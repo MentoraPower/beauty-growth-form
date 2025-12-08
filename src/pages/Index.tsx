@@ -5,6 +5,7 @@ import CountrySelect from "@/components/CountrySelect";
 import CustomSelect from "@/components/CustomSelect";
 import ProgressBar from "@/components/ProgressBar";
 import ArrowRight from "@/components/icons/ArrowRight";
+import ArrowLeft from "@/components/icons/ArrowLeft";
 import Mail from "@/components/icons/Mail";
 import WhatsApp from "@/components/icons/WhatsApp";
 import Instagram from "@/components/icons/Instagram";
@@ -51,6 +52,12 @@ const Index = () => {
   const nextStep = () => {
     if (step < totalSteps) {
       setStep(step + 1);
+    }
+  };
+
+  const prevStep = () => {
+    if (step > 1) {
+      setStep(step - 1);
     }
   };
 
@@ -414,6 +421,14 @@ const Index = () => {
   return (
     <div className="form-container">
       {step > 1 && step < 10 && <ProgressBar currentStep={step - 1} totalSteps={totalSteps - 2} />}
+      {step > 1 && step < 10 && (
+        <button
+          onClick={prevStep}
+          className="fixed top-6 left-6 w-10 h-10 rounded-full bg-card border border-border flex items-center justify-center hover:bg-secondary/50 transition-colors z-50"
+        >
+          <ArrowLeft className="w-5 h-5 text-foreground" />
+        </button>
+      )}
       {renderStep()}
     </div>
   );
