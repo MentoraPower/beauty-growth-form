@@ -76,23 +76,7 @@ export const getFlagUrl = (code: string) =>
   `https://flagcdn.com/w40/${code.toLowerCase()}.png`;
 
 export const beautyAreas = [
-  "Estética Facial",
-  "Estética Corporal",
-  "Micropigmentação",
   "Design de Sobrancelhas",
-  "Extensão de Cílios",
-  "Nail Designer / Manicure",
-  "Cabelereiro(a)",
-  "Maquiagem",
-  "Depilação",
-  "Massoterapia",
-  "Podologia",
-  "Harmonização Facial",
-  "Dermatologia Estética",
-  "Nutrição Estética",
-  "Personal Trainer / Fitness",
-  "Spa / Day Spa",
-  "Barbearia",
   "Outro",
 ];
 
