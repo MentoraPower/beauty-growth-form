@@ -86,6 +86,18 @@
     text-rendering: optimizeLegibility;
   }
 
+  /* Remove number input arrows */
+  input[type="number"]::-webkit-inner-spin-button,
+  input[type="number"]::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+
+  input[type="number"] {
+    -moz-appearance: textfield;
+    appearance: textfield;
+  }
+
   body {
     @apply bg-background text-foreground antialiased;
     font-family: var(--font-body) !important;
