@@ -167,13 +167,21 @@
   }
 
   .form-title {
-    @apply text-2xl md:text-3xl font-semibold text-foreground text-center leading-tight;
-    font-family: var(--font-display) !important;
+    @apply text-2xl md:text-3xl text-foreground text-center leading-tight;
+    font-family: 'Metropolis', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
     letter-spacing: -0.03em;
   }
 
+  .form-title .font-light {
+    font-weight: 300 !important;
+  }
+
+  .form-title .font-bold {
+    font-weight: 700 !important;
+  }
+
   .form-subtitle {
-    @apply text-sm text-muted-foreground text-center mt-2;
+    @apply text-sm text-muted-foreground text-center mt-2 mb-8;
   }
 
   .form-label {

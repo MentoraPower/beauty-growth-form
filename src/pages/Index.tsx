@@ -139,8 +139,11 @@ const Index = () => {
                 <Mail className="w-7 h-7 text-primary" />
               </div>
             </div>
-            <h1 className="form-title">Qual o seu melhor e-mail?</h1>
-            <p className="form-subtitle mt-2 mb-8">Para enviarmos informações importantes</p>
+            <h1 className="form-title">
+              <span className="font-light">Qual o seu </span>
+              <span className="font-bold">melhor e-mail?</span>
+            </h1>
+            <p className="form-subtitle">Para enviarmos informações importantes</p>
             <div className="space-y-4">
               <input
                 type="email"
@@ -178,8 +181,11 @@ const Index = () => {
                 <WhatsApp className="w-7 h-7 text-primary" />
               </div>
             </div>
-            <h1 className="form-title">Qual o seu WhatsApp?</h1>
-            <p className="form-subtitle mt-2 mb-8">Para entrarmos em contato com você</p>
+            <h1 className="form-title">
+              <span className="font-light">Qual o seu </span>
+              <span className="font-bold">WhatsApp?</span>
+            </h1>
+            <p className="form-subtitle">Para entrarmos em contato com você</p>
             <div className="space-y-4">
               <div className="flex">
                 <CountrySelect
@@ -223,8 +229,11 @@ const Index = () => {
                 <Instagram className="w-7 h-7 text-primary" />
               </div>
             </div>
-            <h1 className="form-title">Qual o seu Instagram?</h1>
-            <p className="form-subtitle mt-2 mb-8">Para conhecermos seu trabalho</p>
+            <h1 className="form-title">
+              <span className="font-light">Qual o seu </span>
+              <span className="font-bold">Instagram?</span>
+            </h1>
+            <p className="form-subtitle">Para conhecermos seu trabalho</p>
             <div className="space-y-4">
               <div className="relative">
                 <span className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground">@</span>
@@ -265,8 +274,11 @@ const Index = () => {
                 <Building className="w-7 h-7 text-primary" />
               </div>
             </div>
-            <h1 className="form-title">Qual a sua área de atuação?</h1>
-            <p className="form-subtitle mt-2 mb-8">Selecione a área da sua Clínica/Studio</p>
+            <h1 className="form-title">
+              <span className="font-light">Qual a sua </span>
+              <span className="font-bold">área de atuação?</span>
+            </h1>
+            <p className="form-subtitle">Selecione a área da sua Clínica/Studio</p>
             <div className="space-y-4">
               <CustomSelect
                 value={formData.beautyArea}
@@ -302,8 +314,11 @@ const Index = () => {
                 <DollarSign className="w-7 h-7 text-primary" />
               </div>
             </div>
-            <h1 className="form-title">Qual o faturamento mensal atual?</h1>
-            <p className="form-subtitle mt-2 mb-8">Da sua Clínica/Studio</p>
+            <h1 className="form-title">
+              <span className="font-light">Qual o </span>
+              <span className="font-bold">faturamento mensal?</span>
+            </h1>
+            <p className="form-subtitle">Da sua Clínica/Studio</p>
             <div className="space-y-4">
               <CustomSelect
                 value={formData.revenue}
@@ -339,8 +354,11 @@ const Index = () => {
                 <Users className="w-7 h-7 text-primary" />
               </div>
             </div>
-            <h1 className="form-title">Quantos atendimentos por semana?</h1>
-            <p className="form-subtitle mt-2 mb-8">Em média na sua Clínica/Studio</p>
+            <h1 className="form-title">
+              <span className="font-light">Quantos </span>
+              <span className="font-bold">atendimentos por semana?</span>
+            </h1>
+            <p className="form-subtitle">Em média na sua Clínica/Studio</p>
             <div className="space-y-4">
               <input
                 type="number"
@@ -379,8 +397,11 @@ const Index = () => {
                 <Home className="w-7 h-7 text-primary" />
               </div>
             </div>
-            <h1 className="form-title">Você possui espaço físico?</h1>
-            <p className="form-subtitle mt-2 mb-8">Ou atende em domicílio/casa</p>
+            <h1 className="form-title">
+              <span className="font-light">Você possui </span>
+              <span className="font-bold">espaço físico?</span>
+            </h1>
+            <p className="form-subtitle">Ou atende em domicílio/casa</p>
             <div className="space-y-3">
               <button
                 type="button"
@@ -424,8 +445,11 @@ const Index = () => {
                 <Calendar className="w-7 h-7 text-primary" />
               </div>
             </div>
-            <h1 className="form-title">Quantos anos de profissão?</h1>
-            <p className="form-subtitle mt-2 mb-8">Sua experiência na área da beleza</p>
+            <h1 className="form-title">
+              <span className="font-light">Quantos anos de </span>
+              <span className="font-bold">profissão?</span>
+            </h1>
+            <p className="form-subtitle">Sua experiência na área da beleza</p>
             <div className="space-y-4">
               <input
                 type="number"
