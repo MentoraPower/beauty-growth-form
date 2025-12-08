@@ -77,6 +77,8 @@ export const getFlagUrl = (code: string) =>
 
 export const beautyAreas = [
   "Design de Sobrancelhas",
+  "Micropigmentação",
+  "Extensão de Cílios",
   "Outro",
 ];
 
