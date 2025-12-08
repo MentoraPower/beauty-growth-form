@@ -27,7 +27,7 @@ const CustomSelect = ({ value, onChange, options, placeholder }: CustomSelectPro
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className="w-full h-14 px-4 rounded-xl border border-border bg-card text-left flex items-center justify-between hover:border-primary/50 transition-colors focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+        className="w-full h-14 px-4 rounded-xl border border-border bg-card text-left flex items-center justify-between transition-colors focus:outline-none"
       >
         <span className={value ? "text-foreground" : "text-muted-foreground"}>
           {value || placeholder}

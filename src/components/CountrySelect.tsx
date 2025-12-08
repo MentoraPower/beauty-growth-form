@@ -33,7 +33,7 @@ const CountrySelect = ({ value, onChange }: CountrySelectProps) => {
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center gap-2 h-14 px-3 rounded-l-xl border border-r-0 border-border bg-card hover:bg-secondary/50 transition-colors"
+        className="flex items-center gap-2 h-14 px-3 rounded-l-xl border border-r-0 border-border bg-card transition-colors focus:outline-none"
       >
         <span className="text-xl">{value.flag}</span>
         <ChevronDown className="w-4 h-4 text-muted-foreground" />
@@ -44,10 +44,10 @@ const CountrySelect = ({ value, onChange }: CountrySelectProps) => {
           <div className="p-2 border-b border-border">
             <input
               type="text"
-              placeholder="Buscar pais..."
+              placeholder="Buscar país..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full h-10 px-3 rounded-lg border border-border bg-background text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20"
+              className="w-full h-10 px-3 rounded-lg border border-border bg-background text-sm text-foreground placeholder:text-muted-foreground focus:outline-none"
             />
           </div>
           <div className="max-h-60 overflow-y-auto">
