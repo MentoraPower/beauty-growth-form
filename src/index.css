@@ -202,10 +202,16 @@
   }
 
   .btn-primary {
-    @apply h-14 rounded-full text-primary-foreground font-semibold text-base gradient-primary hover:opacity-90 transition-opacity cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed;
+    @apply h-14 rounded-full text-primary-foreground font-semibold text-base gradient-primary transition-all duration-300 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed;
     font-family: var(--font-display);
     width: 85%;
     margin: 0 auto;
+  }
+
+  .btn-primary:hover:not(:disabled),
+  .btn-primary:active:not(:disabled) {
+    background: hsl(var(--card));
+    color: hsl(var(--foreground));
   }
 
   .btn-secondary {
