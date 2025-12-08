@@ -5,6 +5,7 @@ import scaleBeautyHero from "@/assets/scale-beauty-hero.png";
 import CountrySelect from "@/components/CountrySelect";
 import CustomSelect from "@/components/CustomSelect";
 import ProgressBar from "@/components/ProgressBar";
+import RippleButton from "@/components/RippleButton";
 import ArrowRight from "@/components/icons/ArrowRight";
 import ArrowLeft from "@/components/icons/ArrowLeft";
 import Mail from "@/components/icons/Mail";
@@ -107,14 +108,13 @@ const Index = () => {
                 className="form-input"
                 autoFocus
               />
-              <button
+              <RippleButton
                 onClick={nextStep}
                 disabled={!canProceed()}
-                className="btn-primary flex items-center justify-center gap-2"
               >
                 Prosseguir
                 <ArrowRight className="w-5 h-5" />
-              </button>
+              </RippleButton>
             </div>
             {/* Desktop: terms inline */}
             <div className="hidden md:block">
@@ -157,14 +157,14 @@ const Index = () => {
                 >
                   <ArrowLeft className="w-5 h-5 text-foreground" />
                 </button>
-                <button
+                <RippleButton
                   onClick={nextStep}
                   disabled={!canProceed()}
-                  className="btn-primary flex-1 flex items-center justify-center gap-2"
+                  className="flex-1"
                 >
                   Continuar
                   <ArrowRight className="w-5 h-5" />
-                </button>
+                </RippleButton>
               </div>
             </div>
           </div>
@@ -200,14 +200,14 @@ const Index = () => {
                 >
                   <ArrowLeft className="w-5 h-5 text-foreground" />
                 </button>
-                <button
+                <RippleButton
                   onClick={nextStep}
                   disabled={!canProceed()}
-                  className="btn-primary flex-1 flex items-center justify-center gap-2"
+                  className="flex-1"
                 >
                   Continuar
                   <ArrowRight className="w-5 h-5" />
-                </button>
+                </RippleButton>
               </div>
             </div>
           </div>
@@ -240,14 +240,14 @@ const Index = () => {
                 >
                   <ArrowLeft className="w-5 h-5 text-foreground" />
                 </button>
-                <button
+                <RippleButton
                   onClick={nextStep}
                   disabled={!canProceed()}
-                  className="btn-primary flex-1 flex items-center justify-center gap-2"
+                  className="flex-1"
                 >
                   Continuar
                   <ArrowRight className="w-5 h-5" />
-                </button>
+                </RippleButton>
               </div>
             </div>
           </div>
@@ -275,14 +275,14 @@ const Index = () => {
                 >
                   <ArrowLeft className="w-5 h-5 text-foreground" />
                 </button>
-                <button
+                <RippleButton
                   onClick={nextStep}
                   disabled={!canProceed()}
-                  className="btn-primary flex-1 flex items-center justify-center gap-2"
+                  className="flex-1"
                 >
                   Continuar
                   <ArrowRight className="w-5 h-5" />
-                </button>
+                </RippleButton>
               </div>
             </div>
           </div>
@@ -310,14 +310,14 @@ const Index = () => {
                 >
                   <ArrowLeft className="w-5 h-5 text-foreground" />
                 </button>
-                <button
+                <RippleButton
                   onClick={nextStep}
                   disabled={!canProceed()}
-                  className="btn-primary flex-1 flex items-center justify-center gap-2"
+                  className="flex-1"
                 >
                   Continuar
                   <ArrowRight className="w-5 h-5" />
-                </button>
+                </RippleButton>
               </div>
             </div>
           </div>
@@ -348,14 +348,14 @@ const Index = () => {
                 >
                   <ArrowLeft className="w-5 h-5 text-foreground" />
                 </button>
-                <button
+                <RippleButton
                   onClick={nextStep}
                   disabled={!canProceed()}
-                  className="btn-primary flex-1 flex items-center justify-center gap-2"
+                  className="flex-1"
                 >
                   Continuar
                   <ArrowRight className="w-5 h-5" />
-                </button>
+                </RippleButton>
               </div>
             </div>
           </div>
@@ -391,14 +391,14 @@ const Index = () => {
                 >
                   <ArrowLeft className="w-5 h-5 text-foreground" />
                 </button>
-                <button
+                <RippleButton
                   onClick={nextStep}
                   disabled={!canProceed()}
-                  className="btn-primary flex-1 flex items-center justify-center gap-2"
+                  className="flex-1"
                 >
                   Continuar
                   <ArrowRight className="w-5 h-5" />
-                </button>
+                </RippleButton>
               </div>
             </div>
           </div>
@@ -429,14 +429,14 @@ const Index = () => {
                 >
                   <ArrowLeft className="w-5 h-5 text-foreground" />
                 </button>
-                <button
+                <RippleButton
                   onClick={nextStep}
                   disabled={!canProceed()}
-                  className="btn-primary flex-1 flex items-center justify-center gap-2"
+                  className="flex-1"
                 >
                   Continuar
                   <ArrowRight className="w-5 h-5" />
-                </button>
+                </RippleButton>
               </div>
             </div>
           </div>
@@ -461,7 +461,7 @@ const Index = () => {
                 <p className="text-base text-muted-foreground mt-4 mb-8 leading-relaxed">
                   Você ganhou uma consultoria exclusiva com o time da Scale Beauty para saber mais sobre nossos serviços e como podemos escalar seu negócio.
                 </p>
-                <button
+                <RippleButton
                   onClick={() => {
                     setIsLoading(true);
                     console.log("Form submitted:", formData);
@@ -469,10 +469,9 @@ const Index = () => {
                       window.location.href = "https://www.instagram.com/scalebeautyy/";
                     }, 2000);
                   }}
-                  className="btn-primary flex items-center justify-center gap-2"
                 >
                   Finalizar
-                </button>
+                </RippleButton>
                 <p className="text-sm text-muted-foreground mt-6">
                   Em breve vamos entrar em contato pelo seu WhatsApp!
                 </p>
