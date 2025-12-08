@@ -445,7 +445,7 @@ const Index = () => {
           <div className="form-card text-center">
             {isLoading ? (
               <>
-                <h1 className="form-title">Redirecionando...</h1>
+                <h1 className="form-title !text-center">Redirecionando...</h1>
                 <p className="text-base text-muted-foreground mt-4 mb-8">
                   Aguarde um momento
                 </p>
@@ -455,7 +455,7 @@ const Index = () => {
               </>
             ) : (
               <>
-                <h1 className="form-title">Parabéns, {formData.name}!</h1>
+                <h1 className="form-title !text-center">Parabéns, {formData.name}!</h1>
                 <p className="text-base text-muted-foreground mt-4 mb-8 leading-relaxed">
                   Você ganhou uma consultoria exclusiva com o time da Scale Beauty para saber mais sobre nossos serviços e como podemos escalar seu negócio.
                 </p>
