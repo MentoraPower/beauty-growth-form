@@ -93,10 +93,8 @@ const Index = () => {
         return (
           <div className="form-card">
             <h1 className="form-title max-w-[280px] md:max-w-none">
-              <span className="font-light">Escalando seu </span>
-              <span className="font-bold">negócio</span>
-              <span className="font-light"> no mundo </span>
-              <span className="font-bold">Beauty</span>
+              <span className="font-light">Escalando seu negócio no </span>
+              <span className="font-bold">mundo Beauty</span>
             </h1>
             <p className="form-subtitle mt-4 mb-8">Como posso te chamar?</p>
             <div className="space-y-4">
