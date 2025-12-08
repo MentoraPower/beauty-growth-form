@@ -86,6 +86,16 @@
     text-rendering: optimizeLegibility;
   }
 
+  /* Remove all focus outlines and rings */
+  *:focus,
+  *:focus-visible,
+  *:focus-within,
+  *:active {
+    outline: none !important;
+    box-shadow: none !important;
+    -webkit-tap-highlight-color: transparent !important;
+  }
+
   /* Remove number input arrows */
   input[type="number"]::-webkit-inner-spin-button,
   input[type="number"]::-webkit-outer-spin-button {
@@ -101,6 +111,7 @@
   body {
     @apply bg-background text-foreground antialiased;
     font-family: var(--font-body) !important;
+    -webkit-tap-highlight-color: transparent;
   }
 
   h1, h2, h3, h4, h5, h6 {
@@ -110,6 +121,20 @@
   /* Force font on all elements */
   input, button, select, textarea, label, span, p, a, div {
     font-family: var(--font-body) !important;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  input, button, select, textarea {
+    outline: none !important;
+    box-shadow: none !important;
+  }
+
+  input:focus, input:active,
+  button:focus, button:active,
+  select:focus, select:active,
+  textarea:focus, textarea:active {
+    outline: none !important;
+    box-shadow: none !important;
   }
 }
 
