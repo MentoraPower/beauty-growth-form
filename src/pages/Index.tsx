@@ -492,9 +492,9 @@ const Index = () => {
       {step > 1 && step < 10 && <ProgressBar currentStep={step - 1} totalSteps={totalSteps - 2} />}
       
       {/* Mobile Layout */}
-      <div className="md:hidden flex flex-col min-h-screen px-[1.25em]">
+      <div className="md:hidden flex flex-col min-h-screen">
         {/* Image on top with padding and rounded corners */}
-        <div className="w-full pt-[1.25em]">
+        <div className="w-full px-[1.25em] pt-[1.25em]">
           <img 
             src={scaleBeautyHero} 
             alt="Scale Beauty" 
@@ -503,7 +503,7 @@ const Index = () => {
         </div>
         
         {/* Form close to image */}
-        <div className="flex-1 flex flex-col justify-between">
+        <div className="flex-1 flex flex-col justify-between px-[1.25em]">
           <div className="pt-6">
             {renderStep()}
           </div>
