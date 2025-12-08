@@ -30,6 +30,7 @@ interface FormData {
 
 const Index = () => {
   const [step, setStep] = useState(1);
+  const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState<FormData>({
     name: "",
     email: "",
@@ -394,22 +395,40 @@ const Index = () => {
       case 10:
         return (
           <div className="form-card text-center">
-            <h1 className="form-title">Parabéns, {formData.name}!</h1>
-            <p className="text-base text-muted-foreground mt-4 mb-8 leading-relaxed">
-              Você ganhou uma consultoria exclusiva com o time da Scale Beauty para saber mais sobre nossos serviços e como podemos escalar seu negócio.
-            </p>
-            <button
-              onClick={() => {
-                console.log("Form submitted:", formData);
-              }}
-              className="btn-primary flex items-center justify-center gap-2"
-            >
-              Finalizar
-            </button>
-            <p className="text-sm text-muted-foreground mt-6">
-              Em breve vamos entrar em contato pelo seu WhatsApp!
-            </p>
-            <p className="copyright">© Copyright 2025 Scale Beauty</p>
+            {isLoading ? (
+              <>
+                <h1 className="form-title">Redirecionando...</h1>
+                <p className="text-base text-muted-foreground mt-4 mb-8">
+                  Aguarde um momento
+                </p>
+                <div className="w-full h-2 bg-border rounded-full overflow-hidden">
+                  <div className="h-full gradient-primary animate-loading-bar" />
+                </div>
+              </>
+            ) : (
+              <>
+                <h1 className="form-title">Parabéns, {formData.name}!</h1>
+                <p className="text-base text-muted-foreground mt-4 mb-8 leading-relaxed">
+                  Você ganhou uma consultoria exclusiva com o time da Scale Beauty para saber mais sobre nossos serviços e como podemos escalar seu negócio.
+                </p>
+                <button
+                  onClick={() => {
+                    setIsLoading(true);
+                    console.log("Form submitted:", formData);
+                    setTimeout(() => {
+                      window.location.href = "https://www.instagram.com/scalebeautyy/";
+                    }, 2000);
+                  }}
+                  className="btn-primary flex items-center justify-center gap-2"
+                >
+                  Finalizar
+                </button>
+                <p className="text-sm text-muted-foreground mt-6">
+                  Em breve vamos entrar em contato pelo seu WhatsApp!
+                </p>
+                <p className="copyright">© Copyright 2025 Scale Beauty</p>
+              </>
+            )}
           </div>
         );
 
