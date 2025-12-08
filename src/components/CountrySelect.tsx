@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { countries, Country } from "@/data/countries";
+import { countries, Country, getFlagUrl } from "@/data/countries";
 import ChevronDown from "./icons/ChevronDown";
 
 interface CountrySelectProps {
@@ -35,7 +35,11 @@ const CountrySelect = ({ value, onChange }: CountrySelectProps) => {
         onClick={() => setIsOpen(!isOpen)}
         className="flex items-center gap-2 h-14 px-3 rounded-l-xl border border-r-0 border-border bg-card transition-colors focus:outline-none"
       >
-        <span className="text-xl">{value.flag}</span>
+        <img 
+          src={getFlagUrl(value.code)} 
+          alt={value.name}
+          className="w-6 h-4 object-cover rounded-sm"
+        />
         <ChevronDown className="w-4 h-4 text-muted-foreground" />
       </button>
 
@@ -64,7 +68,11 @@ const CountrySelect = ({ value, onChange }: CountrySelectProps) => {
                   value.code === country.code ? "bg-primary/5" : ""
                 }`}
               >
-                <span className="text-xl">{country.flag}</span>
+                <img 
+                  src={getFlagUrl(country.code)} 
+                  alt={country.name}
+                  className="w-6 h-4 object-cover rounded-sm"
+                />
                 <span className="text-sm text-foreground flex-1">{country.name}</span>
                 <span className="text-sm text-muted-foreground">{country.dialCode}</span>
               </button>
