@@ -150,14 +150,22 @@ const Index = () => {
                 className="form-input"
                 autoFocus
               />
-              <button
-                onClick={nextStep}
-                disabled={!canProceed()}
-                className="btn-primary flex items-center justify-center gap-2"
-              >
-                Continuar
-                <ArrowRight className="w-5 h-5" />
-              </button>
+              <div className="flex gap-3">
+                <button
+                  onClick={prevStep}
+                  className="h-14 px-4 rounded-xl border border-border bg-card flex items-center justify-center"
+                >
+                  <ArrowLeft className="w-5 h-5 text-foreground" />
+                </button>
+                <button
+                  onClick={nextStep}
+                  disabled={!canProceed()}
+                  className="btn-primary flex-1 flex items-center justify-center gap-2"
+                >
+                  Continuar
+                  <ArrowRight className="w-5 h-5" />
+                </button>
+              </div>
             </div>
           </div>
         );
@@ -187,14 +195,22 @@ const Index = () => {
                   autoFocus
                 />
               </div>
-              <button
-                onClick={nextStep}
-                disabled={!canProceed()}
-                className="btn-primary flex items-center justify-center gap-2"
-              >
-                Continuar
-                <ArrowRight className="w-5 h-5" />
-              </button>
+              <div className="flex gap-3">
+                <button
+                  onClick={prevStep}
+                  className="h-14 px-4 rounded-xl border border-border bg-card flex items-center justify-center"
+                >
+                  <ArrowLeft className="w-5 h-5 text-foreground" />
+                </button>
+                <button
+                  onClick={nextStep}
+                  disabled={!canProceed()}
+                  className="btn-primary flex-1 flex items-center justify-center gap-2"
+                >
+                  Continuar
+                  <ArrowRight className="w-5 h-5" />
+                </button>
+              </div>
             </div>
           </div>
         );
@@ -221,14 +237,22 @@ const Index = () => {
                   autoFocus
                 />
               </div>
-              <button
-                onClick={nextStep}
-                disabled={!canProceed()}
-                className="btn-primary flex items-center justify-center gap-2"
-              >
-                Continuar
-                <ArrowRight className="w-5 h-5" />
-              </button>
+              <div className="flex gap-3">
+                <button
+                  onClick={prevStep}
+                  className="h-14 px-4 rounded-xl border border-border bg-card flex items-center justify-center"
+                >
+                  <ArrowLeft className="w-5 h-5 text-foreground" />
+                </button>
+                <button
+                  onClick={nextStep}
+                  disabled={!canProceed()}
+                  className="btn-primary flex-1 flex items-center justify-center gap-2"
+                >
+                  Continuar
+                  <ArrowRight className="w-5 h-5" />
+                </button>
+              </div>
             </div>
           </div>
         );
@@ -250,14 +274,22 @@ const Index = () => {
                 options={beautyAreas}
                 placeholder="Selecione uma área"
               />
-              <button
-                onClick={nextStep}
-                disabled={!canProceed()}
-                className="btn-primary flex items-center justify-center gap-2"
-              >
-                Continuar
-                <ArrowRight className="w-5 h-5" />
-              </button>
+              <div className="flex gap-3">
+                <button
+                  onClick={prevStep}
+                  className="h-14 px-4 rounded-xl border border-border bg-card flex items-center justify-center"
+                >
+                  <ArrowLeft className="w-5 h-5 text-foreground" />
+                </button>
+                <button
+                  onClick={nextStep}
+                  disabled={!canProceed()}
+                  className="btn-primary flex-1 flex items-center justify-center gap-2"
+                >
+                  Continuar
+                  <ArrowRight className="w-5 h-5" />
+                </button>
+              </div>
             </div>
           </div>
         );
@@ -279,14 +311,22 @@ const Index = () => {
                 options={revenueRanges}
                 placeholder="Selecione uma faixa"
               />
-              <button
-                onClick={nextStep}
-                disabled={!canProceed()}
-                className="btn-primary flex items-center justify-center gap-2"
-              >
-                Continuar
-                <ArrowRight className="w-5 h-5" />
-              </button>
+              <div className="flex gap-3">
+                <button
+                  onClick={prevStep}
+                  className="h-14 px-4 rounded-xl border border-border bg-card flex items-center justify-center"
+                >
+                  <ArrowLeft className="w-5 h-5 text-foreground" />
+                </button>
+                <button
+                  onClick={nextStep}
+                  disabled={!canProceed()}
+                  className="btn-primary flex-1 flex items-center justify-center gap-2"
+                >
+                  Continuar
+                  <ArrowRight className="w-5 h-5" />
+                </button>
+              </div>
             </div>
           </div>
         );
@@ -311,14 +351,22 @@ const Index = () => {
                 min="0"
                 autoFocus
               />
-              <button
-                onClick={nextStep}
-                disabled={!canProceed()}
-                className="btn-primary flex items-center justify-center gap-2"
-              >
-                Continuar
-                <ArrowRight className="w-5 h-5" />
-              </button>
+              <div className="flex gap-3">
+                <button
+                  onClick={prevStep}
+                  className="h-14 px-4 rounded-xl border border-border bg-card flex items-center justify-center"
+                >
+                  <ArrowLeft className="w-5 h-5 text-foreground" />
+                </button>
+                <button
+                  onClick={nextStep}
+                  disabled={!canProceed()}
+                  className="btn-primary flex-1 flex items-center justify-center gap-2"
+                >
+                  Continuar
+                  <ArrowRight className="w-5 h-5" />
+                </button>
+              </div>
             </div>
           </div>
         );
@@ -348,14 +396,22 @@ const Index = () => {
               >
                 <span className="option-card-text">Não, atendo em casa/domicílio</span>
               </button>
-              <button
-                onClick={nextStep}
-                disabled={!canProceed()}
-                className="btn-primary flex items-center justify-center gap-2 mt-4"
-              >
-                Continuar
-                <ArrowRight className="w-5 h-5" />
-              </button>
+              <div className="flex gap-3 mt-4">
+                <button
+                  onClick={prevStep}
+                  className="h-14 px-4 rounded-xl border border-border bg-card flex items-center justify-center"
+                >
+                  <ArrowLeft className="w-5 h-5 text-foreground" />
+                </button>
+                <button
+                  onClick={nextStep}
+                  disabled={!canProceed()}
+                  className="btn-primary flex-1 flex items-center justify-center gap-2"
+                >
+                  Continuar
+                  <ArrowRight className="w-5 h-5" />
+                </button>
+              </div>
             </div>
           </div>
         );
@@ -380,14 +436,22 @@ const Index = () => {
                 min="0"
                 autoFocus
               />
-              <button
-                onClick={nextStep}
-                disabled={!canProceed()}
-                className="btn-primary flex items-center justify-center gap-2"
-              >
-                Continuar
-                <ArrowRight className="w-5 h-5" />
-              </button>
+              <div className="flex gap-3">
+                <button
+                  onClick={prevStep}
+                  className="h-14 px-4 rounded-xl border border-border bg-card flex items-center justify-center"
+                >
+                  <ArrowLeft className="w-5 h-5 text-foreground" />
+                </button>
+                <button
+                  onClick={nextStep}
+                  disabled={!canProceed()}
+                  className="btn-primary flex-1 flex items-center justify-center gap-2"
+                >
+                  Continuar
+                  <ArrowRight className="w-5 h-5" />
+                </button>
+              </div>
             </div>
           </div>
         );
@@ -440,14 +504,6 @@ const Index = () => {
   return (
     <div className="form-container">
       {step > 1 && step < 10 && <ProgressBar currentStep={step - 1} totalSteps={totalSteps - 2} />}
-      {step > 1 && step < 10 && (
-        <button
-          onClick={prevStep}
-          className="fixed top-6 left-6 w-10 h-10 rounded-full bg-card border border-border flex items-center justify-center hover:bg-secondary/50 transition-colors z-50"
-        >
-          <ArrowLeft className="w-5 h-5 text-foreground" />
-        </button>
-      )}
       {renderStep()}
     </div>
   );
