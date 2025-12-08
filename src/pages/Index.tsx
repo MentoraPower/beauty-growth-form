@@ -134,11 +134,6 @@ const Index = () => {
       case 2:
         return (
           <div className="form-card">
-            <div className="flex justify-center mb-6">
-              <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center">
-                <Mail className="w-7 h-7 text-primary" />
-              </div>
-            </div>
             <h1 className="form-title">
               <span className="font-light">Qual o seu </span>
               <span className="font-bold">melhor e-mail?</span>
@@ -176,11 +171,6 @@ const Index = () => {
       case 3:
         return (
           <div className="form-card">
-            <div className="flex justify-center mb-6">
-              <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center">
-                <WhatsApp className="w-7 h-7 text-primary" />
-              </div>
-            </div>
             <h1 className="form-title">
               <span className="font-light">Qual o seu </span>
               <span className="font-bold">WhatsApp?</span>
@@ -224,11 +214,6 @@ const Index = () => {
       case 4:
         return (
           <div className="form-card">
-            <div className="flex justify-center mb-6">
-              <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center">
-                <Instagram className="w-7 h-7 text-primary" />
-              </div>
-            </div>
             <h1 className="form-title">
               <span className="font-light">Qual o seu </span>
               <span className="font-bold">Instagram?</span>
@@ -269,11 +254,6 @@ const Index = () => {
       case 5:
         return (
           <div className="form-card">
-            <div className="flex justify-center mb-6">
-              <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center">
-                <Building className="w-7 h-7 text-primary" />
-              </div>
-            </div>
             <h1 className="form-title">
               <span className="font-light">Qual a sua </span>
               <span className="font-bold">área de atuação?</span>
@@ -309,11 +289,6 @@ const Index = () => {
       case 6:
         return (
           <div className="form-card">
-            <div className="flex justify-center mb-6">
-              <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center">
-                <DollarSign className="w-7 h-7 text-primary" />
-              </div>
-            </div>
             <h1 className="form-title">
               <span className="font-light">Qual o </span>
               <span className="font-bold">faturamento mensal?</span>
@@ -349,11 +324,6 @@ const Index = () => {
       case 7:
         return (
           <div className="form-card">
-            <div className="flex justify-center mb-6">
-              <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center">
-                <Users className="w-7 h-7 text-primary" />
-              </div>
-            </div>
             <h1 className="form-title">
               <span className="font-light">Quantos </span>
               <span className="font-bold">atendimentos por semana?</span>
@@ -392,11 +362,6 @@ const Index = () => {
       case 8:
         return (
           <div className="form-card">
-            <div className="flex justify-center mb-6">
-              <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center">
-                <Home className="w-7 h-7 text-primary" />
-              </div>
-            </div>
             <h1 className="form-title">
               <span className="font-light">Você possui </span>
               <span className="font-bold">espaço físico?</span>
@@ -440,11 +405,6 @@ const Index = () => {
       case 9:
         return (
           <div className="form-card">
-            <div className="flex justify-center mb-6">
-              <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center">
-                <Calendar className="w-7 h-7 text-primary" />
-              </div>
-            </div>
             <h1 className="form-title">
               <span className="font-light">Quantos anos de </span>
               <span className="font-bold">profissão?</span>
