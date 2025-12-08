@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { countries, beautyAreas, revenueRanges, Country } from "@/data/countries";
+import scaleBeautyHero from "@/assets/scale-beauty-hero.png";
 import CountrySelect from "@/components/CountrySelect";
 import CustomSelect from "@/components/CustomSelect";
 import ProgressBar from "@/components/ProgressBar";
@@ -484,9 +485,34 @@ const Index = () => {
   };
 
   return (
-    <div className="form-container">
+    <div className="min-h-screen bg-background">
       {step > 1 && step < 10 && <ProgressBar currentStep={step - 1} totalSteps={totalSteps - 2} />}
-      {renderStep()}
+      
+      {/* Mobile: Image on top */}
+      <div className="md:hidden w-full">
+        <img 
+          src={scaleBeautyHero} 
+          alt="Scale Beauty" 
+          className="w-full h-auto object-cover"
+        />
+      </div>
+
+      {/* Desktop: Side by side layout */}
+      <div className="flex flex-col md:flex-row min-h-screen">
+        {/* Image - Left side on desktop, hidden on mobile (shown above) */}
+        <div className="hidden md:flex md:w-1/2 lg:w-[55%]">
+          <img 
+            src={scaleBeautyHero} 
+            alt="Scale Beauty" 
+            className="w-full h-full object-cover"
+          />
+        </div>
+        
+        {/* Form - Right side on desktop, full width on mobile */}
+        <div className="flex-1 flex items-center justify-center p-4 md:p-8">
+          {renderStep()}
+        </div>
+      </div>
     </div>
   );
 };
