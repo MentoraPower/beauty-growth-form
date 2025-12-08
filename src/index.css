@@ -208,9 +208,45 @@
     margin: 0 auto;
   }
 
-  .btn-primary:hover:not(:disabled),
-  .btn-primary:active:not(:disabled) {
+  .ripple-button {
+    @apply h-14 rounded-full text-primary-foreground font-semibold text-base gradient-primary transition-all duration-300 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed;
+    font-family: var(--font-display);
+    width: 85%;
+    margin: 0 auto;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .ripple-button-content {
+    @apply relative z-10 flex items-center justify-center gap-2 transition-colors duration-300;
+  }
+
+  .ripple-effect {
+    position: absolute;
+    border-radius: 50%;
     background: hsl(var(--card));
+    transform: translate(-50%, -50%) scale(0);
+    animation: ripple-expand 0.6s ease-out forwards;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  @keyframes ripple-expand {
+    0% {
+      width: 0;
+      height: 0;
+      opacity: 1;
+      transform: translate(-50%, -50%) scale(0);
+    }
+    100% {
+      width: 500px;
+      height: 500px;
+      opacity: 1;
+      transform: translate(-50%, -50%) scale(1);
+    }
+  }
+
+  .ripple-button:has(.ripple-effect) .ripple-button-content {
     color: hsl(var(--foreground));
   }
 
