@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&family=DM+Sans:wght@400;500;600;700&display=swap');
+@import url('https://fonts.cdnfonts.com/css/metropolis-2');
 
 @tailwind base;
 @tailwind components;
@@ -41,8 +41,8 @@
     --gradient-primary: linear-gradient(90deg, hsl(0 100% 48%) 0%, hsl(0 100% 31.6%) 100%);
     
     /* Typography */
-    --font-display: 'Sora', sans-serif;
-    --font-body: 'DM Sans', sans-serif;
+    --font-display: 'Metropolis', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    --font-body: 'Metropolis', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 
     --sidebar-background: 0 0% 98%;
     --sidebar-foreground: 240 5.3% 26.1%;
@@ -81,19 +81,35 @@
 @layer base {
   * {
     @apply border-border;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
   }
 
   body {
-    @apply bg-background text-foreground font-body antialiased;
-    font-family: var(--font-body);
+    @apply bg-background text-foreground antialiased;
+    font-family: var(--font-body) !important;
   }
 
   h1, h2, h3, h4, h5, h6 {
-    font-family: var(--font-display);
+    font-family: var(--font-display) !important;
+  }
+
+  /* Force font on all elements */
+  input, button, select, textarea, label, span, p, a, div {
+    font-family: var(--font-body) !important;
   }
 }
 
 @layer components {
+  .font-light {
+    font-weight: 300 !important;
+  }
+
+  .font-bold {
+    font-weight: 700 !important;
+  }
+
   .gradient-primary {
     background: var(--gradient-primary);
   }

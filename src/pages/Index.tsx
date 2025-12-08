@@ -58,7 +58,7 @@ const Index = () => {
   const canProceed = () => {
     switch (step) {
       case 1:
-        return formData.name.trim().length >= 2;
+        return formData.name.trim().length >= 1;
       case 2:
         return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email);
       case 3:
@@ -85,7 +85,12 @@ const Index = () => {
       case 1:
         return (
           <div className="form-card">
-            <h1 className="form-title">Escalando seu negocio no mundo Beauty</h1>
+            <h1 className="form-title">
+              <span className="font-light">Escalando seu </span>
+              <span className="font-bold">negocio</span>
+              <span className="font-light"> no mundo </span>
+              <span className="font-bold">Beauty</span>
+            </h1>
             <p className="form-subtitle mt-4 mb-8">Como posso te chamar?</p>
             <div className="space-y-4">
               <input
