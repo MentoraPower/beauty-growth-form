@@ -5,7 +5,7 @@ import CountrySelect from "@/components/CountrySelect";
 import ProgressBar from "@/components/ProgressBar";
 import ArrowRight from "@/components/icons/ArrowRight";
 import Mail from "@/components/icons/Mail";
-import Phone from "@/components/icons/Phone";
+import WhatsApp from "@/components/icons/WhatsApp";
 import Instagram from "@/components/icons/Instagram";
 import Building from "@/components/icons/Building";
 import DollarSign from "@/components/icons/DollarSign";
@@ -159,13 +159,13 @@ const Index = () => {
           <div className="form-card">
             <div className="flex justify-center mb-6">
               <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center">
-                <Phone className="w-7 h-7 text-primary" />
+                <WhatsApp className="w-7 h-7 text-primary" />
               </div>
             </div>
             <h1 className="form-title">Qual o seu WhatsApp?</h1>
             <p className="form-subtitle mt-2 mb-8">Para entrarmos em contato com voce</p>
             <div className="space-y-4">
-              <div className="flex gap-2">
+              <div className="flex">
                 <CountrySelect
                   value={formData.country}
                   onChange={(country) => updateFormData("country", country)}
@@ -175,7 +175,7 @@ const Index = () => {
                   value={formData.phone}
                   onChange={(e) => updateFormData("phone", e.target.value.replace(/\D/g, ""))}
                   placeholder="00 00000-0000"
-                  className="form-input flex-1"
+                  className="form-input flex-1 rounded-l-none border-l-0"
                   autoFocus
                 />
               </div>
