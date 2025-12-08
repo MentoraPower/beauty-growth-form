@@ -131,7 +131,8 @@
 
   .form-title {
     @apply text-2xl md:text-3xl font-semibold text-foreground text-center leading-tight;
-    font-family: var(--font-display);
+    font-family: var(--font-display) !important;
+    letter-spacing: -0.03em;
   }
 
   .form-subtitle {
