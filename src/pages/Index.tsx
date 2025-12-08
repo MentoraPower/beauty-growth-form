@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { countries, beautyAreas, revenueRanges, Country } from "@/data/countries";
 import CountrySelect from "@/components/CountrySelect";
+import CustomSelect from "@/components/CustomSelect";
 import ProgressBar from "@/components/ProgressBar";
 import ArrowRight from "@/components/icons/ArrowRight";
 import Mail from "@/components/icons/Mail";
@@ -12,7 +13,6 @@ import DollarSign from "@/components/icons/DollarSign";
 import Users from "@/components/icons/Users";
 import Home from "@/components/icons/Home";
 import Calendar from "@/components/icons/Calendar";
-import ChevronDown from "@/components/icons/ChevronDown";
 
 interface FormData {
   name: string;
@@ -236,21 +236,12 @@ const Index = () => {
             <h1 className="form-title">Qual a sua área de atuação?</h1>
             <p className="form-subtitle mt-2 mb-8">Selecione a área da sua Clínica/Studio</p>
             <div className="space-y-4">
-              <div className="relative">
-                <select
-                  value={formData.beautyArea}
-                  onChange={(e) => updateFormData("beautyArea", e.target.value)}
-                  className="form-select pr-12"
-                >
-                  <option value="">Selecione uma área</option>
-                  {beautyAreas.map((area) => (
-                    <option key={area} value={area}>
-                      {area}
-                    </option>
-                  ))}
-                </select>
-                <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground pointer-events-none" />
-              </div>
+              <CustomSelect
+                value={formData.beautyArea}
+                onChange={(value) => updateFormData("beautyArea", value)}
+                options={beautyAreas}
+                placeholder="Selecione uma área"
+              />
               <button
                 onClick={nextStep}
                 disabled={!canProceed()}
@@ -274,21 +265,12 @@ const Index = () => {
             <h1 className="form-title">Qual o faturamento mensal atual?</h1>
             <p className="form-subtitle mt-2 mb-8">Da sua Clínica/Studio</p>
             <div className="space-y-4">
-              <div className="relative">
-                <select
-                  value={formData.revenue}
-                  onChange={(e) => updateFormData("revenue", e.target.value)}
-                  className="form-select pr-12"
-                >
-                  <option value="">Selecione uma faixa</option>
-                  {revenueRanges.map((range) => (
-                    <option key={range} value={range}>
-                      {range}
-                    </option>
-                  ))}
-                </select>
-                <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground pointer-events-none" />
-              </div>
+              <CustomSelect
+                value={formData.revenue}
+                onChange={(value) => updateFormData("revenue", value)}
+                options={revenueRanges}
+                placeholder="Selecione uma faixa"
+              />
               <button
                 onClick={nextStep}
                 disabled={!canProceed()}
