@@ -492,25 +492,25 @@ const Index = () => {
       {step > 1 && step < 10 && <ProgressBar currentStep={step - 1} totalSteps={totalSteps - 2} />}
       
       {/* Mobile Layout */}
-      <div className="md:hidden flex flex-col min-h-screen">
-        {/* Image on top */}
-        <div className="w-full">
+      <div className="md:hidden flex flex-col min-h-screen px-[1.25em]">
+        {/* Image on top with padding and rounded corners */}
+        <div className="w-full pt-[1.25em]">
           <img 
             src={scaleBeautyHero} 
             alt="Scale Beauty" 
-            className="w-full h-auto object-cover"
+            className="w-full h-auto object-cover rounded-2xl"
           />
         </div>
         
         {/* Form close to image */}
         <div className="flex-1 flex flex-col justify-between">
-          <div className="p-4 pt-6">
+          <div className="pt-6">
             {renderStep()}
           </div>
           
           {/* Mobile footer with terms - only on step 1 */}
           {step === 1 && (
-            <div className="p-4 pb-6 text-center">
+            <div className="pb-6 text-center">
               <p className="legal-text">
                 Ao clicar em PROSSEGUIR você automaticamente concorda com os{" "}
                 <Link to="/termos" className="legal-link">
