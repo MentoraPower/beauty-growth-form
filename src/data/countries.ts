@@ -79,6 +79,10 @@ export const beautyAreas = [
   "Design de Sobrancelhas",
   "Micropigmentação",
   "Extensão de Cílios",
+  "Brow Lamination",
+  "Lash Lifting",
+  "Henna de Sobrancelhas",
+  "Coloração de Sobrancelhas",
   "Outro",
 ];
 
