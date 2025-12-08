@@ -12,7 +12,6 @@ import DollarSign from "@/components/icons/DollarSign";
 import Users from "@/components/icons/Users";
 import Home from "@/components/icons/Home";
 import Calendar from "@/components/icons/Calendar";
-import Sparkles from "@/components/icons/Sparkles";
 import ChevronDown from "@/components/icons/ChevronDown";
 
 interface FormData {
@@ -406,11 +405,6 @@ const Index = () => {
       case 10:
         return (
           <div className="form-card text-center">
-            <div className="flex justify-center mb-6">
-              <div className="w-20 h-20 rounded-full gradient-primary flex items-center justify-center">
-                <Sparkles className="w-10 h-10 text-primary-foreground" />
-              </div>
-            </div>
             <h1 className="form-title">Parabens, {formData.name}!</h1>
             <p className="text-base text-muted-foreground mt-4 mb-8 leading-relaxed">
               Voce ganhou uma consultoria exclusiva com o time da Scale Beauty para saber mais sobre nossos servicos e como podemos escalar seu negocio.
