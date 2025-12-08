@@ -116,17 +116,20 @@ const Index = () => {
                 <ArrowRight className="w-5 h-5" />
               </button>
             </div>
-            <p className="legal-text mt-6">
-              Ao clicar em PROSSEGUIR você automaticamente concorda com os{" "}
-              <Link to="/termos" className="legal-link">
-                termos de uso
-              </Link>{" "}
-              e{" "}
-              <Link to="/privacidade" className="legal-link">
-                política de privacidade
-              </Link>
-            </p>
-            <p className="copyright">© Copyright 2025 Scale Beauty</p>
+            {/* Desktop: terms inline */}
+            <div className="hidden md:block">
+              <p className="legal-text mt-6">
+                Ao clicar em PROSSEGUIR você automaticamente concorda com os{" "}
+                <Link to="/termos" className="legal-link">
+                  termos de uso
+                </Link>{" "}
+                e{" "}
+                <Link to="/privacidade" className="legal-link">
+                  política de privacidade
+                </Link>
+              </p>
+              <p className="copyright">© Copyright 2025 Scale Beauty</p>
+            </div>
           </div>
         );
 
@@ -485,22 +488,49 @@ const Index = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background flex flex-col">
       {step > 1 && step < 10 && <ProgressBar currentStep={step - 1} totalSteps={totalSteps - 2} />}
       
-      {/* Mobile: Image on top */}
-      <div className="md:hidden w-full">
-        <img 
-          src={scaleBeautyHero} 
-          alt="Scale Beauty" 
-          className="w-full h-auto object-cover"
-        />
+      {/* Mobile Layout */}
+      <div className="md:hidden flex flex-col min-h-screen">
+        {/* Image on top */}
+        <div className="w-full">
+          <img 
+            src={scaleBeautyHero} 
+            alt="Scale Beauty" 
+            className="w-full h-auto object-cover"
+          />
+        </div>
+        
+        {/* Form close to image */}
+        <div className="flex-1 flex flex-col justify-between">
+          <div className="p-4 pt-6">
+            {renderStep()}
+          </div>
+          
+          {/* Mobile footer with terms - only on step 1 */}
+          {step === 1 && (
+            <div className="p-4 pb-6 text-center">
+              <p className="legal-text">
+                Ao clicar em PROSSEGUIR você automaticamente concorda com os{" "}
+                <Link to="/termos" className="legal-link">
+                  termos de uso
+                </Link>{" "}
+                e{" "}
+                <Link to="/privacidade" className="legal-link">
+                  política de privacidade
+                </Link>
+              </p>
+              <p className="copyright mt-4">© Copyright 2025 Scale Beauty</p>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Desktop: Side by side layout */}
-      <div className="flex flex-col md:flex-row min-h-screen">
-        {/* Image - Left side on desktop, hidden on mobile (shown above) */}
-        <div className="hidden md:flex md:w-1/2 lg:w-[55%]">
+      <div className="hidden md:flex flex-row min-h-screen">
+        {/* Image - Left side */}
+        <div className="md:w-1/2 lg:w-[55%]">
           <img 
             src={scaleBeautyHero} 
             alt="Scale Beauty" 
@@ -508,8 +538,8 @@ const Index = () => {
           />
         </div>
         
-        {/* Form - Right side on desktop, full width on mobile */}
-        <div className="flex-1 flex items-center justify-center p-4 md:p-8">
+        {/* Form - Right side */}
+        <div className="flex-1 flex items-center justify-center p-8">
           {renderStep()}
         </div>
       </div>
