@@ -86,7 +86,7 @@ const Index = () => {
           <div className="form-card">
             <h1 className="form-title">
               <span className="font-light">Escalando seu </span>
-              <span className="font-bold">negocio</span>
+              <span className="font-bold">negócio</span>
               <span className="font-light"> no mundo </span>
               <span className="font-bold">Beauty</span>
             </h1>
@@ -110,13 +110,13 @@ const Index = () => {
               </button>
             </div>
             <p className="legal-text mt-6">
-              Ao clicar em PROSSEGUIR voce automaticamente concorda com os{" "}
+              Ao clicar em PROSSEGUIR você automaticamente concorda com os{" "}
               <Link to="/termos" className="legal-link">
                 termos de uso
               </Link>{" "}
               e{" "}
               <Link to="/privacidade" className="legal-link">
-                politica de privacidade
+                política de privacidade
               </Link>
             </p>
             <p className="copyright">© Copyright 2025 Scale Beauty</p>
@@ -132,7 +132,7 @@ const Index = () => {
               </div>
             </div>
             <h1 className="form-title">Qual o seu melhor e-mail?</h1>
-            <p className="form-subtitle mt-2 mb-8">Para enviarmos informacoes importantes</p>
+            <p className="form-subtitle mt-2 mb-8">Para enviarmos informações importantes</p>
             <div className="space-y-4">
               <input
                 type="email"
@@ -163,7 +163,7 @@ const Index = () => {
               </div>
             </div>
             <h1 className="form-title">Qual o seu WhatsApp?</h1>
-            <p className="form-subtitle mt-2 mb-8">Para entrarmos em contato com voce</p>
+            <p className="form-subtitle mt-2 mb-8">Para entrarmos em contato com você</p>
             <div className="space-y-4">
               <div className="flex">
                 <CountrySelect
@@ -233,8 +233,8 @@ const Index = () => {
                 <Building className="w-7 h-7 text-primary" />
               </div>
             </div>
-            <h1 className="form-title">Qual a sua area de atuacao?</h1>
-            <p className="form-subtitle mt-2 mb-8">Selecione a area da sua Clinica/Studio</p>
+            <h1 className="form-title">Qual a sua área de atuação?</h1>
+            <p className="form-subtitle mt-2 mb-8">Selecione a área da sua Clínica/Studio</p>
             <div className="space-y-4">
               <div className="relative">
                 <select
@@ -242,7 +242,7 @@ const Index = () => {
                   onChange={(e) => updateFormData("beautyArea", e.target.value)}
                   className="form-select pr-12"
                 >
-                  <option value="">Selecione uma area</option>
+                  <option value="">Selecione uma área</option>
                   {beautyAreas.map((area) => (
                     <option key={area} value={area}>
                       {area}
@@ -272,7 +272,7 @@ const Index = () => {
               </div>
             </div>
             <h1 className="form-title">Qual o faturamento mensal atual?</h1>
-            <p className="form-subtitle mt-2 mb-8">Da sua Clinica/Studio</p>
+            <p className="form-subtitle mt-2 mb-8">Da sua Clínica/Studio</p>
             <div className="space-y-4">
               <div className="relative">
                 <select
@@ -310,7 +310,7 @@ const Index = () => {
               </div>
             </div>
             <h1 className="form-title">Quantos atendimentos por semana?</h1>
-            <p className="form-subtitle mt-2 mb-8">Em media na sua Clinica/Studio</p>
+            <p className="form-subtitle mt-2 mb-8">Em média na sua Clínica/Studio</p>
             <div className="space-y-4">
               <input
                 type="number"
@@ -341,22 +341,22 @@ const Index = () => {
                 <Home className="w-7 h-7 text-primary" />
               </div>
             </div>
-            <h1 className="form-title">Voce possui espaco fisico?</h1>
-            <p className="form-subtitle mt-2 mb-8">Ou atende em domicilio/casa</p>
+            <h1 className="form-title">Você possui espaço físico?</h1>
+            <p className="form-subtitle mt-2 mb-8">Ou atende em domicílio/casa</p>
             <div className="space-y-3">
               <button
                 type="button"
                 onClick={() => updateFormData("hasPhysicalSpace", true)}
                 className={`option-card ${formData.hasPhysicalSpace === true ? "selected" : ""}`}
               >
-                <span className="option-card-text">Sim, possuo espaco fisico</span>
+                <span className="option-card-text">Sim, possuo espaço físico</span>
               </button>
               <button
                 type="button"
                 onClick={() => updateFormData("hasPhysicalSpace", false)}
                 className={`option-card ${formData.hasPhysicalSpace === false ? "selected" : ""}`}
               >
-                <span className="option-card-text">Nao, atendo em casa/domicilio</span>
+                <span className="option-card-text">Não, atendo em casa/domicílio</span>
               </button>
               <button
                 onClick={nextStep}
@@ -378,8 +378,8 @@ const Index = () => {
                 <Calendar className="w-7 h-7 text-primary" />
               </div>
             </div>
-            <h1 className="form-title">Quantos anos de profissao?</h1>
-            <p className="form-subtitle mt-2 mb-8">Sua experiencia na area da beleza</p>
+            <h1 className="form-title">Quantos anos de profissão?</h1>
+            <p className="form-subtitle mt-2 mb-8">Sua experiência na área da beleza</p>
             <div className="space-y-4">
               <input
                 type="number"
@@ -405,9 +405,9 @@ const Index = () => {
       case 10:
         return (
           <div className="form-card text-center">
-            <h1 className="form-title">Parabens, {formData.name}!</h1>
+            <h1 className="form-title">Parabéns, {formData.name}!</h1>
             <p className="text-base text-muted-foreground mt-4 mb-8 leading-relaxed">
-              Voce ganhou uma consultoria exclusiva com o time da Scale Beauty para saber mais sobre nossos servicos e como podemos escalar seu negocio.
+              Você ganhou uma consultoria exclusiva com o time da Scale Beauty para saber mais sobre nossos serviços e como podemos escalar seu negócio.
             </p>
             <button
               onClick={() => {
