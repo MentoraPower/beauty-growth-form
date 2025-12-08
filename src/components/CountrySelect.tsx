@@ -33,10 +33,9 @@ const CountrySelect = ({ value, onChange }: CountrySelectProps) => {
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center gap-2 h-14 px-4 rounded-xl border border-border bg-card hover:bg-secondary/50 transition-colors"
+        className="flex items-center gap-2 h-14 px-3 rounded-l-xl border border-r-0 border-border bg-card hover:bg-secondary/50 transition-colors"
       >
         <span className="text-xl">{value.flag}</span>
-        <span className="text-sm font-medium text-foreground">{value.dialCode}</span>
         <ChevronDown className="w-4 h-4 text-muted-foreground" />
       </button>
 
