@@ -17,41 +17,41 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
   const location = useLocation();
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background p-4 lg:p-6">
       {/* Mobile Header */}
-      <header className="lg:hidden fixed top-0 left-0 right-0 h-16 bg-card border-b border-border z-50 flex items-center justify-between px-4">
+      <header className="lg:hidden fixed top-4 left-4 right-4 h-14 bg-card border border-border rounded-2xl z-50 flex items-center justify-between px-4 shadow-sm">
         <button
           onClick={() => setSidebarOpen(!sidebarOpen)}
-          className="p-2 hover:bg-muted rounded-lg transition-colors"
+          className="p-2 hover:bg-muted rounded-xl transition-colors"
         >
           {sidebarOpen ? (
-            <X className="h-6 w-6 text-foreground" />
+            <X className="h-5 w-5 text-foreground" />
           ) : (
-            <Menu className="h-6 w-6 text-foreground" />
+            <Menu className="h-5 w-5 text-foreground" />
           )}
         </button>
-        <span className="text-lg font-bold text-foreground">SCALE BEAUTY</span>
-        <div className="w-10" />
+        <span className="text-base font-bold text-foreground">SCALE BEAUTY</span>
+        <div className="w-9" />
       </header>
 
       {/* Sidebar */}
       <aside
         className={cn(
-          "fixed top-0 left-0 h-full w-64 bg-card border-r border-border z-40 transform transition-transform duration-200 ease-in-out",
+          "fixed top-4 left-4 bottom-4 w-64 bg-card border border-border rounded-2xl z-40 transform transition-transform duration-200 ease-in-out shadow-sm",
           "lg:translate-x-0",
-          sidebarOpen ? "translate-x-0" : "-translate-x-full"
+          sidebarOpen ? "translate-x-0" : "-translate-x-[calc(100%+2rem)]"
         )}
       >
-        <div className="flex flex-col h-full">
+        <div className="flex flex-col h-full p-4">
           {/* Logo */}
-          <div className="h-16 flex items-center px-6 border-b border-border">
+          <div className="h-14 flex items-center px-4 mb-2">
             <Link to="/admin" className="text-xl font-bold text-foreground">
               SCALE BEAUTY
             </Link>
           </div>
 
           {/* Navigation */}
-          <nav className="flex-1 p-4 space-y-2">
+          <nav className="flex-1 space-y-1">
             {navItems.map((item) => {
               const isActive = location.pathname === item.href;
               return (
@@ -74,7 +74,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
           </nav>
 
           {/* Footer */}
-          <div className="p-4 border-t border-border">
+          <div className="pt-4 border-t border-border mt-4">
             <Link
               to="/"
               className="flex items-center gap-3 px-4 py-3 rounded-xl text-muted-foreground hover:bg-muted hover:text-foreground transition-all"
@@ -95,8 +95,10 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
       )}
 
       {/* Main Content */}
-      <main className="lg:pl-64 pt-16 lg:pt-0 min-h-screen">
-        <div className="p-6 lg:p-8">{children}</div>
+      <main className="lg:ml-72 pt-20 lg:pt-0 min-h-[calc(100vh-3rem)]">
+        <div className="bg-card border border-border rounded-2xl p-6 lg:p-8 min-h-full shadow-sm">
+          {children}
+        </div>
       </main>
     </div>
   );
