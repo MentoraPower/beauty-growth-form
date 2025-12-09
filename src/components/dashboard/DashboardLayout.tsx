@@ -14,6 +14,7 @@ const navItems = [
 
 const DashboardLayout = ({ children }: DashboardLayoutProps) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [isHovered, setIsHovered] = useState(false);
   const location = useLocation();
 
   return (
@@ -36,18 +37,27 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
 
       {/* Sidebar */}
       <aside
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={() => setIsHovered(false)}
         className={cn(
-          "fixed top-4 left-4 bottom-4 w-56 bg-neutral-900 border border-neutral-800 rounded-2xl z-40 transform transition-transform duration-200 ease-in-out shadow-sm",
+          "fixed top-4 left-4 bottom-4 bg-neutral-900 border border-neutral-800 rounded-2xl z-40 transform transition-all duration-300 ease-in-out shadow-sm overflow-hidden",
           "lg:translate-x-0",
-          sidebarOpen ? "translate-x-0" : "-translate-x-[calc(100%+2rem)]"
+          isHovered ? "w-56" : "w-16",
+          sidebarOpen ? "translate-x-0 w-56" : "max-lg:-translate-x-[calc(100%+2rem)]"
         )}
       >
-        <div className="flex flex-col h-full p-4">
+        <div className="flex flex-col h-full p-3">
           {/* Logo */}
-          <div className="h-14 flex items-center px-3 mb-2">
-            <Link to="/admin" className="text-lg font-bold text-white">
-              SCALE BEAUTY
-            </Link>
+          <div className="h-12 flex items-center px-2 mb-2">
+            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary to-primary-dark flex items-center justify-center flex-shrink-0">
+              <span className="text-white font-bold text-sm">SB</span>
+            </div>
+            <span className={cn(
+              "text-lg font-bold text-white ml-3 whitespace-nowrap transition-opacity duration-300",
+              isHovered || sidebarOpen ? "opacity-100" : "opacity-0"
+            )}>
+              SCALE
+            </span>
           </div>
 
           {/* Navigation */}
@@ -60,27 +70,41 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
                   to={item.href}
                   onClick={() => setSidebarOpen(false)}
                   className={cn(
-                    "flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all",
+                    "flex items-center gap-3 px-2 py-2.5 rounded-xl transition-all",
                     isActive
                       ? "bg-white/10 text-white"
                       : "text-neutral-400 hover:bg-white/5 hover:text-white"
                   )}
                 >
-                  <item.icon className="h-5 w-5" />
-                  <span className="font-medium text-sm">{item.label}</span>
+                  <div className="w-8 h-8 flex items-center justify-center flex-shrink-0">
+                    <item.icon className="h-5 w-5" />
+                  </div>
+                  <span className={cn(
+                    "font-medium text-sm whitespace-nowrap transition-opacity duration-300",
+                    isHovered || sidebarOpen ? "opacity-100" : "opacity-0"
+                  )}>
+                    {item.label}
+                  </span>
                 </Link>
               );
             })}
           </nav>
 
           {/* Footer */}
-          <div className="pt-4 border-t border-neutral-800 mt-4">
+          <div className="pt-3 border-t border-neutral-800 mt-3">
             <Link
               to="/"
-              className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-neutral-400 hover:bg-white/5 hover:text-white transition-all"
+              className="flex items-center gap-3 px-2 py-2.5 rounded-xl text-neutral-400 hover:bg-white/5 hover:text-white transition-all"
             >
-              <LogOut className="h-5 w-5" />
-              <span className="font-medium text-sm">Voltar ao Site</span>
+              <div className="w-8 h-8 flex items-center justify-center flex-shrink-0">
+                <LogOut className="h-5 w-5" />
+              </div>
+              <span className={cn(
+                "font-medium text-sm whitespace-nowrap transition-opacity duration-300",
+                isHovered || sidebarOpen ? "opacity-100" : "opacity-0"
+              )}>
+                Voltar ao Site
+              </span>
             </Link>
           </div>
         </div>
@@ -95,7 +119,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
       )}
 
       {/* Main Content */}
-      <main className="lg:ml-64 pt-20 lg:pt-0 min-h-[calc(100vh-3rem)]">
+      <main className="lg:ml-24 pt-20 lg:pt-0 min-h-[calc(100vh-3rem)]">
         <div className="bg-card border border-border rounded-2xl p-6 lg:p-8 min-h-full shadow-sm">
           {children}
         </div>
