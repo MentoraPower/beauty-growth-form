@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { countries, beautyAreas, revenueRanges, Country } from "@/data/countries";
-import scaleBeautyHero from "@/assets/scale-beauty-hero.png";
+
 import CountrySelect from "@/components/CountrySelect";
 import CustomSelect from "@/components/CustomSelect";
 import ProgressBar from "@/components/ProgressBar";
@@ -492,14 +492,6 @@ const Index = () => {
       
       {/* Mobile Layout */}
       <div className="md:hidden flex flex-col min-h-screen">
-        {/* Image on top with padding and rounded corners */}
-        <div className="w-full px-[1.25em] pt-[1.25em]">
-          <img 
-            src={scaleBeautyHero} 
-            alt="Scale Beauty" 
-            className="w-full h-auto object-cover rounded-2xl"
-          />
-        </div>
         
         {/* Form close to image */}
         <div className="flex-1 flex flex-col justify-between px-[1.25em]">
@@ -527,15 +519,7 @@ const Index = () => {
       </div>
 
       {/* Desktop: Side by side layout */}
-      <div className="hidden md:flex flex-row min-h-screen">
-        {/* Image - Left side */}
-        <div className="md:w-1/2 lg:w-[55%]">
-          <img 
-            src={scaleBeautyHero} 
-            alt="Scale Beauty" 
-            className="w-full h-full object-cover"
-          />
-        </div>
+      <div className="hidden md:flex flex-row min-h-screen justify-center items-center">
         
         {/* Form - Right side */}
         <div className="flex-1 flex items-center justify-center p-8">
