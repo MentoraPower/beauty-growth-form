@@ -510,12 +510,12 @@ const Index = () => {
           </FormContainer>
           
           {/* Scroll Velocity - Mobile */}
-          <div className="relative flex w-full flex-col items-center justify-center overflow-hidden py-4 -mx-4" style={{ width: 'calc(100% + 2rem)' }}>
+          <div className="relative flex w-full flex-col items-center justify-center overflow-hidden py-2 mt-3 -mx-4" style={{ width: 'calc(100% + 2rem)' }}>
             <ScrollVelocityContainer className="text-sm font-bold tracking-[-0.02em] text-foreground/80">
-              <ScrollVelocityRow baseVelocity={15} direction={1}>
+              <ScrollVelocityRow baseVelocity={3} direction={1}>
                 <span className="mx-3">Scale Beauty • Escalando seu negócio no mundo beauty • Sua assessoria de marketing •</span>
               </ScrollVelocityRow>
-              <ScrollVelocityRow baseVelocity={15} direction={-1}>
+              <ScrollVelocityRow baseVelocity={3} direction={-1}>
                 <span className="mx-3">Scale Beauty • Escalando seu negócio no mundo beauty • Sua assessoria de marketing •</span>
               </ScrollVelocityRow>
             </ScrollVelocityContainer>
@@ -564,12 +564,12 @@ const Index = () => {
         </div>
 
         {/* Scroll Velocity */}
-        <div className="relative flex w-full flex-col items-center justify-center overflow-hidden py-8">
+        <div className="relative flex w-full flex-col items-center justify-center overflow-hidden py-3 mt-4">
           <ScrollVelocityContainer className="text-2xl font-bold tracking-[-0.02em] text-foreground/80">
-            <ScrollVelocityRow baseVelocity={20} direction={1}>
+            <ScrollVelocityRow baseVelocity={3} direction={1}>
               <span className="mx-4">Scale Beauty • Escalando seu negócio no mundo beauty • Sua assessoria de marketing •</span>
             </ScrollVelocityRow>
-            <ScrollVelocityRow baseVelocity={20} direction={-1}>
+            <ScrollVelocityRow baseVelocity={3} direction={-1}>
               <span className="mx-4">Scale Beauty • Escalando seu negócio no mundo beauty • Sua assessoria de marketing •</span>
             </ScrollVelocityRow>
           </ScrollVelocityContainer>
