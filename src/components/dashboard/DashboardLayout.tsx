@@ -68,9 +68,13 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
                 <Link
                   key={item.href}
                   to={item.href}
-                  onClick={() => setSidebarOpen(false)}
+                  onClick={(e) => {
+                    if (window.innerWidth < 1024) {
+                      setSidebarOpen(false);
+                    }
+                  }}
                   className={cn(
-                    "flex items-center gap-3 px-2 py-2.5 rounded-xl transition-all",
+                    "flex items-center gap-3 px-2 py-2.5 rounded-xl transition-colors",
                     isActive
                       ? "bg-white/10 text-white"
                       : "text-neutral-400 hover:bg-white/5 hover:text-white"
