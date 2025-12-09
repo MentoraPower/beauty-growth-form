@@ -48,6 +48,36 @@ const Dashboard = () => {
 
   useEffect(() => {
     fetchLeads();
+
+    // Subscribe to realtime updates
+    const channel = supabase
+      .channel("dashboard-leads-changes")
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "leads",
+        },
+        (payload) => {
+          if (payload.eventType === "INSERT") {
+            setLeads((prev) => [payload.new as Lead, ...prev]);
+          } else if (payload.eventType === "DELETE") {
+            setLeads((prev) => prev.filter((lead) => lead.id !== payload.old.id));
+          } else if (payload.eventType === "UPDATE") {
+            setLeads((prev) =>
+              prev.map((lead) =>
+                lead.id === payload.new.id ? (payload.new as Lead) : lead
+              )
+            );
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   const fetchLeads = async () => {
