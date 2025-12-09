@@ -510,18 +510,21 @@ const Index = () => {
           
           {/* Mobile footer with terms - only on step 1 */}
           {step === 1 && (
-            <div className="pb-6 text-center">
-              <p className="legal-text">
-                Ao clicar em PROSSEGUIR você automaticamente concorda com os{" "}
-                <Link to="/termos" className="legal-link">
-                  termos de uso
-                </Link>{" "}
-                e{" "}
-                <Link to="/privacidade" className="legal-link">
-                  política de privacidade
-                </Link>
-              </p>
-              <p className="copyright mt-4">© Copyright 2025 Scale Beauty</p>
+            <div className="mt-auto">
+              <div className="w-full h-px bg-border mb-4" />
+              <div className="pb-6 text-center px-[1.25em]">
+                <p className="legal-text">
+                  Ao clicar em PROSSEGUIR você automaticamente concorda com os{" "}
+                  <Link to="/termos" className="legal-link">
+                    termos de uso
+                  </Link>{" "}
+                  e{" "}
+                  <Link to="/privacidade" className="legal-link">
+                    política de privacidade
+                  </Link>
+                </p>
+                <p className="copyright mt-4">© Copyright 2025 Scale Beauty</p>
+              </div>
             </div>
           )}
         </div>
