@@ -512,10 +512,10 @@ const Index = () => {
           {/* Scroll Velocity - Mobile */}
           <div className="relative flex w-full flex-col items-center justify-center overflow-hidden -mx-4 mt-4" style={{ width: 'calc(100% + 2rem)' }}>
             <ScrollVelocityContainer className="text-xs font-bold uppercase tracking-[0.2em] text-foreground/30">
-              <ScrollVelocityRow baseVelocity={3} direction={1}>
+              <ScrollVelocityRow baseVelocity={1} direction={1}>
                 <span className="mx-3">SCALE BEAUTY • ESCALANDO SEU NEGÓCIO NO MUNDO BEAUTY • SUA ASSESSORIA DE MARKETING •</span>
               </ScrollVelocityRow>
-              <ScrollVelocityRow baseVelocity={3} direction={-1}>
+              <ScrollVelocityRow baseVelocity={1} direction={-1}>
                 <span className="mx-3">SCALE BEAUTY • ESCALANDO SEU NEGÓCIO NO MUNDO BEAUTY • SUA ASSESSORIA DE MARKETING •</span>
               </ScrollVelocityRow>
             </ScrollVelocityContainer>
@@ -525,7 +525,7 @@ const Index = () => {
           
           {/* Mobile footer with terms - only on step 1 */}
           {step === 1 && (
-            <div className="flex-shrink-0 pb-4">
+            <div className="fixed bottom-0 left-0 right-0 pb-4 pt-2 bg-background z-20">
               <div className="w-full h-px bg-border mb-4" />
               <div className="text-center px-[1.25em]">
                 <p className="legal-text">
@@ -566,10 +566,10 @@ const Index = () => {
         {/* Scroll Velocity */}
         <div className="relative flex w-full flex-col items-center justify-center overflow-hidden py-3" style={{ marginTop: '15px' }}>
           <ScrollVelocityContainer className="text-xl font-bold uppercase tracking-[0.2em] text-foreground/30">
-            <ScrollVelocityRow baseVelocity={3} direction={1}>
+            <ScrollVelocityRow baseVelocity={1} direction={1}>
               <span className="mx-4">SCALE BEAUTY • ESCALANDO SEU NEGÓCIO NO MUNDO BEAUTY • SUA ASSESSORIA DE MARKETING •</span>
             </ScrollVelocityRow>
-            <ScrollVelocityRow baseVelocity={3} direction={-1}>
+            <ScrollVelocityRow baseVelocity={1} direction={-1}>
               <span className="mx-4">SCALE BEAUTY • ESCALANDO SEU NEGÓCIO NO MUNDO BEAUTY • SUA ASSESSORIA DE MARKETING •</span>
             </ScrollVelocityRow>
           </ScrollVelocityContainer>
