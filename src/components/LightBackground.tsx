@@ -25,31 +25,31 @@ const LightBackground = () => {
       ctx.fillStyle = "#000000";
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-      // Light source position (top-left corner, slightly inside)
-      const sourceX = canvas.width * 0.15;
-      const sourceY = canvas.height * 0.05;
+      // Light source position (top-left corner)
+      const sourceX = canvas.width * 0.1;
+      const sourceY = -canvas.height * 0.1;
 
-      // Draw multiple light rays
-      const rayCount = 12;
+      // Draw multiple light rays with higher opacity
+      const rayCount = 8;
       
       for (let i = 0; i < rayCount; i++) {
-        const baseAngle = (Math.PI / 3) + (i / rayCount) * (Math.PI / 2.5);
-        const angleOffset = Math.sin(time * 0.3 + i * 0.5) * 0.03;
+        const baseAngle = (Math.PI / 4) + (i / rayCount) * (Math.PI / 2);
+        const angleOffset = Math.sin(time * 0.2 + i * 0.5) * 0.02;
         const angle = baseAngle + angleOffset;
         
-        const rayLength = Math.max(canvas.width, canvas.height) * 1.8;
-        const rayWidth = 80 + Math.sin(time * 0.5 + i) * 20;
+        const rayLength = Math.max(canvas.width, canvas.height) * 2;
+        const rayWidth = 120 + Math.sin(time * 0.3 + i) * 30 + i * 15;
         
         const endX = sourceX + Math.cos(angle) * rayLength;
         const endY = sourceY + Math.sin(angle) * rayLength;
 
-        // Create gradient for each ray
+        // Create gradient for each ray - MUCH higher opacity
         const gradient = ctx.createLinearGradient(sourceX, sourceY, endX, endY);
-        const opacity = 0.08 + Math.sin(time * 0.4 + i * 0.8) * 0.03;
+        const baseOpacity = 0.25 + Math.sin(time * 0.3 + i * 0.6) * 0.08;
         
-        gradient.addColorStop(0, `rgba(255, 255, 255, ${opacity * 2})`);
-        gradient.addColorStop(0.3, `rgba(255, 255, 255, ${opacity})`);
-        gradient.addColorStop(0.7, `rgba(255, 255, 255, ${opacity * 0.3})`);
+        gradient.addColorStop(0, `rgba(255, 255, 255, ${baseOpacity * 1.5})`);
+        gradient.addColorStop(0.2, `rgba(255, 255, 255, ${baseOpacity})`);
+        gradient.addColorStop(0.5, `rgba(255, 255, 255, ${baseOpacity * 0.5})`);
         gradient.addColorStop(1, "rgba(255, 255, 255, 0)");
 
         ctx.save();
@@ -69,30 +69,18 @@ const LightBackground = () => {
         ctx.restore();
       }
 
-      // Add soft glow at source
+      // Add large soft glow at source
       const glowGradient = ctx.createRadialGradient(
         sourceX, sourceY, 0,
-        sourceX, sourceY, 300
+        sourceX, sourceY, 500
       );
-      glowGradient.addColorStop(0, "rgba(255, 255, 255, 0.15)");
-      glowGradient.addColorStop(0.5, "rgba(255, 255, 255, 0.05)");
+      glowGradient.addColorStop(0, "rgba(255, 255, 255, 0.4)");
+      glowGradient.addColorStop(0.3, "rgba(255, 255, 255, 0.15)");
+      glowGradient.addColorStop(0.6, "rgba(255, 255, 255, 0.05)");
       glowGradient.addColorStop(1, "rgba(255, 255, 255, 0)");
       
       ctx.fillStyle = glowGradient;
       ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-      // Add subtle noise/grain effect
-      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-      const data = imageData.data;
-      
-      for (let i = 0; i < data.length; i += 4) {
-        const noise = (Math.random() - 0.5) * 8;
-        data[i] = Math.max(0, Math.min(255, data[i] + noise));
-        data[i + 1] = Math.max(0, Math.min(255, data[i + 1] + noise));
-        data[i + 2] = Math.max(0, Math.min(255, data[i + 2] + noise));
-      }
-      
-      ctx.putImageData(imageData, 0, 0);
 
       time += 0.016;
       animationId = requestAnimationFrame(drawLightRays);
@@ -109,8 +97,8 @@ const LightBackground = () => {
   return (
     <canvas
       ref={canvasRef}
-      className="fixed inset-0 w-full h-full"
-      style={{ zIndex: -1 }}
+      className="fixed inset-0 w-full h-full pointer-events-none"
+      style={{ zIndex: 0 }}
     />
   );
 };
