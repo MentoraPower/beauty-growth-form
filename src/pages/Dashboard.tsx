@@ -7,6 +7,12 @@ import { Users, TrendingUp, Calendar, Building2 } from "lucide-react";
 import ModernAreaChart from "@/components/dashboard/ModernAreaChart";
 import ModernBarChart from "@/components/dashboard/ModernBarChart";
 import GaugeChart from "@/components/dashboard/GaugeChart";
+import {
+  CardSkeleton,
+  AreaChartSkeleton,
+  GaugeSkeleton,
+  ChartSkeleton,
+} from "@/components/dashboard/DashboardSkeleton";
 
 interface Lead {
   id: string;
@@ -144,8 +150,28 @@ const Dashboard = () => {
   if (loading) {
     return (
       <DashboardLayout>
-        <div className="flex items-center justify-center h-full min-h-[400px]">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        <div className="space-y-6">
+          <div>
+            <div className="h-7 w-32 bg-muted rounded-lg animate-pulse" />
+            <div className="h-4 w-48 bg-muted rounded-lg animate-pulse mt-2" />
+          </div>
+
+          {/* Stats Cards Skeleton */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            <CardSkeleton />
+            <CardSkeleton />
+            <CardSkeleton />
+            <CardSkeleton />
+          </div>
+
+          {/* Charts Skeleton */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <AreaChartSkeleton />
+            <GaugeSkeleton />
+          </div>
+
+          {/* Bar Chart Skeleton */}
+          <ChartSkeleton height="300px" />
         </div>
       </DashboardLayout>
     );
