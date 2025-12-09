@@ -531,7 +531,7 @@ const Index = () => {
           <img 
             src={scaleBeautyMobile} 
             alt="Scale Beauty" 
-            className="w-full h-[220px] object-cover rounded-b-3xl"
+            className="w-full h-[260px] object-cover rounded-b-3xl"
           />
         </div>
         {/* Form overlapping the image */}
