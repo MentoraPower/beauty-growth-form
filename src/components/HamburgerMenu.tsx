@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
 interface MenuItem {
@@ -19,7 +19,7 @@ const HamburgerMenu = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [theme, setTheme] = useState<NavTheme>("light");
   const [isVisible, setIsVisible] = useState(true);
-  const [lastScrollY, setLastScrollY] = useState(0);
+  const lastScrollY = useRef(0);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -27,13 +27,13 @@ const HamburgerMenu = () => {
       const viewportHeight = window.innerHeight;
       
       // Hide/show based on scroll direction
-      if (scrollY > lastScrollY && scrollY > 100) {
+      if (scrollY > lastScrollY.current && scrollY > 100) {
         setIsVisible(false);
         setIsOpen(false);
       } else {
         setIsVisible(true);
       }
-      setLastScrollY(scrollY);
+      lastScrollY.current = scrollY;
       
       // Theme based on scroll position
       if (scrollY < 180) {
@@ -49,7 +49,7 @@ const HamburgerMenu = () => {
     handleScroll();
     
     return () => window.removeEventListener("scroll", handleScroll);
-  }, [lastScrollY]);
+  }, []);
 
   const bgClass = theme === "dark" 
     ? "bg-neutral-900/80 backdrop-blur-xl" 
