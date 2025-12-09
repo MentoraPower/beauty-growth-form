@@ -16,22 +16,23 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
   const sidebarRef = useRef<HTMLElement>(null);
+  const isMouseOverRef = useRef(false);
   const location = useLocation();
 
-  // Keep hover state in sync with actual mouse position
-  useEffect(() => {
-    const handleMouseMove = (e: MouseEvent) => {
-      if (sidebarRef.current) {
-        const rect = sidebarRef.current.getBoundingClientRect();
-        const isOver = e.clientX >= rect.left && e.clientX <= rect.right && 
-                       e.clientY >= rect.top && e.clientY <= rect.bottom;
-        setIsHovered(isOver);
-      }
-    };
+  const handleMouseEnter = () => {
+    isMouseOverRef.current = true;
+    setIsHovered(true);
+  };
 
-    window.addEventListener('mousemove', handleMouseMove);
-    return () => window.removeEventListener('mousemove', handleMouseMove);
-  }, []);
+  const handleMouseLeave = () => {
+    isMouseOverRef.current = false;
+    // Small delay to prevent flickering during navigation
+    setTimeout(() => {
+      if (!isMouseOverRef.current) {
+        setIsHovered(false);
+      }
+    }, 100);
+  };
 
   return (
     <div className="min-h-screen bg-background p-4 lg:p-6">
@@ -54,6 +55,8 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
       {/* Sidebar */}
       <aside
         ref={sidebarRef}
+        onMouseEnter={handleMouseEnter}
+        onMouseLeave={handleMouseLeave}
         className={cn(
           "fixed top-4 left-4 bottom-4 bg-neutral-900 border border-neutral-800 rounded-2xl z-40 transform transition-all duration-300 ease-in-out shadow-sm overflow-hidden",
           "lg:translate-x-0",
