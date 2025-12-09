@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { countries, beautyAreas, revenueRanges, Country } from "@/data/countries";
 import scaleBeautyBanner from "@/assets/scale-beauty-banner.png";
+import scaleBeautyMobile from "@/assets/scale-beauty-mobile.png";
 import CountrySelect from "@/components/CountrySelect";
 import FormContainer from "@/components/FormContainer";
 import CustomSelect from "@/components/CustomSelect";
@@ -492,17 +493,17 @@ const Index = () => {
       {step > 1 && step < 10 && <ProgressBar currentStep={step - 1} totalSteps={totalSteps - 2} />}
       
       {/* Mobile Layout */}
-      <div className="md:hidden flex flex-col min-h-screen">
-        {/* Banner image on top */}
+      <div className="md:hidden flex flex-col min-h-screen relative">
+        {/* Banner image on top with rounded bottom */}
         <div className="w-full">
           <img 
-            src={scaleBeautyBanner} 
+            src={scaleBeautyMobile} 
             alt="Scale Beauty" 
-            className="w-full h-auto object-cover"
+            className="w-full h-auto object-cover rounded-b-3xl"
           />
         </div>
-        {/* Form centered */}
-        <div className="flex-1 flex flex-col justify-center px-[1.25em]">
+        {/* Form overlapping the image */}
+        <div className="flex-1 flex flex-col justify-start px-[1.25em] -mt-8 relative z-10">
           <FormContainer>
             {renderStep()}
           </FormContainer>
