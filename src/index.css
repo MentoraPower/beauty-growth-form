@@ -209,7 +209,7 @@
   }
 
   .ripple-button {
-    @apply h-14 rounded-full text-primary-foreground font-semibold text-base transition-all duration-300 cursor-pointer;
+    @apply h-14 rounded-full text-primary-foreground font-semibold text-base cursor-pointer;
     font-family: var(--font-display);
     width: 85%;
     margin: 0 auto;
@@ -222,37 +222,32 @@
   }
 
   .ripple-button-content {
-    @apply relative z-10 flex items-center justify-center gap-2 transition-colors duration-300;
+    @apply relative z-10 flex items-center justify-center gap-2;
     width: 100%;
     height: 100%;
+    transition: color 0.3s ease;
   }
 
-  .ripple-effect {
+  .ripple-button-content.hovered {
+    color: hsl(var(--foreground));
+  }
+
+  .ripple-fill {
     position: absolute;
-    border-radius: 50%;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
     background: hsl(var(--card));
-    transform: translate(-50%, -50%) scale(0);
-    animation: ripple-expand 0.5s ease-out forwards;
-    pointer-events: none;
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    transition: width 0.4s ease, height 0.4s ease;
     z-index: 1;
   }
 
-  @keyframes ripple-expand {
-    0% {
-      width: 0;
-      height: 0;
-      transform: translate(-50%, -50%) scale(0);
-    }
-    100% {
-      width: 400px;
-      height: 400px;
-      transform: translate(-50%, -50%) scale(1);
-    }
-  }
-
-  .ripple-button:has(.ripple-effect) .ripple-button-content {
-    color: hsl(var(--foreground));
-    z-index: 2;
+  .ripple-fill.active {
+    width: 500px;
+    height: 500px;
   }
 
   .btn-secondary {
