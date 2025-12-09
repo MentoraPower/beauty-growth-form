@@ -531,7 +531,7 @@ const Index = () => {
           
           {/* Mobile footer with terms - only on step 1 */}
           {step === 1 && (
-            <div className="fixed bottom-0 left-0 right-0 pb-4 pt-2 bg-background z-20">
+            <div className="pb-4 pt-2 bg-background">
               <div className="w-full h-px bg-border mb-4" />
               <div className="text-center px-[1.25em]">
                 <p className="legal-text">
