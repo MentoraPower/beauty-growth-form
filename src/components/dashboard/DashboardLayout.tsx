@@ -46,15 +46,15 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
           sidebarOpen ? "translate-x-0 w-56" : "max-lg:-translate-x-[calc(100%+2rem)]"
         )}
       >
-        <div className="flex flex-col h-full p-3">
+        <div className="flex flex-col h-full p-2">
           {/* Logo */}
-          <div className="h-12 flex items-center px-2 mb-2">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary to-primary-dark flex items-center justify-center flex-shrink-0">
+          <div className="h-10 flex items-center justify-center mb-2">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-primary-dark flex items-center justify-center flex-shrink-0">
               <span className="text-white font-bold text-sm">SB</span>
             </div>
             <span className={cn(
               "text-lg font-bold text-white ml-3 whitespace-nowrap transition-opacity duration-300",
-              isHovered || sidebarOpen ? "opacity-100" : "opacity-0"
+              isHovered || sidebarOpen ? "opacity-100 w-auto" : "opacity-0 w-0"
             )}>
               SCALE
             </span>
@@ -80,7 +80,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
                       : "text-neutral-400 hover:bg-white/5 hover:text-white"
                   )}
                 >
-                  <div className="w-8 h-8 flex items-center justify-center flex-shrink-0">
+                  <div className="w-10 h-10 flex items-center justify-center flex-shrink-0">
                     <item.icon className="h-5 w-5" />
                   </div>
                   <span className={cn(
@@ -95,12 +95,12 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
           </nav>
 
           {/* Footer */}
-          <div className="pt-3 border-t border-neutral-800 mt-3">
+          <div className="pt-2 border-t border-neutral-800 mt-2">
             <Link
               to="/"
-              className="flex items-center gap-3 px-2 py-2.5 rounded-xl text-neutral-400 hover:bg-white/5 hover:text-white transition-all"
+              className="flex items-center gap-3 px-2 py-2.5 rounded-xl text-neutral-400 hover:bg-white/5 hover:text-white transition-colors"
             >
-              <div className="w-8 h-8 flex items-center justify-center flex-shrink-0">
+              <div className="w-10 h-10 flex items-center justify-center flex-shrink-0">
                 <LogOut className="h-5 w-5" />
               </div>
               <span className={cn(
