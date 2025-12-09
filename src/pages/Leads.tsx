@@ -148,9 +148,7 @@ const Leads = () => {
                   <TableHeader>
                     <TableRow className="border-border/50 hover:bg-transparent bg-muted/30">
                       <TableHead className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Lead</TableHead>
-                      <TableHead className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Contato</TableHead>
                       <TableHead className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Área</TableHead>
-                      <TableHead className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Espaço</TableHead>
                       <TableHead className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Data</TableHead>
                       <TableHead className="text-xs font-semibold text-muted-foreground uppercase tracking-wider text-right">Ações</TableHead>
                     </TableRow>
@@ -158,7 +156,7 @@ const Leads = () => {
                   <TableBody>
                     {filteredLeads.length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={6} className="text-center py-12 text-muted-foreground">
+                        <TableCell colSpan={4} className="text-center py-12 text-muted-foreground">
                           <div className="flex flex-col items-center gap-2">
                             <Users className="h-8 w-8 text-muted-foreground/50" />
                             <p className="text-sm">
@@ -181,34 +179,13 @@ const Leads = () => {
                               <div className="w-9 h-9 rounded-full bg-gradient-to-br from-primary to-primary-dark flex items-center justify-center text-sm font-semibold text-primary-foreground shrink-0">
                                 {lead.name.charAt(0).toUpperCase()}
                               </div>
-                              <div className="min-w-0">
-                                <p className="font-medium text-foreground truncate">{lead.name}</p>
-                                <p className="text-xs text-muted-foreground truncate">@{lead.instagram}</p>
-                              </div>
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <div className="min-w-0">
-                              <p className="text-sm text-foreground truncate">{lead.email}</p>
-                              <p className="text-xs text-muted-foreground">{lead.country_code} {lead.whatsapp}</p>
+                              <p className="font-medium text-foreground truncate">{lead.name}</p>
                             </div>
                           </TableCell>
                           <TableCell>
                             <Badge variant="secondary" className="font-normal text-xs">
                               {lead.service_area}
                             </Badge>
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex items-center gap-1.5">
-                              {lead.workspace_type === "physical" ? (
-                                <Building2 className="h-3.5 w-3.5 text-muted-foreground" />
-                              ) : (
-                                <Home className="h-3.5 w-3.5 text-muted-foreground" />
-                              )}
-                              <span className="text-sm text-muted-foreground">
-                                {lead.workspace_type === "physical" ? "Físico" : "Domicílio"}
-                              </span>
-                            </div>
                           </TableCell>
                           <TableCell>
                             <p className="text-sm text-muted-foreground">
