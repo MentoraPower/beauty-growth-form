@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { LayoutDashboard, Users, Menu, X, LogOut } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -15,7 +15,23 @@ const navItems = [
 const DashboardLayout = ({ children }: DashboardLayoutProps) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
+  const sidebarRef = useRef<HTMLElement>(null);
   const location = useLocation();
+
+  // Keep hover state in sync with actual mouse position
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      if (sidebarRef.current) {
+        const rect = sidebarRef.current.getBoundingClientRect();
+        const isOver = e.clientX >= rect.left && e.clientX <= rect.right && 
+                       e.clientY >= rect.top && e.clientY <= rect.bottom;
+        setIsHovered(isOver);
+      }
+    };
+
+    window.addEventListener('mousemove', handleMouseMove);
+    return () => window.removeEventListener('mousemove', handleMouseMove);
+  }, []);
 
   return (
     <div className="min-h-screen bg-background p-4 lg:p-6">
@@ -37,9 +53,9 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
 
       {/* Sidebar */}
       <aside
-        onMouseEnter={() => setIsHovered(true)}
-        onMouseLeave={() => setIsHovered(false)}
+        ref={sidebarRef}
         className={cn(
+          "fixed top-4 left-4 bottom-4 bg-neutral-900 border border-neutral-800 rounded-2xl z-40 transform transition-all duration-300 ease-in-out shadow-sm overflow-hidden",
           "fixed top-4 left-4 bottom-4 bg-neutral-900 border border-neutral-800 rounded-2xl z-40 transform transition-all duration-300 ease-in-out shadow-sm overflow-hidden",
           "lg:translate-x-0",
           isHovered ? "w-56" : "w-16",
