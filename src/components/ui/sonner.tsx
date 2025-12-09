@@ -11,17 +11,18 @@ const Toaster = ({ ...props }: ToasterProps) => {
       theme={theme as ToasterProps["theme"]}
       className="toaster group"
       position="top-center"
-      gap={12}
+      gap={8}
+      offset={20}
       toastOptions={{
-        duration: 3000,
+        duration: 2500,
         classNames: {
           toast:
-            "group toast group-[.toaster]:bg-white/80 group-[.toaster]:backdrop-blur-xl group-[.toaster]:text-neutral-900 group-[.toaster]:border group-[.toaster]:border-neutral-200/50 group-[.toaster]:shadow-[0_8px_32px_rgba(0,0,0,0.12)] group-[.toaster]:rounded-2xl group-[.toaster]:px-5 group-[.toaster]:py-4 group-[.toaster]:font-medium group-[.toaster]:text-sm group-[.toaster]:tracking-tight",
-          description: "group-[.toast]:text-neutral-500 group-[.toast]:text-xs",
-          actionButton: "group-[.toast]:bg-neutral-900 group-[.toast]:text-white group-[.toast]:rounded-lg group-[.toast]:text-xs group-[.toast]:font-semibold",
-          cancelButton: "group-[.toast]:bg-neutral-100 group-[.toast]:text-neutral-600 group-[.toast]:rounded-lg group-[.toast]:text-xs",
-          error: "group-[.toaster]:bg-red-50/90 group-[.toaster]:backdrop-blur-xl group-[.toaster]:text-red-600 group-[.toaster]:border-red-200/50",
-          success: "group-[.toaster]:bg-green-50/90 group-[.toaster]:backdrop-blur-xl group-[.toaster]:text-green-600 group-[.toaster]:border-green-200/50",
+            "group toast group-[.toaster]:bg-black group-[.toaster]:text-white group-[.toaster]:border-none group-[.toaster]:shadow-[0_4px_24px_rgba(0,0,0,0.25)] group-[.toaster]:rounded-xl group-[.toaster]:px-4 group-[.toaster]:py-3 group-[.toaster]:font-medium group-[.toaster]:text-[13px] group-[.toaster]:tracking-normal group-[.toaster]:min-h-0",
+          description: "group-[.toast]:text-white/60 group-[.toast]:text-xs",
+          actionButton: "group-[.toast]:bg-white group-[.toast]:text-black group-[.toast]:rounded-md group-[.toast]:text-xs group-[.toast]:font-semibold group-[.toast]:px-3 group-[.toast]:py-1.5",
+          cancelButton: "group-[.toast]:bg-white/10 group-[.toast]:text-white group-[.toast]:rounded-md group-[.toast]:text-xs",
+          error: "group-[.toaster]:bg-[#1a1a1a] group-[.toaster]:text-[#ff6b6b] group-[.toaster]:border-l-2 group-[.toaster]:border-l-[#ff6b6b]",
+          success: "group-[.toaster]:bg-[#1a1a1a] group-[.toaster]:text-[#4ade80] group-[.toaster]:border-l-2 group-[.toaster]:border-l-[#4ade80]",
         },
       }}
       {...props}
