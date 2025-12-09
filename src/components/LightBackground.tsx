@@ -22,14 +22,15 @@ const LightBackground = () => {
     window.addEventListener("resize", resize);
 
     const drawLightRays = () => {
-      ctx.fillStyle = "#000000";
+      // White background
+      ctx.fillStyle = "#FFFFFF";
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
       // Light source position (top-left corner)
       const sourceX = canvas.width * 0.1;
       const sourceY = -canvas.height * 0.1;
 
-      // Draw multiple light rays with higher opacity
+      // Draw multiple light rays - dark/gray rays on white background
       const rayCount = 8;
       
       for (let i = 0; i < rayCount; i++) {
@@ -43,14 +44,14 @@ const LightBackground = () => {
         const endX = sourceX + Math.cos(angle) * rayLength;
         const endY = sourceY + Math.sin(angle) * rayLength;
 
-        // Create gradient for each ray - MUCH higher opacity
+        // Create gradient for each ray - subtle gray rays
         const gradient = ctx.createLinearGradient(sourceX, sourceY, endX, endY);
-        const baseOpacity = 0.25 + Math.sin(time * 0.3 + i * 0.6) * 0.08;
+        const baseOpacity = 0.08 + Math.sin(time * 0.3 + i * 0.6) * 0.03;
         
-        gradient.addColorStop(0, `rgba(255, 255, 255, ${baseOpacity * 1.5})`);
-        gradient.addColorStop(0.2, `rgba(255, 255, 255, ${baseOpacity})`);
-        gradient.addColorStop(0.5, `rgba(255, 255, 255, ${baseOpacity * 0.5})`);
-        gradient.addColorStop(1, "rgba(255, 255, 255, 0)");
+        gradient.addColorStop(0, `rgba(0, 0, 0, ${baseOpacity * 1.2})`);
+        gradient.addColorStop(0.2, `rgba(0, 0, 0, ${baseOpacity})`);
+        gradient.addColorStop(0.5, `rgba(0, 0, 0, ${baseOpacity * 0.4})`);
+        gradient.addColorStop(1, "rgba(0, 0, 0, 0)");
 
         ctx.save();
         ctx.beginPath();
@@ -69,15 +70,15 @@ const LightBackground = () => {
         ctx.restore();
       }
 
-      // Add large soft glow at source
+      // Add soft glow at source - light gray
       const glowGradient = ctx.createRadialGradient(
         sourceX, sourceY, 0,
         sourceX, sourceY, 500
       );
-      glowGradient.addColorStop(0, "rgba(255, 255, 255, 0.4)");
-      glowGradient.addColorStop(0.3, "rgba(255, 255, 255, 0.15)");
-      glowGradient.addColorStop(0.6, "rgba(255, 255, 255, 0.05)");
-      glowGradient.addColorStop(1, "rgba(255, 255, 255, 0)");
+      glowGradient.addColorStop(0, "rgba(0, 0, 0, 0.12)");
+      glowGradient.addColorStop(0.3, "rgba(0, 0, 0, 0.05)");
+      glowGradient.addColorStop(0.6, "rgba(0, 0, 0, 0.02)");
+      glowGradient.addColorStop(1, "rgba(0, 0, 0, 0)");
       
       ctx.fillStyle = glowGradient;
       ctx.fillRect(0, 0, canvas.width, canvas.height);
