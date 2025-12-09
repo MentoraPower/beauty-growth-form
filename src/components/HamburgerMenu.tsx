@@ -18,21 +18,29 @@ type NavTheme = "light" | "dark";
 const HamburgerMenu = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [theme, setTheme] = useState<NavTheme>("light");
+  const [isVisible, setIsVisible] = useState(true);
+  const [lastScrollY, setLastScrollY] = useState(0);
 
   useEffect(() => {
     const handleScroll = () => {
       const scrollY = window.scrollY;
       const viewportHeight = window.innerHeight;
       
-      // First section (image area) - use light theme (white bg)
-      // After scrolling past the image (~220px on mobile), check for dark sections
+      // Hide/show based on scroll direction
+      if (scrollY > lastScrollY && scrollY > 100) {
+        setIsVisible(false);
+        setIsOpen(false);
+      } else {
+        setIsVisible(true);
+      }
+      setLastScrollY(scrollY);
+      
+      // Theme based on scroll position
       if (scrollY < 180) {
         setTheme("light");
       } else if (scrollY < viewportHeight * 0.8) {
-        // Form area - white background, use dark navbar
         setTheme("dark");
       } else {
-        // Lower sections - default to light (white bg)
         setTheme("light");
       }
     };
@@ -41,7 +49,7 @@ const HamburgerMenu = () => {
     handleScroll();
     
     return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
+  }, [lastScrollY]);
 
   const bgClass = theme === "dark" 
     ? "bg-neutral-900/80 backdrop-blur-xl" 
@@ -49,10 +57,15 @@ const HamburgerMenu = () => {
   
   const textClass = theme === "dark" ? "text-white" : "text-foreground";
   const barClass = theme === "dark" ? "bg-white" : "bg-foreground";
-  const borderClass = theme === "dark" ? "border-white/10" : "border-black/5";
+  const borderClass = theme === "dark" ? "border-white/10" : "border-white/10";
 
   return (
-    <div className="fixed top-0 left-0 right-0 z-50 px-5 pt-4">
+    <motion.div 
+      className="fixed top-0 left-0 right-0 z-50 px-5 pt-4"
+      initial={{ y: 0 }}
+      animate={{ y: isVisible ? 0 : -100 }}
+      transition={{ duration: 0.3, ease: "easeInOut" }}
+    >
       {/* Header bar */}
       <motion.div 
         className={`flex items-center justify-between py-3 px-4 rounded-2xl transition-colors duration-300 ${bgClass}`}
@@ -118,7 +131,7 @@ const HamburgerMenu = () => {
           </motion.div>
         )}
       </AnimatePresence>
-    </div>
+    </motion.div>
   );
 };
 
