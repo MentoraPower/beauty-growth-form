@@ -1,11 +1,12 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { countries, beautyAreas, revenueRanges, Country } from "@/data/countries";
-import scaleBeautyHero from "@/assets/scale-beauty-hero.png";
 import CountrySelect from "@/components/CountrySelect";
 import CustomSelect from "@/components/CustomSelect";
 import ProgressBar from "@/components/ProgressBar";
 import RippleButton from "@/components/RippleButton";
+import LightBackground from "@/components/LightBackground";
+import FormContainer from "@/components/FormContainer";
 import ArrowRight from "@/components/icons/ArrowRight";
 import ArrowLeft from "@/components/icons/ArrowLeft";
 import Mail from "@/components/icons/Mail";
@@ -487,29 +488,19 @@ const Index = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
+    <div className="min-h-screen bg-background flex flex-col relative overflow-hidden">
+      <LightBackground />
+      
       {step > 1 && step < 10 && <ProgressBar currentStep={step - 1} totalSteps={totalSteps - 2} />}
       
-      {/* Mobile Layout */}
-      <div className="md:hidden flex flex-col min-h-screen">
-        {/* Image on top with padding and rounded corners */}
-        <div className="w-full px-[1.25em] pt-[1.25em]">
-          <img 
-            src={scaleBeautyHero} 
-            alt="Scale Beauty" 
-            className="w-full h-auto object-cover rounded-2xl"
-          />
-        </div>
-        
-        {/* Form close to image */}
-        <div className="flex-1 flex flex-col justify-between px-[1.25em]">
-          <div className="pt-6">
-            {renderStep()}
-          </div>
+      {/* Centered Form Layout */}
+      <div className="flex-1 flex flex-col items-center justify-center px-6 py-12 relative z-10">
+        <FormContainer>
+          {renderStep()}
           
           {/* Mobile footer with terms - only on step 1 */}
           {step === 1 && (
-            <div className="pb-6 text-center">
+            <div className="md:hidden pt-6 text-center">
               <p className="legal-text">
                 Ao clicar em PROSSEGUIR você automaticamente concorda com os{" "}
                 <Link to="/termos" className="legal-link">
@@ -523,24 +514,7 @@ const Index = () => {
               <p className="copyright mt-4">© Copyright 2025 Scale Beauty</p>
             </div>
           )}
-        </div>
-      </div>
-
-      {/* Desktop: Side by side layout */}
-      <div className="hidden md:flex flex-row min-h-screen">
-        {/* Image - Left side */}
-        <div className="md:w-1/2 lg:w-[55%]">
-          <img 
-            src={scaleBeautyHero} 
-            alt="Scale Beauty" 
-            className="w-full h-full object-cover"
-          />
-        </div>
-        
-        {/* Form - Right side */}
-        <div className="flex-1 flex items-center justify-center p-8">
-          {renderStep()}
-        </div>
+        </FormContainer>
       </div>
     </div>
   );
