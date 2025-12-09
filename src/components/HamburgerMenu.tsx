@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
 interface MenuItem {
@@ -13,14 +13,54 @@ const menuItems: MenuItem[] = [
   { label: "Contato", href: "#contato" },
 ];
 
+type NavTheme = "light" | "dark";
+
 const HamburgerMenu = () => {
   const [isOpen, setIsOpen] = useState(false);
+  const [theme, setTheme] = useState<NavTheme>("light");
+
+  useEffect(() => {
+    const handleScroll = () => {
+      const scrollY = window.scrollY;
+      const viewportHeight = window.innerHeight;
+      
+      // First section (image area) - use light theme (white bg)
+      // After scrolling past the image (~220px on mobile), check for dark sections
+      if (scrollY < 180) {
+        setTheme("light");
+      } else if (scrollY < viewportHeight * 0.8) {
+        // Form area - white background, use dark navbar
+        setTheme("dark");
+      } else {
+        // Lower sections - default to light (white bg)
+        setTheme("light");
+      }
+    };
+
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    handleScroll();
+    
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
+  const bgClass = theme === "dark" 
+    ? "bg-neutral-900/80 backdrop-blur-xl" 
+    : "bg-white/80 backdrop-blur-xl";
+  
+  const textClass = theme === "dark" ? "text-white" : "text-foreground";
+  const barClass = theme === "dark" ? "bg-white" : "bg-foreground";
+  const borderClass = theme === "dark" ? "border-white/10" : "border-black/5";
 
   return (
     <div className="fixed top-0 left-0 right-0 z-50 px-5 pt-4">
       {/* Header bar */}
-      <div className="flex items-center justify-between py-3 px-4 bg-white/80 backdrop-blur-xl rounded-2xl">
-        <span className="font-bold text-sm uppercase tracking-wide text-foreground">Scale Beauty</span>
+      <motion.div 
+        className={`flex items-center justify-between py-3 px-4 rounded-2xl transition-colors duration-300 ${bgClass}`}
+        layout
+      >
+        <span className={`font-bold text-sm uppercase tracking-wide transition-colors duration-300 ${textClass}`}>
+          Scale Beauty
+        </span>
         
         {/* Hamburger button */}
         <button
@@ -32,18 +72,18 @@ const HamburgerMenu = () => {
             <motion.span
               animate={isOpen ? { rotate: 45, y: 5, width: 24 } : { rotate: 0, y: 0, width: 24 }}
               transition={{ duration: 0.2, ease: "easeInOut" }}
-              className="block h-0.5 bg-foreground rounded-full"
+              className={`block h-0.5 rounded-full transition-colors duration-300 ${barClass}`}
               style={{ width: 24 }}
             />
             <motion.span
               animate={isOpen ? { rotate: -45, y: -5, width: 24 } : { rotate: 0, y: 0, width: 16 }}
               transition={{ duration: 0.2, ease: "easeInOut" }}
-              className="block h-0.5 bg-foreground rounded-full mt-2"
+              className={`block h-0.5 rounded-full mt-2 transition-colors duration-300 ${barClass}`}
               style={{ width: isOpen ? 24 : 16 }}
             />
           </div>
         </button>
-      </div>
+      </motion.div>
 
       {/* Dropdown menu */}
       <AnimatePresence>
@@ -53,7 +93,7 @@ const HamburgerMenu = () => {
             animate={{ height: "auto", opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
             transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
-            className="overflow-hidden bg-white/80 backdrop-blur-xl rounded-2xl mt-2"
+            className={`overflow-hidden rounded-2xl mt-2 transition-colors duration-300 ${bgClass}`}
           >
             <nav className="px-4 py-3">
               {menuItems.map((item, index) => (
@@ -69,7 +109,7 @@ const HamburgerMenu = () => {
                     ease: "easeOut"
                   }}
                   onClick={() => setIsOpen(false)}
-                  className="block py-3 text-foreground font-medium text-base hover:text-primary transition-colors border-b border-black/5 last:border-b-0"
+                  className={`block py-3 font-medium text-base hover:text-primary transition-colors ${textClass} border-b ${borderClass} last:border-b-0`}
                 >
                   {item.label}
                 </motion.a>
