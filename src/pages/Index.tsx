@@ -488,7 +488,7 @@ const Index = () => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col relative overflow-hidden" style={{ backgroundColor: '#000000' }}>
+    <div className="min-h-screen flex flex-col relative overflow-hidden" style={{ backgroundColor: '#FFFFFF' }}>
       <LightBackground />
       
       {step > 1 && step < 10 && <ProgressBar currentStep={step - 1} totalSteps={totalSteps - 2} />}
