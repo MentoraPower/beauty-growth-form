@@ -124,13 +124,11 @@ const Leads = () => {
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div>
             <h1 className="text-2xl font-bold text-foreground">Leads</h1>
-            <p className="text-sm text-muted-foreground mt-0.5">
-              {loading ? (
-                <Skeleton className="h-4 w-32 inline-block" />
-              ) : (
-                `${leads.length} leads cadastrados`
-              )}
-            </p>
+            {leads.length > 0 && !loading && (
+              <p className="text-sm text-muted-foreground mt-0.5">
+                {leads.length} leads cadastrados
+              </p>
+            )}
           </div>
 
           <div className="relative w-full md:w-72">
