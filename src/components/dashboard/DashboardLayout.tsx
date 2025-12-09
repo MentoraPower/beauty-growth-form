@@ -37,15 +37,15 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
       {/* Sidebar */}
       <aside
         className={cn(
-          "fixed top-4 left-4 bottom-4 w-64 bg-card border border-border rounded-2xl z-40 transform transition-transform duration-200 ease-in-out shadow-sm",
+          "fixed top-4 left-4 bottom-4 w-56 bg-neutral-900 border border-neutral-800 rounded-2xl z-40 transform transition-transform duration-200 ease-in-out shadow-sm",
           "lg:translate-x-0",
           sidebarOpen ? "translate-x-0" : "-translate-x-[calc(100%+2rem)]"
         )}
       >
         <div className="flex flex-col h-full p-4">
           {/* Logo */}
-          <div className="h-14 flex items-center px-4 mb-2">
-            <Link to="/admin" className="text-xl font-bold text-foreground">
+          <div className="h-14 flex items-center px-3 mb-2">
+            <Link to="/admin" className="text-lg font-bold text-white">
               SCALE BEAUTY
             </Link>
           </div>
@@ -60,27 +60,27 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
                   to={item.href}
                   onClick={() => setSidebarOpen(false)}
                   className={cn(
-                    "flex items-center gap-3 px-4 py-3 rounded-xl transition-all",
+                    "flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all",
                     isActive
-                      ? "bg-foreground/10 text-foreground"
-                      : "text-muted-foreground hover:bg-foreground/5 hover:text-foreground"
+                      ? "bg-white/10 text-white"
+                      : "text-neutral-400 hover:bg-white/5 hover:text-white"
                   )}
                 >
                   <item.icon className="h-5 w-5" />
-                  <span className="font-medium">{item.label}</span>
+                  <span className="font-medium text-sm">{item.label}</span>
                 </Link>
               );
             })}
           </nav>
 
           {/* Footer */}
-          <div className="pt-4 border-t border-border mt-4">
+          <div className="pt-4 border-t border-neutral-800 mt-4">
             <Link
               to="/"
-              className="flex items-center gap-3 px-4 py-3 rounded-xl text-muted-foreground hover:bg-foreground/5 hover:text-foreground transition-all"
+              className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-neutral-400 hover:bg-white/5 hover:text-white transition-all"
             >
               <LogOut className="h-5 w-5" />
-              <span className="font-medium">Voltar ao Site</span>
+              <span className="font-medium text-sm">Voltar ao Site</span>
             </Link>
           </div>
         </div>
@@ -95,7 +95,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
       )}
 
       {/* Main Content */}
-      <main className="lg:ml-72 pt-20 lg:pt-0 min-h-[calc(100vh-3rem)]">
+      <main className="lg:ml-64 pt-20 lg:pt-0 min-h-[calc(100vh-3rem)]">
         <div className="bg-card border border-border rounded-2xl p-6 lg:p-8 min-h-full shadow-sm">
           {children}
         </div>
