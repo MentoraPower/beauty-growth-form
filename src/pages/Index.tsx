@@ -525,7 +525,7 @@ const Index = () => {
       {step > 1 && step < 10 && <ProgressBar currentStep={step - 1} totalSteps={totalSteps - 2} />}
       
       {/* Mobile Layout */}
-      <div className="md:hidden flex flex-col min-h-screen relative pt-16">
+      <div className="md:hidden flex flex-col min-h-screen relative">
         {/* Banner image on top with rounded bottom */}
         <div className="w-full flex-shrink-0">
           <img 
@@ -582,7 +582,7 @@ const Index = () => {
       </div>
 
       {/* Desktop Layout */}
-      <div className="hidden md:flex flex-col min-h-screen pt-16">
+      <div className="hidden md:flex flex-col min-h-screen">
         {/* Banner image on top */}
         <div className="w-full">
           <img 
