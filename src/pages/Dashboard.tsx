@@ -6,11 +6,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Users, TrendingUp, Calendar, Building2 } from "lucide-react";
 import ModernAreaChart from "@/components/dashboard/ModernAreaChart";
 import ModernBarChart from "@/components/dashboard/ModernBarChart";
-import GaugeChart from "@/components/dashboard/GaugeChart";
+import MiniGaugeChart from "@/components/dashboard/MiniGaugeChart";
 import {
   CardSkeleton,
   AreaChartSkeleton,
-  GaugeSkeleton,
   ChartSkeleton,
 } from "@/components/dashboard/DashboardSkeleton";
 
@@ -167,7 +166,7 @@ const Dashboard = () => {
           {/* Charts Skeleton */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <AreaChartSkeleton />
-            <GaugeSkeleton />
+            <ChartSkeleton height="200px" />
           </div>
 
           {/* Bar Chart Skeleton */}
@@ -259,21 +258,37 @@ const Dashboard = () => {
             </CardContent>
           </Card>
 
-          {/* Gauge Chart */}
+          {/* Mini Gauges por Área */}
           <Card className="bg-card border-border/50">
             <CardHeader className="pb-2">
               <CardTitle className="text-base font-semibold text-foreground">
-                Taxa de Espaço Físico
+                Leads por Área
               </CardTitle>
-              <p className="text-xs text-muted-foreground">Clínicas vs Domicílio</p>
+              <p className="text-xs text-muted-foreground">Distribuição por serviço</p>
             </CardHeader>
-            <CardContent className="flex items-center justify-center">
-              <GaugeChart
-                value={getPhysicalSpacePercentage()}
-                maxValue={100}
-                label="Com Espaço Físico"
-                sublabel={`${getPhysicalSpaceCount()} de ${leads.length} leads`}
-              />
+            <CardContent>
+              <div className="grid grid-cols-3 gap-2">
+                {(() => {
+                  const areas = leads.reduce((acc, lead) => {
+                    acc[lead.service_area] = (acc[lead.service_area] || 0) + 1;
+                    return acc;
+                  }, {} as Record<string, number>);
+                  
+                  const maxLeads = Math.max(...Object.values(areas), 1);
+                  
+                  return Object.entries(areas)
+                    .sort((a, b) => b[1] - a[1])
+                    .slice(0, 6)
+                    .map(([area, count]) => (
+                      <MiniGaugeChart
+                        key={area}
+                        value={count}
+                        maxValue={maxLeads}
+                        label={area}
+                      />
+                    ));
+                })()}
+              </div>
             </CardContent>
           </Card>
         </div>
