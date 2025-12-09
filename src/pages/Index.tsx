@@ -500,9 +500,9 @@ const Index = () => {
             className="w-full h-auto object-cover"
           />
         </div>
-        {/* Form close to image */}
-        <div className="flex-1 flex flex-col justify-between px-[1.25em]">
-          <div className="pt-6">
+        {/* Form centered */}
+        <div className="flex-1 flex flex-col justify-center px-[1.25em]">
+          <div className="text-center">
             {renderStep()}
           </div>
           
