@@ -493,7 +493,7 @@ const Index = () => {
       {step > 1 && step < 10 && <ProgressBar currentStep={step - 1} totalSteps={totalSteps - 2} />}
       
       {/* Mobile Layout */}
-      <div className="md:hidden flex flex-col h-screen relative overflow-hidden">
+      <div className="md:hidden flex flex-col min-h-screen relative">
         {/* Banner image on top with rounded bottom */}
         <div className="w-full flex-shrink-0">
           <img 
@@ -503,16 +503,16 @@ const Index = () => {
           />
         </div>
         {/* Form overlapping the image */}
-        <div className="flex-1 flex flex-col justify-start px-4 -mt-6 relative z-10 overflow-auto">
+        <div className="flex-1 flex flex-col justify-between px-4 -mt-6 relative z-10">
           <FormContainer>
             {renderStep()}
           </FormContainer>
           
           {/* Mobile footer with terms - only on step 1 */}
           {step === 1 && (
-            <div className="mt-6">
+            <div className="flex-shrink-0 pb-4">
               <div className="w-full h-px bg-border mb-4" />
-              <div className="pb-6 text-center px-[1.25em]">
+              <div className="text-center px-[1.25em]">
                 <p className="legal-text">
                   Ao clicar em PROSSEGUIR você automaticamente concorda com os{" "}
                   <Link to="/termos" className="legal-link">
