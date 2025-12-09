@@ -71,7 +71,7 @@ const HamburgerMenu = () => {
         className={`flex items-center justify-between py-3 px-4 rounded-2xl transition-colors duration-300 ${bgClass}`}
         layout
       >
-        <span className={`font-bold text-sm uppercase tracking-wide transition-colors duration-300 ${textClass}`}>
+        <span className={`font-bold text-sm uppercase tracking-tight transition-colors duration-300 ${textClass}`}>
           Scale Beauty
         </span>
         
