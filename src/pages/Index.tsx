@@ -493,17 +493,17 @@ const Index = () => {
       {step > 1 && step < 10 && <ProgressBar currentStep={step - 1} totalSteps={totalSteps - 2} />}
       
       {/* Mobile Layout */}
-      <div className="md:hidden flex flex-col min-h-screen relative">
+      <div className="md:hidden flex flex-col h-screen relative overflow-hidden">
         {/* Banner image on top with rounded bottom */}
-        <div className="w-full">
+        <div className="w-full flex-shrink-0">
           <img 
             src={scaleBeautyMobile} 
             alt="Scale Beauty" 
-            className="w-full h-[280px] object-cover rounded-b-3xl"
+            className="w-full h-[220px] object-cover rounded-b-3xl"
           />
         </div>
         {/* Form overlapping the image */}
-        <div className="flex-1 flex flex-col justify-start px-[1.25em] -mt-8 relative z-10">
+        <div className="flex-1 flex flex-col justify-start px-4 -mt-6 relative z-10 overflow-auto">
           <FormContainer>
             {renderStep()}
           </FormContainer>
