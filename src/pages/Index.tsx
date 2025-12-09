@@ -13,6 +13,7 @@ import ArrowLeft from "@/components/icons/ArrowLeft";
 import Mail from "@/components/icons/Mail";
 import WhatsApp from "@/components/icons/WhatsApp";
 import Instagram from "@/components/icons/Instagram";
+import { ScrollVelocityContainer, ScrollVelocityRow } from "@/components/ScrollVelocity";
 import Building from "@/components/icons/Building";
 import DollarSign from "@/components/icons/DollarSign";
 import Users from "@/components/icons/Users";
@@ -508,6 +509,20 @@ const Index = () => {
             {renderStep()}
           </FormContainer>
           
+          {/* Scroll Velocity - Mobile */}
+          <div className="relative flex w-full flex-col items-center justify-center overflow-hidden py-4 -mx-4" style={{ width: 'calc(100% + 2rem)' }}>
+            <ScrollVelocityContainer className="text-sm font-bold tracking-[-0.02em] text-foreground/80">
+              <ScrollVelocityRow baseVelocity={15} direction={1}>
+                <span className="mx-3">Scale Beauty • Escalando seu negócio no mundo beauty • Sua assessoria de marketing •</span>
+              </ScrollVelocityRow>
+              <ScrollVelocityRow baseVelocity={15} direction={-1}>
+                <span className="mx-3">Scale Beauty • Escalando seu negócio no mundo beauty • Sua assessoria de marketing •</span>
+              </ScrollVelocityRow>
+            </ScrollVelocityContainer>
+            <div className="from-background pointer-events-none absolute inset-y-0 left-0 w-1/6 bg-gradient-to-r"></div>
+            <div className="from-background pointer-events-none absolute inset-y-0 right-0 w-1/6 bg-gradient-to-l"></div>
+          </div>
+          
           {/* Mobile footer with terms - only on step 1 */}
           {step === 1 && (
             <div className="flex-shrink-0 pb-4">
@@ -546,6 +561,20 @@ const Index = () => {
           <FormContainer>
             {renderStep()}
           </FormContainer>
+        </div>
+
+        {/* Scroll Velocity */}
+        <div className="relative flex w-full flex-col items-center justify-center overflow-hidden py-8">
+          <ScrollVelocityContainer className="text-2xl font-bold tracking-[-0.02em] text-foreground/80">
+            <ScrollVelocityRow baseVelocity={20} direction={1}>
+              <span className="mx-4">Scale Beauty • Escalando seu negócio no mundo beauty • Sua assessoria de marketing •</span>
+            </ScrollVelocityRow>
+            <ScrollVelocityRow baseVelocity={20} direction={-1}>
+              <span className="mx-4">Scale Beauty • Escalando seu negócio no mundo beauty • Sua assessoria de marketing •</span>
+            </ScrollVelocityRow>
+          </ScrollVelocityContainer>
+          <div className="from-background pointer-events-none absolute inset-y-0 left-0 w-1/4 bg-gradient-to-r"></div>
+          <div className="from-background pointer-events-none absolute inset-y-0 right-0 w-1/4 bg-gradient-to-l"></div>
         </div>
       </div>
     </div>
