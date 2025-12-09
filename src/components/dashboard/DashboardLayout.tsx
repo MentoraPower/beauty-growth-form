@@ -62,8 +62,8 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
                   className={cn(
                     "flex items-center gap-3 px-4 py-3 rounded-xl transition-all",
                     isActive
-                      ? "bg-primary text-primary-foreground"
-                      : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                      ? "bg-foreground/10 text-foreground"
+                      : "text-muted-foreground hover:bg-foreground/5 hover:text-foreground"
                   )}
                 >
                   <item.icon className="h-5 w-5" />
@@ -77,7 +77,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
           <div className="pt-4 border-t border-border mt-4">
             <Link
               to="/"
-              className="flex items-center gap-3 px-4 py-3 rounded-xl text-muted-foreground hover:bg-muted hover:text-foreground transition-all"
+              className="flex items-center gap-3 px-4 py-3 rounded-xl text-muted-foreground hover:bg-foreground/5 hover:text-foreground transition-all"
             >
               <LogOut className="h-5 w-5" />
               <span className="font-medium">Voltar ao Site</span>
