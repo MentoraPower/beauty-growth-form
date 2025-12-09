@@ -510,7 +510,7 @@ const Index = () => {
           
           {/* Mobile footer with terms - only on step 1 */}
           {step === 1 && (
-            <div className="mt-auto">
+            <div className="mt-6">
               <div className="w-full h-px bg-border mb-4" />
               <div className="pb-6 text-center px-[1.25em]">
                 <p className="legal-text">
