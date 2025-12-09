@@ -510,7 +510,7 @@ const Index = () => {
           </FormContainer>
           
           {/* Scroll Velocity - Mobile */}
-          <div className="relative flex w-full flex-col items-center justify-center overflow-hidden py-2 -mx-4" style={{ width: 'calc(100% + 2rem)', marginTop: '15px' }}>
+          <div className="relative flex w-full flex-col items-center justify-center overflow-hidden py-2 -mx-4 mt-2" style={{ width: 'calc(100% + 2rem)' }}>
             <ScrollVelocityContainer className="text-xs font-bold uppercase tracking-[0.2em] text-foreground/30">
               <ScrollVelocityRow baseVelocity={3} direction={1}>
                 <span className="mx-3">SCALE BEAUTY • ESCALANDO SEU NEGÓCIO NO MUNDO BEAUTY • SUA ASSESSORIA DE MARKETING •</span>
