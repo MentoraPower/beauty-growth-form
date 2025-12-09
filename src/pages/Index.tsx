@@ -20,7 +20,7 @@ import Users from "@/components/icons/Users";
 import Home from "@/components/icons/Home";
 import { FeatureCard } from "@/components/ui/grid-feature-cards";
 import { motion, useReducedMotion } from "framer-motion";
-import { Zap, Cpu, Fingerprint, Pencil, Settings2, Sparkles } from "lucide-react";
+import { Target, FileText, Rocket, Handshake } from "lucide-react";
 import Calendar from "@/components/icons/Calendar";
 import { toast } from "sonner";
 import HamburgerMenu from "@/components/HamburgerMenu";
@@ -456,29 +456,21 @@ const Index = () => {
     </div>;
 };
 const features = [{
-  title: 'Rápido',
-  icon: Zap,
-  description: 'Resultados visíveis em tempo recorde para o seu negócio.'
+  title: 'Tráfego Pago',
+  icon: Target,
+  description: 'Atraia clientes qualificados para seu negócio com campanhas estratégicas de anúncios.'
 }, {
-  title: 'Poderoso',
-  icon: Cpu,
-  description: 'Estratégias comprovadas que impulsionam seu crescimento.'
+  title: 'Páginas de Vendas',
+  icon: FileText,
+  description: 'Landing pages de alta conversão que transformam visitantes em clientes fiéis.'
 }, {
-  title: 'Segurança',
-  icon: Fingerprint,
-  description: 'Proteção total dos seus dados e informações.'
+  title: 'Consultoria de Aceleração',
+  icon: Rocket,
+  description: 'Mentoria personalizada para escalar seu faturamento de forma rápida e sustentável.'
 }, {
-  title: 'Personalização',
-  icon: Pencil,
-  description: 'Soluções sob medida para o seu negócio beauty.'
-}, {
-  title: 'Controle',
-  icon: Settings2,
-  description: 'Acompanhe cada detalhe do seu progresso.'
-}, {
-  title: 'Inovação',
-  icon: Sparkles,
-  description: 'Tecnologia de ponta para escalar seu negócio.'
+  title: 'Co-Produção',
+  icon: Handshake,
+  description: 'Parceria estratégica onde cuidamos do marketing enquanto você foca no seu talento.'
 }];
 type ViewAnimationProps = {
   delay?: number;
