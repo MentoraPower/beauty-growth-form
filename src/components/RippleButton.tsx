@@ -38,11 +38,16 @@ const RippleButton: React.FC<RippleButtonProps> = ({ children, className = "", o
     }
   };
 
+  const handleMouseEnter = (event: React.MouseEvent<HTMLButtonElement>) => {
+    createRipple(event);
+  };
+
   return (
     <button
       ref={buttonRef}
       className={`ripple-button ${className}`}
       onClick={handleClick}
+      onMouseEnter={handleMouseEnter}
       {...props}
     >
       <span className="ripple-button-content">{children}</span>
