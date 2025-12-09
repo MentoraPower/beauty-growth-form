@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { countries, beautyAreas, revenueRanges, Country } from "@/data/countries";
 import scaleBeautyBanner from "@/assets/scale-beauty-banner.png";
 import CountrySelect from "@/components/CountrySelect";
+import FormContainer from "@/components/FormContainer";
 import CustomSelect from "@/components/CustomSelect";
 import ProgressBar from "@/components/ProgressBar";
 import RippleButton from "@/components/RippleButton";
@@ -502,9 +503,9 @@ const Index = () => {
         </div>
         {/* Form centered */}
         <div className="flex-1 flex flex-col justify-center px-[1.25em]">
-          <div className="text-center">
+          <FormContainer>
             {renderStep()}
-          </div>
+          </FormContainer>
           
           {/* Mobile footer with terms - only on step 1 */}
           {step === 1 && (
@@ -538,7 +539,9 @@ const Index = () => {
         
         {/* Form centered */}
         <div className="flex-1 flex items-center justify-center p-8">
-          {renderStep()}
+          <FormContainer>
+            {renderStep()}
+          </FormContainer>
         </div>
       </div>
     </div>
