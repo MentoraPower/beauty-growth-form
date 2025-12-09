@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { LayoutDashboard, Users, Menu, X, LogOut } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -12,27 +12,29 @@ const navItems = [
   { href: "/admin/leads", icon: Users, label: "Leads" },
 ];
 
+// Global state to persist hover across re-renders
+let globalIsHovered = false;
+
 const DashboardLayout = ({ children }: DashboardLayoutProps) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [isHovered, setIsHovered] = useState(false);
+  const [isHovered, setIsHovered] = useState(globalIsHovered);
   const sidebarRef = useRef<HTMLElement>(null);
-  const isMouseOverRef = useRef(false);
   const location = useLocation();
 
-  const handleMouseEnter = () => {
-    isMouseOverRef.current = true;
-    setIsHovered(true);
-  };
+  // Sync with global state on mount
+  useEffect(() => {
+    setIsHovered(globalIsHovered);
+  }, [location.pathname]);
 
-  const handleMouseLeave = () => {
-    isMouseOverRef.current = false;
-    // Small delay to prevent flickering during navigation
-    setTimeout(() => {
-      if (!isMouseOverRef.current) {
-        setIsHovered(false);
-      }
-    }, 100);
-  };
+  const handleMouseEnter = useCallback(() => {
+    globalIsHovered = true;
+    setIsHovered(true);
+  }, []);
+
+  const handleMouseLeave = useCallback(() => {
+    globalIsHovered = false;
+    setIsHovered(false);
+  }, []);
 
   return (
     <div className="min-h-screen bg-background p-4 lg:p-6">
