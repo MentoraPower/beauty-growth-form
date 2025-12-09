@@ -56,28 +56,29 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
         ref={sidebarRef}
         className={cn(
           "fixed top-4 left-4 bottom-4 bg-neutral-900 border border-neutral-800 rounded-2xl z-40 transform transition-all duration-300 ease-in-out shadow-sm overflow-hidden",
-          "fixed top-4 left-4 bottom-4 bg-neutral-900 border border-neutral-800 rounded-2xl z-40 transform transition-all duration-300 ease-in-out shadow-sm overflow-hidden",
           "lg:translate-x-0",
-          isHovered ? "w-56" : "w-16",
-          sidebarOpen ? "translate-x-0 w-56" : "max-lg:-translate-x-[calc(100%+2rem)]"
+          isHovered ? "w-52" : "w-[60px]",
+          sidebarOpen ? "translate-x-0 w-52" : "max-lg:-translate-x-[calc(100%+2rem)]"
         )}
       >
-        <div className="flex flex-col h-full p-2">
+        <div className="flex flex-col h-full py-3">
           {/* Logo */}
-          <div className="h-10 flex items-center justify-center mb-2">
+          <div className="h-11 flex items-center px-[10px] mb-2">
             <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-primary-dark flex items-center justify-center flex-shrink-0">
               <span className="text-white font-bold text-sm">SB</span>
             </div>
-            <span className={cn(
-              "text-lg font-bold text-white ml-3 whitespace-nowrap transition-opacity duration-300",
-              isHovered || sidebarOpen ? "opacity-100 w-auto" : "opacity-0 w-0"
+            <div className={cn(
+              "overflow-hidden transition-all duration-300",
+              isHovered || sidebarOpen ? "w-24 ml-3" : "w-0 ml-0"
             )}>
-              SCALE
-            </span>
+              <span className="text-lg font-bold text-white whitespace-nowrap">
+                SCALE
+              </span>
+            </div>
           </div>
 
           {/* Navigation */}
-          <nav className="flex-1 space-y-1">
+          <nav className="flex-1 space-y-1 px-[10px]">
             {navItems.map((item) => {
               const isActive = location.pathname === item.href;
               return (
@@ -90,7 +91,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
                     }
                   }}
                   className={cn(
-                    "flex items-center gap-3 px-2 py-2.5 rounded-xl transition-colors",
+                    "flex items-center h-10 rounded-xl transition-colors",
                     isActive
                       ? "bg-white/10 text-white"
                       : "text-neutral-400 hover:bg-white/5 hover:text-white"
@@ -99,32 +100,36 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
                   <div className="w-10 h-10 flex items-center justify-center flex-shrink-0">
                     <item.icon className="h-5 w-5" />
                   </div>
-                  <span className={cn(
-                    "font-medium text-sm whitespace-nowrap transition-opacity duration-300",
-                    isHovered || sidebarOpen ? "opacity-100" : "opacity-0"
+                  <div className={cn(
+                    "overflow-hidden transition-all duration-300",
+                    isHovered || sidebarOpen ? "w-28" : "w-0"
                   )}>
-                    {item.label}
-                  </span>
+                    <span className="font-medium text-sm whitespace-nowrap">
+                      {item.label}
+                    </span>
+                  </div>
                 </Link>
               );
             })}
           </nav>
 
           {/* Footer */}
-          <div className="pt-2 border-t border-neutral-800 mt-2">
+          <div className="pt-2 border-t border-neutral-800 mt-2 px-[10px]">
             <Link
               to="/"
-              className="flex items-center gap-3 px-2 py-2.5 rounded-xl text-neutral-400 hover:bg-white/5 hover:text-white transition-colors"
+              className="flex items-center h-10 rounded-xl text-neutral-400 hover:bg-white/5 hover:text-white transition-colors"
             >
               <div className="w-10 h-10 flex items-center justify-center flex-shrink-0">
                 <LogOut className="h-5 w-5" />
               </div>
-              <span className={cn(
-                "font-medium text-sm whitespace-nowrap transition-opacity duration-300",
-                isHovered || sidebarOpen ? "opacity-100" : "opacity-0"
+              <div className={cn(
+                "overflow-hidden transition-all duration-300",
+                isHovered || sidebarOpen ? "w-28" : "w-0"
               )}>
-                Voltar ao Site
-              </span>
+                <span className="font-medium text-sm whitespace-nowrap">
+                  Voltar ao Site
+                </span>
+              </div>
             </Link>
           </div>
         </div>
