@@ -148,8 +148,8 @@ const Leads = () => {
                   <TableHeader>
                     <TableRow className="border-border/50 hover:bg-transparent bg-muted/30">
                       <TableHead className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Lead</TableHead>
-                      <TableHead className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Área</TableHead>
-                      <TableHead className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Data</TableHead>
+                      <TableHead className="text-xs font-semibold text-muted-foreground uppercase tracking-wider text-right">Área</TableHead>
+                      <TableHead className="text-xs font-semibold text-muted-foreground uppercase tracking-wider text-center">Data</TableHead>
                       <TableHead className="text-xs font-semibold text-muted-foreground uppercase tracking-wider text-right">Ações</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -182,12 +182,12 @@ const Leads = () => {
                               <p className="font-medium text-foreground truncate">{lead.name}</p>
                             </div>
                           </TableCell>
-                          <TableCell>
+                          <TableCell className="text-right">
                             <Badge variant="secondary" className="font-normal text-xs">
                               {lead.service_area}
                             </Badge>
                           </TableCell>
-                          <TableCell>
+                          <TableCell className="text-center">
                             <p className="text-sm text-muted-foreground">
                               {format(new Date(lead.created_at), "dd/MM/yy", { locale: ptBR })}
                             </p>
