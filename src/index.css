@@ -209,7 +209,7 @@
   }
 
   .ripple-button {
-    @apply h-14 rounded-full text-primary-foreground font-semibold text-base bg-primary transition-all duration-300 cursor-pointer;
+    @apply h-14 rounded-full text-primary-foreground font-semibold text-base transition-all duration-300 cursor-pointer;
     font-family: var(--font-display);
     width: 85%;
     margin: 0 auto;
@@ -218,6 +218,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
+    background: linear-gradient(90deg, hsl(0 100% 48%) 0%, hsl(0 100% 32%) 100%);
   }
 
   .ripple-button-content {
