@@ -23,7 +23,7 @@ import { motion, useReducedMotion } from "framer-motion";
 import { Zap, Cpu, Fingerprint, Pencil, Settings2, Sparkles } from "lucide-react";
 import Calendar from "@/components/icons/Calendar";
 import { toast } from "sonner";
-
+import HamburgerMenu from "@/components/HamburgerMenu";
 interface FormData {
   name: string;
   email: string;
@@ -521,10 +521,11 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
+      <HamburgerMenu />
       {step > 1 && step < 10 && <ProgressBar currentStep={step - 1} totalSteps={totalSteps - 2} />}
       
       {/* Mobile Layout */}
-      <div className="md:hidden flex flex-col min-h-screen relative">
+      <div className="md:hidden flex flex-col min-h-screen relative pt-16">
         {/* Banner image on top with rounded bottom */}
         <div className="w-full flex-shrink-0">
           <img 
@@ -581,7 +582,7 @@ const Index = () => {
       </div>
 
       {/* Desktop Layout */}
-      <div className="hidden md:flex flex-col min-h-screen">
+      <div className="hidden md:flex flex-col min-h-screen pt-16">
         {/* Banner image on top */}
         <div className="w-full">
           <img 
