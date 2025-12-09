@@ -226,10 +226,10 @@
     @apply relative z-10 flex items-center justify-center gap-2;
     width: 100%;
     height: 100%;
-    transition: color 0.3s ease;
+    transition: color 0.4s ease;
   }
 
-  .ripple-button-content.hovered {
+  .ripple-button:hover .ripple-button-content {
     color: hsl(var(--foreground));
   }
 
@@ -240,18 +240,18 @@
     background: hsl(var(--card));
     border-radius: 50%;
     transform: translate(-50%, -50%);
-    transition: width 1s ease-out, height 1s ease-out;
+    transition: width 0.8s ease-out, height 0.8s ease-out;
     z-index: 1;
   }
 
-  .ripple-fill.active {
+  .ripple-button:hover .ripple-fill {
     width: 700px;
     height: 700px;
   }
 
-  .ripple-button:has(.ripple-fill.active) {
+  .ripple-button:hover {
     background: hsl(var(--card));
-    transition: background 0.1s ease;
+    transition: background 0.05s ease;
   }
 
   .btn-secondary {
