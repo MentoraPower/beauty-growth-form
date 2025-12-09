@@ -36,7 +36,6 @@ interface FormData {
   hasPhysicalSpace: boolean | null;
   yearsOfExperience: string;
 }
-
 const Index = () => {
   const [step, setStep] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
@@ -50,15 +49,15 @@ const Index = () => {
     revenue: "",
     weeklyAppointments: "",
     hasPhysicalSpace: null,
-    yearsOfExperience: "",
+    yearsOfExperience: ""
   });
-
   const totalSteps = 10;
-
   const updateFormData = (field: keyof FormData, value: string | boolean | Country | null) => {
-    setFormData((prev) => ({ ...prev, [field]: value }));
+    setFormData(prev => ({
+      ...prev,
+      [field]: value
+    }));
   };
-
   const getValidationMessage = () => {
     switch (step) {
       case 1:
@@ -83,7 +82,6 @@ const Index = () => {
         return "Por favor, preencha o campo";
     }
   };
-
   const handleNext = () => {
     if (canProceed()) {
       if (step < totalSteps) {
@@ -93,19 +91,16 @@ const Index = () => {
       toast.error(getValidationMessage());
     }
   };
-
   const nextStep = () => {
     if (step < totalSteps) {
       setStep(step + 1);
     }
   };
-
   const prevStep = () => {
     if (step > 1) {
       setStep(step - 1);
     }
   };
-
   const canProceed = () => {
     switch (step) {
       case 1:
@@ -130,29 +125,18 @@ const Index = () => {
         return true;
     }
   };
-
   const renderStep = () => {
     switch (step) {
       case 1:
-        return (
-          <div className="form-card">
+        return <div className="form-card">
             <h1 className="form-title max-w-[280px] md:max-w-none">
               <span className="font-light">Escalando seu negócio no </span>
               <span className="font-bold">mundo Beauty</span>
             </h1>
             <p className="form-subtitle mt-4 mb-8">Como posso te chamar?</p>
             <div className="space-y-4">
-              <input
-                type="text"
-                value={formData.name}
-                onChange={(e) => updateFormData("name", e.target.value)}
-                placeholder="Seu nome"
-                className="form-input"
-                autoFocus
-              />
-              <RippleButton
-                onClick={handleNext}
-              >
+              <input type="text" value={formData.name} onChange={e => updateFormData("name", e.target.value)} placeholder="Seu nome" className="form-input" autoFocus />
+              <RippleButton onClick={handleNext}>
                 Prosseguir
                 <ArrowRight className="w-5 h-5" />
               </RippleButton>
@@ -171,48 +155,29 @@ const Index = () => {
               </p>
               <p className="copyright">© Copyright 2025 Scale Beauty</p>
             </div>
-          </div>
-        );
-
+          </div>;
       case 2:
-        return (
-          <div className="form-card">
+        return <div className="form-card">
             <h1 className="form-title">
               <span className="font-light">Qual o seu </span>
               <span className="font-bold">melhor e-mail?</span>
             </h1>
             <p className="form-subtitle">Para enviarmos informações importantes</p>
             <div className="space-y-4">
-              <input
-                type="email"
-                value={formData.email}
-                onChange={(e) => updateFormData("email", e.target.value)}
-                placeholder="seu@email.com"
-                className="form-input"
-                autoFocus
-              />
+              <input type="email" value={formData.email} onChange={e => updateFormData("email", e.target.value)} placeholder="seu@email.com" className="form-input" autoFocus />
               <div className="flex gap-3">
-                <button
-                  onClick={prevStep}
-                  className="h-14 px-4 rounded-xl border border-border bg-card flex items-center justify-center"
-                >
+                <button onClick={prevStep} className="h-14 px-4 rounded-xl border border-border bg-card flex items-center justify-center">
                   <ArrowLeft className="w-5 h-5 text-foreground" />
                 </button>
-                <RippleButton
-                  onClick={handleNext}
-                  className="flex-1"
-                >
+                <RippleButton onClick={handleNext} className="flex-1">
                   Continuar
                   <ArrowRight className="w-5 h-5" />
                 </RippleButton>
               </div>
             </div>
-          </div>
-        );
-
+          </div>;
       case 3:
-        return (
-          <div className="form-card">
+        return <div className="form-card">
             <h1 className="form-title">
               <span className="font-light">Qual o seu </span>
               <span className="font-bold">WhatsApp?</span>
@@ -220,41 +185,22 @@ const Index = () => {
             <p className="form-subtitle">Para entrarmos em contato com você</p>
             <div className="space-y-4">
               <div className="flex">
-                <CountrySelect
-                  value={formData.country}
-                  onChange={(country) => updateFormData("country", country)}
-                />
-                <input
-                  type="tel"
-                  value={formData.phone}
-                  onChange={(e) => updateFormData("phone", e.target.value.replace(/\D/g, ""))}
-                  placeholder="00 00000-0000"
-                  className="form-input flex-1 rounded-l-none border-l-0"
-                  autoFocus
-                />
+                <CountrySelect value={formData.country} onChange={country => updateFormData("country", country)} />
+                <input type="tel" value={formData.phone} onChange={e => updateFormData("phone", e.target.value.replace(/\D/g, ""))} placeholder="00 00000-0000" className="form-input flex-1 rounded-l-none border-l-0" autoFocus />
               </div>
               <div className="flex gap-3">
-                <button
-                  onClick={prevStep}
-                  className="h-14 px-4 rounded-xl border border-border bg-card flex items-center justify-center"
-                >
+                <button onClick={prevStep} className="h-14 px-4 rounded-xl border border-border bg-card flex items-center justify-center">
                   <ArrowLeft className="w-5 h-5 text-foreground" />
                 </button>
-                <RippleButton
-                  onClick={handleNext}
-                  className="flex-1"
-                >
+                <RippleButton onClick={handleNext} className="flex-1">
                   Continuar
                   <ArrowRight className="w-5 h-5" />
                 </RippleButton>
               </div>
             </div>
-          </div>
-        );
-
+          </div>;
       case 4:
-        return (
-          <div className="form-card">
+        return <div className="form-card">
             <h1 className="form-title">
               <span className="font-light">Qual o seu </span>
               <span className="font-bold">Instagram?</span>
@@ -263,223 +209,127 @@ const Index = () => {
             <div className="space-y-4">
               <div className="relative">
                 <span className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground">@</span>
-                <input
-                  type="text"
-                  value={formData.instagram}
-                  onChange={(e) => updateFormData("instagram", e.target.value.replace("@", ""))}
-                  placeholder="seuinstagram"
-                  className="form-input pl-9"
-                  autoFocus
-                />
+                <input type="text" value={formData.instagram} onChange={e => updateFormData("instagram", e.target.value.replace("@", ""))} placeholder="seuinstagram" className="form-input pl-9" autoFocus />
               </div>
               <div className="flex gap-3">
-                <button
-                  onClick={prevStep}
-                  className="h-14 px-4 rounded-xl border border-border bg-card flex items-center justify-center"
-                >
+                <button onClick={prevStep} className="h-14 px-4 rounded-xl border border-border bg-card flex items-center justify-center">
                   <ArrowLeft className="w-5 h-5 text-foreground" />
                 </button>
-                <RippleButton
-                  onClick={handleNext}
-                  className="flex-1"
-                >
+                <RippleButton onClick={handleNext} className="flex-1">
                   Continuar
                   <ArrowRight className="w-5 h-5" />
                 </RippleButton>
               </div>
             </div>
-          </div>
-        );
-
+          </div>;
       case 5:
-        return (
-          <div className="form-card">
+        return <div className="form-card">
             <h1 className="form-title">
               <span className="font-light">Qual a sua </span>
               <span className="font-bold">área de atuação?</span>
             </h1>
             <p className="form-subtitle">Selecione a área da sua Clínica/Studio</p>
             <div className="space-y-4">
-              <CustomSelect
-                value={formData.beautyArea}
-                onChange={(value) => updateFormData("beautyArea", value)}
-                options={beautyAreas}
-                placeholder="Selecione uma área"
-              />
+              <CustomSelect value={formData.beautyArea} onChange={value => updateFormData("beautyArea", value)} options={beautyAreas} placeholder="Selecione uma área" />
               <div className="flex gap-3">
-                <button
-                  onClick={prevStep}
-                  className="h-14 px-4 rounded-xl border border-border bg-card flex items-center justify-center"
-                >
+                <button onClick={prevStep} className="h-14 px-4 rounded-xl border border-border bg-card flex items-center justify-center">
                   <ArrowLeft className="w-5 h-5 text-foreground" />
                 </button>
-                <RippleButton
-                  onClick={handleNext}
-                  className="flex-1"
-                >
+                <RippleButton onClick={handleNext} className="flex-1">
                   Continuar
                   <ArrowRight className="w-5 h-5" />
                 </RippleButton>
               </div>
             </div>
-          </div>
-        );
-
+          </div>;
       case 6:
-        return (
-          <div className="form-card">
+        return <div className="form-card">
             <h1 className="form-title">
               <span className="font-light">Qual o </span>
               <span className="font-bold">faturamento mensal?</span>
             </h1>
             <p className="form-subtitle">Da sua Clínica/Studio</p>
             <div className="space-y-4">
-              <CustomSelect
-                value={formData.revenue}
-                onChange={(value) => updateFormData("revenue", value)}
-                options={revenueRanges}
-                placeholder="Selecione uma faixa"
-              />
+              <CustomSelect value={formData.revenue} onChange={value => updateFormData("revenue", value)} options={revenueRanges} placeholder="Selecione uma faixa" />
               <div className="flex gap-3">
-                <button
-                  onClick={prevStep}
-                  className="h-14 px-4 rounded-xl border border-border bg-card flex items-center justify-center"
-                >
+                <button onClick={prevStep} className="h-14 px-4 rounded-xl border border-border bg-card flex items-center justify-center">
                   <ArrowLeft className="w-5 h-5 text-foreground" />
                 </button>
-                <RippleButton
-                  onClick={handleNext}
-                  className="flex-1"
-                >
+                <RippleButton onClick={handleNext} className="flex-1">
                   Continuar
                   <ArrowRight className="w-5 h-5" />
                 </RippleButton>
               </div>
             </div>
-          </div>
-        );
-
+          </div>;
       case 7:
-        return (
-          <div className="form-card">
+        return <div className="form-card">
             <h1 className="form-title">
               <span className="font-light">Quantos </span>
               <span className="font-bold">atendimentos por semana?</span>
             </h1>
             <p className="form-subtitle">Em média na sua Clínica/Studio</p>
             <div className="space-y-4">
-              <input
-                type="number"
-                value={formData.weeklyAppointments}
-                onChange={(e) => updateFormData("weeklyAppointments", e.target.value)}
-                placeholder="Ex: 30"
-                className="form-input"
-                min="0"
-                autoFocus
-              />
+              <input type="number" value={formData.weeklyAppointments} onChange={e => updateFormData("weeklyAppointments", e.target.value)} placeholder="Ex: 30" className="form-input" min="0" autoFocus />
               <div className="flex gap-3">
-                <button
-                  onClick={prevStep}
-                  className="h-14 px-4 rounded-xl border border-border bg-card flex items-center justify-center"
-                >
+                <button onClick={prevStep} className="h-14 px-4 rounded-xl border border-border bg-card flex items-center justify-center">
                   <ArrowLeft className="w-5 h-5 text-foreground" />
                 </button>
-                <RippleButton
-                  onClick={handleNext}
-                  className="flex-1"
-                >
+                <RippleButton onClick={handleNext} className="flex-1">
                   Continuar
                   <ArrowRight className="w-5 h-5" />
                 </RippleButton>
               </div>
             </div>
-          </div>
-        );
-
+          </div>;
       case 8:
-        return (
-          <div className="form-card">
+        return <div className="form-card">
             <h1 className="form-title">
               <span className="font-light">Você possui </span>
               <span className="font-bold">espaço físico?</span>
             </h1>
             <p className="form-subtitle">Ou atende em domicílio/casa</p>
             <div className="space-y-3">
-              <button
-                type="button"
-                onClick={() => updateFormData("hasPhysicalSpace", true)}
-                className={`option-card ${formData.hasPhysicalSpace === true ? "selected" : ""}`}
-              >
+              <button type="button" onClick={() => updateFormData("hasPhysicalSpace", true)} className={`option-card ${formData.hasPhysicalSpace === true ? "selected" : ""}`}>
                 <span className="option-card-text">Sim, possuo espaço físico</span>
               </button>
-              <button
-                type="button"
-                onClick={() => updateFormData("hasPhysicalSpace", false)}
-                className={`option-card ${formData.hasPhysicalSpace === false ? "selected" : ""}`}
-              >
+              <button type="button" onClick={() => updateFormData("hasPhysicalSpace", false)} className={`option-card ${formData.hasPhysicalSpace === false ? "selected" : ""}`}>
                 <span className="option-card-text">Não, atendo em casa/domicílio</span>
               </button>
               <div className="flex gap-3 mt-4">
-                <button
-                  onClick={prevStep}
-                  className="h-14 px-4 rounded-xl border border-border bg-card flex items-center justify-center"
-                >
+                <button onClick={prevStep} className="h-14 px-4 rounded-xl border border-border bg-card flex items-center justify-center">
                   <ArrowLeft className="w-5 h-5 text-foreground" />
                 </button>
-                <RippleButton
-                  onClick={handleNext}
-                  className="flex-1"
-                >
+                <RippleButton onClick={handleNext} className="flex-1">
                   Continuar
                   <ArrowRight className="w-5 h-5" />
                 </RippleButton>
               </div>
             </div>
-          </div>
-        );
-
+          </div>;
       case 9:
-        return (
-          <div className="form-card">
+        return <div className="form-card">
             <h1 className="form-title">
               <span className="font-light">Quantos anos de </span>
               <span className="font-bold">profissão?</span>
             </h1>
             <p className="form-subtitle">Sua experiência na área da beleza</p>
             <div className="space-y-4">
-              <input
-                type="number"
-                value={formData.yearsOfExperience}
-                onChange={(e) => updateFormData("yearsOfExperience", e.target.value)}
-                placeholder="Ex: 5"
-                className="form-input"
-                min="0"
-                autoFocus
-              />
+              <input type="number" value={formData.yearsOfExperience} onChange={e => updateFormData("yearsOfExperience", e.target.value)} placeholder="Ex: 5" className="form-input" min="0" autoFocus />
               <div className="flex gap-3">
-                <button
-                  onClick={prevStep}
-                  className="h-14 px-4 rounded-xl border border-border bg-card flex items-center justify-center"
-                >
+                <button onClick={prevStep} className="h-14 px-4 rounded-xl border border-border bg-card flex items-center justify-center">
                   <ArrowLeft className="w-5 h-5 text-foreground" />
                 </button>
-                <RippleButton
-                  onClick={handleNext}
-                  className="flex-1"
-                >
+                <RippleButton onClick={handleNext} className="flex-1">
                   Continuar
                   <ArrowRight className="w-5 h-5" />
                 </RippleButton>
               </div>
             </div>
-          </div>
-        );
-
+          </div>;
       case 10:
-        return (
-          <div className="form-card text-center">
-            {isLoading ? (
-              <>
+        return <div className="form-card text-center">
+            {isLoading ? <>
                 <h1 className="form-title !text-center">Redirecionando...</h1>
                 <p className="text-base text-muted-foreground mt-4 mb-8">
                   Aguarde um momento
@@ -487,40 +337,31 @@ const Index = () => {
                 <div className="w-full h-2 bg-border rounded-full overflow-hidden">
                   <div className="h-full gradient-primary animate-loading-bar" />
                 </div>
-              </>
-            ) : (
-              <>
+              </> : <>
                 <h1 className="form-title !text-center">Parabéns, {formData.name}!</h1>
                 <p className="text-base text-muted-foreground mt-4 mb-8 leading-relaxed">
                   Você ganhou uma consultoria exclusiva com o time da Scale Beauty para saber mais sobre nossos serviços e como podemos escalar seu negócio.
                 </p>
-                <RippleButton
-                  onClick={() => {
-                    setIsLoading(true);
-                    console.log("Form submitted:", formData);
-                    setTimeout(() => {
-                      window.location.href = "https://www.instagram.com/scalebeautyy/";
-                    }, 2000);
-                  }}
-                >
+                <RippleButton onClick={() => {
+              setIsLoading(true);
+              console.log("Form submitted:", formData);
+              setTimeout(() => {
+                window.location.href = "https://www.instagram.com/scalebeautyy/";
+              }, 2000);
+            }}>
                   Finalizar
                 </RippleButton>
                 <p className="text-sm text-muted-foreground mt-6">
                   Em breve vamos entrar em contato pelo seu WhatsApp!
                 </p>
                 <p className="copyright">© Copyright 2025 Scale Beauty</p>
-              </>
-            )}
-          </div>
-        );
-
+              </>}
+          </div>;
       default:
         return null;
     }
   };
-
-  return (
-    <div className="min-h-screen bg-background flex flex-col">
+  return <div className="min-h-screen bg-background flex flex-col">
       <HamburgerMenu />
       {step > 1 && step < 10 && <ProgressBar currentStep={step - 1} totalSteps={totalSteps - 2} />}
       
@@ -528,11 +369,7 @@ const Index = () => {
       <div className="md:hidden flex flex-col min-h-screen relative">
         {/* Banner image on top with rounded bottom */}
         <div className="w-full flex-shrink-0">
-          <img 
-            src={scaleBeautyMobile} 
-            alt="Scale Beauty" 
-            className="w-full h-[260px] object-cover rounded-b-3xl"
-          />
+          <img src={scaleBeautyMobile} alt="Scale Beauty" className="w-full h-[260px] object-cover rounded-b-3xl" />
         </div>
         {/* Form overlapping the image */}
         <div className="flex-1 flex flex-col justify-start px-4 -mt-6 relative z-10">
@@ -541,7 +378,9 @@ const Index = () => {
           </FormContainer>
           
           {/* Scroll Velocity - Mobile */}
-          <div className="relative flex w-full flex-col items-center justify-center overflow-hidden -mx-4 mt-4 gap-1" style={{ width: 'calc(100% + 2rem)' }}>
+          <div className="relative flex w-full flex-col items-center justify-center overflow-hidden -mx-4 mt-4 gap-1" style={{
+          width: 'calc(100% + 2rem)'
+        }}>
             <ScrollVelocityContainer className="text-[10px] uppercase tracking-[0.2em] text-foreground/30">
               <ScrollVelocityRow baseVelocity={1} direction={1}>
                 <span className="mx-3 font-light">SCALE BEAUTY • ESCALANDO SEU NEGÓCIO NO MUNDO BEAUTY • SUA ASSESSORIA DE MARKETING •</span>
@@ -560,8 +399,7 @@ const Index = () => {
           <FeaturesSection />
           
           {/* Mobile footer with terms - only on step 1 */}
-          {step === 1 && (
-            <div className="pb-4 pt-2 bg-background">
+          {step === 1 && <div className="pb-4 pt-2 bg-background">
               <div className="w-full h-px bg-border mb-4" />
               <div className="text-center px-[1.25em]">
                 <p className="legal-text">
@@ -576,8 +414,7 @@ const Index = () => {
                 </p>
                 <p className="copyright mt-4">© Copyright 2025 Scale Beauty</p>
               </div>
-            </div>
-          )}
+            </div>}
         </div>
       </div>
 
@@ -585,11 +422,7 @@ const Index = () => {
       <div className="hidden md:flex flex-col min-h-screen">
         {/* Banner image on top */}
         <div className="w-full">
-          <img 
-            src={scaleBeautyBanner} 
-            alt="Scale Beauty" 
-            className="w-full h-auto object-cover"
-          />
+          <img src={scaleBeautyBanner} alt="Scale Beauty" className="w-full h-auto object-cover" />
         </div>
         
         {/* Form centered */}
@@ -600,7 +433,9 @@ const Index = () => {
         </div>
 
         {/* Scroll Velocity */}
-        <div className="relative flex w-full flex-col items-center justify-center overflow-hidden py-3 gap-1" style={{ marginTop: '15px' }}>
+        <div className="relative flex w-full flex-col items-center justify-center overflow-hidden py-3 gap-1" style={{
+        marginTop: '15px'
+      }}>
           <ScrollVelocityContainer className="text-sm uppercase tracking-[0.2em] text-foreground/30">
             <ScrollVelocityRow baseVelocity={1} direction={1}>
               <span className="mx-4 font-light">SCALE BEAUTY • ESCALANDO SEU NEGÓCIO NO MUNDO BEAUTY • SUA ASSESSORIA DE MARKETING •</span>
@@ -618,93 +453,80 @@ const Index = () => {
         {/* Feature Cards Section */}
         <FeaturesSection />
       </div>
-    </div>
-  );
+    </div>;
 };
-
-const features = [
-  {
-    title: 'Rápido',
-    icon: Zap,
-    description: 'Resultados visíveis em tempo recorde para o seu negócio.',
-  },
-  {
-    title: 'Poderoso',
-    icon: Cpu,
-    description: 'Estratégias comprovadas que impulsionam seu crescimento.',
-  },
-  {
-    title: 'Segurança',
-    icon: Fingerprint,
-    description: 'Proteção total dos seus dados e informações.',
-  },
-  {
-    title: 'Personalização',
-    icon: Pencil,
-    description: 'Soluções sob medida para o seu negócio beauty.',
-  },
-  {
-    title: 'Controle',
-    icon: Settings2,
-    description: 'Acompanhe cada detalhe do seu progresso.',
-  },
-  {
-    title: 'Inovação',
-    icon: Sparkles,
-    description: 'Tecnologia de ponta para escalar seu negócio.',
-  },
-];
-
+const features = [{
+  title: 'Rápido',
+  icon: Zap,
+  description: 'Resultados visíveis em tempo recorde para o seu negócio.'
+}, {
+  title: 'Poderoso',
+  icon: Cpu,
+  description: 'Estratégias comprovadas que impulsionam seu crescimento.'
+}, {
+  title: 'Segurança',
+  icon: Fingerprint,
+  description: 'Proteção total dos seus dados e informações.'
+}, {
+  title: 'Personalização',
+  icon: Pencil,
+  description: 'Soluções sob medida para o seu negócio beauty.'
+}, {
+  title: 'Controle',
+  icon: Settings2,
+  description: 'Acompanhe cada detalhe do seu progresso.'
+}, {
+  title: 'Inovação',
+  icon: Sparkles,
+  description: 'Tecnologia de ponta para escalar seu negócio.'
+}];
 type ViewAnimationProps = {
   delay?: number;
   className?: React.ComponentProps<typeof motion.div>['className'];
   children: React.ReactNode;
 };
-
-function AnimatedContainer({ className, delay = 0.1, children }: ViewAnimationProps) {
+function AnimatedContainer({
+  className,
+  delay = 0.1,
+  children
+}: ViewAnimationProps) {
   const shouldReduceMotion = useReducedMotion();
-
   if (shouldReduceMotion) {
     return <>{children}</>;
   }
-
-  return (
-    <motion.div
-      initial={{ filter: 'blur(4px)', translateY: -8, opacity: 0 }}
-      whileInView={{ filter: 'blur(0px)', translateY: 0, opacity: 1 }}
-      viewport={{ once: true }}
-      transition={{ delay, duration: 0.8 }}
-      className={className}
-    >
+  return <motion.div initial={{
+    filter: 'blur(4px)',
+    translateY: -8,
+    opacity: 0
+  }} whileInView={{
+    filter: 'blur(0px)',
+    translateY: 0,
+    opacity: 1
+  }} viewport={{
+    once: true
+  }} transition={{
+    delay,
+    duration: 0.8
+  }} className={className}>
       {children}
-    </motion.div>
-  );
+    </motion.div>;
 }
-
 function FeaturesSection() {
-  return (
-    <section className="py-16 md:py-32">
+  return <section className="py-16 md:py-32">
       <div className="mx-auto w-full max-w-5xl space-y-8 px-4">
         <AnimatedContainer className="mx-auto max-w-3xl text-center">
-          <h2 className="text-3xl font-bold tracking-wide text-balance md:text-4xl lg:text-5xl xl:font-extrabold">
-            Power. Speed. Control.
+          <h2 className="text-3xl font-bold tracking-wide text-balance md:text-4xl lg:text-5xl xl:font-extrabold mx-0">
+            ​Como a Scale pode te ajudar?                    
           </h2>
           <p className="text-muted-foreground mt-4 text-sm tracking-wide text-balance md:text-base">
             Tudo que você precisa para escalar seu negócio beauty.
           </p>
         </AnimatedContainer>
 
-        <AnimatedContainer
-          delay={0.4}
-          className="grid grid-cols-1 divide-x divide-y divide-dashed border border-dashed sm:grid-cols-2 md:grid-cols-3"
-        >
-          {features.map((feature, i) => (
-            <FeatureCard key={i} feature={feature} />
-          ))}
+        <AnimatedContainer delay={0.4} className="grid grid-cols-1 divide-x divide-y divide-dashed border border-dashed sm:grid-cols-2 md:grid-cols-3">
+          {features.map((feature, i) => <FeatureCard key={i} feature={feature} />)}
         </AnimatedContainer>
       </div>
-    </section>
-  );
+    </section>;
 }
-
 export default Index;
