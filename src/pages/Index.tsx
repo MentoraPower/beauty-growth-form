@@ -22,6 +22,7 @@ import { FeatureCard } from "@/components/ui/grid-feature-cards";
 import { motion, useReducedMotion } from "framer-motion";
 import { Zap, Cpu, Fingerprint, Pencil, Settings2, Sparkles } from "lucide-react";
 import Calendar from "@/components/icons/Calendar";
+import { toast } from "sonner";
 
 interface FormData {
   name: string;
@@ -56,6 +57,41 @@ const Index = () => {
 
   const updateFormData = (field: keyof FormData, value: string | boolean | Country | null) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const getValidationMessage = () => {
+    switch (step) {
+      case 1:
+        return "Por favor, preencha seu nome";
+      case 2:
+        return "Por favor, preencha um e-mail válido";
+      case 3:
+        return "Por favor, preencha seu WhatsApp";
+      case 4:
+        return "Por favor, preencha seu Instagram";
+      case 5:
+        return "Por favor, selecione sua área de atuação";
+      case 6:
+        return "Por favor, selecione seu faturamento";
+      case 7:
+        return "Por favor, preencha a quantidade de atendimentos";
+      case 8:
+        return "Por favor, selecione uma opção";
+      case 9:
+        return "Por favor, preencha seus anos de experiência";
+      default:
+        return "Por favor, preencha o campo";
+    }
+  };
+
+  const handleNext = () => {
+    if (canProceed()) {
+      if (step < totalSteps) {
+        setStep(step + 1);
+      }
+    } else {
+      toast.error(getValidationMessage());
+    }
   };
 
   const nextStep = () => {
@@ -115,8 +151,7 @@ const Index = () => {
                 autoFocus
               />
               <RippleButton
-                onClick={nextStep}
-                disabled={!canProceed()}
+                onClick={handleNext}
               >
                 Prosseguir
                 <ArrowRight className="w-5 h-5" />
@@ -164,8 +199,7 @@ const Index = () => {
                   <ArrowLeft className="w-5 h-5 text-foreground" />
                 </button>
                 <RippleButton
-                  onClick={nextStep}
-                  disabled={!canProceed()}
+                  onClick={handleNext}
                   className="flex-1"
                 >
                   Continuar
@@ -207,8 +241,7 @@ const Index = () => {
                   <ArrowLeft className="w-5 h-5 text-foreground" />
                 </button>
                 <RippleButton
-                  onClick={nextStep}
-                  disabled={!canProceed()}
+                  onClick={handleNext}
                   className="flex-1"
                 >
                   Continuar
@@ -247,8 +280,7 @@ const Index = () => {
                   <ArrowLeft className="w-5 h-5 text-foreground" />
                 </button>
                 <RippleButton
-                  onClick={nextStep}
-                  disabled={!canProceed()}
+                  onClick={handleNext}
                   className="flex-1"
                 >
                   Continuar
@@ -282,8 +314,7 @@ const Index = () => {
                   <ArrowLeft className="w-5 h-5 text-foreground" />
                 </button>
                 <RippleButton
-                  onClick={nextStep}
-                  disabled={!canProceed()}
+                  onClick={handleNext}
                   className="flex-1"
                 >
                   Continuar
@@ -317,8 +348,7 @@ const Index = () => {
                   <ArrowLeft className="w-5 h-5 text-foreground" />
                 </button>
                 <RippleButton
-                  onClick={nextStep}
-                  disabled={!canProceed()}
+                  onClick={handleNext}
                   className="flex-1"
                 >
                   Continuar
@@ -355,8 +385,7 @@ const Index = () => {
                   <ArrowLeft className="w-5 h-5 text-foreground" />
                 </button>
                 <RippleButton
-                  onClick={nextStep}
-                  disabled={!canProceed()}
+                  onClick={handleNext}
                   className="flex-1"
                 >
                   Continuar
@@ -398,8 +427,7 @@ const Index = () => {
                   <ArrowLeft className="w-5 h-5 text-foreground" />
                 </button>
                 <RippleButton
-                  onClick={nextStep}
-                  disabled={!canProceed()}
+                  onClick={handleNext}
                   className="flex-1"
                 >
                   Continuar
@@ -436,8 +464,7 @@ const Index = () => {
                   <ArrowLeft className="w-5 h-5 text-foreground" />
                 </button>
                 <RippleButton
-                  onClick={nextStep}
-                  disabled={!canProceed()}
+                  onClick={handleNext}
                   className="flex-1"
                 >
                   Continuar
