@@ -245,8 +245,12 @@
   }
 
   .ripple-fill.active {
-    width: 500px;
-    height: 500px;
+    width: 600px;
+    height: 600px;
+  }
+
+  .ripple-button:has(.ripple-fill.active) {
+    background: hsl(var(--card));
   }
 
   .btn-secondary {
