@@ -14,7 +14,51 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      leads: {
+        Row: {
+          country_code: string
+          created_at: string
+          email: string
+          id: string
+          instagram: string
+          monthly_billing: string
+          name: string
+          service_area: string
+          weekly_attendance: string
+          whatsapp: string
+          workspace_type: string
+          years_experience: string
+        }
+        Insert: {
+          country_code?: string
+          created_at?: string
+          email: string
+          id?: string
+          instagram: string
+          monthly_billing: string
+          name: string
+          service_area: string
+          weekly_attendance: string
+          whatsapp: string
+          workspace_type: string
+          years_experience: string
+        }
+        Update: {
+          country_code?: string
+          created_at?: string
+          email?: string
+          id?: string
+          instagram?: string
+          monthly_billing?: string
+          name?: string
+          service_area?: string
+          weekly_attendance?: string
+          whatsapp?: string
+          workspace_type?: string
+          years_experience?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

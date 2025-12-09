@@ -24,6 +24,7 @@ import { Target, FileText, Rocket, Handshake } from "lucide-react";
 import Calendar from "@/components/icons/Calendar";
 import { toast } from "sonner";
 import HamburgerMenu from "@/components/HamburgerMenu";
+import { supabase } from "@/integrations/supabase/client";
 interface FormData {
   name: string;
   email: string;
@@ -342,12 +343,38 @@ const Index = () => {
                 <p className="text-base text-muted-foreground mt-4 mb-8 leading-relaxed">
                   Você ganhou uma consultoria exclusiva com o time da Scale Beauty para saber mais sobre nossos serviços e como podemos escalar seu negócio.
                 </p>
-                <RippleButton onClick={() => {
+                <RippleButton onClick={async () => {
               setIsLoading(true);
-              console.log("Form submitted:", formData);
-              setTimeout(() => {
-                window.location.href = "https://www.instagram.com/scalebeautyy/";
-              }, 2000);
+              
+              try {
+                const { error } = await supabase.from("leads").insert({
+                  name: formData.name,
+                  email: formData.email,
+                  whatsapp: formData.phone,
+                  country_code: formData.country.dialCode,
+                  instagram: formData.instagram,
+                  service_area: formData.beautyArea,
+                  monthly_billing: formData.revenue,
+                  weekly_attendance: formData.weeklyAppointments,
+                  workspace_type: formData.hasPhysicalSpace ? "physical" : "home",
+                  years_experience: formData.yearsOfExperience,
+                });
+                
+                if (error) {
+                  console.error("Error saving lead:", error);
+                  toast.error("Erro ao salvar dados. Tente novamente.");
+                  setIsLoading(false);
+                  return;
+                }
+                
+                setTimeout(() => {
+                  window.location.href = "https://www.instagram.com/scalebeautyy/";
+                }, 2000);
+              } catch (err) {
+                console.error("Error:", err);
+                toast.error("Erro ao salvar dados. Tente novamente.");
+                setIsLoading(false);
+              }
             }}>
                   Finalizar
                 </RippleButton>
