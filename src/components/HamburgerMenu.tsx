@@ -20,7 +20,7 @@ const HamburgerMenu = () => {
     <div className="fixed top-0 left-0 right-0 z-50 px-5 pt-4">
       {/* Header bar */}
       <div className="flex items-center justify-between py-3 px-4 bg-white/80 backdrop-blur-xl rounded-2xl">
-        <span className="font-bold text-lg text-foreground">Scale Beauty</span>
+        <span className="font-bold text-sm uppercase tracking-wide text-foreground">Scale Beauty</span>
         
         {/* Hamburger button */}
         <button
