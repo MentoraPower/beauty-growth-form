@@ -504,13 +504,13 @@ const Index = () => {
           />
         </div>
         {/* Form overlapping the image */}
-        <div className="flex-1 flex flex-col justify-between px-4 -mt-6 relative z-10">
+        <div className="flex-1 flex flex-col justify-start px-4 -mt-6 relative z-10">
           <FormContainer>
             {renderStep()}
           </FormContainer>
           
           {/* Scroll Velocity - Mobile */}
-          <div className="relative flex w-full flex-col items-center justify-center overflow-hidden -mx-4 -mt-1" style={{ width: 'calc(100% + 2rem)' }}>
+          <div className="relative flex w-full flex-col items-center justify-center overflow-hidden -mx-4 mt-4" style={{ width: 'calc(100% + 2rem)' }}>
             <ScrollVelocityContainer className="text-xs font-bold uppercase tracking-[0.2em] text-foreground/30">
               <ScrollVelocityRow baseVelocity={3} direction={1}>
                 <span className="mx-3">SCALE BEAUTY • ESCALANDO SEU NEGÓCIO NO MUNDO BEAUTY • SUA ASSESSORIA DE MARKETING •</span>
