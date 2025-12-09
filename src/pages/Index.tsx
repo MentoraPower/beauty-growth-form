@@ -510,13 +510,13 @@ const Index = () => {
           </FormContainer>
           
           {/* Scroll Velocity - Mobile */}
-          <div className="relative flex w-full flex-col items-center justify-center overflow-hidden py-2 mt-3 -mx-4" style={{ width: 'calc(100% + 2rem)' }}>
-            <ScrollVelocityContainer className="text-sm font-bold tracking-[-0.02em] text-foreground/80">
+          <div className="relative flex w-full flex-col items-center justify-center overflow-hidden py-2 -mx-4" style={{ width: 'calc(100% + 2rem)', marginTop: '15px' }}>
+            <ScrollVelocityContainer className="text-xs font-bold uppercase tracking-[0.2em] text-foreground/30">
               <ScrollVelocityRow baseVelocity={3} direction={1}>
-                <span className="mx-3">Scale Beauty • Escalando seu negócio no mundo beauty • Sua assessoria de marketing •</span>
+                <span className="mx-3">SCALE BEAUTY • ESCALANDO SEU NEGÓCIO NO MUNDO BEAUTY • SUA ASSESSORIA DE MARKETING •</span>
               </ScrollVelocityRow>
               <ScrollVelocityRow baseVelocity={3} direction={-1}>
-                <span className="mx-3">Scale Beauty • Escalando seu negócio no mundo beauty • Sua assessoria de marketing •</span>
+                <span className="mx-3">SCALE BEAUTY • ESCALANDO SEU NEGÓCIO NO MUNDO BEAUTY • SUA ASSESSORIA DE MARKETING •</span>
               </ScrollVelocityRow>
             </ScrollVelocityContainer>
             <div className="from-background pointer-events-none absolute inset-y-0 left-0 w-1/6 bg-gradient-to-r"></div>
@@ -564,13 +564,13 @@ const Index = () => {
         </div>
 
         {/* Scroll Velocity */}
-        <div className="relative flex w-full flex-col items-center justify-center overflow-hidden py-3 mt-4">
-          <ScrollVelocityContainer className="text-2xl font-bold tracking-[-0.02em] text-foreground/80">
+        <div className="relative flex w-full flex-col items-center justify-center overflow-hidden py-3" style={{ marginTop: '15px' }}>
+          <ScrollVelocityContainer className="text-xl font-bold uppercase tracking-[0.2em] text-foreground/30">
             <ScrollVelocityRow baseVelocity={3} direction={1}>
-              <span className="mx-4">Scale Beauty • Escalando seu negócio no mundo beauty • Sua assessoria de marketing •</span>
+              <span className="mx-4">SCALE BEAUTY • ESCALANDO SEU NEGÓCIO NO MUNDO BEAUTY • SUA ASSESSORIA DE MARKETING •</span>
             </ScrollVelocityRow>
             <ScrollVelocityRow baseVelocity={3} direction={-1}>
-              <span className="mx-4">Scale Beauty • Escalando seu negócio no mundo beauty • Sua assessoria de marketing •</span>
+              <span className="mx-4">SCALE BEAUTY • ESCALANDO SEU NEGÓCIO NO MUNDO BEAUTY • SUA ASSESSORIA DE MARKETING •</span>
             </ScrollVelocityRow>
           </ScrollVelocityContainer>
           <div className="from-background pointer-events-none absolute inset-y-0 left-0 w-1/4 bg-gradient-to-r"></div>
