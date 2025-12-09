@@ -513,7 +513,7 @@ const Index = () => {
           </FormContainer>
           
           {/* Scroll Velocity - Mobile */}
-          <div className="relative flex w-full flex-col items-center justify-center overflow-hidden -mx-4 mt-4 gap-3" style={{ width: 'calc(100% + 2rem)' }}>
+          <div className="relative flex w-full flex-col items-center justify-center overflow-hidden -mx-4 mt-4 gap-1" style={{ width: 'calc(100% + 2rem)' }}>
             <ScrollVelocityContainer className="text-[10px] uppercase tracking-[0.2em] text-foreground/30">
               <ScrollVelocityRow baseVelocity={1} direction={1}>
                 <span className="mx-3 font-light">SCALE BEAUTY • ESCALANDO SEU NEGÓCIO NO MUNDO BEAUTY • SUA ASSESSORIA DE MARKETING •</span>
@@ -572,7 +572,7 @@ const Index = () => {
         </div>
 
         {/* Scroll Velocity */}
-        <div className="relative flex w-full flex-col items-center justify-center overflow-hidden py-3 gap-4" style={{ marginTop: '15px' }}>
+        <div className="relative flex w-full flex-col items-center justify-center overflow-hidden py-3 gap-1" style={{ marginTop: '15px' }}>
           <ScrollVelocityContainer className="text-sm uppercase tracking-[0.2em] text-foreground/30">
             <ScrollVelocityRow baseVelocity={1} direction={1}>
               <span className="mx-4 font-light">SCALE BEAUTY • ESCALANDO SEU NEGÓCIO NO MUNDO BEAUTY • SUA ASSESSORIA DE MARKETING •</span>
