@@ -23,7 +23,6 @@ import { FeatureCard } from "@/components/ui/grid-feature-cards";
 import { motion, useReducedMotion } from "framer-motion";
 import { Target, FileText, Rocket, Handshake } from "lucide-react";
 import Calendar from "@/components/icons/Calendar";
-import ChevronDown from "@/components/icons/ChevronDown";
 import { toast } from "sonner";
 import HamburgerMenu from "@/components/HamburgerMenu";
 import { supabase } from "@/integrations/supabase/client";
@@ -643,10 +642,8 @@ function FeaturesSection() {
 function QuemSomosSection() {
   return (
     <section className="w-[calc(100%+2rem)] -mx-4 md:mx-0 md:w-full relative">
-      {/* Arrow icon at top center */}
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 z-10">
-        <ChevronDown className="w-10 h-10 md:w-14 md:h-14 text-[#F40000]" />
-      </div>
+      {/* Curved top transition */}
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[70%] md:w-[50%] h-8 md:h-12 bg-background rounded-b-[50px] z-10" />
       
       {/* Red background with padding for the curve */}
       <div className="bg-gradient-to-r from-[#F40000] to-[#A10000] pt-8 md:pt-12 pb-16 md:pb-24">
