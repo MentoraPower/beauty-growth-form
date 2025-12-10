@@ -82,16 +82,23 @@ const Emails = () => {
     // Check if settings exist
     const { data: existingSettings } = await supabase
       .from("email_settings")
-      .select("id")
-      .limit(1);
+      .select("*")
+      .limit(1)
+      .single();
 
-    if (!existingSettings || existingSettings.length === 0) {
+    if (!existingSettings) {
       // Insert default settings
       await supabase.from("email_settings").insert({
         delay_minutes: 0,
         from_name: "Scale Beauty",
-        from_email: "onboarding@resend.dev",
+        from_email: "contato@scalebeauty.com.br",
       });
+    } else if (existingSettings.from_email === "onboarding@resend.dev") {
+      // Update to verified domain
+      await supabase
+        .from("email_settings")
+        .update({ from_email: "contato@scalebeauty.com.br" })
+        .eq("id", existingSettings.id);
     }
   };
 
