@@ -66,73 +66,76 @@ const HamburgerMenu = () => {
       animate={{ y: isVisible ? 0 : -100 }}
       transition={{ duration: 0.3, ease: "easeInOut" }}
     >
-      {/* Header bar - same for mobile and desktop */}
-      <motion.div 
-        className={`flex items-center justify-between py-3 px-4 rounded-2xl transition-colors duration-300 ${bgClass}`}
-        layout
-      >
-        <span className={`font-bold text-sm uppercase tracking-tight transition-colors duration-300 ${textClass}`}>
-          Scale Beauty
-        </span>
-        
-        {/* Hamburger button with dropdown container */}
-        <div className="relative">
-          <button
-            onClick={() => setIsOpen(!isOpen)}
-            className="relative w-10 h-10 flex items-center justify-center"
-            aria-label="Menu"
-          >
-            <div className="flex flex-col justify-center items-end w-6 h-6">
-              <motion.span
-                animate={isOpen ? { rotate: 45, y: 5, width: 24 } : { rotate: 0, y: 0, width: 24 }}
-                transition={{ duration: 0.2, ease: "easeInOut" }}
-                className={`block h-0.5 rounded-full transition-colors duration-300 ${barClass}`}
-                style={{ width: 24 }}
-              />
-              <motion.span
-                animate={isOpen ? { rotate: -45, y: -5, width: 24 } : { rotate: 0, y: 0, width: 16 }}
-                transition={{ duration: 0.2, ease: "easeInOut" }}
-                className={`block h-0.5 rounded-full mt-2 transition-colors duration-300 ${barClass}`}
-                style={{ width: isOpen ? 24 : 16 }}
-              />
-            </div>
-          </button>
+      {/* Container with max-width on desktop */}
+      <div className="mx-auto w-full max-w-5xl">
+        {/* Header bar - same for mobile and desktop */}
+        <motion.div 
+          className={`flex items-center justify-between py-3 px-4 rounded-2xl transition-colors duration-300 ${bgClass}`}
+          layout
+        >
+          <span className={`font-bold text-sm uppercase tracking-tight transition-colors duration-300 ${textClass}`}>
+            Scale Beauty
+          </span>
+          
+          {/* Hamburger button with dropdown container */}
+          <div className="relative">
+            <button
+              onClick={() => setIsOpen(!isOpen)}
+              className="relative w-10 h-10 flex items-center justify-center"
+              aria-label="Menu"
+            >
+              <div className="flex flex-col justify-center items-end w-6 h-6">
+                <motion.span
+                  animate={isOpen ? { rotate: 45, y: 5, width: 24 } : { rotate: 0, y: 0, width: 24 }}
+                  transition={{ duration: 0.2, ease: "easeInOut" }}
+                  className={`block h-0.5 rounded-full transition-colors duration-300 ${barClass}`}
+                  style={{ width: 24 }}
+                />
+                <motion.span
+                  animate={isOpen ? { rotate: -45, y: -5, width: 24 } : { rotate: 0, y: 0, width: 16 }}
+                  transition={{ duration: 0.2, ease: "easeInOut" }}
+                  className={`block h-0.5 rounded-full mt-2 transition-colors duration-300 ${barClass}`}
+                  style={{ width: isOpen ? 24 : 16 }}
+                />
+              </div>
+            </button>
 
-          {/* Dropdown menu - positioned below button */}
-          <AnimatePresence>
-            {isOpen && (
-              <motion.div
-                initial={{ height: 0, opacity: 0 }}
-                animate={{ height: "auto", opacity: 1 }}
-                exit={{ height: 0, opacity: 0 }}
-                transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
-                className={`absolute right-0 top-full mt-2 w-48 overflow-hidden rounded-2xl transition-colors duration-300 ${bgClass}`}
-              >
-                <nav className="px-4 py-3">
-                  {menuItems.map((item, index) => (
-                    <motion.a
-                      key={item.label}
-                      href={item.href}
-                      initial={{ opacity: 0, y: -10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -10 }}
-                      transition={{ 
-                        duration: 0.2, 
-                        delay: index * 0.05,
-                        ease: "easeOut"
-                      }}
-                      onClick={() => setIsOpen(false)}
-                      className={`block py-3 font-medium text-base hover:text-primary transition-colors ${textClass} border-b ${borderClass} last:border-b-0`}
-                    >
-                      {item.label}
-                    </motion.a>
-                  ))}
-                </nav>
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
-      </motion.div>
+            {/* Dropdown menu - positioned below button */}
+            <AnimatePresence>
+              {isOpen && (
+                <motion.div
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: "auto", opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
+                  className={`absolute right-0 top-full mt-2 w-48 overflow-hidden rounded-2xl transition-colors duration-300 ${bgClass}`}
+                >
+                  <nav className="px-4 py-3">
+                    {menuItems.map((item, index) => (
+                      <motion.a
+                        key={item.label}
+                        href={item.href}
+                        initial={{ opacity: 0, y: -10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -10 }}
+                        transition={{ 
+                          duration: 0.2, 
+                          delay: index * 0.05,
+                          ease: "easeOut"
+                        }}
+                        onClick={() => setIsOpen(false)}
+                        className={`block py-3 font-medium text-base hover:text-primary transition-colors ${textClass} border-b ${borderClass} last:border-b-0`}
+                      >
+                        {item.label}
+                      </motion.a>
+                    ))}
+                  </nav>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+        </motion.div>
+      </div>
     </motion.div>
   );
 };
