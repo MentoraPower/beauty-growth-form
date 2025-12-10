@@ -303,8 +303,8 @@ export default function LeadDetail() {
                   </h3>
                   
                   <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg">
-                    <div className="h-10 w-10 rounded-full bg-purple-500/10 flex items-center justify-center">
-                      <Building2 className="h-5 w-5 text-purple-500" />
+                    <div className="h-10 w-10 rounded-full border border-black/10 flex items-center justify-center">
+                      <Building2 className="h-5 w-5 text-neutral-600" />
                     </div>
                     <div>
                       <p className="text-xs text-muted-foreground">Empresa</p>
@@ -315,8 +315,8 @@ export default function LeadDetail() {
                   </div>
                   
                   <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg">
-                    <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
-                      <Mail className="h-5 w-5 text-primary" />
+                    <div className="h-10 w-10 rounded-full border border-black/10 flex items-center justify-center">
+                      <Mail className="h-5 w-5 text-neutral-600" />
                     </div>
                     <div>
                       <p className="text-xs text-muted-foreground">Email</p>
@@ -331,8 +331,8 @@ export default function LeadDetail() {
                   </div>
 
                   <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg">
-                    <div className="h-10 w-10 rounded-full bg-green-500/10 flex items-center justify-center">
-                      <Phone className="h-5 w-5 text-green-500" />
+                    <div className="h-10 w-10 rounded-full border border-black/10 flex items-center justify-center">
+                      <Phone className="h-5 w-5 text-neutral-600" />
                     </div>
                     <div>
                       <p className="text-xs text-muted-foreground">WhatsApp</p>
@@ -352,8 +352,8 @@ export default function LeadDetail() {
                   </div>
 
                   <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg">
-                    <div className="h-10 w-10 rounded-full bg-pink-500/10 flex items-center justify-center">
-                      <Instagram className="h-5 w-5 text-pink-500" />
+                    <div className="h-10 w-10 rounded-full border border-black/10 flex items-center justify-center">
+                      <Instagram className="h-5 w-5 text-neutral-600" />
                     </div>
                     <div>
                       <p className="text-xs text-muted-foreground">Instagram</p>
@@ -373,8 +373,8 @@ export default function LeadDetail() {
                   </div>
 
                   <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg">
-                    <div className="h-10 w-10 rounded-full bg-blue-500/10 flex items-center justify-center">
-                      <Calendar className="h-5 w-5 text-blue-500" />
+                    <div className="h-10 w-10 rounded-full border border-black/10 flex items-center justify-center">
+                      <Calendar className="h-5 w-5 text-neutral-600" />
                     </div>
                     <div>
                       <p className="text-xs text-muted-foreground">Data de Cadastro</p>
