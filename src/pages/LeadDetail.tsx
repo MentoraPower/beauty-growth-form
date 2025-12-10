@@ -263,6 +263,11 @@ export default function LeadDetail() {
           <LeadTagsManager leadId={lead.id} />
         </div>
 
+        {/* Separator */}
+        <div className="px-8">
+          <div className="border-t border-black/10" />
+        </div>
+
         {/* Tabs Navigation */}
         <div className="relative">
           <div className="flex gap-6 border-b border-black/10">
