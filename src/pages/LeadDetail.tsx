@@ -289,32 +289,21 @@ export default function LeadDetail() {
         {/* Tab Content */}
         <div className="mt-4">
           {activeTab === "atividades" && (
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.2 }}
-            >
-              <Card className="border-black/5">
-                <CardContent className="p-12 flex flex-col items-center justify-center text-center">
-                  <div className="h-16 w-16 rounded-full bg-muted flex items-center justify-center mb-4">
-                    <Clock className="h-8 w-8 text-muted-foreground" />
-                  </div>
-                  <p className="text-lg font-medium text-muted-foreground">Em desenvolvimento</p>
-                  <p className="text-sm text-muted-foreground/70 mt-1">
-                    Em breve você poderá acompanhar as atividades do lead aqui
-                  </p>
-                </CardContent>
-              </Card>
-            </motion.div>
+            <Card className="border-black/5">
+              <CardContent className="p-12 flex flex-col items-center justify-center text-center">
+                <div className="h-16 w-16 rounded-full bg-muted flex items-center justify-center mb-4">
+                  <Clock className="h-8 w-8 text-muted-foreground" />
+                </div>
+                <p className="text-lg font-medium text-muted-foreground">Em desenvolvimento</p>
+                <p className="text-sm text-muted-foreground/70 mt-1">
+                  Em breve você poderá acompanhar as atividades do lead aqui
+                </p>
+              </CardContent>
+            </Card>
           )}
 
           {activeTab === "contato" && (
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.2 }}
-              className="grid grid-cols-1 lg:grid-cols-2 gap-6"
-            >
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {/* Contact Info */}
               <Card className="border-black/5">
                 <CardContent className="p-6 space-y-4">
@@ -480,7 +469,7 @@ export default function LeadDetail() {
                   )}
                 </CardContent>
               </Card>
-            </motion.div>
+            </div>
           )}
         </div>
       </div>
