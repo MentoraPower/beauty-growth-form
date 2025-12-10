@@ -132,7 +132,7 @@ const HamburgerMenu = () => {
             animate={{ height: "auto", opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
             transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
-            className={`overflow-hidden rounded-2xl mt-2 transition-colors duration-300 ${bgClass}`}
+            className={`overflow-hidden rounded-2xl mt-2 transition-colors duration-300 md:ml-auto md:w-48 ${bgClass}`}
           >
             <nav className="px-4 py-3">
               {menuItems.map((item, index) => (
