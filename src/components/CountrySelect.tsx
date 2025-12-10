@@ -44,18 +44,34 @@ const CountrySelect = ({ value, onChange }: CountrySelectProps) => {
       </button>
 
       {isOpen && (
-        <div className="absolute z-50 top-full left-0 mt-2 w-72 max-h-80 overflow-hidden rounded-xl border border-border shadow-lg" style={{ backgroundColor: '#ffffff' }}>
-          <div className="p-2 border-b border-border" style={{ backgroundColor: '#ffffff' }}>
+        <div 
+          className="absolute z-[9999] top-full left-0 mt-2 w-72 max-h-80 overflow-hidden rounded-xl border border-border shadow-xl"
+          style={{ 
+            backgroundColor: '#ffffff',
+            background: '#ffffff',
+            opacity: 1
+          }}
+        >
+          <div 
+            className="p-2 border-b border-border"
+            style={{ backgroundColor: '#ffffff' }}
+          >
             <input
               type="text"
               placeholder="Buscar país..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="w-full h-10 px-3 rounded-lg border border-border text-sm focus:outline-none"
-              style={{ backgroundColor: '#f5f5f5', color: '#000000' }}
+              style={{ 
+                backgroundColor: '#f5f5f5', 
+                color: '#000000'
+              }}
             />
           </div>
-          <div className="max-h-60 overflow-y-auto">
+          <div 
+            className="max-h-60 overflow-y-auto"
+            style={{ backgroundColor: '#ffffff' }}
+          >
             {filteredCountries.map((country) => (
               <button
                 key={country.code}
@@ -67,7 +83,7 @@ const CountrySelect = ({ value, onChange }: CountrySelectProps) => {
                 }}
                 className="w-full flex items-center gap-3 px-4 py-3 text-left transition-colors"
                 style={{ 
-                  backgroundColor: value.code === country.code ? 'rgba(0,0,0,0.05)' : '#ffffff',
+                  backgroundColor: value.code === country.code ? '#f5f5f5' : '#ffffff',
                   color: '#000000'
                 }}
               >

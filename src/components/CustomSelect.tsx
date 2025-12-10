@@ -36,8 +36,18 @@ const CustomSelect = ({ value, onChange, options, placeholder }: CustomSelectPro
       </button>
 
       {isOpen && (
-        <div className="absolute z-50 top-full left-0 right-0 mt-2 max-h-64 overflow-hidden rounded-xl border border-border shadow-lg" style={{ backgroundColor: '#ffffff' }}>
-          <div className="max-h-64 overflow-y-auto">
+        <div 
+          className="absolute z-[9999] top-full left-0 right-0 mt-2 max-h-64 overflow-hidden rounded-xl border border-border shadow-xl"
+          style={{ 
+            backgroundColor: '#ffffff',
+            background: '#ffffff',
+            opacity: 1
+          }}
+        >
+          <div 
+            className="max-h-64 overflow-y-auto"
+            style={{ backgroundColor: '#ffffff' }}
+          >
             {options.map((option) => (
               <button
                 key={option}
@@ -46,12 +56,11 @@ const CustomSelect = ({ value, onChange, options, placeholder }: CustomSelectPro
                   onChange(option);
                   setIsOpen(false);
                 }}
-                className={`w-full px-4 py-3 text-left text-sm transition-colors ${
-                  value === option ? "font-medium" : ""
-                }`}
+                className="w-full px-4 py-3 text-left text-sm transition-colors"
                 style={{ 
-                  backgroundColor: value === option ? 'rgba(0,0,0,0.05)' : '#ffffff',
-                  color: '#000000'
+                  backgroundColor: value === option ? '#f5f5f5' : '#ffffff',
+                  color: '#000000',
+                  fontWeight: value === option ? 500 : 400
                 }}
               >
                 {option}
