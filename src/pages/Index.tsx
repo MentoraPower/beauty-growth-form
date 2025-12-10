@@ -642,17 +642,24 @@ function FeaturesSection() {
 function QuemSomosSection() {
   return (
     <section className="w-[calc(100%+2rem)] -mx-4 md:mx-0 md:w-full relative">
-      {/* Curved top transition with clip-path */}
-      <div 
-        className="absolute top-0 left-1/2 -translate-x-1/2 w-[70%] md:w-[50%] h-10 md:h-14 bg-background z-10"
-        style={{
-          clipPath: 'polygon(43% 100%, 57% 100%, 60% 0, 100% 0, 100% 100%, 0 100%, 0 0, 40% 0)',
-          borderTop: '2px solid transparent',
-          backgroundImage: 'linear-gradient(hsl(var(--background)), hsl(var(--background))), linear-gradient(to right, #F40000, #A10000)',
-          backgroundOrigin: 'border-box',
-          backgroundClip: 'padding-box, border-box'
-        }}
-      />
+      {/* Curved top transition */}
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[70%] md:w-[50%] h-10 md:h-14 z-10">
+        {/* Border element with gradient */}
+        <div 
+          className="absolute bottom-0 left-[40%] right-[40%] h-[2px]"
+          style={{
+            background: 'linear-gradient(to right, #F40000, #A10000)',
+            borderRadius: '0 0 50% 50%'
+          }}
+        />
+        {/* Background shape */}
+        <div 
+          className="w-full h-full bg-background"
+          style={{
+            clipPath: 'polygon(40% 0, 0 0, 0 100%, 43% 100%, 50% 30%, 57% 100%, 100% 100%, 100% 0, 60% 0, 50% 70%)'
+          }}
+        />
+      </div>
       
       {/* Red background with padding for the curve */}
       <div className="bg-gradient-to-r from-[#F40000] to-[#A10000] pt-10 md:pt-14 pb-16 md:pb-24">
