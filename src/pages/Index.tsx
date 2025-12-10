@@ -107,6 +107,7 @@ const Index = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [isCheckingLead, setIsCheckingLead] = useState(false);
+  const [partialLeadId, setPartialLeadId] = useState<string | null>(null);
   const [existingLead, setExistingLead] = useState<{
     id: string;
     whatsapp: string;
@@ -238,6 +239,58 @@ const Index = () => {
     }
   };
 
+  // Function to save partial lead data progressively
+  const savePartialLead = async (currentFormData: FormData, currentStep: number) => {
+    try {
+      // Get Base pipeline id for new leads
+      const { data: basePipeline } = await supabase
+        .from("pipelines")
+        .select("id")
+        .eq("nome", "Base")
+        .maybeSingle();
+
+      // Build lead data with all required fields (use placeholders for incomplete data)
+      const leadData = {
+        name: currentFormData.name || "Incompleto",
+        email: currentFormData.email || `incompleto_${Date.now()}@temp.com`,
+        whatsapp: currentFormData.phone || "",
+        country_code: currentFormData.country.dialCode,
+        instagram: currentFormData.instagram || "",
+        service_area: currentFormData.beautyArea || "",
+        monthly_billing: currentFormData.revenue || "",
+        weekly_attendance: currentFormData.weeklyAppointments || "",
+        average_ticket: currentFormData.averageTicket ? parseCurrency(currentFormData.averageTicket) : null,
+        workspace_type: currentFormData.hasPhysicalSpace === null ? "" : (currentFormData.hasPhysicalSpace ? "physical" : "home"),
+        years_experience: currentFormData.yearsOfExperience || "",
+        can_afford: currentFormData.canAfford,
+        pipeline_id: basePipeline?.id || null,
+      };
+
+      // If we already have a lead ID (from existing lead or partial save), update it
+      const leadIdToUpdate = existingLead?.id || partialLeadId;
+      
+      if (leadIdToUpdate) {
+        await supabase
+          .from("leads")
+          .update(leadData)
+          .eq("id", leadIdToUpdate);
+      } else {
+        // Create new partial lead
+        const { data, error } = await supabase
+          .from("leads")
+          .insert(leadData)
+          .select("id")
+          .single();
+        
+        if (!error && data) {
+          setPartialLeadId(data.id);
+        }
+      }
+    } catch (error) {
+      console.error("Error saving partial lead:", error);
+    }
+  };
+
   // Track page view on mount (only once per real visitor, filter bots)
   useEffect(() => {
     const trackPageView = async () => {
@@ -329,6 +382,58 @@ const Index = () => {
     };
   }, []);
 
+  // Save partial data when user leaves the page
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      // Only save if user has started filling the form (at least has name or email)
+      if ((formData.name || formData.email) && step > 1 && step < 12) {
+        // Use navigator.sendBeacon for reliable saving on page close
+        const leadIdToUpdate = existingLead?.id || partialLeadId;
+        
+        const leadData = {
+          name: formData.name || "Incompleto",
+          email: formData.email || `incompleto_${Date.now()}@temp.com`,
+          whatsapp: formData.phone || "",
+          country_code: formData.country.dialCode,
+          instagram: formData.instagram || "",
+          service_area: formData.beautyArea || "",
+          monthly_billing: formData.revenue || "",
+          weekly_attendance: formData.weeklyAppointments || "",
+          average_ticket: formData.averageTicket ? parseCurrency(formData.averageTicket) : null,
+          workspace_type: formData.hasPhysicalSpace === null ? "" : (formData.hasPhysicalSpace ? "physical" : "home"),
+          years_experience: formData.yearsOfExperience || "",
+          can_afford: formData.canAfford,
+        };
+
+        if (leadIdToUpdate) {
+          // Use fetch with keepalive for updates
+          fetch(`https://ytdfwkchsumgdvcroaqg.supabase.co/rest/v1/leads?id=eq.${leadIdToUpdate}`, {
+            method: 'PATCH',
+            headers: {
+              'Content-Type': 'application/json',
+              'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl0ZGZ3a2Noc3VtZ2R2Y3JvYXFnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjUyOTkyOTUsImV4cCI6MjA4MDg3NTI5NX0.bbPtEz54fczTpjsxCaLW_VMHNm1tTutMJr_gpM6GE_M',
+              'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl0ZGZ3a2Noc3VtZ2R2Y3JvYXFnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjUyOTkyOTUsImV4cCI6MjA4MDg3NTI5NX0.bbPtEz54fczTpjsxCaLW_VMHNm1tTutMJr_gpM6GE_M',
+              'Prefer': 'return=minimal'
+            },
+            body: JSON.stringify(leadData),
+            keepalive: true
+          }).catch(() => {});
+        }
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'hidden') {
+        handleBeforeUnload();
+      }
+    });
+
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
+  }, [formData, step, existingLead, partialLeadId]);
+
   const totalSteps = 12; // Added ticket médio and affordability steps
   const updateFormData = (field: keyof FormData, value: string | boolean | Country | null) => {
     setFormData(prev => ({
@@ -382,8 +487,16 @@ const Index = () => {
       if (step < totalSteps) {
         // After email step, check if lead exists
         if (step === 2) {
-          await checkExistingLead(formData.email);
+          const existing = await checkExistingLead(formData.email);
+          // If no existing lead, save partial data after step 1 (name)
+          if (!existing) {
+            await savePartialLead(formData, step);
+          }
+        } else if (step >= 1 && step <= 11) {
+          // Save partial data at each step (if not step 2 which we handle above)
+          await savePartialLead(formData, step);
         }
+        
         // After ticket médio step, analyze with AI
         if (step === 8) {
           await analyzeLeadWithAI();
@@ -872,12 +985,14 @@ const Index = () => {
                 
                 let error;
                 
-                // If existing lead, update instead of insert
-                if (existingLead) {
+                // If existing lead or partial lead, update instead of insert
+                const leadIdToUpdate = existingLead?.id || partialLeadId;
+                
+                if (leadIdToUpdate) {
                   const result = await supabase
                     .from("leads")
                     .update(leadData)
-                    .eq("id", existingLead.id);
+                    .eq("id", leadIdToUpdate);
                   error = result.error;
                 } else {
                   const result = await supabase
