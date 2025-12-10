@@ -235,7 +235,7 @@
   }
 
   .shimmer-button {
-    @apply h-14 rounded-md text-primary-foreground font-semibold text-base cursor-pointer;
+    @apply h-14 rounded-xl text-primary-foreground font-semibold text-base cursor-pointer;
     font-family: var(--font-display);
     width: 85%;
     margin: 0 auto;
@@ -244,17 +244,25 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    background: linear-gradient(90deg, hsl(0 100% 48%) 0%, hsl(0 100% 32%) 100%);
-    transition: transform 0.2s ease-out, box-shadow 0.2s ease-out;
+    background: linear-gradient(135deg, hsl(0 100% 48%) 0%, hsl(0 100% 35%) 100%);
+    transition: transform 0.15s ease-out, box-shadow 0.15s ease-out, background 0.15s ease-out;
+    box-shadow: 0 2px 8px -2px hsl(0 100% 48% / 30%);
   }
 
-  .shimmer-button:hover:not(:active) {
-    transform: scale(1.03);
-    box-shadow: 0 4px 8px -2px hsl(0 100% 48% / 50%);
+  .shimmer-button:hover:not(:active):not(:disabled) {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px -2px hsl(0 100% 48% / 40%);
+    background: linear-gradient(135deg, hsl(0 100% 50%) 0%, hsl(0 100% 38%) 100%);
   }
 
-  .shimmer-button:active {
-    transform: scale(0.98);
+  .shimmer-button:active:not(:disabled) {
+    transform: translateY(1px);
+    box-shadow: 0 1px 4px -1px hsl(0 100% 48% / 30%);
+  }
+
+  .shimmer-button:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
   }
 
   .shimmer-button-content {
