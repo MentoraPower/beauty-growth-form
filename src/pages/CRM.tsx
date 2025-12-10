@@ -4,7 +4,7 @@ import DashboardLayout from "@/components/dashboard/DashboardLayout";
 export default function CRM() {
   return (
     <DashboardLayout>
-      <div className="p-6">
+      <div className="space-y-6">
         <KanbanBoard />
       </div>
     </DashboardLayout>
