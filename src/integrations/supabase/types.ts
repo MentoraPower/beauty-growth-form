@@ -14,6 +14,63 @@ export type Database = {
   }
   public: {
     Tables: {
+      email_settings: {
+        Row: {
+          created_at: string
+          delay_minutes: number
+          from_email: string
+          from_name: string
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          delay_minutes?: number
+          from_email?: string
+          from_name?: string
+          id?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          delay_minutes?: number
+          from_email?: string
+          from_name?: string
+          id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      email_templates: {
+        Row: {
+          body_html: string
+          created_at: string
+          id: string
+          is_default: boolean | null
+          name: string
+          subject: string
+          updated_at: string
+        }
+        Insert: {
+          body_html: string
+          created_at?: string
+          id?: string
+          is_default?: boolean | null
+          name: string
+          subject: string
+          updated_at?: string
+        }
+        Update: {
+          body_html?: string
+          created_at?: string
+          id?: string
+          is_default?: boolean | null
+          name?: string
+          subject?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       leads: {
         Row: {
           average_ticket: number | null
@@ -150,6 +207,56 @@ export type Database = {
           id?: string
         }
         Relationships: []
+      }
+      sent_emails: {
+        Row: {
+          body_html: string
+          created_at: string
+          error_message: string | null
+          id: string
+          lead_email: string
+          lead_id: string | null
+          lead_name: string
+          resend_id: string | null
+          sent_at: string | null
+          status: string
+          subject: string
+        }
+        Insert: {
+          body_html: string
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          lead_email: string
+          lead_id?: string | null
+          lead_name: string
+          resend_id?: string | null
+          sent_at?: string | null
+          status?: string
+          subject: string
+        }
+        Update: {
+          body_html?: string
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          lead_email?: string
+          lead_id?: string | null
+          lead_name?: string
+          resend_id?: string | null
+          sent_at?: string | null
+          status?: string
+          subject?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sent_emails_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {

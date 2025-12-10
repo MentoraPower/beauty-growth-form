@@ -1004,6 +1004,27 @@ const Index = () => {
                   setIsLoading(false);
                   return;
                 }
+                
+                // Send welcome email
+                try {
+                  const leadId = leadIdToUpdate || partialLeadId;
+                  await fetch('https://ytdfwkchsumgdvcroaqg.supabase.co/functions/v1/send-email', {
+                    method: 'POST',
+                    headers: {
+                      'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                      leadId: leadId,
+                      leadName: formData.name,
+                      leadEmail: formData.email,
+                    }),
+                  });
+                  console.log("Welcome email triggered");
+                } catch (emailError) {
+                  console.error("Error sending welcome email:", emailError);
+                  // Don't block the flow if email fails
+                }
+                
                 setTimeout(() => {
                   window.location.href = "https://www.instagram.com/scalebeautyy/";
                 }, 2000);
