@@ -100,7 +100,7 @@ export function ActivitiesBoard({ leadId, leadName, currentPipelineId }: Activit
       {/* Two columns layout */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {/* Left block - Activities List */}
-        <Card className="border-black/5">
+        <Card className="border-[#00000010] bg-muted/10 shadow-none">
           <CardContent className="p-4 flex flex-col h-[400px]">
             {isLoadingActivities ? (
               <div className="space-y-3 flex-1">
@@ -197,7 +197,7 @@ export function ActivitiesBoard({ leadId, leadName, currentPipelineId }: Activit
         </Card>
 
         {/* Right block - Activity Details / Tasks */}
-        <Card className="border-black/5">
+        <Card className="border-[#00000010] bg-muted/10 shadow-none">
           <CardContent className="p-4 h-[400px] flex flex-col">
             {selectedActivity ? (
               <div className="flex-1 flex flex-col">
