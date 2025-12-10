@@ -58,6 +58,7 @@ const HamburgerMenu = () => {
   const textClass = theme === "dark" ? "text-white" : "text-foreground";
   const barClass = theme === "dark" ? "bg-white" : "bg-foreground";
   const borderClass = theme === "dark" ? "border-white/10" : "border-white/10";
+  const underlineClass = theme === "dark" ? "bg-white" : "bg-foreground";
 
   return (
     <motion.div 
@@ -66,18 +67,18 @@ const HamburgerMenu = () => {
       animate={{ y: isVisible ? 0 : -100 }}
       transition={{ duration: 0.3, ease: "easeInOut" }}
     >
-      {/* Container with max-width on desktop */}
+      {/* Container with max-width */}
       <div className="mx-auto w-full max-w-5xl">
-        {/* Header bar - same for mobile and desktop */}
+        
+        {/* Mobile: Header bar with hamburger */}
         <motion.div 
-          className={`flex items-center justify-between py-2 px-4 rounded-xl transition-colors duration-300 ${bgClass}`}
+          className={`md:hidden flex items-center justify-between py-2 px-4 rounded-xl transition-colors duration-300 ${bgClass}`}
           layout
         >
           <span className={`font-bold text-sm uppercase tracking-tight transition-colors duration-300 ${textClass}`}>
             Scale Beauty
           </span>
           
-          {/* Hamburger button with dropdown container */}
           <div className="relative">
             <button
               onClick={() => setIsOpen(!isOpen)}
@@ -100,7 +101,6 @@ const HamburgerMenu = () => {
               </div>
             </button>
 
-            {/* Dropdown menu - positioned below button */}
             <AnimatePresence>
               {isOpen && (
                 <motion.div
@@ -135,6 +135,28 @@ const HamburgerMenu = () => {
             </AnimatePresence>
           </div>
         </motion.div>
+
+        {/* Desktop: Clean navbar with horizontal menu */}
+        <div className="hidden md:flex items-center justify-between py-3">
+          <span className={`font-bold text-sm uppercase tracking-tight transition-colors duration-300 ${textClass}`}>
+            Scale Beauty
+          </span>
+          
+          <nav className="flex items-center gap-8">
+            {menuItems.map((item) => (
+              <a
+                key={item.label}
+                href={item.href}
+                className={`relative text-sm font-medium transition-colors duration-300 ${textClass} group`}
+              >
+                {item.label}
+                <span 
+                  className={`absolute left-0 -bottom-1 h-[1px] w-0 ${underlineClass} transition-all duration-300 ease-out group-hover:w-full`}
+                />
+              </a>
+            ))}
+          </nav>
+        </div>
       </div>
     </motion.div>
   );
