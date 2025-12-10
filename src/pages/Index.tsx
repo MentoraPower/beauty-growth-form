@@ -26,6 +26,8 @@ import Calendar from "@/components/icons/Calendar";
 import { toast } from "sonner";
 import HamburgerMenu from "@/components/HamburgerMenu";
 import { supabase } from "@/integrations/supabase/client";
+import SplashScreen from "@/components/SplashScreen";
+
 interface FormData {
   name: string;
   email: string;
@@ -38,7 +40,9 @@ interface FormData {
   hasPhysicalSpace: boolean | null;
   yearsOfExperience: string;
 }
+
 const Index = () => {
+  const [showSplash, setShowSplash] = useState(true);
   const [step, setStep] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState<FormData>({
@@ -433,7 +437,15 @@ const Index = () => {
         return null;
     }
   };
-  return <div className="min-h-screen bg-background flex flex-col">
+  return (
+    <>
+      {showSplash && <SplashScreen onComplete={() => setShowSplash(false)} />}
+      <motion.div 
+        initial={{ opacity: 0 }}
+        animate={{ opacity: showSplash ? 0 : 1 }}
+        transition={{ duration: 0.3 }}
+        className="min-h-screen bg-background flex flex-col"
+      >
       <HamburgerMenu />
       {step > 1 && step < 10 && <ProgressBar currentStep={step - 1} totalSteps={totalSteps - 2} />}
       
@@ -549,7 +561,9 @@ const Index = () => {
             </div>
           </div>}
       </div>
-    </div>;
+      </motion.div>
+    </>
+  );
 };
 const features = [{
   title: 'Tráfego Pago',
