@@ -106,6 +106,19 @@ const Index = () => {
   const [step, setStep] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [isCheckingLead, setIsCheckingLead] = useState(false);
+  const [existingLead, setExistingLead] = useState<{
+    id: string;
+    whatsapp: string;
+    country_code: string;
+    instagram: string;
+    service_area: string;
+    monthly_billing: string;
+    weekly_attendance: string;
+    workspace_type: string;
+    years_experience: string;
+    average_ticket: number | null;
+  } | null>(null);
   const [aiAnalysis, setAiAnalysis] = useState<{
     estimatedRevenue?: number;
     revenueConsistent?: boolean;
@@ -131,6 +144,62 @@ const Index = () => {
   
   // Track if affordability question should be shown
   const [showAffordabilityQuestion, setShowAffordabilityQuestion] = useState(false);
+  
+  // Function to mask phone number (show DDD and last 4 digits)
+  const maskPhoneNumber = (phone: string, countryCode: string): string => {
+    if (!phone || phone.length < 4) return phone;
+    const ddd = phone.substring(0, 2);
+    const lastFour = phone.slice(-4);
+    const middleLength = phone.length - 6;
+    const asterisks = '*'.repeat(Math.max(middleLength, 3));
+    return `(${ddd}) ${asterisks}-${lastFour}`;
+  };
+  
+  // Function to check if lead exists by email
+  const checkExistingLead = async (email: string) => {
+    setIsCheckingLead(true);
+    try {
+      const { data, error } = await supabase
+        .from('leads')
+        .select('id, whatsapp, country_code, instagram, service_area, monthly_billing, weekly_attendance, workspace_type, years_experience, average_ticket')
+        .eq('email', email.toLowerCase().trim())
+        .maybeSingle();
+      
+      if (error) {
+        console.error("Error checking lead:", error);
+        return null;
+      }
+      
+      if (data) {
+        console.log("Existing lead found:", data);
+        setExistingLead(data);
+        
+        // Pre-fill form with existing data
+        const country = countries.find(c => c.dialCode === data.country_code) || countries[0];
+        setFormData(prev => ({
+          ...prev,
+          phone: data.whatsapp || "",
+          country: country,
+          instagram: data.instagram || "",
+          beautyArea: data.service_area || "",
+          revenue: data.monthly_billing || "",
+          weeklyAppointments: data.weekly_attendance || "",
+          hasPhysicalSpace: data.workspace_type === "physical" ? true : data.workspace_type === "home" ? false : null,
+          yearsOfExperience: data.years_experience || "",
+          averageTicket: data.average_ticket ? formatCurrency(String(Math.round(data.average_ticket * 100))) : ""
+        }));
+        
+        return data;
+      }
+      
+      return null;
+    } catch (error) {
+      console.error("Error checking lead:", error);
+      return null;
+    } finally {
+      setIsCheckingLead(false);
+    }
+  };
   
   // Function to analyze lead data with AI
   const analyzeLeadWithAI = async () => {
@@ -298,6 +367,10 @@ const Index = () => {
   const handleNext = async () => {
     if (canProceed()) {
       if (step < totalSteps) {
+        // After email step, check if lead exists
+        if (step === 2) {
+          await checkExistingLead(formData.email);
+        }
         // After ticket médio step, analyze with AI
         if (step === 8) {
           await analyzeLeadWithAI();
@@ -325,10 +398,14 @@ const Index = () => {
       case 2:
         return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email);
       case 3:
+        // Allow proceeding if existing lead has phone (confirmation mode)
+        if (existingLead && existingLead.whatsapp) return true;
         return formData.phone.trim().length >= 8;
       case 4:
         return formData.instagram.trim().length >= 1;
       case 5:
+        // Allow proceeding if existing lead has service area (confirmation mode)
+        if (existingLead && existingLead.service_area) return true;
         return formData.beautyArea !== "";
       case 6:
         return formData.revenue !== "";
@@ -371,19 +448,68 @@ const Index = () => {
             </h1>
             <p className="form-subtitle">Para enviarmos informações importantes</p>
             <div className="space-y-4">
-              <input type="email" value={formData.email} onChange={e => updateFormData("email", e.target.value)} placeholder="seu@email.com" className="form-input" autoFocus />
+              <input 
+                type="email" 
+                value={formData.email} 
+                onChange={e => updateFormData("email", e.target.value)} 
+                placeholder="seu@email.com" 
+                className="form-input" 
+                autoFocus 
+                disabled={isCheckingLead}
+              />
               <div className="flex gap-3">
-                <button onClick={prevStep} className="h-14 px-4 rounded-xl border border-border bg-card flex items-center justify-center">
+                <button onClick={prevStep} className="h-14 px-4 rounded-xl border border-border bg-card flex items-center justify-center" disabled={isCheckingLead}>
                   <ArrowLeft className="w-5 h-5 text-foreground" />
                 </button>
-                <ShimmerButton onClick={handleNext} className="flex-1">
-                  Continuar
-                  <ArrowRight className="w-5 h-5" />
+                <ShimmerButton onClick={handleNext} className="flex-1" disabled={isCheckingLead}>
+                  {isCheckingLead ? "Verificando..." : "Continuar"}
+                  {!isCheckingLead && <ArrowRight className="w-5 h-5" />}
                 </ShimmerButton>
               </div>
             </div>
           </div>;
       case 3:
+        // If existing lead found, show confirmation mode
+        if (existingLead && existingLead.whatsapp) {
+          const maskedPhone = maskPhoneNumber(existingLead.whatsapp, existingLead.country_code);
+          return <div className="form-card">
+              <h1 className="form-title">
+                <span className="font-light">Confirme seu </span>
+                <span className="font-bold">WhatsApp</span>
+              </h1>
+              <p className="form-subtitle">Este é o seu número?</p>
+              <div className="space-y-4">
+                <div className="form-input flex items-center justify-center text-lg font-medium">
+                  {maskedPhone}
+                </div>
+                <div className="space-y-3">
+                  <button 
+                    type="button" 
+                    onClick={handleNext}
+                    className="option-card"
+                  >
+                    <span className="option-card-text">Sim, este é meu número</span>
+                  </button>
+                  <button 
+                    type="button" 
+                    onClick={() => {
+                      setExistingLead(null);
+                      updateFormData("phone", "");
+                    }}
+                    className="option-card"
+                  >
+                    <span className="option-card-text">Não, quero informar outro</span>
+                  </button>
+                </div>
+                <div className="flex gap-3">
+                  <button onClick={prevStep} className="h-14 px-4 rounded-xl border border-border bg-card flex items-center justify-center">
+                    <ArrowLeft className="w-5 h-5 text-foreground" />
+                  </button>
+                </div>
+              </div>
+            </div>;
+        }
+        
         return <div className="form-card">
             <h1 className="form-title">
               <span className="font-light">Qual o seu </span>
@@ -430,6 +556,46 @@ const Index = () => {
             </div>
           </div>;
       case 5:
+        // If existing lead found, show confirmation mode
+        if (existingLead && existingLead.service_area) {
+          return <div className="form-card">
+              <h1 className="form-title">
+                <span className="font-light">Confirme sua </span>
+                <span className="font-bold">área de atuação</span>
+              </h1>
+              <p className="form-subtitle">Esta é sua área?</p>
+              <div className="space-y-4">
+                <div className="form-input flex items-center justify-center text-lg font-medium">
+                  {existingLead.service_area}
+                </div>
+                <div className="space-y-3">
+                  <button 
+                    type="button" 
+                    onClick={handleNext}
+                    className="option-card"
+                  >
+                    <span className="option-card-text">Sim, esta é minha área</span>
+                  </button>
+                  <button 
+                    type="button" 
+                    onClick={() => {
+                      setExistingLead(prev => prev ? { ...prev, service_area: "" } : null);
+                      updateFormData("beautyArea", "");
+                    }}
+                    className="option-card"
+                  >
+                    <span className="option-card-text">Não, quero alterar</span>
+                  </button>
+                </div>
+                <div className="flex gap-3">
+                  <button onClick={prevStep} className="h-14 px-4 rounded-xl border border-border bg-card flex items-center justify-center">
+                    <ArrowLeft className="w-5 h-5 text-foreground" />
+                  </button>
+                </div>
+              </div>
+            </div>;
+        }
+        
         return <div className="form-card">
             <h1 className="form-title">
               <span className="font-light">Qual a sua </span>
@@ -662,9 +828,8 @@ const Index = () => {
                 const {
                   data: basePipeline
                 } = await supabase.from("pipelines").select("id").eq("nome", "Base").maybeSingle();
-                const {
-                  error
-                } = await supabase.from("leads").insert({
+                
+                const leadData = {
                   name: formData.name,
                   email: formData.email,
                   whatsapp: formData.phone,
@@ -679,7 +844,24 @@ const Index = () => {
                   can_afford: formData.canAfford,
                   wants_more_info: formData.wantsMoreInfo,
                   pipeline_id: basePipeline?.id || null
-                });
+                };
+                
+                let error;
+                
+                // If existing lead, update instead of insert
+                if (existingLead) {
+                  const result = await supabase
+                    .from("leads")
+                    .update(leadData)
+                    .eq("id", existingLead.id);
+                  error = result.error;
+                } else {
+                  const result = await supabase
+                    .from("leads")
+                    .insert(leadData);
+                  error = result.error;
+                }
+                
                 if (error) {
                   console.error("Error saving lead:", error);
                   toast.error("Erro ao salvar dados. Tente novamente.");
