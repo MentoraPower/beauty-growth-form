@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { countries, beautyAreas, revenueRanges, Country } from "@/data/countries";
 import scaleBeautyBanner from "@/assets/scale-beauty-banner.png";
 import scaleBeautyMobile from "@/assets/scale-beauty-mobile.png";
-import quemSomosImage from "@/assets/quem-somos.png";
+import quemSomosImage from "@/assets/quem-somos.webp";
 import CountrySelect from "@/components/CountrySelect";
 import FormContainer from "@/components/FormContainer";
 import CustomSelect from "@/components/CustomSelect";
