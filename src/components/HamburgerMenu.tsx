@@ -21,14 +21,16 @@ const HamburgerMenu = () => {
   const lastScrollY = useRef(0);
 
   const handleNavClick = (e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
+    console.log("Nav click:", href);
+    e.preventDefault();
+    
     if (href.startsWith("#")) {
-      e.preventDefault();
       const element = document.getElementById(href.slice(1));
+      console.log("Element found:", element);
       if (element) {
         element.scrollIntoView({ behavior: "smooth" });
       }
     } else if (href === "/") {
-      e.preventDefault();
       window.scrollTo({ top: 0, behavior: "smooth" });
     }
     setIsOpen(false);
@@ -150,8 +152,8 @@ const HamburgerMenu = () => {
         </div>
       </motion.div>
 
-      {/* Desktop navbar - static, scrolls with page, white text */}
-      <div className="hidden md:block absolute top-0 left-0 right-0 z-50 px-5 pt-4">
+      {/* Desktop navbar - fixed at top, white text */}
+      <div className="hidden md:block fixed top-0 left-0 right-0 z-50 px-5 pt-4 pointer-events-auto">
         <div className="mx-auto w-full max-w-5xl">
           <div className="flex items-center justify-between py-3">
             <span className="font-bold text-sm uppercase tracking-tight text-white">

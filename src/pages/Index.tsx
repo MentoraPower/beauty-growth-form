@@ -1032,7 +1032,7 @@ const Index = () => {
         initial={{ opacity: 0 }}
         animate={{ opacity: showSplash ? 0 : 1 }}
         transition={{ duration: 0.3 }}
-        className="min-h-screen bg-background flex flex-col"
+        className="min-h-screen bg-background flex flex-col relative"
       >
       <HamburgerMenu />
       {step > 1 && step < 12 && <ProgressBar currentStep={step - 1} totalSteps={totalSteps - 2} />}
