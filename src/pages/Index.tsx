@@ -34,6 +34,7 @@ interface FormData {
   phone: string;
   country: Country;
   instagram: string;
+  clinicName: string;
   beautyArea: string;
   revenue: string;
   weeklyAppointments: string;
@@ -133,6 +134,7 @@ const Index = () => {
     phone: "",
     country: countries[0],
     instagram: "",
+    clinicName: "",
     beautyArea: "",
     revenue: "",
     weeklyAppointments: "",
@@ -411,6 +413,7 @@ const Index = () => {
           whatsapp: formData.phone || "",
           country_code: formData.country.dialCode,
           instagram: formData.instagram || "",
+          clinic_name: formData.clinicName || null,
           service_area: formData.beautyArea || "",
           monthly_billing: formData.revenue || "",
           weekly_attendance: formData.weeklyAppointments || "",
@@ -449,7 +452,7 @@ const Index = () => {
     };
   }, [formData, step, existingLead, partialLeadId]);
 
-  const totalSteps = 12; // Added ticket médio and affordability steps
+  const totalSteps = 13; // Added clinic name step
   const updateFormData = (field: keyof FormData, value: string | boolean | Country | null) => {
     setFormData(prev => ({
       ...prev,
@@ -467,18 +470,20 @@ const Index = () => {
       case 4:
         return "Por favor, preencha seu Instagram";
       case 5:
-        return "Por favor, selecione sua área de atuação";
+        return "Por favor, preencha o nome da clínica/studio";
       case 6:
-        return "Por favor, selecione seu faturamento";
+        return "Por favor, selecione sua área de atuação";
       case 7:
-        return "Por favor, preencha a quantidade de atendimentos";
+        return "Por favor, selecione seu faturamento";
       case 8:
-        return "Por favor, preencha o valor do ticket médio";
+        return "Por favor, preencha a quantidade de atendimentos";
       case 9:
-        return "Por favor, selecione uma opção";
+        return "Por favor, preencha o valor do ticket médio";
       case 10:
-        return "Por favor, preencha seus anos de experiência";
+        return "Por favor, selecione uma opção";
       case 11:
+        return "Por favor, preencha seus anos de experiência";
+      case 12:
         return "Por favor, selecione uma opção";
       default:
         return "Por favor, preencha o campo";
@@ -509,21 +514,21 @@ const Index = () => {
           if (!existing) {
             await savePartialLead(formData, step);
           }
-        } else if (step >= 1 && step <= 11) {
+        } else if (step >= 1 && step <= 12) {
           // Save partial data at each step (if not step 2 which we handle above)
           await savePartialLead(formData, step);
         }
         
         // After ticket médio step, analyze with AI
-        if (step === 8) {
+        if (step === 9) {
           await analyzeLeadWithAI();
         }
         
         // After years of experience step, check if we should skip affordability question
-        if (step === 10) {
+        if (step === 11) {
           if (!shouldShowAffordabilityQuestion()) {
-            // Skip step 11, go directly to final step (12)
-            setStep(12);
+            // Skip step 12, go directly to final step (13)
+            setStep(13);
             return;
           }
         }
@@ -541,9 +546,9 @@ const Index = () => {
   };
   const prevStep = () => {
     if (step > 1) {
-      // If on final step and affordability was skipped, go back to step 10
-      if (step === 12 && !shouldShowAffordabilityQuestion()) {
-        setStep(10);
+      // If on final step and affordability was skipped, go back to step 11
+      if (step === 13 && !shouldShowAffordabilityQuestion()) {
+        setStep(11);
         return;
       }
       setStep(step - 1);
@@ -562,20 +567,22 @@ const Index = () => {
       case 4:
         return formData.instagram.trim().length >= 1;
       case 5:
+        return formData.clinicName.trim().length >= 1;
+      case 6:
         // Allow proceeding if existing lead has service area (confirmation mode)
         if (existingLead && existingLead.service_area) return true;
         return formData.beautyArea !== "";
-      case 6:
-        return formData.revenue !== "";
       case 7:
-        return formData.weeklyAppointments.trim().length >= 1;
+        return formData.revenue !== "";
       case 8:
-        return formData.averageTicket.trim().length >= 1 && parseCurrency(formData.averageTicket) > 0;
+        return formData.weeklyAppointments.trim().length >= 1;
       case 9:
-        return formData.hasPhysicalSpace !== null;
+        return formData.averageTicket.trim().length >= 1 && parseCurrency(formData.averageTicket) > 0;
       case 10:
-        return formData.yearsOfExperience.trim().length >= 1;
+        return formData.hasPhysicalSpace !== null;
       case 11:
+        return formData.yearsOfExperience.trim().length >= 1;
+      case 12:
         return formData.canAfford !== null;
       default:
         return true;
@@ -714,6 +721,26 @@ const Index = () => {
             </div>
           </div>;
       case 5:
+        return <div className="form-card">
+            <h1 className="form-title">
+              <span className="font-light">Nome da sua </span>
+              <span className="font-bold">Clínica/Studio</span>
+            </h1>
+            <p className="form-subtitle">Caso possua</p>
+            <div className="space-y-4">
+              <input type="text" value={formData.clinicName} onChange={e => updateFormData("clinicName", e.target.value)} placeholder="Ex: Studio Beleza" className="form-input" autoFocus />
+              <div className="flex gap-3">
+                <button onClick={prevStep} className="h-14 px-4 rounded-xl border border-border bg-card flex items-center justify-center">
+                  <ArrowLeft className="w-5 h-5 text-foreground" />
+                </button>
+                <ShimmerButton onClick={handleNext} className="flex-1">
+                  Continuar
+                  <ArrowRight className="w-5 h-5" />
+                </ShimmerButton>
+              </div>
+            </div>
+          </div>;
+      case 6:
         // If existing lead found, show confirmation mode
         if (existingLead && existingLead.service_area) {
           return <div className="form-card">
@@ -773,7 +800,7 @@ const Index = () => {
               </div>
             </div>
           </div>;
-      case 6:
+      case 7:
         return <div className="form-card">
             <h1 className="form-title">
               <span className="font-light">Qual o </span>
@@ -793,7 +820,7 @@ const Index = () => {
               </div>
             </div>
           </div>;
-      case 7:
+      case 8:
         return <div className="form-card">
             <h1 className="form-title">
               <span className="font-light">Quantos </span>
@@ -813,7 +840,7 @@ const Index = () => {
               </div>
             </div>
           </div>;
-      case 8:
+      case 9:
         return <div className="form-card">
             <h1 className="form-title">
               <span className="font-light">Qual o </span>
@@ -844,7 +871,7 @@ const Index = () => {
               </div>
             </div>
           </div>;
-      case 9:
+      case 10:
         return <div className="form-card">
             <h1 className="form-title">
               <span className="font-light">Você possui </span>
@@ -869,7 +896,7 @@ const Index = () => {
               </div>
             </div>
           </div>;
-      case 10:
+      case 11:
         return <div className="form-card">
             <h1 className="form-title">
               <span className="font-light">Quantos anos de </span>
@@ -889,7 +916,7 @@ const Index = () => {
               </div>
             </div>
           </div>;
-      case 11:
+      case 12:
         // Affordability check step
         if (formData.canAfford === "no" && formData.wantsMoreInfo === null) {
           // Show "want to know more?" question
@@ -954,7 +981,7 @@ const Index = () => {
               </button>
             </div>
           </div>;
-      case 12:
+      case 13:
         return <div className="form-card text-center">
             {isLoading ? <>
                 <h1 className="form-title !text-center">Redirecionando...</h1>
@@ -983,6 +1010,7 @@ const Index = () => {
                   whatsapp: formData.phone,
                   country_code: formData.country.dialCode,
                   instagram: formData.instagram,
+                  clinic_name: formData.clinicName || null,
                   service_area: formData.beautyArea,
                   monthly_billing: formData.revenue,
                   weekly_attendance: formData.weeklyAppointments,
