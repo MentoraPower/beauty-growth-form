@@ -7,12 +7,16 @@ interface KanbanColumnProps {
   pipeline: Pipeline;
   leads: Lead[];
   isOver?: boolean;
+  activeId?: string | null;
 }
 
-export function KanbanColumn({ pipeline, leads, isOver }: KanbanColumnProps) {
+export function KanbanColumn({ pipeline, leads, isOver, activeId }: KanbanColumnProps) {
   const { setNodeRef } = useDroppable({
     id: pipeline.id,
   });
+
+  // Filter out the card being dragged so it disappears from original position
+  const visibleLeads = activeId ? leads.filter((l) => l.id !== activeId) : leads;
 
   return (
     <div className="flex-shrink-0 w-80">
@@ -40,10 +44,10 @@ export function KanbanColumn({ pipeline, leads, isOver }: KanbanColumnProps) {
           strategy={verticalListSortingStrategy}
         >
           <div className="space-y-2">
-            {leads.map((lead) => (
+            {visibleLeads.map((lead) => (
               <KanbanCard key={lead.id} lead={lead} />
             ))}
-            {leads.length === 0 && (
+            {visibleLeads.length === 0 && (
               <div className={`text-center text-sm py-8 rounded-lg border-2 border-dashed transition-colors ${
                 isOver ? "border-muted-foreground/30 text-muted-foreground" : "border-transparent text-muted-foreground"
               }`}>

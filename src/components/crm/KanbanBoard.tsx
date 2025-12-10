@@ -334,6 +334,7 @@ export function KanbanBoard() {
                   pipeline={pipeline}
                   leads={pipelineLeads}
                   isOver={overId === pipeline.id}
+                  activeId={activeId}
                 />
               );
             })}
