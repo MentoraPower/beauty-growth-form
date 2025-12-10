@@ -20,6 +20,20 @@ const HamburgerMenu = () => {
   const [isVisible, setIsVisible] = useState(true);
   const lastScrollY = useRef(0);
 
+  const handleNavClick = (e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
+    if (href.startsWith("#")) {
+      e.preventDefault();
+      const element = document.getElementById(href.slice(1));
+      if (element) {
+        element.scrollIntoView({ behavior: "smooth" });
+      }
+    } else if (href === "/") {
+      e.preventDefault();
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+    setIsOpen(false);
+  };
+
   useEffect(() => {
     const handleScroll = () => {
       const scrollY = window.scrollY;
@@ -121,7 +135,7 @@ const HamburgerMenu = () => {
                             delay: index * 0.05,
                             ease: "easeOut"
                           }}
-                          onClick={() => setIsOpen(false)}
+                          onClick={(e) => handleNavClick(e, item.href)}
                           className={`block py-3 font-medium text-base hover:text-primary transition-colors ${textClass} border-b ${borderClass} last:border-b-0`}
                         >
                           {item.label}
@@ -149,7 +163,8 @@ const HamburgerMenu = () => {
                 <a
                   key={item.label}
                   href={item.href}
-                  className="relative text-sm font-medium text-white group"
+                  onClick={(e) => handleNavClick(e, item.href)}
+                  className="relative text-sm font-medium text-white group cursor-pointer"
                 >
                   {item.label}
                   <span 
