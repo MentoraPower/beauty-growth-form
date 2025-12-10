@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect, useRef } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { LayoutDashboard, Users, Menu, X, LogOut } from "lucide-react";
+import { LayoutDashboard, Users, Menu, X, LogOut, Kanban } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
 import scaleLogo from "@/assets/scale-logo.png";
@@ -11,6 +11,7 @@ interface DashboardLayoutProps {
 
 const navItems = [
   { href: "/admin", icon: LayoutDashboard, label: "Dashboard" },
+  { href: "/admin/crm", icon: Kanban, label: "CRM" },
   { href: "/admin/leads", icon: Users, label: "Leads" },
 ];
 
