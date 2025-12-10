@@ -866,6 +866,7 @@ const Index = () => {
                   average_ticket: parseCurrency(formData.averageTicket),
                   can_afford: formData.canAfford,
                   wants_more_info: formData.wantsMoreInfo,
+                  estimated_revenue: aiAnalysis?.estimatedRevenue || null,
                   pipeline_id: basePipeline?.id || null
                 };
                 

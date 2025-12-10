@@ -21,6 +21,7 @@ export type Database = {
           country_code: string
           created_at: string
           email: string
+          estimated_revenue: number | null
           id: string
           instagram: string
           monthly_billing: string
@@ -40,6 +41,7 @@ export type Database = {
           country_code?: string
           created_at?: string
           email: string
+          estimated_revenue?: number | null
           id?: string
           instagram: string
           monthly_billing: string
@@ -59,6 +61,7 @@ export type Database = {
           country_code?: string
           created_at?: string
           email?: string
+          estimated_revenue?: number | null
           id?: string
           instagram?: string
           monthly_billing?: string
