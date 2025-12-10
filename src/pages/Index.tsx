@@ -7,7 +7,7 @@ import CountrySelect from "@/components/CountrySelect";
 import FormContainer from "@/components/FormContainer";
 import CustomSelect from "@/components/CustomSelect";
 import ProgressBar from "@/components/ProgressBar";
-import ShimmerButton from "@/components/ShimmerButton";
+import { FlowButton } from "@/components/ui/flow-button";
 import ArrowRight from "@/components/icons/ArrowRight";
 import ArrowLeft from "@/components/icons/ArrowLeft";
 import Mail from "@/components/icons/Mail";
@@ -199,10 +199,7 @@ const Index = () => {
             <p className="form-subtitle mt-4 mb-8">Como posso te chamar?</p>
             <div className="space-y-4">
               <input type="text" value={formData.name} onChange={e => updateFormData("name", e.target.value)} placeholder="Seu nome" className="form-input" autoFocus />
-              <ShimmerButton onClick={handleNext}>
-                Prosseguir
-                <ArrowRight className="w-5 h-5" />
-              </ShimmerButton>
+              <FlowButton onClick={handleNext} text="Prosseguir" className="w-full" />
             </div>
           </div>;
       case 2:
@@ -218,10 +215,7 @@ const Index = () => {
                 <button onClick={prevStep} className="h-14 px-4 rounded-xl border border-border bg-card flex items-center justify-center">
                   <ArrowLeft className="w-5 h-5 text-foreground" />
                 </button>
-                <ShimmerButton onClick={handleNext} className="flex-1">
-                  Continuar
-                  <ArrowRight className="w-5 h-5" />
-                </ShimmerButton>
+                <FlowButton onClick={handleNext} text="Continuar" className="flex-1" />
               </div>
             </div>
           </div>;
@@ -241,10 +235,7 @@ const Index = () => {
                 <button onClick={prevStep} className="h-14 px-4 rounded-xl border border-border bg-card flex items-center justify-center">
                   <ArrowLeft className="w-5 h-5 text-foreground" />
                 </button>
-                <ShimmerButton onClick={handleNext} className="flex-1">
-                  Continuar
-                  <ArrowRight className="w-5 h-5" />
-                </ShimmerButton>
+                <FlowButton onClick={handleNext} text="Continuar" className="flex-1" />
               </div>
             </div>
           </div>;
@@ -264,10 +255,7 @@ const Index = () => {
                 <button onClick={prevStep} className="h-14 px-4 rounded-xl border border-border bg-card flex items-center justify-center">
                   <ArrowLeft className="w-5 h-5 text-foreground" />
                 </button>
-                <ShimmerButton onClick={handleNext} className="flex-1">
-                  Continuar
-                  <ArrowRight className="w-5 h-5" />
-                </ShimmerButton>
+                <FlowButton onClick={handleNext} text="Continuar" className="flex-1" />
               </div>
             </div>
           </div>;
@@ -284,10 +272,7 @@ const Index = () => {
                 <button onClick={prevStep} className="h-14 px-4 rounded-xl border border-border bg-card flex items-center justify-center">
                   <ArrowLeft className="w-5 h-5 text-foreground" />
                 </button>
-                <ShimmerButton onClick={handleNext} className="flex-1">
-                  Continuar
-                  <ArrowRight className="w-5 h-5" />
-                </ShimmerButton>
+                <FlowButton onClick={handleNext} text="Continuar" className="flex-1" />
               </div>
             </div>
           </div>;
@@ -304,10 +289,7 @@ const Index = () => {
                 <button onClick={prevStep} className="h-14 px-4 rounded-xl border border-border bg-card flex items-center justify-center">
                   <ArrowLeft className="w-5 h-5 text-foreground" />
                 </button>
-                <ShimmerButton onClick={handleNext} className="flex-1">
-                  Continuar
-                  <ArrowRight className="w-5 h-5" />
-                </ShimmerButton>
+                <FlowButton onClick={handleNext} text="Continuar" className="flex-1" />
               </div>
             </div>
           </div>;
@@ -324,10 +306,7 @@ const Index = () => {
                 <button onClick={prevStep} className="h-14 px-4 rounded-xl border border-border bg-card flex items-center justify-center">
                   <ArrowLeft className="w-5 h-5 text-foreground" />
                 </button>
-                <ShimmerButton onClick={handleNext} className="flex-1">
-                  Continuar
-                  <ArrowRight className="w-5 h-5" />
-                </ShimmerButton>
+                <FlowButton onClick={handleNext} text="Continuar" className="flex-1" />
               </div>
             </div>
           </div>;
@@ -349,10 +328,7 @@ const Index = () => {
                 <button onClick={prevStep} className="h-14 px-4 rounded-xl border border-border bg-card flex items-center justify-center">
                   <ArrowLeft className="w-5 h-5 text-foreground" />
                 </button>
-                <ShimmerButton onClick={handleNext} className="flex-1">
-                  Continuar
-                  <ArrowRight className="w-5 h-5" />
-                </ShimmerButton>
+                <FlowButton onClick={handleNext} text="Continuar" className="flex-1" />
               </div>
             </div>
           </div>;
@@ -369,10 +345,7 @@ const Index = () => {
                 <button onClick={prevStep} className="h-14 px-4 rounded-xl border border-border bg-card flex items-center justify-center">
                   <ArrowLeft className="w-5 h-5 text-foreground" />
                 </button>
-                <ShimmerButton onClick={handleNext} className="flex-1">
-                  Continuar
-                  <ArrowRight className="w-5 h-5" />
-                </ShimmerButton>
+                <FlowButton onClick={handleNext} text="Continuar" className="flex-1" />
               </div>
             </div>
           </div>;
@@ -391,41 +364,43 @@ const Index = () => {
                 <p className="text-base text-muted-foreground mt-4 mb-8 leading-relaxed">
                   Você ganhou uma consultoria exclusiva com o time da Scale Beauty para saber mais sobre nossos serviços e como podemos escalar seu negócio.
                 </p>
-                <ShimmerButton onClick={async () => {
-              setIsLoading(true);
-              
-              try {
-                const { error } = await supabase.from("leads").insert({
-                  name: formData.name,
-                  email: formData.email,
-                  whatsapp: formData.phone,
-                  country_code: formData.country.dialCode,
-                  instagram: formData.instagram,
-                  service_area: formData.beautyArea,
-                  monthly_billing: formData.revenue,
-                  weekly_attendance: formData.weeklyAppointments,
-                  workspace_type: formData.hasPhysicalSpace ? "physical" : "home",
-                  years_experience: formData.yearsOfExperience,
-                });
-                
-                if (error) {
-                  console.error("Error saving lead:", error);
-                  toast.error("Erro ao salvar dados. Tente novamente.");
-                  setIsLoading(false);
-                  return;
-                }
-                
-                setTimeout(() => {
-                  window.location.href = "https://www.instagram.com/scalebeautyy/";
-                }, 2000);
-              } catch (err) {
-                console.error("Error:", err);
-                toast.error("Erro ao salvar dados. Tente novamente.");
-                setIsLoading(false);
-              }
-            }}>
-                  Finalizar
-                </ShimmerButton>
+                <FlowButton 
+                  text="Finalizar" 
+                  className="w-full"
+                  onClick={async () => {
+                    setIsLoading(true);
+                    
+                    try {
+                      const { error } = await supabase.from("leads").insert({
+                        name: formData.name,
+                        email: formData.email,
+                        whatsapp: formData.phone,
+                        country_code: formData.country.dialCode,
+                        instagram: formData.instagram,
+                        service_area: formData.beautyArea,
+                        monthly_billing: formData.revenue,
+                        weekly_attendance: formData.weeklyAppointments,
+                        workspace_type: formData.hasPhysicalSpace ? "physical" : "home",
+                        years_experience: formData.yearsOfExperience,
+                      });
+                      
+                      if (error) {
+                        console.error("Error saving lead:", error);
+                        toast.error("Erro ao salvar dados. Tente novamente.");
+                        setIsLoading(false);
+                        return;
+                      }
+                      
+                      setTimeout(() => {
+                        window.location.href = "https://www.instagram.com/scalebeautyy/";
+                      }, 2000);
+                    } catch (err) {
+                      console.error("Error:", err);
+                      toast.error("Erro ao salvar dados. Tente novamente.");
+                      setIsLoading(false);
+                    }
+                  }}
+                />
                 <p className="text-sm text-muted-foreground mt-6">
                   Em breve vamos entrar em contato pelo seu WhatsApp!
                 </p>
