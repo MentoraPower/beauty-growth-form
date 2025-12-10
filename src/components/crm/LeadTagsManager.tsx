@@ -156,24 +156,26 @@ export function LeadTagsManager({ leadId }: LeadTagsManagerProps) {
               />
             </div>
 
-            {/* Color picker */}
-            <div>
-              <p className="text-xs text-muted-foreground mb-1.5">Cor</p>
-              <div className="grid grid-cols-8 gap-1.5">
-                {TAG_COLORS.map((color) => (
-                  <button
-                    key={color}
-                    onClick={() => setSelectedColor(color)}
-                    className={`h-5 w-5 rounded-full transition-transform hover:scale-110 ${
-                      selectedColor === color
-                        ? "ring-2 ring-offset-2 ring-black/20"
-                        : ""
-                    }`}
-                    style={{ backgroundColor: color }}
-                  />
-                ))}
+            {/* Color picker - only show after name is entered */}
+            {newTagName.trim() && (
+              <div>
+                <p className="text-xs text-muted-foreground mb-1.5">Cor</p>
+                <div className="grid grid-cols-8 gap-1.5">
+                  {TAG_COLORS.map((color) => (
+                    <button
+                      key={color}
+                      onClick={() => setSelectedColor(color)}
+                      className={`h-5 w-5 rounded-full transition-transform hover:scale-110 ${
+                        selectedColor === color
+                          ? "ring-2 ring-offset-2 ring-black/20"
+                          : ""
+                      }`}
+                      style={{ backgroundColor: color }}
+                    />
+                  ))}
+                </div>
               </div>
-            </div>
+            )}
 
             {/* Preview */}
             {newTagName && (
