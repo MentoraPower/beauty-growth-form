@@ -111,6 +111,44 @@ const Index = () => {
     };
     trackPageView();
   }, []);
+
+  // Content protection - disable right-click, keyboard shortcuts, and dev tools
+  useEffect(() => {
+    const handleContextMenu = (e: MouseEvent) => {
+      e.preventDefault();
+      return false;
+    };
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Disable F12, Ctrl+Shift+I, Ctrl+Shift+J, Ctrl+U, Ctrl+S
+      if (
+        e.key === 'F12' ||
+        (e.ctrlKey && e.shiftKey && (e.key === 'I' || e.key === 'i' || e.key === 'J' || e.key === 'j')) ||
+        (e.ctrlKey && (e.key === 'U' || e.key === 'u' || e.key === 'S' || e.key === 's'))
+      ) {
+        e.preventDefault();
+        return false;
+      }
+    };
+
+    const handleDragStart = (e: DragEvent) => {
+      if (e.target instanceof HTMLImageElement) {
+        e.preventDefault();
+        return false;
+      }
+    };
+
+    document.addEventListener('contextmenu', handleContextMenu);
+    document.addEventListener('keydown', handleKeyDown);
+    document.addEventListener('dragstart', handleDragStart);
+
+    return () => {
+      document.removeEventListener('contextmenu', handleContextMenu);
+      document.removeEventListener('keydown', handleKeyDown);
+      document.removeEventListener('dragstart', handleDragStart);
+    };
+  }, []);
+
   const totalSteps = 10;
   const updateFormData = (field: keyof FormData, value: string | boolean | Country | null) => {
     setFormData(prev => ({
