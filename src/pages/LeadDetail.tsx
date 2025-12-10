@@ -12,6 +12,7 @@ import WhatsApp from "@/components/icons/WhatsApp";
 import { Skeleton } from "@/components/ui/skeleton";
 import { motion } from "framer-motion";
 import { ActivitiesBoard } from "@/components/activities/ActivitiesBoard";
+import { LeadTagsManager } from "@/components/crm/LeadTagsManager";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -256,6 +257,9 @@ export default function LeadDetail() {
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
+
+        {/* Tags Section */}
+        <LeadTagsManager leadId={lead.id} />
 
         {/* Tabs Navigation */}
         <div className="relative">

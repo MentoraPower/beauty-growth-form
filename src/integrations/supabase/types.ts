@@ -128,6 +128,38 @@ export type Database = {
           },
         ]
       }
+      lead_tags: {
+        Row: {
+          color: string
+          created_at: string
+          id: string
+          lead_id: string
+          name: string
+        }
+        Insert: {
+          color?: string
+          created_at?: string
+          id?: string
+          lead_id: string
+          name: string
+        }
+        Update: {
+          color?: string
+          created_at?: string
+          id?: string
+          lead_id?: string
+          name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lead_tags_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       leads: {
         Row: {
           average_ticket: number | null
