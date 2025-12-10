@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Users, Calendar } from "lucide-react";
+import { Users, TrendingUp } from "lucide-react";
 import ModernAreaChart from "@/components/dashboard/ModernAreaChart";
 import ModernBarChart from "@/components/dashboard/ModernBarChart";
 import MiniGaugeChart from "@/components/dashboard/MiniGaugeChart";
@@ -35,11 +35,13 @@ interface DayData {
 
 const Dashboard = () => {
   const [leads, setLeads] = useState<Lead[]>([]);
+  const [pageViews, setPageViews] = useState(0);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
   useEffect(() => {
     fetchLeads();
+    fetchPageViews();
 
     // Subscribe to realtime updates
     const channel = supabase
@@ -67,8 +69,25 @@ const Dashboard = () => {
       )
       .subscribe();
 
+    // Subscribe to page_views updates
+    const viewsChannel = supabase
+      .channel("dashboard-views-changes")
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "page_views",
+        },
+        () => {
+          setPageViews((prev) => prev + 1);
+        }
+      )
+      .subscribe();
+
     return () => {
       supabase.removeChannel(channel);
+      supabase.removeChannel(viewsChannel);
     };
   }, []);
 
@@ -85,6 +104,19 @@ const Dashboard = () => {
       console.error("Error fetching leads:", error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchPageViews = async () => {
+    try {
+      const { count, error } = await supabase
+        .from("page_views")
+        .select("*", { count: "exact", head: true });
+
+      if (error) throw error;
+      setPageViews(count || 0);
+    } catch (error) {
+      console.error("Error fetching page views:", error);
     }
   };
 
@@ -126,6 +158,12 @@ const Dashboard = () => {
     return leads.filter(
       (lead) => new Date(lead.created_at).toDateString() === new Date().toDateString()
     ).length;
+  };
+
+  // Calculate conversion rate
+  const getConversionRate = () => {
+    if (pageViews === 0) return "0";
+    return ((leads.length / pageViews) * 100).toFixed(1);
   };
 
   if (loading) {
@@ -184,13 +222,14 @@ const Dashboard = () => {
             <CardContent className="pt-5 pb-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">Leads Hoje</p>
-                  <p className="text-3xl font-bold text-foreground mt-1">{getLeadsToday()}</p>
+                  <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">Taxa de Captação</p>
+                  <p className="text-3xl font-bold text-foreground mt-1">{getConversionRate()}%</p>
                 </div>
                 <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
-                  <Calendar className="h-5 w-5 text-primary" />
+                  <TrendingUp className="h-5 w-5 text-primary" />
                 </div>
               </div>
+              <p className="text-xs text-muted-foreground mt-2">{pageViews} visitas</p>
             </CardContent>
           </Card>
         </div>
