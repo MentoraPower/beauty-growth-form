@@ -30,6 +30,7 @@ const TAG_COLORS = [
 
 export function LeadTagsManager({ leadId }: LeadTagsManagerProps) {
   const [tags, setTags] = useState<Tag[]>([]);
+  const [allTags, setAllTags] = useState<{name: string; color: string}[]>([]);
   const [isOpen, setIsOpen] = useState(false);
   const [newTagName, setNewTagName] = useState("");
   const [selectedColor, setSelectedColor] = useState(TAG_COLORS[0]);
@@ -39,6 +40,7 @@ export function LeadTagsManager({ leadId }: LeadTagsManagerProps) {
 
   useEffect(() => {
     fetchTags();
+    fetchAllTags();
   }, [leadId]);
 
   const fetchTags = async () => {
@@ -54,6 +56,42 @@ export function LeadTagsManager({ leadId }: LeadTagsManagerProps) {
     }
 
     setTags(data || []);
+  };
+
+  const fetchAllTags = async () => {
+    const { data, error } = await supabase
+      .from("lead_tags")
+      .select("name, color")
+      .order("name", { ascending: true });
+
+    if (error) {
+      console.error("Error fetching all tags:", error);
+      return;
+    }
+
+    // Get unique tags by name
+    const uniqueTags = data?.reduce((acc: {name: string; color: string}[], tag) => {
+      if (!acc.find(t => t.name.toLowerCase() === tag.name.toLowerCase())) {
+        acc.push({ name: tag.name, color: tag.color });
+      }
+      return acc;
+    }, []) || [];
+
+    setAllTags(uniqueTags);
+  };
+
+  // Filter suggestions based on input
+  const suggestions = newTagName.trim()
+    ? allTags.filter(tag => 
+        tag.name.toLowerCase().includes(newTagName.toLowerCase()) &&
+        !tags.find(t => t.name.toLowerCase() === tag.name.toLowerCase())
+      )
+    : [];
+
+  const handleSelectSuggestion = (suggestion: {name: string; color: string}) => {
+    setNewTagName(suggestion.name);
+    setSelectedColor(suggestion.color);
+    setShowColorPicker(true);
   };
 
   const handleAddTag = async () => {
@@ -156,6 +194,26 @@ export function LeadTagsManager({ leadId }: LeadTagsManagerProps) {
                   }
                 }}
               />
+              
+              {/* Suggestions */}
+              {suggestions.length > 0 && (
+                <div className="mt-2 border border-black/10 rounded-md overflow-hidden">
+                  {suggestions.slice(0, 5).map((suggestion, index) => (
+                    <button
+                      key={index}
+                      type="button"
+                      onClick={() => handleSelectSuggestion(suggestion)}
+                      className="w-full flex items-center gap-2 px-2 py-1.5 text-sm hover:bg-muted/50 transition-colors text-left"
+                    >
+                      <span
+                        className="h-3 w-3 rounded-full flex-shrink-0"
+                        style={{ backgroundColor: suggestion.color }}
+                      />
+                      {suggestion.name}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
 
             {/* Preview - clickable to show color picker */}
