@@ -8,6 +8,10 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// Service cost and threshold
+const SERVICE_COST = 2800;
+const THRESHOLD = SERVICE_COST * 0.8; // R$ 2,240 - Only show affordability question below this
+
 const SYSTEM_PROMPT = `Você é um calculador financeiro especializado. Sua ÚNICA função é analisar números e retornar um JSON.
 
 REGRAS ABSOLUTAS:
@@ -19,7 +23,7 @@ REGRAS ABSOLUTAS:
 
 FÓRMULA:
 - Faturamento Estimado = atendimentos_semanais × 4 × ticket_medio
-- Pode Pagar = Faturamento Estimado >= 2800 OU Faturamento Declarado >= 2800
+- Pode Pagar = Faturamento Estimado >= ${THRESHOLD} (80% de R$ ${SERVICE_COST})
 
 FORMATO DE RESPOSTA (APENAS ISSO, NADA MAIS):
 {"estimatedRevenue":0,"revenueConsistent":true,"canAfford":true,"confidenceLevel":"high","analysis":"texto"}`;
@@ -48,10 +52,11 @@ serve(async (req) => {
     }
     
     // Simple calculation fallback (always available)
+    // canAfford = true means we DON'T need to show the affordability question
     const fallbackResult = {
       estimatedRevenue: estimatedMonthly,
       revenueConsistent: Math.abs(estimatedMonthly - minRevenue) < minRevenue * 0.5 || minRevenue === 0,
-      canAfford: estimatedMonthly >= 2800 || minRevenue >= 2800,
+      canAfford: estimatedMonthly >= THRESHOLD, // Only false if below 80% of service cost
       confidenceLevel: "high",
       analysis: `Faturamento estimado: R$ ${estimatedMonthly.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}/mês.`
     };

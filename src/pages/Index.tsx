@@ -364,6 +364,19 @@ const Index = () => {
         return "Por favor, preencha o campo";
     }
   };
+  // Check if affordability question should be shown (only if revenue < 80% of R$ 2,800)
+  const shouldShowAffordabilityQuestion = (): boolean => {
+    const SERVICE_COST = 2800;
+    const THRESHOLD = SERVICE_COST * 0.8; // R$ 2,240
+    
+    const appointments = parseInt(formData.weeklyAppointments) || 0;
+    const ticket = parseCurrency(formData.averageTicket);
+    const estimatedMonthly = appointments * 4 * ticket;
+    
+    // Only show if estimated monthly revenue is below 80% of service cost
+    return estimatedMonthly < THRESHOLD;
+  };
+
   const handleNext = async () => {
     if (canProceed()) {
       if (step < totalSteps) {
@@ -375,6 +388,16 @@ const Index = () => {
         if (step === 8) {
           await analyzeLeadWithAI();
         }
+        
+        // After years of experience step, check if we should skip affordability question
+        if (step === 10) {
+          if (!shouldShowAffordabilityQuestion()) {
+            // Skip step 11, go directly to final step (12)
+            setStep(12);
+            return;
+          }
+        }
+        
         setStep(step + 1);
       }
     } else {
@@ -388,6 +411,11 @@ const Index = () => {
   };
   const prevStep = () => {
     if (step > 1) {
+      // If on final step and affordability was skipped, go back to step 10
+      if (step === 12 && !shouldShowAffordabilityQuestion()) {
+        setStep(10);
+        return;
+      }
       setStep(step - 1);
     }
   };
