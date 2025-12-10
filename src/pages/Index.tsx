@@ -641,27 +641,21 @@ function FeaturesSection() {
 
 function QuemSomosSection() {
   return (
-    <section className="w-[calc(100%+2rem)] -mx-4 md:mx-0 md:w-full relative">
-      {/* SVG curved notch - red with curve cut out */}
+    <section className="w-[calc(100%+2rem)] -mx-4 md:mx-0 md:w-full relative bg-gradient-to-r from-[#F40000] to-[#A10000]">
+      {/* SVG curved notch - background color with curve dipping into red */}
       <svg 
         className="block w-full h-6 md:h-8"
         viewBox="0 0 100 10" 
         preserveAspectRatio="none"
       >
-        <defs>
-          <linearGradient id="redGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-            <stop offset="0%" stopColor="#F40000" />
-            <stop offset="100%" stopColor="#A10000" />
-          </linearGradient>
-        </defs>
         <path 
-          d="M0,10 L0,0 L40,0 Q50,10 60,0 L100,0 L100,10 Z" 
-          fill="url(#redGradient)"
+          d="M0,0 L100,0 L100,10 L60,10 Q50,0 40,10 L0,10 Z" 
+          fill="#F3F3F3"
         />
       </svg>
       
-      {/* Red background */}
-      <div className="bg-gradient-to-r from-[#F40000] to-[#A10000] pb-16 md:pb-24">
+      {/* Content area */}
+      <div className="pb-16 md:pb-24">
         <div className="mx-auto w-full max-w-6xl px-6 md:px-8 pt-8 md:pt-12">
           <AnimatedContainer className="flex flex-col md:flex-row items-center gap-8 md:gap-12">
             {/* Image */}
