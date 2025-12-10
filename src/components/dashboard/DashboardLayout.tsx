@@ -147,7 +147,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
       )}
 
       {/* Main Content */}
-      <main className="lg:ml-[5rem] pt-20 lg:pt-0 min-h-[calc(100vh-3rem)] p-4 lg:p-6">
+      <main className="lg:ml-[4.75rem] pt-20 lg:pt-0 min-h-[calc(100vh-2rem)]">
         {children}
       </main>
     </div>
