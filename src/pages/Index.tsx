@@ -642,19 +642,20 @@ function FeaturesSection() {
 function QuemSomosSection() {
   return (
     <section className="w-[calc(100%+2rem)] -mx-4 md:mx-0 md:w-full relative">
-      {/* Curved top transition */}
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[70%] md:w-[50%] h-8 md:h-12 bg-background rounded-b-[50px] z-10" />
-      {/* Left inverted corner */}
-      <div className="absolute top-0 left-[15%] md:left-[25%] w-6 md:w-8 h-6 md:h-8 bg-background z-[9]">
-        <div className="w-full h-full bg-gradient-to-r from-[#F40000] to-[#F40000] rounded-tl-full" />
-      </div>
-      {/* Right inverted corner */}
-      <div className="absolute top-0 right-[15%] md:right-[25%] w-6 md:w-8 h-6 md:h-8 bg-background z-[9]">
-        <div className="w-full h-full bg-gradient-to-l from-[#A10000] to-[#A10000] rounded-tr-full" />
+      {/* Curved top transition container */}
+      <div className="absolute top-0 left-0 right-0 h-10 md:h-14 z-10 flex">
+        {/* Left red area with inverted corner */}
+        <div className="flex-1 bg-gradient-to-r from-[#F40000] to-[#F40000]">
+          <div className="w-full h-full bg-background rounded-br-[30px]" />
+        </div>
+        {/* Right red area with inverted corner */}
+        <div className="flex-1 bg-gradient-to-l from-[#A10000] to-[#A10000]">
+          <div className="w-full h-full bg-background rounded-bl-[30px]" />
+        </div>
       </div>
       
       {/* Red background with padding for the curve */}
-      <div className="bg-gradient-to-r from-[#F40000] to-[#A10000] pt-8 md:pt-12 pb-16 md:pb-24">
+      <div className="bg-gradient-to-r from-[#F40000] to-[#A10000] pt-10 md:pt-14 pb-16 md:pb-24">
         <div className="mx-auto w-full max-w-6xl px-6 md:px-8 pt-8 md:pt-12">
           <AnimatedContainer className="flex flex-col md:flex-row items-center gap-8 md:gap-12">
             {/* Image */}
