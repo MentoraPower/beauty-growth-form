@@ -57,18 +57,6 @@ const SplashScreen = ({ onComplete }: SplashScreenProps) => {
                 </motion.span>
               ))}
             </div>
-            <motion.p
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{
-                duration: 0.4,
-                delay: 0.9,
-                ease: "easeOut",
-              }}
-              className="text-[10px] md:text-xs font-light tracking-[0.08em] text-foreground/60 uppercase"
-            >
-              AQUI VOCÊ É ÚNICA
-            </motion.p>
           </div>
         </motion.div>
       )}
