@@ -140,7 +140,7 @@ export const StepNavigation = memo(function StepNavigation({
                 {/* Lead avatar indicator below step name */}
                 {isCurrentLead && (
                   <div className="mt-1.5 flex items-center justify-center">
-                    <div className="w-6 h-6 rounded-full bg-primary flex items-center justify-center text-[10px] font-medium text-primary-foreground shadow-sm">
+                    <div className="w-5 h-5 rounded-md bg-primary flex items-center justify-center text-[9px] font-medium text-primary-foreground shadow-sm">
                       {getInitials(leadName)}
                     </div>
                   </div>
