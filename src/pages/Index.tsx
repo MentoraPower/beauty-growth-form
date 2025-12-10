@@ -495,13 +495,13 @@ const Index = () => {
 
       {/* Desktop Layout */}
       <div className="hidden md:flex flex-col min-h-screen">
-        {/* Banner image on top */}
-        <div className="w-full">
-          <img src={scaleBeautyBanner} alt="Scale Beauty" className="w-full h-auto object-cover" />
+        {/* Banner image on top with rounded bottom */}
+        <div className="w-full flex-shrink-0">
+          <img src={scaleBeautyBanner} alt="Scale Beauty" className="w-full h-[320px] object-cover rounded-b-3xl" />
         </div>
         
-        {/* Form centered */}
-        <div className="flex-1 flex items-center justify-center p-8">
+        {/* Form overlapping the image */}
+        <div className="flex-1 flex items-start justify-center px-8 -mt-12 relative z-10">
           <FormContainer>
             {renderStep()}
           </FormContainer>
