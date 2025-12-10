@@ -229,13 +229,6 @@ export default function LeadDetail() {
               <h1 className="text-lg font-bold">
                 {lead.name === "Incompleto" ? "incompleto" : lead.name}
               </h1>
-              <div className="flex items-center gap-2 mt-0.5">
-                {lead.service_area && lead.service_area !== "" && (
-                  <Badge variant="secondary" className="text-xs">
-                    {lead.service_area}
-                  </Badge>
-                )}
-              </div>
             </div>
           </div>
           
