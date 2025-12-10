@@ -60,7 +60,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
         className={cn(
-          "fixed top-4 left-4 bottom-4 bg-neutral-900 border border-neutral-800 rounded-2xl z-40 transform transition-all duration-300 ease-in-out shadow-sm overflow-hidden",
+          "fixed top-4 left-4 bottom-4 bg-neutral-950 border border-neutral-800 rounded-2xl z-40 transform transition-all duration-300 ease-in-out shadow-sm overflow-hidden",
           "lg:translate-x-0",
           isHovered ? "w-52" : "w-[60px]",
           sidebarOpen ? "translate-x-0 w-52" : "max-lg:-translate-x-[calc(100%+2rem)]"
