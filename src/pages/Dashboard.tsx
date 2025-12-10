@@ -267,8 +267,8 @@ const Dashboard = () => {
           <Card className="bg-white border border-border shadow-none">
             <CardContent className="pt-5 pb-4">
               <div className="flex items-center gap-3 mb-3">
-                <div className="w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center">
-                  <Users className="h-5 w-5 text-emerald-600" />
+                <div className="w-10 h-10 rounded-full border border-emerald-400 flex items-center justify-center">
+                  <Users className="h-5 w-5 text-emerald-500" />
                 </div>
                 <p className="text-sm text-foreground font-medium">Total Leads</p>
               </div>
@@ -279,8 +279,8 @@ const Dashboard = () => {
           <Card className="bg-white border border-border shadow-none">
             <CardContent className="pt-5 pb-4">
               <div className="flex items-center gap-3 mb-3">
-                <div className="w-10 h-10 rounded-full bg-violet-100 flex items-center justify-center">
-                  <TrendingUp className="h-5 w-5 text-violet-600" />
+                <div className="w-10 h-10 rounded-full border border-violet-400 flex items-center justify-center">
+                  <TrendingUp className="h-5 w-5 text-violet-500" />
                 </div>
                 <p className="text-sm text-foreground font-medium">Taxa de Captação</p>
               </div>
@@ -292,8 +292,8 @@ const Dashboard = () => {
           <Card className="bg-white border border-border shadow-none">
             <CardContent className="pt-5 pb-4">
               <div className="flex items-center gap-3 mb-3">
-                <div className="w-10 h-10 rounded-full bg-orange-100 flex items-center justify-center">
-                  <ShoppingCart className="h-5 w-5 text-orange-600" />
+                <div className="w-10 h-10 rounded-full border border-orange-400 flex items-center justify-center">
+                  <ShoppingCart className="h-5 w-5 text-orange-500" />
                 </div>
                 <p className="text-sm text-foreground font-medium">Vendas</p>
               </div>
@@ -304,8 +304,8 @@ const Dashboard = () => {
           <Card className="bg-white border border-border shadow-none">
             <CardContent className="pt-5 pb-4">
               <div className="flex items-center gap-3 mb-3">
-                <div className="w-10 h-10 rounded-full bg-sky-100 flex items-center justify-center">
-                  <DollarSign className="h-5 w-5 text-sky-600" />
+                <div className="w-10 h-10 rounded-full border border-sky-400 flex items-center justify-center">
+                  <DollarSign className="h-5 w-5 text-sky-500" />
                 </div>
                 <p className="text-sm text-foreground font-medium">Valor em Vendas</p>
               </div>
