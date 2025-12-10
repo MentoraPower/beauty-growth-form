@@ -642,27 +642,20 @@ function FeaturesSection() {
 function QuemSomosSection() {
   return (
     <section className="w-[calc(100%+2rem)] -mx-4 md:mx-0 md:w-full relative">
-      {/* Curved top transition */}
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[70%] md:w-[50%] h-10 md:h-14 z-10">
-        {/* Border element with gradient */}
-        <div 
-          className="absolute bottom-0 left-[40%] right-[40%] h-[2px]"
-          style={{
-            background: 'linear-gradient(to right, #F40000, #A10000)',
-            borderRadius: '0 0 50% 50%'
-          }}
+      {/* SVG curved notch at top */}
+      <svg 
+        className="absolute top-0 left-0 w-full h-6 md:h-8 z-10"
+        viewBox="0 0 100 10" 
+        preserveAspectRatio="none"
+      >
+        <path 
+          d="M0,0 L40,0 Q50,10 60,0 L100,0 L100,10 L0,10 Z" 
+          fill="hsl(var(--background))"
         />
-        {/* Background shape */}
-        <div 
-          className="w-full h-full bg-background"
-          style={{
-            clipPath: 'polygon(40% 0, 0 0, 0 100%, 43% 100%, 50% 30%, 57% 100%, 100% 100%, 100% 0, 60% 0, 50% 70%)'
-          }}
-        />
-      </div>
+      </svg>
       
-      {/* Red background with padding for the curve */}
-      <div className="bg-gradient-to-r from-[#F40000] to-[#A10000] pt-10 md:pt-14 pb-16 md:pb-24">
+      {/* Red background */}
+      <div className="bg-gradient-to-r from-[#F40000] to-[#A10000] pt-6 md:pt-8 pb-16 md:pb-24">
         <div className="mx-auto w-full max-w-6xl px-6 md:px-8 pt-8 md:pt-12">
           <AnimatedContainer className="flex flex-col md:flex-row items-center gap-8 md:gap-12">
             {/* Image */}
