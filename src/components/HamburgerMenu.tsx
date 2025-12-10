@@ -8,9 +8,8 @@ interface MenuItem {
 
 const menuItems: MenuItem[] = [
   { label: "Início", href: "/" },
-  { label: "Sobre", href: "#sobre" },
+  { label: "Sobre", href: "#quem-somos" },
   { label: "Serviços", href: "#servicos" },
-  { label: "Contato", href: "#contato" },
 ];
 
 type NavTheme = "light" | "dark";
