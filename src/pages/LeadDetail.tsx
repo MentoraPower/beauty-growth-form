@@ -302,7 +302,7 @@ export default function LeadDetail() {
                     Informações de Contato
                   </h3>
                   
-                  <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg">
+                  <div className="flex items-center gap-3 p-3 border border-[#00000010] rounded-lg">
                     <div className="h-10 w-10 rounded-full border border-black/10 flex items-center justify-center">
                       <Building2 className="h-5 w-5 text-neutral-600" />
                     </div>
@@ -314,7 +314,7 @@ export default function LeadDetail() {
                     </div>
                   </div>
                   
-                  <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg">
+                  <div className="flex items-center gap-3 p-3 border border-[#00000010] rounded-lg">
                     <div className="h-10 w-10 rounded-full border border-black/10 flex items-center justify-center">
                       <Mail className="h-5 w-5 text-neutral-600" />
                     </div>
@@ -330,7 +330,7 @@ export default function LeadDetail() {
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg">
+                  <div className="flex items-center gap-3 p-3 border border-[#00000010] rounded-lg">
                     <div className="h-10 w-10 rounded-full border border-black/10 flex items-center justify-center">
                       <Phone className="h-5 w-5 text-neutral-600" />
                     </div>
@@ -351,7 +351,7 @@ export default function LeadDetail() {
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg">
+                  <div className="flex items-center gap-3 p-3 border border-[#00000010] rounded-lg">
                     <div className="h-10 w-10 rounded-full border border-black/10 flex items-center justify-center">
                       <Instagram className="h-5 w-5 text-neutral-600" />
                     </div>
@@ -372,7 +372,7 @@ export default function LeadDetail() {
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg">
+                  <div className="flex items-center gap-3 p-3 border border-[#00000010] rounded-lg">
                     <div className="h-10 w-10 rounded-full border border-black/10 flex items-center justify-center">
                       <Calendar className="h-5 w-5 text-neutral-600" />
                     </div>
@@ -392,7 +392,7 @@ export default function LeadDetail() {
                   </h3>
                   
                   <div className="grid grid-cols-2 gap-4">
-                    <div className="p-3 bg-muted/50 rounded-lg">
+                    <div className="p-3 border border-[#00000010] rounded-lg">
                       <div className="flex items-center gap-2 mb-1">
                         <DollarSign className="h-4 w-4 text-muted-foreground" />
                         <p className="text-xs text-muted-foreground">Faturamento Mensal</p>
@@ -402,7 +402,7 @@ export default function LeadDetail() {
                       </p>
                     </div>
 
-                    <div className="p-3 bg-muted/50 rounded-lg">
+                    <div className="p-3 border border-[#00000010] rounded-lg">
                       <div className="flex items-center gap-2 mb-1">
                         <Users className="h-4 w-4 text-muted-foreground" />
                         <p className="text-xs text-muted-foreground">Atendimentos/Semana</p>
@@ -412,7 +412,7 @@ export default function LeadDetail() {
                       </p>
                     </div>
 
-                    <div className="p-3 bg-muted/50 rounded-lg">
+                    <div className="p-3 border border-[#00000010] rounded-lg">
                       <div className="flex items-center gap-2 mb-1">
                         <DollarSign className="h-4 w-4 text-muted-foreground" />
                         <p className="text-xs text-muted-foreground">Ticket Médio</p>
@@ -422,7 +422,7 @@ export default function LeadDetail() {
                       </p>
                     </div>
 
-                    <div className="p-3 bg-muted/50 rounded-lg">
+                    <div className="p-3 border border-[#00000010] rounded-lg">
                       <div className="flex items-center gap-2 mb-1">
                         <Building2 className="h-4 w-4 text-muted-foreground" />
                         <p className="text-xs text-muted-foreground">Tipo de Espaço</p>
@@ -432,7 +432,7 @@ export default function LeadDetail() {
                       </p>
                     </div>
 
-                    <div className="p-3 bg-muted/50 rounded-lg">
+                    <div className="p-3 border border-[#00000010] rounded-lg">
                       <div className="flex items-center gap-2 mb-1">
                         <Briefcase className="h-4 w-4 text-muted-foreground" />
                         <p className="text-xs text-muted-foreground">Anos de Experiência</p>
@@ -442,7 +442,7 @@ export default function LeadDetail() {
                       </p>
                     </div>
 
-                    <div className="p-3 bg-muted/50 rounded-lg">
+                    <div className="p-3 border border-[#00000010] rounded-lg">
                       <div className="flex items-center gap-2 mb-1">
                         <Clock className="h-4 w-4 text-muted-foreground" />
                         <p className="text-xs text-muted-foreground">Receita Estimada</p>
@@ -455,7 +455,7 @@ export default function LeadDetail() {
 
                   {/* Affordability Status */}
                   {lead.can_afford && (
-                    <div className="p-4 bg-muted/50 rounded-lg">
+                    <div className="p-4 border border-[#00000010] rounded-lg">
                       <p className="text-xs text-muted-foreground mb-2">Capacidade de Investimento</p>
                       <Badge 
                         variant={lead.can_afford === "yes" ? "default" : "secondary"}
