@@ -264,7 +264,7 @@ const Dashboard = () => {
 
         {/* Stats Cards */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          <Card className="bg-white border border-black/10 shadow-none">
+          <Card className="bg-white border border-black/5 shadow-none">
             <CardContent className="pt-5 pb-4">
               <div className="flex items-center gap-3 mb-3">
                 <div className="w-10 h-10 rounded-full border border-emerald-400 flex items-center justify-center">
@@ -276,7 +276,7 @@ const Dashboard = () => {
             </CardContent>
           </Card>
 
-          <Card className="bg-white border border-black/10 shadow-none">
+          <Card className="bg-white border border-black/5 shadow-none">
             <CardContent className="pt-5 pb-4">
               <div className="flex items-center gap-3 mb-3">
                 <div className="w-10 h-10 rounded-full border border-violet-400 flex items-center justify-center">
@@ -289,7 +289,7 @@ const Dashboard = () => {
             </CardContent>
           </Card>
 
-          <Card className="bg-white border border-black/10 shadow-none">
+          <Card className="bg-white border border-black/5 shadow-none">
             <CardContent className="pt-5 pb-4">
               <div className="flex items-center gap-3 mb-3">
                 <div className="w-10 h-10 rounded-full border border-orange-400 flex items-center justify-center">
@@ -301,7 +301,7 @@ const Dashboard = () => {
             </CardContent>
           </Card>
 
-          <Card className="bg-white border border-black/10 shadow-none">
+          <Card className="bg-white border border-black/5 shadow-none">
             <CardContent className="pt-5 pb-4">
               <div className="flex items-center gap-3 mb-3">
                 <div className="w-10 h-10 rounded-full border border-sky-400 flex items-center justify-center">
@@ -317,7 +317,7 @@ const Dashboard = () => {
         {/* Charts Row */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
           {/* Leads Trend - Area Chart */}
-          <Card className="bg-white border border-black/10 shadow-none lg:col-span-2">
+          <Card className="bg-white border border-black/5 shadow-none lg:col-span-2">
             <CardHeader className="pb-2">
               <CardTitle className="text-base font-semibold text-foreground">
                 Tendência de Leads
@@ -330,7 +330,7 @@ const Dashboard = () => {
           </Card>
 
           {/* Mini Gauges por Área */}
-          <Card className="bg-white border border-black/10 shadow-none">
+          <Card className="bg-white border border-black/5 shadow-none">
             <CardHeader className="pb-2">
               <CardTitle className="text-base font-semibold text-foreground">
                 Leads por Área
@@ -365,7 +365,7 @@ const Dashboard = () => {
         </div>
 
         {/* Bar Chart */}
-        <Card className="bg-white border border-black/10 shadow-none">
+        <Card className="bg-white border border-black/5 shadow-none">
           <CardHeader className="pb-2">
             <CardTitle className="text-base font-semibold text-foreground">
               Leads por Dia da Semana
