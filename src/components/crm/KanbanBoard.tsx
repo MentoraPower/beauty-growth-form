@@ -19,8 +19,9 @@ import { Lead, Pipeline } from "@/types/crm";
 import { KanbanColumn } from "./KanbanColumn";
 import { KanbanCard } from "./KanbanCard";
 import { Button } from "@/components/ui/button";
-import { Settings } from "lucide-react";
+import { Settings, LayoutGrid, List } from "lucide-react";
 import { ManagePipelinesDialog } from "./ManagePipelinesDialog";
+import { LeadsList } from "./LeadsList";
 import { toast } from "sonner";
 
 export function KanbanBoard() {
@@ -28,6 +29,7 @@ export function KanbanBoard() {
   const [overId, setOverId] = useState<string | null>(null);
   const [isPipelinesDialogOpen, setIsPipelinesDialogOpen] = useState(false);
   const [localLeads, setLocalLeads] = useState<Lead[]>([]);
+  const [viewMode, setViewMode] = useState<"kanban" | "list">("kanban");
   const queryClient = useQueryClient();
 
   const sensors = useSensors(
@@ -275,53 +277,77 @@ export function KanbanBoard() {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">Lista geral comercial</h1>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => setIsPipelinesDialogOpen(true)}
-        >
-          <Settings className="w-4 h-4 mr-2" />
-          Gerenciar Origens
-        </Button>
+        <div className="flex items-center gap-2">
+          <div className="flex items-center border rounded-lg overflow-hidden">
+            <Button
+              variant={viewMode === "kanban" ? "secondary" : "ghost"}
+              size="sm"
+              className="rounded-none"
+              onClick={() => setViewMode("kanban")}
+            >
+              <LayoutGrid className="w-4 h-4" />
+            </Button>
+            <Button
+              variant={viewMode === "list" ? "secondary" : "ghost"}
+              size="sm"
+              className="rounded-none"
+              onClick={() => setViewMode("list")}
+            >
+              <List className="w-4 h-4" />
+            </Button>
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setIsPipelinesDialogOpen(true)}
+          >
+            <Settings className="w-4 h-4 mr-2" />
+            Gerenciar Origens
+          </Button>
+        </div>
       </div>
 
-      <DndContext
-        sensors={sensors}
-        collisionDetection={closestCenter}
-        onDragStart={handleDragStart}
-        onDragOver={handleDragOver}
-        onDragEnd={handleDragEnd}
-        onDragCancel={handleDragCancel}
-        measuring={{
-          droppable: {
-            strategy: MeasuringStrategy.Always,
-          },
-        }}
-      >
-        <div className="flex gap-4 overflow-x-auto pb-4">
-          {pipelines.map((pipeline) => {
-            const pipelineLeads = displayLeads
-              .filter((lead) => lead.pipeline_id === pipeline.id)
-              .sort((a, b) => (a.ordem ?? 0) - (b.ordem ?? 0));
-            return (
-              <KanbanColumn
-                key={pipeline.id}
-                pipeline={pipeline}
-                leads={pipelineLeads}
-                isOver={overId === pipeline.id}
-              />
-            );
-          })}
-        </div>
+      {viewMode === "list" ? (
+        <LeadsList leads={displayLeads} pipelines={pipelines} />
+      ) : (
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          onDragStart={handleDragStart}
+          onDragOver={handleDragOver}
+          onDragEnd={handleDragEnd}
+          onDragCancel={handleDragCancel}
+          measuring={{
+            droppable: {
+              strategy: MeasuringStrategy.Always,
+            },
+          }}
+        >
+          <div className="flex gap-4 overflow-x-auto pb-4">
+            {pipelines.map((pipeline) => {
+              const pipelineLeads = displayLeads
+                .filter((lead) => lead.pipeline_id === pipeline.id)
+                .sort((a, b) => (a.ordem ?? 0) - (b.ordem ?? 0));
+              return (
+                <KanbanColumn
+                  key={pipeline.id}
+                  pipeline={pipeline}
+                  leads={pipelineLeads}
+                  isOver={overId === pipeline.id}
+                />
+              );
+            })}
+          </div>
 
-        <DragOverlay dropAnimation={null}>
-          {activeLead ? (
-            <div className="rotate-3 scale-105">
-              <KanbanCard lead={activeLead} isDragging />
-            </div>
-          ) : null}
-        </DragOverlay>
-      </DndContext>
+          <DragOverlay dropAnimation={null}>
+            {activeLead ? (
+              <div className="rotate-3 scale-105">
+                <KanbanCard lead={activeLead} isDragging />
+              </div>
+            ) : null}
+          </DragOverlay>
+        </DndContext>
+      )}
 
       <ManagePipelinesDialog
         open={isPipelinesDialogOpen}
