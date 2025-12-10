@@ -60,7 +60,7 @@ export function KanbanBoard() {
     staleTime: 30000,
   });
 
-  const { data: leads = [] } = useQuery({
+  const { data: leads = [], dataUpdatedAt } = useQuery({
     queryKey: ["crm-leads"],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -71,15 +71,15 @@ export function KanbanBoard() {
       if (error) throw error;
       return data as Lead[];
     },
-    staleTime: 5000,
+    staleTime: 0, // Always consider stale to ensure fresh data on navigation
+    refetchOnMount: true,
+    refetchOnWindowFocus: true,
   });
 
-  // Sync local state with fetched data
+  // Sync local state with fetched data - using dataUpdatedAt to detect changes
   useEffect(() => {
-    if (leads.length > 0) {
-      setLocalLeads(leads);
-    }
-  }, [leads]);
+    setLocalLeads(leads);
+  }, [leads, dataUpdatedAt]);
 
   // Real-time subscription
   useEffect(() => {
@@ -245,6 +245,16 @@ export function KanbanBoard() {
               .update({ ordem: update.ordem })
               .eq("id", update.id);
           }
+
+          // Force update the query cache to prevent stale data on navigation
+          queryClient.setQueryData<Lead[]>(["crm-leads"], (oldData) => {
+            if (!oldData) return oldData;
+            return oldData.map((l) => 
+              l.id === activeId 
+                ? { ...l, pipeline_id: newPipelineId, ordem: insertIndex }
+                : l
+            );
+          });
         } catch (error) {
           setLocalLeads((prev) =>
             prev.map((l) =>
