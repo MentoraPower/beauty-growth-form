@@ -16,6 +16,8 @@ export type Database = {
     Tables: {
       leads: {
         Row: {
+          average_ticket: number | null
+          can_afford: string | null
           country_code: string
           created_at: string
           email: string
@@ -26,12 +28,15 @@ export type Database = {
           ordem: number | null
           pipeline_id: string | null
           service_area: string
+          wants_more_info: boolean | null
           weekly_attendance: string
           whatsapp: string
           workspace_type: string
           years_experience: string
         }
         Insert: {
+          average_ticket?: number | null
+          can_afford?: string | null
           country_code?: string
           created_at?: string
           email: string
@@ -42,12 +47,15 @@ export type Database = {
           ordem?: number | null
           pipeline_id?: string | null
           service_area: string
+          wants_more_info?: boolean | null
           weekly_attendance: string
           whatsapp: string
           workspace_type: string
           years_experience: string
         }
         Update: {
+          average_ticket?: number | null
+          can_afford?: string | null
           country_code?: string
           created_at?: string
           email?: string
@@ -58,6 +66,7 @@ export type Database = {
           ordem?: number | null
           pipeline_id?: string | null
           service_area?: string
+          wants_more_info?: boolean | null
           weekly_attendance?: string
           whatsapp?: string
           workspace_type?: string

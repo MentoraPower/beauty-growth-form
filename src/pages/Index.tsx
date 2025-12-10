@@ -37,9 +37,69 @@ interface FormData {
   beautyArea: string;
   revenue: string;
   weeklyAppointments: string;
+  averageTicket: string;
   hasPhysicalSpace: boolean | null;
   yearsOfExperience: string;
+  canAfford: string | null;
+  wantsMoreInfo: boolean | null;
 }
+
+// Format currency as user types
+const formatCurrency = (value: string): string => {
+  // Remove non-digits
+  const digits = value.replace(/\D/g, '');
+  if (!digits) return '';
+  
+  // Convert to number (cents)
+  const cents = parseInt(digits, 10);
+  
+  // Format as BRL
+  const reais = (cents / 100).toLocaleString('pt-BR', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  });
+  
+  return `R$ ${reais}`;
+};
+
+// Parse currency string to number
+const parseCurrency = (value: string): number => {
+  const digits = value.replace(/\D/g, '');
+  if (!digits) return 0;
+  return parseInt(digits, 10) / 100;
+};
+
+// Get minimum revenue value from range string
+const getMinRevenueFromRange = (range: string): number => {
+  // Parse strings like "Até R$ 5.000", "R$ 5.000 a R$ 10.000", "Acima de R$ 50.000"
+  const cleanRange = range.replace(/\./g, '').replace(',', '.');
+  
+  if (range.toLowerCase().includes('até')) {
+    return 0;
+  }
+  
+  if (range.toLowerCase().includes('acima')) {
+    const match = cleanRange.match(/(\d+)/);
+    return match ? parseInt(match[1], 10) : 0;
+  }
+  
+  const match = cleanRange.match(/(\d+)/);
+  return match ? parseInt(match[1], 10) : 0;
+};
+
+// Check if person can likely afford the service
+const checkAffordability = (revenue: string, weeklyAppointments: string, averageTicket: string): boolean => {
+  const minRevenue = getMinRevenueFromRange(revenue);
+  const appointments = parseInt(weeklyAppointments, 10) || 0;
+  const ticket = parseCurrency(averageTicket);
+  
+  // Calculate estimated monthly revenue
+  const estimatedMonthly = appointments * 4 * ticket;
+  
+  // Service costs R$ 2,800/month
+  // Consider affordable if revenue >= 2800 and estimated monthly is reasonable
+  return minRevenue >= 2800 || estimatedMonthly >= 2800;
+};
 
 const Index = () => {
   const [showSplash, setShowSplash] = useState(true);
@@ -54,9 +114,15 @@ const Index = () => {
     beautyArea: "",
     revenue: "",
     weeklyAppointments: "",
+    averageTicket: "",
     hasPhysicalSpace: null,
-    yearsOfExperience: ""
+    yearsOfExperience: "",
+    canAfford: null,
+    wantsMoreInfo: null
   });
+  
+  // Track if affordability question should be shown
+  const [showAffordabilityQuestion, setShowAffordabilityQuestion] = useState(false);
 
   // Track page view on mount (only once per real visitor, filter bots)
   useEffect(() => {
@@ -149,7 +215,7 @@ const Index = () => {
     };
   }, []);
 
-  const totalSteps = 10;
+  const totalSteps = 12; // Added ticket médio and affordability steps
   const updateFormData = (field: keyof FormData, value: string | boolean | Country | null) => {
     setFormData(prev => ({
       ...prev,
@@ -173,9 +239,13 @@ const Index = () => {
       case 7:
         return "Por favor, preencha a quantidade de atendimentos";
       case 8:
-        return "Por favor, selecione uma opção";
+        return "Por favor, preencha o valor do ticket médio";
       case 9:
+        return "Por favor, selecione uma opção";
+      case 10:
         return "Por favor, preencha seus anos de experiência";
+      case 11:
+        return "Por favor, selecione uma opção";
       default:
         return "Por favor, preencha o campo";
     }
@@ -183,6 +253,11 @@ const Index = () => {
   const handleNext = () => {
     if (canProceed()) {
       if (step < totalSteps) {
+        // After ticket médio step, check affordability
+        if (step === 8) {
+          const canAfford = checkAffordability(formData.revenue, formData.weeklyAppointments, formData.averageTicket);
+          setShowAffordabilityQuestion(!canAfford);
+        }
         setStep(step + 1);
       }
     } else {
@@ -216,9 +291,13 @@ const Index = () => {
       case 7:
         return formData.weeklyAppointments.trim().length >= 1;
       case 8:
-        return formData.hasPhysicalSpace !== null;
+        return formData.averageTicket.trim().length >= 1 && parseCurrency(formData.averageTicket) > 0;
       case 9:
+        return formData.hasPhysicalSpace !== null;
+      case 10:
         return formData.yearsOfExperience.trim().length >= 1;
+      case 11:
+        return formData.canAfford !== null;
       default:
         return true;
     }
@@ -369,6 +448,36 @@ const Index = () => {
       case 8:
         return <div className="form-card">
             <h1 className="form-title">
+              <span className="font-light">Qual o </span>
+              <span className="font-bold">ticket médio?</span>
+            </h1>
+            <p className="form-subtitle">Valor médio do seu procedimento</p>
+            <div className="space-y-4">
+              <input 
+                type="text" 
+                value={formData.averageTicket} 
+                onChange={e => {
+                  const formatted = formatCurrency(e.target.value);
+                  updateFormData("averageTicket", formatted);
+                }} 
+                placeholder="R$ 0,00" 
+                className="form-input" 
+                autoFocus 
+              />
+              <div className="flex gap-3">
+                <button onClick={prevStep} className="h-14 px-4 rounded-xl border border-border bg-card flex items-center justify-center">
+                  <ArrowLeft className="w-5 h-5 text-foreground" />
+                </button>
+                <ShimmerButton onClick={handleNext} className="flex-1">
+                  Continuar
+                  <ArrowRight className="w-5 h-5" />
+                </ShimmerButton>
+              </div>
+            </div>
+          </div>;
+      case 9:
+        return <div className="form-card">
+            <h1 className="form-title">
               <span className="font-light">Você possui </span>
               <span className="font-bold">espaço físico?</span>
             </h1>
@@ -391,7 +500,7 @@ const Index = () => {
               </div>
             </div>
           </div>;
-      case 9:
+      case 10:
         return <div className="form-card">
             <h1 className="form-title">
               <span className="font-light">Quantos anos de </span>
@@ -411,7 +520,77 @@ const Index = () => {
               </div>
             </div>
           </div>;
-      case 10:
+      case 11:
+        // Affordability check step
+        if (formData.canAfford === "no" && formData.wantsMoreInfo === null) {
+          // Show "want to know more?" question
+          return <div className="form-card">
+              <h1 className="form-title !text-center">
+                <span className="font-bold">Deseja saber mais?</span>
+              </h1>
+              <p className="text-base text-muted-foreground mt-4 mb-8 leading-relaxed text-center">
+                Mesmo assim, gostaria de conhecer mais sobre nossos serviços e como podemos ajudar seu negócio?
+              </p>
+              <div className="space-y-3">
+                <button 
+                  type="button" 
+                  onClick={() => {
+                    updateFormData("wantsMoreInfo", true);
+                    nextStep();
+                  }} 
+                  className="option-card"
+                >
+                  <span className="option-card-text">Sim, quero saber mais</span>
+                </button>
+                <button 
+                  type="button" 
+                  onClick={() => {
+                    updateFormData("wantsMoreInfo", false);
+                    nextStep();
+                  }} 
+                  className="option-card"
+                >
+                  <span className="option-card-text">Não, obrigada</span>
+                </button>
+              </div>
+            </div>;
+        }
+        
+        return <div className="form-card">
+            <h1 className="form-title !text-center">
+              <span className="font-bold">Investimento</span>
+            </h1>
+            <p className="text-base text-muted-foreground mt-4 mb-8 leading-relaxed text-center">
+              Hoje, nosso serviço mais acessível custa <span className="font-bold text-foreground">R$ 2.800,00 por mês</span>. Você tem condição de investir esse valor no crescimento do seu negócio?
+            </p>
+            <div className="space-y-3">
+              <button 
+                type="button" 
+                onClick={() => {
+                  updateFormData("canAfford", "yes");
+                  nextStep();
+                }} 
+                className={`option-card ${formData.canAfford === "yes" ? "selected" : ""}`}
+              >
+                <span className="option-card-text">Sim, consigo investir</span>
+              </button>
+              <button 
+                type="button" 
+                onClick={() => {
+                  updateFormData("canAfford", "no");
+                }} 
+                className={`option-card ${formData.canAfford === "no" ? "selected" : ""}`}
+              >
+                <span className="option-card-text">Não no momento</span>
+              </button>
+              <div className="flex gap-3 mt-4">
+                <button onClick={prevStep} className="h-14 px-4 rounded-xl border border-border bg-card flex items-center justify-center">
+                  <ArrowLeft className="w-5 h-5 text-foreground" />
+                </button>
+              </div>
+            </div>
+          </div>;
+      case 12:
         return <div className="form-card text-center">
             {isLoading ? <>
                 <h1 className="form-title !text-center">Redirecionando...</h1>
@@ -446,6 +625,9 @@ const Index = () => {
                   weekly_attendance: formData.weeklyAppointments,
                   workspace_type: formData.hasPhysicalSpace ? "physical" : "home",
                   years_experience: formData.yearsOfExperience,
+                  average_ticket: parseCurrency(formData.averageTicket),
+                  can_afford: formData.canAfford,
+                  wants_more_info: formData.wantsMoreInfo,
                   pipeline_id: basePipeline?.id || null
                 });
                 if (error) {
@@ -485,7 +667,7 @@ const Index = () => {
         className="min-h-screen bg-background flex flex-col"
       >
       <HamburgerMenu />
-      {step > 1 && step < 10 && <ProgressBar currentStep={step - 1} totalSteps={totalSteps - 2} />}
+      {step > 1 && step < 12 && <ProgressBar currentStep={step - 1} totalSteps={totalSteps - 2} />}
       
       {/* Mobile Layout */}
       <div className="md:hidden flex flex-col min-h-screen relative">
