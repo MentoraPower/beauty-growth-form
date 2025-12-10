@@ -1202,7 +1202,7 @@ function AnimatedContainer({
     </motion.div>;
 }
 function FeaturesSection() {
-  return <section className="py-16 md:py-32">
+  return <section id="servicos" className="py-16 md:py-32">
       <div className="mx-auto w-full max-w-5xl space-y-8 px-6 md:px-4">
         <AnimatedContainer className="mx-auto max-w-4xl text-center px-2">
           <h2 className="text-2xl font-bold tracking-tight text-balance md:text-3xl lg:text-4xl xl:font-extrabold mx-0">
@@ -1225,7 +1225,7 @@ function FeaturesSection() {
     </section>;
 }
 function QuemSomosSection() {
-  return <section className="w-[calc(100%+2rem)] -mx-4 md:mx-0 md:w-full relative">
+  return <section id="quem-somos" className="w-[calc(100%+2rem)] -mx-4 md:mx-0 md:w-full relative">
       {/* Curved top transition */}
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[70%] md:w-[50%] h-8 md:h-12 bg-background rounded-b-[50px] z-10" />
       
