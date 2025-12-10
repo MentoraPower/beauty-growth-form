@@ -221,6 +221,9 @@ export default function LeadDetail() {
             
             {/* Name and Badges */}
             <div>
+              <p className={`uppercase tracking-wide ${lead.clinic_name ? "text-xs text-muted-foreground font-medium" : "text-[10px] text-muted-foreground/70"}`}>
+                {lead.clinic_name || "SEM EMPRESA"}
+              </p>
               <h1 className="text-lg font-bold">
                 {lead.name === "Incompleto" ? "incompleto" : lead.name}
               </h1>
