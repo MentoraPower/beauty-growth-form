@@ -80,15 +80,21 @@ export function LeadTagsManager({ leadId }: LeadTagsManagerProps) {
     setAllTags(uniqueTags);
   };
 
-  // Filter suggestions based on input
+  // Filter suggestions based on input - show all matching tags
   const suggestions = newTagName.trim()
     ? allTags.filter(tag => 
-        tag.name.toLowerCase().includes(newTagName.toLowerCase()) &&
-        !tags.find(t => t.name.toLowerCase() === tag.name.toLowerCase())
-      )
+        tag.name.toLowerCase().includes(newTagName.toLowerCase())
+      ).map(tag => ({
+        ...tag,
+        alreadyAdded: !!tags.find(t => t.name.toLowerCase() === tag.name.toLowerCase())
+      }))
     : [];
 
-  const handleSelectSuggestion = (suggestion: {name: string; color: string}) => {
+  const handleSelectSuggestion = (suggestion: {name: string; color: string; alreadyAdded: boolean}) => {
+    if (suggestion.alreadyAdded) {
+      toast.info("Essa tag já está adicionada neste lead");
+      return;
+    }
     setNewTagName(suggestion.name);
     setSelectedColor(suggestion.color);
     setShowColorPicker(true);
@@ -212,13 +218,20 @@ export function LeadTagsManager({ leadId }: LeadTagsManagerProps) {
                       key={index}
                       type="button"
                       onClick={() => handleSelectSuggestion(suggestion)}
-                      className="w-full flex items-center gap-2 px-2 py-1.5 text-sm hover:bg-muted/50 transition-colors text-left"
+                      className={`w-full flex items-center gap-2 px-2 py-1.5 text-sm transition-colors text-left ${
+                        suggestion.alreadyAdded 
+                          ? "bg-muted/30 text-muted-foreground cursor-default" 
+                          : "hover:bg-muted/50"
+                      }`}
                     >
                       <span
                         className="h-3 w-3 rounded-full flex-shrink-0"
                         style={{ backgroundColor: suggestion.color }}
                       />
-                      {suggestion.name}
+                      <span className="flex-1">{suggestion.name}</span>
+                      {suggestion.alreadyAdded && (
+                        <span className="text-xs text-muted-foreground">já adicionada</span>
+                      )}
                     </button>
                   ))}
                 </div>
