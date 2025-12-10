@@ -86,7 +86,7 @@ export const StepNavigation = memo(function StepNavigation({
                   {/* Line before */}
                   {index > 0 ? (
                     <div 
-                      className="h-[2px] w-10"
+                      className="h-[2px] w-16"
                       style={{ 
                         backgroundColor: isLineBeforeActive 
                           ? 'hsl(var(--primary))' 
@@ -94,7 +94,7 @@ export const StepNavigation = memo(function StepNavigation({
                       }}
                     />
                   ) : (
-                    <div className="w-10" />
+                    <div className="w-16" />
                   )}
                   
                   {/* Circle */}
@@ -117,7 +117,7 @@ export const StepNavigation = memo(function StepNavigation({
                   {/* Line after */}
                   {index < pipelines.length - 1 ? (
                     <div 
-                      className="h-[2px] w-10"
+                      className="h-[2px] w-16"
                       style={{ 
                         backgroundColor: isLineAfterActive 
                           ? 'hsl(var(--primary))' 
@@ -125,7 +125,7 @@ export const StepNavigation = memo(function StepNavigation({
                       }}
                     />
                   ) : (
-                    <div className="w-10" />
+                    <div className="w-16" />
                   )}
                 </div>
 
