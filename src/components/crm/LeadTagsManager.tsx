@@ -216,8 +216,8 @@ export function LeadTagsManager({ leadId }: LeadTagsManagerProps) {
               )}
             </div>
 
-            {/* Preview - clickable to show color picker */}
-            {newTagName.trim() && (
+            {/* Preview - only show when no suggestions match OR after selecting a suggestion */}
+            {newTagName.trim() && (suggestions.length === 0 || showColorPicker) && (
               <div className="pt-2 border-t border-black/5">
                 <p className="text-xs text-muted-foreground mb-1">
                   {showColorPicker ? "Selecione a cor" : "Clique para escolher a cor"}
