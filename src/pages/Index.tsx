@@ -204,20 +204,6 @@ const Index = () => {
                 <ArrowRight className="w-5 h-5" />
               </RippleButton>
             </div>
-            {/* Desktop: terms inline */}
-            <div className="hidden md:block">
-              <p className="legal-text mt-6">
-                Ao clicar em PROSSEGUIR você automaticamente concorda com os{" "}
-                <Link to="/termos" className="legal-link">
-                  termos de uso
-                </Link>{" "}
-                e{" "}
-                <Link to="/privacidade" className="legal-link">
-                  política de privacidade
-                </Link>
-              </p>
-              <p className="copyright">© Copyright 2025 Scale Beauty</p>
-            </div>
           </div>;
       case 2:
         return <div className="form-card">
@@ -541,6 +527,24 @@ const Index = () => {
 
         {/* Feature Cards Section */}
         <FeaturesSection />
+
+        {/* Desktop footer with terms - only on step 1 */}
+        {step === 1 && <div className="pb-6 pt-4 bg-background">
+            <div className="w-full h-px bg-border mb-4" />
+            <div className="text-center px-8">
+              <p className="legal-text">
+                Ao clicar em PROSSEGUIR você automaticamente concorda com os{" "}
+                <Link to="/termos" className="legal-link">
+                  termos de uso
+                </Link>{" "}
+                e{" "}
+                <Link to="/privacidade" className="legal-link">
+                  política de privacidade
+                </Link>
+              </p>
+              <p className="copyright mt-4">© Copyright 2025 Scale Beauty</p>
+            </div>
+          </div>}
       </div>
     </div>;
 };
