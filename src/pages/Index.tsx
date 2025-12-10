@@ -1,5 +1,4 @@
 import { useState, useEffect } from "react";
-import { ChevronDown } from "lucide-react";
 import { Link } from "react-router-dom";
 import { countries, beautyAreas, revenueRanges, Country } from "@/data/countries";
 import scaleBeautyBanner from "@/assets/scale-beauty-banner.png";
@@ -644,22 +643,16 @@ function QuemSomosSection() {
   return (
     <section className="w-[calc(100%+2rem)] -mx-4 md:mx-0 md:w-full relative bg-gradient-to-r from-[#F40000] to-[#A10000]">
       {/* SVG curved notch - background color with curve dipping into red */}
-      <div className="relative">
-        <svg 
-          className="block w-full h-10 md:h-14"
-          viewBox="0 0 100 14" 
-          preserveAspectRatio="none"
-        >
-          <path 
-            d="M0,0 L100,0 L100,14 L58,14 Q50,2 42,14 L0,14 Z" 
-            fill="#F3F3F3"
-          />
-        </svg>
-        {/* Arrow pointing down */}
-        <div className="absolute bottom-1 md:bottom-2 left-1/2 -translate-x-1/2">
-          <ChevronDown className="w-5 h-5 md:w-6 md:h-6 text-muted-foreground/60" strokeWidth={2} />
-        </div>
-      </div>
+      <svg 
+        className="block w-full h-6 md:h-8"
+        viewBox="0 0 100 10" 
+        preserveAspectRatio="none"
+      >
+        <path 
+          d="M0,0 L100,0 L100,10 L60,10 Q50,0 40,10 L0,10 Z" 
+          fill="#F3F3F3"
+        />
+      </svg>
       
       {/* Content area */}
       <div className="pb-16 md:pb-24">
