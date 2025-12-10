@@ -643,7 +643,7 @@ function QuemSomosSection() {
   return (
     <section className="w-[calc(100%+2rem)] -mx-4 md:mx-0 md:w-full relative">
       {/* Curved top transition */}
-      <div className="absolute top-0 left-0 right-0 h-8 md:h-12 bg-background rounded-b-3xl z-10" />
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[70%] md:w-[50%] h-8 md:h-12 bg-background rounded-b-[50px] z-10" />
       
       {/* Red background with padding for the curve */}
       <div className="bg-gradient-to-r from-[#F40000] to-[#A10000] pt-8 md:pt-12 pb-16 md:pb-24">
