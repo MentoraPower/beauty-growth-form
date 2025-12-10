@@ -132,6 +132,7 @@ export type Database = {
         Row: {
           average_ticket: number | null
           can_afford: string | null
+          clinic_name: string | null
           country_code: string
           created_at: string
           email: string
@@ -152,6 +153,7 @@ export type Database = {
         Insert: {
           average_ticket?: number | null
           can_afford?: string | null
+          clinic_name?: string | null
           country_code?: string
           created_at?: string
           email: string
@@ -172,6 +174,7 @@ export type Database = {
         Update: {
           average_ticket?: number | null
           can_afford?: string | null
+          clinic_name?: string | null
           country_code?: string
           created_at?: string
           email?: string

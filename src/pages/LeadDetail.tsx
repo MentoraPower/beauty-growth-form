@@ -37,6 +37,7 @@ interface LeadData {
   whatsapp: string;
   country_code: string;
   instagram: string;
+  clinic_name: string | null;
   service_area: string;
   monthly_billing: string;
   weekly_attendance: string;
@@ -220,6 +221,9 @@ export default function LeadDetail() {
             
             {/* Name and Badges */}
             <div>
+              <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">
+                {lead.clinic_name || "SEM EMPRESA"}
+              </p>
               <h1 className="text-lg font-bold">
                 {lead.name === "Incompleto" ? "incompleto" : lead.name}
               </h1>
