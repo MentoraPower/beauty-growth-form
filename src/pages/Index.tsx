@@ -641,8 +641,8 @@ function FeaturesSection() {
 
 function QuemSomosSection() {
   return (
-    <section className="w-full bg-gradient-to-r from-[#F40000] to-[#A10000] py-16 md:py-24">
-      <div className="mx-auto w-full max-w-6xl px-0 md:px-8">
+    <section className="w-[calc(100%+2rem)] -mx-4 md:mx-0 md:w-full bg-gradient-to-r from-[#F40000] to-[#A10000] py-16 md:py-24">
+      <div className="mx-auto w-full max-w-6xl px-4 md:px-8">
         <AnimatedContainer className="flex flex-col md:flex-row items-center gap-8 md:gap-12">
           {/* Image */}
           <div className="w-full md:w-1/2">
