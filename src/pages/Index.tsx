@@ -469,17 +469,19 @@ const Index = () => {
         return "Por favor, preencha o campo";
     }
   };
-  // Check if affordability question should be shown (only if revenue < 80% of R$ 2,800)
+  // Check if affordability question should be shown
+  // Logic: service should be max 55% of revenue for it to be sustainable
+  // If revenue < ~R$ 5,091, they likely can't afford R$ 2,800/month
   const shouldShowAffordabilityQuestion = (): boolean => {
     const SERVICE_COST = 2800;
-    const THRESHOLD = SERVICE_COST * 0.8; // R$ 2,240
+    const MIN_REVENUE_RATIO = 0.55; // Service should be at most 55% of revenue
+    const MIN_AFFORDABLE_REVENUE = Math.ceil(SERVICE_COST / MIN_REVENUE_RATIO); // ~R$ 5,091
     
     const appointments = parseInt(formData.weeklyAppointments) || 0;
     const ticket = parseCurrency(formData.averageTicket);
     const estimatedMonthly = appointments * 4 * ticket;
-    
-    // Only show if estimated monthly revenue is below 80% of service cost
-    return estimatedMonthly < THRESHOLD;
+    // Show question if estimated revenue is below minimum affordable threshold
+    return estimatedMonthly < MIN_AFFORDABLE_REVENUE;
   };
 
   const handleNext = async () => {

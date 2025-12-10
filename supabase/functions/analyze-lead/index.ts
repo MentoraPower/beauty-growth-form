@@ -10,7 +10,12 @@ const corsHeaders = {
 
 // Service cost and threshold
 const SERVICE_COST = 2800;
-const THRESHOLD = SERVICE_COST * 0.8; // R$ 2,240 - Only show affordability question below this
+// Minimum revenue to afford: service should be max 50-60% of revenue
+// If revenue = 3000, can't afford (would be 93% of income)
+// If revenue = 3500, borderline (80% of income)
+// If revenue = 5000, can afford (56% of income)
+const MIN_REVENUE_RATIO = 0.55; // Service should be at most 55% of revenue
+const MIN_AFFORDABLE_REVENUE = Math.ceil(SERVICE_COST / MIN_REVENUE_RATIO); // ~R$ 5,091
 
 const SYSTEM_PROMPT = `Você é um calculador financeiro especializado. Sua ÚNICA função é analisar números e retornar um JSON.
 
@@ -21,9 +26,17 @@ REGRAS ABSOLUTAS:
 4. Você NUNCA inclui texto fora do JSON
 5. Você NUNCA usa markdown, código ou formatação
 
+CONTEXTO IMPORTANTE:
+- O serviço custa R$ ${SERVICE_COST}/mês
+- Uma pessoa NÃO pode pagar se o serviço representar mais de 55% do faturamento dela
+- Exemplo: Se fatura R$ 3.000, NÃO pode pagar (R$ 2.800 seria 93% do faturamento - não sobra para viver)
+- Exemplo: Se fatura R$ 3.500, NÃO pode pagar (R$ 2.800 seria 80% do faturamento - muito arriscado)
+- Exemplo: Se fatura R$ 5.000, PODE pagar (R$ 2.800 seria 56% do faturamento - sustentável)
+- Mínimo para poder pagar: ~R$ ${MIN_AFFORDABLE_REVENUE} (onde o serviço representa ~55% do faturamento)
+
 FÓRMULA:
 - Faturamento Estimado = atendimentos_semanais × 4 × ticket_medio
-- Pode Pagar = Faturamento Estimado >= ${THRESHOLD} (80% de R$ ${SERVICE_COST})
+- Pode Pagar = Faturamento Estimado >= ${MIN_AFFORDABLE_REVENUE}
 
 FORMATO DE RESPOSTA (APENAS ISSO, NADA MAIS):
 {"estimatedRevenue":0,"revenueConsistent":true,"canAfford":true,"confidenceLevel":"high","analysis":"texto"}`;
@@ -51,14 +64,16 @@ serve(async (req) => {
       minRevenue = parseInt(match[1]);
     }
     
-    // Simple calculation fallback (always available)
+    // Calculate if they can afford based on ratio
     // canAfford = true means we DON'T need to show the affordability question
+    const canAffordService = estimatedMonthly >= MIN_AFFORDABLE_REVENUE;
+    
     const fallbackResult = {
       estimatedRevenue: estimatedMonthly,
       revenueConsistent: Math.abs(estimatedMonthly - minRevenue) < minRevenue * 0.5 || minRevenue === 0,
-      canAfford: estimatedMonthly >= THRESHOLD, // Only false if below 80% of service cost
+      canAfford: canAffordService,
       confidenceLevel: "high",
-      analysis: `Faturamento estimado: R$ ${estimatedMonthly.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}/mês.`
+      analysis: `Faturamento estimado: R$ ${estimatedMonthly.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}/mês. ${canAffordService ? 'Investimento sustentável.' : 'Investimento representaria mais de 55% do faturamento.'}`
     };
 
     if (!grokApiKey) {
