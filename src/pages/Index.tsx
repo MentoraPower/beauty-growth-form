@@ -58,53 +58,45 @@ const Index = () => {
   useEffect(() => {
     const trackPageView = async () => {
       const STORAGE_KEY = "scale_beauty_visited";
-      
+
       // Check localStorage
       const hasVisitedLS = localStorage.getItem(STORAGE_KEY);
-      
+
       // Check cookies
       const hasVisitedCookie = document.cookie.includes(`${STORAGE_KEY}=true`);
-      
+
       // If already visited, don't track again
       if (hasVisitedLS || hasVisitedCookie) {
         return;
       }
-      
+
       // Bot detection
       const userAgent = navigator.userAgent.toLowerCase();
-      const botPatterns = [
-        'bot', 'crawl', 'spider', 'slurp', 'googlebot', 'bingbot', 
-        'yandex', 'baidu', 'duckduck', 'facebookexternalhit', 'facebook',
-        'twitter', 'linkedin', 'pinterest', 'whatsapp', 'telegram',
-        'headless', 'phantom', 'selenium', 'puppeteer', 'playwright',
-        'curl', 'wget', 'python', 'java', 'ruby', 'perl', 'go-http',
-        'apache', 'node-fetch', 'axios', 'postman', 'insomnia'
-      ];
-      
+      const botPatterns = ['bot', 'crawl', 'spider', 'slurp', 'googlebot', 'bingbot', 'yandex', 'baidu', 'duckduck', 'facebookexternalhit', 'facebook', 'twitter', 'linkedin', 'pinterest', 'whatsapp', 'telegram', 'headless', 'phantom', 'selenium', 'puppeteer', 'playwright', 'curl', 'wget', 'python', 'java', 'ruby', 'perl', 'go-http', 'apache', 'node-fetch', 'axios', 'postman', 'insomnia'];
       const isBot = botPatterns.some(pattern => userAgent.includes(pattern));
-      
+
       // Check for headless browser indicators
       const isHeadless = !navigator.languages || navigator.languages.length === 0;
       const hasWebdriver = navigator.webdriver === true;
-      
       if (isBot || isHeadless || hasWebdriver) {
         return;
       }
-      
+
       // Wait 2 seconds to ensure real user (bots usually leave immediately)
       await new Promise(resolve => setTimeout(resolve, 2000));
-      
+
       // Verify user is still on page
       if (document.hidden) {
         return;
       }
-      
       try {
-        await supabase.from("page_views").insert({ page_path: "/" });
-        
+        await supabase.from("page_views").insert({
+          page_path: "/"
+        });
+
         // Save to localStorage
         localStorage.setItem(STORAGE_KEY, "true");
-        
+
         // Save to cookies (expires in 1 year)
         const expires = new Date();
         expires.setFullYear(expires.getFullYear() + 1);
@@ -394,16 +386,14 @@ const Index = () => {
                 </p>
                 <ShimmerButton onClick={async () => {
               setIsLoading(true);
-              
               try {
                 // Get Base pipeline id
-                const { data: basePipeline } = await supabase
-                  .from("pipelines")
-                  .select("id")
-                  .eq("nome", "Base")
-                  .maybeSingle();
-
-                const { error } = await supabase.from("leads").insert({
+                const {
+                  data: basePipeline
+                } = await supabase.from("pipelines").select("id").eq("nome", "Base").maybeSingle();
+                const {
+                  error
+                } = await supabase.from("leads").insert({
                   name: formData.name,
                   email: formData.email,
                   whatsapp: formData.phone,
@@ -414,16 +404,14 @@ const Index = () => {
                   weekly_attendance: formData.weeklyAppointments,
                   workspace_type: formData.hasPhysicalSpace ? "physical" : "home",
                   years_experience: formData.yearsOfExperience,
-                  pipeline_id: basePipeline?.id || null,
+                  pipeline_id: basePipeline?.id || null
                 });
-                
                 if (error) {
                   console.error("Error saving lead:", error);
                   toast.error("Erro ao salvar dados. Tente novamente.");
                   setIsLoading(false);
                   return;
                 }
-                
                 setTimeout(() => {
                   window.location.href = "https://www.instagram.com/scalebeautyy/";
                 }, 2000);
@@ -453,13 +441,7 @@ const Index = () => {
       <div className="md:hidden flex flex-col min-h-screen relative">
         {/* Banner image on top with rounded bottom */}
         <div className="w-full flex-shrink-0">
-          <img 
-            src={scaleBeautyMobile} 
-            alt="Scale Beauty" 
-            className="w-full h-[260px] object-cover rounded-b-3xl" 
-            loading="eager"
-            decoding="async"
-          />
+          <img src={scaleBeautyMobile} alt="Scale Beauty" className="w-full h-[260px] object-cover rounded-b-3xl" loading="eager" decoding="async" />
         </div>
         {/* Form overlapping the image */}
         <div className="flex-1 flex flex-col justify-start px-4 -mt-6 relative z-10">
@@ -515,13 +497,7 @@ const Index = () => {
       <div className="hidden md:flex flex-col min-h-screen">
         {/* Banner image on top with rounded bottom */}
         <div className="w-full flex-shrink-0">
-          <img 
-            src={scaleBeautyBanner} 
-            alt="Scale Beauty" 
-            className="w-full h-[320px] object-cover rounded-b-3xl"
-            loading="eager"
-            decoding="async"
-          />
+          <img src={scaleBeautyBanner} alt="Scale Beauty" className="w-full h-[320px] object-cover rounded-b-3xl" loading="eager" decoding="async" />
         </div>
         
         {/* Form overlapping the image */}
@@ -630,17 +606,13 @@ function FeaturesSection() {
           <h2 className="text-2xl font-bold tracking-tight text-balance md:text-3xl lg:text-4xl xl:font-extrabold mx-0">
             ​Como a Scale pode te ajudar?                    
           </h2>
-          <p className="text-muted-foreground mt-4 text-sm tracking-wide text-balance md:text-base">
-            Tudo que você precisa para escalar seu negócio beauty.
-          </p>
+          <p className="text-muted-foreground mt-4 text-sm tracking-wide text-balance md:text-base">Tudo que você precisa para escalar seu negócio.</p>
         </AnimatedContainer>
 
         <AnimatedContainer delay={0.4} className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3">
-          {features.slice(0, 3).map((feature, i) => (
-            <div key={i} className="border border-dashed">
+          {features.slice(0, 3).map((feature, i) => <div key={i} className="border border-dashed">
               <FeatureCard feature={feature} />
-            </div>
-          ))}
+            </div>)}
         </AnimatedContainer>
         
         {/* Co-Produção full width */}
@@ -650,10 +622,8 @@ function FeaturesSection() {
       </div>
     </section>;
 }
-
 function QuemSomosSection() {
-  return (
-    <section className="w-[calc(100%+2rem)] -mx-4 md:mx-0 md:w-full relative">
+  return <section className="w-[calc(100%+2rem)] -mx-4 md:mx-0 md:w-full relative">
       {/* Curved top transition */}
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[70%] md:w-[50%] h-8 md:h-12 bg-background rounded-b-[50px] z-10" />
       
@@ -663,13 +633,7 @@ function QuemSomosSection() {
           <AnimatedContainer className="flex flex-col md:flex-row items-center gap-8 md:gap-12">
             {/* Image */}
             <div className="w-full md:w-1/2">
-              <img 
-                src={quemSomosImage} 
-                alt="Quem Somos - Scale Beauty" 
-                className="w-full h-auto rounded-2xl"
-                loading="lazy"
-                decoding="async"
-              />
+              <img src={quemSomosImage} alt="Quem Somos - Scale Beauty" className="w-full h-auto rounded-2xl" loading="lazy" decoding="async" />
             </div>
             
             {/* Text Content */}
@@ -687,8 +651,6 @@ function QuemSomosSection() {
           </AnimatedContainer>
         </div>
       </div>
-    </section>
-  );
+    </section>;
 }
-
 export default Index;
