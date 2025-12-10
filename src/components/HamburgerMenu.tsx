@@ -66,9 +66,9 @@ const HamburgerMenu = () => {
       animate={{ y: isVisible ? 0 : -100 }}
       transition={{ duration: 0.3, ease: "easeInOut" }}
     >
-      {/* Header bar */}
+      {/* Mobile: Full header bar */}
       <motion.div 
-        className={`flex items-center justify-between py-3 px-4 rounded-2xl transition-colors duration-300 ${bgClass}`}
+        className={`md:hidden flex items-center justify-between py-3 px-4 rounded-2xl transition-colors duration-300 ${bgClass}`}
         layout
       >
         <span className={`font-bold text-sm uppercase tracking-tight transition-colors duration-300 ${textClass}`}>
@@ -97,6 +97,32 @@ const HamburgerMenu = () => {
           </div>
         </button>
       </motion.div>
+
+      {/* Desktop: Only hamburger button in corner */}
+      <div className="hidden md:flex justify-end">
+        <motion.button
+          onClick={() => setIsOpen(!isOpen)}
+          className={`w-12 h-12 flex items-center justify-center rounded-2xl transition-colors duration-300 ${bgClass}`}
+          aria-label="Menu"
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+        >
+          <div className="flex flex-col justify-center items-end w-6 h-6">
+            <motion.span
+              animate={isOpen ? { rotate: 45, y: 5, width: 24 } : { rotate: 0, y: 0, width: 24 }}
+              transition={{ duration: 0.2, ease: "easeInOut" }}
+              className={`block h-0.5 rounded-full transition-colors duration-300 ${barClass}`}
+              style={{ width: 24 }}
+            />
+            <motion.span
+              animate={isOpen ? { rotate: -45, y: -5, width: 24 } : { rotate: 0, y: 0, width: 16 }}
+              transition={{ duration: 0.2, ease: "easeInOut" }}
+              className={`block h-0.5 rounded-full mt-2 transition-colors duration-300 ${barClass}`}
+              style={{ width: isOpen ? 24 : 16 }}
+            />
+          </div>
+        </motion.button>
+      </div>
 
       {/* Dropdown menu */}
       <AnimatePresence>
