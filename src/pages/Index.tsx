@@ -879,20 +879,26 @@ const Index = () => {
             </h1>
             <p className="form-subtitle">Ou atende em domicílio/casa</p>
             <div className="space-y-3">
-              <button type="button" onClick={() => updateFormData("hasPhysicalSpace", true)} className={`option-card ${formData.hasPhysicalSpace === true ? "selected" : ""}`}>
+              <button type="button" onClick={async () => {
+                updateFormData("hasPhysicalSpace", true);
+                // Save with the value we just set
+                await savePartialLead({ ...formData, hasPhysicalSpace: true }, step);
+                setStep(step + 1);
+              }} className={`option-card ${formData.hasPhysicalSpace === true ? "selected" : ""}`}>
                 <span className="option-card-text">Sim, possuo espaço físico</span>
               </button>
-              <button type="button" onClick={() => updateFormData("hasPhysicalSpace", false)} className={`option-card ${formData.hasPhysicalSpace === false ? "selected" : ""}`}>
+              <button type="button" onClick={async () => {
+                updateFormData("hasPhysicalSpace", false);
+                // Save with the value we just set
+                await savePartialLead({ ...formData, hasPhysicalSpace: false }, step);
+                setStep(step + 1);
+              }} className={`option-card ${formData.hasPhysicalSpace === false ? "selected" : ""}`}>
                 <span className="option-card-text">Não, atendo em casa/domicílio</span>
               </button>
               <div className="flex gap-3 mt-4">
                 <button onClick={prevStep} className="h-14 px-4 rounded-xl border border-border bg-card flex items-center justify-center">
                   <ArrowLeft className="w-5 h-5 text-foreground" />
                 </button>
-                <ShimmerButton onClick={handleNext} className="flex-1">
-                  Continuar
-                  <ArrowRight className="w-5 h-5" />
-                </ShimmerButton>
               </div>
             </div>
           </div>;
@@ -1014,8 +1020,8 @@ const Index = () => {
                   service_area: formData.beautyArea,
                   monthly_billing: formData.revenue,
                   weekly_attendance: formData.weeklyAppointments,
-                  workspace_type: formData.hasPhysicalSpace ? "physical" : "home",
-                  years_experience: formData.yearsOfExperience,
+                  workspace_type: formData.hasPhysicalSpace === null ? "" : (formData.hasPhysicalSpace ? "physical" : "home"),
+                  years_experience: formData.yearsOfExperience || "",
                   average_ticket: parseCurrency(formData.averageTicket),
                   can_afford: formData.canAfford,
                   wants_more_info: formData.wantsMoreInfo,
