@@ -16,6 +16,7 @@ interface KanbanCardProps {
 export function KanbanCard({ lead, isDragging: isDraggingOverlay }: KanbanCardProps) {
   const navigate = useNavigate();
   const dragStartPos = useRef<{ x: number; y: number } | null>(null);
+  const wasDragged = useRef(false);
   
   const {
     attributes,
@@ -39,21 +40,32 @@ export function KanbanCard({ lead, isDragging: isDraggingOverlay }: KanbanCardPr
 
   const isBeingDragged = isDragging || isDraggingOverlay;
 
+  // Combine our pointer tracking with dnd-kit's listeners
   const handlePointerDown = (e: React.PointerEvent) => {
     dragStartPos.current = { x: e.clientX, y: e.clientY };
+    wasDragged.current = false;
+    // Call dnd-kit's onPointerDown
+    listeners?.onPointerDown?.(e as any);
   };
 
-  const handleClick = (e: React.MouseEvent) => {
-    // Only navigate if not dragging (mouse moved less than 5px)
+  const handlePointerMove = (e: React.PointerEvent) => {
     if (dragStartPos.current) {
       const dx = Math.abs(e.clientX - dragStartPos.current.x);
       const dy = Math.abs(e.clientY - dragStartPos.current.y);
-      if (dx < 5 && dy < 5 && !isDragging) {
-        e.stopPropagation();
-        navigate(`/admin/crm/${lead.id}`);
+      if (dx > 5 || dy > 5) {
+        wasDragged.current = true;
       }
     }
+  };
+
+  const handleClick = (e: React.MouseEvent) => {
+    // Only navigate if mouse didn't move much (not a drag)
+    if (!wasDragged.current && !isDragging) {
+      e.stopPropagation();
+      navigate(`/admin/crm/${lead.id}`);
+    }
     dragStartPos.current = null;
+    wasDragged.current = false;
   };
 
   return (
@@ -61,7 +73,6 @@ export function KanbanCard({ lead, isDragging: isDraggingOverlay }: KanbanCardPr
       ref={setNodeRef}
       style={style}
       {...attributes}
-      {...listeners}
       className={`cursor-grab active:cursor-grabbing transition-all duration-150 bg-card border-black/5 select-none touch-none ${
         isBeingDragged
           ? "shadow-xl opacity-100 ring-2 ring-primary/20"
@@ -70,6 +81,7 @@ export function KanbanCard({ lead, isDragging: isDraggingOverlay }: KanbanCardPr
           : "hover:shadow-md hover:border-black/10"
       }`}
       onPointerDown={handlePointerDown}
+      onPointerMove={handlePointerMove}
       onClick={handleClick}
     >
       <CardContent className="p-4 space-y-2">
