@@ -39,7 +39,7 @@ const SplashScreen = ({ onComplete }: SplashScreenProps) => {
           transition={{ duration: 0.5, ease: "easeInOut" }}
           className="fixed inset-0 z-50 flex items-center justify-center bg-[#F3F3F3]"
         >
-          <div className="flex flex-col items-center gap-4">
+          <div className="flex flex-col items-center gap-1">
             <div className="flex gap-3 md:gap-4">
               {letters.map((letter, index) => (
                 <motion.span
@@ -65,9 +65,9 @@ const SplashScreen = ({ onComplete }: SplashScreenProps) => {
                 delay: 0.9,
                 ease: "easeOut",
               }}
-              className="text-sm md:text-base font-light tracking-[0.2em] text-foreground/60"
+              className="text-sm md:text-base font-light tracking-[0.2em] text-foreground/60 uppercase"
             >
-              aqui você é única
+              AQUI VOCÊ É ÚNICA
             </motion.p>
           </div>
         </motion.div>
