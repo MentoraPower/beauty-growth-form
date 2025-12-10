@@ -197,22 +197,52 @@ export function KanbanBoard() {
         return;
       }
 
-      // Different pipeline - move lead
+      // Different pipeline - move lead and position it
       if (newPipelineId !== activeLead.pipeline_id) {
+        const targetPipelineLeads = localLeads
+          .filter((l) => l.pipeline_id === newPipelineId)
+          .sort((a, b) => (a.ordem ?? 0) - (b.ordem ?? 0));
+
+        // Determine insertion index
+        let insertIndex = 0;
+        if (overLead) {
+          const overIndex = targetPipelineLeads.findIndex((l) => l.id === overId);
+          insertIndex = overIndex >= 0 ? overIndex : targetPipelineLeads.length;
+        } else {
+          insertIndex = targetPipelineLeads.length;
+        }
+
+        // Calculate new ordem values
+        const updatesForTarget = targetPipelineLeads.map((lead, index) => ({
+          id: lead.id,
+          ordem: index >= insertIndex ? index + 1 : index,
+        }));
+
         // Optimistic update
         setLocalLeads((prev) =>
-          prev.map((l) =>
-            l.id === activeId ? { ...l, pipeline_id: newPipelineId } : l
-          )
+          prev.map((l) => {
+            if (l.id === activeId) {
+              return { ...l, pipeline_id: newPipelineId, ordem: insertIndex };
+            }
+            const update = updatesForTarget.find((u) => u.id === l.id);
+            return update ? { ...l, ordem: update.ordem } : l;
+          })
         );
 
         try {
-          const { error } = await supabase
+          // Update the moved lead
+          await supabase
             .from("leads")
-            .update({ pipeline_id: newPipelineId })
+            .update({ pipeline_id: newPipelineId, ordem: insertIndex })
             .eq("id", activeId);
 
-          if (error) throw error;
+          // Update ordem for displaced leads
+          for (const update of updatesForTarget.filter((u) => u.ordem > insertIndex - 1)) {
+            await supabase
+              .from("leads")
+              .update({ ordem: update.ordem })
+              .eq("id", update.id);
+          }
         } catch (error) {
           setLocalLeads((prev) =>
             prev.map((l) =>
