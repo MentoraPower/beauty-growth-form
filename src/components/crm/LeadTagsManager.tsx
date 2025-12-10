@@ -102,27 +102,22 @@ export function LeadTagsManager({ leadId }: LeadTagsManagerProps) {
   };
 
   return (
-    <div className="flex flex-col gap-2">
-      {/* Tags display */}
-      {tags.length > 0 && (
-        <div className="flex flex-wrap gap-1.5">
-          {tags.map((tag) => (
-            <span
-              key={tag.id}
-              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-sm font-medium text-white"
-              style={{ backgroundColor: tag.color }}
-            >
-              {tag.name}
-              <button
-                onClick={() => handleRemoveTag(tag.id)}
-                className="hover:opacity-70 transition-opacity"
-              >
-                <X className="h-3.5 w-3.5" />
-              </button>
-            </span>
-          ))}
-        </div>
-      )}
+    <div className="flex flex-wrap items-center gap-2">
+      {tags.map((tag) => (
+        <span
+          key={tag.id}
+          className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-sm font-medium text-white"
+          style={{ backgroundColor: tag.color }}
+        >
+          {tag.name}
+          <button
+            onClick={() => handleRemoveTag(tag.id)}
+            className="hover:opacity-70 transition-opacity"
+          >
+            <X className="h-3.5 w-3.5" />
+          </button>
+        </span>
+      ))}
 
       {/* Add tag button */}
       <Popover open={isOpen} onOpenChange={setIsOpen}>
