@@ -242,15 +242,8 @@ const Index = () => {
   // Function to save partial lead data progressively
   const savePartialLead = async (currentFormData: FormData, currentStep: number) => {
     try {
-      // Get Base pipeline id for new leads
-      const { data: basePipeline } = await supabase
-        .from("pipelines")
-        .select("id")
-        .eq("nome", "Base")
-        .maybeSingle();
-
       // Build lead data with all required fields (use placeholders for incomplete data)
-      const leadData = {
+      const leadData: Record<string, unknown> = {
         name: currentFormData.name || "Incompleto",
         email: currentFormData.email || `incompleto_${Date.now()}@temp.com`,
         whatsapp: currentFormData.phone || "",
@@ -263,22 +256,44 @@ const Index = () => {
         workspace_type: currentFormData.hasPhysicalSpace === null ? "" : (currentFormData.hasPhysicalSpace ? "physical" : "home"),
         years_experience: currentFormData.yearsOfExperience || "",
         can_afford: currentFormData.canAfford,
-        pipeline_id: basePipeline?.id || null,
       };
 
       // If we already have a lead ID (from existing lead or partial save), update it
+      // Existing leads keep their current pipeline - don't change pipeline_id
       const leadIdToUpdate = existingLead?.id || partialLeadId;
       
       if (leadIdToUpdate) {
+        // Update existing lead WITHOUT changing pipeline_id (preserves CRM position)
         await supabase
           .from("leads")
           .update(leadData)
           .eq("id", leadIdToUpdate);
       } else {
-        // Create new partial lead
+        // Get Base pipeline id only for NEW leads
+        const { data: basePipeline } = await supabase
+          .from("pipelines")
+          .select("id")
+          .eq("nome", "Base")
+          .maybeSingle();
+        
+        // Create new partial lead with Base pipeline
         const { data, error } = await supabase
           .from("leads")
-          .insert(leadData)
+          .insert({
+            name: currentFormData.name || "Incompleto",
+            email: currentFormData.email || `incompleto_${Date.now()}@temp.com`,
+            whatsapp: currentFormData.phone || "",
+            country_code: currentFormData.country.dialCode,
+            instagram: currentFormData.instagram || "",
+            service_area: currentFormData.beautyArea || "",
+            monthly_billing: currentFormData.revenue || "",
+            weekly_attendance: currentFormData.weeklyAppointments || "",
+            average_ticket: currentFormData.averageTicket ? parseCurrency(currentFormData.averageTicket) : null,
+            workspace_type: currentFormData.hasPhysicalSpace === null ? "" : (currentFormData.hasPhysicalSpace ? "physical" : "home"),
+            years_experience: currentFormData.yearsOfExperience || "",
+            can_afford: currentFormData.canAfford,
+            pipeline_id: basePipeline?.id || null,
+          })
           .select("id")
           .single();
         
