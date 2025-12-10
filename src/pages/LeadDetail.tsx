@@ -296,7 +296,7 @@ export default function LeadDetail() {
           {activeTab === "contato" && (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {/* Contact Info */}
-              <Card className="border-black/5">
+              <Card className="border-[#00000010] shadow-none">
                 <CardContent className="p-6 space-y-4">
                   <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-4">
                     Informações de Contato
@@ -385,7 +385,7 @@ export default function LeadDetail() {
               </Card>
 
               {/* Business Info */}
-              <Card className="border-black/5">
+              <Card className="border-[#00000010] shadow-none">
                 <CardContent className="p-6 space-y-4">
                   <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-4">
                     Informações do Negócio
