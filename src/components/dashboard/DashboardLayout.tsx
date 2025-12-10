@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect, useRef } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { LayoutDashboard, Menu, X, LogOut, Kanban, Mail } from "lucide-react";
+import { LayoutDashboard, Menu, X, LogOut, Kanban } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
 import scaleLogo from "@/assets/scale-logo.png";
@@ -12,7 +12,6 @@ interface DashboardLayoutProps {
 const navItems = [
   { href: "/admin", icon: LayoutDashboard, label: "Dashboard" },
   { href: "/admin/crm", icon: Kanban, label: "CRM" },
-  { href: "/admin/emails", icon: Mail, label: "E-mails" },
 ];
 
 // Variável global para persistir o estado de hover entre navegações
