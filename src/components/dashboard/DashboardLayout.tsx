@@ -192,7 +192,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
       )}
 
       {/* Main Content */}
-      <main className="lg:ml-[88px] pt-14 lg:pt-0 min-h-screen p-4 lg:p-6">
+      <main className="lg:ml-[88px] pt-14 lg:pt-6 min-h-screen p-4 lg:p-6">
         {children}
       </main>
     </div>
