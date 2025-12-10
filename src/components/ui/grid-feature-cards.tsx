@@ -15,27 +15,31 @@ export function FeatureCard({ feature, className, ...props }: FeatureCardPorps) 
 	const p = React.useMemo(() => genRandomPattern(), []);
 
 	return (
-		<div className={cn('relative p-6 overflow-hidden', className)} {...props}>
-			<div className="absolute top-2 left-2 w-2 h-2 border border-foreground/20" />
-			<div className="absolute top-2 right-2 w-2 h-2 border border-foreground/20" />
-			<div className="absolute bottom-2 left-2 w-2 h-2 border border-foreground/20" />
-			<div className="absolute bottom-2 right-2 w-2 h-2 border border-foreground/20" />
+		<div className={cn('relative', className)} {...props}>
+			{/* Corner squares - outside the overflow-hidden container */}
+			<div className="absolute -top-1 -left-1 w-2 h-2 border border-foreground/20 z-10" />
+			<div className="absolute -top-1 -right-1 w-2 h-2 border border-foreground/20 z-10" />
+			<div className="absolute -bottom-1 -left-1 w-2 h-2 border border-foreground/20 z-10" />
+			<div className="absolute -bottom-1 -right-1 w-2 h-2 border border-foreground/20 z-10" />
 			
-			<div className="pointer-events-none absolute top-0 left-1/2 -mt-2 -ml-20 h-full w-full overflow-hidden [mask-image:linear-gradient(white,transparent)]">
-				<div className="from-foreground/5 to-foreground/1 absolute inset-0 bg-gradient-to-r [mask-image:radial-gradient(farthest-side_at_top,white,transparent)] opacity-100">
-					<GridPattern
-						width={20}
-						height={20}
-						x="-12"
-						y="4"
-						squares={p}
-						className="fill-foreground/5 stroke-foreground/25 absolute inset-0 h-full w-full mix-blend-overlay"
-					/>
+			{/* Card content with overflow hidden */}
+			<div className="relative p-6 overflow-hidden h-full">
+				<div className="pointer-events-none absolute top-0 left-1/2 -mt-2 -ml-20 h-full w-full overflow-hidden [mask-image:linear-gradient(white,transparent)]">
+					<div className="from-foreground/5 to-foreground/1 absolute inset-0 bg-gradient-to-r [mask-image:radial-gradient(farthest-side_at_top,white,transparent)] opacity-100">
+						<GridPattern
+							width={20}
+							height={20}
+							x="-12"
+							y="4"
+							squares={p}
+							className="fill-foreground/5 stroke-foreground/25 absolute inset-0 h-full w-full mix-blend-overlay"
+						/>
+					</div>
 				</div>
+				<feature.icon className="text-foreground/75 size-6 relative z-10" strokeWidth={1} aria-hidden />
+				<h3 className="mt-10 text-sm md:text-base relative z-10">{feature.title}</h3>
+				<p className="text-muted-foreground relative z-20 mt-2 text-xs font-light">{feature.description}</p>
 			</div>
-			<feature.icon className="text-foreground/75 size-6 relative z-10" strokeWidth={1} aria-hidden />
-			<h3 className="mt-10 text-sm md:text-base relative z-10">{feature.title}</h3>
-			<p className="text-muted-foreground relative z-20 mt-2 text-xs font-light">{feature.description}</p>
 		</div>
 	);
 }
