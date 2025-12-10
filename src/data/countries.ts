@@ -76,13 +76,12 @@ export const getFlagUrl = (code: string) =>
   `https://flagcdn.com/w40/${code.toLowerCase()}.png`;
 
 export const beautyAreas = [
-  "Design de Sobrancelhas",
-  "Micropigmentação",
-  "Extensão de Cílios",
-  "Brow Lamination",
-  "Lash Lifting",
-  "Henna de Sobrancelhas",
-  "Coloração de Sobrancelhas",
+  "Sobrancelhas",
+  "Cílios",
+  "Maquiagem",
+  "Unhas",
+  "Harmonização Facial",
+  "Estética",
   "Outro",
 ];
 
