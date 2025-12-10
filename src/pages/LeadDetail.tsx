@@ -1,6 +1,7 @@
 import { useParams, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { useQueryClient } from "@tanstack/react-query";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -25,6 +26,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
+import { Lead } from "@/types/crm";
 
 interface LeadData {
   id: string;
@@ -56,6 +58,7 @@ interface Pipeline {
 export default function LeadDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [lead, setLead] = useState<LeadData | null>(null);
   const [pipeline, setPipeline] = useState<Pipeline | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -109,6 +112,13 @@ export default function LeadDetail() {
     if (!lead) return;
     
     setIsDeleting(true);
+    
+    // Optimistically update the cache immediately
+    queryClient.setQueryData<Lead[]>(["crm-leads"], (oldData) => {
+      if (!oldData) return [];
+      return oldData.filter((l) => l.id !== lead.id);
+    });
+    
     const { error } = await supabase
       .from("leads")
       .delete()
@@ -117,6 +127,8 @@ export default function LeadDetail() {
     if (error) {
       console.error("Error deleting lead:", error);
       toast.error("Erro ao excluir lead");
+      // Revert the optimistic update
+      queryClient.invalidateQueries({ queryKey: ["crm-leads"] });
       setIsDeleting(false);
       return;
     }
