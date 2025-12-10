@@ -20,7 +20,7 @@ import DollarSign from "@/components/icons/DollarSign";
 import Users from "@/components/icons/Users";
 import Home from "@/components/icons/Home";
 import { FeatureCard } from "@/components/ui/grid-feature-cards";
-import { motion, useReducedMotion } from "framer-motion";
+import { motion, useReducedMotion, AnimatePresence } from "framer-motion";
 import { Target, FileText, Rocket, Handshake, BadgeCheck } from "lucide-react";
 import Calendar from "@/components/icons/Calendar";
 import { toast } from "sonner";
@@ -1130,7 +1130,17 @@ const Index = () => {
         {/* Form overlapping the image */}
         <div className="flex-1 flex flex-col justify-start px-4 -mt-6 relative z-10">
           <FormContainer>
-            {renderStep()}
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={step}
+                initial={{ opacity: 0, x: 15 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -15 }}
+                transition={{ duration: 0.2, ease: "easeOut" }}
+              >
+                {renderStep()}
+              </motion.div>
+            </AnimatePresence>
           </FormContainer>
           
           {/* Scroll Velocity - Mobile */}
@@ -1187,7 +1197,17 @@ const Index = () => {
         {/* Form overlapping the image */}
         <div className="flex-1 flex items-start justify-center px-8 -mt-12 relative z-10">
           <FormContainer>
-            {renderStep()}
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={step}
+                initial={{ opacity: 0, x: 15 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -15 }}
+                transition={{ duration: 0.2, ease: "easeOut" }}
+              >
+                {renderStep()}
+              </motion.div>
+            </AnimatePresence>
           </FormContainer>
         </div>
 
