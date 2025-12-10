@@ -44,7 +44,7 @@ const CountrySelect = ({ value, onChange }: CountrySelectProps) => {
       </button>
 
       {isOpen && (
-        <div className="absolute z-50 top-full left-0 mt-2 w-72 max-h-80 overflow-hidden rounded-xl border border-border bg-card shadow-lg">
+        <div className="absolute z-50 top-full left-0 mt-2 w-72 max-h-80 overflow-hidden rounded-xl border border-border bg-white dark:bg-neutral-900 shadow-lg">
           <div className="p-2 border-b border-border">
             <input
               type="text"
