@@ -2,6 +2,7 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { LayoutDashboard, Users, Menu, X, LogOut } from "lucide-react";
 import { cn } from "@/lib/utils";
+import scaleLogo from "@/assets/scale-logo.png";
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -68,18 +69,15 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
       >
         <div className="flex flex-col h-full py-3">
           {/* Logo */}
-          <div className="h-11 flex items-center px-3 mb-2">
-            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary to-primary-dark flex items-center justify-center flex-shrink-0">
-              <span className="text-white font-bold text-sm">SB</span>
-            </div>
-            <div className={cn(
-              "overflow-hidden transition-all duration-300",
-              isHovered || sidebarOpen ? "w-24 ml-3" : "w-0 ml-0"
-            )}>
-              <span className="text-lg font-bold text-white whitespace-nowrap">
-                SCALE
-              </span>
-            </div>
+          <div className="flex items-center justify-center px-3 py-4 mb-4">
+            <img 
+              src={scaleLogo} 
+              alt="Scale" 
+              className={cn(
+                "transition-all duration-300",
+                isHovered || sidebarOpen ? "w-32" : "w-12"
+              )}
+            />
           </div>
 
           {/* Navigation */}
