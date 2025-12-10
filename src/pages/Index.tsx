@@ -45,25 +45,19 @@ interface FormData {
   wantsMoreInfo: boolean | null;
 }
 
-// Format currency as user types (treats input as reais, not cents)
-const formatCurrency = (value: string): string => {
-  // Remove non-digits except comma and dot
+// Format currency for display (only on blur or initial load)
+const formatCurrencyDisplay = (value: string): string => {
+  if (!value) return '';
+  
+  // Remove everything except digits and comma/dot
   let cleaned = value.replace(/[^\d,\.]/g, '');
+  if (!cleaned) return '';
   
   // Replace comma with dot for parsing
   cleaned = cleaned.replace(',', '.');
   
-  // Remove extra dots (keep only last one)
-  const parts = cleaned.split('.');
-  if (parts.length > 2) {
-    cleaned = parts.slice(0, -1).join('') + '.' + parts[parts.length - 1];
-  }
-  
-  if (!cleaned) return '';
-  
-  // Parse as number
   const number = parseFloat(cleaned);
-  if (isNaN(number)) return '';
+  if (isNaN(number)) return value;
   
   // Format as BRL
   const formatted = number.toLocaleString('pt-BR', {
@@ -72,6 +66,35 @@ const formatCurrency = (value: string): string => {
   });
   
   return `R$ ${formatted}`;
+};
+
+// Handle currency input - allow free typing with minimal formatting
+const handleCurrencyInput = (value: string): string => {
+  // If empty, return empty
+  if (!value) return '';
+  
+  // Remove R$ prefix if present for processing
+  let cleaned = value.replace(/R\$\s*/g, '').trim();
+  
+  // Allow only digits, comma and dot
+  cleaned = cleaned.replace(/[^\d,\.]/g, '');
+  
+  // Replace multiple dots/commas, keep only last separator
+  const separatorCount = (cleaned.match(/[,\.]/g) || []).length;
+  if (separatorCount > 1) {
+    const lastSeparatorIndex = Math.max(cleaned.lastIndexOf(','), cleaned.lastIndexOf('.'));
+    const beforeSeparator = cleaned.substring(0, lastSeparatorIndex).replace(/[,\.]/g, '');
+    const afterSeparator = cleaned.substring(lastSeparatorIndex);
+    cleaned = beforeSeparator + afterSeparator;
+  }
+  
+  // Limit decimal places to 2
+  const parts = cleaned.split(/[,\.]/);
+  if (parts.length === 2 && parts[1].length > 2) {
+    cleaned = parts[0] + ',' + parts[1].substring(0, 2);
+  }
+  
+  return cleaned ? `R$ ${cleaned}` : '';
 };
 
 // Parse currency string to number (returns value in reais)
@@ -203,7 +226,7 @@ const Index = () => {
           weeklyAppointments: data.weekly_attendance || "",
           hasPhysicalSpace: data.workspace_type === "physical" ? true : data.workspace_type === "home" ? false : null,
           yearsOfExperience: data.years_experience || "",
-          averageTicket: data.average_ticket ? formatCurrency(String(Math.round(data.average_ticket * 100))) : ""
+          averageTicket: data.average_ticket ? formatCurrencyDisplay(String(data.average_ticket)) : ""
         }));
         
         return data;
@@ -867,7 +890,7 @@ const Index = () => {
                 type="text" 
                 value={formData.averageTicket} 
                 onChange={e => {
-                  const formatted = formatCurrency(e.target.value);
+                  const formatted = handleCurrencyInput(e.target.value);
                   updateFormData("averageTicket", formatted);
                 }} 
                 placeholder="R$ 0,00" 
