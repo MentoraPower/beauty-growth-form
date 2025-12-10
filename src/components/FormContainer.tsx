@@ -6,10 +6,7 @@ interface FormContainerProps {
 
 const FormContainer = ({ children }: FormContainerProps) => {
   return (
-    <div 
-      className="w-full max-w-[90%] sm:max-w-md mx-auto rounded-2xl p-5 shadow-lg border border-border/50"
-      style={{ backgroundColor: '#ffffff' }}
-    >
+    <div className="w-full max-w-[90%] sm:max-w-md mx-auto bg-card/80 backdrop-blur-sm rounded-2xl p-5 shadow-lg border border-border/50">
       {children}
     </div>
   );
