@@ -23,6 +23,8 @@ export type Database = {
           instagram: string
           monthly_billing: string
           name: string
+          ordem: number | null
+          pipeline_id: string | null
           service_area: string
           weekly_attendance: string
           whatsapp: string
@@ -37,6 +39,8 @@ export type Database = {
           instagram: string
           monthly_billing: string
           name: string
+          ordem?: number | null
+          pipeline_id?: string | null
           service_area: string
           weekly_attendance: string
           whatsapp: string
@@ -51,13 +55,23 @@ export type Database = {
           instagram?: string
           monthly_billing?: string
           name?: string
+          ordem?: number | null
+          pipeline_id?: string | null
           service_area?: string
           weekly_attendance?: string
           whatsapp?: string
           workspace_type?: string
           years_experience?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "leads_pipeline_id_fkey"
+            columns: ["pipeline_id"]
+            isOneToOne: false
+            referencedRelation: "pipelines"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       page_views: {
         Row: {
@@ -74,6 +88,30 @@ export type Database = {
           created_at?: string
           id?: string
           page_path?: string
+        }
+        Relationships: []
+      }
+      pipelines: {
+        Row: {
+          cor: string
+          created_at: string
+          id: string
+          nome: string
+          ordem: number
+        }
+        Insert: {
+          cor?: string
+          created_at?: string
+          id?: string
+          nome: string
+          ordem?: number
+        }
+        Update: {
+          cor?: string
+          created_at?: string
+          id?: string
+          nome?: string
+          ordem?: number
         }
         Relationships: []
       }
