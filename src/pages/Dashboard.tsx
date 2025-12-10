@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Users, TrendingUp } from "lucide-react";
+import { Users, TrendingUp, ShoppingCart, DollarSign } from "lucide-react";
 import ModernAreaChart from "@/components/dashboard/ModernAreaChart";
 import ModernBarChart from "@/components/dashboard/ModernBarChart";
 import MiniGaugeChart from "@/components/dashboard/MiniGaugeChart";
@@ -33,8 +33,17 @@ interface DayData {
   leads: number;
 }
 
+interface Sale {
+  id: string;
+  amount: number;
+  description: string | null;
+  customer_name: string | null;
+  created_at: string;
+}
+
 const Dashboard = () => {
   const [leads, setLeads] = useState<Lead[]>([]);
+  const [sales, setSales] = useState<Sale[]>([]);
   const [pageViews, setPageViews] = useState(0);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
@@ -42,6 +51,7 @@ const Dashboard = () => {
   useEffect(() => {
     fetchLeads();
     fetchPageViews();
+    fetchSales();
 
     // Subscribe to realtime updates
     const channel = supabase
@@ -85,9 +95,36 @@ const Dashboard = () => {
       )
       .subscribe();
 
+    // Subscribe to sales updates
+    const salesChannel = supabase
+      .channel("dashboard-sales-changes")
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "sales",
+        },
+        (payload) => {
+          if (payload.eventType === "INSERT") {
+            setSales((prev) => [payload.new as Sale, ...prev]);
+          } else if (payload.eventType === "DELETE") {
+            setSales((prev) => prev.filter((sale) => sale.id !== payload.old.id));
+          } else if (payload.eventType === "UPDATE") {
+            setSales((prev) =>
+              prev.map((sale) =>
+                sale.id === payload.new.id ? (payload.new as Sale) : sale
+              )
+            );
+          }
+        }
+      )
+      .subscribe();
+
     return () => {
       supabase.removeChannel(channel);
       supabase.removeChannel(viewsChannel);
+      supabase.removeChannel(salesChannel);
     };
   }, []);
 
@@ -104,6 +141,20 @@ const Dashboard = () => {
       console.error("Error fetching leads:", error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchSales = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("sales")
+        .select("*")
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+      setSales(data || []);
+    } catch (error) {
+      console.error("Error fetching sales:", error);
     }
   };
 
@@ -166,6 +217,15 @@ const Dashboard = () => {
     return ((leads.length / pageViews) * 100).toFixed(1);
   };
 
+  // Get total sales count
+  const getTotalSales = () => sales.length;
+
+  // Get total sales amount
+  const getTotalSalesAmount = () => {
+    const total = sales.reduce((acc, sale) => acc + Number(sale.amount), 0);
+    return total.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  };
+
   if (loading) {
     return (
       <DashboardLayout>
@@ -203,7 +263,7 @@ const Dashboard = () => {
         </div>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           <Card className="bg-card border-border/50">
             <CardContent className="pt-5 pb-4">
               <div className="flex items-center justify-between">
@@ -230,6 +290,34 @@ const Dashboard = () => {
                 </div>
               </div>
               <p className="text-xs text-muted-foreground mt-2">{pageViews} visitas</p>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-card border-border/50">
+            <CardContent className="pt-5 pb-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">Vendas</p>
+                  <p className="text-3xl font-bold text-foreground mt-1">{getTotalSales()}</p>
+                </div>
+                <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
+                  <ShoppingCart className="h-5 w-5 text-primary" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-card border-border/50">
+            <CardContent className="pt-5 pb-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">Valor em Vendas</p>
+                  <p className="text-2xl font-bold text-foreground mt-1">R$ {getTotalSalesAmount()}</p>
+                </div>
+                <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
+                  <DollarSign className="h-5 w-5 text-primary" />
+                </div>
+              </div>
             </CardContent>
           </Card>
         </div>
