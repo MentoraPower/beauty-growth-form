@@ -105,6 +105,14 @@ const Index = () => {
   const [showSplash, setShowSplash] = useState(true);
   const [step, setStep] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [aiAnalysis, setAiAnalysis] = useState<{
+    estimatedRevenue?: number;
+    revenueConsistent?: boolean;
+    canAfford?: boolean;
+    confidenceLevel?: string;
+    analysis?: string;
+  } | null>(null);
   const [formData, setFormData] = useState<FormData>({
     name: "",
     email: "",
@@ -123,6 +131,43 @@ const Index = () => {
   
   // Track if affordability question should be shown
   const [showAffordabilityQuestion, setShowAffordabilityQuestion] = useState(false);
+  
+  // Function to analyze lead data with AI
+  const analyzeLeadWithAI = async () => {
+    setIsAnalyzing(true);
+    try {
+      const ticketValue = parseCurrency(formData.averageTicket);
+      
+      const response = await fetch('https://ytdfwkchsumgdvcroaqg.supabase.co/functions/v1/analyze-lead', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          revenue: formData.revenue,
+          weeklyAppointments: formData.weeklyAppointments,
+          averageTicket: ticketValue.toFixed(2),
+        }),
+      });
+      
+      const data = await response.json();
+      console.log("AI Analysis result:", data);
+      setAiAnalysis(data);
+      
+      // Set affordability question based on AI analysis
+      setShowAffordabilityQuestion(!data.canAfford);
+      
+      return data;
+    } catch (error) {
+      console.error("Error analyzing lead:", error);
+      // Fallback to local calculation
+      const canAfford = checkAffordability(formData.revenue, formData.weeklyAppointments, formData.averageTicket);
+      setShowAffordabilityQuestion(!canAfford);
+      return null;
+    } finally {
+      setIsAnalyzing(false);
+    }
+  };
 
   // Track page view on mount (only once per real visitor, filter bots)
   useEffect(() => {
@@ -250,13 +295,12 @@ const Index = () => {
         return "Por favor, preencha o campo";
     }
   };
-  const handleNext = () => {
+  const handleNext = async () => {
     if (canProceed()) {
       if (step < totalSteps) {
-        // After ticket médio step, check affordability
+        // After ticket médio step, analyze with AI
         if (step === 8) {
-          const canAfford = checkAffordability(formData.revenue, formData.weeklyAppointments, formData.averageTicket);
-          setShowAffordabilityQuestion(!canAfford);
+          await analyzeLeadWithAI();
         }
         setStep(step + 1);
       }
@@ -463,14 +507,15 @@ const Index = () => {
                 placeholder="R$ 0,00" 
                 className="form-input" 
                 autoFocus 
+                disabled={isAnalyzing}
               />
               <div className="flex gap-3">
-                <button onClick={prevStep} className="h-14 px-4 rounded-xl border border-border bg-card flex items-center justify-center">
+                <button onClick={prevStep} className="h-14 px-4 rounded-xl border border-border bg-card flex items-center justify-center" disabled={isAnalyzing}>
                   <ArrowLeft className="w-5 h-5 text-foreground" />
                 </button>
-                <ShimmerButton onClick={handleNext} className="flex-1">
-                  Continuar
-                  <ArrowRight className="w-5 h-5" />
+                <ShimmerButton onClick={handleNext} className="flex-1" disabled={isAnalyzing}>
+                  {isAnalyzing ? "Analisando..." : "Continuar"}
+                  {!isAnalyzing && <ArrowRight className="w-5 h-5" />}
                 </ShimmerButton>
               </div>
             </div>
@@ -560,6 +605,11 @@ const Index = () => {
             <h1 className="form-title !text-center">
               <span className="font-bold">Investimento</span>
             </h1>
+            {aiAnalysis?.analysis && (
+              <p className="text-sm text-muted-foreground mt-2 mb-4 leading-relaxed text-center italic">
+                {aiAnalysis.analysis}
+              </p>
+            )}
             <p className="text-base text-muted-foreground mt-4 mb-8 leading-relaxed text-center">
               Hoje, nosso serviço mais acessível custa <span className="font-bold text-foreground">R$ 2.800,00 por mês</span>. Você tem condição de investir esse valor no crescimento do seu negócio?
             </p>
