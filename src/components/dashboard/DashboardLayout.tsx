@@ -69,13 +69,13 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
       >
         <div className="flex flex-col h-full py-3">
           {/* Logo */}
-          <div className="flex items-center justify-center px-3 py-4 mb-4">
+          <div className="flex items-center px-3 py-4 mb-4">
             <img 
               src={scaleLogo} 
               alt="Scale" 
               className={cn(
                 "transition-all duration-300",
-                isHovered || sidebarOpen ? "w-32" : "w-12"
+                isHovered || sidebarOpen ? "w-20" : "w-12"
               )}
             />
           </div>
