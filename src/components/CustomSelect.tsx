@@ -36,7 +36,7 @@ const CustomSelect = ({ value, onChange, options, placeholder }: CustomSelectPro
       </button>
 
       {isOpen && (
-        <div className="absolute z-50 top-full left-0 right-0 mt-2 max-h-64 overflow-hidden rounded-xl border border-border bg-white dark:bg-card shadow-lg">
+        <div className="absolute z-50 top-full left-0 right-0 mt-2 max-h-64 overflow-hidden rounded-xl border border-border bg-white dark:bg-neutral-900 shadow-lg">
           <div className="max-h-64 overflow-y-auto">
             {options.map((option) => (
               <button
