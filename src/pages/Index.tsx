@@ -7,7 +7,7 @@ import CountrySelect from "@/components/CountrySelect";
 import FormContainer from "@/components/FormContainer";
 import CustomSelect from "@/components/CustomSelect";
 import ProgressBar from "@/components/ProgressBar";
-import RippleButton from "@/components/RippleButton";
+import ShimmerButton from "@/components/ShimmerButton";
 import ArrowRight from "@/components/icons/ArrowRight";
 import ArrowLeft from "@/components/icons/ArrowLeft";
 import Mail from "@/components/icons/Mail";
@@ -199,10 +199,10 @@ const Index = () => {
             <p className="form-subtitle mt-4 mb-8">Como posso te chamar?</p>
             <div className="space-y-4">
               <input type="text" value={formData.name} onChange={e => updateFormData("name", e.target.value)} placeholder="Seu nome" className="form-input" autoFocus />
-              <RippleButton onClick={handleNext}>
+              <ShimmerButton onClick={handleNext}>
                 Prosseguir
                 <ArrowRight className="w-5 h-5" />
-              </RippleButton>
+              </ShimmerButton>
             </div>
           </div>;
       case 2:
@@ -218,10 +218,10 @@ const Index = () => {
                 <button onClick={prevStep} className="h-14 px-4 rounded-xl border border-border bg-card flex items-center justify-center">
                   <ArrowLeft className="w-5 h-5 text-foreground" />
                 </button>
-                <RippleButton onClick={handleNext} className="flex-1">
+                <ShimmerButton onClick={handleNext} className="flex-1">
                   Continuar
                   <ArrowRight className="w-5 h-5" />
-                </RippleButton>
+                </ShimmerButton>
               </div>
             </div>
           </div>;
@@ -241,10 +241,10 @@ const Index = () => {
                 <button onClick={prevStep} className="h-14 px-4 rounded-xl border border-border bg-card flex items-center justify-center">
                   <ArrowLeft className="w-5 h-5 text-foreground" />
                 </button>
-                <RippleButton onClick={handleNext} className="flex-1">
+                <ShimmerButton onClick={handleNext} className="flex-1">
                   Continuar
                   <ArrowRight className="w-5 h-5" />
-                </RippleButton>
+                </ShimmerButton>
               </div>
             </div>
           </div>;
@@ -264,10 +264,10 @@ const Index = () => {
                 <button onClick={prevStep} className="h-14 px-4 rounded-xl border border-border bg-card flex items-center justify-center">
                   <ArrowLeft className="w-5 h-5 text-foreground" />
                 </button>
-                <RippleButton onClick={handleNext} className="flex-1">
+                <ShimmerButton onClick={handleNext} className="flex-1">
                   Continuar
                   <ArrowRight className="w-5 h-5" />
-                </RippleButton>
+                </ShimmerButton>
               </div>
             </div>
           </div>;
@@ -284,10 +284,10 @@ const Index = () => {
                 <button onClick={prevStep} className="h-14 px-4 rounded-xl border border-border bg-card flex items-center justify-center">
                   <ArrowLeft className="w-5 h-5 text-foreground" />
                 </button>
-                <RippleButton onClick={handleNext} className="flex-1">
+                <ShimmerButton onClick={handleNext} className="flex-1">
                   Continuar
                   <ArrowRight className="w-5 h-5" />
-                </RippleButton>
+                </ShimmerButton>
               </div>
             </div>
           </div>;
@@ -304,10 +304,10 @@ const Index = () => {
                 <button onClick={prevStep} className="h-14 px-4 rounded-xl border border-border bg-card flex items-center justify-center">
                   <ArrowLeft className="w-5 h-5 text-foreground" />
                 </button>
-                <RippleButton onClick={handleNext} className="flex-1">
+                <ShimmerButton onClick={handleNext} className="flex-1">
                   Continuar
                   <ArrowRight className="w-5 h-5" />
-                </RippleButton>
+                </ShimmerButton>
               </div>
             </div>
           </div>;
@@ -324,10 +324,10 @@ const Index = () => {
                 <button onClick={prevStep} className="h-14 px-4 rounded-xl border border-border bg-card flex items-center justify-center">
                   <ArrowLeft className="w-5 h-5 text-foreground" />
                 </button>
-                <RippleButton onClick={handleNext} className="flex-1">
+                <ShimmerButton onClick={handleNext} className="flex-1">
                   Continuar
                   <ArrowRight className="w-5 h-5" />
-                </RippleButton>
+                </ShimmerButton>
               </div>
             </div>
           </div>;
@@ -349,10 +349,10 @@ const Index = () => {
                 <button onClick={prevStep} className="h-14 px-4 rounded-xl border border-border bg-card flex items-center justify-center">
                   <ArrowLeft className="w-5 h-5 text-foreground" />
                 </button>
-                <RippleButton onClick={handleNext} className="flex-1">
+                <ShimmerButton onClick={handleNext} className="flex-1">
                   Continuar
                   <ArrowRight className="w-5 h-5" />
-                </RippleButton>
+                </ShimmerButton>
               </div>
             </div>
           </div>;
@@ -369,10 +369,10 @@ const Index = () => {
                 <button onClick={prevStep} className="h-14 px-4 rounded-xl border border-border bg-card flex items-center justify-center">
                   <ArrowLeft className="w-5 h-5 text-foreground" />
                 </button>
-                <RippleButton onClick={handleNext} className="flex-1">
+                <ShimmerButton onClick={handleNext} className="flex-1">
                   Continuar
                   <ArrowRight className="w-5 h-5" />
-                </RippleButton>
+                </ShimmerButton>
               </div>
             </div>
           </div>;
@@ -391,7 +391,7 @@ const Index = () => {
                 <p className="text-base text-muted-foreground mt-4 mb-8 leading-relaxed">
                   Você ganhou uma consultoria exclusiva com o time da Scale Beauty para saber mais sobre nossos serviços e como podemos escalar seu negócio.
                 </p>
-                <RippleButton onClick={async () => {
+                <ShimmerButton onClick={async () => {
               setIsLoading(true);
               
               try {
@@ -425,7 +425,7 @@ const Index = () => {
               }
             }}>
                   Finalizar
-                </RippleButton>
+                </ShimmerButton>
                 <p className="text-sm text-muted-foreground mt-6">
                   Em breve vamos entrar em contato pelo seu WhatsApp!
                 </p>
