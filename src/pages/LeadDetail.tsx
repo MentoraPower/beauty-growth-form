@@ -203,35 +203,27 @@ export default function LeadDetail() {
       <div className="space-y-6">
         {/* Header with Avatar and Name */}
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3">
             <Button
               variant="outline"
               size="icon"
               onClick={() => navigate("/admin/crm")}
-              className="h-10 w-10"
+              className="h-8 w-8"
             >
-              <ArrowLeft className="h-4 w-4" />
+              <ArrowLeft className="h-3.5 w-3.5" />
             </Button>
             
             {/* Avatar */}
-            <div className="h-14 w-14 rounded-full bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center border border-black/5">
-              <User className="h-7 w-7 text-primary/70" />
+            <div className="h-10 w-10 rounded-full bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center border border-black/5">
+              <User className="h-5 w-5 text-primary/70" />
             </div>
             
             {/* Name and Badges */}
             <div>
-              <h1 className="text-xl font-bold">
+              <h1 className="text-lg font-bold">
                 {lead.name === "Incompleto" ? "incompleto" : lead.name}
               </h1>
-              <div className="flex items-center gap-2 mt-1">
-                {pipeline && (
-                  <Badge
-                    style={{ backgroundColor: pipeline.cor, color: "#fff" }}
-                    className="text-xs"
-                  >
-                    {pipeline.nome}
-                  </Badge>
-                )}
+              <div className="flex items-center gap-2 mt-0.5">
                 {lead.service_area && lead.service_area !== "" && (
                   <Badge variant="secondary" className="text-xs">
                     {lead.service_area}
