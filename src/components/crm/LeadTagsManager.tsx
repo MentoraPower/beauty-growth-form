@@ -109,7 +109,7 @@ export function LeadTagsManager({ leadId }: LeadTagsManagerProps) {
           {tags.map((tag) => (
             <span
               key={tag.id}
-              className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium text-white"
+              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-sm font-medium text-white"
               style={{ backgroundColor: tag.color }}
             >
               {tag.name}
@@ -117,7 +117,7 @@ export function LeadTagsManager({ leadId }: LeadTagsManagerProps) {
                 onClick={() => handleRemoveTag(tag.id)}
                 className="hover:opacity-70 transition-opacity"
               >
-                <X className="h-3 w-3" />
+                <X className="h-3.5 w-3.5" />
               </button>
             </span>
           ))}
@@ -146,21 +146,24 @@ export function LeadTagsManager({ leadId }: LeadTagsManagerProps) {
         </PopoverTrigger>
         <PopoverContent className="w-64 p-3" align="start">
           <div className="space-y-3">
-            <Input
-              placeholder="Nome da tag"
-              value={newTagName}
-              onChange={(e) => setNewTagName(e.target.value)}
-              className="h-8 text-sm"
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  handleAddTag();
-                }
-              }}
-            />
+            <div>
+              <p className="text-xs text-muted-foreground mb-1.5">Nome</p>
+              <Input
+                placeholder="Nome da tag"
+                value={newTagName}
+                onChange={(e) => setNewTagName(e.target.value)}
+                className="h-8 text-sm"
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    handleAddTag();
+                  }
+                }}
+              />
+            </div>
 
             {/* Color picker */}
             <div>
-              <p className="text-xs text-muted-foreground mb-2">Cor</p>
+              <p className="text-xs text-muted-foreground mb-1.5">Cor</p>
               <div className="grid grid-cols-8 gap-1.5">
                 {TAG_COLORS.map((color) => (
                   <button
@@ -182,7 +185,7 @@ export function LeadTagsManager({ leadId }: LeadTagsManagerProps) {
               <div className="pt-2 border-t border-black/5">
                 <p className="text-xs text-muted-foreground mb-1">Preview</p>
                 <span
-                  className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium text-white"
+                  className="inline-flex items-center px-2.5 py-1 rounded-full text-sm font-medium text-white"
                   style={{ backgroundColor: selectedColor }}
                 >
                   {newTagName}
@@ -193,7 +196,7 @@ export function LeadTagsManager({ leadId }: LeadTagsManagerProps) {
             <Button
               onClick={handleAddTag}
               disabled={!newTagName.trim() || isLoading}
-              className="w-full h-8 text-sm"
+              className="w-full h-8 text-sm bg-gradient-to-r from-[#F40000] to-[#A10000] hover:opacity-90 text-white"
             >
               {isLoading ? "Salvando..." : "Salvar"}
             </Button>
