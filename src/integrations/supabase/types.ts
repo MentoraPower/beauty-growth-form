@@ -71,6 +71,63 @@ export type Database = {
         }
         Relationships: []
       }
+      lead_activities: {
+        Row: {
+          concluida: boolean
+          created_at: string
+          data: string
+          hora: string
+          id: string
+          lead_id: string
+          notas: string | null
+          pipeline_id: string | null
+          tipo: string
+          titulo: string
+          updated_at: string
+        }
+        Insert: {
+          concluida?: boolean
+          created_at?: string
+          data: string
+          hora?: string
+          id?: string
+          lead_id: string
+          notas?: string | null
+          pipeline_id?: string | null
+          tipo?: string
+          titulo: string
+          updated_at?: string
+        }
+        Update: {
+          concluida?: boolean
+          created_at?: string
+          data?: string
+          hora?: string
+          id?: string
+          lead_id?: string
+          notas?: string | null
+          pipeline_id?: string | null
+          tipo?: string
+          titulo?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lead_activities_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lead_activities_pipeline_id_fkey"
+            columns: ["pipeline_id"]
+            isOneToOne: false
+            referencedRelation: "pipelines"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       leads: {
         Row: {
           average_ticket: number | null

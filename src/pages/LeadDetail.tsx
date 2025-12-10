@@ -10,6 +10,7 @@ import { ArrowLeft, Mail, Phone, Calendar, Building2, Clock, DollarSign, Users, 
 import Instagram from "@/components/icons/Instagram";
 import { Skeleton } from "@/components/ui/skeleton";
 import { motion } from "framer-motion";
+import { ActivitiesBoard } from "@/components/activities/ActivitiesBoard";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -289,17 +290,10 @@ export default function LeadDetail() {
         {/* Tab Content */}
         <div className="mt-4">
           {activeTab === "atividades" && (
-            <Card className="border-black/5">
-              <CardContent className="p-12 flex flex-col items-center justify-center text-center">
-                <div className="h-16 w-16 rounded-full bg-muted flex items-center justify-center mb-4">
-                  <Clock className="h-8 w-8 text-muted-foreground" />
-                </div>
-                <p className="text-lg font-medium text-muted-foreground">Em desenvolvimento</p>
-                <p className="text-sm text-muted-foreground/70 mt-1">
-                  Em breve você poderá acompanhar as atividades do lead aqui
-                </p>
-              </CardContent>
-            </Card>
+            <ActivitiesBoard
+              leadId={lead.id}
+              currentPipelineId={lead.pipeline_id}
+            />
           )}
 
           {activeTab === "contato" && (
