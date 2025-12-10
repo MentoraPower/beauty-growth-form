@@ -10,6 +10,7 @@ import NotFound from "./pages/NotFound";
 import Dashboard from "./pages/Dashboard";
 import CRM from "./pages/CRM";
 import Emails from "./pages/Emails";
+import LeadDetail from "./pages/LeadDetail";
 
 const queryClient = new QueryClient();
 
@@ -25,6 +26,7 @@ const App = () => (
           <Route path="/privacidade" element={<PrivacyPolicy />} />
           <Route path="/admin" element={<Dashboard />} />
           <Route path="/admin/crm" element={<CRM />} />
+          <Route path="/admin/crm/:id" element={<LeadDetail />} />
           <Route path="/admin/emails" element={<Emails />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
