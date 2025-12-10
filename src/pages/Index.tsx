@@ -641,21 +641,12 @@ function FeaturesSection() {
 
 function QuemSomosSection() {
   return (
-    <section className="w-[calc(100%+2rem)] -mx-4 md:mx-0 md:w-full relative bg-gradient-to-r from-[#F40000] to-[#A10000]">
-      {/* SVG curved notch - background color with curve dipping into red */}
-      <svg 
-        className="block w-full h-6 md:h-8"
-        viewBox="0 0 100 10" 
-        preserveAspectRatio="none"
-      >
-        <path 
-          d="M0,0 L100,0 L100,10 L60,10 Q50,0 40,10 L0,10 Z" 
-          fill="#F3F3F3"
-        />
-      </svg>
+    <section className="w-[calc(100%+2rem)] -mx-4 md:mx-0 md:w-full relative">
+      {/* Curved top transition */}
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[70%] md:w-[50%] h-8 md:h-12 bg-background rounded-b-[50px] z-10" />
       
-      {/* Content area */}
-      <div className="pb-16 md:pb-24">
+      {/* Red background with padding for the curve */}
+      <div className="bg-gradient-to-r from-[#F40000] to-[#A10000] pt-8 md:pt-12 pb-16 md:pb-24">
         <div className="mx-auto w-full max-w-6xl px-6 md:px-8 pt-8 md:pt-12">
           <AnimatedContainer className="flex flex-col md:flex-row items-center gap-8 md:gap-12">
             {/* Image */}
