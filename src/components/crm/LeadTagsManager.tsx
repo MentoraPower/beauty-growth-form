@@ -130,13 +130,13 @@ export function LeadTagsManager({ leadId }: LeadTagsManagerProps) {
           <Button
             variant="outline"
             size="sm"
-            className="h-7 border-[#00000010] bg-transparent hover:bg-muted/50 transition-all duration-200 w-fit"
-            onMouseEnter={() => setIsHovered(true)}
+            className="h-7 border-[#00000010] bg-transparent hover:bg-muted/50 transition-all duration-300 w-fit"
+            onMouseEnter={() => setTimeout(() => setIsHovered(true), 150)}
             onMouseLeave={() => setIsHovered(false)}
           >
             <Plus className="h-3.5 w-3.5" />
             <span
-              className={`overflow-hidden transition-all duration-200 ${
+              className={`overflow-hidden transition-all duration-300 ${
                 isHovered || isOpen ? "max-w-[100px] ml-1 opacity-100" : "max-w-0 opacity-0"
               }`}
             >
