@@ -53,11 +53,32 @@ const Index = () => {
     yearsOfExperience: ""
   });
 
-  // Track page view on mount
+  // Track page view on mount (only once per visitor)
   useEffect(() => {
     const trackPageView = async () => {
+      const STORAGE_KEY = "scale_beauty_visited";
+      
+      // Check localStorage
+      const hasVisitedLS = localStorage.getItem(STORAGE_KEY);
+      
+      // Check cookies
+      const hasVisitedCookie = document.cookie.includes(`${STORAGE_KEY}=true`);
+      
+      // If already visited, don't track again
+      if (hasVisitedLS || hasVisitedCookie) {
+        return;
+      }
+      
       try {
         await supabase.from("page_views").insert({ page_path: "/" });
+        
+        // Save to localStorage
+        localStorage.setItem(STORAGE_KEY, "true");
+        
+        // Save to cookies (expires in 1 year)
+        const expires = new Date();
+        expires.setFullYear(expires.getFullYear() + 1);
+        document.cookie = `${STORAGE_KEY}=true; expires=${expires.toUTCString()}; path=/`;
       } catch (error) {
         console.error("Error tracking page view:", error);
       }
