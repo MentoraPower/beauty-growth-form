@@ -70,7 +70,7 @@ const HamburgerMenu = () => {
       <div className="mx-auto w-full max-w-5xl">
         {/* Header bar - same for mobile and desktop */}
         <motion.div 
-          className={`flex items-center justify-between py-3 px-4 rounded-2xl transition-colors duration-300 ${bgClass}`}
+          className={`flex items-center justify-between py-2 px-4 rounded-xl transition-colors duration-300 ${bgClass}`}
           layout
         >
           <span className={`font-bold text-sm uppercase tracking-tight transition-colors duration-300 ${textClass}`}>
