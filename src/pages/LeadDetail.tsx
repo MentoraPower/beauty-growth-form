@@ -203,7 +203,7 @@ export default function LeadDetail() {
 
   return (
     <DashboardLayout>
-      <div className="space-y-6">
+      <div className="space-y-4">
         {/* Header with Avatar and Name */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -259,7 +259,7 @@ export default function LeadDetail() {
         </div>
 
         {/* Tags Section - aligned with profile content */}
-        <div className="pl-[52px] -mt-4">
+        <div className="pl-[52px] -mt-5">
           <LeadTagsManager leadId={lead.id} />
         </div>
 
