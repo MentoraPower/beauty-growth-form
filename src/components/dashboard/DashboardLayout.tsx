@@ -68,8 +68,8 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
       >
         <div className="flex flex-col h-full py-3">
           {/* Logo */}
-          <div className="h-11 flex items-center px-[10px] mb-2">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-primary-dark flex items-center justify-center flex-shrink-0">
+          <div className="h-11 flex items-center px-3 mb-2">
+            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary to-primary-dark flex items-center justify-center flex-shrink-0">
               <span className="text-white font-bold text-sm">SB</span>
             </div>
             <div className={cn(
@@ -83,7 +83,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
           </div>
 
           {/* Navigation */}
-          <nav className="flex-1 space-y-1 px-[10px]">
+          <nav className="flex-1 space-y-1 px-3">
             {navItems.map((item) => {
               const isActive = location.pathname === item.href;
               return (
@@ -102,8 +102,8 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
                       : "text-neutral-400 hover:bg-white/5 hover:text-white"
                   )}
                 >
-                  <div className="w-10 h-10 flex items-center justify-center flex-shrink-0">
-                    <item.icon className="h-5 w-5" />
+                    <div className="w-12 h-10 flex items-center justify-center flex-shrink-0">
+                      <item.icon className="h-5 w-5" />
                   </div>
                   <div className={cn(
                     "overflow-hidden transition-all duration-300",
@@ -119,12 +119,12 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
           </nav>
 
           {/* Footer */}
-          <div className="pt-2 border-t border-neutral-800 mt-2 px-[10px]">
+          <div className="pt-2 border-t border-neutral-800 mt-2 px-3">
             <Link
               to="/"
               className="flex items-center h-10 rounded-xl text-neutral-400 hover:bg-white/5 hover:text-white transition-colors"
             >
-              <div className="w-10 h-10 flex items-center justify-center flex-shrink-0">
+              <div className="w-12 h-10 flex items-center justify-center flex-shrink-0">
                 <LogOut className="h-5 w-5" />
               </div>
               <div className={cn(
