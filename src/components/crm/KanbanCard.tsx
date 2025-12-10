@@ -10,9 +10,10 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 
 interface KanbanCardProps {
   lead: Lead;
+  isDragging?: boolean;
 }
 
-export function KanbanCard({ lead }: KanbanCardProps) {
+export function KanbanCard({ lead, isDragging: isDraggingOverlay }: KanbanCardProps) {
   const [isOpen, setIsOpen] = useState(false);
   
   const {
@@ -22,13 +23,20 @@ export function KanbanCard({ lead }: KanbanCardProps) {
     transform,
     transition,
     isDragging,
-  } = useSortable({ id: lead.id });
+  } = useSortable({ 
+    id: lead.id,
+    transition: {
+      duration: 150,
+      easing: 'cubic-bezier(0.25, 1, 0.5, 1)',
+    },
+  });
 
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
-    opacity: isDragging ? 0.5 : 1,
   };
+
+  const isBeingDragged = isDragging || isDraggingOverlay;
 
   return (
     <>
@@ -37,25 +45,36 @@ export function KanbanCard({ lead }: KanbanCardProps) {
         style={style}
         {...attributes}
         {...listeners}
-        className="cursor-move hover:shadow-md transition-shadow bg-card border-black/5"
-        onClick={() => setIsOpen(true)}
+        className={`cursor-grab active:cursor-grabbing transition-all duration-150 bg-card border-black/5 select-none touch-none ${
+          isBeingDragged
+            ? "shadow-xl opacity-100 ring-2 ring-primary/20"
+            : isDragging
+            ? "opacity-30"
+            : "hover:shadow-md hover:border-black/10"
+        }`}
+        onClick={(e) => {
+          if (!isDragging) {
+            e.stopPropagation();
+            setIsOpen(true);
+          }
+        }}
       >
         <CardContent className="p-4 space-y-2">
           <h3 className="font-semibold text-sm">{lead.name}</h3>
           
           <div className="space-y-1 text-xs text-muted-foreground">
             <div className="flex items-center gap-2">
-              <Mail className="w-3 h-3" />
+              <Mail className="w-3 h-3 flex-shrink-0" />
               <span className="truncate">{lead.email}</span>
             </div>
             
             <div className="flex items-center gap-2">
-              <Phone className="w-3 h-3" />
+              <Phone className="w-3 h-3 flex-shrink-0" />
               <span>{lead.country_code} {lead.whatsapp}</span>
             </div>
             
             <div className="flex items-center gap-2">
-              <Instagram className="w-3 h-3" />
+              <Instagram className="w-3 h-3 flex-shrink-0" />
               <span className="truncate">{lead.instagram}</span>
             </div>
           </div>
