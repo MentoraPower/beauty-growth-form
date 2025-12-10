@@ -15,12 +15,12 @@ export function FeatureCard({ feature, className, ...props }: FeatureCardPorps) 
 	const p = React.useMemo(() => genRandomPattern(), []);
 
 	return (
-		<div className={cn('relative', className)} {...props}>
+		<div className={cn('relative group', className)} {...props}>
 			{/* Corner squares - outside the overflow-hidden container */}
-			<div className="absolute -top-1 -left-1 w-2 h-2 border border-foreground/20 z-10" />
-			<div className="absolute -top-1 -right-1 w-2 h-2 border border-foreground/20 z-10" />
-			<div className="absolute -bottom-1 -left-1 w-2 h-2 border border-foreground/20 z-10" />
-			<div className="absolute -bottom-1 -right-1 w-2 h-2 border border-foreground/20 z-10" />
+			<div className="absolute -top-1 -left-1 w-2 h-2 border border-foreground/20 z-10 transition-colors group-hover:border-red-500 group-hover:bg-red-500" />
+			<div className="absolute -top-1 -right-1 w-2 h-2 border border-foreground/20 z-10 transition-colors group-hover:border-red-500 group-hover:bg-red-500" />
+			<div className="absolute -bottom-1 -left-1 w-2 h-2 border border-foreground/20 z-10 transition-colors group-hover:border-red-500 group-hover:bg-red-500" />
+			<div className="absolute -bottom-1 -right-1 w-2 h-2 border border-foreground/20 z-10 transition-colors group-hover:border-red-500 group-hover:bg-red-500" />
 			
 			{/* Card content with overflow hidden */}
 			<div className="relative p-6 overflow-hidden h-full">
