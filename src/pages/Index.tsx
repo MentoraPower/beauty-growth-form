@@ -70,25 +70,42 @@ const handleCurrencyInput = (value: string): string => {
   // Remove R$ prefix and spaces for processing
   let cleaned = value.replace(/R\$\s*/g, '').trim();
   
-  // Remove everything except digits
-  const digits = cleaned.replace(/\D/g, '');
+  // Remove everything except digits, comma and dot
+  cleaned = cleaned.replace(/[^\d,\.]/g, '');
   
-  // If no digits, return empty
-  if (!digits) return '';
+  // If no content, return empty
+  if (!cleaned) return '';
   
-  // Convert to number (treating as cents)
-  const number = parseInt(digits, 10);
+  // Replace dot with comma for consistency (allow either separator)
+  cleaned = cleaned.replace(/\./g, ',');
   
-  // Format as currency (divide by 100 to get reais from cents)
-  const reais = number / 100;
+  // Keep only the last comma (decimal separator)
+  const commaCount = (cleaned.match(/,/g) || []).length;
+  if (commaCount > 1) {
+    const lastCommaIndex = cleaned.lastIndexOf(',');
+    cleaned = cleaned.substring(0, lastCommaIndex).replace(/,/g, '') + cleaned.substring(lastCommaIndex);
+  }
   
-  // Format with Brazilian locale
-  const formatted = reais.toLocaleString('pt-BR', {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2
-  });
+  // Split into integer and decimal parts
+  const parts = cleaned.split(',');
+  let integerPart = parts[0] || '0';
+  let decimalPart = parts[1] || '';
   
-  return `R$ ${formatted}`;
+  // Limit decimal to 2 digits
+  if (decimalPart.length > 2) {
+    decimalPart = decimalPart.substring(0, 2);
+  }
+  
+  // Format integer part with thousands separator
+  const integerNumber = parseInt(integerPart.replace(/\D/g, ''), 10) || 0;
+  const formattedInteger = integerNumber.toLocaleString('pt-BR');
+  
+  // Build result
+  if (parts.length > 1) {
+    return `R$ ${formattedInteger},${decimalPart}`;
+  }
+  
+  return `R$ ${formattedInteger}`;
 };
 
 // Parse currency string to number (returns value in reais)
