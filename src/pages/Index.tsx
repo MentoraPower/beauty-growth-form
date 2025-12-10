@@ -674,7 +674,7 @@ function QuemSomosSection() {
             
             {/* Text Content */}
             <div className="w-full md:w-1/2 text-white">
-              <h2 className="text-3xl md:text-3xl lg:text-4xl font-bold mb-6">
+              <h2 className="text-4xl md:text-3xl lg:text-4xl font-bold mb-6">
                 Quem somos
               </h2>
               <p className="text-base md:text-lg leading-relaxed opacity-95">
