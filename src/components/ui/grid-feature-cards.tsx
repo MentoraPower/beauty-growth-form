@@ -15,8 +15,7 @@ export function FeatureCard({ feature, className, ...props }: FeatureCardPorps) 
 	const p = React.useMemo(() => genRandomPattern(), []);
 
 	return (
-		<div className={cn('relative p-6', className)} {...props}>
-			{/* Corner squares - inside the card corners */}
+		<div className={cn('relative p-6 overflow-hidden', className)} {...props}>
 			<div className="absolute top-2 left-2 w-2 h-2 border border-foreground/20" />
 			<div className="absolute top-2 right-2 w-2 h-2 border border-foreground/20" />
 			<div className="absolute bottom-2 left-2 w-2 h-2 border border-foreground/20" />
