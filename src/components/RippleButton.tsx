@@ -20,12 +20,21 @@ const RippleButton: React.FC<RippleButtonProps> = ({ children, className = "", o
     fill.style.top = `${y}px`;
   };
 
+  const resetFill = () => {
+    const fill = fillRef.current;
+    if (fill) {
+      fill.style.width = '0';
+      fill.style.height = '0';
+    }
+  };
+
   return (
     <button
       ref={buttonRef}
       className={`ripple-button ${className}`}
       onClick={onClick}
       onMouseMove={updatePosition}
+      onMouseLeave={resetFill}
       {...props}
     >
       <span ref={fillRef} className="ripple-fill" />
