@@ -45,29 +45,43 @@ interface FormData {
   wantsMoreInfo: boolean | null;
 }
 
-// Format currency as user types
+// Format currency as user types (treats input as reais, not cents)
 const formatCurrency = (value: string): string => {
-  // Remove non-digits
-  const digits = value.replace(/\D/g, '');
-  if (!digits) return '';
+  // Remove non-digits except comma and dot
+  let cleaned = value.replace(/[^\d,\.]/g, '');
   
-  // Convert to number (cents)
-  const cents = parseInt(digits, 10);
+  // Replace comma with dot for parsing
+  cleaned = cleaned.replace(',', '.');
+  
+  // Remove extra dots (keep only last one)
+  const parts = cleaned.split('.');
+  if (parts.length > 2) {
+    cleaned = parts.slice(0, -1).join('') + '.' + parts[parts.length - 1];
+  }
+  
+  if (!cleaned) return '';
+  
+  // Parse as number
+  const number = parseFloat(cleaned);
+  if (isNaN(number)) return '';
   
   // Format as BRL
-  const reais = (cents / 100).toLocaleString('pt-BR', {
+  const formatted = number.toLocaleString('pt-BR', {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2
   });
   
-  return `R$ ${reais}`;
+  return `R$ ${formatted}`;
 };
 
-// Parse currency string to number
+// Parse currency string to number (returns value in reais)
 const parseCurrency = (value: string): number => {
-  const digits = value.replace(/\D/g, '');
-  if (!digits) return 0;
-  return parseInt(digits, 10) / 100;
+  // Remove R$ and spaces
+  let cleaned = value.replace(/R\$\s*/g, '').trim();
+  // Replace dots (thousands separator) and comma (decimal)
+  cleaned = cleaned.replace(/\./g, '').replace(',', '.');
+  const number = parseFloat(cleaned);
+  return isNaN(number) ? 0 : number;
 };
 
 // Get minimum revenue value from range string
