@@ -221,9 +221,6 @@ export default function LeadDetail() {
             
             {/* Name and Badges */}
             <div>
-              <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">
-                {lead.clinic_name || "SEM EMPRESA"}
-              </p>
               <h1 className="text-lg font-bold">
                 {lead.name === "Incompleto" ? "incompleto" : lead.name}
               </h1>
@@ -301,6 +298,18 @@ export default function LeadDetail() {
                   <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-4">
                     Informações de Contato
                   </h3>
+                  
+                  <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg">
+                    <div className="h-10 w-10 rounded-full bg-purple-500/10 flex items-center justify-center">
+                      <Building2 className="h-5 w-5 text-purple-500" />
+                    </div>
+                    <div>
+                      <p className="text-xs text-muted-foreground">Empresa</p>
+                      <p className={`text-sm font-medium ${!lead.clinic_name ? "text-muted-foreground italic text-xs" : ""}`}>
+                        {lead.clinic_name || "sem empresa"}
+                      </p>
+                    </div>
+                  </div>
                   
                   <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg">
                     <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
