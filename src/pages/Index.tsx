@@ -659,7 +659,7 @@ function QuemSomosSection() {
       
       {/* Red background with padding for the curve */}
       <div className="bg-gradient-to-r from-[#F40000] to-[#A10000] pt-8 md:pt-12 pb-16 md:pb-24">
-        <div className="mx-auto w-full max-w-6xl px-6 md:px-8 pt-8 md:pt-12">
+        <div className="mx-auto w-full max-w-6xl px-8 md:px-8 pt-8 md:pt-12">
           <AnimatedContainer className="flex flex-col md:flex-row items-center gap-8 md:gap-12">
             {/* Image */}
             <div className="w-full md:w-1/2">
