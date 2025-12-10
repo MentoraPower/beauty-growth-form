@@ -31,7 +31,7 @@ export function KanbanColumn({ pipeline, leads, isOver }: KanbanColumnProps) {
         ref={setNodeRef}
         className={`p-3 min-h-[500px] rounded-xl border transition-all duration-150 ${
           isOver
-            ? "bg-primary/5 border-primary/30 shadow-lg"
+            ? "bg-muted/30 border-muted-foreground/20 border-dashed"
             : "bg-muted/20 border-black/5"
         }`}
       >
@@ -45,7 +45,7 @@ export function KanbanColumn({ pipeline, leads, isOver }: KanbanColumnProps) {
             ))}
             {leads.length === 0 && (
               <div className={`text-center text-sm py-8 rounded-lg border-2 border-dashed transition-colors ${
-                isOver ? "border-primary/30 text-primary" : "border-transparent text-muted-foreground"
+                isOver ? "border-muted-foreground/30 text-muted-foreground" : "border-transparent text-muted-foreground"
               }`}>
                 {isOver ? "Solte aqui" : "Nenhum lead"}
               </div>
