@@ -665,19 +665,19 @@ function QuemSomosSection() {
       
       {/* Main content */}
       <div className="w-full bg-gradient-to-r from-[#F40000] to-[#A10000] py-12 md:py-20 -mt-px">
-        <div className="w-full px-4 md:px-8">
-          <AnimatedContainer className="flex flex-col md:flex-row items-center gap-8 md:gap-12">
+        <div className="w-full px-0 md:px-8">
+          <AnimatedContainer className="flex flex-col md:flex-row items-center gap-0 md:gap-12">
             {/* Image */}
             <div className="w-full md:w-1/2">
               <img 
                 src={quemSomosImage} 
                 alt="Quem Somos - Scale Beauty" 
-                className="w-full h-auto rounded-2xl"
+                className="w-full h-auto rounded-none md:rounded-2xl"
               />
             </div>
             
             {/* Text Content */}
-            <div className="w-full md:w-1/2 text-white">
+            <div className="w-full md:w-1/2 text-white px-4 md:px-0 pt-6 md:pt-0">
               <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold mb-6">
                 Quem somos
               </h2>
