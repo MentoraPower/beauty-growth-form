@@ -39,22 +39,36 @@ const SplashScreen = ({ onComplete }: SplashScreenProps) => {
           transition={{ duration: 0.5, ease: "easeInOut" }}
           className="fixed inset-0 z-50 flex items-center justify-center bg-[#F3F3F3]"
         >
-          <div className="flex gap-3 md:gap-4">
-            {letters.map((letter, index) => (
-              <motion.span
-                key={index}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{
-                  duration: 0.3,
-                  delay: index * 0.15,
-                  ease: "easeOut",
-                }}
-                className="text-2xl md:text-4xl font-light tracking-[0.3em] bg-gradient-to-r from-[#F40000] to-[#A10000] bg-clip-text text-transparent"
-              >
-                {letter}
-              </motion.span>
-            ))}
+          <div className="flex flex-col items-center gap-4">
+            <div className="flex gap-3 md:gap-4">
+              {letters.map((letter, index) => (
+                <motion.span
+                  key={index}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{
+                    duration: 0.3,
+                    delay: index * 0.15,
+                    ease: "easeOut",
+                  }}
+                  className="text-2xl md:text-4xl font-light tracking-[0.3em] bg-gradient-to-r from-[#F40000] to-[#A10000] bg-clip-text text-transparent"
+                >
+                  {letter}
+                </motion.span>
+              ))}
+            </div>
+            <motion.p
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{
+                duration: 0.4,
+                delay: 0.9,
+                ease: "easeOut",
+              }}
+              className="text-sm md:text-base font-light tracking-[0.2em] text-foreground/60"
+            >
+              aqui você é única
+            </motion.p>
           </div>
         </motion.div>
       )}
