@@ -292,6 +292,7 @@ export default function LeadDetail() {
           {activeTab === "atividades" && (
             <ActivitiesBoard
               leadId={lead.id}
+              leadName={lead.name}
               currentPipelineId={lead.pipeline_id}
             />
           )}

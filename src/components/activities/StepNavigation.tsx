@@ -6,6 +6,7 @@ interface StepNavigationProps {
   pipelines: Pipeline[];
   viewingPipelineId: string | null;
   currentPipelineId: string | null;
+  leadName: string;
   onPipelineClick: (pipelineId: string) => void;
 }
 
@@ -13,6 +14,7 @@ export const StepNavigation = memo(function StepNavigation({
   pipelines,
   viewingPipelineId,
   currentPipelineId,
+  leadName,
   onPipelineClick,
 }: StepNavigationProps) {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -39,6 +41,15 @@ export const StepNavigation = memo(function StepNavigation({
     onPipelineClick(pipelineId);
     scrollToStep(index);
   }, [onPipelineClick, scrollToStep]);
+
+  // Get initials from lead name
+  const getInitials = (name: string) => {
+    const parts = name.trim().split(' ').filter(Boolean);
+    if (parts.length >= 2) {
+      return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+    }
+    return parts[0]?.[0]?.toUpperCase() || '?';
+  };
 
   if (pipelines.length === 0) {
     return (
@@ -126,10 +137,12 @@ export const StepNavigation = memo(function StepNavigation({
                   {pipeline.nome}
                 </span>
 
-                {/* Current lead indicator */}
+                {/* Lead avatar indicator below step name */}
                 {isCurrentLead && (
-                  <div className="absolute -top-1 right-6">
-                    <div className="w-3 h-3 rounded-full bg-green-500 border-2 border-background" />
+                  <div className="mt-1.5 flex items-center justify-center">
+                    <div className="w-6 h-6 rounded-full bg-primary flex items-center justify-center text-[10px] font-medium text-primary-foreground shadow-sm">
+                      {getInitials(leadName)}
+                    </div>
                   </div>
                 )}
               </div>
