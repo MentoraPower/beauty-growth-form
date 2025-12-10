@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useCallback } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { LayoutDashboard, Users, Menu, X, LogOut } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -14,36 +14,25 @@ const navItems = [
   { href: "/admin/leads", icon: Users, label: "Leads" },
 ];
 
-// Global state to persist hover across re-renders
-let globalIsHovered = false;
-
 const DashboardLayout = ({ children }: DashboardLayoutProps) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [isHovered, setIsHovered] = useState(globalIsHovered);
-  const sidebarRef = useRef<HTMLElement>(null);
+  const [isHovered, setIsHovered] = useState(false);
   const location = useLocation();
 
-  // Sync with global state on mount
-  useEffect(() => {
-    setIsHovered(globalIsHovered);
-  }, [location.pathname]);
-
   const handleMouseEnter = useCallback(() => {
-    globalIsHovered = true;
     setIsHovered(true);
   }, []);
 
   const handleMouseLeave = useCallback(() => {
-    globalIsHovered = false;
     setIsHovered(false);
   }, []);
 
   const shouldBeExpanded = isHovered || sidebarOpen;
 
   return (
-    <div className="min-h-screen bg-background p-4 lg:p-6">
+    <div className="min-h-screen bg-background">
       {/* Mobile Header */}
-      <header className="lg:hidden fixed top-4 left-4 right-4 h-14 bg-card border border-border rounded-2xl z-50 flex items-center justify-between px-4 shadow-sm">
+      <header className="lg:hidden fixed top-0 left-0 right-0 h-14 bg-card border-b border-border z-50 flex items-center justify-between px-4">
         <button
           onClick={() => setSidebarOpen(!sidebarOpen)}
           className="p-2 hover:bg-muted rounded-xl transition-colors"
@@ -58,30 +47,22 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
         <div className="w-9" />
       </header>
 
-      {/* Sidebar */}
+      {/* Desktop Sidebar */}
       <motion.aside
-        ref={sidebarRef}
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
         initial={false}
-        animate={{ 
-          width: shouldBeExpanded ? 224 : 72
-        }}
-        transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
-        className={cn(
-          "hidden lg:flex flex-col fixed left-0 top-0 my-2 ml-2 h-[calc(100vh-1rem)] rounded-3xl border border-[#ffffff15] bg-black overflow-hidden z-50"
-        )}
+        animate={{ width: shouldBeExpanded ? 224 : 72 }}
+        transition={{ duration: 0.2, ease: "easeOut" }}
+        className="hidden lg:flex flex-col fixed left-0 top-0 my-2 ml-2 h-[calc(100vh-1rem)] rounded-3xl border border-[#ffffff15] bg-black overflow-hidden z-50"
       >
         <div className="flex flex-col h-full">
           {/* Logo */}
           <div className="pt-[30px] pb-4 px-4 flex justify-start">
             <motion.div
               initial={false}
-              animate={{ 
-                width: shouldBeExpanded ? 100 : 40,
-                opacity: 1
-              }}
-              transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
+              animate={{ width: shouldBeExpanded ? 100 : 40 }}
+              transition={{ duration: 0.2, ease: "easeOut" }}
               className="flex items-center"
             >
               <img src={scaleLogo} alt="Scale Beauty" className="w-full h-auto" />
@@ -105,17 +86,14 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
                     )}
                   >
                     <item.icon className="h-5 w-5 flex-shrink-0" strokeWidth={1.5} />
-                    <motion.span
-                      initial={false}
-                      animate={{ 
-                        opacity: shouldBeExpanded ? 1 : 0,
-                        width: shouldBeExpanded ? 'auto' : 0
-                      }}
-                      transition={{ duration: 0.2, ease: "easeInOut" }}
-                      className="text-sm font-medium whitespace-nowrap overflow-hidden"
+                    <span
+                      className={cn(
+                        "text-sm font-medium whitespace-nowrap transition-opacity duration-200",
+                        shouldBeExpanded ? "opacity-100" : "opacity-0 w-0 overflow-hidden"
+                      )}
                     >
                       {item.label}
-                    </motion.span>
+                    </span>
                   </Link>
                 );
               })}
@@ -129,17 +107,14 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
               className="relative flex items-center w-full rounded-xl transition-colors duration-200 px-4 py-3 gap-3 text-white/60 hover:bg-white/5 hover:text-white"
             >
               <LogOut className="h-5 w-5 flex-shrink-0" strokeWidth={1.5} />
-              <motion.span
-                initial={false}
-                animate={{ 
-                  opacity: shouldBeExpanded ? 1 : 0,
-                  width: shouldBeExpanded ? 'auto' : 0
-                }}
-                transition={{ duration: 0.2, ease: "easeInOut" }}
-                className="text-sm font-medium whitespace-nowrap overflow-hidden"
+              <span
+                className={cn(
+                  "text-sm font-medium whitespace-nowrap transition-opacity duration-200",
+                  shouldBeExpanded ? "opacity-100" : "opacity-0 w-0 overflow-hidden"
+                )}
               >
                 Voltar ao Site
-              </motion.span>
+              </span>
             </Link>
           </div>
         </div>
@@ -148,11 +123,11 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
       {/* Mobile Sidebar */}
       <aside
         className={cn(
-          "lg:hidden fixed top-4 left-4 bottom-4 bg-black border border-[#ffffff15] rounded-2xl z-40 transform transition-all duration-300 ease-in-out shadow-sm overflow-hidden w-52",
-          sidebarOpen ? "translate-x-0" : "-translate-x-[calc(100%+2rem)]"
+          "lg:hidden fixed top-14 left-0 bottom-0 w-64 bg-black border-r border-[#ffffff15] z-40 transform transition-transform duration-300 ease-in-out",
+          sidebarOpen ? "translate-x-0" : "-translate-x-full"
         )}
       >
-        <div className="flex flex-col h-full py-3">
+        <div className="flex flex-col h-full py-4">
           <div className="flex items-center px-4 py-4 mb-4">
             <img src={scaleLogo} alt="Scale" className="w-20" />
           </div>
@@ -197,7 +172,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
         </div>
       </aside>
 
-      {/* Overlay */}
+      {/* Mobile Overlay */}
       {sidebarOpen && (
         <div
           className="fixed inset-0 bg-black/50 z-30 lg:hidden"
@@ -206,7 +181,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
       )}
 
       {/* Main Content */}
-      <main className="lg:ml-[4.75rem] pt-20 lg:pt-0 min-h-[calc(100vh-2rem)] p-3">
+      <main className="lg:ml-[88px] pt-14 lg:pt-0 min-h-screen p-4 lg:p-6">
         {children}
       </main>
     </div>
