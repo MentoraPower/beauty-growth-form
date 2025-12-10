@@ -662,14 +662,24 @@ function QuemSomosSection() {
                 Não acreditamos em fórmulas prontas! A nossa experiência com a área da beleza nos mostra que cada clínica, cada studio em seu modelo criativo é único e que as nossas estratégias também serão únicas.
               </p>
               
-              {/* CEO Attribution Card */}
-              <div className="mt-8 inline-flex items-center gap-4 bg-white/10 backdrop-blur-sm rounded-2xl px-5 py-4">
-                <div className="w-12 h-12 rounded-full border-2 border-white/40 flex items-center justify-center">
-                  <Building className="w-5 h-5 text-white" />
+              {/* CEO Attribution Cards */}
+              <div className="mt-8 flex flex-wrap gap-3">
+                <div className="inline-flex items-center gap-3 bg-white/10 backdrop-blur-sm rounded-xl px-4 py-3">
+                  <div className="w-9 h-9 rounded-full border border-white/40 flex items-center justify-center">
+                    <Building className="w-4 h-4 text-white" />
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="text-white font-semibold text-xs tracking-wide">EMILLY BITETI</span>
+                    <span className="text-white/70 text-[10px] tracking-wider">CEO DA BITETI BEAUTY</span>
+                  </div>
                 </div>
-                <div className="flex flex-col">
-                  <span className="text-white font-semibold text-sm tracking-wide">EMILLY BITETI</span>
-                  <span className="text-white/70 text-xs tracking-wider">CEO DA BITETI BEAUTY</span>
+                <div className="inline-flex items-center gap-3 bg-white/10 backdrop-blur-sm rounded-xl px-4 py-3">
+                  <div className="w-9 h-9 rounded-full border border-white/40 flex items-center justify-center">
+                    <Building className="w-4 h-4 text-white" />
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="text-white font-semibold text-xs tracking-wide">BITETI & CO.</span>
+                  </div>
                 </div>
               </div>
             </div>
