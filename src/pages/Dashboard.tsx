@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Users, TrendingUp, Calendar, Building2 } from "lucide-react";
+import { Users, Calendar } from "lucide-react";
 import ModernAreaChart from "@/components/dashboard/ModernAreaChart";
 import ModernBarChart from "@/components/dashboard/ModernBarChart";
 import MiniGaugeChart from "@/components/dashboard/MiniGaugeChart";
@@ -121,24 +121,6 @@ const Dashboard = () => {
     return last7Days;
   };
 
-  // Calculate average years of experience
-  const getAverageExperience = () => {
-    if (leads.length === 0) return 0;
-    const total = leads.reduce((sum, lead) => sum + (parseInt(lead.years_experience) || 0), 0);
-    return Math.round(total / leads.length);
-  };
-
-  // Count leads with physical space
-  const getPhysicalSpaceCount = () => {
-    return leads.filter((lead) => lead.workspace_type === "physical").length;
-  };
-
-  // Get physical space percentage
-  const getPhysicalSpacePercentage = () => {
-    if (leads.length === 0) return 0;
-    return Math.round((getPhysicalSpaceCount() / leads.length) * 100);
-  };
-
   // Get leads today
   const getLeadsToday = () => {
     return leads.filter(
@@ -156,9 +138,7 @@ const Dashboard = () => {
           </div>
 
           {/* Stats Cards Skeleton */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-            <CardSkeleton />
-            <CardSkeleton />
+          <div className="grid grid-cols-2 gap-4">
             <CardSkeleton />
             <CardSkeleton />
           </div>
@@ -185,7 +165,7 @@ const Dashboard = () => {
         </div>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 gap-4">
           <Card className="bg-card border-border/50">
             <CardContent className="pt-5 pb-4">
               <div className="flex items-center justify-between">
@@ -209,34 +189,6 @@ const Dashboard = () => {
                 </div>
                 <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
                   <Calendar className="h-5 w-5 text-primary" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="bg-card border-border/50">
-            <CardContent className="pt-5 pb-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">Experiência Média</p>
-                  <p className="text-3xl font-bold text-foreground mt-1">{getAverageExperience()}<span className="text-lg text-muted-foreground ml-1">anos</span></p>
-                </div>
-                <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
-                  <TrendingUp className="h-5 w-5 text-primary" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="bg-card border-border/50">
-            <CardContent className="pt-5 pb-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">Espaço Físico</p>
-                  <p className="text-3xl font-bold text-foreground mt-1">{getPhysicalSpaceCount()}</p>
-                </div>
-                <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
-                  <Building2 className="h-5 w-5 text-primary" />
                 </div>
               </div>
             </CardContent>
