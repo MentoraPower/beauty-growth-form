@@ -9,6 +9,7 @@ import {
   useSpring,
   useTransform,
   useVelocity,
+  useInView,
 } from "framer-motion";
 import { cn } from "@/lib/utils";
 
@@ -39,6 +40,9 @@ function ScrollVelocityRow({
   const [repetitions, setRepetitions] = useState(1);
   const containerRef = useRef<HTMLDivElement>(null);
   const textRef = useRef<HTMLSpanElement>(null);
+  
+  // Check if element is in view
+  const isInView = useInView(containerRef, { margin: "100px" });
 
   useEffect(() => {
     const calculateRepetitions = () => {
@@ -60,6 +64,9 @@ function ScrollVelocityRow({
   const directionFactor = useRef<number>(direction);
 
   useAnimationFrame((_, delta) => {
+    // Skip animation if not in view
+    if (!isInView) return;
+    
     let moveBy = directionFactor.current * baseVelocity * (delta / 1000);
 
     if (velocityFactor.get() < 0) {

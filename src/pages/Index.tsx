@@ -453,7 +453,13 @@ const Index = () => {
       <div className="md:hidden flex flex-col min-h-screen relative">
         {/* Banner image on top with rounded bottom */}
         <div className="w-full flex-shrink-0">
-          <img src={scaleBeautyMobile} alt="Scale Beauty" className="w-full h-[260px] object-cover rounded-b-3xl" />
+          <img 
+            src={scaleBeautyMobile} 
+            alt="Scale Beauty" 
+            className="w-full h-[260px] object-cover rounded-b-3xl" 
+            loading="eager"
+            decoding="async"
+          />
         </div>
         {/* Form overlapping the image */}
         <div className="flex-1 flex flex-col justify-start px-4 -mt-6 relative z-10">
@@ -509,7 +515,13 @@ const Index = () => {
       <div className="hidden md:flex flex-col min-h-screen">
         {/* Banner image on top with rounded bottom */}
         <div className="w-full flex-shrink-0">
-          <img src={scaleBeautyBanner} alt="Scale Beauty" className="w-full h-[320px] object-cover rounded-b-3xl" />
+          <img 
+            src={scaleBeautyBanner} 
+            alt="Scale Beauty" 
+            className="w-full h-[320px] object-cover rounded-b-3xl"
+            loading="eager"
+            decoding="async"
+          />
         </div>
         
         {/* Form overlapping the image */}
@@ -655,6 +667,8 @@ function QuemSomosSection() {
                 src={quemSomosImage} 
                 alt="Quem Somos - Scale Beauty" 
                 className="w-full h-auto rounded-2xl"
+                loading="lazy"
+                decoding="async"
               />
             </div>
             
