@@ -10,18 +10,23 @@ const SplashScreen = ({ onComplete }: SplashScreenProps) => {
   const letters = "SCALE".split("");
 
   useEffect(() => {
+    // Prevent scrolling while splash is showing
+    document.body.style.overflow = "hidden";
+    
     // Total animation time: letters appear (5 * 150ms = 750ms) + hold (500ms) + fade (500ms)
     const timer = setTimeout(() => {
       setShowSplash(false);
     }, 1750);
 
     const completeTimer = setTimeout(() => {
+      document.body.style.overflow = "";
       onComplete();
     }, 2250);
 
     return () => {
       clearTimeout(timer);
       clearTimeout(completeTimer);
+      document.body.style.overflow = "";
     };
   }, [onComplete]);
 
