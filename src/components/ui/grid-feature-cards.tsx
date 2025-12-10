@@ -15,12 +15,12 @@ export function FeatureCard({ feature, className, ...props }: FeatureCardPorps) 
 	const p = genRandomPattern();
 
 	return (
-		<div className={cn('relative overflow-hidden p-6', className)} {...props}>
-			{/* Corner squares */}
-			<div className="absolute top-2 left-2 w-2 h-2 border border-foreground/20" />
-			<div className="absolute top-2 right-2 w-2 h-2 border border-foreground/20" />
-			<div className="absolute bottom-2 left-2 w-2 h-2 border border-foreground/20" />
-			<div className="absolute bottom-2 right-2 w-2 h-2 border border-foreground/20" />
+		<div className={cn('relative p-6', className)} {...props}>
+			{/* Corner squares - extending outside */}
+			<div className="absolute -top-1 -left-1 w-2 h-2 border border-foreground/20" />
+			<div className="absolute -top-1 -right-1 w-2 h-2 border border-foreground/20" />
+			<div className="absolute -bottom-1 -left-1 w-2 h-2 border border-foreground/20" />
+			<div className="absolute -bottom-1 -right-1 w-2 h-2 border border-foreground/20" />
 			
 			<div className="pointer-events-none absolute top-0 left-1/2 -mt-2 -ml-20 h-full w-full [mask-image:linear-gradient(white,transparent)]">
 				<div className="from-foreground/5 to-foreground/1 absolute inset-0 bg-gradient-to-r [mask-image:radial-gradient(farthest-side_at_top,white,transparent)] opacity-100">
