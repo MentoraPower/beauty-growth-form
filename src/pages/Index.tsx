@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { countries, beautyAreas, revenueRanges, Country } from "@/data/countries";
 import scaleBeautyBanner from "@/assets/scale-beauty-banner.png";
@@ -52,6 +52,18 @@ const Index = () => {
     hasPhysicalSpace: null,
     yearsOfExperience: ""
   });
+
+  // Track page view on mount
+  useEffect(() => {
+    const trackPageView = async () => {
+      try {
+        await supabase.from("page_views").insert({ page_path: "/" });
+      } catch (error) {
+        console.error("Error tracking page view:", error);
+      }
+    };
+    trackPageView();
+  }, []);
   const totalSteps = 10;
   const updateFormData = (field: keyof FormData, value: string | boolean | Country | null) => {
     setFormData(prev => ({
