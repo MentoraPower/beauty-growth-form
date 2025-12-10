@@ -935,11 +935,6 @@ const Index = () => {
               >
                 <span className="option-card-text">Não no momento</span>
               </button>
-              <div className="flex gap-3 mt-4">
-                <button onClick={prevStep} className="h-14 px-4 rounded-xl border border-border bg-card flex items-center justify-center">
-                  <ArrowLeft className="w-5 h-5 text-foreground" />
-                </button>
-              </div>
             </div>
           </div>;
       case 12:
