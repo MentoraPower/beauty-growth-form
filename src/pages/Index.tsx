@@ -799,11 +799,6 @@ const Index = () => {
             <h1 className="form-title !text-center">
               <span className="font-bold">Investimento</span>
             </h1>
-            {aiAnalysis?.analysis && (
-              <p className="text-sm text-muted-foreground mt-2 mb-4 leading-relaxed text-center italic">
-                {aiAnalysis.analysis}
-              </p>
-            )}
             <p className="text-base text-muted-foreground mt-4 mb-8 leading-relaxed text-center">
               Hoje, nosso serviço mais acessível custa <span className="font-bold text-foreground">R$ 2.800,00 por mês</span>. Você tem condição de investir esse valor no crescimento do seu negócio?
             </p>
