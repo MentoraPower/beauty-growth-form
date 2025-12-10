@@ -97,6 +97,15 @@ export function LeadTagsManager({ leadId }: LeadTagsManagerProps) {
   const handleAddTag = async () => {
     if (!newTagName.trim()) return;
 
+    // Check if tag with same name already exists on this lead
+    const existingTag = tags.find(
+      t => t.name.toLowerCase() === newTagName.trim().toLowerCase()
+    );
+    if (existingTag) {
+      toast.error("Essa tag já existe neste lead");
+      return;
+    }
+
     setIsLoading(true);
 
     const { data, error } = await supabase
