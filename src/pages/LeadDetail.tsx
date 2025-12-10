@@ -5,9 +5,26 @@ import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Mail, Phone, Calendar, Building2, Clock, DollarSign, Users, Briefcase } from "lucide-react";
+import { ArrowLeft, Mail, Phone, Calendar, Building2, Clock, DollarSign, Users, Briefcase, MoreVertical, Trash2 } from "lucide-react";
 import Instagram from "@/components/icons/Instagram";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { toast } from "sonner";
 
 interface LeadData {
   id: string;
@@ -42,6 +59,8 @@ export default function LeadDetail() {
   const [lead, setLead] = useState<LeadData | null>(null);
   const [pipeline, setPipeline] = useState<Pipeline | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
     const fetchLead = async () => {
@@ -86,8 +105,28 @@ export default function LeadDetail() {
     fetchLead();
   }, [id, navigate]);
 
+  const handleDelete = async () => {
+    if (!lead) return;
+    
+    setIsDeleting(true);
+    const { error } = await supabase
+      .from("leads")
+      .delete()
+      .eq("id", lead.id);
+
+    if (error) {
+      console.error("Error deleting lead:", error);
+      toast.error("Erro ao excluir lead");
+      setIsDeleting(false);
+      return;
+    }
+
+    toast.success("Lead excluído com sucesso");
+    navigate("/admin/crm");
+  };
+
   const formatCurrency = (value: number | null) => {
-    if (value === null) return "—";
+    if (value === null) return "incompleto";
     return new Intl.NumberFormat("pt-BR", {
       style: "currency",
       currency: "BRL",
@@ -107,7 +146,18 @@ export default function LeadDetail() {
   const getWorkspaceLabel = (type: string) => {
     if (type === "physical") return "Espaço Físico";
     if (type === "home") return "Domicílio/Casa";
-    return type || "—";
+    return type || "incompleto";
+  };
+
+  // Helper to display field value or "incompleto"
+  const displayValue = (value: string | null | undefined) => {
+    if (!value || value.trim() === "" || value === "Incompleto") return "incompleto";
+    return value;
+  };
+
+  // Check if email is a temp/incomplete email
+  const isIncompleteEmail = (email: string) => {
+    return email.includes("incompleto_") && email.includes("@temp.com");
   };
 
   if (isLoading) {
@@ -143,7 +193,9 @@ export default function LeadDetail() {
             <ArrowLeft className="h-4 w-4" />
           </Button>
           <div className="flex-1">
-            <h1 className="text-2xl font-bold">{lead.name}</h1>
+            <h1 className="text-2xl font-bold">
+              {lead.name === "Incompleto" ? "incompleto" : lead.name}
+            </h1>
             <div className="flex items-center gap-2 mt-1">
               {pipeline && (
                 <Badge
@@ -153,11 +205,31 @@ export default function LeadDetail() {
                   {pipeline.nome}
                 </Badge>
               )}
-              <Badge variant="secondary" className="text-xs">
-                {lead.service_area}
-              </Badge>
+              {lead.service_area && lead.service_area !== "" && (
+                <Badge variant="secondary" className="text-xs">
+                  {lead.service_area}
+                </Badge>
+              )}
             </div>
           </div>
+          
+          {/* Three dots menu */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="icon" className="h-10 w-10">
+                <MoreVertical className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem 
+                className="text-destructive focus:text-destructive cursor-pointer"
+                onClick={() => setShowDeleteDialog(true)}
+              >
+                <Trash2 className="h-4 w-4 mr-2" />
+                Excluir lead
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -173,9 +245,13 @@ export default function LeadDetail() {
                 </div>
                 <div>
                   <p className="text-xs text-muted-foreground">Email</p>
-                  <a href={`mailto:${lead.email}`} className="text-sm font-medium hover:underline">
-                    {lead.email}
-                  </a>
+                  {isIncompleteEmail(lead.email) ? (
+                    <span className="text-sm font-medium text-muted-foreground italic">incompleto</span>
+                  ) : (
+                    <a href={`mailto:${lead.email}`} className="text-sm font-medium hover:underline">
+                      {lead.email}
+                    </a>
+                  )}
                 </div>
               </div>
 
@@ -185,14 +261,18 @@ export default function LeadDetail() {
                 </div>
                 <div>
                   <p className="text-xs text-muted-foreground">WhatsApp</p>
-                  <a 
-                    href={`https://wa.me/${lead.country_code.replace("+", "")}${lead.whatsapp}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-sm font-medium hover:underline"
-                  >
-                    {lead.country_code} {lead.whatsapp}
-                  </a>
+                  {!lead.whatsapp || lead.whatsapp === "" ? (
+                    <span className="text-sm font-medium text-muted-foreground italic">incompleto</span>
+                  ) : (
+                    <a 
+                      href={`https://wa.me/${lead.country_code.replace("+", "")}${lead.whatsapp}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-sm font-medium hover:underline"
+                    >
+                      {lead.country_code} {lead.whatsapp}
+                    </a>
+                  )}
                 </div>
               </div>
 
@@ -202,14 +282,18 @@ export default function LeadDetail() {
                 </div>
                 <div>
                   <p className="text-xs text-muted-foreground">Instagram</p>
-                  <a 
-                    href={`https://instagram.com/${lead.instagram}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-sm font-medium hover:underline"
-                  >
-                    @{lead.instagram}
-                  </a>
+                  {!lead.instagram || lead.instagram === "" ? (
+                    <span className="text-sm font-medium text-muted-foreground italic">incompleto</span>
+                  ) : (
+                    <a 
+                      href={`https://instagram.com/${lead.instagram}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-sm font-medium hover:underline"
+                    >
+                      @{lead.instagram}
+                    </a>
+                  )}
                 </div>
               </div>
 
@@ -237,7 +321,9 @@ export default function LeadDetail() {
                     <DollarSign className="h-4 w-4 text-muted-foreground" />
                     <p className="text-xs text-muted-foreground">Faturamento Mensal</p>
                   </div>
-                  <p className="text-sm font-medium">{lead.monthly_billing || "—"}</p>
+                  <p className={`text-sm font-medium ${!lead.monthly_billing ? "text-muted-foreground italic" : ""}`}>
+                    {displayValue(lead.monthly_billing)}
+                  </p>
                 </div>
 
                 <div className="p-3 bg-muted/50 rounded-lg">
@@ -245,7 +331,9 @@ export default function LeadDetail() {
                     <Users className="h-4 w-4 text-muted-foreground" />
                     <p className="text-xs text-muted-foreground">Atendimentos/Semana</p>
                   </div>
-                  <p className="text-sm font-medium">{lead.weekly_attendance || "—"}</p>
+                  <p className={`text-sm font-medium ${!lead.weekly_attendance ? "text-muted-foreground italic" : ""}`}>
+                    {displayValue(lead.weekly_attendance)}
+                  </p>
                 </div>
 
                 <div className="p-3 bg-muted/50 rounded-lg">
@@ -253,7 +341,9 @@ export default function LeadDetail() {
                     <DollarSign className="h-4 w-4 text-muted-foreground" />
                     <p className="text-xs text-muted-foreground">Ticket Médio</p>
                   </div>
-                  <p className="text-sm font-medium">{formatCurrency(lead.average_ticket)}</p>
+                  <p className={`text-sm font-medium ${lead.average_ticket === null ? "text-muted-foreground italic" : ""}`}>
+                    {formatCurrency(lead.average_ticket)}
+                  </p>
                 </div>
 
                 <div className="p-3 bg-muted/50 rounded-lg">
@@ -261,7 +351,9 @@ export default function LeadDetail() {
                     <Building2 className="h-4 w-4 text-muted-foreground" />
                     <p className="text-xs text-muted-foreground">Tipo de Espaço</p>
                   </div>
-                  <p className="text-sm font-medium">{getWorkspaceLabel(lead.workspace_type)}</p>
+                  <p className={`text-sm font-medium ${!lead.workspace_type ? "text-muted-foreground italic" : ""}`}>
+                    {getWorkspaceLabel(lead.workspace_type)}
+                  </p>
                 </div>
 
                 <div className="p-3 bg-muted/50 rounded-lg">
@@ -269,7 +361,9 @@ export default function LeadDetail() {
                     <Briefcase className="h-4 w-4 text-muted-foreground" />
                     <p className="text-xs text-muted-foreground">Anos de Experiência</p>
                   </div>
-                  <p className="text-sm font-medium">{lead.years_experience || "—"} anos</p>
+                  <p className={`text-sm font-medium ${!lead.years_experience ? "text-muted-foreground italic" : ""}`}>
+                    {lead.years_experience ? `${lead.years_experience} anos` : "incompleto"}
+                  </p>
                 </div>
 
                 <div className="p-3 bg-muted/50 rounded-lg">
@@ -277,7 +371,9 @@ export default function LeadDetail() {
                     <Clock className="h-4 w-4 text-muted-foreground" />
                     <p className="text-xs text-muted-foreground">Receita Estimada</p>
                   </div>
-                  <p className="text-sm font-medium">{formatCurrency(lead.estimated_revenue)}</p>
+                  <p className={`text-sm font-medium ${lead.estimated_revenue === null ? "text-muted-foreground italic" : ""}`}>
+                    {formatCurrency(lead.estimated_revenue)}
+                  </p>
                 </div>
               </div>
 
@@ -302,6 +398,28 @@ export default function LeadDetail() {
           </Card>
         </div>
       </div>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir lead?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta ação não pode ser desfeita. O lead será permanentemente excluído do sistema.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeleting}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleDelete}
+              disabled={isDeleting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {isDeleting ? "Excluindo..." : "Excluir"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </DashboardLayout>
   );
 }
