@@ -258,8 +258,10 @@ export default function LeadDetail() {
           </DropdownMenu>
         </div>
 
-        {/* Tags Section */}
-        <LeadTagsManager leadId={lead.id} />
+        {/* Tags Section - aligned with profile content */}
+        <div className="pl-[76px]">
+          <LeadTagsManager leadId={lead.id} />
+        </div>
 
         {/* Tabs Navigation */}
         <div className="relative">
