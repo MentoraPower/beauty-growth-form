@@ -34,7 +34,7 @@ const SplashScreen = ({ onComplete }: SplashScreenProps) => {
           transition={{ duration: 0.5, ease: "easeInOut" }}
           className="fixed inset-0 z-50 flex items-center justify-center bg-[#F3F3F3]"
         >
-          <div className="flex gap-4 md:gap-6">
+          <div className="flex gap-3 md:gap-4">
             {letters.map((letter, index) => (
               <motion.span
                 key={index}
@@ -45,7 +45,7 @@ const SplashScreen = ({ onComplete }: SplashScreenProps) => {
                   delay: index * 0.15,
                   ease: "easeOut",
                 }}
-                className="text-5xl md:text-7xl font-bold text-foreground tracking-widest"
+                className="text-2xl md:text-4xl font-light tracking-[0.3em] bg-gradient-to-r from-[#F40000] to-[#A10000] bg-clip-text text-transparent"
               >
                 {letter}
               </motion.span>
