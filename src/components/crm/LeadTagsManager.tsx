@@ -35,6 +35,7 @@ export function LeadTagsManager({ leadId }: LeadTagsManagerProps) {
   const [selectedColor, setSelectedColor] = useState(TAG_COLORS[0]);
   const [isHovered, setIsHovered] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [showColorPicker, setShowColorPicker] = useState(false);
 
   useEffect(() => {
     fetchTags();
@@ -80,6 +81,7 @@ export function LeadTagsManager({ leadId }: LeadTagsManagerProps) {
     setTags([...tags, data]);
     setNewTagName("");
     setSelectedColor(TAG_COLORS[0]);
+    setShowColorPicker(false);
     setIsOpen(false);
     setIsLoading(false);
     toast.success("Tag adicionada");
@@ -156,10 +158,26 @@ export function LeadTagsManager({ leadId }: LeadTagsManagerProps) {
               />
             </div>
 
-            {/* Color picker - only show after name is entered */}
+            {/* Preview - clickable to show color picker */}
             {newTagName.trim() && (
+              <div className="pt-2 border-t border-black/5">
+                <p className="text-xs text-muted-foreground mb-1">
+                  {showColorPicker ? "Selecione a cor" : "Clique para escolher a cor"}
+                </p>
+                <button
+                  type="button"
+                  onClick={() => setShowColorPicker(true)}
+                  className="inline-flex items-center px-2.5 py-1 rounded-full text-sm font-medium text-white cursor-pointer hover:opacity-90 transition-opacity"
+                  style={{ backgroundColor: selectedColor }}
+                >
+                  {newTagName}
+                </button>
+              </div>
+            )}
+
+            {/* Color picker - only show after clicking preview */}
+            {newTagName.trim() && showColorPicker && (
               <div>
-                <p className="text-xs text-muted-foreground mb-1.5">Cor</p>
                 <div className="grid grid-cols-8 gap-1.5">
                   {TAG_COLORS.map((color) => (
                     <button
@@ -174,19 +192,6 @@ export function LeadTagsManager({ leadId }: LeadTagsManagerProps) {
                     />
                   ))}
                 </div>
-              </div>
-            )}
-
-            {/* Preview */}
-            {newTagName && (
-              <div className="pt-2 border-t border-black/5">
-                <p className="text-xs text-muted-foreground mb-1">Preview</p>
-                <span
-                  className="inline-flex items-center px-2.5 py-1 rounded-full text-sm font-medium text-white"
-                  style={{ backgroundColor: selectedColor }}
-                >
-                  {newTagName}
-                </span>
               </div>
             )}
 
