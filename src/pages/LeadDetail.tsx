@@ -264,7 +264,7 @@ export default function LeadDetail() {
         </div>
 
         {/* Separator */}
-        <div className="px-8">
+        <div className="px-8 py-2">
           <div className="border-t border-black/10" />
         </div>
 
