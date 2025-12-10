@@ -630,7 +630,7 @@ function FeaturesSection() {
           <h2 className="text-2xl font-bold tracking-tight text-balance md:text-3xl lg:text-4xl xl:font-extrabold mx-0">
             ​Como a Scale pode te ajudar?                    
           </h2>
-          <p className="text-muted-foreground mt-4 text-sm tracking-wide text-balance md:text-base px-6 md:px-0">
+          <p className="text-muted-foreground mt-4 text-sm tracking-wide text-balance md:text-base">
             Tudo que você precisa para escalar seu negócio beauty.
           </p>
         </AnimatedContainer>
