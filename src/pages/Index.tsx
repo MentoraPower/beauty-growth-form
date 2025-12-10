@@ -665,8 +665,8 @@ function QuemSomosSection() {
       
       {/* Main content */}
       <div className="w-full bg-gradient-to-r from-[#F40000] to-[#A10000] py-12 md:py-20 -mt-px">
-        <div className="mx-auto w-full max-w-6xl px-0 md:px-8">
-          <AnimatedContainer className="flex flex-col md:flex-row items-center gap-8 md:gap-12 px-4 md:px-0">
+        <div className="w-full px-4 md:px-8">
+          <AnimatedContainer className="flex flex-col md:flex-row items-center gap-8 md:gap-12">
             {/* Image */}
             <div className="w-full md:w-1/2">
               <img 
