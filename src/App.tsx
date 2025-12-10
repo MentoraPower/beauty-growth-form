@@ -8,7 +8,6 @@ import TermsOfUse from "./pages/TermsOfUse";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import NotFound from "./pages/NotFound";
 import Dashboard from "./pages/Dashboard";
-import Leads from "./pages/Leads";
 import CRM from "./pages/CRM";
 
 const queryClient = new QueryClient();
@@ -24,7 +23,6 @@ const App = () => (
           <Route path="/termos" element={<TermsOfUse />} />
           <Route path="/privacidade" element={<PrivacyPolicy />} />
           <Route path="/admin" element={<Dashboard />} />
-          <Route path="/admin/leads" element={<Leads />} />
           <Route path="/admin/crm" element={<CRM />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
