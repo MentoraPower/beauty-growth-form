@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { countries, beautyAreas, revenueRanges, Country } from "@/data/countries";
 import scaleBeautyBanner from "@/assets/scale-beauty-banner.png";
 import scaleBeautyMobile from "@/assets/scale-beauty-mobile.png";
+import quemSomosImage from "@/assets/quem-somos.png";
 import CountrySelect from "@/components/CountrySelect";
 import FormContainer from "@/components/FormContainer";
 import CustomSelect from "@/components/CustomSelect";
@@ -481,6 +482,9 @@ const Index = () => {
           {/* Feature Cards Section - Mobile */}
           <FeaturesSection />
           
+          {/* Quem Somos Section - Mobile */}
+          <QuemSomosSection />
+          
           {/* Mobile footer with terms - only on step 1 */}
           {step === 1 && <div className="pb-4 pt-2 bg-background">
               <div className="w-full h-px bg-border mb-4" />
@@ -535,6 +539,9 @@ const Index = () => {
 
         {/* Feature Cards Section */}
         <FeaturesSection />
+
+        {/* Quem Somos Section - Desktop */}
+        <QuemSomosSection />
 
         {/* Desktop footer with terms - only on step 1 */}
         {step === 1 && <div className="pb-6 pt-4 bg-background">
@@ -631,4 +638,37 @@ function FeaturesSection() {
       </div>
     </section>;
 }
+
+function QuemSomosSection() {
+  return (
+    <section className="w-full bg-gradient-to-r from-[#F40000] to-[#A10000] py-16 md:py-24">
+      <div className="mx-auto w-full max-w-6xl px-4 md:px-8">
+        <AnimatedContainer className="flex flex-col md:flex-row items-center gap-8 md:gap-12">
+          {/* Image */}
+          <div className="w-full md:w-1/2">
+            <img 
+              src={quemSomosImage} 
+              alt="Quem Somos - Scale Beauty" 
+              className="w-full h-auto rounded-2xl"
+            />
+          </div>
+          
+          {/* Text Content */}
+          <div className="w-full md:w-1/2 text-white">
+            <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold mb-6">
+              Quem somos
+            </h2>
+            <p className="text-base md:text-lg leading-relaxed opacity-95">
+              Somos mais que uma assessoria de marketing, somos um ecossistema completo para a área da beleza.
+            </p>
+            <p className="text-base md:text-lg leading-relaxed opacity-95 mt-4">
+              Não acreditamos em fórmulas prontas! A nossa experiência com a área da beleza nos mostra que cada clínica, cada studio em seu modelo criativo é único e que as nossas estratégias também serão únicas.
+            </p>
+          </div>
+        </AnimatedContainer>
+      </div>
+    </section>
+  );
+}
+
 export default Index;
