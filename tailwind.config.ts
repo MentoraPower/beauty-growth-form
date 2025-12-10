@@ -14,8 +14,12 @@ export default {
     },
     extend: {
       fontFamily: {
-        display: ['Montserrat', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif'],
-        body: ['Montserrat', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif'],
+        display: ['Metropolis', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif'],
+        body: ['Metropolis', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif'],
+      },
+      letterSpacing: {
+        tighter: '-0.03em',
+        tight: '-0.02em',
       },
       colors: {
         border: "hsl(var(--border))",
