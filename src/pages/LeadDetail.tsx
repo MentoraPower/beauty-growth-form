@@ -331,7 +331,7 @@ export default function LeadDetail() {
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-3 p-3 border border-[#00000010] rounded-lg">
+                  <div className="flex items-center gap-3 p-3 bg-muted/30 border border-[#00000010] rounded-lg">
                     <div className="h-10 w-10 rounded-full border border-black/10 flex items-center justify-center">
                       <WhatsApp className="h-5 w-5 text-neutral-600" />
                     </div>
