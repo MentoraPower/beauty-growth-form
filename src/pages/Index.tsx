@@ -21,7 +21,7 @@ import Users from "@/components/icons/Users";
 import Home from "@/components/icons/Home";
 import { FeatureCard } from "@/components/ui/grid-feature-cards";
 import { motion, useReducedMotion } from "framer-motion";
-import { Target, FileText, Rocket, Handshake } from "lucide-react";
+import { Target, FileText, Rocket, Handshake, BadgeCheck } from "lucide-react";
 import Calendar from "@/components/icons/Calendar";
 import { toast } from "sonner";
 import HamburgerMenu from "@/components/HamburgerMenu";
@@ -675,7 +675,7 @@ function QuemSomosSection() {
                 </div>
                 <div className="inline-flex items-center gap-3 bg-white/10 backdrop-blur-sm rounded-xl px-4 py-3">
                   <div className="w-9 h-9 rounded-full border border-white/40 flex items-center justify-center">
-                    <Building className="w-4 h-4 text-white" />
+                    <BadgeCheck className="w-4 h-4 text-white" />
                   </div>
                   <div className="flex flex-col">
                     <span className="text-white font-semibold text-xs tracking-wide">BITETI & CO.</span>
