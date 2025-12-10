@@ -395,6 +395,13 @@ const Index = () => {
               setIsLoading(true);
               
               try {
+                // Get Base pipeline id
+                const { data: basePipeline } = await supabase
+                  .from("pipelines")
+                  .select("id")
+                  .eq("nome", "Base")
+                  .maybeSingle();
+
                 const { error } = await supabase.from("leads").insert({
                   name: formData.name,
                   email: formData.email,
@@ -406,6 +413,7 @@ const Index = () => {
                   weekly_attendance: formData.weeklyAppointments,
                   workspace_type: formData.hasPhysicalSpace ? "physical" : "home",
                   years_experience: formData.yearsOfExperience,
+                  pipeline_id: basePipeline?.id || null,
                 });
                 
                 if (error) {
