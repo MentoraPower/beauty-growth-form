@@ -1094,7 +1094,7 @@ const Index = () => {
       </div>
 
       {/* Desktop Layout */}
-      <div className="hidden md:flex flex-col min-h-screen">
+      <div className="hidden md:flex flex-col min-h-screen relative">
         {/* Banner image on top with rounded bottom */}
         <div className="w-full flex-shrink-0">
           <img src={scaleBeautyBanner} alt="Scale Beauty" className="w-full h-[320px] object-cover rounded-b-3xl" loading="eager" decoding="async" />
