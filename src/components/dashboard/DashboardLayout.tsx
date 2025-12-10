@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { LayoutDashboard, Users, Menu, X, LogOut } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -14,16 +14,27 @@ const navItems = [
   { href: "/admin/leads", icon: Users, label: "Leads" },
 ];
 
+// Variável global para persistir o estado de hover entre navegações
+let globalHoverState = false;
+
 const DashboardLayout = ({ children }: DashboardLayoutProps) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [isHovered, setIsHovered] = useState(false);
+  const [isHovered, setIsHovered] = useState(globalHoverState);
+  const sidebarRef = useRef<HTMLElement>(null);
   const location = useLocation();
 
+  // Sincronizar com estado global ao montar e quando a rota muda
+  useEffect(() => {
+    setIsHovered(globalHoverState);
+  }, [location.pathname]);
+
   const handleMouseEnter = useCallback(() => {
+    globalHoverState = true;
     setIsHovered(true);
   }, []);
 
   const handleMouseLeave = useCallback(() => {
+    globalHoverState = false;
     setIsHovered(false);
   }, []);
 
