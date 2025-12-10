@@ -53,7 +53,7 @@ const Index = () => {
     yearsOfExperience: ""
   });
 
-  // Track page view on mount (only once per visitor)
+  // Track page view on mount (only once per real visitor, filter bots)
   useEffect(() => {
     const trackPageView = async () => {
       const STORAGE_KEY = "scale_beauty_visited";
@@ -66,6 +66,35 @@ const Index = () => {
       
       // If already visited, don't track again
       if (hasVisitedLS || hasVisitedCookie) {
+        return;
+      }
+      
+      // Bot detection
+      const userAgent = navigator.userAgent.toLowerCase();
+      const botPatterns = [
+        'bot', 'crawl', 'spider', 'slurp', 'googlebot', 'bingbot', 
+        'yandex', 'baidu', 'duckduck', 'facebookexternalhit', 'facebook',
+        'twitter', 'linkedin', 'pinterest', 'whatsapp', 'telegram',
+        'headless', 'phantom', 'selenium', 'puppeteer', 'playwright',
+        'curl', 'wget', 'python', 'java', 'ruby', 'perl', 'go-http',
+        'apache', 'node-fetch', 'axios', 'postman', 'insomnia'
+      ];
+      
+      const isBot = botPatterns.some(pattern => userAgent.includes(pattern));
+      
+      // Check for headless browser indicators
+      const isHeadless = !navigator.languages || navigator.languages.length === 0;
+      const hasWebdriver = navigator.webdriver === true;
+      
+      if (isBot || isHeadless || hasWebdriver) {
+        return;
+      }
+      
+      // Wait 2 seconds to ensure real user (bots usually leave immediately)
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      
+      // Verify user is still on page
+      if (document.hidden) {
         return;
       }
       
