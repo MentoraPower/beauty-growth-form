@@ -642,11 +642,20 @@ function FeaturesSection() {
 function QuemSomosSection() {
   return (
     <section className="w-[calc(100%+2rem)] -mx-4 md:mx-0 md:w-full relative">
-      {/* Curved top transition */}
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[70%] md:w-[50%] h-8 md:h-12 bg-background rounded-b-[50px] z-10" />
+      {/* Curved top transition with clip-path */}
+      <div 
+        className="absolute top-0 left-1/2 -translate-x-1/2 w-[70%] md:w-[50%] h-10 md:h-14 bg-background z-10"
+        style={{
+          clipPath: 'polygon(43% 100%, 57% 100%, 60% 0, 100% 0, 100% 100%, 0 100%, 0 0, 40% 0)',
+          borderTop: '2px solid transparent',
+          backgroundImage: 'linear-gradient(hsl(var(--background)), hsl(var(--background))), linear-gradient(to right, #F40000, #A10000)',
+          backgroundOrigin: 'border-box',
+          backgroundClip: 'padding-box, border-box'
+        }}
+      />
       
       {/* Red background with padding for the curve */}
-      <div className="bg-gradient-to-r from-[#F40000] to-[#A10000] pt-8 md:pt-12 pb-16 md:pb-24">
+      <div className="bg-gradient-to-r from-[#F40000] to-[#A10000] pt-10 md:pt-14 pb-16 md:pb-24">
         <div className="mx-auto w-full max-w-6xl px-6 md:px-8 pt-8 md:pt-12">
           <AnimatedContainer className="flex flex-col md:flex-row items-center gap-8 md:gap-12">
             {/* Image */}
