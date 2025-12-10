@@ -137,8 +137,8 @@ const HamburgerMenu = () => {
         </div>
       </motion.div>
 
-      {/* Desktop navbar - always visible, white text */}
-      <div className="hidden md:block fixed top-0 left-0 right-0 z-50 px-5 pt-4">
+      {/* Desktop navbar - static, scrolls with page, white text */}
+      <div className="hidden md:block absolute top-0 left-0 right-0 z-50 px-5 pt-4">
         <div className="mx-auto w-full max-w-5xl">
           <div className="flex items-center justify-between py-3">
             <span className="font-bold text-sm uppercase tracking-tight text-white">
