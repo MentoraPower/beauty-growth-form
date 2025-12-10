@@ -66,8 +66,8 @@ const HamburgerMenu = () => {
   }, []);
 
   const bgClass = theme === "dark" 
-    ? "bg-neutral-900/80 backdrop-blur-xl" 
-    : "bg-white/80 backdrop-blur-xl";
+    ? "bg-neutral-900/95 backdrop-blur-2xl" 
+    : "bg-white/95 backdrop-blur-2xl";
   
   const textClass = theme === "dark" ? "text-white" : "text-foreground";
   const barClass = theme === "dark" ? "bg-white" : "bg-foreground";
