@@ -44,14 +44,15 @@ const CountrySelect = ({ value, onChange }: CountrySelectProps) => {
       </button>
 
       {isOpen && (
-        <div className="absolute z-50 top-full left-0 mt-2 w-72 max-h-80 overflow-hidden rounded-xl border border-border bg-white dark:bg-neutral-900 shadow-lg">
-          <div className="p-2 border-b border-border">
+        <div className="absolute z-50 top-full left-0 mt-2 w-72 max-h-80 overflow-hidden rounded-xl border border-border shadow-lg" style={{ backgroundColor: '#ffffff' }}>
+          <div className="p-2 border-b border-border" style={{ backgroundColor: '#ffffff' }}>
             <input
               type="text"
               placeholder="Buscar país..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full h-10 px-3 rounded-lg border border-border bg-background text-sm text-foreground placeholder:text-muted-foreground focus:outline-none"
+              className="w-full h-10 px-3 rounded-lg border border-border text-sm focus:outline-none"
+              style={{ backgroundColor: '#f5f5f5', color: '#000000' }}
             />
           </div>
           <div className="max-h-60 overflow-y-auto">
@@ -64,17 +65,19 @@ const CountrySelect = ({ value, onChange }: CountrySelectProps) => {
                   setIsOpen(false);
                   setSearch("");
                 }}
-                className={`w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-secondary/50 transition-colors ${
-                  value.code === country.code ? "bg-primary/5" : ""
-                }`}
+                className="w-full flex items-center gap-3 px-4 py-3 text-left transition-colors"
+                style={{ 
+                  backgroundColor: value.code === country.code ? 'rgba(0,0,0,0.05)' : '#ffffff',
+                  color: '#000000'
+                }}
               >
                 <img 
                   src={getFlagUrl(country.code)} 
                   alt={country.name}
                   className="w-6 h-4 object-cover rounded-sm"
                 />
-                <span className="text-sm text-foreground flex-1">{country.name}</span>
-                <span className="text-sm text-muted-foreground">{country.dialCode}</span>
+                <span className="text-sm flex-1" style={{ color: '#000000' }}>{country.name}</span>
+                <span className="text-sm" style={{ color: '#666666' }}>{country.dialCode}</span>
               </button>
             ))}
           </div>
