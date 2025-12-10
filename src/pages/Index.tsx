@@ -641,55 +641,31 @@ function FeaturesSection() {
 
 function QuemSomosSection() {
   return (
-    <section className="w-full relative">
-      {/* Curved top shape */}
-      <div className="w-full h-16 md:h-24 bg-background relative">
-        <svg 
-          className="absolute bottom-0 left-0 w-full" 
-          viewBox="0 0 1440 80" 
-          preserveAspectRatio="none"
-          style={{ height: '100%' }}
-        >
-          <path 
-            d="M0,80 L0,0 Q720,80 1440,0 L1440,80 Z" 
-            fill="url(#redGradient)"
-          />
-          <defs>
-            <linearGradient id="redGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-              <stop offset="0%" stopColor="#F40000" />
-              <stop offset="100%" stopColor="#A10000" />
-            </linearGradient>
-          </defs>
-        </svg>
-      </div>
-      
-      {/* Main content */}
-      <div className="w-full bg-gradient-to-r from-[#F40000] to-[#A10000] py-12 md:py-20 -mt-px">
-        <div className="w-full px-0 md:px-8">
-          <AnimatedContainer className="flex flex-col md:flex-row items-center gap-0 md:gap-12">
-            {/* Image */}
-            <div className="w-full md:w-1/2">
-              <img 
-                src={quemSomosImage} 
-                alt="Quem Somos - Scale Beauty" 
-                className="w-full h-auto rounded-none md:rounded-2xl"
-              />
-            </div>
-            
-            {/* Text Content */}
-            <div className="w-full md:w-1/2 text-white px-4 md:px-0 pt-6 md:pt-0">
-              <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold mb-6">
-                Quem somos
-              </h2>
-              <p className="text-base md:text-lg leading-relaxed opacity-95">
-                Somos mais que uma assessoria de marketing, somos um ecossistema completo para a área da beleza.
-              </p>
-              <p className="text-base md:text-lg leading-relaxed opacity-95 mt-4">
-                Não acreditamos em fórmulas prontas! A nossa experiência com a área da beleza nos mostra que cada clínica, cada studio em seu modelo criativo é único e que as nossas estratégias também serão únicas.
-              </p>
-            </div>
-          </AnimatedContainer>
-        </div>
+    <section className="w-full bg-gradient-to-r from-[#F40000] to-[#A10000] py-16 md:py-24">
+      <div className="mx-auto w-full max-w-6xl px-4 md:px-8">
+        <AnimatedContainer className="flex flex-col md:flex-row items-center gap-8 md:gap-12">
+          {/* Image */}
+          <div className="w-full md:w-1/2">
+            <img 
+              src={quemSomosImage} 
+              alt="Quem Somos - Scale Beauty" 
+              className="w-full h-auto rounded-2xl"
+            />
+          </div>
+          
+          {/* Text Content */}
+          <div className="w-full md:w-1/2 text-white">
+            <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold mb-6">
+              Quem somos
+            </h2>
+            <p className="text-base md:text-lg leading-relaxed opacity-95">
+              Somos mais que uma assessoria de marketing, somos um ecossistema completo para a área da beleza.
+            </p>
+            <p className="text-base md:text-lg leading-relaxed opacity-95 mt-4">
+              Não acreditamos em fórmulas prontas! A nossa experiência com a área da beleza nos mostra que cada clínica, cada studio em seu modelo criativo é único e que as nossas estratégias também serão únicas.
+            </p>
+          </div>
+        </AnimatedContainer>
       </div>
     </section>
   );
