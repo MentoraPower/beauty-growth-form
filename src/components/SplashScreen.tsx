@@ -65,7 +65,7 @@ const SplashScreen = ({ onComplete }: SplashScreenProps) => {
                 delay: 0.9,
                 ease: "easeOut",
               }}
-              className="text-sm md:text-base font-light tracking-[0.2em] text-foreground/60 uppercase"
+              className="text-[10px] md:text-xs font-light tracking-[0.08em] text-foreground/60 uppercase"
             >
               AQUI VOCÊ É ÚNICA
             </motion.p>
