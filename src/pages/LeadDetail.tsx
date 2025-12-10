@@ -6,8 +6,9 @@ import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Mail, Phone, Calendar, Building2, Clock, DollarSign, Users, Briefcase, MoreVertical, Trash2, User } from "lucide-react";
+import { ArrowLeft, Mail, Calendar, Building2, Clock, DollarSign, Users, Briefcase, MoreVertical, Trash2, User } from "lucide-react";
 import Instagram from "@/components/icons/Instagram";
+import WhatsApp from "@/components/icons/WhatsApp";
 import { Skeleton } from "@/components/ui/skeleton";
 import { motion } from "framer-motion";
 import { ActivitiesBoard } from "@/components/activities/ActivitiesBoard";
@@ -332,7 +333,7 @@ export default function LeadDetail() {
 
                   <div className="flex items-center gap-3 p-3 border border-[#00000010] rounded-lg">
                     <div className="h-10 w-10 rounded-full border border-black/10 flex items-center justify-center">
-                      <Phone className="h-5 w-5 text-neutral-600" />
+                      <WhatsApp className="h-5 w-5 text-neutral-600" />
                     </div>
                     <div>
                       <p className="text-xs text-muted-foreground">WhatsApp</p>
