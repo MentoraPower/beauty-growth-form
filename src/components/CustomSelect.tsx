@@ -36,7 +36,7 @@ const CustomSelect = ({ value, onChange, options, placeholder }: CustomSelectPro
       </button>
 
       {isOpen && (
-        <div className="absolute z-50 top-full left-0 right-0 mt-2 max-h-64 overflow-hidden rounded-xl border border-border bg-white dark:bg-neutral-900 shadow-lg">
+        <div className="absolute z-50 top-full left-0 right-0 mt-2 max-h-64 overflow-hidden rounded-xl border border-border shadow-lg" style={{ backgroundColor: '#ffffff' }}>
           <div className="max-h-64 overflow-y-auto">
             {options.map((option) => (
               <button
@@ -46,9 +46,13 @@ const CustomSelect = ({ value, onChange, options, placeholder }: CustomSelectPro
                   onChange(option);
                   setIsOpen(false);
                 }}
-                className={`w-full px-4 py-3 text-left text-sm transition-colors hover:bg-secondary/50 ${
-                  value === option ? "bg-primary/5 text-foreground font-medium" : "text-foreground"
+                className={`w-full px-4 py-3 text-left text-sm transition-colors ${
+                  value === option ? "font-medium" : ""
                 }`}
+                style={{ 
+                  backgroundColor: value === option ? 'rgba(0,0,0,0.05)' : '#ffffff',
+                  color: '#000000'
+                }}
               >
                 {option}
               </button>

@@ -45,19 +45,13 @@ interface FormData {
   wantsMoreInfo: boolean | null;
 }
 
-// Format currency for display (only on blur or initial load)
-const formatCurrencyDisplay = (value: string): string => {
-  if (!value) return '';
+// Format currency for display (from database value in reais)
+const formatCurrencyDisplay = (value: string | number): string => {
+  if (!value && value !== 0) return '';
   
-  // Remove everything except digits and comma/dot
-  let cleaned = value.replace(/[^\d,\.]/g, '');
-  if (!cleaned) return '';
-  
-  // Replace comma with dot for parsing
-  cleaned = cleaned.replace(',', '.');
-  
-  const number = parseFloat(cleaned);
-  if (isNaN(number)) return value;
+  // If it's a number, format directly
+  const number = typeof value === 'number' ? value : parseFloat(String(value));
+  if (isNaN(number)) return '';
   
   // Format as BRL
   const formatted = number.toLocaleString('pt-BR', {
@@ -68,33 +62,33 @@ const formatCurrencyDisplay = (value: string): string => {
   return `R$ ${formatted}`;
 };
 
-// Handle currency input - allow free typing with minimal formatting
+// Handle currency input - format as R$ 000,00 while allowing free typing
 const handleCurrencyInput = (value: string): string => {
   // If empty, return empty
   if (!value) return '';
   
-  // Remove R$ prefix if present for processing
+  // Remove R$ prefix and spaces for processing
   let cleaned = value.replace(/R\$\s*/g, '').trim();
   
-  // Allow only digits, comma and dot
-  cleaned = cleaned.replace(/[^\d,\.]/g, '');
+  // Remove everything except digits
+  const digits = cleaned.replace(/\D/g, '');
   
-  // Replace multiple dots/commas, keep only last separator
-  const separatorCount = (cleaned.match(/[,\.]/g) || []).length;
-  if (separatorCount > 1) {
-    const lastSeparatorIndex = Math.max(cleaned.lastIndexOf(','), cleaned.lastIndexOf('.'));
-    const beforeSeparator = cleaned.substring(0, lastSeparatorIndex).replace(/[,\.]/g, '');
-    const afterSeparator = cleaned.substring(lastSeparatorIndex);
-    cleaned = beforeSeparator + afterSeparator;
-  }
+  // If no digits, return empty
+  if (!digits) return '';
   
-  // Limit decimal places to 2
-  const parts = cleaned.split(/[,\.]/);
-  if (parts.length === 2 && parts[1].length > 2) {
-    cleaned = parts[0] + ',' + parts[1].substring(0, 2);
-  }
+  // Convert to number (treating as cents)
+  const number = parseInt(digits, 10);
   
-  return cleaned ? `R$ ${cleaned}` : '';
+  // Format as currency (divide by 100 to get reais from cents)
+  const reais = number / 100;
+  
+  // Format with Brazilian locale
+  const formatted = reais.toLocaleString('pt-BR', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  });
+  
+  return `R$ ${formatted}`;
 };
 
 // Parse currency string to number (returns value in reais)
@@ -226,7 +220,7 @@ const Index = () => {
           weeklyAppointments: data.weekly_attendance || "",
           hasPhysicalSpace: data.workspace_type === "physical" ? true : data.workspace_type === "home" ? false : null,
           yearsOfExperience: data.years_experience || "",
-          averageTicket: data.average_ticket ? formatCurrencyDisplay(String(data.average_ticket)) : ""
+          averageTicket: data.average_ticket ? formatCurrencyDisplay(data.average_ticket) : ""
         }));
         
         return data;
