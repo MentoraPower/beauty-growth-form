@@ -264,68 +264,60 @@ const Dashboard = () => {
 
         {/* Stats Cards */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          <Card className="bg-card border-border/50">
+          <Card className="bg-white border border-border shadow-none">
             <CardContent className="pt-5 pb-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">Total Leads</p>
-                  <p className="text-3xl font-bold text-foreground mt-1">{leads.length}</p>
+              <div className="flex items-center gap-3 mb-3">
+                <div className="w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center">
+                  <Users className="h-5 w-5 text-emerald-600" />
                 </div>
-                <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
-                  <Users className="h-5 w-5 text-primary" />
-                </div>
+                <p className="text-sm text-foreground font-medium">Total Leads</p>
               </div>
+              <p className="text-3xl font-bold text-foreground">{leads.length}</p>
             </CardContent>
           </Card>
 
-          <Card className="bg-card border-border/50">
+          <Card className="bg-white border border-border shadow-none">
             <CardContent className="pt-5 pb-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">Taxa de Captação</p>
-                  <p className="text-3xl font-bold text-foreground mt-1">{getConversionRate()}%</p>
+              <div className="flex items-center gap-3 mb-3">
+                <div className="w-10 h-10 rounded-full bg-violet-100 flex items-center justify-center">
+                  <TrendingUp className="h-5 w-5 text-violet-600" />
                 </div>
-                <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
-                  <TrendingUp className="h-5 w-5 text-primary" />
-                </div>
+                <p className="text-sm text-foreground font-medium">Taxa de Captação</p>
               </div>
-              <p className="text-xs text-muted-foreground mt-2">{pageViews} visitas</p>
+              <p className="text-3xl font-bold text-foreground">{getConversionRate()}%</p>
+              <p className="text-xs text-muted-foreground mt-1">{pageViews} visitas</p>
             </CardContent>
           </Card>
 
-          <Card className="bg-card border-border/50">
+          <Card className="bg-white border border-border shadow-none">
             <CardContent className="pt-5 pb-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">Vendas</p>
-                  <p className="text-3xl font-bold text-foreground mt-1">{getTotalSales()}</p>
+              <div className="flex items-center gap-3 mb-3">
+                <div className="w-10 h-10 rounded-full bg-orange-100 flex items-center justify-center">
+                  <ShoppingCart className="h-5 w-5 text-orange-600" />
                 </div>
-                <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
-                  <ShoppingCart className="h-5 w-5 text-primary" />
-                </div>
+                <p className="text-sm text-foreground font-medium">Vendas</p>
               </div>
+              <p className="text-3xl font-bold text-foreground">{getTotalSales()}</p>
             </CardContent>
           </Card>
 
-          <Card className="bg-card border-border/50">
+          <Card className="bg-white border border-border shadow-none">
             <CardContent className="pt-5 pb-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">Valor em Vendas</p>
-                  <p className="text-2xl font-bold text-foreground mt-1">R$ {getTotalSalesAmount()}</p>
+              <div className="flex items-center gap-3 mb-3">
+                <div className="w-10 h-10 rounded-full bg-sky-100 flex items-center justify-center">
+                  <DollarSign className="h-5 w-5 text-sky-600" />
                 </div>
-                <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
-                  <DollarSign className="h-5 w-5 text-primary" />
-                </div>
+                <p className="text-sm text-foreground font-medium">Valor em Vendas</p>
               </div>
+              <p className="text-2xl font-bold text-foreground">R$ {getTotalSalesAmount()}</p>
             </CardContent>
           </Card>
         </div>
 
         {/* Charts Row */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
           {/* Leads Trend - Area Chart */}
-          <Card className="bg-card border-border/50 lg:col-span-2">
+          <Card className="bg-white border border-border shadow-none lg:col-span-2">
             <CardHeader className="pb-2">
               <CardTitle className="text-base font-semibold text-foreground">
                 Tendência de Leads
@@ -338,7 +330,7 @@ const Dashboard = () => {
           </Card>
 
           {/* Mini Gauges por Área */}
-          <Card className="bg-card border-border/50">
+          <Card className="bg-white border border-border shadow-none">
             <CardHeader className="pb-2">
               <CardTitle className="text-base font-semibold text-foreground">
                 Leads por Área
@@ -373,7 +365,7 @@ const Dashboard = () => {
         </div>
 
         {/* Bar Chart */}
-        <Card className="bg-card border-border/50">
+        <Card className="bg-white border border-border shadow-none">
           <CardHeader className="pb-2">
             <CardTitle className="text-base font-semibold text-foreground">
               Leads por Dia da Semana
