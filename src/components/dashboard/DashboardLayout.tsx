@@ -147,10 +147,8 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
       )}
 
       {/* Main Content */}
-      <main className="lg:ml-[5.5rem] pt-20 lg:pt-0 min-h-[calc(100vh-3rem)]">
-        <div className="bg-card border border-border rounded-2xl p-6 lg:p-8 min-h-full shadow-sm">
-          {children}
-        </div>
+      <main className="lg:ml-[5.5rem] pt-20 lg:pt-0 min-h-[calc(100vh-3rem)] p-6 lg:p-8">
+        {children}
       </main>
     </div>
   );
