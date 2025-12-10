@@ -524,12 +524,13 @@ const Index = () => {
         // After email step, check if lead exists
         if (step === 2) {
           const existing = await checkExistingLead(formData.email);
-          // If no existing lead, save partial data after step 1 (name)
+          // If no existing lead, save partial data now (first save happens after email check)
           if (!existing) {
             await savePartialLead(formData, step);
           }
-        } else if (step >= 1 && step <= 12) {
-          // Save partial data at each step (if not step 2 which we handle above)
+        } else if (step > 2 && step <= 12) {
+          // Save partial data at each step AFTER email verification (step 2)
+          // Don't save at step 1 - wait until we check for existing lead at step 2
           await savePartialLead(formData, step);
         }
         
