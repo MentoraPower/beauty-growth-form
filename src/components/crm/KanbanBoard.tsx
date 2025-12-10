@@ -12,6 +12,7 @@ import {
   closestCenter,
   MeasuringStrategy,
 } from "@dnd-kit/core";
+import { arrayMove } from "@dnd-kit/sortable";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Lead, Pipeline } from "@/types/crm";
@@ -63,7 +64,7 @@ export function KanbanBoard() {
       const { data, error } = await supabase
         .from("leads")
         .select("*")
-        .order("created_at", { ascending: false });
+        .order("ordem", { ascending: true, nullsFirst: false });
 
       if (error) throw error;
       return data as Lead[];
@@ -142,50 +143,90 @@ export function KanbanBoard() {
       const activeLead = localLeads.find((l) => l.id === activeId);
       if (!activeLead) return;
 
-      // Determine target pipeline
-      let newPipelineId: string | null = null;
-
+      // Check if dropping on a pipeline column or another lead
       const overPipeline = pipelines.find((p) => p.id === overId);
-      if (overPipeline) {
-        newPipelineId = overPipeline.id;
-      } else {
-        const overLead = localLeads.find((l) => l.id === overId);
-        if (overLead) {
-          newPipelineId = overLead.pipeline_id;
+      const overLead = localLeads.find((l) => l.id === overId);
+
+      // Determine target pipeline
+      let newPipelineId: string | null = overPipeline
+        ? overPipeline.id
+        : overLead?.pipeline_id ?? null;
+
+      if (!newPipelineId) return;
+
+      // Same pipeline - handle reordering
+      if (newPipelineId === activeLead.pipeline_id && overLead) {
+        const pipelineLeads = localLeads
+          .filter((l) => l.pipeline_id === newPipelineId)
+          .sort((a, b) => (a.ordem ?? 0) - (b.ordem ?? 0));
+
+        const oldIndex = pipelineLeads.findIndex((l) => l.id === activeId);
+        const newIndex = pipelineLeads.findIndex((l) => l.id === overId);
+
+        if (oldIndex === newIndex) return;
+
+        const reorderedLeads = arrayMove(pipelineLeads, oldIndex, newIndex);
+
+        // Update ordem for all reordered leads
+        const updates = reorderedLeads.map((lead, index) => ({
+          id: lead.id,
+          ordem: index,
+        }));
+
+        // Optimistic update
+        setLocalLeads((prev) =>
+          prev.map((l) => {
+            const update = updates.find((u) => u.id === l.id);
+            return update ? { ...l, ordem: update.ordem } : l;
+          })
+        );
+
+        // Update database
+        try {
+          for (const update of updates) {
+            await supabase
+              .from("leads")
+              .update({ ordem: update.ordem })
+              .eq("id", update.id);
+          }
+        } catch (error) {
+          console.error("Erro ao reordenar leads:", error);
+          toast.error("Erro ao reordenar leads");
+          queryClient.invalidateQueries({ queryKey: ["crm-leads"] });
         }
+        return;
       }
 
-      if (!newPipelineId || newPipelineId === activeLead.pipeline_id) return;
-
-      // Optimistic update - update local state immediately
-      setLocalLeads((prev) =>
-        prev.map((l) =>
-          l.id === activeId ? { ...l, pipeline_id: newPipelineId } : l
-        )
-      );
-
-      // Update database in background
-      try {
-        const { error } = await supabase
-          .from("leads")
-          .update({ pipeline_id: newPipelineId })
-          .eq("id", activeId);
-
-        if (error) throw error;
-      } catch (error) {
-        // Revert on error
+      // Different pipeline - move lead
+      if (newPipelineId !== activeLead.pipeline_id) {
+        // Optimistic update
         setLocalLeads((prev) =>
           prev.map((l) =>
-            l.id === activeId
-              ? { ...l, pipeline_id: activeLead.pipeline_id }
-              : l
+            l.id === activeId ? { ...l, pipeline_id: newPipelineId } : l
           )
         );
-        console.error("Erro ao mover lead:", error);
-        toast.error("Erro ao mover lead");
+
+        try {
+          const { error } = await supabase
+            .from("leads")
+            .update({ pipeline_id: newPipelineId })
+            .eq("id", activeId);
+
+          if (error) throw error;
+        } catch (error) {
+          setLocalLeads((prev) =>
+            prev.map((l) =>
+              l.id === activeId
+                ? { ...l, pipeline_id: activeLead.pipeline_id }
+                : l
+            )
+          );
+          console.error("Erro ao mover lead:", error);
+          toast.error("Erro ao mover lead");
+        }
       }
     },
-    [localLeads, pipelines]
+    [localLeads, pipelines, queryClient]
   );
 
   const handleDragCancel = useCallback(() => {
@@ -229,9 +270,9 @@ export function KanbanBoard() {
       >
         <div className="flex gap-4 overflow-x-auto pb-4">
           {pipelines.map((pipeline) => {
-            const pipelineLeads = displayLeads.filter(
-              (lead) => lead.pipeline_id === pipeline.id
-            );
+            const pipelineLeads = displayLeads
+              .filter((lead) => lead.pipeline_id === pipeline.id)
+              .sort((a, b) => (a.ordem ?? 0) - (b.ordem ?? 0));
             return (
               <KanbanColumn
                 key={pipeline.id}
