@@ -50,7 +50,7 @@ const SplashScreen = ({ onComplete }: SplashScreenProps) => {
               }}
               className="text-[10px] md:text-xs font-light tracking-[0.2em] text-muted-foreground uppercase"
             >
-              desenvolvido por
+              Essa é uma página desenvolvida pela
             </motion.span>
             <div className="flex gap-3 md:gap-4">
               {letters.map((letter, index) => (
