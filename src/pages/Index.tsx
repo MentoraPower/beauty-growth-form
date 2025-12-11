@@ -22,7 +22,7 @@ import Users from "@/components/icons/Users";
 import Home from "@/components/icons/Home";
 import { FeatureCard } from "@/components/ui/grid-feature-cards";
 import { motion, useReducedMotion, AnimatePresence } from "framer-motion";
-import { Target, FileText, Rocket, Handshake, BadgeCheck, Sparkles } from "lucide-react";
+import { Target, FileText, Rocket, Handshake, BadgeCheck, Sparkles, Zap } from "lucide-react";
 import Calendar from "@/components/icons/Calendar";
 import { toast } from "sonner";
 import HamburgerMenu from "@/components/HamburgerMenu";
@@ -1320,9 +1320,13 @@ const features = [{
   icon: FileText,
   description: 'Landing pages de alta conversão que transformam visitantes em clientes fiéis.'
 }, {
-  title: 'Automações e IA',
+  title: 'Automações',
+  icon: Zap,
+  description: 'Automatize processos e ganhe tempo para focar no que realmente importa.'
+}, {
+  title: 'Inteligência Artificial',
   icon: Sparkles,
-  description: 'Automatize processos e use inteligência artificial para escalar seu negócio de beleza.'
+  description: 'Use IA para escalar seu negócio de beleza e atender mais clientes.'
 }];
 type ViewAnimationProps = {
   delay?: number;
