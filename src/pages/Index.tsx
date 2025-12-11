@@ -1197,12 +1197,9 @@ const Index = () => {
         )}
       </AnimatePresence>
 
-      {/* Landing Page - Step 1 */}
-      <motion.div
-        animate={{ opacity: step === 1 ? 1 : 0 }}
-        transition={{ duration: 0.3 }}
-        className={step === 1 ? "" : "pointer-events-none"}
-      >
+      {/* Landing Page - Step 1 only */}
+      {step === 1 && (
+        <>
         <HamburgerMenu />
         
         {/* Mobile Layout */}
@@ -1343,7 +1340,8 @@ const Index = () => {
               </div>
             </div>}
         </div>
-      </motion.div>
+        </>
+      )}
       </motion.div>
     </>
   );
