@@ -1363,13 +1363,11 @@ function FeaturesSection() {
         </AnimatedContainer>
 
         <AnimatedContainer delay={0.4} className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3">
-          {features.slice(0, 3).map((feature, i) => <div key={i} className="border border-dashed">
-              <FeatureCard feature={feature} />
-            </div>)}
+          {features.slice(0, 3).map((feature, i) => <FeatureCard key={i} feature={feature} />)}
         </AnimatedContainer>
         
         {/* Co-Produção full width */}
-        <AnimatedContainer delay={0.5} className="border border-dashed">
+        <AnimatedContainer delay={0.5}>
           <FeatureCard feature={features[3]} className="w-full" />
         </AnimatedContainer>
       </div>

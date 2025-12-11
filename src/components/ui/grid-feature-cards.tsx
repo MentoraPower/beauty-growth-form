@@ -17,28 +17,28 @@ export function FeatureCard({ feature, className, ...props }: FeatureCardPorps) 
 	return (
 		<div className={cn('relative group', className)} {...props}>
 			{/* Corner squares - outside the overflow-hidden container */}
-			<div className="absolute -top-1 -left-1 w-2 h-2 border border-foreground/20 z-10 transition-colors group-hover:border-red-500 group-hover:bg-red-500" />
-			<div className="absolute -top-1 -right-1 w-2 h-2 border border-foreground/20 z-10 transition-colors group-hover:border-red-500 group-hover:bg-red-500" />
-			<div className="absolute -bottom-1 -left-1 w-2 h-2 border border-foreground/20 z-10 transition-colors group-hover:border-red-500 group-hover:bg-red-500" />
-			<div className="absolute -bottom-1 -right-1 w-2 h-2 border border-foreground/20 z-10 transition-colors group-hover:border-red-500 group-hover:bg-red-500" />
+			<div className="absolute -top-1 -left-1 w-2 h-2 border border-white/30 z-10 bg-white/20" />
+			<div className="absolute -top-1 -right-1 w-2 h-2 border border-white/30 z-10 bg-white/20" />
+			<div className="absolute -bottom-1 -left-1 w-2 h-2 border border-white/30 z-10 bg-white/20" />
+			<div className="absolute -bottom-1 -right-1 w-2 h-2 border border-white/30 z-10 bg-white/20" />
 			
-			{/* Card content with overflow hidden */}
-			<div className="relative p-6 overflow-hidden h-full">
+			{/* Card content with red gradient background */}
+			<div className="relative p-6 overflow-hidden h-full bg-gradient-to-br from-[#F40000] to-[#A10000] rounded-lg">
 				<div className="pointer-events-none absolute top-0 left-1/2 -mt-2 -ml-20 h-full w-full overflow-hidden [mask-image:linear-gradient(white,transparent)]">
-					<div className="from-foreground/5 to-foreground/1 absolute inset-0 bg-gradient-to-r [mask-image:radial-gradient(farthest-side_at_top,white,transparent)] opacity-100">
+					<div className="from-white/10 to-white/5 absolute inset-0 bg-gradient-to-r [mask-image:radial-gradient(farthest-side_at_top,white,transparent)] opacity-100">
 						<GridPattern
 							width={20}
 							height={20}
 							x="-12"
 							y="4"
 							squares={p}
-							className="fill-foreground/5 stroke-foreground/25 absolute inset-0 h-full w-full mix-blend-overlay"
+							className="fill-white/10 stroke-white/20 absolute inset-0 h-full w-full mix-blend-overlay"
 						/>
 					</div>
 				</div>
-				<feature.icon className="text-foreground/75 size-6 relative z-10" strokeWidth={1} aria-hidden />
-			<h3 className="mt-10 text-base md:text-lg font-medium relative z-10">{feature.title}</h3>
-			<p className="text-muted-foreground relative z-20 mt-2 text-sm md:text-xs font-light leading-relaxed">{feature.description}</p>
+				<feature.icon className="text-white size-7 md:size-8 relative z-10" strokeWidth={1.5} aria-hidden />
+			<h3 className="mt-8 text-lg md:text-xl lg:text-2xl font-bold text-white relative z-10">{feature.title}</h3>
+			<p className="text-white/90 relative z-20 mt-3 text-sm md:text-base font-light leading-relaxed">{feature.description}</p>
 			</div>
 		</div>
 	);
