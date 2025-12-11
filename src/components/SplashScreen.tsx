@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import splashLogo from "@/assets/splash-logo.png";
 
 interface SplashScreenProps {
   onComplete: () => void;
@@ -45,8 +46,16 @@ const SplashScreen = ({ onComplete }: SplashScreenProps) => {
           initial={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration: 0.5, ease: "easeInOut" }}
-          className="fixed inset-0 z-50 flex items-center justify-center bg-[#F3F3F3] px-6"
+          className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-[#F3F3F3] px-6"
         >
+          <motion.img
+            src={splashLogo}
+            alt="Scale Beauty"
+            className="w-16 mb-6"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.4, ease: "easeOut" }}
+          />
           <p className="text-base md:text-lg font-light tracking-wide text-muted-foreground">
             {allChars.map((char, index) => {
               const isScale = index >= normalLength;
