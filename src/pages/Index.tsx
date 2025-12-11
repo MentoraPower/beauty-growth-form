@@ -1372,7 +1372,7 @@ function FeaturesSection() {
 function AnimatedCircleSection() {
   return (
     <section className="py-16 md:py-24 flex items-center justify-center overflow-visible">
-      <div className="relative w-[280px] h-[280px] md:w-[450px] md:h-[450px] lg:w-[550px] lg:h-[550px]">
+      <div className="relative w-[85vw] h-[85vw] md:w-[450px] md:h-[450px] lg:w-[550px] lg:h-[550px]">
         {/* Passo 01 - Top (dot at ~42%, 13%) */}
         <div className="absolute top-[8%] left-[42%] -translate-x-1/2 -translate-y-full text-center">
           <span className="text-[10px] md:text-xs text-muted-foreground">Passo 01</span>
