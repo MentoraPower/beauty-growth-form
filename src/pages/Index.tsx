@@ -1398,7 +1398,7 @@ function AnimatedCircleSection() {
   return (
     <section className="py-16 md:py-16 overflow-visible">
       <div className="mx-auto w-full max-w-6xl px-6 md:px-8">
-        <div className="flex flex-col lg:flex-row items-center gap-8 lg:gap-16">
+        <div className="flex flex-col lg:flex-row-reverse items-center gap-8 lg:gap-16">
           {/* Circle */}
           <div className="relative w-[85vw] h-[85vw] md:w-[400px] md:h-[400px] lg:w-[450px] lg:h-[450px] flex-shrink-0">
             {/* Passo 01 - Top (dot at ~42%, 13%) */}
