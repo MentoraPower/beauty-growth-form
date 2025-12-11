@@ -1366,6 +1366,9 @@ function FeaturesSection() {
           <h2 className="text-2xl font-bold tracking-tight text-balance md:text-3xl lg:text-4xl xl:font-extrabold mx-0">
             ​Como a Scale pode te ajudar?                    
           </h2>
+          <p className="text-muted-foreground mt-3 text-sm md:text-base">
+            Conheça nossos principais serviços⭣
+          </p>
         </AnimatedContainer>
 
         <AnimatedContainer delay={0.4} className="grid grid-cols-1 gap-4 sm:grid-cols-2">
