@@ -1323,6 +1323,10 @@ const features = [{
   title: 'Automações',
   icon: Zap,
   description: 'Automatize processos e ganhe tempo para focar no que realmente importa.'
+}, {
+  title: 'E em breve… Coprodução',
+  icon: Handshake,
+  description: 'Selecionaremos nossos melhores clientes para ter uma sociedade de coprodução dos seus cursos online. Em breve.'
 }];
 type ViewAnimationProps = {
   delay?: number;
