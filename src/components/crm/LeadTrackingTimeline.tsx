@@ -161,7 +161,7 @@ export function LeadTrackingTimeline({ leadId, utmData }: LeadTrackingTimelinePr
       {/* Timeline Card */}
       <Card className="border-[#00000010] shadow-none">
         <CardContent className="p-6">
-          <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-4">
+          <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-6">
             Histórico de Atualizações
           </h3>
           
@@ -169,7 +169,7 @@ export function LeadTrackingTimeline({ leadId, utmData }: LeadTrackingTimelinePr
             <div className="space-y-4">
               {[1, 2, 3].map((i) => (
                 <div key={i} className="flex gap-3 animate-pulse">
-                  <div className="h-10 w-10 rounded-full bg-muted" />
+                  <div className="h-10 w-10 rounded-lg bg-muted" />
                   <div className="flex-1 space-y-2">
                     <div className="h-4 bg-muted rounded w-1/3" />
                     <div className="h-3 bg-muted rounded w-2/3" />
@@ -180,75 +180,80 @@ export function LeadTrackingTimeline({ leadId, utmData }: LeadTrackingTimelinePr
           ) : events.length === 0 ? (
             <p className="text-sm text-muted-foreground italic">Nenhuma atualização registrada</p>
           ) : (
-            <div className="relative">
-              {/* Timeline line */}
-              <div className="absolute left-5 top-0 bottom-0 w-px bg-border" />
+            <div className="relative pl-8">
+              {/* Vertical timeline line */}
+              <div className="absolute left-[15px] top-3 bottom-3 w-[2px] bg-gray-200 rounded-full" />
               
-              <div className="space-y-4">
-                {events.map((event) => (
-                  <div key={event.id} className="relative flex gap-4">
-                    {/* Icon */}
-                    <div className={`relative z-10 h-10 w-10 rounded-full flex items-center justify-center ${getIconBgColor(event.tipo)}`}>
-                      {getIconForType(event.tipo)}
-                    </div>
+              <div className="space-y-6">
+                {events.map((event, index) => (
+                  <div key={event.id} className="relative">
+                    {/* Timeline dot */}
+                    <div className="absolute -left-8 top-4 w-[10px] h-[10px] rounded-full bg-gray-300 border-2 border-white z-10" />
                     
-                    {/* Content */}
-                    <div className="flex-1 pb-4">
-                      <div className="bg-muted/30 border border-[#00000010] rounded-lg p-3">
-                        <div className="flex items-start justify-between">
-                          <div>
-                            <p className="text-sm font-medium">{event.titulo}</p>
-                            {event.origem && (
-                              <p className="text-xs text-muted-foreground">
-                                ORIGEM: {event.origem}
-                              </p>
-                            )}
-                          </div>
+                    {/* Event Card */}
+                    <div className="bg-white border border-gray-100 rounded-xl p-4 shadow-sm">
+                      <div className="flex items-start gap-3">
+                        {/* Icon */}
+                        <div className={`h-10 w-10 rounded-lg flex items-center justify-center flex-shrink-0 ${getIconBgColor(event.tipo)}`}>
+                          {getIconForType(event.tipo)}
                         </div>
                         
-                        {event.descricao && (
-                          <p className="text-sm text-muted-foreground mt-2">
-                            {event.descricao}
-                          </p>
-                        )}
-                        
-                        {event.dados && typeof event.dados === 'object' && Object.keys(event.dados as object).length > 0 && (
-                          <div className="mt-2">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="h-7 text-xs"
-                              onClick={() => setExpandedEvent(expandedEvent === event.id ? null : event.id)}
-                            >
-                              {expandedEvent === event.id ? (
-                                <>
-                                  <ChevronUp className="h-3 w-3 mr-1" />
-                                  Ocultar dados
-                                </>
-                              ) : (
-                                <>
-                                  <ChevronDown className="h-3 w-3 mr-1" />
-                                  Mostrar dados
-                                </>
-                              )}
-                            </Button>
-                            
-                            {expandedEvent === event.id && (
-                              <pre className="mt-2 p-2 bg-muted/50 rounded text-xs overflow-x-auto">
-                                {JSON.stringify(event.dados, null, 2)}
-                              </pre>
-                            )}
+                        {/* Content */}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <p className="text-sm font-semibold text-foreground">{event.titulo}</p>
                           </div>
-                        )}
-                        
-                        <div className="flex items-center gap-1 mt-2 text-xs text-muted-foreground">
-                          <Clock className="h-3 w-3" />
-                          <span>
-                            {formatDistanceToNow(new Date(event.created_at), {
-                              addSuffix: true,
-                              locale: ptBR
-                            })}
-                          </span>
+                          
+                          {event.origem && (
+                            <p className="text-xs text-muted-foreground mt-0.5">
+                              ORIGEM: <span className="font-medium">{event.origem}</span> <span className="mx-1">&gt;</span> LISTA GERAL
+                            </p>
+                          )}
+                          
+                          {event.descricao && (
+                            <p className="text-sm text-muted-foreground mt-2">
+                              {event.descricao}
+                            </p>
+                          )}
+                          
+                          {event.dados && typeof event.dados === 'object' && Object.keys(event.dados as object).length > 0 && (
+                            <div className="mt-3">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="h-7 text-xs border-gray-200"
+                                onClick={() => setExpandedEvent(expandedEvent === event.id ? null : event.id)}
+                              >
+                                {expandedEvent === event.id ? (
+                                  <>
+                                    <ChevronUp className="h-3 w-3 mr-1" />
+                                    Ocultar dados
+                                  </>
+                                ) : (
+                                  <>
+                                    <ChevronDown className="h-3 w-3 mr-1" />
+                                    Mostrar dados
+                                  </>
+                                )}
+                              </Button>
+                              
+                              {expandedEvent === event.id && (
+                                <pre className="mt-2 p-3 bg-gray-50 rounded-lg text-xs overflow-x-auto border border-gray-100">
+                                  {JSON.stringify(event.dados, null, 2)}
+                                </pre>
+                              )}
+                            </div>
+                          )}
+                          
+                          <div className="flex items-center gap-1.5 mt-3 text-xs text-muted-foreground">
+                            <Clock className="h-3 w-3" />
+                            <span>
+                              {formatDistanceToNow(new Date(event.created_at), {
+                                addSuffix: true,
+                                locale: ptBR
+                              })}
+                            </span>
+                          </div>
                         </div>
                       </div>
                     </div>
