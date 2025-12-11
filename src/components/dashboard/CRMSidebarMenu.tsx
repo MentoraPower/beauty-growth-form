@@ -11,6 +11,11 @@ import {
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import {
   Dialog,
   DialogContent,
   DialogHeader,
@@ -443,14 +448,13 @@ export function CRMSidebarMenu({ isExpanded, onNavigate, onDropdownOpenChange }:
             />
           </button>
         ) : (
-          /* CRM Button with Dropdown - When collapsed */
-          <DropdownMenu onOpenChange={(open) => {
+          /* CRM Button with Popover - When collapsed, opens below */
+          <Popover open={isOpen} onOpenChange={(open) => {
+            setIsOpen(open);
             onDropdownOpenChange?.(open);
-            if (!open) setIsOpen(false);
           }}>
-            <DropdownMenuTrigger asChild>
+            <PopoverTrigger asChild>
               <button
-                onClick={() => setIsOpen(!isOpen)}
                 className={cn(
                   "relative flex items-center justify-center w-full rounded-xl transition-colors duration-200 px-4 py-3",
                   isCRMActive
@@ -460,19 +464,19 @@ export function CRMSidebarMenu({ isExpanded, onNavigate, onDropdownOpenChange }:
               >
                 <Kanban className="h-5 w-5 flex-shrink-0" strokeWidth={1.5} />
               </button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent 
-              side="right" 
+            </PopoverTrigger>
+            <PopoverContent 
+              side="bottom" 
               align="start" 
               sideOffset={8}
-              className="w-64 z-[9999] bg-popover max-h-[70vh] overflow-y-auto"
+              className="w-64 z-[9999] bg-popover p-0 max-h-[60vh] overflow-y-auto"
             >
-              <div className="px-3 py-2 border-b border-border/50">
+              <div className="px-3 py-2 border-b border-border/50 sticky top-0 bg-popover">
                 <span className="text-sm font-semibold text-foreground">CRM - Origens</span>
               </div>
               {renderOriginsMenu(true)}
-            </DropdownMenuContent>
-          </DropdownMenu>
+            </PopoverContent>
+          </Popover>
         )}
 
         {/* Expandable Menu - Only when expanded */}
