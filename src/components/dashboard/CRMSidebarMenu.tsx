@@ -276,10 +276,6 @@ export function CRMSidebarMenu({ isExpanded, onNavigate, onDropdownOpenChange }:
                         </button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end" className="w-40 z-[9999] bg-popover">
-                        <DropdownMenuItem onClick={() => openCreateSubOriginDialog(origin.id)}>
-                          <Plus className="h-4 w-4 mr-2" />
-                          Nova Sub-origem
-                        </DropdownMenuItem>
                         <DropdownMenuItem onClick={() => openEditOriginDialog(origin)}>
                           <Pencil className="h-4 w-4 mr-2" />
                           Editar
@@ -343,7 +339,7 @@ export function CRMSidebarMenu({ isExpanded, onNavigate, onDropdownOpenChange }:
                         className="flex items-center gap-2 w-full py-1.5 px-2 rounded-lg text-white/60 hover:text-white hover:bg-white/5 transition-colors text-xs"
                       >
                         <Plus className="h-3 w-3" />
-                        <span>Novo CRM</span>
+                        <span>Criar sub origem</span>
                       </button>
                     </div>
                   )}
