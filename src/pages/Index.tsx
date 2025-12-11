@@ -651,8 +651,7 @@ const Index = () => {
             <h1 className="form-title">
               <span className="font-light">Pronta para escalar seu negócio</span>
               <br />
-              <span className="font-light">no </span>
-              <span className="font-bold">Mundo Beauty?</span>
+              <span className="whitespace-nowrap"><span className="font-light">no </span><span className="font-bold">Mundo Beauty?</span></span>
             </h1>
             <p className="form-subtitle mt-4 mb-8">Como posso te chamar?</p>
             <div className="space-y-4">
