@@ -492,3 +492,47 @@
 .animated-circle #fundo1-2:hover path {
   fill: #FF3333 !important;
 }
+
+/* Smooth page transitions for dashboard */
+@layer utilities {
+  .animate-in {
+    animation: animate-in 200ms ease-out;
+  }
+  
+  .fade-in {
+    animation: fade-in-smooth 200ms ease-out forwards;
+  }
+  
+  .fade-in-up {
+    animation: fade-in-up 200ms ease-out forwards;
+  }
+}
+
+@keyframes animate-in {
+  from {
+    opacity: 0.5;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes fade-in-smooth {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes fade-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

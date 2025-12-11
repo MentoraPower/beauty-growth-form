@@ -356,9 +356,9 @@ export function KanbanBoard() {
     : "Selecione uma sub-origem";
 
   return (
-    <div className="flex flex-col h-[calc(100vh-8rem)]">
+    <div className="flex flex-col h-[calc(100vh-8rem)] transition-opacity duration-150">
       <div className="flex items-center justify-between mb-4">
-        <div>
+        <div className="transition-all duration-150">
           <h1 className="text-2xl font-bold">{pageTitle}</h1>
           {!subOriginId && (
             <p className="text-sm text-muted-foreground mt-1">
@@ -371,7 +371,7 @@ export function KanbanBoard() {
             <Button
               variant={viewMode === "kanban" ? "secondary" : "ghost"}
               size="sm"
-              className="rounded-none"
+              className="rounded-none transition-colors duration-100"
               onClick={() => setViewMode("kanban")}
             >
               <LayoutGrid className="w-4 h-4" />
@@ -379,7 +379,7 @@ export function KanbanBoard() {
             <Button
               variant={viewMode === "list" ? "secondary" : "ghost"}
               size="sm"
-              className="rounded-none"
+              className="rounded-none transition-colors duration-100"
               onClick={() => setViewMode("list")}
             >
               <List className="w-4 h-4" />
@@ -410,9 +410,11 @@ export function KanbanBoard() {
         }}
       >
         {viewMode === "list" ? (
-          <LeadsList leads={displayLeads} pipelines={pipelines} activeDragId={activeId} />
+          <div className="fade-in">
+            <LeadsList leads={displayLeads} pipelines={pipelines} activeDragId={activeId} />
+          </div>
         ) : (
-          <div className="flex gap-4 overflow-x-auto flex-1 pb-4 h-full">
+          <div className="flex gap-4 overflow-x-auto flex-1 pb-4 h-full fade-in">
             {pipelines.map((pipeline) => (
               <KanbanColumn
                 key={pipeline.id}
