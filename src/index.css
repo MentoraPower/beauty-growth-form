@@ -1,4 +1,12 @@
 @font-face {
+  font-family: 'Colo';
+  src: url('/fonts/Colo-Regular.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
   font-family: 'Metropolis';
   src: url('/fonts/Metropolis-Regular.woff2') format('woff2');
   font-weight: 400;
