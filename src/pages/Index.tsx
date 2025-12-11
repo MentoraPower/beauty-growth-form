@@ -1442,7 +1442,13 @@ function QuemSomosSection() {
                 Somos mais que uma assessoria de marketing, somos um ecossistema completo para a área da beleza.
               </p>
               <p className="text-base md:text-lg leading-relaxed opacity-95 mt-4">
-                Não acreditamos em fórmulas prontas! A nossa experiência com a área da beleza nos mostra que cada clínica, cada studio em seu modelo criativo é único e que as nossas estratégias também serão únicas.
+                Não acreditamos em fórmulas prontas! A nossa experiência com a área da beleza nos mostra que cada clínica e cada profissional em seu modelo criativo é único e por isso nossas estratégias também serão únicas e personalizadas.
+              </p>
+              <blockquote className="text-base md:text-lg leading-relaxed opacity-95 mt-6 italic border-l-2 border-white/40 pl-4">
+                "Nosso propósito é evoluir cada vez mais o mercado da beleza, quando uma cresce, outras crescem junto. E fazer cada uma de nossas clientes estar em constante escala de crescimento é, e sempre será nossa prioridade"
+              </blockquote>
+              <p className="text-sm md:text-base opacity-80 mt-3">
+                — Frase de nossa CEO, Biteti.
               </p>
               
               {/* CEO Attribution Cards */}
