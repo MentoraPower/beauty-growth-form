@@ -41,12 +41,31 @@ export function KanbanBoard() {
     const saved = localStorage.getItem('crm_view_mode');
     return (saved === 'list' || saved === 'kanban') ? saved : 'kanban';
   });
+  const [isTransitioning, setIsTransitioning] = useState(false);
   const queryClient = useQueryClient();
 
   // Persist viewMode to localStorage
   useEffect(() => {
     localStorage.setItem('crm_view_mode', viewMode);
   }, [viewMode]);
+
+  // Handle smooth transitions when changing sub-origins
+  useEffect(() => {
+    const handleSubOriginChange = () => {
+      setIsTransitioning(true);
+    };
+    
+    window.addEventListener('suborigin-change', handleSubOriginChange);
+    return () => window.removeEventListener('suborigin-change', handleSubOriginChange);
+  }, []);
+
+  // Reset transition state when data loads for new sub-origin
+  useEffect(() => {
+    if (isTransitioning) {
+      const timer = setTimeout(() => setIsTransitioning(false), 100);
+      return () => clearTimeout(timer);
+    }
+  }, [subOriginId, isTransitioning]);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -356,7 +375,7 @@ export function KanbanBoard() {
     : "Selecione uma sub-origem";
 
   return (
-    <div className="flex flex-col h-[calc(100vh-8rem)] transition-opacity duration-150">
+    <div className={`flex flex-col h-[calc(100vh-8rem)] transition-opacity duration-150 ${isTransitioning ? 'opacity-0' : 'opacity-100'}`}>
       <div className="flex items-center justify-between mb-4">
         <div className="transition-all duration-150">
           <h1 className="text-2xl font-bold">{pageTitle}</h1>
