@@ -1431,7 +1431,7 @@ function AnimatedCircleSection() {
             </div>
             
             {/* Passo 05 - Left */}
-            <div className="absolute top-[45%] md:top-[44%] left-[12%] md:left-[15%] -translate-x-full text-right pr-2 whitespace-nowrap">
+            <div className="absolute top-[45%] md:top-[44%] right-[88%] md:right-[90%] text-right pr-2 whitespace-nowrap">
               <span className="text-[9px] md:text-xs text-muted-foreground">Passo 05</span>
               <p className="text-[10px] md:text-sm font-bold text-foreground">Escala</p>
             </div>
