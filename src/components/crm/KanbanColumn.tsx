@@ -1,3 +1,4 @@
+import { memo } from "react";
 import { useDroppable } from "@dnd-kit/core";
 import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { Lead, Pipeline } from "@/types/crm";
@@ -9,7 +10,7 @@ interface KanbanColumnProps {
   isOver?: boolean;
 }
 
-export function KanbanColumn({ pipeline, leads, isOver }: KanbanColumnProps) {
+export const KanbanColumn = memo(function KanbanColumn({ pipeline, leads, isOver }: KanbanColumnProps) {
   const { setNodeRef } = useDroppable({
     id: pipeline.id,
   });
@@ -57,4 +58,4 @@ export function KanbanColumn({ pipeline, leads, isOver }: KanbanColumnProps) {
       </div>
     </div>
   );
-}
+});

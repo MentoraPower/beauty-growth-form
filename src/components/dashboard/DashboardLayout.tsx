@@ -1,8 +1,7 @@
-import { useState, useCallback, useEffect, useRef } from "react";
+import { useState, useCallback, useEffect, memo } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { LayoutDashboard, Menu, X, LogOut } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { motion } from "framer-motion";
 import scaleLogo from "@/assets/scale-logo.png";
 import { CRMSidebarMenu } from "./CRMSidebarMenu";
 
@@ -14,17 +13,16 @@ const navItems = [
   { href: "/admin", icon: LayoutDashboard, label: "Dashboard" },
 ];
 
-// Variável global para persistir o estado de hover entre navegações
+// Global hover state to persist across navigations
 let globalHoverState = false;
 
-const DashboardLayout = ({ children }: DashboardLayoutProps) => {
+const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isHovered, setIsHovered] = useState(globalHoverState);
   const [dropdownOpen, setDropdownOpen] = useState(false);
-  const sidebarRef = useRef<HTMLElement>(null);
   const location = useLocation();
 
-  // Sincronizar com estado global ao montar e quando a rota muda
+  // Sync with global state on mount and route change
   useEffect(() => {
     setIsHovered(globalHoverState);
   }, [location.pathname]);
@@ -35,7 +33,6 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
   }, []);
 
   const handleMouseLeave = useCallback(() => {
-    // Don't collapse if dropdown is open
     if (dropdownOpen) return;
     globalHoverState = false;
     setIsHovered(false);
@@ -61,26 +58,22 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
         <div className="w-9" />
       </header>
 
-      {/* Desktop Sidebar */}
-      <motion.aside
+      {/* Desktop Sidebar - CSS transitions instead of framer-motion */}
+      <aside
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
-        initial={false}
-        animate={{ width: shouldBeExpanded ? 224 : 72 }}
-        transition={{ duration: 0.2, ease: "easeOut" }}
-        className="hidden lg:flex flex-col fixed left-0 top-0 my-2 ml-2 h-[calc(100vh-1rem)] rounded-3xl border border-[#ffffff15] bg-black overflow-hidden z-50"
+        style={{ width: shouldBeExpanded ? 224 : 72 }}
+        className="hidden lg:flex flex-col fixed left-0 top-0 my-2 ml-2 h-[calc(100vh-1rem)] rounded-3xl border border-[#ffffff15] bg-black overflow-hidden z-50 transition-[width] duration-200 ease-out"
       >
         <div className="flex flex-col h-full">
           {/* Logo */}
           <div className="pt-[30px] pb-4 px-4 flex justify-start">
-            <motion.div
-              initial={false}
-              animate={{ width: shouldBeExpanded ? 100 : 40 }}
-              transition={{ duration: 0.2, ease: "easeOut" }}
-              className="flex items-center"
+            <div
+              style={{ width: shouldBeExpanded ? 100 : 40 }}
+              className="flex items-center transition-[width] duration-200 ease-out"
             >
               <img src={scaleLogo} alt="Scale Beauty" className="w-full h-auto" />
-            </motion.div>
+            </div>
           </div>
 
           {/* Navigation */}
@@ -135,7 +128,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
             </Link>
           </div>
         </div>
-      </motion.aside>
+      </aside>
 
       {/* Mobile Sidebar */}
       <aside
@@ -206,6 +199,6 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
       </main>
     </div>
   );
-};
+});
 
 export default DashboardLayout;

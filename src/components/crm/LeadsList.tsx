@@ -1,7 +1,6 @@
+import { memo, useMemo } from "react";
 import { Lead, Pipeline } from "@/types/crm";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { format } from "date-fns";
-import { ptBR } from "date-fns/locale";
 import { useNavigate } from "react-router-dom";
 import { useDroppable } from "@dnd-kit/core";
 import { useSortable } from "@dnd-kit/sortable";
@@ -15,10 +14,9 @@ interface LeadsListProps {
 
 interface DraggableRowProps {
   lead: Lead;
-  isDragging?: boolean;
 }
 
-function DraggableRow({ lead, isDragging: isBeingDraggedGlobally }: DraggableRowProps) {
+const DraggableRow = memo(function DraggableRow({ lead }: DraggableRowProps) {
   const navigate = useNavigate();
   
   const {
@@ -42,11 +40,17 @@ function DraggableRow({ lead, isDragging: isBeingDraggedGlobally }: DraggableRow
     opacity: isDragging ? 0 : 1,
   };
 
-  const handleClick = (e: React.MouseEvent) => {
+  const handleClick = () => {
     if (!isDragging) {
       navigate(`/admin/crm/${lead.id}`);
     }
   };
+
+  // Format date inline to avoid date-fns import
+  const formattedDate = useMemo(() => {
+    const date = new Date(lead.created_at);
+    return `${date.getDate().toString().padStart(2, '0')}/${(date.getMonth() + 1).toString().padStart(2, '0')}/${date.getFullYear()}`;
+  }, [lead.created_at]);
 
   return (
     <TableRow 
@@ -63,20 +67,17 @@ function DraggableRow({ lead, isDragging: isBeingDraggedGlobally }: DraggableRow
         {lead.country_code} {lead.whatsapp}
       </TableCell>
       <TableCell className="text-muted-foreground text-sm">@{lead.instagram}</TableCell>
-      <TableCell className="text-muted-foreground text-sm">
-        {format(new Date(lead.created_at), "dd/MM/yyyy", { locale: ptBR })}
-      </TableCell>
+      <TableCell className="text-muted-foreground text-sm">{formattedDate}</TableCell>
     </TableRow>
   );
-}
+});
 
 interface PipelineListProps {
   pipeline: Pipeline;
   leads: Lead[];
-  activeDragId?: string | null;
 }
 
-function PipelineList({ pipeline, leads, activeDragId }: PipelineListProps) {
+const PipelineList = memo(function PipelineList({ pipeline, leads }: PipelineListProps) {
   const { setNodeRef, isOver } = useDroppable({
     id: pipeline.id,
   });
@@ -122,11 +123,7 @@ function PipelineList({ pipeline, leads, activeDragId }: PipelineListProps) {
         </TableHeader>
         <TableBody>
           {leads.map((lead) => (
-            <DraggableRow 
-              key={lead.id} 
-              lead={lead} 
-              isDragging={activeDragId === lead.id}
-            />
+            <DraggableRow key={lead.id} lead={lead} />
           ))}
           {leads.length === 0 && (
             <TableRow>
@@ -141,28 +138,41 @@ function PipelineList({ pipeline, leads, activeDragId }: PipelineListProps) {
       </Table>
     </div>
   );
-}
+});
 
-export function LeadsList({ leads, pipelines, activeDragId }: LeadsListProps) {
-  // Sort pipelines by ordem
-  const sortedPipelines = [...pipelines].sort((a, b) => a.ordem - b.ordem);
+export const LeadsList = memo(function LeadsList({ leads, pipelines, activeDragId }: LeadsListProps) {
+  // Sort pipelines by ordem - memoized
+  const sortedPipelines = useMemo(() => 
+    [...pipelines].sort((a, b) => a.ordem - b.ordem),
+    [pipelines]
+  );
+
+  // Group leads by pipeline - memoized
+  const leadsByPipeline = useMemo(() => {
+    const map = new Map<string, Lead[]>();
+    sortedPipelines.forEach(p => map.set(p.id, []));
+    leads.forEach(lead => {
+      if (lead.pipeline_id) {
+        const arr = map.get(lead.pipeline_id);
+        if (arr) arr.push(lead);
+      }
+    });
+    // Sort each pipeline's leads
+    map.forEach((pipelineLeads) => {
+      pipelineLeads.sort((a, b) => (a.ordem ?? 0) - (b.ordem ?? 0));
+    });
+    return map;
+  }, [leads, sortedPipelines]);
 
   return (
     <div className="space-y-4 overflow-y-auto flex-1">
-      {sortedPipelines.map((pipeline) => {
-        const pipelineLeads = leads
-          .filter((lead) => lead.pipeline_id === pipeline.id)
-          .sort((a, b) => (a.ordem ?? 0) - (b.ordem ?? 0));
-
-        return (
-          <PipelineList
-            key={pipeline.id}
-            pipeline={pipeline}
-            leads={pipelineLeads}
-            activeDragId={activeDragId}
-          />
-        );
-      })}
+      {sortedPipelines.map((pipeline) => (
+        <PipelineList
+          key={pipeline.id}
+          pipeline={pipeline}
+          leads={leadsByPipeline.get(pipeline.id) || []}
+        />
+      ))}
     </div>
   );
-}
+});
