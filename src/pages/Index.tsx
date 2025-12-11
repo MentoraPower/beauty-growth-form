@@ -2,8 +2,7 @@ import { useState, useEffect } from "react";
 import { AnimatedCircle } from "@/components/AnimatedCircle";
 import { Link } from "react-router-dom";
 import { countries, beautyAreas, revenueRanges, Country } from "@/data/countries";
-import scaleBeautyBanner from "@/assets/scale-beauty-banner.png";
-import scaleBeautyMobile from "@/assets/scale-beauty-mobile.png";
+import scaleBeautyBanner from "@/assets/scale-beauty-banner-new.webp";
 import quemSomosImage from "@/assets/quem-somos.webp";
 import CountrySelect from "@/components/CountrySelect";
 import FormContainer from "@/components/FormContainer";
@@ -1085,7 +1084,7 @@ const Index = () => {
       <div className="md:hidden flex flex-col min-h-screen relative">
         {/* Banner image on top with rounded bottom */}
         <div className="w-full flex-shrink-0">
-          <img src={scaleBeautyMobile} alt="Scale Beauty" className="w-full h-[260px] object-cover rounded-b-3xl" loading="eager" decoding="async" />
+          <img src={scaleBeautyBanner} alt="Scale Beauty" className="w-full h-[260px] object-cover rounded-b-3xl" loading="eager" decoding="async" />
         </div>
         {/* Form overlapping the image */}
         <div className="flex-1 flex flex-col justify-start px-4 -mt-6 relative z-10">
