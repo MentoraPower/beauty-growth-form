@@ -73,7 +73,7 @@ export function KanbanCard({ lead, isDragging: isDraggingOverlay }: KanbanCardPr
       ref={setNodeRef}
       style={style}
       {...attributes}
-      className={`cursor-grab active:cursor-grabbing transition-all duration-150 bg-card border-black/5 select-none touch-none ${
+      className={`cursor-grab active:cursor-grabbing transition-all duration-150 bg-card border-black/5 shadow-none select-none touch-none ${
         isBeingDragged
           ? "opacity-100"
           : isDragging
