@@ -653,7 +653,7 @@ const Index = () => {
               <span className="font-light">Pronta para escalar seu negócio no </span>
               <span className="font-bold">Mundo Beauty?</span>
             </h1>
-            <p className="form-subtitle mt-4 mb-8">Você está prestes a tomar a melhor decisão para o seu negócio. Somos especialistas em escalar negócios de beleza através do Tráfego Pago.</p>
+            <p className="form-subtitle mt-4 mb-4">Você está prestes a tomar a melhor decisão para o seu negócio. Somos especialistas em escalar negócios de beleza através do Tráfego Pago.</p>
             <div className="space-y-4">
               <input type="text" value={formData.name} onChange={e => updateFormData("name", e.target.value)} placeholder="Seu nome" className="form-input" autoFocus />
               <ShimmerButton onClick={handleNext}>
