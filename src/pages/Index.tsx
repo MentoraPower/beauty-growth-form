@@ -1211,6 +1211,9 @@ const Index = () => {
           {/* Feature Cards Section - Mobile */}
           <FeaturesSection />
           
+          {/* Animated Circle Section - Mobile */}
+          <AnimatedCircleSection />
+          
           {/* Quem Somos Section - Mobile */}
           <QuemSomosSection />
           
@@ -1278,6 +1281,9 @@ const Index = () => {
 
         {/* Feature Cards Section */}
         <FeaturesSection />
+        
+        {/* Animated Circle Section */}
+        <AnimatedCircleSection />
 
         {/* Quem Somos Section - Desktop */}
         <QuemSomosSection />
@@ -1345,20 +1351,8 @@ function AnimatedContainer({
     </motion.div>;
 }
 function FeaturesSection() {
-  return <section id="servicos" className="py-16 md:py-32 relative overflow-hidden">
-      {/* Large animated circle positioned to the right */}
-      <div className="absolute -right-32 md:-right-48 top-1/2 -translate-y-1/2 pointer-events-none">
-        <img 
-          src="/circle-animado.svg" 
-          alt="" 
-          className="w-[400px] h-[400px] md:w-[600px] md:h-[600px] lg:w-[800px] lg:h-[800px] animate-spin-slow opacity-80"
-          style={{ 
-            filter: 'hue-rotate(-40deg) saturate(2) brightness(0.9)'
-          }}
-        />
-      </div>
-      
-      <div className="mx-auto w-full max-w-5xl space-y-8 px-6 md:px-4 relative z-10">
+  return <section id="servicos" className="py-16 md:py-32">
+      <div className="mx-auto w-full max-w-5xl space-y-8 px-6 md:px-4">
         <AnimatedContainer className="mx-auto max-w-4xl text-center px-2">
           <h2 className="text-2xl font-bold tracking-tight text-balance md:text-3xl lg:text-4xl xl:font-extrabold mx-0">
             ​Como a Scale pode te ajudar?                    
@@ -1370,6 +1364,21 @@ function FeaturesSection() {
               <FeatureCard feature={feature} />
             </div>)}
         </AnimatedContainer>
+      </div>
+    </section>;
+}
+
+function AnimatedCircleSection() {
+  return <section className="py-12 md:py-20 flex items-center justify-center overflow-hidden">
+      <div className="relative">
+        <img 
+          src="/circle-animado.svg" 
+          alt="" 
+          className="w-[280px] h-[280px] md:w-[450px] md:h-[450px] lg:w-[550px] lg:h-[550px] animate-spin-slow"
+          style={{ 
+            filter: 'hue-rotate(-40deg) saturate(2) brightness(0.9)'
+          }}
+        />
       </div>
     </section>;
 }
