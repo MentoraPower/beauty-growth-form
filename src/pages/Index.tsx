@@ -1162,7 +1162,7 @@ const Index = () => {
       <div className="hidden md:flex flex-col min-h-screen relative">
         {/* Banner image on top with rounded bottom */}
         <div className="w-full flex-shrink-0">
-          <img src={scaleBeautyBanner} alt="Scale Beauty" className="w-full h-auto object-contain rounded-b-[48px]" loading="eager" decoding="async" />
+          <img src={scaleBeautyBanner} alt="Scale Beauty" className="w-full h-auto object-contain rounded-b-[80px]" loading="eager" decoding="async" />
         </div>
         
         {/* Form overlapping the image */}
