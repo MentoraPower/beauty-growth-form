@@ -1019,7 +1019,7 @@ const Index = () => {
               <span className="font-bold">Investimento</span>
             </h1>
             <p className="text-base text-muted-foreground mt-4 mb-8 leading-relaxed text-center">
-              Hoje, nosso serviço mais acessível custa <span className="font-bold text-foreground">R$ 2.800,00 por mês</span>. Você tem condição de investir esse valor no crescimento do seu negócio?
+              Hoje, nosso serviço mais acessível custa <span className="font-bold text-foreground">R$ 1.800,00 por mês</span>. Você está disposta a investir esse valor no crescimento do seu negócio?
             </p>
             <div className="space-y-3">
               <button 
