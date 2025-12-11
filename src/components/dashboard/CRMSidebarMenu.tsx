@@ -37,9 +37,10 @@ interface SubOrigin {
 interface CRMSidebarMenuProps {
   isExpanded: boolean;
   onNavigate?: () => void;
+  onDropdownOpenChange?: (isOpen: boolean) => void;
 }
 
-export function CRMSidebarMenu({ isExpanded, onNavigate }: CRMSidebarMenuProps) {
+export function CRMSidebarMenu({ isExpanded, onNavigate, onDropdownOpenChange }: CRMSidebarMenuProps) {
   const location = useLocation();
   const navigate = useNavigate();
   const [isOpen, setIsOpen] = useState(false);
@@ -265,7 +266,7 @@ export function CRMSidebarMenu({ isExpanded, onNavigate }: CRMSidebarMenuProps) 
                     </button>
                     
                     {/* Origin Actions */}
-                    <DropdownMenu>
+                    <DropdownMenu onOpenChange={onDropdownOpenChange}>
                       <DropdownMenuTrigger asChild>
                         <button 
                           onClick={(e) => e.stopPropagation()}
@@ -309,7 +310,7 @@ export function CRMSidebarMenu({ isExpanded, onNavigate }: CRMSidebarMenuProps) 
                           </button>
                           
                           {/* Sub-origin Actions */}
-                          <DropdownMenu>
+                          <DropdownMenu onOpenChange={onDropdownOpenChange}>
                             <DropdownMenuTrigger asChild>
                               <button 
                                 onClick={(e) => e.stopPropagation()}
