@@ -1407,31 +1407,31 @@ function AnimatedCircleSection() {
           {/* Circle */}
           <div className="relative w-[65vw] h-[65vw] md:w-[450px] md:h-[450px] lg:w-[520px] lg:h-[520px] xl:w-[580px] xl:h-[580px] flex-shrink-0 my-8 md:my-0">
             {/* Passo 01 - Top */}
-            <div className="absolute top-[2%] md:top-[10%] left-[50%] md:left-[42%] -translate-x-1/2 -translate-y-full text-center">
+            <div className="absolute top-[5%] md:top-[8%] left-[50%] md:left-[42%] -translate-x-1/2 -translate-y-full text-center">
               <span className="text-[9px] md:text-xs text-muted-foreground">Passo 01</span>
               <p className="text-[10px] md:text-sm font-bold text-foreground">Analisa</p>
             </div>
             
             {/* Passo 02 - Upper right */}
-            <div className="absolute top-[22%] md:top-[28%] left-[85%] md:left-[85%] text-left">
+            <div className="absolute top-[25%] md:top-[28%] left-[88%] md:left-[85%] text-left pl-2">
               <span className="text-[9px] md:text-xs text-muted-foreground">Passo 02</span>
               <p className="text-[10px] md:text-sm font-bold text-foreground">Segmenta</p>
             </div>
             
             {/* Passo 03 - Lower right */}
-            <div className="absolute top-[70%] md:top-[72%] left-[85%] md:left-[80%] text-left">
+            <div className="absolute top-[73%] md:top-[72%] left-[82%] md:left-[80%] text-left pl-2">
               <span className="text-[9px] md:text-xs text-muted-foreground">Passo 03</span>
               <p className="text-[10px] md:text-sm font-bold text-foreground">Anuncia</p>
             </div>
             
-            {/* Passo 04 - Bottom left */}
-            <div className="absolute top-[95%] md:top-[88%] left-[50%] md:left-[35%] -translate-x-1/2 text-center">
+            {/* Passo 04 - Bottom */}
+            <div className="absolute top-[92%] md:top-[88%] left-[35%] md:left-[35%] -translate-x-1/2 text-center">
               <span className="text-[9px] md:text-xs text-muted-foreground">Passo 04</span>
               <p className="text-[10px] md:text-sm font-bold text-foreground">Converte</p>
             </div>
             
             {/* Passo 05 - Left */}
-            <div className="absolute top-[42%] md:top-[44%] right-[85%] md:right-[85%] text-right whitespace-nowrap">
+            <div className="absolute top-[45%] md:top-[44%] left-[12%] md:left-[15%] -translate-x-full text-right pr-2 whitespace-nowrap">
               <span className="text-[9px] md:text-xs text-muted-foreground">Passo 05</span>
               <p className="text-[10px] md:text-sm font-bold text-foreground">Escala</p>
             </div>
