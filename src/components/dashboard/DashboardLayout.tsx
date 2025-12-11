@@ -20,6 +20,7 @@ let globalHoverState = false;
 const DashboardLayout = ({ children }: DashboardLayoutProps) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isHovered, setIsHovered] = useState(globalHoverState);
+  const [dropdownOpen, setDropdownOpen] = useState(false);
   const sidebarRef = useRef<HTMLElement>(null);
   const location = useLocation();
 
@@ -34,11 +35,13 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
   }, []);
 
   const handleMouseLeave = useCallback(() => {
+    // Don't collapse if dropdown is open
+    if (dropdownOpen) return;
     globalHoverState = false;
     setIsHovered(false);
-  }, []);
+  }, [dropdownOpen]);
 
-  const shouldBeExpanded = isHovered || sidebarOpen;
+  const shouldBeExpanded = isHovered || sidebarOpen || dropdownOpen;
 
   return (
     <div className="min-h-screen bg-background">
@@ -110,7 +113,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
               })}
               
               {/* CRM Menu with Origins/Sub-origins */}
-              <CRMSidebarMenu isExpanded={shouldBeExpanded} />
+              <CRMSidebarMenu isExpanded={shouldBeExpanded} onDropdownOpenChange={setDropdownOpen} />
             </div>
           </nav>
 
