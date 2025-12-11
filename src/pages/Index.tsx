@@ -1444,8 +1444,8 @@ function AnimatedCircleSection() {
               {/* CRIATIVOS */}
               <div className="group relative p-5 rounded-2xl bg-gradient-to-br from-background to-muted/50 border border-border/30 hover:border-primary/30 transition-all duration-300">
                 <div className="flex items-start gap-4">
-                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#F40000] to-[#A10000] flex items-center justify-center flex-shrink-0">
-                    <span className="text-white font-bold text-sm">01</span>
+                  <div className="w-10 h-10 rounded-xl border-2 border-[#F40000] flex items-center justify-center flex-shrink-0">
+                    <span className="text-[#F40000] font-bold text-sm">01</span>
                   </div>
                   <div className="flex-1">
                     <h3 className="font-bold text-foreground text-lg tracking-tight">Criativos</h3>
@@ -1459,8 +1459,8 @@ function AnimatedCircleSection() {
               {/* CRM */}
               <div className="group relative p-5 rounded-2xl bg-gradient-to-br from-background to-muted/50 border border-border/30 hover:border-primary/30 transition-all duration-300">
                 <div className="flex items-start gap-4">
-                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#F40000] to-[#A10000] flex items-center justify-center flex-shrink-0">
-                    <span className="text-white font-bold text-sm">02</span>
+                  <div className="w-10 h-10 rounded-xl border-2 border-[#F40000] flex items-center justify-center flex-shrink-0">
+                    <span className="text-[#F40000] font-bold text-sm">02</span>
                   </div>
                   <div className="flex-1">
                     <h3 className="font-bold text-foreground text-lg tracking-tight">CRM</h3>
@@ -1474,8 +1474,8 @@ function AnimatedCircleSection() {
               {/* PÁGINAS DE VENDA */}
               <div className="group relative p-5 rounded-2xl bg-gradient-to-br from-background to-muted/50 border border-border/30 hover:border-primary/30 transition-all duration-300">
                 <div className="flex items-start gap-4">
-                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#F40000] to-[#A10000] flex items-center justify-center flex-shrink-0">
-                    <span className="text-white font-bold text-sm">03</span>
+                  <div className="w-10 h-10 rounded-xl border-2 border-[#F40000] flex items-center justify-center flex-shrink-0">
+                    <span className="text-[#F40000] font-bold text-sm">03</span>
                   </div>
                   <div className="flex-1">
                     <h3 className="font-bold text-foreground text-lg tracking-tight">Páginas de Venda</h3>
