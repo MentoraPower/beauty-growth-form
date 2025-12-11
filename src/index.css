@@ -1,23 +1,23 @@
 @font-face {
-  font-family: 'Colo';
-  src: url('/fonts/Colo-Regular.woff2') format('woff2');
+  font-family: 'RoobertPRO';
+  src: url('/fonts/RoobertPRO-Light.woff2') format('woff2');
+  font-weight: 300;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'RoobertPRO';
+  src: url('/fonts/RoobertPRO-Regular.woff2') format('woff2');
   font-weight: 400;
   font-style: normal;
   font-display: swap;
 }
 
 @font-face {
-  font-family: 'Metropolis';
-  src: url('/fonts/Metropolis-Regular.woff2') format('woff2');
-  font-weight: 400;
-  font-style: normal;
-  font-display: swap;
-}
-
-@font-face {
-  font-family: 'Metropolis';
-  src: url('/fonts/Metropolis-Bold.woff2') format('woff2');
-  font-weight: 700;
+  font-family: 'RoobertPRO';
+  src: url('/fonts/RoobertPRO-Medium.woff2') format('woff2');
+  font-weight: 500;
   font-style: normal;
   font-display: swap;
 }
