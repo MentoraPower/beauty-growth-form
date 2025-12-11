@@ -284,8 +284,8 @@ export function KanbanBoard() {
   const displayLeads = localLeads.length > 0 ? localLeads : leads;
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
+    <div className="flex flex-col h-[calc(100vh-8rem)]">
+      <div className="flex items-center justify-between mb-4">
         <h1 className="text-2xl font-bold">Lista geral comercial</h1>
         <div className="flex items-center gap-2">
           <div className="flex items-center border rounded-lg overflow-hidden">
@@ -333,7 +333,7 @@ export function KanbanBoard() {
             },
           }}
         >
-          <div className="flex gap-4 overflow-x-auto pb-4">
+          <div className="flex gap-4 overflow-x-auto flex-1 pb-4">
             {pipelines.map((pipeline) => {
               const pipelineLeads = displayLeads
                 .filter((lead) => lead.pipeline_id === pipeline.id)
