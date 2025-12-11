@@ -1454,7 +1454,10 @@ function AnimatedCircleSection() {
                     <span className="text-[#F40000] font-bold text-xs">01</span>
                   </div>
                   <div className="flex-1">
-                    <h3 className="font-bold text-foreground text-base lg:text-sm tracking-tight">Criativos</h3>
+                    <h3 className="font-bold text-foreground text-base lg:text-sm tracking-tight flex items-center gap-1">
+                      <ArrowRight className="w-3 h-3 text-[#F40000]" />
+                      Criativos
+                    </h3>
                     <p className="text-sm lg:text-xs text-muted-foreground mt-1 leading-relaxed">
                       Anúncios criados por copywriters e designers com foco em conversão
                     </p>
@@ -1469,7 +1472,10 @@ function AnimatedCircleSection() {
                     <span className="text-[#F40000] font-bold text-xs">02</span>
                   </div>
                   <div className="flex-1">
-                    <h3 className="font-bold text-foreground text-base lg:text-sm tracking-tight">CRM</h3>
+                    <h3 className="font-bold text-foreground text-base lg:text-sm tracking-tight flex items-center gap-1">
+                      <ArrowRight className="w-3 h-3 text-[#F40000]" />
+                      CRM
+                    </h3>
                     <p className="text-sm lg:text-xs text-muted-foreground mt-1 leading-relaxed">
                       Gerencie relacionamentos e visualize seu funil de vendas em um só lugar
                     </p>
@@ -1484,7 +1490,10 @@ function AnimatedCircleSection() {
                     <span className="text-[#F40000] font-bold text-xs">03</span>
                   </div>
                   <div className="flex-1">
-                    <h3 className="font-bold text-foreground text-base lg:text-sm tracking-tight">Páginas de Venda</h3>
+                    <h3 className="font-bold text-foreground text-base lg:text-sm tracking-tight flex items-center gap-1">
+                      <ArrowRight className="w-3 h-3 text-[#F40000]" />
+                      Páginas de Venda
+                    </h3>
                     <p className="text-sm lg:text-xs text-muted-foreground mt-1 leading-relaxed">
                       Landing pages com as melhores práticas do mercado digital
                     </p>
