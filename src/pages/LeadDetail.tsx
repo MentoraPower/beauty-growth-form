@@ -13,6 +13,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { motion } from "framer-motion";
 import { ActivitiesBoard } from "@/components/activities/ActivitiesBoard";
 import { LeadTagsManager } from "@/components/crm/LeadTagsManager";
+import { LeadTrackingTimeline } from "@/components/crm/LeadTrackingTimeline";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -52,6 +53,11 @@ interface LeadData {
   estimated_revenue: number | null;
   can_afford: string | null;
   wants_more_info: boolean | null;
+  utm_source: string | null;
+  utm_medium: string | null;
+  utm_campaign: string | null;
+  utm_term: string | null;
+  utm_content: string | null;
 }
 
 interface Pipeline {
@@ -63,6 +69,7 @@ interface Pipeline {
 const tabs = [
   { id: "atividades", label: "Atividades" },
   { id: "contato", label: "Contato" },
+  { id: "rastreamento", label: "Rastreamento" },
 ];
 
 export default function LeadDetail() {
@@ -485,6 +492,19 @@ export default function LeadDetail() {
                 </CardContent>
               </Card>
             </div>
+          )}
+
+          {activeTab === "rastreamento" && (
+            <LeadTrackingTimeline
+              leadId={lead.id}
+              utmData={{
+                utm_source: lead.utm_source,
+                utm_medium: lead.utm_medium,
+                utm_campaign: lead.utm_campaign,
+                utm_term: lead.utm_term,
+                utm_content: lead.utm_content,
+              }}
+            />
           )}
         </div>
       </div>

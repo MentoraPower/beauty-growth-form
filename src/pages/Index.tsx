@@ -196,6 +196,26 @@ const Index = () => {
   // Track if affordability question should be shown
   const [showAffordabilityQuestion, setShowAffordabilityQuestion] = useState(false);
   
+  // UTM parameters
+  const [utmParams, setUtmParams] = useState({
+    utm_source: null as string | null,
+    utm_medium: null as string | null,
+    utm_campaign: null as string | null,
+    utm_term: null as string | null,
+    utm_content: null as string | null,
+  });
+
+  // Capture UTM params from URL on mount
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    setUtmParams({
+      utm_source: urlParams.get('utm_source'),
+      utm_medium: urlParams.get('utm_medium'),
+      utm_campaign: urlParams.get('utm_campaign'),
+      utm_term: urlParams.get('utm_term'),
+      utm_content: urlParams.get('utm_content'),
+    });
+  }, []);
   // Function to mask phone number (show DDD and last 4 digits)
   const maskPhoneNumber = (phone: string, countryCode: string): string => {
     if (!phone || phone.length < 4) return phone;
@@ -306,6 +326,11 @@ const Index = () => {
         workspace_type: currentFormData.hasPhysicalSpace === null ? "" : (currentFormData.hasPhysicalSpace ? "physical" : "home"),
         years_experience: currentFormData.yearsOfExperience || "",
         can_afford: currentFormData.canAfford,
+        utm_source: utmParams.utm_source,
+        utm_medium: utmParams.utm_medium,
+        utm_campaign: utmParams.utm_campaign,
+        utm_term: utmParams.utm_term,
+        utm_content: utmParams.utm_content,
       };
 
       // If we already have a lead ID (from existing lead or partial save), update it
@@ -343,6 +368,11 @@ const Index = () => {
             years_experience: currentFormData.yearsOfExperience || "",
             can_afford: currentFormData.canAfford,
             pipeline_id: basePipeline?.id || null,
+            utm_source: utmParams.utm_source,
+            utm_medium: utmParams.utm_medium,
+            utm_campaign: utmParams.utm_campaign,
+            utm_term: utmParams.utm_term,
+            utm_content: utmParams.utm_content,
           })
           .select("id")
           .single();
@@ -1075,7 +1105,12 @@ const Index = () => {
                   can_afford: formData.canAfford,
                   wants_more_info: formData.wantsMoreInfo,
                   estimated_revenue: aiAnalysis?.estimatedRevenue || null,
-                  pipeline_id: basePipeline?.id || null
+                  pipeline_id: basePipeline?.id || null,
+                  utm_source: utmParams.utm_source,
+                  utm_medium: utmParams.utm_medium,
+                  utm_campaign: utmParams.utm_campaign,
+                  utm_term: utmParams.utm_term,
+                  utm_content: utmParams.utm_content,
                 };
                 
                 let error;
