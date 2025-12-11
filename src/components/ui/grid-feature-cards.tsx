@@ -17,13 +17,13 @@ export function FeatureCard({ feature, className, ...props }: FeatureCardPorps) 
 	return (
 		<div className={cn('relative group', className)} {...props}>
 			{/* Corner squares - outside the overflow-hidden container */}
-			<div className="absolute -top-1 -left-1 w-2 h-2 border border-foreground/20 z-10 transition-colors group-hover:border-red-500 group-hover:bg-red-500" />
-			<div className="absolute -top-1 -right-1 w-2 h-2 border border-foreground/20 z-10 transition-colors group-hover:border-red-500 group-hover:bg-red-500" />
-			<div className="absolute -bottom-1 -left-1 w-2 h-2 border border-foreground/20 z-10 transition-colors group-hover:border-red-500 group-hover:bg-red-500" />
-			<div className="absolute -bottom-1 -right-1 w-2 h-2 border border-foreground/20 z-10 transition-colors group-hover:border-red-500 group-hover:bg-red-500" />
+			<div className="absolute -top-0.5 -left-0.5 w-1.5 h-1.5 border border-foreground/20 z-10 transition-colors group-hover:border-red-500 group-hover:bg-red-500" />
+			<div className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 border border-foreground/20 z-10 transition-colors group-hover:border-red-500 group-hover:bg-red-500" />
+			<div className="absolute -bottom-0.5 -left-0.5 w-1.5 h-1.5 border border-foreground/20 z-10 transition-colors group-hover:border-red-500 group-hover:bg-red-500" />
+			<div className="absolute -bottom-0.5 -right-0.5 w-1.5 h-1.5 border border-foreground/20 z-10 transition-colors group-hover:border-red-500 group-hover:bg-red-500" />
 			
 			{/* Card content with overflow hidden */}
-			<div className="relative p-6 overflow-hidden h-full">
+			<div className="relative p-4 overflow-hidden h-full">
 				<div className="pointer-events-none absolute top-0 left-1/2 -mt-2 -ml-20 h-full w-full overflow-hidden [mask-image:linear-gradient(white,transparent)]">
 					<div className="from-foreground/5 to-foreground/1 absolute inset-0 bg-gradient-to-r [mask-image:radial-gradient(farthest-side_at_top,white,transparent)] opacity-100">
 						<GridPattern
@@ -36,9 +36,9 @@ export function FeatureCard({ feature, className, ...props }: FeatureCardPorps) 
 						/>
 					</div>
 				</div>
-				<feature.icon className="text-foreground/75 size-6 md:size-8 relative z-10" strokeWidth={1} aria-hidden />
-			<h3 className="mt-10 text-lg md:text-xl lg:text-2xl font-bold relative z-10">{feature.title}</h3>
-			<p className="text-muted-foreground relative z-20 mt-2 text-sm md:text-base font-light leading-relaxed">{feature.description}</p>
+				<feature.icon className="text-foreground/75 size-5 md:size-6 relative z-10" strokeWidth={1} aria-hidden />
+			<h3 className="mt-6 text-base md:text-lg font-bold relative z-10">{feature.title}</h3>
+			<p className="text-muted-foreground relative z-20 mt-1.5 text-xs md:text-sm font-light leading-relaxed">{feature.description}</p>
 			</div>
 		</div>
 	);
