@@ -1440,41 +1440,50 @@ function AnimatedCircleSection() {
               Montamos o marketing do seu negócio conforme a necessidade dele
             </h2>
             
-            <div className="space-y-6">
+            <div className="space-y-4">
               {/* CRIATIVOS */}
-              <div className="p-4 rounded-xl bg-muted/30 border border-border/50">
-                <h3 className="font-bold text-foreground mb-2">CRIATIVOS</h3>
-                <p className="text-sm text-muted-foreground">
-                  Seus anúncios criados pelos copywriters e designers da Scale
-                </p>
-                <p className="text-sm text-muted-foreground">
-                  Mais foco em conversão, não apenas em estética
-                </p>
+              <div className="group relative p-5 rounded-2xl bg-gradient-to-br from-background to-muted/50 border border-border/30 hover:border-primary/30 transition-all duration-300">
+                <div className="flex items-start gap-4">
+                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#F40000] to-[#A10000] flex items-center justify-center flex-shrink-0">
+                    <span className="text-white font-bold text-sm">01</span>
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="font-bold text-foreground text-lg tracking-tight">Criativos</h3>
+                    <p className="text-sm text-muted-foreground mt-1 leading-relaxed">
+                      Anúncios criados por copywriters e designers com foco em conversão
+                    </p>
+                  </div>
+                </div>
               </div>
 
               {/* CRM */}
-              <div className="p-4 rounded-xl bg-muted/30 border border-border/50">
-                <h3 className="font-bold text-foreground mb-2">CRM</h3>
-                <p className="text-sm text-muted-foreground">
-                  Gerencie o relacionamento com seu cliente em um só lugar
-                </p>
-                <p className="text-sm text-muted-foreground">
-                  Visualize todo o seu funil de vendas
-                </p>
-                <p className="text-sm text-muted-foreground mt-2 font-medium">
-                  Mantenha conexão com seus clientes e venda mais
-                </p>
+              <div className="group relative p-5 rounded-2xl bg-gradient-to-br from-background to-muted/50 border border-border/30 hover:border-primary/30 transition-all duration-300">
+                <div className="flex items-start gap-4">
+                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#F40000] to-[#A10000] flex items-center justify-center flex-shrink-0">
+                    <span className="text-white font-bold text-sm">02</span>
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="font-bold text-foreground text-lg tracking-tight">CRM</h3>
+                    <p className="text-sm text-muted-foreground mt-1 leading-relaxed">
+                      Gerencie relacionamentos e visualize seu funil de vendas em um só lugar
+                    </p>
+                  </div>
+                </div>
               </div>
 
               {/* PÁGINAS DE VENDA */}
-              <div className="p-4 rounded-xl bg-muted/30 border border-border/50">
-                <h3 className="font-bold text-foreground mb-2">PÁGINAS DE VENDA</h3>
-                <p className="text-sm text-muted-foreground">
-                  Landing pages projetadas para trazer oportunidades de vendas
-                </p>
-                <p className="text-sm text-muted-foreground">
-                  Feitas com as melhores práticas do mercado digital
-                </p>
+              <div className="group relative p-5 rounded-2xl bg-gradient-to-br from-background to-muted/50 border border-border/30 hover:border-primary/30 transition-all duration-300">
+                <div className="flex items-start gap-4">
+                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#F40000] to-[#A10000] flex items-center justify-center flex-shrink-0">
+                    <span className="text-white font-bold text-sm">03</span>
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="font-bold text-foreground text-lg tracking-tight">Páginas de Venda</h3>
+                    <p className="text-sm text-muted-foreground mt-1 leading-relaxed">
+                      Landing pages com as melhores práticas do mercado digital
+                    </p>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
