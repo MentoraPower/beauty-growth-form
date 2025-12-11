@@ -218,47 +218,49 @@ export default function LeadDetail() {
           </span>
         </div>
 
-        {/* Header with Avatar and Name */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            {/* Avatar - smaller */}
-            <div className="h-8 w-8 rounded-full bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center border border-black/5">
-              <User className="h-4 w-4 text-primary/70" />
+        {/* Header with Avatar, Name and Tags */}
+        <div>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              {/* Avatar - smaller */}
+              <div className="h-8 w-8 rounded-full bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center border border-black/5">
+                <User className="h-4 w-4 text-primary/70" />
+              </div>
+              
+              {/* Name and Company */}
+              <div>
+                <p className={`uppercase tracking-wide ${lead.clinic_name ? "text-xs text-muted-foreground font-medium" : "text-[10px] text-muted-foreground/70"}`}>
+                  {lead.clinic_name || "SEM EMPRESA"}
+                </p>
+                <h1 className="text-xl font-bold leading-tight">
+                  {lead.name === "Incompleto" ? "incompleto" : lead.name}
+                </h1>
+              </div>
             </div>
             
-            {/* Name and Company */}
-            <div>
-              <p className={`uppercase tracking-wide ${lead.clinic_name ? "text-xs text-muted-foreground font-medium" : "text-[10px] text-muted-foreground/70"}`}>
-                {lead.clinic_name || "SEM EMPRESA"}
-              </p>
-              <h1 className="text-xl font-bold">
-                {lead.name === "Incompleto" ? "incompleto" : lead.name}
-              </h1>
-            </div>
+            {/* Three dots menu */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="icon" className="h-10 w-10">
+                  <MoreVertical className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem 
+                  className="text-destructive focus:text-destructive cursor-pointer"
+                  onClick={() => setShowDeleteDialog(true)}
+                >
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Excluir lead
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
-          
-          {/* Three dots menu */}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="icon" className="h-10 w-10">
-                <MoreVertical className="h-4 w-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem 
-                className="text-destructive focus:text-destructive cursor-pointer"
-                onClick={() => setShowDeleteDialog(true)}
-              >
-                <Trash2 className="h-4 w-4 mr-2" />
-                Excluir lead
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
 
-        {/* Tags Section - aligned with profile content */}
-        <div className="pl-[44px] -mt-5">
-          <LeadTagsManager leadId={lead.id} />
+          {/* Tags Section - directly below name */}
+          <div className="pl-[44px] mt-0.5">
+            <LeadTagsManager leadId={lead.id} />
+          </div>
         </div>
 
         {/* Separator */}
