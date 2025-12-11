@@ -322,14 +322,10 @@ const Index = () => {
           .update(leadData)
           .eq("id", leadIdToUpdate);
       } else {
-        // Get Base pipeline id only for NEW leads
-        const { data: basePipeline } = await supabase
-          .from("pipelines")
-          .select("id")
-          .eq("nome", "Base")
-          .maybeSingle();
+        // Create new lead with fixed pipeline "Novo" and sub-origin "Entrada"
+        const PIPELINE_NOVO_ID = 'b62bdfc2-cfda-4cc2-9a72-f87f9ac1f724';
+        const SUB_ORIGIN_ENTRADA_ID = '00000000-0000-0000-0000-000000000002';
         
-        // Create new partial lead with Base pipeline
         const { data, error } = await supabase
           .from("leads")
           .insert({
@@ -345,7 +341,8 @@ const Index = () => {
             workspace_type: currentFormData.hasPhysicalSpace === null ? "" : (currentFormData.hasPhysicalSpace ? "physical" : "home"),
             years_experience: currentFormData.yearsOfExperience || "",
             can_afford: currentFormData.canAfford,
-            pipeline_id: basePipeline?.id || null,
+            pipeline_id: PIPELINE_NOVO_ID,
+            sub_origin_id: SUB_ORIGIN_ENTRADA_ID,
             utm_source: utmParams.utm_source,
             utm_medium: utmParams.utm_medium,
             utm_campaign: utmParams.utm_campaign,
