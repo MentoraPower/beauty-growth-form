@@ -1398,6 +1398,11 @@ function AnimatedCircleSection() {
   return (
     <section className="pt-4 pb-16 md:py-16 overflow-visible">
       <div className="mx-auto w-full max-w-6xl px-6 md:px-8">
+        {/* Title - Mobile only (above circle) */}
+        <h2 className="lg:hidden text-xl md:text-2xl font-bold tracking-tighter text-foreground mb-4 text-center mx-auto max-w-sm" style={{ letterSpacing: '-0.04em' }}>
+          Montamos o marketing do seu negócio conforme a necessidade dele
+        </h2>
+        
         <div className="flex flex-col lg:flex-row-reverse items-center gap-8 lg:gap-16">
           {/* Circle */}
           <div className="relative w-[85vw] h-[85vw] md:w-[450px] md:h-[450px] lg:w-[520px] lg:h-[520px] xl:w-[580px] xl:h-[580px] flex-shrink-0">
@@ -1436,7 +1441,8 @@ function AnimatedCircleSection() {
 
           {/* Content */}
           <div className="flex-1 text-center lg:text-left">
-            <h2 className="text-xl md:text-2xl lg:text-3xl font-bold tracking-tighter text-foreground mb-8 text-center lg:text-left max-w-xs lg:max-w-sm" style={{ letterSpacing: '-0.04em' }}>
+            {/* Title - Desktop only */}
+            <h2 className="hidden lg:block text-lg lg:text-3xl font-bold tracking-tighter text-foreground mb-8 lg:text-left max-w-xs lg:max-w-sm" style={{ letterSpacing: '-0.04em' }}>
               Montamos o marketing do seu negócio conforme a necessidade dele
             </h2>
             
