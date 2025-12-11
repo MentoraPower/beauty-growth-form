@@ -6,7 +6,7 @@ import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Mail, Calendar, Building2, Clock, DollarSign, Users, Briefcase, MoreVertical, Trash2, User } from "lucide-react";
+import { Mail, Calendar, Building2, Clock, DollarSign, Users, Briefcase, MoreVertical, Trash2, User } from "lucide-react";
 import Instagram from "@/components/icons/Instagram";
 import WhatsApp from "@/components/icons/WhatsApp";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -204,29 +204,34 @@ export default function LeadDetail() {
   return (
     <DashboardLayout>
       <div className="space-y-3">
+        {/* Breadcrumb Navigation */}
+        <div className="flex items-center gap-2 text-sm">
+          <button
+            onClick={() => navigate("/admin/crm")}
+            className="text-muted-foreground hover:text-foreground transition-colors"
+          >
+            Lista Geral
+          </button>
+          <span className="text-muted-foreground">&gt;</span>
+          <span className="text-foreground font-medium">
+            {lead.name === "Incompleto" ? "incompleto" : lead.name}
+          </span>
+        </div>
+
         {/* Header with Avatar and Name */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={() => navigate("/admin/crm")}
-              className="h-8 w-8"
-            >
-              <ArrowLeft className="h-3.5 w-3.5" />
-            </Button>
-            
-            {/* Avatar */}
-            <div className="h-10 w-10 rounded-full bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center border border-black/5">
-              <User className="h-5 w-5 text-primary/70" />
+            {/* Avatar - smaller */}
+            <div className="h-8 w-8 rounded-full bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center border border-black/5">
+              <User className="h-4 w-4 text-primary/70" />
             </div>
             
-            {/* Name and Badges */}
+            {/* Name and Company */}
             <div>
               <p className={`uppercase tracking-wide ${lead.clinic_name ? "text-xs text-muted-foreground font-medium" : "text-[10px] text-muted-foreground/70"}`}>
                 {lead.clinic_name || "SEM EMPRESA"}
               </p>
-              <h1 className="text-lg font-bold">
+              <h1 className="text-xl font-bold">
                 {lead.name === "Incompleto" ? "incompleto" : lead.name}
               </h1>
             </div>
@@ -252,7 +257,7 @@ export default function LeadDetail() {
         </div>
 
         {/* Tags Section - aligned with profile content */}
-        <div className="pl-[52px] -mt-2">
+        <div className="pl-[44px] -mt-2">
           <LeadTagsManager leadId={lead.id} />
         </div>
 
