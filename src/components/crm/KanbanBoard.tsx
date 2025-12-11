@@ -407,9 +407,16 @@ export function KanbanBoard() {
 
         <DragOverlay dropAnimation={null}>
           {activeLead ? (
-            <div className="rotate-3 scale-105">
-              <KanbanCard lead={activeLead} isDragging />
-            </div>
+            viewMode === "list" ? (
+              <div className="bg-white border border-primary/30 rounded-lg px-4 py-2 shadow-lg opacity-90">
+                <span className="font-medium text-sm">{activeLead.name}</span>
+                <span className="text-muted-foreground text-sm ml-4">{activeLead.email}</span>
+              </div>
+            ) : (
+              <div className="rotate-3 scale-105">
+                <KanbanCard lead={activeLead} isDragging />
+              </div>
+            )
           ) : null}
         </DragOverlay>
       </DndContext>
