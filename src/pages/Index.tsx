@@ -1436,7 +1436,7 @@ function AnimatedCircleSection() {
 
           {/* Content */}
           <div className="flex-1 text-center lg:text-left">
-            <h2 className="text-xl md:text-2xl lg:text-3xl font-bold tracking-tighter text-foreground mb-8 text-center lg:text-left max-w-sm lg:max-w-md" style={{ letterSpacing: '-0.04em' }}>
+            <h2 className="text-xl md:text-2xl lg:text-3xl font-bold tracking-tighter text-foreground mb-8 text-center lg:text-left max-w-xs lg:max-w-sm" style={{ letterSpacing: '-0.04em' }}>
               Montamos o marketing do seu negócio conforme a necessidade dele
             </h2>
             
