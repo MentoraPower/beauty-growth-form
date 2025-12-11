@@ -43,10 +43,29 @@ interface CRMSidebarMenuProps {
 export function CRMSidebarMenu({ isExpanded, onNavigate, onDropdownOpenChange }: CRMSidebarMenuProps) {
   const location = useLocation();
   const navigate = useNavigate();
-  const [isOpen, setIsOpen] = useState(false);
   const [origins, setOrigins] = useState<Origin[]>([]);
   const [subOrigins, setSubOrigins] = useState<SubOrigin[]>([]);
-  const [expandedOrigins, setExpandedOrigins] = useState<Set<string>>(new Set());
+  
+  // Load persisted state from localStorage
+  const [isOpen, setIsOpen] = useState(() => {
+    const saved = localStorage.getItem('crm_menu_open');
+    return saved ? JSON.parse(saved) : false;
+  });
+  
+  const [expandedOrigins, setExpandedOrigins] = useState<Set<string>>(() => {
+    const saved = localStorage.getItem('crm_expanded_origins');
+    return saved ? new Set(JSON.parse(saved)) : new Set();
+  });
+
+  // Persist isOpen to localStorage
+  useEffect(() => {
+    localStorage.setItem('crm_menu_open', JSON.stringify(isOpen));
+  }, [isOpen]);
+
+  // Persist expandedOrigins to localStorage
+  useEffect(() => {
+    localStorage.setItem('crm_expanded_origins', JSON.stringify([...expandedOrigins]));
+  }, [expandedOrigins]);
   
   // Dialog states
   const [dialogOpen, setDialogOpen] = useState(false);
