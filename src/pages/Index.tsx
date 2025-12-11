@@ -1150,7 +1150,7 @@ const Index = () => {
                 <p className="text-sm text-muted-foreground mt-6">
                   Em breve vamos entrar em contato pelo seu WhatsApp!
                 </p>
-                <p className="copyright">© Copyright 2025 Scale Beauty</p>
+                <p className="copyright">© Copyright 2025 Scale Beauty - Desenvolvido por Scale Beauty</p>
               </>}
           </div>;
       default:
@@ -1232,7 +1232,7 @@ const Index = () => {
                     política de privacidade
                   </Link>
                 </p>
-                <p className="copyright mt-4">© Copyright 2025 Scale Beauty</p>
+                <p className="copyright mt-4">© Copyright 2025 Scale Beauty - Desenvolvido por Scale Beauty</p>
               </div>
             </div>}
         </div>
@@ -1303,7 +1303,7 @@ const Index = () => {
                   política de privacidade
                 </Link>
               </p>
-              <p className="copyright mt-4">© Copyright 2025 Scale Beauty</p>
+              <p className="copyright mt-4">© Copyright 2025 Scale Beauty - Desenvolvido por Scale Beauty</p>
             </div>
           </div>}
       </div>
