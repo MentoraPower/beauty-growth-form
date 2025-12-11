@@ -3,24 +3,97 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useNavigate } from "react-router-dom";
+import { useDroppable } from "@dnd-kit/core";
+import { useSortable } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 
 interface LeadsListProps {
   leads: Lead[];
   pipelines: Pipeline[];
+  activeDragId?: string | null;
+}
+
+interface DraggableRowProps {
+  lead: Lead;
+  isDragging?: boolean;
+}
+
+function DraggableRow({ lead, isDragging: isBeingDraggedGlobally }: DraggableRowProps) {
+  const navigate = useNavigate();
+  
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ 
+    id: lead.id,
+    transition: {
+      duration: 200,
+      easing: 'cubic-bezier(0.25, 1, 0.5, 1)',
+    },
+  });
+
+  const style: React.CSSProperties = {
+    transform: CSS.Transform.toString(transform),
+    transition: transition || 'transform 200ms cubic-bezier(0.25, 1, 0.5, 1)',
+    opacity: isDragging ? 0 : 1,
+  };
+
+  const handleClick = (e: React.MouseEvent) => {
+    if (!isDragging) {
+      navigate(`/admin/crm/${lead.id}`);
+    }
+  };
+
+  return (
+    <TableRow 
+      ref={setNodeRef}
+      style={style}
+      {...attributes}
+      {...listeners}
+      className="bg-white hover:bg-muted/20 cursor-grab active:cursor-grabbing"
+      onClick={handleClick}
+    >
+      <TableCell className="font-medium text-sm">{lead.name}</TableCell>
+      <TableCell className="text-muted-foreground text-sm">{lead.email}</TableCell>
+      <TableCell className="text-muted-foreground text-sm">
+        {lead.country_code} {lead.whatsapp}
+      </TableCell>
+      <TableCell className="text-muted-foreground text-sm">@{lead.instagram}</TableCell>
+      <TableCell className="text-muted-foreground text-sm">
+        {format(new Date(lead.created_at), "dd/MM/yyyy", { locale: ptBR })}
+      </TableCell>
+    </TableRow>
+  );
 }
 
 interface PipelineListProps {
   pipeline: Pipeline;
   leads: Lead[];
+  activeDragId?: string | null;
 }
 
-function PipelineList({ pipeline, leads }: PipelineListProps) {
-  const navigate = useNavigate();
+function PipelineList({ pipeline, leads, activeDragId }: PipelineListProps) {
+  const { setNodeRef, isOver } = useDroppable({
+    id: pipeline.id,
+  });
 
   return (
-    <div className="rounded-xl border border-black/10 bg-muted/40 overflow-hidden">
+    <div 
+      ref={setNodeRef}
+      className={`rounded-xl border overflow-hidden transition-all ${
+        isOver 
+          ? "border-primary/30 bg-primary/5" 
+          : "border-black/10 bg-muted/40"
+      }`}
+    >
       {/* Pipeline Header */}
-      <div className="px-4 py-3 border-b border-black/5 bg-muted/20">
+      <div className={`px-4 py-3 border-b transition-colors ${
+        isOver ? "border-primary/20 bg-primary/10" : "border-black/5 bg-muted/20"
+      }`}>
         <div className="flex items-center gap-2">
           <h3 className="font-semibold text-sm">{pipeline.nome}</h3>
           <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-full">
@@ -42,26 +115,18 @@ function PipelineList({ pipeline, leads }: PipelineListProps) {
         </TableHeader>
         <TableBody>
           {leads.map((lead) => (
-            <TableRow 
+            <DraggableRow 
               key={lead.id} 
-              className="bg-white hover:bg-muted/20 cursor-pointer"
-              onClick={() => navigate(`/admin/crm/${lead.id}`)}
-            >
-              <TableCell className="font-medium text-sm">{lead.name}</TableCell>
-              <TableCell className="text-muted-foreground text-sm">{lead.email}</TableCell>
-              <TableCell className="text-muted-foreground text-sm">
-                {lead.country_code} {lead.whatsapp}
-              </TableCell>
-              <TableCell className="text-muted-foreground text-sm">@{lead.instagram}</TableCell>
-              <TableCell className="text-muted-foreground text-sm">
-                {format(new Date(lead.created_at), "dd/MM/yyyy", { locale: ptBR })}
-              </TableCell>
-            </TableRow>
+              lead={lead} 
+              isDragging={activeDragId === lead.id}
+            />
           ))}
           {leads.length === 0 && (
             <TableRow>
-              <TableCell colSpan={5} className="text-center text-muted-foreground py-6 text-sm">
-                Nenhum lead
+              <TableCell colSpan={5} className={`text-center py-6 text-sm transition-colors ${
+                isOver ? "text-primary" : "text-muted-foreground"
+              }`}>
+                {isOver ? "Solte aqui" : "Nenhum lead"}
               </TableCell>
             </TableRow>
           )}
@@ -71,7 +136,7 @@ function PipelineList({ pipeline, leads }: PipelineListProps) {
   );
 }
 
-export function LeadsList({ leads, pipelines }: LeadsListProps) {
+export function LeadsList({ leads, pipelines, activeDragId }: LeadsListProps) {
   // Sort pipelines by ordem
   const sortedPipelines = [...pipelines].sort((a, b) => a.ordem - b.ordem);
 
@@ -87,6 +152,7 @@ export function LeadsList({ leads, pipelines }: LeadsListProps) {
             key={pipeline.id}
             pipeline={pipeline}
             leads={pipelineLeads}
+            activeDragId={activeDragId}
           />
         );
       })}
