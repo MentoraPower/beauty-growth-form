@@ -1370,27 +1370,35 @@ function FeaturesSection() {
 }
 
 function AnimatedCircleSection() {
-  const [rotation, setRotation] = useState(0);
-  
-  useEffect(() => {
-    const handleScroll = () => {
-      const scrollY = window.scrollY;
-      // Rotate based on scroll position (1 degree per 5 pixels scrolled)
-      setRotation(scrollY / 5);
-    };
-    
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
-  
-  return <section className="py-12 md:py-20 flex items-center justify-center overflow-hidden">
+  return (
+    <section className="py-12 md:py-20 flex items-center justify-center overflow-hidden">
       <div className="relative">
-        <AnimatedCircle 
-          className="w-[280px] h-[280px] md:w-[450px] md:h-[450px] lg:w-[550px] lg:h-[550px]" 
-          style={{ transform: `rotate(${rotation}deg)` }}
-        />
+        {/* External labels */}
+        <div className="absolute -top-4 right-0 md:right-8 text-right">
+          <span className="text-xs text-muted-foreground">Passo 01</span>
+          <p className="text-sm md:text-base font-bold text-foreground">Entende</p>
+        </div>
+        <div className="absolute top-1/4 -right-16 md:-right-24 text-left">
+          <span className="text-xs text-muted-foreground">Passo 02</span>
+          <p className="text-sm md:text-base font-bold text-foreground">Conecta</p>
+        </div>
+        <div className="absolute -bottom-4 left-1/2 -translate-x-1/2 text-center">
+          <span className="text-xs text-muted-foreground">Passo 03</span>
+          <p className="text-sm md:text-base font-bold text-foreground">Ajuda</p>
+        </div>
+        <div className="absolute top-1/4 -left-16 md:-left-24 text-right">
+          <span className="text-xs text-muted-foreground">Passo 04</span>
+          <p className="text-sm md:text-base font-bold text-foreground">Vende</p>
+        </div>
+        <div className="absolute -top-4 left-0 md:left-8 text-left">
+          <span className="text-xs text-muted-foreground">Passo 05</span>
+          <p className="text-sm md:text-base font-bold text-foreground">Otimiza</p>
+        </div>
+        
+        <AnimatedCircle className="w-[280px] h-[280px] md:w-[450px] md:h-[450px] lg:w-[550px] lg:h-[550px]" />
       </div>
-    </section>;
+    </section>
+  );
 }
 function QuemSomosSection() {
   return <section id="quem-somos" className="w-[calc(100%+2rem)] -mx-4 md:mx-0 md:w-full relative">
