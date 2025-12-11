@@ -28,17 +28,20 @@ export function KanbanCard({ lead, isDragging: isDraggingOverlay }: KanbanCardPr
   } = useSortable({ 
     id: lead.id,
     transition: {
-      duration: 150,
+      duration: 200,
       easing: 'cubic-bezier(0.25, 1, 0.5, 1)',
     },
   });
 
-  const style = {
+  const style: React.CSSProperties = {
     transform: CSS.Transform.toString(transform),
-    transition,
+    transition: transition || 'transform 200ms cubic-bezier(0.25, 1, 0.5, 1)',
+    border: '1px solid #00000020',
+    // Hide the original card when being dragged (placeholder keeps space)
+    opacity: isDragging ? 0 : 1,
   };
 
-  const isBeingDragged = isDragging || isDraggingOverlay;
+  const isBeingDragged = isDraggingOverlay;
 
   // Combine our pointer tracking with dnd-kit's listeners
   const handlePointerDown = (e: React.PointerEvent) => {
@@ -71,14 +74,10 @@ export function KanbanCard({ lead, isDragging: isDraggingOverlay }: KanbanCardPr
   return (
     <Card
       ref={setNodeRef}
-      style={{ ...style, border: '1px solid #00000020' }}
+      style={style}
       {...attributes}
-      className={`cursor-grab active:cursor-grabbing transition-all duration-150 bg-card shadow-none select-none touch-none ${
-        isBeingDragged
-          ? "opacity-100"
-          : isDragging
-          ? "opacity-30"
-          : ""
+      className={`cursor-grab active:cursor-grabbing bg-card shadow-none select-none touch-none ${
+        isBeingDragged ? "opacity-100" : ""
       }`}
       onPointerDown={handlePointerDown}
       onPointerMove={handlePointerMove}
