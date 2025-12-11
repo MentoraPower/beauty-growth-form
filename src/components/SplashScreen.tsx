@@ -40,6 +40,18 @@ const SplashScreen = ({ onComplete }: SplashScreenProps) => {
           className="fixed inset-0 z-50 flex items-center justify-center bg-[#F3F3F3]"
         >
           <div className="flex flex-col items-center gap-1">
+            <motion.span
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{
+                duration: 0.3,
+                delay: 0,
+                ease: "easeOut",
+              }}
+              className="text-[10px] md:text-xs font-light tracking-[0.2em] text-muted-foreground uppercase"
+            >
+              desenvolvido por
+            </motion.span>
             <div className="flex gap-3 md:gap-4">
               {letters.map((letter, index) => (
                 <motion.span
