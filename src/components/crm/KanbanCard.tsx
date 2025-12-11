@@ -75,10 +75,10 @@ export function KanbanCard({ lead, isDragging: isDraggingOverlay }: KanbanCardPr
       {...attributes}
       className={`cursor-grab active:cursor-grabbing transition-all duration-150 bg-card border-black/5 select-none touch-none ${
         isBeingDragged
-          ? "shadow-xl opacity-100 ring-2 ring-primary/20"
+          ? "opacity-100"
           : isDragging
           ? "opacity-30"
-          : "hover:shadow-md hover:border-black/10"
+          : "hover:border-black/10"
       }`}
       onPointerDown={handlePointerDown}
       onPointerMove={handlePointerMove}
