@@ -1347,11 +1347,17 @@ function AnimatedContainer({
 function FeaturesSection() {
   return <section id="servicos" className="py-16 md:py-32">
       <div className="mx-auto w-full max-w-5xl space-y-8 px-6 md:px-4">
-        <AnimatedContainer className="mx-auto max-w-4xl text-center px-2">
-          <h2 className="text-2xl font-bold tracking-tight text-balance md:text-3xl lg:text-4xl xl:font-extrabold mx-0">
-            ​Como a Scale pode te ajudar?                    
-          </h2>
-          
+        <AnimatedContainer className="mx-auto max-w-4xl px-2">
+          <div className="flex items-center justify-center gap-4 md:gap-8">
+            <h2 className="text-2xl font-bold tracking-tight text-balance md:text-3xl lg:text-4xl xl:font-extrabold mx-0 text-center">
+              ​Como a Scale pode te ajudar?                    
+            </h2>
+            <img 
+              src="/circle-animado.svg" 
+              alt="" 
+              className="w-16 h-16 md:w-24 md:h-24 animate-spin-slow flex-shrink-0"
+            />
+          </div>
         </AnimatedContainer>
 
         <AnimatedContainer delay={0.4} className="grid grid-cols-1 gap-4 sm:grid-cols-2">
