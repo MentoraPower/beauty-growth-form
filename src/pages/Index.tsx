@@ -1373,32 +1373,32 @@ function AnimatedCircleSection() {
   return (
     <section className="py-16 md:py-24 flex items-center justify-center overflow-visible">
       <div className="relative w-[280px] h-[280px] md:w-[450px] md:h-[450px] lg:w-[550px] lg:h-[550px]">
-        {/* Passo 01 - Top center (dot 1 position ~42%, 13%) */}
-        <div className="absolute -top-12 left-[35%] text-center">
+        {/* Passo 01 - Top (dot at ~42%, 13%) */}
+        <div className="absolute top-[8%] left-[42%] -translate-x-1/2 -translate-y-full text-center">
           <span className="text-[10px] md:text-xs text-muted-foreground">Passo 01</span>
           <p className="text-xs md:text-sm font-bold text-foreground">Entende</p>
         </div>
         
-        {/* Passo 02 - Upper right (dot 2 position ~83%, 31%) */}
-        <div className="absolute top-[25%] -right-20 md:-right-28 text-left">
+        {/* Passo 02 - Upper right (dot at ~83%, 31%) */}
+        <div className="absolute top-[28%] left-[88%] text-left">
           <span className="text-[10px] md:text-xs text-muted-foreground">Passo 02</span>
           <p className="text-xs md:text-sm font-bold text-foreground">Conecta</p>
         </div>
         
-        {/* Passo 03 - Lower right (dot 3 position ~78%, 76%) */}
-        <div className="absolute bottom-[15%] -right-16 md:-right-24 text-left">
+        {/* Passo 03 - Lower right (dot at ~78%, 76%) */}
+        <div className="absolute top-[74%] left-[82%] text-left">
           <span className="text-[10px] md:text-xs text-muted-foreground">Passo 03</span>
           <p className="text-xs md:text-sm font-bold text-foreground">Ajuda</p>
         </div>
         
-        {/* Passo 04 - Bottom left (dot 4 position ~35%, 85%) */}
-        <div className="absolute -bottom-12 left-[25%] text-center">
+        {/* Passo 04 - Bottom left (dot at ~35%, 85%) */}
+        <div className="absolute top-[90%] left-[35%] -translate-x-1/2 text-center">
           <span className="text-[10px] md:text-xs text-muted-foreground">Passo 04</span>
           <p className="text-xs md:text-sm font-bold text-foreground">Vende</p>
         </div>
         
-        {/* Passo 05 - Left side (dot 5 position ~12%, 46%) */}
-        <div className="absolute top-[40%] -left-20 md:-left-28 text-right">
+        {/* Passo 05 - Left (dot at ~12%, 46%) */}
+        <div className="absolute top-[44%] right-[90%] text-right">
           <span className="text-[10px] md:text-xs text-muted-foreground">Passo 05</span>
           <p className="text-xs md:text-sm font-bold text-foreground">Otimiza</p>
         </div>
