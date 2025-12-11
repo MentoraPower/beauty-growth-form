@@ -53,14 +53,15 @@ const SplashScreen = ({ onComplete }: SplashScreenProps) => {
               return (
                 <motion.span
                   key={index}
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
+                  initial={{ opacity: 0, y: 12 }}
+                  animate={{ opacity: 1, y: 0 }}
                   transition={{
-                    duration: 0.05,
+                    duration: 0.15,
                     delay: index * 0.04,
                     ease: "easeOut",
                   }}
-                  className={isScale ? "font-semibold bg-gradient-to-r from-[#F40000] to-[#A10000] bg-clip-text text-transparent" : ""}
+                  className={`inline-block ${isScale ? "font-semibold bg-gradient-to-r from-[#F40000] to-[#A10000] bg-clip-text text-transparent" : ""}`}
+                  style={{ whiteSpace: "pre" }}
                 >
                   {char}
                 </motion.span>
