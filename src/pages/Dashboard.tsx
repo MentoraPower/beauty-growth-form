@@ -226,37 +226,12 @@ const Dashboard = () => {
     return total.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   };
 
-  if (loading) {
-    return (
-      <DashboardLayout>
-        <div className="space-y-6">
-          <div>
-            <div className="h-7 w-32 bg-muted rounded-lg animate-pulse" />
-            <div className="h-4 w-48 bg-muted rounded-lg animate-pulse mt-2" />
-          </div>
-
-          {/* Stats Cards Skeleton */}
-          <div className="grid grid-cols-2 gap-4">
-            <CardSkeleton />
-            <CardSkeleton />
-          </div>
-
-          {/* Charts Skeleton */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <AreaChartSkeleton />
-            <ChartSkeleton height="200px" />
-          </div>
-
-          {/* Bar Chart Skeleton */}
-          <ChartSkeleton height="300px" />
-        </div>
-      </DashboardLayout>
-    );
-  }
+  // Show content with skeleton placeholders for loading data instead of full skeleton screen
+  const isDataReady = leads.length > 0 || !loading;
 
   return (
     <DashboardLayout>
-      <div className="space-y-6">
+      <div className="space-y-6 fade-in">
         <div>
           <h1 className="text-2xl font-bold text-foreground">Dashboard</h1>
           <p className="text-muted-foreground text-sm mt-1">Visão geral dos seus leads</p>
