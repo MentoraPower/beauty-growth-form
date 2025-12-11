@@ -1377,7 +1377,7 @@ function QuemSomosSection() {
             </div>
             
             {/* Text Content */}
-            <div className="w-full md:w-1/2 text-white text-center md:text-left">
+            <div className="w-full md:w-1/2 text-white text-left">
               <h2 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-6">
                 Quem somos
               </h2>
@@ -1389,7 +1389,7 @@ function QuemSomosSection() {
               </p>
               
               {/* CEO Attribution Cards */}
-              <div className="mt-8 flex flex-wrap justify-center md:justify-start gap-2 md:gap-3">
+              <div className="mt-8 flex flex-wrap justify-start gap-2 md:gap-3">
                 <div className="inline-flex items-center gap-2 md:gap-3 bg-white/10 backdrop-blur-sm rounded-xl px-3 md:px-4 py-2 md:py-3 border border-[#FFFFFF15]">
                   <div className="w-7 h-7 md:w-9 md:h-9 rounded-full border border-white/40 flex items-center justify-center flex-shrink-0">
                     <Building className="w-3 h-3 md:w-4 md:h-4 text-white" />
