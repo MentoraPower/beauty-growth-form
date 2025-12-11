@@ -1309,7 +1309,7 @@ function FeaturesSection() {
     </section>;
 }
 function AnimatedCircleSection() {
-  return <section className="pt-4 pb-16 md:py-16 overflow-visible">
+  return <section className="pt-4 pb-16 md:py-8 overflow-visible">
       <div className="mx-auto w-full max-w-6xl px-6 md:px-8">
         {/* Title - Mobile only (above circle) */}
         <h2 className="lg:hidden text-xl md:text-2xl font-bold tracking-tighter text-foreground mb-4 text-center mx-auto max-w-sm" style={{
@@ -1318,9 +1318,9 @@ function AnimatedCircleSection() {
           Montamos o marketing do seu negócio conforme a necessidade dele
         </h2>
         
-        <div className="flex flex-col lg:flex-row-reverse items-center gap-8 lg:gap-16">
+        <div className="flex flex-col lg:flex-row-reverse items-center gap-8 lg:gap-12">
           {/* Circle */}
-          <div className="relative w-[65vw] h-[65vw] md:w-[450px] md:h-[450px] lg:w-[520px] lg:h-[520px] xl:w-[580px] xl:h-[580px] flex-shrink-0 my-8 md:my-0">
+          <div className="relative w-[65vw] h-[65vw] md:w-[450px] md:h-[450px] lg:w-[420px] lg:h-[420px] xl:w-[480px] xl:h-[480px] flex-shrink-0 my-8 md:my-0">
             {/* Passo 01 - Top */}
             <div className="absolute top-[5%] md:top-[8%] left-[50%] md:left-[42%] -translate-x-1/2 -translate-y-full text-center">
               <span className="text-[9px] md:text-xs text-muted-foreground">Passo 01</span>
