@@ -28,7 +28,6 @@ import { toast } from "sonner";
 import HamburgerMenu from "@/components/HamburgerMenu";
 import { supabase } from "@/integrations/supabase/client";
 import SplashScreen from "@/components/SplashScreen";
-
 interface FormData {
   name: string;
   email: string;
@@ -49,17 +48,16 @@ interface FormData {
 // Format currency for display (from database value in reais)
 const formatCurrencyDisplay = (value: string | number): string => {
   if (!value && value !== 0) return '';
-  
+
   // If it's a number, format directly
   const number = typeof value === 'number' ? value : parseFloat(String(value));
   if (isNaN(number)) return '';
-  
+
   // Format as BRL
   const formatted = number.toLocaleString('pt-BR', {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2
   });
-  
   return `R$ ${formatted}`;
 };
 
@@ -67,22 +65,21 @@ const formatCurrencyDisplay = (value: string | number): string => {
 const handleCurrencyInput = (value: string): string => {
   // Remove everything except digits
   const digits = value.replace(/\D/g, '');
-  
+
   // If empty, return empty placeholder
   if (!digits) return '';
-  
+
   // Convert to cents (pad with leading zeros if needed)
   const cents = parseInt(digits, 10);
-  
+
   // Convert cents to reais (divide by 100)
   const reais = cents / 100;
-  
+
   // Format as BRL currency
   const formatted = reais.toLocaleString('pt-BR', {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2
   });
-  
   return `R$ ${formatted}`;
 };
 
@@ -100,16 +97,13 @@ const parseCurrency = (value: string): number => {
 const getMinRevenueFromRange = (range: string): number => {
   // Parse strings like "Até R$ 5.000", "R$ 5.000 a R$ 10.000", "Acima de R$ 50.000"
   const cleanRange = range.replace(/\./g, '').replace(',', '.');
-  
   if (range.toLowerCase().includes('até')) {
     return 0;
   }
-  
   if (range.toLowerCase().includes('acima')) {
     const match = cleanRange.match(/(\d+)/);
     return match ? parseInt(match[1], 10) : 0;
   }
-  
   const match = cleanRange.match(/(\d+)/);
   return match ? parseInt(match[1], 10) : 0;
 };
@@ -119,15 +113,14 @@ const checkAffordability = (revenue: string, weeklyAppointments: string, average
   const minRevenue = getMinRevenueFromRange(revenue);
   const appointments = parseInt(weeklyAppointments, 10) || 0;
   const ticket = parseCurrency(averageTicket);
-  
+
   // Calculate estimated monthly revenue
   const estimatedMonthly = appointments * 4 * ticket;
-  
+
   // Service costs R$ 2,800/month
   // Consider affordable if revenue >= 2800 and estimated monthly is reasonable
   return minRevenue >= 2800 || estimatedMonthly >= 2800;
 };
-
 const Index = () => {
   const [showSplash, setShowSplash] = useState(true);
   const [step, setStep] = useState(1);
@@ -170,17 +163,17 @@ const Index = () => {
     canAfford: null,
     wantsMoreInfo: null
   });
-  
+
   // Track if affordability question should be shown
   const [showAffordabilityQuestion, setShowAffordabilityQuestion] = useState(false);
-  
+
   // UTM parameters
   const [utmParams, setUtmParams] = useState({
     utm_source: null as string | null,
     utm_medium: null as string | null,
     utm_campaign: null as string | null,
     utm_term: null as string | null,
-    utm_content: null as string | null,
+    utm_content: null as string | null
   });
 
   // Capture UTM params from URL on mount
@@ -191,7 +184,7 @@ const Index = () => {
       utm_medium: urlParams.get('utm_medium'),
       utm_campaign: urlParams.get('utm_campaign'),
       utm_term: urlParams.get('utm_term'),
-      utm_content: urlParams.get('utm_content'),
+      utm_content: urlParams.get('utm_content')
     });
   }, []);
   // Function to mask phone number (show DDD and last 4 digits)
@@ -203,26 +196,23 @@ const Index = () => {
     const asterisks = '*'.repeat(Math.max(middleLength, 3));
     return `(${ddd}) ${asterisks}-${lastFour}`;
   };
-  
+
   // Function to check if lead exists by email
   const checkExistingLead = async (email: string) => {
     setIsCheckingLead(true);
     try {
-      const { data, error } = await supabase
-        .from('leads')
-        .select('id, whatsapp, country_code, instagram, service_area, monthly_billing, weekly_attendance, workspace_type, years_experience, average_ticket')
-        .eq('email', email.toLowerCase().trim())
-        .maybeSingle();
-      
+      const {
+        data,
+        error
+      } = await supabase.from('leads').select('id, whatsapp, country_code, instagram, service_area, monthly_billing, weekly_attendance, workspace_type, years_experience, average_ticket').eq('email', email.toLowerCase().trim()).maybeSingle();
       if (error) {
         console.error("Error checking lead:", error);
         return null;
       }
-      
       if (data) {
         console.log("Existing lead found:", data);
         setExistingLead(data);
-        
+
         // Pre-fill form with existing data
         const country = countries.find(c => c.dialCode === data.country_code) || countries[0];
         setFormData(prev => ({
@@ -237,10 +227,8 @@ const Index = () => {
           yearsOfExperience: data.years_experience || "",
           averageTicket: data.average_ticket ? formatCurrencyDisplay(data.average_ticket) : ""
         }));
-        
         return data;
       }
-      
       return null;
     } catch (error) {
       console.error("Error checking lead:", error);
@@ -249,32 +237,29 @@ const Index = () => {
       setIsCheckingLead(false);
     }
   };
-  
+
   // Function to analyze lead data with AI
   const analyzeLeadWithAI = async () => {
     setIsAnalyzing(true);
     try {
       const ticketValue = parseCurrency(formData.averageTicket);
-      
       const response = await fetch('https://ytdfwkchsumgdvcroaqg.supabase.co/functions/v1/analyze-lead', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
+          'Content-Type': 'application/json'
         },
         body: JSON.stringify({
           revenue: formData.revenue,
           weeklyAppointments: formData.weeklyAppointments,
-          averageTicket: ticketValue.toFixed(2),
-        }),
+          averageTicket: ticketValue.toFixed(2)
+        })
       });
-      
       const data = await response.json();
       console.log("AI Analysis result:", data);
       setAiAnalysis(data);
-      
+
       // Set affordability question based on AI analysis
       setShowAffordabilityQuestion(!data.canAfford);
-      
       return data;
     } catch (error) {
       console.error("Error analyzing lead:", error);
@@ -301,57 +286,50 @@ const Index = () => {
         monthly_billing: currentFormData.revenue || "",
         weekly_attendance: currentFormData.weeklyAppointments || "",
         average_ticket: currentFormData.averageTicket ? parseCurrency(currentFormData.averageTicket) : null,
-        workspace_type: currentFormData.hasPhysicalSpace === null ? "" : (currentFormData.hasPhysicalSpace ? "physical" : "home"),
+        workspace_type: currentFormData.hasPhysicalSpace === null ? "" : currentFormData.hasPhysicalSpace ? "physical" : "home",
         years_experience: currentFormData.yearsOfExperience || "",
         can_afford: currentFormData.canAfford,
         utm_source: utmParams.utm_source,
         utm_medium: utmParams.utm_medium,
         utm_campaign: utmParams.utm_campaign,
         utm_term: utmParams.utm_term,
-        utm_content: utmParams.utm_content,
+        utm_content: utmParams.utm_content
       };
 
       // If we already have a lead ID (from existing lead or partial save), update it
       // Existing leads keep their current pipeline - don't change pipeline_id
       const leadIdToUpdate = existingLead?.id || partialLeadId;
-      
       if (leadIdToUpdate) {
         // Update existing lead WITHOUT changing pipeline_id (preserves CRM position)
-        await supabase
-          .from("leads")
-          .update(leadData)
-          .eq("id", leadIdToUpdate);
+        await supabase.from("leads").update(leadData).eq("id", leadIdToUpdate);
       } else {
         // Create new lead with fixed pipeline "Novo" and sub-origin "Entrada"
         const PIPELINE_NOVO_ID = 'b62bdfc2-cfda-4cc2-9a72-f87f9ac1f724';
         const SUB_ORIGIN_ENTRADA_ID = '00000000-0000-0000-0000-000000000002';
-        
-        const { data, error } = await supabase
-          .from("leads")
-          .insert({
-            name: currentFormData.name || "Incompleto",
-            email: currentFormData.email || `incompleto_${Date.now()}@temp.com`,
-            whatsapp: currentFormData.phone || "",
-            country_code: currentFormData.country.dialCode,
-            instagram: currentFormData.instagram || "",
-            service_area: currentFormData.beautyArea || "",
-            monthly_billing: currentFormData.revenue || "",
-            weekly_attendance: currentFormData.weeklyAppointments || "",
-            average_ticket: currentFormData.averageTicket ? parseCurrency(currentFormData.averageTicket) : null,
-            workspace_type: currentFormData.hasPhysicalSpace === null ? "" : (currentFormData.hasPhysicalSpace ? "physical" : "home"),
-            years_experience: currentFormData.yearsOfExperience || "",
-            can_afford: currentFormData.canAfford,
-            pipeline_id: PIPELINE_NOVO_ID,
-            sub_origin_id: SUB_ORIGIN_ENTRADA_ID,
-            utm_source: utmParams.utm_source,
-            utm_medium: utmParams.utm_medium,
-            utm_campaign: utmParams.utm_campaign,
-            utm_term: utmParams.utm_term,
-            utm_content: utmParams.utm_content,
-          })
-          .select("id")
-          .single();
-        
+        const {
+          data,
+          error
+        } = await supabase.from("leads").insert({
+          name: currentFormData.name || "Incompleto",
+          email: currentFormData.email || `incompleto_${Date.now()}@temp.com`,
+          whatsapp: currentFormData.phone || "",
+          country_code: currentFormData.country.dialCode,
+          instagram: currentFormData.instagram || "",
+          service_area: currentFormData.beautyArea || "",
+          monthly_billing: currentFormData.revenue || "",
+          weekly_attendance: currentFormData.weeklyAppointments || "",
+          average_ticket: currentFormData.averageTicket ? parseCurrency(currentFormData.averageTicket) : null,
+          workspace_type: currentFormData.hasPhysicalSpace === null ? "" : currentFormData.hasPhysicalSpace ? "physical" : "home",
+          years_experience: currentFormData.yearsOfExperience || "",
+          can_afford: currentFormData.canAfford,
+          pipeline_id: PIPELINE_NOVO_ID,
+          sub_origin_id: SUB_ORIGIN_ENTRADA_ID,
+          utm_source: utmParams.utm_source,
+          utm_medium: utmParams.utm_medium,
+          utm_campaign: utmParams.utm_campaign,
+          utm_term: utmParams.utm_term,
+          utm_content: utmParams.utm_content
+        }).select("id").single();
         if (!error && data) {
           setPartialLeadId(data.id);
         }
@@ -421,30 +399,22 @@ const Index = () => {
       e.preventDefault();
       return false;
     };
-
     const handleKeyDown = (e: KeyboardEvent) => {
       // Disable F12, Ctrl+Shift+I, Ctrl+Shift+J, Ctrl+U, Ctrl+S
-      if (
-        e.key === 'F12' ||
-        (e.ctrlKey && e.shiftKey && (e.key === 'I' || e.key === 'i' || e.key === 'J' || e.key === 'j')) ||
-        (e.ctrlKey && (e.key === 'U' || e.key === 'u' || e.key === 'S' || e.key === 's'))
-      ) {
+      if (e.key === 'F12' || e.ctrlKey && e.shiftKey && (e.key === 'I' || e.key === 'i' || e.key === 'J' || e.key === 'j') || e.ctrlKey && (e.key === 'U' || e.key === 'u' || e.key === 'S' || e.key === 's')) {
         e.preventDefault();
         return false;
       }
     };
-
     const handleDragStart = (e: DragEvent) => {
       if (e.target instanceof HTMLImageElement) {
         e.preventDefault();
         return false;
       }
     };
-
     document.addEventListener('contextmenu', handleContextMenu);
     document.addEventListener('keydown', handleKeyDown);
     document.addEventListener('dragstart', handleDragStart);
-
     return () => {
       document.removeEventListener('contextmenu', handleContextMenu);
       document.removeEventListener('keydown', handleKeyDown);
@@ -459,7 +429,6 @@ const Index = () => {
       if ((formData.name || formData.email) && step > 1 && step < 12) {
         // Use navigator.sendBeacon for reliable saving on page close
         const leadIdToUpdate = existingLead?.id || partialLeadId;
-        
         const leadData = {
           name: formData.name || "Incompleto",
           email: formData.email || `incompleto_${Date.now()}@temp.com`,
@@ -471,11 +440,10 @@ const Index = () => {
           monthly_billing: formData.revenue || "",
           weekly_attendance: formData.weeklyAppointments || "",
           average_ticket: formData.averageTicket ? parseCurrency(formData.averageTicket) : null,
-          workspace_type: formData.hasPhysicalSpace === null ? "" : (formData.hasPhysicalSpace ? "physical" : "home"),
+          workspace_type: formData.hasPhysicalSpace === null ? "" : formData.hasPhysicalSpace ? "physical" : "home",
           years_experience: formData.yearsOfExperience || "",
-          can_afford: formData.canAfford,
+          can_afford: formData.canAfford
         };
-
         if (leadIdToUpdate) {
           // Use fetch with keepalive for updates
           fetch(`https://ytdfwkchsumgdvcroaqg.supabase.co/rest/v1/leads?id=eq.${leadIdToUpdate}`, {
@@ -492,19 +460,16 @@ const Index = () => {
         }
       }
     };
-
     window.addEventListener('beforeunload', handleBeforeUnload);
     document.addEventListener('visibilitychange', () => {
       if (document.visibilityState === 'hidden') {
         handleBeforeUnload();
       }
     });
-
     return () => {
       window.removeEventListener('beforeunload', handleBeforeUnload);
     };
   }, [formData, step, existingLead, partialLeadId]);
-
   const totalSteps = 13; // Added clinic name step
   const updateFormData = (field: keyof FormData, value: string | boolean | Country | null) => {
     setFormData(prev => ({
@@ -549,14 +514,13 @@ const Index = () => {
     const SERVICE_COST = 2800;
     const MIN_REVENUE_RATIO = 0.55; // Service should be at most 55% of revenue
     const MIN_AFFORDABLE_REVENUE = Math.ceil(SERVICE_COST / MIN_REVENUE_RATIO); // ~R$ 5,091
-    
+
     const appointments = parseInt(formData.weeklyAppointments) || 0;
     const ticket = parseCurrency(formData.averageTicket);
     const estimatedMonthly = appointments * 4 * ticket;
     // Show question if estimated revenue is below minimum affordable threshold
     return estimatedMonthly < MIN_AFFORDABLE_REVENUE;
   };
-
   const handleNext = async () => {
     if (canProceed()) {
       if (step < totalSteps) {
@@ -572,12 +536,12 @@ const Index = () => {
           // Don't save at step 1 - wait until we check for existing lead at step 2
           await savePartialLead(formData, step);
         }
-        
+
         // After ticket médio step, analyze with AI
         if (step === 9) {
           await analyzeLeadWithAI();
         }
-        
+
         // After years of experience step, check if we should skip affordability question
         if (step === 11) {
           if (!shouldShowAffordabilityQuestion()) {
@@ -586,7 +550,6 @@ const Index = () => {
             return;
           }
         }
-        
         setStep(step + 1);
       }
     } else {
@@ -647,8 +610,8 @@ const Index = () => {
       case 1:
         return <div className="form-card">
             <h1 className="form-title max-w-[320px] md:max-w-none">
-              <span className="font-light">Pronta para escalar seu negócio no </span>
-              <span className="font-bold">Mundo Beauty?</span>
+              <span className="font-light">Pronta para lotar a agenda da sua clínica todos </span>
+              <span className="font-bold">os meses?</span>
             </h1>
             <p className="form-subtitle mt-4 mb-4">Você está prestes a tomar a melhor decisão para o seu negócio. Somos especialistas em escalar negócios de beleza através do Tráfego Pago.</p>
             <div className="space-y-4">
@@ -667,15 +630,7 @@ const Index = () => {
             </h1>
             <p className="form-subtitle">Para enviarmos informações importantes</p>
             <div className="space-y-4">
-              <input 
-                type="email" 
-                value={formData.email} 
-                onChange={e => updateFormData("email", e.target.value)} 
-                placeholder="seu@email.com" 
-                className="form-input" 
-                autoFocus 
-                disabled={isCheckingLead}
-              />
+              <input type="email" value={formData.email} onChange={e => updateFormData("email", e.target.value)} placeholder="seu@email.com" className="form-input" autoFocus disabled={isCheckingLead} />
               <div className="flex gap-3">
                 <button onClick={prevStep} className="h-14 px-4 rounded-xl border border-border bg-card flex items-center justify-center" disabled={isCheckingLead}>
                   <ArrowLeft className="w-5 h-5 text-foreground" />
@@ -702,21 +657,13 @@ const Index = () => {
                   {maskedPhone}
                 </div>
                 <div className="space-y-3">
-                  <button 
-                    type="button" 
-                    onClick={handleNext}
-                    className="option-card"
-                  >
+                  <button type="button" onClick={handleNext} className="option-card">
                     <span className="option-card-text">Sim, este é meu número</span>
                   </button>
-                  <button 
-                    type="button" 
-                    onClick={() => {
-                      setExistingLead(null);
-                      updateFormData("phone", "");
-                    }}
-                    className="option-card"
-                  >
+                  <button type="button" onClick={() => {
+                  setExistingLead(null);
+                  updateFormData("phone", "");
+                }} className="option-card">
                     <span className="option-card-text">Não, quero informar outro</span>
                   </button>
                 </div>
@@ -728,7 +675,6 @@ const Index = () => {
               </div>
             </div>;
         }
-        
         return <div className="form-card">
             <h1 className="form-title">
               <span className="font-light">Qual o seu </span>
@@ -808,21 +754,16 @@ const Index = () => {
                   {existingLead.service_area}
                 </div>
                 <div className="space-y-3">
-                  <button 
-                    type="button" 
-                    onClick={handleNext}
-                    className="option-card"
-                  >
+                  <button type="button" onClick={handleNext} className="option-card">
                     <span className="option-card-text">Sim, esta é minha área</span>
                   </button>
-                  <button 
-                    type="button" 
-                    onClick={() => {
-                      setExistingLead(prev => prev ? { ...prev, service_area: "" } : null);
-                      updateFormData("beautyArea", "");
-                    }}
-                    className="option-card"
-                  >
+                  <button type="button" onClick={() => {
+                  setExistingLead(prev => prev ? {
+                    ...prev,
+                    service_area: ""
+                  } : null);
+                  updateFormData("beautyArea", "");
+                }} className="option-card">
                     <span className="option-card-text">Não, quero alterar</span>
                   </button>
                 </div>
@@ -834,7 +775,6 @@ const Index = () => {
               </div>
             </div>;
         }
-        
         return <div className="form-card">
             <h1 className="form-title">
               <span className="font-light">Qual a sua </span>
@@ -902,18 +842,10 @@ const Index = () => {
             </h1>
             <p className="form-subtitle">Valor médio do seu procedimento</p>
             <div className="space-y-4">
-              <input 
-                type="text" 
-                value={formData.averageTicket} 
-                onChange={e => {
-                  const formatted = handleCurrencyInput(e.target.value);
-                  updateFormData("averageTicket", formatted);
-                }} 
-                placeholder="R$ 0,00" 
-                className="form-input" 
-                autoFocus 
-                disabled={isAnalyzing}
-              />
+              <input type="text" value={formData.averageTicket} onChange={e => {
+              const formatted = handleCurrencyInput(e.target.value);
+              updateFormData("averageTicket", formatted);
+            }} placeholder="R$ 0,00" className="form-input" autoFocus disabled={isAnalyzing} />
               <div className="flex gap-3">
                 <button onClick={prevStep} className="h-14 px-4 rounded-xl border border-border bg-card flex items-center justify-center" disabled={isAnalyzing}>
                   <ArrowLeft className="w-5 h-5 text-foreground" />
@@ -934,19 +866,25 @@ const Index = () => {
             <p className="form-subtitle">Ou atende em domicílio/casa</p>
             <div className="space-y-3">
               <button type="button" onClick={async () => {
-                updateFormData("hasPhysicalSpace", true);
-                // Save with the value we just set
-                await savePartialLead({ ...formData, hasPhysicalSpace: true }, step);
-                setStep(step + 1);
-              }} className={`option-card ${formData.hasPhysicalSpace === true ? "selected" : ""}`}>
+              updateFormData("hasPhysicalSpace", true);
+              // Save with the value we just set
+              await savePartialLead({
+                ...formData,
+                hasPhysicalSpace: true
+              }, step);
+              setStep(step + 1);
+            }} className={`option-card ${formData.hasPhysicalSpace === true ? "selected" : ""}`}>
                 <span className="option-card-text">Sim, possuo espaço físico</span>
               </button>
               <button type="button" onClick={async () => {
-                updateFormData("hasPhysicalSpace", false);
-                // Save with the value we just set
-                await savePartialLead({ ...formData, hasPhysicalSpace: false }, step);
-                setStep(step + 1);
-              }} className={`option-card ${formData.hasPhysicalSpace === false ? "selected" : ""}`}>
+              updateFormData("hasPhysicalSpace", false);
+              // Save with the value we just set
+              await savePartialLead({
+                ...formData,
+                hasPhysicalSpace: false
+              }, step);
+              setStep(step + 1);
+            }} className={`option-card ${formData.hasPhysicalSpace === false ? "selected" : ""}`}>
                 <span className="option-card-text">Não, atendo em casa/domicílio</span>
               </button>
               <div className="flex gap-3 mt-4">
@@ -988,30 +926,21 @@ const Index = () => {
                 Mesmo assim, gostaria de conhecer mais sobre nossos serviços e como podemos ajudar seu negócio?
               </p>
               <div className="space-y-3">
-                <button 
-                  type="button" 
-                  onClick={() => {
-                    updateFormData("wantsMoreInfo", true);
-                    nextStep();
-                  }} 
-                  className="option-card"
-                >
+                <button type="button" onClick={() => {
+                updateFormData("wantsMoreInfo", true);
+                nextStep();
+              }} className="option-card">
                   <span className="option-card-text">Sim, quero saber mais</span>
                 </button>
-                <button 
-                  type="button" 
-                  onClick={() => {
-                    updateFormData("wantsMoreInfo", false);
-                    nextStep();
-                  }} 
-                  className="option-card"
-                >
+                <button type="button" onClick={() => {
+                updateFormData("wantsMoreInfo", false);
+                nextStep();
+              }} className="option-card">
                   <span className="option-card-text">Não, obrigada</span>
                 </button>
               </div>
             </div>;
         }
-        
         return <div className="form-card">
             <h1 className="form-title !text-center">
               <span className="font-bold">Investimento</span>
@@ -1020,23 +949,15 @@ const Index = () => {
               Hoje, nosso serviço mais acessível custa <span className="font-bold text-foreground">R$ 1.800,00 por mês</span>. Você está disposta a investir esse valor no crescimento do seu negócio?
             </p>
             <div className="space-y-3">
-              <button 
-                type="button" 
-                onClick={() => {
-                  updateFormData("canAfford", "yes");
-                  nextStep();
-                }} 
-                className={`option-card ${formData.canAfford === "yes" ? "selected" : ""}`}
-              >
+              <button type="button" onClick={() => {
+              updateFormData("canAfford", "yes");
+              nextStep();
+            }} className={`option-card ${formData.canAfford === "yes" ? "selected" : ""}`}>
                 <span className="option-card-text">Sim, consigo investir</span>
               </button>
-              <button 
-                type="button" 
-                onClick={() => {
-                  updateFormData("canAfford", "no");
-                }} 
-                className={`option-card ${formData.canAfford === "no" ? "selected" : ""}`}
-              >
+              <button type="button" onClick={() => {
+              updateFormData("canAfford", "no");
+            }} className={`option-card ${formData.canAfford === "no" ? "selected" : ""}`}>
                 <span className="option-card-text">Não no momento</span>
               </button>
             </div>
@@ -1063,7 +984,6 @@ const Index = () => {
                 const {
                   data: basePipeline
                 } = await supabase.from("pipelines").select("id").eq("nome", "Base").maybeSingle();
-                
                 const leadData = {
                   name: formData.name,
                   email: formData.email,
@@ -1074,7 +994,7 @@ const Index = () => {
                   service_area: formData.beautyArea,
                   monthly_billing: formData.revenue,
                   weekly_attendance: formData.weeklyAppointments,
-                  workspace_type: formData.hasPhysicalSpace === null ? "" : (formData.hasPhysicalSpace ? "physical" : "home"),
+                  workspace_type: formData.hasPhysicalSpace === null ? "" : formData.hasPhysicalSpace ? "physical" : "home",
                   years_experience: formData.yearsOfExperience || "",
                   average_ticket: parseCurrency(formData.averageTicket),
                   can_afford: formData.canAfford,
@@ -1085,54 +1005,45 @@ const Index = () => {
                   utm_medium: utmParams.utm_medium,
                   utm_campaign: utmParams.utm_campaign,
                   utm_term: utmParams.utm_term,
-                  utm_content: utmParams.utm_content,
+                  utm_content: utmParams.utm_content
                 };
-                
                 let error;
-                
+
                 // If existing lead or partial lead, update instead of insert
                 const leadIdToUpdate = existingLead?.id || partialLeadId;
-                
                 if (leadIdToUpdate) {
-                  const result = await supabase
-                    .from("leads")
-                    .update(leadData)
-                    .eq("id", leadIdToUpdate);
+                  const result = await supabase.from("leads").update(leadData).eq("id", leadIdToUpdate);
                   error = result.error;
                 } else {
-                  const result = await supabase
-                    .from("leads")
-                    .insert(leadData);
+                  const result = await supabase.from("leads").insert(leadData);
                   error = result.error;
                 }
-                
                 if (error) {
                   console.error("Error saving lead:", error);
                   toast.error("Erro ao salvar dados. Tente novamente.");
                   setIsLoading(false);
                   return;
                 }
-                
+
                 // Send welcome email
                 try {
                   const leadId = leadIdToUpdate || partialLeadId;
                   await fetch('https://ytdfwkchsumgdvcroaqg.supabase.co/functions/v1/send-email', {
                     method: 'POST',
                     headers: {
-                      'Content-Type': 'application/json',
+                      'Content-Type': 'application/json'
                     },
                     body: JSON.stringify({
                       leadId: leadId,
                       leadName: formData.name,
-                      leadEmail: formData.email,
-                    }),
+                      leadEmail: formData.email
+                    })
                   });
                   console.log("Welcome email triggered");
                 } catch (emailError) {
                   console.error("Error sending welcome email:", emailError);
                   // Don't block the flow if email fails
                 }
-                
                 setTimeout(() => {
                   window.location.href = "https://www.instagram.com/scalebeautyy/";
                 }, 2000);
@@ -1154,15 +1065,15 @@ const Index = () => {
         return null;
     }
   };
-  return (
-    <>
+  return <>
       {showSplash && <SplashScreen onComplete={() => setShowSplash(false)} />}
-      <motion.div 
-        initial={{ opacity: 0 }}
-        animate={{ opacity: showSplash ? 0 : 1 }}
-        transition={{ duration: 0.3 }}
-        className="min-h-screen bg-background flex flex-col relative"
-      >
+      <motion.div initial={{
+      opacity: 0
+    }} animate={{
+      opacity: showSplash ? 0 : 1
+    }} transition={{
+      duration: 0.3
+    }} className="min-h-screen bg-background flex flex-col relative">
       
       {/* Navbar - only on step 1 */}
       {step === 1 && <HamburgerMenu />}
@@ -1180,21 +1091,26 @@ const Index = () => {
         <div className="flex-1 flex flex-col justify-start px-4 -mt-6 relative z-10">
           <FormContainer>
             <AnimatePresence mode="wait">
-              <motion.div
-                key={step}
-                initial={{ opacity: 0, x: 15 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -15 }}
-                transition={{ duration: 0.2, ease: "easeOut" }}
-              >
+              <motion.div key={step} initial={{
+                opacity: 0,
+                x: 15
+              }} animate={{
+                opacity: 1,
+                x: 0
+              }} exit={{
+                opacity: 0,
+                x: -15
+              }} transition={{
+                duration: 0.2,
+                ease: "easeOut"
+              }}>
                 {renderStep()}
               </motion.div>
             </AnimatePresence>
           </FormContainer>
           
           {/* Sections only on step 1 */}
-          {step === 1 && (
-            <>
+          {step === 1 && <>
               {/* Scroll Velocity - Mobile */}
               <div className="relative flex w-full flex-col items-center justify-center overflow-hidden -mx-4 mt-4 gap-1" style={{
               width: 'calc(100% + 2rem)'
@@ -1239,8 +1155,7 @@ const Index = () => {
                   <p className="copyright mt-4">© Copyright 2025 Scale Beauty - Desenvolvido por Scale Beauty</p>
                 </div>
               </div>
-            </>
-          )}
+            </>}
         </div>
       </div>
 
@@ -1255,13 +1170,19 @@ const Index = () => {
         <div className="flex-1 flex items-start justify-center px-8 -mt-12 relative z-10">
           <FormContainer>
             <AnimatePresence mode="wait">
-              <motion.div
-                key={step}
-                initial={{ opacity: 0, x: 15 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -15 }}
-                transition={{ duration: 0.2, ease: "easeOut" }}
-              >
+              <motion.div key={step} initial={{
+                opacity: 0,
+                x: 15
+              }} animate={{
+                opacity: 1,
+                x: 0
+              }} exit={{
+                opacity: 0,
+                x: -15
+              }} transition={{
+                duration: 0.2,
+                ease: "easeOut"
+              }}>
                 {renderStep()}
               </motion.div>
             </AnimatePresence>
@@ -1269,8 +1190,7 @@ const Index = () => {
         </div>
 
         {/* Sections only on step 1 */}
-        {step === 1 && (
-          <>
+        {step === 1 && <>
             {/* Scroll Velocity */}
             <div className="relative flex w-full flex-col items-center justify-center overflow-hidden py-3 gap-1" style={{
             marginTop: '15px'
@@ -1315,12 +1235,10 @@ const Index = () => {
                 <p className="copyright mt-4">© Copyright 2025 Scale Beauty - Desenvolvido por Scale Beauty</p>
               </div>
             </div>
-          </>
-        )}
+          </>}
       </div>
       </motion.div>
-    </>
-  );
+    </>;
 };
 const features = [{
   title: 'Tráfego Pago',
@@ -1390,13 +1308,13 @@ function FeaturesSection() {
       </div>
     </section>;
 }
-
 function AnimatedCircleSection() {
-  return (
-    <section className="pt-4 pb-16 md:py-16 overflow-visible">
+  return <section className="pt-4 pb-16 md:py-16 overflow-visible">
       <div className="mx-auto w-full max-w-6xl px-6 md:px-8">
         {/* Title - Mobile only (above circle) */}
-        <h2 className="lg:hidden text-xl md:text-2xl font-bold tracking-tighter text-foreground mb-4 text-center mx-auto max-w-sm" style={{ letterSpacing: '-0.04em' }}>
+        <h2 className="lg:hidden text-xl md:text-2xl font-bold tracking-tighter text-foreground mb-4 text-center mx-auto max-w-sm" style={{
+        letterSpacing: '-0.04em'
+      }}>
           Montamos o marketing do seu negócio conforme a necessidade dele
         </h2>
         
@@ -1439,7 +1357,9 @@ function AnimatedCircleSection() {
           {/* Content */}
           <div className="flex-1 text-center lg:text-left">
             {/* Title - Desktop only */}
-            <h2 className="hidden lg:block text-lg lg:text-3xl font-bold tracking-tighter text-foreground mb-8 lg:text-left max-w-xs lg:max-w-sm" style={{ letterSpacing: '-0.04em' }}>
+            <h2 className="hidden lg:block text-lg lg:text-3xl font-bold tracking-tighter text-foreground mb-8 lg:text-left max-w-xs lg:max-w-sm" style={{
+            letterSpacing: '-0.04em'
+          }}>
               Montamos o marketing do seu negócio conforme a necessidade dele
             </h2>
             
@@ -1501,8 +1421,7 @@ function AnimatedCircleSection() {
           </div>
         </div>
       </div>
-    </section>
-  );
+    </section>;
 }
 function QuemSomosSection() {
   return <section id="quem-somos" className="w-[calc(100%+2rem)] -mx-4 md:mx-0 md:w-full relative">
