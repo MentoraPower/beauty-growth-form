@@ -1405,7 +1405,7 @@ function AnimatedCircleSection() {
         
         <div className="flex flex-col lg:flex-row-reverse items-center gap-8 lg:gap-16">
           {/* Circle */}
-          <div className="relative w-[65vw] h-[65vw] md:w-[450px] md:h-[450px] lg:w-[520px] lg:h-[520px] xl:w-[580px] xl:h-[580px] flex-shrink-0">
+          <div className="relative w-[65vw] h-[65vw] md:w-[450px] md:h-[450px] lg:w-[520px] lg:h-[520px] xl:w-[580px] xl:h-[580px] flex-shrink-0 my-8 md:my-0">
             {/* Passo 01 - Top */}
             <div className="absolute top-[-2%] md:top-[8%] left-[50%] md:left-[42%] -translate-x-1/2 -translate-y-full text-center">
               <span className="text-[9px] md:text-xs text-muted-foreground">Passo 01</span>
