@@ -1382,7 +1382,7 @@ function AnimatedCircleSection() {
                 </div>
               </div>
 
-              {/* CRM */}
+              {/* TRÁFEGO */}
               <div className="group relative p-4 lg:p-3 rounded-xl bg-gradient-to-br from-background to-muted/50 border border-border/30 hover:border-primary/30 transition-all duration-300">
                 <div className="flex items-start gap-3">
                   <div className="w-9 h-9 lg:w-8 lg:h-8 rounded-lg border-2 border-[#F40000] flex items-center justify-center flex-shrink-0">
@@ -1391,7 +1391,7 @@ function AnimatedCircleSection() {
                   <div className="flex-1">
                     <h3 className="font-bold text-foreground text-base lg:text-sm tracking-tight flex items-center gap-1">
                       <ArrowRight className="w-3 h-3 text-[#F40000]" />
-                      CRM
+                      TRÁFEGO
                     </h3>
                     <p className="text-sm lg:text-xs text-muted-foreground mt-1 leading-relaxed">
                       Gerencie relacionamentos e visualize seu funil de vendas em um só lugar
