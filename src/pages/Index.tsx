@@ -1312,14 +1312,6 @@ const features = [{
   title: 'Páginas de Vendas',
   icon: FileText,
   description: 'Landing pages de alta conversão que transformam visitantes em clientes fiéis.'
-}, {
-  title: 'Consultoria de Aceleração',
-  icon: Rocket,
-  description: 'Mentoria personalizada para escalar seu faturamento de forma rápida e sustentável.'
-}, {
-  title: 'Co-Produção',
-  icon: Handshake,
-  description: 'Parceria estratégica onde cuidamos do marketing enquanto você foca no seu talento.'
 }];
 type ViewAnimationProps = {
   delay?: number;
