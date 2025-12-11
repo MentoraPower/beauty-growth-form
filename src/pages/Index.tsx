@@ -1396,39 +1396,89 @@ function FeaturesSection() {
 
 function AnimatedCircleSection() {
   return (
-    <section className="py-16 md:py-16 flex items-center justify-center overflow-visible">
-      <div className="relative w-[85vw] h-[85vw] md:w-[450px] md:h-[450px] lg:w-[550px] lg:h-[550px]">
-        {/* Passo 01 - Top (dot at ~42%, 13%) */}
-        <div className="absolute top-[8%] left-[42%] -translate-x-1/2 -translate-y-full text-center">
-          <span className="text-[10px] md:text-xs text-muted-foreground">Passo 01</span>
-          <p className="text-xs md:text-sm font-bold text-foreground">Entende</p>
+    <section className="py-16 md:py-16 overflow-visible">
+      <div className="mx-auto w-full max-w-6xl px-6 md:px-8">
+        <div className="flex flex-col lg:flex-row items-center gap-8 lg:gap-16">
+          {/* Circle */}
+          <div className="relative w-[85vw] h-[85vw] md:w-[400px] md:h-[400px] lg:w-[450px] lg:h-[450px] flex-shrink-0">
+            {/* Passo 01 - Top (dot at ~42%, 13%) */}
+            <div className="absolute top-[8%] left-[42%] -translate-x-1/2 -translate-y-full text-center">
+              <span className="text-[10px] md:text-xs text-muted-foreground">Passo 01</span>
+              <p className="text-xs md:text-sm font-bold text-foreground">Entende</p>
+            </div>
+            
+            {/* Passo 02 - Upper right (dot at ~83%, 31%) */}
+            <div className="absolute top-[28%] left-[88%] text-left">
+              <span className="text-[10px] md:text-xs text-muted-foreground">Passo 02</span>
+              <p className="text-xs md:text-sm font-bold text-foreground">Conecta</p>
+            </div>
+            
+            {/* Passo 03 - Lower right (dot at ~78%, 76%) */}
+            <div className="absolute top-[74%] left-[82%] text-left">
+              <span className="text-[10px] md:text-xs text-muted-foreground">Passo 03</span>
+              <p className="text-xs md:text-sm font-bold text-foreground">Ajuda</p>
+            </div>
+            
+            {/* Passo 04 - Bottom left (dot at ~35%, 85%) */}
+            <div className="absolute top-[90%] left-[35%] -translate-x-1/2 text-center">
+              <span className="text-[10px] md:text-xs text-muted-foreground">Passo 04</span>
+              <p className="text-xs md:text-sm font-bold text-foreground">Vende</p>
+            </div>
+            
+            {/* Passo 05 - Left (dot at ~12%, 46%) */}
+            <div className="absolute top-[44%] right-[90%] text-right">
+              <span className="text-[10px] md:text-xs text-muted-foreground">Passo 05</span>
+              <p className="text-xs md:text-sm font-bold text-foreground">Otimiza</p>
+            </div>
+            
+            <AnimatedCircle className="w-full h-full" />
+          </div>
+
+          {/* Content */}
+          <div className="flex-1 text-left">
+            <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold tracking-tight text-foreground mb-8">
+              Montamos o marketing do seu negócio conforme a necessidade dele
+            </h2>
+            
+            <div className="space-y-6">
+              {/* CRIATIVOS */}
+              <div className="p-4 rounded-xl bg-muted/30 border border-border/50">
+                <h3 className="font-bold text-foreground mb-2">CRIATIVOS</h3>
+                <p className="text-sm text-muted-foreground">
+                  Seus anúncios criados pelos copywriters e designers da Scale
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  Mais foco em conversão, não apenas em estética
+                </p>
+              </div>
+
+              {/* CRM */}
+              <div className="p-4 rounded-xl bg-muted/30 border border-border/50">
+                <h3 className="font-bold text-foreground mb-2">CRM</h3>
+                <p className="text-sm text-muted-foreground">
+                  Gerencie o relacionamento com seu cliente em um só lugar
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  Visualize todo o seu funil de vendas
+                </p>
+                <p className="text-sm text-muted-foreground mt-2 font-medium">
+                  Mantenha conexão com seus clientes e venda mais
+                </p>
+              </div>
+
+              {/* PÁGINAS DE VENDA */}
+              <div className="p-4 rounded-xl bg-muted/30 border border-border/50">
+                <h3 className="font-bold text-foreground mb-2">PÁGINAS DE VENDA</h3>
+                <p className="text-sm text-muted-foreground">
+                  Landing pages projetadas para trazer oportunidades de vendas
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  Feitas com as melhores práticas do mercado digital
+                </p>
+              </div>
+            </div>
+          </div>
         </div>
-        
-        {/* Passo 02 - Upper right (dot at ~83%, 31%) */}
-        <div className="absolute top-[28%] left-[88%] text-left">
-          <span className="text-[10px] md:text-xs text-muted-foreground">Passo 02</span>
-          <p className="text-xs md:text-sm font-bold text-foreground">Conecta</p>
-        </div>
-        
-        {/* Passo 03 - Lower right (dot at ~78%, 76%) */}
-        <div className="absolute top-[74%] left-[82%] text-left">
-          <span className="text-[10px] md:text-xs text-muted-foreground">Passo 03</span>
-          <p className="text-xs md:text-sm font-bold text-foreground">Ajuda</p>
-        </div>
-        
-        {/* Passo 04 - Bottom left (dot at ~35%, 85%) */}
-        <div className="absolute top-[90%] left-[35%] -translate-x-1/2 text-center">
-          <span className="text-[10px] md:text-xs text-muted-foreground">Passo 04</span>
-          <p className="text-xs md:text-sm font-bold text-foreground">Vende</p>
-        </div>
-        
-        {/* Passo 05 - Left (dot at ~12%, 46%) */}
-        <div className="absolute top-[44%] right-[90%] text-right">
-          <span className="text-[10px] md:text-xs text-muted-foreground">Passo 05</span>
-          <p className="text-xs md:text-sm font-bold text-foreground">Otimiza</p>
-        </div>
-        
-        <AnimatedCircle className="w-full h-full" />
       </div>
     </section>
   );
