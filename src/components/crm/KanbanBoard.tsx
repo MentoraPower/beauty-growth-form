@@ -33,8 +33,16 @@ export function KanbanBoard() {
   const [overId, setOverId] = useState<string | null>(null);
   const [isPipelinesDialogOpen, setIsPipelinesDialogOpen] = useState(false);
   const [localLeads, setLocalLeads] = useState<Lead[]>([]);
-  const [viewMode, setViewMode] = useState<"kanban" | "list">("kanban");
+  const [viewMode, setViewMode] = useState<"kanban" | "list">(() => {
+    const saved = localStorage.getItem('crm_view_mode');
+    return (saved === 'list' || saved === 'kanban') ? saved : 'kanban';
+  });
   const queryClient = useQueryClient();
+
+  // Persist viewMode to localStorage
+  useEffect(() => {
+    localStorage.setItem('crm_view_mode', viewMode);
+  }, [viewMode]);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -364,22 +372,22 @@ export function KanbanBoard() {
         </div>
       </div>
 
-      {viewMode === "list" ? (
-        <LeadsList leads={displayLeads} pipelines={pipelines} />
-      ) : (
-        <DndContext
-          sensors={sensors}
-          collisionDetection={closestCenter}
-          onDragStart={handleDragStart}
-          onDragOver={handleDragOver}
-          onDragEnd={handleDragEnd}
-          onDragCancel={handleDragCancel}
-          measuring={{
-            droppable: {
-              strategy: MeasuringStrategy.Always,
-            },
-          }}
-        >
+      <DndContext
+        sensors={sensors}
+        collisionDetection={closestCenter}
+        onDragStart={handleDragStart}
+        onDragOver={handleDragOver}
+        onDragEnd={handleDragEnd}
+        onDragCancel={handleDragCancel}
+        measuring={{
+          droppable: {
+            strategy: MeasuringStrategy.Always,
+          },
+        }}
+      >
+        {viewMode === "list" ? (
+          <LeadsList leads={displayLeads} pipelines={pipelines} activeDragId={activeId} />
+        ) : (
           <div className="flex gap-4 overflow-x-auto flex-1 pb-4 h-full">
             {pipelines.map((pipeline) => {
               const pipelineLeads = displayLeads
@@ -395,16 +403,16 @@ export function KanbanBoard() {
               );
             })}
           </div>
+        )}
 
-          <DragOverlay dropAnimation={null}>
-            {activeLead ? (
-              <div className="rotate-3 scale-105">
-                <KanbanCard lead={activeLead} isDragging />
-              </div>
-            ) : null}
-          </DragOverlay>
-        </DndContext>
-      )}
+        <DragOverlay dropAnimation={null}>
+          {activeLead ? (
+            <div className="rotate-3 scale-105">
+              <KanbanCard lead={activeLead} isDragging />
+            </div>
+          ) : null}
+        </DragOverlay>
+      </DndContext>
 
       <ManagePipelinesDialog
         open={isPipelinesDialogOpen}
