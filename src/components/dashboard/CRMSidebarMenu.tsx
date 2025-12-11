@@ -248,17 +248,17 @@ export function CRMSidebarMenu({ isExpanded, onNavigate }: CRMSidebarMenuProps) 
                   <div className="flex items-center group">
                     <button
                       onClick={() => toggleOrigin(origin.id)}
-                      className="flex items-center gap-2 flex-1 py-2 px-2 rounded-lg text-white/60 hover:text-white hover:bg-white/5 transition-colors text-sm"
+                      className="flex items-center gap-2 flex-1 py-2 px-2 rounded-lg text-white/90 hover:text-white hover:bg-white/5 transition-colors text-sm"
                     >
                       {isOriginExpanded ? (
-                        <FolderOpen className="h-4 w-4 flex-shrink-0" />
+                        <FolderOpen className="h-4 w-4 flex-shrink-0 text-white/90" />
                       ) : (
-                        <Folder className="h-4 w-4 flex-shrink-0" />
+                        <Folder className="h-4 w-4 flex-shrink-0 text-white/90" />
                       )}
-                      <span className="flex-1 text-left truncate">{origin.nome}</span>
+                      <span className="flex-1 text-left truncate font-medium">{origin.nome}</span>
                       <ChevronRight 
                         className={cn(
-                          "h-3 w-3 transition-transform",
+                          "h-3 w-3 transition-transform text-white/70",
                           isOriginExpanded ? "rotate-90" : ""
                         )} 
                       />
@@ -267,11 +267,14 @@ export function CRMSidebarMenu({ isExpanded, onNavigate }: CRMSidebarMenuProps) 
                     {/* Origin Actions */}
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
-                        <button className="p-1 rounded opacity-0 group-hover:opacity-100 hover:bg-white/10 transition-all">
-                          <MoreVertical className="h-3 w-3 text-white/60" />
+                        <button 
+                          onClick={(e) => e.stopPropagation()}
+                          className="p-1.5 rounded opacity-0 group-hover:opacity-100 hover:bg-white/10 transition-all"
+                        >
+                          <MoreVertical className="h-4 w-4 text-white/80" />
                         </button>
                       </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" className="w-40">
+                      <DropdownMenuContent align="end" className="w-40 z-[9999] bg-popover">
                         <DropdownMenuItem onClick={() => openCreateSubOriginDialog(origin.id)}>
                           <Plus className="h-4 w-4 mr-2" />
                           Nova Sub-origem
@@ -294,25 +297,28 @@ export function CRMSidebarMenu({ isExpanded, onNavigate }: CRMSidebarMenuProps) 
 
                   {/* Sub-origins */}
                   {isOriginExpanded && (
-                    <div className="ml-4 pl-2 border-l border-white/5 space-y-0.5">
+                    <div className="ml-4 pl-2 border-l border-white/10 space-y-0.5">
                       {originSubOrigins.map((subOrigin) => (
                         <div key={subOrigin.id} className="flex items-center group">
                           <button
                             onClick={() => handleSubOriginClick(subOrigin.id)}
-                            className="flex items-center gap-2 flex-1 py-1.5 px-2 rounded-lg text-white/50 hover:text-white hover:bg-white/5 transition-colors text-xs"
+                            className="flex items-center gap-2 flex-1 py-1.5 px-2 rounded-lg text-white/80 hover:text-white hover:bg-white/5 transition-colors text-xs"
                           >
-                            <Kanban className="h-3 w-3 flex-shrink-0" />
+                            <Kanban className="h-3 w-3 flex-shrink-0 text-white/80" />
                             <span className="truncate">{subOrigin.nome}</span>
                           </button>
                           
                           {/* Sub-origin Actions */}
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
-                              <button className="p-1 rounded opacity-0 group-hover:opacity-100 hover:bg-white/10 transition-all">
-                                <MoreVertical className="h-3 w-3 text-white/60" />
+                              <button 
+                                onClick={(e) => e.stopPropagation()}
+                                className="p-1.5 rounded opacity-0 group-hover:opacity-100 hover:bg-white/10 transition-all"
+                              >
+                                <MoreVertical className="h-4 w-4 text-white/80" />
                               </button>
                             </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end" className="w-40">
+                            <DropdownMenuContent align="end" className="w-40 z-[9999] bg-popover">
                               <DropdownMenuItem onClick={() => openEditSubOriginDialog(subOrigin)}>
                                 <Pencil className="h-4 w-4 mr-2" />
                                 Editar
@@ -331,7 +337,7 @@ export function CRMSidebarMenu({ isExpanded, onNavigate }: CRMSidebarMenuProps) 
                       ))}
 
                       {originSubOrigins.length === 0 && (
-                        <p className="text-xs text-white/30 py-1 px-2">Sem sub-origens</p>
+                        <p className="text-xs text-white/50 py-1 px-2">Sem sub-origens</p>
                       )}
                     </div>
                   )}
@@ -342,7 +348,7 @@ export function CRMSidebarMenu({ isExpanded, onNavigate }: CRMSidebarMenuProps) 
             {/* Add Origin Button */}
             <button
               onClick={openCreateOriginDialog}
-              className="flex items-center gap-2 w-full py-2 px-2 rounded-lg text-white/40 hover:text-white hover:bg-white/5 transition-colors text-xs"
+              className="flex items-center gap-2 w-full py-2 px-2 rounded-lg text-white/70 hover:text-white hover:bg-white/5 transition-colors text-xs"
             >
               <Plus className="h-3 w-3" />
               <span>Nova Origem</span>
