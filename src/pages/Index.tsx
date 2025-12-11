@@ -1166,62 +1166,169 @@ const Index = () => {
         transition={{ duration: 0.3 }}
         className="min-h-screen bg-background flex flex-col relative"
       >
-      <HamburgerMenu />
-      {step > 1 && step < 12 && <ProgressBar currentStep={step - 1} totalSteps={totalSteps - 2} />}
       
-      {/* Mobile Layout */}
-      <div className="md:hidden flex flex-col min-h-screen relative">
-        {/* Banner image on top with rounded bottom */}
-        <div className="w-full flex-shrink-0">
-          <img src={scaleBeautyMobile} alt="Scale Beauty" className="w-full h-[260px] object-cover rounded-b-3xl" loading="eager" decoding="async" />
+      {/* Form Popup Mode - Steps 2+ */}
+      <AnimatePresence>
+        {step > 1 && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.4, ease: "easeInOut" }}
+            className="fixed inset-0 z-50 bg-background flex items-center justify-center"
+          >
+            {step > 1 && step < 12 && <ProgressBar currentStep={step - 1} totalSteps={totalSteps - 2} />}
+            <div className="w-full max-w-md px-6">
+              <FormContainer>
+                <AnimatePresence mode="wait">
+                  <motion.div
+                    key={step}
+                    initial={{ opacity: 0, x: 15 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: -15 }}
+                    transition={{ duration: 0.2, ease: "easeOut" }}
+                  >
+                    {renderStep()}
+                  </motion.div>
+                </AnimatePresence>
+              </FormContainer>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Landing Page - Step 1 */}
+      <motion.div
+        animate={{ opacity: step === 1 ? 1 : 0 }}
+        transition={{ duration: 0.3 }}
+        className={step === 1 ? "" : "pointer-events-none"}
+      >
+        <HamburgerMenu />
+        
+        {/* Mobile Layout */}
+        <div className="md:hidden flex flex-col min-h-screen relative">
+          {/* Banner image on top with rounded bottom */}
+          <div className="w-full flex-shrink-0">
+            <img src={scaleBeautyMobile} alt="Scale Beauty" className="w-full h-[260px] object-cover rounded-b-3xl" loading="eager" decoding="async" />
+          </div>
+          {/* Form overlapping the image */}
+          <div className="flex-1 flex flex-col justify-start px-4 -mt-6 relative z-10">
+            <FormContainer>
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key={step}
+                  initial={{ opacity: 0, x: 15 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -15 }}
+                  transition={{ duration: 0.2, ease: "easeOut" }}
+                >
+                  {renderStep()}
+                </motion.div>
+              </AnimatePresence>
+            </FormContainer>
+            
+            {/* Scroll Velocity - Mobile */}
+            <div className="relative flex w-full flex-col items-center justify-center overflow-hidden -mx-4 mt-4 gap-1" style={{
+            width: 'calc(100% + 2rem)'
+          }}>
+              <ScrollVelocityContainer className="text-[10px] uppercase tracking-[0.2em] text-foreground/30">
+                <ScrollVelocityRow baseVelocity={1} direction={1}>
+                  <span className="mx-3 font-light">SCALE BEAUTY • ESCALANDO SEU NEGÓCIO NO MUNDO BEAUTY • SUA ASSESSORIA DE MARKETING •</span>
+                </ScrollVelocityRow>
+              </ScrollVelocityContainer>
+              <ScrollVelocityContainer className="text-[10px] uppercase tracking-[0.2em] text-foreground/30">
+                <ScrollVelocityRow baseVelocity={1} direction={-1}>
+                  <span className="mx-3 font-bold">SCALE BEAUTY • ESCALANDO SEU NEGÓCIO NO MUNDO BEAUTY • SUA ASSESSORIA DE MARKETING •</span>
+                </ScrollVelocityRow>
+              </ScrollVelocityContainer>
+              <div className="from-background pointer-events-none absolute inset-y-0 left-0 w-1/6 bg-gradient-to-r"></div>
+              <div className="from-background pointer-events-none absolute inset-y-0 right-0 w-1/6 bg-gradient-to-l"></div>
+            </div>
+
+            {/* Feature Cards Section - Mobile */}
+            <FeaturesSection />
+            
+            {/* Animated Circle Section - Mobile */}
+            <AnimatedCircleSection />
+            
+            {/* Quem Somos Section - Mobile */}
+            <QuemSomosSection />
+            
+            {/* Mobile footer with terms - only on step 1 */}
+            {step === 1 && <div className="pb-4 pt-2 bg-background">
+                <div className="w-full h-px bg-border mb-4" />
+                <div className="text-center px-[1.25em]">
+                  <p className="legal-text">
+                    Ao clicar em PROSSEGUIR você automaticamente concorda com os{" "}
+                    <Link to="/termos" className="legal-link">
+                      termos de uso
+                    </Link>{" "}
+                    e{" "}
+                    <Link to="/privacidade" className="legal-link">
+                      política de privacidade
+                    </Link>
+                  </p>
+                  <p className="copyright mt-4">© Copyright 2025 Scale Beauty - Desenvolvido por Scale Beauty</p>
+                </div>
+              </div>}
+          </div>
         </div>
-        {/* Form overlapping the image */}
-        <div className="flex-1 flex flex-col justify-start px-4 -mt-6 relative z-10">
-          <FormContainer>
-            <AnimatePresence mode="wait">
-              <motion.div
-                key={step}
-                initial={{ opacity: 0, x: 15 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -15 }}
-                transition={{ duration: 0.2, ease: "easeOut" }}
-              >
-                {renderStep()}
-              </motion.div>
-            </AnimatePresence>
-          </FormContainer>
+
+        {/* Desktop Layout */}
+        <div className="hidden md:flex flex-col min-h-screen relative">
+          {/* Banner image on top with rounded bottom */}
+          <div className="w-full flex-shrink-0">
+            <img src={scaleBeautyBanner} alt="Scale Beauty" className="w-full h-[320px] object-cover rounded-b-3xl" loading="eager" decoding="async" />
+          </div>
           
-          {/* Scroll Velocity - Mobile */}
-          <div className="relative flex w-full flex-col items-center justify-center overflow-hidden -mx-4 mt-4 gap-1" style={{
-          width: 'calc(100% + 2rem)'
-        }}>
-            <ScrollVelocityContainer className="text-[10px] uppercase tracking-[0.2em] text-foreground/30">
-              <ScrollVelocityRow baseVelocity={1} direction={1}>
-                <span className="mx-3 font-light">SCALE BEAUTY • ESCALANDO SEU NEGÓCIO NO MUNDO BEAUTY • SUA ASSESSORIA DE MARKETING •</span>
-              </ScrollVelocityRow>
-            </ScrollVelocityContainer>
-            <ScrollVelocityContainer className="text-[10px] uppercase tracking-[0.2em] text-foreground/30">
-              <ScrollVelocityRow baseVelocity={1} direction={-1}>
-                <span className="mx-3 font-bold">SCALE BEAUTY • ESCALANDO SEU NEGÓCIO NO MUNDO BEAUTY • SUA ASSESSORIA DE MARKETING •</span>
-              </ScrollVelocityRow>
-            </ScrollVelocityContainer>
-            <div className="from-background pointer-events-none absolute inset-y-0 left-0 w-1/6 bg-gradient-to-r"></div>
-            <div className="from-background pointer-events-none absolute inset-y-0 right-0 w-1/6 bg-gradient-to-l"></div>
+          {/* Form overlapping the image */}
+          <div className="flex-1 flex items-start justify-center px-8 -mt-12 relative z-10">
+            <FormContainer>
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key={step}
+                  initial={{ opacity: 0, x: 15 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -15 }}
+                  transition={{ duration: 0.2, ease: "easeOut" }}
+                >
+                  {renderStep()}
+                </motion.div>
+              </AnimatePresence>
+            </FormContainer>
           </div>
 
-          {/* Feature Cards Section - Mobile */}
+          {/* Scroll Velocity */}
+          <div className="relative flex w-full flex-col items-center justify-center overflow-hidden py-3 gap-1" style={{
+          marginTop: '15px'
+        }}>
+            <ScrollVelocityContainer className="text-sm uppercase tracking-[0.2em] text-foreground/30">
+              <ScrollVelocityRow baseVelocity={1} direction={1}>
+                <span className="mx-4 font-light">SCALE BEAUTY • ESCALANDO SEU NEGÓCIO NO MUNDO BEAUTY • SUA ASSESSORIA DE MARKETING •</span>
+              </ScrollVelocityRow>
+            </ScrollVelocityContainer>
+            <ScrollVelocityContainer className="text-sm uppercase tracking-[0.2em] text-foreground/30">
+              <ScrollVelocityRow baseVelocity={1} direction={-1}>
+                <span className="mx-4 font-bold">SCALE BEAUTY • ESCALANDO SEU NEGÓCIO NO MUNDO BEAUTY • SUA ASSESSORIA DE MARKETING •</span>
+              </ScrollVelocityRow>
+            </ScrollVelocityContainer>
+            <div className="from-background pointer-events-none absolute inset-y-0 left-0 w-1/4 bg-gradient-to-r"></div>
+            <div className="from-background pointer-events-none absolute inset-y-0 right-0 w-1/4 bg-gradient-to-l"></div>
+          </div>
+
+          {/* Feature Cards Section */}
           <FeaturesSection />
           
-          {/* Animated Circle Section - Mobile */}
+          {/* Animated Circle Section */}
           <AnimatedCircleSection />
-          
-          {/* Quem Somos Section - Mobile */}
+
+          {/* Quem Somos Section - Desktop */}
           <QuemSomosSection />
-          
-          {/* Mobile footer with terms - only on step 1 */}
-          {step === 1 && <div className="pb-4 pt-2 bg-background">
+
+          {/* Desktop footer with terms - only on step 1 */}
+          {step === 1 && <div className="pb-6 pt-4 bg-background">
               <div className="w-full h-px bg-border mb-4" />
-              <div className="text-center px-[1.25em]">
+              <div className="text-center px-8">
                 <p className="legal-text">
                   Ao clicar em PROSSEGUIR você automaticamente concorda com os{" "}
                   <Link to="/termos" className="legal-link">
@@ -1236,77 +1343,7 @@ const Index = () => {
               </div>
             </div>}
         </div>
-      </div>
-
-      {/* Desktop Layout */}
-      <div className="hidden md:flex flex-col min-h-screen relative">
-        {/* Banner image on top with rounded bottom */}
-        <div className="w-full flex-shrink-0">
-          <img src={scaleBeautyBanner} alt="Scale Beauty" className="w-full h-[320px] object-cover rounded-b-3xl" loading="eager" decoding="async" />
-        </div>
-        
-        {/* Form overlapping the image */}
-        <div className="flex-1 flex items-start justify-center px-8 -mt-12 relative z-10">
-          <FormContainer>
-            <AnimatePresence mode="wait">
-              <motion.div
-                key={step}
-                initial={{ opacity: 0, x: 15 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -15 }}
-                transition={{ duration: 0.2, ease: "easeOut" }}
-              >
-                {renderStep()}
-              </motion.div>
-            </AnimatePresence>
-          </FormContainer>
-        </div>
-
-        {/* Scroll Velocity */}
-        <div className="relative flex w-full flex-col items-center justify-center overflow-hidden py-3 gap-1" style={{
-        marginTop: '15px'
-      }}>
-          <ScrollVelocityContainer className="text-sm uppercase tracking-[0.2em] text-foreground/30">
-            <ScrollVelocityRow baseVelocity={1} direction={1}>
-              <span className="mx-4 font-light">SCALE BEAUTY • ESCALANDO SEU NEGÓCIO NO MUNDO BEAUTY • SUA ASSESSORIA DE MARKETING •</span>
-            </ScrollVelocityRow>
-          </ScrollVelocityContainer>
-          <ScrollVelocityContainer className="text-sm uppercase tracking-[0.2em] text-foreground/30">
-            <ScrollVelocityRow baseVelocity={1} direction={-1}>
-              <span className="mx-4 font-bold">SCALE BEAUTY • ESCALANDO SEU NEGÓCIO NO MUNDO BEAUTY • SUA ASSESSORIA DE MARKETING •</span>
-            </ScrollVelocityRow>
-          </ScrollVelocityContainer>
-          <div className="from-background pointer-events-none absolute inset-y-0 left-0 w-1/4 bg-gradient-to-r"></div>
-          <div className="from-background pointer-events-none absolute inset-y-0 right-0 w-1/4 bg-gradient-to-l"></div>
-        </div>
-
-        {/* Feature Cards Section */}
-        <FeaturesSection />
-        
-        {/* Animated Circle Section */}
-        <AnimatedCircleSection />
-
-        {/* Quem Somos Section - Desktop */}
-        <QuemSomosSection />
-
-        {/* Desktop footer with terms - only on step 1 */}
-        {step === 1 && <div className="pb-6 pt-4 bg-background">
-            <div className="w-full h-px bg-border mb-4" />
-            <div className="text-center px-8">
-              <p className="legal-text">
-                Ao clicar em PROSSEGUIR você automaticamente concorda com os{" "}
-                <Link to="/termos" className="legal-link">
-                  termos de uso
-                </Link>{" "}
-                e{" "}
-                <Link to="/privacidade" className="legal-link">
-                  política de privacidade
-                </Link>
-              </p>
-              <p className="copyright mt-4">© Copyright 2025 Scale Beauty - Desenvolvido por Scale Beauty</p>
-            </div>
-          </div>}
-      </div>
+      </motion.div>
       </motion.div>
     </>
   );
