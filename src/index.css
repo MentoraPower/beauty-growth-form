@@ -467,17 +467,12 @@
   fill: #FFD4D4;
 }
 
-/* Text in numbered circles - black */
-.animated-circle #icone1 path,
-.animated-circle #icone2 path,
-.animated-circle #icone3 path,
-.animated-circle #icone4 path,
-.animated-circle #icone5 path,
-.animated-circle [id^="1"] path,
-.animated-circle [id^="2"] path,
-.animated-circle [id^="3"] path,
-.animated-circle [id^="4"] path,
-.animated-circle [id^="5"] path {
+/* Number text inside circles - black */
+.animated-circle #\31  path,
+.animated-circle #\32  path,
+.animated-circle #\33  path,
+.animated-circle #\34  path,
+.animated-circle #\35  path {
   fill: #000000 !important;
 }
 
