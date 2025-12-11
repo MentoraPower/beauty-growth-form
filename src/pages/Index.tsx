@@ -650,7 +650,7 @@ const Index = () => {
         return <div className="form-card">
             <h1 className="form-title max-w-[280px] md:max-w-none">
               <span className="font-light">Pronta para escalar seu negócio no </span>
-              <span className="font-bold">Mundo Beauty?</span>
+              <span className="font-bold whitespace-nowrap">Mundo Beauty?</span>
             </h1>
             <p className="form-subtitle mt-4 mb-8">Como posso te chamar?</p>
             <div className="space-y-4">
