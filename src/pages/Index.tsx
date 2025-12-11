@@ -1375,7 +1375,7 @@ function AnimatedContainer({
 }
 function FeaturesSection() {
   return <section id="servicos" className="py-16 md:py-20">
-      <div className="mx-auto w-full max-w-5xl space-y-8 px-6 md:px-4">
+      <div className="mx-auto w-full max-w-6xl space-y-8 px-6 md:px-8">
         <AnimatedContainer className="mx-auto max-w-4xl text-center px-2">
           <h2 className="text-2xl font-bold tracking-tight text-balance md:text-3xl lg:text-4xl xl:font-extrabold mx-0">
             ​Como a Scale pode te ajudar?                    
@@ -1385,9 +1385,9 @@ function FeaturesSection() {
           </p>
         </AnimatedContainer>
 
-        <AnimatedContainer delay={0.4} className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          {features.map((feature, i) => <div key={i} className="border border-dashed">
-              <FeatureCard feature={feature} />
+        <AnimatedContainer delay={0.4} className="grid grid-cols-2 gap-4">
+          {features.map((feature, i) => <div key={i} className="border border-dashed aspect-square">
+              <FeatureCard feature={feature} className="h-full" />
             </div>)}
         </AnimatedContainer>
       </div>
