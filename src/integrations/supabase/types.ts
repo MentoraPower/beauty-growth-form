@@ -371,6 +371,71 @@ export type Database = {
         }
         Relationships: []
       }
+      pipeline_automations: {
+        Row: {
+          created_at: string
+          id: string
+          is_active: boolean
+          pipeline_id: string
+          target_origin_id: string | null
+          target_pipeline_id: string | null
+          target_sub_origin_id: string | null
+          target_type: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          pipeline_id: string
+          target_origin_id?: string | null
+          target_pipeline_id?: string | null
+          target_sub_origin_id?: string | null
+          target_type: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          pipeline_id?: string
+          target_origin_id?: string | null
+          target_pipeline_id?: string | null
+          target_sub_origin_id?: string | null
+          target_type?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pipeline_automations_pipeline_id_fkey"
+            columns: ["pipeline_id"]
+            isOneToOne: false
+            referencedRelation: "pipelines"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pipeline_automations_target_origin_id_fkey"
+            columns: ["target_origin_id"]
+            isOneToOne: false
+            referencedRelation: "crm_origins"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pipeline_automations_target_pipeline_id_fkey"
+            columns: ["target_pipeline_id"]
+            isOneToOne: false
+            referencedRelation: "pipelines"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pipeline_automations_target_sub_origin_id_fkey"
+            columns: ["target_sub_origin_id"]
+            isOneToOne: false
+            referencedRelation: "crm_sub_origins"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       pipelines: {
         Row: {
           cor: string
