@@ -11,10 +11,10 @@ import {
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import {
   Dialog,
   DialogContent,
@@ -422,65 +422,109 @@ export function CRMSidebarMenu({ isExpanded, onNavigate, onDropdownOpenChange }:
     </div>
   );
 
+  // Render collapsed icons for origins and sub-origins
+  const renderCollapsedIcons = () => (
+    <div className="flex flex-col items-center gap-1 mt-1">
+      {origins.map((origin) => {
+        const originSubOrigins = subOrigins.filter(s => s.origin_id === origin.id);
+        const isOriginExpanded = expandedOrigins.has(origin.id);
+        const originInitial = origin.nome.charAt(0).toUpperCase();
+
+        return (
+          <div key={origin.id} className="flex flex-col items-center">
+            {/* Origin Icon */}
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  onClick={() => toggleOrigin(origin.id)}
+                  className={cn(
+                    "w-9 h-9 rounded-lg flex items-center justify-center transition-colors",
+                    isOriginExpanded 
+                      ? "bg-white/15 text-white" 
+                      : "text-white/70 hover:bg-white/10 hover:text-white"
+                  )}
+                >
+                  {isOriginExpanded ? (
+                    <FolderOpen className="h-4 w-4" />
+                  ) : (
+                    <Folder className="h-4 w-4" />
+                  )}
+                </button>
+              </TooltipTrigger>
+              <TooltipContent side="right" className="z-[9999]">
+                {origin.nome}
+              </TooltipContent>
+            </Tooltip>
+
+            {/* Sub-origin Icons when origin is expanded */}
+            {isOriginExpanded && (
+              <div className="flex flex-col items-center gap-0.5 mt-0.5 ml-1 pl-1 border-l border-white/20">
+                {originSubOrigins.map((subOrigin) => {
+                  const leadCount = leadCounts.find(lc => lc.sub_origin_id === subOrigin.id)?.count || 0;
+                  return (
+                    <Tooltip key={subOrigin.id}>
+                      <TooltipTrigger asChild>
+                        <button
+                          onClick={() => handleSubOriginClick(subOrigin.id)}
+                          className="w-7 h-7 rounded-md flex items-center justify-center text-white/60 hover:bg-white/10 hover:text-white transition-colors relative"
+                        >
+                          <Kanban className="h-3 w-3" />
+                          {leadCount > 0 && (
+                            <span className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 bg-gradient-to-r from-[#F40000] to-[#A10000] text-white text-[8px] rounded-full flex items-center justify-center">
+                              {leadCount > 9 ? '9+' : leadCount}
+                            </span>
+                          )}
+                        </button>
+                      </TooltipTrigger>
+                      <TooltipContent side="right" className="z-[9999]">
+                        {subOrigin.nome} {leadCount > 0 && `(${leadCount})`}
+                      </TooltipContent>
+                    </Tooltip>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+
   return (
     <>
       <div className="flex flex-col">
-        {/* CRM Main Button - When expanded */}
-        {isExpanded ? (
-          <button
-            onClick={() => setIsOpen(!isOpen)}
-            className={cn(
-              "relative flex items-center w-full rounded-xl transition-colors duration-200 px-4 py-3 gap-3",
-              isCRMActive
-                ? "bg-white/10 text-white before:absolute before:left-0 before:top-1/2 before:-translate-y-1/2 before:h-[70%] before:w-1 before:rounded-r-full before:bg-gradient-to-b before:from-[#F40000] before:to-[#A10000]"
-                : "text-white/60 hover:bg-white/5 hover:text-white"
-            )}
-          >
-            <Kanban className="h-5 w-5 flex-shrink-0" strokeWidth={1.5} />
-            <span className="text-sm font-medium whitespace-nowrap flex-1 text-left">
-              CRM
-            </span>
-            <ChevronDown 
-              className={cn(
-                "h-4 w-4 transition-transform duration-200",
-                isOpen ? "rotate-180" : ""
-              )} 
-            />
-          </button>
-        ) : (
-          /* CRM Button with Popover - When collapsed, opens below */
-          <Popover open={isOpen} onOpenChange={(open) => {
-            setIsOpen(open);
-            onDropdownOpenChange?.(open);
-          }}>
-            <PopoverTrigger asChild>
-              <button
+        {/* CRM Main Button */}
+        <button
+          onClick={() => setIsOpen(!isOpen)}
+          className={cn(
+            "relative flex items-center rounded-xl transition-colors duration-200 px-4 py-3 gap-3",
+            isExpanded ? "w-full" : "w-full justify-center",
+            isCRMActive
+              ? "bg-white/10 text-white before:absolute before:left-0 before:top-1/2 before:-translate-y-1/2 before:h-[70%] before:w-1 before:rounded-r-full before:bg-gradient-to-b before:from-[#F40000] before:to-[#A10000]"
+              : "text-white/60 hover:bg-white/5 hover:text-white"
+          )}
+        >
+          <Kanban className="h-5 w-5 flex-shrink-0" strokeWidth={1.5} />
+          {isExpanded && (
+            <>
+              <span className="text-sm font-medium whitespace-nowrap flex-1 text-left">
+                CRM
+              </span>
+              <ChevronDown 
                 className={cn(
-                  "relative flex items-center justify-center w-full rounded-xl transition-colors duration-200 px-4 py-3",
-                  isCRMActive
-                    ? "bg-white/10 text-white before:absolute before:left-0 before:top-1/2 before:-translate-y-1/2 before:h-[70%] before:w-1 before:rounded-r-full before:bg-gradient-to-b before:from-[#F40000] before:to-[#A10000]"
-                    : "text-white/60 hover:bg-white/5 hover:text-white"
-                )}
-              >
-                <Kanban className="h-5 w-5 flex-shrink-0" strokeWidth={1.5} />
-              </button>
-            </PopoverTrigger>
-            <PopoverContent 
-              side="bottom" 
-              align="start" 
-              sideOffset={8}
-              className="w-64 z-[9999] bg-popover p-0 max-h-[60vh] overflow-y-auto"
-            >
-              <div className="px-3 py-2 border-b border-border/50 sticky top-0 bg-popover">
-                <span className="text-sm font-semibold text-foreground">CRM - Origens</span>
-              </div>
-              {renderOriginsMenu(true)}
-            </PopoverContent>
-          </Popover>
-        )}
+                  "h-4 w-4 transition-transform duration-200",
+                  isOpen ? "rotate-180" : ""
+                )} 
+              />
+            </>
+          )}
+        </button>
 
-        {/* Expandable Menu - Only when expanded */}
+        {/* Expanded Menu - When sidebar is expanded */}
         {isOpen && isExpanded && renderOriginsMenu(false)}
+
+        {/* Collapsed Icons - When sidebar is collapsed and CRM is open */}
+        {isOpen && !isExpanded && renderCollapsedIcons()}
       </div>
 
       {/* Create/Edit Dialog */}
