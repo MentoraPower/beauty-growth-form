@@ -407,3 +407,71 @@
     user-select: text;
   }
 }
+
+/* Animated Circle SVG Styles */
+.animated-circle svg {
+  width: 100%;
+  height: 100%;
+}
+
+.animated-circle #fundo5-1,
+.animated-circle #fundo4-5 path,
+.animated-circle #fundo3-4 path,
+.animated-circle #fundo2-3 path,
+.animated-circle #fundo1-2 path {
+  fill: #F40000;
+  transition: fill 0.3s ease;
+}
+
+.animated-circle #fundo5-1 {
+  fill: #A10000;
+}
+
+.animated-circle #fundo4-5 path {
+  fill: #B80000;
+}
+
+.animated-circle #fundo3-4 path {
+  fill: #C50000;
+}
+
+.animated-circle #fundo2-3 path {
+  fill: #D80000;
+}
+
+.animated-circle #fundo1-2 path {
+  fill: #E50000;
+}
+
+.animated-circle #circle-fora {
+  stroke: #F40000;
+  stroke-opacity: 0.3;
+}
+
+/* Small dots */
+.animated-circle #circle-dentro-1 path,
+.animated-circle #circle-dentro-2 path,
+.animated-circle #circle-dentro-3 path,
+.animated-circle #circle-dentro-4 path,
+.animated-circle #circle-dentro-5 path {
+  fill: #F40000;
+  stroke: #F40000;
+}
+
+/* Icon circles background */
+.animated-circle #circle1,
+.animated-circle #circle2,
+.animated-circle #circle3,
+.animated-circle #circle4,
+.animated-circle #circle5 {
+  fill: #FFD4D4;
+}
+
+/* Hover effects */
+.animated-circle #fundo5-1:hover,
+.animated-circle #fundo4-5:hover path,
+.animated-circle #fundo3-4:hover path,
+.animated-circle #fundo2-3:hover path,
+.animated-circle #fundo1-2:hover path {
+  fill: #FF3333 !important;
+}
