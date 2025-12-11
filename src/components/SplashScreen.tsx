@@ -18,10 +18,11 @@ const SplashScreen = ({ onComplete }: SplashScreenProps) => {
     // Prevent scrolling while splash is showing
     document.body.style.overflow = "hidden";
     
-    // Total animation time: all letters appear + hold + fade
+    // Total animation time: logo + all letters appear + hold + fade
+    const logoDelay = 800; // logo appears first
     const totalLetters = allChars.length;
     const letterDelay = 55; // ms per letter
-    const animationTime = totalLetters * letterDelay + 1000; // letters + hold
+    const animationTime = logoDelay + totalLetters * letterDelay + 1000; // logo + letters + hold
     
     const timer = setTimeout(() => {
       setShowSplash(false);
@@ -52,9 +53,9 @@ const SplashScreen = ({ onComplete }: SplashScreenProps) => {
             src={splashLogo}
             alt="Scale Beauty"
             className="w-16 mb-6"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.4, ease: "easeOut" }}
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, ease: [0.25, 0.4, 0.25, 1] }}
           />
           <p className="text-base md:text-lg font-light tracking-wide text-muted-foreground">
             {allChars.map((char, index) => {
@@ -66,7 +67,7 @@ const SplashScreen = ({ onComplete }: SplashScreenProps) => {
                   animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
                   transition={{
                     duration: 0.35,
-                    delay: index * 0.055,
+                    delay: 0.8 + index * 0.055, // starts after logo (0.8s delay)
                     ease: [0.25, 0.4, 0.25, 1],
                   }}
                   className={`inline-block ${isScale ? "font-semibold bg-gradient-to-r from-[#F40000] to-[#A10000] bg-clip-text text-transparent" : ""}`}
