@@ -1323,10 +1323,6 @@ const features = [{
   title: 'Automações',
   icon: Zap,
   description: 'Automatize processos e ganhe tempo para focar no que realmente importa.'
-}, {
-  title: 'Inteligência Artificial',
-  icon: Sparkles,
-  description: 'Use IA para escalar seu negócio de beleza e atender mais clientes.'
 }];
 type ViewAnimationProps = {
   delay?: number;
