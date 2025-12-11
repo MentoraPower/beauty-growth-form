@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, lazy, Suspense } from "react";
 import {
   DndContext,
   DragEndEvent,
@@ -21,9 +21,13 @@ import { KanbanColumn } from "./KanbanColumn";
 import { KanbanCard } from "./KanbanCard";
 import { Button } from "@/components/ui/button";
 import { Settings, LayoutGrid, List } from "lucide-react";
-import { ManagePipelinesDialog } from "./ManagePipelinesDialog";
 import { LeadsList } from "./LeadsList";
 import { toast } from "sonner";
+
+// Lazy load heavy dialog
+const ManagePipelinesDialog = lazy(() => 
+  import("./ManagePipelinesDialog").then(m => ({ default: m.ManagePipelinesDialog }))
+);
 
 export function KanbanBoard() {
   const [searchParams] = useSearchParams();
@@ -324,7 +328,27 @@ export function KanbanBoard() {
     [activeId, localLeads]
   );
 
-  const displayLeads = localLeads.length > 0 ? localLeads : leads;
+  const displayLeads = useMemo(() => 
+    localLeads.length > 0 ? localLeads : leads,
+    [localLeads, leads]
+  );
+
+  // Memoize leads grouped by pipeline for Kanban view
+  const leadsByPipeline = useMemo(() => {
+    const map = new Map<string, Lead[]>();
+    pipelines.forEach(p => map.set(p.id, []));
+    displayLeads.forEach(lead => {
+      if (lead.pipeline_id) {
+        const arr = map.get(lead.pipeline_id);
+        if (arr) arr.push(lead);
+      }
+    });
+    // Sort each pipeline's leads
+    map.forEach((pipelineLeads) => {
+      pipelineLeads.sort((a, b) => (a.ordem ?? 0) - (b.ordem ?? 0));
+    });
+    return map;
+  }, [displayLeads, pipelines]);
 
   // Build title based on current sub-origin
   const pageTitle = currentSubOrigin 
@@ -389,19 +413,14 @@ export function KanbanBoard() {
           <LeadsList leads={displayLeads} pipelines={pipelines} activeDragId={activeId} />
         ) : (
           <div className="flex gap-4 overflow-x-auto flex-1 pb-4 h-full">
-            {pipelines.map((pipeline) => {
-              const pipelineLeads = displayLeads
-                .filter((lead) => lead.pipeline_id === pipeline.id)
-                .sort((a, b) => (a.ordem ?? 0) - (b.ordem ?? 0));
-              return (
-                <KanbanColumn
-                  key={pipeline.id}
-                  pipeline={pipeline}
-                  leads={pipelineLeads}
-                  isOver={overId === pipeline.id}
-                />
-              );
-            })}
+            {pipelines.map((pipeline) => (
+              <KanbanColumn
+                key={pipeline.id}
+                pipeline={pipeline}
+                leads={leadsByPipeline.get(pipeline.id) || []}
+                isOver={overId === pipeline.id}
+              />
+            ))}
           </div>
         )}
 
@@ -421,11 +440,13 @@ export function KanbanBoard() {
         </DragOverlay>
       </DndContext>
 
-      <ManagePipelinesDialog
-        open={isPipelinesDialogOpen}
-        onOpenChange={setIsPipelinesDialogOpen}
-        pipelines={pipelines}
-      />
+      <Suspense fallback={null}>
+        <ManagePipelinesDialog
+          open={isPipelinesDialogOpen}
+          onOpenChange={setIsPipelinesDialogOpen}
+          pipelines={pipelines}
+        />
+      </Suspense>
     </div>
   );
 }

@@ -1,3 +1,4 @@
+import { memo, useRef } from "react";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { Lead } from "@/types/crm";
@@ -6,14 +7,13 @@ import { Badge } from "@/components/ui/badge";
 import { Mail, Phone } from "lucide-react";
 import Instagram from "@/components/icons/Instagram";
 import { useNavigate } from "react-router-dom";
-import { useRef } from "react";
 
 interface KanbanCardProps {
   lead: Lead;
   isDragging?: boolean;
 }
 
-export function KanbanCard({ lead, isDragging: isDraggingOverlay }: KanbanCardProps) {
+export const KanbanCard = memo(function KanbanCard({ lead, isDragging: isDraggingOverlay }: KanbanCardProps) {
   const navigate = useNavigate();
   const dragStartPos = useRef<{ x: number; y: number } | null>(null);
   const wasDragged = useRef(false);
@@ -37,17 +37,14 @@ export function KanbanCard({ lead, isDragging: isDraggingOverlay }: KanbanCardPr
     transform: CSS.Transform.toString(transform),
     transition: transition || 'transform 200ms cubic-bezier(0.25, 1, 0.5, 1)',
     border: '1px solid #00000020',
-    // Hide the original card when being dragged (placeholder keeps space)
     opacity: isDragging ? 0 : 1,
   };
 
   const isBeingDragged = isDraggingOverlay;
 
-  // Combine our pointer tracking with dnd-kit's listeners
   const handlePointerDown = (e: React.PointerEvent) => {
     dragStartPos.current = { x: e.clientX, y: e.clientY };
     wasDragged.current = false;
-    // Call dnd-kit's onPointerDown
     listeners?.onPointerDown?.(e as any);
   };
 
@@ -62,7 +59,6 @@ export function KanbanCard({ lead, isDragging: isDraggingOverlay }: KanbanCardPr
   };
 
   const handleClick = (e: React.MouseEvent) => {
-    // Only navigate if mouse didn't move much (not a drag)
     if (!wasDragged.current && !isDragging) {
       e.stopPropagation();
       navigate(`/admin/crm/${lead.id}`);
@@ -111,4 +107,4 @@ export function KanbanCard({ lead, isDragging: isDraggingOverlay }: KanbanCardPr
       </CardContent>
     </Card>
   );
-}
+});
