@@ -1375,9 +1375,6 @@ function AnimatedCircleSection() {
           src="/circle-animado.svg" 
           alt="" 
           className="w-[280px] h-[280px] md:w-[450px] md:h-[450px] lg:w-[550px] lg:h-[550px] animate-spin-slow"
-          style={{ 
-            filter: 'hue-rotate(-40deg) saturate(2) brightness(0.9)'
-          }}
         />
       </div>
     </section>;
