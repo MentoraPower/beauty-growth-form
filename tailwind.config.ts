@@ -14,9 +14,9 @@ export default {
     },
     extend: {
       fontFamily: {
-        colo: ['Colo', 'sans-serif'],
-        display: ['Metropolis', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif'],
-        body: ['Metropolis', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif'],
+        sans: ['RoobertPRO', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif'],
+        display: ['RoobertPRO', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif'],
+        body: ['RoobertPRO', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif'],
       },
       letterSpacing: {
         tighter: '-0.03em',
