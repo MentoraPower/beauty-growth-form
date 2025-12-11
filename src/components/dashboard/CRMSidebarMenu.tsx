@@ -34,6 +34,11 @@ interface SubOrigin {
   ordem: number;
 }
 
+interface LeadCount {
+  sub_origin_id: string;
+  count: number;
+}
+
 interface CRMSidebarMenuProps {
   isExpanded: boolean;
   onNavigate?: () => void;
@@ -45,6 +50,7 @@ export function CRMSidebarMenu({ isExpanded, onNavigate, onDropdownOpenChange }:
   const navigate = useNavigate();
   const [origins, setOrigins] = useState<Origin[]>([]);
   const [subOrigins, setSubOrigins] = useState<SubOrigin[]>([]);
+  const [leadCounts, setLeadCounts] = useState<LeadCount[]>([]);
   
   // Load persisted state from localStorage
   const [isOpen, setIsOpen] = useState(() => {
@@ -90,20 +96,40 @@ export function CRMSidebarMenu({ isExpanded, onNavigate, onDropdownOpenChange }:
       .on('postgres_changes', { event: '*', schema: 'public', table: 'crm_sub_origins' }, fetchData)
       .subscribe();
 
+    const leadsChannel = supabase
+      .channel('crm-leads-count-changes')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'leads' }, fetchData)
+      .subscribe();
+
     return () => {
       supabase.removeChannel(originsChannel);
       supabase.removeChannel(subOriginsChannel);
+      supabase.removeChannel(leadsChannel);
     };
   }, []);
 
   const fetchData = async () => {
-    const [originsRes, subOriginsRes] = await Promise.all([
+    const [originsRes, subOriginsRes, leadsRes] = await Promise.all([
       supabase.from("crm_origins").select("*").order("ordem"),
       supabase.from("crm_sub_origins").select("*").order("ordem"),
+      supabase.from("leads").select("sub_origin_id"),
     ]);
 
     if (originsRes.data) setOrigins(originsRes.data);
     if (subOriginsRes.data) setSubOrigins(subOriginsRes.data);
+    
+    // Calculate lead counts per sub-origin
+    if (leadsRes.data) {
+      const counts: Record<string, number> = {};
+      leadsRes.data.forEach((lead) => {
+        if (lead.sub_origin_id) {
+          counts[lead.sub_origin_id] = (counts[lead.sub_origin_id] || 0) + 1;
+        }
+      });
+      setLeadCounts(
+        Object.entries(counts).map(([sub_origin_id, count]) => ({ sub_origin_id, count }))
+      );
+    }
   };
 
   const toggleOrigin = (originId: string) => {
@@ -314,7 +340,9 @@ export function CRMSidebarMenu({ isExpanded, onNavigate, onDropdownOpenChange }:
                   {/* Sub-origins */}
                   {isOriginExpanded && (
                     <div className="ml-4 pl-2 border-l border-white/10 space-y-0.5">
-                      {originSubOrigins.map((subOrigin) => (
+                      {originSubOrigins.map((subOrigin) => {
+                        const leadCount = leadCounts.find(lc => lc.sub_origin_id === subOrigin.id)?.count || 0;
+                        return (
                         <div key={subOrigin.id} className="flex items-center group">
                           <button
                             onClick={() => handleSubOriginClick(subOrigin.id)}
@@ -322,6 +350,11 @@ export function CRMSidebarMenu({ isExpanded, onNavigate, onDropdownOpenChange }:
                           >
                             <Kanban className="h-3 w-3 flex-shrink-0 text-white/80" />
                             <span className="truncate">{subOrigin.nome}</span>
+                            {leadCount > 0 && (
+                              <span className="ml-auto text-[10px] bg-white/10 text-white/70 px-1.5 py-0.5 rounded-full">
+                                {leadCount}
+                              </span>
+                            )}
                           </button>
                           
                           {/* Sub-origin Actions */}
@@ -350,7 +383,8 @@ export function CRMSidebarMenu({ isExpanded, onNavigate, onDropdownOpenChange }:
                             </DropdownMenuContent>
                           </DropdownMenu>
                         </div>
-                      ))}
+                        );
+                      })}
 
                       {/* Add Sub-origin Button inside folder */}
                       <button
