@@ -14,6 +14,59 @@ export type Database = {
   }
   public: {
     Tables: {
+      crm_origins: {
+        Row: {
+          created_at: string
+          id: string
+          nome: string
+          ordem: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          nome: string
+          ordem?: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          nome?: string
+          ordem?: number
+        }
+        Relationships: []
+      }
+      crm_sub_origins: {
+        Row: {
+          created_at: string
+          id: string
+          nome: string
+          ordem: number
+          origin_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          nome: string
+          ordem?: number
+          origin_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          nome?: string
+          ordem?: number
+          origin_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_sub_origins_origin_id_fkey"
+            columns: ["origin_id"]
+            isOneToOne: false
+            referencedRelation: "crm_origins"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       email_settings: {
         Row: {
           created_at: string
@@ -217,6 +270,7 @@ export type Database = {
           ordem: number | null
           pipeline_id: string | null
           service_area: string
+          sub_origin_id: string | null
           utm_campaign: string | null
           utm_content: string | null
           utm_medium: string | null
@@ -243,6 +297,7 @@ export type Database = {
           ordem?: number | null
           pipeline_id?: string | null
           service_area: string
+          sub_origin_id?: string | null
           utm_campaign?: string | null
           utm_content?: string | null
           utm_medium?: string | null
@@ -269,6 +324,7 @@ export type Database = {
           ordem?: number | null
           pipeline_id?: string | null
           service_area?: string
+          sub_origin_id?: string | null
           utm_campaign?: string | null
           utm_content?: string | null
           utm_medium?: string | null
@@ -286,6 +342,13 @@ export type Database = {
             columns: ["pipeline_id"]
             isOneToOne: false
             referencedRelation: "pipelines"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "leads_sub_origin_id_fkey"
+            columns: ["sub_origin_id"]
+            isOneToOne: false
+            referencedRelation: "crm_sub_origins"
             referencedColumns: ["id"]
           },
         ]

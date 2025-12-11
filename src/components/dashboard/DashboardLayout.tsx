@@ -1,9 +1,10 @@
 import { useState, useCallback, useEffect, useRef } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { LayoutDashboard, Menu, X, LogOut, Kanban } from "lucide-react";
+import { LayoutDashboard, Menu, X, LogOut } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
 import scaleLogo from "@/assets/scale-logo.png";
+import { CRMSidebarMenu } from "./CRMSidebarMenu";
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -11,7 +12,6 @@ interface DashboardLayoutProps {
 
 const navItems = [
   { href: "/admin", icon: LayoutDashboard, label: "Dashboard" },
-  { href: "/admin/crm", icon: Kanban, label: "CRM" },
 ];
 
 // Variável global para persistir o estado de hover entre navegações
@@ -108,6 +108,9 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
                   </Link>
                 );
               })}
+              
+              {/* CRM Menu with Origins/Sub-origins */}
+              <CRMSidebarMenu isExpanded={shouldBeExpanded} />
             </div>
           </nav>
 
@@ -143,7 +146,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
             <img src={scaleLogo} alt="Scale" className="w-20" />
           </div>
 
-          <nav className="flex-1 px-2">
+          <nav className="flex-1 px-2 overflow-y-auto">
             <div className="flex flex-col gap-1">
               {navItems.map((item) => {
                 const isActive = location.pathname === item.href;
@@ -166,6 +169,9 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
                   </Link>
                 );
               })}
+              
+              {/* CRM Menu with Origins/Sub-origins - Mobile */}
+              <CRMSidebarMenu isExpanded={true} onNavigate={() => setSidebarOpen(false)} />
             </div>
           </nav>
 
