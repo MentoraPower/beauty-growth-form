@@ -1385,8 +1385,8 @@ function FeaturesSection() {
           </p>
         </AnimatedContainer>
 
-        <AnimatedContainer delay={0.4} className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {features.map((feature, i) => <div key={i} className="border border-dashed min-h-[180px] md:min-h-[220px]">
+        <AnimatedContainer delay={0.4} className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          {features.map((feature, i) => <div key={i} className="border border-dashed min-h-[140px] md:min-h-[160px]">
               <FeatureCard feature={feature} className="h-full" />
             </div>)}
         </AnimatedContainer>
