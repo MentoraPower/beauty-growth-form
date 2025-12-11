@@ -160,6 +160,47 @@ export type Database = {
           },
         ]
       }
+      lead_tracking: {
+        Row: {
+          created_at: string
+          dados: Json | null
+          descricao: string | null
+          id: string
+          lead_id: string
+          origem: string | null
+          tipo: string
+          titulo: string
+        }
+        Insert: {
+          created_at?: string
+          dados?: Json | null
+          descricao?: string | null
+          id?: string
+          lead_id: string
+          origem?: string | null
+          tipo?: string
+          titulo: string
+        }
+        Update: {
+          created_at?: string
+          dados?: Json | null
+          descricao?: string | null
+          id?: string
+          lead_id?: string
+          origem?: string | null
+          tipo?: string
+          titulo?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lead_tracking_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       leads: {
         Row: {
           average_ticket: number | null
@@ -176,6 +217,11 @@ export type Database = {
           ordem: number | null
           pipeline_id: string | null
           service_area: string
+          utm_campaign: string | null
+          utm_content: string | null
+          utm_medium: string | null
+          utm_source: string | null
+          utm_term: string | null
           wants_more_info: boolean | null
           weekly_attendance: string
           whatsapp: string
@@ -197,6 +243,11 @@ export type Database = {
           ordem?: number | null
           pipeline_id?: string | null
           service_area: string
+          utm_campaign?: string | null
+          utm_content?: string | null
+          utm_medium?: string | null
+          utm_source?: string | null
+          utm_term?: string | null
           wants_more_info?: boolean | null
           weekly_attendance: string
           whatsapp: string
@@ -218,6 +269,11 @@ export type Database = {
           ordem?: number | null
           pipeline_id?: string | null
           service_area?: string
+          utm_campaign?: string | null
+          utm_content?: string | null
+          utm_medium?: string | null
+          utm_source?: string | null
+          utm_term?: string | null
           wants_more_info?: boolean | null
           weekly_attendance?: string
           whatsapp?: string
