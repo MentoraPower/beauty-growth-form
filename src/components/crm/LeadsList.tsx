@@ -86,7 +86,7 @@ function PipelineList({ pipeline, leads, activeDragId }: PipelineListProps) {
       ref={setNodeRef}
       className={`rounded-xl border overflow-hidden transition-all ${
         isOver 
-          ? "border-primary/30 bg-primary/5" 
+          ? "border-primary/40 bg-primary/5 ring-2 ring-primary/20" 
           : "border-black/10 bg-muted/40"
       }`}
     >
@@ -94,11 +94,18 @@ function PipelineList({ pipeline, leads, activeDragId }: PipelineListProps) {
       <div className={`px-4 py-3 border-b transition-colors ${
         isOver ? "border-primary/20 bg-primary/10" : "border-black/5 bg-muted/20"
       }`}>
-        <div className="flex items-center gap-2">
-          <h3 className="font-semibold text-sm">{pipeline.nome}</h3>
-          <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-full">
-            {leads.length}
-          </span>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <h3 className="font-semibold text-sm">{pipeline.nome}</h3>
+            <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-full">
+              {leads.length}
+            </span>
+          </div>
+          {isOver && (
+            <span className="text-xs text-primary font-medium animate-pulse">
+              Solte aqui
+            </span>
+          )}
         </div>
       </div>
 
