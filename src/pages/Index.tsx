@@ -62,50 +62,27 @@ const formatCurrencyDisplay = (value: string | number): string => {
   return `R$ ${formatted}`;
 };
 
-// Handle currency input - format as R$ 000,00 while allowing free typing
+// Handle currency input - ATM-style formatting (digits entered from right to left)
 const handleCurrencyInput = (value: string): string => {
-  // If empty, return empty
-  if (!value) return '';
+  // Remove everything except digits
+  const digits = value.replace(/\D/g, '');
   
-  // Remove R$ prefix and spaces for processing
-  let cleaned = value.replace(/R\$\s*/g, '').trim();
+  // If empty, return empty placeholder
+  if (!digits) return '';
   
-  // Remove everything except digits, comma and dot
-  cleaned = cleaned.replace(/[^\d,\.]/g, '');
+  // Convert to cents (pad with leading zeros if needed)
+  const cents = parseInt(digits, 10);
   
-  // If no content, return empty
-  if (!cleaned) return '';
+  // Convert cents to reais (divide by 100)
+  const reais = cents / 100;
   
-  // Replace dot with comma for consistency (allow either separator)
-  cleaned = cleaned.replace(/\./g, ',');
+  // Format as BRL currency
+  const formatted = reais.toLocaleString('pt-BR', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  });
   
-  // Keep only the last comma (decimal separator)
-  const commaCount = (cleaned.match(/,/g) || []).length;
-  if (commaCount > 1) {
-    const lastCommaIndex = cleaned.lastIndexOf(',');
-    cleaned = cleaned.substring(0, lastCommaIndex).replace(/,/g, '') + cleaned.substring(lastCommaIndex);
-  }
-  
-  // Split into integer and decimal parts
-  const parts = cleaned.split(',');
-  let integerPart = parts[0] || '0';
-  let decimalPart = parts[1] || '';
-  
-  // Limit decimal to 2 digits
-  if (decimalPart.length > 2) {
-    decimalPart = decimalPart.substring(0, 2);
-  }
-  
-  // Format integer part with thousands separator
-  const integerNumber = parseInt(integerPart.replace(/\D/g, ''), 10) || 0;
-  const formattedInteger = integerNumber.toLocaleString('pt-BR');
-  
-  // Build result
-  if (parts.length > 1) {
-    return `R$ ${formattedInteger},${decimalPart}`;
-  }
-  
-  return `R$ ${formattedInteger}`;
+  return `R$ ${formatted}`;
 };
 
 // Parse currency string to number (returns value in reais)
