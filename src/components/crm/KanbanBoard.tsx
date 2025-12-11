@@ -333,7 +333,7 @@ export function KanbanBoard() {
             },
           }}
         >
-          <div className="flex gap-4 overflow-x-auto flex-1 pb-4">
+          <div className="flex gap-4 overflow-x-auto flex-1 pb-4 h-full">
             {pipelines.map((pipeline) => {
               const pipelineLeads = displayLeads
                 .filter((lead) => lead.pipeline_id === pipeline.id)
