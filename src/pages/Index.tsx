@@ -1396,7 +1396,7 @@ function FeaturesSection() {
 
 function AnimatedCircleSection() {
   return (
-    <section className="py-16 md:py-16 overflow-visible">
+    <section className="pt-8 pb-16 md:py-16 overflow-visible">
       <div className="mx-auto w-full max-w-6xl px-6 md:px-8">
         <div className="flex flex-col lg:flex-row-reverse items-center gap-8 lg:gap-16">
           {/* Circle */}
