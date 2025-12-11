@@ -19,13 +19,13 @@ export function KanbanColumn({ pipeline, leads, isOver, activeId }: KanbanColumn
   const visibleLeads = activeId ? leads.filter((l) => l.id !== activeId) : leads;
 
   return (
-    <div className="flex-shrink-0 w-80 flex flex-col h-full">
+    <div className="flex-shrink-0 w-80 flex flex-col min-h-full">
       <div
         ref={setNodeRef}
         className={`flex-1 rounded-xl border transition-all duration-150 flex flex-col ${
           isOver
-            ? "bg-muted/30 border-muted-foreground/20 border-dashed"
-            : "bg-muted/20 border-black/5"
+            ? "bg-muted/50 border-muted-foreground/20 border-dashed"
+            : "bg-muted/40 border-black/10"
         }`}
       >
         {/* Header inside column */}
