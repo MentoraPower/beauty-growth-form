@@ -257,7 +257,7 @@ export default function LeadDetail() {
         </div>
 
         {/* Tags Section - aligned with profile content */}
-        <div className="pl-[44px] -mt-3">
+        <div className="pl-[44px] -mt-5">
           <LeadTagsManager leadId={lead.id} />
         </div>
 
