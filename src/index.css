@@ -414,73 +414,57 @@
   height: 100%;
 }
 
-/* Segments - black/dark gray gradient */
 .animated-circle #fundo5-1,
 .animated-circle #fundo4-5 path,
 .animated-circle #fundo3-4 path,
 .animated-circle #fundo2-3 path,
 .animated-circle #fundo1-2 path {
+  fill: #F40000;
   transition: fill 0.3s ease;
 }
 
 .animated-circle #fundo5-1 {
-  fill: #1a1a1a;
+  fill: #A10000;
 }
 
 .animated-circle #fundo4-5 path {
-  fill: #2a2a2a;
+  fill: #B80000;
 }
 
 .animated-circle #fundo3-4 path {
-  fill: #3a3a3a;
+  fill: #C50000;
 }
 
 .animated-circle #fundo2-3 path {
-  fill: #4a4a4a;
+  fill: #D80000;
 }
 
 .animated-circle #fundo1-2 path {
-  fill: #5a5a5a;
+  fill: #E50000;
 }
 
-/* Main circle outline */
 .animated-circle #circle-fora {
-  stroke: #000000;
-  stroke-opacity: 0.2;
+  stroke: #F40000;
+  stroke-opacity: 0.3;
 }
 
-/* Small dots - black */
+/* Small dots */
 .animated-circle #circle-dentro-1 path,
 .animated-circle #circle-dentro-2 path,
 .animated-circle #circle-dentro-3 path,
 .animated-circle #circle-dentro-4 path,
 .animated-circle #circle-dentro-5 path {
-  fill: #000000;
-  stroke: #000000;
+  fill: #F40000;
+  stroke: #F40000;
 }
 
-/* Icon circles background - light gray */
+/* Icon circles background */
 .animated-circle #circle1,
 .animated-circle #circle2,
 .animated-circle #circle3,
 .animated-circle #circle4,
 .animated-circle #circle5 {
-  fill: #f0f0f0;
-}
-
-/* Text/icons inside circles - black */
-.animated-circle #icone1 path,
-.animated-circle #icone2 path,
-.animated-circle #icone3 path,
-.animated-circle #icone4 path,
-.animated-circle #icone5 path,
-.animated-circle g[id^="icone"] path,
-.animated-circle g[id^="1"] path,
-.animated-circle g[id^="2"] path,
-.animated-circle g[id^="3"] path,
-.animated-circle g[id^="4"] path,
-.animated-circle g[id^="5"] path {
-  fill: #000000;
+  fill: #FFD4D4;
 }
 
 /* Hover effects */
@@ -489,5 +473,5 @@
 .animated-circle #fundo3-4:hover path,
 .animated-circle #fundo2-3:hover path,
 .animated-circle #fundo1-2:hover path {
-  fill: #F40000 !important;
+  fill: #FF3333 !important;
 }
