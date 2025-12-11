@@ -1,10 +1,11 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, CSSProperties } from 'react';
 
 interface AnimatedCircleProps {
   className?: string;
+  style?: CSSProperties;
 }
 
-export function AnimatedCircle({ className = '' }: AnimatedCircleProps) {
+export function AnimatedCircle({ className = '', style }: AnimatedCircleProps) {
   const [svgContent, setSvgContent] = useState<string>('');
 
   useEffect(() => {
@@ -17,6 +18,7 @@ export function AnimatedCircle({ className = '' }: AnimatedCircleProps) {
   return (
     <div 
       className={`animated-circle ${className}`}
+      style={style}
       dangerouslySetInnerHTML={{ __html: svgContent }}
     />
   );

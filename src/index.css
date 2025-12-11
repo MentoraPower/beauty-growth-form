@@ -467,6 +467,20 @@
   fill: #FFD4D4;
 }
 
+/* Text in numbered circles - black */
+.animated-circle #icone1 path,
+.animated-circle #icone2 path,
+.animated-circle #icone3 path,
+.animated-circle #icone4 path,
+.animated-circle #icone5 path,
+.animated-circle [id^="1"] path,
+.animated-circle [id^="2"] path,
+.animated-circle [id^="3"] path,
+.animated-circle [id^="4"] path,
+.animated-circle [id^="5"] path {
+  fill: #000000 !important;
+}
+
 /* Hover effects */
 .animated-circle #fundo5-1:hover,
 .animated-circle #fundo4-5:hover path,

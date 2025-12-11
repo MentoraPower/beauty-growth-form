@@ -1370,9 +1370,25 @@ function FeaturesSection() {
 }
 
 function AnimatedCircleSection() {
+  const [rotation, setRotation] = useState(0);
+  
+  useEffect(() => {
+    const handleScroll = () => {
+      const scrollY = window.scrollY;
+      // Rotate based on scroll position (1 degree per 5 pixels scrolled)
+      setRotation(scrollY / 5);
+    };
+    
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+  
   return <section className="py-12 md:py-20 flex items-center justify-center overflow-hidden">
       <div className="relative">
-        <AnimatedCircle className="w-[280px] h-[280px] md:w-[450px] md:h-[450px] lg:w-[550px] lg:h-[550px] animate-spin-slow" />
+        <AnimatedCircle 
+          className="w-[280px] h-[280px] md:w-[450px] md:h-[450px] lg:w-[550px] lg:h-[550px]" 
+          style={{ transform: `rotate(${rotation}deg)` }}
+        />
       </div>
     </section>;
 }
