@@ -1074,8 +1074,8 @@ const Index = () => {
       duration: 0.3
     }} className="min-h-screen bg-background flex flex-col relative">
       
-      {/* Navbar - only on step 1 */}
-      {step === 1 && <HamburgerMenu />}
+      {/* Navbar - only on step 1, desktop only */}
+      {step === 1 && <div className="hidden md:block"><HamburgerMenu /></div>}
       
       {/* Progress bar - steps 2-11 */}
       {step > 1 && step < 12 && <ProgressBar currentStep={step - 1} totalSteps={totalSteps - 2} />}
@@ -1162,7 +1162,7 @@ const Index = () => {
       <div className="hidden md:flex flex-col min-h-screen relative">
         {/* Banner image on top with rounded bottom */}
         <div className="w-full flex-shrink-0">
-          <img src={scaleBeautyBanner} alt="Scale Beauty" className="w-full h-[320px] object-cover object-top rounded-b-3xl" loading="eager" decoding="async" />
+          <img src={scaleBeautyBanner} alt="Scale Beauty" className="w-full h-[420px] object-cover object-top rounded-b-3xl" loading="eager" decoding="async" />
         </div>
         
         {/* Form overlapping the image */}
