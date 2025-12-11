@@ -1440,7 +1440,7 @@ function AnimatedCircleSection() {
               Montamos o marketing do seu negócio conforme a necessidade dele
             </h2>
             
-            <div className="space-y-4">
+            <div className="space-y-4 text-left">
               {/* CRIATIVOS */}
               <div className="group relative p-5 rounded-2xl bg-gradient-to-br from-background to-muted/50 border border-border/30 hover:border-primary/30 transition-all duration-300">
                 <div className="flex items-start gap-4">
