@@ -1368,48 +1368,48 @@ function FeaturesSection() {
     </section>;
 }
 function QuemSomosSection() {
-  return <section id="quem-somos" className="w-[calc(100%+2rem)] -mx-4 md:mx-0 md:w-full relative">
+  return <section id="quem-somos" className="w-[calc(100%+2rem)] -mx-4 lg:mx-0 lg:w-full relative">
       {/* Curved top transition */}
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[70%] md:w-[50%] h-8 md:h-12 bg-background rounded-b-[50px] z-10" />
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[70%] lg:w-[50%] h-8 lg:h-12 bg-background rounded-b-[50px] z-10" />
       
       {/* Red background with padding for the curve */}
-      <div className="bg-gradient-to-r from-[#F40000] to-[#A10000] pt-8 md:pt-12 pb-16 md:pb-24">
-        <div className="mx-auto w-full max-w-6xl px-8 md:px-8 pt-8 md:pt-12">
-          <AnimatedContainer className="flex flex-col md:flex-row items-center gap-8 md:gap-12">
+      <div className="bg-gradient-to-r from-[#F40000] to-[#A10000] pt-8 lg:pt-12 pb-16 lg:pb-24">
+        <div className="mx-auto w-full max-w-6xl px-6 lg:px-8 pt-8 lg:pt-12">
+          <AnimatedContainer className="flex flex-col lg:flex-row items-center gap-8 lg:gap-12">
             {/* Image */}
-            <div className="w-full md:w-1/2">
+            <div className="w-full lg:w-1/2 flex-shrink-0">
               <img src={quemSomosImage} alt="Quem Somos - Scale Beauty" className="w-full h-auto rounded-2xl" loading="lazy" decoding="async" />
             </div>
             
             {/* Text Content */}
-            <div className="w-full md:w-1/2 text-white">
-              <h2 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-6">
+            <div className="w-full lg:w-1/2 text-white text-center lg:text-left">
+              <h2 className="text-4xl lg:text-5xl xl:text-6xl font-bold mb-6">
                 Quem somos
               </h2>
-              <p className="text-base md:text-lg leading-relaxed opacity-95">
+              <p className="text-base lg:text-lg leading-relaxed opacity-95">
                 Somos mais que uma assessoria de marketing, somos um ecossistema completo para a área da beleza.
               </p>
-              <p className="text-base md:text-lg leading-relaxed opacity-95 mt-4">
+              <p className="text-base lg:text-lg leading-relaxed opacity-95 mt-4">
                 Não acreditamos em fórmulas prontas! A nossa experiência com a área da beleza nos mostra que cada clínica, cada studio em seu modelo criativo é único e que as nossas estratégias também serão únicas.
               </p>
               
               {/* CEO Attribution Cards */}
-              <div className="mt-8 flex gap-2 md:gap-3">
-                <div className="inline-flex items-center gap-2 md:gap-3 bg-white/10 backdrop-blur-sm rounded-xl px-3 md:px-4 py-2 md:py-3 border border-[#FFFFFF15]">
-                  <div className="w-7 h-7 md:w-9 md:h-9 rounded-full border border-white/40 flex items-center justify-center flex-shrink-0">
-                    <Building className="w-3 h-3 md:w-4 md:h-4 text-white" />
+              <div className="mt-8 flex flex-wrap justify-center lg:justify-start gap-2 lg:gap-3">
+                <div className="inline-flex items-center gap-2 lg:gap-3 bg-white/10 backdrop-blur-sm rounded-xl px-3 lg:px-4 py-2 lg:py-3 border border-[#FFFFFF15]">
+                  <div className="w-7 h-7 lg:w-9 lg:h-9 rounded-full border border-white/40 flex items-center justify-center flex-shrink-0">
+                    <Building className="w-3 h-3 lg:w-4 lg:h-4 text-white" />
                   </div>
                   <div className="flex flex-col">
-                    <span className="text-white font-semibold text-[10px] md:text-xs tracking-wide">EMILLY BITETI</span>
-                    <span className="text-white/70 text-[8px] md:text-[10px] tracking-wider">CEO DA BITETI BEAUTY</span>
+                    <span className="text-white font-semibold text-[10px] lg:text-xs tracking-wide">EMILLY BITETI</span>
+                    <span className="text-white/70 text-[8px] lg:text-[10px] tracking-wider">CEO DA BITETI BEAUTY</span>
                   </div>
                 </div>
-                <div className="inline-flex items-center gap-2 md:gap-3 bg-white/10 backdrop-blur-sm rounded-xl px-3 md:px-4 py-2 md:py-3 border border-[#FFFFFF15]">
-                  <div className="w-7 h-7 md:w-9 md:h-9 rounded-full border border-white/40 flex items-center justify-center flex-shrink-0">
-                    <BadgeCheck className="w-3 h-3 md:w-4 md:h-4 text-white" />
+                <div className="inline-flex items-center gap-2 lg:gap-3 bg-white/10 backdrop-blur-sm rounded-xl px-3 lg:px-4 py-2 lg:py-3 border border-[#FFFFFF15]">
+                  <div className="w-7 h-7 lg:w-9 lg:h-9 rounded-full border border-white/40 flex items-center justify-center flex-shrink-0">
+                    <BadgeCheck className="w-3 h-3 lg:w-4 lg:h-4 text-white" />
                   </div>
                   <div className="flex flex-col">
-                    <span className="text-white font-semibold text-[10px] md:text-xs tracking-wide">BITETI & CO.</span>
+                    <span className="text-white font-semibold text-[10px] lg:text-xs tracking-wide">BITETI & CO.</span>
                   </div>
                 </div>
               </div>
