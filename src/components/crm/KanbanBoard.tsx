@@ -14,6 +14,7 @@ import {
 } from "@dnd-kit/core";
 import { arrayMove } from "@dnd-kit/sortable";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Lead, Pipeline } from "@/types/crm";
 import { KanbanColumn } from "./KanbanColumn";
@@ -25,6 +26,9 @@ import { LeadsList } from "./LeadsList";
 import { toast } from "sonner";
 
 export function KanbanBoard() {
+  const [searchParams] = useSearchParams();
+  const subOriginId = searchParams.get("origin");
+  
   const [activeId, setActiveId] = useState<string | null>(null);
   const [overId, setOverId] = useState<string | null>(null);
   const [isPipelinesDialogOpen, setIsPipelinesDialogOpen] = useState(false);
@@ -60,18 +64,42 @@ export function KanbanBoard() {
     staleTime: 30000,
   });
 
-  const { data: leads = [], dataUpdatedAt } = useQuery({
-    queryKey: ["crm-leads"],
+  // Fetch current sub-origin name for display
+  const { data: currentSubOrigin } = useQuery({
+    queryKey: ["sub-origin", subOriginId],
     queryFn: async () => {
+      if (!subOriginId) return null;
       const { data, error } = await supabase
+        .from("crm_sub_origins")
+        .select("*, crm_origins(nome)")
+        .eq("id", subOriginId)
+        .single();
+
+      if (error) return null;
+      return data;
+    },
+    enabled: !!subOriginId,
+  });
+
+  const { data: leads = [], dataUpdatedAt } = useQuery({
+    queryKey: ["crm-leads", subOriginId],
+    queryFn: async () => {
+      let query = supabase
         .from("leads")
         .select("*")
         .order("ordem", { ascending: true, nullsFirst: false });
 
+      // Filter by sub_origin_id if one is selected
+      if (subOriginId) {
+        query = query.eq("sub_origin_id", subOriginId);
+      }
+
+      const { data, error } = await query;
+
       if (error) throw error;
       return data as Lead[];
     },
-    staleTime: 0, // Always consider stale to ensure fresh data on navigation
+    staleTime: 0,
     refetchOnMount: true,
     refetchOnWindowFocus: true,
   });
@@ -84,27 +112,34 @@ export function KanbanBoard() {
   // Real-time subscription
   useEffect(() => {
     const channel = supabase
-      .channel("crm-realtime")
+      .channel(`crm-realtime-${subOriginId || 'all'}`)
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "leads" },
         (payload) => {
           if (payload.eventType === "INSERT") {
             const newLead = payload.new as Lead;
+            // Only add if matches current sub_origin filter
+            if (subOriginId && newLead.sub_origin_id !== subOriginId) return;
             setLocalLeads((prev) => {
               if (prev.some((l) => l.id === newLead.id)) return prev;
               return [newLead, ...prev];
             });
           } else if (payload.eventType === "UPDATE") {
             const updatedLead = payload.new as Lead;
-            setLocalLeads((prev) =>
-              prev.map((l) => (l.id === updatedLead.id ? updatedLead : l))
-            );
+            // If sub_origin changed and doesn't match current filter, remove it
+            if (subOriginId && updatedLead.sub_origin_id !== subOriginId) {
+              setLocalLeads((prev) => prev.filter((l) => l.id !== updatedLead.id));
+            } else {
+              setLocalLeads((prev) =>
+                prev.map((l) => (l.id === updatedLead.id ? updatedLead : l))
+              );
+            }
           } else if (payload.eventType === "DELETE") {
             const deletedId = payload.old.id;
             setLocalLeads((prev) => prev.filter((l) => l.id !== deletedId));
           }
-          queryClient.invalidateQueries({ queryKey: ["crm-leads"] });
+          queryClient.invalidateQueries({ queryKey: ["crm-leads", subOriginId] });
         }
       )
       .on(
@@ -119,7 +154,7 @@ export function KanbanBoard() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [queryClient]);
+  }, [queryClient, subOriginId]);
 
   const handleDragStart = useCallback((event: DragStartEvent) => {
     setActiveId(event.active.id as string);
@@ -194,7 +229,7 @@ export function KanbanBoard() {
         } catch (error) {
           console.error("Erro ao reordenar leads:", error);
           toast.error("Erro ao reordenar leads");
-          queryClient.invalidateQueries({ queryKey: ["crm-leads"] });
+          queryClient.invalidateQueries({ queryKey: ["crm-leads", subOriginId] });
         }
         return;
       }
@@ -247,7 +282,7 @@ export function KanbanBoard() {
           }
 
           // Force update the query cache to prevent stale data on navigation
-          queryClient.setQueryData<Lead[]>(["crm-leads"], (oldData) => {
+          queryClient.setQueryData<Lead[]>(["crm-leads", subOriginId], (oldData) => {
             if (!oldData) return oldData;
             return oldData.map((l) => 
               l.id === activeId 
@@ -268,7 +303,7 @@ export function KanbanBoard() {
         }
       }
     },
-    [localLeads, pipelines, queryClient]
+    [localLeads, pipelines, queryClient, subOriginId]
   );
 
   const handleDragCancel = useCallback(() => {
@@ -283,10 +318,22 @@ export function KanbanBoard() {
 
   const displayLeads = localLeads.length > 0 ? localLeads : leads;
 
+  // Build title based on current sub-origin
+  const pageTitle = currentSubOrigin 
+    ? `${currentSubOrigin.crm_origins?.nome} / ${currentSubOrigin.nome}`
+    : "Selecione uma sub-origem";
+
   return (
     <div className="flex flex-col h-[calc(100vh-8rem)]">
       <div className="flex items-center justify-between mb-4">
-        <h1 className="text-2xl font-bold">Lista geral comercial</h1>
+        <div>
+          <h1 className="text-2xl font-bold">{pageTitle}</h1>
+          {!subOriginId && (
+            <p className="text-sm text-muted-foreground mt-1">
+              Clique em uma sub-origem no menu lateral para ver os leads
+            </p>
+          )}
+        </div>
         <div className="flex items-center gap-2">
           <div className="flex items-center border rounded-lg overflow-hidden">
             <Button
