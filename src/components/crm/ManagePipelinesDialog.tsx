@@ -11,7 +11,7 @@ import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient, useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Plus, Trash2, Pencil, X, Check, Zap, ChevronRight, ArrowRight } from "lucide-react";
+import { Plus, Trash2, Pencil, Check, Zap, ArrowRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   Select,
@@ -21,7 +21,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 
 interface ManagePipelinesDialogProps {
   open: boolean;
@@ -222,12 +221,12 @@ export function ManagePipelinesDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[85vh] overflow-hidden">
-        <DialogHeader>
+      <DialogContent className="max-w-2xl max-h-[85vh] overflow-hidden p-0">
+        <DialogHeader className="px-6 pt-6 pb-4">
           <DialogTitle>Gerenciar Pipelines</DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-6">
+        <div className="px-6 pb-6 space-y-5 overflow-y-auto max-h-[calc(85vh-100px)]">
           {/* Add New Pipeline */}
           <div className="flex gap-2">
             <Input
@@ -237,23 +236,23 @@ export function ManagePipelinesDialog({
               onKeyDown={(e) => {
                 if (e.key === "Enter") addPipeline();
               }}
-              className="max-w-xs"
+              className="flex-1"
             />
-            <Button onClick={addPipeline} className="bg-gradient-to-r from-[#F40000] to-[#A10000] text-white">
+            <Button onClick={addPipeline} className="bg-gradient-to-r from-[#F40000] to-[#A10000] text-white shrink-0">
               <Plus className="w-4 h-4 mr-2" />
               Adicionar
             </Button>
           </div>
 
-          {/* Horizontal Pipeline Cards */}
-          <div className="relative">
-            <ScrollArea className="w-full">
-              <div className="flex gap-3 pb-4">
+          {/* Horizontal Pipeline Cards with proper scroll */}
+          <div className="relative -mx-6 px-6">
+            <div className="overflow-x-auto pb-2">
+              <div className="flex gap-3 min-w-max">
                 {pipelines.map((pipeline) => (
                   <div
                     key={pipeline.id}
                     className={cn(
-                      "flex-shrink-0 w-48 p-4 rounded-xl border-2 transition-all cursor-pointer",
+                      "w-44 p-3 rounded-xl border-2 transition-all cursor-pointer shrink-0",
                       selectedPipeline === pipeline.id
                         ? "border-[#F40000]/50 bg-[#F40000]/5"
                         : "border-border/50 bg-muted/20 hover:border-border"
@@ -262,9 +261,9 @@ export function ManagePipelinesDialog({
                       selectedPipeline === pipeline.id ? null : pipeline.id
                     )}
                   >
-                    <div className="flex items-start justify-between mb-3">
+                    <div className="mb-2">
                       {editingId === pipeline.id ? (
-                        <div className="flex items-center gap-1 flex-1">
+                        <div className="flex items-center gap-1">
                           <Input
                             value={editingName}
                             onChange={(e) => setEditingName(e.target.value)}
@@ -275,12 +274,12 @@ export function ManagePipelinesDialog({
                             }}
                             onClick={(e) => e.stopPropagation()}
                             autoFocus
-                            className="h-7 text-sm"
+                            className="h-7 text-sm flex-1"
                           />
                           <Button
                             size="sm"
                             variant="ghost"
-                            className="h-7 w-7 p-0"
+                            className="h-7 w-7 p-0 shrink-0"
                             onClick={(e) => {
                               e.stopPropagation();
                               updatePipeline(pipeline.id);
@@ -288,109 +287,110 @@ export function ManagePipelinesDialog({
                           >
                             <Check className="h-3.5 w-3.5 text-green-600" />
                           </Button>
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            className="h-7 w-7 p-0"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setEditingId(null);
-                            }}
-                          >
-                            <X className="h-3.5 w-3.5" />
-                          </Button>
                         </div>
                       ) : (
-                        <span className="font-medium text-sm truncate flex-1">
+                        <span className="font-medium text-sm block truncate">
                           {pipeline.nome}
                         </span>
                       )}
                     </div>
 
                     <div className="flex items-center justify-between">
-                      <div className="flex gap-1">
+                      <div className="flex gap-0.5">
                         <Button
                           size="sm"
                           variant="ghost"
-                          className="h-7 w-7 p-0"
+                          className="h-6 w-6 p-0"
                           onClick={(e) => {
                             e.stopPropagation();
                             setEditingId(pipeline.id);
                             setEditingName(pipeline.nome);
                           }}
                         >
-                          <Pencil className="h-3.5 w-3.5 text-muted-foreground" />
+                          <Pencil className="h-3 w-3 text-muted-foreground" />
                         </Button>
                         <Button
                           size="sm"
                           variant="ghost"
-                          className="h-7 w-7 p-0"
+                          className="h-6 w-6 p-0"
                           onClick={(e) => {
                             e.stopPropagation();
                             deletePipeline(pipeline.id);
                           }}
                         >
-                          <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                          <Trash2 className="h-3 w-3 text-destructive" />
                         </Button>
                       </div>
 
-                      {/* Automation indicator */}
                       {automations.some(a => a.pipeline_id === pipeline.id && a.is_active) && (
-                        <div className="flex items-center gap-1 text-xs text-amber-600">
+                        <div className="flex items-center gap-1 text-[10px] text-amber-600">
                           <Zap className="h-3 w-3" />
-                          <span>Auto</span>
                         </div>
                       )}
                     </div>
                   </div>
                 ))}
               </div>
-              <ScrollBar orientation="horizontal" />
-            </ScrollArea>
+            </div>
           </div>
 
           {/* Automation Panel */}
           {selectedPipeline && (
             <div className="border rounded-xl p-4 bg-muted/10">
-              <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-2">
-                  <Zap className="h-5 w-5 text-amber-500" />
-                  <h3 className="font-semibold">
+                  <Zap className="h-4 w-4 text-amber-500" />
+                  <h3 className="font-medium text-sm">
                     Automações - {getPipelineName(selectedPipeline)}
                   </h3>
                 </div>
                 <Button
                   size="sm"
                   variant="outline"
+                  className="h-7 text-xs"
                   onClick={() => createAutomation(selectedPipeline)}
                 >
-                  <Plus className="h-4 w-4 mr-1" />
-                  Nova Automação
+                  <Plus className="h-3 w-3 mr-1" />
+                  Nova
                 </Button>
               </div>
 
               {selectedPipelineAutomations.length === 0 ? (
-                <p className="text-sm text-muted-foreground text-center py-4">
-                  Nenhuma automação configurada. Crie uma para mover cards automaticamente.
+                <p className="text-xs text-muted-foreground text-center py-3">
+                  Nenhuma automação configurada.
                 </p>
               ) : (
-                <div className="space-y-3">
+                <div className="space-y-2">
                   {selectedPipelineAutomations.map((automation) => (
                     <div
                       key={automation.id}
-                      className="flex items-center gap-3 p-3 bg-background rounded-lg border"
+                      className="p-2 bg-background rounded-lg border space-y-2"
                     >
-                      <Switch
-                        checked={automation.is_active}
-                        onCheckedChange={(checked) => 
-                          updateAutomation(automation.id, { is_active: checked })
-                        }
-                      />
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <Switch
+                            checked={automation.is_active}
+                            onCheckedChange={(checked) => 
+                              updateAutomation(automation.id, { is_active: checked })
+                            }
+                            className="scale-75"
+                          />
+                          <span className="text-xs text-muted-foreground">
+                            {automation.is_active ? 'Ativa' : 'Inativa'}
+                          </span>
+                        </div>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-6 w-6 p-0"
+                          onClick={() => deleteAutomation(automation.id)}
+                        >
+                          <Trash2 className="h-3 w-3 text-destructive" />
+                        </Button>
+                      </div>
 
-                      <div className="flex items-center gap-2 flex-1">
-                        <span className="text-sm text-muted-foreground">
-                          Mover para
-                        </span>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="text-xs text-muted-foreground">Mover para:</span>
                         
                         <Select
                           value={automation.target_type}
@@ -403,7 +403,7 @@ export function ManagePipelinesDialog({
                             })
                           }
                         >
-                          <SelectTrigger className="w-32 h-8">
+                          <SelectTrigger className="w-28 h-7 text-xs">
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
@@ -412,7 +412,7 @@ export function ManagePipelinesDialog({
                           </SelectContent>
                         </Select>
 
-                        <ArrowRight className="h-4 w-4 text-muted-foreground" />
+                        <ArrowRight className="h-3 w-3 text-muted-foreground" />
 
                         {automation.target_type === 'sub_origin' ? (
                           <Select
@@ -425,7 +425,7 @@ export function ManagePipelinesDialog({
                               });
                             }}
                           >
-                            <SelectTrigger className="w-40 h-8">
+                            <SelectTrigger className="w-32 h-7 text-xs">
                               <SelectValue placeholder="Selecione..." />
                             </SelectTrigger>
                             <SelectContent>
@@ -443,7 +443,7 @@ export function ManagePipelinesDialog({
                               updateAutomation(automation.id, { target_origin_id: value })
                             }
                           >
-                            <SelectTrigger className="w-40 h-8">
+                            <SelectTrigger className="w-32 h-7 text-xs">
                               <SelectValue placeholder="Selecione..." />
                             </SelectTrigger>
                             <SelectContent>
@@ -456,15 +456,15 @@ export function ManagePipelinesDialog({
                           </Select>
                         )}
 
-                        {/* Target Pipeline */}
-                        <ArrowRight className="h-4 w-4 text-muted-foreground" />
+                        <ArrowRight className="h-3 w-3 text-muted-foreground" />
+                        
                         <Select
                           value={automation.target_pipeline_id || ""}
                           onValueChange={(value) => 
                             updateAutomation(automation.id, { target_pipeline_id: value })
                           }
                         >
-                          <SelectTrigger className="w-36 h-8">
+                          <SelectTrigger className="w-28 h-7 text-xs">
                             <SelectValue placeholder="Pipeline..." />
                           </SelectTrigger>
                           <SelectContent>
@@ -476,15 +476,6 @@ export function ManagePipelinesDialog({
                           </SelectContent>
                         </Select>
                       </div>
-
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        className="h-8 w-8 p-0"
-                        onClick={() => deleteAutomation(automation.id)}
-                      >
-                        <Trash2 className="h-4 w-4 text-destructive" />
-                      </Button>
                     </div>
                   ))}
                 </div>
