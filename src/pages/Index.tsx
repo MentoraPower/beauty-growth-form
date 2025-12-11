@@ -609,7 +609,7 @@ const Index = () => {
     switch (step) {
       case 1:
         return <div className="form-card">
-            <h1 className="form-title max-w-[320px] md:max-w-none">
+            <h1 className="form-title max-w-[380px] md:max-w-none">
               <span className="font-light">Pronta para lotar a agenda da sua clínica todos </span>
               <span className="font-bold">os meses?</span>
             </h1>
