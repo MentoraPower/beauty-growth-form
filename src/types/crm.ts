@@ -19,6 +19,12 @@ export interface Lead {
   workspace_type: string;
   years_experience: string;
   pipeline_id: string | null;
+  sub_origin_id: string | null;
   ordem: number;
   created_at: string;
+  clinic_name?: string | null;
+  average_ticket?: number | null;
+  estimated_revenue?: number | null;
+  can_afford?: string | null;
+  wants_more_info?: boolean | null;
 }
