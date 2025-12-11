@@ -1391,10 +1391,10 @@ function AnimatedCircleSection() {
                   <div className="flex-1">
                     <h3 className="font-bold text-foreground text-base lg:text-sm tracking-tight flex items-center gap-1">
                       <ArrowRight className="w-3 h-3 text-[#F40000]" />
-                      TRÁFEGO
+                      Tráfego
                     </h3>
                     <p className="text-sm lg:text-xs text-muted-foreground mt-1 leading-relaxed">
-                      Gerencie relacionamentos e visualize seu funil de vendas em um só lugar
+                      Campanhas estratégicas para atrair clientes qualificados para o seu negócio
                     </p>
                   </div>
                 </div>
