@@ -1372,7 +1372,7 @@ function FeaturesSection() {
 function AnimatedCircleSection() {
   return <section className="py-12 md:py-20 flex items-center justify-center overflow-hidden">
       <div className="relative">
-        <AnimatedCircle className="w-[280px] h-[280px] md:w-[450px] md:h-[450px] lg:w-[550px] lg:h-[550px] animate-spin-slow" />
+        <AnimatedCircle className="w-[280px] h-[280px] md:w-[450px] md:h-[450px] lg:w-[550px] lg:h-[550px]" />
       </div>
     </section>;
 }
