@@ -1401,34 +1401,34 @@ function AnimatedCircleSection() {
         <div className="flex flex-col lg:flex-row-reverse items-center gap-8 lg:gap-16">
           {/* Circle */}
           <div className="relative w-[85vw] h-[85vw] md:w-[400px] md:h-[400px] lg:w-[450px] lg:h-[450px] flex-shrink-0">
-            {/* Passo 01 - Top (dot at ~42%, 13%) */}
+            {/* Passo 01 - Top */}
             <div className="absolute top-[8%] left-[42%] -translate-x-1/2 -translate-y-full text-center">
               <span className="text-[10px] md:text-xs text-muted-foreground">Passo 01</span>
-              <p className="text-xs md:text-sm font-bold text-foreground">Entende</p>
+              <p className="text-xs md:text-sm font-bold text-foreground">Analisa</p>
             </div>
             
-            {/* Passo 02 - Upper right (dot at ~83%, 31%) */}
+            {/* Passo 02 - Upper right */}
             <div className="absolute top-[28%] left-[88%] text-left">
               <span className="text-[10px] md:text-xs text-muted-foreground">Passo 02</span>
-              <p className="text-xs md:text-sm font-bold text-foreground">Conecta</p>
+              <p className="text-xs md:text-sm font-bold text-foreground">Segmenta</p>
             </div>
             
-            {/* Passo 03 - Lower right (dot at ~78%, 76%) */}
+            {/* Passo 03 - Lower right */}
             <div className="absolute top-[74%] left-[82%] text-left">
               <span className="text-[10px] md:text-xs text-muted-foreground">Passo 03</span>
-              <p className="text-xs md:text-sm font-bold text-foreground">Ajuda</p>
+              <p className="text-xs md:text-sm font-bold text-foreground">Anuncia</p>
             </div>
             
-            {/* Passo 04 - Bottom left (dot at ~35%, 85%) */}
+            {/* Passo 04 - Bottom left */}
             <div className="absolute top-[90%] left-[35%] -translate-x-1/2 text-center">
               <span className="text-[10px] md:text-xs text-muted-foreground">Passo 04</span>
-              <p className="text-xs md:text-sm font-bold text-foreground">Vende</p>
+              <p className="text-xs md:text-sm font-bold text-foreground">Converte</p>
             </div>
             
-            {/* Passo 05 - Left (dot at ~12%, 46%) */}
+            {/* Passo 05 - Left */}
             <div className="absolute top-[44%] right-[90%] text-right">
               <span className="text-[10px] md:text-xs text-muted-foreground">Passo 05</span>
-              <p className="text-xs md:text-sm font-bold text-foreground">Otimiza</p>
+              <p className="text-xs md:text-sm font-bold text-foreground">Escala</p>
             </div>
             
             <AnimatedCircle className="w-full h-full" />
