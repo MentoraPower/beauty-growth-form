@@ -157,11 +157,11 @@ export function LeadTagsManager({ leadId }: LeadTagsManagerProps) {
   };
 
   return (
-    <div className="flex flex-wrap items-center gap-2">
+    <div className="flex flex-wrap items-center gap-1.5">
       {tags.map((tag) => (
         <span
           key={tag.id}
-          className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-sm font-medium text-white"
+          className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium text-white"
           style={{ backgroundColor: tag.color }}
         >
           {tag.name}
@@ -169,7 +169,7 @@ export function LeadTagsManager({ leadId }: LeadTagsManagerProps) {
             onClick={() => handleRemoveTag(tag.id)}
             className="hover:opacity-70 transition-opacity"
           >
-            <X className="h-3.5 w-3.5" />
+            <X className="h-3 w-3" />
           </button>
         </span>
       ))}
@@ -180,11 +180,11 @@ export function LeadTagsManager({ leadId }: LeadTagsManagerProps) {
           <Button
             variant="outline"
             size="sm"
-            className="h-7 border-[#00000010] bg-transparent hover:bg-muted/50 transition-all duration-300 w-fit"
+            className="h-5 px-1.5 text-[10px] border-[#00000010] bg-transparent hover:bg-muted/50 transition-all duration-300 w-fit"
             onMouseEnter={() => setTimeout(() => setIsHovered(true), 150)}
             onMouseLeave={() => setIsHovered(false)}
           >
-            <Plus className="h-3.5 w-3.5" />
+            <Plus className="h-3 w-3" />
             <span
               className={`overflow-hidden transition-all duration-300 ${
                 isHovered || isOpen ? "max-w-[100px] ml-1 opacity-100" : "max-w-0 opacity-0"
