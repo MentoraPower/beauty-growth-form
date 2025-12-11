@@ -336,9 +336,14 @@ export function CRMSidebarMenu({ isExpanded, onNavigate }: CRMSidebarMenuProps) 
                         </div>
                       ))}
 
-                      {originSubOrigins.length === 0 && (
-                        <p className="text-xs text-white/50 py-1 px-2">Sem sub-origens</p>
-                      )}
+                      {/* Add Sub-origin Button inside folder */}
+                      <button
+                        onClick={() => openCreateSubOriginDialog(origin.id)}
+                        className="flex items-center gap-2 w-full py-1.5 px-2 rounded-lg text-white/60 hover:text-white hover:bg-white/5 transition-colors text-xs"
+                      >
+                        <Plus className="h-3 w-3" />
+                        <span>Novo CRM</span>
+                      </button>
                     </div>
                   )}
                 </div>
