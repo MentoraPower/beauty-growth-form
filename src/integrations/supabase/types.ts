@@ -67,6 +67,73 @@ export type Database = {
           },
         ]
       }
+      crm_webhooks: {
+        Row: {
+          created_at: string
+          id: string
+          is_active: boolean
+          name: string
+          origin_id: string | null
+          scope: string
+          sub_origin_id: string | null
+          trigger: string | null
+          trigger_pipeline_id: string | null
+          type: string
+          updated_at: string
+          url: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name: string
+          origin_id?: string | null
+          scope?: string
+          sub_origin_id?: string | null
+          trigger?: string | null
+          trigger_pipeline_id?: string | null
+          type: string
+          updated_at?: string
+          url?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+          origin_id?: string | null
+          scope?: string
+          sub_origin_id?: string | null
+          trigger?: string | null
+          trigger_pipeline_id?: string | null
+          type?: string
+          updated_at?: string
+          url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_webhooks_origin_id_fkey"
+            columns: ["origin_id"]
+            isOneToOne: false
+            referencedRelation: "crm_origins"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_webhooks_sub_origin_id_fkey"
+            columns: ["sub_origin_id"]
+            isOneToOne: false
+            referencedRelation: "crm_sub_origins"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_webhooks_trigger_pipeline_id_fkey"
+            columns: ["trigger_pipeline_id"]
+            isOneToOne: false
+            referencedRelation: "pipelines"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       email_settings: {
         Row: {
           created_at: string
