@@ -17,7 +17,7 @@ export const KanbanColumn = memo(function KanbanColumn({ pipeline, leads, isOver
   });
 
   return (
-    <div className="flex-shrink-0 w-80 flex flex-col h-full">
+    <div className="flex-shrink-0 w-80 flex flex-col h-full relative">
       <div
         ref={setNodeRef}
         className={`flex-1 rounded-xl rounded-b-none border border-b-0 transition-all duration-150 flex flex-col overflow-hidden ${
@@ -42,7 +42,7 @@ export const KanbanColumn = memo(function KanbanColumn({ pipeline, leads, isOver
             items={leads.map((l) => l.id)}
             strategy={verticalListSortingStrategy}
           >
-            <div className="space-y-2">
+            <div className="space-y-2 pb-12">
               {leads.map((lead) => (
                 <KanbanCard key={lead.id} lead={lead} subOriginId={subOriginId} />
               ))}
@@ -57,6 +57,8 @@ export const KanbanColumn = memo(function KanbanColumn({ pipeline, leads, isOver
           </SortableContext>
         </div>
       </div>
+      {/* Bottom gradient fade */}
+      <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-background to-transparent pointer-events-none rounded-b-xl" />
     </div>
   );
 });
