@@ -1185,20 +1185,23 @@ const Index = () => {
               <QuemSomosSection />
               
               {/* Mobile footer with terms */}
-              <div className="pb-4 pt-2 bg-background">
-                <div className="w-full h-px bg-border mb-4" />
+              <div className="pb-4 pt-2 bg-gradient-to-r from-[#F40000] to-[#A10000]">
+                <div className="w-full h-px bg-white/20 mb-4" />
                 <div className="text-center px-[1.25em]">
-                  <p className="legal-text">
+                  <p className="text-xs text-white/80">
                     Ao clicar em PROSSEGUIR você automaticamente concorda com os{" "}
-                    <Link to="/termos" className="legal-link">
+                    <Link to="/termos" className="underline hover:text-white">
                       termos de uso
                     </Link>{" "}
                     e{" "}
-                    <Link to="/privacidade" className="legal-link">
+                    <Link to="/privacidade" className="underline hover:text-white">
                       política de privacidade
                     </Link>
                   </p>
-                  <p className="copyright mt-4">© Copyright 2025 Scale Beauty - Desenvolvido por Scale Beauty</p>
+                  <div className="mt-4 flex items-center justify-center gap-2">
+                    <span className="text-xs text-white/80">© Copyright 2025 - Desenvolvido por</span>
+                    <img src={scaleLogoWhite} alt="Scale" className="h-4" />
+                  </div>
                 </div>
               </div>
             </>}
