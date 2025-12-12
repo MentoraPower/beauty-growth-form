@@ -264,6 +264,23 @@ const Index = () => {
       console.log("AI Analysis result:", data);
       setAiAnalysis(data);
 
+      // Calculate MQL status based on analysis
+      // MQL = estimated revenue * 0.55 >= R$ 2,800 (service cost)
+      const SERVICE_COST = 2800;
+      const isMQL = data.estimatedRevenue && (data.estimatedRevenue * 0.55) >= SERVICE_COST;
+
+      // Save MQL status and analysis to lead in database
+      const leadIdToUpdate = existingLead?.id || partialLeadId;
+      if (leadIdToUpdate) {
+        await supabase.from("leads").update({
+          is_mql: isMQL,
+          estimated_revenue: data.estimatedRevenue || null,
+          ai_analysis: data.analysis || null,
+          analysis_created_at: new Date().toISOString()
+        }).eq("id", leadIdToUpdate);
+        console.log("MQL status saved:", isMQL);
+      }
+
       // Set affordability question based on AI analysis
       setShowAffordabilityQuestion(!data.canAfford);
       return data;
@@ -272,6 +289,24 @@ const Index = () => {
       // Fallback to local calculation
       const canAfford = checkAffordability(formData.revenue, formData.weeklyAppointments, formData.averageTicket);
       setShowAffordabilityQuestion(!canAfford);
+      
+      // Calculate and save MQL with fallback logic
+      const appointments = parseInt(formData.weeklyAppointments) || 0;
+      const ticket = parseCurrency(formData.averageTicket);
+      const estimatedRevenue = appointments * 4 * ticket;
+      const SERVICE_COST = 2800;
+      const isMQL = (estimatedRevenue * 0.55) >= SERVICE_COST;
+      
+      const leadIdToUpdate = existingLead?.id || partialLeadId;
+      if (leadIdToUpdate) {
+        await supabase.from("leads").update({
+          is_mql: isMQL,
+          estimated_revenue: estimatedRevenue,
+          analysis_created_at: new Date().toISOString()
+        }).eq("id", leadIdToUpdate);
+        console.log("MQL status saved (fallback):", isMQL);
+      }
+      
       return null;
     } finally {
       setIsAnalyzing(false);
