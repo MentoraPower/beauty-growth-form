@@ -17,7 +17,7 @@ export const KanbanColumn = memo(function KanbanColumn({ pipeline, leads, isOver
   });
 
   return (
-    <div className="flex-shrink-0 w-80 flex flex-col min-h-full">
+    <div className="flex-shrink-0 w-80 flex flex-col h-full">
       <div
         ref={setNodeRef}
         className={`flex-1 rounded-xl border transition-all duration-150 flex flex-col ${
