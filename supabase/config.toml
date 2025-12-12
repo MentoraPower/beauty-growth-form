@@ -14,3 +14,6 @@ verify_jwt = false
 
 [functions.zapi-whatsapp]
 verify_jwt = false
+
+[functions.zapi-webhook]
+verify_jwt = false
