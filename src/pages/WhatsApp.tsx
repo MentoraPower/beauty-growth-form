@@ -55,15 +55,8 @@ const WhatsApp = () => {
         {/* Left Sidebar - Chat List */}
         <div className="w-[380px] flex flex-col border-r border-border/50 bg-card">
           {/* Header */}
-          <div className="h-14 px-4 flex items-center justify-between bg-muted/30 border-b border-border/30">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-primary/70 flex items-center justify-center text-primary-foreground font-medium text-sm">
-                SB
-              </div>
-            </div>
-            <button className="p-2 hover:bg-muted/50 rounded-full transition-colors">
-              <MoreVertical className="w-5 h-5 text-muted-foreground" />
-            </button>
+          <div className="h-14 px-4 flex items-center bg-muted/30 border-b border-border/30">
+            <h2 className="font-medium text-foreground">Conversas</h2>
           </div>
 
           {/* Search */}
