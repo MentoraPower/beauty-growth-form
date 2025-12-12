@@ -87,17 +87,9 @@ export default function LeadDetail() {
   const [isDeleting, setIsDeleting] = useState(false);
   const [activeTab, setActiveTab] = useState("atividades");
 
-  if (authLoading) {
-    return (
-      <div className="min-h-screen bg-neutral-900 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white"></div>
-      </div>
-    );
-  }
-
   useEffect(() => {
     const fetchLead = async () => {
-      if (!id) return;
+      if (!id || authLoading) return;
       
       setIsLoading(true);
       const { data, error } = await supabase
@@ -136,7 +128,15 @@ export default function LeadDetail() {
     };
 
     fetchLead();
-  }, [id, navigate]);
+  }, [id, navigate, authLoading, subOriginId]);
+
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-neutral-900 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white"></div>
+      </div>
+    );
+  }
 
   const handleDelete = async () => {
     if (!lead) return;
