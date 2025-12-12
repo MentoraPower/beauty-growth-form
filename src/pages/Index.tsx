@@ -1200,7 +1200,7 @@ const Index = () => {
                   </p>
                   <div className="mt-4 flex items-center justify-center gap-2">
                     <span className="text-xs text-white/80">© Copyright 2025 - Desenvolvido por</span>
-                    <img src={scaleLogoWhite} alt="Scale" className="h-4" />
+                    <span className="text-xs text-white font-bold">SCALE</span>
                   </div>
                 </div>
               </div>
