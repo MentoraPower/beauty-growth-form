@@ -15,6 +15,7 @@ import { motion } from "framer-motion";
 import { ActivitiesBoard } from "@/components/activities/ActivitiesBoard";
 import { LeadTagsManager } from "@/components/crm/LeadTagsManager";
 import { LeadTrackingTimeline } from "@/components/crm/LeadTrackingTimeline";
+import { LeadAnalysis } from "@/components/crm/LeadAnalysis";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -325,7 +326,11 @@ export default function LeadDetail() {
           )}
 
           {activeTab === "contato" && (
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="space-y-6">
+              {/* Lead Analysis Card */}
+              <LeadAnalysis lead={lead} />
+
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {/* Contact Info */}
               <Card className="border-[#00000010] shadow-none">
                 <CardContent className="p-6 space-y-4">
@@ -534,6 +539,7 @@ export default function LeadDetail() {
                   </div>
                 </CardContent>
               </Card>
+              </div>
             </div>
           )}
 
