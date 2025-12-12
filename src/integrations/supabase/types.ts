@@ -386,6 +386,7 @@ export type Database = {
           id: string
           is_active: boolean
           pipeline_id: string
+          sub_origin_id: string | null
           target_origin_id: string | null
           target_pipeline_id: string | null
           target_sub_origin_id: string | null
@@ -397,6 +398,7 @@ export type Database = {
           id?: string
           is_active?: boolean
           pipeline_id: string
+          sub_origin_id?: string | null
           target_origin_id?: string | null
           target_pipeline_id?: string | null
           target_sub_origin_id?: string | null
@@ -408,6 +410,7 @@ export type Database = {
           id?: string
           is_active?: boolean
           pipeline_id?: string
+          sub_origin_id?: string | null
           target_origin_id?: string | null
           target_pipeline_id?: string | null
           target_sub_origin_id?: string | null
@@ -420,6 +423,13 @@ export type Database = {
             columns: ["pipeline_id"]
             isOneToOne: false
             referencedRelation: "pipelines"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pipeline_automations_sub_origin_id_fkey"
+            columns: ["sub_origin_id"]
+            isOneToOne: false
+            referencedRelation: "crm_sub_origins"
             referencedColumns: ["id"]
           },
           {
@@ -452,6 +462,7 @@ export type Database = {
           id: string
           nome: string
           ordem: number
+          sub_origin_id: string | null
         }
         Insert: {
           cor?: string
@@ -459,6 +470,7 @@ export type Database = {
           id?: string
           nome: string
           ordem?: number
+          sub_origin_id?: string | null
         }
         Update: {
           cor?: string
@@ -466,8 +478,17 @@ export type Database = {
           id?: string
           nome?: string
           ordem?: number
+          sub_origin_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "pipelines_sub_origin_id_fkey"
+            columns: ["sub_origin_id"]
+            isOneToOne: false
+            referencedRelation: "crm_sub_origins"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       sales: {
         Row: {
