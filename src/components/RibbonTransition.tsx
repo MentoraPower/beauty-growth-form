@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from "framer-motion";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 
 interface RibbonTransitionProps {
   isActive: boolean;
@@ -7,6 +7,8 @@ interface RibbonTransitionProps {
 }
 
 const RibbonTransition = ({ isActive, onComplete }: RibbonTransitionProps) => {
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
+  
   // Define ribbons stacked together without gaps
   const ribbons = [
     { id: 1, height: "10vh", top: "0vh", delay: 0, duration: 0.4 },
@@ -21,67 +23,78 @@ const RibbonTransition = ({ isActive, onComplete }: RibbonTransitionProps) => {
   ];
 
   useEffect(() => {
+    // Clear any existing timer
+    if (timerRef.current) {
+      clearTimeout(timerRef.current);
+      timerRef.current = null;
+    }
+    
     if (isActive) {
       // Trigger completion after animation finishes (wait for slowest ribbon - the middle one)
-      const timer = setTimeout(() => {
+      timerRef.current = setTimeout(() => {
         onComplete();
       }, 900);
-      return () => clearTimeout(timer);
     }
+    
+    return () => {
+      if (timerRef.current) {
+        clearTimeout(timerRef.current);
+        timerRef.current = null;
+      }
+    };
   }, [isActive, onComplete]);
 
+  if (!isActive) return null;
+
   return (
-    <AnimatePresence>
-      {isActive && (
+    <motion.div
+      className="fixed inset-0 z-[100] pointer-events-none overflow-hidden"
+      initial={{ opacity: 1 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.2 }}
+    >
+      {/* Regular ribbons */}
+      {ribbons.map((ribbon) => (
         <motion.div
-          className="fixed inset-0 z-[100] pointer-events-none overflow-hidden"
-          initial={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: 0.2 }}
-        >
-          {/* Regular ribbons */}
-          {ribbons.map((ribbon) => (
-            <motion.div
-              key={ribbon.id}
-              className="absolute left-0 bg-gradient-to-r from-[#F40000] to-[#A10000]"
-              style={{
-                top: ribbon.top,
-                height: ribbon.height,
-                width: "100%",
-              }}
-              initial={{ x: "-100%" }}
-              animate={{ x: "100%" }}
-              transition={{
-                duration: ribbon.duration,
-                delay: ribbon.delay,
-                ease: [0.25, 0.1, 0.25, 1],
-              }}
-            />
-          ))}
-          
-          {/* Middle ribbon with SCALE text - slower */}
-          <motion.div
-            className="absolute left-0 bg-gradient-to-r from-[#F40000] to-[#A10000] flex items-center justify-center"
-            style={{
-              top: "40vh",
-              height: "14vh",
-              width: "100%",
-            }}
-            initial={{ x: "-100%" }}
-            animate={{ x: "100%" }}
-            transition={{
-              duration: 0.7,
-              delay: 0.05,
-              ease: [0.25, 0.1, 0.25, 1],
-            }}
-          >
-            <span className="text-white text-xl md:text-2xl font-semibold tracking-[0.4em]">
-              SCALE
-            </span>
-          </motion.div>
-        </motion.div>
-      )}
-    </AnimatePresence>
+          key={ribbon.id}
+          className="absolute left-0 bg-gradient-to-r from-[#F40000] to-[#A10000]"
+          style={{
+            top: ribbon.top,
+            height: ribbon.height,
+            width: "100%",
+          }}
+          initial={{ x: "-100%" }}
+          animate={{ x: "100%" }}
+          transition={{
+            duration: ribbon.duration,
+            delay: ribbon.delay,
+            ease: [0.25, 0.1, 0.25, 1],
+          }}
+        />
+      ))}
+      
+      {/* Middle ribbon with SCALE text - slower */}
+      <motion.div
+        className="absolute left-0 bg-gradient-to-r from-[#F40000] to-[#A10000] flex items-center justify-center"
+        style={{
+          top: "40vh",
+          height: "14vh",
+          width: "100%",
+        }}
+        initial={{ x: "-100%" }}
+        animate={{ x: "100%" }}
+        transition={{
+          duration: 0.7,
+          delay: 0.05,
+          ease: [0.25, 0.1, 0.25, 1],
+        }}
+      >
+        <span className="text-white text-xl md:text-2xl font-semibold tracking-[0.4em]">
+          SCALE
+        </span>
+      </motion.div>
+    </motion.div>
   );
 };
 
