@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Zap, Plus, Trash2, ArrowRight, Webhook, FolderSync, Copy, Check } from "lucide-react";
+import { Zap, Plus, Trash2, ArrowRight, Webhook, FolderSync, Copy, Check, Send, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -49,14 +49,39 @@ interface AutomationsDropdownProps {
 type ActiveView = "menu" | "origin" | "webhook";
 type WebhookTab = "receive" | "send";
 
+// Temporary webhook storage (would be in database in production)
+interface WebhookConfig {
+  id: string;
+  type: "receive" | "send";
+  url: string;
+  scope: "all" | "origin" | "sub_origin";
+  origin_id?: string;
+  sub_origin_id?: string;
+  trigger?: string;
+  is_active: boolean;
+}
+
 export function AutomationsDropdown({ pipelines, subOriginId }: AutomationsDropdownProps) {
   const queryClient = useQueryClient();
   const [activeView, setActiveView] = useState<ActiveView>("menu");
   const [webhookTab, setWebhookTab] = useState<WebhookTab>("receive");
   const [selectedSourcePipeline, setSelectedSourcePipeline] = useState<string>("");
-  const [webhookScope, setWebhookScope] = useState<"all" | "origin" | "sub_origin">("all");
-  const [webhookOriginId, setWebhookOriginId] = useState<string>("");
-  const [webhookSubOriginId, setWebhookSubOriginId] = useState<string>("");
+  
+  // Receive webhook states
+  const [receiveWebhookUrl, setReceiveWebhookUrl] = useState("");
+  const [receiveScope, setReceiveScope] = useState<"all" | "origin" | "sub_origin">("all");
+  const [receiveOriginId, setReceiveOriginId] = useState<string>("");
+  const [receiveSubOriginId, setReceiveSubOriginId] = useState<string>("");
+  const [receivedWebhooks, setReceivedWebhooks] = useState<WebhookConfig[]>([]);
+  
+  // Send webhook states
+  const [sendWebhookUrl, setSendWebhookUrl] = useState("");
+  const [sendTrigger, setSendTrigger] = useState<string>("");
+  const [sendScope, setSendScope] = useState<"all" | "origin" | "sub_origin">("all");
+  const [sendOriginId, setSendOriginId] = useState<string>("");
+  const [sendSubOriginId, setSendSubOriginId] = useState<string>("");
+  const [sentWebhooks, setSentWebhooks] = useState<WebhookConfig[]>([]);
+  
   const [copied, setCopied] = useState(false);
 
   // Fetch origins
@@ -173,23 +198,98 @@ export function AutomationsDropdown({ pipelines, subOriginId }: AutomationsDropd
   };
 
   // Generate webhook URL based on scope
-  const getWebhookUrl = () => {
+  const getGeneratedWebhookUrl = () => {
     const baseUrl = `https://ytdfwkchsumgdvcroaqg.supabase.co/functions/v1/crm-webhook`;
-    if (webhookScope === "all") {
+    if (receiveScope === "all") {
       return baseUrl;
-    } else if (webhookScope === "origin" && webhookOriginId) {
-      return `${baseUrl}?origin_id=${webhookOriginId}`;
-    } else if (webhookScope === "sub_origin" && webhookSubOriginId) {
-      return `${baseUrl}?sub_origin_id=${webhookSubOriginId}`;
+    } else if (receiveScope === "origin" && receiveOriginId) {
+      return `${baseUrl}?origin_id=${receiveOriginId}`;
+    } else if (receiveScope === "sub_origin" && receiveSubOriginId) {
+      return `${baseUrl}?sub_origin_id=${receiveSubOriginId}`;
     }
     return baseUrl;
   };
 
   const copyWebhookUrl = () => {
-    navigator.clipboard.writeText(getWebhookUrl());
+    navigator.clipboard.writeText(getGeneratedWebhookUrl());
     setCopied(true);
     toast.success("URL copiada!");
     setTimeout(() => setCopied(false), 2000);
+  };
+
+  const addReceiveWebhook = () => {
+    if (!receiveWebhookUrl.trim()) {
+      toast.error("Digite uma URL válida");
+      return;
+    }
+    const newWebhook: WebhookConfig = {
+      id: Date.now().toString(),
+      type: "receive",
+      url: receiveWebhookUrl,
+      scope: receiveScope,
+      origin_id: receiveOriginId || undefined,
+      sub_origin_id: receiveSubOriginId || undefined,
+      is_active: true,
+    };
+    setReceivedWebhooks([...receivedWebhooks, newWebhook]);
+    setReceiveWebhookUrl("");
+    toast.success("Webhook de recebimento cadastrado!");
+  };
+
+  const addSendWebhook = () => {
+    if (!sendWebhookUrl.trim()) {
+      toast.error("Digite uma URL válida");
+      return;
+    }
+    if (!sendTrigger) {
+      toast.error("Selecione um gatilho");
+      return;
+    }
+    const newWebhook: WebhookConfig = {
+      id: Date.now().toString(),
+      type: "send",
+      url: sendWebhookUrl,
+      scope: sendScope,
+      origin_id: sendOriginId || undefined,
+      sub_origin_id: sendSubOriginId || undefined,
+      trigger: sendTrigger,
+      is_active: true,
+    };
+    setSentWebhooks([...sentWebhooks, newWebhook]);
+    setSendWebhookUrl("");
+    setSendTrigger("");
+    toast.success("Webhook de envio cadastrado!");
+  };
+
+  const removeWebhook = (id: string, type: "receive" | "send") => {
+    if (type === "receive") {
+      setReceivedWebhooks(receivedWebhooks.filter(w => w.id !== id));
+    } else {
+      setSentWebhooks(sentWebhooks.filter(w => w.id !== id));
+    }
+    toast.success("Webhook removido!");
+  };
+
+  const toggleWebhook = (id: string, type: "receive" | "send") => {
+    if (type === "receive") {
+      setReceivedWebhooks(receivedWebhooks.map(w => 
+        w.id === id ? { ...w, is_active: !w.is_active } : w
+      ));
+    } else {
+      setSentWebhooks(sentWebhooks.map(w => 
+        w.id === id ? { ...w, is_active: !w.is_active } : w
+      ));
+    }
+  };
+
+  const getTriggerLabel = (trigger: string) => {
+    const triggers: Record<string, string> = {
+      "lead_created": "Lead criado",
+      "lead_moved": "Lead movido de pipeline",
+      "lead_updated": "Lead atualizado",
+      "lead_deleted": "Lead excluído",
+    };
+    return triggers[trigger] || trigger;
   };
 
   const handleBack = () => {
@@ -208,7 +308,7 @@ export function AutomationsDropdown({ pipelines, subOriginId }: AutomationsDropd
           )}
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="start" className="w-[420px] bg-popover z-[9999] p-0 overflow-hidden">
+      <DropdownMenuContent align="start" className="w-[520px] bg-popover z-[9999] p-0 overflow-hidden">
         {/* Header */}
         <div className="px-4 py-3 border-b border-border bg-muted/30">
           <div className="flex items-center gap-2">
@@ -231,7 +331,7 @@ export function AutomationsDropdown({ pipelines, subOriginId }: AutomationsDropd
 
         {/* Menu View */}
         {activeView === "menu" && (
-          <div className="p-3 space-y-2">
+          <div className="p-4 space-y-3">
             <button
               onClick={() => setActiveView("origin")}
               className="w-full flex items-center gap-3 p-4 rounded-xl border border-border bg-card hover:bg-muted/50 transition-colors text-left"
@@ -264,7 +364,7 @@ export function AutomationsDropdown({ pipelines, subOriginId }: AutomationsDropd
 
         {/* Origin Automation View */}
         {activeView === "origin" && (
-          <div className="p-4 space-y-4">
+          <div className="p-4 space-y-4 max-h-[400px] overflow-y-auto">
             {/* Create new automation */}
             <div className="space-y-3">
               <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">
@@ -300,7 +400,7 @@ export function AutomationsDropdown({ pipelines, subOriginId }: AutomationsDropd
                 Automações ativas ({automations.length})
               </span>
               
-              <div className="space-y-2 max-h-[240px] overflow-y-auto">
+              <div className="space-y-2">
                 {automations.length === 0 ? (
                   <div className="text-center py-6 text-xs text-muted-foreground bg-muted/20 rounded-lg border border-dashed border-border/50">
                     Nenhuma automação configurada
@@ -428,135 +528,321 @@ export function AutomationsDropdown({ pipelines, subOriginId }: AutomationsDropd
 
         {/* Webhook View */}
         {activeView === "webhook" && (
-          <div className="p-4 space-y-4">
+          <div className="p-4 space-y-4 max-h-[450px] overflow-y-auto">
             {/* Tabs */}
             <div className="flex gap-1 p-1 bg-muted/30 rounded-lg">
               <button
                 onClick={() => setWebhookTab("receive")}
-                className={`flex-1 py-2 px-3 rounded-md text-xs font-medium transition-colors ${
+                className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-3 rounded-md text-xs font-medium transition-colors ${
                   webhookTab === "receive"
                     ? "bg-background text-foreground shadow-sm"
                     : "text-muted-foreground hover:text-foreground"
                 }`}
               >
+                <Download className="w-3.5 h-3.5" />
                 Receber
               </button>
               <button
                 onClick={() => setWebhookTab("send")}
-                className={`flex-1 py-2 px-3 rounded-md text-xs font-medium transition-colors ${
+                className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-3 rounded-md text-xs font-medium transition-colors ${
                   webhookTab === "send"
                     ? "bg-background text-foreground shadow-sm"
                     : "text-muted-foreground hover:text-foreground"
                 }`}
               >
+                <Send className="w-3.5 h-3.5" />
                 Enviar
               </button>
             </div>
 
             {webhookTab === "receive" && (
               <div className="space-y-4">
-                {/* Scope Selection */}
-                <div className="space-y-2">
-                  <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">
-                    Escopo do webhook
-                  </span>
-                  <Select value={webhookScope} onValueChange={(v: "all" | "origin" | "sub_origin") => {
-                    setWebhookScope(v);
-                    setWebhookOriginId("");
-                    setWebhookSubOriginId("");
-                  }}>
-                    <SelectTrigger className="h-9 text-xs">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent className="z-[10000]">
-                      <SelectItem value="all">Todas as origens</SelectItem>
-                      <SelectItem value="origin">Origem específica</SelectItem>
-                      <SelectItem value="sub_origin">Sub-origem específica</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                {/* Origin Selection */}
-                {webhookScope === "origin" && (
-                  <div className="space-y-2">
-                    <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">
-                      Selecione a origem
-                    </span>
-                    <Select value={webhookOriginId} onValueChange={setWebhookOriginId}>
-                      <SelectTrigger className="h-9 text-xs">
-                        <SelectValue placeholder="Selecione..." />
-                      </SelectTrigger>
-                      <SelectContent className="z-[10000]">
-                        {origins.map((origin) => (
-                          <SelectItem key={origin.id} value={origin.id}>
-                            {origin.nome}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                )}
-
-                {/* Sub-origin Selection */}
-                {webhookScope === "sub_origin" && (
-                  <div className="space-y-2">
-                    <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">
-                      Selecione a sub-origem
-                    </span>
-                    <Select value={webhookSubOriginId} onValueChange={setWebhookSubOriginId}>
-                      <SelectTrigger className="h-9 text-xs">
-                        <SelectValue placeholder="Selecione..." />
-                      </SelectTrigger>
-                      <SelectContent className="z-[10000]">
-                        {subOrigins.map((subOrigin) => {
-                          const origin = origins.find(o => o.id === subOrigin.origin_id);
-                          return (
-                            <SelectItem key={subOrigin.id} value={subOrigin.id}>
-                              {origin?.nome} / {subOrigin.nome}
-                            </SelectItem>
-                          );
-                        })}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                )}
-
-                {/* Webhook URL */}
-                <div className="space-y-2">
-                  <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">
-                    URL do Webhook
+                {/* Generated URL */}
+                <div className="p-3 rounded-lg bg-blue-500/5 border border-blue-500/20">
+                  <span className="text-[11px] font-medium text-blue-600 uppercase tracking-wider block mb-2">
+                    Sua URL de recebimento
                   </span>
                   <div className="flex gap-2">
                     <Input
-                      value={getWebhookUrl()}
+                      value={getGeneratedWebhookUrl()}
                       readOnly
-                      className="flex-1 h-9 text-xs bg-muted/30 font-mono"
+                      className="flex-1 h-8 text-[11px] bg-background font-mono"
                     />
                     <Button
                       size="sm"
                       variant="outline"
-                      className="h-9 px-3"
+                      className="h-8 px-2"
                       onClick={copyWebhookUrl}
                     >
                       {copied ? (
-                        <Check className="w-4 h-4 text-green-500" />
+                        <Check className="w-3.5 h-3.5 text-green-500" />
                       ) : (
-                        <Copy className="w-4 h-4" />
+                        <Copy className="w-3.5 h-3.5" />
                       )}
                     </Button>
                   </div>
-                  <p className="text-[10px] text-muted-foreground">
-                    Envie um POST para esta URL para criar leads automaticamente.
-                  </p>
                 </div>
+
+                {/* Add new receive webhook */}
+                <div className="space-y-3">
+                  <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">
+                    Cadastrar webhook de recebimento
+                  </span>
+                  
+                  <div className="space-y-2">
+                    <Input
+                      placeholder="URL do webhook externo..."
+                      value={receiveWebhookUrl}
+                      onChange={(e) => setReceiveWebhookUrl(e.target.value)}
+                      className="h-9 text-xs"
+                    />
+                    
+                    <Select value={receiveScope} onValueChange={(v: "all" | "origin" | "sub_origin") => {
+                      setReceiveScope(v);
+                      setReceiveOriginId("");
+                      setReceiveSubOriginId("");
+                    }}>
+                      <SelectTrigger className="h-9 text-xs">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent className="z-[10000]">
+                        <SelectItem value="all">Todas as origens</SelectItem>
+                        <SelectItem value="origin">Origem específica</SelectItem>
+                        <SelectItem value="sub_origin">Sub-origem específica</SelectItem>
+                      </SelectContent>
+                    </Select>
+
+                    {receiveScope === "origin" && (
+                      <Select value={receiveOriginId} onValueChange={setReceiveOriginId}>
+                        <SelectTrigger className="h-9 text-xs">
+                          <SelectValue placeholder="Selecione a origem..." />
+                        </SelectTrigger>
+                        <SelectContent className="z-[10000]">
+                          {origins.map((origin) => (
+                            <SelectItem key={origin.id} value={origin.id}>
+                              {origin.nome}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    )}
+
+                    {receiveScope === "sub_origin" && (
+                      <Select value={receiveSubOriginId} onValueChange={setReceiveSubOriginId}>
+                        <SelectTrigger className="h-9 text-xs">
+                          <SelectValue placeholder="Selecione a sub-origem..." />
+                        </SelectTrigger>
+                        <SelectContent className="z-[10000]">
+                          {subOrigins.map((subOrigin) => {
+                            const origin = origins.find(o => o.id === subOrigin.origin_id);
+                            return (
+                              <SelectItem key={subOrigin.id} value={subOrigin.id}>
+                                {origin?.nome} / {subOrigin.nome}
+                              </SelectItem>
+                            );
+                          })}
+                        </SelectContent>
+                      </Select>
+                    )}
+
+                    <Button
+                      size="sm"
+                      className="w-full h-9 bg-gradient-to-r from-[#F40000] to-[#A10000] text-white"
+                      onClick={addReceiveWebhook}
+                    >
+                      <Plus className="w-4 h-4 mr-2" />
+                      Cadastrar Webhook
+                    </Button>
+                  </div>
+                </div>
+
+                {/* Registered receive webhooks */}
+                {receivedWebhooks.length > 0 && (
+                  <div className="space-y-2">
+                    <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">
+                      Webhooks cadastrados ({receivedWebhooks.length})
+                    </span>
+                    {receivedWebhooks.map((webhook) => (
+                      <div
+                        key={webhook.id}
+                        className={`p-3 rounded-lg border ${
+                          webhook.is_active 
+                            ? "bg-blue-500/5 border-blue-500/20" 
+                            : "bg-muted/20 border-border/50 opacity-60"
+                        }`}
+                      >
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2 flex-1 min-w-0">
+                            <button
+                              onClick={() => toggleWebhook(webhook.id, "receive")}
+                              className={`relative w-9 h-5 rounded-full transition-colors flex-shrink-0 ${
+                                webhook.is_active ? "bg-blue-500" : "bg-muted"
+                              }`}
+                            >
+                              <span
+                                className={`absolute left-0.5 top-0.5 w-4 h-4 rounded-full bg-white shadow-sm transition-transform ${
+                                  webhook.is_active ? "translate-x-4" : "translate-x-0"
+                                }`}
+                              />
+                            </button>
+                            <span className="text-xs font-mono truncate">{webhook.url}</span>
+                          </div>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-6 w-6 p-0 hover:bg-destructive/10 flex-shrink-0"
+                            onClick={() => removeWebhook(webhook.id, "receive")}
+                          >
+                            <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             )}
 
             {webhookTab === "send" && (
-              <div className="text-center py-8 text-muted-foreground">
-                <Webhook className="w-8 h-8 mx-auto mb-2 opacity-50" />
-                <p className="text-xs">Em breve</p>
-                <p className="text-[10px] mt-1">Envie dados para sistemas externos</p>
+              <div className="space-y-4">
+                {/* Add new send webhook */}
+                <div className="space-y-3">
+                  <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">
+                    Cadastrar webhook de envio
+                  </span>
+                  
+                  <div className="space-y-2">
+                    <Input
+                      placeholder="URL de destino..."
+                      value={sendWebhookUrl}
+                      onChange={(e) => setSendWebhookUrl(e.target.value)}
+                      className="h-9 text-xs"
+                    />
+                    
+                    <Select value={sendTrigger} onValueChange={setSendTrigger}>
+                      <SelectTrigger className="h-9 text-xs">
+                        <SelectValue placeholder="Selecione o gatilho..." />
+                      </SelectTrigger>
+                      <SelectContent className="z-[10000]">
+                        <SelectItem value="lead_created">Lead criado</SelectItem>
+                        <SelectItem value="lead_moved">Lead movido de pipeline</SelectItem>
+                        <SelectItem value="lead_updated">Lead atualizado</SelectItem>
+                        <SelectItem value="lead_deleted">Lead excluído</SelectItem>
+                      </SelectContent>
+                    </Select>
+
+                    <Select value={sendScope} onValueChange={(v: "all" | "origin" | "sub_origin") => {
+                      setSendScope(v);
+                      setSendOriginId("");
+                      setSendSubOriginId("");
+                    }}>
+                      <SelectTrigger className="h-9 text-xs">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent className="z-[10000]">
+                        <SelectItem value="all">Todas as origens</SelectItem>
+                        <SelectItem value="origin">Origem específica</SelectItem>
+                        <SelectItem value="sub_origin">Sub-origem específica</SelectItem>
+                      </SelectContent>
+                    </Select>
+
+                    {sendScope === "origin" && (
+                      <Select value={sendOriginId} onValueChange={setSendOriginId}>
+                        <SelectTrigger className="h-9 text-xs">
+                          <SelectValue placeholder="Selecione a origem..." />
+                        </SelectTrigger>
+                        <SelectContent className="z-[10000]">
+                          {origins.map((origin) => (
+                            <SelectItem key={origin.id} value={origin.id}>
+                              {origin.nome}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    )}
+
+                    {sendScope === "sub_origin" && (
+                      <Select value={sendSubOriginId} onValueChange={setSendSubOriginId}>
+                        <SelectTrigger className="h-9 text-xs">
+                          <SelectValue placeholder="Selecione a sub-origem..." />
+                        </SelectTrigger>
+                        <SelectContent className="z-[10000]">
+                          {subOrigins.map((subOrigin) => {
+                            const origin = origins.find(o => o.id === subOrigin.origin_id);
+                            return (
+                              <SelectItem key={subOrigin.id} value={subOrigin.id}>
+                                {origin?.nome} / {subOrigin.nome}
+                              </SelectItem>
+                            );
+                          })}
+                        </SelectContent>
+                      </Select>
+                    )}
+
+                    <Button
+                      size="sm"
+                      className="w-full h-9 bg-gradient-to-r from-[#F40000] to-[#A10000] text-white"
+                      onClick={addSendWebhook}
+                    >
+                      <Plus className="w-4 h-4 mr-2" />
+                      Cadastrar Webhook
+                    </Button>
+                  </div>
+                </div>
+
+                {/* Registered send webhooks */}
+                {sentWebhooks.length > 0 && (
+                  <div className="space-y-2">
+                    <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">
+                      Webhooks cadastrados ({sentWebhooks.length})
+                    </span>
+                    {sentWebhooks.map((webhook) => (
+                      <div
+                        key={webhook.id}
+                        className={`p-3 rounded-lg border ${
+                          webhook.is_active 
+                            ? "bg-green-500/5 border-green-500/20" 
+                            : "bg-muted/20 border-border/50 opacity-60"
+                        }`}
+                      >
+                        <div className="flex items-center justify-between mb-2">
+                          <div className="flex items-center gap-2 flex-1 min-w-0">
+                            <button
+                              onClick={() => toggleWebhook(webhook.id, "send")}
+                              className={`relative w-9 h-5 rounded-full transition-colors flex-shrink-0 ${
+                                webhook.is_active ? "bg-green-500" : "bg-muted"
+                              }`}
+                            >
+                              <span
+                                className={`absolute left-0.5 top-0.5 w-4 h-4 rounded-full bg-white shadow-sm transition-transform ${
+                                  webhook.is_active ? "translate-x-4" : "translate-x-0"
+                                }`}
+                              />
+                            </button>
+                            <span className="text-xs font-mono truncate">{webhook.url}</span>
+                          </div>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-6 w-6 p-0 hover:bg-destructive/10 flex-shrink-0"
+                            onClick={() => removeWebhook(webhook.id, "send")}
+                          >
+                            <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                          </Button>
+                        </div>
+                        <div className="text-[10px] text-muted-foreground pl-11">
+                          Gatilho: <span className="text-foreground font-medium">{getTriggerLabel(webhook.trigger || "")}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {sentWebhooks.length === 0 && (
+                  <div className="text-center py-4 text-xs text-muted-foreground bg-muted/20 rounded-lg border border-dashed border-border/50">
+                    Nenhum webhook de envio cadastrado
+                  </div>
+                )}
               </div>
             )}
           </div>
