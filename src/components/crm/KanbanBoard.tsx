@@ -146,22 +146,26 @@ export function KanbanBoard() {
     refetchOnWindowFocus: false,
   });
 
-  // Track previous dataUpdatedAt to prevent unnecessary updates
+  // Track previous values to prevent unnecessary updates
   const prevDataUpdatedAtRef = useRef(dataUpdatedAt);
+  const prevSubOriginIdRef = useRef(subOriginId);
 
   // Sync local state with fetched data - only when data actually changes
   useEffect(() => {
-    if (dataUpdatedAt !== prevDataUpdatedAtRef.current || leads !== localLeads) {
+    // Reset when subOriginId changes
+    if (prevSubOriginIdRef.current !== subOriginId) {
+      prevSubOriginIdRef.current = subOriginId;
+      prevDataUpdatedAtRef.current = 0;
+      setLocalLeads([]);
+      return;
+    }
+    
+    // Update when data changes
+    if (dataUpdatedAt && dataUpdatedAt !== prevDataUpdatedAtRef.current) {
       prevDataUpdatedAtRef.current = dataUpdatedAt;
       setLocalLeads(leads);
     }
-  }, [dataUpdatedAt]);
-  
-  // Reset local leads when subOriginId changes
-  useEffect(() => {
-    setLocalLeads([]);
-    prevDataUpdatedAtRef.current = 0;
-  }, [subOriginId]);
+  }, [dataUpdatedAt, subOriginId, leads]);
 
   // Real-time subscription
   useEffect(() => {
