@@ -608,7 +608,7 @@ const Index = () => {
     switch (step) {
       case 1:
         return <div className="form-card">
-            <h1 className="form-title max-w-[260px] md:max-w-none text-center md:text-left mx-auto md:mx-0">
+            <h1 className="form-title max-w-[380px] md:max-w-none">
               <span className="font-light">A sua assessoria de marketing no <span className="font-bold">Mundo Beauty.</span></span>
               
             </h1>
