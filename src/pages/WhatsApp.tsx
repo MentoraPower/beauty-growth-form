@@ -1,11 +1,10 @@
 import { useState, useEffect, useRef } from "react";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
-import { Search, Smile, Paperclip, Mic, Send, Check, CheckCheck, RefreshCw } from "lucide-react";
+import { Search, Smile, Paperclip, Mic, Send, Check, CheckCheck, RefreshCw, Phone } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-
 interface Chat {
   id: string;
   name: string;
@@ -36,6 +35,7 @@ const WhatsApp = () => {
   const [isLoadingChats, setIsLoadingChats] = useState(false);
   const [isLoadingMessages, setIsLoadingMessages] = useState(false);
   const [isSending, setIsSending] = useState(false);
+  const [isCalling, setIsCalling] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const getInitials = (name: string): string => {
@@ -242,6 +242,33 @@ const WhatsApp = () => {
     }
   };
 
+  const makeCall = async () => {
+    if (!selectedChat) return;
+
+    setIsCalling(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("twilio-call", {
+        body: { to: selectedChat.phone },
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: "Ligação iniciada",
+        description: `Chamando ${selectedChat.name}...`,
+      });
+    } catch (error: any) {
+      console.error("Error making call:", error);
+      toast({
+        title: "Erro ao ligar",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setIsCalling(false);
+    }
+  };
+
   // Initial fetch
   useEffect(() => {
     fetchChats();
@@ -425,6 +452,14 @@ const WhatsApp = () => {
                   <h3 className="font-medium text-foreground">{selectedChat.name}</h3>
                   <p className="text-xs text-muted-foreground">{selectedChat.phone}</p>
                 </div>
+                <button
+                  onClick={makeCall}
+                  disabled={isCalling}
+                  className="p-2 hover:bg-emerald-500/10 rounded-full transition-colors"
+                  title="Fazer ligação"
+                >
+                  <Phone className={cn("w-5 h-5 text-emerald-500", isCalling && "animate-pulse")} />
+                </button>
                 <button
                   onClick={() => fetchMessages(selectedChat.id)}
                   disabled={isLoadingMessages}
