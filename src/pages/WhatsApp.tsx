@@ -196,9 +196,35 @@ const WhatsApp = () => {
     }
   };
 
+  const cleanEmptyChats = async () => {
+    try {
+      // Delete chats without messages
+      const { error } = await supabase
+        .from("whatsapp_chats")
+        .delete()
+        .or("last_message.is.null,last_message.eq.");
+      
+      if (error) throw error;
+      
+      await fetchChats();
+      toast({
+        title: "Limpeza concluída",
+        description: "Chats sem conversa foram removidos",
+      });
+    } catch (error: any) {
+      console.error("Error cleaning chats:", error);
+    }
+  };
+
   const syncFromZAPI = async () => {
     setIsLoadingChats(true);
     try {
+      // First clean empty chats
+      await supabase
+        .from("whatsapp_chats")
+        .delete()
+        .or("last_message.is.null,last_message.eq.");
+
       const { data, error } = await supabase.functions.invoke("zapi-whatsapp", {
         body: { action: "get-chats" },
       });
@@ -212,7 +238,10 @@ const WhatsApp = () => {
         
         for (const chat of data) {
           const phone = chat.phone || "";
-          if (!phone) continue;
+          const lastMessage = chat.lastMessage || "";
+          
+          // Only save chats that have actual messages
+          if (!phone || !lastMessage) continue;
           
           // Convert timestamp (seconds) to ISO string
           let lastMessageTime = new Date().toISOString();
@@ -224,7 +253,7 @@ const WhatsApp = () => {
             phone: phone,
             name: chat.name || phone,
             photo_url: chat.photo || null,
-            last_message: chat.lastMessage || "",
+            last_message: lastMessage,
             last_message_time: lastMessageTime,
             unread_count: chat.unreadCount || 0,
           };
@@ -244,7 +273,7 @@ const WhatsApp = () => {
       } else {
         toast({
           title: "Nenhuma conversa",
-          description: "Nenhuma conversa encontrada no Z-API",
+          description: "Nenhuma conversa com mensagens encontrada",
         });
       }
     } catch (error: any) {
@@ -279,9 +308,18 @@ const WhatsApp = () => {
     setIsCallModalOpen(true);
   };
 
-  // Initial fetch
+  // Initial fetch and clean empty chats
   useEffect(() => {
-    fetchChats();
+    const init = async () => {
+      // Clean chats without messages first
+      await supabase
+        .from("whatsapp_chats")
+        .delete()
+        .or("last_message.is.null,last_message.eq.");
+      
+      fetchChats();
+    };
+    init();
   }, []);
 
   // Realtime subscription for chats
