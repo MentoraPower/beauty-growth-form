@@ -189,158 +189,179 @@ export function AutomationsDropdown({ pipelines, subOriginId }: AutomationsDropd
           )}
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="start" className="w-[500px] bg-popover z-[9999] p-4">
-        <DropdownMenuLabel className="flex items-center gap-2 text-base font-semibold pb-2">
-          <Zap className="w-4 h-4 text-amber-500" />
-          Automações de Pipeline
-        </DropdownMenuLabel>
-        <DropdownMenuSeparator />
-
-        {/* Create new automation */}
-        <div className="py-3 space-y-2">
-          <p className="text-xs text-muted-foreground">
-            Mova leads automaticamente quando chegarem em uma pipeline
-          </p>
+      <DropdownMenuContent align="start" className="w-[420px] bg-popover z-[9999] p-0 overflow-hidden">
+        {/* Header */}
+        <div className="px-4 py-3 border-b border-border bg-muted/30">
           <div className="flex items-center gap-2">
-            <Select value={selectedSourcePipeline} onValueChange={setSelectedSourcePipeline}>
-              <SelectTrigger className="flex-1 h-8 text-xs">
-                <SelectValue placeholder="Selecione pipeline de origem..." />
-              </SelectTrigger>
-              <SelectContent className="z-[10000]">
-                {pipelines.map((pipeline) => (
-                  <SelectItem key={pipeline.id} value={pipeline.id}>
-                    {pipeline.nome}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Button
-              size="sm"
-              className="h-8 bg-gradient-to-r from-[#F40000] to-[#A10000] text-white"
-              onClick={createAutomation}
-              disabled={!selectedSourcePipeline}
-            >
-              <Plus className="w-4 h-4 mr-1" />
-              Criar
-            </Button>
+            <Zap className="w-4 h-4 text-amber-500" />
+            <span className="text-sm font-semibold">Automações</span>
           </div>
+          <p className="text-[11px] text-muted-foreground mt-1">
+            Mova leads automaticamente entre pipelines
+          </p>
         </div>
 
-        <DropdownMenuSeparator />
-
-        {/* Existing automations */}
-        <div className="py-2 space-y-2 max-h-[300px] overflow-y-auto">
-          {automations.length === 0 ? (
-            <p className="text-xs text-muted-foreground text-center py-4">
-              Nenhuma automação configurada
-            </p>
-          ) : (
-            automations.map((automation) => (
-              <div
-                key={automation.id}
-                className="p-3 bg-muted/30 rounded-lg border space-y-2"
+        <div className="p-4 space-y-4">
+          {/* Create new automation */}
+          <div className="space-y-3">
+            <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">
+              Nova automação
+            </span>
+            <div className="flex items-center gap-2">
+              <Select value={selectedSourcePipeline} onValueChange={setSelectedSourcePipeline}>
+                <SelectTrigger className="flex-1 h-9 text-xs">
+                  <SelectValue placeholder="Quando lead chegar em..." />
+                </SelectTrigger>
+                <SelectContent className="z-[10000]">
+                  {pipelines.map((pipeline) => (
+                    <SelectItem key={pipeline.id} value={pipeline.id}>
+                      {pipeline.nome}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Button
+                size="sm"
+                className="h-9 px-4 bg-gradient-to-r from-[#F40000] to-[#A10000] text-white"
+                onClick={createAutomation}
+                disabled={!selectedSourcePipeline}
               >
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Switch
-                      checked={automation.is_active}
-                      onCheckedChange={(checked) =>
-                        updateAutomation(automation.id, { is_active: checked })
-                      }
-                      className="scale-75"
-                    />
-                    <span className="text-xs font-medium">
-                      {getPipelineName(automation.pipeline_id)}
-                    </span>
+                <Plus className="w-4 h-4" />
+              </Button>
+            </div>
+          </div>
+
+          {/* Existing automations */}
+          <div className="space-y-3">
+            <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">
+              Automações ativas ({automations.length})
+            </span>
+            
+            <div className="space-y-2 max-h-[280px] overflow-y-auto">
+              {automations.length === 0 ? (
+                <div className="text-center py-6 text-xs text-muted-foreground bg-muted/20 rounded-lg border border-dashed border-border/50">
+                  Nenhuma automação configurada
+                </div>
+              ) : (
+                automations.map((automation) => (
+                  <div
+                    key={automation.id}
+                    className={`p-3 rounded-lg border transition-colors ${
+                      automation.is_active 
+                        ? "bg-amber-500/5 border-amber-500/20" 
+                        : "bg-muted/20 border-border/50 opacity-60"
+                    }`}
+                  >
+                    {/* Header row */}
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => updateAutomation(automation.id, { is_active: !automation.is_active })}
+                          className={`relative w-9 h-5 rounded-full transition-colors ${
+                            automation.is_active ? "bg-amber-500" : "bg-muted"
+                          }`}
+                        >
+                          <span
+                            className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow-sm transition-transform ${
+                              automation.is_active ? "translate-x-4" : "translate-x-0.5"
+                            }`}
+                          />
+                        </button>
+                        <span className="text-xs font-medium">
+                          {getPipelineName(automation.pipeline_id)}
+                        </span>
+                      </div>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="h-6 w-6 p-0 hover:bg-destructive/10"
+                        onClick={() => deleteAutomation(automation.id)}
+                      >
+                        <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                      </Button>
+                    </div>
+
+                    {/* Target selectors - vertical layout */}
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2">
+                        <span className="text-[10px] text-muted-foreground w-16 flex-shrink-0">Origem:</span>
+                        <Select
+                          value={automation.target_origin_id || ""}
+                          onValueChange={(value) => {
+                            updateAutomation(automation.id, {
+                              target_origin_id: value,
+                              target_sub_origin_id: null,
+                              target_pipeline_id: null,
+                            });
+                          }}
+                        >
+                          <SelectTrigger className="flex-1 h-7 text-xs">
+                            <SelectValue placeholder="Selecione..." />
+                          </SelectTrigger>
+                          <SelectContent className="z-[10000]">
+                            {origins.map((origin) => (
+                              <SelectItem key={origin.id} value={origin.id}>
+                                {origin.nome}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        <span className="text-[10px] text-muted-foreground w-16 flex-shrink-0">Sub-origem:</span>
+                        <Select
+                          value={automation.target_sub_origin_id || ""}
+                          onValueChange={(value) => {
+                            updateAutomation(automation.id, {
+                              target_sub_origin_id: value,
+                              target_pipeline_id: null,
+                            });
+                          }}
+                          disabled={!automation.target_origin_id}
+                        >
+                          <SelectTrigger className="flex-1 h-7 text-xs">
+                            <SelectValue placeholder="Selecione..." />
+                          </SelectTrigger>
+                          <SelectContent className="z-[10000]">
+                            {subOrigins
+                              .filter(s => s.origin_id === automation.target_origin_id)
+                              .map((subOrigin) => (
+                                <SelectItem key={subOrigin.id} value={subOrigin.id}>
+                                  {subOrigin.nome}
+                                </SelectItem>
+                              ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        <span className="text-[10px] text-muted-foreground w-16 flex-shrink-0">Pipeline:</span>
+                        <Select
+                          value={automation.target_pipeline_id || ""}
+                          onValueChange={(value) => {
+                            updateAutomation(automation.id, { target_pipeline_id: value });
+                          }}
+                          disabled={!automation.target_sub_origin_id}
+                        >
+                          <SelectTrigger className="flex-1 h-7 text-xs">
+                            <SelectValue placeholder="Selecione..." />
+                          </SelectTrigger>
+                          <SelectContent className="z-[10000]">
+                            {getTargetPipelines(automation.target_sub_origin_id).map((pipeline) => (
+                              <SelectItem key={pipeline.id} value={pipeline.id}>
+                                {pipeline.nome}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
                   </div>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    className="h-6 w-6 p-0"
-                    onClick={() => deleteAutomation(automation.id)}
-                  >
-                    <Trash2 className="h-3 w-3 text-destructive" />
-                  </Button>
-                </div>
-
-                <div className="flex flex-wrap items-center gap-2 text-xs">
-                  <span className="text-muted-foreground">Mover para:</span>
-                  
-                  {/* Select Origin */}
-                  <Select
-                    value={automation.target_origin_id || ""}
-                    onValueChange={(value) => {
-                      updateAutomation(automation.id, {
-                        target_origin_id: value,
-                        target_sub_origin_id: null,
-                        target_pipeline_id: null,
-                      });
-                    }}
-                  >
-                    <SelectTrigger className="w-28 h-7 text-xs">
-                      <SelectValue placeholder="Origem..." />
-                    </SelectTrigger>
-                    <SelectContent className="z-[10000]">
-                      {origins.map((origin) => (
-                        <SelectItem key={origin.id} value={origin.id}>
-                          {origin.nome}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-
-                  <ArrowRight className="h-3 w-3 text-muted-foreground" />
-
-                  {/* Select Sub-Origin */}
-                  <Select
-                    value={automation.target_sub_origin_id || ""}
-                    onValueChange={(value) => {
-                      updateAutomation(automation.id, {
-                        target_sub_origin_id: value,
-                        target_pipeline_id: null,
-                      });
-                    }}
-                    disabled={!automation.target_origin_id}
-                  >
-                    <SelectTrigger className="w-28 h-7 text-xs">
-                      <SelectValue placeholder="Sub-origem..." />
-                    </SelectTrigger>
-                    <SelectContent className="z-[10000]">
-                      {subOrigins
-                        .filter(s => s.origin_id === automation.target_origin_id)
-                        .map((subOrigin) => (
-                          <SelectItem key={subOrigin.id} value={subOrigin.id}>
-                            {subOrigin.nome}
-                          </SelectItem>
-                        ))}
-                    </SelectContent>
-                  </Select>
-
-                  <ArrowRight className="h-3 w-3 text-muted-foreground" />
-
-                  {/* Select Target Pipeline */}
-                  <Select
-                    value={automation.target_pipeline_id || ""}
-                    onValueChange={(value) => {
-                      updateAutomation(automation.id, { target_pipeline_id: value });
-                    }}
-                    disabled={!automation.target_sub_origin_id}
-                  >
-                    <SelectTrigger className="w-28 h-7 text-xs">
-                      <SelectValue placeholder="Pipeline..." />
-                    </SelectTrigger>
-                    <SelectContent className="z-[10000]">
-                      {getTargetPipelines(automation.target_sub_origin_id).map((pipeline) => (
-                        <SelectItem key={pipeline.id} value={pipeline.id}>
-                          {pipeline.nome}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-            ))
-          )}
+                ))
+              )}
+            </div>
+          </div>
         </div>
       </DropdownMenuContent>
     </DropdownMenu>
