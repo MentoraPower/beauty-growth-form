@@ -57,14 +57,13 @@ const handler = async (req: Request): Promise<Response> => {
         break;
 
       case "get-chats":
-        console.log("Fetching all chats from Z-API with pagination");
+        console.log("Fetching chats with messages from Z-API");
         
         const allChats: any[] = [];
         let currentPage = 1;
         const pageSize = 100;
         let hasMorePages = true;
         
-        // Paginate through all chats
         while (hasMorePages) {
           console.log(`Fetching page ${currentPage}...`);
           
@@ -76,13 +75,12 @@ const handler = async (req: Request): Promise<Response> => {
           });
           
           const pageData = await pageResponse.json();
-          console.log(`Page ${currentPage} response: ${Array.isArray(pageData) ? pageData.length : 0} chats`);
+          console.log(`Page ${currentPage}: ${Array.isArray(pageData) ? pageData.length : 0} items`);
           
           if (Array.isArray(pageData) && pageData.length > 0) {
             allChats.push(...pageData);
             currentPage++;
             
-            // If we got less than pageSize, we've reached the end
             if (pageData.length < pageSize) {
               hasMorePages = false;
             }
@@ -90,24 +88,31 @@ const handler = async (req: Request): Promise<Response> => {
             hasMorePages = false;
           }
           
-          // Safety limit to prevent infinite loops
-          if (currentPage > 50) {
-            console.log("Reached safety limit of 50 pages");
+          if (currentPage > 20) {
             hasMorePages = false;
           }
         }
         
-        console.log(`Total chats fetched: ${allChats.length}`);
+        console.log(`Total items fetched: ${allChats.length}`);
         
-        // Return all chats (including groups) with relevant fields
-        const formattedChats = allChats.map((chat: any) => ({
-          phone: chat.phone || chat.id?.replace("@c.us", "").replace("@g.us", ""),
-          name: chat.name || chat.phone || "Desconhecido",
-          lastMessage: chat.lastMessageText || chat.lastMessage?.text || null,
+        // FILTER: Only chats that have actual messages (lastMessageText exists and is not empty)
+        const chatsWithMessages = allChats.filter((chat: any) => {
+          const hasMessage = chat.lastMessageText && chat.lastMessageText.trim() !== "";
+          const hasPhone = chat.phone && !chat.phone.includes("status@broadcast");
+          return hasMessage && hasPhone;
+        });
+        
+        console.log(`Chats with messages: ${chatsWithMessages.length}`);
+        
+        // Format and return only chats with conversations
+        const formattedChats = chatsWithMessages.map((chat: any) => ({
+          phone: chat.phone,
+          name: chat.name || chat.phone,
+          lastMessage: chat.lastMessageText || "",
           unreadCount: chat.unreadCount || 0,
-          timestamp: chat.lastMessageTimestamp || chat.timestamp || null,
-          isGroup: chat.isGroup || chat.id?.includes("@g.us") || false,
-          photo: chat.profileThumbnail || chat.photo || null,
+          timestamp: chat.lastMessageTimestamp || null,
+          isGroup: chat.isGroup || false,
+          photo: chat.profileThumbnail || null,
         }));
         
         return new Response(JSON.stringify(formattedChats), {
