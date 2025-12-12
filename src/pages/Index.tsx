@@ -279,7 +279,7 @@ const Index = () => {
   };
 
   // Function to save partial lead data progressively (non-blocking)
-  const savePartialLead = async (currentFormData: FormData, currentStep: number) => {
+  const savePartialLead = async (currentFormData: FormData, currentStep: number, sendEmail: boolean = false) => {
     try {
       // Build lead data with all required fields (use placeholders for incomplete data)
       const leadData: Record<string, unknown> = {
@@ -297,6 +297,7 @@ const Index = () => {
         years_experience: currentFormData.yearsOfExperience || "",
         can_afford: currentFormData.canAfford,
         wants_more_info: currentFormData.wantsMoreInfo,
+        estimated_revenue: aiAnalysis?.estimatedRevenue || null,
         utm_source: utmParams.utm_source,
         utm_medium: utmParams.utm_medium,
         utm_campaign: utmParams.utm_campaign,
@@ -304,12 +305,15 @@ const Index = () => {
         utm_content: utmParams.utm_content
       };
 
+      let savedLeadId: string | null = null;
+
       // If we already have a lead ID (from existing lead or partial save), update it
       // Existing leads keep their current pipeline - don't change pipeline_id
       const leadIdToUpdate = existingLead?.id || partialLeadId;
       if (leadIdToUpdate) {
         // Update existing lead WITHOUT changing pipeline_id (preserves CRM position)
         await supabase.from("leads").update(leadData).eq("id", leadIdToUpdate);
+        savedLeadId = leadIdToUpdate;
       } else {
         // Create new lead with fixed pipeline "Novo" and sub-origin "Entrada"
         const PIPELINE_NOVO_ID = 'b62bdfc2-cfda-4cc2-9a72-f87f9ac1f724';
@@ -332,6 +336,7 @@ const Index = () => {
           years_experience: currentFormData.yearsOfExperience || "",
           can_afford: currentFormData.canAfford,
           wants_more_info: currentFormData.wantsMoreInfo,
+          estimated_revenue: aiAnalysis?.estimatedRevenue || null,
           pipeline_id: PIPELINE_NOVO_ID,
           sub_origin_id: SUB_ORIGIN_ENTRADA_ID,
           utm_source: utmParams.utm_source,
@@ -342,6 +347,27 @@ const Index = () => {
         }).select("id").single();
         if (!error && data) {
           setPartialLeadId(data.id);
+          savedLeadId = data.id;
+        }
+      }
+
+      // Send welcome email if requested (on final save)
+      if (sendEmail && savedLeadId && currentFormData.email && currentFormData.name) {
+        try {
+          await fetch('https://ytdfwkchsumgdvcroaqg.supabase.co/functions/v1/send-email', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              leadId: savedLeadId,
+              leadName: currentFormData.name,
+              leadEmail: currentFormData.email
+            })
+          });
+          console.log("Welcome email triggered");
+        } catch (emailError) {
+          console.error("Error sending welcome email:", emailError);
         }
       }
     } catch (error) {
@@ -576,10 +602,16 @@ const Index = () => {
         // After years of experience step, check if we should skip affordability question
         if (step === 11) {
           if (!shouldShowAffordabilityQuestion()) {
-            // Skip step 12, go directly to final step (13)
+            // Skip step 12, go directly to final step (13) - send email on final save
+            savePartialLead(formData, step, true).catch(console.error);
             setStep(13);
             return;
           }
+        }
+        
+        // After affordability question, save final data and send email
+        if (step === 12) {
+          savePartialLead(formData, step, true).catch(console.error);
         }
         setStep(step + 1);
       }
@@ -1011,81 +1043,12 @@ const Index = () => {
                 <p className="text-base text-muted-foreground mt-4 mb-8 leading-relaxed">
                   Você ganhou uma consultoria exclusiva com o time da Scale Beauty para saber mais sobre nossos serviços e como podemos escalar seu negócio.
                 </p>
-                <ShimmerButton onClick={async () => {
+                <ShimmerButton onClick={() => {
               setIsLoading(true);
-              try {
-                // Get Base pipeline id
-                const {
-                  data: basePipeline
-                } = await supabase.from("pipelines").select("id").eq("nome", "Base").maybeSingle();
-                const leadData = {
-                  name: formData.name,
-                  email: formData.email,
-                  whatsapp: formData.phone,
-                  country_code: formData.country.dialCode,
-                  instagram: formData.instagram,
-                  clinic_name: formData.clinicName || null,
-                  service_area: formData.beautyArea,
-                  monthly_billing: formData.revenue,
-                  weekly_attendance: formData.weeklyAppointments,
-                  workspace_type: formData.hasPhysicalSpace === null ? "" : formData.hasPhysicalSpace ? "physical" : "home",
-                  years_experience: formData.yearsOfExperience || "",
-                  average_ticket: parseCurrency(formData.averageTicket),
-                  can_afford: formData.canAfford,
-                  wants_more_info: formData.wantsMoreInfo,
-                  estimated_revenue: aiAnalysis?.estimatedRevenue || null,
-                  pipeline_id: basePipeline?.id || null,
-                  utm_source: utmParams.utm_source,
-                  utm_medium: utmParams.utm_medium,
-                  utm_campaign: utmParams.utm_campaign,
-                  utm_term: utmParams.utm_term,
-                  utm_content: utmParams.utm_content
-                };
-                let error;
-
-                // If existing lead or partial lead, update instead of insert
-                const leadIdToUpdate = existingLead?.id || partialLeadId;
-                if (leadIdToUpdate) {
-                  const result = await supabase.from("leads").update(leadData).eq("id", leadIdToUpdate);
-                  error = result.error;
-                } else {
-                  const result = await supabase.from("leads").insert(leadData);
-                  error = result.error;
-                }
-                if (error) {
-                  console.error("Error saving lead:", error);
-                  toast.error("Erro ao salvar dados. Tente novamente.");
-                  setIsLoading(false);
-                  return;
-                }
-
-                // Send welcome email
-                try {
-                  const leadId = leadIdToUpdate || partialLeadId;
-                  await fetch('https://ytdfwkchsumgdvcroaqg.supabase.co/functions/v1/send-email', {
-                    method: 'POST',
-                    headers: {
-                      'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                      leadId: leadId,
-                      leadName: formData.name,
-                      leadEmail: formData.email
-                    })
-                  });
-                  console.log("Welcome email triggered");
-                } catch (emailError) {
-                  console.error("Error sending welcome email:", emailError);
-                  // Don't block the flow if email fails
-                }
-                setTimeout(() => {
-                  window.location.href = "https://www.instagram.com/scalebeautyy/";
-                }, 2000);
-              } catch (err) {
-                console.error("Error:", err);
-                toast.error("Erro ao salvar dados. Tente novamente.");
-                setIsLoading(false);
-              }
+              // Just redirect to Instagram - data is already saved
+              setTimeout(() => {
+                window.location.href = "https://www.instagram.com/scalebeautyy/";
+              }, 2000);
             }}>
                   Finalizar
                 </ShimmerButton>
