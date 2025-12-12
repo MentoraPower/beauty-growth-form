@@ -228,6 +228,20 @@ export default function LeadDetail() {
     return email.includes("incompleto_") && email.includes("@temp.com");
   };
 
+  // Check if lead has incomplete essential fields (abandoned form)
+  const isLeadIncomplete = (leadData: LeadData) => {
+    const essentialFields = [
+      leadData.service_area,
+      leadData.monthly_billing,
+      leadData.weekly_attendance,
+      leadData.workspace_type,
+      leadData.years_experience
+    ];
+    // Lead is incomplete if more than 2 essential fields are empty
+    const emptyCount = essentialFields.filter(f => !f || f.trim() === "").length;
+    return emptyCount >= 3;
+  };
+
   if (isLoading) {
     return (
       <DashboardLayout>
@@ -274,9 +288,16 @@ export default function LeadDetail() {
               
               {/* Name and Company */}
               <div>
-                <p className={`uppercase tracking-wide ${lead.clinic_name ? "text-xs text-muted-foreground font-medium" : "text-[10px] text-muted-foreground/70"}`}>
-                  {lead.clinic_name || "SEM EMPRESA"}
-                </p>
+                <div className="flex items-center gap-2">
+                  <p className={`uppercase tracking-wide ${lead.clinic_name ? "text-xs text-muted-foreground font-medium" : "text-[10px] text-muted-foreground/70"}`}>
+                    {lead.clinic_name || "SEM EMPRESA"}
+                  </p>
+                  {isLeadIncomplete(lead) && (
+                    <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-4 border-amber-400 text-amber-600 bg-amber-50">
+                      Cadastro incompleto
+                    </Badge>
+                  )}
+                </div>
                 <h1 className="text-xl font-bold leading-tight">
                   {lead.name === "Incompleto" ? "incompleto" : lead.name}
                 </h1>
