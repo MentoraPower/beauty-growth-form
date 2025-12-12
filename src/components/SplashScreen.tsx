@@ -57,7 +57,7 @@ const SplashScreen = ({ onComplete }: SplashScreenProps) => {
             animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
             transition={{ duration: 0.8, ease: [0.25, 0.1, 0.25, 1] }}
           />
-          <p className="text-base md:text-lg font-light tracking-wide text-muted-foreground text-center max-w-xs md:max-w-none">
+          <p className="text-base md:text-lg font-light tracking-wide text-muted-foreground text-center max-w-[250px] md:max-w-none">
             {allChars.map((char, index) => {
               const isScale = index >= normalLength;
               return (
