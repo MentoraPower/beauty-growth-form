@@ -496,22 +496,42 @@ export default function LeadDetail() {
                     <div className="p-3 bg-muted/30 border border-[#00000010] rounded-lg">
                       <div className="flex items-center gap-2 mb-1">
                         <DollarSign className="h-4 w-4 text-muted-foreground" />
-                        <p className="text-xs text-muted-foreground">Capacidade de Investimento</p>
+                        <p className="text-xs text-muted-foreground">Quer mais informações?</p>
                       </div>
-                      <p className={`text-sm font-medium ${!lead.can_afford ? "text-muted-foreground italic" : ""}`}>
-                        {lead.can_afford === "yes" ? "Sim, pode investir" : lead.can_afford === "no" ? "Não no momento" : "incompleto"}
+                      <p className={`text-sm font-medium ${lead.wants_more_info === null ? "text-muted-foreground italic" : ""}`}>
+                        {lead.wants_more_info === true ? "Sim" : lead.wants_more_info === false ? "Não" : "incompleto"}
                       </p>
                     </div>
                   </div>
 
-                  {/* Wants More Info */}
-                  {lead.wants_more_info && (
-                    <div className="p-4 bg-muted/30 border border-[#00000010] rounded-lg">
-                      <Badge variant="secondary">
-                        Solicitou mais informações sobre investimento
-                      </Badge>
+                  {/* Investment Summary Card */}
+                  <div className="p-4 bg-muted/20 border border-[#00000010] rounded-lg mt-4">
+                    <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">
+                      Resumo de Investimento
+                    </h4>
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm text-muted-foreground">Pergunta: "Você consegue investir R$1.800/mês?"</span>
+                        <Badge 
+                          variant={lead.can_afford === "yes" ? "default" : lead.can_afford === "no" ? "secondary" : "outline"}
+                          className={lead.can_afford === "yes" ? "bg-green-500" : lead.can_afford === "no" ? "bg-orange-500" : ""}
+                        >
+                          {lead.can_afford === "yes" ? "Clicou: SIM" : lead.can_afford === "no" ? "Clicou: NÃO" : "Não respondeu"}
+                        </Badge>
+                      </div>
+                      {lead.can_afford === "no" && (
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm text-muted-foreground">Pergunta: "Quer saber mais?"</span>
+                          <Badge 
+                            variant={lead.wants_more_info ? "default" : "secondary"}
+                            className={lead.wants_more_info ? "bg-blue-500" : ""}
+                          >
+                            {lead.wants_more_info ? "Clicou: SIM" : "Clicou: NÃO"}
+                          </Badge>
+                        </div>
+                      )}
                     </div>
-                  )}
+                  </div>
                 </CardContent>
               </Card>
             </div>
