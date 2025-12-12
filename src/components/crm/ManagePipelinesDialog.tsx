@@ -117,119 +117,86 @@ export function ManagePipelinesDialog({
             </Button>
           </div>
 
-          {/* Horizontal Scroll Container */}
-          <div className="relative">
-            <div className="overflow-x-auto pb-4 -mx-2 px-2">
-              <div className="flex gap-4 min-w-max">
-                {pipelines.map((pipeline, index) => (
-                  <div
-                    key={pipeline.id}
-                    className="group relative w-56 flex-shrink-0"
-                  >
-                    {/* Modern Card */}
-                    <div className="h-40 rounded-2xl bg-gradient-to-br from-background to-muted/50 border border-border/60 p-4 flex flex-col transition-all duration-200 hover:border-border hover:shadow-lg hover:shadow-black/5">
-                      {/* Card Number Badge */}
-                      <div className="absolute -top-2 -left-2 w-7 h-7 rounded-lg bg-gradient-to-br from-neutral-800 to-neutral-900 flex items-center justify-center shadow-md">
-                        <span className="text-[11px] font-bold text-white">{index + 1}</span>
-                      </div>
+          {/* Vertical Scroll Container */}
+          <div className="space-y-3 max-h-[400px] overflow-y-auto pr-2">
+            {pipelines.map((pipeline) => (
+              <div
+                key={pipeline.id}
+                className="group rounded-xl bg-gradient-to-br from-background to-muted/30 border border-border/60 p-4 transition-all duration-200 hover:border-border hover:shadow-md"
+              >
+                <div className="flex items-center gap-4">
+                  {/* Drag Handle */}
+                  <div className="opacity-40 group-hover:opacity-100 transition-opacity cursor-grab">
+                    <GripVertical className="w-5 h-5 text-muted-foreground" />
+                  </div>
 
-                      {/* Drag Handle */}
-                      <div className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <GripVertical className="w-4 h-4 text-muted-foreground/50" />
+                  {/* Content */}
+                  <div className="flex-1 min-w-0">
+                    {editingId === pipeline.id ? (
+                      <div className="flex items-center gap-2">
+                        <Input
+                          value={editingName}
+                          onChange={(e) => setEditingName(e.target.value)}
+                          onKeyDown={(e) => {
+                            e.stopPropagation();
+                            if (e.key === "Enter") updatePipeline(pipeline.id);
+                            if (e.key === "Escape") setEditingId(null);
+                          }}
+                          onClick={(e) => e.stopPropagation()}
+                          autoFocus
+                          className="h-9 flex-1"
+                        />
+                        <Button
+                          size="sm"
+                          className="h-9 px-3 bg-green-600 hover:bg-green-700 text-white"
+                          onClick={() => updatePipeline(pipeline.id)}
+                        >
+                          <Check className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="h-9 px-3"
+                          onClick={() => setEditingId(null)}
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
                       </div>
+                    ) : (
+                      <h3 className="font-medium text-sm truncate">
+                        {pipeline.nome}
+                      </h3>
+                    )}
+                  </div>
 
-                      {/* Content */}
-                      <div className="flex-1 pt-2">
-                        {editingId === pipeline.id ? (
-                          <div className="space-y-2">
-                            <Input
-                              value={editingName}
-                              onChange={(e) => setEditingName(e.target.value)}
-                              onKeyDown={(e) => {
-                                e.stopPropagation();
-                                if (e.key === "Enter") updatePipeline(pipeline.id);
-                                if (e.key === "Escape") setEditingId(null);
-                              }}
-                              onClick={(e) => e.stopPropagation()}
-                              autoFocus
-                              className="h-9 text-sm"
-                            />
-                            <div className="flex gap-1">
-                              <Button
-                                size="sm"
-                                className="flex-1 h-8 bg-green-600 hover:bg-green-700 text-white"
-                                onClick={() => updatePipeline(pipeline.id)}
-                              >
-                                <Check className="h-4 w-4" />
-                              </Button>
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                className="h-8 px-2"
-                                onClick={() => setEditingId(null)}
-                              >
-                                <X className="h-4 w-4" />
-                              </Button>
-                            </div>
-                          </div>
-                        ) : (
-                          <h3 className="font-semibold text-base leading-tight line-clamp-2">
-                            {pipeline.nome}
-                          </h3>
-                        )}
-                      </div>
-
-                      {/* Actions */}
-                      {editingId !== pipeline.id && (
-                        <div className="flex items-center gap-2 pt-3 border-t border-border/40">
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            className="flex-1 h-8 text-xs gap-1.5 hover:bg-muted"
-                            onClick={() => {
-                              setEditingId(pipeline.id);
-                              setEditingName(pipeline.nome);
-                            }}
-                          >
-                            <Pencil className="h-3.5 w-3.5" />
-                            Editar
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            className="h-8 w-8 p-0 text-destructive hover:text-destructive hover:bg-destructive/10"
-                            onClick={() => deletePipeline(pipeline.id)}
-                          >
-                            <Trash2 className="h-3.5 w-3.5" />
-                          </Button>
-                        </div>
-                      )}
+                  {/* Actions */}
+                  {editingId !== pipeline.id && (
+                    <div className="flex items-center gap-1">
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="h-8 px-3 text-xs gap-1.5 hover:bg-muted"
+                        onClick={() => {
+                          setEditingId(pipeline.id);
+                          setEditingName(pipeline.nome);
+                        }}
+                      >
+                        <Pencil className="h-3.5 w-3.5" />
+                        Editar
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="h-8 w-8 p-0 text-destructive hover:text-destructive hover:bg-destructive/10"
+                        onClick={() => deletePipeline(pipeline.id)}
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </Button>
                     </div>
-                  </div>
-                ))}
-
-                {/* Add New Card Placeholder */}
-                <button
-                  onClick={() => document.querySelector<HTMLInputElement>('input[placeholder="Nome da nova pipeline..."]')?.focus()}
-                  className="w-56 h-40 flex-shrink-0 rounded-2xl border-2 border-dashed border-border/60 hover:border-primary/40 bg-muted/20 hover:bg-muted/40 transition-all duration-200 flex flex-col items-center justify-center gap-2 group"
-                >
-                  <div className="w-10 h-10 rounded-xl bg-muted/50 group-hover:bg-primary/10 flex items-center justify-center transition-colors">
-                    <Plus className="w-5 h-5 text-muted-foreground group-hover:text-primary transition-colors" />
-                  </div>
-                  <span className="text-sm text-muted-foreground group-hover:text-foreground transition-colors">
-                    Nova pipeline
-                  </span>
-                </button>
+                  )}
+                </div>
               </div>
-            </div>
-
-            {/* Scroll Indicators */}
-            {pipelines.length > 3 && (
-              <>
-                <div className="absolute left-0 top-0 bottom-4 w-8 bg-gradient-to-r from-background to-transparent pointer-events-none" />
-                <div className="absolute right-0 top-0 bottom-4 w-8 bg-gradient-to-l from-background to-transparent pointer-events-none" />
-              </>
-            )}
+            ))}
           </div>
 
           {pipelines.length === 0 && (
