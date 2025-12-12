@@ -15,9 +15,7 @@ export default function CRM() {
   
   return (
     <DashboardLayout>
-      <div className="space-y-6">
-        <KanbanBoard />
-      </div>
+      <KanbanBoard />
     </DashboardLayout>
   );
 }
