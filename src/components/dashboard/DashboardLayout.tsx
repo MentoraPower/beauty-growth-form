@@ -35,12 +35,16 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
     setIsHovered(globalHoverState);
   }, [location.pathname]);
 
-  // Close CRM panel when navigating away from CRM
+  // Auto-open panel when navigating to CRM from elsewhere
   useEffect(() => {
-    if (!isCRMActive) {
-      setCrmPanelOpen(false);
+    if (isCRMActive && !crmPanelOpen) {
+      // Check if we just arrived at CRM (panel was closed but we're now on CRM)
+      const wasOnCRM = location.pathname.startsWith("/admin/crm");
+      if (wasOnCRM) {
+        setCrmPanelOpen(true);
+      }
     }
-  }, [isCRMActive]);
+  }, [location.pathname]);
 
   const handleMouseEnter = useCallback(() => {
     globalHoverState = true;
