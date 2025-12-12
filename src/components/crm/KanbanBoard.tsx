@@ -534,17 +534,111 @@ export function KanbanBoard() {
 
   return (
     <div className="flex flex-col h-[calc(100vh-2rem)]">
-      {/* Header with title */}
-      <div className="flex items-center justify-between mb-3">
-        <div className="transition-all duration-150 flex-shrink-0">
-          <h1 className="text-2xl font-bold">{pageTitle}</h1>
-          {!subOriginId && (
-            <p className="text-sm text-muted-foreground mt-1">
-              Clique em uma sub-origem no menu lateral para ver os leads
-            </p>
+      {/* Header - all on same line */}
+      <div className="flex items-center gap-4 mb-4">
+        {/* Title - left */}
+        <div className="flex-shrink-0">
+          <h1 className="text-xl font-bold">{pageTitle}</h1>
+        </div>
+
+        {/* Search centered */}
+        <div className="flex-1 flex items-center justify-center gap-3">
+          <div className="relative w-full max-w-md">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <Input
+              type="text"
+              placeholder="Pesquisar leads..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-9 h-9"
+            />
+          </div>
+
+          {/* Filters */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm" className="h-9 gap-2">
+                <Filter className="w-4 h-4" />
+                Filtros
+                {hasActiveFilters && (
+                  <Badge variant="secondary" className="ml-1 px-1.5 py-0 text-xs">
+                    {(filterMQL !== "all" ? 1 : 0) + filterTags.length}
+                  </Badge>
+                )}
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-56 bg-popover z-[9999]">
+              <DropdownMenuLabel>Status MQL</DropdownMenuLabel>
+              <DropdownMenuCheckboxItem
+                checked={filterMQL === "all"}
+                onCheckedChange={() => setFilterMQL("all")}
+              >
+                Todos
+              </DropdownMenuCheckboxItem>
+              <DropdownMenuCheckboxItem
+                checked={filterMQL === "mql"}
+                onCheckedChange={() => setFilterMQL(filterMQL === "mql" ? "all" : "mql")}
+              >
+                <span className="flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                  MQL
+                </span>
+              </DropdownMenuCheckboxItem>
+              <DropdownMenuCheckboxItem
+                checked={filterMQL === "non-mql"}
+                onCheckedChange={() => setFilterMQL(filterMQL === "non-mql" ? "all" : "non-mql")}
+              >
+                <span className="flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-orange-500" />
+                  Não MQL
+                </span>
+              </DropdownMenuCheckboxItem>
+              
+              {allTags.length > 0 && (
+                <>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuLabel>Tags</DropdownMenuLabel>
+                  {allTags.map((tag) => (
+                    <DropdownMenuCheckboxItem
+                      key={tag.name}
+                      checked={filterTags.includes(tag.name)}
+                      onCheckedChange={(checked) => {
+                        if (checked) {
+                          setFilterTags([...filterTags, tag.name]);
+                        } else {
+                          setFilterTags(filterTags.filter(t => t !== tag.name));
+                        }
+                      }}
+                    >
+                      <span className="flex items-center gap-2">
+                        <span 
+                          className="w-2 h-2 rounded-full" 
+                          style={{ backgroundColor: tag.color }}
+                        />
+                        {tag.name}
+                      </span>
+                    </DropdownMenuCheckboxItem>
+                  ))}
+                </>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          {/* Clear filters button */}
+          {hasActiveFilters && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-9 px-2 text-muted-foreground hover:text-foreground"
+              onClick={clearFilters}
+            >
+              <X className="w-4 h-4" />
+            </Button>
           )}
         </div>
-        <div className="flex items-center gap-2">
+
+        {/* Right side - view toggle and settings */}
+        <div className="flex items-center gap-2 flex-shrink-0">
           <div className="flex items-center border rounded-lg overflow-hidden">
             <Button
               variant={viewMode === "kanban" ? "secondary" : "ghost"}
@@ -574,102 +668,11 @@ export function KanbanBoard() {
         </div>
       </div>
 
-      {/* Search and Filters Bar */}
-      <div className="flex items-center justify-center gap-3 mb-4">
-        {/* Search centered */}
-        <div className="relative w-full max-w-md">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-          <Input
-            type="text"
-            placeholder="Pesquisar leads..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-9 h-9"
-          />
-        </div>
-
-        {/* Filters */}
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="outline" size="sm" className="h-9 gap-2">
-              <Filter className="w-4 h-4" />
-              Filtros
-              {hasActiveFilters && (
-                <Badge variant="secondary" className="ml-1 px-1.5 py-0 text-xs">
-                  {(filterMQL !== "all" ? 1 : 0) + filterTags.length}
-                </Badge>
-              )}
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-56 bg-popover z-[9999]">
-            <DropdownMenuLabel>Status MQL</DropdownMenuLabel>
-            <DropdownMenuCheckboxItem
-              checked={filterMQL === "all"}
-              onCheckedChange={() => setFilterMQL("all")}
-            >
-              Todos
-            </DropdownMenuCheckboxItem>
-            <DropdownMenuCheckboxItem
-              checked={filterMQL === "mql"}
-              onCheckedChange={() => setFilterMQL(filterMQL === "mql" ? "all" : "mql")}
-            >
-              <span className="flex items-center gap-2">
-                <span className="w-2 h-2 rounded-full bg-emerald-500" />
-                MQL
-              </span>
-            </DropdownMenuCheckboxItem>
-            <DropdownMenuCheckboxItem
-              checked={filterMQL === "non-mql"}
-              onCheckedChange={() => setFilterMQL(filterMQL === "non-mql" ? "all" : "non-mql")}
-            >
-              <span className="flex items-center gap-2">
-                <span className="w-2 h-2 rounded-full bg-orange-500" />
-                Não MQL
-              </span>
-            </DropdownMenuCheckboxItem>
-            
-            {allTags.length > 0 && (
-              <>
-                <DropdownMenuSeparator />
-                <DropdownMenuLabel>Tags</DropdownMenuLabel>
-                {allTags.map((tag) => (
-                  <DropdownMenuCheckboxItem
-                    key={tag.name}
-                    checked={filterTags.includes(tag.name)}
-                    onCheckedChange={(checked) => {
-                      if (checked) {
-                        setFilterTags([...filterTags, tag.name]);
-                      } else {
-                        setFilterTags(filterTags.filter(t => t !== tag.name));
-                      }
-                    }}
-                  >
-                    <span className="flex items-center gap-2">
-                      <span 
-                        className="w-2 h-2 rounded-full" 
-                        style={{ backgroundColor: tag.color }}
-                      />
-                      {tag.name}
-                    </span>
-                  </DropdownMenuCheckboxItem>
-                ))}
-              </>
-            )}
-          </DropdownMenuContent>
-        </DropdownMenu>
-
-        {/* Clear filters button */}
-        {hasActiveFilters && (
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-9 px-2 text-muted-foreground hover:text-foreground"
-            onClick={clearFilters}
-          >
-            <X className="w-4 h-4" />
-          </Button>
-        )}
-      </div>
+      {!subOriginId && (
+        <p className="text-sm text-muted-foreground mb-4">
+          Clique em uma sub-origem no menu lateral para ver os leads
+        </p>
+      )}
 
       <DndContext
         sensors={sensors}
