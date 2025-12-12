@@ -59,6 +59,9 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
     setCrmPanelOpen(!crmPanelOpen);
   };
 
+  // Calculate main content margin based on panel state
+  const mainContentMargin = crmPanelOpen ? sidebarWidth + 272 : 88; // 272 = panel width (256) + gap (16)
+
   return (
     <div className="min-h-screen bg-background">
       {/* Mobile Header */}
@@ -303,7 +306,17 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
       )}
 
       {/* Main Content */}
-      <main className="lg:ml-[88px] pt-14 lg:pt-6 min-h-screen p-4 lg:p-6">
+      <main 
+        style={{ marginLeft: `${mainContentMargin}px` }}
+        className="hidden lg:block pt-6 min-h-screen p-6 transition-[margin-left] duration-300 ease-out"
+      >
+        <PageTransition>
+          {children}
+        </PageTransition>
+      </main>
+      
+      {/* Mobile Main Content */}
+      <main className="lg:hidden pt-14 min-h-screen p-4">
         <PageTransition>
           {children}
         </PageTransition>
