@@ -599,46 +599,46 @@ export function KanbanBoard() {
                     Qualificação
                   </span>
                   
-                  <div className="grid grid-cols-2 gap-2">
-                    <button
-                      onClick={() => setFilterMQL(filterMQL === "mql" ? "all" : "mql")}
-                      className={`flex items-center gap-2 p-2.5 rounded-lg text-xs font-medium transition-all border ${
-                        filterMQL === "mql"
-                          ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/50"
-                          : "bg-background text-muted-foreground border-border hover:border-emerald-500/30 hover:bg-emerald-500/5"
-                      }`}
-                    >
-                      <div className={`w-5 h-5 rounded-full flex items-center justify-center ${
-                        filterMQL === "mql" ? "bg-emerald-500" : "bg-muted"
-                      }`}>
-                        {filterMQL === "mql" && (
-                          <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                          </svg>
-                        )}
+                  <div className="space-y-2">
+                    {/* MQL Toggle */}
+                    <div className="flex items-center justify-between p-2.5 rounded-lg bg-background border border-border">
+                      <div className="flex items-center gap-2">
+                        <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                        <span className="text-xs font-medium">MQL</span>
                       </div>
-                      MQL
-                    </button>
+                      <button
+                        onClick={() => setFilterMQL(filterMQL === "mql" ? "all" : "mql")}
+                        className={`relative w-10 h-5 rounded-full transition-colors ${
+                          filterMQL === "mql" ? "bg-emerald-500" : "bg-muted"
+                        }`}
+                      >
+                        <span
+                          className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow-sm transition-transform ${
+                            filterMQL === "mql" ? "translate-x-5" : "translate-x-0.5"
+                          }`}
+                        />
+                      </button>
+                    </div>
                     
-                    <button
-                      onClick={() => setFilterMQL(filterMQL === "non-mql" ? "all" : "non-mql")}
-                      className={`flex items-center gap-2 p-2.5 rounded-lg text-xs font-medium transition-all border ${
-                        filterMQL === "non-mql"
-                          ? "bg-orange-500/10 text-orange-600 border-orange-500/50"
-                          : "bg-background text-muted-foreground border-border hover:border-orange-500/30 hover:bg-orange-500/5"
-                      }`}
-                    >
-                      <div className={`w-5 h-5 rounded-full flex items-center justify-center ${
-                        filterMQL === "non-mql" ? "bg-orange-500" : "bg-muted"
-                      }`}>
-                        {filterMQL === "non-mql" && (
-                          <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                          </svg>
-                        )}
+                    {/* Non-MQL Toggle */}
+                    <div className="flex items-center justify-between p-2.5 rounded-lg bg-background border border-border">
+                      <div className="flex items-center gap-2">
+                        <span className="w-2 h-2 rounded-full bg-orange-500" />
+                        <span className="text-xs font-medium">Não MQL</span>
                       </div>
-                      Não MQL
-                    </button>
+                      <button
+                        onClick={() => setFilterMQL(filterMQL === "non-mql" ? "all" : "non-mql")}
+                        className={`relative w-10 h-5 rounded-full transition-colors ${
+                          filterMQL === "non-mql" ? "bg-orange-500" : "bg-muted"
+                        }`}
+                      >
+                        <span
+                          className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow-sm transition-transform ${
+                            filterMQL === "non-mql" ? "translate-x-5" : "translate-x-0.5"
+                          }`}
+                        />
+                      </button>
+                    </div>
                   </div>
                 </div>
                 
