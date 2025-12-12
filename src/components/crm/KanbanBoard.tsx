@@ -59,13 +59,12 @@ export function KanbanBoard() {
     return () => window.removeEventListener('suborigin-change', handleSubOriginChange);
   }, []);
 
-  // Reset transition state when data loads for new sub-origin
+  // Reset transition state when subOriginId changes
   useEffect(() => {
-    if (isTransitioning) {
-      const timer = setTimeout(() => setIsTransitioning(false), 100);
-      return () => clearTimeout(timer);
-    }
-  }, [subOriginId, isTransitioning]);
+    // Slight delay to allow new content to be ready
+    const timer = setTimeout(() => setIsTransitioning(false), 150);
+    return () => clearTimeout(timer);
+  }, [subOriginId]);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -428,7 +427,7 @@ export function KanbanBoard() {
     : "Selecione uma sub-origem";
 
   return (
-    <div className={`flex flex-col h-[calc(100vh-2rem)] transition-opacity duration-150 ${isTransitioning ? 'opacity-0' : 'opacity-100'}`}>
+    <div className={`flex flex-col h-[calc(100vh-2rem)] transition-all duration-300 ease-out ${isTransitioning ? 'opacity-0 translate-y-1' : 'opacity-100 translate-y-0'}`}>
       <div className="flex items-center justify-between mb-4">
         <div className="transition-all duration-150">
           <h1 className="text-2xl font-bold">{pageTitle}</h1>

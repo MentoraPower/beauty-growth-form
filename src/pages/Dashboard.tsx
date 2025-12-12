@@ -242,7 +242,7 @@ const Dashboard = () => {
 
   return (
     <DashboardLayout>
-      <div className="space-y-6 fade-in">
+      <div className="space-y-6 transition-opacity duration-300 ease-out">
         <div>
           <h1 className="text-2xl font-bold text-foreground">Dashboard</h1>
           <p className="text-muted-foreground text-sm mt-1">Visão geral dos seus leads</p>

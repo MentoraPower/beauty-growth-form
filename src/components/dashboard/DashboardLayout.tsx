@@ -194,8 +194,8 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
       )}
 
       {/* Main Content - smooth fade transition */}
-      <main className="lg:ml-[88px] pt-14 lg:pt-6 min-h-screen p-4 lg:p-6 transition-opacity duration-150 ease-out">
-        <div className="animate-in fade-in duration-200">
+      <main className="lg:ml-[88px] pt-14 lg:pt-6 min-h-screen p-4 lg:p-6">
+        <div className="transition-opacity duration-300 ease-out opacity-100">
           {children}
         </div>
       </main>
