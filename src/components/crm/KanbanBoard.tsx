@@ -20,7 +20,8 @@ import { Lead, Pipeline } from "@/types/crm";
 import { KanbanColumn } from "./KanbanColumn";
 import { KanbanCard } from "./KanbanCard";
 import { Button } from "@/components/ui/button";
-import { Settings, LayoutGrid, List } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Settings, LayoutGrid, List, Search } from "lucide-react";
 import { LeadsList } from "./LeadsList";
 import { toast } from "sonner";
 
@@ -37,6 +38,7 @@ export function KanbanBoard() {
   const [overId, setOverId] = useState<string | null>(null);
   const [isPipelinesDialogOpen, setIsPipelinesDialogOpen] = useState(false);
   const [localLeads, setLocalLeads] = useState<Lead[]>([]);
+  const [searchQuery, setSearchQuery] = useState("");
   const [viewMode, setViewMode] = useState<"kanban" | "list">(() => {
     const saved = localStorage.getItem('crm_view_mode');
     return (saved === 'list' || saved === 'kanban') ? saved : 'kanban';
@@ -399,10 +401,16 @@ export function KanbanBoard() {
     [activeId, localLeads]
   );
 
-  const displayLeads = useMemo(() => 
-    localLeads.length > 0 ? localLeads : leads,
-    [localLeads, leads]
-  );
+  const displayLeads = useMemo(() => {
+    const baseLeads = localLeads.length > 0 ? localLeads : leads;
+    if (!searchQuery.trim()) return baseLeads;
+    const query = searchQuery.toLowerCase().trim();
+    return baseLeads.filter(lead => 
+      lead.name.toLowerCase().includes(query) ||
+      lead.email.toLowerCase().includes(query) ||
+      lead.clinic_name?.toLowerCase().includes(query)
+    );
+  }, [localLeads, leads, searchQuery]);
 
   // Memoize leads grouped by pipeline for Kanban view
   const leadsByPipeline = useMemo(() => {
@@ -428,8 +436,8 @@ export function KanbanBoard() {
 
   return (
     <div className={`flex flex-col h-[calc(100vh-2rem)] transition-all duration-300 ease-out ${isTransitioning ? 'opacity-0 translate-y-1' : 'opacity-100 translate-y-0'}`}>
-      <div className="flex items-center justify-between mb-4">
-        <div className="transition-all duration-150">
+      <div className="flex items-center justify-between mb-4 gap-4">
+        <div className="transition-all duration-150 flex-shrink-0">
           <h1 className="text-2xl font-bold">{pageTitle}</h1>
           {!subOriginId && (
             <p className="text-sm text-muted-foreground mt-1">
@@ -437,7 +445,17 @@ export function KanbanBoard() {
             </p>
           )}
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-1 justify-end">
+          <div className="relative w-full max-w-xs">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <Input
+              type="text"
+              placeholder="Pesquisar leads..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-9 h-9"
+            />
+          </div>
           <div className="flex items-center border rounded-lg overflow-hidden">
             <Button
               variant={viewMode === "kanban" ? "secondary" : "ghost"}
