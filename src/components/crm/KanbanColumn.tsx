@@ -20,7 +20,7 @@ export const KanbanColumn = memo(function KanbanColumn({ pipeline, leads, isOver
     <div className="flex-shrink-0 w-80 flex flex-col h-full">
       <div
         ref={setNodeRef}
-        className={`flex-1 rounded-xl border transition-all duration-150 flex flex-col ${
+        className={`flex-1 rounded-xl rounded-b-none border border-b-0 transition-all duration-150 flex flex-col ${
           isOver
             ? "bg-muted/50 border-muted-foreground/20 border-dashed"
             : "bg-muted/40 border-black/10"
