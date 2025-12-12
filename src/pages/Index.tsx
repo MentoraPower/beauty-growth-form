@@ -659,7 +659,7 @@ const Index = () => {
             </h1>
             <p className="form-subtitle mt-4 mb-4">Você está prestes a tomar a melhor decisão para o seu negócio. Somos especialistas em escalar negócios de beleza através do Tráfego Pago.</p>
             <div className="space-y-4">
-              <input type="text" value={formData.name} onChange={e => updateFormData("name", e.target.value)} placeholder="Seu nome" className="form-input" autoFocus />
+              <input type="text" value={formData.name} onChange={e => updateFormData("name", e.target.value)} placeholder="Como posso te chamar?" className="form-input" autoFocus />
               <ShimmerButton onClick={handleNext}>
                 Prosseguir
                 <ArrowRight className="w-5 h-5" />
