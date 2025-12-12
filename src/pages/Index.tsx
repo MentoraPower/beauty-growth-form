@@ -27,6 +27,7 @@ import { toast } from "sonner";
 import HamburgerMenu from "@/components/HamburgerMenu";
 import { supabase } from "@/integrations/supabase/client";
 import SplashScreen from "@/components/SplashScreen";
+import RibbonTransition from "@/components/RibbonTransition";
 interface FormData {
   name: string;
   email: string;
@@ -122,6 +123,7 @@ const checkAffordability = (revenue: string, weeklyAppointments: string, average
 };
 const Index = () => {
   const [showSplash, setShowSplash] = useState(true);
+  const [showRibbonTransition, setShowRibbonTransition] = useState(false);
   const [step, setStep] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
@@ -523,6 +525,12 @@ const Index = () => {
   const handleNext = async () => {
     if (canProceed()) {
       if (step < totalSteps) {
+        // Step 1 triggers ribbon transition
+        if (step === 1) {
+          setShowRibbonTransition(true);
+          return;
+        }
+        
         // After email step, check if lead exists
         if (step === 2) {
           const existing = await checkExistingLead(formData.email);
@@ -554,6 +562,11 @@ const Index = () => {
     } else {
       toast.error(getValidationMessage());
     }
+  };
+  
+  const handleRibbonComplete = () => {
+    setShowRibbonTransition(false);
+    setStep(2);
   };
   const nextStep = () => {
     if (step < totalSteps) {
@@ -1066,6 +1079,7 @@ const Index = () => {
   };
   return <>
       {showSplash && <SplashScreen onComplete={() => setShowSplash(false)} />}
+      <RibbonTransition isActive={showRibbonTransition} onComplete={handleRibbonComplete} />
       <motion.div initial={{
       opacity: 0
     }} animate={{
