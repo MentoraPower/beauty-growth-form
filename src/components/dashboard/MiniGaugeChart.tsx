@@ -10,11 +10,11 @@ const MiniGaugeChart = ({ value, maxValue, label }: MiniGaugeChartProps) => {
   const uniqueId = `miniGauge-${label.replace(/\s+/g, '-')}`;
 
   return (
-    <div className="flex flex-col items-center justify-center p-3 bg-background rounded-xl">
-      <div className="relative w-16 h-8">
+    <div className="flex flex-col items-center justify-center p-2 bg-background rounded-xl min-w-[70px]">
+      <div className="relative w-14 h-9">
         <svg
           className="absolute inset-0 w-full h-full"
-          viewBox="0 0 100 50"
+          viewBox="0 0 100 55"
           preserveAspectRatio="xMidYMax meet"
         >
           {/* Background track */}
@@ -22,7 +22,7 @@ const MiniGaugeChart = ({ value, maxValue, label }: MiniGaugeChartProps) => {
             d="M 10 50 A 40 40 0 0 1 90 50"
             fill="none"
             stroke="hsl(var(--border))"
-            strokeWidth="10"
+            strokeWidth="8"
             strokeLinecap="round"
           />
           {/* Progress arc */}
@@ -30,7 +30,7 @@ const MiniGaugeChart = ({ value, maxValue, label }: MiniGaugeChartProps) => {
             d="M 10 50 A 40 40 0 0 1 90 50"
             fill="none"
             stroke={`url(#${uniqueId})`}
-            strokeWidth="10"
+            strokeWidth="8"
             strokeLinecap="round"
             strokeDasharray={`${(angle / 180) * 125.66} 125.66`}
           />
@@ -42,12 +42,12 @@ const MiniGaugeChart = ({ value, maxValue, label }: MiniGaugeChartProps) => {
           </defs>
         </svg>
 
-        <div className="absolute inset-0 flex items-end justify-center pb-0">
-          <span className="text-lg font-bold text-foreground">{value}</span>
+        <div className="absolute inset-x-0 bottom-0 flex items-center justify-center">
+          <span className="text-sm font-bold text-foreground">{value}</span>
         </div>
       </div>
       
-      <p className="text-[10px] text-muted-foreground mt-1.5 text-center leading-tight line-clamp-2 max-w-[80px]">
+      <p className="text-[10px] text-muted-foreground mt-2 text-center leading-tight line-clamp-2 max-w-[70px]">
         {label}
       </p>
     </div>
