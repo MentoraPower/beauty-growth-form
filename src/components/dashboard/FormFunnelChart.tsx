@@ -95,10 +95,12 @@ export default function FormFunnelChart({ data }: FormFunnelChartProps) {
                 <div className="w-px h-3 bg-gradient-to-b from-foreground/60 to-transparent" />
               </div>
 
-              {/* Count in middle */}
-              <span className="text-sm font-bold text-white drop-shadow-md">
-                {step.count}
-              </span>
+              {/* Count in middle - modern badge */}
+              <div className="bg-white/90 backdrop-blur-sm rounded-full px-2.5 py-1 shadow-lg border border-white/50">
+                <span className="text-sm font-bold bg-gradient-to-r from-[#F40000] to-[#A10000] bg-clip-text text-transparent">
+                  {step.count}
+                </span>
+              </div>
 
               {/* Label at bottom with trace line and tooltip */}
               <div className="flex flex-col items-center">
