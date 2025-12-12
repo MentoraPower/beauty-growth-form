@@ -70,7 +70,7 @@ const SplashScreen = ({ onComplete }: SplashScreenProps) => {
                     delay: 1 + index * 0.055,
                     ease: [0.25, 0.1, 0.25, 1],
                   }}
-                  className={`inline-block ${isScale ? "font-semibold bg-gradient-to-r from-[#F40000] to-[#A10000] bg-clip-text text-transparent" : ""}`}
+                  className={`inline-block ${isScale ? "font-bold bg-gradient-to-r from-[#F40000] to-[#A10000] bg-clip-text text-transparent" : ""}`}
                   style={{ whiteSpace: "pre" }}
                 >
                   {char}
