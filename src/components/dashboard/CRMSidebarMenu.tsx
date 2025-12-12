@@ -334,8 +334,8 @@ export function CRMSidebarMenu({ isExpanded, onNavigate, onDropdownOpenChange }:
             >
               <div className="overflow-hidden">
                 <div className={cn(
-                  "ml-4 pl-2 space-y-0.5 pt-1",
-                  inDropdown ? "border-l border-border/50" : "border-l border-white/10"
+                  "ml-4 pl-2 space-y-0.5 pt-1 pb-1 rounded-lg",
+                  inDropdown ? "border-l border-border/50 bg-black/5" : "border-l border-white/10 bg-white/[0.06]"
                 )}>
                 {originSubOrigins.map((subOrigin) => {
                   const leadCount = leadCounts.find(lc => lc.sub_origin_id === subOrigin.id)?.count || 0;
