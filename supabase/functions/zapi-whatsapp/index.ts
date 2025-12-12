@@ -59,13 +59,52 @@ const handler = async (req: Request): Promise<Response> => {
       case "get-chats":
         console.log("Fetching chats from Z-API");
         
+        // First get all contacts
+        const contactsResponse = await fetch(`${ZAPI_BASE_URL}/contacts`, {
+          method: "GET",
+          headers: {
+            "Client-Token": ZAPI_CLIENT_TOKEN || "",
+          },
+        });
+        
+        const contacts = await contactsResponse.json();
+        console.log(`Z-API contacts count: ${Array.isArray(contacts) ? contacts.length : 0}`);
+        
+        // Then get chats
         response = await fetch(`${ZAPI_BASE_URL}/chats`, {
           method: "GET",
           headers: {
             "Client-Token": ZAPI_CLIENT_TOKEN || "",
           },
         });
-        break;
+        
+        const chatsData = await response.json();
+        console.log(`Z-API chats count: ${Array.isArray(chatsData) ? chatsData.length : 0}`);
+        
+        // Merge contacts with chats data
+        const contactsMap = new Map();
+        if (Array.isArray(contacts)) {
+          for (const contact of contacts) {
+            if (contact.phone) {
+              contactsMap.set(contact.phone, contact);
+            }
+          }
+        }
+        
+        // Enhance chats with contact info
+        const enhancedChats = Array.isArray(chatsData) ? chatsData.map((chat: any) => {
+          const contact = contactsMap.get(chat.phone);
+          return {
+            ...chat,
+            name: chat.name || contact?.name || chat.phone,
+            photo: chat.photo || contact?.profileThumbnail || null,
+          };
+        }) : [];
+        
+        return new Response(JSON.stringify(enhancedChats), {
+          status: 200,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
 
       case "get-chat-messages":
         if (!chatId) {

@@ -205,30 +205,42 @@ const WhatsApp = () => {
 
       if (error) throw error;
 
-      if (Array.isArray(data)) {
-        for (const chat of data.slice(0, 30)) {
-          const phone = chat.phone || "";
-          if (!phone) continue;
+      console.log("Z-API chats received:", data?.length || 0);
 
-          await supabase
+      if (Array.isArray(data) && data.length > 0) {
+        let syncedCount = 0;
+        
+        for (const chat of data) {
+          const phone = chat.phone || "";
+          if (!phone || phone.includes("@g.us")) continue; // Skip groups
+          
+          const chatData = {
+            phone: phone,
+            name: chat.name || chat.pushname || phone,
+            photo_url: chat.photo || chat.profileThumbnail || null,
+            last_message: chat.lastMessageText || chat.lastMessage?.content || "",
+            last_message_time: chat.lastMessageTime 
+              ? new Date(chat.lastMessageTime * 1000).toISOString() 
+              : new Date().toISOString(),
+            unread_count: chat.unreadCount || 0,
+          };
+
+          const { error: upsertError } = await supabase
             .from("whatsapp_chats")
-            .upsert(
-              {
-                phone: phone,
-                name: chat.name || phone,
-                photo_url: chat.photo || null,
-                last_message: chat.lastMessageText || "",
-                last_message_time: chat.lastMessageTime ? new Date(chat.lastMessageTime).toISOString() : new Date().toISOString(),
-                unread_count: chat.unreadCount || 0,
-              },
-              { onConflict: "phone" }
-            );
+            .upsert(chatData, { onConflict: "phone" });
+            
+          if (!upsertError) syncedCount++;
         }
 
         await fetchChats();
         toast({
           title: "Sincronizado",
-          description: "Conversas sincronizadas com sucesso",
+          description: `${syncedCount} conversas sincronizadas com sucesso`,
+        });
+      } else {
+        toast({
+          title: "Nenhuma conversa",
+          description: "Nenhuma conversa encontrada no Z-API",
         });
       }
     } catch (error: any) {
