@@ -576,16 +576,65 @@ export function KanbanBoard() {
                 )}
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="center" className="w-72 bg-popover z-[9999] p-4">
-              {/* MQL Status Section */}
+            <DropdownMenuContent align="center" className="w-80 bg-popover z-[9999] p-4">
+              {/* MQL Status Section - Modern Toggle */}
+              <div className="space-y-3">
+                <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                  Status MQL
+                </span>
+                
+                {/* MQL Toggle */}
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between p-3 rounded-lg bg-muted/30 border border-border/50">
+                    <div className="flex items-center gap-2">
+                      <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                      <span className="text-sm font-medium">MQL</span>
+                    </div>
+                    <button
+                      onClick={() => setFilterMQL(filterMQL === "mql" ? "all" : "mql")}
+                      className={`relative w-11 h-6 rounded-full transition-colors ${
+                        filterMQL === "mql" ? "bg-emerald-500" : "bg-muted"
+                      }`}
+                    >
+                      <span
+                        className={`absolute top-1 w-4 h-4 rounded-full bg-white shadow-sm transition-transform ${
+                          filterMQL === "mql" ? "translate-x-6" : "translate-x-1"
+                        }`}
+                      />
+                    </button>
+                  </div>
+                  
+                  <div className="flex items-center justify-between p-3 rounded-lg bg-muted/30 border border-border/50">
+                    <div className="flex items-center gap-2">
+                      <span className="w-2 h-2 rounded-full bg-orange-500" />
+                      <span className="text-sm font-medium">Não MQL</span>
+                    </div>
+                    <button
+                      onClick={() => setFilterMQL(filterMQL === "non-mql" ? "all" : "non-mql")}
+                      className={`relative w-11 h-6 rounded-full transition-colors ${
+                        filterMQL === "non-mql" ? "bg-orange-500" : "bg-muted"
+                      }`}
+                    >
+                      <span
+                        className={`absolute top-1 w-4 h-4 rounded-full bg-white shadow-sm transition-transform ${
+                          filterMQL === "non-mql" ? "translate-x-6" : "translate-x-1"
+                        }`}
+                      />
+                    </button>
+                  </div>
+                </div>
+              </div>
+              
+              {/* Tags Section */}
+              <div className="my-4 border-t border-border" />
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-                    Status MQL
+                    Tags
                   </span>
-                  {filterMQL !== "all" && (
+                  {filterTags.length > 0 && (
                     <button 
-                      onClick={() => setFilterMQL("all")}
+                      onClick={() => setFilterTags([])}
                       className="text-[10px] text-muted-foreground hover:text-foreground transition-colors"
                     >
                       Limpar
@@ -593,83 +642,53 @@ export function KanbanBoard() {
                   )}
                 </div>
                 
-                {/* Toggle Buttons for MQL */}
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => setFilterMQL(filterMQL === "mql" ? "all" : "mql")}
-                    className={`flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-lg text-xs font-medium transition-all ${
-                      filterMQL === "mql"
-                        ? "bg-emerald-500/10 text-emerald-600 border-2 border-emerald-500"
-                        : "bg-muted/50 text-muted-foreground border-2 border-transparent hover:bg-muted"
-                    }`}
-                  >
-                    <span className="w-2 h-2 rounded-full bg-emerald-500" />
-                    MQL
-                  </button>
-                  <button
-                    onClick={() => setFilterMQL(filterMQL === "non-mql" ? "all" : "non-mql")}
-                    className={`flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-lg text-xs font-medium transition-all ${
-                      filterMQL === "non-mql"
-                        ? "bg-orange-500/10 text-orange-600 border-2 border-orange-500"
-                        : "bg-muted/50 text-muted-foreground border-2 border-transparent hover:bg-muted"
-                    }`}
-                  >
-                    <span className="w-2 h-2 rounded-full bg-orange-500" />
-                    Não MQL
-                  </button>
-                </div>
-              </div>
-              
-              {/* Tags Section */}
-              {allTags.length > 0 && (
-                <>
-                  <div className="my-4 border-t border-border" />
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-                        Tags
-                      </span>
-                      {filterTags.length > 0 && (
-                        <button 
-                          onClick={() => setFilterTags([])}
-                          className="text-[10px] text-muted-foreground hover:text-foreground transition-colors"
+                {/* Selected Tags */}
+                {filterTags.length > 0 && (
+                  <div className="flex flex-wrap gap-1.5 mb-2">
+                    {filterTags.map((tagName) => {
+                      const tag = allTags.find(t => t.name === tagName);
+                      return (
+                        <span
+                          key={tagName}
+                          className="flex items-center gap-1 py-1 px-2 rounded-md text-xs text-white"
+                          style={{ backgroundColor: tag?.color || "#6366f1" }}
                         >
-                          Limpar
-                        </button>
-                      )}
-                    </div>
-                    
-                    <div className="flex flex-wrap gap-2">
-                      {allTags.map((tag) => (
-                        <button
-                          key={tag.name}
-                          onClick={() => {
-                            if (filterTags.includes(tag.name)) {
-                              setFilterTags(filterTags.filter(t => t !== tag.name));
-                            } else {
-                              setFilterTags([...filterTags, tag.name]);
-                            }
-                          }}
-                          className={`flex items-center gap-1.5 py-1.5 px-3 rounded-full text-xs font-medium transition-all ${
-                            filterTags.includes(tag.name)
-                              ? "text-white shadow-sm"
-                              : "bg-muted/50 text-muted-foreground hover:bg-muted"
-                          }`}
-                          style={filterTags.includes(tag.name) ? { backgroundColor: tag.color } : {}}
-                        >
-                          {!filterTags.includes(tag.name) && (
-                            <span 
-                              className="w-2 h-2 rounded-full" 
-                              style={{ backgroundColor: tag.color }}
-                            />
-                          )}
-                          {tag.name}
-                        </button>
-                      ))}
-                    </div>
+                          {tagName}
+                          <button
+                            onClick={() => setFilterTags(filterTags.filter(t => t !== tagName))}
+                            className="hover:bg-white/20 rounded p-0.5"
+                          >
+                            <X className="w-3 h-3" />
+                          </button>
+                        </span>
+                      );
+                    })}
                   </div>
-                </>
-              )}
+                )}
+                
+                {/* Available Tags List */}
+                {allTags.length > 0 ? (
+                  <div className="max-h-32 overflow-y-auto space-y-1">
+                    {allTags.filter(tag => !filterTags.includes(tag.name)).map((tag) => (
+                      <button
+                        key={tag.name}
+                        onClick={() => setFilterTags([...filterTags, tag.name])}
+                        className="w-full flex items-center gap-2 p-2 rounded-lg text-sm hover:bg-muted/50 transition-colors text-left"
+                      >
+                        <span 
+                          className="w-3 h-3 rounded-full flex-shrink-0" 
+                          style={{ backgroundColor: tag.color }}
+                        />
+                        <span className="truncate">{tag.name}</span>
+                      </button>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-xs text-muted-foreground text-center py-2">
+                    Nenhuma tag disponível
+                  </p>
+                )}
+              </div>
 
               {/* Clear All Button */}
               {hasActiveFilters && (
