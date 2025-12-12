@@ -540,8 +540,11 @@ export function KanbanBoard() {
         {/* Title - left */}
         <h1 className="text-xl font-bold flex-shrink-0">{pageTitle}</h1>
 
-        {/* Search centered with automations icon */}
+        {/* Search centered with filters */}
         <div className="flex-1 flex items-center justify-center gap-2">
+          {subOriginId && (
+            <AutomationsDropdown pipelines={pipelines} subOriginId={subOriginId} />
+          )}
           <div className="relative w-full max-w-md">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <Input
@@ -552,9 +555,6 @@ export function KanbanBoard() {
               className="pl-9 h-9"
             />
           </div>
-          {subOriginId && (
-            <AutomationsDropdown pipelines={pipelines} subOriginId={subOriginId} />
-          )}
 
           {/* Filters - Modern Toggle Style */}
           <DropdownMenu>

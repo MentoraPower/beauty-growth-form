@@ -180,7 +180,7 @@ export function AutomationsDropdown({ pipelines, subOriginId }: AutomationsDropd
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="icon" className="h-9 w-9 relative">
+        <Button variant="outline" size="icon" className="h-9 w-9 relative border-border">
           <Zap className="w-4 h-4 text-amber-500" />
           {activeAutomationsCount > 0 && (
             <span className="absolute -top-1 -right-1 w-4 h-4 text-[10px] font-medium flex items-center justify-center bg-amber-500 text-white rounded-full">
