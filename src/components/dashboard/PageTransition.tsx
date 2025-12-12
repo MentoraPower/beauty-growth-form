@@ -11,6 +11,7 @@ export function PageTransition({ children }: PageTransitionProps) {
   const [currentChildren, setCurrentChildren] = useState(children);
   const previousKeyRef = useRef(location.pathname + location.search);
   const isFirstRender = useRef(true);
+  const transitionTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     const currentKey = location.pathname + location.search;
@@ -27,26 +28,24 @@ export function PageTransition({ children }: PageTransitionProps) {
     if (previousKeyRef.current !== currentKey) {
       previousKeyRef.current = currentKey;
       
-      // Fade out
-      setIsVisible(false);
+      // Clear any pending transition
+      if (transitionTimeoutRef.current) {
+        clearTimeout(transitionTimeoutRef.current);
+      }
       
-      // After fade out, update content and fade in
-      const timer = setTimeout(() => {
-        setCurrentChildren(children);
-        setIsVisible(true);
-      }, 150);
-      
-      return () => clearTimeout(timer);
+      // Update content immediately (no fade out) - let the content handle its own loading
+      setCurrentChildren(children);
+      setIsVisible(true);
     } else {
       // Same route, just update children immediately
       setCurrentChildren(children);
     }
   }, [location.pathname, location.search, children]);
 
-  // Also listen for custom suborigin-change event for early fade-out
+  // Listen for custom suborigin-change event - but don't fade out, let loading handle it
   useEffect(() => {
     const handleSubOriginChange = () => {
-      setIsVisible(false);
+      // Don't fade out - the loading skeletons will handle the transition
     };
     
     window.addEventListener('suborigin-change', handleSubOriginChange);
@@ -54,11 +53,7 @@ export function PageTransition({ children }: PageTransitionProps) {
   }, []);
 
   return (
-    <div
-      className={`transition-opacity duration-200 ease-out ${
-        isVisible ? 'opacity-100' : 'opacity-0'
-      }`}
-    >
+    <div className="transition-opacity duration-150 ease-out opacity-100">
       {currentChildren}
     </div>
   );

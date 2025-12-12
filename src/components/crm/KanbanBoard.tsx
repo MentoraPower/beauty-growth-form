@@ -21,6 +21,7 @@ import { KanbanColumn } from "./KanbanColumn";
 import { KanbanCard } from "./KanbanCard";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Settings, LayoutGrid, List, Search } from "lucide-react";
 import { LeadsList } from "./LeadsList";
 import { toast } from "sonner";
@@ -64,7 +65,7 @@ export function KanbanBoard() {
     })
   );
 
-  const { data: pipelines = [] } = useQuery({
+  const { data: pipelines = [], isLoading: isLoadingPipelines } = useQuery({
     queryKey: ["pipelines", subOriginId],
     queryFn: async () => {
       let query = supabase
@@ -123,7 +124,7 @@ export function KanbanBoard() {
     enabled: !!subOriginId,
   });
 
-  const { data: leads = [], dataUpdatedAt } = useQuery({
+  const { data: leads = [], dataUpdatedAt, isLoading: isLoadingLeads } = useQuery({
     queryKey: ["crm-leads", subOriginId],
     queryFn: async () => {
       let query = supabase
@@ -145,6 +146,8 @@ export function KanbanBoard() {
     refetchOnMount: true,
     refetchOnWindowFocus: false,
   });
+
+  const isLoading = isLoadingPipelines || isLoadingLeads;
 
   // Track previous values to prevent unnecessary updates
   const prevDataUpdatedAtRef = useRef(dataUpdatedAt);
@@ -509,12 +512,26 @@ export function KanbanBoard() {
           },
         }}
       >
-        {viewMode === "list" ? (
-          <div className="fade-in">
+        {isLoading ? (
+          // Loading skeletons
+          <div className="flex gap-4 overflow-x-auto flex-1 pb-0 h-full animate-in fade-in duration-300">
+            {[1, 2, 3, 4].map((i) => (
+              <div key={i} className="flex-shrink-0 w-72 bg-muted/40 rounded-xl p-3 h-full">
+                <Skeleton className="h-6 w-24 mb-4" />
+                <div className="space-y-3">
+                  <Skeleton className="h-20 w-full rounded-lg" />
+                  <Skeleton className="h-20 w-full rounded-lg" />
+                  <Skeleton className="h-20 w-full rounded-lg" />
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : viewMode === "list" ? (
+          <div className="animate-in fade-in duration-300">
             <LeadsList leads={displayLeads} pipelines={pipelines} activeDragId={activeId} subOriginId={subOriginId} />
           </div>
         ) : (
-          <div className="flex gap-4 overflow-x-auto flex-1 pb-0 h-full fade-in">
+          <div className="flex gap-4 overflow-x-auto flex-1 pb-0 h-full animate-in fade-in duration-300">
             {pipelines.map((pipeline) => (
               <KanbanColumn
                 key={pipeline.id}
