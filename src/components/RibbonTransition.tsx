@@ -75,7 +75,7 @@ const RibbonTransition = ({ isActive, onComplete }: RibbonTransitionProps) => {
               ease: [0.25, 0.1, 0.25, 1],
             }}
           >
-            <span className="text-white text-3xl md:text-5xl font-semibold tracking-[0.4em]">
+            <span className="text-white text-xl md:text-2xl font-semibold tracking-[0.4em]">
               SCALE
             </span>
           </motion.div>
