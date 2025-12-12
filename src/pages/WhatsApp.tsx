@@ -35,7 +35,7 @@ const WhatsApp = () => {
 
   return (
     <DashboardLayout>
-      <div className="h-[calc(100vh-6rem)] flex rounded-2xl overflow-hidden border border-border/50 bg-card">
+      <div className="h-[calc(100vh-2rem)] flex rounded-2xl overflow-hidden border border-border/50 bg-card -mt-4">
         {/* Left Sidebar - Chat List */}
         <div className="w-[380px] flex flex-col border-r border-border/50 bg-card">
           {/* Header */}
