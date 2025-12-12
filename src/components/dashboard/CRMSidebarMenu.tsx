@@ -327,12 +327,16 @@ export function CRMSidebarMenu({ isExpanded, onNavigate, onDropdownOpenChange }:
               </DropdownMenu>
             </div>
 
-            {/* Sub-origins */}
-            {isOriginExpanded && (
-              <div className={cn(
-                "ml-4 pl-2 space-y-0.5",
-                inDropdown ? "border-l border-border/50" : "border-l border-white/10"
-              )}>
+            {/* Sub-origins with smooth height transition */}
+            <div 
+              className="grid transition-[grid-template-rows] duration-300 ease-out"
+              style={{ gridTemplateRows: isOriginExpanded ? '1fr' : '0fr' }}
+            >
+              <div className="overflow-hidden">
+                <div className={cn(
+                  "ml-4 pl-2 space-y-0.5 pt-1",
+                  inDropdown ? "border-l border-border/50" : "border-l border-white/10"
+                )}>
                 {originSubOrigins.map((subOrigin) => {
                   const leadCount = leadCounts.find(lc => lc.sub_origin_id === subOrigin.id)?.count || 0;
                   return (
@@ -405,8 +409,9 @@ export function CRMSidebarMenu({ isExpanded, onNavigate, onDropdownOpenChange }:
                   <Plus className="h-3 w-3" />
                   <span>Criar sub origem</span>
                 </button>
+                </div>
               </div>
-            )}
+            </div>
           </div>
         );
       })}
@@ -461,34 +466,39 @@ export function CRMSidebarMenu({ isExpanded, onNavigate, onDropdownOpenChange }:
                 </TooltipContent>
               </Tooltip>
 
-              {/* Sub-origin Icons when origin is expanded */}
-              {isOriginExpanded && (
-                <div className="flex flex-col items-center gap-0.5 mt-0.5 ml-1 pl-1 border-l border-white/20">
-                  {originSubOrigins.map((subOrigin) => {
-                    const leadCount = leadCounts.find(lc => lc.sub_origin_id === subOrigin.id)?.count || 0;
-                    return (
-                      <Tooltip key={subOrigin.id}>
-                        <TooltipTrigger asChild>
-                          <button
-                            onClick={() => handleSubOriginClick(subOrigin.id)}
-                            className="w-7 h-7 rounded-md flex items-center justify-center text-white/60 hover:bg-white/10 hover:text-white transition-all duration-200 ease-out relative"
-                          >
-                            <Kanban className="h-3 w-3" />
-                            {leadCount > 0 && (
-                              <span className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 bg-gradient-to-r from-[#F40000] to-[#A10000] text-white text-[8px] rounded-full flex items-center justify-center">
-                                {leadCount > 9 ? '9+' : leadCount}
-                              </span>
-                            )}
-                          </button>
-                        </TooltipTrigger>
-                        <TooltipContent side="right" className="z-[9999]">
-                          {subOrigin.nome} {leadCount > 0 && `(${leadCount})`}
-                        </TooltipContent>
-                      </Tooltip>
-                    );
-                  })}
+              {/* Sub-origin Icons with smooth height transition */}
+              <div 
+                className="grid transition-[grid-template-rows] duration-300 ease-out"
+                style={{ gridTemplateRows: isOriginExpanded ? '1fr' : '0fr' }}
+              >
+                <div className="overflow-hidden">
+                  <div className="flex flex-col items-center gap-0.5 mt-0.5 ml-1 pl-1 border-l border-white/20">
+                    {originSubOrigins.map((subOrigin) => {
+                      const leadCount = leadCounts.find(lc => lc.sub_origin_id === subOrigin.id)?.count || 0;
+                      return (
+                        <Tooltip key={subOrigin.id}>
+                          <TooltipTrigger asChild>
+                            <button
+                              onClick={() => handleSubOriginClick(subOrigin.id)}
+                              className="w-7 h-7 rounded-md flex items-center justify-center text-white/60 hover:bg-white/10 hover:text-white transition-all duration-200 ease-out relative"
+                            >
+                              <Kanban className="h-3 w-3" />
+                              {leadCount > 0 && (
+                                <span className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 bg-gradient-to-r from-[#F40000] to-[#A10000] text-white text-[8px] rounded-full flex items-center justify-center">
+                                  {leadCount > 9 ? '9+' : leadCount}
+                                </span>
+                              )}
+                            </button>
+                          </TooltipTrigger>
+                          <TooltipContent side="right" className="z-[9999]">
+                            {subOrigin.nome} {leadCount > 0 && `(${leadCount})`}
+                          </TooltipContent>
+                        </Tooltip>
+                      );
+                    })}
+                  </div>
                 </div>
-              )}
+              </div>
             </div>
           );
         })}
@@ -527,10 +537,28 @@ export function CRMSidebarMenu({ isExpanded, onNavigate, onDropdownOpenChange }:
         </button>
 
         {/* Expanded Menu - When sidebar is expanded */}
-        {isOpen && isExpanded && renderOriginsMenu(false)}
+        {isExpanded && (
+          <div 
+            className="grid transition-[grid-template-rows] duration-300 ease-out"
+            style={{ gridTemplateRows: isOpen ? '1fr' : '0fr' }}
+          >
+            <div className="overflow-hidden">
+              {renderOriginsMenu(false)}
+            </div>
+          </div>
+        )}
 
-        {/* Collapsed Icons - When sidebar is collapsed and CRM is open */}
-        {isOpen && !isExpanded && renderCollapsedIcons()}
+        {/* Collapsed Icons - When sidebar is collapsed */}
+        {!isExpanded && (
+          <div 
+            className="grid transition-[grid-template-rows] duration-300 ease-out"
+            style={{ gridTemplateRows: isOpen ? '1fr' : '0fr' }}
+          >
+            <div className="overflow-hidden">
+              {renderCollapsedIcons()}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Create/Edit Dialog */}
