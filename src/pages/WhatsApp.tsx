@@ -212,16 +212,20 @@ const WhatsApp = () => {
         
         for (const chat of data) {
           const phone = chat.phone || "";
-          if (!phone || phone.includes("@g.us")) continue; // Skip groups
+          if (!phone) continue;
+          
+          // Convert timestamp (seconds) to ISO string
+          let lastMessageTime = new Date().toISOString();
+          if (chat.timestamp) {
+            lastMessageTime = new Date(chat.timestamp * 1000).toISOString();
+          }
           
           const chatData = {
             phone: phone,
-            name: chat.name || chat.pushname || phone,
-            photo_url: chat.photo || chat.profileThumbnail || null,
-            last_message: chat.lastMessageText || chat.lastMessage?.content || "",
-            last_message_time: chat.lastMessageTime 
-              ? new Date(chat.lastMessageTime * 1000).toISOString() 
-              : new Date().toISOString(),
+            name: chat.name || phone,
+            photo_url: chat.photo || null,
+            last_message: chat.lastMessage || "",
+            last_message_time: lastMessageTime,
             unread_count: chat.unreadCount || 0,
           };
 
