@@ -430,7 +430,7 @@ export function KanbanBoard() {
       >
         {viewMode === "list" ? (
           <div className="fade-in">
-            <LeadsList leads={displayLeads} pipelines={pipelines} activeDragId={activeId} />
+            <LeadsList leads={displayLeads} pipelines={pipelines} activeDragId={activeId} subOriginId={subOriginId} />
           </div>
         ) : (
           <div className="flex gap-4 overflow-x-auto flex-1 pb-4 h-full fade-in">
@@ -440,6 +440,7 @@ export function KanbanBoard() {
                 pipeline={pipeline}
                 leads={leadsByPipeline.get(pipeline.id) || []}
                 isOver={overId === pipeline.id}
+                subOriginId={subOriginId}
               />
             ))}
           </div>

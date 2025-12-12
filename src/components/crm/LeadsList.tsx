@@ -10,13 +10,15 @@ interface LeadsListProps {
   leads: Lead[];
   pipelines: Pipeline[];
   activeDragId?: string | null;
+  subOriginId?: string | null;
 }
 
 interface DraggableRowProps {
   lead: Lead;
+  subOriginId?: string | null;
 }
 
-const DraggableRow = memo(function DraggableRow({ lead }: DraggableRowProps) {
+const DraggableRow = memo(function DraggableRow({ lead, subOriginId }: DraggableRowProps) {
   const navigate = useNavigate();
   
   const {
@@ -42,7 +44,10 @@ const DraggableRow = memo(function DraggableRow({ lead }: DraggableRowProps) {
 
   const handleClick = () => {
     if (!isDragging) {
-      navigate(`/admin/crm/${lead.id}`);
+      const url = subOriginId 
+        ? `/admin/crm/${lead.id}?origin=${subOriginId}` 
+        : `/admin/crm/${lead.id}`;
+      navigate(url);
     }
   };
 
@@ -75,9 +80,10 @@ const DraggableRow = memo(function DraggableRow({ lead }: DraggableRowProps) {
 interface PipelineListProps {
   pipeline: Pipeline;
   leads: Lead[];
+  subOriginId?: string | null;
 }
 
-const PipelineList = memo(function PipelineList({ pipeline, leads }: PipelineListProps) {
+const PipelineList = memo(function PipelineList({ pipeline, leads, subOriginId }: PipelineListProps) {
   const { setNodeRef, isOver } = useDroppable({
     id: pipeline.id,
   });
@@ -123,7 +129,7 @@ const PipelineList = memo(function PipelineList({ pipeline, leads }: PipelineLis
         </TableHeader>
         <TableBody>
           {leads.map((lead) => (
-            <DraggableRow key={lead.id} lead={lead} />
+            <DraggableRow key={lead.id} lead={lead} subOriginId={subOriginId} />
           ))}
           {leads.length === 0 && (
             <TableRow>
@@ -140,7 +146,7 @@ const PipelineList = memo(function PipelineList({ pipeline, leads }: PipelineLis
   );
 });
 
-export const LeadsList = memo(function LeadsList({ leads, pipelines, activeDragId }: LeadsListProps) {
+export const LeadsList = memo(function LeadsList({ leads, pipelines, activeDragId, subOriginId }: LeadsListProps) {
   // Sort pipelines by ordem - memoized
   const sortedPipelines = useMemo(() => 
     [...pipelines].sort((a, b) => a.ordem - b.ordem),
@@ -171,6 +177,7 @@ export const LeadsList = memo(function LeadsList({ leads, pipelines, activeDragI
           key={pipeline.id}
           pipeline={pipeline}
           leads={leadsByPipeline.get(pipeline.id) || []}
+          subOriginId={subOriginId}
         />
       ))}
     </div>

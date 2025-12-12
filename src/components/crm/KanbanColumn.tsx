@@ -8,9 +8,10 @@ interface KanbanColumnProps {
   pipeline: Pipeline;
   leads: Lead[];
   isOver?: boolean;
+  subOriginId?: string | null;
 }
 
-export const KanbanColumn = memo(function KanbanColumn({ pipeline, leads, isOver }: KanbanColumnProps) {
+export const KanbanColumn = memo(function KanbanColumn({ pipeline, leads, isOver, subOriginId }: KanbanColumnProps) {
   const { setNodeRef } = useDroppable({
     id: pipeline.id,
   });
@@ -43,7 +44,7 @@ export const KanbanColumn = memo(function KanbanColumn({ pipeline, leads, isOver
           >
             <div className="space-y-2">
               {leads.map((lead) => (
-                <KanbanCard key={lead.id} lead={lead} />
+                <KanbanCard key={lead.id} lead={lead} subOriginId={subOriginId} />
               ))}
               {leads.length === 0 && (
                 <div className={`text-center text-sm py-8 rounded-lg border-2 border-dashed transition-colors ${
