@@ -10,7 +10,7 @@ const SplashScreen = ({ onComplete }: SplashScreenProps) => {
   const [showSplash, setShowSplash] = useState(true);
   
   const normalText = "Essa é uma página desenvolvida pela ";
-  const scaleText = "Mundo Beauty";
+  const scaleText = "Scale";
   const allChars = (normalText + scaleText).split("");
   const normalLength = normalText.length;
 
