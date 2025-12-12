@@ -22,8 +22,17 @@ const bottomNavItems = [
 // Global hover state to persist across navigations
 let globalHoverState = false;
 
+// Load panel state from localStorage
+const getInitialPanelState = () => {
+  if (typeof window !== 'undefined') {
+    const saved = localStorage.getItem('crm_panel_open');
+    return saved === 'true';
+  }
+  return false;
+};
+
 // Global panel state to persist across re-renders
-let globalCrmPanelOpen = false;
+let globalCrmPanelOpen = getInitialPanelState();
 
 const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -38,9 +47,10 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
     setIsHovered(globalHoverState);
   }, [location.pathname]);
 
-  // Keep global state in sync
+  // Keep global state and localStorage in sync
   useEffect(() => {
     globalCrmPanelOpen = crmPanelOpen;
+    localStorage.setItem('crm_panel_open', String(crmPanelOpen));
   }, [crmPanelOpen]);
 
   const handleMouseEnter = useCallback(() => {
