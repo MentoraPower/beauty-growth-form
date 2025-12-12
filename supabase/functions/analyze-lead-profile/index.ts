@@ -1,7 +1,7 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
-const grokApiKey = Deno.env.get('GROK_API_KEY');
+const groqApiKey = Deno.env.get('GROK_API_KEY'); // Note: using GROK_API_KEY but it contains Groq key
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -32,10 +32,10 @@ serve(async (req) => {
     
     console.log("Analyzing lead profile:", leadData.name);
 
-    if (!grokApiKey) {
-      console.log("No GROK_API_KEY configured");
+    if (!groqApiKey) {
+      console.log("No GROQ API key configured");
       return new Response(JSON.stringify({ 
-        analysis: "*Analise nao disponivel* - API de IA nao configurada. Configure a chave GROK_API_KEY para habilitar analises automaticas de leads." 
+        analysis: "*Analise nao disponivel* - API de IA nao configurada. Configure a chave da API Groq para habilitar analises automaticas de leads." 
       }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
@@ -57,16 +57,16 @@ Quer mais informacoes: ${leadData.wants_more_info ? 'Sim' : 'Nao'}
 
 Escreva sua analise:`;
 
-    console.log("Calling Grok API for profile analysis...");
+    console.log("Calling Groq API for profile analysis...");
 
-    const response = await fetch('https://api.x.ai/v1/chat/completions', {
+    const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${grokApiKey}`,
+        'Authorization': `Bearer ${groqApiKey}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'grok-3-mini-fast',
+        model: 'llama-3.1-70b-versatile',
         messages: [
           { role: 'system', content: SYSTEM_PROMPT },
           { role: 'user', content: userPrompt }
@@ -78,7 +78,7 @@ Escreva sua analise:`;
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error("Grok API error:", response.status, errorText);
+      console.error("Groq API error:", response.status, errorText);
       return new Response(JSON.stringify({ 
         analysis: "*Erro na analise* - Nao foi possivel gerar a analise automatica. Tente novamente mais tarde." 
       }), {
@@ -87,7 +87,7 @@ Escreva sua analise:`;
     }
 
     const data = await response.json();
-    console.log("Grok profile analysis received");
+    console.log("Groq profile analysis received");
     
     const content = data.choices?.[0]?.message?.content || '';
     

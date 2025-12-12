@@ -1,7 +1,7 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
-const grokApiKey = Deno.env.get('GROK_API_KEY');
+const groqApiKey = Deno.env.get('GROK_API_KEY'); // Note: using GROK_API_KEY but it contains Groq key
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -76,8 +76,8 @@ serve(async (req) => {
       analysis: `Faturamento estimado: R$ ${estimatedMonthly.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}/mês. ${canAffordService ? 'Investimento sustentável.' : 'Investimento representaria mais de 55% do faturamento.'}`
     };
 
-    if (!grokApiKey) {
-      console.log("No API key, using fallback calculation");
+    if (!groqApiKey) {
+      console.log("No Groq API key, using fallback calculation");
       return new Response(JSON.stringify(fallbackResult), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
@@ -90,16 +90,16 @@ serve(async (req) => {
 
 CALCULE E RETORNE APENAS O JSON:`;
 
-    console.log("Calling Grok API...");
+    console.log("Calling Groq API...");
 
-    const response = await fetch('https://api.x.ai/v1/chat/completions', {
+    const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${grokApiKey}`,
+        'Authorization': `Bearer ${groqApiKey}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'grok-3-mini-fast',
+        model: 'llama-3.1-70b-versatile',
         messages: [
           { role: 'system', content: SYSTEM_PROMPT },
           { role: 'user', content: userPrompt }
@@ -111,14 +111,14 @@ CALCULE E RETORNE APENAS O JSON:`;
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error("Grok API error:", response.status, errorText);
+      console.error("Groq API error:", response.status, errorText);
       return new Response(JSON.stringify(fallbackResult), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
     const data = await response.json();
-    console.log("Grok response received");
+    console.log("Groq response received");
     
     const content = data.choices?.[0]?.message?.content || '';
     

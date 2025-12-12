@@ -106,7 +106,7 @@ export function LeadAnalysis({ lead }: LeadAnalysisProps) {
         )}
 
         <p className="text-[10px] text-muted-foreground/60 mt-3 pt-2 border-t border-black/5">
-          Analise gerada por IA - Grok
+          Analise gerada por IA - Groq
         </p>
       </CardContent>
     </Card>
