@@ -1185,7 +1185,7 @@ const Index = () => {
               <QuemSomosSection />
               
               {/* Mobile footer with terms */}
-              <div className="pb-4 pt-2 bg-gradient-to-r from-[#F40000] to-[#A10000]">
+              <div className="pb-4 pt-2 bg-gradient-to-r from-[#F40000] to-[#A10000] -mx-4">
                 <div className="w-full h-px bg-white/20 mb-4" />
                 <div className="text-center px-[1.25em]">
                   <p className="text-xs text-white/80">
