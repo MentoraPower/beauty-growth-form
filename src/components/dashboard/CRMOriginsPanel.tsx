@@ -1,8 +1,25 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { Kanban, ChevronRight, Folder, FolderOpen, MoreVertical, Plus, Pencil, Trash2, X } from "lucide-react";
+import { Kanban, ChevronRight, Folder, FolderOpen, MoreVertical, Plus, Pencil, Trash2, X, GripVertical } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -51,6 +68,192 @@ let cachedSubOrigins: SubOrigin[] = [];
 let cachedLeadCounts: LeadCount[] = [];
 let dataLoaded = false;
 
+// Sortable Origin Item Component
+function SortableOriginItem({ 
+  origin, 
+  originSubOrigins,
+  isOriginExpanded,
+  expandedOrigins,
+  toggleOrigin,
+  openEditOriginDialog,
+  handleDeleteOrigin,
+  openCreateSubOriginDialog,
+  openEditSubOriginDialog,
+  handleDeleteSubOrigin,
+  handleSubOriginClick,
+  leadCounts,
+  currentSubOriginId,
+}: {
+  origin: Origin;
+  originSubOrigins: SubOrigin[];
+  isOriginExpanded: boolean;
+  expandedOrigins: Set<string>;
+  toggleOrigin: (id: string) => void;
+  openEditOriginDialog: (origin: Origin) => void;
+  handleDeleteOrigin: (id: string) => void;
+  openCreateSubOriginDialog: (originId: string) => void;
+  openEditSubOriginDialog: (subOrigin: SubOrigin) => void;
+  handleDeleteSubOrigin: (id: string) => void;
+  handleSubOriginClick: (id: string) => void;
+  leadCounts: LeadCount[];
+  currentSubOriginId: string | null;
+}) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: origin.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  };
+
+  return (
+    <div ref={setNodeRef} style={style} className="animate-in fade-in duration-200">
+      {/* Origin (Folder) */}
+      <div className="flex items-center group">
+        {/* Drag Handle */}
+        <button
+          {...attributes}
+          {...listeners}
+          className="p-1 rounded cursor-grab active:cursor-grabbing opacity-0 group-hover:opacity-100 transition-opacity hover:bg-muted"
+        >
+          <GripVertical className="h-3 w-3 text-muted-foreground" />
+        </button>
+        
+        <button
+          onClick={() => toggleOrigin(origin.id)}
+          className="flex items-center gap-2 flex-1 py-2 px-2 rounded-lg transition-all duration-200 ease-out text-sm text-foreground/90 hover:text-foreground hover:bg-muted/50"
+        >
+          {isOriginExpanded ? (
+            <FolderOpen className="h-4 w-4 flex-shrink-0 fill-current text-foreground/90" />
+          ) : (
+            <Folder className="h-4 w-4 flex-shrink-0 fill-current text-foreground/90" />
+          )}
+          <span className="flex-1 text-left truncate font-bold">{origin.nome}</span>
+          <ChevronRight 
+            className={cn(
+              "h-3 w-3 transition-transform duration-300 text-foreground/70",
+              isOriginExpanded ? "rotate-90" : ""
+            )} 
+          />
+        </button>
+        
+        {/* Origin Actions */}
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button 
+              onClick={(e) => e.stopPropagation()}
+              className="p-1.5 rounded opacity-0 group-hover:opacity-100 transition-all duration-200 ease-out hover:bg-muted"
+            >
+              <MoreVertical className="h-4 w-4 text-foreground/80" />
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-40 z-[9999] bg-popover">
+            <DropdownMenuItem onClick={() => openEditOriginDialog(origin)}>
+              <Pencil className="h-4 w-4 mr-2" />
+              Editar
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem 
+              className="text-destructive focus:text-destructive"
+              onClick={() => handleDeleteOrigin(origin.id)}
+            >
+              <Trash2 className="h-4 w-4 mr-2" />
+              Excluir
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
+
+      {/* Sub-origins */}
+      <div 
+        className="grid transition-[grid-template-rows] duration-300 ease-out"
+        style={{ gridTemplateRows: isOriginExpanded ? '1fr' : '0fr' }}
+      >
+        <div className="overflow-hidden">
+          <div className="ml-4 pl-2 space-y-0.5 pt-1 pb-1 rounded-lg border-l border-border/50 bg-muted/30">
+            {originSubOrigins.map((subOrigin) => {
+              const leadCount = leadCounts.find(lc => lc.sub_origin_id === subOrigin.id)?.count || 0;
+              const isActive = currentSubOriginId === subOrigin.id;
+              
+              return (
+                <div key={subOrigin.id} className="flex items-center group">
+                  <button
+                    onClick={() => handleSubOriginClick(subOrigin.id)}
+                    className={cn(
+                      "flex items-center gap-2 flex-1 py-1.5 px-2 rounded-lg transition-all duration-200 ease-out text-xs",
+                      isActive 
+                        ? "bg-primary/10 text-primary font-medium"
+                        : "text-foreground/80 hover:text-foreground hover:bg-muted/50"
+                    )}
+                  >
+                    <Kanban className={cn(
+                      "h-3 w-3 flex-shrink-0",
+                      isActive ? "text-primary" : "text-foreground/80"
+                    )} />
+                    <span className="truncate">{subOrigin.nome}</span>
+                    {leadCount > 0 && (
+                      <span className={cn(
+                        "ml-auto text-[10px] px-1.5 py-0.5 rounded-full",
+                        isActive 
+                          ? "bg-primary/20 text-primary"
+                          : "bg-muted text-muted-foreground"
+                      )}>
+                        {leadCount}
+                      </span>
+                    )}
+                  </button>
+                  
+                  {/* Sub-origin Actions */}
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <button 
+                        onClick={(e) => e.stopPropagation()}
+                        className="p-1.5 rounded opacity-0 group-hover:opacity-100 transition-all duration-200 ease-out hover:bg-muted"
+                      >
+                        <MoreVertical className="h-4 w-4 text-foreground/80" />
+                      </button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="w-40 z-[9999] bg-popover">
+                      <DropdownMenuItem onClick={() => openEditSubOriginDialog(subOrigin)}>
+                        <Pencil className="h-4 w-4 mr-2" />
+                        Editar
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem 
+                        className="text-destructive focus:text-destructive"
+                        onClick={() => handleDeleteSubOrigin(subOrigin.id)}
+                      >
+                        <Trash2 className="h-4 w-4 mr-2" />
+                        Excluir
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
+              );
+            })}
+
+            {/* Add Sub-origin Button */}
+            <button
+              onClick={() => openCreateSubOriginDialog(origin.id)}
+              className="flex items-center gap-2 w-full py-1.5 px-2 rounded-lg transition-all duration-200 ease-out text-xs text-foreground/60 hover:text-foreground hover:bg-muted/50"
+            >
+              <Plus className="h-3 w-3" />
+              <span>Criar sub origem</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function CRMOriginsPanel({ isOpen, onClose, sidebarWidth }: CRMOriginsPanelProps) {
   const location = useLocation();
   const navigate = useNavigate();
@@ -71,6 +274,12 @@ export function CRMOriginsPanel({ isOpen, onClose, sidebarWidth }: CRMOriginsPan
   const [editingItem, setEditingItem] = useState<{ id: string; nome: string; origin_id?: string } | null>(null);
   const [inputValue, setInputValue] = useState("");
   const [selectedOriginId, setSelectedOriginId] = useState<string | null>(null);
+
+  // DnD sensors
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+  );
 
   // Persist expandedOrigins to localStorage
   useEffect(() => {
@@ -116,7 +325,7 @@ export function CRMOriginsPanel({ isOpen, onClose, sidebarWidth }: CRMOriginsPan
     }
   }, [fetchData]);
 
-  // Real-time subscriptions - only update, don't cause flicker
+  // Real-time subscriptions
   useEffect(() => {
     const originsChannel = supabase
       .channel('crm-origins-panel-changes')
@@ -139,6 +348,33 @@ export function CRMOriginsPanel({ isOpen, onClose, sidebarWidth }: CRMOriginsPan
       supabase.removeChannel(leadsChannel);
     };
   }, [fetchData]);
+
+  const handleDragEnd = async (event: DragEndEvent) => {
+    const { active, over } = event;
+
+    if (over && active.id !== over.id) {
+      const oldIndex = origins.findIndex((o) => o.id === active.id);
+      const newIndex = origins.findIndex((o) => o.id === over.id);
+
+      const newOrigins = arrayMove(origins, oldIndex, newIndex);
+      
+      // Optimistic update
+      setOrigins(newOrigins);
+      cachedOrigins = newOrigins;
+
+      // Update ordem in database
+      const updates = newOrigins.map((origin, index) => 
+        supabase.from("crm_origins").update({ ordem: index }).eq("id", origin.id)
+      );
+
+      try {
+        await Promise.all(updates);
+      } catch (error) {
+        toast.error("Erro ao reordenar origens");
+        fetchData(); // Revert on error
+      }
+    }
+  };
 
   const toggleOrigin = (originId: string) => {
     setExpandedOrigins(prev => {
@@ -193,7 +429,7 @@ export function CRMOriginsPanel({ isOpen, onClose, sidebarWidth }: CRMOriginsPan
 
     if (dialogType === 'origin') {
       if (dialogMode === 'create') {
-        const { error } = await supabase.from("crm_origins").insert({ nome: inputValue.trim() });
+        const { error } = await supabase.from("crm_origins").insert({ nome: inputValue.trim(), ordem: origins.length });
         if (error) {
           toast.error("Erro ao criar origem");
           return;
@@ -212,7 +448,12 @@ export function CRMOriginsPanel({ isOpen, onClose, sidebarWidth }: CRMOriginsPan
       if (!originId) return;
 
       if (dialogMode === 'create') {
-        const { error } = await supabase.from("crm_sub_origins").insert({ nome: inputValue.trim(), origin_id: originId });
+        const originSubOrigins = subOrigins.filter(s => s.origin_id === originId);
+        const { error } = await supabase.from("crm_sub_origins").insert({ 
+          nome: inputValue.trim(), 
+          origin_id: originId,
+          ordem: originSubOrigins.length 
+        });
         if (error) {
           toast.error("Erro ao criar sub-origem");
           return;
@@ -298,141 +539,40 @@ export function CRMOriginsPanel({ isOpen, onClose, sidebarWidth }: CRMOriginsPan
 
         {/* Content */}
         <div className="flex-1 overflow-y-auto p-3 space-y-1 max-h-[calc(100vh-6rem)]">
-          {origins.map((origin) => {
-            const originSubOrigins = subOrigins.filter(s => s.origin_id === origin.id);
-            const isOriginExpanded = expandedOrigins.has(origin.id);
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragEnd={handleDragEnd}
+          >
+            <SortableContext
+              items={origins.map(o => o.id)}
+              strategy={verticalListSortingStrategy}
+            >
+              {origins.map((origin) => {
+                const originSubOrigins = subOrigins.filter(s => s.origin_id === origin.id);
+                const isOriginExpanded = expandedOrigins.has(origin.id);
 
-            return (
-              <div key={origin.id} className="animate-in fade-in duration-200">
-                {/* Origin (Folder) */}
-                <div className="flex items-center group">
-                  <button
-                    onClick={() => toggleOrigin(origin.id)}
-                    className="flex items-center gap-2 flex-1 py-2 px-2 rounded-lg transition-all duration-200 ease-out text-sm text-foreground/90 hover:text-foreground hover:bg-muted/50"
-                  >
-                    {isOriginExpanded ? (
-                      <FolderOpen className="h-4 w-4 flex-shrink-0 fill-current text-foreground/90" />
-                    ) : (
-                      <Folder className="h-4 w-4 flex-shrink-0 fill-current text-foreground/90" />
-                    )}
-                    <span className="flex-1 text-left truncate font-bold">{origin.nome}</span>
-                    <ChevronRight 
-                      className={cn(
-                        "h-3 w-3 transition-transform duration-300 text-foreground/70",
-                        isOriginExpanded ? "rotate-90" : ""
-                      )} 
-                    />
-                  </button>
-                  
-                  {/* Origin Actions */}
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <button 
-                        onClick={(e) => e.stopPropagation()}
-                        className="p-1.5 rounded opacity-0 group-hover:opacity-100 transition-all duration-200 ease-out hover:bg-muted"
-                      >
-                        <MoreVertical className="h-4 w-4 text-foreground/80" />
-                      </button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="w-40 z-[9999] bg-popover">
-                      <DropdownMenuItem onClick={() => openEditOriginDialog(origin)}>
-                        <Pencil className="h-4 w-4 mr-2" />
-                        Editar
-                      </DropdownMenuItem>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem 
-                        className="text-destructive focus:text-destructive"
-                        onClick={() => handleDeleteOrigin(origin.id)}
-                      >
-                        <Trash2 className="h-4 w-4 mr-2" />
-                        Excluir
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </div>
-
-                {/* Sub-origins */}
-                <div 
-                  className="grid transition-[grid-template-rows] duration-300 ease-out"
-                  style={{ gridTemplateRows: isOriginExpanded ? '1fr' : '0fr' }}
-                >
-                  <div className="overflow-hidden">
-                    <div className="ml-4 pl-2 space-y-0.5 pt-1 pb-1 rounded-lg border-l border-border/50 bg-muted/30">
-                      {originSubOrigins.map((subOrigin) => {
-                        const leadCount = leadCounts.find(lc => lc.sub_origin_id === subOrigin.id)?.count || 0;
-                        const isActive = currentSubOriginId === subOrigin.id;
-                        
-                        return (
-                          <div key={subOrigin.id} className="flex items-center group">
-                            <button
-                              onClick={() => handleSubOriginClick(subOrigin.id)}
-                              className={cn(
-                                "flex items-center gap-2 flex-1 py-1.5 px-2 rounded-lg transition-all duration-200 ease-out text-xs",
-                                isActive 
-                                  ? "bg-primary/10 text-primary font-medium"
-                                  : "text-foreground/80 hover:text-foreground hover:bg-muted/50"
-                              )}
-                            >
-                              <Kanban className={cn(
-                                "h-3 w-3 flex-shrink-0",
-                                isActive ? "text-primary" : "text-foreground/80"
-                              )} />
-                              <span className="truncate">{subOrigin.nome}</span>
-                              {leadCount > 0 && (
-                                <span className={cn(
-                                  "ml-auto text-[10px] px-1.5 py-0.5 rounded-full",
-                                  isActive 
-                                    ? "bg-primary/20 text-primary"
-                                    : "bg-muted text-muted-foreground"
-                                )}>
-                                  {leadCount}
-                                </span>
-                              )}
-                            </button>
-                            
-                            {/* Sub-origin Actions */}
-                            <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                <button 
-                                  onClick={(e) => e.stopPropagation()}
-                                  className="p-1.5 rounded opacity-0 group-hover:opacity-100 transition-all duration-200 ease-out hover:bg-muted"
-                                >
-                                  <MoreVertical className="h-4 w-4 text-foreground/80" />
-                                </button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end" className="w-40 z-[9999] bg-popover">
-                                <DropdownMenuItem onClick={() => openEditSubOriginDialog(subOrigin)}>
-                                  <Pencil className="h-4 w-4 mr-2" />
-                                  Editar
-                                </DropdownMenuItem>
-                                <DropdownMenuSeparator />
-                                <DropdownMenuItem 
-                                  className="text-destructive focus:text-destructive"
-                                  onClick={() => handleDeleteSubOrigin(subOrigin.id)}
-                                >
-                                  <Trash2 className="h-4 w-4 mr-2" />
-                                  Excluir
-                                </DropdownMenuItem>
-                              </DropdownMenuContent>
-                            </DropdownMenu>
-                          </div>
-                        );
-                      })}
-
-                      {/* Add Sub-origin Button */}
-                      <button
-                        onClick={() => openCreateSubOriginDialog(origin.id)}
-                        className="flex items-center gap-2 w-full py-1.5 px-2 rounded-lg transition-all duration-200 ease-out text-xs text-foreground/60 hover:text-foreground hover:bg-muted/50"
-                      >
-                        <Plus className="h-3 w-3" />
-                        <span>Criar sub origem</span>
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            );
-          })}
+                return (
+                  <SortableOriginItem
+                    key={origin.id}
+                    origin={origin}
+                    originSubOrigins={originSubOrigins}
+                    isOriginExpanded={isOriginExpanded}
+                    expandedOrigins={expandedOrigins}
+                    toggleOrigin={toggleOrigin}
+                    openEditOriginDialog={openEditOriginDialog}
+                    handleDeleteOrigin={handleDeleteOrigin}
+                    openCreateSubOriginDialog={openCreateSubOriginDialog}
+                    openEditSubOriginDialog={openEditSubOriginDialog}
+                    handleDeleteSubOrigin={handleDeleteSubOrigin}
+                    handleSubOriginClick={handleSubOriginClick}
+                    leadCounts={leadCounts}
+                    currentSubOriginId={currentSubOriginId}
+                  />
+                );
+              })}
+            </SortableContext>
+          </DndContext>
 
           {/* Add Origin Button */}
           <button
