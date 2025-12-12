@@ -116,9 +116,9 @@ function SortableOriginItem({
   return (
     <div ref={setNodeRef} style={style} className="animate-in fade-in duration-200">
       {/* Origin (Folder) */}
-      <div className="flex items-center group relative">
-        {/* Drag Handle - slides in from left */}
-        <div className="absolute -left-1 top-1/2 -translate-y-1/2 transition-all duration-200 ease-out opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0">
+      <div className="flex items-center group/origin relative">
+        {/* Drag Handle - slides in from left, hides when actions hovered */}
+        <div className="absolute -left-1 top-1/2 -translate-y-1/2 transition-all duration-200 ease-out opacity-0 -translate-x-2 group-hover/origin:opacity-100 group-hover/origin:translate-x-0 group-has-[.actions-area:hover]/origin:opacity-0 group-has-[.actions-area:hover]/origin:-translate-x-2">
           <button
             {...attributes}
             {...listeners}
@@ -130,7 +130,7 @@ function SortableOriginItem({
         
         <button
           onClick={() => toggleOrigin(origin.id)}
-          className="flex items-center gap-2 flex-1 py-2 px-2 rounded-lg transition-all duration-200 ease-out text-sm text-foreground/90 hover:text-foreground hover:bg-muted/50 group-hover:translate-x-4"
+          className="flex items-center gap-2 flex-1 py-2 px-2 rounded-lg transition-all duration-200 ease-out text-sm text-foreground/90 hover:text-foreground hover:bg-muted/50 group-hover/origin:translate-x-4 group-has-[.actions-area:hover]/origin:translate-x-0"
         >
           {isOriginExpanded ? (
             <FolderOpen className="h-4 w-4 flex-shrink-0 fill-current text-foreground/90" />
@@ -147,12 +147,12 @@ function SortableOriginItem({
         </button>
         
         {/* Origin Actions */}
-        <div className="transition-all duration-200 ease-out group-hover:translate-x-4">
+        <div className="actions-area transition-all duration-200 ease-out group-hover/origin:translate-x-4 hover:!translate-x-0">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <button 
                 onClick={(e) => e.stopPropagation()}
-                className="p-1.5 rounded opacity-0 group-hover:opacity-100 transition-all duration-200 ease-out hover:bg-muted"
+                className="p-1.5 rounded opacity-0 group-hover/origin:opacity-100 transition-all duration-200 ease-out hover:bg-muted"
               >
                 <MoreVertical className="h-4 w-4 text-foreground/80" />
               </button>
