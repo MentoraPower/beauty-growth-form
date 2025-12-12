@@ -22,7 +22,16 @@ import { KanbanCard } from "./KanbanCard";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Settings, LayoutGrid, List, Search } from "lucide-react";
+import { Settings, LayoutGrid, List, Search, Filter, X } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuCheckboxItem,
+  DropdownMenuTrigger,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu";
+import { Badge } from "@/components/ui/badge";
 import { LeadsList } from "./LeadsList";
 import { toast } from "sonner";
 
@@ -40,6 +49,8 @@ export function KanbanBoard() {
   const [isPipelinesDialogOpen, setIsPipelinesDialogOpen] = useState(false);
   const [localLeads, setLocalLeads] = useState<Lead[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
+  const [filterMQL, setFilterMQL] = useState<"all" | "mql" | "non-mql">("all");
+  const [filterTags, setFilterTags] = useState<string[]>([]);
   const [viewMode, setViewMode] = useState<"kanban" | "list">(() => {
     const saved = localStorage.getItem('crm_view_mode');
     return (saved === 'list' || saved === 'kanban') ? saved : 'kanban';
@@ -145,6 +156,50 @@ export function KanbanBoard() {
     staleTime: 5000,
     refetchOnMount: true,
     refetchOnWindowFocus: false,
+  });
+
+  // Fetch all tags for filtering (after leads is declared)
+  const { data: allTags = [] } = useQuery({
+    queryKey: ["all-tags", subOriginId, leads.length],
+    queryFn: async () => {
+      const leadIds = leads.map(l => l.id);
+      if (leadIds.length === 0) return [];
+      
+      const { data, error } = await supabase
+        .from("lead_tags")
+        .select("name, color")
+        .in("lead_id", leadIds);
+
+      if (error) return [];
+      
+      // Get unique tags
+      const uniqueTags = new Map<string, { name: string; color: string }>();
+      data.forEach(tag => {
+        if (!uniqueTags.has(tag.name)) {
+          uniqueTags.set(tag.name, tag);
+        }
+      });
+      return Array.from(uniqueTags.values());
+    },
+    enabled: leads.length > 0,
+  });
+
+  // Fetch tags for leads (for filtering)
+  const { data: leadTags = [] } = useQuery({
+    queryKey: ["lead-tags-map", subOriginId, leads.length],
+    queryFn: async () => {
+      const leadIds = leads.map(l => l.id);
+      if (leadIds.length === 0) return [];
+      
+      const { data, error } = await supabase
+        .from("lead_tags")
+        .select("lead_id, name")
+        .in("lead_id", leadIds);
+
+      if (error) return [];
+      return data;
+    },
+    enabled: leads.length > 0,
   });
 
   const isLoading = isLoadingPipelines || isLoadingLeads;
@@ -416,15 +471,44 @@ export function KanbanBoard() {
   );
 
   const displayLeads = useMemo(() => {
-    const baseLeads = localLeads.length > 0 ? localLeads : leads;
-    if (!searchQuery.trim()) return baseLeads;
-    const query = searchQuery.toLowerCase().trim();
-    return baseLeads.filter(lead => 
-      lead.name.toLowerCase().includes(query) ||
-      lead.email.toLowerCase().includes(query) ||
-      lead.clinic_name?.toLowerCase().includes(query)
-    );
-  }, [localLeads, leads, searchQuery]);
+    let baseLeads = localLeads.length > 0 ? localLeads : leads;
+    
+    // Filter by search query
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase().trim();
+      baseLeads = baseLeads.filter(lead => 
+        lead.name.toLowerCase().includes(query) ||
+        lead.email.toLowerCase().includes(query) ||
+        lead.clinic_name?.toLowerCase().includes(query)
+      );
+    }
+    
+    // Filter by MQL status
+    if (filterMQL === "mql") {
+      baseLeads = baseLeads.filter(lead => lead.is_mql === true);
+    } else if (filterMQL === "non-mql") {
+      baseLeads = baseLeads.filter(lead => lead.is_mql === false);
+    }
+    
+    // Filter by tags
+    if (filterTags.length > 0) {
+      const leadIdsWithTags = new Set(
+        leadTags
+          .filter(lt => filterTags.includes(lt.name))
+          .map(lt => lt.lead_id)
+      );
+      baseLeads = baseLeads.filter(lead => leadIdsWithTags.has(lead.id));
+    }
+    
+    return baseLeads;
+  }, [localLeads, leads, searchQuery, filterMQL, filterTags, leadTags]);
+
+  const hasActiveFilters = filterMQL !== "all" || filterTags.length > 0;
+
+  const clearFilters = () => {
+    setFilterMQL("all");
+    setFilterTags([]);
+  };
 
   // Memoize leads grouped by pipeline for Kanban view
   const leadsByPipeline = useMemo(() => {
@@ -450,7 +534,8 @@ export function KanbanBoard() {
 
   return (
     <div className="flex flex-col h-[calc(100vh-2rem)]">
-      <div className="flex items-center justify-between mb-4 gap-4">
+      {/* Header with title */}
+      <div className="flex items-center justify-between mb-3">
         <div className="transition-all duration-150 flex-shrink-0">
           <h1 className="text-2xl font-bold">{pageTitle}</h1>
           {!subOriginId && (
@@ -459,17 +544,7 @@ export function KanbanBoard() {
             </p>
           )}
         </div>
-        <div className="flex items-center gap-2 flex-1 justify-end">
-          <div className="relative w-full max-w-xs">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-            <Input
-              type="text"
-              placeholder="Pesquisar leads..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-9 h-9"
-            />
-          </div>
+        <div className="flex items-center gap-2">
           <div className="flex items-center border rounded-lg overflow-hidden">
             <Button
               variant={viewMode === "kanban" ? "secondary" : "ghost"}
@@ -497,6 +572,103 @@ export function KanbanBoard() {
             Gerenciar Origens
           </Button>
         </div>
+      </div>
+
+      {/* Search and Filters Bar */}
+      <div className="flex items-center justify-center gap-3 mb-4">
+        {/* Search centered */}
+        <div className="relative w-full max-w-md">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <Input
+            type="text"
+            placeholder="Pesquisar leads..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-9 h-9"
+          />
+        </div>
+
+        {/* Filters */}
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline" size="sm" className="h-9 gap-2">
+              <Filter className="w-4 h-4" />
+              Filtros
+              {hasActiveFilters && (
+                <Badge variant="secondary" className="ml-1 px-1.5 py-0 text-xs">
+                  {(filterMQL !== "all" ? 1 : 0) + filterTags.length}
+                </Badge>
+              )}
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-56 bg-popover z-[9999]">
+            <DropdownMenuLabel>Status MQL</DropdownMenuLabel>
+            <DropdownMenuCheckboxItem
+              checked={filterMQL === "all"}
+              onCheckedChange={() => setFilterMQL("all")}
+            >
+              Todos
+            </DropdownMenuCheckboxItem>
+            <DropdownMenuCheckboxItem
+              checked={filterMQL === "mql"}
+              onCheckedChange={() => setFilterMQL(filterMQL === "mql" ? "all" : "mql")}
+            >
+              <span className="flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                MQL
+              </span>
+            </DropdownMenuCheckboxItem>
+            <DropdownMenuCheckboxItem
+              checked={filterMQL === "non-mql"}
+              onCheckedChange={() => setFilterMQL(filterMQL === "non-mql" ? "all" : "non-mql")}
+            >
+              <span className="flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-orange-500" />
+                Não MQL
+              </span>
+            </DropdownMenuCheckboxItem>
+            
+            {allTags.length > 0 && (
+              <>
+                <DropdownMenuSeparator />
+                <DropdownMenuLabel>Tags</DropdownMenuLabel>
+                {allTags.map((tag) => (
+                  <DropdownMenuCheckboxItem
+                    key={tag.name}
+                    checked={filterTags.includes(tag.name)}
+                    onCheckedChange={(checked) => {
+                      if (checked) {
+                        setFilterTags([...filterTags, tag.name]);
+                      } else {
+                        setFilterTags(filterTags.filter(t => t !== tag.name));
+                      }
+                    }}
+                  >
+                    <span className="flex items-center gap-2">
+                      <span 
+                        className="w-2 h-2 rounded-full" 
+                        style={{ backgroundColor: tag.color }}
+                      />
+                      {tag.name}
+                    </span>
+                  </DropdownMenuCheckboxItem>
+                ))}
+              </>
+            )}
+          </DropdownMenuContent>
+        </DropdownMenu>
+
+        {/* Clear filters button */}
+        {hasActiveFilters && (
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-9 px-2 text-muted-foreground hover:text-foreground"
+            onClick={clearFilters}
+          >
+            <X className="w-4 h-4" />
+          </Button>
+        )}
       </div>
 
       <DndContext
