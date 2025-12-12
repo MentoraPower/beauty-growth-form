@@ -147,30 +147,32 @@ function SortableOriginItem({
         </button>
         
         {/* Origin Actions */}
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <button 
-              onClick={(e) => e.stopPropagation()}
-              className="p-1.5 rounded opacity-0 group-hover:opacity-100 transition-all duration-200 ease-out hover:bg-muted group-hover:translate-x-4"
-            >
-              <MoreVertical className="h-4 w-4 text-foreground/80" />
-            </button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-40 z-[9999] bg-popover">
-            <DropdownMenuItem onClick={() => openEditOriginDialog(origin)}>
-              <Pencil className="h-4 w-4 mr-2" />
-              Editar
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem 
-              className="text-destructive focus:text-destructive"
-              onClick={() => handleDeleteOrigin(origin.id)}
-            >
-              <Trash2 className="h-4 w-4 mr-2" />
-              Excluir
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+        <div className="transition-all duration-200 ease-out group-hover:translate-x-4">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button 
+                onClick={(e) => e.stopPropagation()}
+                className="p-1.5 rounded opacity-0 group-hover:opacity-100 transition-all duration-200 ease-out hover:bg-muted"
+              >
+                <MoreVertical className="h-4 w-4 text-foreground/80" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-40 z-[9999] bg-popover">
+              <DropdownMenuItem onClick={() => openEditOriginDialog(origin)}>
+                <Pencil className="h-4 w-4 mr-2" />
+                Editar
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem 
+                className="text-destructive focus:text-destructive"
+                onClick={() => handleDeleteOrigin(origin.id)}
+              >
+                <Trash2 className="h-4 w-4 mr-2" />
+                Excluir
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
       </div>
 
       {/* Sub-origins */}
