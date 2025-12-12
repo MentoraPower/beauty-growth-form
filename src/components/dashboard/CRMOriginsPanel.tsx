@@ -116,15 +116,17 @@ function SortableOriginItem({
   return (
     <div ref={setNodeRef} style={style} className="animate-in fade-in duration-200">
       {/* Origin (Folder) */}
-      <div className="flex items-center group">
-        {/* Drag Handle */}
-        <button
-          {...attributes}
-          {...listeners}
-          className="p-1 rounded cursor-grab active:cursor-grabbing opacity-0 group-hover:opacity-100 transition-opacity hover:bg-muted"
-        >
-          <GripVertical className="h-3 w-3 text-muted-foreground" />
-        </button>
+      <div className="flex items-center group relative">
+        {/* Drag Handle - slides in from left */}
+        <div className="absolute -left-1 top-1/2 -translate-y-1/2 transition-all duration-200 ease-out opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0">
+          <button
+            {...attributes}
+            {...listeners}
+            className="p-1 rounded cursor-grab active:cursor-grabbing hover:bg-muted"
+          >
+            <GripVertical className="h-3 w-3 text-muted-foreground" />
+          </button>
+        </div>
         
         <button
           onClick={() => toggleOrigin(origin.id)}
