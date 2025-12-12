@@ -558,87 +558,138 @@ export function KanbanBoard() {
             />
           </div>
 
-          {/* Filters */}
+          {/* Filters - Modern Toggle Style */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="sm" className="h-9 gap-2">
+              <Button 
+                variant={hasActiveFilters ? "default" : "outline"} 
+                size="sm" 
+                className={hasActiveFilters 
+                  ? "h-9 gap-2 bg-gradient-to-r from-[#F40000] to-[#A10000] text-white border-0" 
+                  : "h-9 gap-2"
+                }
+              >
                 <Filter className="w-4 h-4" />
                 Filtros
                 {hasActiveFilters && (
-                  <Badge variant="secondary" className="ml-1 px-1.5 py-0 text-xs">
+                  <span className="ml-1 px-1.5 py-0.5 text-[10px] bg-white/20 rounded-full">
                     {(filterMQL !== "all" ? 1 : 0) + filterTags.length}
-                  </Badge>
+                  </span>
                 )}
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-56 bg-popover z-[9999]">
-              <DropdownMenuLabel>Status MQL</DropdownMenuLabel>
-              <DropdownMenuCheckboxItem
-                checked={filterMQL === "all"}
-                onCheckedChange={() => setFilterMQL("all")}
-              >
-                Todos
-              </DropdownMenuCheckboxItem>
-              <DropdownMenuCheckboxItem
-                checked={filterMQL === "mql"}
-                onCheckedChange={() => setFilterMQL(filterMQL === "mql" ? "all" : "mql")}
-              >
-                <span className="flex items-center gap-2">
-                  <span className="w-2 h-2 rounded-full bg-emerald-500" />
-                  MQL
-                </span>
-              </DropdownMenuCheckboxItem>
-              <DropdownMenuCheckboxItem
-                checked={filterMQL === "non-mql"}
-                onCheckedChange={() => setFilterMQL(filterMQL === "non-mql" ? "all" : "non-mql")}
-              >
-                <span className="flex items-center gap-2">
-                  <span className="w-2 h-2 rounded-full bg-orange-500" />
-                  Não MQL
-                </span>
-              </DropdownMenuCheckboxItem>
+            <DropdownMenuContent align="center" className="w-72 bg-popover z-[9999] p-4">
+              {/* MQL Status Section */}
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                    Status MQL
+                  </span>
+                  {filterMQL !== "all" && (
+                    <button 
+                      onClick={() => setFilterMQL("all")}
+                      className="text-[10px] text-muted-foreground hover:text-foreground transition-colors"
+                    >
+                      Limpar
+                    </button>
+                  )}
+                </div>
+                
+                {/* Toggle Buttons for MQL */}
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setFilterMQL(filterMQL === "mql" ? "all" : "mql")}
+                    className={`flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-lg text-xs font-medium transition-all ${
+                      filterMQL === "mql"
+                        ? "bg-emerald-500/10 text-emerald-600 border-2 border-emerald-500"
+                        : "bg-muted/50 text-muted-foreground border-2 border-transparent hover:bg-muted"
+                    }`}
+                  >
+                    <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                    MQL
+                  </button>
+                  <button
+                    onClick={() => setFilterMQL(filterMQL === "non-mql" ? "all" : "non-mql")}
+                    className={`flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-lg text-xs font-medium transition-all ${
+                      filterMQL === "non-mql"
+                        ? "bg-orange-500/10 text-orange-600 border-2 border-orange-500"
+                        : "bg-muted/50 text-muted-foreground border-2 border-transparent hover:bg-muted"
+                    }`}
+                  >
+                    <span className="w-2 h-2 rounded-full bg-orange-500" />
+                    Não MQL
+                  </button>
+                </div>
+              </div>
               
+              {/* Tags Section */}
               {allTags.length > 0 && (
                 <>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuLabel>Tags</DropdownMenuLabel>
-                  {allTags.map((tag) => (
-                    <DropdownMenuCheckboxItem
-                      key={tag.name}
-                      checked={filterTags.includes(tag.name)}
-                      onCheckedChange={(checked) => {
-                        if (checked) {
-                          setFilterTags([...filterTags, tag.name]);
-                        } else {
-                          setFilterTags(filterTags.filter(t => t !== tag.name));
-                        }
-                      }}
-                    >
-                      <span className="flex items-center gap-2">
-                        <span 
-                          className="w-2 h-2 rounded-full" 
-                          style={{ backgroundColor: tag.color }}
-                        />
-                        {tag.name}
+                  <div className="my-4 border-t border-border" />
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                        Tags
                       </span>
-                    </DropdownMenuCheckboxItem>
-                  ))}
+                      {filterTags.length > 0 && (
+                        <button 
+                          onClick={() => setFilterTags([])}
+                          className="text-[10px] text-muted-foreground hover:text-foreground transition-colors"
+                        >
+                          Limpar
+                        </button>
+                      )}
+                    </div>
+                    
+                    <div className="flex flex-wrap gap-2">
+                      {allTags.map((tag) => (
+                        <button
+                          key={tag.name}
+                          onClick={() => {
+                            if (filterTags.includes(tag.name)) {
+                              setFilterTags(filterTags.filter(t => t !== tag.name));
+                            } else {
+                              setFilterTags([...filterTags, tag.name]);
+                            }
+                          }}
+                          className={`flex items-center gap-1.5 py-1.5 px-3 rounded-full text-xs font-medium transition-all ${
+                            filterTags.includes(tag.name)
+                              ? "text-white shadow-sm"
+                              : "bg-muted/50 text-muted-foreground hover:bg-muted"
+                          }`}
+                          style={filterTags.includes(tag.name) ? { backgroundColor: tag.color } : {}}
+                        >
+                          {!filterTags.includes(tag.name) && (
+                            <span 
+                              className="w-2 h-2 rounded-full" 
+                              style={{ backgroundColor: tag.color }}
+                            />
+                          )}
+                          {tag.name}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </>
+              )}
+
+              {/* Clear All Button */}
+              {hasActiveFilters && (
+                <>
+                  <div className="my-4 border-t border-border" />
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="w-full h-8 text-xs"
+                    onClick={clearFilters}
+                  >
+                    <X className="w-3 h-3 mr-1.5" />
+                    Limpar todos os filtros
+                  </Button>
                 </>
               )}
             </DropdownMenuContent>
           </DropdownMenu>
-
-          {/* Clear filters button */}
-          {hasActiveFilters && (
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-9 px-2 text-muted-foreground hover:text-foreground"
-              onClick={clearFilters}
-            >
-              <X className="w-4 h-4" />
-            </Button>
-          )}
         </div>
 
         {/* Right side - view toggle and settings */}
