@@ -5,6 +5,7 @@ import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import CallModal from "@/components/whatsapp/CallModal";
 interface Chat {
   id: string;
   name: string;
@@ -35,7 +36,7 @@ const WhatsApp = () => {
   const [isLoadingChats, setIsLoadingChats] = useState(false);
   const [isLoadingMessages, setIsLoadingMessages] = useState(false);
   const [isSending, setIsSending] = useState(false);
-  const [isCalling, setIsCalling] = useState(false);
+  const [isCallModalOpen, setIsCallModalOpen] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const getInitials = (name: string): string => {
@@ -242,31 +243,24 @@ const WhatsApp = () => {
     }
   };
 
-  const makeCall = async () => {
+  const initiateCall = async () => {
     if (!selectedChat) return;
 
-    setIsCalling(true);
-    try {
-      const { data, error } = await supabase.functions.invoke("twilio-call", {
-        body: { to: selectedChat.phone },
-      });
+    const { data, error } = await supabase.functions.invoke("twilio-call", {
+      body: { to: selectedChat.phone },
+    });
 
-      if (error) throw error;
+    if (error) throw error;
 
-      toast({
-        title: "Ligação iniciada",
-        description: `Chamando ${selectedChat.name}...`,
-      });
-    } catch (error: any) {
-      console.error("Error making call:", error);
-      toast({
-        title: "Erro ao ligar",
-        description: error.message,
-        variant: "destructive",
-      });
-    } finally {
-      setIsCalling(false);
-    }
+    toast({
+      title: "Ligação iniciada",
+      description: `Chamando ${selectedChat.name}...`,
+    });
+  };
+
+  const openCallModal = () => {
+    if (!selectedChat) return;
+    setIsCallModalOpen(true);
   };
 
   // Initial fetch
@@ -453,12 +447,11 @@ const WhatsApp = () => {
                   <p className="text-xs text-muted-foreground">{selectedChat.phone}</p>
                 </div>
                 <button
-                  onClick={makeCall}
-                  disabled={isCalling}
+                  onClick={openCallModal}
                   className="p-2 hover:bg-emerald-500/10 rounded-full transition-colors"
                   title="Fazer ligação"
                 >
-                  <Phone className={cn("w-5 h-5 text-emerald-500", isCalling && "animate-pulse")} />
+                  <Phone className="w-5 h-5 text-emerald-500" />
                 </button>
                 <button
                   onClick={() => fetchMessages(selectedChat.id)}
@@ -546,6 +539,18 @@ const WhatsApp = () => {
           )}
         </div>
       </div>
+
+      {/* Call Modal */}
+      {selectedChat && (
+        <CallModal
+          isOpen={isCallModalOpen}
+          onClose={() => setIsCallModalOpen(false)}
+          contactName={selectedChat.name}
+          contactPhone={selectedChat.phone}
+          contactAvatar={selectedChat.photo_url}
+          onInitiateCall={initiateCall}
+        />
+      )}
     </DashboardLayout>
   );
 };
