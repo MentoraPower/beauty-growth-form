@@ -1,6 +1,6 @@
 import { useState } from "react";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
-import { Search, MoreVertical, Smile, Paperclip, Mic, Send, Check, CheckCheck } from "lucide-react";
+import { Search, Smile, Paperclip, Mic, Send } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 
@@ -22,30 +22,14 @@ interface Message {
   read: boolean;
 }
 
-const mockChats: Chat[] = [
-  { id: "1", name: "Maria Silva", lastMessage: "Olá, gostaria de saber mais sobre os serviços", time: "10:30", unread: 2, avatar: "MS", online: true },
-  { id: "2", name: "João Santos", lastMessage: "Perfeito, vou agendar para sexta!", time: "09:45", unread: 0, avatar: "JS", online: false },
-  { id: "3", name: "Ana Costa", lastMessage: "Obrigada pelo atendimento 💕", time: "Ontem", unread: 0, avatar: "AC", online: true },
-  { id: "4", name: "Carla Oliveira", lastMessage: "Qual o valor do pacote completo?", time: "Ontem", unread: 1, avatar: "CO", online: false },
-  { id: "5", name: "Beatriz Lima", lastMessage: "Vou pensar e te retorno", time: "12/12", unread: 0, avatar: "BL", online: false },
-];
-
-const mockMessages: Message[] = [
-  { id: "1", text: "Olá! Tudo bem?", time: "10:15", sent: false, read: true },
-  { id: "2", text: "Oi! Tudo sim, e você?", time: "10:16", sent: true, read: true },
-  { id: "3", text: "Estou bem! Gostaria de saber mais sobre os serviços de sobrancelha", time: "10:18", sent: false, read: true },
-  { id: "4", text: "Claro! Temos vários pacotes disponíveis. Você tem preferência por algum procedimento específico?", time: "10:20", sent: true, read: true },
-  { id: "5", text: "Estou interessada em micropigmentação", time: "10:25", sent: false, read: true },
-  { id: "6", text: "Ótima escolha! A micropigmentação dura em média 1 a 2 anos. O valor do procedimento é R$ 450,00 e inclui o retoque após 30 dias.", time: "10:27", sent: true, read: true },
-  { id: "7", text: "Olá, gostaria de saber mais sobre os serviços", time: "10:30", sent: false, read: false },
-];
-
 const WhatsApp = () => {
-  const [selectedChat, setSelectedChat] = useState<Chat | null>(mockChats[0]);
+  const [selectedChat, setSelectedChat] = useState<Chat | null>(null);
   const [message, setMessage] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
+  const [chats] = useState<Chat[]>([]);
+  const [messages] = useState<Message[]>([]);
 
-  const filteredChats = mockChats.filter(chat => 
+  const filteredChats = chats.filter(chat => 
     chat.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
@@ -74,46 +58,52 @@ const WhatsApp = () => {
 
           {/* Chat List */}
           <div className="flex-1 overflow-y-auto">
-            {filteredChats.map((chat) => (
-              <div
-                key={chat.id}
-                onClick={() => setSelectedChat(chat)}
-                className={cn(
-                  "flex items-center gap-3 px-4 py-3 cursor-pointer transition-colors border-b border-border/20",
-                  selectedChat?.id === chat.id ? "bg-muted/40" : "hover:bg-muted/20"
-                )}
-              >
-                <div className="relative">
-                  <div className="w-12 h-12 rounded-full bg-gradient-to-br from-muted to-muted-foreground/20 flex items-center justify-center text-foreground font-medium">
-                    {chat.avatar}
-                  </div>
-                  {chat.online && (
-                    <div className="absolute bottom-0 right-0 w-3 h-3 bg-emerald-500 rounded-full border-2 border-card" />
+            {filteredChats.length > 0 ? (
+              filteredChats.map((chat) => (
+                <div
+                  key={chat.id}
+                  onClick={() => setSelectedChat(chat)}
+                  className={cn(
+                    "flex items-center gap-3 px-4 py-3 cursor-pointer transition-colors border-b border-border/20",
+                    selectedChat?.id === chat.id ? "bg-muted/40" : "hover:bg-muted/20"
                   )}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center justify-between">
-                    <span className="font-medium text-foreground">{chat.name}</span>
-                    <span className={cn(
-                      "text-xs",
-                      chat.unread > 0 ? "text-emerald-500" : "text-muted-foreground"
-                    )}>
-                      {chat.time}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between mt-0.5">
-                    <p className="text-sm text-muted-foreground truncate pr-2">
-                      {chat.lastMessage}
-                    </p>
-                    {chat.unread > 0 && (
-                      <span className="min-w-[20px] h-5 rounded-full bg-emerald-500 text-white text-xs flex items-center justify-center px-1.5">
-                        {chat.unread}
-                      </span>
+                >
+                  <div className="relative">
+                    <div className="w-12 h-12 rounded-full bg-gradient-to-br from-muted to-muted-foreground/20 flex items-center justify-center text-foreground font-medium">
+                      {chat.avatar}
+                    </div>
+                    {chat.online && (
+                      <div className="absolute bottom-0 right-0 w-3 h-3 bg-emerald-500 rounded-full border-2 border-card" />
                     )}
                   </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between">
+                      <span className="font-medium text-foreground">{chat.name}</span>
+                      <span className={cn(
+                        "text-xs",
+                        chat.unread > 0 ? "text-emerald-500" : "text-muted-foreground"
+                      )}>
+                        {chat.time}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between mt-0.5">
+                      <p className="text-sm text-muted-foreground truncate pr-2">
+                        {chat.lastMessage}
+                      </p>
+                      {chat.unread > 0 && (
+                        <span className="min-w-[20px] h-5 rounded-full bg-emerald-500 text-white text-xs flex items-center justify-center px-1.5">
+                          {chat.unread}
+                        </span>
+                      )}
+                    </div>
+                  </div>
                 </div>
+              ))
+            ) : (
+              <div className="flex-1 flex items-center justify-center h-full py-20">
+                <p className="text-sm text-muted-foreground">Nenhuma conversa</p>
               </div>
-            ))}
+            )}
           </div>
         </div>
 
@@ -122,26 +112,21 @@ const WhatsApp = () => {
           {selectedChat ? (
             <>
               {/* Chat Header */}
-              <div className="h-14 px-4 flex items-center justify-between bg-muted/30 border-b border-border/30">
-                <div className="flex items-center gap-3">
-                  <div className="relative">
-                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-muted to-muted-foreground/20 flex items-center justify-center text-foreground font-medium">
-                      {selectedChat.avatar}
-                    </div>
-                    {selectedChat.online && (
-                      <div className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-emerald-500 rounded-full border-2 border-card" />
-                    )}
+              <div className="h-14 px-4 flex items-center gap-3 bg-muted/30 border-b border-border/30">
+                <div className="relative">
+                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-muted to-muted-foreground/20 flex items-center justify-center text-foreground font-medium">
+                    {selectedChat.avatar}
                   </div>
-                  <div>
-                    <h3 className="font-medium text-foreground">{selectedChat.name}</h3>
-                    <p className="text-xs text-muted-foreground">
-                      {selectedChat.online ? "online" : "visto por último hoje às 09:30"}
-                    </p>
-                  </div>
+                  {selectedChat.online && (
+                    <div className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-emerald-500 rounded-full border-2 border-card" />
+                  )}
                 </div>
-                <button className="p-2 hover:bg-muted/50 rounded-full transition-colors">
-                  <MoreVertical className="w-5 h-5 text-muted-foreground" />
-                </button>
+                <div>
+                  <h3 className="font-medium text-foreground">{selectedChat.name}</h3>
+                  <p className="text-xs text-muted-foreground">
+                    {selectedChat.online ? "online" : "offline"}
+                  </p>
+                </div>
               </div>
 
               {/* Messages Area */}
@@ -152,34 +137,11 @@ const WhatsApp = () => {
                   backgroundColor: 'hsl(var(--muted) / 0.15)'
                 }}
               >
-                {mockMessages.map((msg) => (
-                  <div
-                    key={msg.id}
-                    className={cn(
-                      "flex",
-                      msg.sent ? "justify-end" : "justify-start"
-                    )}
-                  >
-                    <div
-                      className={cn(
-                        "max-w-[65%] rounded-lg px-3 py-2 shadow-sm",
-                        msg.sent 
-                          ? "bg-emerald-100 dark:bg-emerald-900/30 rounded-tr-none" 
-                          : "bg-card rounded-tl-none"
-                      )}
-                    >
-                      <p className="text-sm text-foreground">{msg.text}</p>
-                      <div className="flex items-center justify-end gap-1 mt-1">
-                        <span className="text-[10px] text-muted-foreground">{msg.time}</span>
-                        {msg.sent && (
-                          msg.read 
-                            ? <CheckCheck className="w-4 h-4 text-blue-500" />
-                            : <Check className="w-4 h-4 text-muted-foreground" />
-                        )}
-                      </div>
-                    </div>
+                {messages.length === 0 && (
+                  <div className="flex items-center justify-center h-full">
+                    <p className="text-sm text-muted-foreground">Nenhuma mensagem</p>
                   </div>
-                ))}
+                )}
               </div>
 
               {/* Message Input */}
@@ -208,9 +170,6 @@ const WhatsApp = () => {
           ) : (
             <div className="flex-1 flex items-center justify-center bg-muted/10">
               <div className="text-center">
-                <div className="w-20 h-20 rounded-full bg-muted/30 flex items-center justify-center mx-auto mb-4">
-                  <Search className="w-8 h-8 text-muted-foreground" />
-                </div>
                 <p className="text-muted-foreground">Selecione uma conversa para começar</p>
               </div>
             </div>
