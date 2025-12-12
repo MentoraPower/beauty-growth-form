@@ -27,6 +27,7 @@ import Calendar from "@/components/icons/Calendar";
 import { toast } from "sonner";
 import HamburgerMenu from "@/components/HamburgerMenu";
 import { supabase } from "@/integrations/supabase/client";
+import { triggerWebhook } from "@/lib/webhooks";
 import SplashScreen from "@/components/SplashScreen";
 import RibbonTransition from "@/components/RibbonTransition";
 interface FormData {
@@ -398,10 +399,18 @@ const Index = () => {
           utm_campaign: utmParams.utm_campaign,
           utm_term: utmParams.utm_term,
           utm_content: utmParams.utm_content
-        }).select("id").single();
+        }).select("*").single();
         if (!error && data) {
           setPartialLeadId(data.id);
           savedLeadId = data.id;
+          
+          // Trigger webhook for lead created (fire and forget)
+          triggerWebhook({
+            trigger: "lead_created",
+            lead: data,
+            pipeline_id: data.pipeline_id,
+            sub_origin_id: data.sub_origin_id,
+          }).catch(console.error);
         }
       }
 

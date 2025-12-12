@@ -17,6 +17,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Lead, Pipeline } from "@/types/crm";
+import { triggerWebhook } from "@/lib/webhooks";
 import { KanbanColumn } from "./KanbanColumn";
 import { KanbanCard } from "./KanbanCard";
 import { Button } from "@/components/ui/button";
@@ -445,6 +446,16 @@ export function KanbanBoard() {
                 : l
             );
           });
+
+          // Trigger webhook for lead moved (fire and forget)
+          const movedLead = { ...activeLead, pipeline_id: newPipelineId };
+          triggerWebhook({
+            trigger: "lead_moved",
+            lead: movedLead as Lead,
+            pipeline_id: newPipelineId,
+            previous_pipeline_id: activeLead.pipeline_id,
+            sub_origin_id: subOriginId,
+          }).catch(console.error);
         } catch (error) {
           setLocalLeads((prev) =>
             prev.map((l) =>
