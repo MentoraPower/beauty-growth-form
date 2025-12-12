@@ -521,9 +521,17 @@ export function KanbanBoard() {
         if (arr) arr.push(lead);
       }
     });
-    // Sort each pipeline's leads
+    // Sort each pipeline's leads - by created_at (newest first), respecting manual ordem when set
     map.forEach((pipelineLeads) => {
-      pipelineLeads.sort((a, b) => (a.ordem ?? 0) - (b.ordem ?? 0));
+      pipelineLeads.sort((a, b) => {
+        // If both have ordem set (manual reorder), use ordem
+        if (a.ordem !== null && a.ordem !== undefined && a.ordem !== 0 && 
+            b.ordem !== null && b.ordem !== undefined && b.ordem !== 0) {
+          return (a.ordem ?? 0) - (b.ordem ?? 0);
+        }
+        // Otherwise, sort by created_at (newest first)
+        return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+      });
     });
     return map;
   }, [displayLeads, pipelines]);
