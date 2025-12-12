@@ -57,21 +57,10 @@ const handler = async (req: Request): Promise<Response> => {
         break;
 
       case "get-chats":
-        console.log("Fetching chats from Z-API");
+        console.log("Fetching all chats from Z-API");
         
-        // First get all contacts
-        const contactsResponse = await fetch(`${ZAPI_BASE_URL}/contacts`, {
-          method: "GET",
-          headers: {
-            "Client-Token": ZAPI_CLIENT_TOKEN || "",
-          },
-        });
-        
-        const contacts = await contactsResponse.json();
-        console.log(`Z-API contacts count: ${Array.isArray(contacts) ? contacts.length : 0}`);
-        
-        // Then get chats
-        response = await fetch(`${ZAPI_BASE_URL}/chats`, {
+        // Get chats with page parameter to get more
+        response = await fetch(`${ZAPI_BASE_URL}/chats?page=1&pageSize=100`, {
           method: "GET",
           headers: {
             "Client-Token": ZAPI_CLIENT_TOKEN || "",
@@ -79,29 +68,16 @@ const handler = async (req: Request): Promise<Response> => {
         });
         
         const chatsData = await response.json();
-        console.log(`Z-API chats count: ${Array.isArray(chatsData) ? chatsData.length : 0}`);
+        console.log(`Z-API chats response:`, JSON.stringify(chatsData).substring(0, 1000));
         
-        // Merge contacts with chats data
-        const contactsMap = new Map();
-        if (Array.isArray(contacts)) {
-          for (const contact of contacts) {
-            if (contact.phone) {
-              contactsMap.set(contact.phone, contact);
-            }
-          }
-        }
+        // Filter only personal chats (not groups)
+        const personalChats = Array.isArray(chatsData) 
+          ? chatsData.filter((chat: any) => !chat.isGroup && chat.phone)
+          : [];
         
-        // Enhance chats with contact info
-        const enhancedChats = Array.isArray(chatsData) ? chatsData.map((chat: any) => {
-          const contact = contactsMap.get(chat.phone);
-          return {
-            ...chat,
-            name: chat.name || contact?.name || chat.phone,
-            photo: chat.photo || contact?.profileThumbnail || null,
-          };
-        }) : [];
+        console.log(`Personal chats count: ${personalChats.length}`);
         
-        return new Response(JSON.stringify(enhancedChats), {
+        return new Response(JSON.stringify(personalChats), {
           status: 200,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
