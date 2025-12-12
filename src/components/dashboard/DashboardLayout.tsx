@@ -4,6 +4,7 @@ import { LayoutDashboard, Menu, X, LogOut } from "lucide-react";
 import { cn } from "@/lib/utils";
 import scaleLogo from "@/assets/scale-logo.png";
 import { CRMSidebarMenu } from "./CRMSidebarMenu";
+import { PageTransition } from "./PageTransition";
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -195,9 +196,9 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
 
       {/* Main Content - smooth fade transition */}
       <main className="lg:ml-[88px] pt-14 lg:pt-6 min-h-screen p-4 lg:p-6">
-        <div className="transition-opacity duration-300 ease-out opacity-100">
+        <PageTransition>
           {children}
-        </div>
+        </PageTransition>
       </main>
     </div>
   );
