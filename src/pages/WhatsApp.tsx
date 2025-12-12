@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import { Search, Smile, Paperclip, Mic, Send, Check, CheckCheck, RefreshCw } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -13,8 +13,8 @@ interface Chat {
   time: string;
   unread: number;
   avatar: string;
-  online: boolean;
   phone: string;
+  photo_url: string | null;
 }
 
 interface Message {
@@ -23,6 +23,7 @@ interface Message {
   time: string;
   sent: boolean;
   read: boolean;
+  status: string;
 }
 
 const WhatsApp = () => {
@@ -35,37 +36,58 @@ const WhatsApp = () => {
   const [isLoadingChats, setIsLoadingChats] = useState(false);
   const [isLoadingMessages, setIsLoadingMessages] = useState(false);
   const [isSending, setIsSending] = useState(false);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  const getInitials = (name: string): string => {
+    if (!name) return "?";
+    const parts = name.trim().split(" ");
+    if (parts.length >= 2) {
+      return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+    }
+    return name.substring(0, 2).toUpperCase();
+  };
+
+  const formatTime = (dateString: string): string => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffDays = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24));
+    
+    if (diffDays === 0) {
+      return date.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+    } else if (diffDays === 1) {
+      return "Ontem";
+    } else {
+      return date.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" });
+    }
+  };
 
   const fetchChats = async () => {
     setIsLoadingChats(true);
     try {
-      const { data, error } = await supabase.functions.invoke("zapi-whatsapp", {
-        body: { action: "get-chats" },
-      });
+      const { data, error } = await supabase
+        .from("whatsapp_chats")
+        .select("*")
+        .order("last_message_time", { ascending: false });
 
       if (error) throw error;
 
-      console.log("Chats response:", data);
+      const formattedChats: Chat[] = (data || []).map((chat: any) => ({
+        id: chat.id,
+        name: chat.name || chat.phone,
+        lastMessage: chat.last_message || "",
+        time: chat.last_message_time ? formatTime(chat.last_message_time) : "",
+        unread: chat.unread_count || 0,
+        avatar: getInitials(chat.name || chat.phone),
+        phone: chat.phone,
+        photo_url: chat.photo_url,
+      }));
 
-      // Transform Z-API response to our Chat format
-      if (Array.isArray(data)) {
-        const formattedChats: Chat[] = data.slice(0, 50).map((chat: any, index: number) => ({
-          id: chat.phone || chat.id || String(index),
-          name: chat.name || chat.phone || "Desconhecido",
-          lastMessage: chat.lastMessageText || chat.text?.message || "",
-          time: chat.lastMessageTime ? new Date(chat.lastMessageTime).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }) : "",
-          unread: chat.unreadCount || 0,
-          avatar: getInitials(chat.name || chat.phone || "?"),
-          online: false,
-          phone: chat.phone || "",
-        }));
-        setChats(formattedChats);
-      }
+      setChats(formattedChats);
     } catch (error: any) {
       console.error("Error fetching chats:", error);
       toast({
         title: "Erro ao carregar conversas",
-        description: error.message || "Verifique as credenciais da Z-API",
+        description: error.message,
         variant: "destructive",
       });
     } finally {
@@ -76,25 +98,31 @@ const WhatsApp = () => {
   const fetchMessages = async (chatId: string) => {
     setIsLoadingMessages(true);
     try {
-      const { data, error } = await supabase.functions.invoke("zapi-whatsapp", {
-        body: { action: "get-chat-messages", chatId },
-      });
+      const { data, error } = await supabase
+        .from("whatsapp_messages")
+        .select("*")
+        .eq("chat_id", chatId)
+        .order("created_at", { ascending: true });
 
       if (error) throw error;
 
-      console.log("Messages response:", data);
+      const formattedMessages: Message[] = (data || []).map((msg: any) => ({
+        id: msg.id,
+        text: msg.text || (msg.media_type ? `[${msg.media_type}]` : ""),
+        time: msg.created_at ? new Date(msg.created_at).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }) : "",
+        sent: msg.from_me || false,
+        read: msg.status === "READ" || msg.status === "PLAYED",
+        status: msg.status,
+      }));
 
-      // Transform Z-API response to our Message format
-      if (Array.isArray(data)) {
-        const formattedMessages: Message[] = data.map((msg: any) => ({
-          id: msg.messageId || msg.id || String(Math.random()),
-          text: msg.text?.message || msg.body || msg.message || "",
-          time: msg.momment ? new Date(msg.momment).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }) : "",
-          sent: msg.fromMe || false,
-          read: msg.status === "READ" || msg.status === "PLAYED",
-        })).filter((msg: Message) => msg.text);
-        
-        setMessages(formattedMessages.reverse());
+      setMessages(formattedMessages);
+
+      // Mark as read
+      if (selectedChat) {
+        await supabase
+          .from("whatsapp_chats")
+          .update({ unread_count: 0 })
+          .eq("id", chatId);
       }
     } catch (error: any) {
       console.error("Error fetching messages:", error);
@@ -113,6 +141,7 @@ const WhatsApp = () => {
 
     setIsSending(true);
     try {
+      // Send via Z-API
       const { data, error } = await supabase.functions.invoke("zapi-whatsapp", {
         body: {
           action: "send-text",
@@ -123,18 +152,31 @@ const WhatsApp = () => {
 
       if (error) throw error;
 
-      console.log("Send message response:", data);
+      // Save to database
+      const { error: insertError } = await supabase
+        .from("whatsapp_messages")
+        .insert({
+          chat_id: selectedChat.id,
+          message_id: data?.messageId || `local-${Date.now()}`,
+          phone: selectedChat.phone,
+          text: message.trim(),
+          from_me: true,
+          status: "SENT",
+        });
 
-      // Add message to local state
-      const newMessage: Message = {
-        id: data.messageId || String(Date.now()),
-        text: message.trim(),
-        time: new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }),
-        sent: true,
-        read: false,
-      };
+      if (insertError) {
+        console.error("Error saving message:", insertError);
+      }
 
-      setMessages((prev) => [...prev, newMessage]);
+      // Update chat last message
+      await supabase
+        .from("whatsapp_chats")
+        .update({
+          last_message: message.trim(),
+          last_message_time: new Date().toISOString(),
+        })
+        .eq("id", selectedChat.id);
+
       setMessage("");
 
       toast({
@@ -153,27 +195,120 @@ const WhatsApp = () => {
     }
   };
 
-  const getInitials = (name: string): string => {
-    if (!name) return "?";
-    const parts = name.trim().split(" ");
-    if (parts.length >= 2) {
-      return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+  const syncFromZAPI = async () => {
+    setIsLoadingChats(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("zapi-whatsapp", {
+        body: { action: "get-chats" },
+      });
+
+      if (error) throw error;
+
+      if (Array.isArray(data)) {
+        for (const chat of data.slice(0, 30)) {
+          const phone = chat.phone || "";
+          if (!phone) continue;
+
+          await supabase
+            .from("whatsapp_chats")
+            .upsert(
+              {
+                phone: phone,
+                name: chat.name || phone,
+                photo_url: chat.photo || null,
+                last_message: chat.lastMessageText || "",
+                last_message_time: chat.lastMessageTime ? new Date(chat.lastMessageTime).toISOString() : new Date().toISOString(),
+                unread_count: chat.unreadCount || 0,
+              },
+              { onConflict: "phone" }
+            );
+        }
+
+        await fetchChats();
+        toast({
+          title: "Sincronizado",
+          description: "Conversas sincronizadas com sucesso",
+        });
+      }
+    } catch (error: any) {
+      console.error("Error syncing from Z-API:", error);
+      toast({
+        title: "Erro ao sincronizar",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoadingChats(false);
     }
-    return name.substring(0, 2).toUpperCase();
   };
 
+  // Initial fetch
   useEffect(() => {
     fetchChats();
   }, []);
 
+  // Realtime subscription for chats
+  useEffect(() => {
+    const channel = supabase
+      .channel("whatsapp-chats-changes")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "whatsapp_chats" },
+        () => {
+          fetchChats();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
+
+  // Realtime subscription for messages
+  useEffect(() => {
+    if (!selectedChat) return;
+
+    const channel = supabase
+      .channel("whatsapp-messages-changes")
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "whatsapp_messages", filter: `chat_id=eq.${selectedChat.id}` },
+        (payload) => {
+          const msg = payload.new as any;
+          const newMessage: Message = {
+            id: msg.id,
+            text: msg.text || "",
+            time: msg.created_at ? new Date(msg.created_at).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }) : "",
+            sent: msg.from_me || false,
+            read: msg.status === "READ",
+            status: msg.status,
+          };
+          setMessages((prev) => [...prev, newMessage]);
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [selectedChat]);
+
+  // Fetch messages when chat selected
   useEffect(() => {
     if (selectedChat) {
-      fetchMessages(selectedChat.phone);
+      fetchMessages(selectedChat.id);
     }
   }, [selectedChat]);
 
+  // Scroll to bottom on new messages
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
+
   const filteredChats = chats.filter((chat) =>
-    chat.name.toLowerCase().includes(searchQuery.toLowerCase())
+    chat.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    chat.phone.includes(searchQuery)
   );
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -192,9 +327,10 @@ const WhatsApp = () => {
           <div className="h-14 px-4 flex items-center justify-between bg-muted/30 border-b border-border/30">
             <h2 className="font-medium text-foreground">Conversas</h2>
             <button
-              onClick={fetchChats}
+              onClick={syncFromZAPI}
               disabled={isLoadingChats}
               className="p-2 hover:bg-muted/50 rounded-full transition-colors"
+              title="Sincronizar com Z-API"
             >
               <RefreshCw className={cn("w-4 h-4 text-muted-foreground", isLoadingChats && "animate-spin")} />
             </button>
@@ -230,11 +366,12 @@ const WhatsApp = () => {
                   )}
                 >
                   <div className="relative">
-                    <div className="w-12 h-12 rounded-full bg-gradient-to-br from-muted to-muted-foreground/20 flex items-center justify-center text-foreground font-medium">
-                      {chat.avatar}
-                    </div>
-                    {chat.online && (
-                      <div className="absolute bottom-0 right-0 w-3 h-3 bg-emerald-500 rounded-full border-2 border-card" />
+                    {chat.photo_url ? (
+                      <img src={chat.photo_url} alt={chat.name} className="w-12 h-12 rounded-full object-cover" />
+                    ) : (
+                      <div className="w-12 h-12 rounded-full bg-gradient-to-br from-muted to-muted-foreground/20 flex items-center justify-center text-foreground font-medium">
+                        {chat.avatar}
+                      </div>
                     )}
                   </div>
                   <div className="flex-1 min-w-0">
@@ -256,8 +393,14 @@ const WhatsApp = () => {
                 </div>
               ))
             ) : (
-              <div className="flex-1 flex items-center justify-center h-full py-20">
+              <div className="flex-1 flex flex-col items-center justify-center h-full py-20 gap-2">
                 <p className="text-sm text-muted-foreground">Nenhuma conversa</p>
+                <button
+                  onClick={syncFromZAPI}
+                  className="text-xs text-emerald-500 hover:underline"
+                >
+                  Sincronizar do Z-API
+                </button>
               </div>
             )}
           </div>
@@ -270,16 +413,20 @@ const WhatsApp = () => {
               {/* Chat Header */}
               <div className="h-14 px-4 flex items-center gap-3 bg-muted/30 border-b border-border/30">
                 <div className="relative">
-                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-muted to-muted-foreground/20 flex items-center justify-center text-foreground font-medium">
-                    {selectedChat.avatar}
-                  </div>
+                  {selectedChat.photo_url ? (
+                    <img src={selectedChat.photo_url} alt={selectedChat.name} className="w-10 h-10 rounded-full object-cover" />
+                  ) : (
+                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-muted to-muted-foreground/20 flex items-center justify-center text-foreground font-medium">
+                      {selectedChat.avatar}
+                    </div>
+                  )}
                 </div>
                 <div className="flex-1">
                   <h3 className="font-medium text-foreground">{selectedChat.name}</h3>
                   <p className="text-xs text-muted-foreground">{selectedChat.phone}</p>
                 </div>
                 <button
-                  onClick={() => fetchMessages(selectedChat.phone)}
+                  onClick={() => fetchMessages(selectedChat.id)}
                   disabled={isLoadingMessages}
                   className="p-2 hover:bg-muted/50 rounded-full transition-colors"
                 >
@@ -315,12 +462,19 @@ const WhatsApp = () => {
                         <p className="text-sm text-foreground whitespace-pre-wrap">{msg.text}</p>
                         <div className="flex items-center justify-end gap-1 mt-1">
                           <span className="text-[10px] text-muted-foreground">{msg.time}</span>
-                          {msg.sent && (msg.read ? <CheckCheck className="w-4 h-4 text-blue-500" /> : <Check className="w-4 h-4 text-muted-foreground" />)}
+                          {msg.sent && (
+                            msg.status === "READ" || msg.status === "PLAYED" 
+                              ? <CheckCheck className="w-4 h-4 text-blue-500" /> 
+                              : msg.status === "RECEIVED" || msg.status === "DELIVERED"
+                                ? <CheckCheck className="w-4 h-4 text-muted-foreground" />
+                                : <Check className="w-4 h-4 text-muted-foreground" />
+                          )}
                         </div>
                       </div>
                     </div>
                   ))
                 )}
+                <div ref={messagesEndRef} />
               </div>
 
               {/* Message Input */}
