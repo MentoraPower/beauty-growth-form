@@ -204,14 +204,11 @@ const Index = () => {
     try {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 4000);
-      
       const {
         data,
         error
       } = await supabase.from('leads').select('id, whatsapp, country_code, instagram, service_area, monthly_billing, weekly_attendance, workspace_type, years_experience, average_ticket').eq('email', email.toLowerCase().trim()).maybeSingle();
-      
       clearTimeout(timeoutId);
-      
       if (error) {
         console.error("Error checking lead:", error);
         return null;
@@ -248,10 +245,8 @@ const Index = () => {
     setIsAnalyzing(true);
     try {
       const ticketValue = parseCurrency(formData.averageTicket);
-      
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 5000);
-      
       const response = await fetch('https://ytdfwkchsumgdvcroaqg.supabase.co/functions/v1/analyze-lead', {
         method: 'POST',
         headers: {
@@ -264,9 +259,7 @@ const Index = () => {
         }),
         signal: controller.signal
       });
-      
       clearTimeout(timeoutId);
-      
       const data = await response.json();
       console.log("AI Analysis result:", data);
       setAiAnalysis(data);
@@ -548,19 +541,16 @@ const Index = () => {
           setStep(2); // Change step immediately so form is ready when ribbons pass
           return;
         }
-        
+
         // After email step, check if lead exists (with timeout)
         if (step === 2) {
           setIsCheckingLead(true);
           try {
             // Use Promise.race to add timeout
             const checkPromise = checkExistingLead(formData.email);
-            const timeoutPromise = new Promise((_, reject) => 
-              setTimeout(() => reject(new Error('timeout')), 5000)
-            );
-            
+            const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 5000));
             const existing = await Promise.race([checkPromise, timeoutPromise]).catch(() => null);
-            
+
             // Save partial lead in background (don't await)
             if (!existing) {
               savePartialLead(formData, step).catch(console.error);
@@ -597,7 +587,6 @@ const Index = () => {
       toast.error(getValidationMessage());
     }
   };
-  
   const handleRibbonComplete = () => {
     setShowRibbonTransition(false);
   };
@@ -1427,9 +1416,7 @@ function AnimatedCircleSection() {
                       <ArrowRight className="w-3 h-3 text-[#F40000]" />
                       Roteiros
                     </h3>
-                    <p className="text-sm lg:text-xs text-muted-foreground mt-1 leading-relaxed">
-                      Roteiros estratégicos para vídeos e conteúdos que engajam e convertem
-                    </p>
+                    <p className="text-sm lg:text-xs text-muted-foreground mt-1 leading-relaxed">Roteiros estratégicos para vídeos e anúncios que engajam e convertem em vendas.</p>
                   </div>
                 </div>
               </div>
