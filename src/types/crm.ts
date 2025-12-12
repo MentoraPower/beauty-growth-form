@@ -27,4 +27,7 @@ export interface Lead {
   estimated_revenue?: number | null;
   can_afford?: string | null;
   wants_more_info?: boolean | null;
+  is_mql?: boolean | null;
+  ai_analysis?: string | null;
+  analysis_created_at?: string | null;
 }
