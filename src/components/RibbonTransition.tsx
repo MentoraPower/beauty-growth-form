@@ -1,4 +1,5 @@
 import { motion, AnimatePresence } from "framer-motion";
+import { useEffect } from "react";
 
 interface RibbonTransitionProps {
   isActive: boolean;
@@ -16,6 +17,16 @@ const RibbonTransition = ({ isActive, onComplete }: RibbonTransitionProps) => {
     { id: 6, height: "22vh", top: "80%", delay: 0.02, duration: 0.4 },
   ];
 
+  useEffect(() => {
+    if (isActive) {
+      // Trigger completion after animation finishes
+      const timer = setTimeout(() => {
+        onComplete();
+      }, 700); // Total animation time
+      return () => clearTimeout(timer);
+    }
+  }, [isActive, onComplete]);
+
   return (
     <AnimatePresence>
       {isActive && (
@@ -23,11 +34,7 @@ const RibbonTransition = ({ isActive, onComplete }: RibbonTransitionProps) => {
           className="fixed inset-0 z-[100] pointer-events-none overflow-hidden"
           initial={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          transition={{ duration: 0.2, delay: 0.5 }}
-          onAnimationComplete={() => {
-            // Trigger completion after all ribbons have passed
-            setTimeout(onComplete, 100);
-          }}
+          transition={{ duration: 0.2 }}
         >
           {ribbons.map((ribbon) => (
             <motion.div
