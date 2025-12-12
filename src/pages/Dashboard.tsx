@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Users, TrendingUp, ShoppingCart, DollarSign } from "lucide-react";
+import { Users, TrendingUp, ShoppingCart, DollarSign, Target } from "lucide-react";
 import ModernAreaChart from "@/components/dashboard/ModernAreaChart";
 import ModernBarChart from "@/components/dashboard/ModernBarChart";
 import MiniGaugeChart from "@/components/dashboard/MiniGaugeChart";
@@ -27,6 +27,7 @@ interface Lead {
   workspace_type: string;
   years_experience: string;
   created_at: string;
+  is_mql: boolean | null;
 }
 
 interface DayData {
@@ -228,6 +229,14 @@ const Dashboard = () => {
     return total.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   };
 
+  // Get MQL percentage
+  const getMQLPercentage = () => {
+    const leadsWithMQL = leads.filter(lead => lead.is_mql !== null);
+    if (leadsWithMQL.length === 0) return "0";
+    const mqlCount = leadsWithMQL.filter(lead => lead.is_mql === true).length;
+    return ((mqlCount / leadsWithMQL.length) * 100).toFixed(1);
+  };
+
   // Show content with skeleton placeholders for loading data instead of full skeleton screen
   const isDataReady = leads.length > 0 || !loading;
 
@@ -240,7 +249,7 @@ const Dashboard = () => {
         </div>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
           <Card className="bg-white border border-black/5 shadow-none">
             <CardContent className="pt-5 pb-4">
               <div className="flex items-center gap-3 mb-3">
@@ -287,6 +296,19 @@ const Dashboard = () => {
                 <p className="text-sm text-foreground font-medium">Valor em Vendas</p>
               </div>
               <p className="text-2xl font-bold text-foreground">R$ {getTotalSalesAmount()}</p>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-white border border-black/5 shadow-none">
+            <CardContent className="pt-5 pb-4">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="w-10 h-10 rounded-full border border-rose-400 flex items-center justify-center">
+                  <Target className="h-5 w-5 text-rose-500" />
+                </div>
+                <p className="text-sm text-foreground font-medium">Taxa MQL</p>
+              </div>
+              <p className="text-3xl font-bold text-foreground">{getMQLPercentage()}%</p>
+              <p className="text-xs text-muted-foreground mt-1">{leads.filter(l => l.is_mql === true).length} MQLs</p>
             </CardContent>
           </Card>
         </div>

@@ -84,7 +84,18 @@ export const KanbanCard = memo(function KanbanCard({ lead, isDragging: isDraggin
       onClick={handleClick}
     >
       <CardContent className="p-4 space-y-2">
-        <h3 className="font-semibold text-sm">{lead.name}</h3>
+        <div className="flex items-center justify-between gap-2">
+          <h3 className="font-semibold text-sm truncate">{lead.name}</h3>
+          {lead.is_mql !== null && (
+            <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded flex-shrink-0 ${
+              lead.is_mql 
+                ? "bg-emerald-100 text-emerald-700" 
+                : "bg-orange-100 text-orange-700"
+            }`}>
+              {lead.is_mql ? "MQL" : "Não MQL"}
+            </span>
+          )}
+        </div>
         
         <div className="space-y-1 text-xs text-muted-foreground">
           <div className="flex items-center gap-2">
