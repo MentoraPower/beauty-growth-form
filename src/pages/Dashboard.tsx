@@ -8,6 +8,7 @@ import { Users, TrendingUp, ShoppingCart, DollarSign, Target } from "lucide-reac
 import ModernAreaChart from "@/components/dashboard/ModernAreaChart";
 import ModernBarChart from "@/components/dashboard/ModernBarChart";
 import MiniGaugeChart from "@/components/dashboard/MiniGaugeChart";
+import FormFunnelChart from "@/components/dashboard/FormFunnelChart";
 import {
   CardSkeleton,
   AreaChartSkeleton,
@@ -21,11 +22,13 @@ interface Lead {
   whatsapp: string;
   country_code: string;
   instagram: string;
+  clinic_name: string | null;
   service_area: string;
   monthly_billing: string;
   weekly_attendance: string;
   workspace_type: string;
   years_experience: string;
+  average_ticket: number | null;
   created_at: string;
   is_mql: boolean | null;
 }
@@ -237,6 +240,43 @@ const Dashboard = () => {
     return ((mqlCount / leadsWithMQL.length) * 100).toFixed(1);
   };
 
+  // Calculate form funnel data - which step each lead reached
+  const getFormFunnelData = () => {
+    const totalVisits = pageViews;
+    
+    // Define form steps and check which field indicates reaching that step
+    const steps = [
+      { label: "Visitas", check: () => true, count: totalVisits },
+      { label: "Nome", check: (l: Lead) => !!l.name, count: 0 },
+      { label: "Email", check: (l: Lead) => !!l.email, count: 0 },
+      { label: "WhatsApp", check: (l: Lead) => !!l.whatsapp, count: 0 },
+      { label: "Instagram", check: (l: Lead) => !!l.instagram, count: 0 },
+      { label: "Clínica/Studio", check: (l: Lead) => !!l.clinic_name, count: 0 },
+      { label: "Área de Atuação", check: (l: Lead) => !!l.service_area, count: 0 },
+      { label: "Faturamento", check: (l: Lead) => !!l.monthly_billing, count: 0 },
+      { label: "Atendimentos/Sem", check: (l: Lead) => !!l.weekly_attendance, count: 0 },
+      { label: "Espaço Físico", check: (l: Lead) => !!l.workspace_type, count: 0 },
+      { label: "Experiência", check: (l: Lead) => !!l.years_experience, count: 0 },
+      { label: "Ticket Médio", check: (l: Lead) => l.average_ticket !== null && l.average_ticket > 0, count: 0 },
+    ];
+
+    // Count leads that reached each step
+    leads.forEach(lead => {
+      for (let i = 1; i < steps.length; i++) {
+        if (steps[i].check(lead)) {
+          steps[i].count++;
+        }
+      }
+    });
+
+    // Calculate percentages based on total visits
+    return steps.map(step => ({
+      label: step.label,
+      count: step.count,
+      percentage: totalVisits > 0 ? (step.count / totalVisits) * 100 : 0,
+    }));
+  };
+
   // Show content with skeleton placeholders for loading data instead of full skeleton screen
   const isDataReady = leads.length > 0 || !loading;
 
@@ -363,18 +403,32 @@ const Dashboard = () => {
           </Card>
         </div>
 
-        {/* Bar Chart */}
-        <Card className="bg-white border border-black/5 shadow-none">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-base font-semibold text-foreground">
-              Leads por Dia da Semana
-            </CardTitle>
-            <p className="text-xs text-muted-foreground">Distribuição semanal</p>
-          </CardHeader>
-          <CardContent>
-            <ModernBarChart data={getLeadsByDayOfWeek()} />
-          </CardContent>
-        </Card>
+        {/* Bar Chart + Funnel */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <Card className="bg-white border border-black/5 shadow-none">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base font-semibold text-foreground">
+                Leads por Dia da Semana
+              </CardTitle>
+              <p className="text-xs text-muted-foreground">Distribuição semanal</p>
+            </CardHeader>
+            <CardContent>
+              <ModernBarChart data={getLeadsByDayOfWeek()} />
+            </CardContent>
+          </Card>
+
+          <Card className="bg-white border border-black/5 shadow-none">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base font-semibold text-foreground">
+                Funil do Formulário
+              </CardTitle>
+              <p className="text-xs text-muted-foreground">Taxa de conclusão por etapa</p>
+            </CardHeader>
+            <CardContent>
+              <FormFunnelChart data={getFormFunnelData()} />
+            </CardContent>
+          </Card>
+        </div>
       </div>
     </DashboardLayout>
   );
