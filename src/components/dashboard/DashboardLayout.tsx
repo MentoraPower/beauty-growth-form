@@ -1,10 +1,10 @@
 import { useState, useCallback, useEffect, memo } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { LayoutDashboard, Menu, X, LogOut } from "lucide-react";
+import { LayoutDashboard, Menu, X, LogOut, Kanban } from "lucide-react";
 import { cn } from "@/lib/utils";
 import WhatsAppIcon from "@/components/icons/WhatsApp";
 import scaleLogo from "@/assets/scale-logo.png";
-import { CRMSidebarMenu } from "./CRMSidebarMenu";
+import { CRMOriginsPanel } from "./CRMOriginsPanel";
 import { PageTransition } from "./PageTransition";
 
 interface DashboardLayoutProps {
@@ -25,13 +25,22 @@ let globalHoverState = false;
 const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isHovered, setIsHovered] = useState(globalHoverState);
-  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [crmPanelOpen, setCrmPanelOpen] = useState(false);
   const location = useLocation();
+
+  const isCRMActive = location.pathname.startsWith("/admin/crm");
 
   // Sync with global state on mount and route change
   useEffect(() => {
     setIsHovered(globalHoverState);
   }, [location.pathname]);
+
+  // Close CRM panel when navigating away from CRM
+  useEffect(() => {
+    if (!isCRMActive) {
+      setCrmPanelOpen(false);
+    }
+  }, [isCRMActive]);
 
   const handleMouseEnter = useCallback(() => {
     globalHoverState = true;
@@ -39,12 +48,16 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
   }, []);
 
   const handleMouseLeave = useCallback(() => {
-    if (dropdownOpen) return;
     globalHoverState = false;
     setIsHovered(false);
-  }, [dropdownOpen]);
+  }, []);
 
-  const shouldBeExpanded = isHovered || sidebarOpen || dropdownOpen;
+  const shouldBeExpanded = isHovered || sidebarOpen;
+  const sidebarWidth = shouldBeExpanded ? 224 : 72;
+
+  const handleCRMClick = () => {
+    setCrmPanelOpen(!crmPanelOpen);
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -64,11 +77,11 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
         <div className="w-9" />
       </header>
 
-      {/* Desktop Sidebar - CSS transitions instead of framer-motion */}
+      {/* Desktop Sidebar */}
       <aside
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
-        style={{ width: shouldBeExpanded ? 224 : 72 }}
+        style={{ width: sidebarWidth }}
         className="hidden lg:flex flex-col fixed left-0 top-0 my-2 ml-2 h-[calc(100vh-1rem)] rounded-3xl border border-[#ffffff15] bg-black overflow-hidden z-50 transition-[width] duration-200 ease-out"
       >
         <div className="flex flex-col h-full">
@@ -111,8 +124,26 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
                 );
               })}
               
-              {/* CRM Menu with Origins/Sub-origins */}
-              <CRMSidebarMenu isExpanded={shouldBeExpanded} onDropdownOpenChange={setDropdownOpen} />
+              {/* CRM Button */}
+              <button
+                onClick={handleCRMClick}
+                className={cn(
+                  "relative flex items-center w-full rounded-xl transition-colors duration-200 px-4 py-3 gap-3",
+                  isCRMActive
+                    ? "bg-white/10 text-white before:absolute before:left-0 before:top-1/2 before:-translate-y-1/2 before:h-[70%] before:w-1 before:rounded-r-full before:bg-gradient-to-b before:from-[#F40000] before:to-[#A10000]"
+                    : "text-white/60 hover:bg-white/5 hover:text-white"
+                )}
+              >
+                <Kanban className="h-5 w-5 flex-shrink-0" strokeWidth={1.5} />
+                <span
+                  className={cn(
+                    "text-sm font-medium whitespace-nowrap transition-opacity duration-200",
+                    shouldBeExpanded ? "opacity-100" : "opacity-0 w-0 overflow-hidden"
+                  )}
+                >
+                  CRM
+                </span>
+              </button>
               
               {/* WhatsApp and other bottom nav items */}
               {bottomNavItems.map((item) => {
@@ -163,6 +194,13 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
         </div>
       </aside>
 
+      {/* CRM Origins Panel - Desktop */}
+      <CRMOriginsPanel 
+        isOpen={crmPanelOpen} 
+        onClose={() => setCrmPanelOpen(false)}
+        sidebarWidth={sidebarWidth}
+      />
+
       {/* Mobile Sidebar */}
       <aside
         className={cn(
@@ -199,8 +237,23 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
                 );
               })}
               
-              {/* CRM Menu with Origins/Sub-origins - Mobile */}
-              <CRMSidebarMenu isExpanded={true} onNavigate={() => setSidebarOpen(false)} />
+              {/* CRM Button - Mobile */}
+              <button
+                onClick={() => {
+                  setCrmPanelOpen(!crmPanelOpen);
+                }}
+                className={cn(
+                  "relative flex items-center w-full rounded-xl transition-colors duration-200 px-4 py-3 gap-3",
+                  isCRMActive
+                    ? "bg-white/10 text-white before:absolute before:left-0 before:top-1/2 before:-translate-y-1/2 before:h-[70%] before:w-1 before:rounded-r-full before:bg-gradient-to-b before:from-[#F40000] before:to-[#A10000]"
+                    : "text-white/60 hover:bg-white/5 hover:text-white"
+                )}
+              >
+                <Kanban className="h-5 w-5 flex-shrink-0" strokeWidth={1.5} />
+                <span className="text-sm font-medium whitespace-nowrap">
+                  CRM
+                </span>
+              </button>
               
               {/* WhatsApp and other bottom nav items - Mobile */}
               {bottomNavItems.map((item) => {
@@ -249,7 +302,7 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
         />
       )}
 
-      {/* Main Content - smooth fade transition */}
+      {/* Main Content */}
       <main className="lg:ml-[88px] pt-14 lg:pt-6 min-h-screen p-4 lg:p-6">
         <PageTransition>
           {children}
