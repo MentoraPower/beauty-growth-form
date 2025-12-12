@@ -3,10 +3,11 @@ import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { Lead } from "@/types/crm";
 import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Mail, Phone } from "lucide-react";
 import Instagram from "@/components/icons/Instagram";
 import { useNavigate } from "react-router-dom";
+import { formatDistanceToNow } from "date-fns";
+import { ptBR } from "date-fns/locale";
 
 interface KanbanCardProps {
   lead: Lead;
@@ -114,10 +115,10 @@ export const KanbanCard = memo(function KanbanCard({ lead, isDragging: isDraggin
           </div>
         </div>
 
-        <div className="flex flex-wrap gap-1 pt-2">
-          <Badge variant="secondary" className="text-xs">
-            {lead.service_area}
-          </Badge>
+        <div className="flex items-center justify-between pt-2 text-[10px] text-muted-foreground">
+          <span>
+            {formatDistanceToNow(new Date(lead.created_at), { addSuffix: true, locale: ptBR })}
+          </span>
         </div>
       </CardContent>
     </Card>
