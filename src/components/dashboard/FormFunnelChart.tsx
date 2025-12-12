@@ -100,14 +100,16 @@ export default function FormFunnelChart({ data }: FormFunnelChartProps) {
                 {step.count}
               </span>
 
-              {/* Label at bottom with trace line and tooltip */}
+              {/* Step number badge at bottom with trace line and tooltip */}
               <div className="flex flex-col items-center">
                 <div className="w-px h-3 bg-gradient-to-t from-muted-foreground/60 to-transparent" />
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <span className="text-[10px] text-muted-foreground text-center cursor-help">
-                      Etapa {index + 1}
-                    </span>
+                    <div className="w-6 h-6 rounded-full bg-gradient-to-br from-[#F40000] to-[#A10000] flex items-center justify-center cursor-help shadow-sm hover:scale-110 transition-transform">
+                      <span className="text-[10px] font-semibold text-white">
+                        {index + 1}
+                      </span>
+                    </div>
                   </TooltipTrigger>
                   <TooltipContent side="bottom" className="text-xs">
                     {step.label}
