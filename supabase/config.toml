@@ -11,3 +11,6 @@ verify_jwt = false
 
 [functions.recalculate-mql]
 verify_jwt = false
+
+[functions.zapi-whatsapp]
+verify_jwt = false
