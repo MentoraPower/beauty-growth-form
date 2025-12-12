@@ -262,7 +262,7 @@ export function CRMSidebarMenu({ isExpanded, onNavigate, onDropdownOpenChange }:
   // Render the origins menu content (reused for both expanded and collapsed states)
   const renderOriginsMenu = (inDropdown: boolean = false) => (
     <div className={cn(
-      "space-y-1 animate-fade-in",
+      "space-y-1",
       inDropdown ? "p-2" : "mt-1 ml-4 pl-3 border-l border-white/10"
     )}>
       {origins.map((origin) => {
@@ -276,7 +276,7 @@ export function CRMSidebarMenu({ isExpanded, onNavigate, onDropdownOpenChange }:
               <button
                 onClick={() => toggleOrigin(origin.id)}
                 className={cn(
-                  "flex items-center gap-2 flex-1 py-2 px-2 rounded-lg transition-colors text-sm",
+                  "flex items-center gap-2 flex-1 py-2 px-2 rounded-lg transition-all duration-200 ease-out text-sm",
                   inDropdown 
                     ? "text-foreground/90 hover:text-foreground hover:bg-muted/50"
                     : "text-white/90 hover:text-white hover:bg-white/5"
@@ -290,7 +290,7 @@ export function CRMSidebarMenu({ isExpanded, onNavigate, onDropdownOpenChange }:
                 <span className="flex-1 text-left truncate font-medium">{origin.nome}</span>
                 <ChevronRight 
                   className={cn(
-                    "h-3 w-3 transition-transform",
+                    "h-3 w-3 transition-transform duration-300 ease-out",
                     inDropdown ? "text-foreground/70" : "text-white/70",
                     isOriginExpanded ? "rotate-90" : ""
                   )} 
@@ -303,7 +303,7 @@ export function CRMSidebarMenu({ isExpanded, onNavigate, onDropdownOpenChange }:
                   <button 
                     onClick={(e) => e.stopPropagation()}
                     className={cn(
-                      "p-1.5 rounded opacity-0 group-hover:opacity-100 transition-all",
+                      "p-1.5 rounded opacity-0 group-hover:opacity-100 transition-all duration-200 ease-out",
                       inDropdown ? "hover:bg-muted" : "hover:bg-white/10"
                     )}
                   >
@@ -330,7 +330,7 @@ export function CRMSidebarMenu({ isExpanded, onNavigate, onDropdownOpenChange }:
             {/* Sub-origins */}
             {isOriginExpanded && (
               <div className={cn(
-                "ml-4 pl-2 space-y-0.5 animate-fade-in",
+                "ml-4 pl-2 space-y-0.5",
                 inDropdown ? "border-l border-border/50" : "border-l border-white/10"
               )}>
                 {originSubOrigins.map((subOrigin) => {
@@ -340,7 +340,7 @@ export function CRMSidebarMenu({ isExpanded, onNavigate, onDropdownOpenChange }:
                     <button
                       onClick={() => handleSubOriginClick(subOrigin.id)}
                       className={cn(
-                        "flex items-center gap-2 flex-1 py-1.5 px-2 rounded-lg transition-colors text-xs",
+                        "flex items-center gap-2 flex-1 py-1.5 px-2 rounded-lg transition-all duration-200 ease-out text-xs",
                         inDropdown
                           ? "text-foreground/80 hover:text-foreground hover:bg-muted/50"
                           : "text-white/80 hover:text-white hover:bg-white/5"
@@ -365,10 +365,10 @@ export function CRMSidebarMenu({ isExpanded, onNavigate, onDropdownOpenChange }:
                       <DropdownMenuTrigger asChild>
                         <button 
                           onClick={(e) => e.stopPropagation()}
-                          className={cn(
-                            "p-1.5 rounded opacity-0 group-hover:opacity-100 transition-all",
-                            inDropdown ? "hover:bg-muted" : "hover:bg-white/10"
-                          )}
+                        className={cn(
+                          "p-1.5 rounded opacity-0 group-hover:opacity-100 transition-all duration-200 ease-out",
+                          inDropdown ? "hover:bg-muted" : "hover:bg-white/10"
+                        )}
                         >
                           <MoreVertical className={cn("h-4 w-4", inDropdown ? "text-foreground/80" : "text-white/80")} />
                         </button>
@@ -396,7 +396,7 @@ export function CRMSidebarMenu({ isExpanded, onNavigate, onDropdownOpenChange }:
                 <button
                   onClick={() => openCreateSubOriginDialog(origin.id)}
                   className={cn(
-                    "flex items-center gap-2 w-full py-1.5 px-2 rounded-lg transition-colors text-xs",
+                    "flex items-center gap-2 w-full py-1.5 px-2 rounded-lg transition-all duration-200 ease-out text-xs",
                     inDropdown
                       ? "text-foreground/60 hover:text-foreground hover:bg-muted/50"
                       : "text-white/60 hover:text-white hover:bg-white/5"
@@ -414,12 +414,12 @@ export function CRMSidebarMenu({ isExpanded, onNavigate, onDropdownOpenChange }:
       {/* Add Origin Button */}
       <button
         onClick={openCreateOriginDialog}
-        className={cn(
-          "flex items-center gap-2 w-full py-2 px-2 rounded-lg transition-colors text-xs",
-          inDropdown
-            ? "text-foreground/70 hover:text-foreground hover:bg-muted/50"
-            : "text-white/70 hover:text-white hover:bg-white/5"
-        )}
+          className={cn(
+            "flex items-center gap-2 w-full py-2 px-2 rounded-lg transition-all duration-200 ease-out text-xs",
+            inDropdown
+              ? "text-foreground/70 hover:text-foreground hover:bg-muted/50"
+              : "text-white/70 hover:text-white hover:bg-white/5"
+          )}
       >
         <Plus className="h-3 w-3" />
         <span>Nova Origem</span>
@@ -443,7 +443,7 @@ export function CRMSidebarMenu({ isExpanded, onNavigate, onDropdownOpenChange }:
                   <button
                     onClick={() => toggleOrigin(origin.id)}
                     className={cn(
-                      "w-9 h-9 rounded-lg flex items-center justify-center transition-colors",
+                      "w-9 h-9 rounded-lg flex items-center justify-center transition-all duration-200 ease-out",
                       isOriginExpanded 
                         ? "bg-white/15 text-white" 
                         : "text-white/70 hover:bg-white/10 hover:text-white"
@@ -463,7 +463,7 @@ export function CRMSidebarMenu({ isExpanded, onNavigate, onDropdownOpenChange }:
 
               {/* Sub-origin Icons when origin is expanded */}
               {isOriginExpanded && (
-                <div className="flex flex-col items-center gap-0.5 mt-0.5 ml-1 pl-1 border-l border-white/20 animate-fade-in">
+                <div className="flex flex-col items-center gap-0.5 mt-0.5 ml-1 pl-1 border-l border-white/20">
                   {originSubOrigins.map((subOrigin) => {
                     const leadCount = leadCounts.find(lc => lc.sub_origin_id === subOrigin.id)?.count || 0;
                     return (
@@ -471,7 +471,7 @@ export function CRMSidebarMenu({ isExpanded, onNavigate, onDropdownOpenChange }:
                         <TooltipTrigger asChild>
                           <button
                             onClick={() => handleSubOriginClick(subOrigin.id)}
-                            className="w-7 h-7 rounded-md flex items-center justify-center text-white/60 hover:bg-white/10 hover:text-white transition-colors relative"
+                            className="w-7 h-7 rounded-md flex items-center justify-center text-white/60 hover:bg-white/10 hover:text-white transition-all duration-200 ease-out relative"
                           >
                             <Kanban className="h-3 w-3" />
                             {leadCount > 0 && (
@@ -518,7 +518,7 @@ export function CRMSidebarMenu({ isExpanded, onNavigate, onDropdownOpenChange }:
               </span>
               <ChevronDown 
                 className={cn(
-                  "h-4 w-4 transition-transform duration-200",
+                  "h-4 w-4 transition-transform duration-300 ease-out",
                   isOpen ? "rotate-180" : ""
                 )} 
               />
@@ -527,18 +527,10 @@ export function CRMSidebarMenu({ isExpanded, onNavigate, onDropdownOpenChange }:
         </button>
 
         {/* Expanded Menu - When sidebar is expanded */}
-        {isOpen && isExpanded && (
-          <div className="animate-fade-in">
-            {renderOriginsMenu(false)}
-          </div>
-        )}
+        {isOpen && isExpanded && renderOriginsMenu(false)}
 
         {/* Collapsed Icons - When sidebar is collapsed and CRM is open */}
-        {isOpen && !isExpanded && (
-          <div className="animate-fade-in">
-            {renderCollapsedIcons()}
-          </div>
-        )}
+        {isOpen && !isExpanded && renderCollapsedIcons()}
       </div>
 
       {/* Create/Edit Dialog */}
