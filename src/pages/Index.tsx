@@ -316,6 +316,20 @@ const Index = () => {
   // Function to save partial lead data progressively (non-blocking)
   const savePartialLead = async (currentFormData: FormData, currentStep: number, sendEmail: boolean = false) => {
     try {
+      // Calculate estimated revenue locally (don't rely on AI analysis)
+      const weeklyAppointments = parseInt(currentFormData.weeklyAppointments) || 0;
+      const avgTicket = currentFormData.averageTicket ? parseCurrency(currentFormData.averageTicket) : 0;
+      const calculatedEstimatedRevenue = weeklyAppointments > 0 && avgTicket > 0 
+        ? weeklyAppointments * 4 * avgTicket 
+        : null;
+
+      // Calculate MQL status locally
+      const SERVICE_COST = 2800;
+      const MIN_REVENUE_RATIO = 0.55;
+      const calculatedIsMQL = calculatedEstimatedRevenue 
+        ? (calculatedEstimatedRevenue * MIN_REVENUE_RATIO) >= SERVICE_COST 
+        : null;
+
       // Build lead data with all required fields (use placeholders for incomplete data)
       const leadData: Record<string, unknown> = {
         name: currentFormData.name || "Incompleto",
@@ -332,7 +346,10 @@ const Index = () => {
         years_experience: currentFormData.yearsOfExperience || "",
         can_afford: currentFormData.canAfford,
         wants_more_info: currentFormData.wantsMoreInfo,
-        estimated_revenue: aiAnalysis?.estimatedRevenue || null,
+        // Use local calculation, fallback to AI analysis if available
+        estimated_revenue: calculatedEstimatedRevenue || aiAnalysis?.estimatedRevenue || null,
+        is_mql: calculatedIsMQL,
+        analysis_created_at: calculatedEstimatedRevenue ? new Date().toISOString() : null,
         utm_source: utmParams.utm_source,
         utm_medium: utmParams.utm_medium,
         utm_campaign: utmParams.utm_campaign,
@@ -371,7 +388,9 @@ const Index = () => {
           years_experience: currentFormData.yearsOfExperience || "",
           can_afford: currentFormData.canAfford,
           wants_more_info: currentFormData.wantsMoreInfo,
-          estimated_revenue: aiAnalysis?.estimatedRevenue || null,
+          estimated_revenue: calculatedEstimatedRevenue || aiAnalysis?.estimatedRevenue || null,
+          is_mql: calculatedIsMQL,
+          analysis_created_at: calculatedEstimatedRevenue ? new Date().toISOString() : null,
           pipeline_id: PIPELINE_NOVO_ID,
           sub_origin_id: SUB_ORIGIN_ENTRADA_ID,
           utm_source: utmParams.utm_source,
@@ -693,13 +712,15 @@ const Index = () => {
       case 7:
         return formData.revenue !== "";
       case 8:
-        return formData.weeklyAppointments.trim().length >= 1;
+        const attendance = parseInt(formData.weeklyAppointments);
+        return formData.weeklyAppointments.trim().length >= 1 && !isNaN(attendance) && attendance > 0;
       case 9:
         return formData.averageTicket.trim().length >= 1 && parseCurrency(formData.averageTicket) > 0;
       case 10:
         return formData.hasPhysicalSpace !== null;
       case 11:
-        return formData.yearsOfExperience.trim().length >= 1;
+        const years = parseInt(formData.yearsOfExperience);
+        return formData.yearsOfExperience.trim().length >= 1 && !isNaN(years) && years >= 0;
       case 12:
         return formData.canAfford !== null;
       default:
