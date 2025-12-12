@@ -130,7 +130,7 @@ function SortableOriginItem({
         
         <button
           onClick={() => toggleOrigin(origin.id)}
-          className="flex items-center gap-2 flex-1 py-2 px-2 rounded-lg transition-all duration-200 ease-out text-sm text-foreground/90 hover:text-foreground hover:bg-muted/50"
+          className="flex items-center gap-2 flex-1 py-2 px-2 rounded-lg transition-all duration-200 ease-out text-sm text-foreground/90 hover:text-foreground hover:bg-muted/50 group-hover:translate-x-4"
         >
           {isOriginExpanded ? (
             <FolderOpen className="h-4 w-4 flex-shrink-0 fill-current text-foreground/90" />
@@ -151,7 +151,7 @@ function SortableOriginItem({
           <DropdownMenuTrigger asChild>
             <button 
               onClick={(e) => e.stopPropagation()}
-              className="p-1.5 rounded opacity-0 group-hover:opacity-100 transition-all duration-200 ease-out hover:bg-muted"
+              className="p-1.5 rounded opacity-0 group-hover:opacity-100 transition-all duration-200 ease-out hover:bg-muted group-hover:translate-x-4"
             >
               <MoreVertical className="h-4 w-4 text-foreground/80" />
             </button>
