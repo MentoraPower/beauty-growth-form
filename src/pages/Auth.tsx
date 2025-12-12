@@ -93,15 +93,9 @@ const Auth = () => {
       <div className="w-full max-w-md">
         {/* Modern Glass Card Container */}
         <div className="relative">
-          {/* Glow Effect */}
-          <div className="absolute -inset-1 bg-gradient-to-r from-[#F40000]/20 to-[#A10000]/20 rounded-3xl blur-xl opacity-50" />
-          
-          <div className="relative bg-neutral-900/80 backdrop-blur-xl border border-white/10 rounded-2xl p-8 shadow-2xl">
-            {/* Logo/Header */}
+          <div className="relative bg-neutral-900/80 backdrop-blur-xl border border-white/10 rounded-2xl p-8">
+            {/* Header */}
             <div className="text-center mb-8">
-              <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-gradient-to-br from-[#F40000] to-[#A10000] mb-4">
-                <Lock className="w-7 h-7 text-white" />
-              </div>
               <h1 className="text-2xl font-semibold text-white tracking-tight">Admin Scale Beauty</h1>
               <p className="text-neutral-400 mt-2 text-sm">Acesse sua conta para continuar</p>
             </div>
