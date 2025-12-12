@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { Kanban, ChevronRight, Folder, FolderOpen, MoreVertical, Plus, Pencil, Trash2, X } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -45,12 +45,19 @@ interface CRMOriginsPanelProps {
   sidebarWidth: number;
 }
 
+// Cache data globally to prevent flickering
+let cachedOrigins: Origin[] = [];
+let cachedSubOrigins: SubOrigin[] = [];
+let cachedLeadCounts: LeadCount[] = [];
+let dataLoaded = false;
+
 export function CRMOriginsPanel({ isOpen, onClose, sidebarWidth }: CRMOriginsPanelProps) {
   const location = useLocation();
   const navigate = useNavigate();
-  const [origins, setOrigins] = useState<Origin[]>([]);
-  const [subOrigins, setSubOrigins] = useState<SubOrigin[]>([]);
-  const [leadCounts, setLeadCounts] = useState<LeadCount[]>([]);
+  const [origins, setOrigins] = useState<Origin[]>(cachedOrigins);
+  const [subOrigins, setSubOrigins] = useState<SubOrigin[]>(cachedSubOrigins);
+  const [leadCounts, setLeadCounts] = useState<LeadCount[]>(cachedLeadCounts);
+  const hasInitialized = useRef(dataLoaded);
   
   const [expandedOrigins, setExpandedOrigins] = useState<Set<string>>(() => {
     const saved = localStorage.getItem('crm_expanded_origins');
@@ -70,11 +77,47 @@ export function CRMOriginsPanel({ isOpen, onClose, sidebarWidth }: CRMOriginsPan
     localStorage.setItem('crm_expanded_origins', JSON.stringify([...expandedOrigins]));
   }, [expandedOrigins]);
 
+  const fetchData = useCallback(async () => {
+    const [originsRes, subOriginsRes, leadsRes] = await Promise.all([
+      supabase.from("crm_origins").select("*").order("ordem"),
+      supabase.from("crm_sub_origins").select("*").order("ordem"),
+      supabase.from("leads").select("sub_origin_id"),
+    ]);
+
+    if (originsRes.data) {
+      cachedOrigins = originsRes.data;
+      setOrigins(originsRes.data);
+    }
+    if (subOriginsRes.data) {
+      cachedSubOrigins = subOriginsRes.data;
+      setSubOrigins(subOriginsRes.data);
+    }
+    
+    if (leadsRes.data) {
+      const counts: Record<string, number> = {};
+      leadsRes.data.forEach((lead) => {
+        if (lead.sub_origin_id) {
+          counts[lead.sub_origin_id] = (counts[lead.sub_origin_id] || 0) + 1;
+        }
+      });
+      const newCounts = Object.entries(counts).map(([sub_origin_id, count]) => ({ sub_origin_id, count }));
+      cachedLeadCounts = newCounts;
+      setLeadCounts(newCounts);
+    }
+    
+    dataLoaded = true;
+    hasInitialized.current = true;
+  }, []);
+
+  // Initial fetch only once
   useEffect(() => {
-    if (isOpen) {
+    if (!hasInitialized.current) {
       fetchData();
     }
+  }, [fetchData]);
 
+  // Real-time subscriptions - only update, don't cause flicker
+  useEffect(() => {
     const originsChannel = supabase
       .channel('crm-origins-panel-changes')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'crm_origins' }, fetchData)
@@ -95,30 +138,7 @@ export function CRMOriginsPanel({ isOpen, onClose, sidebarWidth }: CRMOriginsPan
       supabase.removeChannel(subOriginsChannel);
       supabase.removeChannel(leadsChannel);
     };
-  }, [isOpen]);
-
-  const fetchData = async () => {
-    const [originsRes, subOriginsRes, leadsRes] = await Promise.all([
-      supabase.from("crm_origins").select("*").order("ordem"),
-      supabase.from("crm_sub_origins").select("*").order("ordem"),
-      supabase.from("leads").select("sub_origin_id"),
-    ]);
-
-    if (originsRes.data) setOrigins(originsRes.data);
-    if (subOriginsRes.data) setSubOrigins(subOriginsRes.data);
-    
-    if (leadsRes.data) {
-      const counts: Record<string, number> = {};
-      leadsRes.data.forEach((lead) => {
-        if (lead.sub_origin_id) {
-          counts[lead.sub_origin_id] = (counts[lead.sub_origin_id] || 0) + 1;
-        }
-      });
-      setLeadCounts(
-        Object.entries(counts).map(([sub_origin_id, count]) => ({ sub_origin_id, count }))
-      );
-    }
-  };
+  }, [fetchData]);
 
   const toggleOrigin = (originId: string) => {
     setExpandedOrigins(prev => {
