@@ -262,8 +262,8 @@ export function AutomationsDropdown({ pipelines, subOriginId }: AutomationsDropd
                           }`}
                         >
                           <span
-                            className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow-sm transition-transform ${
-                              automation.is_active ? "translate-x-4" : "translate-x-0.5"
+                            className={`absolute left-0.5 top-0.5 w-4 h-4 rounded-full bg-white shadow-sm transition-transform ${
+                              automation.is_active ? "translate-x-4" : "translate-x-0"
                             }`}
                           />
                         </button>

@@ -608,13 +608,13 @@ export function KanbanBoard() {
                       </div>
                       <button
                         onClick={() => setFilterMQL(filterMQL === "mql" ? "all" : "mql")}
-                        className={`relative w-10 h-5 rounded-full transition-colors ${
+                        className={`relative w-9 h-5 rounded-full transition-colors ${
                           filterMQL === "mql" ? "bg-emerald-500" : "bg-muted"
                         }`}
                       >
                         <span
-                          className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow-sm transition-transform ${
-                            filterMQL === "mql" ? "translate-x-5" : "translate-x-0.5"
+                          className={`absolute left-0.5 top-0.5 w-4 h-4 rounded-full bg-white shadow-sm transition-transform ${
+                            filterMQL === "mql" ? "translate-x-4" : "translate-x-0"
                           }`}
                         />
                       </button>
@@ -628,13 +628,13 @@ export function KanbanBoard() {
                       </div>
                       <button
                         onClick={() => setFilterMQL(filterMQL === "non-mql" ? "all" : "non-mql")}
-                        className={`relative w-10 h-5 rounded-full transition-colors ${
+                        className={`relative w-9 h-5 rounded-full transition-colors ${
                           filterMQL === "non-mql" ? "bg-orange-500" : "bg-muted"
                         }`}
                       >
                         <span
-                          className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow-sm transition-transform ${
-                            filterMQL === "non-mql" ? "translate-x-5" : "translate-x-0.5"
+                          className={`absolute left-0.5 top-0.5 w-4 h-4 rounded-full bg-white shadow-sm transition-transform ${
+                            filterMQL === "non-mql" ? "translate-x-4" : "translate-x-0"
                           }`}
                         />
                       </button>
