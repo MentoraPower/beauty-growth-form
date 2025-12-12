@@ -530,7 +530,7 @@ export function KanbanBoard() {
 
   // Build title based on current sub-origin
   const pageTitle = currentSubOrigin 
-    ? `${currentSubOrigin.crm_origins?.nome} > ${currentSubOrigin.nome}`
+    ? currentSubOrigin.nome
     : "Selecione uma sub-origem";
 
   return (
