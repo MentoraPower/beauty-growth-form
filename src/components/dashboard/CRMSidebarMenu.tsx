@@ -251,6 +251,14 @@ export function CRMSidebarMenu({ isExpanded, onNavigate, onDropdownOpenChange }:
   };
 
   const handleSubOriginClick = (subOriginId: string) => {
+    // Get current origin from URL
+    const currentOrigin = new URLSearchParams(window.location.search).get('origin');
+    
+    // Don't navigate if already on the same sub-origin
+    if (currentOrigin === subOriginId) {
+      return;
+    }
+    
     // Dispatch event to trigger smooth transition before navigation
     window.dispatchEvent(new CustomEvent('suborigin-change'));
     
