@@ -537,16 +537,11 @@ export function KanbanBoard() {
     <div className="flex flex-col h-[calc(100vh-2rem)]">
       {/* Header - all on same line */}
       <div className="flex items-center gap-4 mb-4">
-        {/* Title and Automations - left */}
-        <div className="flex items-center gap-3 flex-shrink-0">
-          <h1 className="text-xl font-bold">{pageTitle}</h1>
-          {subOriginId && (
-            <AutomationsDropdown pipelines={pipelines} subOriginId={subOriginId} />
-          )}
-        </div>
+        {/* Title - left */}
+        <h1 className="text-xl font-bold flex-shrink-0">{pageTitle}</h1>
 
-        {/* Search centered */}
-        <div className="flex-1 flex items-center justify-center gap-3">
+        {/* Search centered with automations icon */}
+        <div className="flex-1 flex items-center justify-center gap-2">
           <div className="relative w-full max-w-md">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <Input
@@ -557,6 +552,9 @@ export function KanbanBoard() {
               className="pl-9 h-9"
             />
           </div>
+          {subOriginId && (
+            <AutomationsDropdown pipelines={pipelines} subOriginId={subOriginId} />
+          )}
 
           {/* Filters - Modern Toggle Style */}
           <DropdownMenu>
