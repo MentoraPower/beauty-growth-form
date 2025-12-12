@@ -556,7 +556,7 @@ export function KanbanBoard() {
             />
           </div>
 
-          {/* Filters - Modern Toggle Style */}
+          {/* Filters - Modern Style */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button 
@@ -576,135 +576,136 @@ export function KanbanBoard() {
                 )}
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="center" className="w-80 bg-popover z-[9999] p-4">
-              {/* MQL Status Section - Modern Toggle */}
-              <div className="space-y-3">
-                <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-                  Status MQL
-                </span>
-                
-                {/* MQL Toggle */}
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between p-3 rounded-lg bg-muted/30 border border-border/50">
-                    <div className="flex items-center gap-2">
-                      <span className="w-2 h-2 rounded-full bg-emerald-500" />
-                      <span className="text-sm font-medium">MQL</span>
-                    </div>
-                    <button
-                      onClick={() => setFilterMQL(filterMQL === "mql" ? "all" : "mql")}
-                      className={`relative w-11 h-6 rounded-full transition-colors ${
-                        filterMQL === "mql" ? "bg-emerald-500" : "bg-muted"
-                      }`}
-                    >
-                      <span
-                        className={`absolute top-1 w-4 h-4 rounded-full bg-white shadow-sm transition-transform ${
-                          filterMQL === "mql" ? "translate-x-6" : "translate-x-1"
-                        }`}
-                      />
-                    </button>
-                  </div>
-                  
-                  <div className="flex items-center justify-between p-3 rounded-lg bg-muted/30 border border-border/50">
-                    <div className="flex items-center gap-2">
-                      <span className="w-2 h-2 rounded-full bg-orange-500" />
-                      <span className="text-sm font-medium">Não MQL</span>
-                    </div>
-                    <button
-                      onClick={() => setFilterMQL(filterMQL === "non-mql" ? "all" : "non-mql")}
-                      className={`relative w-11 h-6 rounded-full transition-colors ${
-                        filterMQL === "non-mql" ? "bg-orange-500" : "bg-muted"
-                      }`}
-                    >
-                      <span
-                        className={`absolute top-1 w-4 h-4 rounded-full bg-white shadow-sm transition-transform ${
-                          filterMQL === "non-mql" ? "translate-x-6" : "translate-x-1"
-                        }`}
-                      />
-                    </button>
-                  </div>
-                </div>
-              </div>
-              
-              {/* Tags Section */}
-              <div className="my-4 border-t border-border" />
-              <div className="space-y-3">
+            <DropdownMenuContent align="center" className="w-72 bg-popover z-[9999] p-0 overflow-hidden">
+              {/* Header */}
+              <div className="px-4 py-3 border-b border-border bg-muted/30">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-                    Tags
-                  </span>
-                  {filterTags.length > 0 && (
+                  <span className="text-sm font-semibold">Filtros</span>
+                  {hasActiveFilters && (
                     <button 
-                      onClick={() => setFilterTags([])}
-                      className="text-[10px] text-muted-foreground hover:text-foreground transition-colors"
+                      onClick={clearFilters}
+                      className="text-xs text-muted-foreground hover:text-foreground transition-colors"
                     >
-                      Limpar
+                      Limpar tudo
                     </button>
                   )}
                 </div>
-                
-                {/* Selected Tags */}
-                {filterTags.length > 0 && (
-                  <div className="flex flex-wrap gap-1.5 mb-2">
-                    {filterTags.map((tagName) => {
-                      const tag = allTags.find(t => t.name === tagName);
-                      return (
-                        <span
-                          key={tagName}
-                          className="flex items-center gap-1 py-1 px-2 rounded-md text-xs text-white"
-                          style={{ backgroundColor: tag?.color || "#6366f1" }}
-                        >
-                          {tagName}
-                          <button
-                            onClick={() => setFilterTags(filterTags.filter(t => t !== tagName))}
-                            className="hover:bg-white/20 rounded p-0.5"
-                          >
-                            <X className="w-3 h-3" />
-                          </button>
-                        </span>
-                      );
-                    })}
-                  </div>
-                )}
-                
-                {/* Available Tags List */}
-                {allTags.length > 0 ? (
-                  <div className="max-h-32 overflow-y-auto space-y-1">
-                    {allTags.filter(tag => !filterTags.includes(tag.name)).map((tag) => (
-                      <button
-                        key={tag.name}
-                        onClick={() => setFilterTags([...filterTags, tag.name])}
-                        className="w-full flex items-center gap-2 p-2 rounded-lg text-sm hover:bg-muted/50 transition-colors text-left"
-                      >
-                        <span 
-                          className="w-3 h-3 rounded-full flex-shrink-0" 
-                          style={{ backgroundColor: tag.color }}
-                        />
-                        <span className="truncate">{tag.name}</span>
-                      </button>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-xs text-muted-foreground text-center py-2">
-                    Nenhuma tag disponível
-                  </p>
-                )}
               </div>
 
-              {/* Clear All Button */}
-              {hasActiveFilters && (
-                <>
-                  <div className="my-4 border-t border-border" />
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="w-full h-8 text-xs"
-                    onClick={clearFilters}
-                  >
-                    <X className="w-3 h-3 mr-1.5" />
-                    Limpar todos os filtros
-                  </Button>
-                </>
-              )}
+              <div className="p-3 space-y-4">
+                {/* MQL Status Section */}
+                <div className="space-y-2">
+                  <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">
+                    Qualificação
+                  </span>
+                  
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      onClick={() => setFilterMQL(filterMQL === "mql" ? "all" : "mql")}
+                      className={`flex items-center gap-2 p-2.5 rounded-lg text-xs font-medium transition-all border ${
+                        filterMQL === "mql"
+                          ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/50"
+                          : "bg-background text-muted-foreground border-border hover:border-emerald-500/30 hover:bg-emerald-500/5"
+                      }`}
+                    >
+                      <div className={`w-5 h-5 rounded-full flex items-center justify-center ${
+                        filterMQL === "mql" ? "bg-emerald-500" : "bg-muted"
+                      }`}>
+                        {filterMQL === "mql" && (
+                          <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                          </svg>
+                        )}
+                      </div>
+                      MQL
+                    </button>
+                    
+                    <button
+                      onClick={() => setFilterMQL(filterMQL === "non-mql" ? "all" : "non-mql")}
+                      className={`flex items-center gap-2 p-2.5 rounded-lg text-xs font-medium transition-all border ${
+                        filterMQL === "non-mql"
+                          ? "bg-orange-500/10 text-orange-600 border-orange-500/50"
+                          : "bg-background text-muted-foreground border-border hover:border-orange-500/30 hover:bg-orange-500/5"
+                      }`}
+                    >
+                      <div className={`w-5 h-5 rounded-full flex items-center justify-center ${
+                        filterMQL === "non-mql" ? "bg-orange-500" : "bg-muted"
+                      }`}>
+                        {filterMQL === "non-mql" && (
+                          <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                          </svg>
+                        )}
+                      </div>
+                      Não MQL
+                    </button>
+                  </div>
+                </div>
+                
+                {/* Tags Section */}
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">
+                      Tags
+                    </span>
+                    {filterTags.length > 0 && (
+                      <button 
+                        onClick={() => setFilterTags([])}
+                        className="text-[10px] text-muted-foreground hover:text-foreground transition-colors"
+                      >
+                        Limpar
+                      </button>
+                    )}
+                  </div>
+                  
+                  {/* Selected Tags */}
+                  {filterTags.length > 0 && (
+                    <div className="flex flex-wrap gap-1.5 p-2 bg-muted/20 rounded-lg border border-border/50">
+                      {filterTags.map((tagName) => {
+                        const tag = allTags.find(t => t.name === tagName);
+                        return (
+                          <span
+                            key={tagName}
+                            className="inline-flex items-center gap-1 py-0.5 px-2 rounded text-[11px] text-white"
+                            style={{ backgroundColor: tag?.color || "#6366f1" }}
+                          >
+                            {tagName}
+                            <button
+                              onClick={() => setFilterTags(filterTags.filter(t => t !== tagName))}
+                              className="hover:bg-white/20 rounded-sm"
+                            >
+                              <X className="w-3 h-3" />
+                            </button>
+                          </span>
+                        );
+                      })}
+                    </div>
+                  )}
+                  
+                  {/* Available Tags */}
+                  {allTags.length > 0 ? (
+                    <div className="max-h-28 overflow-y-auto rounded-lg border border-border/50 divide-y divide-border/30">
+                      {allTags.filter(tag => !filterTags.includes(tag.name)).map((tag) => (
+                        <button
+                          key={tag.name}
+                          onClick={() => setFilterTags([...filterTags, tag.name])}
+                          className="w-full flex items-center gap-2.5 px-3 py-2 text-xs hover:bg-muted/50 transition-colors text-left"
+                        >
+                          <span 
+                            className="w-2.5 h-2.5 rounded-full flex-shrink-0 ring-2 ring-white/50" 
+                            style={{ backgroundColor: tag.color }}
+                          />
+                          <span className="truncate text-foreground">{tag.name}</span>
+                        </button>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-center py-4 text-xs text-muted-foreground bg-muted/20 rounded-lg border border-dashed border-border/50">
+                      Nenhuma tag disponível
+                    </div>
+                  )}
+                </div>
+              </div>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
