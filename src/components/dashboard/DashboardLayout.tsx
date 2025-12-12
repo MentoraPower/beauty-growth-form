@@ -22,10 +22,13 @@ const bottomNavItems = [
 // Global hover state to persist across navigations
 let globalHoverState = false;
 
+// Global panel state to persist across re-renders
+let globalCrmPanelOpen = false;
+
 const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isHovered, setIsHovered] = useState(globalHoverState);
-  const [crmPanelOpen, setCrmPanelOpen] = useState(false);
+  const [crmPanelOpen, setCrmPanelOpen] = useState(globalCrmPanelOpen);
   const location = useLocation();
 
   const isCRMActive = location.pathname.startsWith("/admin/crm");
@@ -35,16 +38,10 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
     setIsHovered(globalHoverState);
   }, [location.pathname]);
 
-  // Auto-open panel when navigating to CRM from elsewhere
+  // Keep global state in sync
   useEffect(() => {
-    if (isCRMActive && !crmPanelOpen) {
-      // Check if we just arrived at CRM (panel was closed but we're now on CRM)
-      const wasOnCRM = location.pathname.startsWith("/admin/crm");
-      if (wasOnCRM) {
-        setCrmPanelOpen(true);
-      }
-    }
-  }, [location.pathname]);
+    globalCrmPanelOpen = crmPanelOpen;
+  }, [crmPanelOpen]);
 
   const handleMouseEnter = useCallback(() => {
     globalHoverState = true;
