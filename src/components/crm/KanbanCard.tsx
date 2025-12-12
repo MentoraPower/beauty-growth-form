@@ -11,9 +11,10 @@ import { useNavigate } from "react-router-dom";
 interface KanbanCardProps {
   lead: Lead;
   isDragging?: boolean;
+  subOriginId?: string | null;
 }
 
-export const KanbanCard = memo(function KanbanCard({ lead, isDragging: isDraggingOverlay }: KanbanCardProps) {
+export const KanbanCard = memo(function KanbanCard({ lead, isDragging: isDraggingOverlay, subOriginId }: KanbanCardProps) {
   const navigate = useNavigate();
   const dragStartPos = useRef<{ x: number; y: number } | null>(null);
   const wasDragged = useRef(false);
@@ -61,7 +62,10 @@ export const KanbanCard = memo(function KanbanCard({ lead, isDragging: isDraggin
   const handleClick = (e: React.MouseEvent) => {
     if (!wasDragged.current && !isDragging) {
       e.stopPropagation();
-      navigate(`/admin/crm/${lead.id}`);
+      const url = subOriginId 
+        ? `/admin/crm/${lead.id}?origin=${subOriginId}` 
+        : `/admin/crm/${lead.id}`;
+      navigate(url);
     }
     dragStartPos.current = null;
     wasDragged.current = false;

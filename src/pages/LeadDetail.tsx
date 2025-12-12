@@ -1,4 +1,4 @@
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
@@ -76,6 +76,8 @@ const tabs = [
 export default function LeadDetail() {
   const { isLoading: authLoading } = useAuth("/auth");
   const { id } = useParams<{ id: string }>();
+  const [searchParams] = useSearchParams();
+  const subOriginId = searchParams.get("origin");
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [lead, setLead] = useState<LeadData | null>(null);
@@ -106,12 +108,12 @@ export default function LeadDetail() {
 
       if (error) {
         console.error("Error fetching lead:", error);
-        navigate("/admin/crm");
+        navigate(subOriginId ? `/admin/crm?origin=${subOriginId}` : "/admin/crm");
         return;
       }
 
       if (!data) {
-        navigate("/admin/crm");
+        navigate(subOriginId ? `/admin/crm?origin=${subOriginId}` : "/admin/crm");
         return;
       }
 
@@ -162,7 +164,7 @@ export default function LeadDetail() {
     }
 
     toast.success("Lead excluído com sucesso");
-    navigate("/admin/crm");
+    navigate(subOriginId ? `/admin/crm?origin=${subOriginId}` : "/admin/crm");
   };
 
   const formatCurrency = (value: number | null) => {
@@ -224,7 +226,7 @@ export default function LeadDetail() {
         {/* Breadcrumb Navigation */}
         <div className="flex items-center gap-2 text-sm">
           <button
-            onClick={() => navigate("/admin/crm")}
+            onClick={() => navigate(subOriginId ? `/admin/crm?origin=${subOriginId}` : "/admin/crm")}
             className="text-muted-foreground hover:text-foreground transition-colors"
           >
             Lista Geral
