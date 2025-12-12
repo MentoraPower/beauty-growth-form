@@ -428,7 +428,7 @@ export function KanbanBoard() {
     : "Selecione uma sub-origem";
 
   return (
-    <div className={`flex flex-col h-[calc(100vh-4rem)] transition-opacity duration-150 ${isTransitioning ? 'opacity-0' : 'opacity-100'}`}>
+    <div className={`flex flex-col h-[calc(100vh-2rem)] transition-opacity duration-150 ${isTransitioning ? 'opacity-0' : 'opacity-100'}`}>
       <div className="flex items-center justify-between mb-4">
         <div className="transition-all duration-150">
           <h1 className="text-2xl font-bold">{pageTitle}</h1>
