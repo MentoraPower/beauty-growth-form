@@ -290,7 +290,7 @@ export function CRMSidebarMenu({ isExpanded, onNavigate, onDropdownOpenChange }:
                 <span className="flex-1 text-left truncate font-medium">{origin.nome}</span>
                 <ChevronRight 
                   className={cn(
-                    "h-3 w-3 transition-transform duration-500 ease-out",
+                    "h-3 w-3 transition-transform duration-700 ease-[cubic-bezier(0.4,0,0.2,1)]",
                     inDropdown ? "text-foreground/70" : "text-white/70",
                     isOriginExpanded ? "rotate-90" : ""
                   )} 
@@ -329,7 +329,7 @@ export function CRMSidebarMenu({ isExpanded, onNavigate, onDropdownOpenChange }:
 
             {/* Sub-origins with smooth height transition */}
             <div 
-              className="grid transition-[grid-template-rows] duration-500 ease-out"
+              className="grid transition-[grid-template-rows] duration-700 ease-[cubic-bezier(0.4,0,0.2,1)]"
               style={{ gridTemplateRows: isOriginExpanded ? '1fr' : '0fr' }}
             >
               <div className="overflow-hidden">
@@ -468,7 +468,7 @@ export function CRMSidebarMenu({ isExpanded, onNavigate, onDropdownOpenChange }:
 
               {/* Sub-origin Icons with smooth height transition */}
               <div 
-                className="grid transition-[grid-template-rows] duration-500 ease-out"
+                className="grid transition-[grid-template-rows] duration-700 ease-[cubic-bezier(0.4,0,0.2,1)]"
                 style={{ gridTemplateRows: isOriginExpanded ? '1fr' : '0fr' }}
               >
                 <div className="overflow-hidden">
@@ -528,7 +528,7 @@ export function CRMSidebarMenu({ isExpanded, onNavigate, onDropdownOpenChange }:
               </span>
               <ChevronDown 
                 className={cn(
-                  "h-4 w-4 transition-transform duration-500 ease-out",
+                  "h-4 w-4 transition-transform duration-700 ease-[cubic-bezier(0.4,0,0.2,1)]",
                   isOpen ? "rotate-180" : ""
                 )} 
               />
@@ -539,7 +539,7 @@ export function CRMSidebarMenu({ isExpanded, onNavigate, onDropdownOpenChange }:
         {/* Expanded Menu - When sidebar is expanded */}
         {isExpanded && (
           <div 
-            className="grid transition-[grid-template-rows] duration-500 ease-out"
+            className="grid transition-[grid-template-rows] duration-700 ease-[cubic-bezier(0.4,0,0.2,1)]"
             style={{ gridTemplateRows: isOpen ? '1fr' : '0fr' }}
           >
             <div className="overflow-hidden">
@@ -551,7 +551,7 @@ export function CRMSidebarMenu({ isExpanded, onNavigate, onDropdownOpenChange }:
         {/* Collapsed Icons - When sidebar is collapsed */}
         {!isExpanded && (
           <div 
-            className="grid transition-[grid-template-rows] duration-500 ease-out"
+            className="grid transition-[grid-template-rows] duration-700 ease-[cubic-bezier(0.4,0,0.2,1)]"
             style={{ gridTemplateRows: isOpen ? '1fr' : '0fr' }}
           >
             <div className="overflow-hidden">
