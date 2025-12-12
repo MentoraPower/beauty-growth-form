@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect, memo } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { LayoutDashboard, Menu, X, LogOut } from "lucide-react";
+import { LayoutDashboard, Menu, X, LogOut, MessageCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import scaleLogo from "@/assets/scale-logo.png";
 import { CRMSidebarMenu } from "./CRMSidebarMenu";
@@ -12,6 +12,10 @@ interface DashboardLayoutProps {
 
 const navItems = [
   { href: "/admin", icon: LayoutDashboard, label: "Dashboard" },
+];
+
+const bottomNavItems = [
+  { href: "/admin/whatsapp", icon: MessageCircle, label: "WhatsApp" },
 ];
 
 // Global hover state to persist across navigations
@@ -108,6 +112,33 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
               
               {/* CRM Menu with Origins/Sub-origins */}
               <CRMSidebarMenu isExpanded={shouldBeExpanded} onDropdownOpenChange={setDropdownOpen} />
+              
+              {/* WhatsApp and other bottom nav items */}
+              {bottomNavItems.map((item) => {
+                const isActive = location.pathname === item.href;
+                return (
+                  <Link
+                    key={item.href}
+                    to={item.href}
+                    className={cn(
+                      "relative flex items-center w-full rounded-xl transition-colors duration-200 px-4 py-3 gap-3",
+                      isActive
+                        ? "bg-white/10 text-white before:absolute before:left-0 before:top-1/2 before:-translate-y-1/2 before:h-[70%] before:w-1 before:rounded-r-full before:bg-gradient-to-b before:from-[#F40000] before:to-[#A10000]"
+                        : "text-white/60 hover:bg-white/5 hover:text-white"
+                    )}
+                  >
+                    <item.icon className="h-5 w-5 flex-shrink-0" strokeWidth={1.5} />
+                    <span
+                      className={cn(
+                        "text-sm font-medium whitespace-nowrap transition-opacity duration-200",
+                        shouldBeExpanded ? "opacity-100" : "opacity-0 w-0 overflow-hidden"
+                      )}
+                    >
+                      {item.label}
+                    </span>
+                  </Link>
+                );
+              })}
             </div>
           </nav>
 
@@ -169,6 +200,29 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
               
               {/* CRM Menu with Origins/Sub-origins - Mobile */}
               <CRMSidebarMenu isExpanded={true} onNavigate={() => setSidebarOpen(false)} />
+              
+              {/* WhatsApp and other bottom nav items - Mobile */}
+              {bottomNavItems.map((item) => {
+                const isActive = location.pathname === item.href;
+                return (
+                  <Link
+                    key={item.href}
+                    to={item.href}
+                    onClick={() => setSidebarOpen(false)}
+                    className={cn(
+                      "relative flex items-center w-full rounded-xl transition-colors duration-200 px-4 py-3 gap-3",
+                      isActive
+                        ? "bg-white/10 text-white before:absolute before:left-0 before:top-1/2 before:-translate-y-1/2 before:h-[70%] before:w-1 before:rounded-r-full before:bg-gradient-to-b before:from-[#F40000] before:to-[#A10000]"
+                        : "text-white/60 hover:bg-white/5 hover:text-white"
+                    )}
+                  >
+                    <item.icon className="h-5 w-5 flex-shrink-0" strokeWidth={1.5} />
+                    <span className="text-sm font-medium whitespace-nowrap">
+                      {item.label}
+                    </span>
+                  </Link>
+                );
+              })}
             </div>
           </nav>
 
