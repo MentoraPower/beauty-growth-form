@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Users, TrendingUp, ShoppingCart, DollarSign } from "lucide-react";
@@ -42,6 +43,7 @@ interface Sale {
 }
 
 const Dashboard = () => {
+  const { isLoading: authLoading } = useAuth("/auth");
   const [leads, setLeads] = useState<Lead[]>([]);
   const [sales, setSales] = useState<Sale[]>([]);
   const [pageViews, setPageViews] = useState(0);
