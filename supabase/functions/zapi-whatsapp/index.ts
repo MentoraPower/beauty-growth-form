@@ -95,11 +95,19 @@ const handler = async (req: Request): Promise<Response> => {
         
         console.log(`Total items fetched: ${allChats.length}`);
         
-        // FILTER: Only chats that have actual messages (lastMessageText exists and is not empty)
+        // Log sample to see actual structure
+        if (allChats.length > 0) {
+          console.log(`Sample chat structure: ${JSON.stringify(allChats[0])}`);
+        }
+        
+        // FILTER: Only chats that have actual messages
+        // Check multiple possible field names for last message
         const chatsWithMessages = allChats.filter((chat: any) => {
-          const hasMessage = chat.lastMessageText && chat.lastMessageText.trim() !== "";
-          const hasPhone = chat.phone && !chat.phone.includes("status@broadcast");
-          return hasMessage && hasPhone;
+          const lastMsg = chat.lastMessageText || chat.lastMessage || chat.message || "";
+          const hasMessage = lastMsg && String(lastMsg).trim() !== "";
+          const phone = chat.phone || chat.id?.replace("@c.us", "").replace("@g.us", "");
+          const hasValidPhone = phone && !phone.includes("status@broadcast") && !phone.includes("lid:");
+          return hasMessage && hasValidPhone;
         });
         
         console.log(`Chats with messages: ${chatsWithMessages.length}`);
