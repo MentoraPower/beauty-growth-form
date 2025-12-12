@@ -43,8 +43,14 @@ export const KanbanColumn = memo(function KanbanColumn({ pipeline, leads, isOver
             strategy={verticalListSortingStrategy}
           >
             <div className="space-y-2 pb-12">
-              {leads.map((lead) => (
-                <KanbanCard key={lead.id} lead={lead} subOriginId={subOriginId} />
+              {leads.map((lead, index) => (
+                <div 
+                  key={lead.id} 
+                  className="animate-in fade-in slide-in-from-bottom-2 duration-200"
+                  style={{ animationDelay: `${index * 30}ms` }}
+                >
+                  <KanbanCard lead={lead} subOriginId={subOriginId} />
+                </div>
               ))}
               {leads.length === 0 && (
                 <div className={`text-center text-sm py-8 rounded-lg border-2 border-dashed transition-colors ${

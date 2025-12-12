@@ -36,7 +36,7 @@ export const KanbanCard = memo(function KanbanCard({ lead, isDragging: isDraggin
 
   const style: React.CSSProperties = {
     transform: CSS.Transform.toString(transform),
-    transition: transition || 'transform 200ms cubic-bezier(0.25, 1, 0.5, 1)',
+    transition: transition || 'transform 200ms cubic-bezier(0.25, 1, 0.5, 1), opacity 200ms ease-out',
     border: '1px solid #00000020',
     opacity: isDragging ? 0 : 1,
   };
