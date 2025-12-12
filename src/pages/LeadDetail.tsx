@@ -77,8 +77,9 @@ const tabs = [
 export default function LeadDetail() {
   const { isLoading: authLoading } = useAuth("/auth");
   const { id } = useParams<{ id: string }>();
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const subOriginId = searchParams.get("origin");
+  const tabParam = searchParams.get("tab");
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [lead, setLead] = useState<LeadData | null>(null);
@@ -86,7 +87,17 @@ export default function LeadDetail() {
   const [isLoading, setIsLoading] = useState(true);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
-  const [activeTab, setActiveTab] = useState("atividades");
+  
+  // Use URL param for tab persistence, default to "atividades"
+  const activeTab = tabParam && ["atividades", "contato", "rastreamento"].includes(tabParam) 
+    ? tabParam 
+    : "atividades";
+
+  const setActiveTab = (tab: string) => {
+    const newParams = new URLSearchParams(searchParams);
+    newParams.set("tab", tab);
+    setSearchParams(newParams, { replace: true });
+  };
 
   useEffect(() => {
     const fetchLead = async () => {
