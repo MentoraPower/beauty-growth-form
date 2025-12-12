@@ -530,7 +530,7 @@ export function KanbanBoard() {
 
   // Build title based on current sub-origin
   const pageTitle = currentSubOrigin 
-    ? `${currentSubOrigin.crm_origins?.nome} / ${currentSubOrigin.nome}`
+    ? `${currentSubOrigin.crm_origins?.nome} > ${currentSubOrigin.nome}`
     : "Selecione uma sub-origem";
 
   return (
@@ -538,7 +538,7 @@ export function KanbanBoard() {
       {/* Header - all on same line */}
       <div className="flex items-center gap-4 mb-4">
         {/* Title - left */}
-        <h1 className="text-xl font-bold flex-shrink-0">{pageTitle}</h1>
+        <h1 className="text-xl font-light flex-shrink-0">{pageTitle}</h1>
 
         {/* Search centered with filters */}
         <div className="flex-1 flex items-center justify-center gap-2">
