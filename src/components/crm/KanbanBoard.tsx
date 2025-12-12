@@ -95,6 +95,21 @@ export function KanbanBoard() {
     staleTime: 30000,
   });
 
+  // Fetch automations for pipeline transfers
+  const { data: automations = [] } = useQuery({
+    queryKey: ["pipeline-automations"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("pipeline_automations")
+        .select("*")
+        .eq("is_active", true);
+
+      if (error) throw error;
+      return data || [];
+    },
+    staleTime: 30000,
+  });
+
   // Fetch current sub-origin name for display
   const { data: currentSubOrigin } = useQuery({
     queryKey: ["sub-origin", subOriginId],
@@ -267,6 +282,44 @@ export function KanbanBoard() {
 
       // Different pipeline - move lead and position it
       if (newPipelineId !== activeLead.pipeline_id) {
+        // Check for automation on this pipeline
+        const automation = automations.find(
+          (a) => a.pipeline_id === newPipelineId && a.is_active
+        );
+
+        // If automation exists and has target sub_origin, transfer the lead
+        if (automation && automation.target_sub_origin_id && automation.target_pipeline_id) {
+          // Remove lead from local state immediately (optimistic)
+          setLocalLeads((prev) => prev.filter((l) => l.id !== activeId));
+
+          try {
+            // Transfer lead to target sub-origin and pipeline
+            const { error } = await supabase
+              .from("leads")
+              .update({
+                sub_origin_id: automation.target_sub_origin_id,
+                pipeline_id: automation.target_pipeline_id,
+                ordem: 0,
+              })
+              .eq("id", activeId);
+
+            if (error) throw error;
+
+            // Invalidate queries for both origins to refresh data
+            queryClient.invalidateQueries({ queryKey: ["crm-leads", subOriginId] });
+            queryClient.invalidateQueries({ queryKey: ["crm-leads", automation.target_sub_origin_id] });
+
+            toast.success("Lead transferido automaticamente!");
+          } catch (error) {
+            // Revert optimistic update
+            setLocalLeads((prev) => [...prev, activeLead]);
+            console.error("Erro ao transferir lead:", error);
+            toast.error("Erro ao transferir lead");
+          }
+          return;
+        }
+
+        // No automation - normal pipeline move
         const targetPipelineLeads = localLeads
           .filter((l) => l.pipeline_id === newPipelineId)
           .sort((a, b) => (a.ordem ?? 0) - (b.ordem ?? 0));
@@ -334,7 +387,7 @@ export function KanbanBoard() {
         }
       }
     },
-    [localLeads, pipelines, queryClient, subOriginId]
+    [localLeads, pipelines, automations, queryClient, subOriginId]
   );
 
   const handleDragCancel = useCallback(() => {
