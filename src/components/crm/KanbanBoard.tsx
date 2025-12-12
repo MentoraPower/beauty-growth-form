@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo, lazy, Suspense } from "react";
+import { useState, useEffect, useCallback, useMemo, lazy, Suspense, useRef } from "react";
 import {
   DndContext,
   DragEndEvent,
@@ -128,15 +128,27 @@ export function KanbanBoard() {
       if (error) throw error;
       return data as Lead[];
     },
-    staleTime: 0,
+    staleTime: 5000,
     refetchOnMount: true,
-    refetchOnWindowFocus: true,
+    refetchOnWindowFocus: false,
   });
 
-  // Sync local state with fetched data - using dataUpdatedAt to detect changes
+  // Track previous dataUpdatedAt to prevent unnecessary updates
+  const prevDataUpdatedAtRef = useRef(dataUpdatedAt);
+
+  // Sync local state with fetched data - only when data actually changes
   useEffect(() => {
-    setLocalLeads(leads);
-  }, [leads, dataUpdatedAt]);
+    if (dataUpdatedAt !== prevDataUpdatedAtRef.current || leads !== localLeads) {
+      prevDataUpdatedAtRef.current = dataUpdatedAt;
+      setLocalLeads(leads);
+    }
+  }, [dataUpdatedAt]);
+  
+  // Reset local leads when subOriginId changes
+  useEffect(() => {
+    setLocalLeads([]);
+    prevDataUpdatedAtRef.current = 0;
+  }, [subOriginId]);
 
   // Real-time subscription
   useEffect(() => {
