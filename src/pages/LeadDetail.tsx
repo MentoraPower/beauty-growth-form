@@ -425,6 +425,16 @@ export default function LeadDetail() {
                   <div className="grid grid-cols-2 gap-4">
                     <div className="p-3 bg-muted/30 border border-[#00000010] rounded-lg">
                       <div className="flex items-center gap-2 mb-1">
+                        <Briefcase className="h-4 w-4 text-muted-foreground" />
+                        <p className="text-xs text-muted-foreground">Área de Atuação</p>
+                      </div>
+                      <p className={`text-sm font-medium ${!lead.service_area ? "text-muted-foreground italic" : ""}`}>
+                        {displayValue(lead.service_area)}
+                      </p>
+                    </div>
+
+                    <div className="p-3 bg-muted/30 border border-[#00000010] rounded-lg">
+                      <div className="flex items-center gap-2 mb-1">
                         <DollarSign className="h-4 w-4 text-muted-foreground" />
                         <p className="text-xs text-muted-foreground">Faturamento Mensal</p>
                       </div>
@@ -482,23 +492,24 @@ export default function LeadDetail() {
                         {formatCurrency(lead.estimated_revenue)}
                       </p>
                     </div>
+
+                    <div className="p-3 bg-muted/30 border border-[#00000010] rounded-lg">
+                      <div className="flex items-center gap-2 mb-1">
+                        <DollarSign className="h-4 w-4 text-muted-foreground" />
+                        <p className="text-xs text-muted-foreground">Capacidade de Investimento</p>
+                      </div>
+                      <p className={`text-sm font-medium ${!lead.can_afford ? "text-muted-foreground italic" : ""}`}>
+                        {lead.can_afford === "yes" ? "Sim, pode investir" : lead.can_afford === "no" ? "Não no momento" : "incompleto"}
+                      </p>
+                    </div>
                   </div>
 
-                  {/* Affordability Status */}
-                  {lead.can_afford && (
+                  {/* Wants More Info */}
+                  {lead.wants_more_info && (
                     <div className="p-4 bg-muted/30 border border-[#00000010] rounded-lg">
-                      <p className="text-xs text-muted-foreground mb-2">Capacidade de Investimento</p>
-                      <Badge 
-                        variant={lead.can_afford === "yes" ? "default" : "secondary"}
-                        className={lead.can_afford === "yes" ? "bg-green-500" : ""}
-                      >
-                        {lead.can_afford === "yes" ? "Pode Investir" : "Não no Momento"}
+                      <Badge variant="secondary">
+                        Solicitou mais informações sobre investimento
                       </Badge>
-                      {lead.wants_more_info && (
-                        <p className="text-xs text-muted-foreground mt-2">
-                          Solicitou mais informações
-                        </p>
-                      )}
                     </div>
                   )}
                 </CardContent>
