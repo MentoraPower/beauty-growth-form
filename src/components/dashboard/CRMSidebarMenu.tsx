@@ -254,11 +254,9 @@ export function CRMSidebarMenu({ isExpanded, onNavigate, onDropdownOpenChange }:
     // Dispatch event to trigger smooth transition before navigation
     window.dispatchEvent(new CustomEvent('suborigin-change'));
     
-    // Small delay to allow fade-out, then navigate
-    setTimeout(() => {
-      navigate(`/admin/crm?origin=${subOriginId}`);
-      onNavigate?.();
-    }, 50);
+    // Navigate immediately for snappier feel
+    navigate(`/admin/crm?origin=${subOriginId}`);
+    onNavigate?.();
   };
 
   // Render the origins menu content (reused for both expanded and collapsed states)
