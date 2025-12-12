@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { Phone, PhoneOff, Mic, MicOff, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-type CallStatus = "idle" | "calling" | "ringing" | "connected" | "ended";
+type CallStatus = "idle" | "calling" | "ringing" | "connected" | "ended" | "error";
 
 interface CallModalProps {
   isOpen: boolean;
@@ -24,6 +24,7 @@ const CallModal = ({
   const [callStatus, setCallStatus] = useState<CallStatus>("idle");
   const [isMuted, setIsMuted] = useState(false);
   const [callDuration, setCallDuration] = useState(0);
+  const [errorMessage, setErrorMessage] = useState<string>("");
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
   const formatDuration = (seconds: number): string => {
@@ -43,6 +44,7 @@ const CallModal = ({
 
   const startCall = async () => {
     setCallStatus("calling");
+    setErrorMessage("");
     try {
       await onInitiateCall();
       setCallStatus("ringing");
@@ -50,11 +52,14 @@ const CallModal = ({
       setTimeout(() => {
         setCallStatus("connected");
       }, 3000);
-    } catch (error) {
-      setCallStatus("ended");
-      setTimeout(() => {
-        onClose();
-      }, 2000);
+    } catch (error: any) {
+      const msg = error?.message || "";
+      if (msg.includes("unverified") || msg.includes("Trial accounts")) {
+        setErrorMessage("Conta Twilio em modo trial. Apenas números verificados podem receber chamadas.");
+      } else {
+        setErrorMessage("Erro ao iniciar chamada. Tente novamente.");
+      }
+      setCallStatus("error");
     }
   };
 
@@ -100,6 +105,7 @@ const CallModal = ({
       setCallStatus("idle");
       setIsMuted(false);
       setCallDuration(0);
+      setErrorMessage("");
       if (timerRef.current) {
         clearInterval(timerRef.current);
       }
@@ -118,6 +124,8 @@ const CallModal = ({
         return formatDuration(callDuration);
       case "ended":
         return "Chamada encerrada";
+      case "error":
+        return "Erro na chamada";
       default:
         return "";
     }
@@ -127,6 +135,28 @@ const CallModal = ({
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
       <div className="bg-card rounded-2xl shadow-2xl w-[320px] overflow-hidden">
         {/* Header */}
+        {callStatus === "error" ? (
+          <div className="bg-gradient-to-br from-red-500 to-red-600 p-6 text-center text-white">
+            <button
+              onClick={onClose}
+              className="absolute top-4 right-4 p-1 hover:bg-white/20 rounded-full transition-colors"
+            >
+              <X className="w-5 h-5" />
+            </button>
+            <div className="w-16 h-16 rounded-full bg-white/20 flex items-center justify-center mx-auto mb-4">
+              <PhoneOff className="w-8 h-8" />
+            </div>
+            <h3 className="text-lg font-semibold mb-2">Erro na Chamada</h3>
+            <p className="text-sm text-white/90 leading-relaxed">{errorMessage}</p>
+            <button
+              onClick={onClose}
+              className="mt-4 px-6 py-2 bg-white/20 hover:bg-white/30 rounded-lg text-sm font-medium transition-colors"
+            >
+              Fechar
+            </button>
+          </div>
+        ) : (
+          <>
         <div className="bg-gradient-to-br from-emerald-500 to-emerald-600 p-6 text-center text-white">
           <button
             onClick={endCall}
@@ -165,57 +195,61 @@ const CallModal = ({
             )}
             <span className="text-sm font-medium">{getStatusText()}</span>
           </div>
-        </div>
+          </div>
+        </>
+        )}
 
         {/* Controls */}
-        <div className="p-6 bg-card">
-          <div className="flex items-center justify-center gap-6">
-            {/* Mute Button */}
-            <button
-              onClick={toggleMute}
-              disabled={callStatus !== "connected"}
-              className={cn(
-                "p-4 rounded-full transition-all",
-                callStatus !== "connected" && "opacity-50 cursor-not-allowed",
-                isMuted
-                  ? "bg-red-100 dark:bg-red-900/30 text-red-500"
-                  : "bg-muted hover:bg-muted/80 text-foreground"
-              )}
-            >
-              {isMuted ? <MicOff className="w-6 h-6" /> : <Mic className="w-6 h-6" />}
-            </button>
+        {callStatus !== "error" && (
+          <div className="p-6 bg-card">
+            <div className="flex items-center justify-center gap-6">
+              {/* Mute Button */}
+              <button
+                onClick={toggleMute}
+                disabled={callStatus !== "connected"}
+                className={cn(
+                  "p-4 rounded-full transition-all",
+                  callStatus !== "connected" && "opacity-50 cursor-not-allowed",
+                  isMuted
+                    ? "bg-red-100 dark:bg-red-900/30 text-red-500"
+                    : "bg-muted hover:bg-muted/80 text-foreground"
+                )}
+              >
+                {isMuted ? <MicOff className="w-6 h-6" /> : <Mic className="w-6 h-6" />}
+              </button>
 
-            {/* End Call Button */}
-            <button
-              onClick={endCall}
-              disabled={callStatus === "ended"}
-              className={cn(
-                "p-5 rounded-full bg-red-500 hover:bg-red-600 text-white transition-all shadow-lg",
-                callStatus === "ended" && "opacity-50 cursor-not-allowed"
-              )}
-            >
-              <PhoneOff className="w-7 h-7" />
-            </button>
+              {/* End Call Button */}
+              <button
+                onClick={endCall}
+                disabled={callStatus === "ended"}
+                className={cn(
+                  "p-5 rounded-full bg-red-500 hover:bg-red-600 text-white transition-all shadow-lg",
+                  callStatus === "ended" && "opacity-50 cursor-not-allowed"
+                )}
+              >
+                <PhoneOff className="w-7 h-7" />
+              </button>
 
-            {/* Speaker/Answer Button (placeholder for future) */}
-            <button
-              disabled={callStatus !== "connected"}
-              className={cn(
-                "p-4 rounded-full bg-muted hover:bg-muted/80 text-foreground transition-all",
-                callStatus !== "connected" && "opacity-50 cursor-not-allowed"
-              )}
-            >
-              <Phone className="w-6 h-6" />
-            </button>
+              {/* Speaker/Answer Button (placeholder for future) */}
+              <button
+                disabled={callStatus !== "connected"}
+                className={cn(
+                  "p-4 rounded-full bg-muted hover:bg-muted/80 text-foreground transition-all",
+                  callStatus !== "connected" && "opacity-50 cursor-not-allowed"
+                )}
+              >
+                <Phone className="w-6 h-6" />
+              </button>
+            </div>
+
+            {/* Status Labels */}
+            <div className="flex items-center justify-center gap-8 mt-4 text-xs text-muted-foreground">
+              <span>Silenciar</span>
+              <span>Desligar</span>
+              <span>Alto-falante</span>
+            </div>
           </div>
-
-          {/* Status Labels */}
-          <div className="flex items-center justify-center gap-8 mt-4 text-xs text-muted-foreground">
-            <span>Silenciar</span>
-            <span>Desligar</span>
-            <span>Alto-falante</span>
-          </div>
-        </div>
+        )}
       </div>
     </div>
   );
