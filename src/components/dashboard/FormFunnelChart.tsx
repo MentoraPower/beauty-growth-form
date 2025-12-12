@@ -105,8 +105,8 @@ export default function FormFunnelChart({ data }: FormFunnelChartProps) {
                 <div className="w-px h-3 bg-gradient-to-t from-muted-foreground/60 to-transparent" />
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <div className="w-6 h-6 rounded-full bg-gradient-to-br from-[#F40000] to-[#A10000] flex items-center justify-center cursor-help shadow-sm hover:scale-110 transition-transform">
-                      <span className="text-[10px] font-semibold text-white">
+                    <div className="w-6 h-6 rounded-full bg-white border border-black/10 flex items-center justify-center cursor-help shadow-sm hover:scale-110 transition-transform">
+                      <span className="text-[10px] font-semibold text-black/60">
                         {index + 1}
                       </span>
                     </div>
