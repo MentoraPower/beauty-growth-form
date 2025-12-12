@@ -7,16 +7,17 @@ interface RibbonTransitionProps {
 }
 
 const RibbonTransition = ({ isActive, onComplete }: RibbonTransitionProps) => {
-  // Define ribbons with different sizes and positions - thinner now
+  // Define ribbons stacked together without gaps
   const ribbons = [
-    { id: 1, height: "6vh", top: "2%", delay: 0, duration: 0.4 },
-    { id: 2, height: "8vh", top: "12%", delay: 0.05, duration: 0.45 },
-    { id: 3, height: "5vh", top: "24%", delay: 0.1, duration: 0.4 },
-    { id: 4, height: "7vh", top: "32%", delay: 0.03, duration: 0.42 },
-    { id: 5, height: "6vh", top: "58%", delay: 0.08, duration: 0.45 },
-    { id: 6, height: "8vh", top: "68%", delay: 0.02, duration: 0.4 },
-    { id: 7, height: "5vh", top: "80%", delay: 0.06, duration: 0.43 },
-    { id: 8, height: "7vh", top: "90%", delay: 0.04, duration: 0.4 },
+    { id: 1, height: "10vh", top: "0vh", delay: 0, duration: 0.4 },
+    { id: 2, height: "12vh", top: "10vh", delay: 0.05, duration: 0.45 },
+    { id: 3, height: "8vh", top: "22vh", delay: 0.1, duration: 0.4 },
+    { id: 4, height: "10vh", top: "30vh", delay: 0.03, duration: 0.42 },
+    // Middle ribbon with SCALE is at 40vh with 14vh height
+    { id: 5, height: "10vh", top: "54vh", delay: 0.08, duration: 0.45 },
+    { id: 6, height: "12vh", top: "64vh", delay: 0.02, duration: 0.4 },
+    { id: 7, height: "14vh", top: "76vh", delay: 0.06, duration: 0.43 },
+    { id: 8, height: "14vh", top: "90vh", delay: 0.04, duration: 0.4 },
   ];
 
   useEffect(() => {
@@ -62,8 +63,8 @@ const RibbonTransition = ({ isActive, onComplete }: RibbonTransitionProps) => {
           <motion.div
             className="absolute left-0 bg-gradient-to-r from-[#F40000] to-[#A10000] flex items-center justify-center"
             style={{
-              top: "44%",
-              height: "12vh",
+              top: "40vh",
+              height: "14vh",
               width: "100%",
             }}
             initial={{ x: "-100%" }}
