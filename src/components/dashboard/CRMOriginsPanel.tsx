@@ -62,11 +62,6 @@ interface CRMOriginsPanelProps {
   sidebarWidth: number;
 }
 
-// Cache data globally to prevent flickering
-let cachedOrigins: Origin[] = [];
-let cachedSubOrigins: SubOrigin[] = [];
-let cachedLeadCounts: LeadCount[] = [];
-let dataLoaded = false;
 
 // Sortable Origin Item Component
 function SortableOriginItem({ 
@@ -261,10 +256,10 @@ function SortableOriginItem({
 export function CRMOriginsPanel({ isOpen, onClose, sidebarWidth }: CRMOriginsPanelProps) {
   const location = useLocation();
   const navigate = useNavigate();
-  const [origins, setOrigins] = useState<Origin[]>(cachedOrigins);
-  const [subOrigins, setSubOrigins] = useState<SubOrigin[]>(cachedSubOrigins);
-  const [leadCounts, setLeadCounts] = useState<LeadCount[]>(cachedLeadCounts);
-  const hasInitialized = useRef(dataLoaded);
+  const [origins, setOrigins] = useState<Origin[]>([]);
+  const [subOrigins, setSubOrigins] = useState<SubOrigin[]>([]);
+  const [leadCounts, setLeadCounts] = useState<LeadCount[]>([]);
+  const hasInitialized = useRef(false);
   
   const [expandedOrigins, setExpandedOrigins] = useState<Set<string>>(() => {
     const saved = localStorage.getItem('crm_expanded_origins');
@@ -291,43 +286,43 @@ export function CRMOriginsPanel({ isOpen, onClose, sidebarWidth }: CRMOriginsPan
   }, [expandedOrigins]);
 
   const fetchData = useCallback(async () => {
-    const [originsRes, subOriginsRes, leadsRes] = await Promise.all([
-      supabase.from("crm_origins").select("*").order("ordem"),
-      supabase.from("crm_sub_origins").select("*").order("ordem"),
-      supabase.from("leads").select("sub_origin_id"),
-    ]);
+    try {
+      const [originsRes, subOriginsRes, leadsRes] = await Promise.all([
+        supabase.from("crm_origins").select("*").order("ordem"),
+        supabase.from("crm_sub_origins").select("*").order("ordem"),
+        supabase.from("leads").select("sub_origin_id"),
+      ]);
 
-    if (originsRes.data) {
-      cachedOrigins = originsRes.data;
-      setOrigins(originsRes.data);
+      if (originsRes.data) {
+        setOrigins(originsRes.data);
+      }
+      if (subOriginsRes.data) {
+        setSubOrigins(subOriginsRes.data);
+      }
+      
+      if (leadsRes.data) {
+        const counts: Record<string, number> = {};
+        leadsRes.data.forEach((lead) => {
+          if (lead.sub_origin_id) {
+            counts[lead.sub_origin_id] = (counts[lead.sub_origin_id] || 0) + 1;
+          }
+        });
+        const newCounts = Object.entries(counts).map(([sub_origin_id, count]) => ({ sub_origin_id, count }));
+        setLeadCounts(newCounts);
+      }
+      
+      hasInitialized.current = true;
+    } catch (error) {
+      console.error('Error fetching CRM data:', error);
     }
-    if (subOriginsRes.data) {
-      cachedSubOrigins = subOriginsRes.data;
-      setSubOrigins(subOriginsRes.data);
-    }
-    
-    if (leadsRes.data) {
-      const counts: Record<string, number> = {};
-      leadsRes.data.forEach((lead) => {
-        if (lead.sub_origin_id) {
-          counts[lead.sub_origin_id] = (counts[lead.sub_origin_id] || 0) + 1;
-        }
-      });
-      const newCounts = Object.entries(counts).map(([sub_origin_id, count]) => ({ sub_origin_id, count }));
-      cachedLeadCounts = newCounts;
-      setLeadCounts(newCounts);
-    }
-    
-    dataLoaded = true;
-    hasInitialized.current = true;
   }, []);
 
-  // Initial fetch only once
+  // Fetch data when panel opens or on mount
   useEffect(() => {
-    if (!hasInitialized.current) {
+    if (isOpen || !hasInitialized.current) {
       fetchData();
     }
-  }, [fetchData]);
+  }, [fetchData, isOpen]);
 
   // Real-time subscriptions
   useEffect(() => {
@@ -364,7 +359,6 @@ export function CRMOriginsPanel({ isOpen, onClose, sidebarWidth }: CRMOriginsPan
       
       // Optimistic update
       setOrigins(newOrigins);
-      cachedOrigins = newOrigins;
 
       // Update ordem in database
       const updates = newOrigins.map((origin, index) => 
