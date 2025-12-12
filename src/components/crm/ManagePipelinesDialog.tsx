@@ -26,6 +26,7 @@ interface ManagePipelinesDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   pipelines: Pipeline[];
+  subOriginId: string | null;
 }
 
 interface Origin {
@@ -53,6 +54,7 @@ export function ManagePipelinesDialog({
   open,
   onOpenChange,
   pipelines,
+  subOriginId,
 }: ManagePipelinesDialogProps) {
   const queryClient = useQueryClient();
   const [newPipelineName, setNewPipelineName] = useState("");
@@ -77,11 +79,15 @@ export function ManagePipelinesDialog({
     },
   });
 
-  // Fetch automations
+  // Fetch automations (filtered by sub_origin_id)
   const { data: automations = [], refetch: refetchAutomations } = useQuery({
-    queryKey: ["pipeline-automations"],
+    queryKey: ["pipeline-automations", subOriginId],
     queryFn: async () => {
-      const { data } = await supabase.from("pipeline_automations").select("*");
+      let query = supabase.from("pipeline_automations").select("*");
+      if (subOriginId) {
+        query = query.eq("sub_origin_id", subOriginId);
+      }
+      const { data } = await query;
       return data as Automation[] || [];
     },
   });
@@ -95,12 +101,13 @@ export function ManagePipelinesDialog({
         nome: newPipelineName,
         ordem: maxOrdem + 1,
         cor: "#6366f1",
+        sub_origin_id: subOriginId,
       });
 
       if (error) throw error;
 
       setNewPipelineName("");
-      queryClient.invalidateQueries({ queryKey: ["pipelines"] });
+      queryClient.invalidateQueries({ queryKey: ["pipelines", subOriginId] });
       toast.success("Pipeline adicionada!");
     } catch (error) {
       console.error("Erro ao adicionar pipeline:", error);
@@ -117,7 +124,7 @@ export function ManagePipelinesDialog({
       if (selectedPipeline === id) {
         setSelectedPipeline(null);
       }
-      queryClient.invalidateQueries({ queryKey: ["pipelines"] });
+      queryClient.invalidateQueries({ queryKey: ["pipelines", subOriginId] });
       toast.success("Pipeline removida!");
     } catch (error) {
       console.error("Erro ao remover pipeline:", error);
@@ -138,7 +145,7 @@ export function ManagePipelinesDialog({
 
       setEditingId(null);
       setEditingName("");
-      queryClient.invalidateQueries({ queryKey: ["pipelines"] });
+      queryClient.invalidateQueries({ queryKey: ["pipelines", subOriginId] });
       toast.success("Pipeline atualizada!");
     } catch (error) {
       console.error("Erro ao atualizar pipeline:", error);
@@ -152,6 +159,7 @@ export function ManagePipelinesDialog({
         pipeline_id: pipelineId,
         target_type: 'sub_origin',
         is_active: true,
+        sub_origin_id: subOriginId,
       });
 
       if (error) throw error;

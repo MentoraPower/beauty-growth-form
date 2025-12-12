@@ -65,32 +65,45 @@ export function KanbanBoard() {
   );
 
   const { data: pipelines = [] } = useQuery({
-    queryKey: ["pipelines"],
+    queryKey: ["pipelines", subOriginId],
     queryFn: async () => {
-      const { data, error } = await supabase
+      let query = supabase
         .from("pipelines")
         .select("*")
         .order("ordem", { ascending: true });
+      
+      // Filter by sub_origin_id if selected
+      if (subOriginId) {
+        query = query.eq("sub_origin_id", subOriginId);
+      }
+
+      const { data, error } = await query;
 
       if (error) throw error;
       return data as Pipeline[];
     },
-    staleTime: 30000,
+    staleTime: 5000,
   });
 
-  // Fetch automations for pipeline transfers
+  // Fetch automations for pipeline transfers (filtered by sub_origin_id)
   const { data: automations = [] } = useQuery({
-    queryKey: ["pipeline-automations"],
+    queryKey: ["pipeline-automations", subOriginId],
     queryFn: async () => {
-      const { data, error } = await supabase
+      let query = supabase
         .from("pipeline_automations")
         .select("*")
         .eq("is_active", true);
+      
+      if (subOriginId) {
+        query = query.eq("sub_origin_id", subOriginId);
+      }
+
+      const { data, error } = await query;
 
       if (error) throw error;
       return data || [];
     },
-    staleTime: 30000,
+    staleTime: 5000,
   });
 
   // Fetch current sub-origin name for display
@@ -187,7 +200,7 @@ export function KanbanBoard() {
         "postgres_changes",
         { event: "*", schema: "public", table: "pipelines" },
         () => {
-          queryClient.invalidateQueries({ queryKey: ["pipelines"] });
+          queryClient.invalidateQueries({ queryKey: ["pipelines", subOriginId] });
         }
       )
       .subscribe();
@@ -531,6 +544,7 @@ export function KanbanBoard() {
           open={isPipelinesDialogOpen}
           onOpenChange={setIsPipelinesDialogOpen}
           pipelines={pipelines}
+          subOriginId={subOriginId}
         />
       </Suspense>
     </div>

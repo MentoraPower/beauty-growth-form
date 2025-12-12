@@ -3,6 +3,7 @@ export interface Pipeline {
   nome: string;
   ordem: number;
   cor: string;
+  sub_origin_id?: string | null;
   created_at?: string;
 }
 
