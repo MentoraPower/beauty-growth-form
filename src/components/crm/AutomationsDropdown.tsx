@@ -180,13 +180,12 @@ export function AutomationsDropdown({ pipelines, subOriginId }: AutomationsDropd
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="outline" size="sm" className="h-9 gap-2">
+        <Button variant="ghost" size="icon" className="h-9 w-9 relative">
           <Zap className="w-4 h-4 text-amber-500" />
-          Automações
           {activeAutomationsCount > 0 && (
-            <Badge variant="secondary" className="ml-1 px-1.5 py-0 text-xs bg-amber-100 text-amber-700">
+            <span className="absolute -top-1 -right-1 w-4 h-4 text-[10px] font-medium flex items-center justify-center bg-amber-500 text-white rounded-full">
               {activeAutomationsCount}
-            </Badge>
+            </span>
           )}
         </Button>
       </DropdownMenuTrigger>
