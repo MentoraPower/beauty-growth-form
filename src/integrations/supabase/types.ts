@@ -256,6 +256,8 @@ export type Database = {
       }
       leads: {
         Row: {
+          ai_analysis: string | null
+          analysis_created_at: string | null
           average_ticket: number | null
           can_afford: string | null
           clinic_name: string | null
@@ -265,6 +267,7 @@ export type Database = {
           estimated_revenue: number | null
           id: string
           instagram: string
+          is_mql: boolean | null
           monthly_billing: string
           name: string
           ordem: number | null
@@ -283,6 +286,8 @@ export type Database = {
           years_experience: string
         }
         Insert: {
+          ai_analysis?: string | null
+          analysis_created_at?: string | null
           average_ticket?: number | null
           can_afford?: string | null
           clinic_name?: string | null
@@ -292,6 +297,7 @@ export type Database = {
           estimated_revenue?: number | null
           id?: string
           instagram: string
+          is_mql?: boolean | null
           monthly_billing: string
           name: string
           ordem?: number | null
@@ -310,6 +316,8 @@ export type Database = {
           years_experience: string
         }
         Update: {
+          ai_analysis?: string | null
+          analysis_created_at?: string | null
           average_ticket?: number | null
           can_afford?: string | null
           clinic_name?: string | null
@@ -319,6 +327,7 @@ export type Database = {
           estimated_revenue?: number | null
           id?: string
           instagram?: string
+          is_mql?: boolean | null
           monthly_billing?: string
           name?: string
           ordem?: number | null

@@ -60,6 +60,9 @@ interface LeadData {
   utm_campaign: string | null;
   utm_term: string | null;
   utm_content: string | null;
+  ai_analysis: string | null;
+  is_mql: boolean | null;
+  analysis_created_at: string | null;
 }
 
 interface Pipeline {
