@@ -1,7 +1,8 @@
 import { useState, useCallback, useEffect, memo } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { LayoutDashboard, Menu, X, LogOut, MessageCircle } from "lucide-react";
+import { LayoutDashboard, Menu, X, LogOut } from "lucide-react";
 import { cn } from "@/lib/utils";
+import WhatsAppIcon from "@/components/icons/WhatsApp";
 import scaleLogo from "@/assets/scale-logo.png";
 import { CRMSidebarMenu } from "./CRMSidebarMenu";
 import { PageTransition } from "./PageTransition";
@@ -15,7 +16,7 @@ const navItems = [
 ];
 
 const bottomNavItems = [
-  { href: "/admin/whatsapp", icon: MessageCircle, label: "WhatsApp" },
+  { href: "/admin/whatsapp", icon: WhatsAppIcon, label: "WhatsApp" },
 ];
 
 // Global hover state to persist across navigations
@@ -127,7 +128,7 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
                         : "text-white/60 hover:bg-white/5 hover:text-white"
                     )}
                   >
-                    <item.icon className="h-5 w-5 flex-shrink-0" strokeWidth={1.5} />
+                    <item.icon className="h-5 w-5 flex-shrink-0" />
                     <span
                       className={cn(
                         "text-sm font-medium whitespace-nowrap transition-opacity duration-200",
@@ -216,7 +217,7 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
                         : "text-white/60 hover:bg-white/5 hover:text-white"
                     )}
                   >
-                    <item.icon className="h-5 w-5 flex-shrink-0" strokeWidth={1.5} />
+                    <item.icon className="h-5 w-5 flex-shrink-0" />
                     <span className="text-sm font-medium whitespace-nowrap">
                       {item.label}
                     </span>
