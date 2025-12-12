@@ -609,7 +609,7 @@ const Index = () => {
       case 1:
         return <div className="form-card">
             <h1 className="form-title max-w-[380px] md:max-w-none">
-              <span className="font-light">A sua assessoria de marketing no <span className="font-bold">Mundo Beauty.</span></span>
+              <span className="font-light">A sua assessoria de marketing no <span className="font-bold bg-gradient-to-r from-[#F40000] to-[#A10000] bg-clip-text text-transparent">Mundo Beauty.</span></span>
               
             </h1>
             <p className="form-subtitle mt-4 mb-4">Você está prestes a tomar a melhor decisão para o seu negócio. Somos especialistas em escalar negócios de beleza através do Tráfego Pago.</p>
