@@ -262,7 +262,7 @@ export function CRMSidebarMenu({ isExpanded, onNavigate, onDropdownOpenChange }:
   // Render the origins menu content (reused for both expanded and collapsed states)
   const renderOriginsMenu = (inDropdown: boolean = false) => (
     <div className={cn(
-      "space-y-1 overflow-hidden transition-all duration-300 ease-out",
+      "space-y-1 animate-fade-in",
       inDropdown ? "p-2" : "mt-1 ml-4 pl-3 border-l border-white/10"
     )}>
       {origins.map((origin) => {
@@ -327,14 +327,12 @@ export function CRMSidebarMenu({ isExpanded, onNavigate, onDropdownOpenChange }:
               </DropdownMenu>
             </div>
 
-            {/* Sub-origins with smooth animation */}
-            <div className={cn(
-              "ml-4 pl-2 space-y-0.5 overflow-hidden transition-all duration-300 ease-out origin-top",
-              inDropdown ? "border-l border-border/50" : "border-l border-white/10",
-              isOriginExpanded 
-                ? "max-h-[500px] opacity-100 scale-y-100" 
-                : "max-h-0 opacity-0 scale-y-95"
-            )}>
+            {/* Sub-origins */}
+            {isOriginExpanded && (
+              <div className={cn(
+                "ml-4 pl-2 space-y-0.5 animate-fade-in",
+                inDropdown ? "border-l border-border/50" : "border-l border-white/10"
+              )}>
                 {originSubOrigins.map((subOrigin) => {
                   const leadCount = leadCounts.find(lc => lc.sub_origin_id === subOrigin.id)?.count || 0;
                   return (
@@ -408,7 +406,8 @@ export function CRMSidebarMenu({ isExpanded, onNavigate, onDropdownOpenChange }:
                   <span>Criar sub origem</span>
                 </button>
               </div>
-            </div>
+            )}
+          </div>
         );
       })}
 
@@ -463,12 +462,8 @@ export function CRMSidebarMenu({ isExpanded, onNavigate, onDropdownOpenChange }:
               </Tooltip>
 
               {/* Sub-origin Icons when origin is expanded */}
-              <div className={cn(
-                "flex flex-col items-center gap-0.5 mt-0.5 ml-1 pl-1 border-l border-white/20 overflow-hidden transition-all duration-300 ease-out origin-top",
-                isOriginExpanded 
-                  ? "max-h-[300px] opacity-100" 
-                  : "max-h-0 opacity-0"
-              )}>
+              {isOriginExpanded && (
+                <div className="flex flex-col items-center gap-0.5 mt-0.5 ml-1 pl-1 border-l border-white/20 animate-fade-in">
                   {originSubOrigins.map((subOrigin) => {
                     const leadCount = leadCounts.find(lc => lc.sub_origin_id === subOrigin.id)?.count || 0;
                     return (
@@ -492,7 +487,8 @@ export function CRMSidebarMenu({ isExpanded, onNavigate, onDropdownOpenChange }:
                       </Tooltip>
                     );
                   })}
-              </div>
+                </div>
+              )}
             </div>
           );
         })}
@@ -531,24 +527,18 @@ export function CRMSidebarMenu({ isExpanded, onNavigate, onDropdownOpenChange }:
         </button>
 
         {/* Expanded Menu - When sidebar is expanded */}
-        <div className={cn(
-          "overflow-hidden transition-all duration-300 ease-out origin-top",
-          isOpen && isExpanded 
-            ? "max-h-[1000px] opacity-100" 
-            : "max-h-0 opacity-0"
-        )}>
-          {renderOriginsMenu(false)}
-        </div>
+        {isOpen && isExpanded && (
+          <div className="animate-fade-in">
+            {renderOriginsMenu(false)}
+          </div>
+        )}
 
         {/* Collapsed Icons - When sidebar is collapsed and CRM is open */}
-        <div className={cn(
-          "overflow-hidden transition-all duration-300 ease-out origin-top",
-          isOpen && !isExpanded 
-            ? "max-h-[500px] opacity-100" 
-            : "max-h-0 opacity-0"
-        )}>
-          {renderCollapsedIcons()}
-        </div>
+        {isOpen && !isExpanded && (
+          <div className="animate-fade-in">
+            {renderCollapsedIcons()}
+          </div>
+        )}
       </div>
 
       {/* Create/Edit Dialog */}
