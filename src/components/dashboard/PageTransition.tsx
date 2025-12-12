@@ -1,46 +1,67 @@
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, ReactNode } from "react";
 import { useLocation } from "react-router-dom";
 
 interface PageTransitionProps {
-  children: React.ReactNode;
+  children: ReactNode;
 }
 
 export function PageTransition({ children }: PageTransitionProps) {
   const location = useLocation();
-  const [displayChildren, setDisplayChildren] = useState(children);
-  const [isTransitioning, setIsTransitioning] = useState(false);
-  const previousPathRef = useRef(location.pathname + location.search);
+  const [isVisible, setIsVisible] = useState(true);
+  const [currentChildren, setCurrentChildren] = useState(children);
+  const previousKeyRef = useRef(location.pathname + location.search);
+  const isFirstRender = useRef(true);
 
   useEffect(() => {
-    const currentPath = location.pathname + location.search;
+    const currentKey = location.pathname + location.search;
     
-    // Only trigger transition if path actually changed
-    if (previousPathRef.current !== currentPath) {
-      previousPathRef.current = currentPath;
-      setIsTransitioning(true);
+    // Skip transition on first render
+    if (isFirstRender.current) {
+      isFirstRender.current = false;
+      previousKeyRef.current = currentKey;
+      setCurrentChildren(children);
+      return;
+    }
+    
+    // Only trigger transition if route actually changed
+    if (previousKeyRef.current !== currentKey) {
+      previousKeyRef.current = currentKey;
       
-      // Short delay for fade out, then update content
+      // Fade out
+      setIsVisible(false);
+      
+      // After fade out, update content and fade in
       const timer = setTimeout(() => {
-        setDisplayChildren(children);
-        setIsTransitioning(false);
+        setCurrentChildren(children);
+        setIsVisible(true);
       }, 150);
       
       return () => clearTimeout(timer);
     } else {
-      // Same path, just update children without transition
-      setDisplayChildren(children);
+      // Same route, just update children immediately
+      setCurrentChildren(children);
     }
   }, [location.pathname, location.search, children]);
+
+  // Also listen for custom suborigin-change event for early fade-out
+  useEffect(() => {
+    const handleSubOriginChange = () => {
+      setIsVisible(false);
+    };
+    
+    window.addEventListener('suborigin-change', handleSubOriginChange);
+    return () => window.removeEventListener('suborigin-change', handleSubOriginChange);
+  }, []);
 
   return (
     <div
       className={`transition-all duration-200 ease-out ${
-        isTransitioning 
-          ? 'opacity-0 translate-y-1' 
-          : 'opacity-100 translate-y-0'
+        isVisible 
+          ? 'opacity-100 translate-y-0' 
+          : 'opacity-0 translate-y-1'
       }`}
     >
-      {displayChildren}
+      {currentChildren}
     </div>
   );
 }
