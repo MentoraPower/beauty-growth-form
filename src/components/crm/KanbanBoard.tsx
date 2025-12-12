@@ -34,6 +34,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { LeadsList } from "./LeadsList";
 import { toast } from "sonner";
+import { AutomationsDropdown } from "./AutomationsDropdown";
 
 // Lazy load heavy dialog
 const ManagePipelinesDialog = lazy(() => 
@@ -536,9 +537,12 @@ export function KanbanBoard() {
     <div className="flex flex-col h-[calc(100vh-2rem)]">
       {/* Header - all on same line */}
       <div className="flex items-center gap-4 mb-4">
-        {/* Title - left */}
-        <div className="flex-shrink-0">
+        {/* Title and Automations - left */}
+        <div className="flex items-center gap-3 flex-shrink-0">
           <h1 className="text-xl font-bold">{pageTitle}</h1>
+          {subOriginId && (
+            <AutomationsDropdown pipelines={pipelines} subOriginId={subOriginId} />
+          )}
         </div>
 
         {/* Search centered */}
