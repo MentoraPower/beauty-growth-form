@@ -168,12 +168,23 @@ export default function LeadDetail() {
     navigate(subOriginId ? `/admin/crm?origin=${subOriginId}` : "/admin/crm");
   };
 
-  const formatCurrency = (value: number | null) => {
-    if (value === null) return "incompleto";
+  const formatCurrency = (value: number | null | undefined) => {
+    if (value === null || value === undefined) return "incompleto";
     return new Intl.NumberFormat("pt-BR", {
       style: "currency",
       currency: "BRL",
     }).format(value);
+  };
+
+  // Calculate estimated revenue if not stored
+  const getEstimatedRevenue = () => {
+    if (lead?.estimated_revenue) return lead.estimated_revenue;
+    
+    const weeklyAttendance = parseInt(lead?.weekly_attendance || "0") || 0;
+    const averageTicket = lead?.average_ticket || 0;
+    const calculated = weeklyAttendance * 4 * averageTicket;
+    
+    return calculated > 0 ? calculated : null;
   };
 
   const formatDate = (date: string) => {
@@ -493,8 +504,10 @@ export default function LeadDetail() {
                         <Clock className="h-4 w-4 text-muted-foreground" />
                         <p className="text-xs text-muted-foreground">Receita Estimada</p>
                       </div>
-                      <p className={`text-sm font-medium ${lead.estimated_revenue === null ? "text-muted-foreground italic" : ""}`}>
-                        {formatCurrency(lead.estimated_revenue)}
+                      <p className={`text-sm font-medium ${getEstimatedRevenue() === null ? "text-muted-foreground italic" : ""}`}>
+                        {getEstimatedRevenue() !== null 
+                          ? `${formatCurrency(getEstimatedRevenue())}/mês` 
+                          : "incompleto"}
                       </p>
                     </div>
 
