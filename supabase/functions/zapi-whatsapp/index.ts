@@ -57,27 +57,60 @@ const handler = async (req: Request): Promise<Response> => {
         break;
 
       case "get-chats":
-        console.log("Fetching all chats from Z-API");
+        console.log("Fetching all chats from Z-API with pagination");
         
-        // Get chats with page parameter to get more
-        response = await fetch(`${ZAPI_BASE_URL}/chats?page=1&pageSize=100`, {
-          method: "GET",
-          headers: {
-            "Client-Token": ZAPI_CLIENT_TOKEN || "",
-          },
-        });
+        const allChats: any[] = [];
+        let currentPage = 1;
+        const pageSize = 100;
+        let hasMorePages = true;
         
-        const chatsData = await response.json();
-        console.log(`Z-API chats response:`, JSON.stringify(chatsData).substring(0, 1000));
+        // Paginate through all chats
+        while (hasMorePages) {
+          console.log(`Fetching page ${currentPage}...`);
+          
+          const pageResponse = await fetch(`${ZAPI_BASE_URL}/chats?page=${currentPage}&pageSize=${pageSize}`, {
+            method: "GET",
+            headers: {
+              "Client-Token": ZAPI_CLIENT_TOKEN || "",
+            },
+          });
+          
+          const pageData = await pageResponse.json();
+          console.log(`Page ${currentPage} response: ${Array.isArray(pageData) ? pageData.length : 0} chats`);
+          
+          if (Array.isArray(pageData) && pageData.length > 0) {
+            allChats.push(...pageData);
+            currentPage++;
+            
+            // If we got less than pageSize, we've reached the end
+            if (pageData.length < pageSize) {
+              hasMorePages = false;
+            }
+          } else {
+            hasMorePages = false;
+          }
+          
+          // Safety limit to prevent infinite loops
+          if (currentPage > 50) {
+            console.log("Reached safety limit of 50 pages");
+            hasMorePages = false;
+          }
+        }
         
-        // Filter only personal chats (not groups)
-        const personalChats = Array.isArray(chatsData) 
-          ? chatsData.filter((chat: any) => !chat.isGroup && chat.phone)
-          : [];
+        console.log(`Total chats fetched: ${allChats.length}`);
         
-        console.log(`Personal chats count: ${personalChats.length}`);
+        // Return all chats (including groups) with relevant fields
+        const formattedChats = allChats.map((chat: any) => ({
+          phone: chat.phone || chat.id?.replace("@c.us", "").replace("@g.us", ""),
+          name: chat.name || chat.phone || "Desconhecido",
+          lastMessage: chat.lastMessageText || chat.lastMessage?.text || null,
+          unreadCount: chat.unreadCount || 0,
+          timestamp: chat.lastMessageTimestamp || chat.timestamp || null,
+          isGroup: chat.isGroup || chat.id?.includes("@g.us") || false,
+          photo: chat.profileThumbnail || chat.photo || null,
+        }));
         
-        return new Response(JSON.stringify(personalChats), {
+        return new Response(JSON.stringify(formattedChats), {
           status: 200,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
