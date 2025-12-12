@@ -8,7 +8,6 @@ import { Users, TrendingUp, ShoppingCart, DollarSign, Target } from "lucide-reac
 import ModernAreaChart from "@/components/dashboard/ModernAreaChart";
 import ModernBarChart from "@/components/dashboard/ModernBarChart";
 import MiniGaugeChart from "@/components/dashboard/MiniGaugeChart";
-import FormFunnelChart from "@/components/dashboard/FormFunnelChart";
 import {
   CardSkeleton,
   AreaChartSkeleton,
@@ -403,32 +402,18 @@ const Dashboard = () => {
           </Card>
         </div>
 
-        {/* Bar Chart + Funnel */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          <Card className="bg-white border border-black/5 shadow-none">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-base font-semibold text-foreground">
-                Leads por Dia da Semana
-              </CardTitle>
-              <p className="text-xs text-muted-foreground">Distribuição semanal</p>
-            </CardHeader>
-            <CardContent>
-              <ModernBarChart data={getLeadsByDayOfWeek()} />
-            </CardContent>
-          </Card>
-
-          <Card className="bg-white border border-black/5 shadow-none">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-base font-semibold text-foreground">
-                Funil do Formulário
-              </CardTitle>
-              <p className="text-xs text-muted-foreground">Taxa de conclusão por etapa</p>
-            </CardHeader>
-            <CardContent>
-              <FormFunnelChart data={getFormFunnelData()} />
-            </CardContent>
-          </Card>
-        </div>
+        {/* Bar Chart */}
+        <Card className="bg-white border border-black/5 shadow-none">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base font-semibold text-foreground">
+              Leads por Dia da Semana
+            </CardTitle>
+            <p className="text-xs text-muted-foreground">Distribuição semanal</p>
+          </CardHeader>
+          <CardContent>
+            <ModernBarChart data={getLeadsByDayOfWeek()} />
+          </CardContent>
+        </Card>
       </div>
     </DashboardLayout>
   );
