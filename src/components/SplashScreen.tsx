@@ -47,7 +47,7 @@ const SplashScreen = ({ onComplete }: SplashScreenProps) => {
           initial={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration: 0.5, ease: "easeInOut" }}
-          className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-[#F3F3F3] px-6"
+          className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-[#F3F3F3] px-8"
         >
           <motion.img
             src={splashLogo}
@@ -57,7 +57,7 @@ const SplashScreen = ({ onComplete }: SplashScreenProps) => {
             animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
             transition={{ duration: 0.8, ease: [0.25, 0.1, 0.25, 1] }}
           />
-          <p className="text-base md:text-lg font-light tracking-wide text-muted-foreground">
+          <p className="text-base md:text-lg font-light tracking-wide text-muted-foreground text-center max-w-xs md:max-w-none">
             {allChars.map((char, index) => {
               const isScale = index >= normalLength;
               return (
