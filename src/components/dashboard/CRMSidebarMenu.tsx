@@ -283,11 +283,11 @@ export function CRMSidebarMenu({ isExpanded, onNavigate, onDropdownOpenChange }:
                 )}
               >
                 {isOriginExpanded ? (
-                  <FolderOpen className={cn("h-4 w-4 flex-shrink-0", inDropdown ? "text-foreground/90" : "text-white/90")} />
+                  <FolderOpen className={cn("h-4 w-4 flex-shrink-0 fill-current", inDropdown ? "text-foreground/90" : "text-white/90")} />
                 ) : (
-                  <Folder className={cn("h-4 w-4 flex-shrink-0", inDropdown ? "text-foreground/90" : "text-white/90")} />
+                  <Folder className={cn("h-4 w-4 flex-shrink-0 fill-current", inDropdown ? "text-foreground/90" : "text-white/90")} />
                 )}
-                <span className="flex-1 text-left truncate font-medium">{origin.nome}</span>
+                <span className="flex-1 text-left truncate font-bold">{origin.nome}</span>
                 <ChevronRight 
                   className={cn(
                     "h-3 w-3 transition-transform duration-700 ease-[cubic-bezier(0.4,0,0.2,1)]",
