@@ -7,6 +7,7 @@ import { Sparkles, RefreshCw, TrendingUp, TrendingDown } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
 interface LeadData {
+  id: string;
   name: string;
   clinic_name: string | null;
   service_area: string;
@@ -18,6 +19,9 @@ interface LeadData {
   estimated_revenue: number | null;
   can_afford: string | null;
   wants_more_info: boolean | null;
+  ai_analysis?: string | null;
+  is_mql?: boolean | null;
+  analysis_created_at?: string | null;
 }
 
 interface LeadAnalysisProps {
@@ -31,11 +35,33 @@ interface AnalysisResponse {
 }
 
 export function LeadAnalysis({ lead }: LeadAnalysisProps) {
-  const [analysis, setAnalysis] = useState<string | null>(null);
-  const [isMQL, setIsMQL] = useState<boolean | null>(null);
+  const [analysis, setAnalysis] = useState<string | null>(lead.ai_analysis || null);
+  const [isMQL, setIsMQL] = useState<boolean | null>(lead.is_mql ?? null);
   const [estimatedRevenue, setEstimatedRevenue] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [hasLoaded, setHasLoaded] = useState(false);
+  const [hasLoaded, setHasLoaded] = useState(!!lead.ai_analysis);
+
+  // Calculate estimated revenue locally
+  const calculateEstimatedRevenue = () => {
+    if (lead.estimated_revenue) return lead.estimated_revenue;
+    const weeklyAttendance = parseInt(lead.weekly_attendance) || 0;
+    const averageTicket = lead.average_ticket || 0;
+    return weeklyAttendance * 4 * averageTicket;
+  };
+
+  useEffect(() => {
+    // If analysis already exists, use it
+    if (lead.ai_analysis) {
+      setAnalysis(lead.ai_analysis);
+      setIsMQL(lead.is_mql ?? null);
+      setEstimatedRevenue(calculateEstimatedRevenue());
+      setHasLoaded(true);
+      return;
+    }
+
+    // Otherwise, fetch analysis only once on mount
+    fetchAnalysis();
+  }, [lead.id]);
 
   const fetchAnalysis = async () => {
     setIsLoading(true);
@@ -52,7 +78,18 @@ export function LeadAnalysis({ lead }: LeadAnalysisProps) {
         const response = data as AnalysisResponse;
         setAnalysis(response.analysis);
         setIsMQL(response.isMQL ?? null);
-        setEstimatedRevenue(response.estimatedRevenue ?? null);
+        setEstimatedRevenue(response.estimatedRevenue ?? calculateEstimatedRevenue());
+
+        // Save analysis to database
+        await supabase
+          .from("leads")
+          .update({
+            ai_analysis: response.analysis,
+            is_mql: response.isMQL ?? null,
+            estimated_revenue: response.estimatedRevenue ?? calculateEstimatedRevenue(),
+            analysis_created_at: new Date().toISOString()
+          })
+          .eq("id", lead.id);
       }
     } catch (err) {
       console.error("Error:", err);
@@ -64,9 +101,13 @@ export function LeadAnalysis({ lead }: LeadAnalysisProps) {
     }
   };
 
-  useEffect(() => {
-    fetchAnalysis();
-  }, [lead.name]);
+  const handleRefresh = async () => {
+    // Force regenerate analysis
+    setAnalysis(null);
+    setIsMQL(null);
+    setHasLoaded(false);
+    await fetchAnalysis();
+  };
 
   // Function to render text with bold formatting
   const renderFormattedText = (text: string) => {
@@ -87,6 +128,8 @@ export function LeadAnalysis({ lead }: LeadAnalysisProps) {
     });
   };
 
+  const displayEstimatedRevenue = estimatedRevenue ?? calculateEstimatedRevenue();
+
   return (
     <Card className="border-[#00000010] shadow-none bg-gradient-to-br from-muted/20 to-muted/40">
       <CardContent className="p-4">
@@ -95,14 +138,15 @@ export function LeadAnalysis({ lead }: LeadAnalysisProps) {
             <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center">
               <Sparkles className="h-4 w-4 text-primary" />
             </div>
-            <h3 className="text-sm font-semibold">Analise do Lead</h3>
+            <h3 className="text-sm font-semibold">Análise do Lead</h3>
           </div>
           <Button 
             variant="ghost" 
             size="sm" 
-            onClick={fetchAnalysis}
+            onClick={handleRefresh}
             disabled={isLoading}
             className="h-8 px-2"
+            title="Regenerar análise"
           >
             <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
           </Button>
@@ -125,9 +169,9 @@ export function LeadAnalysis({ lead }: LeadAnalysisProps) {
               )}
               {isMQL ? 'MQL' : 'Não é MQL'}
             </Badge>
-            {estimatedRevenue !== null && estimatedRevenue > 0 && (
+            {displayEstimatedRevenue > 0 && (
               <span className="text-xs text-muted-foreground">
-                Faturamento estimado: {formatCurrency(estimatedRevenue)}/mês
+                Faturamento estimado: {formatCurrency(displayEstimatedRevenue)}/mês
               </span>
             )}
           </div>
@@ -145,12 +189,12 @@ export function LeadAnalysis({ lead }: LeadAnalysisProps) {
           </p>
         ) : (
           <p className="text-sm text-muted-foreground italic">
-            Clique no botao para gerar uma analise
+            Clique no botão para gerar uma análise
           </p>
         )}
 
         <p className="text-[10px] text-muted-foreground/60 mt-3 pt-2 border-t border-black/5">
-          Analise gerada por IA - Groq | Serviço: R$ 2.800/mês (R$ 1.800 + R$ 1.000 tráfego)
+          Análise gerada por IA - Groq | Serviço: R$ 2.800/mês (R$ 1.800 + R$ 1.000 tráfego)
         </p>
       </CardContent>
     </Card>
