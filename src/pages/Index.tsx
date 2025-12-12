@@ -525,9 +525,10 @@ const Index = () => {
   const handleNext = async () => {
     if (canProceed()) {
       if (step < totalSteps) {
-        // Step 1 triggers ribbon transition
+        // Step 1 triggers ribbon transition and immediately goes to step 2
         if (step === 1) {
           setShowRibbonTransition(true);
+          setStep(2); // Change step immediately so form is ready when ribbons pass
           return;
         }
         
@@ -566,7 +567,6 @@ const Index = () => {
   
   const handleRibbonComplete = () => {
     setShowRibbonTransition(false);
-    setStep(2);
   };
   const nextStep = () => {
     if (step < totalSteps) {
