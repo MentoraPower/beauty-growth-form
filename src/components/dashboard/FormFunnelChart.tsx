@@ -12,59 +12,97 @@ interface FormFunnelChartProps {
 
 export default function FormFunnelChart({ data }: FormFunnelChartProps) {
   const maxCount = data.length > 0 ? data[0].count : 1;
+  const chartHeight = 280;
+  const stepWidth = 100 / data.length;
 
   return (
-    <div className="space-y-2">
-      {data.map((step, index) => {
-        const widthPercentage = maxCount > 0 ? (step.count / maxCount) * 100 : 0;
-        const dropRate = index > 0 && data[index - 1].count > 0 
-          ? ((data[index - 1].count - step.count) / data[index - 1].count * 100).toFixed(1)
-          : null;
+    <div className="relative w-full" style={{ height: chartHeight }}>
+      {/* SVG Funnel */}
+      <svg 
+        viewBox={`0 0 ${data.length * 60} 100`} 
+        className="w-full h-full" 
+        preserveAspectRatio="none"
+      >
+        <defs>
+          <linearGradient id="funnelGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" stopColor="#F40000" stopOpacity="0.9" />
+            <stop offset="100%" stopColor="#A10000" stopOpacity="0.6" />
+          </linearGradient>
+        </defs>
         
-        return (
-          <div key={step.label} className="relative">
-            <div className="flex items-center gap-3">
-              {/* Step number */}
-              <div className="w-6 h-6 rounded-full bg-gradient-to-r from-[#F40000] to-[#A10000] text-white text-xs font-bold flex items-center justify-center flex-shrink-0">
-                {index + 1}
-              </div>
-              
-              {/* Bar container */}
-              <div className="flex-1 relative">
-                {/* Background bar */}
-                <div className="h-8 bg-muted/40 rounded-lg overflow-hidden">
-                  {/* Filled bar */}
-                  <div 
-                    className="h-full bg-gradient-to-r from-[#F40000]/80 to-[#A10000]/60 rounded-lg transition-all duration-500 ease-out flex items-center"
-                    style={{ width: `${Math.max(widthPercentage, 8)}%` }}
-                  >
-                    <span className="text-white text-xs font-semibold px-3 whitespace-nowrap">
-                      {step.count}
-                    </span>
-                  </div>
-                </div>
-                
-                {/* Label below */}
-                <div className="flex items-center justify-between mt-1">
-                  <span className="text-xs text-muted-foreground truncate max-w-[120px]">
-                    {step.label}
-                  </span>
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs font-medium text-foreground">
-                      {step.percentage.toFixed(1)}%
-                    </span>
-                    {dropRate !== null && Number(dropRate) > 0 && (
-                      <span className="text-[10px] text-rose-500">
-                        -{dropRate}%
-                      </span>
-                    )}
-                  </div>
-                </div>
-              </div>
+        {/* Funnel shape - trapezoid getting smaller */}
+        <path
+          d={`
+            M 0 10
+            ${data.map((step, i) => {
+              const x = (i + 1) * 60;
+              const heightPercent = maxCount > 0 ? (step.count / maxCount) * 40 : 0;
+              const topY = 50 - heightPercent;
+              return `L ${x} ${topY}`;
+            }).join(' ')}
+            L ${data.length * 60} ${50 + (maxCount > 0 ? (data[data.length - 1]?.count / maxCount) * 40 : 0)}
+            ${[...data].reverse().map((step, i) => {
+              const x = (data.length - 1 - i) * 60;
+              const heightPercent = maxCount > 0 ? (step.count / maxCount) * 40 : 0;
+              const bottomY = 50 + heightPercent;
+              return `L ${x} ${bottomY}`;
+            }).join(' ')}
+            L 0 90
+            Z
+          `}
+          fill="url(#funnelGradient)"
+          className="drop-shadow-sm"
+        />
+
+        {/* Vertical divider lines */}
+        {data.slice(1).map((_, i) => {
+          const x = (i + 1) * 60;
+          return (
+            <line
+              key={i}
+              x1={x}
+              y1={10}
+              x2={x}
+              y2={90}
+              stroke="white"
+              strokeOpacity="0.2"
+              strokeWidth="0.5"
+            />
+          );
+        })}
+      </svg>
+
+      {/* Labels and percentages overlay */}
+      <div className="absolute inset-0 flex">
+        {data.map((step, index) => (
+          <div 
+            key={step.label}
+            className="flex-1 flex flex-col items-center justify-between py-2"
+            style={{ width: `${stepWidth}%` }}
+          >
+            {/* Percentage at top with trace line */}
+            <div className="flex flex-col items-center">
+              <span className="text-xs font-bold text-foreground">
+                {step.percentage.toFixed(0)}%
+              </span>
+              <div className="w-px h-3 bg-gradient-to-b from-foreground/60 to-transparent" />
+            </div>
+
+            {/* Count in middle */}
+            <span className="text-sm font-bold text-white drop-shadow-md">
+              {step.count}
+            </span>
+
+            {/* Label at bottom with trace line */}
+            <div className="flex flex-col items-center">
+              <div className="w-px h-3 bg-gradient-to-t from-muted-foreground/60 to-transparent" />
+              <span className="text-[10px] text-muted-foreground text-center max-w-[50px] leading-tight truncate">
+                {step.label}
+              </span>
             </div>
           </div>
-        );
-      })}
+        ))}
+      </div>
     </div>
   );
 }
