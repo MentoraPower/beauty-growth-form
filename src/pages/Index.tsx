@@ -198,14 +198,19 @@ const Index = () => {
     return `(${ddd}) ${asterisks}-${lastFour}`;
   };
 
-  // Function to check if lead exists by email
+  // Function to check if lead exists by email (with timeout)
   const checkExistingLead = async (email: string) => {
-    setIsCheckingLead(true);
     try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 4000);
+      
       const {
         data,
         error
       } = await supabase.from('leads').select('id, whatsapp, country_code, instagram, service_area, monthly_billing, weekly_attendance, workspace_type, years_experience, average_ticket').eq('email', email.toLowerCase().trim()).maybeSingle();
+      
+      clearTimeout(timeoutId);
+      
       if (error) {
         console.error("Error checking lead:", error);
         return null;
@@ -234,16 +239,18 @@ const Index = () => {
     } catch (error) {
       console.error("Error checking lead:", error);
       return null;
-    } finally {
-      setIsCheckingLead(false);
     }
   };
 
-  // Function to analyze lead data with AI
+  // Function to analyze lead data with AI (non-blocking with timeout)
   const analyzeLeadWithAI = async () => {
     setIsAnalyzing(true);
     try {
       const ticketValue = parseCurrency(formData.averageTicket);
+      
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 5000);
+      
       const response = await fetch('https://ytdfwkchsumgdvcroaqg.supabase.co/functions/v1/analyze-lead', {
         method: 'POST',
         headers: {
@@ -253,8 +260,12 @@ const Index = () => {
           revenue: formData.revenue,
           weeklyAppointments: formData.weeklyAppointments,
           averageTicket: ticketValue.toFixed(2)
-        })
+        }),
+        signal: controller.signal
       });
+      
+      clearTimeout(timeoutId);
+      
       const data = await response.json();
       console.log("AI Analysis result:", data);
       setAiAnalysis(data);
@@ -273,7 +284,7 @@ const Index = () => {
     }
   };
 
-  // Function to save partial lead data progressively
+  // Function to save partial lead data progressively (non-blocking)
   const savePartialLead = async (currentFormData: FormData, currentStep: number) => {
     try {
       // Build lead data with all required fields (use placeholders for incomplete data)
@@ -283,6 +294,7 @@ const Index = () => {
         whatsapp: currentFormData.phone || "",
         country_code: currentFormData.country.dialCode,
         instagram: currentFormData.instagram || "",
+        clinic_name: currentFormData.clinicName || null,
         service_area: currentFormData.beautyArea || "",
         monthly_billing: currentFormData.revenue || "",
         weekly_attendance: currentFormData.weeklyAppointments || "",
@@ -290,6 +302,7 @@ const Index = () => {
         workspace_type: currentFormData.hasPhysicalSpace === null ? "" : currentFormData.hasPhysicalSpace ? "physical" : "home",
         years_experience: currentFormData.yearsOfExperience || "",
         can_afford: currentFormData.canAfford,
+        wants_more_info: currentFormData.wantsMoreInfo,
         utm_source: utmParams.utm_source,
         utm_medium: utmParams.utm_medium,
         utm_campaign: utmParams.utm_campaign,
@@ -316,6 +329,7 @@ const Index = () => {
           whatsapp: currentFormData.phone || "",
           country_code: currentFormData.country.dialCode,
           instagram: currentFormData.instagram || "",
+          clinic_name: currentFormData.clinicName || null,
           service_area: currentFormData.beautyArea || "",
           monthly_billing: currentFormData.revenue || "",
           weekly_attendance: currentFormData.weeklyAppointments || "",
@@ -323,6 +337,7 @@ const Index = () => {
           workspace_type: currentFormData.hasPhysicalSpace === null ? "" : currentFormData.hasPhysicalSpace ? "physical" : "home",
           years_experience: currentFormData.yearsOfExperience || "",
           can_afford: currentFormData.canAfford,
+          wants_more_info: currentFormData.wantsMoreInfo,
           pipeline_id: PIPELINE_NOVO_ID,
           sub_origin_id: SUB_ORIGIN_ENTRADA_ID,
           utm_source: utmParams.utm_source,
@@ -337,6 +352,7 @@ const Index = () => {
       }
     } catch (error) {
       console.error("Error saving partial lead:", error);
+      // Silently fail - don't block user
     }
   };
 
@@ -532,22 +548,38 @@ const Index = () => {
           return;
         }
         
-        // After email step, check if lead exists
+        // After email step, check if lead exists (with timeout)
         if (step === 2) {
-          const existing = await checkExistingLead(formData.email);
-          // If no existing lead, save partial data now (first save happens after email check)
-          if (!existing) {
-            await savePartialLead(formData, step);
+          setIsCheckingLead(true);
+          try {
+            // Use Promise.race to add timeout
+            const checkPromise = checkExistingLead(formData.email);
+            const timeoutPromise = new Promise((_, reject) => 
+              setTimeout(() => reject(new Error('timeout')), 5000)
+            );
+            
+            const existing = await Promise.race([checkPromise, timeoutPromise]).catch(() => null);
+            
+            // Save partial lead in background (don't await)
+            if (!existing) {
+              savePartialLead(formData, step).catch(console.error);
+            }
+          } catch (error) {
+            console.error("Error checking lead:", error);
+            // Continue anyway - save in background
+            savePartialLead(formData, step).catch(console.error);
+          } finally {
+            setIsCheckingLead(false);
           }
         } else if (step > 2 && step <= 12) {
-          // Save partial data at each step AFTER email verification (step 2)
-          // Don't save at step 1 - wait until we check for existing lead at step 2
-          await savePartialLead(formData, step);
+          // Save partial data in background (don't await - non-blocking)
+          savePartialLead(formData, step).catch(console.error);
         }
 
-        // After ticket médio step, analyze with AI
+        // After ticket médio step, analyze with AI in background (don't block)
         if (step === 9) {
-          await analyzeLeadWithAI();
+          // Fire and forget - don't block navigation
+          analyzeLeadWithAI().catch(console.error);
         }
 
         // After years of experience step, check if we should skip affordability question
