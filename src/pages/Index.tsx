@@ -1418,10 +1418,10 @@ function AnimatedCircleSection() {
                   <div className="flex-1">
                     <h3 className="font-bold text-foreground text-base lg:text-sm tracking-tight flex items-center gap-1">
                       <ArrowRight className="w-3 h-3 text-[#F40000]" />
-                      Criativos
+                      Roteiros
                     </h3>
                     <p className="text-sm lg:text-xs text-muted-foreground mt-1 leading-relaxed">
-                      Anúncios criados por copywriters e designers com foco em conversão
+                      Roteiros estratégicos para vídeos e conteúdos que engajam e convertem
                     </p>
                   </div>
                 </div>
