@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
+  DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
 import {
@@ -435,7 +436,8 @@ export function AutomationsDropdown({ pipelines, subOriginId }: AutomationsDropd
           )}
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-w-4xl h-[700px] overflow-hidden p-0 bg-neutral-900 border-neutral-800">
+      <DialogContent className="max-w-4xl h-[700px] overflow-hidden p-0 bg-neutral-900 border-neutral-800" aria-describedby={undefined}>
+        <DialogTitle className="sr-only">Automações</DialogTitle>
         {/* Header with icon and tabs */}
         <div className="border-b border-neutral-800">
           <div className="flex items-center gap-3 px-6 py-4">

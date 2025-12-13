@@ -44,19 +44,33 @@ serve(async (req) => {
     
     console.log("Analyzing lead profile:", leadData.name);
 
-    // Calculate estimated revenue for MQL determination
+    // Parse values - CRITICAL: Only calculate if we have real data
     const weeklyAttendance = parseInt(leadData.weekly_attendance) || 0;
     const averageTicket = parseFloat(leadData.average_ticket) || 0;
-    const estimatedRevenue = leadData.estimated_revenue || (weeklyAttendance * 4 * averageTicket);
-    const isMQL = estimatedRevenue >= MIN_AFFORDABLE_REVENUE;
+    
+    // Check if we have enough data to calculate
+    const hasEnoughData = weeklyAttendance > 0 && averageTicket > 0;
+    
+    // Use existing estimated_revenue if available, otherwise calculate (only if we have data)
+    let estimatedRevenue = leadData.estimated_revenue;
+    if (estimatedRevenue === null || estimatedRevenue === undefined) {
+      estimatedRevenue = hasEnoughData ? weeklyAttendance * 4 * averageTicket : null;
+    }
+    
+    // Only determine MQL if we have revenue data
+    const isMQL = estimatedRevenue !== null && estimatedRevenue >= MIN_AFFORDABLE_REVENUE;
 
     if (!groqApiKey) {
       console.log("No GROQ API key configured");
-      const mqlStatus = isMQL ? "*MQL*" : "*Nao e MQL*";
-      const analysis = `${mqlStatus}. Faturamento estimado de *R$ ${estimatedRevenue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}*/mes. ${isMQL ? 'Lead tem capacidade financeira para investir no servico.' : 'Faturamento abaixo do minimo recomendado de R$ ' + MIN_AFFORDABLE_REVENUE.toLocaleString('pt-BR') + '/mes para o investimento ser sustentavel.'}`;
+      const mqlStatus = estimatedRevenue === null 
+        ? "*Dados insuficientes*" 
+        : (isMQL ? "*MQL*" : "*Nao e MQL*");
+      const analysis = estimatedRevenue === null
+        ? `${mqlStatus}. Lead nao possui dados de atendimentos ou ticket medio para calcular faturamento estimado.`
+        : `${mqlStatus}. Faturamento estimado de *R$ ${estimatedRevenue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}*/mes. ${isMQL ? 'Lead tem capacidade financeira para investir no servico.' : 'Faturamento abaixo do minimo recomendado de R$ ' + MIN_AFFORDABLE_REVENUE.toLocaleString('pt-BR') + '/mes para o investimento ser sustentavel.'}`;
       return new Response(JSON.stringify({ 
         analysis,
-        isMQL,
+        isMQL: estimatedRevenue !== null ? isMQL : null,
         estimatedRevenue
       }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -71,12 +85,14 @@ Area de Atuacao: ${leadData.service_area || 'Nao informada'}
 Anos de Experiencia: ${leadData.years_experience || 'Nao informado'}
 Tipo de Espaco: ${leadData.workspace_type === 'physical' ? 'Espaco Fisico' : leadData.workspace_type === 'home' ? 'Domicilio/Casa' : 'Nao informado'}
 Faturamento Mensal Declarado: ${leadData.monthly_billing || 'Nao informado'}
-Atendimentos por Semana: ${leadData.weekly_attendance || 'Nao informado'}
-Ticket Medio: ${leadData.average_ticket ? `R$ ${parseFloat(leadData.average_ticket).toFixed(2)}` : 'Nao informado'}
-Receita Estimada: R$ ${estimatedRevenue.toFixed(2)}/mes
-E MQL (pode pagar R$ 2.800/mes): ${isMQL ? 'SIM' : 'NAO'}
+Atendimentos por Semana: ${weeklyAttendance > 0 ? weeklyAttendance : 'Nao informado'}
+Ticket Medio: ${averageTicket > 0 ? `R$ ${averageTicket.toFixed(2)}` : 'Nao informado'}
+Receita Estimada: ${estimatedRevenue !== null ? `R$ ${estimatedRevenue.toFixed(2)}/mes` : 'Nao calculavel (dados faltando)'}
+E MQL (pode pagar R$ 2.800/mes): ${estimatedRevenue !== null ? (isMQL ? 'SIM' : 'NAO') : 'NAO DETERMINADO (dados faltando)'}
 Pode Investir (resposta do formulario): ${leadData.can_afford === 'yes' ? 'Sim' : leadData.can_afford === 'no' ? 'Nao' : 'Nao respondeu'}
 Quer mais informacoes: ${leadData.wants_more_info ? 'Sim' : 'Nao'}
+
+IMPORTANTE: NAO invente numeros ou valores. Se um dado esta como "Nao informado", mencione que o dado nao foi fornecido. NAO crie valores ficticios.
 
 Escreva sua analise:`;
 

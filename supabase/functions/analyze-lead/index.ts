@@ -54,6 +54,21 @@ serve(async (req) => {
     // Parse values
     const appointments = parseInt(weeklyAppointments) || 0;
     const ticket = parseFloat(averageTicket) || 0;
+    
+    // CRITICAL: If essential data is missing, return null values - don't calculate
+    if (appointments === 0 || ticket === 0) {
+      console.log("Missing essential data (appointments or ticket), returning null values");
+      return new Response(JSON.stringify({
+        estimatedRevenue: null,
+        revenueConsistent: true,
+        canAfford: true, // Default to true so we don't show affordability question
+        confidenceLevel: "none",
+        analysis: "Dados insuficientes para análise."
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+    
     const estimatedMonthly = appointments * 4 * ticket;
     
     // Extract minimum revenue from range
