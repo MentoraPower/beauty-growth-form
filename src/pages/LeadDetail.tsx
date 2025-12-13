@@ -63,6 +63,7 @@ interface LeadData {
   ai_analysis: string | null;
   is_mql: boolean | null;
   analysis_created_at: string | null;
+  biggest_difficulty: string | null;
 }
 
 interface Pipeline {
@@ -556,6 +557,18 @@ export default function LeadDetail() {
                       </p>
                     </div>
                   </div>
+
+                  {/* Biggest Difficulty */}
+                  {lead.biggest_difficulty && (
+                    <div className="p-4 bg-muted/20 border border-[#00000010] rounded-lg">
+                      <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">
+                        Maior Dificuldade
+                      </h4>
+                      <p className="text-sm text-foreground whitespace-pre-wrap">
+                        {lead.biggest_difficulty}
+                      </p>
+                    </div>
+                  )}
 
                   {/* Investment Summary Card */}
                   <div className="p-4 bg-muted/20 border border-[#00000010] rounded-lg mt-4">
