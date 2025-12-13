@@ -143,10 +143,7 @@ export function ActivitiesBoard({ leadId, leadName, currentPipelineId }: Activit
                           <span className="text-muted-foreground flex-shrink-0">
                             {getTipoIcon(activity.tipo)}
                           </span>
-                          <p className={cn(
-                            "text-sm truncate",
-                            activity.concluida && "line-through text-muted-foreground"
-                          )}>
+                          <p className="text-sm truncate">
                             {activity.titulo}
                           </p>
                         </div>
