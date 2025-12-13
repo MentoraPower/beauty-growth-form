@@ -100,8 +100,8 @@ export function ActivitiesBoard({ leadId, leadName, currentPipelineId }: Activit
       {/* Two columns layout - left narrower */}
       <div className="grid grid-cols-1 lg:grid-cols-[480px_1fr] gap-4">
         {/* Left block - Activities List */}
-        <Card className="border-[#00000010] bg-[#fafafa] shadow-none">
-          <CardContent className="p-4 flex flex-col h-[400px]">
+        <Card className="border-[#00000010] bg-[#fafafa] shadow-none min-h-[calc(100vh-380px)]">
+          <CardContent className="p-4 flex flex-col h-full">
             {isLoadingActivities ? (
               <div className="space-y-3 flex-1">
                 {[1, 2, 3].map((i) => (
