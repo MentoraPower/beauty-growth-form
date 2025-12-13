@@ -212,8 +212,8 @@ export function ActivitiesBoard({ leadId, leadName, currentPipelineId }: Activit
         </Card>
 
         {/* Right block - Activity Details / Tasks */}
-        <Card className="border-[#00000010] bg-[#fafafa] shadow-none">
-          <CardContent className="p-4 h-[400px] flex flex-col">
+        <Card className="border-[#00000010] bg-[#fafafa] shadow-none min-h-[calc(100vh-380px)]">
+          <CardContent className="p-4 h-full flex flex-col">
             <ActivityDetails
               activity={selectedActivity}
               leadId={leadId}
