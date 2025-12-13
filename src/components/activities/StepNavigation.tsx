@@ -1,6 +1,12 @@
 import { memo, useRef, useEffect, useCallback } from "react";
 import { cn } from "@/lib/utils";
 import { Pipeline } from "@/hooks/use-lead-activities";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 interface StepNavigationProps {
   pipelines: Pipeline[];
@@ -8,6 +14,7 @@ interface StepNavigationProps {
   currentPipelineId: string | null;
   leadName: string;
   onPipelineClick: (pipelineId: string) => void;
+  onMoveClick?: () => void;
 }
 
 export const StepNavigation = memo(function StepNavigation({
@@ -16,6 +23,7 @@ export const StepNavigation = memo(function StepNavigation({
   currentPipelineId,
   leadName,
   onPipelineClick,
+  onMoveClick,
 }: StepNavigationProps) {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
 
@@ -137,13 +145,25 @@ export const StepNavigation = memo(function StepNavigation({
                   {pipeline.nome}
                 </span>
 
-                {/* Lead avatar indicator below step name */}
+                {/* Lead avatar indicator below step name - clickable to move */}
                 {isCurrentLead && (
-                  <div className="mt-1.5 flex items-center justify-center">
-                    <div className="w-5 h-5 rounded-sm bg-primary flex items-center justify-center text-[9px] font-medium text-primary-foreground shadow-sm">
-                      {getInitials(leadName)}
-                    </div>
-                  </div>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <button 
+                          onClick={onMoveClick}
+                          className="mt-1.5 flex items-center justify-center hover:scale-110 transition-transform"
+                        >
+                          <div className="w-5 h-5 rounded-sm bg-primary flex items-center justify-center text-[9px] font-medium text-primary-foreground shadow-sm cursor-pointer">
+                            {getInitials(leadName)}
+                          </div>
+                        </button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Mover para outra origem</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
                 )}
               </div>
             </div>

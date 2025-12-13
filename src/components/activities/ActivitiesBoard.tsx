@@ -19,6 +19,7 @@ interface ActivitiesBoardProps {
   leadName: string;
   currentPipelineId: string | null;
   subOriginId?: string | null;
+  onMoveClick?: () => void;
 }
 
 const getTipoIcon = (tipo: string) => {
@@ -32,7 +33,7 @@ const getTipoIcon = (tipo: string) => {
   }
 };
 
-export function ActivitiesBoard({ leadId, leadName, currentPipelineId, subOriginId }: ActivitiesBoardProps) {
+export function ActivitiesBoard({ leadId, leadName, currentPipelineId, subOriginId, onMoveClick }: ActivitiesBoardProps) {
   const [isAddActivityOpen, setIsAddActivityOpen] = useState(false);
   const [editingActivity, setEditingActivity] = useState<LeadActivity | null>(null);
 
@@ -102,6 +103,7 @@ export function ActivitiesBoard({ leadId, leadName, currentPipelineId, subOrigin
             currentPipelineId={currentPipelineId}
             leadName={leadName}
             onPipelineClick={handlePipelineClick}
+            onMoveClick={onMoveClick}
           />
         </CardContent>
       </Card>

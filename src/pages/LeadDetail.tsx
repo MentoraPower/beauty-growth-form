@@ -7,7 +7,7 @@ import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Mail, Calendar, Building2, Clock, DollarSign, Users, Briefcase, MoreVertical, Trash2, User, MessageSquare } from "lucide-react";
+import { Mail, Calendar, Building2, Clock, DollarSign, Users, Briefcase, MoreVertical, Trash2, User, MessageSquare, ArrowRightLeft } from "lucide-react";
 import Instagram from "@/components/icons/Instagram";
 import WhatsApp from "@/components/icons/WhatsApp";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -16,11 +16,13 @@ import { ActivitiesBoard } from "@/components/activities/ActivitiesBoard";
 import { LeadTagsManager } from "@/components/crm/LeadTagsManager";
 import { LeadTrackingTimeline } from "@/components/crm/LeadTrackingTimeline";
 import { LeadAnalysis } from "@/components/crm/LeadAnalysis";
+import { MoveLeadDialog } from "@/components/crm/MoveLeadDialog";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 import {
   AlertDialog,
@@ -91,6 +93,7 @@ export default function LeadDetail() {
   const [pipeline, setPipeline] = useState<Pipeline | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [showMoveDialog, setShowMoveDialog] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   
   // Use URL param for tab persistence, default to "atividades"
@@ -362,6 +365,14 @@ export default function LeadDetail() {
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
                 <DropdownMenuItem 
+                  className="cursor-pointer"
+                  onClick={() => setShowMoveDialog(true)}
+                >
+                  <ArrowRightLeft className="h-4 w-4 mr-2" />
+                  Mover para outra origem
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem 
                   className="text-destructive focus:text-destructive cursor-pointer"
                   onClick={() => setShowDeleteDialog(true)}
                 >
@@ -427,6 +438,7 @@ export default function LeadDetail() {
                   leadName={lead.name}
                   currentPipelineId={lead.pipeline_id}
                   subOriginId={lead.sub_origin_id || subOriginId}
+                  onMoveClick={() => setShowMoveDialog(true)}
                 />
               </motion.div>
             )}
@@ -681,6 +693,19 @@ export default function LeadDetail() {
           </AnimatePresence>
         </div>
       </motion.div>
+
+      {/* Move Lead Dialog */}
+      <MoveLeadDialog
+        open={showMoveDialog}
+        onOpenChange={setShowMoveDialog}
+        leadId={lead.id}
+        leadName={lead.name}
+        currentSubOriginId={lead.sub_origin_id}
+        onMoved={() => {
+          queryClient.invalidateQueries({ queryKey: ["leads"] });
+          navigate(subOriginId ? `/admin/crm?origin=${subOriginId}` : "/admin/crm");
+        }}
+      />
 
       {/* Delete Confirmation Dialog */}
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
