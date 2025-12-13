@@ -142,8 +142,8 @@ export function ActivitiesBoard({ leadId, leadName, currentPipelineId }: Activit
                         <div className={cn(
                           "flex items-center justify-center w-7 h-7 rounded-full text-xs font-medium flex-shrink-0 transition-colors",
                           activity.concluida 
-                            ? "bg-primary text-primary-foreground" 
-                            : "bg-muted border border-border text-muted-foreground"
+                            ? "bg-neutral-800 text-white" 
+                            : "bg-neutral-900 text-white"
                         )}>
                           {index + 1}
                         </div>
