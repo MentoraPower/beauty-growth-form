@@ -72,12 +72,20 @@ export function ActivitiesBoard({ leadId, leadName, currentPipelineId, subOrigin
     setEditingActivity(null);
   }, [handleAddActivity, editingActivity?.id]);
 
-  const handleSaveNotes = useCallback(async (activityId: string, notes: string) => {
+  const handleSaveNotes = useCallback(async (activityId: string, notes: string, activityGroupId?: string | null) => {
     try {
-      await supabase
-        .from("lead_activities")
-        .update({ notas: notes })
-        .eq("id", activityId);
+      // Se a atividade tiver um group_id, atualizar todas do grupo
+      if (activityGroupId) {
+        await supabase
+          .from("lead_activities")
+          .update({ notas: notes })
+          .eq("activity_group_id", activityGroupId);
+      } else {
+        await supabase
+          .from("lead_activities")
+          .update({ notas: notes })
+          .eq("id", activityId);
+      }
     } catch (error) {
       console.error("Error saving notes:", error);
     }
