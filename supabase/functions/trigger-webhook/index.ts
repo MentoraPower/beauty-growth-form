@@ -129,9 +129,6 @@ const handler = async (req: Request): Promise<Response> => {
 
           const response = await fetch(webhook.url, {
             method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
             body: JSON.stringify(webhookPayload),
           });
 
