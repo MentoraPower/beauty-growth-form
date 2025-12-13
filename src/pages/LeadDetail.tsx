@@ -91,6 +91,7 @@ export default function LeadDetail() {
   const [isLoading, setIsLoading] = useState(true);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [contactPanelTab, setContactPanelTab] = useState<"instagram" | "whatsapp">("instagram");
   
   // Use URL param for tab persistence, default to "atividades"
   const activeTab = tabParam && ["atividades", "contato", "rastreamento"].includes(tabParam) 
@@ -377,217 +378,287 @@ export default function LeadDetail() {
               {/* Lead Analysis Card */}
               <LeadAnalysis lead={lead} />
 
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* Contact Info */}
-              <Card className="border-[#00000010] shadow-none">
-                <CardContent className="p-6 space-y-4">
-                  <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-4">
-                    Informações de Contato
-                  </h3>
-                  
-                  
-                  <div className="flex items-center gap-3 p-3 bg-muted/30 border border-[#00000010] rounded-lg">
-                    <div className="h-10 w-10 rounded-full border border-black/10 flex items-center justify-center">
-                      <Mail className="h-5 w-5 text-neutral-600" />
-                    </div>
-                    <div>
-                      <p className="text-xs text-muted-foreground">Email</p>
-                      {isIncompleteEmail(lead.email) ? (
-                        <span className="text-sm font-medium text-muted-foreground italic">incompleto</span>
-                      ) : (
-                        <a href={`mailto:${lead.email}`} className="text-sm font-medium hover:underline">
-                          {lead.email}
-                        </a>
-                      )}
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-3 p-3 bg-muted/30 border border-[#00000010] rounded-lg">
-                    <div className="h-10 w-10 rounded-full border border-black/10 flex items-center justify-center">
-                      <WhatsApp className="h-5 w-5 text-neutral-600" />
-                    </div>
-                    <div>
-                      <p className="text-xs text-muted-foreground">WhatsApp</p>
-                      {!lead.whatsapp || lead.whatsapp === "" ? (
-                        <span className="text-sm font-medium text-muted-foreground italic">incompleto</span>
-                      ) : (
-                        <a 
-                          href={`https://wa.me/${lead.country_code.replace("+", "")}${lead.whatsapp}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-sm font-medium hover:underline"
-                        >
-                          {lead.country_code} {lead.whatsapp}
-                        </a>
-                      )}
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-3 p-3 bg-muted/30 border border-[#00000010] rounded-lg">
-                    <div className="h-10 w-10 rounded-full border border-black/10 flex items-center justify-center">
-                      <Instagram className="h-5 w-5 text-neutral-600" />
-                    </div>
-                    <div>
-                      <p className="text-xs text-muted-foreground">Instagram</p>
-                      {!lead.instagram || lead.instagram === "" ? (
-                        <span className="text-sm font-medium text-muted-foreground italic">incompleto</span>
-                      ) : (
-                        <a 
-                          href={`https://instagram.com/${lead.instagram}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-sm font-medium hover:underline"
-                        >
-                          @{lead.instagram}
-                        </a>
-                      )}
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-3 p-3 bg-muted/30 border border-[#00000010] rounded-lg">
-                    <div className="h-10 w-10 rounded-full border border-black/10 flex items-center justify-center">
-                      <Calendar className="h-5 w-5 text-neutral-600" />
-                    </div>
-                    <div>
-                      <p className="text-xs text-muted-foreground">Data de Cadastro</p>
-                      <p className="text-sm font-medium">{formatDate(lead.created_at)}</p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Business Info */}
-              <Card className="border-[#00000010] shadow-none">
-                <CardContent className="p-6 space-y-4">
-                  <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-4">
-                    Informações do Negócio
-                  </h3>
-                  
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="p-3 bg-muted/30 border border-[#00000010] rounded-lg">
-                      <div className="flex items-center gap-2 mb-1">
-                        <Briefcase className="h-4 w-4 text-muted-foreground" />
-                        <p className="text-xs text-muted-foreground">Área de Atuação</p>
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                {/* Contact Info */}
+                <Card className="border-[#00000010] shadow-none">
+                  <CardContent className="p-6 space-y-4">
+                    <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-4">
+                      Informações de Contato
+                    </h3>
+                    
+                    
+                    <div className="flex items-center gap-3 p-3 bg-muted/30 border border-[#00000010] rounded-lg">
+                      <div className="h-10 w-10 rounded-full border border-black/10 flex items-center justify-center">
+                        <Mail className="h-5 w-5 text-neutral-600" />
                       </div>
-                      <p className={`text-sm font-medium ${!lead.service_area ? "text-muted-foreground italic" : ""}`}>
-                        {displayValue(lead.service_area)}
-                      </p>
-                    </div>
-
-                    <div className="p-3 bg-muted/30 border border-[#00000010] rounded-lg">
-                      <div className="flex items-center gap-2 mb-1">
-                        <DollarSign className="h-4 w-4 text-muted-foreground" />
-                        <p className="text-xs text-muted-foreground">Faturamento Mensal</p>
+                      <div>
+                        <p className="text-xs text-muted-foreground">Email</p>
+                        {isIncompleteEmail(lead.email) ? (
+                          <span className="text-sm font-medium text-muted-foreground italic">incompleto</span>
+                        ) : (
+                          <a href={`mailto:${lead.email}`} className="text-sm font-medium hover:underline">
+                            {lead.email}
+                          </a>
+                        )}
                       </div>
-                      <p className={`text-sm font-medium ${!lead.monthly_billing ? "text-muted-foreground italic" : ""}`}>
-                        {displayValue(lead.monthly_billing)}
-                      </p>
                     </div>
 
-                    <div className="p-3 bg-muted/30 border border-[#00000010] rounded-lg">
-                      <div className="flex items-center gap-2 mb-1">
-                        <Users className="h-4 w-4 text-muted-foreground" />
-                        <p className="text-xs text-muted-foreground">Atendimentos/Semana</p>
+                    <div className="flex items-center gap-3 p-3 bg-muted/30 border border-[#00000010] rounded-lg">
+                      <div className="h-10 w-10 rounded-full border border-black/10 flex items-center justify-center">
+                        <WhatsApp className="h-5 w-5 text-neutral-600" />
                       </div>
-                      <p className={`text-sm font-medium ${!lead.weekly_attendance ? "text-muted-foreground italic" : ""}`}>
-                        {displayValue(lead.weekly_attendance)}
-                      </p>
-                    </div>
-
-                    <div className="p-3 bg-muted/30 border border-[#00000010] rounded-lg">
-                      <div className="flex items-center gap-2 mb-1">
-                        <DollarSign className="h-4 w-4 text-muted-foreground" />
-                        <p className="text-xs text-muted-foreground">Ticket Médio</p>
-                      </div>
-                      <p className={`text-sm font-medium ${lead.average_ticket === null ? "text-muted-foreground italic" : ""}`}>
-                        {formatCurrency(lead.average_ticket)}
-                      </p>
-                    </div>
-
-                    <div className="p-3 bg-muted/30 border border-[#00000010] rounded-lg">
-                      <div className="flex items-center gap-2 mb-1">
-                        <Building2 className="h-4 w-4 text-muted-foreground" />
-                        <p className="text-xs text-muted-foreground">Tipo de Espaço</p>
-                      </div>
-                      <p className={`text-sm font-medium ${!lead.workspace_type ? "text-muted-foreground italic" : ""}`}>
-                        {getWorkspaceLabel(lead.workspace_type)}
-                      </p>
-                    </div>
-
-                    <div className="p-3 bg-muted/30 border border-[#00000010] rounded-lg">
-                      <div className="flex items-center gap-2 mb-1">
-                        <Briefcase className="h-4 w-4 text-muted-foreground" />
-                        <p className="text-xs text-muted-foreground">Anos de Experiência</p>
-                      </div>
-                      <p className={`text-sm font-medium ${!lead.years_experience ? "text-muted-foreground italic" : ""}`}>
-                        {lead.years_experience ? `${lead.years_experience} anos` : "incompleto"}
-                      </p>
-                    </div>
-
-                    <div className="p-3 bg-muted/30 border border-[#00000010] rounded-lg">
-                      <div className="flex items-center gap-2 mb-1">
-                        <Clock className="h-4 w-4 text-muted-foreground" />
-                        <p className="text-xs text-muted-foreground">Receita Estimada</p>
-                      </div>
-                      <p className={`text-sm font-medium ${getEstimatedRevenue() === null ? "text-muted-foreground italic" : ""}`}>
-                        {getEstimatedRevenue() !== null 
-                          ? `${formatCurrency(getEstimatedRevenue())}/mês` 
-                          : "incompleto"}
-                      </p>
-                    </div>
-
-                    <div className="p-3 bg-muted/30 border border-[#00000010] rounded-lg">
-                      <div className="flex items-center gap-2 mb-1">
-                        <DollarSign className="h-4 w-4 text-muted-foreground" />
-                        <p className="text-xs text-muted-foreground">Quer mais informações?</p>
-                      </div>
-                      <p className={`text-sm font-medium ${lead.wants_more_info === null ? "text-muted-foreground italic" : ""}`}>
-                        {lead.wants_more_info === true ? "Sim" : lead.wants_more_info === false ? "Não" : "incompleto"}
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* Biggest Difficulty - Full width */}
-                  <div className="col-span-2 p-3 bg-muted/30 border border-[#00000010] rounded-lg">
-                    <div className="flex items-center gap-2 mb-1">
-                      <MessageSquare className="h-4 w-4 text-muted-foreground" />
-                      <p className="text-xs text-muted-foreground">Maior Dificuldade</p>
-                    </div>
-                    <p className={`text-sm font-medium whitespace-pre-wrap ${!lead.biggest_difficulty ? "text-muted-foreground italic" : ""}`}>
-                      {lead.biggest_difficulty || "incompleto"}
-                    </p>
-                  </div>
-
-                  {/* Investment Summary Card */}
-                  <div className="p-4 bg-muted/20 border border-[#00000010] rounded-lg mt-4">
-                    <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">
-                      Resumo de Investimento
-                    </h4>
-                    <div className="space-y-2">
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm text-muted-foreground">Pergunta: "Você consegue investir R$1.800/mês?"</span>
-                        <Badge 
-                          variant={lead.can_afford === "yes" ? "default" : lead.can_afford === "no" ? "secondary" : "outline"}
-                          className={lead.can_afford === "yes" ? "bg-green-500" : lead.can_afford === "no" ? "bg-orange-500" : ""}
-                        >
-                          {lead.can_afford === "yes" ? "Clicou: SIM" : lead.can_afford === "no" ? "Clicou: NÃO" : "Não respondeu"}
-                        </Badge>
-                      </div>
-                      {lead.can_afford === "no" && (
-                        <div className="flex items-center justify-between">
-                          <span className="text-sm text-muted-foreground">Pergunta: "Quer saber mais?"</span>
-                          <Badge 
-                            variant={lead.wants_more_info ? "default" : "secondary"}
-                            className={lead.wants_more_info ? "bg-blue-500" : ""}
+                      <div>
+                        <p className="text-xs text-muted-foreground">WhatsApp</p>
+                        {!lead.whatsapp || lead.whatsapp === "" ? (
+                          <span className="text-sm font-medium text-muted-foreground italic">incompleto</span>
+                        ) : (
+                          <a 
+                            href={`https://wa.me/${lead.country_code.replace("+", "")}${lead.whatsapp}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-sm font-medium hover:underline"
                           >
-                            {lead.wants_more_info ? "Clicou: SIM" : "Clicou: NÃO"}
+                            {lead.country_code} {lead.whatsapp}
+                          </a>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-3 p-3 bg-muted/30 border border-[#00000010] rounded-lg">
+                      <div className="h-10 w-10 rounded-full border border-black/10 flex items-center justify-center">
+                        <Instagram className="h-5 w-5 text-neutral-600" />
+                      </div>
+                      <div>
+                        <p className="text-xs text-muted-foreground">Instagram</p>
+                        {!lead.instagram || lead.instagram === "" ? (
+                          <span className="text-sm font-medium text-muted-foreground italic">incompleto</span>
+                        ) : (
+                          <a 
+                            href={`https://instagram.com/${lead.instagram}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-sm font-medium hover:underline"
+                          >
+                            @{lead.instagram}
+                          </a>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-3 p-3 bg-muted/30 border border-[#00000010] rounded-lg">
+                      <div className="h-10 w-10 rounded-full border border-black/10 flex items-center justify-center">
+                        <Calendar className="h-5 w-5 text-neutral-600" />
+                      </div>
+                      <div>
+                        <p className="text-xs text-muted-foreground">Data de Cadastro</p>
+                        <p className="text-sm font-medium">{formatDate(lead.created_at)}</p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Business Info */}
+                <Card className="border-[#00000010] shadow-none">
+                  <CardContent className="p-6 space-y-4">
+                    <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-4">
+                      Informações do Negócio
+                    </h3>
+                    
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="p-3 bg-muted/30 border border-[#00000010] rounded-lg">
+                        <div className="flex items-center gap-2 mb-1">
+                          <Briefcase className="h-4 w-4 text-muted-foreground" />
+                          <p className="text-xs text-muted-foreground">Área de Atuação</p>
+                        </div>
+                        <p className={`text-sm font-medium ${!lead.service_area ? "text-muted-foreground italic" : ""}`}>
+                          {displayValue(lead.service_area)}
+                        </p>
+                      </div>
+
+                      <div className="p-3 bg-muted/30 border border-[#00000010] rounded-lg">
+                        <div className="flex items-center gap-2 mb-1">
+                          <DollarSign className="h-4 w-4 text-muted-foreground" />
+                          <p className="text-xs text-muted-foreground">Faturamento Mensal</p>
+                        </div>
+                        <p className={`text-sm font-medium ${!lead.monthly_billing ? "text-muted-foreground italic" : ""}`}>
+                          {displayValue(lead.monthly_billing)}
+                        </p>
+                      </div>
+
+                      <div className="p-3 bg-muted/30 border border-[#00000010] rounded-lg">
+                        <div className="flex items-center gap-2 mb-1">
+                          <Users className="h-4 w-4 text-muted-foreground" />
+                          <p className="text-xs text-muted-foreground">Atendimentos/Semana</p>
+                        </div>
+                        <p className={`text-sm font-medium ${!lead.weekly_attendance ? "text-muted-foreground italic" : ""}`}>
+                          {displayValue(lead.weekly_attendance)}
+                        </p>
+                      </div>
+
+                      <div className="p-3 bg-muted/30 border border-[#00000010] rounded-lg">
+                        <div className="flex items-center gap-2 mb-1">
+                          <DollarSign className="h-4 w-4 text-muted-foreground" />
+                          <p className="text-xs text-muted-foreground">Ticket Médio</p>
+                        </div>
+                        <p className={`text-sm font-medium ${lead.average_ticket === null ? "text-muted-foreground italic" : ""}`}>
+                          {formatCurrency(lead.average_ticket)}
+                        </p>
+                      </div>
+
+                      <div className="p-3 bg-muted/30 border border-[#00000010] rounded-lg">
+                        <div className="flex items-center gap-2 mb-1">
+                          <Building2 className="h-4 w-4 text-muted-foreground" />
+                          <p className="text-xs text-muted-foreground">Tipo de Espaço</p>
+                        </div>
+                        <p className={`text-sm font-medium ${!lead.workspace_type ? "text-muted-foreground italic" : ""}`}>
+                          {getWorkspaceLabel(lead.workspace_type)}
+                        </p>
+                      </div>
+
+                      <div className="p-3 bg-muted/30 border border-[#00000010] rounded-lg">
+                        <div className="flex items-center gap-2 mb-1">
+                          <Briefcase className="h-4 w-4 text-muted-foreground" />
+                          <p className="text-xs text-muted-foreground">Anos de Experiência</p>
+                        </div>
+                        <p className={`text-sm font-medium ${!lead.years_experience ? "text-muted-foreground italic" : ""}`}>
+                          {lead.years_experience ? `${lead.years_experience} anos` : "incompleto"}
+                        </p>
+                      </div>
+
+                      <div className="p-3 bg-muted/30 border border-[#00000010] rounded-lg">
+                        <div className="flex items-center gap-2 mb-1">
+                          <Clock className="h-4 w-4 text-muted-foreground" />
+                          <p className="text-xs text-muted-foreground">Receita Estimada</p>
+                        </div>
+                        <p className={`text-sm font-medium ${getEstimatedRevenue() === null ? "text-muted-foreground italic" : ""}`}>
+                          {getEstimatedRevenue() !== null 
+                            ? `${formatCurrency(getEstimatedRevenue())}/mês` 
+                            : "incompleto"}
+                        </p>
+                      </div>
+
+                      <div className="p-3 bg-muted/30 border border-[#00000010] rounded-lg">
+                        <div className="flex items-center gap-2 mb-1">
+                          <DollarSign className="h-4 w-4 text-muted-foreground" />
+                          <p className="text-xs text-muted-foreground">Quer mais informações?</p>
+                        </div>
+                        <p className={`text-sm font-medium ${lead.wants_more_info === null ? "text-muted-foreground italic" : ""}`}>
+                          {lead.wants_more_info === true ? "Sim" : lead.wants_more_info === false ? "Não" : "incompleto"}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Biggest Difficulty - Full width */}
+                    <div className="col-span-2 p-3 bg-muted/30 border border-[#00000010] rounded-lg">
+                      <div className="flex items-center gap-2 mb-1">
+                        <MessageSquare className="h-4 w-4 text-muted-foreground" />
+                        <p className="text-xs text-muted-foreground">Maior Dificuldade</p>
+                      </div>
+                      <p className={`text-sm font-medium whitespace-pre-wrap ${!lead.biggest_difficulty ? "text-muted-foreground italic" : ""}`}>
+                        {lead.biggest_difficulty || "incompleto"}
+                      </p>
+                    </div>
+
+                    {/* Investment Summary Card */}
+                    <div className="p-4 bg-muted/20 border border-[#00000010] rounded-lg mt-4">
+                      <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">
+                        Resumo de Investimento
+                      </h4>
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm text-muted-foreground">Pergunta: "Você consegue investir R$1.800/mês?"</span>
+                          <Badge 
+                            variant={lead.can_afford === "yes" ? "default" : lead.can_afford === "no" ? "secondary" : "outline"}
+                            className={lead.can_afford === "yes" ? "bg-green-500" : lead.can_afford === "no" ? "bg-orange-500" : ""}
+                          >
+                            {lead.can_afford === "yes" ? "Clicou: SIM" : lead.can_afford === "no" ? "Clicou: NÃO" : "Não respondeu"}
                           </Badge>
+                        </div>
+                        {lead.can_afford === "no" && (
+                          <div className="flex items-center justify-between">
+                            <span className="text-sm text-muted-foreground">Pergunta: "Quer saber mais?"</span>
+                            <Badge 
+                              variant={lead.wants_more_info ? "default" : "secondary"}
+                              className={lead.wants_more_info ? "bg-blue-500" : ""}
+                            >
+                              {lead.wants_more_info ? "Clicou: SIM" : "Clicou: NÃO"}
+                            </Badge>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Social Panel - Instagram & WhatsApp */}
+                <Card className="border-[#00000010] shadow-none">
+                  <CardContent className="p-0">
+                    {/* Tabs */}
+                    <div className="flex border-b border-border">
+                      <button
+                        onClick={() => setContactPanelTab("instagram")}
+                        className={`flex-1 py-3 text-sm font-medium flex items-center justify-center gap-2 transition-colors ${
+                          contactPanelTab === "instagram" 
+                            ? "text-primary border-b-2 border-primary" 
+                            : "text-muted-foreground hover:text-foreground"
+                        }`}
+                      >
+                        <Instagram className="w-4 h-4" />
+                        Instagram
+                      </button>
+                      <button
+                        onClick={() => setContactPanelTab("whatsapp")}
+                        className={`flex-1 py-3 text-sm font-medium flex items-center justify-center gap-2 transition-colors ${
+                          contactPanelTab === "whatsapp" 
+                            ? "text-primary border-b-2 border-primary" 
+                            : "text-muted-foreground hover:text-foreground"
+                        }`}
+                      >
+                        <WhatsApp className="w-4 h-4" />
+                        WhatsApp
+                      </button>
+                    </div>
+
+                    {/* Content */}
+                    <div className="h-[500px]">
+                      {contactPanelTab === "instagram" ? (
+                        lead.instagram ? (
+                          <iframe
+                            src={`https://www.instagram.com/${lead.instagram.replace(/^@/, "").replace(/^https?:\/\/(www\.)?instagram\.com\//, "").split("/")[0].split("?")[0]}/`}
+                            className="w-full h-full border-0"
+                            title={`Instagram de ${lead.name}`}
+                          />
+                        ) : (
+                          <div className="flex flex-col items-center justify-center h-full text-center p-6">
+                            <Instagram className="w-12 h-12 text-muted-foreground/30 mb-4" />
+                            <p className="text-sm text-muted-foreground">Instagram não informado</p>
+                          </div>
+                        )
+                      ) : (
+                        <div className="flex flex-col items-center justify-center h-full p-6 text-center">
+                          <div className="w-16 h-16 rounded-full bg-emerald-500/10 flex items-center justify-center mb-4">
+                            <WhatsApp className="w-8 h-8 text-emerald-600" />
+                          </div>
+                          <h3 className="font-semibold text-lg mb-2">Iniciar Conversa</h3>
+                          <p className="text-sm text-muted-foreground mb-4">
+                            {lead.whatsapp ? `${lead.country_code} ${lead.whatsapp}` : "WhatsApp não informado"}
+                          </p>
+                          {lead.whatsapp && (
+                            <a
+                              href={`https://wa.me/${lead.country_code.replace("+", "")}${lead.whatsapp.replace(/\D/g, "")}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-2 px-6 py-3 bg-emerald-500 text-white rounded-lg font-medium hover:bg-emerald-600 transition-colors"
+                            >
+                              <WhatsApp className="w-5 h-5" />
+                              Abrir WhatsApp
+                            </a>
+                          )}
                         </div>
                       )}
                     </div>
-                  </div>
-                </CardContent>
-              </Card>
+                  </CardContent>
+                </Card>
               </div>
             </div>
           )}
