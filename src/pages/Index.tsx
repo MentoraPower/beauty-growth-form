@@ -36,6 +36,7 @@ interface FormData {
   phone: string;
   country: Country;
   instagram: string;
+  biggestDifficulty: string;
   clinicName: string;
   beautyArea: string;
   revenue: string;
@@ -156,6 +157,7 @@ const Index = () => {
     phone: "",
     country: countries[0],
     instagram: "",
+    biggestDifficulty: "",
     clinicName: "",
     beautyArea: "",
     revenue: "",
@@ -338,6 +340,7 @@ const Index = () => {
         whatsapp: currentFormData.phone || "",
         country_code: currentFormData.country.dialCode,
         instagram: currentFormData.instagram || "",
+        biggest_difficulty: currentFormData.biggestDifficulty || null,
         clinic_name: currentFormData.clinicName || null,
         service_area: currentFormData.beautyArea || "",
         monthly_billing: currentFormData.revenue || "",
@@ -380,6 +383,7 @@ const Index = () => {
           whatsapp: currentFormData.phone || "",
           country_code: currentFormData.country.dialCode,
           instagram: currentFormData.instagram || "",
+          biggest_difficulty: currentFormData.biggestDifficulty || null,
           clinic_name: currentFormData.clinicName || null,
           service_area: currentFormData.beautyArea || "",
           monthly_billing: currentFormData.revenue || "",
@@ -570,7 +574,7 @@ const Index = () => {
       window.removeEventListener('beforeunload', handleBeforeUnload);
     };
   }, [formData, step, existingLead, partialLeadId]);
-  const totalSteps = 12; // Removed clinic name step
+  const totalSteps = 13; // Added biggest difficulty step after Instagram
   const updateFormData = (field: keyof FormData, value: string | boolean | Country | null) => {
     setFormData(prev => ({
       ...prev,
@@ -588,18 +592,20 @@ const Index = () => {
       case 4:
         return "Por favor, preencha seu Instagram";
       case 5:
-        return "Por favor, selecione sua área de atuação";
+        return "Por favor, conte sua maior dificuldade";
       case 6:
-        return "Por favor, selecione seu faturamento";
+        return "Por favor, selecione sua área de atuação";
       case 7:
-        return "Por favor, preencha a quantidade de atendimentos";
+        return "Por favor, selecione seu faturamento";
       case 8:
-        return "Por favor, preencha o valor do ticket médio";
+        return "Por favor, preencha a quantidade de atendimentos";
       case 9:
-        return "Por favor, selecione uma opção";
+        return "Por favor, preencha o valor do ticket médio";
       case 10:
-        return "Por favor, preencha seus anos de experiência";
+        return "Por favor, selecione uma opção";
       case 11:
+        return "Por favor, preencha seus anos de experiência";
+      case 12:
         return "Por favor, selecione uma opção";
       default:
         return "Por favor, preencha o campo";
@@ -649,29 +655,29 @@ const Index = () => {
           } finally {
             setIsCheckingLead(false);
           }
-        } else if (step > 2 && step <= 11) {
+        } else if (step > 2 && step <= 12) {
           // Save partial data in background (don't await - non-blocking)
           savePartialLead(formData, step).catch(console.error);
         }
 
         // After ticket médio step, analyze with AI in background (don't block)
-        if (step === 8) {
+        if (step === 9) {
           // Fire and forget - don't block navigation
           analyzeLeadWithAI().catch(console.error);
         }
 
         // After years of experience step, check if we should skip affordability question
-        if (step === 10) {
+        if (step === 11) {
           if (!shouldShowAffordabilityQuestion()) {
-            // Skip step 11, go directly to final step (12) - send email on final save
+            // Skip step 12, go directly to final step (13) - send email on final save
             savePartialLead(formData, step, true).catch(console.error);
-            setStep(12);
+            setStep(13);
             return;
           }
         }
         
         // After affordability question, save final data and send email
-        if (step === 11) {
+        if (step === 12) {
           savePartialLead(formData, step, true).catch(console.error);
         }
         setStep(step + 1);
@@ -690,9 +696,9 @@ const Index = () => {
   };
   const prevStep = () => {
     if (step > 1) {
-      // If on final step and affordability was skipped, go back to step 10
-      if (step === 12 && !shouldShowAffordabilityQuestion()) {
-        setStep(10);
+      // If on final step and affordability was skipped, go back to step 11
+      if (step === 13 && !shouldShowAffordabilityQuestion()) {
+        setStep(11);
         return;
       }
       setStep(step - 1);
@@ -711,22 +717,24 @@ const Index = () => {
       case 4:
         return formData.instagram.trim().length >= 1;
       case 5:
+        return formData.biggestDifficulty.trim().length >= 1;
+      case 6:
         // Allow proceeding if existing lead has service area (confirmation mode)
         if (existingLead && existingLead.service_area) return true;
         return formData.beautyArea !== "";
-      case 6:
-        return formData.revenue !== "";
       case 7:
+        return formData.revenue !== "";
+      case 8:
         const attendance = parseInt(formData.weeklyAppointments);
         return formData.weeklyAppointments.trim().length >= 1 && !isNaN(attendance) && attendance > 0;
-      case 8:
-        return formData.averageTicket.trim().length >= 1 && parseCurrency(formData.averageTicket) > 0;
       case 9:
-        return formData.hasPhysicalSpace !== null;
+        return formData.averageTicket.trim().length >= 1 && parseCurrency(formData.averageTicket) > 0;
       case 10:
+        return formData.hasPhysicalSpace !== null;
+      case 11:
         const years = parseInt(formData.yearsOfExperience);
         return formData.yearsOfExperience.trim().length >= 1 && !isNaN(years) && years >= 0;
-      case 11:
+      case 12:
         return formData.canAfford !== null;
       default:
         return true;
@@ -848,6 +856,38 @@ const Index = () => {
             </div>
           </div>;
       case 5:
+        return <div className="form-card">
+            <h1 className="form-title">
+              <span className="font-light">Qual a sua </span>
+              <span className="font-bold">maior dificuldade?</span>
+            </h1>
+            <p className="form-subtitle">Para aumentar o faturamento do seu negócio</p>
+            <div className="space-y-4">
+              <textarea
+                value={formData.biggestDifficulty}
+                onChange={e => updateFormData("biggestDifficulty", e.target.value)}
+                placeholder="Conte aqui sua maior dificuldade..."
+                className="form-input min-h-[120px] resize-none overflow-hidden"
+                autoFocus
+                style={{ height: 'auto' }}
+                onInput={(e) => {
+                  const target = e.target as HTMLTextAreaElement;
+                  target.style.height = 'auto';
+                  target.style.height = Math.max(120, target.scrollHeight) + 'px';
+                }}
+              />
+              <div className="flex gap-3">
+                <button onClick={prevStep} className="h-14 px-4 rounded-xl border border-border bg-card flex items-center justify-center">
+                  <ArrowLeft className="w-5 h-5 text-foreground" />
+                </button>
+                <ShimmerButton onClick={handleNext} className="flex-1">
+                  Continuar
+                  <ArrowRight className="w-5 h-5" />
+                </ShimmerButton>
+              </div>
+            </div>
+          </div>;
+      case 6:
         // If existing lead found, show confirmation mode
         if (existingLead && existingLead.service_area) {
           return <div className="form-card">
@@ -901,7 +941,7 @@ const Index = () => {
               </div>
             </div>
           </div>;
-      case 6:
+      case 7:
         return <div className="form-card">
             <h1 className="form-title">
               <span className="font-light">Qual o </span>
@@ -921,7 +961,7 @@ const Index = () => {
               </div>
             </div>
           </div>;
-      case 7:
+      case 8:
         return <div className="form-card">
             <h1 className="form-title">
               <span className="font-light">Quantos </span>
@@ -941,7 +981,7 @@ const Index = () => {
               </div>
             </div>
           </div>;
-      case 8:
+      case 9:
         return <div className="form-card">
             <h1 className="form-title">
               <span className="font-light">Qual o </span>
@@ -964,7 +1004,7 @@ const Index = () => {
               </div>
             </div>
           </div>;
-      case 9:
+      case 10:
         return <div className="form-card">
             <h1 className="form-title">
               <span className="font-light">Você possui </span>
@@ -1001,7 +1041,7 @@ const Index = () => {
               </div>
             </div>
           </div>;
-      case 10:
+      case 11:
         return <div className="form-card">
             <h1 className="form-title">
               <span className="font-light">Quantos anos de </span>
@@ -1021,7 +1061,7 @@ const Index = () => {
               </div>
             </div>
           </div>;
-      case 11:
+      case 12:
         // Affordability check step
         if (formData.canAfford === "no" && formData.wantsMoreInfo === null) {
           // Show "want to know more?" question
@@ -1069,7 +1109,7 @@ const Index = () => {
               </button>
             </div>
           </div>;
-      case 12:
+      case 13:
         return <div className="form-card text-center">
             {isLoading ? <>
                 <h1 className="form-title !text-center">Redirecionando...</h1>
