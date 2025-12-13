@@ -64,29 +64,26 @@ const formatCurrencyDisplay = (value: string | number): string => {
   return `R$ ${formatted}`;
 };
 
-// Handle currency input - direct reais input (user types the actual value)
+// Handle currency input - ATM-style (digits enter from right, like a calculator)
 const handleCurrencyInput = (value: string): string => {
-  // Remove R$ prefix and spaces
-  let cleaned = value.replace(/R\$\s*/g, '').trim();
-  
-  // Remove everything except digits and comma
-  cleaned = cleaned.replace(/[^\d,]/g, '');
-  
-  // If empty, return empty
-  if (!cleaned) return '';
-  
-  // Ensure only one comma
-  const parts = cleaned.split(',');
-  if (parts.length > 2) {
-    cleaned = parts[0] + ',' + parts.slice(1).join('');
-  }
-  
-  // Limit decimal places to 2
-  if (parts.length === 2 && parts[1].length > 2) {
-    cleaned = parts[0] + ',' + parts[1].substring(0, 2);
-  }
-  
-  return `R$ ${cleaned}`;
+  // Remove everything except digits
+  const digits = value.replace(/\D/g, '');
+
+  // If empty, return empty placeholder
+  if (!digits) return '';
+
+  // Convert to number (as cents)
+  const cents = parseInt(digits, 10);
+
+  // Convert cents to reais (divide by 100)
+  const reais = cents / 100;
+
+  // Format as BRL currency with thousands separator
+  const formatted = reais.toLocaleString('pt-BR', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  });
+  return `R$ ${formatted}`;
 };
 
 // Parse currency string to number (returns value in reais)
