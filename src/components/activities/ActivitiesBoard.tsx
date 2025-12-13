@@ -149,12 +149,12 @@ export function ActivitiesBoard({ leadId, leadName, currentPipelineId }: Activit
                         </div>
 
                         {/* Atividade - título */}
-                        <p className="text-sm truncate flex-1 min-w-0">
+                        <p className="text-sm font-semibold truncate flex-1 min-w-0">
                           {activity.titulo}
                         </p>
 
                         {/* Data - formato dd/MM */}
-                        <span className="w-14 text-xs text-muted-foreground text-center flex-shrink-0">
+                        <span className="w-14 text-xs font-semibold text-muted-foreground text-center flex-shrink-0">
                           {format(new Date(activity.data + 'T00:00:00'), "dd/MM")}
                         </span>
 
