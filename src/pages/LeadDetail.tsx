@@ -7,7 +7,7 @@ import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Mail, Calendar, Building2, Clock, DollarSign, Users, Briefcase, MoreVertical, Trash2, User } from "lucide-react";
+import { Mail, Calendar, Building2, Clock, DollarSign, Users, Briefcase, MoreVertical, Trash2, User, MessageSquare } from "lucide-react";
 import Instagram from "@/components/icons/Instagram";
 import WhatsApp from "@/components/icons/WhatsApp";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -385,17 +385,6 @@ export default function LeadDetail() {
                     Informações de Contato
                   </h3>
                   
-                  <div className="flex items-center gap-3 p-3 bg-muted/30 border border-[#00000010] rounded-lg">
-                    <div className="h-10 w-10 rounded-full border border-black/10 flex items-center justify-center">
-                      <Building2 className="h-5 w-5 text-neutral-600" />
-                    </div>
-                    <div>
-                      <p className="text-xs text-muted-foreground">Empresa</p>
-                      <p className={`text-sm font-medium ${!lead.clinic_name ? "text-muted-foreground italic text-xs" : ""}`}>
-                        {lead.clinic_name || "sem empresa"}
-                      </p>
-                    </div>
-                  </div>
                   
                   <div className="flex items-center gap-3 p-3 bg-muted/30 border border-[#00000010] rounded-lg">
                     <div className="h-10 w-10 rounded-full border border-black/10 flex items-center justify-center">
@@ -558,17 +547,16 @@ export default function LeadDetail() {
                     </div>
                   </div>
 
-                  {/* Biggest Difficulty */}
-                  {lead.biggest_difficulty && (
-                    <div className="p-4 bg-muted/20 border border-[#00000010] rounded-lg">
-                      <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">
-                        Maior Dificuldade
-                      </h4>
-                      <p className="text-sm text-foreground whitespace-pre-wrap">
-                        {lead.biggest_difficulty}
-                      </p>
+                  {/* Biggest Difficulty - Full width */}
+                  <div className="col-span-2 p-3 bg-muted/30 border border-[#00000010] rounded-lg">
+                    <div className="flex items-center gap-2 mb-1">
+                      <MessageSquare className="h-4 w-4 text-muted-foreground" />
+                      <p className="text-xs text-muted-foreground">Maior Dificuldade</p>
                     </div>
-                  )}
+                    <p className={`text-sm font-medium whitespace-pre-wrap ${!lead.biggest_difficulty ? "text-muted-foreground italic" : ""}`}>
+                      {lead.biggest_difficulty || "incompleto"}
+                    </p>
+                  </div>
 
                   {/* Investment Summary Card */}
                   <div className="p-4 bg-muted/20 border border-[#00000010] rounded-lg mt-4">
