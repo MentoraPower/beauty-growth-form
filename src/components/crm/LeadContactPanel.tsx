@@ -240,34 +240,35 @@ export function LeadContactPanel({ lead, className }: LeadContactPanelProps) {
           <div className="flex-1 flex flex-col overflow-hidden">
             {activeTab === "instagram" ? (
               lead.instagram ? (
-                <div className="flex-1 flex flex-col">
-                  {/* Instagram Header */}
-                  <div className="p-4 border-b border-border flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 via-pink-500 to-orange-400 flex items-center justify-center">
-                        <Instagram className="w-5 h-5 text-white" />
+                <div className="flex-1 flex flex-col overflow-hidden">
+                  {/* Instagram Header - Compact */}
+                  <div className="p-3 border-b border-border flex items-center justify-between shrink-0">
+                    <div className="flex items-center gap-2">
+                      <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-500 via-pink-500 to-orange-400 flex items-center justify-center">
+                        <Instagram className="w-4 h-4 text-white" />
                       </div>
                       <div>
-                        <p className="font-semibold">@{getInstagramHandle()}</p>
-                        <p className="text-xs text-muted-foreground">Perfil do Instagram</p>
+                        <p className="font-semibold text-sm">@{getInstagramHandle()}</p>
                       </div>
                     </div>
                     <a
                       href={`https://www.instagram.com/${getInstagramHandle()}/`}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="p-2 hover:bg-muted rounded-full transition-colors"
+                      className="p-1.5 hover:bg-muted rounded-full transition-colors"
                     >
-                      <ExternalLink className="w-4 h-4 text-muted-foreground" />
+                      <ExternalLink className="w-3.5 h-3.5 text-muted-foreground" />
                     </a>
                   </div>
-                  {/* Instagram Embed */}
-                  <div className="flex-1 overflow-hidden">
+                  {/* Instagram Profile Embed - Full Height */}
+                  <div className="flex-1 overflow-hidden relative">
                     <iframe
-                      src={`https://www.instagram.com/${getInstagramHandle()}/embed`}
+                      src={`https://www.instagram.com/${getInstagramHandle()}/embed/?cr=1&v=14&wp=540&rd=https%3A%2F%2Fscalebeauty.com.br`}
                       className="w-full h-full border-0"
+                      style={{ minHeight: "500px" }}
                       title={`Instagram de ${lead.name}`}
                       scrolling="yes"
+                      allowFullScreen
                     />
                   </div>
                 </div>

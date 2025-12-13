@@ -374,20 +374,22 @@ export default function LeadDetail() {
           )}
 
           {activeTab === "contato" && (
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-[calc(100vh-14rem)]">
-              {/* Left Column - Analysis + Contact + Business Info */}
-              <div className="lg:col-span-2 space-y-6 overflow-y-auto pr-2">
-                {/* Lead Analysis Card */}
-                <LeadAnalysis lead={lead} />
+            <div className="space-y-6">
+              {/* Top Row - Social Panel + Contact/Business Info */}
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-6" style={{ height: "calc(100vh - 20rem)" }}>
+                {/* Social Panel - Narrower, Full Height */}
+                <div className="lg:col-span-4 h-full">
+                  <LeadContactPanel lead={lead} className="h-full" />
+                </div>
 
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* Contact + Business Info - Wider */}
+                <div className="lg:col-span-8 grid grid-cols-1 lg:grid-cols-2 gap-6 overflow-y-auto">
                   {/* Contact Info */}
-                  <Card className="border-[#00000010] shadow-none">
+                  <Card className="border-[#00000010] shadow-none h-fit">
                     <CardContent className="p-6 space-y-4">
                       <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-4">
                         Informações de Contato
                       </h3>
-                      
                       
                       <div className="flex items-center gap-3 p-3 bg-muted/30 border border-[#00000010] rounded-lg">
                         <div className="h-10 w-10 rounded-full border border-black/10 flex items-center justify-center">
@@ -460,13 +462,13 @@ export default function LeadDetail() {
                   </Card>
 
                   {/* Business Info */}
-                  <Card className="border-[#00000010] shadow-none">
+                  <Card className="border-[#00000010] shadow-none h-fit">
                     <CardContent className="p-6 space-y-4">
                       <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-4">
                         Informações do Negócio
                       </h3>
                       
-                      <div className="grid grid-cols-2 gap-4">
+                      <div className="grid grid-cols-2 gap-3">
                         <div className="p-3 bg-muted/30 border border-[#00000010] rounded-lg">
                           <div className="flex items-center gap-2 mb-1">
                             <Briefcase className="h-4 w-4 text-muted-foreground" />
@@ -480,7 +482,7 @@ export default function LeadDetail() {
                         <div className="p-3 bg-muted/30 border border-[#00000010] rounded-lg">
                           <div className="flex items-center gap-2 mb-1">
                             <DollarSign className="h-4 w-4 text-muted-foreground" />
-                            <p className="text-xs text-muted-foreground">Faturamento Mensal</p>
+                            <p className="text-xs text-muted-foreground">Faturamento</p>
                           </div>
                           <p className={`text-sm font-medium ${!lead.monthly_billing ? "text-muted-foreground italic" : ""}`}>
                             {displayValue(lead.monthly_billing)}
@@ -490,7 +492,7 @@ export default function LeadDetail() {
                         <div className="p-3 bg-muted/30 border border-[#00000010] rounded-lg">
                           <div className="flex items-center gap-2 mb-1">
                             <Users className="h-4 w-4 text-muted-foreground" />
-                            <p className="text-xs text-muted-foreground">Atendimentos/Semana</p>
+                            <p className="text-xs text-muted-foreground">Atend./Semana</p>
                           </div>
                           <p className={`text-sm font-medium ${!lead.weekly_attendance ? "text-muted-foreground italic" : ""}`}>
                             {displayValue(lead.weekly_attendance)}
@@ -510,7 +512,7 @@ export default function LeadDetail() {
                         <div className="p-3 bg-muted/30 border border-[#00000010] rounded-lg">
                           <div className="flex items-center gap-2 mb-1">
                             <Building2 className="h-4 w-4 text-muted-foreground" />
-                            <p className="text-xs text-muted-foreground">Tipo de Espaço</p>
+                            <p className="text-xs text-muted-foreground">Espaço</p>
                           </div>
                           <p className={`text-sm font-medium ${!lead.workspace_type ? "text-muted-foreground italic" : ""}`}>
                             {getWorkspaceLabel(lead.workspace_type)}
@@ -520,7 +522,7 @@ export default function LeadDetail() {
                         <div className="p-3 bg-muted/30 border border-[#00000010] rounded-lg">
                           <div className="flex items-center gap-2 mb-1">
                             <Briefcase className="h-4 w-4 text-muted-foreground" />
-                            <p className="text-xs text-muted-foreground">Anos de Experiência</p>
+                            <p className="text-xs text-muted-foreground">Experiência</p>
                           </div>
                           <p className={`text-sm font-medium ${!lead.years_experience ? "text-muted-foreground italic" : ""}`}>
                             {lead.years_experience ? `${lead.years_experience} anos` : "incompleto"}
@@ -530,7 +532,7 @@ export default function LeadDetail() {
                         <div className="p-3 bg-muted/30 border border-[#00000010] rounded-lg">
                           <div className="flex items-center gap-2 mb-1">
                             <Clock className="h-4 w-4 text-muted-foreground" />
-                            <p className="text-xs text-muted-foreground">Receita Estimada</p>
+                            <p className="text-xs text-muted-foreground">Receita Est.</p>
                           </div>
                           <p className={`text-sm font-medium ${getEstimatedRevenue() === null ? "text-muted-foreground italic" : ""}`}>
                             {getEstimatedRevenue() !== null 
@@ -542,7 +544,7 @@ export default function LeadDetail() {
                         <div className="p-3 bg-muted/30 border border-[#00000010] rounded-lg">
                           <div className="flex items-center gap-2 mb-1">
                             <DollarSign className="h-4 w-4 text-muted-foreground" />
-                            <p className="text-xs text-muted-foreground">Quer mais informações?</p>
+                            <p className="text-xs text-muted-foreground">Quer info?</p>
                           </div>
                           <p className={`text-sm font-medium ${lead.wants_more_info === null ? "text-muted-foreground italic" : ""}`}>
                             {lead.wants_more_info === true ? "Sim" : lead.wants_more_info === false ? "Não" : "incompleto"}
@@ -550,8 +552,8 @@ export default function LeadDetail() {
                         </div>
                       </div>
 
-                      {/* Biggest Difficulty - Full width */}
-                      <div className="col-span-2 p-3 bg-muted/30 border border-[#00000010] rounded-lg">
+                      {/* Biggest Difficulty */}
+                      <div className="p-3 bg-muted/30 border border-[#00000010] rounded-lg">
                         <div className="flex items-center gap-2 mb-1">
                           <MessageSquare className="h-4 w-4 text-muted-foreground" />
                           <p className="text-xs text-muted-foreground">Maior Dificuldade</p>
@@ -561,29 +563,29 @@ export default function LeadDetail() {
                         </p>
                       </div>
 
-                      {/* Investment Summary Card */}
-                      <div className="p-4 bg-muted/20 border border-[#00000010] rounded-lg mt-4">
-                        <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">
-                          Resumo de Investimento
+                      {/* Investment Summary */}
+                      <div className="p-3 bg-muted/20 border border-[#00000010] rounded-lg">
+                        <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">
+                          Investimento
                         </h4>
-                        <div className="space-y-2">
+                        <div className="space-y-1">
                           <div className="flex items-center justify-between">
-                            <span className="text-sm text-muted-foreground">Pergunta: "Você consegue investir R$1.800/mês?"</span>
+                            <span className="text-xs text-muted-foreground">Investir R$1.800/mês?</span>
                             <Badge 
                               variant={lead.can_afford === "yes" ? "default" : lead.can_afford === "no" ? "secondary" : "outline"}
-                              className={lead.can_afford === "yes" ? "bg-green-500" : lead.can_afford === "no" ? "bg-orange-500" : ""}
+                              className={`text-xs ${lead.can_afford === "yes" ? "bg-green-500" : lead.can_afford === "no" ? "bg-orange-500" : ""}`}
                             >
-                              {lead.can_afford === "yes" ? "Clicou: SIM" : lead.can_afford === "no" ? "Clicou: NÃO" : "Não respondeu"}
+                              {lead.can_afford === "yes" ? "SIM" : lead.can_afford === "no" ? "NÃO" : "—"}
                             </Badge>
                           </div>
                           {lead.can_afford === "no" && (
                             <div className="flex items-center justify-between">
-                              <span className="text-sm text-muted-foreground">Pergunta: "Quer saber mais?"</span>
+                              <span className="text-xs text-muted-foreground">Quer saber mais?</span>
                               <Badge 
                                 variant={lead.wants_more_info ? "default" : "secondary"}
-                                className={lead.wants_more_info ? "bg-blue-500" : ""}
+                                className={`text-xs ${lead.wants_more_info ? "bg-blue-500" : ""}`}
                               >
-                                {lead.wants_more_info ? "Clicou: SIM" : "Clicou: NÃO"}
+                                {lead.wants_more_info ? "SIM" : "NÃO"}
                               </Badge>
                             </div>
                           )}
@@ -594,10 +596,8 @@ export default function LeadDetail() {
                 </div>
               </div>
 
-              {/* Right Column - Social Panel - Full Height */}
-              <div className="h-full">
-                <LeadContactPanel lead={lead} className="h-full" />
-              </div>
+              {/* Bottom Row - Lead Analysis */}
+              <LeadAnalysis lead={lead} />
             </div>
           )}
 
