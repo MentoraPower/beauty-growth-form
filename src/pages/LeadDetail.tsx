@@ -49,6 +49,7 @@ interface LeadData {
   workspace_type: string;
   years_experience: string;
   pipeline_id: string | null;
+  sub_origin_id: string | null;
   ordem: number;
   created_at: string;
   average_ticket: number | null;
@@ -423,7 +424,7 @@ export default function LeadDetail() {
                   leadId={lead.id}
                   leadName={lead.name}
                   currentPipelineId={lead.pipeline_id}
-                  subOriginId={subOriginId}
+                  subOriginId={lead.sub_origin_id || subOriginId}
                 />
               </motion.div>
             )}
