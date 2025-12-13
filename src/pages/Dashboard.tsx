@@ -1,5 +1,7 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
+import { subDays, startOfDay, endOfDay, format, differenceInDays, eachDayOfInterval } from "date-fns";
+import { ptBR } from "date-fns/locale";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
@@ -8,6 +10,7 @@ import { Users, TrendingUp, ShoppingCart, DollarSign, Target } from "lucide-reac
 import ModernAreaChart from "@/components/dashboard/ModernAreaChart";
 import ModernBarChart from "@/components/dashboard/ModernBarChart";
 import MiniGaugeChart from "@/components/dashboard/MiniGaugeChart";
+import DateFilter, { DateRange } from "@/components/dashboard/DateFilter";
 import {
   CardSkeleton,
   AreaChartSkeleton,
@@ -45,13 +48,46 @@ interface Sale {
   created_at: string;
 }
 
+interface PageView {
+  id: string;
+  created_at: string;
+}
+
 const Dashboard = () => {
   const { isLoading: authLoading } = useAuth("/auth");
-  const [leads, setLeads] = useState<Lead[]>([]);
-  const [sales, setSales] = useState<Sale[]>([]);
-  const [pageViews, setPageViews] = useState(0);
+  const [allLeads, setAllLeads] = useState<Lead[]>([]);
+  const [allSales, setAllSales] = useState<Sale[]>([]);
+  const [allPageViews, setAllPageViews] = useState<PageView[]>([]);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
+  
+  // Default to last 30 days
+  const [dateRange, setDateRange] = useState<DateRange>({
+    from: startOfDay(subDays(new Date(), 29)),
+    to: endOfDay(new Date())
+  });
+
+  // Filter data by date range
+  const leads = useMemo(() => {
+    return allLeads.filter(lead => {
+      const date = new Date(lead.created_at);
+      return date >= dateRange.from && date <= dateRange.to;
+    });
+  }, [allLeads, dateRange]);
+
+  const sales = useMemo(() => {
+    return allSales.filter(sale => {
+      const date = new Date(sale.created_at);
+      return date >= dateRange.from && date <= dateRange.to;
+    });
+  }, [allSales, dateRange]);
+
+  const pageViews = useMemo(() => {
+    return allPageViews.filter(view => {
+      const date = new Date(view.created_at);
+      return date >= dateRange.from && date <= dateRange.to;
+    });
+  }, [allPageViews, dateRange]);
 
   useEffect(() => {
     fetchLeads();
@@ -70,11 +106,11 @@ const Dashboard = () => {
         },
         (payload) => {
           if (payload.eventType === "INSERT") {
-            setLeads((prev) => [payload.new as Lead, ...prev]);
+            setAllLeads((prev) => [payload.new as Lead, ...prev]);
           } else if (payload.eventType === "DELETE") {
-            setLeads((prev) => prev.filter((lead) => lead.id !== payload.old.id));
+            setAllLeads((prev) => prev.filter((lead) => lead.id !== payload.old.id));
           } else if (payload.eventType === "UPDATE") {
-            setLeads((prev) =>
+            setAllLeads((prev) =>
               prev.map((lead) =>
                 lead.id === payload.new.id ? (payload.new as Lead) : lead
               )
@@ -94,8 +130,8 @@ const Dashboard = () => {
           schema: "public",
           table: "page_views",
         },
-        () => {
-          setPageViews((prev) => prev + 1);
+        (payload) => {
+          setAllPageViews((prev) => [payload.new as PageView, ...prev]);
         }
       )
       .subscribe();
@@ -112,11 +148,11 @@ const Dashboard = () => {
         },
         (payload) => {
           if (payload.eventType === "INSERT") {
-            setSales((prev) => [payload.new as Sale, ...prev]);
+            setAllSales((prev) => [payload.new as Sale, ...prev]);
           } else if (payload.eventType === "DELETE") {
-            setSales((prev) => prev.filter((sale) => sale.id !== payload.old.id));
+            setAllSales((prev) => prev.filter((sale) => sale.id !== payload.old.id));
           } else if (payload.eventType === "UPDATE") {
-            setSales((prev) =>
+            setAllSales((prev) =>
               prev.map((sale) =>
                 sale.id === payload.new.id ? (payload.new as Sale) : sale
               )
@@ -141,7 +177,7 @@ const Dashboard = () => {
         .order("created_at", { ascending: false });
 
       if (error) throw error;
-      setLeads(data || []);
+      setAllLeads(data || []);
     } catch (error) {
       console.error("Error fetching leads:", error);
     } finally {
@@ -157,7 +193,7 @@ const Dashboard = () => {
         .order("created_at", { ascending: false });
 
       if (error) throw error;
-      setSales(data || []);
+      setAllSales(data || []);
     } catch (error) {
       console.error("Error fetching sales:", error);
     }
@@ -165,18 +201,19 @@ const Dashboard = () => {
 
   const fetchPageViews = async () => {
     try {
-      const { count, error } = await supabase
+      const { data, error } = await supabase
         .from("page_views")
-        .select("*", { count: "exact", head: true });
+        .select("id, created_at")
+        .order("created_at", { ascending: false });
 
       if (error) throw error;
-      setPageViews(count || 0);
+      setAllPageViews(data || []);
     } catch (error) {
       console.error("Error fetching page views:", error);
     }
   };
 
-  // Calculate leads by day of week
+  // Calculate leads by day of week (filtered)
   const getLeadsByDayOfWeek = (): DayData[] => {
     const days = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
     const dayCount = [0, 0, 0, 0, 0, 0, 0];
@@ -192,46 +229,35 @@ const Dashboard = () => {
     }));
   };
 
-  // Calculate leads trend (last 7 days)
+  // Calculate leads trend based on date range
   const getLeadsTrend = () => {
-    const last7Days = [];
-    for (let i = 6; i >= 0; i--) {
-      const date = new Date();
-      date.setDate(date.getDate() - i);
-      last7Days.push({
-        date: date.toLocaleDateString("pt-BR", { day: "2-digit", month: "short" }),
-        count: leads.filter((lead) => {
-          const leadDate = new Date(lead.created_at);
-          return leadDate.toDateString() === date.toDateString();
-        }).length,
-      });
-    }
-    return last7Days;
+    const days = eachDayOfInterval({ start: dateRange.from, end: dateRange.to });
+    
+    return days.map(day => ({
+      date: format(day, "dd/MMM", { locale: ptBR }),
+      count: leads.filter((lead) => {
+        const leadDate = new Date(lead.created_at);
+        return leadDate.toDateString() === day.toDateString();
+      }).length,
+    }));
   };
 
-  // Get leads today
-  const getLeadsToday = () => {
-    return leads.filter(
-      (lead) => new Date(lead.created_at).toDateString() === new Date().toDateString()
-    ).length;
-  };
-
-  // Calculate conversion rate
+  // Calculate conversion rate (filtered)
   const getConversionRate = () => {
-    if (pageViews === 0) return "0";
-    return ((leads.length / pageViews) * 100).toFixed(1);
+    if (pageViews.length === 0) return "0";
+    return ((leads.length / pageViews.length) * 100).toFixed(1);
   };
 
-  // Get total sales count
+  // Get total sales count (filtered)
   const getTotalSales = () => sales.length;
 
-  // Get total sales amount
+  // Get total sales amount (filtered)
   const getTotalSalesAmount = () => {
     const total = sales.reduce((acc, sale) => acc + Number(sale.amount), 0);
     return total.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   };
 
-  // Get MQL percentage
+  // Get MQL percentage (filtered)
   const getMQLPercentage = () => {
     const leadsWithMQL = leads.filter(lead => lead.is_mql !== null);
     if (leadsWithMQL.length === 0) return "0";
@@ -239,52 +265,22 @@ const Dashboard = () => {
     return ((mqlCount / leadsWithMQL.length) * 100).toFixed(1);
   };
 
-  // Calculate form funnel data - which step each lead reached
-  const getFormFunnelData = () => {
-    const totalVisits = pageViews;
-    
-    // Define form steps and check which field indicates reaching that step
-    const steps = [
-      { label: "Visitas", check: () => true, count: totalVisits },
-      { label: "Nome", check: (l: Lead) => !!l.name, count: 0 },
-      { label: "Email", check: (l: Lead) => !!l.email, count: 0 },
-      { label: "WhatsApp", check: (l: Lead) => !!l.whatsapp, count: 0 },
-      { label: "Instagram", check: (l: Lead) => !!l.instagram, count: 0 },
-      { label: "Clínica/Studio", check: (l: Lead) => !!l.clinic_name, count: 0 },
-      { label: "Área de Atuação", check: (l: Lead) => !!l.service_area, count: 0 },
-      { label: "Faturamento", check: (l: Lead) => !!l.monthly_billing, count: 0 },
-      { label: "Atendimentos/Sem", check: (l: Lead) => !!l.weekly_attendance, count: 0 },
-      { label: "Espaço Físico", check: (l: Lead) => !!l.workspace_type, count: 0 },
-      { label: "Experiência", check: (l: Lead) => !!l.years_experience, count: 0 },
-      { label: "Ticket Médio", check: (l: Lead) => l.average_ticket !== null && l.average_ticket > 0, count: 0 },
-    ];
-
-    // Count leads that reached each step
-    leads.forEach(lead => {
-      for (let i = 1; i < steps.length; i++) {
-        if (steps[i].check(lead)) {
-          steps[i].count++;
-        }
-      }
-    });
-
-    // Calculate percentages based on total visits
-    return steps.map(step => ({
-      label: step.label,
-      count: step.count,
-      percentage: totalVisits > 0 ? (step.count / totalVisits) * 100 : 0,
-    }));
+  // Get period label for charts
+  const getPeriodLabel = () => {
+    const days = differenceInDays(dateRange.to, dateRange.from) + 1;
+    if (days === 1) return "Hoje";
+    return `Últimos ${days} dias`;
   };
-
-  // Show content with skeleton placeholders for loading data instead of full skeleton screen
-  const isDataReady = leads.length > 0 || !loading;
 
   return (
     <DashboardLayout>
       <div className="space-y-6 transition-opacity duration-300 ease-out">
-        <div>
-          <h1 className="text-2xl font-bold text-foreground">Dashboard</h1>
-          <p className="text-muted-foreground text-sm mt-1">Visão geral dos seus leads</p>
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+          <div>
+            <h1 className="text-2xl font-bold text-foreground">Dashboard</h1>
+            <p className="text-muted-foreground text-sm mt-1">Visão geral dos seus leads</p>
+          </div>
+          <DateFilter onDateChange={setDateRange} />
         </div>
 
         {/* Stats Cards */}
@@ -310,7 +306,7 @@ const Dashboard = () => {
                 <p className="text-sm text-foreground font-medium">Taxa de Captação</p>
               </div>
               <p className="text-3xl font-bold text-foreground">{getConversionRate()}%</p>
-              <p className="text-xs text-muted-foreground mt-1">{pageViews} visitas</p>
+              <p className="text-xs text-muted-foreground mt-1">{pageViews.length} visitas</p>
             </CardContent>
           </Card>
 
@@ -360,7 +356,7 @@ const Dashboard = () => {
               <CardTitle className="text-base font-semibold text-foreground">
                 Tendência de Leads
               </CardTitle>
-              <p className="text-xs text-muted-foreground">Últimos 7 dias</p>
+              <p className="text-xs text-muted-foreground">{getPeriodLabel()}</p>
             </CardHeader>
             <CardContent>
               <ModernAreaChart data={getLeadsTrend()} title="Leads" />
@@ -379,7 +375,9 @@ const Dashboard = () => {
               <div className="grid grid-cols-3 gap-2">
                 {(() => {
                   const areas = leads.reduce((acc, lead) => {
-                    acc[lead.service_area] = (acc[lead.service_area] || 0) + 1;
+                    if (lead.service_area) {
+                      acc[lead.service_area] = (acc[lead.service_area] || 0) + 1;
+                    }
                     return acc;
                   }, {} as Record<string, number>);
                   
