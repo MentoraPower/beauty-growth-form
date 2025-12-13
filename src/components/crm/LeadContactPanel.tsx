@@ -242,7 +242,7 @@ export function LeadContactPanel({ lead, className }: LeadContactPanelProps) {
               lead.instagram ? (
                 <div className="flex-1 flex flex-col overflow-hidden">
                   {/* Instagram Profile - Clean Header */}
-                  <div className="p-3 flex items-center justify-between shrink-0 bg-gradient-to-r from-purple-500/10 via-pink-500/10 to-orange-400/10">
+                  <div className="p-3 flex items-center justify-between shrink-0 bg-gradient-to-r from-purple-500/10 via-pink-500/10 to-orange-400/10 border-b border-border">
                     <a
                       href={`https://www.instagram.com/${getInstagramHandle()}/`}
                       target="_blank"
@@ -253,26 +253,29 @@ export function LeadContactPanel({ lead, className }: LeadContactPanelProps) {
                       <ExternalLink className="w-3 h-3 text-muted-foreground" />
                     </a>
                   </div>
-                  {/* Instagram Posts Grid - Direct embed without header */}
+                  {/* Instagram Embed - Shows profile with bio and posts */}
                   <div className="flex-1 overflow-y-auto bg-white">
-                    <div className="relative w-full h-full">
-                      {/* Hide Instagram's header with CSS overlay */}
-                      <style>{`
-                        .instagram-embed-container iframe {
-                          margin-top: -56px !important;
-                        }
-                      `}</style>
-                      <div className="instagram-embed-container overflow-hidden h-full">
-                        <iframe
-                          src={`https://www.instagram.com/${getInstagramHandle()}/embed/?cr=1&v=14&wp=400`}
-                          className="w-full border-0"
-                          style={{ height: "calc(100% + 56px)", minHeight: "600px" }}
-                          title={`Instagram de ${lead.name}`}
-                          scrolling="yes"
-                          allowFullScreen
-                        />
-                      </div>
-                    </div>
+                    <iframe
+                      src={`https://www.instagram.com/${getInstagramHandle()}/embed/`}
+                      className="w-full h-full border-0"
+                      style={{ minHeight: "700px" }}
+                      title={`Instagram de ${lead.name}`}
+                      scrolling="yes"
+                      allowFullScreen
+                    />
+                  </div>
+                  <div className="p-2 bg-muted/20 text-center border-t border-border">
+                    <p className="text-[10px] text-muted-foreground">
+                      Embed limitado pelo Instagram. 
+                      <a 
+                        href={`https://www.instagram.com/${getInstagramHandle()}/`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="ml-1 underline hover:text-foreground"
+                      >
+                        Ver perfil completo
+                      </a>
+                    </p>
                   </div>
                 </div>
               ) : (
