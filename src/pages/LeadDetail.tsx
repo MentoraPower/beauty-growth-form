@@ -303,7 +303,12 @@ export default function LeadDetail() {
 
   return (
     <DashboardLayout>
-      <div className="space-y-3">
+      <motion.div 
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3, ease: "easeOut" }}
+        className="space-y-3"
+      >
         {/* Breadcrumb Navigation */}
         <div className="flex items-center gap-2 text-sm">
           <button
@@ -645,7 +650,7 @@ export default function LeadDetail() {
             />
           )}
         </div>
-      </div>
+      </motion.div>
 
       {/* Delete Confirmation Dialog */}
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
