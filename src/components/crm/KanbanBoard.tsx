@@ -23,7 +23,7 @@ import { KanbanCard } from "./KanbanCard";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Settings, LayoutGrid, List, Search, Filter, X } from "lucide-react";
+import { Settings, Search, Filter, X } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -33,7 +33,7 @@ import {
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
-import { LeadsList } from "./LeadsList";
+
 import { toast } from "sonner";
 import { AutomationsDropdown } from "./AutomationsDropdown";
 
@@ -53,16 +53,7 @@ export function KanbanBoard() {
   const [searchQuery, setSearchQuery] = useState("");
   const [filterMQL, setFilterMQL] = useState<"all" | "mql" | "non-mql">("all");
   const [filterTags, setFilterTags] = useState<string[]>([]);
-  const [viewMode, setViewMode] = useState<"kanban" | "list">(() => {
-    const saved = localStorage.getItem('crm_view_mode');
-    return (saved === 'list' || saved === 'kanban') ? saved : 'kanban';
-  });
   const queryClient = useQueryClient();
-
-  // Persist viewMode to localStorage
-  useEffect(() => {
-    localStorage.setItem('crm_view_mode', viewMode);
-  }, [viewMode]);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -729,26 +720,8 @@ export function KanbanBoard() {
           </DropdownMenu>
         </div>
 
-        {/* Right side - view toggle and settings */}
+        {/* Right side - settings */}
         <div className="flex items-center gap-2 flex-shrink-0">
-          <div className="flex items-center border rounded-lg overflow-hidden">
-            <Button
-              variant={viewMode === "kanban" ? "secondary" : "ghost"}
-              size="sm"
-              className="rounded-none transition-colors duration-100"
-              onClick={() => setViewMode("kanban")}
-            >
-              <LayoutGrid className="w-4 h-4" />
-            </Button>
-            <Button
-              variant={viewMode === "list" ? "secondary" : "ghost"}
-              size="sm"
-              className="rounded-none transition-colors duration-100"
-              onClick={() => setViewMode("list")}
-            >
-              <List className="w-4 h-4" />
-            </Button>
-          </div>
           <Button
             variant="outline"
             size="sm"
@@ -793,10 +766,6 @@ export function KanbanBoard() {
               </div>
             ))}
           </div>
-        ) : viewMode === "list" ? (
-          <div className="animate-in fade-in duration-300">
-            <LeadsList leads={displayLeads} pipelines={pipelines} activeDragId={activeId} subOriginId={subOriginId} />
-          </div>
         ) : (
           <div className="flex gap-4 overflow-x-auto flex-1 pb-0 h-full animate-in fade-in duration-300">
             {pipelines.map((pipeline) => (
@@ -813,16 +782,9 @@ export function KanbanBoard() {
 
         <DragOverlay dropAnimation={null}>
           {activeLead ? (
-            viewMode === "list" ? (
-              <div className="bg-white border border-primary/30 rounded-lg px-4 py-2 shadow-lg opacity-90">
-                <span className="font-medium text-sm">{activeLead.name}</span>
-                <span className="text-muted-foreground text-sm ml-4">{activeLead.email}</span>
-              </div>
-            ) : (
-              <div className="rotate-3 scale-105">
-                <KanbanCard lead={activeLead} isDragging />
-              </div>
-            )
+            <div className="rotate-3 scale-105">
+              <KanbanCard lead={activeLead} isDragging />
+            </div>
           ) : null}
         </DragOverlay>
       </DndContext>
