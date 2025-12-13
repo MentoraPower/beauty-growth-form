@@ -82,6 +82,21 @@ export function useLeadActivities({ leadId, currentPipelineId, subOriginId }: Us
     return allActivities.filter(a => a.pipeline_id === viewingPipelineId);
   }, [allActivities, viewingPipelineId]);
 
+  // Auto-select first activity when activities change or pipeline changes
+  useEffect(() => {
+    if (activities.length > 0 && !selectedActivity) {
+      setSelectedActivity(activities[0]);
+    } else if (activities.length > 0 && selectedActivity) {
+      // Check if selected activity is still in current pipeline
+      const stillExists = activities.find(a => a.id === selectedActivity.id);
+      if (!stillExists) {
+        setSelectedActivity(activities[0]);
+      }
+    } else if (activities.length === 0) {
+      setSelectedActivity(null);
+    }
+  }, [activities, selectedActivity]);
+
   // Realtime subscription
   useEffect(() => {
     if (!leadId) return;
@@ -109,6 +124,7 @@ export function useLeadActivities({ leadId, currentPipelineId, subOriginId }: Us
 
   const handlePipelineClick = useCallback((pipelineId: string) => {
     setViewingPipelineId(pipelineId);
+    // Clear selection so auto-select kicks in for new pipeline
     setSelectedActivity(null);
   }, []);
 
