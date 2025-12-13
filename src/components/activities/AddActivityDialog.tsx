@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, memo } from "react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { CalendarIcon, ClipboardList, ListChecks, Phone, Mail, MessageCircle, Instagram, Calendar as CalendarIconLucide, Users } from "lucide-react";
+import { CalendarIcon, ClipboardList, ListChecks } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -27,12 +27,6 @@ interface AddActivityDialogProps {
 const activityTypes = [
   { id: "tarefas", label: "Tarefas", icon: ClipboardList },
   { id: "checklist", label: "Checklist", icon: ListChecks },
-  { id: "agendamento", label: "Agendamento", icon: CalendarIconLucide },
-  { id: "reuniao", label: "Reunião", icon: Users },
-  { id: "whatsapp", label: "WhatsApp", icon: MessageCircle },
-  { id: "instagram", label: "Instagram", icon: Instagram },
-  { id: "ligacao", label: "Ligação", icon: Phone },
-  { id: "email", label: "E-mail", icon: Mail },
 ] as const;
 
 const hours = Array.from({ length: 24 }, (_, i) => i.toString().padStart(2, "0"));
