@@ -67,8 +67,9 @@ export function AutomationsDropdown({ pipelines, subOriginId }: AutomationsDropd
   const [open, setOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<ActiveTab>("automations");
   
-  // Automation creation states
+  // Automation creation/edit states
   const [isCreatingAutomation, setIsCreatingAutomation] = useState(false);
+  const [editingAutomationId, setEditingAutomationId] = useState<string | null>(null);
   const [selectedTrigger, setSelectedTrigger] = useState<string>("");
   const [selectedTriggerPipeline, setSelectedTriggerPipeline] = useState<string>("");
   const [selectedActionOrigin, setSelectedActionOrigin] = useState<string>("");
@@ -189,8 +190,45 @@ export function AutomationsDropdown({ pipelines, subOriginId }: AutomationsDropd
     }
   };
 
+  const saveAutomationEdit = async () => {
+    if (!editingAutomationId) return;
+    
+    try {
+      const { error } = await supabase
+        .from("pipeline_automations")
+        .update({
+          pipeline_id: selectedTriggerPipeline,
+          target_origin_id: selectedActionOrigin || null,
+          target_sub_origin_id: selectedActionSubOrigin || null,
+          target_pipeline_id: selectedActionPipeline || null,
+        })
+        .eq("id", editingAutomationId);
+
+      if (error) throw error;
+
+      refetchAutomations();
+      queryClient.invalidateQueries({ queryKey: ["pipeline-automations", subOriginId] });
+      toast.success("Automação atualizada!");
+      resetAutomationForm();
+    } catch (error) {
+      console.error("Erro ao atualizar automação:", error);
+      toast.error("Erro ao atualizar automação");
+    }
+  };
+
+  const startEditingAutomation = (automation: Automation) => {
+    setEditingAutomationId(automation.id);
+    setIsCreatingAutomation(true);
+    setSelectedTrigger("lead_moved");
+    setSelectedTriggerPipeline(automation.pipeline_id);
+    setSelectedActionOrigin(automation.target_origin_id || "");
+    setSelectedActionSubOrigin(automation.target_sub_origin_id || "");
+    setSelectedActionPipeline(automation.target_pipeline_id || "");
+  };
+
   const resetAutomationForm = () => {
     setIsCreatingAutomation(false);
+    setEditingAutomationId(null);
     setSelectedTrigger("");
     setSelectedTriggerPipeline("");
     setSelectedActionOrigin("");
@@ -397,7 +435,7 @@ export function AutomationsDropdown({ pipelines, subOriginId }: AutomationsDropd
           )}
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden p-0 bg-neutral-900 border-neutral-800">
+      <DialogContent className="max-w-4xl h-[700px] overflow-hidden p-0 bg-neutral-900 border-neutral-800">
         {/* Header with icon and tabs */}
         <div className="border-b border-neutral-800">
           <div className="flex items-center gap-3 px-6 py-4">
@@ -751,11 +789,11 @@ export function AutomationsDropdown({ pipelines, subOriginId }: AutomationsDropd
                       </span>
                     </div>
                     <Button
-                      onClick={createAutomation}
+                      onClick={editingAutomationId ? saveAutomationEdit : createAutomation}
                       className="bg-purple-600 hover:bg-purple-700 text-white"
                       disabled={!selectedTriggerPipeline}
                     >
-                      Criar
+                      {editingAutomationId ? "Salvar" : "Criar"}
                     </Button>
                   </div>
                 </div>
@@ -816,14 +854,24 @@ export function AutomationsDropdown({ pipelines, subOriginId }: AutomationsDropd
                             </div>
                           </div>
                         </div>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          className="h-8 w-8 p-0 text-neutral-400 hover:text-red-400 hover:bg-red-500/10"
-                          onClick={() => deleteAutomation(automation.id)}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
+                        <div className="flex items-center gap-1">
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-8 w-8 p-0 text-neutral-400 hover:text-white hover:bg-neutral-700"
+                            onClick={() => startEditingAutomation(automation)}
+                          >
+                            <Settings className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-8 w-8 p-0 text-neutral-400 hover:text-red-400 hover:bg-red-500/10"
+                            onClick={() => deleteAutomation(automation.id)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
                       </div>
                     </div>
                   ))}
