@@ -97,8 +97,8 @@ export function ActivitiesBoard({ leadId, leadName, currentPipelineId }: Activit
         </CardContent>
       </Card>
 
-      {/* Two columns layout */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      {/* Two columns layout - left narrower */}
+      <div className="grid grid-cols-1 lg:grid-cols-[320px_1fr] gap-4">
         {/* Left block - Activities List */}
         <Card className="border-[#00000010] bg-[#fafafa] shadow-none">
           <CardContent className="p-4 flex flex-col h-[400px]">
