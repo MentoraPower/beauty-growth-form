@@ -105,12 +105,20 @@ export function ActivitiesBoard({ leadId, leadName, currentPipelineId }: Activit
             {isLoadingActivities ? (
               <div className="space-y-3 flex-1">
                 {[1, 2, 3].map((i) => (
-                  <Skeleton key={i} className="h-14 w-full" />
+                  <Skeleton key={i} className="h-10 w-full" />
                 ))}
               </div>
             ) : (
               <>
-                <div className="flex-1 overflow-y-auto space-y-2">
+                {/* Column headers */}
+                <div className="flex items-center gap-2 pb-2 border-b border-black/10 mb-2">
+                  <span className="flex-1 text-xs font-medium text-muted-foreground uppercase tracking-wide">Atividade</span>
+                  <span className="w-14 text-xs font-medium text-muted-foreground uppercase tracking-wide text-center">Data</span>
+                  <span className="w-16 text-xs font-medium text-muted-foreground uppercase tracking-wide text-center">Concluído</span>
+                  <span className="w-8"></span>
+                </div>
+
+                <div className="flex-1 overflow-y-auto space-y-1">
                   {activities.length === 0 ? (
                     <div className="h-full flex items-center justify-center">
                       <p className="text-sm text-muted-foreground">
@@ -123,40 +131,45 @@ export function ActivitiesBoard({ leadId, leadName, currentPipelineId }: Activit
                         key={activity.id}
                         onClick={() => handleActivityClick(activity)}
                         className={cn(
-                          "flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-colors border",
+                          "flex items-center gap-2 py-2 px-2 rounded-lg cursor-pointer transition-colors",
                           selectedActivity?.id === activity.id 
-                            ? "bg-primary/5 border-primary/20" 
-                            : "bg-muted/30 border-transparent hover:bg-muted/50",
+                            ? "bg-primary/5" 
+                            : "hover:bg-muted/50",
                           activity.concluida && "opacity-60"
                         )}
                       >
-                        <Checkbox
-                          checked={activity.concluida}
-                          onCheckedChange={(checked) => {
-                            if (typeof checked === 'boolean') {
-                              handleToggleConcluida(activity.id, checked);
-                            }
-                          }}
-                          onClick={(e) => e.stopPropagation()}
-                        />
-                        
+                        {/* Atividade - título com ícone */}
                         <div className="flex items-center gap-2 flex-1 min-w-0">
-                          <span className="text-muted-foreground">
+                          <span className="text-muted-foreground flex-shrink-0">
                             {getTipoIcon(activity.tipo)}
                           </span>
-                          <div className="flex-1 min-w-0">
-                            <p className={cn(
-                              "text-sm font-medium truncate",
-                              activity.concluida && "line-through"
-                            )}>
-                              {activity.titulo}
-                            </p>
-                            <p className="text-xs text-muted-foreground">
-                              {format(new Date(activity.data + 'T00:00:00'), "dd 'de' MMM", { locale: ptBR })} às {activity.hora.slice(0, 5)}
-                            </p>
-                          </div>
+                          <p className={cn(
+                            "text-sm truncate",
+                            activity.concluida && "line-through text-muted-foreground"
+                          )}>
+                            {activity.titulo}
+                          </p>
                         </div>
 
+                        {/* Data - formato dd/MM */}
+                        <span className="w-14 text-xs text-muted-foreground text-center flex-shrink-0">
+                          {format(new Date(activity.data + 'T00:00:00'), "dd/MM")}
+                        </span>
+
+                        {/* Concluído - checkbox */}
+                        <div className="w-16 flex justify-center flex-shrink-0">
+                          <Checkbox
+                            checked={activity.concluida}
+                            onCheckedChange={(checked) => {
+                              if (typeof checked === 'boolean') {
+                                handleToggleConcluida(activity.id, checked);
+                              }
+                            }}
+                            onClick={(e) => e.stopPropagation()}
+                          />
+                        </div>
+
+                        {/* Menu 3 pontos */}
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
                             <Button variant="ghost" size="icon" className="h-8 w-8 flex-shrink-0">
