@@ -135,45 +135,16 @@ export function LeadAnalysis({ lead }: LeadAnalysisProps) {
       <CardContent className="p-4">
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
-            <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center">
-              <Sparkles className="h-4 w-4 text-primary" />
-            </div>
             <h3 className="text-sm font-semibold">Análise do Lead</h3>
           </div>
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            onClick={handleRefresh}
-            disabled={isLoading}
-            className="h-8 px-2"
-            title="Regenerar análise"
-          >
-            <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
-          </Button>
         </div>
 
-        {/* MQL Badge */}
-        {hasLoaded && isMQL !== null && (
+        {/* Faturamento estimado */}
+        {hasLoaded && displayEstimatedRevenue > 0 && (
           <div className="flex items-center gap-2 mb-3">
-            <Badge 
-              variant={isMQL ? "default" : "secondary"}
-              className={`${isMQL 
-                ? 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20 hover:bg-emerald-500/20' 
-                : 'bg-orange-500/10 text-orange-600 border-orange-500/20 hover:bg-orange-500/20'
-              } flex items-center gap-1`}
-            >
-              {isMQL ? (
-                <TrendingUp className="h-3 w-3" />
-              ) : (
-                <TrendingDown className="h-3 w-3" />
-              )}
-              {isMQL ? 'MQL' : 'Não é MQL'}
-            </Badge>
-            {displayEstimatedRevenue > 0 && (
-              <span className="text-xs text-muted-foreground">
-                Faturamento estimado: {formatCurrency(displayEstimatedRevenue)}/mês
-              </span>
-            )}
+            <span className="text-xs text-muted-foreground">
+              Faturamento estimado: {formatCurrency(displayEstimatedRevenue)}/mês
+            </span>
           </div>
         )}
 
@@ -189,13 +160,9 @@ export function LeadAnalysis({ lead }: LeadAnalysisProps) {
           </p>
         ) : (
           <p className="text-sm text-muted-foreground italic">
-            Clique no botão para gerar uma análise
+            Análise não disponível
           </p>
         )}
-
-        <p className="text-[10px] text-muted-foreground/60 mt-3 pt-2 border-t border-black/5">
-          Análise gerada por IA - Groq | Serviço: R$ 2.800/mês (R$ 1.800 + R$ 1.000 tráfego)
-        </p>
       </CardContent>
     </Card>
   );
