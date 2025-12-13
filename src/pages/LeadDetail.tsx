@@ -595,8 +595,9 @@ export default function LeadDetail() {
                   initial={{ opacity: 0, x: 20 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ duration: 0.4, ease: [0.25, 0.1, 0.25, 1], delay: 0.1 }}
+                  className="h-full"
                 >
-                  <Card className="border-[#00000010] shadow-none overflow-hidden h-full">
+                  <Card className="border-[#00000010] shadow-none overflow-hidden h-full min-h-[calc(100vh-12rem)]">
                     <CardContent className="p-0 h-full flex flex-col">
                       {/* Tabs */}
                       <div className="flex border-b border-border pt-4 px-4">
@@ -634,7 +635,7 @@ export default function LeadDetail() {
                       >
                         {contactPanelTab === "instagram" ? (
                           lead.instagram ? (
-                            <div className="flex flex-col items-center justify-center h-[400px] p-6 text-center">
+                            <div className="flex flex-col items-center justify-center h-full min-h-[300px] p-6 text-center">
                               <motion.div 
                                 initial={{ scale: 0.8, opacity: 0 }}
                                 animate={{ scale: 1, opacity: 1 }}
@@ -661,13 +662,13 @@ export default function LeadDetail() {
                               </motion.a>
                             </div>
                           ) : (
-                            <div className="flex flex-col items-center justify-center h-[400px] text-center p-6">
+                            <div className="flex flex-col items-center justify-center h-full min-h-[300px] text-center p-6">
                               <Instagram className="w-12 h-12 text-muted-foreground/30 mb-4" />
                               <p className="text-sm text-muted-foreground">Instagram não informado</p>
                             </div>
                           )
                         ) : (
-                          <div className="flex flex-col items-center justify-center h-[400px] p-6 text-center">
+                          <div className="flex flex-col items-center justify-center h-full min-h-[300px] p-6 text-center">
                             <motion.div 
                               initial={{ scale: 0.8, opacity: 0 }}
                               animate={{ scale: 1, opacity: 1 }}
