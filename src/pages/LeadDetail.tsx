@@ -591,74 +591,94 @@ export default function LeadDetail() {
                 </Card>
 
                 {/* Social Panel - Instagram & WhatsApp */}
-                <Card className="border-[#00000010] shadow-none">
-                  <CardContent className="p-0">
-                    {/* Tabs */}
-                    <div className="flex border-b border-border">
-                      <button
-                        onClick={() => setContactPanelTab("instagram")}
-                        className={`flex-1 py-3 text-sm font-medium flex items-center justify-center gap-2 transition-colors ${
-                          contactPanelTab === "instagram" 
-                            ? "text-primary border-b-2 border-primary" 
-                            : "text-muted-foreground hover:text-foreground"
-                        }`}
-                      >
-                        <Instagram className="w-4 h-4" />
-                        Instagram
-                      </button>
-                      <button
-                        onClick={() => setContactPanelTab("whatsapp")}
-                        className={`flex-1 py-3 text-sm font-medium flex items-center justify-center gap-2 transition-colors ${
-                          contactPanelTab === "whatsapp" 
-                            ? "text-primary border-b-2 border-primary" 
-                            : "text-muted-foreground hover:text-foreground"
-                        }`}
-                      >
-                        <WhatsApp className="w-4 h-4" />
-                        WhatsApp
-                      </button>
-                    </div>
+                <motion.div
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ duration: 0.4, ease: [0.25, 0.1, 0.25, 1], delay: 0.1 }}
+                >
+                  <Card className="border-[#00000010] shadow-none overflow-hidden">
+                    <CardContent className="p-0">
+                      {/* Tabs */}
+                      <div className="flex border-b border-border">
+                        <button
+                          onClick={() => setContactPanelTab("instagram")}
+                          className={`flex-1 py-3 text-sm font-medium flex items-center justify-center gap-2 transition-colors ${
+                            contactPanelTab === "instagram" 
+                              ? "text-primary border-b-2 border-primary" 
+                              : "text-muted-foreground hover:text-foreground"
+                          }`}
+                        >
+                          <Instagram className="w-4 h-4" />
+                          Instagram
+                        </button>
+                        <button
+                          onClick={() => setContactPanelTab("whatsapp")}
+                          className={`flex-1 py-3 text-sm font-medium flex items-center justify-center gap-2 transition-colors ${
+                            contactPanelTab === "whatsapp" 
+                              ? "text-primary border-b-2 border-primary" 
+                              : "text-muted-foreground hover:text-foreground"
+                          }`}
+                        >
+                          <WhatsApp className="w-4 h-4" />
+                          WhatsApp
+                        </button>
+                      </div>
 
-                    {/* Content */}
-                    <div className="h-[500px]">
-                      {contactPanelTab === "instagram" ? (
-                        lead.instagram ? (
-                          <iframe
-                            src={`https://www.instagram.com/${lead.instagram.replace(/^@/, "").replace(/^https?:\/\/(www\.)?instagram\.com\//, "").split("/")[0].split("?")[0]}/`}
-                            className="w-full h-full border-0"
-                            title={`Instagram de ${lead.name}`}
-                          />
+                      {/* Content */}
+                      <motion.div 
+                        key={contactPanelTab}
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ duration: 0.2 }}
+                        className="h-[500px]"
+                      >
+                        {contactPanelTab === "instagram" ? (
+                          lead.instagram ? (
+                            <iframe
+                              src={`https://www.instagram.com/${lead.instagram.replace(/^@/, "").replace(/^https?:\/\/(www\.)?instagram\.com\//, "").split("/")[0].split("?")[0]}/`}
+                              className="w-full h-full border-0"
+                              title={`Instagram de ${lead.name}`}
+                            />
+                          ) : (
+                            <div className="flex flex-col items-center justify-center h-full text-center p-6">
+                              <Instagram className="w-12 h-12 text-muted-foreground/30 mb-4" />
+                              <p className="text-sm text-muted-foreground">Instagram não informado</p>
+                            </div>
+                          )
                         ) : (
-                          <div className="flex flex-col items-center justify-center h-full text-center p-6">
-                            <Instagram className="w-12 h-12 text-muted-foreground/30 mb-4" />
-                            <p className="text-sm text-muted-foreground">Instagram não informado</p>
-                          </div>
-                        )
-                      ) : (
-                        <div className="flex flex-col items-center justify-center h-full p-6 text-center">
-                          <div className="w-16 h-16 rounded-full bg-emerald-500/10 flex items-center justify-center mb-4">
-                            <WhatsApp className="w-8 h-8 text-emerald-600" />
-                          </div>
-                          <h3 className="font-semibold text-lg mb-2">Iniciar Conversa</h3>
-                          <p className="text-sm text-muted-foreground mb-4">
-                            {lead.whatsapp ? `${lead.country_code} ${lead.whatsapp}` : "WhatsApp não informado"}
-                          </p>
-                          {lead.whatsapp && (
-                            <a
-                              href={`https://wa.me/${lead.country_code.replace("+", "")}${lead.whatsapp.replace(/\D/g, "")}`}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="inline-flex items-center gap-2 px-6 py-3 bg-emerald-500 text-white rounded-lg font-medium hover:bg-emerald-600 transition-colors"
+                          <div className="flex flex-col items-center justify-center h-full p-6 text-center">
+                            <motion.div 
+                              initial={{ scale: 0.8, opacity: 0 }}
+                              animate={{ scale: 1, opacity: 1 }}
+                              transition={{ duration: 0.3, delay: 0.1 }}
+                              className="w-16 h-16 rounded-full bg-emerald-500/10 flex items-center justify-center mb-4"
                             >
-                              <WhatsApp className="w-5 h-5" />
-                              Abrir WhatsApp
-                            </a>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  </CardContent>
-                </Card>
+                              <WhatsApp className="w-8 h-8 text-emerald-600" />
+                            </motion.div>
+                            <h3 className="font-semibold text-lg mb-2">Iniciar Conversa</h3>
+                            <p className="text-sm text-muted-foreground mb-4">
+                              {lead.whatsapp ? `${lead.country_code} ${lead.whatsapp}` : "WhatsApp não informado"}
+                            </p>
+                            {lead.whatsapp && (
+                              <motion.a
+                                initial={{ y: 10, opacity: 0 }}
+                                animate={{ y: 0, opacity: 1 }}
+                                transition={{ duration: 0.3, delay: 0.2 }}
+                                href={`https://wa.me/${lead.country_code.replace("+", "")}${lead.whatsapp.replace(/\D/g, "")}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center gap-2 px-6 py-3 bg-emerald-500 text-white rounded-lg font-medium hover:bg-emerald-600 transition-colors"
+                              >
+                                <WhatsApp className="w-5 h-5" />
+                                Abrir WhatsApp
+                              </motion.a>
+                            )}
+                          </div>
+                        )}
+                      </motion.div>
+                    </CardContent>
+                  </Card>
+                </motion.div>
               </div>
             </div>
           )}
