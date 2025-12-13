@@ -53,12 +53,12 @@ export const LoadingBar = () => {
   if (!isVisible) return null;
 
   return (
-    <div className="fixed top-0 left-0 right-0 h-0.5 z-[99999] overflow-hidden bg-black/5">
+    <div className="fixed top-0 left-0 right-0 h-1 z-[999999] overflow-hidden bg-black/10 pointer-events-none">
       <div 
         className="h-full transition-all duration-200 ease-out"
         style={{
           width: `${progress}%`,
-          background: "linear-gradient(90deg, #DD2A7B, #F56040)"
+          background: "linear-gradient(90deg, #F40000, #A10000)"
         }}
       />
     </div>

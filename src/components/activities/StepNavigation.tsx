@@ -1,6 +1,7 @@
 import { memo, useRef, useEffect, useCallback } from "react";
 import { cn } from "@/lib/utils";
 import { Pipeline } from "@/hooks/use-lead-activities";
+import { MoveLeadDropdown } from "@/components/crm/MoveLeadDropdown";
 import {
   Tooltip,
   TooltipContent,
@@ -12,18 +13,22 @@ interface StepNavigationProps {
   pipelines: Pipeline[];
   viewingPipelineId: string | null;
   currentPipelineId: string | null;
+  leadId: string;
   leadName: string;
+  currentSubOriginId?: string | null;
   onPipelineClick: (pipelineId: string) => void;
-  onMoveClick?: () => void;
+  onLeadMoved?: () => void;
 }
 
 export const StepNavigation = memo(function StepNavigation({
   pipelines,
   viewingPipelineId,
   currentPipelineId,
+  leadId,
   leadName,
+  currentSubOriginId,
   onPipelineClick,
-  onMoveClick,
+  onLeadMoved,
 }: StepNavigationProps) {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
 
@@ -147,23 +152,29 @@ export const StepNavigation = memo(function StepNavigation({
 
                 {/* Lead avatar indicator below step name - clickable to move */}
                 {isCurrentLead && (
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <button 
-                          onClick={onMoveClick}
-                          className="mt-1.5 flex items-center justify-center hover:scale-110 transition-transform"
-                        >
-                          <div className="w-5 h-5 rounded-sm bg-primary flex items-center justify-center text-[9px] font-medium text-primary-foreground shadow-sm cursor-pointer">
-                            {getInitials(leadName)}
-                          </div>
-                        </button>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p>Mover para outra origem</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
+                  <MoveLeadDropdown
+                    leadId={leadId}
+                    leadName={leadName}
+                    currentSubOriginId={currentSubOriginId || null}
+                    onMoved={onLeadMoved}
+                  >
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <button 
+                            className="mt-1.5 flex items-center justify-center hover:scale-110 transition-transform"
+                          >
+                            <div className="w-5 h-5 rounded-sm bg-primary flex items-center justify-center text-[9px] font-medium text-primary-foreground shadow-sm cursor-pointer">
+                              {getInitials(leadName)}
+                            </div>
+                          </button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Mover para outra origem</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  </MoveLeadDropdown>
                 )}
               </div>
             </div>
