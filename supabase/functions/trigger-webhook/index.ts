@@ -16,6 +16,7 @@ interface WebhookPayload {
     name: string;
     email: string;
     whatsapp: string;
+    country_code?: string;
     instagram: string;
     service_area: string;
     monthly_billing: string;
@@ -115,15 +116,36 @@ const handler = async (req: Request): Promise<Response> => {
         console.log(`Triggering webhook "${webhook.name}" to ${webhook.url}`);
         
         try {
+          const lead = payload.lead;
+          
           const webhookPayload = {
-            event: payload.trigger,
-            timestamp: new Date().toISOString(),
-            lead: payload.lead,
-            metadata: {
-              pipeline_id: payload.pipeline_id,
-              previous_pipeline_id: payload.previous_pipeline_id,
+            evento: payload.trigger,
+            data_envio: new Date().toISOString(),
+            dados: {
+              id: lead.id,
+              nome: lead.name,
+              email: lead.email,
+              whatsapp: lead.whatsapp,
+              codigo_pais: lead.country_code,
+              instagram: lead.instagram,
+              nome_clinica: lead.clinic_name || null,
+              area_atuacao: lead.service_area,
+              faturamento_mensal: lead.monthly_billing,
+              atendimentos_semana: lead.weekly_attendance,
+              ticket_medio: lead.average_ticket || null,
+              tipo_espaco: lead.workspace_type,
+              anos_experiencia: lead.years_experience,
+              receita_estimada: lead.estimated_revenue || null,
+              e_mql: lead.is_mql || null,
+              data_cadastro: lead.created_at,
+            },
+            pipeline: {
+              atual: payload.pipeline_id,
+              anterior: payload.previous_pipeline_id || null,
+            },
+            origem: {
               sub_origin_id: payload.sub_origin_id,
-              origin_id: payload.origin_id,
+              origin_id: payload.origin_id || null,
             },
           };
 
