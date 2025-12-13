@@ -18,6 +18,7 @@ interface ActivitiesBoardProps {
   leadId: string;
   leadName: string;
   currentPipelineId: string | null;
+  subOriginId?: string | null;
 }
 
 const getTipoIcon = (tipo: string) => {
@@ -31,7 +32,7 @@ const getTipoIcon = (tipo: string) => {
   }
 };
 
-export function ActivitiesBoard({ leadId, leadName, currentPipelineId }: ActivitiesBoardProps) {
+export function ActivitiesBoard({ leadId, leadName, currentPipelineId, subOriginId }: ActivitiesBoardProps) {
   const [isAddActivityOpen, setIsAddActivityOpen] = useState(false);
   const [editingActivity, setEditingActivity] = useState<LeadActivity | null>(null);
 
@@ -47,7 +48,7 @@ export function ActivitiesBoard({ leadId, leadName, currentPipelineId }: Activit
     handleAddActivity,
     handleDeleteActivity,
     handleToggleConcluida,
-  } = useLeadActivities({ leadId, currentPipelineId });
+  } = useLeadActivities({ leadId, currentPipelineId, subOriginId });
 
   const handleEditActivity = useCallback((activity: LeadActivity) => {
     setEditingActivity(activity);

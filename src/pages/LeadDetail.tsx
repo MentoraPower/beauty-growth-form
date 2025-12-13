@@ -423,6 +423,7 @@ export default function LeadDetail() {
                   leadId={lead.id}
                   leadName={lead.name}
                   currentPipelineId={lead.pipeline_id}
+                  subOriginId={subOriginId}
                 />
               </motion.div>
             )}
