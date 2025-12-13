@@ -22,9 +22,10 @@ interface LeadContactPanelProps {
     whatsapp: string;
     country_code: string;
   };
+  className?: string;
 }
 
-export function LeadContactPanel({ lead }: LeadContactPanelProps) {
+export function LeadContactPanel({ lead, className }: LeadContactPanelProps) {
   const [activeTab, setActiveTab] = useState<"instagram" | "whatsapp">("instagram");
   const [message, setMessage] = useState("");
   const [messages, setMessages] = useState<Message[]>([]);
@@ -205,9 +206,9 @@ export function LeadContactPanel({ lead }: LeadContactPanelProps) {
       initial={{ opacity: 0, x: 20 }}
       animate={{ opacity: 1, x: 0 }}
       transition={{ duration: 0.4, ease: [0.25, 0.1, 0.25, 1], delay: 0.1 }}
-      className="h-full"
+      className={className || "h-full"}
     >
-      <Card className="border-[#00000010] shadow-none overflow-hidden h-full min-h-[calc(100vh-12rem)] flex flex-col">
+      <Card className="border-[#00000010] shadow-none overflow-hidden h-full flex flex-col">
         <CardContent className="p-0 h-full flex flex-col">
           {/* Tabs */}
           <div className="flex border-b border-border pt-4 px-4">
