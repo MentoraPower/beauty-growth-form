@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Zap, Plus, Trash2, ArrowRight, Webhook, FolderSync, Copy, Check, Send, Download, X, ChevronDown, Search, Play, Settings } from "lucide-react";
+import { Zap, Plus, Trash2, ArrowRight, Webhook, FolderSync, Copy, Check, Send, Download, X, Play, Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -482,7 +482,7 @@ export function AutomationsDropdown({ pipelines, subOriginId }: AutomationsDropd
           </div>
         </div>
 
-        <div className="overflow-y-auto max-h-[calc(90vh-120px)]">
+        <div className="overflow-y-auto h-[calc(700px-110px)]">
           {/* Automations Tab */}
           {activeTab === "automations" && (
             <div className="p-6">
@@ -507,16 +507,15 @@ export function AutomationsDropdown({ pipelines, subOriginId }: AutomationsDropd
 
               {/* Create automation flow */}
               {isCreatingAutomation && (
-                <div className="mb-8 p-6 rounded-xl bg-neutral-800/50 border border-neutral-700">
-                  <div className="flex items-center justify-between mb-6">
-                    <Input
-                      placeholder="Dê um nome a essa regra de automação..."
-                      className="max-w-md bg-transparent border-none text-neutral-400 placeholder:text-neutral-500 text-sm focus-visible:ring-0 px-0"
-                    />
+                <div className="mb-6 p-5 rounded-xl bg-neutral-800/50 border border-neutral-700">
+                  <div className="flex items-center justify-between mb-4">
+                    <span className="text-sm font-medium text-white">
+                      {editingAutomationId ? "Editar automação" : "Nova automação"}
+                    </span>
                     <Button
                       size="sm"
                       variant="ghost"
-                      className="text-neutral-400 hover:text-white"
+                      className="h-7 w-7 p-0 text-neutral-400 hover:text-white"
                       onClick={resetAutomationForm}
                     >
                       <X className="w-4 h-4" />
@@ -524,273 +523,132 @@ export function AutomationsDropdown({ pipelines, subOriginId }: AutomationsDropd
                   </div>
 
                   {/* Two-column layout: Trigger -> Action */}
-                  <div className="flex items-start gap-4">
+                  <div className="flex items-stretch gap-3">
                     {/* Trigger Column */}
-                    <div className="flex-1 space-y-3">
-                      <div className="rounded-xl bg-neutral-800 border border-neutral-700 overflow-hidden">
-                        {/* Trigger Header */}
-                        <div className="flex items-center gap-3 p-4 border-b border-neutral-700">
-                          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
-                            <Play className="w-4 h-4 text-white" />
+                    <div className="flex-1">
+                      <div className="rounded-lg bg-neutral-800 border border-neutral-700 h-full">
+                        <div className="flex items-center gap-2 p-3 border-b border-neutral-700">
+                          <div className="w-6 h-6 rounded bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
+                            <Play className="w-3 h-3 text-white" />
                           </div>
-                          <span className="text-white font-medium">Acionar</span>
-                          <div className="flex-1" />
-                          <Select value={selectedTrigger} onValueChange={setSelectedTrigger}>
-                            <SelectTrigger className="w-auto h-8 bg-neutral-700 border-neutral-600 text-white text-sm gap-2">
-                              <SelectValue placeholder="Leads" />
+                          <span className="text-white text-sm font-medium">Quando</span>
+                        </div>
+                        
+                        <div className="p-3">
+                          <Select value={selectedTriggerPipeline} onValueChange={setSelectedTriggerPipeline}>
+                            <SelectTrigger className="h-9 bg-neutral-700/50 border-neutral-600 text-white text-sm">
+                              <SelectValue placeholder="Lead movido para..." />
                             </SelectTrigger>
                             <SelectContent className="bg-neutral-800 border-neutral-700">
-                              <SelectItem value="leads" className="text-white">Leads</SelectItem>
+                              {pipelines.map((pipeline) => (
+                                <SelectItem key={pipeline.id} value={pipeline.id} className="text-white">
+                                  Lead movido para {pipeline.nome}
+                                </SelectItem>
+                              ))}
                             </SelectContent>
                           </Select>
-                        </div>
-
-                        {/* Trigger Body */}
-                        <div className="p-4 space-y-4">
-                          <div className="space-y-2">
-                            <button
-                              onClick={() => setTriggerDropdownOpen(!triggerDropdownOpen)}
-                              className="w-full flex items-center justify-between p-3 rounded-lg bg-neutral-700/50 border border-neutral-600 text-left"
-                            >
-                              <div className="flex items-center gap-2">
-                                <div className="w-5 h-5 rounded-full border-2 border-purple-500 flex items-center justify-center">
-                                  {selectedTriggerPipeline && (
-                                    <div className="w-2.5 h-2.5 rounded-full bg-purple-500" />
-                                  )}
-                                </div>
-                                <span className="text-white text-sm">
-                                  {selectedTriggerPipeline 
-                                    ? `Lead movido para ${getPipelineName(selectedTriggerPipeline)}`
-                                    : "Selecione o gatilho..."}
-                                </span>
-                              </div>
-                              <ChevronDown className={cn(
-                                "w-4 h-4 text-neutral-400 transition-transform",
-                                triggerDropdownOpen && "rotate-180"
-                              )} />
-                            </button>
-
-                            {triggerDropdownOpen && (
-                              <div className="rounded-lg bg-neutral-800 border border-neutral-700 overflow-hidden">
-                                <div className="p-2">
-                                  <div className="relative">
-                                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-500" />
-                                    <Input
-                                      placeholder="Pesquisar..."
-                                      className="pl-9 h-9 bg-neutral-700 border-neutral-600 text-white placeholder:text-neutral-500"
-                                    />
-                                  </div>
-                                </div>
-                                <div className="max-h-48 overflow-y-auto">
-                                  <div className="px-3 py-2 text-[11px] font-medium text-neutral-500 uppercase tracking-wider">
-                                    Pipelines
-                                  </div>
-                                  {pipelines.map((pipeline) => (
-                                    <button
-                                      key={pipeline.id}
-                                      onClick={() => {
-                                        setSelectedTriggerPipeline(pipeline.id);
-                                        setTriggerDropdownOpen(false);
-                                      }}
-                                      className={cn(
-                                        "w-full flex items-center gap-2 px-3 py-2 text-sm text-left transition-colors",
-                                        selectedTriggerPipeline === pipeline.id
-                                          ? "bg-purple-500/20 text-purple-400"
-                                          : "text-white hover:bg-neutral-700"
-                                      )}
-                                    >
-                                      <ArrowRight className="w-4 h-4 text-neutral-400" />
-                                      <span>Lead movido para {pipeline.nome}</span>
-                                      {selectedTriggerPipeline === pipeline.id && (
-                                        <Check className="w-4 h-4 ml-auto text-purple-400" />
-                                      )}
-                                    </button>
-                                  ))}
-                                </div>
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Dashed line connector */}
-                      <div className="flex justify-center">
-                        <div className="w-px h-6 border-l-2 border-dashed border-neutral-600" />
-                      </div>
-                      <div className="flex justify-center">
-                        <div className="w-8 h-8 rounded-full bg-neutral-800 border border-neutral-600 flex items-center justify-center">
-                          <Plus className="w-4 h-4 text-neutral-400" />
                         </div>
                       </div>
                     </div>
 
                     {/* Arrow */}
-                    <div className="flex items-center justify-center pt-20">
-                      <div className="w-12 h-12 rounded-full bg-neutral-800 border border-neutral-700 flex items-center justify-center">
-                        <ArrowRight className="w-5 h-5 text-neutral-400" />
+                    <div className="flex items-center justify-center">
+                      <div className="w-8 h-8 rounded-full bg-neutral-800 border border-neutral-700 flex items-center justify-center">
+                        <ArrowRight className="w-4 h-4 text-neutral-400" />
                       </div>
                     </div>
 
                     {/* Action Column */}
-                    <div className="flex-1 space-y-3">
-                      <div className="rounded-xl bg-neutral-800 border border-neutral-700 overflow-hidden">
-                        {/* Action Header */}
-                        <div className="flex items-center gap-3 p-4 border-b border-neutral-700">
-                          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-pink-500 to-orange-500 flex items-center justify-center">
-                            <Settings className="w-4 h-4 text-white" />
+                    <div className="flex-1">
+                      <div className="rounded-lg bg-neutral-800 border border-neutral-700 h-full">
+                        <div className="flex items-center gap-2 p-3 border-b border-neutral-700">
+                          <div className="w-6 h-6 rounded bg-gradient-to-br from-pink-500 to-orange-500 flex items-center justify-center">
+                            <FolderSync className="w-3 h-3 text-white" />
                           </div>
-                          <span className="text-white font-medium">Ação</span>
+                          <span className="text-white text-sm font-medium">Então</span>
                         </div>
+                        
+                        <div className="p-3 space-y-2">
+                          <Select value={selectedActionOrigin} onValueChange={(v) => {
+                            setSelectedActionOrigin(v);
+                            setSelectedActionSubOrigin("");
+                            setSelectedActionPipeline("");
+                          }}>
+                            <SelectTrigger className="h-9 bg-neutral-700/50 border-neutral-600 text-white text-sm">
+                              <SelectValue placeholder="Origem..." />
+                            </SelectTrigger>
+                            <SelectContent className="bg-neutral-800 border-neutral-700">
+                              {origins.map((origin) => (
+                                <SelectItem key={origin.id} value={origin.id} className="text-white">
+                                  {origin.nome}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
 
-                        {/* Action Body */}
-                        <div className="p-4 space-y-4">
-                          <div className="space-y-2">
-                            <button
-                              onClick={() => setActionDropdownOpen(!actionDropdownOpen)}
-                              className="w-full flex items-center justify-between p-3 rounded-lg bg-neutral-700/50 border border-neutral-600 text-left"
-                            >
-                              <div className="flex items-center gap-2">
-                                <Settings className="w-4 h-4 text-neutral-400" />
-                                <span className="text-white text-sm">
-                                  {selectedActionPipeline 
-                                    ? "Mover para pipeline"
-                                    : "Selecione a ação..."}
-                                </span>
-                              </div>
-                              <ChevronDown className={cn(
-                                "w-4 h-4 text-neutral-400 transition-transform",
-                                actionDropdownOpen && "rotate-180"
-                              )} />
-                            </button>
+                          <Select 
+                            value={selectedActionSubOrigin} 
+                            onValueChange={(v) => {
+                              setSelectedActionSubOrigin(v);
+                              setSelectedActionPipeline("");
+                            }}
+                            disabled={!selectedActionOrigin}
+                          >
+                            <SelectTrigger className="h-9 bg-neutral-700/50 border-neutral-600 text-white text-sm disabled:opacity-50">
+                              <SelectValue placeholder="Sub-origem..." />
+                            </SelectTrigger>
+                            <SelectContent className="bg-neutral-800 border-neutral-700">
+                              {subOrigins
+                                .filter(s => s.origin_id === selectedActionOrigin)
+                                .map((subOrigin) => (
+                                  <SelectItem key={subOrigin.id} value={subOrigin.id} className="text-white">
+                                    {subOrigin.nome}
+                                  </SelectItem>
+                                ))}
+                            </SelectContent>
+                          </Select>
 
-                            {actionDropdownOpen && (
-                              <div className="rounded-lg bg-neutral-800 border border-neutral-700 overflow-hidden">
-                                <div className="p-2">
-                                  <div className="relative">
-                                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-500" />
-                                    <Input
-                                      placeholder="Pesquisar..."
-                                      className="pl-9 h-9 bg-neutral-700 border-neutral-600 text-white placeholder:text-neutral-500"
-                                    />
-                                  </div>
-                                </div>
-                                <div className="max-h-48 overflow-y-auto">
-                                  <div className="px-3 py-2 text-[11px] font-medium text-neutral-500 uppercase tracking-wider">
-                                    Popular
-                                  </div>
-                                  <button
-                                    onClick={() => setActionDropdownOpen(false)}
-                                    className="w-full flex items-center gap-2 px-3 py-2 text-sm text-white hover:bg-neutral-700 text-left"
-                                  >
-                                    <FolderSync className="w-4 h-4 text-neutral-400" />
-                                    <span>Mover para outra origem</span>
-                                  </button>
-                                </div>
-                              </div>
-                            )}
-                          </div>
-
-                          {/* Target selection */}
-                          <div className="space-y-3">
-                            <div className="space-y-1.5">
-                              <span className="text-[11px] text-neutral-500 uppercase tracking-wider">Origem *</span>
-                              <Select value={selectedActionOrigin} onValueChange={(v) => {
-                                setSelectedActionOrigin(v);
-                                setSelectedActionSubOrigin("");
-                                setSelectedActionPipeline("");
-                              }}>
-                                <SelectTrigger className="h-10 bg-neutral-700/50 border-neutral-600 text-white">
-                                  <SelectValue placeholder="Selecionar origem..." />
-                                </SelectTrigger>
-                                <SelectContent className="bg-neutral-800 border-neutral-700">
-                                  {origins.map((origin) => (
-                                    <SelectItem key={origin.id} value={origin.id} className="text-white">
-                                      {origin.nome}
-                                    </SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
-                            </div>
-
-                            <div className="space-y-1.5">
-                              <span className="text-[11px] text-neutral-500 uppercase tracking-wider">Sub-origem</span>
-                              <Select 
-                                value={selectedActionSubOrigin} 
-                                onValueChange={(v) => {
-                                  setSelectedActionSubOrigin(v);
-                                  setSelectedActionPipeline("");
-                                }}
-                                disabled={!selectedActionOrigin}
-                              >
-                                <SelectTrigger className="h-10 bg-neutral-700/50 border-neutral-600 text-white disabled:opacity-50">
-                                  <SelectValue placeholder="Selecionar sub-origem..." />
-                                </SelectTrigger>
-                                <SelectContent className="bg-neutral-800 border-neutral-700">
-                                  {subOrigins
-                                    .filter(s => s.origin_id === selectedActionOrigin)
-                                    .map((subOrigin) => (
-                                      <SelectItem key={subOrigin.id} value={subOrigin.id} className="text-white">
-                                        {subOrigin.nome}
-                                      </SelectItem>
-                                    ))}
-                                </SelectContent>
-                              </Select>
-                            </div>
-
-                            <div className="space-y-1.5">
-                              <span className="text-[11px] text-neutral-500 uppercase tracking-wider">Pipeline</span>
-                              <Select 
-                                value={selectedActionPipeline} 
-                                onValueChange={setSelectedActionPipeline}
-                                disabled={!selectedActionSubOrigin}
-                              >
-                                <SelectTrigger className="h-10 bg-neutral-700/50 border-neutral-600 text-white disabled:opacity-50">
-                                  <SelectValue placeholder="Selecionar pipeline..." />
-                                </SelectTrigger>
-                                <SelectContent className="bg-neutral-800 border-neutral-700">
-                                  {getTargetPipelines(selectedActionSubOrigin).map((pipeline) => (
-                                    <SelectItem key={pipeline.id} value={pipeline.id} className="text-white">
-                                      {pipeline.nome}
-                                    </SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Dashed line connector */}
-                      <div className="flex justify-center">
-                        <div className="w-px h-6 border-l-2 border-dashed border-neutral-600" />
-                      </div>
-                      <div className="flex justify-center">
-                        <div className="w-8 h-8 rounded-full bg-neutral-800 border border-neutral-600 flex items-center justify-center">
-                          <Plus className="w-4 h-4 text-neutral-400" />
+                          <Select 
+                            value={selectedActionPipeline} 
+                            onValueChange={setSelectedActionPipeline}
+                            disabled={!selectedActionSubOrigin}
+                          >
+                            <SelectTrigger className="h-9 bg-neutral-700/50 border-neutral-600 text-white text-sm disabled:opacity-50">
+                              <SelectValue placeholder="Pipeline..." />
+                            </SelectTrigger>
+                            <SelectContent className="bg-neutral-800 border-neutral-700">
+                              {getTargetPipelines(selectedActionSubOrigin).map((pipeline) => (
+                                <SelectItem key={pipeline.id} value={pipeline.id} className="text-white">
+                                  {pipeline.nome}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
                         </div>
                       </div>
                     </div>
                   </div>
 
-                  {/* Footer summary */}
-                  <div className="flex items-center justify-between mt-6 pt-6 border-t border-neutral-700">
-                    <div className="flex items-center gap-2 text-sm text-neutral-400">
+                  {/* Footer */}
+                  <div className="flex items-center justify-between mt-4 pt-4 border-t border-neutral-700">
+                    <div className="flex items-center gap-1.5 text-xs text-neutral-400">
                       <span>Quando</span>
-                      <span className="px-2 py-1 bg-neutral-700 rounded text-white">
+                      <span className="px-1.5 py-0.5 bg-neutral-700 rounded text-white text-xs">
                         {selectedTriggerPipeline 
-                          ? `Lead movido para ${getPipelineName(selectedTriggerPipeline)}`
-                          : "Selecione..."}
+                          ? getPipelineName(selectedTriggerPipeline)
+                          : "..."}
                       </span>
-                      <span>então</span>
-                      <span className="px-2 py-1 bg-neutral-700 rounded text-white">
+                      <ArrowRight className="w-3 h-3" />
+                      <span className="px-1.5 py-0.5 bg-neutral-700 rounded text-white text-xs">
                         {selectedActionPipeline
-                          ? `Mover para ${getPipelineName(selectedActionPipeline, allPipelines)}`
-                          : "Selecione..."}
+                          ? `${getOriginName(selectedActionOrigin)} / ${getSubOriginName(selectedActionSubOrigin)} / ${getPipelineName(selectedActionPipeline, allPipelines)}`
+                          : "..."}
                       </span>
                     </div>
                     <Button
+                      size="sm"
                       onClick={editingAutomationId ? saveAutomationEdit : createAutomation}
-                      className="bg-purple-600 hover:bg-purple-700 text-white"
+                      className="h-8 bg-purple-600 hover:bg-purple-700 text-white text-xs"
                       disabled={!selectedTriggerPipeline}
                     >
                       {editingAutomationId ? "Salvar" : "Criar"}
