@@ -1,6 +1,14 @@
 {
   "rewrites": [
     {
+      "source": "/api/webhook",
+      "destination": "https://ytdfwkchsumgdvcroaqg.supabase.co/functions/v1/receive-webhook"
+    },
+    {
+      "source": "/api/webhook/:path*",
+      "destination": "https://ytdfwkchsumgdvcroaqg.supabase.co/functions/v1/receive-webhook/:path*"
+    },
+    {
       "source": "/(.*)",
       "destination": "/index.html"
     }

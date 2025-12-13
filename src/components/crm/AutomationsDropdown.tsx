@@ -290,7 +290,7 @@ export function AutomationsDropdown({ pipelines, subOriginId }: AutomationsDropd
   };
 
   const getGeneratedWebhookUrl = () => {
-    const baseUrl = `https://ytdfwkchsumgdvcroaqg.supabase.co/functions/v1/receive-webhook`;
+    const baseUrl = `https://scalebeauty.com.br/api/webhook`;
     if (webhookScope === "all") {
       return baseUrl;
     } else if (webhookScope === "origin" && webhookOriginId) {
