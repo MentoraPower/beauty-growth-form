@@ -11,7 +11,7 @@ import { Mail, Calendar, Building2, Clock, DollarSign, Users, Briefcase, MoreVer
 import Instagram from "@/components/icons/Instagram";
 import WhatsApp from "@/components/icons/WhatsApp";
 import { Skeleton } from "@/components/ui/skeleton";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, LayoutGroup } from "framer-motion";
 import { ActivitiesBoard } from "@/components/activities/ActivitiesBoard";
 import { LeadTagsManager } from "@/components/crm/LeadTagsManager";
 import { LeadTrackingTimeline } from "@/components/crm/LeadTrackingTimeline";
@@ -381,31 +381,32 @@ export default function LeadDetail() {
         </div>
 
         {/* Tabs Navigation */}
-        <div className="relative">
-          <div className="flex gap-6 border-b border-black/10">
-            {tabs.map((tab) => (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={`relative pb-3 text-sm font-medium transition-colors ${
-                  activeTab === tab.id
-                    ? "text-foreground"
-                    : "text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                {tab.label}
-                {activeTab === tab.id && (
-                  <motion.div
-                    layoutId="activeTabIndicator"
-                    className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary"
-                    initial={false}
-                    transition={{ type: "spring", stiffness: 500, damping: 30 }}
-                  />
-                )}
-              </button>
-            ))}
+        <LayoutGroup>
+          <div className="relative">
+            <div className="flex gap-6 border-b border-black/10">
+              {tabs.map((tab) => (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`relative pb-3 text-sm font-medium transition-colors ${
+                    activeTab === tab.id
+                      ? "text-foreground"
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  {tab.label}
+                  {activeTab === tab.id && (
+                    <motion.div
+                      layoutId="activeTabIndicator"
+                      className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-[#F40000] to-[#A10000]"
+                      transition={{ type: "spring", stiffness: 400, damping: 30 }}
+                    />
+                  )}
+                </button>
+              ))}
+            </div>
           </div>
-        </div>
+        </LayoutGroup>
 
         {/* Tab Content */}
         <div className="mt-4">
