@@ -147,13 +147,18 @@ export function useLeadActivities({ leadId, currentPipelineId, subOriginId }: Us
         toast.success("Atividade atualizada!");
       } else {
         // Se tiver subOriginId, criar atividade para todos os leads dessa sub-origem
+        console.log("[Activities] Creating activity with subOriginId:", subOriginId);
+        
         if (subOriginId) {
           const { data: subOriginLeads, error: leadsError } = await supabase
             .from("leads")
             .select("id")
             .eq("sub_origin_id", subOriginId);
 
+          console.log("[Activities] Found leads in sub-origin:", subOriginLeads?.length, subOriginLeads);
+
           if (leadsError) {
+            console.error("[Activities] Error fetching leads:", leadsError);
             toast.error(`Erro ao buscar leads: ${leadsError.message}`);
             return;
           }
