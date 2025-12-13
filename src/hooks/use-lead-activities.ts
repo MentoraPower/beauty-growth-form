@@ -27,9 +27,10 @@ export interface Pipeline {
 interface UseLeadActivitiesProps {
   leadId: string;
   currentPipelineId: string | null;
+  subOriginId?: string | null;
 }
 
-export function useLeadActivities({ leadId, currentPipelineId }: UseLeadActivitiesProps) {
+export function useLeadActivities({ leadId, currentPipelineId, subOriginId }: UseLeadActivitiesProps) {
   const queryClient = useQueryClient();
   const [viewingPipelineId, setViewingPipelineId] = useState<string | null>(currentPipelineId);
   const [selectedActivity, setSelectedActivity] = useState<LeadActivity | null>(null);
@@ -144,30 +145,66 @@ export function useLeadActivities({ leadId, currentPipelineId }: UseLeadActiviti
 
         toast.success("Atividade atualizada!");
       } else {
-        const { error } = await supabase
-          .from("lead_activities")
-          .insert({
-            lead_id: leadId,
-            pipeline_id: viewingPipelineId!,
-            titulo: activity.titulo,
-            tipo: activity.tipo,
-            data: format(activity.data, "yyyy-MM-dd"),
-            hora: activity.hora,
-          });
+        // Se tiver subOriginId, criar atividade para todos os leads dessa sub-origem
+        if (subOriginId) {
+          const { data: subOriginLeads, error: leadsError } = await supabase
+            .from("leads")
+            .select("id")
+            .eq("sub_origin_id", subOriginId);
 
-        if (error) {
-          toast.error(`Erro: ${error.message}`);
-          return;
+          if (leadsError) {
+            toast.error(`Erro ao buscar leads: ${leadsError.message}`);
+            return;
+          }
+
+          if (subOriginLeads && subOriginLeads.length > 0) {
+            const activitiesToInsert = subOriginLeads.map(lead => ({
+              lead_id: lead.id,
+              pipeline_id: viewingPipelineId!,
+              titulo: activity.titulo,
+              tipo: activity.tipo,
+              data: format(activity.data, "yyyy-MM-dd"),
+              hora: activity.hora,
+            }));
+
+            const { error } = await supabase
+              .from("lead_activities")
+              .insert(activitiesToInsert);
+
+            if (error) {
+              toast.error(`Erro: ${error.message}`);
+              return;
+            }
+
+            toast.success(`Atividade criada para ${subOriginLeads.length} leads!`);
+          }
+        } else {
+          // Criar apenas para o lead atual
+          const { error } = await supabase
+            .from("lead_activities")
+            .insert({
+              lead_id: leadId,
+              pipeline_id: viewingPipelineId!,
+              titulo: activity.titulo,
+              tipo: activity.tipo,
+              data: format(activity.data, "yyyy-MM-dd"),
+              hora: activity.hora,
+            });
+
+          if (error) {
+            toast.error(`Erro: ${error.message}`);
+            return;
+          }
+
+          toast.success("Atividade criada!");
         }
-
-        toast.success("Atividade criada!");
       }
       refetchActivities();
     } catch (error: any) {
       console.error("Error saving activity:", error);
       toast.error(`Erro ao salvar: ${error?.message || 'Erro desconhecido'}`);
     }
-  }, [leadId, viewingPipelineId, refetchActivities]);
+  }, [leadId, viewingPipelineId, subOriginId, refetchActivities]);
 
   const handleDeleteActivity = useCallback(async (activityId: string) => {
     try {
