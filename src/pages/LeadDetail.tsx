@@ -634,19 +634,40 @@ export default function LeadDetail() {
                       >
                         {contactPanelTab === "instagram" ? (
                           lead.instagram ? (
-                            <iframe
-                              src={`https://www.instagram.com/${lead.instagram.replace(/^@/, "").replace(/^https?:\/\/(www\.)?instagram\.com\//, "").split("/")[0].split("?")[0]}/`}
-                              className="w-full h-full border-0"
-                              title={`Instagram de ${lead.name}`}
-                            />
+                            <div className="flex flex-col items-center justify-center h-[400px] p-6 text-center">
+                              <motion.div 
+                                initial={{ scale: 0.8, opacity: 0 }}
+                                animate={{ scale: 1, opacity: 1 }}
+                                transition={{ duration: 0.3, delay: 0.1 }}
+                                className="w-16 h-16 rounded-full bg-gradient-to-br from-purple-500 via-pink-500 to-orange-400 flex items-center justify-center mb-4"
+                              >
+                                <Instagram className="w-8 h-8 text-white" />
+                              </motion.div>
+                              <h3 className="font-semibold text-lg mb-2">@{lead.instagram.replace(/^@/, "").replace(/^https?:\/\/(www\.)?instagram\.com\//, "").split("/")[0].split("?")[0]}</h3>
+                              <p className="text-sm text-muted-foreground mb-4">
+                                Abrir perfil do Instagram
+                              </p>
+                              <motion.a
+                                initial={{ y: 10, opacity: 0 }}
+                                animate={{ y: 0, opacity: 1 }}
+                                transition={{ duration: 0.3, delay: 0.2 }}
+                                href={`https://www.instagram.com/${lead.instagram.replace(/^@/, "").replace(/^https?:\/\/(www\.)?instagram\.com\//, "").split("/")[0].split("?")[0]}/`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-purple-500 via-pink-500 to-orange-400 text-white rounded-lg font-medium hover:opacity-90 transition-opacity"
+                              >
+                                <Instagram className="w-5 h-5" />
+                                Abrir Instagram
+                              </motion.a>
+                            </div>
                           ) : (
-                            <div className="flex flex-col items-center justify-center h-full text-center p-6">
+                            <div className="flex flex-col items-center justify-center h-[400px] text-center p-6">
                               <Instagram className="w-12 h-12 text-muted-foreground/30 mb-4" />
                               <p className="text-sm text-muted-foreground">Instagram não informado</p>
                             </div>
                           )
                         ) : (
-                          <div className="flex flex-col items-center justify-center h-full p-6 text-center">
+                          <div className="flex flex-col items-center justify-center h-[400px] p-6 text-center">
                             <motion.div 
                               initial={{ scale: 0.8, opacity: 0 }}
                               animate={{ scale: 1, opacity: 1 }}
@@ -660,18 +681,16 @@ export default function LeadDetail() {
                               {lead.whatsapp ? `${lead.country_code} ${lead.whatsapp}` : "WhatsApp não informado"}
                             </p>
                             {lead.whatsapp && (
-                              <motion.a
+                              <motion.button
                                 initial={{ y: 10, opacity: 0 }}
                                 animate={{ y: 0, opacity: 1 }}
                                 transition={{ duration: 0.3, delay: 0.2 }}
-                                href={`https://wa.me/${lead.country_code.replace("+", "")}${lead.whatsapp.replace(/\D/g, "")}`}
-                                target="_blank"
-                                rel="noopener noreferrer"
+                                onClick={() => navigate(`/admin/whatsapp?phone=${lead.country_code.replace("+", "")}${lead.whatsapp.replace(/\D/g, "")}`)}
                                 className="inline-flex items-center gap-2 px-6 py-3 bg-emerald-500 text-white rounded-lg font-medium hover:bg-emerald-600 transition-colors"
                               >
                                 <WhatsApp className="w-5 h-5" />
                                 Abrir WhatsApp
-                              </motion.a>
+                              </motion.button>
                             )}
                           </div>
                         )}
