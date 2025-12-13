@@ -22,7 +22,7 @@ interface ChecklistItem {
 interface ActivityDetailsProps {
   activity: LeadActivity | null;
   leadId: string;
-  onSaveNotes: (activityId: string, notes: string) => void;
+  onSaveNotes: (activityId: string, notes: string, activityGroupId?: string | null) => void;
 }
 
 export const ActivityDetails = memo(function ActivityDetails({
@@ -66,7 +66,7 @@ export const ActivityDetails = memo(function ActivityDetails({
       if (saveNotesTimeoutRef.current) clearTimeout(saveNotesTimeoutRef.current);
       if (activity) {
         saveNotesTimeoutRef.current = setTimeout(() => {
-          onSaveNotes(activity.id, editor.getHTML());
+          onSaveNotes(activity.id, editor.getHTML(), activity.activity_group_id);
           showSavedStatus();
         }, 800);
       }
@@ -98,10 +98,22 @@ export const ActivityDetails = memo(function ActivityDetails({
   const saveChecklist = useCallback(async (items: ChecklistItem[]) => {
     if (!activity) return;
     setSaveStatus('saving');
-    await supabase
-      .from("lead_activities")
-      .update({ notas: JSON.stringify(items) })
-      .eq("id", activity.id);
+    
+    const notasJson = JSON.stringify(items);
+    
+    // Se a atividade tiver um group_id, atualizar todas do grupo
+    if (activity.activity_group_id) {
+      await supabase
+        .from("lead_activities")
+        .update({ notas: notasJson })
+        .eq("activity_group_id", activity.activity_group_id);
+    } else {
+      await supabase
+        .from("lead_activities")
+        .update({ notas: notasJson })
+        .eq("id", activity.id);
+    }
+    
     showSavedStatus();
   }, [activity, showSavedStatus]);
 

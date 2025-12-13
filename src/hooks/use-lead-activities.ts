@@ -15,6 +15,7 @@ export interface LeadActivity {
   concluida: boolean;
   notas: string | null;
   created_at: string;
+  activity_group_id: string | null;
 }
 
 export interface Pipeline {
@@ -158,6 +159,9 @@ export function useLeadActivities({ leadId, currentPipelineId, subOriginId }: Us
           }
 
           if (subOriginLeads && subOriginLeads.length > 0) {
+            // Gerar um activity_group_id compartilhado para vincular todas as atividades
+            const groupId = crypto.randomUUID();
+            
             const activitiesToInsert = subOriginLeads.map(lead => ({
               lead_id: lead.id,
               pipeline_id: viewingPipelineId!,
@@ -165,6 +169,7 @@ export function useLeadActivities({ leadId, currentPipelineId, subOriginId }: Us
               tipo: activity.tipo,
               data: format(activity.data, "yyyy-MM-dd"),
               hora: activity.hora,
+              activity_group_id: groupId,
             }));
 
             const { error } = await supabase
@@ -179,7 +184,7 @@ export function useLeadActivities({ leadId, currentPipelineId, subOriginId }: Us
             toast.success(`Atividade criada para ${subOriginLeads.length} leads!`);
           }
         } else {
-          // Criar apenas para o lead atual
+          // Criar apenas para o lead atual (sem group_id)
           const { error } = await supabase
             .from("lead_activities")
             .insert({

@@ -193,6 +193,7 @@ export type Database = {
       }
       lead_activities: {
         Row: {
+          activity_group_id: string | null
           concluida: boolean
           created_at: string
           data: string
@@ -206,6 +207,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          activity_group_id?: string | null
           concluida?: boolean
           created_at?: string
           data: string
@@ -219,6 +221,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          activity_group_id?: string | null
           concluida?: boolean
           created_at?: string
           data?: string
