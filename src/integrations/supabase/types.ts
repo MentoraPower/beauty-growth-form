@@ -326,6 +326,7 @@ export type Database = {
           ai_analysis: string | null
           analysis_created_at: string | null
           average_ticket: number | null
+          biggest_difficulty: string | null
           can_afford: string | null
           clinic_name: string | null
           country_code: string
@@ -356,6 +357,7 @@ export type Database = {
           ai_analysis?: string | null
           analysis_created_at?: string | null
           average_ticket?: number | null
+          biggest_difficulty?: string | null
           can_afford?: string | null
           clinic_name?: string | null
           country_code?: string
@@ -386,6 +388,7 @@ export type Database = {
           ai_analysis?: string | null
           analysis_created_at?: string | null
           average_ticket?: number | null
+          biggest_difficulty?: string | null
           can_afford?: string | null
           clinic_name?: string | null
           country_code?: string
