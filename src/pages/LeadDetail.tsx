@@ -15,7 +15,7 @@ import { motion } from "framer-motion";
 import { ActivitiesBoard } from "@/components/activities/ActivitiesBoard";
 import { LeadTagsManager } from "@/components/crm/LeadTagsManager";
 import { LeadTrackingTimeline } from "@/components/crm/LeadTrackingTimeline";
-import { LeadContactPanel } from "@/components/crm/LeadContactPanel";
+import { LeadAnalysis } from "@/components/crm/LeadAnalysis";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -263,355 +263,347 @@ export default function LeadDetail() {
 
   return (
     <DashboardLayout>
-      <div className="animate-in fade-in duration-300">
-        {/* Main Layout - Two Column with Social Panel on Right */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 h-[calc(100vh-6rem)]">
-          {/* Left Column - All Content */}
-          <div className="lg:col-span-9 space-y-3 overflow-y-auto pr-2">
-            {/* Breadcrumb Navigation */}
-            <div className="flex items-center gap-2 text-sm">
-              <button
-                onClick={() => navigate(subOriginId ? `/admin/crm?origin=${subOriginId}` : "/admin/crm")}
-                className="text-muted-foreground hover:text-foreground transition-colors"
-              >
-                Lista Geral
-              </button>
-              <span className="text-muted-foreground">&gt;</span>
-              <span className="text-foreground font-medium">
-                {lead.name === "Incompleto" ? "incompleto" : lead.name}
-              </span>
-            </div>
+      <div className="space-y-3 animate-in fade-in duration-300">
+        {/* Breadcrumb Navigation */}
+        <div className="flex items-center gap-2 text-sm">
+          <button
+            onClick={() => navigate(subOriginId ? `/admin/crm?origin=${subOriginId}` : "/admin/crm")}
+            className="text-muted-foreground hover:text-foreground transition-colors"
+          >
+            Lista Geral
+          </button>
+          <span className="text-muted-foreground">&gt;</span>
+          <span className="text-foreground font-medium">
+            {lead.name === "Incompleto" ? "incompleto" : lead.name}
+          </span>
+        </div>
 
-            {/* Header with Avatar, Name and Tags */}
-            <div>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  {/* Avatar - smaller */}
-                  <div className="h-8 w-8 rounded-full bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center border border-black/5">
-                    <User className="h-4 w-4 text-primary/70" />
-                  </div>
+        {/* Header with Avatar, Name and Tags */}
+        <div>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              {/* Avatar - smaller */}
+              <div className="h-8 w-8 rounded-full bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center border border-black/5">
+                <User className="h-4 w-4 text-primary/70" />
+              </div>
+              
+              {/* Name and Company */}
+              <div>
+                <div className="flex items-center gap-2">
+                  <p className={`uppercase tracking-wide ${lead.clinic_name ? "text-xs text-muted-foreground font-medium" : "text-[10px] text-muted-foreground/70"}`}>
+                    {lead.clinic_name || "SEM EMPRESA"}
+                  </p>
+                  {isLeadIncomplete(lead) && (
+                    <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-4 border-amber-400 text-amber-600 bg-amber-50">
+                      Cadastro incompleto
+                    </Badge>
+                  )}
+                </div>
+                <h1 className="text-xl font-bold leading-tight">
+                  {lead.name === "Incompleto" ? "incompleto" : lead.name}
+                </h1>
+              </div>
+            </div>
+            
+            {/* Three dots menu */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="icon" className="h-10 w-10">
+                  <MoreVertical className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem 
+                  className="text-destructive focus:text-destructive cursor-pointer"
+                  onClick={() => setShowDeleteDialog(true)}
+                >
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Excluir lead
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+
+          {/* Tags Section - directly below name */}
+          <div className="pl-[44px] mt-0.5">
+            <LeadTagsManager leadId={lead.id} />
+          </div>
+        </div>
+
+        {/* Separator */}
+        <div className="px-8 py-2">
+          <div className="border-t border-black/10" />
+        </div>
+
+        {/* Tabs Navigation */}
+        <div className="relative">
+          <div className="flex gap-6 border-b border-black/10">
+            {tabs.map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`relative pb-3 text-sm font-medium transition-colors ${
+                  activeTab === tab.id
+                    ? "text-foreground"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                {tab.label}
+                {activeTab === tab.id && (
+                  <motion.div
+                    layoutId="activeTabIndicator"
+                    className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary"
+                    initial={false}
+                    transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                  />
+                )}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Tab Content */}
+        <div className="mt-4">
+          {activeTab === "atividades" && (
+            <ActivitiesBoard
+              leadId={lead.id}
+              leadName={lead.name}
+              currentPipelineId={lead.pipeline_id}
+            />
+          )}
+
+          {activeTab === "contato" && (
+            <div className="space-y-6">
+              {/* Lead Analysis Card */}
+              <LeadAnalysis lead={lead} />
+
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Contact Info */}
+              <Card className="border-[#00000010] shadow-none">
+                <CardContent className="p-6 space-y-4">
+                  <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-4">
+                    Informações de Contato
+                  </h3>
                   
-                  {/* Name and Company */}
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <p className={`uppercase tracking-wide ${lead.clinic_name ? "text-xs text-muted-foreground font-medium" : "text-[10px] text-muted-foreground/70"}`}>
-                        {lead.clinic_name || "SEM EMPRESA"}
-                      </p>
-                      {isLeadIncomplete(lead) && (
-                        <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-4 border-amber-400 text-amber-600 bg-amber-50">
-                          Cadastro incompleto
-                        </Badge>
+                  
+                  <div className="flex items-center gap-3 p-3 bg-muted/30 border border-[#00000010] rounded-lg">
+                    <div className="h-10 w-10 rounded-full border border-black/10 flex items-center justify-center">
+                      <Mail className="h-5 w-5 text-neutral-600" />
+                    </div>
+                    <div>
+                      <p className="text-xs text-muted-foreground">Email</p>
+                      {isIncompleteEmail(lead.email) ? (
+                        <span className="text-sm font-medium text-muted-foreground italic">incompleto</span>
+                      ) : (
+                        <a href={`mailto:${lead.email}`} className="text-sm font-medium hover:underline">
+                          {lead.email}
+                        </a>
                       )}
                     </div>
-                    <h1 className="text-xl font-bold leading-tight">
-                      {lead.name === "Incompleto" ? "incompleto" : lead.name}
-                    </h1>
                   </div>
-                </div>
-                
-                {/* Three dots menu */}
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="outline" size="icon" className="h-10 w-10">
-                      <MoreVertical className="h-4 w-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem 
-                      className="text-destructive focus:text-destructive cursor-pointer"
-                      onClick={() => setShowDeleteDialog(true)}
-                    >
-                      <Trash2 className="h-4 w-4 mr-2" />
-                      Excluir lead
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </div>
 
-              {/* Tags Section - directly below name */}
-              <div className="pl-[44px] mt-0.5">
-                <LeadTagsManager leadId={lead.id} />
-              </div>
-            </div>
-
-            {/* Separator */}
-            <div className="py-2">
-              <div className="border-t border-black/10" />
-            </div>
-
-            {/* Tabs Navigation */}
-            <div className="relative">
-              <div className="flex gap-6 border-b border-black/10">
-                {tabs.map((tab) => (
-                  <button
-                    key={tab.id}
-                    onClick={() => setActiveTab(tab.id)}
-                    className={`relative pb-3 text-sm font-medium transition-colors ${
-                      activeTab === tab.id
-                        ? "text-foreground"
-                        : "text-muted-foreground hover:text-foreground"
-                    }`}
-                  >
-                    {tab.label}
-                    {activeTab === tab.id && (
-                      <motion.div
-                        layoutId="activeTabIndicator"
-                        className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary"
-                        initial={false}
-                        transition={{ type: "spring", stiffness: 500, damping: 30 }}
-                      />
-                    )}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Tab Content */}
-            <div className="mt-4">
-              {activeTab === "atividades" && (
-                <ActivitiesBoard
-                  leadId={lead.id}
-                  leadName={lead.name}
-                  currentPipelineId={lead.pipeline_id}
-                />
-              )}
-
-              {activeTab === "contato" && (
-                <div className="space-y-6">
-                  {/* Contact + Business Info */}
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    {/* Contact Info */}
-                    <Card className="border-[#00000010] shadow-none h-fit">
-                      <CardContent className="p-6 space-y-4">
-                        <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-4">
-                          Informações de Contato
-                        </h3>
-                        
-                        <div className="flex items-center gap-3 p-3 bg-muted/30 border border-[#00000010] rounded-lg">
-                          <div className="h-10 w-10 rounded-full border border-black/10 flex items-center justify-center">
-                            <Mail className="h-5 w-5 text-neutral-600" />
-                          </div>
-                          <div>
-                            <p className="text-xs text-muted-foreground">Email</p>
-                            {isIncompleteEmail(lead.email) ? (
-                              <span className="text-sm font-medium text-muted-foreground italic">incompleto</span>
-                            ) : (
-                              <a href={`mailto:${lead.email}`} className="text-sm font-medium hover:underline">
-                                {lead.email}
-                              </a>
-                            )}
-                          </div>
-                        </div>
-
-                        <div className="flex items-center gap-3 p-3 bg-muted/30 border border-[#00000010] rounded-lg">
-                          <div className="h-10 w-10 rounded-full border border-black/10 flex items-center justify-center">
-                            <WhatsApp className="h-5 w-5 text-neutral-600" />
-                          </div>
-                          <div>
-                            <p className="text-xs text-muted-foreground">WhatsApp</p>
-                            {!lead.whatsapp || lead.whatsapp === "" ? (
-                              <span className="text-sm font-medium text-muted-foreground italic">incompleto</span>
-                            ) : (
-                              <a 
-                                href={`https://wa.me/${lead.country_code.replace("+", "")}${lead.whatsapp}`}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="text-sm font-medium hover:underline"
-                              >
-                                {lead.country_code} {lead.whatsapp}
-                              </a>
-                            )}
-                          </div>
-                        </div>
-
-                        <div className="flex items-center gap-3 p-3 bg-muted/30 border border-[#00000010] rounded-lg">
-                          <div className="h-10 w-10 rounded-full border border-black/10 flex items-center justify-center">
-                            <Instagram className="h-5 w-5 text-neutral-600" />
-                          </div>
-                          <div>
-                            <p className="text-xs text-muted-foreground">Instagram</p>
-                            {!lead.instagram || lead.instagram === "" ? (
-                              <span className="text-sm font-medium text-muted-foreground italic">incompleto</span>
-                            ) : (
-                              <a 
-                                href={`https://instagram.com/${lead.instagram}`}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="text-sm font-medium hover:underline"
-                              >
-                                @{lead.instagram}
-                              </a>
-                            )}
-                          </div>
-                        </div>
-
-                        <div className="flex items-center gap-3 p-3 bg-muted/30 border border-[#00000010] rounded-lg">
-                          <div className="h-10 w-10 rounded-full border border-black/10 flex items-center justify-center">
-                            <Calendar className="h-5 w-5 text-neutral-600" />
-                          </div>
-                          <div>
-                            <p className="text-xs text-muted-foreground">Data de Cadastro</p>
-                            <p className="text-sm font-medium">{formatDate(lead.created_at)}</p>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-
-                    {/* Business Info */}
-                    <Card className="border-[#00000010] shadow-none h-fit">
-                      <CardContent className="p-6 space-y-4">
-                        <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-4">
-                          Informações do Negócio
-                        </h3>
-                        
-                        <div className="grid grid-cols-2 gap-3">
-                          <div className="p-3 bg-muted/30 border border-[#00000010] rounded-lg">
-                            <div className="flex items-center gap-2 mb-1">
-                              <Briefcase className="h-4 w-4 text-muted-foreground" />
-                              <p className="text-xs text-muted-foreground">Área de Atuação</p>
-                            </div>
-                            <p className={`text-sm font-medium ${!lead.service_area ? "text-muted-foreground italic" : ""}`}>
-                              {displayValue(lead.service_area)}
-                            </p>
-                          </div>
-
-                          <div className="p-3 bg-muted/30 border border-[#00000010] rounded-lg">
-                            <div className="flex items-center gap-2 mb-1">
-                              <DollarSign className="h-4 w-4 text-muted-foreground" />
-                              <p className="text-xs text-muted-foreground">Faturamento</p>
-                            </div>
-                            <p className={`text-sm font-medium ${!lead.monthly_billing ? "text-muted-foreground italic" : ""}`}>
-                              {displayValue(lead.monthly_billing)}
-                            </p>
-                          </div>
-
-                          <div className="p-3 bg-muted/30 border border-[#00000010] rounded-lg">
-                            <div className="flex items-center gap-2 mb-1">
-                              <Users className="h-4 w-4 text-muted-foreground" />
-                              <p className="text-xs text-muted-foreground">Atend./Semana</p>
-                            </div>
-                            <p className={`text-sm font-medium ${!lead.weekly_attendance ? "text-muted-foreground italic" : ""}`}>
-                              {displayValue(lead.weekly_attendance)}
-                            </p>
-                          </div>
-
-                          <div className="p-3 bg-muted/30 border border-[#00000010] rounded-lg">
-                            <div className="flex items-center gap-2 mb-1">
-                              <DollarSign className="h-4 w-4 text-muted-foreground" />
-                              <p className="text-xs text-muted-foreground">Ticket Médio</p>
-                            </div>
-                            <p className={`text-sm font-medium ${lead.average_ticket === null ? "text-muted-foreground italic" : ""}`}>
-                              {formatCurrency(lead.average_ticket)}
-                            </p>
-                          </div>
-
-                          <div className="p-3 bg-muted/30 border border-[#00000010] rounded-lg">
-                            <div className="flex items-center gap-2 mb-1">
-                              <Building2 className="h-4 w-4 text-muted-foreground" />
-                              <p className="text-xs text-muted-foreground">Espaço</p>
-                            </div>
-                            <p className={`text-sm font-medium ${!lead.workspace_type ? "text-muted-foreground italic" : ""}`}>
-                              {getWorkspaceLabel(lead.workspace_type)}
-                            </p>
-                          </div>
-
-                          <div className="p-3 bg-muted/30 border border-[#00000010] rounded-lg">
-                            <div className="flex items-center gap-2 mb-1">
-                              <Briefcase className="h-4 w-4 text-muted-foreground" />
-                              <p className="text-xs text-muted-foreground">Experiência</p>
-                            </div>
-                            <p className={`text-sm font-medium ${!lead.years_experience ? "text-muted-foreground italic" : ""}`}>
-                              {lead.years_experience ? `${lead.years_experience} anos` : "incompleto"}
-                            </p>
-                          </div>
-
-                          <div className="p-3 bg-muted/30 border border-[#00000010] rounded-lg">
-                            <div className="flex items-center gap-2 mb-1">
-                              <Clock className="h-4 w-4 text-muted-foreground" />
-                              <p className="text-xs text-muted-foreground">Receita Est.</p>
-                            </div>
-                            <p className={`text-sm font-medium ${getEstimatedRevenue() === null ? "text-muted-foreground italic" : ""}`}>
-                              {getEstimatedRevenue() !== null 
-                                ? `${formatCurrency(getEstimatedRevenue())}/mês` 
-                                : "incompleto"}
-                            </p>
-                          </div>
-
-                          <div className="p-3 bg-muted/30 border border-[#00000010] rounded-lg">
-                            <div className="flex items-center gap-2 mb-1">
-                              <DollarSign className="h-4 w-4 text-muted-foreground" />
-                              <p className="text-xs text-muted-foreground">Quer info?</p>
-                            </div>
-                            <p className={`text-sm font-medium ${lead.wants_more_info === null ? "text-muted-foreground italic" : ""}`}>
-                              {lead.wants_more_info === true ? "Sim" : lead.wants_more_info === false ? "Não" : "incompleto"}
-                            </p>
-                          </div>
-                        </div>
-
-                        {/* Biggest Difficulty */}
-                        <div className="p-3 bg-muted/30 border border-[#00000010] rounded-lg">
-                          <div className="flex items-center gap-2 mb-1">
-                            <MessageSquare className="h-4 w-4 text-muted-foreground" />
-                            <p className="text-xs text-muted-foreground">Maior Dificuldade</p>
-                          </div>
-                          <p className={`text-sm font-medium whitespace-pre-wrap ${!lead.biggest_difficulty ? "text-muted-foreground italic" : ""}`}>
-                            {lead.biggest_difficulty || "incompleto"}
-                          </p>
-                        </div>
-
-                        {/* Investment Summary */}
-                        <div className="p-3 bg-muted/20 border border-[#00000010] rounded-lg">
-                          <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">
-                            Investimento
-                          </h4>
-                          <div className="space-y-1">
-                            <div className="flex items-center justify-between">
-                              <span className="text-xs text-muted-foreground">Investir R$1.800/mês?</span>
-                              <Badge 
-                                variant={lead.can_afford === "yes" ? "default" : lead.can_afford === "no" ? "secondary" : "outline"}
-                                className={`text-xs ${lead.can_afford === "yes" ? "bg-green-500" : lead.can_afford === "no" ? "bg-orange-500" : ""}`}
-                              >
-                                {lead.can_afford === "yes" ? "SIM" : lead.can_afford === "no" ? "NÃO" : "—"}
-                              </Badge>
-                            </div>
-                            {lead.can_afford === "no" && (
-                              <div className="flex items-center justify-between">
-                                <span className="text-xs text-muted-foreground">Quer saber mais?</span>
-                                <Badge 
-                                  variant={lead.wants_more_info ? "default" : "secondary"}
-                                  className={`text-xs ${lead.wants_more_info ? "bg-blue-500" : ""}`}
-                                >
-                                  {lead.wants_more_info ? "SIM" : "NÃO"}
-                                </Badge>
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
+                  <div className="flex items-center gap-3 p-3 bg-muted/30 border border-[#00000010] rounded-lg">
+                    <div className="h-10 w-10 rounded-full border border-black/10 flex items-center justify-center">
+                      <WhatsApp className="h-5 w-5 text-neutral-600" />
+                    </div>
+                    <div>
+                      <p className="text-xs text-muted-foreground">WhatsApp</p>
+                      {!lead.whatsapp || lead.whatsapp === "" ? (
+                        <span className="text-sm font-medium text-muted-foreground italic">incompleto</span>
+                      ) : (
+                        <a 
+                          href={`https://wa.me/${lead.country_code.replace("+", "")}${lead.whatsapp}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-sm font-medium hover:underline"
+                        >
+                          {lead.country_code} {lead.whatsapp}
+                        </a>
+                      )}
+                    </div>
                   </div>
-                </div>
-              )}
 
-              {activeTab === "rastreamento" && (
-                <LeadTrackingTimeline
-                  leadId={lead.id}
-                  utmData={{
-                    utm_source: lead.utm_source,
-                    utm_medium: lead.utm_medium,
-                    utm_campaign: lead.utm_campaign,
-                    utm_term: lead.utm_term,
-                    utm_content: lead.utm_content,
-                  }}
-                />
-              )}
+                  <div className="flex items-center gap-3 p-3 bg-muted/30 border border-[#00000010] rounded-lg">
+                    <div className="h-10 w-10 rounded-full border border-black/10 flex items-center justify-center">
+                      <Instagram className="h-5 w-5 text-neutral-600" />
+                    </div>
+                    <div>
+                      <p className="text-xs text-muted-foreground">Instagram</p>
+                      {!lead.instagram || lead.instagram === "" ? (
+                        <span className="text-sm font-medium text-muted-foreground italic">incompleto</span>
+                      ) : (
+                        <a 
+                          href={`https://instagram.com/${lead.instagram}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-sm font-medium hover:underline"
+                        >
+                          @{lead.instagram}
+                        </a>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-3 p-3 bg-muted/30 border border-[#00000010] rounded-lg">
+                    <div className="h-10 w-10 rounded-full border border-black/10 flex items-center justify-center">
+                      <Calendar className="h-5 w-5 text-neutral-600" />
+                    </div>
+                    <div>
+                      <p className="text-xs text-muted-foreground">Data de Cadastro</p>
+                      <p className="text-sm font-medium">{formatDate(lead.created_at)}</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Business Info */}
+              <Card className="border-[#00000010] shadow-none">
+                <CardContent className="p-6 space-y-4">
+                  <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-4">
+                    Informações do Negócio
+                  </h3>
+                  
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="p-3 bg-muted/30 border border-[#00000010] rounded-lg">
+                      <div className="flex items-center gap-2 mb-1">
+                        <Briefcase className="h-4 w-4 text-muted-foreground" />
+                        <p className="text-xs text-muted-foreground">Área de Atuação</p>
+                      </div>
+                      <p className={`text-sm font-medium ${!lead.service_area ? "text-muted-foreground italic" : ""}`}>
+                        {displayValue(lead.service_area)}
+                      </p>
+                    </div>
+
+                    <div className="p-3 bg-muted/30 border border-[#00000010] rounded-lg">
+                      <div className="flex items-center gap-2 mb-1">
+                        <DollarSign className="h-4 w-4 text-muted-foreground" />
+                        <p className="text-xs text-muted-foreground">Faturamento Mensal</p>
+                      </div>
+                      <p className={`text-sm font-medium ${!lead.monthly_billing ? "text-muted-foreground italic" : ""}`}>
+                        {displayValue(lead.monthly_billing)}
+                      </p>
+                    </div>
+
+                    <div className="p-3 bg-muted/30 border border-[#00000010] rounded-lg">
+                      <div className="flex items-center gap-2 mb-1">
+                        <Users className="h-4 w-4 text-muted-foreground" />
+                        <p className="text-xs text-muted-foreground">Atendimentos/Semana</p>
+                      </div>
+                      <p className={`text-sm font-medium ${!lead.weekly_attendance ? "text-muted-foreground italic" : ""}`}>
+                        {displayValue(lead.weekly_attendance)}
+                      </p>
+                    </div>
+
+                    <div className="p-3 bg-muted/30 border border-[#00000010] rounded-lg">
+                      <div className="flex items-center gap-2 mb-1">
+                        <DollarSign className="h-4 w-4 text-muted-foreground" />
+                        <p className="text-xs text-muted-foreground">Ticket Médio</p>
+                      </div>
+                      <p className={`text-sm font-medium ${lead.average_ticket === null ? "text-muted-foreground italic" : ""}`}>
+                        {formatCurrency(lead.average_ticket)}
+                      </p>
+                    </div>
+
+                    <div className="p-3 bg-muted/30 border border-[#00000010] rounded-lg">
+                      <div className="flex items-center gap-2 mb-1">
+                        <Building2 className="h-4 w-4 text-muted-foreground" />
+                        <p className="text-xs text-muted-foreground">Tipo de Espaço</p>
+                      </div>
+                      <p className={`text-sm font-medium ${!lead.workspace_type ? "text-muted-foreground italic" : ""}`}>
+                        {getWorkspaceLabel(lead.workspace_type)}
+                      </p>
+                    </div>
+
+                    <div className="p-3 bg-muted/30 border border-[#00000010] rounded-lg">
+                      <div className="flex items-center gap-2 mb-1">
+                        <Briefcase className="h-4 w-4 text-muted-foreground" />
+                        <p className="text-xs text-muted-foreground">Anos de Experiência</p>
+                      </div>
+                      <p className={`text-sm font-medium ${!lead.years_experience ? "text-muted-foreground italic" : ""}`}>
+                        {lead.years_experience ? `${lead.years_experience} anos` : "incompleto"}
+                      </p>
+                    </div>
+
+                    <div className="p-3 bg-muted/30 border border-[#00000010] rounded-lg">
+                      <div className="flex items-center gap-2 mb-1">
+                        <Clock className="h-4 w-4 text-muted-foreground" />
+                        <p className="text-xs text-muted-foreground">Receita Estimada</p>
+                      </div>
+                      <p className={`text-sm font-medium ${getEstimatedRevenue() === null ? "text-muted-foreground italic" : ""}`}>
+                        {getEstimatedRevenue() !== null 
+                          ? `${formatCurrency(getEstimatedRevenue())}/mês` 
+                          : "incompleto"}
+                      </p>
+                    </div>
+
+                    <div className="p-3 bg-muted/30 border border-[#00000010] rounded-lg">
+                      <div className="flex items-center gap-2 mb-1">
+                        <DollarSign className="h-4 w-4 text-muted-foreground" />
+                        <p className="text-xs text-muted-foreground">Quer mais informações?</p>
+                      </div>
+                      <p className={`text-sm font-medium ${lead.wants_more_info === null ? "text-muted-foreground italic" : ""}`}>
+                        {lead.wants_more_info === true ? "Sim" : lead.wants_more_info === false ? "Não" : "incompleto"}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Biggest Difficulty - Full width */}
+                  <div className="col-span-2 p-3 bg-muted/30 border border-[#00000010] rounded-lg">
+                    <div className="flex items-center gap-2 mb-1">
+                      <MessageSquare className="h-4 w-4 text-muted-foreground" />
+                      <p className="text-xs text-muted-foreground">Maior Dificuldade</p>
+                    </div>
+                    <p className={`text-sm font-medium whitespace-pre-wrap ${!lead.biggest_difficulty ? "text-muted-foreground italic" : ""}`}>
+                      {lead.biggest_difficulty || "incompleto"}
+                    </p>
+                  </div>
+
+                  {/* Investment Summary Card */}
+                  <div className="p-4 bg-muted/20 border border-[#00000010] rounded-lg mt-4">
+                    <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">
+                      Resumo de Investimento
+                    </h4>
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm text-muted-foreground">Pergunta: "Você consegue investir R$1.800/mês?"</span>
+                        <Badge 
+                          variant={lead.can_afford === "yes" ? "default" : lead.can_afford === "no" ? "secondary" : "outline"}
+                          className={lead.can_afford === "yes" ? "bg-green-500" : lead.can_afford === "no" ? "bg-orange-500" : ""}
+                        >
+                          {lead.can_afford === "yes" ? "Clicou: SIM" : lead.can_afford === "no" ? "Clicou: NÃO" : "Não respondeu"}
+                        </Badge>
+                      </div>
+                      {lead.can_afford === "no" && (
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm text-muted-foreground">Pergunta: "Quer saber mais?"</span>
+                          <Badge 
+                            variant={lead.wants_more_info ? "default" : "secondary"}
+                            className={lead.wants_more_info ? "bg-blue-500" : ""}
+                          >
+                            {lead.wants_more_info ? "Clicou: SIM" : "Clicou: NÃO"}
+                          </Badge>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+              </div>
             </div>
-          </div>
+          )}
 
-          {/* Right Column - Social Panel - Narrower, Full Height */}
-          <div className="lg:col-span-3 h-full">
-            <LeadContactPanel lead={lead} className="h-full" />
-          </div>
+          {activeTab === "rastreamento" && (
+            <LeadTrackingTimeline
+              leadId={lead.id}
+              utmData={{
+                utm_source: lead.utm_source,
+                utm_medium: lead.utm_medium,
+                utm_campaign: lead.utm_campaign,
+                utm_term: lead.utm_term,
+                utm_content: lead.utm_content,
+              }}
+            />
+          )}
         </div>
       </div>
 
