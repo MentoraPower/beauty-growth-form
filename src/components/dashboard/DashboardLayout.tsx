@@ -6,6 +6,7 @@ import WhatsAppIcon from "@/components/icons/WhatsApp";
 import scaleLogo from "@/assets/scale-logo.png";
 import { CRMOriginsPanel } from "./CRMOriginsPanel";
 import { PageTransition } from "./PageTransition";
+import { LoadingBar } from "@/components/LoadingBar";
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -75,6 +76,7 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
 
   return (
     <div className="min-h-screen bg-background">
+      <LoadingBar />
       {/* Mobile Header */}
       <header className="lg:hidden fixed top-0 left-0 right-0 h-14 bg-card border-b border-border z-50 flex items-center justify-between px-4">
         <button
