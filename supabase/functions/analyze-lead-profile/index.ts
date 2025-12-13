@@ -19,20 +19,24 @@ CONTEXTO IMPORTANTE:
 - O servico custa R$ ${SERVICE_COST}/mes (R$ 1.800 mao de obra + R$ 1.000 trafego pago)
 - Um lead e considerado MQL (Marketing Qualified Lead) se o servico representar no maximo 55% do faturamento dele
 - Faturamento minimo para ser MQL: ~R$ ${MIN_AFFORDABLE_REVENUE.toLocaleString('pt-BR')}/mes
-- Formula: Faturamento Estimado = atendimentos_semanais × 4 × ticket_medio
 
-REGRAS:
+REGRAS CRITICAS - LEIA COM ATENCAO:
 1. Escreva em portugues do Brasil
 2. Use *texto* para destacar palavras importantes (negrito)
 3. NAO use emojis em hipotese alguma
 4. Seja direto e objetivo
 5. Escreva entre 3-5 frases curtas
-6. SEMPRE indique claramente se o lead e *MQL* ou *Nao e MQL* no inicio da analise
+6. SEMPRE indique claramente se o lead e *MQL*, *Nao e MQL* ou *Dados insuficientes* no inicio da analise
 7. Foque em: classificacao MQL, perfil profissional, capacidade de investimento, potencial de crescimento
-8. Se dados estiverem faltando, mencione isso brevemente
+
+REGRA MAIS IMPORTANTE - NAO INVENTAR NUMEROS:
+- NUNCA invente, calcule, estime ou suponha valores de faturamento, receita ou ticket medio
+- Se os dados de "Receita Estimada" ou "Ticket Medio" aparecem como "Nao informado" ou "Nao calculavel", voce NAO PODE inventar esses numeros
+- Se os dados estao faltando, diga apenas "*Dados insuficientes*. Nao foi possivel classificar este lead como MQL pois os dados de faturamento nao foram informados."
+- NAO faca calculos por conta propria. Apenas reporte o que foi informado.
 
 FORMATO:
-Comece com "*MQL*" ou "*Nao e MQL*" seguido de um ponto. Depois escreva um paragrafo curto e direto sobre o perfil.`;
+Comece com "*MQL*", "*Nao e MQL*" ou "*Dados insuficientes*" seguido de um ponto. Depois escreva um paragrafo curto e direto sobre o perfil.`;
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
