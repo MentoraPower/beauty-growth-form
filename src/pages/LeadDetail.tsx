@@ -246,14 +246,54 @@ export default function LeadDetail() {
   if (isLoading) {
     return (
       <DashboardLayout>
-        <div className="space-y-6 animate-in fade-in duration-300">
-          <div className="flex items-center gap-4">
-            <Skeleton className="h-10 w-10" />
-            <Skeleton className="h-16 w-16 rounded-full" />
-            <Skeleton className="h-8 w-48" />
+        <div className="space-y-3">
+          {/* Breadcrumb skeleton */}
+          <div className="flex items-center gap-2">
+            <Skeleton className="h-4 w-20" />
+            <span className="text-muted-foreground">&gt;</span>
+            <Skeleton className="h-4 w-32" />
           </div>
-          <Skeleton className="h-10 w-64" />
-          <Skeleton className="h-64" />
+
+          {/* Header skeleton */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <Skeleton className="h-8 w-8 rounded-full" />
+              <div className="space-y-1.5">
+                <Skeleton className="h-3 w-24" />
+                <Skeleton className="h-6 w-40" />
+              </div>
+            </div>
+            <Skeleton className="h-10 w-10 rounded-md" />
+          </div>
+
+          {/* Tags skeleton */}
+          <div className="pl-[44px] flex gap-2">
+            <Skeleton className="h-5 w-16 rounded-full" />
+            <Skeleton className="h-5 w-20 rounded-full" />
+          </div>
+
+          {/* Separator */}
+          <div className="px-8 py-2">
+            <div className="border-t border-black/10" />
+          </div>
+
+          {/* Tabs skeleton */}
+          <div className="flex gap-6 border-b border-black/10 pb-3">
+            <Skeleton className="h-4 w-20" />
+            <Skeleton className="h-4 w-16" />
+            <Skeleton className="h-4 w-24" />
+          </div>
+
+          {/* Content skeleton */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 pt-4">
+            <div className="lg:col-span-2 space-y-4">
+              <Skeleton className="h-48 w-full rounded-xl" />
+              <Skeleton className="h-32 w-full rounded-xl" />
+            </div>
+            <div className="space-y-4">
+              <Skeleton className="h-64 w-full rounded-xl" />
+            </div>
+          </div>
         </div>
       </DashboardLayout>
     );
@@ -263,7 +303,7 @@ export default function LeadDetail() {
 
   return (
     <DashboardLayout>
-      <div className="space-y-3 animate-in fade-in duration-300">
+      <div className="space-y-3">
         {/* Breadcrumb Navigation */}
         <div className="flex items-center gap-2 text-sm">
           <button
