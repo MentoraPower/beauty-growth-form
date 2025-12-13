@@ -11,7 +11,7 @@ import { Mail, Calendar, Building2, Clock, DollarSign, Users, Briefcase, MoreVer
 import Instagram from "@/components/icons/Instagram";
 import WhatsApp from "@/components/icons/WhatsApp";
 import { Skeleton } from "@/components/ui/skeleton";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { ActivitiesBoard } from "@/components/activities/ActivitiesBoard";
 import { LeadTagsManager } from "@/components/crm/LeadTagsManager";
 import { LeadTrackingTimeline } from "@/components/crm/LeadTrackingTimeline";
@@ -409,18 +409,34 @@ export default function LeadDetail() {
 
         {/* Tab Content */}
         <div className="mt-4">
-          {activeTab === "atividades" && (
-            <ActivitiesBoard
-              leadId={lead.id}
-              leadName={lead.name}
-              currentPipelineId={lead.pipeline_id}
-            />
-          )}
+          <AnimatePresence mode="wait">
+            {activeTab === "atividades" && (
+              <motion.div
+                key="atividades"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.15 }}
+              >
+                <ActivitiesBoard
+                  leadId={lead.id}
+                  leadName={lead.name}
+                  currentPipelineId={lead.pipeline_id}
+                />
+              </motion.div>
+            )}
 
-          {activeTab === "contato" && (
-            <div className="space-y-6">
-              {/* Lead Analysis Card */}
-              <LeadAnalysis lead={lead} />
+            {activeTab === "contato" && (
+              <motion.div
+                key="contato"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.15 }}
+                className="space-y-6"
+              >
+                {/* Lead Analysis Card */}
+                <LeadAnalysis lead={lead} />
 
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {/* Contact Info */}
@@ -633,22 +649,31 @@ export default function LeadDetail() {
                   </div>
                 </CardContent>
               </Card>
-              </div>
-            </div>
-          )}
+                </div>
+              </motion.div>
+            )}
 
-          {activeTab === "rastreamento" && (
-            <LeadTrackingTimeline
-              leadId={lead.id}
-              utmData={{
-                utm_source: lead.utm_source,
-                utm_medium: lead.utm_medium,
-                utm_campaign: lead.utm_campaign,
-                utm_term: lead.utm_term,
-                utm_content: lead.utm_content,
-              }}
-            />
-          )}
+            {activeTab === "rastreamento" && (
+              <motion.div
+                key="rastreamento"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.15 }}
+              >
+                <LeadTrackingTimeline
+                  leadId={lead.id}
+                  utmData={{
+                    utm_source: lead.utm_source,
+                    utm_medium: lead.utm_medium,
+                    utm_campaign: lead.utm_campaign,
+                    utm_term: lead.utm_term,
+                    utm_content: lead.utm_content,
+                  }}
+                />
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
       </motion.div>
 
