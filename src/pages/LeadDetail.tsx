@@ -336,9 +336,11 @@ export default function LeadDetail() {
               {/* Name and Company */}
               <div>
                 <div className="flex items-center gap-2">
-                  <p className={`uppercase tracking-wide ${lead.clinic_name ? "text-xs text-muted-foreground font-medium" : "text-[10px] text-muted-foreground/70"}`}>
-                    {lead.clinic_name || "SEM EMPRESA"}
-                  </p>
+                  {lead.clinic_name && (
+                    <p className="uppercase tracking-wide text-xs text-muted-foreground font-medium">
+                      {lead.clinic_name}
+                    </p>
+                  )}
                   {isLeadIncomplete(lead) && (
                     <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-4 border-amber-400 text-amber-600 bg-amber-50">
                       Cadastro incompleto
