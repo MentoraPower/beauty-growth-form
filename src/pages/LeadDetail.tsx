@@ -184,7 +184,7 @@ export default function LeadDetail() {
   };
 
   const formatCurrency = (value: number | null | undefined) => {
-    if (value === null || value === undefined) return "incompleto";
+    if (value === null || value === undefined || value === 0) return "incompleto";
     return new Intl.NumberFormat("pt-BR", {
       style: "currency",
       currency: "BRL",
