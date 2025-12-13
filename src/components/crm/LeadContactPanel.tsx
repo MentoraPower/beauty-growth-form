@@ -241,35 +241,38 @@ export function LeadContactPanel({ lead, className }: LeadContactPanelProps) {
             {activeTab === "instagram" ? (
               lead.instagram ? (
                 <div className="flex-1 flex flex-col overflow-hidden">
-                  {/* Instagram Header - Compact */}
-                  <div className="p-3 border-b border-border flex items-center justify-between shrink-0">
-                    <div className="flex items-center gap-2">
-                      <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-500 via-pink-500 to-orange-400 flex items-center justify-center">
-                        <Instagram className="w-4 h-4 text-white" />
-                      </div>
-                      <div>
-                        <p className="font-semibold text-sm">@{getInstagramHandle()}</p>
-                      </div>
-                    </div>
+                  {/* Instagram Profile - Clean Header */}
+                  <div className="p-3 flex items-center justify-between shrink-0 bg-gradient-to-r from-purple-500/10 via-pink-500/10 to-orange-400/10">
                     <a
                       href={`https://www.instagram.com/${getInstagramHandle()}/`}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="p-1.5 hover:bg-muted rounded-full transition-colors"
+                      className="flex items-center gap-2 hover:opacity-80 transition-opacity"
                     >
-                      <ExternalLink className="w-3.5 h-3.5 text-muted-foreground" />
+                      <span className="font-semibold text-sm">@{getInstagramHandle()}</span>
+                      <ExternalLink className="w-3 h-3 text-muted-foreground" />
                     </a>
                   </div>
-                  {/* Instagram Profile Embed - Full Height */}
-                  <div className="flex-1 overflow-hidden relative">
-                    <iframe
-                      src={`https://www.instagram.com/${getInstagramHandle()}/embed/?cr=1&v=14&wp=540&rd=https%3A%2F%2Fscalebeauty.com.br`}
-                      className="w-full h-full border-0"
-                      style={{ minHeight: "500px" }}
-                      title={`Instagram de ${lead.name}`}
-                      scrolling="yes"
-                      allowFullScreen
-                    />
+                  {/* Instagram Posts Grid - Direct embed without header */}
+                  <div className="flex-1 overflow-y-auto bg-white">
+                    <div className="relative w-full h-full">
+                      {/* Hide Instagram's header with CSS overlay */}
+                      <style>{`
+                        .instagram-embed-container iframe {
+                          margin-top: -56px !important;
+                        }
+                      `}</style>
+                      <div className="instagram-embed-container overflow-hidden h-full">
+                        <iframe
+                          src={`https://www.instagram.com/${getInstagramHandle()}/embed/?cr=1&v=14&wp=400`}
+                          className="w-full border-0"
+                          style={{ height: "calc(100% + 56px)", minHeight: "600px" }}
+                          title={`Instagram de ${lead.name}`}
+                          scrolling="yes"
+                          allowFullScreen
+                        />
+                      </div>
+                    </div>
                   </div>
                 </div>
               ) : (
