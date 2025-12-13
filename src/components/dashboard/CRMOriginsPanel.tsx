@@ -317,28 +317,56 @@ export function CRMOriginsPanel({ isOpen, onClose, sidebarWidth }: CRMOriginsPan
     }
   }, []);
 
-  // Fetch data when panel opens or on mount
+  // Fetch data only on first mount
   useEffect(() => {
-    if (isOpen || !hasInitialized.current) {
+    if (!hasInitialized.current) {
       fetchData();
     }
-  }, [fetchData, isOpen]);
+  }, [fetchData]);
 
-  // Real-time subscriptions
+  // Real-time subscriptions - only for structure changes, not navigation
   useEffect(() => {
     const originsChannel = supabase
       .channel('crm-origins-panel-changes')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'crm_origins' }, fetchData)
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'crm_origins' }, fetchData)
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'crm_origins' }, fetchData)
+      .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'crm_origins' }, fetchData)
       .subscribe();
 
     const subOriginsChannel = supabase
       .channel('crm-sub-origins-panel-changes')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'crm_sub_origins' }, fetchData)
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'crm_sub_origins' }, fetchData)
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'crm_sub_origins' }, fetchData)
+      .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'crm_sub_origins' }, fetchData)
       .subscribe();
 
+    // Only update lead counts, not full reload
     const leadsChannel = supabase
       .channel('crm-leads-panel-count-changes')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'leads' }, fetchData)
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'leads' }, async () => {
+        const { data } = await supabase.from("leads").select("sub_origin_id");
+        if (data) {
+          const counts: Record<string, number> = {};
+          data.forEach((lead) => {
+            if (lead.sub_origin_id) {
+              counts[lead.sub_origin_id] = (counts[lead.sub_origin_id] || 0) + 1;
+            }
+          });
+          setLeadCounts(Object.entries(counts).map(([sub_origin_id, count]) => ({ sub_origin_id, count })));
+        }
+      })
+      .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'leads' }, async () => {
+        const { data } = await supabase.from("leads").select("sub_origin_id");
+        if (data) {
+          const counts: Record<string, number> = {};
+          data.forEach((lead) => {
+            if (lead.sub_origin_id) {
+              counts[lead.sub_origin_id] = (counts[lead.sub_origin_id] || 0) + 1;
+            }
+          });
+          setLeadCounts(Object.entries(counts).map(([sub_origin_id, count]) => ({ sub_origin_id, count })));
+        }
+      })
       .subscribe();
 
     return () => {
