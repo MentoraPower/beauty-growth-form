@@ -15,7 +15,6 @@ import { motion } from "framer-motion";
 import { ActivitiesBoard } from "@/components/activities/ActivitiesBoard";
 import { LeadTagsManager } from "@/components/crm/LeadTagsManager";
 import { LeadTrackingTimeline } from "@/components/crm/LeadTrackingTimeline";
-import { LeadAnalysis } from "@/components/crm/LeadAnalysis";
 import { LeadContactPanel } from "@/components/crm/LeadContactPanel";
 import {
   DropdownMenu,
@@ -268,7 +267,7 @@ export default function LeadDetail() {
         {/* Main Layout - Two Column with Social Panel on Right */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 h-[calc(100vh-6rem)]">
           {/* Left Column - All Content */}
-          <div className="lg:col-span-8 space-y-3 overflow-y-auto pr-2">
+          <div className="lg:col-span-9 space-y-3 overflow-y-auto pr-2">
             {/* Breadcrumb Navigation */}
             <div className="flex items-center gap-2 text-sm">
               <button
@@ -591,9 +590,6 @@ export default function LeadDetail() {
                       </CardContent>
                     </Card>
                   </div>
-
-                  {/* Bottom Row - Lead Analysis */}
-                  <LeadAnalysis lead={lead} />
                 </div>
               )}
 
@@ -612,8 +608,8 @@ export default function LeadDetail() {
             </div>
           </div>
 
-          {/* Right Column - Social Panel - Full Height from top to bottom */}
-          <div className="lg:col-span-4 h-full">
+          {/* Right Column - Social Panel - Narrower, Full Height */}
+          <div className="lg:col-span-3 h-full">
             <LeadContactPanel lead={lead} className="h-full" />
           </div>
         </div>
