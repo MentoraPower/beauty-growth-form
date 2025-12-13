@@ -16,7 +16,7 @@ import { ActivitiesBoard } from "@/components/activities/ActivitiesBoard";
 import { LeadTagsManager } from "@/components/crm/LeadTagsManager";
 import { LeadTrackingTimeline } from "@/components/crm/LeadTrackingTimeline";
 import { LeadAnalysis } from "@/components/crm/LeadAnalysis";
-import { MoveLeadDialog } from "@/components/crm/MoveLeadDialog";
+import { MoveLeadDropdown } from "@/components/crm/MoveLeadDropdown";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -93,7 +93,6 @@ export default function LeadDetail() {
   const [pipeline, setPipeline] = useState<Pipeline | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
-  const [showMoveDialog, setShowMoveDialog] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   
   // Use URL param for tab persistence, default to "atividades"
@@ -356,7 +355,7 @@ export default function LeadDetail() {
               </div>
             </div>
             
-            {/* Three dots menu */}
+            {/* Three dots menu with nested move dropdown */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="outline" size="icon" className="h-10 w-10">
@@ -364,13 +363,23 @@ export default function LeadDetail() {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                <DropdownMenuItem 
-                  className="cursor-pointer"
-                  onClick={() => setShowMoveDialog(true)}
+                <MoveLeadDropdown
+                  leadId={lead.id}
+                  leadName={lead.name}
+                  currentSubOriginId={lead.sub_origin_id}
+                  onMoved={() => {
+                    queryClient.invalidateQueries({ queryKey: ["leads"] });
+                    navigate(subOriginId ? `/admin/crm?origin=${subOriginId}` : "/admin/crm");
+                  }}
                 >
-                  <ArrowRightLeft className="h-4 w-4 mr-2" />
-                  Mover para outra origem
-                </DropdownMenuItem>
+                  <DropdownMenuItem 
+                    className="cursor-pointer"
+                    onSelect={(e) => e.preventDefault()}
+                  >
+                    <ArrowRightLeft className="h-4 w-4 mr-2" />
+                    Mover para outra origem
+                  </DropdownMenuItem>
+                </MoveLeadDropdown>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem 
                   className="text-destructive focus:text-destructive cursor-pointer"
@@ -437,8 +446,12 @@ export default function LeadDetail() {
                   leadId={lead.id}
                   leadName={lead.name}
                   currentPipelineId={lead.pipeline_id}
+                  currentSubOriginId={lead.sub_origin_id}
                   subOriginId={lead.sub_origin_id || subOriginId}
-                  onMoveClick={() => setShowMoveDialog(true)}
+                  onLeadMoved={() => {
+                    queryClient.invalidateQueries({ queryKey: ["leads"] });
+                    navigate(subOriginId ? `/admin/crm?origin=${subOriginId}` : "/admin/crm");
+                  }}
                 />
               </motion.div>
             )}
@@ -694,18 +707,6 @@ export default function LeadDetail() {
         </div>
       </motion.div>
 
-      {/* Move Lead Dialog */}
-      <MoveLeadDialog
-        open={showMoveDialog}
-        onOpenChange={setShowMoveDialog}
-        leadId={lead.id}
-        leadName={lead.name}
-        currentSubOriginId={lead.sub_origin_id}
-        onMoved={() => {
-          queryClient.invalidateQueries({ queryKey: ["leads"] });
-          navigate(subOriginId ? `/admin/crm?origin=${subOriginId}` : "/admin/crm");
-        }}
-      />
 
       {/* Delete Confirmation Dialog */}
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>

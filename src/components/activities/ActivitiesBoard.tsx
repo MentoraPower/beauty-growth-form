@@ -18,8 +18,9 @@ interface ActivitiesBoardProps {
   leadId: string;
   leadName: string;
   currentPipelineId: string | null;
+  currentSubOriginId?: string | null;
   subOriginId?: string | null;
-  onMoveClick?: () => void;
+  onLeadMoved?: () => void;
 }
 
 const getTipoIcon = (tipo: string) => {
@@ -33,7 +34,7 @@ const getTipoIcon = (tipo: string) => {
   }
 };
 
-export function ActivitiesBoard({ leadId, leadName, currentPipelineId, subOriginId, onMoveClick }: ActivitiesBoardProps) {
+export function ActivitiesBoard({ leadId, leadName, currentPipelineId, currentSubOriginId, subOriginId, onLeadMoved }: ActivitiesBoardProps) {
   const [isAddActivityOpen, setIsAddActivityOpen] = useState(false);
   const [editingActivity, setEditingActivity] = useState<LeadActivity | null>(null);
 
@@ -101,9 +102,11 @@ export function ActivitiesBoard({ leadId, leadName, currentPipelineId, subOrigin
             pipelines={pipelines}
             viewingPipelineId={viewingPipelineId}
             currentPipelineId={currentPipelineId}
+            leadId={leadId}
             leadName={leadName}
+            currentSubOriginId={currentSubOriginId}
             onPipelineClick={handlePipelineClick}
-            onMoveClick={onMoveClick}
+            onLeadMoved={onLeadMoved}
           />
         </CardContent>
       </Card>
