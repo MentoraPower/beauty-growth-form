@@ -596,10 +596,10 @@ export default function LeadDetail() {
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ duration: 0.4, ease: [0.25, 0.1, 0.25, 1], delay: 0.1 }}
                 >
-                  <Card className="border-[#00000010] shadow-none overflow-hidden">
-                    <CardContent className="p-0">
+                  <Card className="border-[#00000010] shadow-none overflow-hidden h-full">
+                    <CardContent className="p-0 h-full flex flex-col">
                       {/* Tabs */}
-                      <div className="flex border-b border-border">
+                      <div className="flex border-b border-border pt-4 px-4">
                         <button
                           onClick={() => setContactPanelTab("instagram")}
                           className={`flex-1 py-3 text-sm font-medium flex items-center justify-center gap-2 transition-colors ${
@@ -630,7 +630,7 @@ export default function LeadDetail() {
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         transition={{ duration: 0.2 }}
-                        className="h-[500px]"
+                        className="flex-1 pb-4"
                       >
                         {contactPanelTab === "instagram" ? (
                           lead.instagram ? (
