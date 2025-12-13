@@ -4,14 +4,15 @@ import { Button } from "@/components/ui/button";
 import { useLeadActivities, LeadActivity } from "@/hooks/use-lead-activities";
 import { StepNavigation } from "./StepNavigation";
 import { AddActivityDialog } from "./AddActivityDialog";
+import { ActivityDetails } from "./ActivityDetails";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Plus, MoreVertical, Trash2, Pencil, ClipboardList, ListChecks, Phone, Mail, MessageCircle, Calendar, Users } from "lucide-react";
+import { Plus, MoreVertical, Trash2, Pencil, ClipboardList, ListChecks } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import Instagram from "@/components/icons/Instagram";
+import { supabase } from "@/integrations/supabase/client";
 
 interface ActivitiesBoardProps {
   leadId: string;
@@ -25,18 +26,6 @@ const getTipoIcon = (tipo: string) => {
       return <ClipboardList className="h-4 w-4" />;
     case 'checklist':
       return <ListChecks className="h-4 w-4" />;
-    case 'agendamento':
-      return <Calendar className="h-4 w-4" />;
-    case 'reuniao':
-      return <Users className="h-4 w-4" />;
-    case 'whatsapp':
-      return <MessageCircle className="h-4 w-4" />;
-    case 'instagram':
-      return <Instagram className="h-4 w-4" />;
-    case 'ligacao':
-      return <Phone className="h-4 w-4" />;
-    case 'email':
-      return <Mail className="h-4 w-4" />;
     default:
       return <ClipboardList className="h-4 w-4" />;
   }
@@ -81,6 +70,17 @@ export function ActivitiesBoard({ leadId, leadName, currentPipelineId }: Activit
     await handleAddActivity(activity, editingActivity?.id);
     setEditingActivity(null);
   }, [handleAddActivity, editingActivity?.id]);
+
+  const handleSaveNotes = useCallback(async (activityId: string, notes: string) => {
+    try {
+      await supabase
+        .from("lead_activities")
+        .update({ notas: notes })
+        .eq("id", activityId);
+    } catch (error) {
+      console.error("Error saving notes:", error);
+    }
+  }, []);
 
   return (
     <div className="space-y-4">
@@ -199,33 +199,11 @@ export function ActivitiesBoard({ leadId, leadName, currentPipelineId }: Activit
         {/* Right block - Activity Details / Tasks */}
         <Card className="border-[#00000010] bg-[#fafafa] shadow-none">
           <CardContent className="p-4 h-[400px] flex flex-col">
-            {selectedActivity ? (
-              <div className="flex-1 flex flex-col">
-                <div className="flex items-center gap-3 pb-4 border-b border-black/5">
-                  <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
-                    {getTipoIcon(selectedActivity.tipo)}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <h3 className="font-medium truncate">{selectedActivity.titulo}</h3>
-                    <p className="text-xs text-muted-foreground">
-                      {format(new Date(selectedActivity.data + 'T00:00:00'), "EEEE, dd 'de' MMMM", { locale: ptBR })} às {selectedActivity.hora.slice(0, 5)}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="flex-1 mt-4 flex items-center justify-center">
-                  <p className="text-sm text-muted-foreground text-center">
-                    Tarefas em desenvolvimento
-                  </p>
-                </div>
-              </div>
-            ) : (
-              <div className="h-full flex items-center justify-center">
-                <p className="text-sm text-muted-foreground text-center">
-                  Selecione uma atividade para ver os detalhes
-                </p>
-              </div>
-            )}
+            <ActivityDetails
+              activity={selectedActivity}
+              leadId={leadId}
+              onSaveNotes={handleSaveNotes}
+            />
           </CardContent>
         </Card>
       </div>
