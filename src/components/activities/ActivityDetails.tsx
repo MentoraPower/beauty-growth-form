@@ -262,10 +262,10 @@ export const ActivityDetails = memo(function ActivityDetails({
           </div>
         ) : (
           <div className="h-full flex flex-col">
-            {/* Toolbar */}
+            {/* Toolbar - only visible when active */}
             <div className={cn(
-              "flex items-center gap-1 pb-2 border-b border-black/5 transition-opacity",
-              showToolbar ? "opacity-100" : "opacity-40 hover:opacity-100"
+              "flex items-center gap-1 pb-2 border-b border-black/5 transition-all duration-300",
+              showToolbar ? "opacity-100 h-auto" : "opacity-0 h-0 overflow-hidden pb-0 border-b-0"
             )}>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
