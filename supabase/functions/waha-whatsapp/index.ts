@@ -90,8 +90,6 @@ const handler = async (req: Request): Promise<Response> => {
       const formattedPhone = phone.replace(/\D/g, "");
       const chatIdFormatted = `${formattedPhone}@c.us`;
 
-      console.log("Sending image to:", chatIdFormatted);
-
       const response = await fetch(`${wahaApiUrl}/api/sendImage`, {
         method: "POST",
         headers,
@@ -104,8 +102,6 @@ const handler = async (req: Request): Promise<Response> => {
       });
 
       const data = await response.json();
-      console.log("WAHA image response:", data);
-
       if (!response.ok) {
         throw new Error(data.message || data.exception?.message || "Failed to send image");
       }
@@ -128,8 +124,6 @@ const handler = async (req: Request): Promise<Response> => {
       const formattedPhone = phone.replace(/\D/g, "");
       const chatIdFormatted = `${formattedPhone}@c.us`;
 
-      console.log("Sending file to:", chatIdFormatted);
-
       const response = await fetch(`${wahaApiUrl}/api/sendFile`, {
         method: "POST",
         headers,
@@ -142,8 +136,6 @@ const handler = async (req: Request): Promise<Response> => {
       });
 
       const data = await response.json();
-      console.log("WAHA file response:", data);
-
       if (!response.ok) {
         throw new Error(data.message || data.exception?.message || "Failed to send file");
       }
@@ -166,8 +158,6 @@ const handler = async (req: Request): Promise<Response> => {
       const formattedPhone = phone.replace(/\D/g, "");
       const chatIdFormatted = `${formattedPhone}@c.us`;
 
-      console.log("Sending voice to:", chatIdFormatted);
-
       const response = await fetch(`${wahaApiUrl}/api/sendVoice`, {
         method: "POST",
         headers,
@@ -179,8 +169,6 @@ const handler = async (req: Request): Promise<Response> => {
       });
 
       const data = await response.json();
-      console.log("WAHA voice response:", data);
-
       if (!response.ok) {
         throw new Error(data.message || data.exception?.message || "Failed to send voice");
       }
@@ -191,31 +179,37 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    // GET CHATS
+    // GET CHATS - Use overview endpoint
     if (action === "get-chats") {
-      console.log("Fetching chats from WAHA...");
+      console.log("Fetching chats overview from WAHA...");
 
       const response = await fetch(
-        `${wahaApiUrl}/api/${session}/chats?limit=100&offset=0`,
+        `${wahaApiUrl}/api/${session}/chats/overview?limit=100&offset=0`,
         { method: "GET", headers }
       );
 
       const data = await response.json();
-      console.log("WAHA chats response count:", Array.isArray(data) ? data.length : 0);
+      console.log("WAHA chats overview response:", JSON.stringify(data).substring(0, 500));
 
       if (!response.ok) {
         throw new Error(data.message || "Failed to get chats");
       }
 
-      // Filter only chats with messages
+      // Format chats - include all that have lastMessage
       const formattedChats = (data || [])
         .filter((chat: any) => {
-          // Only include chats that have lastMessage
-          return chat.lastMessage?.body || chat.lastMessage?.hasMedia;
+          const chatId = chat.id || "";
+          // Skip groups and status broadcasts
+          if (chatId.includes("@g.us") || chatId.includes("status@broadcast")) {
+            return false;
+          }
+          // Include chats with any lastMessage content
+          return chat.lastMessage;
         })
         .map((chat: any) => {
           const chatIdStr = chat.id || "";
-          const phoneNumber = chatIdStr.replace("@c.us", "").replace("@s.whatsapp.net", "").replace("@lid", "");
+          // Clean phone number - remove @c.us, @s.whatsapp.net, etc.
+          const phoneNumber = chatIdStr.split("@")[0];
           
           return {
             phone: phoneNumber,
@@ -224,9 +218,11 @@ const handler = async (req: Request): Promise<Response> => {
             photo: chat.picture || null,
             lastMessage: chat.lastMessage?.body || (chat.lastMessage?.hasMedia ? "[Mídia]" : ""),
             timestamp: chat.lastMessage?.timestamp || null,
-            unreadCount: chat.unreadCount || 0,
+            unreadCount: chat._chat?.unreadCount || 0,
           };
         });
+
+      console.log("Formatted chats count:", formattedChats.length);
 
       return new Response(
         JSON.stringify(formattedChats),
@@ -283,14 +279,15 @@ const handler = async (req: Request): Promise<Response> => {
       
       const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-      // First, get all chats
+      // Get all chats using overview endpoint
       const chatsResponse = await fetch(
-        `${wahaApiUrl}/api/${session}/chats?limit=100&offset=0`,
+        `${wahaApiUrl}/api/${session}/chats/overview?limit=100&offset=0`,
         { method: "GET", headers }
       );
 
       const chatsData = await chatsResponse.json();
-      console.log("WAHA chats for sync:", Array.isArray(chatsData) ? chatsData.length : 0);
+      console.log("WAHA chats overview for sync:", Array.isArray(chatsData) ? chatsData.length : 0);
+      console.log("First chat sample:", JSON.stringify(chatsData?.[0] || {}).substring(0, 300));
 
       if (!chatsResponse.ok) {
         throw new Error(chatsData.message || "Failed to get chats for sync");
@@ -300,19 +297,23 @@ const handler = async (req: Request): Promise<Response> => {
       let syncedMessages = 0;
 
       for (const chat of chatsData) {
-        // Skip chats without messages
-        if (!chat.lastMessage?.body && !chat.lastMessage?.hasMedia) {
-          continue;
-        }
-
         const chatIdStr = chat.id || "";
-        const phoneNumber = chatIdStr.replace("@c.us", "").replace("@s.whatsapp.net", "").replace("@lid", "");
         
-        if (!phoneNumber || phoneNumber.includes("@g.us")) {
-          // Skip group chats
+        // Skip groups and status broadcasts
+        if (chatIdStr.includes("@g.us") || chatIdStr.includes("status@broadcast") || !chatIdStr) {
           continue;
         }
 
+        // Clean phone number
+        const phoneNumber = chatIdStr.split("@")[0];
+        
+        if (!phoneNumber) {
+          continue;
+        }
+
+        // Get last message info
+        const lastMessageBody = chat.lastMessage?.body || (chat.lastMessage?.hasMedia ? "[Mídia]" : "");
+        
         // Convert timestamp to ISO string
         let lastMessageTime = new Date().toISOString();
         if (chat.lastMessage?.timestamp) {
@@ -326,19 +327,20 @@ const handler = async (req: Request): Promise<Response> => {
             phone: phoneNumber,
             name: chat.name || phoneNumber,
             photo_url: chat.picture || null,
-            last_message: chat.lastMessage?.body || (chat.lastMessage?.hasMedia ? "[Mídia]" : ""),
+            last_message: lastMessageBody || "Conversa iniciada",
             last_message_time: lastMessageTime,
-            unread_count: chat.unreadCount || 0,
+            unread_count: chat._chat?.unreadCount || 0,
           }, { onConflict: "phone" })
           .select()
           .single();
 
         if (chatError) {
-          console.error("Error upserting chat:", chatError);
+          console.error("Error upserting chat:", phoneNumber, chatError.message);
           continue;
         }
 
         syncedChats++;
+        console.log(`Synced chat: ${phoneNumber} (${chat.name || 'no name'})`);
 
         // Fetch messages for this chat
         try {
@@ -349,6 +351,7 @@ const handler = async (req: Request): Promise<Response> => {
 
           if (messagesResponse.ok) {
             const messagesData = await messagesResponse.json();
+            console.log(`Messages for ${phoneNumber}:`, messagesData?.length || 0);
             
             for (const msg of messagesData) {
               const messageId = msg.id || msg.key?.id;
@@ -358,7 +361,6 @@ const handler = async (req: Request): Promise<Response> => {
               if (msg.fromMe) {
                 if (msg.ack === 3) status = "READ";
                 else if (msg.ack === 2) status = "DELIVERED";
-                else if (msg.ack === 1) status = "SENT";
                 else status = "SENT";
               }
 

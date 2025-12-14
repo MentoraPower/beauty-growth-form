@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
-import { Search, Smile, Paperclip, Mic, Send, Check, CheckCheck, RefreshCw, Phone, Image, File, X, Play, Pause } from "lucide-react";
+import { Search, Smile, Paperclip, Mic, Send, Check, CheckCheck, RefreshCw, Phone, Image, File, Play } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
@@ -55,6 +55,22 @@ const WhatsApp = () => {
     return name.substring(0, 2).toUpperCase();
   };
 
+  const formatPhoneDisplay = (phone: string): string => {
+    // Format phone for display: +55 44 9123-4567
+    const cleaned = phone.replace(/\D/g, "");
+    if (cleaned.length === 13) {
+      // Brazilian format: 55 + DDD (2) + number (9)
+      return `+${cleaned.slice(0, 2)} ${cleaned.slice(2, 4)} ${cleaned.slice(4, 9)}-${cleaned.slice(9)}`;
+    } else if (cleaned.length === 12) {
+      // Brazilian format without 9: 55 + DDD (2) + number (8)
+      return `+${cleaned.slice(0, 2)} ${cleaned.slice(2, 4)} ${cleaned.slice(4, 8)}-${cleaned.slice(8)}`;
+    } else if (cleaned.length >= 10) {
+      // Generic format
+      return `+${cleaned.slice(0, 2)} ${cleaned.slice(2)}`;
+    }
+    return phone;
+  };
+
   const formatTime = (dateString: string): string => {
     const date = new Date(dateString);
     const now = new Date();
@@ -75,15 +91,13 @@ const WhatsApp = () => {
       const { data, error } = await supabase
         .from("whatsapp_chats")
         .select("*")
-        .not("last_message", "is", null)
-        .neq("last_message", "")
         .order("last_message_time", { ascending: false });
 
       if (error) throw error;
 
       const formattedChats: Chat[] = (data || []).map((chat: any) => ({
         id: chat.id,
-        name: chat.name || chat.phone,
+        name: chat.name || formatPhoneDisplay(chat.phone),
         lastMessage: chat.last_message || "",
         time: chat.last_message_time ? formatTime(chat.last_message_time) : "",
         unread: chat.unread_count || 0,
@@ -243,39 +257,16 @@ const WhatsApp = () => {
     if (!selectedChat) return;
     
     setShowAttachMenu(false);
-    setIsSending(true);
-
-    try {
-      // Convert file to base64 data URL (for demo - in production, upload to storage first)
-      const reader = new FileReader();
-      reader.onload = async () => {
-        const dataUrl = reader.result as string;
-        
-        // For production, you would upload to Supabase Storage and get a public URL
-        // For now, we show that the feature is available
-        toast({
-          title: "Funcionalidade em desenvolvimento",
-          description: "Upload de arquivos será implementado com Supabase Storage",
-        });
-        
-        setIsSending(false);
-      };
-      reader.readAsDataURL(file);
-    } catch (error: any) {
-      console.error("Error uploading file:", error);
-      toast({
-        title: "Erro ao enviar arquivo",
-        description: error.message,
-        variant: "destructive",
-      });
-      setIsSending(false);
-    }
+    toast({
+      title: "Funcionalidade em desenvolvimento",
+      description: "Upload de arquivos será implementado com Supabase Storage",
+    });
   };
 
   const initiateCall = async () => {
     if (!selectedChat) return;
 
-    const { data, error } = await supabase.functions.invoke("twilio-call", {
+    const { error } = await supabase.functions.invoke("twilio-call", {
       body: { to: selectedChat.phone },
     });
 
@@ -319,11 +310,8 @@ const WhatsApp = () => {
         { event: "INSERT", schema: "public", table: "whatsapp_messages", filter: `chat_id=eq.${selectedChat.id}` },
         (payload) => {
           const msg = payload.new as any;
-          // Avoid duplicates
           setMessages(prev => {
-            if (prev.some(m => m.id === msg.id || (msg.message_id && prev.some(m => m.id.includes(msg.message_id))))) {
-              return prev;
-            }
+            if (prev.some(m => m.id === msg.id)) return prev;
             return [...prev, {
               id: msg.id,
               text: msg.text || "",
@@ -418,29 +406,29 @@ const WhatsApp = () => {
     <DashboardLayout>
       <div className="h-[calc(100vh-2rem)] flex rounded-2xl overflow-hidden border border-border/50 bg-card -mt-4">
         {/* Left Sidebar - Chat List */}
-        <div className="w-[380px] flex flex-col border-r border-border/50 bg-[#111b21]">
+        <div className="w-[380px] flex flex-col border-r border-border/50 bg-card">
           {/* Header */}
-          <div className="h-14 px-4 flex items-center justify-between bg-[#202c33]">
-            <h2 className="font-medium text-white">Conversas</h2>
+          <div className="h-14 px-4 flex items-center justify-between bg-muted/30 border-b border-border/30">
+            <h2 className="font-semibold text-foreground">Conversas</h2>
             <button
               onClick={syncAllChats}
               disabled={isSyncing}
-              className="p-2 hover:bg-white/10 rounded-full transition-colors"
+              className="p-2 hover:bg-muted/50 rounded-full transition-colors"
               title="Sincronizar todas as conversas"
             >
-              <RefreshCw className={cn("w-5 h-5 text-[#aebac1]", isSyncing && "animate-spin")} />
+              <RefreshCw className={cn("w-5 h-5 text-muted-foreground", isSyncing && "animate-spin")} />
             </button>
           </div>
 
           {/* Search */}
-          <div className="p-2 bg-[#111b21]">
+          <div className="p-2 border-b border-border/30">
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#aebac1]" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
               <Input
                 placeholder="Pesquisar ou começar nova conversa"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10 bg-[#202c33] border-0 h-9 text-sm text-white placeholder:text-[#8696a0]"
+                className="pl-10 bg-muted/30 border-0 h-9 text-sm placeholder:text-muted-foreground/60"
               />
             </div>
           </div>
@@ -449,7 +437,7 @@ const WhatsApp = () => {
           <div className="flex-1 overflow-y-auto">
             {isLoadingChats || isSyncing ? (
               <div className="flex items-center justify-center h-full py-20">
-                <RefreshCw className="w-6 h-6 text-[#aebac1] animate-spin" />
+                <RefreshCw className="w-6 h-6 text-muted-foreground animate-spin" />
               </div>
             ) : filteredChats.length > 0 ? (
               filteredChats.map((chat) => (
@@ -457,30 +445,30 @@ const WhatsApp = () => {
                   key={chat.id}
                   onClick={() => setSelectedChat(chat)}
                   className={cn(
-                    "flex items-center gap-3 px-3 py-3 cursor-pointer transition-colors border-b border-[#222d34]",
-                    selectedChat?.id === chat.id ? "bg-[#2a3942]" : "hover:bg-[#202c33]"
+                    "flex items-center gap-3 px-3 py-3 cursor-pointer transition-colors border-b border-border/20",
+                    selectedChat?.id === chat.id ? "bg-muted/40" : "hover:bg-muted/20"
                   )}
                 >
                   <div className="relative flex-shrink-0">
                     {chat.photo_url ? (
                       <img src={chat.photo_url} alt={chat.name} className="w-12 h-12 rounded-full object-cover" />
                     ) : (
-                      <div className="w-12 h-12 rounded-full bg-[#6b7b8a] flex items-center justify-center text-white font-medium text-lg">
+                      <div className="w-12 h-12 rounded-full bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center text-white font-medium text-lg">
                         {chat.avatar}
                       </div>
                     )}
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between">
-                      <span className="font-medium text-white truncate">{chat.name}</span>
-                      <span className={cn("text-xs flex-shrink-0", chat.unread > 0 ? "text-[#00a884]" : "text-[#8696a0]")}>
+                      <span className="font-medium text-foreground truncate">{chat.name}</span>
+                      <span className={cn("text-xs flex-shrink-0", chat.unread > 0 ? "text-emerald-500" : "text-muted-foreground")}>
                         {chat.time}
                       </span>
                     </div>
                     <div className="flex items-center justify-between mt-0.5">
-                      <p className="text-sm text-[#8696a0] truncate pr-2">{chat.lastMessage}</p>
+                      <p className="text-sm text-muted-foreground truncate pr-2">{chat.lastMessage}</p>
                       {chat.unread > 0 && (
-                        <span className="min-w-[20px] h-5 rounded-full bg-[#00a884] text-[#111b21] text-xs font-medium flex items-center justify-center px-1.5">
+                        <span className="min-w-[20px] h-5 rounded-full bg-emerald-500 text-white text-xs font-medium flex items-center justify-center px-1.5">
                           {chat.unread}
                         </span>
                       )}
@@ -490,11 +478,11 @@ const WhatsApp = () => {
               ))
             ) : (
               <div className="flex-1 flex flex-col items-center justify-center h-full py-20 gap-3">
-                <p className="text-sm text-[#8696a0]">Nenhuma conversa</p>
+                <p className="text-sm text-muted-foreground">Nenhuma conversa</p>
                 <button
                   onClick={syncAllChats}
                   disabled={isSyncing}
-                  className="text-sm text-[#00a884] hover:underline flex items-center gap-2"
+                  className="text-sm text-emerald-500 hover:underline flex items-center gap-2"
                 >
                   <RefreshCw className={cn("w-4 h-4", isSyncing && "animate-spin")} />
                   Sincronizar do WhatsApp
@@ -505,37 +493,37 @@ const WhatsApp = () => {
         </div>
 
         {/* Right Panel - Chat Area */}
-        <div className="flex-1 flex flex-col bg-[#0b141a]">
+        <div className="flex-1 flex flex-col bg-muted/10">
           {selectedChat ? (
             <>
               {/* Chat Header */}
-              <div className="h-14 px-4 flex items-center gap-3 bg-[#202c33] border-b border-[#222d34]">
+              <div className="h-14 px-4 flex items-center gap-3 bg-muted/30 border-b border-border/30">
                 <div className="relative flex-shrink-0">
                   {selectedChat.photo_url ? (
                     <img src={selectedChat.photo_url} alt={selectedChat.name} className="w-10 h-10 rounded-full object-cover" />
                   ) : (
-                    <div className="w-10 h-10 rounded-full bg-[#6b7b8a] flex items-center justify-center text-white font-medium">
+                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center text-white font-medium">
                       {selectedChat.avatar}
                     </div>
                   )}
                 </div>
                 <div className="flex-1">
-                  <h3 className="font-medium text-white">{selectedChat.name}</h3>
-                  <p className="text-xs text-[#8696a0]">{selectedChat.phone}</p>
+                  <h3 className="font-medium text-foreground">{selectedChat.name}</h3>
+                  <p className="text-xs text-muted-foreground">{formatPhoneDisplay(selectedChat.phone)}</p>
                 </div>
                 <button
                   onClick={() => setIsCallModalOpen(true)}
-                  className="p-2 hover:bg-white/10 rounded-full transition-colors"
+                  className="p-2 hover:bg-muted/50 rounded-full transition-colors"
                   title="Fazer ligação"
                 >
-                  <Phone className="w-5 h-5 text-[#aebac1]" />
+                  <Phone className="w-5 h-5 text-emerald-500" />
                 </button>
                 <button
                   onClick={() => fetchMessages(selectedChat.id)}
                   disabled={isLoadingMessages}
-                  className="p-2 hover:bg-white/10 rounded-full transition-colors"
+                  className="p-2 hover:bg-muted/50 rounded-full transition-colors"
                 >
-                  <RefreshCw className={cn("w-4 h-4 text-[#aebac1]", isLoadingMessages && "animate-spin")} />
+                  <RefreshCw className={cn("w-4 h-4 text-muted-foreground", isLoadingMessages && "animate-spin")} />
                 </button>
               </div>
 
@@ -543,16 +531,17 @@ const WhatsApp = () => {
               <div
                 className="flex-1 overflow-y-auto p-4 space-y-1"
                 style={{
-                  backgroundImage: `url("data:image/svg+xml,%3Csvg width='417' height='417' xmlns='http://www.w3.org/2000/svg'%3E%3Cdefs%3E%3Cpattern id='pattern' width='8.33' height='8.33' patternUnits='userSpaceOnUse'%3E%3Cpath d='M 0 4.165 L 4.165 0 L 8.33 4.165 L 4.165 8.33 Z' fill='%23182229' fill-opacity='0.4'/%3E%3C/pattern%3E%3C/defs%3E%3Crect width='100%25' height='100%25' fill='%230b141a'/%3E%3Crect width='100%25' height='100%25' fill='url(%23pattern)'/%3E%3C/svg%3E")`,
+                  backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23000000' fill-opacity='0.03'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
+                  backgroundColor: "hsl(var(--muted) / 0.15)",
                 }}
               >
                 {isLoadingMessages ? (
                   <div className="flex items-center justify-center h-full">
-                    <RefreshCw className="w-6 h-6 text-[#aebac1] animate-spin" />
+                    <RefreshCw className="w-6 h-6 text-muted-foreground animate-spin" />
                   </div>
                 ) : messages.length === 0 ? (
                   <div className="flex items-center justify-center h-full">
-                    <p className="text-sm text-[#8696a0]">Nenhuma mensagem</p>
+                    <p className="text-sm text-muted-foreground">Nenhuma mensagem</p>
                   </div>
                 ) : (
                   messages.map((msg) => (
@@ -561,21 +550,21 @@ const WhatsApp = () => {
                         className={cn(
                           "max-w-[65%] rounded-lg px-3 py-1.5 shadow-sm relative",
                           msg.sent 
-                            ? "bg-[#005c4b] rounded-tr-none" 
-                            : "bg-[#202c33] rounded-tl-none"
+                            ? "bg-emerald-100 dark:bg-emerald-900/30 rounded-tr-none" 
+                            : "bg-card rounded-tl-none border border-border/30"
                         )}
                       >
                         {renderMessageContent(msg)}
                         <div className="flex items-center justify-end gap-1 mt-0.5">
-                          <span className="text-[10px] text-[#8696a0]">{msg.time}</span>
+                          <span className="text-[10px] text-muted-foreground">{msg.time}</span>
                           {msg.sent && (
                             msg.status === "READ" || msg.status === "PLAYED" 
-                              ? <CheckCheck className="w-4 h-4 text-[#53bdeb]" /> 
+                              ? <CheckCheck className="w-4 h-4 text-blue-500" /> 
                               : msg.status === "DELIVERED"
-                                ? <CheckCheck className="w-4 h-4 text-[#8696a0]" />
+                                ? <CheckCheck className="w-4 h-4 text-muted-foreground" />
                                 : msg.status === "SENDING"
-                                  ? <div className="w-3 h-3 border-2 border-[#8696a0] border-t-transparent rounded-full animate-spin" />
-                                  : <Check className="w-4 h-4 text-[#8696a0]" />
+                                  ? <div className="w-3 h-3 border-2 border-muted-foreground border-t-transparent rounded-full animate-spin" />
+                                  : <Check className="w-4 h-4 text-muted-foreground" />
                           )}
                         </div>
                       </div>
@@ -586,38 +575,38 @@ const WhatsApp = () => {
               </div>
 
               {/* Message Input */}
-              <div className="px-4 py-3 flex items-center gap-2 bg-[#202c33]">
-                <button className="p-2 hover:bg-white/10 rounded-full transition-colors">
-                  <Smile className="w-6 h-6 text-[#aebac1]" />
+              <div className="px-4 py-3 flex items-center gap-2 bg-muted/30 border-t border-border/30">
+                <button className="p-2 hover:bg-muted/50 rounded-full transition-colors">
+                  <Smile className="w-6 h-6 text-muted-foreground" />
                 </button>
                 
                 <div className="relative">
                   <button 
                     onClick={() => setShowAttachMenu(!showAttachMenu)}
-                    className="p-2 hover:bg-white/10 rounded-full transition-colors"
+                    className="p-2 hover:bg-muted/50 rounded-full transition-colors"
                   >
-                    <Paperclip className={cn("w-6 h-6 text-[#aebac1] transition-transform", showAttachMenu && "rotate-45")} />
+                    <Paperclip className={cn("w-6 h-6 text-muted-foreground transition-transform", showAttachMenu && "rotate-45")} />
                   </button>
                   
                   {showAttachMenu && (
-                    <div className="absolute bottom-full left-0 mb-2 bg-[#233138] rounded-lg shadow-lg overflow-hidden">
+                    <div className="absolute bottom-full left-0 mb-2 bg-card rounded-lg shadow-lg border border-border overflow-hidden z-50">
                       <button
                         onClick={() => imageInputRef.current?.click()}
-                        className="flex items-center gap-3 px-4 py-3 hover:bg-white/10 w-full text-left"
+                        className="flex items-center gap-3 px-4 py-3 hover:bg-muted/50 w-full text-left"
                       >
                         <div className="w-10 h-10 rounded-full bg-purple-500 flex items-center justify-center">
                           <Image className="w-5 h-5 text-white" />
                         </div>
-                        <span className="text-white">Fotos</span>
+                        <span className="text-foreground">Fotos</span>
                       </button>
                       <button
                         onClick={() => fileInputRef.current?.click()}
-                        className="flex items-center gap-3 px-4 py-3 hover:bg-white/10 w-full text-left"
+                        className="flex items-center gap-3 px-4 py-3 hover:bg-muted/50 w-full text-left"
                       >
                         <div className="w-10 h-10 rounded-full bg-blue-500 flex items-center justify-center">
                           <File className="w-5 h-5 text-white" />
                         </div>
-                        <span className="text-white">Documento</span>
+                        <span className="text-foreground">Documento</span>
                       </button>
                     </div>
                   )}
@@ -645,40 +634,40 @@ const WhatsApp = () => {
                     onChange={(e) => setMessage(e.target.value)}
                     onKeyDown={handleKeyPress}
                     disabled={isSending}
-                    className="bg-[#2a3942] border-0 h-10 text-sm text-white placeholder:text-[#8696a0] rounded-lg"
+                    className="bg-card border-border/50 h-10 text-sm rounded-lg"
                   />
                 </div>
                 
                 <button
                   onClick={sendMessage}
                   disabled={!message.trim() || isSending}
-                  className="p-2 hover:bg-white/10 rounded-full transition-colors disabled:opacity-50"
+                  className="p-2 hover:bg-muted/50 rounded-full transition-colors disabled:opacity-50"
                 >
                   {message.trim() ? (
-                    <Send className={cn("w-6 h-6 text-[#aebac1]", isSending && "animate-pulse")} />
+                    <Send className={cn("w-6 h-6 text-emerald-500", isSending && "animate-pulse")} />
                   ) : (
-                    <Mic className="w-6 h-6 text-[#aebac1]" />
+                    <Mic className="w-6 h-6 text-muted-foreground" />
                   )}
                 </button>
               </div>
             </>
           ) : (
-            <div className="flex-1 flex items-center justify-center bg-[#222e35]">
+            <div className="flex-1 flex items-center justify-center bg-muted/5">
               <div className="text-center space-y-4">
-                <div className="w-64 h-64 mx-auto opacity-30">
-                  <svg viewBox="0 0 303 172" className="w-full h-full text-[#8696a0]">
+                <div className="w-48 h-48 mx-auto opacity-20">
+                  <svg viewBox="0 0 303 172" className="w-full h-full text-muted-foreground">
                     <path fill="currentColor" d="M229.565 160.229c32.647-25.618 50.26-65.927 45.433-107.678C269.995 11.857 234.312-8.196 194.32 3.078c-39.99 11.273-71.282 44.109-80.022 82.752-7.266 32.13 2.066 58.476 22.937 74.907-3.027 12.476-7.045 27.15-7.045 27.15s23.628-6.457 37.757-11.883c24.527 4.616 47.617.526 61.618-15.775z"/>
                   </svg>
                 </div>
-                <h2 className="text-2xl font-light text-[#e9edef]">WhatsApp Web</h2>
-                <p className="text-sm text-[#8696a0] max-w-md">
+                <h2 className="text-xl font-light text-foreground">WhatsApp Web</h2>
+                <p className="text-sm text-muted-foreground max-w-md">
                   Envie e receba mensagens diretamente do seu CRM
                 </p>
                 {chats.length === 0 && (
                   <button
                     onClick={syncAllChats}
                     disabled={isSyncing}
-                    className="mt-4 px-6 py-2 bg-[#00a884] text-white rounded-full hover:bg-[#06cf9c] transition-colors flex items-center gap-2 mx-auto"
+                    className="mt-4 px-6 py-2 bg-emerald-500 text-white rounded-full hover:bg-emerald-600 transition-colors flex items-center gap-2 mx-auto"
                   >
                     <RefreshCw className={cn("w-4 h-4", isSyncing && "animate-spin")} />
                     Sincronizar conversas
