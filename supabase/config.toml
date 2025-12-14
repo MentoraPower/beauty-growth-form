@@ -12,10 +12,10 @@ verify_jwt = false
 [functions.recalculate-mql]
 verify_jwt = false
 
-[functions.zapi-whatsapp]
+[functions.waha-whatsapp]
 verify_jwt = false
 
-[functions.zapi-webhook]
+[functions.waha-webhook]
 verify_jwt = false
 
 [functions.twilio-call]

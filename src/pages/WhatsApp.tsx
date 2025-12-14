@@ -142,8 +142,8 @@ const WhatsApp = () => {
 
     setIsSending(true);
     try {
-      // Send via Z-API
-      const { data, error } = await supabase.functions.invoke("zapi-whatsapp", {
+      // Send via WAHA
+      const { data, error } = await supabase.functions.invoke("waha-whatsapp", {
         body: {
           action: "send-text",
           phone: selectedChat.phone,
@@ -216,7 +216,7 @@ const WhatsApp = () => {
     }
   };
 
-  const syncFromZAPI = async () => {
+  const syncFromWAHA = async () => {
     setIsLoadingChats(true);
     try {
       // First clean empty chats
@@ -225,13 +225,13 @@ const WhatsApp = () => {
         .delete()
         .or("last_message.is.null,last_message.eq.");
 
-      const { data, error } = await supabase.functions.invoke("zapi-whatsapp", {
+      const { data, error } = await supabase.functions.invoke("waha-whatsapp", {
         body: { action: "get-chats" },
       });
 
       if (error) throw error;
 
-      console.log("Z-API chats received:", data?.length || 0);
+      console.log("WAHA chats received:", data?.length || 0);
 
       if (Array.isArray(data) && data.length > 0) {
         let syncedCount = 0;
@@ -277,7 +277,7 @@ const WhatsApp = () => {
         });
       }
     } catch (error: any) {
-      console.error("Error syncing from Z-API:", error);
+      console.error("Error syncing from WAHA:", error);
       toast({
         title: "Erro ao sincronizar",
         description: error.message,
@@ -402,10 +402,10 @@ const WhatsApp = () => {
           <div className="h-14 px-4 flex items-center justify-between bg-muted/30 border-b border-border/30">
             <h2 className="font-medium text-foreground">Conversas</h2>
             <button
-              onClick={syncFromZAPI}
+              onClick={syncFromWAHA}
               disabled={isLoadingChats}
               className="p-2 hover:bg-muted/50 rounded-full transition-colors"
-              title="Sincronizar com Z-API"
+              title="Sincronizar com WAHA"
             >
               <RefreshCw className={cn("w-4 h-4 text-muted-foreground", isLoadingChats && "animate-spin")} />
             </button>
@@ -471,10 +471,10 @@ const WhatsApp = () => {
               <div className="flex-1 flex flex-col items-center justify-center h-full py-20 gap-2">
                 <p className="text-sm text-muted-foreground">Nenhuma conversa</p>
                 <button
-                  onClick={syncFromZAPI}
+                  onClick={syncFromWAHA}
                   className="text-xs text-emerald-500 hover:underline"
                 >
-                  Sincronizar do Z-API
+                  Sincronizar do WAHA
                 </button>
               </div>
             )}
