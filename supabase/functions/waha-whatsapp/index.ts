@@ -12,7 +12,7 @@ const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
 const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
 interface RequestBody {
-  action: "send-text" | "send-image" | "send-file" | "send-voice" | "get-chats" | "get-chat-messages" | "sync-all";
+  action: "send-text" | "send-image" | "send-file" | "send-voice" | "get-chats" | "get-chat-messages" | "sync-all" | "clear-all";
   phone?: string;
   message?: string;
   chatId?: string;
@@ -392,6 +392,42 @@ const handler = async (req: Request): Promise<Response> => {
 
       return new Response(
         JSON.stringify({ success: true, syncedChats, syncedMessages }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // CLEAR ALL - Delete all chats and messages from database
+    if (action === "clear-all") {
+      console.log("Clearing all WhatsApp data from database...");
+      
+      const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+      // Delete messages first (foreign key constraint)
+      const { error: messagesError } = await supabase
+        .from("whatsapp_messages")
+        .delete()
+        .neq("id", "00000000-0000-0000-0000-000000000000"); // Delete all
+
+      if (messagesError) {
+        console.error("Error deleting messages:", messagesError);
+        throw new Error("Failed to delete messages: " + messagesError.message);
+      }
+
+      // Delete chats
+      const { error: chatsError } = await supabase
+        .from("whatsapp_chats")
+        .delete()
+        .neq("id", "00000000-0000-0000-0000-000000000000"); // Delete all
+
+      if (chatsError) {
+        console.error("Error deleting chats:", chatsError);
+        throw new Error("Failed to delete chats: " + chatsError.message);
+      }
+
+      console.log("All WhatsApp data cleared successfully");
+
+      return new Response(
+        JSON.stringify({ success: true, message: "All chats and messages deleted" }),
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }

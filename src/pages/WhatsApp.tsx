@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
-import { Search, Smile, Paperclip, Mic, Send, Check, CheckCheck, RefreshCw, Phone, Image, File, Play } from "lucide-react";
+import { Search, Smile, Paperclip, Mic, Send, Check, CheckCheck, RefreshCw, Phone, Image, File, Play, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
@@ -40,6 +40,7 @@ const WhatsApp = () => {
   const [isLoadingMessages, setIsLoadingMessages] = useState(false);
   const [isSending, setIsSending] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
+  const [isClearing, setIsClearing] = useState(false);
   const [isCallModalOpen, setIsCallModalOpen] = useState(false);
   const [showAttachMenu, setShowAttachMenu] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -253,6 +254,39 @@ const WhatsApp = () => {
     }
   };
 
+  const clearAllChats = async () => {
+    if (!confirm("Tem certeza que deseja apagar TODAS as conversas e mensagens? Esta ação não pode ser desfeita.")) {
+      return;
+    }
+    
+    setIsClearing(true);
+    try {
+      const { error } = await supabase.functions.invoke("waha-whatsapp", {
+        body: { action: "clear-all" },
+      });
+
+      if (error) throw error;
+
+      setChats([]);
+      setMessages([]);
+      setSelectedChat(null);
+      
+      toast({
+        title: "Dados limpos",
+        description: "Todas as conversas e mensagens foram apagadas",
+      });
+    } catch (error: any) {
+      console.error("Error clearing:", error);
+      toast({
+        title: "Erro ao limpar",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setIsClearing(false);
+    }
+  };
+
   const handleFileUpload = async (file: File, type: "image" | "file") => {
     if (!selectedChat) return;
     
@@ -410,14 +444,24 @@ const WhatsApp = () => {
           {/* Header */}
           <div className="h-14 px-4 flex items-center justify-between bg-muted/30 border-b border-border/30">
             <h2 className="font-semibold text-foreground">Conversas</h2>
-            <button
-              onClick={syncAllChats}
-              disabled={isSyncing}
-              className="p-2 hover:bg-muted/50 rounded-full transition-colors"
-              title="Sincronizar todas as conversas"
-            >
-              <RefreshCw className={cn("w-5 h-5 text-muted-foreground", isSyncing && "animate-spin")} />
-            </button>
+            <div className="flex items-center gap-1">
+              <button
+                onClick={clearAllChats}
+                disabled={isClearing}
+                className="p-2 hover:bg-destructive/10 rounded-full transition-colors"
+                title="Apagar todas as conversas"
+              >
+                <Trash2 className={cn("w-5 h-5 text-destructive", isClearing && "animate-pulse")} />
+              </button>
+              <button
+                onClick={syncAllChats}
+                disabled={isSyncing}
+                className="p-2 hover:bg-muted/50 rounded-full transition-colors"
+                title="Sincronizar todas as conversas"
+              >
+                <RefreshCw className={cn("w-5 h-5 text-muted-foreground", isSyncing && "animate-spin")} />
+              </button>
+            </div>
           </div>
 
           {/* Search */}
