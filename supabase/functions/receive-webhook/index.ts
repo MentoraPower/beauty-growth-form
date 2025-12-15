@@ -107,97 +107,347 @@ function toNumberOrNull(value: any): number | null {
   return Number.isFinite(n) ? n : null;
 }
 
+// Helpers
+function normalizeKey(input: string): string {
+  return input
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9_]+/g, "_")
+    .replace(/^_+|_+$/g, "");
+}
+
+function collectStringValues(value: any, out: string[], depth = 0) {
+  if (depth > 6 || out.length > 200) return;
+  if (value === null || value === undefined) return;
+
+  if (typeof value === "string") {
+    const s = value.trim();
+    if (s) out.push(s);
+    return;
+  }
+
+  if (typeof value === "number" || typeof value === "boolean") {
+    out.push(String(value));
+    return;
+  }
+
+  if (Array.isArray(value)) {
+    for (const v of value) collectStringValues(v, out, depth + 1);
+    return;
+  }
+
+  if (typeof value === "object") {
+    for (const v of Object.values(value)) collectStringValues(v, out, depth + 1);
+  }
+}
+
+function guessEmail(raw: any, normalized: Record<string, any>): string | null {
+  if (normalized.email) return String(normalized.email);
+  const values: string[] = [];
+  collectStringValues(raw, values);
+
+  const emailRegex = /[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i;
+  for (const v of values) {
+    const m = v.match(emailRegex);
+    if (m) return m[0];
+  }
+  return null;
+}
+
+function guessName(raw: any, normalized: Record<string, any>): string | null {
+  if (normalized.name) return String(normalized.name);
+
+  const values: string[] = [];
+  collectStringValues(raw, values);
+
+  const candidates = values
+    .map((v) => v.trim())
+    .filter((v) => v.length >= 2)
+    .filter((v) => !v.includes("@"))
+    .filter((v) => !/^\d+$/.test(v))
+    .filter((v) => /[a-zA-ZÀ-ÿ]/.test(v));
+
+  // Prefer a full name (has spaces)
+  const withSpace = candidates.find((v) => v.includes(" "));
+  return withSpace || candidates[0] || null;
+}
+
 // Normalize payload from different sources (Elementor WordPress, direct, etc.)
 function normalizePayload(raw: any): Record<string, any> {
   // If it's already a flat object with expected fields, return as-is
-  if (raw.name && raw.email) {
+  if (raw?.name && raw?.email) {
     return raw;
   }
 
   const normalized: Record<string, any> = {};
 
-  // Field mapping - maps various field IDs/names to our expected format
+  // Field mapping - maps various field IDs/names/titles to our expected format
   const fieldMap: Record<string, string> = {
-    // Name variations
-    'name': 'name', 'nome': 'name', 'full_name': 'name', 'fullname': 'name',
-    // Email variations
-    'email': 'email', 'e-mail': 'email', 'mail': 'email',
-    // WhatsApp variations
-    'whatsapp': 'whatsapp', 'phone': 'whatsapp', 'telefone': 'whatsapp', 
-    'celular': 'whatsapp', 'tel': 'whatsapp',
-    // Instagram variations
-    'instagram': 'instagram', 'insta': 'instagram',
-    // Clinic name
-    'clinic_name': 'clinic_name', 'clinicname': 'clinic_name', 
-    'empresa': 'clinic_name', 'company': 'clinic_name', 'studio': 'clinic_name',
-    // Service area
-    'service_area': 'service_area', 'servicearea': 'service_area', 
-    'area': 'service_area', 'servico': 'service_area',
-    // Monthly billing
-    'monthly_billing': 'monthly_billing', 'monthlybilling': 'monthly_billing', 
-    'faturamento': 'monthly_billing', 'billing': 'monthly_billing',
-    // Weekly attendance
-    'weekly_attendance': 'weekly_attendance', 'weeklyattendance': 'weekly_attendance', 
-    'atendimentos': 'weekly_attendance', 'attendance': 'weekly_attendance',
-    // Workspace type
-    'workspace_type': 'workspace_type', 'workspacetype': 'workspace_type', 
-    'espaco': 'workspace_type', 'workspace': 'workspace_type',
-    // Years experience
-    'years_experience': 'years_experience', 'yearsexperience': 'years_experience', 
-    'experiencia': 'years_experience', 'experience': 'years_experience',
-    // Average ticket
-    'average_ticket': 'average_ticket', 'averageticket': 'average_ticket', 
-    'ticket': 'average_ticket', 'ticket_medio': 'average_ticket',
-    // Country code
-    'country_code': 'country_code', 'countrycode': 'country_code', 'ddi': 'country_code',
-    // Biggest difficulty
-    'biggest_difficulty': 'biggest_difficulty', 'dificuldade': 'biggest_difficulty',
-    // UTM fields
-    'utm_source': 'utm_source', 'utm_medium': 'utm_medium', 
-    'utm_campaign': 'utm_campaign', 'utm_term': 'utm_term', 'utm_content': 'utm_content',
+    // name
+    [normalizeKey("name")]: "name",
+    [normalizeKey("nome")]: "name",
+    [normalizeKey("nome_completo")]: "name",
+    [normalizeKey("full_name")]: "name",
+    [normalizeKey("fullname")]: "name",
+    // email
+    [normalizeKey("email")]: "email",
+    [normalizeKey("e_mail")]: "email",
+    [normalizeKey("mail")]: "email",
+    // whatsapp/phone
+    [normalizeKey("whatsapp")]: "whatsapp",
+    [normalizeKey("phone")]: "whatsapp",
+    [normalizeKey("telefone")]: "whatsapp",
+    [normalizeKey("celular")]: "whatsapp",
+    [normalizeKey("tel")]: "whatsapp",
+    // instagram
+    [normalizeKey("instagram")]: "instagram",
+    [normalizeKey("insta")]: "instagram",
+    // clinic/company
+    [normalizeKey("clinic_name")]: "clinic_name",
+    [normalizeKey("clinicname")]: "clinic_name",
+    [normalizeKey("empresa")]: "clinic_name",
+    [normalizeKey("company")]: "clinic_name",
+    [normalizeKey("studio")]: "clinic_name",
+    // service area
+    [normalizeKey("service_area")]: "service_area",
+    [normalizeKey("servicearea")]: "service_area",
+    [normalizeKey("area")]: "service_area",
+    [normalizeKey("area_de_atuacao")]: "service_area",
+    [normalizeKey("servico")]: "service_area",
+    // monthly billing
+    [normalizeKey("monthly_billing")]: "monthly_billing",
+    [normalizeKey("monthlybilling")]: "monthly_billing",
+    [normalizeKey("faturamento")]: "monthly_billing",
+    [normalizeKey("faturamento_mensal")]: "monthly_billing",
+    // weekly attendance
+    [normalizeKey("weekly_attendance")]: "weekly_attendance",
+    [normalizeKey("weeklyattendance")]: "weekly_attendance",
+    [normalizeKey("atendimentos")]: "weekly_attendance",
+    [normalizeKey("atendimentos_semanais")]: "weekly_attendance",
+    // workspace type
+    [normalizeKey("workspace_type")]: "workspace_type",
+    [normalizeKey("workspacetype")]: "workspace_type",
+    [normalizeKey("espaco")]: "workspace_type",
+    [normalizeKey("espaco_fisico")]: "workspace_type",
+    // years exp
+    [normalizeKey("years_experience")]: "years_experience",
+    [normalizeKey("yearsexperience")]: "years_experience",
+    [normalizeKey("experiencia")]: "years_experience",
+    [normalizeKey("anos_de_experiencia")]: "years_experience",
+    // ticket
+    [normalizeKey("average_ticket")]: "average_ticket",
+    [normalizeKey("averageticket")]: "average_ticket",
+    [normalizeKey("ticket")]: "average_ticket",
+    [normalizeKey("ticket_medio")]: "average_ticket",
+    // revenue
+    [normalizeKey("estimated_revenue")]: "estimated_revenue",
+    [normalizeKey("estimatedrevenue")]: "estimated_revenue",
+    [normalizeKey("receita")]: "estimated_revenue",
+    // country
+    [normalizeKey("country_code")]: "country_code",
+    [normalizeKey("countrycode")]: "country_code",
+    [normalizeKey("ddi")]: "country_code",
+    // difficulty
+    [normalizeKey("biggest_difficulty")]: "biggest_difficulty",
+    [normalizeKey("dificuldade")]: "biggest_difficulty",
+    [normalizeKey("maior_dificuldade")]: "biggest_difficulty",
+    // UTMs
+    [normalizeKey("utm_source")]: "utm_source",
+    [normalizeKey("utm_medium")]: "utm_medium",
+    [normalizeKey("utm_campaign")]: "utm_campaign",
+    [normalizeKey("utm_term")]: "utm_term",
+    [normalizeKey("utm_content")]: "utm_content",
+    // Common Elementor patterns
+    [normalizeKey("field_name")]: "name",
+    [normalizeKey("field_email")]: "email",
+    [normalizeKey("field_phone")]: "whatsapp",
+    [normalizeKey("field_whatsapp")]: "whatsapp",
+    [normalizeKey("field_instagram")]: "instagram",
   };
 
-  // Handle Elementor format: { fields: { field_id: { id, type, title, value } } }
-  if (raw.fields && typeof raw.fields === 'object') {
+  // Elementor JSON format: { fields: { field_id: { id, type, title, value } } }
+  if (raw?.fields && typeof raw.fields === "object") {
     for (const [fieldId, fieldData] of Object.entries(raw.fields)) {
       const data = fieldData as any;
-      const value = data.value || data.raw_value || data;
-      const key = fieldId.toLowerCase().replace(/[\s-]/g, '_');
-      
-      if (fieldMap[key]) {
-        normalized[fieldMap[key]] = value;
-      } else if (data.title) {
-        // Try matching by field title
-        const title = data.title.toLowerCase().replace(/[\s-]/g, '_');
-        if (fieldMap[title]) {
-          normalized[fieldMap[title]] = value;
-        }
+      const value = data?.value ?? data?.raw_value ?? data;
+
+      const fieldIdKey = normalizeKey(String(fieldId));
+      const titleKey = data?.title ? normalizeKey(String(data.title)) : "";
+
+      const mapped = fieldMap[fieldIdKey] || (titleKey ? fieldMap[titleKey] : undefined);
+      if (mapped) {
+        normalized[mapped] = value;
       }
     }
   }
-  
-  // Handle flat object with various field names
-  for (const [key, value] of Object.entries(raw)) {
-    if (key === 'fields') continue;
-    
-    const lowerKey = key.toLowerCase().replace(/[\s-]/g, '_');
-    if (fieldMap[lowerKey] && !normalized[fieldMap[lowerKey]]) {
-      normalized[fieldMap[lowerKey]] = value;
+
+  // Flat object format
+  for (const [k, v] of Object.entries(raw || {})) {
+    if (k === "fields") continue;
+    const key = normalizeKey(String(k));
+    const mapped = fieldMap[key];
+    if (mapped && normalized[mapped] === undefined) {
+      normalized[mapped] = v;
     }
   }
 
-  // Handle form_data array format
-  if (raw.form_data && Array.isArray(raw.form_data)) {
+  // form_data array format
+  if (raw?.form_data && Array.isArray(raw.form_data)) {
     for (const field of raw.form_data) {
-      const key = (field.name || field.id || '').toLowerCase().replace(/[\s-]/g, '_');
-      const value = field.value;
-      if (fieldMap[key] && !normalized[fieldMap[key]]) {
-        normalized[fieldMap[key]] = value;
+      const key = normalizeKey(String(field?.name || field?.id || ""));
+      const mapped = fieldMap[key];
+      if (mapped && normalized[mapped] === undefined) {
+        normalized[mapped] = field?.value;
       }
     }
   }
 
   return normalized;
+}
+
+type ProcessLeadArgs = {
+  requestId: string;
+  originId: string | null;
+  subOriginId: string | null;
+  pipelineId: string | null;
+  rawPayload: Record<string, any>;
+};
+
+async function processLead(args: ProcessLeadArgs) {
+  const { requestId, originId, subOriginId, pipelineId, rawPayload } = args;
+
+  try {
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+    let payload = normalizePayload(rawPayload);
+    payload.email = payload.email || guessEmail(rawPayload, payload) || "";
+    payload.name = payload.name || guessName(rawPayload, payload) || "";
+
+    console.log(`[${requestId}] Normalized payload:`, JSON.stringify(payload).substring(0, 800));
+
+    if (!payload.name || !payload.email) {
+      console.log(`[${requestId}] Missing required fields, skipping. Keys:`, Object.keys(rawPayload));
+      return;
+    }
+
+    // Routing (prefer query params)
+    let targetSubOriginId = subOriginId;
+    let targetPipelineId = pipelineId;
+
+    if (!targetSubOriginId && originId) {
+      const { data: subOrigins, error } = await supabase
+        .from("crm_sub_origins")
+        .select("id")
+        .eq("origin_id", originId)
+        .order("ordem")
+        .limit(1);
+      if (error) throw error;
+      if (subOrigins && subOrigins.length > 0) {
+        targetSubOriginId = subOrigins[0].id;
+      }
+    }
+
+    if (targetSubOriginId && !targetPipelineId) {
+      const { data: pipelines, error } = await supabase
+        .from("pipelines")
+        .select("id")
+        .eq("sub_origin_id", targetSubOriginId)
+        .order("ordem")
+        .limit(1);
+      if (error) throw error;
+      if (pipelines && pipelines.length > 0) {
+        targetPipelineId = pipelines[0].id;
+      }
+    }
+
+    // Fallbacks
+    if (!targetSubOriginId) {
+      targetSubOriginId = "00000000-0000-0000-0000-000000000002"; // Entrada
+    }
+    if (!targetPipelineId) {
+      targetPipelineId = "b62bdfc2-cfda-4cc2-9a72-f87f9ac1f724"; // Base/Novo (fallback)
+    }
+
+    const leadData: Record<string, any> = {
+      name: String(payload.name).trim(),
+      email: String(payload.email).trim(),
+      whatsapp: String(payload.whatsapp || payload.phone || ""),
+      country_code: String(payload.country_code || "+55"),
+      instagram: String(payload.instagram || ""),
+      clinic_name: payload.clinic_name ? String(payload.clinic_name) : null,
+      service_area: String(payload.service_area || ""),
+      monthly_billing: String(payload.monthly_billing || ""),
+      weekly_attendance: String(payload.weekly_attendance || ""),
+      workspace_type: String(payload.workspace_type || ""),
+      years_experience: String(payload.years_experience || ""),
+      average_ticket: toNumberOrNull(payload.average_ticket),
+      estimated_revenue: toNumberOrNull(payload.estimated_revenue),
+      pipeline_id: targetPipelineId,
+      sub_origin_id: targetSubOriginId,
+      utm_source: payload.utm_source ? String(payload.utm_source) : null,
+      utm_medium: payload.utm_medium ? String(payload.utm_medium) : null,
+      utm_campaign: payload.utm_campaign ? String(payload.utm_campaign) : null,
+      utm_term: payload.utm_term ? String(payload.utm_term) : null,
+      utm_content: payload.utm_content ? String(payload.utm_content) : null,
+    };
+
+    if (payload.biggest_difficulty) {
+      leadData.biggest_difficulty = String(payload.biggest_difficulty);
+    }
+
+    console.log(`[${requestId}] Upserting lead:`, JSON.stringify({
+      email: leadData.email,
+      sub_origin_id: leadData.sub_origin_id,
+      pipeline_id: leadData.pipeline_id,
+    }));
+
+    const { data: existingLead, error: existingLeadError } = await supabase
+      .from("leads")
+      .select("id")
+      .eq("email", leadData.email)
+      .maybeSingle();
+    if (existingLeadError) throw existingLeadError;
+
+    let savedLeadId: string;
+
+    if (existingLead) {
+      const { data, error } = await supabase
+        .from("leads")
+        .update(leadData)
+        .eq("id", existingLead.id)
+        .select("id")
+        .single();
+      if (error) throw error;
+      savedLeadId = data.id;
+      console.log(`[${requestId}] Lead updated:`, savedLeadId);
+      return;
+    }
+
+    const { data, error } = await supabase
+      .from("leads")
+      .insert(leadData)
+      .select("id")
+      .single();
+    if (error) throw error;
+
+    savedLeadId = data.id;
+    console.log(`[${requestId}] Lead created:`, savedLeadId);
+
+    // Tracking record (best-effort)
+    const { error: trackingError } = await supabase.from("lead_tracking").insert({
+      lead_id: savedLeadId,
+      tipo: "webhook",
+      titulo: "Lead recebido via Webhook",
+      descricao: `Lead criado via webhook externo`,
+      origem: "webhook",
+    });
+    if (trackingError) {
+      console.log(`[${requestId}] Tracking insert failed:`, trackingError.message);
+    }
+  } catch (error: any) {
+    console.error(`[${requestId}] processLead failed:`, error);
+  }
 }
 
 const handler = async (req: Request): Promise<Response> => {
@@ -230,23 +480,30 @@ const handler = async (req: Request): Promise<Response> => {
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
     // Normalize payload - handle Elementor WordPress format and other variations
-    const payload = normalizePayload(rawPayload);
-    
+    let payload = normalizePayload(rawPayload);
+
+    // Heuristic fallback (covers Elementor IDs/titles that come in unexpected keys)
+    payload.email = payload.email || guessEmail(rawPayload, payload) || "";
+    payload.name = payload.name || guessName(rawPayload, payload) || "";
+
     console.log("Normalized payload:", JSON.stringify(payload).substring(0, 500));
 
     // Validate required fields
+    // NOTE: Elementor shows "submissão falhou" for non-2xx responses, então mantemos 200.
     if (!payload.name || !payload.email) {
       console.error("Missing required fields: name and email. Received keys:", Object.keys(rawPayload));
       console.error("Normalized keys:", Object.keys(payload));
+
       return new Response(
-        JSON.stringify({ 
+        JSON.stringify({
+          success: false,
           error: "Missing required fields: name and email",
           received_fields: Object.keys(rawPayload),
           normalized_fields: Object.keys(payload),
-          tip: "Use field IDs: name, email, whatsapp, instagram, etc."
+          tip: "No Elementor, configure os IDs dos campos como: name, email, whatsapp",
         }),
         {
-          status: 400,
+          status: 200,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         }
       );
@@ -413,9 +670,12 @@ const handler = async (req: Request): Promise<Response> => {
   } catch (error: any) {
     console.error("Error in receive-webhook function:", error);
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({
+        success: false,
+        error: error?.message || "unknown_error",
+      }),
       {
-        status: 500,
+        status: 200,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       }
     );
