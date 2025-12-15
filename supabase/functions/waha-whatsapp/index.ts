@@ -196,12 +196,22 @@ const handler = async (req: Request): Promise<Response> => {
         throw new Error(data.message || "Failed to get chats");
       }
 
-      // Format chats - include all that have lastMessage
+      // Format chats - filter out channels, groups, and invalid contacts
       const formattedChats = (data || [])
         .filter((chat: any) => {
           const chatId = chat.id || "";
-          // Skip groups and status broadcasts
-          if (chatId.includes("@g.us") || chatId.includes("status@broadcast")) {
+          // Skip groups, channels, status broadcasts, and LID duplicates
+          if (
+            chatId.includes("@g.us") || 
+            chatId.includes("@newsletter") || 
+            chatId.includes("@lid") || 
+            chatId.includes("status@broadcast")
+          ) {
+            return false;
+          }
+          const phoneNumber = chatId.split("@")[0];
+          // Skip invalid phone numbers
+          if (!phoneNumber || phoneNumber.length < 8 || phoneNumber === "0") {
             return false;
           }
           // Include chats with any lastMessage content
@@ -300,15 +310,22 @@ const handler = async (req: Request): Promise<Response> => {
       for (const chat of chatsData) {
         const chatIdStr = chat.id || "";
         
-        // Skip groups and status broadcasts
-        if (chatIdStr.includes("@g.us") || chatIdStr.includes("status@broadcast") || !chatIdStr) {
+        // Skip groups, channels, status broadcasts, and LID duplicates
+        if (
+          chatIdStr.includes("@g.us") || 
+          chatIdStr.includes("@newsletter") || 
+          chatIdStr.includes("@lid") || 
+          chatIdStr.includes("status@broadcast") || 
+          !chatIdStr
+        ) {
           continue;
         }
 
-        // Clean phone number
+        // Clean phone number - must be numeric only
         const phoneNumber = chatIdStr.split("@")[0];
         
-        if (!phoneNumber) {
+        // Skip invalid phone numbers (too short or non-numeric patterns)
+        if (!phoneNumber || phoneNumber.length < 8 || phoneNumber === "0") {
           continue;
         }
 
