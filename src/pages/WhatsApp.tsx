@@ -130,6 +130,7 @@ const WhatsApp = () => {
           const photoKey = chat.photo_url ? String(chat.photo_url).split("?")[0] : "";
           const key = photoKey || chat.phone;
           const existing = acc[key];
+          if (!existing) {
             acc[key] = chat;
             return acc;
           }
