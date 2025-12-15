@@ -196,36 +196,21 @@ const handler = async (req: Request): Promise<Response> => {
         throw new Error(data.message || "Failed to get chats");
       }
 
-      const suspiciousPatterns = ["120", "180", "203", "234", "146", "447"];
-      
-      // Format chats - filter out channels, groups, and invalid contacts
+      // Format chats - only filter out channels and groups
       const formattedChats = (data || [])
         .filter((chat: any) => {
           const chatId = chat.id || "";
-          
-          // Skip any with @ suffix except valid ones
-          if (chatId.includes("@") && !chatId.endsWith("@c.us") && !chatId.endsWith("@s.whatsapp.net")) {
-            return false;
-          }
-          
-          const phoneNumber = chatId.split("@")[0];
-          if (!phoneNumber) return false;
-          
-          const numericPhone = phoneNumber.replace(/\D/g, "");
-          
-          // Must be valid length
-          if (numericPhone.length < 10 || numericPhone.length > 15) return false;
-          
-          // Skip suspicious WhatsApp internal IDs
-          const startsWithSuspicious = suspiciousPatterns.some(p => numericPhone.startsWith(p));
-          if (startsWithSuspicious && numericPhone.length > 13) return false;
-          
+          // Only skip clear non-contacts
+          if (chatId.includes("@newsletter")) return false;
+          if (chatId.includes("@g.us")) return false;
+          if (chatId.includes("status@broadcast")) return false;
+          if (!chatId || chatId === "0") return false;
           // Include chats with any lastMessage content
           return chat.lastMessage;
         })
         .map((chat: any) => {
           const chatIdStr = chat.id || "";
-          // Clean phone number - remove @c.us, @s.whatsapp.net, etc.
+          // Clean phone number - remove @c.us, @s.whatsapp.net, @lid, etc.
           const phoneNumber = chatIdStr.split("@")[0];
           
           return {
@@ -313,30 +298,18 @@ const handler = async (req: Request): Promise<Response> => {
       let syncedChats = 0;
       let syncedMessages = 0;
 
-      const suspiciousPatterns = ["120", "180", "203", "234", "146", "447"];
-
       for (const chat of chatsData) {
         const chatIdStr = chat.id || "";
         
-        // Skip any with @ suffix (groups, channels, etc.)
-        if (chatIdStr.includes("@") && !chatIdStr.endsWith("@c.us") && !chatIdStr.endsWith("@s.whatsapp.net")) {
-          continue;
-        }
+        // Only skip clear non-contacts
+        if (chatIdStr.includes("@newsletter")) continue;
+        if (chatIdStr.includes("@g.us")) continue;
+        if (chatIdStr.includes("status@broadcast")) continue;
+        if (!chatIdStr || chatIdStr === "0") continue;
 
-        // Clean phone number
+        // Clean phone number - remove @c.us, @s.whatsapp.net, @lid, etc.
         const phoneNumber = chatIdStr.split("@")[0];
-        
-        // Skip invalid phone numbers
         if (!phoneNumber) continue;
-        
-        const numericPhone = phoneNumber.replace(/\D/g, "");
-        
-        // Must be valid length (10-15 digits for international)
-        if (numericPhone.length < 10 || numericPhone.length > 15) continue;
-        
-        // Skip suspicious WhatsApp internal IDs (long numbers with unusual patterns)
-        const startsWithSuspicious = suspiciousPatterns.some(p => numericPhone.startsWith(p));
-        if (startsWithSuspicious && numericPhone.length > 13) continue;
 
         // Get last message info
         const lastMessageBody = chat.lastMessage?.body || (chat.lastMessage?.hasMedia ? "[Mídia]" : "");

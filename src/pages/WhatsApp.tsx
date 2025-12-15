@@ -96,28 +96,14 @@ const WhatsApp = () => {
 
       if (error) throw error;
 
-      // Filter out channels, groups, invalid contacts and WhatsApp internal IDs
+      // Filter out only channels and groups - keep all other contacts
       const validChats = (data || []).filter((chat: any) => {
         const phone = chat.phone || "";
-        // Exclude channels (@newsletter), groups (@g.us), LID duplicates (@lid)
-        if (phone.includes("@newsletter")) return false;
-        if (phone.includes("@g.us")) return false;
-        if (phone.includes("@lid")) return false;
-        if (phone.includes("@")) return false; // Any other @ suffix
-        
-        // Must be numeric only
-        const numericPhone = phone.replace(/\D/g, "");
-        if (numericPhone.length < 10 || numericPhone.length > 15) return false;
-        
-        // Filter out WhatsApp internal IDs (they start with unusual patterns)
-        // Real phones start with country codes: 55 (Brazil), 1 (US), etc.
-        // Internal IDs often start with patterns like 120, 180, 203, 234, etc.
-        const suspiciousPatterns = ["120", "180", "203", "234", "146", "447"];
-        const startsWithSuspicious = suspiciousPatterns.some(p => numericPhone.startsWith(p));
-        
-        // If it starts with suspicious pattern and doesn't look like a real phone, skip
-        if (startsWithSuspicious && numericPhone.length > 13) return false;
-        
+        // Only exclude clear non-contacts
+        if (phone.includes("@newsletter")) return false; // Channels
+        if (phone.includes("@g.us")) return false; // Groups
+        if (phone.includes("status@broadcast")) return false;
+        if (phone === "0" || phone === "") return false; // Empty
         return true;
       });
 
@@ -346,25 +332,14 @@ const WhatsApp = () => {
         return;
       }
 
-      const suspiciousPatterns = ["120", "180", "203", "234", "146", "447"];
-      
+      // Only cleanup clear non-contacts
       const invalidChatIds = allChats
         .filter((chat: any) => {
           const phone = chat.phone || "";
-          
-          // Remove any with @ suffix
-          if (phone.includes("@")) return true;
-          
-          // Must be numeric
-          const numericPhone = phone.replace(/\D/g, "");
-          
-          // Invalid length
-          if (numericPhone.length < 10 || numericPhone.length > 15) return true;
-          
-          // Suspicious WhatsApp internal IDs
-          const startsWithSuspicious = suspiciousPatterns.some(p => numericPhone.startsWith(p));
-          if (startsWithSuspicious && numericPhone.length > 13) return true;
-          
+          if (phone.includes("@newsletter")) return true;
+          if (phone.includes("@g.us")) return true;
+          if (phone.includes("status@broadcast")) return true;
+          if (phone === "0" || phone === "") return true;
           return false;
         })
         .map((chat: any) => chat.id);
@@ -444,25 +419,14 @@ const WhatsApp = () => {
           .select("id, phone");
 
         if (allChats) {
-          const suspiciousPatterns = ["120", "180", "203", "234", "146", "447"];
-          
+          // Only cleanup clear non-contacts
           const invalidChatIds = allChats
             .filter((chat: any) => {
               const phone = chat.phone || "";
-              
-              // Remove any with @ suffix
-              if (phone.includes("@")) return true;
-              
-              // Must be numeric
-              const numericPhone = phone.replace(/\D/g, "");
-              
-              // Invalid length
-              if (numericPhone.length < 10 || numericPhone.length > 15) return true;
-              
-              // Suspicious WhatsApp internal IDs (long numbers starting with unusual patterns)
-              const startsWithSuspicious = suspiciousPatterns.some(p => numericPhone.startsWith(p));
-              if (startsWithSuspicious && numericPhone.length > 13) return true;
-              
+              if (phone.includes("@newsletter")) return true;
+              if (phone.includes("@g.us")) return true;
+              if (phone.includes("status@broadcast")) return true;
+              if (phone === "0" || phone === "") return true;
               return false;
             })
             .map((chat: any) => chat.id);
