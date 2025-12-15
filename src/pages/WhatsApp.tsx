@@ -241,11 +241,11 @@ const WhatsApp = () => {
     setMessages(prev => [...prev, tempMessage]);
 
     try {
-      const { data, error } = await supabase.functions.invoke("waha-whatsapp", {
+      const { data, error } = await supabase.functions.invoke("w-api-whatsapp", {
         body: {
           action: "send-text",
           phone: selectedChat.phone,
-          message: messageText,
+          text: messageText,
         },
       });
 
@@ -297,7 +297,7 @@ const WhatsApp = () => {
         description: "Buscando todas as conversas do WhatsApp",
       });
 
-      const { data, error } = await supabase.functions.invoke("waha-whatsapp", {
+      const { data, error } = await supabase.functions.invoke("w-api-whatsapp", {
         body: { action: "sync-all" },
       });
 
