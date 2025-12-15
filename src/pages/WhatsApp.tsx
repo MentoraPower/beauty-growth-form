@@ -258,19 +258,28 @@ const WhatsApp = () => {
     if (!confirm("Tem certeza que deseja apagar TODAS as conversas e mensagens? Esta ação não pode ser desfeita.")) {
       return;
     }
-    
+
     setIsClearing(true);
     try {
-      const { error } = await supabase.functions.invoke("waha-whatsapp", {
-        body: { action: "clear-all" },
-      });
+      // Delete messages first (FK constraint)
+      const { error: messagesError } = await supabase
+        .from("whatsapp_messages")
+        .delete()
+        .neq("id", "00000000-0000-0000-0000-000000000000");
 
-      if (error) throw error;
+      if (messagesError) throw messagesError;
+
+      const { error: chatsError } = await supabase
+        .from("whatsapp_chats")
+        .delete()
+        .neq("id", "00000000-0000-0000-0000-000000000000");
+
+      if (chatsError) throw chatsError;
 
       setChats([]);
       setMessages([]);
       setSelectedChat(null);
-      
+
       toast({
         title: "Dados limpos",
         description: "Todas as conversas e mensagens foram apagadas",
@@ -279,7 +288,7 @@ const WhatsApp = () => {
       console.error("Error clearing:", error);
       toast({
         title: "Erro ao limpar",
-        description: error.message,
+        description: error.message || "Falha ao apagar conversas",
         variant: "destructive",
       });
     } finally {
