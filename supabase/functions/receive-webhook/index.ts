@@ -21,7 +21,14 @@ async function parseRequestBody(req: Request): Promise<Record<string, any>> {
     return {};
   }
 
-  const normalizeFieldKey = (key: string) => key.toLowerCase().replace(/[\s-]/g, "_");
+  // Normalize field key: remove "No Label " prefix, lowercase, replace spaces/dashes with underscores
+  const normalizeFieldKey = (key: string) => {
+    let normalized = key;
+    // Remove "No Label " prefix (case insensitive)
+    normalized = normalized.replace(/^no\s*label\s+/i, "");
+    // Lowercase and replace spaces/dashes with underscores
+    return normalized.toLowerCase().replace(/[\s-]+/g, "_").replace(/^_+|_+$/g, "");
+  };
 
   const setMaybeElementorField = (data: Record<string, any>, key: string, value: any) => {
     const val = value instanceof File ? value.name : value;
@@ -109,7 +116,10 @@ function toNumberOrNull(value: any): number | null {
 
 // Helpers
 function normalizeKey(input: string): string {
-  return input
+  let normalized = input;
+  // Remove "No Label " prefix (case insensitive) - common Elementor pattern
+  normalized = normalized.replace(/^no\s*label\s+/i, "");
+  return normalized
     .toLowerCase()
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
