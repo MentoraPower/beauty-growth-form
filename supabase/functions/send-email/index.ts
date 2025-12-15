@@ -78,6 +78,17 @@ const handler = async (req: Request): Promise<Response> => {
       html: bodyHtml,
     });
 
+    const resendError = (emailResponse as any)?.error;
+    if (resendError) {
+      throw new Error(
+        typeof resendError === "string"
+          ? resendError
+          : resendError?.message || "Erro desconhecido ao enviar e-mail"
+      );
+    }
+
+    const resendId = (emailResponse as any)?.data?.id ?? null;
+
     console.log("Email sent successfully:", emailResponse);
 
     // Record sent email in database
@@ -90,7 +101,7 @@ const handler = async (req: Request): Promise<Response> => {
         subject: subject,
         body_html: bodyHtml,
         status: "sent",
-        resend_id: emailResponse.data?.id || null,
+        resend_id: resendId,
         sent_at: new Date().toISOString(),
       });
 
