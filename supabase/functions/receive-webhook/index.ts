@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { Resend } from "https://esm.sh/resend@2.0.0";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -9,6 +10,108 @@ const corsHeaders = {
 
 const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
 const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+
+// Send email automation for lead_created trigger
+async function triggerEmailAutomation(
+  supabase: any,
+  lead: Record<string, any>,
+  pipelineId: string | null,
+  subOriginId: string | null
+) {
+  if (!pipelineId) return;
+
+  try {
+    const { data: emailAutomations, error: emailError } = await supabase
+      .from("email_automations")
+      .select("*")
+      .eq("trigger_pipeline_id", pipelineId)
+      .eq("is_active", true);
+
+    if (emailError || !emailAutomations || emailAutomations.length === 0) {
+      return;
+    }
+
+    const resendApiKey = Deno.env.get("RESEND_API_KEY");
+    if (!resendApiKey) {
+      console.log("[EmailAutomation] RESEND_API_KEY not configured");
+      return;
+    }
+
+    const resend = new Resend(resendApiKey);
+
+    for (const automation of emailAutomations) {
+      // Check sub_origin scope
+      if (automation.sub_origin_id && automation.sub_origin_id !== subOriginId) {
+        continue;
+      }
+
+      // Check if lead has email
+      if (!lead.email) {
+        continue;
+      }
+
+      try {
+        const leadName = lead.name || "Cliente";
+        const replaceName = (value: string) =>
+          value
+            .replace(/\{\{name\}\}/g, leadName)
+            .replace(/\{\{nome\}\}/g, leadName)
+            .replace(/\{name\}/g, leadName)
+            .replace(/\{nome\}/g, leadName);
+
+        const subject = replaceName(automation.subject);
+        const bodyHtml = replaceName(automation.body_html);
+
+        // Get email settings
+        const { data: settings } = await supabase
+          .from("email_settings")
+          .select("*")
+          .limit(1)
+          .single();
+
+        const fromName = settings?.from_name || "Scale Beauty";
+        const fromEmail = settings?.from_email || "contato@scalebeauty.com.br";
+
+        const emailResponse = await resend.emails.send({
+          from: `${fromName} <${fromEmail}>`,
+          to: [lead.email],
+          subject,
+          html: bodyHtml,
+        });
+
+        console.log(`[EmailAutomation] Sent "${automation.name}" to ${lead.email}`, {
+          resend_id: emailResponse.data?.id ?? null,
+        });
+
+        // Record sent email
+        await supabase.from("sent_emails").insert({
+          lead_id: lead.id,
+          lead_name: lead.name,
+          lead_email: lead.email,
+          subject,
+          body_html: bodyHtml,
+          status: "sent",
+          resend_id: emailResponse.data?.id || null,
+          sent_at: new Date().toISOString(),
+        });
+      } catch (emailError: any) {
+        console.error(`[EmailAutomation] Failed "${automation.name}"`, emailError);
+
+        await supabase.from("sent_emails").insert({
+          lead_id: lead.id,
+          lead_name: lead.name,
+          lead_email: lead.email,
+          subject: automation.subject,
+          body_html: automation.body_html,
+          status: "failed",
+          error_message: emailError?.message,
+        });
+      }
+    }
+  } catch (error) {
+    console.error("[EmailAutomation] Error:", error);
+  }
+}
 
 // Parse request body based on content type (JSON, form-data, or URL-encoded)
 async function parseRequestBody(req: Request): Promise<Record<string, any>> {
@@ -590,6 +693,12 @@ const handler = async (req: Request): Promise<Response> => {
         }
       }
 
+      // Trigger email automation (fire and forget)
+      if (savedLeadId) {
+        triggerEmailAutomation(supabase, { ...leadData, id: savedLeadId }, targetPipelineId, targetSubOriginId)
+          .catch((e) => console.error("[EmailAutomation] Error:", e));
+      }
+
       return new Response(
         JSON.stringify({ success: true, lead_id: savedLeadId, message: "Lead received" }),
         {
@@ -599,7 +708,7 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    // Find the matching webhook configuration
+    // ========== NON-FAST PATH ==========
     let webhookQuery = supabase
       .from("crm_webhooks")
       .select("*")
@@ -743,6 +852,12 @@ const handler = async (req: Request): Promise<Response> => {
         descricao: `Lead criado via webhook externo`,
         origem: matchedWebhook?.name || "webhook",
       });
+    }
+
+    // Trigger email automation for new leads (fire and forget)
+    if (savedLead && !existingLead) {
+      triggerEmailAutomation(supabase, savedLead, targetPipelineId, targetSubOriginId)
+        .catch((e) => console.error("[EmailAutomation] Error:", e));
     }
 
     return new Response(

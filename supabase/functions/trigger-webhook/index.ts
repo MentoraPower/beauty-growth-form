@@ -176,8 +176,8 @@ const handler = async (req: Request): Promise<Response> => {
     // ===== EMAIL AUTOMATIONS PROCESSING =====
     const triggeredEmails: string[] = [];
 
-    if (payload.trigger === "lead_moved" && payload.pipeline_id) {
-      console.log("[EmailAutomation] lead_moved", {
+    if ((payload.trigger === "lead_moved" || payload.trigger === "lead_created") && payload.pipeline_id) {
+      console.log(`[EmailAutomation] ${payload.trigger}`, {
         pipeline_id: payload.pipeline_id,
         sub_origin_id: payload.sub_origin_id,
         lead_id: payload.lead?.id,
