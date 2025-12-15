@@ -36,17 +36,24 @@ export function useLeadActivities({ leadId, currentPipelineId, subOriginId }: Us
   const [viewingPipelineId, setViewingPipelineId] = useState<string | null>(currentPipelineId);
   const [selectedActivity, setSelectedActivity] = useState<LeadActivity | null>(null);
 
-  // Fetch all pipelines
+  // Fetch pipelines for this sub-origin only
   const { data: pipelines = [] } = useQuery({
-    queryKey: ["pipelines"],
+    queryKey: ["pipelines", subOriginId],
     queryFn: async () => {
+      if (!subOriginId) {
+        console.warn("[Activities] No subOriginId provided, cannot fetch pipelines");
+        return [];
+      }
       const { data, error } = await supabase
         .from("pipelines")
         .select("*")
+        .eq("sub_origin_id", subOriginId)
         .order("ordem", { ascending: true });
       if (error) throw error;
+      console.log("[Activities] Fetched pipelines for sub-origin:", subOriginId, data?.length);
       return (data || []) as Pipeline[];
     },
+    enabled: !!subOriginId,
     staleTime: 5 * 60 * 1000,
   });
 
