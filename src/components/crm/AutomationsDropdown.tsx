@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Zap, Plus, Trash2, ArrowRight, Webhook, FolderSync, Copy, Check, Send, Download, X, Play, Settings } from "lucide-react";
+import { Zap, Plus, Trash2, ArrowRight, Webhook, FolderSync, Copy, Check, Send, Download, X, Play, Settings, Mail } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -15,6 +15,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -56,12 +57,23 @@ interface CrmWebhook {
   is_active: boolean;
 }
 
+interface EmailAutomation {
+  id: string;
+  name: string;
+  trigger_pipeline_id: string;
+  sub_origin_id: string | null;
+  subject: string;
+  body_html: string;
+  is_active: boolean;
+  created_at: string;
+}
+
 interface AutomationsDropdownProps {
   pipelines: Pipeline[];
   subOriginId: string | null;
 }
 
-type ActiveTab = "automations" | "webhooks";
+type ActiveTab = "automations" | "webhooks" | "emails";
 
 export function AutomationsDropdown({ pipelines, subOriginId }: AutomationsDropdownProps) {
   const queryClient = useQueryClient();
@@ -87,6 +99,14 @@ export function AutomationsDropdown({ pipelines, subOriginId }: AutomationsDropd
   const [webhookSubOriginId, setWebhookSubOriginId] = useState<string>("");
   const [webhookTrigger, setWebhookTrigger] = useState<string>("");
   const [webhookTriggerPipelineId, setWebhookTriggerPipelineId] = useState<string>("");
+  
+  // Email automation states
+  const [isCreatingEmail, setIsCreatingEmail] = useState(false);
+  const [editingEmailId, setEditingEmailId] = useState<string | null>(null);
+  const [emailName, setEmailName] = useState("");
+  const [emailTriggerPipeline, setEmailTriggerPipeline] = useState<string>("");
+  const [emailSubject, setEmailSubject] = useState("");
+  const [emailBodyHtml, setEmailBodyHtml] = useState("");
   
   const [copied, setCopied] = useState(false);
   const [triggerDropdownOpen, setTriggerDropdownOpen] = useState(false);
