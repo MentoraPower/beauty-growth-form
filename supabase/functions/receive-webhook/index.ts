@@ -10,6 +10,99 @@ const corsHeaders = {
 const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
 const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
+// Normalize payload from different sources (Elementor WordPress, direct, etc.)
+function normalizePayload(raw: any): Record<string, any> {
+  // If it's already a flat object with expected fields, return as-is
+  if (raw.name && raw.email) {
+    return raw;
+  }
+
+  const normalized: Record<string, any> = {};
+
+  // Field mapping - maps various field IDs/names to our expected format
+  const fieldMap: Record<string, string> = {
+    // Name variations
+    'name': 'name', 'nome': 'name', 'full_name': 'name', 'fullname': 'name',
+    // Email variations
+    'email': 'email', 'e-mail': 'email', 'mail': 'email',
+    // WhatsApp variations
+    'whatsapp': 'whatsapp', 'phone': 'whatsapp', 'telefone': 'whatsapp', 
+    'celular': 'whatsapp', 'tel': 'whatsapp',
+    // Instagram variations
+    'instagram': 'instagram', 'insta': 'instagram',
+    // Clinic name
+    'clinic_name': 'clinic_name', 'clinicname': 'clinic_name', 
+    'empresa': 'clinic_name', 'company': 'clinic_name', 'studio': 'clinic_name',
+    // Service area
+    'service_area': 'service_area', 'servicearea': 'service_area', 
+    'area': 'service_area', 'servico': 'service_area',
+    // Monthly billing
+    'monthly_billing': 'monthly_billing', 'monthlybilling': 'monthly_billing', 
+    'faturamento': 'monthly_billing', 'billing': 'monthly_billing',
+    // Weekly attendance
+    'weekly_attendance': 'weekly_attendance', 'weeklyattendance': 'weekly_attendance', 
+    'atendimentos': 'weekly_attendance', 'attendance': 'weekly_attendance',
+    // Workspace type
+    'workspace_type': 'workspace_type', 'workspacetype': 'workspace_type', 
+    'espaco': 'workspace_type', 'workspace': 'workspace_type',
+    // Years experience
+    'years_experience': 'years_experience', 'yearsexperience': 'years_experience', 
+    'experiencia': 'years_experience', 'experience': 'years_experience',
+    // Average ticket
+    'average_ticket': 'average_ticket', 'averageticket': 'average_ticket', 
+    'ticket': 'average_ticket', 'ticket_medio': 'average_ticket',
+    // Country code
+    'country_code': 'country_code', 'countrycode': 'country_code', 'ddi': 'country_code',
+    // Biggest difficulty
+    'biggest_difficulty': 'biggest_difficulty', 'dificuldade': 'biggest_difficulty',
+    // UTM fields
+    'utm_source': 'utm_source', 'utm_medium': 'utm_medium', 
+    'utm_campaign': 'utm_campaign', 'utm_term': 'utm_term', 'utm_content': 'utm_content',
+  };
+
+  // Handle Elementor format: { fields: { field_id: { id, type, title, value } } }
+  if (raw.fields && typeof raw.fields === 'object') {
+    for (const [fieldId, fieldData] of Object.entries(raw.fields)) {
+      const data = fieldData as any;
+      const value = data.value || data.raw_value || data;
+      const key = fieldId.toLowerCase().replace(/[\s-]/g, '_');
+      
+      if (fieldMap[key]) {
+        normalized[fieldMap[key]] = value;
+      } else if (data.title) {
+        // Try matching by field title
+        const title = data.title.toLowerCase().replace(/[\s-]/g, '_');
+        if (fieldMap[title]) {
+          normalized[fieldMap[title]] = value;
+        }
+      }
+    }
+  }
+  
+  // Handle flat object with various field names
+  for (const [key, value] of Object.entries(raw)) {
+    if (key === 'fields') continue;
+    
+    const lowerKey = key.toLowerCase().replace(/[\s-]/g, '_');
+    if (fieldMap[lowerKey] && !normalized[fieldMap[lowerKey]]) {
+      normalized[fieldMap[lowerKey]] = value;
+    }
+  }
+
+  // Handle form_data array format
+  if (raw.form_data && Array.isArray(raw.form_data)) {
+    for (const field of raw.form_data) {
+      const key = (field.name || field.id || '').toLowerCase().replace(/[\s-]/g, '_');
+      const value = field.value;
+      if (fieldMap[key] && !normalized[fieldMap[key]]) {
+        normalized[fieldMap[key]] = value;
+      }
+    }
+  }
+
+  return normalized;
+}
+
 const handler = async (req: Request): Promise<Response> => {
   console.log("Webhook received - Method:", req.method, "URL:", req.url);
   
@@ -23,18 +116,27 @@ const handler = async (req: Request): Promise<Response> => {
     const originId = url.searchParams.get("origin_id");
     const subOriginId = url.searchParams.get("sub_origin_id");
     
-    const payload = await req.json();
+    const rawPayload = await req.json();
     
-    console.log("Receive webhook called:", JSON.stringify(payload).substring(0, 500));
+    console.log("Receive webhook called:", JSON.stringify(rawPayload).substring(0, 1000));
     console.log("Query params - origin_id:", originId, "sub_origin_id:", subOriginId);
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
+    // Normalize payload - handle Elementor WordPress format and other variations
+    const payload = normalizePayload(rawPayload);
+    
+    console.log("Normalized payload:", JSON.stringify(payload).substring(0, 500));
+
     // Validate required fields
     if (!payload.name || !payload.email) {
-      console.error("Missing required fields: name and email");
+      console.error("Missing required fields: name and email. Received:", Object.keys(payload));
       return new Response(
-        JSON.stringify({ error: "Missing required fields: name and email" }),
+        JSON.stringify({ 
+          error: "Missing required fields: name and email",
+          received_fields: Object.keys(rawPayload),
+          tip: "Use field IDs: name, email, whatsapp, instagram, etc."
+        }),
         {
           status: 400,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -116,14 +218,15 @@ const handler = async (req: Request): Promise<Response> => {
       whatsapp: payload.whatsapp || payload.phone || "",
       country_code: payload.country_code || "+55",
       instagram: payload.instagram || "",
-      clinic_name: payload.clinic_name || payload.clinicName || null,
-      service_area: payload.service_area || payload.serviceArea || "",
-      monthly_billing: payload.monthly_billing || payload.monthlyBilling || "",
-      weekly_attendance: payload.weekly_attendance || payload.weeklyAttendance || "",
-      workspace_type: payload.workspace_type || payload.workspaceType || "",
-      years_experience: payload.years_experience || payload.yearsExperience || "",
-      average_ticket: payload.average_ticket || payload.averageTicket || null,
-      estimated_revenue: payload.estimated_revenue || payload.estimatedRevenue || null,
+      clinic_name: payload.clinic_name || null,
+      service_area: payload.service_area || "",
+      monthly_billing: payload.monthly_billing || "",
+      weekly_attendance: payload.weekly_attendance || "",
+      workspace_type: payload.workspace_type || "",
+      years_experience: payload.years_experience || "",
+      average_ticket: payload.average_ticket || null,
+      estimated_revenue: payload.estimated_revenue || null,
+      biggest_difficulty: payload.biggest_difficulty || null,
       pipeline_id: targetPipelineId,
       sub_origin_id: targetSubOriginId,
       utm_source: payload.utm_source || null,
@@ -140,7 +243,7 @@ const handler = async (req: Request): Promise<Response> => {
       .from("leads")
       .select("id")
       .eq("email", payload.email)
-      .single();
+      .maybeSingle();
 
     let savedLead;
     if (existingLead) {
