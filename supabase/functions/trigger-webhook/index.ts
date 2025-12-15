@@ -176,16 +176,35 @@ const handler = async (req: Request): Promise<Response> => {
     // ===== EMAIL AUTOMATIONS PROCESSING =====
     const triggeredEmails: string[] = [];
     
-    // Only process email automations for "lead_moved" trigger
+    console.log("=== EMAIL AUTOMATION DEBUG ===");
+    console.log("Trigger type:", payload.trigger);
+    console.log("Pipeline ID:", payload.pipeline_id);
+    console.log("Sub Origin ID:", payload.sub_origin_id);
+    console.log("Lead email:", payload.lead?.email);
+    
+    // Process email automations for "lead_moved" trigger
     if (payload.trigger === "lead_moved" && payload.pipeline_id) {
       console.log("Checking email automations for pipeline:", payload.pipeline_id);
       
+      // First, let's check ALL email automations to debug
+      const { data: allEmailAutomations, error: allEmailError } = await supabase
+        .from("email_automations")
+        .select("*");
+      
+      console.log("All email automations in database:", JSON.stringify(allEmailAutomations));
+      if (allEmailError) {
+        console.error("Error fetching all email automations:", allEmailError);
+      }
+      
+      // Now filter by pipeline
       const { data: emailAutomations, error: emailError } = await supabase
         .from("email_automations")
         .select("*")
         .eq("trigger_pipeline_id", payload.pipeline_id)
         .eq("is_active", true);
 
+      console.log("Matching email automations:", JSON.stringify(emailAutomations));
+      
       if (emailError) {
         console.error("Error fetching email automations:", emailError);
       }
@@ -195,6 +214,7 @@ const handler = async (req: Request): Promise<Response> => {
         
         // Check if we have RESEND_API_KEY
         const resendApiKey = Deno.env.get("RESEND_API_KEY");
+        console.log("RESEND_API_KEY configured:", !!resendApiKey);
         
         if (!resendApiKey) {
           console.error("RESEND_API_KEY not configured - cannot send automated emails");
@@ -202,6 +222,10 @@ const handler = async (req: Request): Promise<Response> => {
           const resend = new Resend(resendApiKey);
           
           for (const automation of emailAutomations as EmailAutomation[]) {
+            console.log("Processing automation:", automation.name);
+            console.log("Automation sub_origin_id:", automation.sub_origin_id);
+            console.log("Payload sub_origin_id:", payload.sub_origin_id);
+            
             // Check sub_origin scope if specified
             if (automation.sub_origin_id && automation.sub_origin_id !== payload.sub_origin_id) {
               console.log(`Email automation "${automation.name}" skipped - sub_origin mismatch`);
@@ -232,6 +256,10 @@ const handler = async (req: Request): Promise<Response> => {
               const fromName = settings?.from_name || "Scale Beauty";
               const fromEmail = settings?.from_email || "contato@scalebeauty.com.br";
               
+              console.log("Sending email from:", `${fromName} <${fromEmail}>`);
+              console.log("Sending email to:", payload.lead.email);
+              console.log("Email subject:", subject);
+              
               // Send email via Resend
               const emailResponse = await resend.emails.send({
                 from: `${fromName} <${fromEmail}>`,
@@ -240,11 +268,11 @@ const handler = async (req: Request): Promise<Response> => {
                 html: bodyHtml,
               });
               
-              console.log(`Email automation "${automation.name}" sent successfully:`, emailResponse);
+              console.log(`Email automation "${automation.name}" sent successfully:`, JSON.stringify(emailResponse));
               triggeredEmails.push(automation.name);
               
               // Record sent email in database
-              await supabase
+              const { error: insertError } = await supabase
                 .from("sent_emails")
                 .insert({
                   lead_id: payload.lead.id,
@@ -256,12 +284,16 @@ const handler = async (req: Request): Promise<Response> => {
                   resend_id: emailResponse.data?.id || null,
                   sent_at: new Date().toISOString(),
                 });
+              
+              if (insertError) {
+                console.error("Error inserting sent_emails record:", insertError);
+              }
                 
             } catch (emailError: any) {
               console.error(`Error sending email automation "${automation.name}":`, emailError);
               
               // Record failed email
-              await supabase
+              const { error: insertError } = await supabase
                 .from("sent_emails")
                 .insert({
                   lead_id: payload.lead.id,
@@ -272,12 +304,18 @@ const handler = async (req: Request): Promise<Response> => {
                   status: "failed",
                   error_message: emailError.message,
                 });
+              
+              if (insertError) {
+                console.error("Error inserting failed sent_emails record:", insertError);
+              }
             }
           }
         }
       } else {
         console.log("No active email automations found for pipeline:", payload.pipeline_id);
       }
+    } else {
+      console.log("Email automation skipped - not a lead_moved trigger or no pipeline_id");
     }
 
     console.log(`Triggered ${triggeredWebhooks.length} webhooks:`, triggeredWebhooks);
