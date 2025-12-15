@@ -294,14 +294,26 @@ const WhatsApp = () => {
     try {
       toast({
         title: "Sincronizando...",
-        description: "Buscando todas as conversas do WhatsApp",
+        description: "Buscando todas as conversas do WhatsApp. Isso pode levar alguns minutos.",
       });
 
+      // Test connection first with a simple get-chats call
+      console.log("[WhatsApp] Testing W-API connection...");
+      
       const { data, error } = await supabase.functions.invoke("w-api-whatsapp", {
         body: { action: "sync-all" },
       });
 
-      if (error) throw error;
+      console.log("[WhatsApp] Sync response:", data, error);
+
+      if (error) {
+        console.error("[WhatsApp] Sync error details:", JSON.stringify(error, null, 2));
+        throw new Error(error.message || "Falha ao conectar com a Edge Function. Verifique se as credenciais W_API estão corretas.");
+      }
+
+      if (data?.error) {
+        throw new Error(data.error);
+      }
 
       await fetchChats();
       
@@ -310,10 +322,20 @@ const WhatsApp = () => {
         description: `${data?.syncedChats || 0} conversas e ${data?.syncedMessages || 0} mensagens sincronizadas`,
       });
     } catch (error: any) {
-      console.error("Error syncing:", error);
+      console.error("[WhatsApp] Error syncing:", error);
+      
+      let errorMessage = "Erro desconhecido";
+      if (error.message?.includes("Failed to fetch")) {
+        errorMessage = "Edge Function não acessível. Aguarde o deploy ou verifique as credenciais W_API.";
+      } else if (error.message?.includes("FunctionsFetchError")) {
+        errorMessage = "Falha ao conectar com a Edge Function. Tente novamente em alguns segundos.";
+      } else {
+        errorMessage = error.message || "Erro ao sincronizar";
+      }
+      
       toast({
         title: "Erro ao sincronizar",
-        description: error.message,
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {
