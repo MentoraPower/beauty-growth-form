@@ -12,7 +12,6 @@ import CRM from "./pages/CRM";
 import LeadDetail from "./pages/LeadDetail";
 import Auth from "./pages/Auth";
 import WhatsApp from "./pages/WhatsApp";
-import Emails from "./pages/Emails";
 
 const queryClient = new QueryClient();
 
@@ -31,7 +30,6 @@ const App = () => (
           <Route path="/admin/crm" element={<CRM />} />
           <Route path="/admin/crm/:id" element={<LeadDetail />} />
           <Route path="/admin/whatsapp" element={<WhatsApp />} />
-          <Route path="/admin/emails" element={<Emails />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>

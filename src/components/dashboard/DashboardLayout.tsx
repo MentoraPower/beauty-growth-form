@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect, memo } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { LayoutDashboard, Menu, X, LogOut, Kanban, Mail } from "lucide-react";
+import { LayoutDashboard, Menu, X, LogOut, Kanban } from "lucide-react";
 import { cn } from "@/lib/utils";
 import WhatsAppIcon from "@/components/icons/WhatsApp";
 import scaleLogo from "@/assets/scale-logo.png";
@@ -17,7 +17,6 @@ const navItems = [
 ];
 
 const bottomNavItems = [
-  { href: "/admin/emails", icon: Mail, label: "E-mails" },
   { href: "/admin/whatsapp", icon: WhatsAppIcon, label: "WhatsApp" },
 ];
 
