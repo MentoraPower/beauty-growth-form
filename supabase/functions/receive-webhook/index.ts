@@ -79,8 +79,19 @@ async function triggerEmailAutomation(
           html: bodyHtml,
         });
 
+        const resendError = (emailResponse as any)?.error;
+        if (resendError) {
+          throw new Error(
+            typeof resendError === "string"
+              ? resendError
+              : resendError?.message || "Erro desconhecido ao enviar e-mail"
+          );
+        }
+
+        const resendId = (emailResponse as any)?.data?.id ?? null;
+
         console.log(`[EmailAutomation] Sent "${automation.name}" to ${lead.email}`, {
-          resend_id: emailResponse.data?.id ?? null,
+          resend_id: resendId,
         });
 
         // Record sent email
@@ -91,7 +102,7 @@ async function triggerEmailAutomation(
           subject,
           body_html: bodyHtml,
           status: "sent",
-          resend_id: emailResponse.data?.id || null,
+          resend_id: resendId,
           sent_at: new Date().toISOString(),
         });
       } catch (emailError: any) {

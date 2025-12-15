@@ -176,10 +176,13 @@ const handler = async (req: Request): Promise<Response> => {
     // ===== EMAIL AUTOMATIONS PROCESSING =====
     const triggeredEmails: string[] = [];
 
-    if ((payload.trigger === "lead_moved" || payload.trigger === "lead_created") && payload.pipeline_id) {
+    const effectivePipelineId = payload.pipeline_id ?? payload.lead?.pipeline_id ?? null;
+    const effectiveSubOriginId = payload.sub_origin_id ?? payload.lead?.sub_origin_id ?? null;
+
+    if ((payload.trigger === "lead_moved" || payload.trigger === "lead_created") && effectivePipelineId) {
       console.log(`[EmailAutomation] ${payload.trigger}`, {
-        pipeline_id: payload.pipeline_id,
-        sub_origin_id: payload.sub_origin_id,
+        pipeline_id: effectivePipelineId,
+        sub_origin_id: effectiveSubOriginId,
         lead_id: payload.lead?.id,
         lead_email: payload.lead?.email,
       });
@@ -187,7 +190,7 @@ const handler = async (req: Request): Promise<Response> => {
       const { data: emailAutomations, error: emailError } = await supabase
         .from("email_automations")
         .select("*")
-        .eq("trigger_pipeline_id", payload.pipeline_id)
+        .eq("trigger_pipeline_id", effectivePipelineId)
         .eq("is_active", true);
 
       if (emailError) {
@@ -204,7 +207,7 @@ const handler = async (req: Request): Promise<Response> => {
 
           for (const automation of emailAutomations as EmailAutomation[]) {
             // Check sub_origin scope if specified
-            if (automation.sub_origin_id && automation.sub_origin_id !== payload.sub_origin_id) {
+            if (automation.sub_origin_id && automation.sub_origin_id !== effectiveSubOriginId) {
               continue;
             }
 
@@ -242,10 +245,21 @@ const handler = async (req: Request): Promise<Response> => {
                 html: bodyHtml,
               });
 
+              const resendError = (emailResponse as any)?.error;
+              if (resendError) {
+                throw new Error(
+                  typeof resendError === "string"
+                    ? resendError
+                    : resendError?.message || "Erro desconhecido ao enviar e-mail"
+                );
+              }
+
+              const resendId = (emailResponse as any)?.data?.id ?? null;
+
               console.log(`[EmailAutomation] Sent "${automation.name}"`, {
                 lead_id: payload.lead.id,
                 to: payload.lead.email,
-                resend_id: emailResponse.data?.id ?? null,
+                resend_id: resendId,
               });
 
               triggeredEmails.push(automation.name);
@@ -258,7 +272,7 @@ const handler = async (req: Request): Promise<Response> => {
                 subject,
                 body_html: bodyHtml,
                 status: "sent",
-                resend_id: emailResponse.data?.id || null,
+                resend_id: resendId,
                 sent_at: new Date().toISOString(),
               });
 
@@ -285,7 +299,7 @@ const handler = async (req: Request): Promise<Response> => {
           }
         }
       } else {
-        console.log("[EmailAutomation] No active automations for pipeline:", payload.pipeline_id);
+        console.log("[EmailAutomation] No active automations for pipeline:", effectivePipelineId);
       }
     }
 
