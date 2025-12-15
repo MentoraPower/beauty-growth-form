@@ -127,9 +127,9 @@ const WhatsApp = () => {
       // If two chats share the same photo, prefer the one with a real phone number.
       const dedupedChats = Object.values(
         validChats.reduce((acc: Record<string, any>, chat: any) => {
-          const key = chat.photo_url || chat.phone;
+          const photoKey = chat.photo_url ? String(chat.photo_url).split("?")[0] : "";
+          const key = photoKey || chat.phone;
           const existing = acc[key];
-          if (!existing) {
             acc[key] = chat;
             return acc;
           }
