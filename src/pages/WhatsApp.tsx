@@ -56,7 +56,23 @@ const WhatsApp = () => {
     return name.substring(0, 2).toUpperCase();
   };
 
+  // Check if phone is a WhatsApp internal ID (LID) instead of a real number
+  const isWhatsAppInternalId = (phone: string): boolean => {
+    if (!phone) return false;
+    const cleaned = phone.replace(/\D/g, "");
+    // WhatsApp LIDs are typically very long (15+ digits) and start with specific patterns
+    if (cleaned.length > 14) return true;
+    // LIDs often start with 120, 146, 180, 203, 234, 447 patterns
+    if (/^(120|146|180|203|234|447)\d{10,}$/.test(cleaned)) return true;
+    return false;
+  };
+
   const formatPhoneDisplay = (phone: string): string => {
+    if (!phone) return "";
+    // If it's an internal WhatsApp ID, show "Contato" instead
+    if (isWhatsAppInternalId(phone)) {
+      return "Contato";
+    }
     // Format phone for display: +55 44 9123-4567
     const cleaned = phone.replace(/\D/g, "");
     if (cleaned.length === 13) {
