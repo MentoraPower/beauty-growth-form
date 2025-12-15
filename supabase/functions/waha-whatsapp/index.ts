@@ -196,24 +196,30 @@ const handler = async (req: Request): Promise<Response> => {
         throw new Error(data.message || "Failed to get chats");
       }
 
+      const suspiciousPatterns = ["120", "180", "203", "234", "146", "447"];
+      
       // Format chats - filter out channels, groups, and invalid contacts
       const formattedChats = (data || [])
         .filter((chat: any) => {
           const chatId = chat.id || "";
-          // Skip groups, channels, status broadcasts, and LID duplicates
-          if (
-            chatId.includes("@g.us") || 
-            chatId.includes("@newsletter") || 
-            chatId.includes("@lid") || 
-            chatId.includes("status@broadcast")
-          ) {
+          
+          // Skip any with @ suffix except valid ones
+          if (chatId.includes("@") && !chatId.endsWith("@c.us") && !chatId.endsWith("@s.whatsapp.net")) {
             return false;
           }
+          
           const phoneNumber = chatId.split("@")[0];
-          // Skip invalid phone numbers
-          if (!phoneNumber || phoneNumber.length < 8 || phoneNumber === "0") {
-            return false;
-          }
+          if (!phoneNumber) return false;
+          
+          const numericPhone = phoneNumber.replace(/\D/g, "");
+          
+          // Must be valid length
+          if (numericPhone.length < 10 || numericPhone.length > 15) return false;
+          
+          // Skip suspicious WhatsApp internal IDs
+          const startsWithSuspicious = suspiciousPatterns.some(p => numericPhone.startsWith(p));
+          if (startsWithSuspicious && numericPhone.length > 13) return false;
+          
           // Include chats with any lastMessage content
           return chat.lastMessage;
         })
@@ -307,27 +313,30 @@ const handler = async (req: Request): Promise<Response> => {
       let syncedChats = 0;
       let syncedMessages = 0;
 
+      const suspiciousPatterns = ["120", "180", "203", "234", "146", "447"];
+
       for (const chat of chatsData) {
         const chatIdStr = chat.id || "";
         
-        // Skip groups, channels, status broadcasts, and LID duplicates
-        if (
-          chatIdStr.includes("@g.us") || 
-          chatIdStr.includes("@newsletter") || 
-          chatIdStr.includes("@lid") || 
-          chatIdStr.includes("status@broadcast") || 
-          !chatIdStr
-        ) {
+        // Skip any with @ suffix (groups, channels, etc.)
+        if (chatIdStr.includes("@") && !chatIdStr.endsWith("@c.us") && !chatIdStr.endsWith("@s.whatsapp.net")) {
           continue;
         }
 
-        // Clean phone number - must be numeric only
+        // Clean phone number
         const phoneNumber = chatIdStr.split("@")[0];
         
-        // Skip invalid phone numbers (too short or non-numeric patterns)
-        if (!phoneNumber || phoneNumber.length < 8 || phoneNumber === "0") {
-          continue;
-        }
+        // Skip invalid phone numbers
+        if (!phoneNumber) continue;
+        
+        const numericPhone = phoneNumber.replace(/\D/g, "");
+        
+        // Must be valid length (10-15 digits for international)
+        if (numericPhone.length < 10 || numericPhone.length > 15) continue;
+        
+        // Skip suspicious WhatsApp internal IDs (long numbers with unusual patterns)
+        const startsWithSuspicious = suspiciousPatterns.some(p => numericPhone.startsWith(p));
+        if (startsWithSuspicious && numericPhone.length > 13) continue;
 
         // Get last message info
         const lastMessageBody = chat.lastMessage?.body || (chat.lastMessage?.hasMedia ? "[Mídia]" : "");
