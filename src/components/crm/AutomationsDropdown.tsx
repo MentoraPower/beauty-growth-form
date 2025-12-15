@@ -164,6 +164,25 @@ export function AutomationsDropdown({ pipelines, subOriginId }: AutomationsDropd
     },
   });
 
+  // Fetch email automations
+  const { data: emailAutomations = [], refetch: refetchEmailAutomations } = useQuery({
+    queryKey: ["email-automations", subOriginId],
+    queryFn: async () => {
+      const { data, error } = await (supabase as any).from("email_automations").select("*").order("created_at", { ascending: false });
+      if (error) {
+        console.error("Error fetching email automations:", error);
+        return [];
+      }
+      let filtered = data || [];
+      if (subOriginId) {
+        filtered = filtered.filter((e: any) => e.sub_origin_id === subOriginId);
+      }
+      return filtered as EmailAutomation[];
+    },
+  });
+
+  const activeEmailAutomationsCount = emailAutomations.filter(e => e.is_active).length;
+
   const activeAutomationsCount = automations.filter(a => a.is_active).length;
   const activeWebhooksCount = webhooks.filter(w => w.is_active).length;
 
@@ -409,6 +428,116 @@ export function AutomationsDropdown({ pipelines, subOriginId }: AutomationsDropd
     setWebhookTriggerPipelineId("");
   };
 
+  // Email automation functions
+  const createEmailAutomation = async () => {
+    if (!emailName.trim()) {
+      toast.error("Digite um nome para a automação");
+      return;
+    }
+    if (!emailTriggerPipeline) {
+      toast.error("Selecione a pipeline de gatilho");
+      return;
+    }
+    if (!emailSubject.trim()) {
+      toast.error("Digite o assunto do e-mail");
+      return;
+    }
+    if (!emailBodyHtml.trim()) {
+      toast.error("Digite o conteúdo HTML do e-mail");
+      return;
+    }
+
+    try {
+      const { error } = await (supabase as any).from("email_automations").insert({
+        name: emailName,
+        trigger_pipeline_id: emailTriggerPipeline,
+        sub_origin_id: subOriginId,
+        subject: emailSubject,
+        body_html: emailBodyHtml,
+        is_active: true,
+      });
+
+      if (error) throw error;
+
+      refetchEmailAutomations();
+      resetEmailForm();
+      toast.success("Automação de e-mail criada!");
+    } catch (error) {
+      console.error("Erro ao criar automação de e-mail:", error);
+      toast.error("Erro ao criar automação de e-mail");
+    }
+  };
+
+  const updateEmailAutomation = async () => {
+    if (!editingEmailId) return;
+
+    try {
+      const { error } = await (supabase as any)
+        .from("email_automations")
+        .update({
+          name: emailName,
+          trigger_pipeline_id: emailTriggerPipeline,
+          subject: emailSubject,
+          body_html: emailBodyHtml,
+        })
+        .eq("id", editingEmailId);
+
+      if (error) throw error;
+
+      refetchEmailAutomations();
+      resetEmailForm();
+      toast.success("Automação atualizada!");
+    } catch (error) {
+      console.error("Erro ao atualizar automação:", error);
+      toast.error("Erro ao atualizar automação");
+    }
+  };
+
+  const toggleEmailAutomation = async (id: string, isActive: boolean) => {
+    try {
+      const { error } = await (supabase as any)
+        .from("email_automations")
+        .update({ is_active: !isActive })
+        .eq("id", id);
+
+      if (error) throw error;
+      refetchEmailAutomations();
+    } catch (error) {
+      console.error("Erro ao atualizar automação:", error);
+      toast.error("Erro ao atualizar automação");
+    }
+  };
+
+  const deleteEmailAutomation = async (id: string) => {
+    try {
+      const { error } = await (supabase as any).from("email_automations").delete().eq("id", id);
+      if (error) throw error;
+      refetchEmailAutomations();
+      toast.success("Automação removida!");
+    } catch (error) {
+      console.error("Erro ao remover automação:", error);
+      toast.error("Erro ao remover automação");
+    }
+  };
+
+  const startEditingEmail = (email: EmailAutomation) => {
+    setEditingEmailId(email.id);
+    setIsCreatingEmail(true);
+    setEmailName(email.name);
+    setEmailTriggerPipeline(email.trigger_pipeline_id);
+    setEmailSubject(email.subject);
+    setEmailBodyHtml(email.body_html);
+  };
+
+  const resetEmailForm = () => {
+    setIsCreatingEmail(false);
+    setEditingEmailId(null);
+    setEmailName("");
+    setEmailTriggerPipeline("");
+    setEmailSubject("");
+    setEmailBodyHtml("");
+  };
+
   const getTriggerLabel = (trigger: string | null, pipelineId?: string | null) => {
     if (!trigger) return "";
     const triggers: Record<string, string> = {
@@ -432,6 +561,7 @@ export function AutomationsDropdown({ pipelines, subOriginId }: AutomationsDropd
     if (!isOpen) {
       resetAutomationForm();
       resetWebhookForm();
+      resetEmailForm();
     }
   };
 
@@ -500,6 +630,20 @@ export function AutomationsDropdown({ pipelines, subOriginId }: AutomationsDropd
                   {activeWebhooksCount}
                 </span>
               )}
+            </button>
+            <button
+              onClick={() => setActiveTab("emails")}
+              className={cn(
+                "pb-3 text-sm font-medium border-b-2 transition-colors",
+                activeTab === "emails"
+                  ? "border-purple-500 text-white"
+                  : "border-transparent text-neutral-400 hover:text-white"
+              )}
+            >
+              <span className="flex items-center gap-1.5">
+                <Mail className="w-3.5 h-3.5" />
+                E-mail
+              </span>
             </button>
           </div>
         </div>
@@ -1084,6 +1228,175 @@ export function AutomationsDropdown({ pipelines, subOriginId }: AutomationsDropd
                       ))}
                     </div>
                   )}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Email Automations Tab */}
+          {activeTab === "emails" && (
+            <div className="p-6">
+              {/* Header */}
+              <div className="flex items-center gap-2 mb-6">
+                <button className="px-3 py-1.5 text-sm rounded-lg bg-pink-500/20 text-pink-400 font-medium">
+                  Ativo {activeEmailAutomationsCount}
+                </button>
+                <button className="px-3 py-1.5 text-sm rounded-lg text-neutral-400 hover:bg-neutral-800 transition-colors">
+                  Inativo {emailAutomations.length - activeEmailAutomationsCount}
+                </button>
+                <div className="flex-1" />
+                <Button
+                  onClick={() => setIsCreatingEmail(true)}
+                  className="bg-purple-600 hover:bg-purple-700 text-white"
+                  disabled={isCreatingEmail}
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  Criar automação
+                </Button>
+              </div>
+
+              {/* Create/Edit form */}
+              {isCreatingEmail && (
+                <div className="mb-6 p-5 rounded-xl bg-neutral-800/50 border border-neutral-700 space-y-4">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium text-white">
+                      {editingEmailId ? "Editar automação de e-mail" : "Nova automação de e-mail"}
+                    </span>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="h-7 w-7 p-0 text-neutral-400 hover:text-white"
+                      onClick={resetEmailForm}
+                    >
+                      <X className="w-4 h-4" />
+                    </Button>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <Input
+                      placeholder="Nome da automação..."
+                      value={emailName}
+                      onChange={(e) => setEmailName(e.target.value)}
+                      className="h-10 bg-neutral-700 border-neutral-600 text-white placeholder:text-neutral-500"
+                    />
+                    <Select value={emailTriggerPipeline} onValueChange={setEmailTriggerPipeline}>
+                      <SelectTrigger className="h-10 bg-neutral-700 border-neutral-600 text-white">
+                        <SelectValue placeholder="Quando lead entrar na pipeline..." />
+                      </SelectTrigger>
+                      <SelectContent className="bg-neutral-800 border-neutral-700">
+                        {pipelines.map((pipeline) => (
+                          <SelectItem key={pipeline.id} value={pipeline.id} className="text-white">
+                            {pipeline.nome}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <Input
+                    placeholder="Assunto do e-mail..."
+                    value={emailSubject}
+                    onChange={(e) => setEmailSubject(e.target.value)}
+                    className="h-10 bg-neutral-700 border-neutral-600 text-white placeholder:text-neutral-500"
+                  />
+
+                  <div>
+                    <label className="text-xs text-neutral-400 mb-2 block">
+                      Conteúdo HTML do e-mail (use {"{{nome}}"}, {"{{email}}"} para variáveis)
+                    </label>
+                    <Textarea
+                      placeholder="<html>...</html>"
+                      value={emailBodyHtml}
+                      onChange={(e) => setEmailBodyHtml(e.target.value)}
+                      className="min-h-[200px] bg-neutral-700 border-neutral-600 text-white placeholder:text-neutral-500 font-mono text-xs"
+                    />
+                  </div>
+
+                  <Button
+                    className="w-full h-10 bg-purple-600 hover:bg-purple-700 text-white"
+                    onClick={editingEmailId ? updateEmailAutomation : createEmailAutomation}
+                  >
+                    {editingEmailId ? "Salvar alterações" : "Criar automação"}
+                  </Button>
+                </div>
+              )}
+
+              {/* List */}
+              {emailAutomations.length === 0 && !isCreatingEmail ? (
+                <div className="flex flex-col items-center justify-center py-16 text-center">
+                  <div className="w-12 h-12 rounded-full bg-neutral-800 flex items-center justify-center mb-4">
+                    <Mail className="w-6 h-6 text-neutral-500" />
+                  </div>
+                  <h3 className="text-white font-medium mb-2">Nenhuma automação de e-mail</h3>
+                  <p className="text-neutral-400 text-sm max-w-md mb-6">
+                    Configure automações para enviar e-mails automaticamente quando leads entrarem em pipelines específicas.
+                  </p>
+                  <Button
+                    onClick={() => setIsCreatingEmail(true)}
+                    className="bg-purple-600 hover:bg-purple-700 text-white"
+                  >
+                    Criar automação
+                  </Button>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {emailAutomations.map((email) => (
+                    <div
+                      key={email.id}
+                      className={cn(
+                        "p-4 rounded-xl border transition-colors",
+                        email.is_active 
+                          ? "bg-pink-500/5 border-pink-500/20" 
+                          : "bg-neutral-800/20 border-neutral-800 opacity-60"
+                      )}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <button
+                            onClick={() => toggleEmailAutomation(email.id, email.is_active)}
+                            className={cn(
+                              "relative w-10 h-5 rounded-full transition-colors",
+                              email.is_active ? "bg-pink-500" : "bg-neutral-600"
+                            )}
+                          >
+                            <span
+                              className={cn(
+                                "absolute left-0.5 top-0.5 w-4 h-4 rounded-full bg-white shadow-sm transition-transform",
+                                email.is_active ? "translate-x-5" : "translate-x-0"
+                              )}
+                            />
+                          </button>
+                          <div>
+                            <span className="text-sm font-medium text-white block">{email.name}</span>
+                            <span className="text-xs text-neutral-400">
+                              Quando lead entrar em: {getPipelineName(email.trigger_pipeline_id)}
+                            </span>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-8 w-8 p-0 text-neutral-400 hover:text-white hover:bg-neutral-700"
+                            onClick={() => startEditingEmail(email)}
+                          >
+                            <Settings className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-8 w-8 p-0 text-neutral-400 hover:text-red-400 hover:bg-red-500/10"
+                            onClick={() => deleteEmailAutomation(email.id)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                      <div className="mt-2 text-xs text-neutral-500">
+                        Assunto: {email.subject}
+                      </div>
+                    </div>
+                  ))}
                 </div>
               )}
             </div>
