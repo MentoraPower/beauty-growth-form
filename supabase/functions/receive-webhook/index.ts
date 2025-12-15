@@ -3,8 +3,8 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "*",
-  "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Methods": "POST, OPTIONS, GET, HEAD",
 };
 
 const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
@@ -13,67 +13,98 @@ const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 // Parse request body based on content type (JSON, form-data, or URL-encoded)
 async function parseRequestBody(req: Request): Promise<Record<string, any>> {
   const contentType = req.headers.get("content-type") || "";
-  
+
   console.log("Content-Type:", contentType);
-  
-  // Handle JSON
-  if (contentType.includes("application/json")) {
-    return await req.json();
+
+  // GET/HEAD usually have no body
+  if (req.method === "GET" || req.method === "HEAD") {
+    return {};
   }
-  
-  // Handle form-data (multipart)
+
+  const normalizeFieldKey = (key: string) => key.toLowerCase().replace(/[\s-]/g, "_");
+
+  const setMaybeElementorField = (data: Record<string, any>, key: string, value: any) => {
+    const val = value instanceof File ? value.name : value;
+
+    // Elementor often uses: fields[field_id] or fields[field_id][value]
+    const m1 = key.match(/^fields\[([^\]]+)\](?:\[value\])?$/);
+    if (m1) {
+      data[normalizeFieldKey(m1[1])] = val;
+      return;
+    }
+
+    // Some WP plugins use: form_fields[field_id]
+    const m2 = key.match(/^form_fields\[([^\]]+)\]$/);
+    if (m2) {
+      data[normalizeFieldKey(m2[1])] = val;
+      return;
+    }
+
+    data[normalizeFieldKey(key)] = val;
+  };
+
+  // JSON: read text once and parse (prevents "body already consumed" issues)
+  if (contentType.includes("application/json")) {
+    const text = await req.text();
+    if (!text) return {};
+    try {
+      return JSON.parse(text);
+    } catch {
+      console.log("Invalid JSON body (first 500):", text.substring(0, 500));
+      return { raw: text };
+    }
+  }
+
+  // multipart/form-data
   if (contentType.includes("multipart/form-data")) {
     const formData = await req.formData();
     const data: Record<string, any> = {};
-    formData.forEach((value, key) => {
-      // Handle Elementor's field format: fields[field_id][value]
-      const match = key.match(/^fields\[([^\]]+)\]\[value\]$/);
-      if (match) {
-        data[match[1]] = value;
-      } else if (key.startsWith("fields[") && key.includes("][")) {
-        // Handle other field formats like fields[name][type]
-        const fieldMatch = key.match(/^fields\[([^\]]+)\]/);
-        if (fieldMatch && key.endsWith("[value]")) {
-          data[fieldMatch[1]] = value;
-        }
-      } else {
-        data[key] = value;
-      }
-    });
+    formData.forEach((value, key) => setMaybeElementorField(data, key, value));
     return data;
   }
-  
-  // Handle URL-encoded
+
+  // application/x-www-form-urlencoded
   if (contentType.includes("application/x-www-form-urlencoded")) {
     const text = await req.text();
     const params = new URLSearchParams(text);
     const data: Record<string, any> = {};
-    params.forEach((value, key) => {
-      // Handle Elementor's field format
-      const match = key.match(/^fields\[([^\]]+)\]\[value\]$/);
-      if (match) {
-        data[match[1]] = value;
-      } else {
-        data[key] = value;
-      }
-    });
+    params.forEach((value, key) => setMaybeElementorField(data, key, value));
     return data;
   }
-  
-  // Fallback: try JSON
+
+  // Fallback: read text once; try JSON, then URLSearchParams
+  const text = await req.text();
+  if (!text) return {};
+
   try {
-    return await req.json();
+    return JSON.parse(text);
   } catch {
-    const text = await req.text();
-    console.log("Raw body text:", text.substring(0, 500));
-    // Try to parse as URL-encoded anyway
+    console.log("Raw body text (first 500):", text.substring(0, 500));
     const params = new URLSearchParams(text);
     const data: Record<string, any> = {};
-    params.forEach((value, key) => {
-      data[key] = value;
-    });
+    params.forEach((value, key) => setMaybeElementorField(data, key, value));
     return data;
   }
+}
+
+function toNumberOrNull(value: any): number | null {
+  if (value === null || value === undefined) return null;
+  const s = String(value).trim();
+  if (!s) return null;
+
+  // Accept: 450, 450.50, 450,50, R$ 450,50
+  const cleaned = s.replace(/[^\d,.-]/g, "");
+  if (!cleaned) return null;
+
+  let normalized = cleaned;
+  if (cleaned.includes(",") && cleaned.includes(".")) {
+    normalized = cleaned.replace(/\./g, "").replace(",", ".");
+  } else if (cleaned.includes(",")) {
+    normalized = cleaned.replace(",", ".");
+  }
+
+  const n = Number(normalized);
+  return Number.isFinite(n) ? n : null;
 }
 
 // Normalize payload from different sources (Elementor WordPress, direct, etc.)
@@ -171,10 +202,18 @@ function normalizePayload(raw: any): Record<string, any> {
 
 const handler = async (req: Request): Promise<Response> => {
   console.log("Webhook received - Method:", req.method, "URL:", req.url);
-  
+
   // Handle CORS preflight
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
+  }
+
+  // Elementor/WordPress "test" calls sometimes hit with GET
+  if (req.method === "GET" || req.method === "HEAD") {
+    return new Response(JSON.stringify({ ok: true }), {
+      status: 200,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
   }
 
   try {
@@ -281,29 +320,33 @@ const handler = async (req: Request): Promise<Response> => {
     }
 
     // Create lead data from payload
-    const leadData = {
-      name: payload.name,
-      email: payload.email,
-      whatsapp: payload.whatsapp || payload.phone || "",
-      country_code: payload.country_code || "+55",
-      instagram: payload.instagram || "",
-      clinic_name: payload.clinic_name || null,
-      service_area: payload.service_area || "",
-      monthly_billing: payload.monthly_billing || "",
-      weekly_attendance: payload.weekly_attendance || "",
-      workspace_type: payload.workspace_type || "",
-      years_experience: payload.years_experience || "",
-      average_ticket: payload.average_ticket || null,
-      estimated_revenue: payload.estimated_revenue || null,
-      biggest_difficulty: payload.biggest_difficulty || null,
+    const leadData: Record<string, any> = {
+      name: String(payload.name).trim(),
+      email: String(payload.email).trim(),
+      whatsapp: String(payload.whatsapp || payload.phone || ""),
+      country_code: String(payload.country_code || "+55"),
+      instagram: String(payload.instagram || ""),
+      clinic_name: payload.clinic_name ? String(payload.clinic_name) : null,
+      service_area: String(payload.service_area || ""),
+      monthly_billing: String(payload.monthly_billing || ""),
+      weekly_attendance: String(payload.weekly_attendance || ""),
+      workspace_type: String(payload.workspace_type || ""),
+      years_experience: String(payload.years_experience || ""),
+      average_ticket: toNumberOrNull(payload.average_ticket),
+      estimated_revenue: toNumberOrNull(payload.estimated_revenue),
       pipeline_id: targetPipelineId,
       sub_origin_id: targetSubOriginId,
-      utm_source: payload.utm_source || null,
-      utm_medium: payload.utm_medium || null,
-      utm_campaign: payload.utm_campaign || null,
-      utm_term: payload.utm_term || null,
-      utm_content: payload.utm_content || null,
+      utm_source: payload.utm_source ? String(payload.utm_source) : null,
+      utm_medium: payload.utm_medium ? String(payload.utm_medium) : null,
+      utm_campaign: payload.utm_campaign ? String(payload.utm_campaign) : null,
+      utm_term: payload.utm_term ? String(payload.utm_term) : null,
+      utm_content: payload.utm_content ? String(payload.utm_content) : null,
     };
+
+    // Optional field (only include if provided to avoid schema mismatch)
+    if (payload.biggest_difficulty) {
+      leadData.biggest_difficulty = String(payload.biggest_difficulty);
+    }
 
     console.log("Creating lead with data:", JSON.stringify(leadData).substring(0, 500));
 
