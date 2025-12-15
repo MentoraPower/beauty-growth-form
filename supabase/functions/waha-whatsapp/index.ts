@@ -1,4 +1,4 @@
-// WAHA WhatsApp Integration - v2 (with clear-all action)
+// WAHA WhatsApp Integration - v3 (with LID handling)
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
@@ -11,6 +11,17 @@ const wahaApiUrl = Deno.env.get("WAHA_API_URL")!;
 const wahaApiKey = Deno.env.get("WAHA_API_KEY") || "";
 const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
 const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+
+// Check if a string looks like a WhatsApp LID (internal ID) instead of a real phone
+const isWhatsAppLid = (phone: string): boolean => {
+  if (!phone) return false;
+  const cleaned = phone.replace(/\D/g, "");
+  // LIDs are typically very long (15+ digits)
+  if (cleaned.length > 14) return true;
+  // LIDs often start with specific patterns
+  if (/^(120|146|180|203|234|447)\d{10,}$/.test(cleaned)) return true;
+  return false;
+};
 
 interface RequestBody {
   action: "send-text" | "send-image" | "send-file" | "send-voice" | "get-chats" | "get-chat-messages" | "sync-all" | "clear-all";
@@ -320,12 +331,15 @@ const handler = async (req: Request): Promise<Response> => {
           lastMessageTime = new Date(chat.lastMessage.timestamp * 1000).toISOString();
         }
 
+        // Determine display name - use "Contato" for LIDs without real name
+        const displayName = chat.name || (isWhatsAppLid(phoneNumber) ? "Contato" : phoneNumber);
+
         // Upsert chat
         const { data: chatData, error: chatError } = await supabase
           .from("whatsapp_chats")
           .upsert({
             phone: phoneNumber,
-            name: chat.name || phoneNumber,
+            name: displayName,
             photo_url: chat.picture || null,
             last_message: lastMessageBody || "Conversa iniciada",
             last_message_time: lastMessageTime,

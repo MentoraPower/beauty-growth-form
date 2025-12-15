@@ -9,6 +9,43 @@ const corsHeaders = {
 const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
 const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
+// Check if a string looks like a WhatsApp LID (internal ID) instead of a real phone
+const isWhatsAppLid = (phone: string): boolean => {
+  if (!phone) return false;
+  const cleaned = phone.replace(/\D/g, "");
+  // LIDs are typically very long (15+ digits) or have @lid suffix
+  if (cleaned.length > 14) return true;
+  // LIDs often start with specific patterns
+  if (/^(120|146|180|203|234|447)\d{10,}$/.test(cleaned)) return true;
+  return false;
+};
+
+// Extract real phone number from WAHA payload - try multiple sources
+const extractRealPhone = (messagePayload: any, fromField: string): string => {
+  // Try to get phone from various fields
+  const sources = [
+    messagePayload._data?.participant,
+    messagePayload._data?.author,
+    messagePayload.participant,
+    messagePayload.author,
+    messagePayload.chatId?.split("@")[0],
+    fromField,
+  ];
+
+  // Return the first valid phone number (not a LID)
+  for (const source of sources) {
+    if (source) {
+      const cleaned = source.replace("@c.us", "").replace("@s.whatsapp.net", "").replace("@lid", "");
+      if (cleaned && !isWhatsAppLid(cleaned)) {
+        return cleaned;
+      }
+    }
+  }
+
+  // If all sources are LIDs, return the original but cleaned
+  return fromField.replace("@c.us", "").replace("@s.whatsapp.net", "").replace("@lid", "");
+};
+
 const handler = async (req: Request): Promise<Response> => {
   // Handle CORS preflight
   if (req.method === "OPTIONS") {
@@ -18,7 +55,8 @@ const handler = async (req: Request): Promise<Response> => {
   try {
     const payload = await req.json();
     
-    console.log("WAHA Webhook received:", JSON.stringify(payload).substring(0, 1000));
+    // Log full payload structure for debugging LID issues
+    console.log("WAHA Webhook received:", JSON.stringify(payload).substring(0, 2000));
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
@@ -37,27 +75,98 @@ const handler = async (req: Request): Promise<Response> => {
       const mediaUrl = messagePayload.media?.url || null;
       const mediaType = hasMedia ? (messagePayload.media?.mimetype?.split("/")[0] || "file") : null;
 
-      // Extract phone from chatId or from/to
-      let phone = "";
+      // Extract phone - try to get real phone, not LID
+      let rawPhone = "";
       if (messagePayload.from) {
-        phone = messagePayload.from.replace("@c.us", "").replace("@s.whatsapp.net", "");
+        rawPhone = messagePayload.from;
       } else if (messagePayload.to) {
-        phone = messagePayload.to.replace("@c.us", "").replace("@s.whatsapp.net", "");
+        rawPhone = messagePayload.to;
       }
 
-      // Get sender info from 'me' field if available
-      const senderName = payload.me?.pushName || messagePayload._data?.notifyName || phone;
+      const phone = extractRealPhone(messagePayload, rawPhone);
       
-      console.log("Processing message:", { phone, fromMe, messageId, textLength: messageText.length });
+      // Log for debugging
+      console.log("Phone extraction:", { 
+        rawPhone, 
+        extractedPhone: phone, 
+        isLid: isWhatsAppLid(phone),
+        participant: messagePayload._data?.participant,
+        author: messagePayload._data?.author,
+        chatId: messagePayload.chatId
+      });
+
+      // Get sender info from 'me' field if available
+      const senderName = payload.me?.pushName || messagePayload._data?.notifyName || null;
+      
+      console.log("Processing message:", { phone, fromMe, messageId, senderName, textLength: messageText.length });
+
+      // If phone is a LID and we have a name, try to find existing chat by name
+      if (phone && isWhatsAppLid(phone) && senderName) {
+        const { data: existingChat } = await supabase
+          .from("whatsapp_chats")
+          .select("id, phone")
+          .eq("name", senderName)
+          .not("phone", "eq", phone)
+          .single();
+
+        if (existingChat) {
+          console.log(`Found existing chat for ${senderName} with real phone ${existingChat.phone}, using that instead of LID ${phone}`);
+          // Use the existing chat's phone instead
+          if (messageId) {
+            const { error: messageError } = await supabase
+              .from("whatsapp_messages")
+              .upsert(
+                {
+                  chat_id: existingChat.id,
+                  message_id: messageId,
+                  phone: existingChat.phone,
+                  text: messageText,
+                  from_me: fromMe,
+                  status: fromMe ? "SENT" : "RECEIVED",
+                  media_url: mediaUrl,
+                  media_type: mediaType,
+                },
+                { 
+                  onConflict: "message_id",
+                  ignoreDuplicates: true 
+                }
+              );
+
+            if (messageError) {
+              console.error("Error inserting message to existing chat:", messageError);
+            } else {
+              console.log("Message saved to existing chat successfully");
+              
+              // Update last message
+              await supabase
+                .from("whatsapp_chats")
+                .update({ 
+                  last_message: messageText || `[${mediaType}]`,
+                  last_message_time: timestamp ? new Date(timestamp * 1000).toISOString() : new Date().toISOString(),
+                  unread_count: fromMe ? 0 : (existingChat as any).unread_count + 1,
+                })
+                .eq("id", existingChat.id);
+            }
+          }
+          
+          return new Response(JSON.stringify({ success: true, usedExistingChat: true }), {
+            status: 200,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+      }
 
       if (phone && (messageText || hasMedia)) {
+        // Use the name if available, otherwise use formatted phone or "Contato" for LIDs
+        const displayName = senderName || (isWhatsAppLid(phone) ? "Contato" : phone);
+        
         // Upsert chat
         const { data: chatData, error: chatError } = await supabase
           .from("whatsapp_chats")
           .upsert(
             {
               phone: phone,
-              name: senderName,
+              name: displayName,
               last_message: messageText || `[${mediaType}]`,
               last_message_time: timestamp ? new Date(timestamp * 1000).toISOString() : new Date().toISOString(),
               unread_count: fromMe ? 0 : 1,
