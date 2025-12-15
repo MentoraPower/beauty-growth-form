@@ -9,63 +9,89 @@ const corsHeaders = {
 const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
 const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
-// Check if a string looks like a WhatsApp LID (internal ID) instead of a real phone
-const isWhatsAppLid = (phone: string): boolean => {
-  if (!phone) return false;
-  const cleaned = phone.replace(/\D/g, "");
-  // LIDs are typically very long (15+ digits) or have @lid suffix
+const wahaApiUrl = Deno.env.get("WAHA_API_URL")!;
+const wahaApiKey = Deno.env.get("WAHA_API_KEY") || "";
+
+const isWhatsAppLid = (id: string): boolean => {
+  if (!id) return false;
+  const cleaned = id.replace(/\D/g, "");
   if (cleaned.length > 14) return true;
-  // LIDs often start with specific patterns
   if (/^(120|146|180|203|234|447)\d{10,}$/.test(cleaned)) return true;
   return false;
 };
 
-// Extract real phone number from WAHA payload - try multiple sources
-const extractRealPhone = (messagePayload: any, fromField: string): string => {
-  // Try to get phone from various fields
-  const sources = [
-    messagePayload._data?.participant,
-    messagePayload._data?.author,
-    messagePayload.participant,
-    messagePayload.author,
-    messagePayload.chatId?.split("@")[0],
-    fromField,
-  ];
+const extractPhoneFromLidResponse = (data: any): string | null => {
+  if (!data) return null;
+  const candidates = [
+    data.phoneNumber,
+    data.phone_number,
+    data.pn,
+    data.number,
+    typeof data.chatId === "string" ? data.chatId.split("@")[0] : null,
+  ].filter(Boolean) as string[];
 
-  // Return the first valid phone number (not a LID)
-  for (const source of sources) {
-    if (source) {
-      const cleaned = source.replace("@c.us", "").replace("@s.whatsapp.net", "").replace("@lid", "");
-      if (cleaned && !isWhatsAppLid(cleaned)) {
-        return cleaned;
-      }
-    }
+  for (const candidate of candidates) {
+    const cleaned = String(candidate).replace(/\D/g, "");
+    if (cleaned && !isWhatsAppLid(cleaned)) return cleaned;
   }
 
-  // If all sources are LIDs, return the original but cleaned
-  return fromField.replace("@c.us", "").replace("@s.whatsapp.net", "").replace("@lid", "");
+  if (typeof data === "string") {
+    const cleaned = data.replace(/\D/g, "");
+    if (cleaned && !isWhatsAppLid(cleaned)) return cleaned;
+  }
+
+  return null;
+};
+
+const resolveLidToPhone = async (lid: string, session: string): Promise<string | null> => {
+  try {
+    const cleaned = lid.replace(/\D/g, "");
+    if (!cleaned) return null;
+
+    const headers: Record<string, string> = {
+      "Content-Type": "application/json",
+    };
+    if (wahaApiKey) headers["X-Api-Key"] = wahaApiKey;
+
+    const res = await fetch(`${wahaApiUrl}/api/${session}/lids/${cleaned}`, {
+      method: "GET",
+      headers,
+    });
+
+    const data = await res.json();
+    if (!res.ok) return null;
+
+    return extractPhoneFromLidResponse(data);
+  } catch {
+    return null;
+  }
+};
+
+const normalizeRawId = (raw: string): { id: string; kind: "cus" | "lid" | "other" } => {
+  const s = String(raw || "");
+  if (!s) return { id: "", kind: "other" };
+  if (s.includes("@g.us") || s.includes("@newsletter") || s.includes("status@broadcast")) {
+    return { id: "", kind: "other" };
+  }
+  if (s.includes("@lid")) return { id: s.split("@")[0], kind: "lid" };
+  if (s.includes("@c.us") || s.includes("@s.whatsapp.net")) return { id: s.split("@")[0], kind: "cus" };
+  return { id: s.replace(/\D/g, ""), kind: isWhatsAppLid(s) ? "lid" : "other" };
 };
 
 const handler = async (req: Request): Promise<Response> => {
-  // Handle CORS preflight
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
     const payload = await req.json();
-    
-    // Log full payload structure for debugging LID issues
-    console.log("WAHA Webhook received:", JSON.stringify(payload).substring(0, 2000));
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // WAHA webhook event types: message, message.any, message.ack, etc.
     const eventType = payload.event || "unknown";
     const session = payload.session || "default";
     const messagePayload = payload.payload || {};
 
-    // Extract message data based on event type
     if (eventType === "message" || eventType === "message.any") {
       const fromMe = messagePayload.fromMe || false;
       const messageId = messagePayload.id || null;
@@ -75,117 +101,63 @@ const handler = async (req: Request): Promise<Response> => {
       const mediaUrl = messagePayload.media?.url || null;
       const mediaType = hasMedia ? (messagePayload.media?.mimetype?.split("/")[0] || "file") : null;
 
-      // Extract phone - try to get real phone, not LID
-      let rawPhone = "";
-      if (messagePayload.from) {
-        rawPhone = messagePayload.from;
-      } else if (messagePayload.to) {
-        rawPhone = messagePayload.to;
+      // Choose the other party id
+      const rawContact = fromMe ? messagePayload.to : messagePayload.from;
+      const fallbackContact = messagePayload.from || messagePayload.to || "";
+      const { id: rawId, kind } = normalizeRawId(rawContact || fallbackContact);
+
+      if (!rawId) {
+        return new Response(JSON.stringify({ success: true, skipped: true }), {
+          status: 200,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
       }
 
-      const phone = extractRealPhone(messagePayload, rawPhone);
-      
-      // Log for debugging
-      console.log("Phone extraction:", { 
-        rawPhone, 
-        extractedPhone: phone, 
-        isLid: isWhatsAppLid(phone),
-        participant: messagePayload._data?.participant,
-        author: messagePayload._data?.author,
-        chatId: messagePayload.chatId
-      });
-
-      // Get sender info from 'me' field if available
-      const senderName = payload.me?.pushName || messagePayload._data?.notifyName || null;
-      
-      console.log("Processing message:", { phone, fromMe, messageId, senderName, textLength: messageText.length });
-
-      // If phone is a LID and we have a name, try to find existing chat by name
-      if (phone && isWhatsAppLid(phone) && senderName) {
-        const { data: existingChat } = await supabase
-          .from("whatsapp_chats")
-          .select("id, phone")
-          .eq("name", senderName)
-          .not("phone", "eq", phone)
-          .single();
-
-        if (existingChat) {
-          console.log(`Found existing chat for ${senderName} with real phone ${existingChat.phone}, using that instead of LID ${phone}`);
-          // Use the existing chat's phone instead
-          if (messageId) {
-            const { error: messageError } = await supabase
-              .from("whatsapp_messages")
-              .upsert(
-                {
-                  chat_id: existingChat.id,
-                  message_id: messageId,
-                  phone: existingChat.phone,
-                  text: messageText,
-                  from_me: fromMe,
-                  status: fromMe ? "SENT" : "RECEIVED",
-                  media_url: mediaUrl,
-                  media_type: mediaType,
-                },
-                { 
-                  onConflict: "message_id",
-                  ignoreDuplicates: true 
-                }
-              );
-
-            if (messageError) {
-              console.error("Error inserting message to existing chat:", messageError);
-            } else {
-              console.log("Message saved to existing chat successfully");
-              
-              // Update last message
-              await supabase
-                .from("whatsapp_chats")
-                .update({ 
-                  last_message: messageText || `[${mediaType}]`,
-                  last_message_time: timestamp ? new Date(timestamp * 1000).toISOString() : new Date().toISOString(),
-                  unread_count: fromMe ? 0 : (existingChat as any).unread_count + 1,
-                })
-                .eq("id", existingChat.id);
-            }
-          }
-          
-          return new Response(JSON.stringify({ success: true, usedExistingChat: true }), {
-            status: 200,
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
-          });
+      let phone = rawId;
+      if (kind === "lid" || isWhatsAppLid(rawId)) {
+        const resolved = await resolveLidToPhone(rawId, session);
+        if (resolved) {
+          console.log(`Resolved webhook LID ${rawId} -> ${resolved}`);
+          phone = resolved;
         }
       }
 
+      const senderNameRaw = payload.me?.pushName || messagePayload._data?.notifyName || messagePayload.notifyName || null;
+      const senderName = senderNameRaw ? String(senderNameRaw).trim() : "";
+      const senderNameIsBad = !senderName || /^\d+$/.test(senderName) || senderName === phone;
+
+      // Preserve existing good name if this event comes from a LID
+      let existingName: string | null = null;
+      const { data: existingChat } = await supabase
+        .from("whatsapp_chats")
+        .select("name")
+        .eq("phone", phone)
+        .maybeSingle();
+      existingName = existingChat?.name || null;
+      const existingIsGood = !!existingName && !/^\d+$/.test(existingName) && existingName !== phone;
+
+      const displayName = !senderNameIsBad ? senderName : (existingIsGood ? (existingName as string) : phone);
+
       if (phone && (messageText || hasMedia)) {
-        // Use the name if available, otherwise use formatted phone or "Contato" for LIDs
-        const displayName = senderName || (isWhatsAppLid(phone) ? "Contato" : phone);
-        
-        // Upsert chat
         const { data: chatData, error: chatError } = await supabase
           .from("whatsapp_chats")
           .upsert(
             {
-              phone: phone,
+              phone,
               name: displayName,
               last_message: messageText || `[${mediaType}]`,
               last_message_time: timestamp ? new Date(timestamp * 1000).toISOString() : new Date().toISOString(),
               unread_count: fromMe ? 0 : 1,
             },
-            { 
-              onConflict: "phone",
-              ignoreDuplicates: false 
-            }
+            { onConflict: "phone", ignoreDuplicates: false }
           )
           .select()
           .single();
 
         if (chatError) {
           console.error("Error upserting chat:", chatError);
-        } else {
-          console.log("Chat upserted:", chatData?.id);
         }
 
-        // Insert message if we have a valid chat
         if (chatData?.id && messageId) {
           const { error: messageError } = await supabase
             .from("whatsapp_messages")
@@ -193,45 +165,38 @@ const handler = async (req: Request): Promise<Response> => {
               {
                 chat_id: chatData.id,
                 message_id: messageId,
-                phone: phone,
+                phone,
                 text: messageText,
                 from_me: fromMe,
                 status: fromMe ? "SENT" : "RECEIVED",
                 media_url: mediaUrl,
                 media_type: mediaType,
               },
-              { 
+              {
                 onConflict: "message_id",
-                ignoreDuplicates: true 
+                ignoreDuplicates: false,
               }
             );
 
           if (messageError) {
-            console.error("Error inserting message:", messageError);
-          } else {
-            console.log("Message saved successfully");
+            console.error("Error inserting/updating message:", messageError);
           }
 
-          // Update unread count if message is not from me
           if (!fromMe) {
             const currentUnread = chatData.unread_count || 0;
             await supabase
               .from("whatsapp_chats")
-              .update({ 
-                unread_count: currentUnread + 1
-              })
+              .update({ unread_count: currentUnread + 1 })
               .eq("id", chatData.id);
           }
         }
       }
     }
 
-    // Handle message acknowledgment updates (sent, delivered, read)
     if (eventType === "message.ack") {
       const messageId = messagePayload.id || null;
       const ack = messagePayload.ack;
-      
-      // WAHA ack values: 0=PENDING, 1=SENT, 2=RECEIVED, 3=READ, 4=PLAYED
+
       let status = "SENT";
       if (ack === 2) status = "DELIVERED";
       else if (ack === 3) status = "READ";
@@ -245,8 +210,6 @@ const handler = async (req: Request): Promise<Response> => {
 
         if (statusError) {
           console.error("Error updating message status:", statusError);
-        } else {
-          console.log("Message status updated:", status);
         }
       }
     }
@@ -255,16 +218,12 @@ const handler = async (req: Request): Promise<Response> => {
       status: 200,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
-
   } catch (error: any) {
     console.error("Error in waha-webhook function:", error);
-    return new Response(
-      JSON.stringify({ error: error.message }),
-      {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      }
-    );
+    return new Response(JSON.stringify({ error: error.message }), {
+      status: 500,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
   }
 };
 

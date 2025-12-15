@@ -23,6 +23,59 @@ const isWhatsAppLid = (phone: string): boolean => {
   return false;
 };
 
+const extractPhoneFromLidResponse = (data: any): string | null => {
+  if (!data) return null;
+  const candidates = [
+    data.phoneNumber,
+    data.phone_number,
+    data.pn,
+    data.number,
+    typeof data.chatId === "string" ? data.chatId.split("@")[0] : null,
+  ].filter(Boolean) as string[];
+
+  for (const candidate of candidates) {
+    const cleaned = String(candidate).replace(/\D/g, "");
+    if (cleaned && !isWhatsAppLid(cleaned)) return cleaned;
+  }
+  return null;
+};
+
+const resolveLidToPhone = async (
+  lid: string,
+  session: string,
+  headers: Record<string, string>
+): Promise<string | null> => {
+  try {
+    const cleaned = lid.replace(/\D/g, "");
+    if (!cleaned) return null;
+
+    const res = await fetch(`${wahaApiUrl}/api/${session}/lids/${cleaned}`, {
+      method: "GET",
+      headers,
+    });
+
+    const data = await res.json();
+    if (!res.ok) {
+      console.log("WAHA lid resolve failed:", cleaned, data?.message || "unknown");
+      return null;
+    }
+
+    const phone = extractPhoneFromLidResponse(data);
+    if (phone) return phone;
+
+    // Fallback: some engines may return plain string
+    if (typeof data === "string") {
+      const s = data.replace(/\D/g, "");
+      if (s && !isWhatsAppLid(s)) return s;
+    }
+
+    return null;
+  } catch (e) {
+    console.log("WAHA lid resolve error:", e);
+    return null;
+  }
+};
+
 interface RequestBody {
   action: "send-text" | "send-image" | "send-file" | "send-voice" | "get-chats" | "get-chat-messages" | "sync-all" | "clear-all";
   phone?: string;
@@ -292,19 +345,35 @@ const handler = async (req: Request): Promise<Response> => {
       
       const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-      // Get all chats using overview endpoint
-      const chatsResponse = await fetch(
-        `${wahaApiUrl}/api/${session}/chats/overview?limit=100&offset=0`,
-        { method: "GET", headers }
-      );
+      // Get all chats using overview endpoint (pagination)
+      const chatsData: any[] = [];
+      const chatsLimit = 100;
+      let chatsOffset = 0;
 
-      const chatsData = await chatsResponse.json();
-      console.log("WAHA chats overview for sync:", Array.isArray(chatsData) ? chatsData.length : 0);
-      console.log("First chat sample:", JSON.stringify(chatsData?.[0] || {}).substring(0, 300));
+      while (true) {
+        const chatsResponse = await fetch(
+          `${wahaApiUrl}/api/${session}/chats/overview?limit=${chatsLimit}&offset=${chatsOffset}`,
+          { method: "GET", headers }
+        );
 
-      if (!chatsResponse.ok) {
-        throw new Error(chatsData.message || "Failed to get chats for sync");
+        const page = await chatsResponse.json();
+
+        if (!chatsResponse.ok) {
+          throw new Error(page?.message || "Failed to get chats for sync");
+        }
+
+        if (!Array.isArray(page) || page.length === 0) break;
+
+        chatsData.push(...page);
+        console.log(`WAHA chats overview page: offset=${chatsOffset} size=${page.length}`);
+
+        if (page.length < chatsLimit) break;
+        chatsOffset += chatsLimit;
+        if (chatsOffset > 5000) break; // safety cap
       }
+
+      console.log("WAHA chats overview for sync:", chatsData.length);
+      console.log("First chat sample:", JSON.stringify(chatsData?.[0] || {}).substring(0, 300));
 
       let syncedChats = 0;
       let syncedMessages = 0;
@@ -319,8 +388,46 @@ const handler = async (req: Request): Promise<Response> => {
         if (!chatIdStr || chatIdStr === "0") continue;
 
         // Clean phone number - remove @c.us, @s.whatsapp.net, @lid, etc.
-        const phoneNumber = chatIdStr.split("@")[0];
-        if (!phoneNumber) continue;
+        const rawPhone = chatIdStr.split("@")[0];
+        if (!rawPhone) continue;
+
+        const looksLikeLid = chatIdStr.includes("@lid") || isWhatsAppLid(rawPhone);
+        let phoneNumber = rawPhone;
+
+        if (looksLikeLid) {
+          const resolved = await resolveLidToPhone(rawPhone, session, headers);
+          if (resolved) {
+            console.log(`Resolved LID ${rawPhone} -> ${resolved}`);
+            phoneNumber = resolved;
+          }
+        }
+
+        // Try to preserve an existing good name/photo if we're processing a LID mapped to a real phone
+        let existingName: string | null = null;
+        let existingPhotoUrl: string | null = null;
+        if (looksLikeLid && phoneNumber !== rawPhone) {
+          const { data: existing } = await supabase
+            .from("whatsapp_chats")
+            .select("name, photo_url")
+            .eq("phone", phoneNumber)
+            .maybeSingle();
+
+          existingName = existing?.name || null;
+          existingPhotoUrl = existing?.photo_url || null;
+        }
+
+        const candidateName = chat.name ? String(chat.name).trim() : "";
+        const candidateIsBad =
+          !candidateName || /^\d+$/.test(candidateName) || candidateName === rawPhone || candidateName === phoneNumber;
+
+        const existingIsGood =
+          !!existingName && !/^\d+$/.test(existingName) && existingName !== phoneNumber;
+
+        const displayName = !candidateIsBad
+          ? candidateName
+          : (existingIsGood ? (existingName as string) : phoneNumber);
+
+        const photoUrl = chat.picture || existingPhotoUrl || null;
 
         // Get last message info
         const lastMessageBody = chat.lastMessage?.body || (chat.lastMessage?.hasMedia ? "[Mídia]" : "");
@@ -331,16 +438,13 @@ const handler = async (req: Request): Promise<Response> => {
           lastMessageTime = new Date(chat.lastMessage.timestamp * 1000).toISOString();
         }
 
-        // Determine display name - use "Contato" for LIDs without real name
-        const displayName = chat.name || (isWhatsAppLid(phoneNumber) ? "Contato" : phoneNumber);
-
         // Upsert chat
         const { data: chatData, error: chatError } = await supabase
           .from("whatsapp_chats")
           .upsert({
             phone: phoneNumber,
             name: displayName,
-            photo_url: chat.picture || null,
+            photo_url: photoUrl,
             last_message: lastMessageBody || "Conversa iniciada",
             last_message_time: lastMessageTime,
             unread_count: chat._chat?.unreadCount || 0,
@@ -356,17 +460,29 @@ const handler = async (req: Request): Promise<Response> => {
         syncedChats++;
         console.log(`Synced chat: ${phoneNumber} (${chat.name || 'no name'})`);
 
-        // Fetch messages for this chat
+        // Fetch messages for this chat (pagination)
         try {
-          const messagesResponse = await fetch(
-            `${wahaApiUrl}/api/${session}/chats/${encodeURIComponent(chatIdStr)}/messages?limit=50&downloadMedia=true`,
-            { method: "GET", headers }
-          );
+          const messagesLimit = 200;
+          let messagesOffset = 0;
 
-          if (messagesResponse.ok) {
+          while (true) {
+            const messagesResponse = await fetch(
+              `${wahaApiUrl}/api/${session}/chats/${encodeURIComponent(chatIdStr)}/messages?limit=${messagesLimit}&offset=${messagesOffset}&downloadMedia=true`,
+              { method: "GET", headers }
+            );
+
+            if (!messagesResponse.ok) {
+              const err = await messagesResponse.json().catch(() => ({}));
+              console.error("Error fetching messages page:", chatIdStr, messagesOffset, err?.message || "unknown");
+              break;
+            }
+
             const messagesData = await messagesResponse.json();
-            console.log(`Messages for ${phoneNumber}:`, messagesData?.length || 0);
-            
+            const pageSize = Array.isArray(messagesData) ? messagesData.length : 0;
+            if (!pageSize) break;
+
+            console.log(`Messages for ${phoneNumber}: offset=${messagesOffset} size=${pageSize}`);
+
             for (const msg of messagesData) {
               const messageId = msg.id || msg.key?.id;
               if (!messageId) continue;
@@ -396,6 +512,10 @@ const handler = async (req: Request): Promise<Response> => {
                 syncedMessages++;
               }
             }
+
+            if (pageSize < messagesLimit) break;
+            messagesOffset += messagesLimit;
+            if (messagesOffset > 2000) break; // safety cap per chat
           }
         } catch (msgError) {
           console.error("Error fetching messages for chat:", chatIdStr, msgError);
