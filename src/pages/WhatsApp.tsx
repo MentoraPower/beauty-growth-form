@@ -96,7 +96,18 @@ const WhatsApp = () => {
 
       if (error) throw error;
 
-      const formattedChats: Chat[] = (data || []).map((chat: any) => ({
+      // Filter out channels, groups, invalid contacts and duplicates
+      const validChats = (data || []).filter((chat: any) => {
+        const phone = chat.phone || "";
+        // Exclude channels (@newsletter), groups (@g.us), LID duplicates (@lid), invalid phones
+        if (phone.includes("@newsletter")) return false;
+        if (phone.includes("@g.us")) return false;
+        if (phone.includes("@lid")) return false;
+        if (phone === "0" || phone.length < 8) return false;
+        return true;
+      });
+
+      const formattedChats: Chat[] = validChats.map((chat: any) => ({
         id: chat.id,
         name: chat.name || formatPhoneDisplay(chat.phone),
         lastMessage: chat.last_message || "",
@@ -261,14 +272,24 @@ const WhatsApp = () => {
 
     setIsClearing(true);
     try {
-      // Delete messages first (FK constraint)
-      const { error: messagesError } = await supabase
-        .from("whatsapp_messages")
-        .delete()
-        .neq("id", "00000000-0000-0000-0000-000000000000");
+      // First get all chat IDs to delete their messages
+      const { data: chatsToDelete } = await supabase
+        .from("whatsapp_chats")
+        .select("id");
 
-      if (messagesError) throw messagesError;
+      if (chatsToDelete && chatsToDelete.length > 0) {
+        const chatIds = chatsToDelete.map((c: any) => c.id);
+        
+        // Delete messages for these chats
+        const { error: messagesError } = await supabase
+          .from("whatsapp_messages")
+          .delete()
+          .in("chat_id", chatIds);
 
+        if (messagesError) throw messagesError;
+      }
+
+      // Delete all chats
       const { error: chatsError } = await supabase
         .from("whatsapp_chats")
         .delete()
@@ -289,6 +310,74 @@ const WhatsApp = () => {
       toast({
         title: "Erro ao limpar",
         description: error.message || "Falha ao apagar conversas",
+        variant: "destructive",
+      });
+    } finally {
+      setIsClearing(false);
+    }
+  };
+
+  // Cleanup invalid chats (channels, duplicates, etc.)
+  const cleanupInvalidChats = async () => {
+    setIsClearing(true);
+    try {
+      // Get all chats that should be removed
+      const { data: allChats } = await supabase
+        .from("whatsapp_chats")
+        .select("id, phone");
+
+      if (!allChats) {
+        toast({ title: "Nenhum chat encontrado" });
+        setIsClearing(false);
+        return;
+      }
+
+      const invalidChatIds = allChats
+        .filter((chat: any) => {
+          const phone = chat.phone || "";
+          return (
+            phone.includes("@newsletter") ||
+            phone.includes("@g.us") ||
+            phone.includes("@lid") ||
+            phone === "0" ||
+            phone.length < 8
+          );
+        })
+        .map((chat: any) => chat.id);
+
+      if (invalidChatIds.length === 0) {
+        toast({ title: "Nenhum contato inválido encontrado" });
+        setIsClearing(false);
+        return;
+      }
+
+      // Delete messages first
+      const { error: messagesError } = await supabase
+        .from("whatsapp_messages")
+        .delete()
+        .in("chat_id", invalidChatIds);
+
+      if (messagesError) throw messagesError;
+
+      // Delete invalid chats
+      const { error: chatsError } = await supabase
+        .from("whatsapp_chats")
+        .delete()
+        .in("id", invalidChatIds);
+
+      if (chatsError) throw chatsError;
+
+      await fetchChats();
+
+      toast({
+        title: "Limpeza concluída",
+        description: `${invalidChatIds.length} contatos inválidos removidos (canais, grupos, duplicados)`,
+      });
+    } catch (error: any) {
+      console.error("Error cleaning up:", error);
+      toast({
+        title: "Erro na limpeza",
+        description: error.message,
         variant: "destructive",
       });
     } finally {
@@ -321,9 +410,54 @@ const WhatsApp = () => {
     });
   };
 
-  // Initial fetch
+  // Initial cleanup and fetch
   useEffect(() => {
-    fetchChats();
+    const init = async () => {
+      // Silently cleanup invalid chats first
+      try {
+        const { data: allChats } = await supabase
+          .from("whatsapp_chats")
+          .select("id, phone");
+
+        if (allChats) {
+          const invalidChatIds = allChats
+            .filter((chat: any) => {
+              const phone = chat.phone || "";
+              return (
+                phone.includes("@newsletter") ||
+                phone.includes("@g.us") ||
+                phone.includes("@lid") ||
+                phone === "0" ||
+                phone.length < 8
+              );
+            })
+            .map((chat: any) => chat.id);
+
+          if (invalidChatIds.length > 0) {
+            // Delete messages first
+            await supabase
+              .from("whatsapp_messages")
+              .delete()
+              .in("chat_id", invalidChatIds);
+
+            // Delete invalid chats
+            await supabase
+              .from("whatsapp_chats")
+              .delete()
+              .in("id", invalidChatIds);
+
+            console.log(`Cleaned up ${invalidChatIds.length} invalid chats`);
+          }
+        }
+      } catch (error) {
+        console.error("Cleanup error:", error);
+      }
+      
+      // Then fetch valid chats
+      await fetchChats();
+    };
+    
+    init();
   }, []);
 
   // Realtime subscription for chats
