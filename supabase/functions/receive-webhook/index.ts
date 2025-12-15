@@ -10,6 +10,72 @@ const corsHeaders = {
 const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
 const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
+// Parse request body based on content type (JSON, form-data, or URL-encoded)
+async function parseRequestBody(req: Request): Promise<Record<string, any>> {
+  const contentType = req.headers.get("content-type") || "";
+  
+  console.log("Content-Type:", contentType);
+  
+  // Handle JSON
+  if (contentType.includes("application/json")) {
+    return await req.json();
+  }
+  
+  // Handle form-data (multipart)
+  if (contentType.includes("multipart/form-data")) {
+    const formData = await req.formData();
+    const data: Record<string, any> = {};
+    formData.forEach((value, key) => {
+      // Handle Elementor's field format: fields[field_id][value]
+      const match = key.match(/^fields\[([^\]]+)\]\[value\]$/);
+      if (match) {
+        data[match[1]] = value;
+      } else if (key.startsWith("fields[") && key.includes("][")) {
+        // Handle other field formats like fields[name][type]
+        const fieldMatch = key.match(/^fields\[([^\]]+)\]/);
+        if (fieldMatch && key.endsWith("[value]")) {
+          data[fieldMatch[1]] = value;
+        }
+      } else {
+        data[key] = value;
+      }
+    });
+    return data;
+  }
+  
+  // Handle URL-encoded
+  if (contentType.includes("application/x-www-form-urlencoded")) {
+    const text = await req.text();
+    const params = new URLSearchParams(text);
+    const data: Record<string, any> = {};
+    params.forEach((value, key) => {
+      // Handle Elementor's field format
+      const match = key.match(/^fields\[([^\]]+)\]\[value\]$/);
+      if (match) {
+        data[match[1]] = value;
+      } else {
+        data[key] = value;
+      }
+    });
+    return data;
+  }
+  
+  // Fallback: try JSON
+  try {
+    return await req.json();
+  } catch {
+    const text = await req.text();
+    console.log("Raw body text:", text.substring(0, 500));
+    // Try to parse as URL-encoded anyway
+    const params = new URLSearchParams(text);
+    const data: Record<string, any> = {};
+    params.forEach((value, key) => {
+      data[key] = value;
+    });
+    return data;
+  }
+}
+
 // Normalize payload from different sources (Elementor WordPress, direct, etc.)
 function normalizePayload(raw: any): Record<string, any> {
   // If it's already a flat object with expected fields, return as-is
@@ -116,7 +182,8 @@ const handler = async (req: Request): Promise<Response> => {
     const originId = url.searchParams.get("origin_id");
     const subOriginId = url.searchParams.get("sub_origin_id");
     
-    const rawPayload = await req.json();
+    // Parse body based on content type
+    const rawPayload = await parseRequestBody(req);
     
     console.log("Receive webhook called:", JSON.stringify(rawPayload).substring(0, 1000));
     console.log("Query params - origin_id:", originId, "sub_origin_id:", subOriginId);
@@ -130,11 +197,13 @@ const handler = async (req: Request): Promise<Response> => {
 
     // Validate required fields
     if (!payload.name || !payload.email) {
-      console.error("Missing required fields: name and email. Received:", Object.keys(payload));
+      console.error("Missing required fields: name and email. Received keys:", Object.keys(rawPayload));
+      console.error("Normalized keys:", Object.keys(payload));
       return new Response(
         JSON.stringify({ 
           error: "Missing required fields: name and email",
           received_fields: Object.keys(rawPayload),
+          normalized_fields: Object.keys(payload),
           tip: "Use field IDs: name, email, whatsapp, instagram, etc."
         }),
         {
