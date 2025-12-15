@@ -175,148 +175,120 @@ const handler = async (req: Request): Promise<Response> => {
 
     // ===== EMAIL AUTOMATIONS PROCESSING =====
     const triggeredEmails: string[] = [];
-    
-    console.log("=== EMAIL AUTOMATION DEBUG ===");
-    console.log("Trigger type:", payload.trigger);
-    console.log("Pipeline ID:", payload.pipeline_id);
-    console.log("Sub Origin ID:", payload.sub_origin_id);
-    console.log("Lead email:", payload.lead?.email);
-    
-    // Process email automations for "lead_moved" trigger
+
     if (payload.trigger === "lead_moved" && payload.pipeline_id) {
-      console.log("Checking email automations for pipeline:", payload.pipeline_id);
-      
-      // First, let's check ALL email automations to debug
-      const { data: allEmailAutomations, error: allEmailError } = await supabase
-        .from("email_automations")
-        .select("*");
-      
-      console.log("All email automations in database:", JSON.stringify(allEmailAutomations));
-      if (allEmailError) {
-        console.error("Error fetching all email automations:", allEmailError);
-      }
-      
-      // Now filter by pipeline
+      console.log("[EmailAutomation] lead_moved", {
+        pipeline_id: payload.pipeline_id,
+        sub_origin_id: payload.sub_origin_id,
+        lead_id: payload.lead?.id,
+        lead_email: payload.lead?.email,
+      });
+
       const { data: emailAutomations, error: emailError } = await supabase
         .from("email_automations")
         .select("*")
         .eq("trigger_pipeline_id", payload.pipeline_id)
         .eq("is_active", true);
 
-      console.log("Matching email automations:", JSON.stringify(emailAutomations));
-      
       if (emailError) {
-        console.error("Error fetching email automations:", emailError);
+        console.error("[EmailAutomation] Error fetching email automations:", emailError);
       }
 
       if (emailAutomations && emailAutomations.length > 0) {
-        console.log(`Found ${emailAutomations.length} active email automations for this pipeline`);
-        
-        // Check if we have RESEND_API_KEY
         const resendApiKey = Deno.env.get("RESEND_API_KEY");
-        console.log("RESEND_API_KEY configured:", !!resendApiKey);
-        
+
         if (!resendApiKey) {
-          console.error("RESEND_API_KEY not configured - cannot send automated emails");
+          console.error("[EmailAutomation] RESEND_API_KEY not configured");
         } else {
           const resend = new Resend(resendApiKey);
-          
+
           for (const automation of emailAutomations as EmailAutomation[]) {
-            console.log("Processing automation:", automation.name);
-            console.log("Automation sub_origin_id:", automation.sub_origin_id);
-            console.log("Payload sub_origin_id:", payload.sub_origin_id);
-            
             // Check sub_origin scope if specified
             if (automation.sub_origin_id && automation.sub_origin_id !== payload.sub_origin_id) {
-              console.log(`Email automation "${automation.name}" skipped - sub_origin mismatch`);
               continue;
             }
-            
+
             // Check if lead has email
-            if (!payload.lead.email) {
-              console.log(`Email automation "${automation.name}" skipped - lead has no email`);
+            if (!payload.lead?.email) {
               continue;
             }
-            
-            console.log(`Triggering email automation "${automation.name}" to ${payload.lead.email}`);
-            
+
             try {
-              // Replace placeholders in subject and body
               const leadName = payload.lead.name || "Cliente";
-              const subject = automation.subject.replace(/\{\{name\}\}/g, leadName).replace(/\{\{nome\}\}/g, leadName);
-              const bodyHtml = automation.body_html.replace(/\{\{name\}\}/g, leadName).replace(/\{\{nome\}\}/g, leadName);
-              
+              const replaceName = (value: string) =>
+                value
+                  .replace(/\{\{name\}\}/g, leadName)
+                  .replace(/\{\{nome\}\}/g, leadName)
+                  .replace(/\{name\}/g, leadName)
+                  .replace(/\{nome\}/g, leadName);
+
+              const subject = replaceName(automation.subject);
+              const bodyHtml = replaceName(automation.body_html);
+
               // Get email settings for from address
               const { data: settings } = await supabase
                 .from("email_settings")
                 .select("*")
                 .limit(1)
                 .single();
-              
+
               const fromName = settings?.from_name || "Scale Beauty";
               const fromEmail = settings?.from_email || "contato@scalebeauty.com.br";
-              
-              console.log("Sending email from:", `${fromName} <${fromEmail}>`);
-              console.log("Sending email to:", payload.lead.email);
-              console.log("Email subject:", subject);
-              
-              // Send email via Resend
+
               const emailResponse = await resend.emails.send({
                 from: `${fromName} <${fromEmail}>`,
                 to: [payload.lead.email],
-                subject: subject,
+                subject,
                 html: bodyHtml,
               });
-              
-              console.log(`Email automation "${automation.name}" sent successfully:`, JSON.stringify(emailResponse));
+
+              console.log(`[EmailAutomation] Sent "${automation.name}"`, {
+                lead_id: payload.lead.id,
+                to: payload.lead.email,
+                resend_id: emailResponse.data?.id ?? null,
+              });
+
               triggeredEmails.push(automation.name);
-              
-              // Record sent email in database
-              const { error: insertError } = await supabase
-                .from("sent_emails")
-                .insert({
-                  lead_id: payload.lead.id,
-                  lead_name: payload.lead.name,
-                  lead_email: payload.lead.email,
-                  subject: subject,
-                  body_html: bodyHtml,
-                  status: "sent",
-                  resend_id: emailResponse.data?.id || null,
-                  sent_at: new Date().toISOString(),
-                });
-              
+
+              // Record sent email in database (best-effort)
+              const { error: insertError } = await supabase.from("sent_emails").insert({
+                lead_id: payload.lead.id,
+                lead_name: payload.lead.name,
+                lead_email: payload.lead.email,
+                subject,
+                body_html: bodyHtml,
+                status: "sent",
+                resend_id: emailResponse.data?.id || null,
+                sent_at: new Date().toISOString(),
+              });
+
               if (insertError) {
-                console.error("Error inserting sent_emails record:", insertError);
+                console.error("[EmailAutomation] Error inserting sent_emails:", insertError);
               }
-                
             } catch (emailError: any) {
-              console.error(`Error sending email automation "${automation.name}":`, emailError);
-              
-              // Record failed email
-              const { error: insertError } = await supabase
-                .from("sent_emails")
-                .insert({
-                  lead_id: payload.lead.id,
-                  lead_name: payload.lead.name,
-                  lead_email: payload.lead.email,
-                  subject: automation.subject,
-                  body_html: automation.body_html,
-                  status: "failed",
-                  error_message: emailError.message,
-                });
-              
+              console.error(`[EmailAutomation] Failed "${automation.name}"`, emailError);
+
+              const { error: insertError } = await supabase.from("sent_emails").insert({
+                lead_id: payload.lead?.id,
+                lead_name: payload.lead?.name,
+                lead_email: payload.lead?.email,
+                subject: automation.subject,
+                body_html: automation.body_html,
+                status: "failed",
+                error_message: emailError?.message,
+              });
+
               if (insertError) {
-                console.error("Error inserting failed sent_emails record:", insertError);
+                console.error("[EmailAutomation] Error inserting failed sent_emails:", insertError);
               }
             }
           }
         }
       } else {
-        console.log("No active email automations found for pipeline:", payload.pipeline_id);
+        console.log("[EmailAutomation] No active automations for pipeline:", payload.pipeline_id);
       }
-    } else {
-      console.log("Email automation skipped - not a lead_moved trigger or no pipeline_id");
     }
+
 
     console.log(`Triggered ${triggeredWebhooks.length} webhooks:`, triggeredWebhooks);
     console.log(`Triggered ${triggeredEmails.length} emails:`, triggeredEmails);

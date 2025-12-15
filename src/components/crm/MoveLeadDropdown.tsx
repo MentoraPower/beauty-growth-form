@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { triggerWebhook } from "@/lib/webhooks";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -71,6 +72,19 @@ export function MoveLeadDropdown({
 
   const handleMove = async (subOriginId: string, pipelineId: string, pipelineName: string) => {
     try {
+      // Fetch current lead so we can send the email automation to the right email
+      const { data: currentLead, error: currentLeadError } = await supabase
+        .from("leads")
+        .select("*")
+        .eq("id", leadId)
+        .single();
+
+      if (currentLeadError) {
+        console.error("Error fetching lead before move:", currentLeadError);
+      }
+
+      const previousPipelineId = (currentLead as any)?.pipeline_id ?? null;
+
       const { error } = await supabase
         .from("leads")
         .update({
@@ -80,6 +94,21 @@ export function MoveLeadDropdown({
         .eq("id", leadId);
 
       if (error) throw error;
+
+      // Trigger webhook/email automation (fire and forget)
+      const movedLead = {
+        ...(currentLead || { id: leadId, name: leadName }),
+        sub_origin_id: subOriginId,
+        pipeline_id: pipelineId,
+      };
+
+      triggerWebhook({
+        trigger: "lead_moved",
+        lead: movedLead as any,
+        pipeline_id: pipelineId,
+        previous_pipeline_id: previousPipelineId,
+        sub_origin_id: subOriginId,
+      }).catch((e) => console.error("Error triggering lead_moved webhook:", e));
 
       toast.success(`Lead movido para ${pipelineName}`);
       setIsOpen(false);
