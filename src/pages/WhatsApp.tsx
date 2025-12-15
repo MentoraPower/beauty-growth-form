@@ -123,16 +123,55 @@ const WhatsApp = () => {
         return true;
       });
 
-      const formattedChats: Chat[] = validChats.map((chat: any) => ({
-        id: chat.id,
-        name: chat.name || formatPhoneDisplay(chat.phone),
-        lastMessage: chat.last_message || "",
-        time: chat.last_message_time ? formatTime(chat.last_message_time) : "",
-        unread: chat.unread_count || 0,
-        avatar: getInitials(chat.name || chat.phone),
-        phone: chat.phone,
-        photo_url: chat.photo_url,
-      }));
+      // De-dupe chats that represent the same contact (common with WAHA LIDs)
+      // If two chats share the same photo, prefer the one with a real phone number.
+      const dedupedChats = Object.values(
+        validChats.reduce((acc: Record<string, any>, chat: any) => {
+          const key = chat.photo_url || chat.phone;
+          const existing = acc[key];
+          if (!existing) {
+            acc[key] = chat;
+            return acc;
+          }
+
+          const existingIsInternal = isWhatsAppInternalId(existing.phone || "");
+          const currentIsInternal = isWhatsAppInternalId(chat.phone || "");
+
+          // Prefer real phone over internal id
+          if (existingIsInternal && !currentIsInternal) {
+            acc[key] = chat;
+            return acc;
+          }
+          if (!existingIsInternal && currentIsInternal) {
+            return acc;
+          }
+
+          // Otherwise keep the most recent chat
+          const existingTime = existing.last_message_time ? new Date(existing.last_message_time).getTime() : 0;
+          const currentTime = chat.last_message_time ? new Date(chat.last_message_time).getTime() : 0;
+          if (currentTime > existingTime) acc[key] = chat;
+          return acc;
+        }, {})
+      );
+
+      const formattedChats: Chat[] = dedupedChats.map((chat: any) => {
+        const rawName = chat.name ? String(chat.name).trim() : "";
+        const nameLooksLikeNumber = /^\d+$/.test(rawName);
+        const displayName = !rawName || nameLooksLikeNumber || rawName === String(chat.phone)
+          ? formatPhoneDisplay(chat.phone)
+          : rawName;
+
+        return {
+          id: chat.id,
+          name: displayName,
+          lastMessage: chat.last_message || "",
+          time: chat.last_message_time ? formatTime(chat.last_message_time) : "",
+          unread: chat.unread_count || 0,
+          avatar: getInitials(displayName || chat.phone),
+          phone: chat.phone,
+          photo_url: chat.photo_url,
+        };
+      });
 
       setChats(formattedChats);
     } catch (error: any) {
