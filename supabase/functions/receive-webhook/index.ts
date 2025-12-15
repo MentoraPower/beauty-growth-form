@@ -519,6 +519,86 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
+    // Fast-path for Elementor: when sub_origin_id is provided, avoid extra DB lookups to prevent WP timeout (~5s)
+    if (subOriginId) {
+      const targetSubOriginId = subOriginId;
+      const targetPipelineId = url.searchParams.get("pipeline_id") || "b62bdfc2-cfda-4cc2-9a72-f87f9ac1f724"; // Novo
+
+      const leadData: Record<string, any> = {
+        name: String(payload.name).trim(),
+        email: String(payload.email).trim(),
+        whatsapp: String(payload.whatsapp || payload.phone || ""),
+        country_code: String(payload.country_code || "+55"),
+        instagram: String(payload.instagram || ""),
+        clinic_name: payload.clinic_name ? String(payload.clinic_name) : null,
+        service_area: String(payload.service_area || ""),
+        monthly_billing: String(payload.monthly_billing || ""),
+        weekly_attendance: String(payload.weekly_attendance || ""),
+        workspace_type: String(payload.workspace_type || ""),
+        years_experience: String(payload.years_experience || ""),
+        average_ticket: toNumberOrNull(payload.average_ticket),
+        estimated_revenue: toNumberOrNull(payload.estimated_revenue),
+        pipeline_id: targetPipelineId,
+        sub_origin_id: targetSubOriginId,
+        utm_source: payload.utm_source ? String(payload.utm_source) : null,
+        utm_medium: payload.utm_medium ? String(payload.utm_medium) : null,
+        utm_campaign: payload.utm_campaign ? String(payload.utm_campaign) : null,
+        utm_term: payload.utm_term ? String(payload.utm_term) : null,
+        utm_content: payload.utm_content ? String(payload.utm_content) : null,
+      };
+
+      if (payload.biggest_difficulty) {
+        leadData.biggest_difficulty = String(payload.biggest_difficulty);
+      }
+
+      // Single DB roundtrip when possible
+      let savedLeadId: string | null = null;
+      const { data: upserted, error: upsertError } = await supabase
+        .from("leads")
+        // Requires a unique constraint on email. If not present, we fall back below.
+        .upsert(leadData, { onConflict: "email" })
+        .select("id")
+        .maybeSingle();
+
+      if (!upsertError && upserted?.id) {
+        savedLeadId = upserted.id;
+      } else {
+        // Fallback (slightly slower) for projects without unique(email)
+        const { data: existingLead } = await supabase
+          .from("leads")
+          .select("id")
+          .eq("email", leadData.email)
+          .maybeSingle();
+
+        if (existingLead?.id) {
+          const { data, error } = await supabase
+            .from("leads")
+            .update(leadData)
+            .eq("id", existingLead.id)
+            .select("id")
+            .single();
+          if (error) throw error;
+          savedLeadId = data.id;
+        } else {
+          const { data, error } = await supabase
+            .from("leads")
+            .insert(leadData)
+            .select("id")
+            .single();
+          if (error) throw error;
+          savedLeadId = data.id;
+        }
+      }
+
+      return new Response(
+        JSON.stringify({ success: true, lead_id: savedLeadId, message: "Lead received" }),
+        {
+          status: 200,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
+      );
+    }
+
     // Find the matching webhook configuration
     let webhookQuery = supabase
       .from("crm_webhooks")
