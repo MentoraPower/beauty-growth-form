@@ -282,15 +282,17 @@ async function handler(req: Request): Promise<Response> {
       const to = formatPhoneForApi(phone);
       console.log(`[Wasender] Sending audio to ${to}: ${mediaUrl}`);
       
-      const result = await wasenderRequest("/send-message", {
+      // Use dedicated /send-audio endpoint for audio messages
+      const result = await wasenderRequest("/send-audio", {
         method: "POST",
         body: JSON.stringify({ 
           to, 
           audioUrl: mediaUrl,
+          ptt: true, // Send as voice note (push-to-talk)
         }),
       });
 
-      return new Response(JSON.stringify({ success: true, messageId: result?.messageId || result?.key?.id }), {
+      return new Response(JSON.stringify({ success: true, messageId: result?.data?.key?.id || result?.messageId }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
