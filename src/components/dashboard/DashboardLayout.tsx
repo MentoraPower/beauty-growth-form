@@ -115,7 +115,7 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
       {/* Desktop Sidebar - Fixed Collapsed */}
       <aside
         style={{ width: sidebarWidth }}
-        className="hidden lg:flex flex-col fixed left-2 top-2 h-[calc(100vh-1rem)] border-r border-border bg-card overflow-hidden z-50 rounded-l-2xl"
+        className="hidden lg:flex flex-col fixed left-2 top-2 h-[calc(100vh-1rem)] border-r border-border bg-card overflow-hidden z-50 rounded-l-2xl rounded-r-xl"
       >
         <div className="flex flex-col h-full">
           {/* Logo */}
@@ -372,8 +372,8 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
 
       {/* Main Content with rounded corners */}
       <main 
-        style={{ marginLeft: `${mainContentMargin}px` }}
-        className="hidden lg:block h-[calc(100vh-1rem)] mt-2 mr-2 transition-[margin-left] duration-300 ease-out"
+        style={{ left: `${mainContentMargin}px` }}
+        className="hidden lg:block fixed top-2 right-2 bottom-2 transition-[left] duration-300 ease-out"
       >
         <div className="bg-card rounded-2xl h-full p-6 overflow-auto relative">
           <PageTransition>
