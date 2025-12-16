@@ -199,15 +199,17 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
         {/* Dark connector between fixed menu and submenu - only visible in CRM mode */}
         <div
           style={{
-            left: sidebarWidth + 6,
+            left: sidebarWidth + 8,
             top: 8,
-            width: 12,
+            width: 16,
             height: 'calc(100vh - 1rem)',
             opacity: isCRMLayout ? 1 : 0,
             transition: 'opacity 200ms ease-out',
             pointerEvents: 'none',
+            borderTopRightRadius: '1rem',
+            borderBottomRightRadius: '1rem',
           }}
-          className="hidden lg:block fixed bg-[#0f0f12] z-[39] rounded-l-2xl"
+          className="hidden lg:block fixed bg-[#0f0f12] z-[38]"
         />
 
         {/* Submenu Panel - expands from fixed menu edge pushing outward */}
