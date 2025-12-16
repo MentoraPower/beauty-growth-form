@@ -25,10 +25,12 @@ interface Lead {
 
 interface LeadInfoPanelProps {
   phone: string;
+  photoUrl?: string | null;
+  contactName?: string | null;
   onClose?: () => void;
 }
 
-const LeadInfoPanel = ({ phone, onClose }: LeadInfoPanelProps) => {
+const LeadInfoPanel = ({ phone, photoUrl, contactName, onClose }: LeadInfoPanelProps) => {
   const [lead, setLead] = useState<Lead | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const navigate = useNavigate();
@@ -83,7 +85,7 @@ const LeadInfoPanel = ({ phone, onClose }: LeadInfoPanelProps) => {
 
   if (isLoading) {
     return (
-      <div className="w-72 border-l border-border/30 bg-card/50 flex items-center justify-center">
+      <div className="w-80 border-l border-border/30 bg-card/50 flex items-center justify-center">
         <div className="animate-pulse text-muted-foreground text-sm">Buscando lead...</div>
       </div>
     );
@@ -91,22 +93,30 @@ const LeadInfoPanel = ({ phone, onClose }: LeadInfoPanelProps) => {
 
   if (!lead) {
     return (
-      <div className="w-72 border-l border-border/30 bg-card/50 flex flex-col items-center justify-center p-6 text-center">
-        <User className="w-12 h-12 text-muted-foreground/30 mb-3" />
-        <p className="text-sm text-muted-foreground">Nenhum lead encontrado</p>
-        <p className="text-xs text-muted-foreground/70 mt-1">Este contato não está no CRM</p>
+      <div className="w-80 border-l border-border/30 bg-card/50 flex flex-col items-center justify-center p-6 text-center">
+        {photoUrl ? (
+          <img src={photoUrl} alt={contactName || "Contato"} className="w-16 h-16 rounded-full object-cover mb-3" />
+        ) : (
+          <User className="w-16 h-16 text-muted-foreground/30 mb-3" />
+        )}
+        <p className="text-sm font-medium text-foreground">{contactName || phone}</p>
+        <p className="text-xs text-muted-foreground mt-1">Este contato não está no CRM</p>
       </div>
     );
   }
 
   return (
-    <div className="w-72 border-l border-border/30 bg-card/50 flex flex-col overflow-hidden">
+    <div className="w-80 border-l border-border/30 bg-card/50 flex flex-col overflow-hidden">
       {/* Header */}
       <div className="p-4 border-b border-border/30 bg-muted/20">
         <div className="flex items-center gap-3">
-          <div className="w-12 h-12 rounded-full bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center text-white font-semibold text-lg">
-            {lead.name.charAt(0).toUpperCase()}
-          </div>
+          {photoUrl ? (
+            <img src={photoUrl} alt={lead.name} className="w-14 h-14 rounded-full object-cover" />
+          ) : (
+            <div className="w-14 h-14 rounded-full bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center text-white font-semibold text-xl">
+              {lead.name.charAt(0).toUpperCase()}
+            </div>
+          )}
           <div className="flex-1 min-w-0">
             <h3 className="font-semibold text-foreground truncate">{lead.name}</h3>
             {lead.clinic_name && (
