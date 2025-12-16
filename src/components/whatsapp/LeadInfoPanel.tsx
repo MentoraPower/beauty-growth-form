@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { User, Mail, Phone, Instagram, Building2, Calendar, DollarSign, Users, MapPin, Clock, TrendingUp, ExternalLink, Sparkles } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { User, Mail, Phone, Instagram, Building2, Calendar, DollarSign, Users, MapPin, Clock, TrendingUp, Sparkles } from "lucide-react";
 
 interface Lead {
   id: string;
@@ -34,7 +33,6 @@ interface LeadInfoPanelProps {
 const LeadInfoPanel = ({ phone, photoUrl, contactName, onClose }: LeadInfoPanelProps) => {
   const [lead, setLead] = useState<Lead | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const navigate = useNavigate();
 
   useEffect(() => {
     const fetchLead = async () => {
@@ -126,202 +124,143 @@ const LeadInfoPanel = ({ phone, photoUrl, contactName, onClose }: LeadInfoPanelP
   }
 
   return (
-    <div className="w-96 border-l border-border/20 bg-gradient-to-b from-card to-muted/10 flex flex-col overflow-hidden">
+    <div className="w-96 border-l border-border/10 bg-card flex flex-col overflow-hidden">
       {/* Header with Photo */}
-      <div className="relative">
-        <div className="h-20 bg-gradient-to-r from-emerald-500/20 to-emerald-600/10" />
-        <div className="px-6 pb-4 -mt-10">
-          <div className="flex items-end gap-4">
-            {displayPhoto ? (
-              <img 
-                src={displayPhoto} 
-                alt={lead.name} 
-                className="w-20 h-20 rounded-2xl object-cover ring-4 ring-card shadow-lg" 
-              />
-            ) : (
-              <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center text-white font-bold text-2xl ring-4 ring-card shadow-lg">
-                {lead.name.charAt(0).toUpperCase()}
-              </div>
-            )}
-            <div className="flex-1 min-w-0 pb-1">
-              {lead.clinic_name && (
-                <p className="text-xs text-muted-foreground truncate uppercase tracking-wide">{lead.clinic_name}</p>
-              )}
-              <h3 className="text-lg font-bold text-foreground truncate">{lead.name}</h3>
-            </div>
-          </div>
-          
-          {/* MQL Badge */}
-          {lead.is_mql !== null && (
-            <div className="mt-3">
-              <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold ${
-                lead.is_mql 
-                  ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300" 
-                  : "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300"
-              }`}>
-                <Sparkles className="w-3.5 h-3.5" />
-                {lead.is_mql ? "Lead Qualificado" : "Não Qualificado"}
-              </span>
+      <div className="p-5 border-b border-border/10">
+        <div className="flex items-center gap-4">
+          {displayPhoto ? (
+            <img 
+              src={displayPhoto} 
+              alt={lead.name} 
+              className="w-16 h-16 rounded-full object-cover ring-2 ring-border/20" 
+            />
+          ) : (
+            <div className="w-16 h-16 rounded-full bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center text-white font-bold text-xl">
+              {lead.name.charAt(0).toUpperCase()}
             </div>
           )}
+          <div className="flex-1 min-w-0">
+            <h3 className="text-base font-semibold text-foreground truncate">{lead.name}</h3>
+            {lead.clinic_name && (
+              <p className="text-xs text-muted-foreground truncate">{lead.clinic_name}</p>
+            )}
+            {lead.is_mql !== null && (
+              <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium mt-1.5 ${
+                lead.is_mql 
+                  ? "bg-emerald-500/10 text-emerald-600" 
+                  : "bg-amber-500/10 text-amber-600"
+              }`}>
+                <Sparkles className="w-3 h-3" />
+                {lead.is_mql ? "Qualificado" : "Não Qualificado"}
+              </span>
+            )}
+          </div>
         </div>
       </div>
 
       {/* Content */}
-      <div className="flex-1 overflow-y-auto px-6 py-4 space-y-5">
+      <div className="flex-1 overflow-y-auto p-5 space-y-5">
         {/* Contact Info */}
-        <div className="space-y-3">
-          <h4 className="text-xs font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
-            <div className="w-1 h-4 bg-emerald-500 rounded-full" />
-            Contato
-          </h4>
-          
-          <div className="space-y-2.5 pl-3">
-            <div className="flex items-center gap-3 text-sm group">
-              <div className="w-8 h-8 rounded-lg bg-muted/50 flex items-center justify-center group-hover:bg-emerald-500/10 transition-colors">
-                <Mail className="w-4 h-4 text-muted-foreground group-hover:text-emerald-600" />
-              </div>
-              <span className="truncate text-foreground">{lead.email}</span>
+        <div className="space-y-2.5">
+          <h4 className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Contato</h4>
+          <div className="space-y-1.5">
+            <div className="flex items-center gap-2.5 text-sm text-foreground">
+              <Mail className="w-3.5 h-3.5 text-muted-foreground/70" />
+              <span className="truncate">{lead.email}</span>
             </div>
-            
-            <div className="flex items-center gap-3 text-sm group">
-              <div className="w-8 h-8 rounded-lg bg-muted/50 flex items-center justify-center group-hover:bg-emerald-500/10 transition-colors">
-                <Phone className="w-4 h-4 text-muted-foreground group-hover:text-emerald-600" />
-              </div>
-              <span className="text-foreground">{lead.country_code} {lead.whatsapp}</span>
+            <div className="flex items-center gap-2.5 text-sm text-foreground">
+              <Phone className="w-3.5 h-3.5 text-muted-foreground/70" />
+              <span>{lead.country_code} {lead.whatsapp}</span>
             </div>
-            
             {lead.instagram && (
               <a 
                 href={`https://instagram.com/${lead.instagram.replace("@", "")}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center gap-3 text-sm group"
+                className="flex items-center gap-2.5 text-sm text-emerald-600 hover:underline"
               >
-                <div className="w-8 h-8 rounded-lg bg-muted/50 flex items-center justify-center group-hover:bg-pink-500/10 transition-colors">
-                  <Instagram className="w-4 h-4 text-muted-foreground group-hover:text-pink-600" />
-                </div>
-                <span className="text-emerald-600 hover:underline truncate">{lead.instagram}</span>
+                <Instagram className="w-3.5 h-3.5 text-muted-foreground/70" />
+                <span className="truncate">{lead.instagram}</span>
               </a>
             )}
           </div>
         </div>
 
         {/* Business Info */}
-        <div className="space-y-3">
-          <h4 className="text-xs font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
-            <div className="w-1 h-4 bg-blue-500 rounded-full" />
-            Negócio
-          </h4>
-          
-          <div className="space-y-2.5 pl-3">
-            {lead.service_area && (
-              <div className="flex items-center gap-3 text-sm">
-                <div className="w-8 h-8 rounded-lg bg-muted/50 flex items-center justify-center">
-                  <MapPin className="w-4 h-4 text-muted-foreground" />
+        {(lead.service_area || lead.workspace_type || lead.years_experience) && (
+          <div className="space-y-2.5">
+            <h4 className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Negócio</h4>
+            <div className="space-y-1.5">
+              {lead.service_area && (
+                <div className="flex items-center gap-2.5 text-sm text-foreground">
+                  <MapPin className="w-3.5 h-3.5 text-muted-foreground/70" />
+                  <span>{lead.service_area}</span>
                 </div>
-                <span className="text-foreground">{lead.service_area}</span>
-              </div>
-            )}
-            
-            {lead.workspace_type && (
-              <div className="flex items-center gap-3 text-sm">
-                <div className="w-8 h-8 rounded-lg bg-muted/50 flex items-center justify-center">
-                  <Building2 className="w-4 h-4 text-muted-foreground" />
+              )}
+              {lead.workspace_type && (
+                <div className="flex items-center gap-2.5 text-sm text-foreground">
+                  <Building2 className="w-3.5 h-3.5 text-muted-foreground/70" />
+                  <span>{lead.workspace_type}</span>
                 </div>
-                <span className="text-foreground">{lead.workspace_type}</span>
-              </div>
-            )}
-            
-            {lead.years_experience && (
-              <div className="flex items-center gap-3 text-sm">
-                <div className="w-8 h-8 rounded-lg bg-muted/50 flex items-center justify-center">
-                  <Clock className="w-4 h-4 text-muted-foreground" />
+              )}
+              {lead.years_experience && (
+                <div className="flex items-center gap-2.5 text-sm text-foreground">
+                  <Clock className="w-3.5 h-3.5 text-muted-foreground/70" />
+                  <span>{lead.years_experience}</span>
                 </div>
-                <span className="text-foreground">{lead.years_experience} de experiência</span>
-              </div>
-            )}
+              )}
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Financial Info */}
-        <div className="space-y-3">
-          <h4 className="text-xs font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
-            <div className="w-1 h-4 bg-amber-500 rounded-full" />
-            Financeiro
-          </h4>
-          
-          <div className="space-y-2.5 pl-3">
-            {lead.monthly_billing && (
-              <div className="flex items-center gap-3 text-sm">
-                <div className="w-8 h-8 rounded-lg bg-muted/50 flex items-center justify-center">
-                  <DollarSign className="w-4 h-4 text-muted-foreground" />
+        {(lead.monthly_billing || lead.weekly_attendance || lead.average_ticket || lead.estimated_revenue) && (
+          <div className="space-y-2.5">
+            <h4 className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Financeiro</h4>
+            <div className="space-y-1.5">
+              {lead.monthly_billing && (
+                <div className="flex items-center gap-2.5 text-sm text-foreground">
+                  <DollarSign className="w-3.5 h-3.5 text-muted-foreground/70" />
+                  <span>{lead.monthly_billing}</span>
                 </div>
-                <span className="text-foreground">{lead.monthly_billing}</span>
-              </div>
-            )}
-            
-            {lead.weekly_attendance && (
-              <div className="flex items-center gap-3 text-sm">
-                <div className="w-8 h-8 rounded-lg bg-muted/50 flex items-center justify-center">
-                  <Users className="w-4 h-4 text-muted-foreground" />
+              )}
+              {lead.weekly_attendance && (
+                <div className="flex items-center gap-2.5 text-sm text-foreground">
+                  <Users className="w-3.5 h-3.5 text-muted-foreground/70" />
+                  <span>{lead.weekly_attendance} atend./semana</span>
                 </div>
-                <span className="text-foreground">{lead.weekly_attendance} atend./semana</span>
-              </div>
-            )}
-            
-            {lead.average_ticket && (
-              <div className="flex items-center gap-3 text-sm">
-                <div className="w-8 h-8 rounded-lg bg-muted/50 flex items-center justify-center">
-                  <DollarSign className="w-4 h-4 text-muted-foreground" />
+              )}
+              {lead.average_ticket && (
+                <div className="flex items-center gap-2.5 text-sm text-foreground">
+                  <DollarSign className="w-3.5 h-3.5 text-muted-foreground/70" />
+                  <span>Ticket: {formatCurrency(lead.average_ticket)}</span>
                 </div>
-                <span className="text-foreground">Ticket: {formatCurrency(lead.average_ticket)}</span>
-              </div>
-            )}
-            
-            {lead.estimated_revenue && (
-              <div className="bg-gradient-to-r from-emerald-500/10 to-emerald-600/5 rounded-xl p-3 flex items-center gap-3">
-                <div className="w-10 h-10 rounded-lg bg-emerald-500/20 flex items-center justify-center">
-                  <TrendingUp className="w-5 h-5 text-emerald-600" />
+              )}
+              {lead.estimated_revenue && (
+                <div className="flex items-center gap-2.5 text-sm">
+                  <TrendingUp className="w-3.5 h-3.5 text-emerald-500" />
+                  <span className="text-foreground font-medium">{formatCurrency(lead.estimated_revenue)}/mês</span>
                 </div>
-                <div>
-                  <span className="text-xs text-muted-foreground block">Receita Estimada</span>
-                  <span className="text-foreground font-bold">{formatCurrency(lead.estimated_revenue)}</span>
-                </div>
-              </div>
-            )}
+              )}
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Difficulty */}
         {lead.biggest_difficulty && (
-          <div className="space-y-3">
-            <h4 className="text-xs font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
-              <div className="w-1 h-4 bg-red-500 rounded-full" />
-              Maior Dificuldade
-            </h4>
-            <p className="text-sm text-foreground bg-muted/30 rounded-xl p-3 leading-relaxed ml-3">
+          <div className="space-y-2.5">
+            <h4 className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Dificuldade</h4>
+            <p className="text-sm text-foreground/80 leading-relaxed">
               {lead.biggest_difficulty}
             </p>
           </div>
         )}
-
-        {/* Registration Date */}
-        <div className="flex items-center gap-2 text-xs text-muted-foreground pt-3 border-t border-border/30 ml-3">
-          <Calendar className="w-3.5 h-3.5" />
-          <span>Cadastrado em {formatDate(lead.created_at)}</span>
-        </div>
       </div>
 
       {/* Footer */}
-      <div className="p-4 border-t border-border/20 bg-muted/10">
-        <button
-          onClick={() => navigate(`/admin/crm/${lead.id}`)}
-          className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl text-sm font-semibold transition-colors shadow-lg shadow-emerald-500/20"
-        >
-          <ExternalLink className="w-4 h-4" />
-          Ver no CRM
-        </button>
+      <div className="px-5 py-3 border-t border-border/10 text-xs text-muted-foreground flex items-center gap-1.5">
+        <Calendar className="w-3 h-3" />
+        <span>Cadastrado em {formatDate(lead.created_at)}</span>
       </div>
     </div>
   );
