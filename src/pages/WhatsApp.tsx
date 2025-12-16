@@ -558,6 +558,8 @@ const WhatsApp = () => {
         { event: "INSERT", schema: "public", table: "whatsapp_messages", filter: `chat_id=eq.${selectedChat.id}` },
         (payload) => {
           const msg = payload.new as any;
+          console.log("[WhatsApp] Realtime message received:", msg.id);
+          
           setMessages(prev => {
             // Skip if already exists by id, message_id, or same text+from_me combo
             const isDuplicate = prev.some(m => 
@@ -578,6 +580,11 @@ const WhatsApp = () => {
               created_at: msg.created_at,
             }];
           });
+          
+          // Auto-scroll to bottom when new message arrives
+          requestAnimationFrame(() => {
+            scrollToBottom();
+          });
         }
       )
       .subscribe();
@@ -585,7 +592,7 @@ const WhatsApp = () => {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [selectedChat?.id]);
+  }, [selectedChat?.id, scrollToBottom]);
 
   // Fetch messages when chat selected
   useEffect(() => {
