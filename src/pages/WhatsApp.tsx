@@ -602,13 +602,11 @@ const WhatsApp = () => {
                   )}
                 >
                   <div className="relative flex-shrink-0">
-                    {chat.photo_url ? (
-                      <img src={chat.photo_url} alt={chat.name} className="w-12 h-12 rounded-full object-cover" />
-                    ) : (
-                      <div className="w-12 h-12 rounded-full bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center text-white font-medium text-lg">
-                        {chat.avatar}
-                      </div>
-                    )}
+                    <img 
+                      src={chat.photo_url || "https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp_default_profile_photo.png"} 
+                      alt={chat.name} 
+                      className="w-12 h-12 rounded-full object-cover" 
+                    />
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between">
@@ -656,13 +654,11 @@ const WhatsApp = () => {
               {/* Chat Header */}
               <div className="h-14 px-4 flex items-center gap-3 bg-muted/30 border-b border-border/30">
                 <div className="relative flex-shrink-0">
-                  {selectedChat.photo_url ? (
-                    <img src={selectedChat.photo_url} alt={selectedChat.name} className="w-10 h-10 rounded-full object-cover" />
-                  ) : (
-                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center text-white font-medium">
-                      {selectedChat.avatar}
-                    </div>
-                  )}
+                  <img 
+                    src={selectedChat.photo_url || "https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp_default_profile_photo.png"} 
+                    alt={selectedChat.name} 
+                    className="w-10 h-10 rounded-full object-cover" 
+                  />
                 </div>
                 <div className="flex-1">
                   <h3 className="font-medium text-foreground">{selectedChat.name}</h3>
