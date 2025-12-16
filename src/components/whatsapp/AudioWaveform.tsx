@@ -9,7 +9,6 @@ interface AudioWaveformProps {
 export const AudioWaveform = ({ src, sent = false }: AudioWaveformProps) => {
   const audioRef = useRef<HTMLAudioElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const animationRef = useRef<number>();
   const [isPlaying, setIsPlaying] = useState(false);
   const [duration, setDuration] = useState(0);
   const [currentTime, setCurrentTime] = useState(0);
@@ -128,24 +127,27 @@ export const AudioWaveform = ({ src, sent = false }: AudioWaveformProps) => {
     const audio = audioRef.current;
     if (!audio) return;
 
+    let rafId: number;
+
     const updateProgress = () => {
-      setCurrentTime(audio.currentTime);
-      if (isPlaying) {
-        animationRef.current = requestAnimationFrame(updateProgress);
+      if (audio && !audio.paused) {
+        setCurrentTime(audio.currentTime);
+        rafId = requestAnimationFrame(updateProgress);
       }
     };
 
     if (isPlaying) {
-      animationRef.current = requestAnimationFrame(updateProgress);
+      rafId = requestAnimationFrame(updateProgress);
     }
 
     return () => {
-      if (animationRef.current) {
-        cancelAnimationFrame(animationRef.current);
+      if (rafId) {
+        cancelAnimationFrame(rafId);
       }
     };
   }, [isPlaying]);
 
+  // Audio event handlers
   useEffect(() => {
     const audio = audioRef.current;
     if (!audio) return;
@@ -154,40 +156,26 @@ export const AudioWaveform = ({ src, sent = false }: AudioWaveformProps) => {
       setDuration(audio.duration);
     };
 
-    const handleEnded = () => {
-      setIsPlaying(false);
-      setCurrentTime(0);
-      // Redraw immediately to reset colors
-      if (canvasRef.current && waveformData.length > 0) {
-        const ctx = canvasRef.current.getContext("2d");
-        if (ctx) {
-          const width = canvasRef.current.width;
-          const height = canvasRef.current.height;
-          ctx.clearRect(0, 0, width, height);
-          waveformData.forEach((value, index) => {
-            const x = index * (3 + 2);
-            const barHeight = Math.max(4, value * height * 0.8);
-            const y = (height - barHeight) / 2;
-            ctx.fillStyle = sent ? "rgba(255,255,255,0.4)" : "rgba(0,0,0,0.2)";
-            ctx.beginPath();
-            ctx.roundRect(x, y, 3, barHeight, 1.5);
-            ctx.fill();
-          });
-        }
-      }
-    };
-
     const handleDurationChange = () => {
       if (audio.duration && isFinite(audio.duration)) {
         setDuration(audio.duration);
       }
     };
 
+    const handleEnded = () => {
+      setIsPlaying(false);
+      setCurrentTime(0);
+    };
+
+    const handleTimeUpdate = () => {
+      setCurrentTime(audio.currentTime);
+    };
+
     audio.addEventListener("loadedmetadata", handleLoadedMetadata);
     audio.addEventListener("durationchange", handleDurationChange);
     audio.addEventListener("ended", handleEnded);
+    audio.addEventListener("timeupdate", handleTimeUpdate);
 
-    // Try to get duration immediately if already loaded
     if (audio.duration && isFinite(audio.duration)) {
       setDuration(audio.duration);
     }
@@ -196,6 +184,7 @@ export const AudioWaveform = ({ src, sent = false }: AudioWaveformProps) => {
       audio.removeEventListener("loadedmetadata", handleLoadedMetadata);
       audio.removeEventListener("durationchange", handleDurationChange);
       audio.removeEventListener("ended", handleEnded);
+      audio.removeEventListener("timeupdate", handleTimeUpdate);
     };
   }, [src]);
 
