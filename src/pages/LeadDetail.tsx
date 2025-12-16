@@ -312,8 +312,9 @@ export default function LeadDetail() {
   if (!lead) return null;
 
   return (
-    <motion.div 
-      initial={{ opacity: 0 }}
+    <>
+      <motion.div 
+        initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.25, ease: "easeOut" }}
         className="space-y-3"
@@ -725,7 +726,6 @@ export default function LeadDetail() {
         </div>
       </motion.div>
 
-
       {/* Delete Confirmation Dialog */}
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
         <AlertDialogContent>
@@ -747,6 +747,6 @@ export default function LeadDetail() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    );
+    </>
   );
 }
