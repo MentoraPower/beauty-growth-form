@@ -13,7 +13,22 @@ const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 // Check if phone is a WhatsApp LID (internal ID) - not a real phone number
 const isWhatsAppLID = (phone: string): boolean => {
   const cleaned = String(phone || "").replace(/\D/g, "");
-  return cleaned.length > 14;
+  if (cleaned.length > 14) return true;
+  if (phone?.includes("@lid")) return true;
+  return false;
+};
+
+// Format phone number for display when no name available
+const formatPhoneDisplay = (phone: string): string => {
+  const digits = phone.replace(/\D/g, '');
+  if (digits.length === 13 && digits.startsWith('55')) {
+    return `+${digits.slice(0, 2)} ${digits.slice(2, 4)} ${digits.slice(4, 5)} ${digits.slice(5, 9)}-${digits.slice(9)}`;
+  } else if (digits.length === 12 && digits.startsWith('55')) {
+    return `+${digits.slice(0, 2)} ${digits.slice(2, 4)} ${digits.slice(4, 8)}-${digits.slice(8)}`;
+  } else if (digits.length >= 10) {
+    return `+${digits}`;
+  }
+  return phone;
 };
 
 const handler = async (req: Request): Promise<Response> => {
@@ -53,7 +68,56 @@ const handler = async (req: Request): Promise<Response> => {
       if (/^\d+$/.test(nameNoSpaces)) return null;
       if (nameNoSpaces === phoneDigits) return null;
       if (nameNoSpaces === `${phoneDigits}@c.us`) return null;
+      // If name looks like a phone number pattern
+      if (/^[\d\s\-\+\(\)]+$/.test(name) && name.replace(/\D/g, '').length >= 8) return null;
       return name;
+    };
+
+    // Fetch ALL contacts and build lookup map
+    const fetchAllContacts = async (): Promise<Map<string, { name: string | null; picture: string | null }>> => {
+      const contactsMap = new Map<string, { name: string | null; picture: string | null }>();
+      
+      try {
+        console.log("[WAHA] Fetching all contacts...");
+        const response = await fetch(
+          `${WAHA_API_URL}/api/contacts/all?session=default&limit=10000`,
+          { method: "GET", headers: getHeaders() }
+        );
+
+        if (!response.ok) {
+          console.log(`[WAHA] Failed to fetch contacts: ${response.status}`);
+          return contactsMap;
+        }
+
+        const contacts = await response.json();
+        console.log(`[WAHA] Fetched ${contacts?.length || 0} contacts`);
+
+        if (Array.isArray(contacts)) {
+          for (const contact of contacts) {
+            const contactId = contact.id || contact.jid || "";
+            const phoneDigits = contactId.replace(/\D/g, "").replace(/@.*/, "");
+            
+            if (isWhatsAppLID(phoneDigits) || phoneDigits.length < 8) continue;
+            
+            const name = normalizeName(
+              contact.name || contact.pushname || contact.pushName || 
+              contact.shortName || contact.formattedName || contact.notifyName,
+              phoneDigits
+            );
+            
+            contactsMap.set(phoneDigits, {
+              name,
+              picture: contact.profilePictureUrl || contact.picture || contact.imgUrl || null,
+            });
+          }
+        }
+        
+        console.log(`[WAHA] Built contacts map with ${contactsMap.size} entries`);
+      } catch (error: any) {
+        console.error("[WAHA] Error fetching contacts:", error.message);
+      }
+      
+      return contactsMap;
     };
 
     // Fetch chat picture using dedicated endpoint
@@ -69,7 +133,23 @@ const handler = async (req: Request): Promise<Response> => {
         const data = await response.json().catch(() => null);
         return data?.url || data?.profilePictureURL || data?.profilePictureUrl || null;
       } catch (e: any) {
-        console.log(`[WAHA] Chat picture error for ${chatId}:`, e.message);
+        return null;
+      }
+    };
+
+    // Fetch contact profile picture as fallback
+    const fetchContactPicture = async (contactId: string): Promise<string | null> => {
+      try {
+        const response = await fetch(
+          `${WAHA_API_URL}/api/contacts/profile-picture?contactId=${encodeURIComponent(contactId)}&session=default`,
+          { method: "GET", headers: getHeaders() }
+        );
+
+        if (!response.ok) return null;
+
+        const data = await response.json().catch(() => null);
+        return data?.url || data?.profilePictureUrl || null;
+      } catch (e: any) {
         return null;
       }
     };
@@ -93,7 +173,6 @@ const handler = async (req: Request): Promise<Response> => {
           normalizeName(data?.shortName, phoneDigits) ||
           null;
       } catch (e: any) {
-        console.log(`[WAHA] Contact info error:`, e.message);
         return null;
       }
     };
@@ -133,31 +212,58 @@ const handler = async (req: Request): Promise<Response> => {
       });
     }
 
-    // Sync all chats and messages using /chats/overview API
+    // Sync all chats and messages with full contact resolution
     if (action === "sync-all") {
-      console.log("[WAHA Sync] Starting sync with /chats/overview");
+      console.log("[WAHA Sync] Starting full sync with contacts map...");
       
       let syncedChats = 0;
       let syncedMessages = 0;
 
-      // Use /chats/overview to get chats with picture directly
-      const chatsResponse = await fetch(
-        `${WAHA_API_URL}/api/default/chats/overview?limit=100&offset=0`,
-        { method: "GET", headers: getHeaders() }
-      );
+      // STEP 1: Fetch all contacts first to build lookup map
+      const contactsMap = await fetchAllContacts();
 
-      if (!chatsResponse.ok) {
-        const errorText = await chatsResponse.text();
-        console.error("[WAHA Sync] Chats overview error:", errorText);
-        throw new Error(`Failed to fetch chats: ${chatsResponse.status}`);
+      // STEP 2: Fetch ALL chats with pagination
+      const allChats: any[] = [];
+      let chatsOffset = 0;
+      const chatsLimit = 100;
+      let hasMoreChats = true;
+
+      while (hasMoreChats) {
+        console.log(`[WAHA Sync] Fetching chats with offset ${chatsOffset}...`);
+        
+        const chatsResponse = await fetch(
+          `${WAHA_API_URL}/api/default/chats/overview?limit=${chatsLimit}&offset=${chatsOffset}`,
+          { method: "GET", headers: getHeaders() }
+        );
+
+        if (!chatsResponse.ok) {
+          console.error(`[WAHA Sync] Chats fetch failed: ${chatsResponse.status}`);
+          break;
+        }
+
+        const chatsData = await chatsResponse.json();
+        const chats = Array.isArray(chatsData) ? chatsData : [];
+        
+        console.log(`[WAHA Sync] Received ${chats.length} chats at offset ${chatsOffset}`);
+        
+        if (chats.length === 0) {
+          hasMoreChats = false;
+        } else {
+          allChats.push(...chats);
+          chatsOffset += chatsLimit;
+          
+          if (chats.length < chatsLimit) {
+            hasMoreChats = false;
+          }
+        }
       }
 
-      const chatsData = await chatsResponse.json();
-      console.log(`[WAHA Sync] Found ${chatsData?.length || 0} chats from overview`);
+      console.log(`[WAHA Sync] Total chats fetched: ${allChats.length}`);
 
-      const chats = Array.isArray(chatsData) ? chatsData : [];
+      // STEP 3: Process each chat with name/photo resolution
+      const processedPhones = new Set<string>();
 
-      for (const chat of chats) {
+      for (const chat of allChats) {
         const chatId = chat.id || chat.chatId || "";
         
         // Skip groups, channels, status broadcasts
@@ -167,37 +273,68 @@ const handler = async (req: Request): Promise<Response> => {
 
         // Skip LID chats
         if (chatId.includes("@lid")) {
-          console.log(`[WAHA Sync] Skipping LID: ${chatId}`);
           continue;
         }
 
         // Extract phone number
         const phone = chatId.split("@")[0].replace(/\D/g, "");
-        if (!phone || phone === "0") continue;
+        if (!phone || phone === "0" || phone.length < 8) continue;
 
         // Skip if it's a LID-style phone number
         if (isWhatsAppLID(phone)) {
-          console.log(`[WAHA Sync] Skipping LID phone: ${phone}`);
           continue;
         }
 
-        // Get name from overview response
-        const chatNameRaw = chat.name || chat.pushName || chat.pushname || chat.notifyName || null;
-        let chatName = normalizeName(chatNameRaw, phone);
+        // Skip duplicates
+        if (processedPhones.has(phone)) {
+          continue;
+        }
+        processedPhones.add(phone);
 
-        // Get picture directly from overview response (this is the key improvement!)
-        let photoUrl = chat.picture || chat.profilePicUrl || chat.profilePictureURL || 
-                       chat.profilePictureUrl || chat.imgUrl || null;
-
-        // If name is missing, try contact endpoint
+        // RESOLVE NAME with priority chain
+        let chatName: string | null = null;
+        
+        // 1. Try name from chat overview
+        chatName = normalizeName(
+          chat.name || chat.pushName || chat.pushname || chat.notifyName,
+          phone
+        );
+        
+        // 2. Try contacts map
+        if (!chatName && contactsMap.has(phone)) {
+          chatName = contactsMap.get(phone)?.name || null;
+        }
+        
+        // 3. Try fetching contact info
         if (!chatName) {
           chatName = await fetchContactInfo(chatId);
         }
+        
+        // 4. Fallback to formatted phone display
+        if (!chatName) {
+          chatName = formatPhoneDisplay(phone);
+        }
 
-        // If photo is missing from overview, use dedicated /chats/{chatId}/picture endpoint
+        // RESOLVE PHOTO with priority chain
+        let photoUrl: string | null = null;
+        
+        // 1. Try picture from chat overview
+        photoUrl = chat.picture || chat.profilePicUrl || chat.profilePictureURL || 
+                   chat.profilePictureUrl || chat.imgUrl || null;
+        
+        // 2. Try contacts map
+        if (!photoUrl && contactsMap.has(phone)) {
+          photoUrl = contactsMap.get(phone)?.picture || null;
+        }
+        
+        // 3. Try fetching chat picture
         if (!photoUrl) {
-          console.log(`[WAHA Sync] Fetching picture for ${phone} via dedicated endpoint`);
           photoUrl = await fetchChatPicture(chatId);
+        }
+        
+        // 4. Try fetching contact picture
+        if (!photoUrl) {
+          photoUrl = await fetchContactPicture(chatId);
         }
 
         // Get last message info from overview
@@ -209,7 +346,7 @@ const handler = async (req: Request): Promise<Response> => {
               ? lastMessageTimestamp * 1000 : lastMessageTimestamp).toISOString()
           : new Date().toISOString();
 
-        console.log(`[WAHA Sync] Chat: ${phone}, Name: ${chatName || 'null'}, Photo: ${photoUrl ? 'Yes' : 'No'}`);
+        console.log(`[WAHA Sync] Chat: ${phone}, Name: ${chatName}, Photo: ${photoUrl ? 'Yes' : 'No'}`);
 
         // Upsert chat
         const { data: chatData, error: chatError } = await supabase
@@ -220,6 +357,7 @@ const handler = async (req: Request): Promise<Response> => {
             last_message: lastMessage,
             last_message_time: lastMessageTime,
             photo_url: photoUrl,
+            unread_count: chat.unreadCount || 0,
           }, { onConflict: "phone", ignoreDuplicates: false })
           .select()
           .single();
@@ -231,15 +369,15 @@ const handler = async (req: Request): Promise<Response> => {
 
         syncedChats++;
 
-        // Fetch messages with pagination
+        // STEP 4: Fetch messages with pagination
         try {
-          let offset = 0;
-          const limit = 100;
-          let hasMore = true;
+          let msgOffset = 0;
+          const msgLimit = 100;
+          let hasMoreMessages = true;
 
-          while (hasMore) {
+          while (hasMoreMessages) {
             const messagesResponse = await fetch(
-              `${WAHA_API_URL}/api/default/chats/${encodeURIComponent(chatId)}/messages?limit=${limit}&offset=${offset}&downloadMedia=false`,
+              `${WAHA_API_URL}/api/default/chats/${encodeURIComponent(chatId)}/messages?limit=${msgLimit}&offset=${msgOffset}&downloadMedia=false`,
               { method: "GET", headers: getHeaders() }
             );
 
@@ -248,12 +386,12 @@ const handler = async (req: Request): Promise<Response> => {
             const messagesData = await messagesResponse.json();
             const messages = Array.isArray(messagesData) ? messagesData : [];
             
-            if (offset === 0) {
+            if (msgOffset === 0) {
               console.log(`[WAHA Sync] Found ${messages.length} messages for ${phone}`);
             }
 
             if (messages.length === 0) {
-              hasMore = false;
+              hasMoreMessages = false;
               break;
             }
 
@@ -307,10 +445,10 @@ const handler = async (req: Request): Promise<Response> => {
             }
 
             // If we got less than limit, no more messages
-            if (messages.length < limit) {
-              hasMore = false;
+            if (messages.length < msgLimit) {
+              hasMoreMessages = false;
             } else {
-              offset += limit;
+              msgOffset += msgLimit;
             }
           }
         } catch (msgErr: any) {
@@ -318,7 +456,7 @@ const handler = async (req: Request): Promise<Response> => {
         }
       }
 
-      // Clean up LID chats from database
+      // STEP 5: Clean up LID chats from database
       const { data: existingChats } = await supabase.from("whatsapp_chats").select("id, phone");
       if (existingChats) {
         const lidChatIds = existingChats
@@ -332,12 +470,13 @@ const handler = async (req: Request): Promise<Response> => {
         }
       }
 
-      console.log(`[WAHA Sync] Completed. Chats: ${syncedChats}, Messages: ${syncedMessages}`);
+      console.log(`[WAHA Sync] Completed. Chats: ${syncedChats}, Messages: ${syncedMessages}, Contacts in map: ${contactsMap.size}`);
 
       return new Response(JSON.stringify({ 
         success: true, 
         syncedChats, 
-        syncedMessages 
+        syncedMessages,
+        totalContactsInMap: contactsMap.size,
       }), {
         status: 200,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
