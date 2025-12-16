@@ -134,6 +134,54 @@ export type Database = {
           },
         ]
       }
+      email_automations: {
+        Row: {
+          body_html: string
+          created_at: string | null
+          id: string
+          is_active: boolean | null
+          name: string
+          sub_origin_id: string | null
+          subject: string
+          trigger_pipeline_id: string
+        }
+        Insert: {
+          body_html: string
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+          sub_origin_id?: string | null
+          subject: string
+          trigger_pipeline_id: string
+        }
+        Update: {
+          body_html?: string
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          sub_origin_id?: string | null
+          subject?: string
+          trigger_pipeline_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_automations_sub_origin_id_fkey"
+            columns: ["sub_origin_id"]
+            isOneToOne: false
+            referencedRelation: "crm_sub_origins"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "email_automations_trigger_pipeline_id_fkey"
+            columns: ["trigger_pipeline_id"]
+            isOneToOne: false
+            referencedRelation: "pipelines"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       email_settings: {
         Row: {
           created_at: string
