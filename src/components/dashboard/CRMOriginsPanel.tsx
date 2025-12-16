@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { Kanban, ChevronRight, Folder, FolderOpen, MoreVertical, Plus, Pencil, Trash2, X, GripVertical } from "lucide-react";
+import { Kanban, ChevronRight, Folder, FolderOpen, MoreVertical, Plus, Pencil, Trash2, GripVertical } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import {
@@ -117,25 +117,25 @@ function SortableOriginItem({
           <button
             {...attributes}
             {...listeners}
-            className="p-1 rounded cursor-grab active:cursor-grabbing hover:bg-muted"
+            className="p-1 rounded cursor-grab active:cursor-grabbing hover:bg-white/10"
           >
-            <GripVertical className="h-3 w-3 text-muted-foreground" />
+            <GripVertical className="h-3 w-3 text-white/50" />
           </button>
         </div>
         
         <button
           onClick={() => toggleOrigin(origin.id)}
-          className="flex items-center gap-2 flex-1 py-2 px-2 rounded-lg transition-all duration-200 ease-out text-sm text-foreground/90 hover:text-foreground hover:bg-muted/50 group-hover/origin:translate-x-4 group-has-[.actions-area:hover]/origin:translate-x-0"
+          className="flex items-center gap-2 flex-1 py-2 px-2 rounded-lg transition-all duration-200 ease-out text-sm text-white/80 hover:text-white hover:bg-white/5 group-hover/origin:translate-x-4 group-has-[.actions-area:hover]/origin:translate-x-0"
         >
           {isOriginExpanded ? (
-            <FolderOpen className="h-4 w-4 flex-shrink-0 fill-current text-foreground/90" />
+            <FolderOpen className="h-4 w-4 flex-shrink-0 fill-current text-white/80" />
           ) : (
-            <Folder className="h-4 w-4 flex-shrink-0 fill-current text-foreground/90" />
+            <Folder className="h-4 w-4 flex-shrink-0 fill-current text-white/80" />
           )}
           <span className="flex-1 text-left truncate font-bold">{origin.nome}</span>
           <ChevronRight 
             className={cn(
-              "h-3 w-3 transition-transform duration-300 text-foreground/70",
+              "h-3 w-3 transition-transform duration-300 text-white/60",
               isOriginExpanded ? "rotate-90" : ""
             )} 
           />
@@ -147,9 +147,9 @@ function SortableOriginItem({
             <DropdownMenuTrigger asChild>
               <button 
                 onClick={(e) => e.stopPropagation()}
-                className="p-1.5 rounded opacity-0 group-hover/origin:opacity-100 transition-all duration-200 ease-out hover:bg-muted"
+                className="p-1.5 rounded opacity-0 group-hover/origin:opacity-100 transition-all duration-200 ease-out hover:bg-white/10"
               >
-                <MoreVertical className="h-4 w-4 text-foreground/80" />
+                <MoreVertical className="h-4 w-4 text-white/70" />
               </button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-40 z-[9999] bg-popover">
@@ -176,7 +176,7 @@ function SortableOriginItem({
         style={{ gridTemplateRows: isOriginExpanded ? '1fr' : '0fr' }}
       >
         <div className="overflow-hidden">
-          <div className="ml-4 pl-2 space-y-0.5 pt-1 pb-1 rounded-lg border-l border-border/50 bg-muted/30">
+          <div className="ml-4 pl-2 space-y-0.5 pt-1 pb-1 rounded-lg border-l border-white/10 bg-white/5">
             {originSubOrigins.map((subOrigin) => {
               const leadCount = leadCounts.find(lc => lc.sub_origin_id === subOrigin.id)?.count || 0;
               const isActive = currentSubOriginId === subOrigin.id;
@@ -188,21 +188,21 @@ function SortableOriginItem({
                     className={cn(
                       "flex items-center gap-2 flex-1 py-1.5 px-2 rounded-lg transition-all duration-200 ease-out text-xs",
                       isActive 
-                        ? "bg-primary/10 text-primary font-medium"
-                        : "text-foreground/80 hover:text-foreground hover:bg-muted/50"
+                        ? "bg-gradient-to-r from-[#6366f1] to-[#8b5cf6] text-white font-medium"
+                        : "text-white/70 hover:text-white hover:bg-white/5"
                     )}
                   >
                     <Kanban className={cn(
                       "h-3 w-3 flex-shrink-0",
-                      isActive ? "text-primary" : "text-foreground/80"
+                      isActive ? "text-white" : "text-white/70"
                     )} />
                     <span className="truncate">{subOrigin.nome}</span>
                     {leadCount > 0 && (
                       <span className={cn(
                         "ml-auto text-[10px] px-1.5 py-0.5 rounded-full",
                         isActive 
-                          ? "bg-primary/20 text-primary"
-                          : "bg-muted text-muted-foreground"
+                          ? "bg-white/20 text-white"
+                          : "bg-white/10 text-white/60"
                       )}>
                         {leadCount}
                       </span>
@@ -214,9 +214,9 @@ function SortableOriginItem({
                     <DropdownMenuTrigger asChild>
                       <button 
                         onClick={(e) => e.stopPropagation()}
-                        className="p-1.5 rounded opacity-0 group-hover:opacity-100 transition-all duration-200 ease-out hover:bg-muted"
+                        className="p-1.5 rounded opacity-0 group-hover:opacity-100 transition-all duration-200 ease-out hover:bg-white/10"
                       >
-                        <MoreVertical className="h-4 w-4 text-foreground/80" />
+                        <MoreVertical className="h-4 w-4 text-white/70" />
                       </button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end" className="w-40 z-[9999] bg-popover">
@@ -241,7 +241,7 @@ function SortableOriginItem({
             {/* Add Sub-origin Button */}
             <button
               onClick={() => openCreateSubOriginDialog(origin.id)}
-              className="flex items-center gap-2 w-full py-1.5 px-2 rounded-lg transition-all duration-200 ease-out text-xs text-foreground/60 hover:text-foreground hover:bg-muted/50"
+              className="flex items-center gap-2 w-full py-1.5 px-2 rounded-lg transition-all duration-200 ease-out text-xs text-white/50 hover:text-white hover:bg-white/5"
             >
               <Plus className="h-3 w-3" />
               <span>Criar sub origem</span>
@@ -546,25 +546,19 @@ export function CRMOriginsPanel({ isOpen, onClose, sidebarWidth }: CRMOriginsPan
       <div
         style={{ left: sidebarWidth + 8 }}
         className={cn(
-          "fixed top-2 bottom-2 w-64 bg-card border border-border rounded-2xl z-40 transition-all duration-300 ease-out overflow-hidden shadow-xl",
+          "hidden lg:block fixed top-0 my-2 h-[calc(100vh-1rem)] w-64 rounded-2xl border border-[#ffffff15] bg-[#0f0f12] z-40 transition-all duration-300 ease-out overflow-hidden",
           isOpen 
             ? "opacity-100 translate-x-0" 
             : "opacity-0 -translate-x-4 pointer-events-none"
         )}
       >
         {/* Header */}
-        <div className="flex items-center justify-between px-4 py-3 border-b border-border">
-          <h3 className="text-sm font-semibold text-foreground">Origens CRM</h3>
-          <button
-            onClick={onClose}
-            className="p-1.5 rounded-lg hover:bg-muted transition-colors"
-          >
-            <X className="h-4 w-4 text-muted-foreground" />
-          </button>
+        <div className="px-4 py-4">
+          <h2 className="text-white font-semibold text-sm px-2">Origens CRM</h2>
         </div>
 
         {/* Content */}
-        <div className="flex-1 overflow-y-auto p-3 space-y-1 max-h-[calc(100vh-6rem)]">
+        <div className="flex-1 overflow-y-auto px-3 pb-3 space-y-1 max-h-[calc(100vh-6rem)]">
           <DndContext
             sensors={sensors}
             collisionDetection={closestCenter}
@@ -603,7 +597,7 @@ export function CRMOriginsPanel({ isOpen, onClose, sidebarWidth }: CRMOriginsPan
           {/* Add Origin Button */}
           <button
             onClick={openCreateOriginDialog}
-            className="flex items-center gap-2 w-full py-2 px-2 rounded-lg transition-all duration-200 ease-out text-xs text-foreground/70 hover:text-foreground hover:bg-muted/50"
+            className="flex items-center gap-2 w-full py-2 px-2 rounded-lg transition-all duration-200 ease-out text-xs text-white/60 hover:text-white hover:bg-white/5"
           >
             <Plus className="h-3 w-3" />
             <span>Nova Origem</span>
