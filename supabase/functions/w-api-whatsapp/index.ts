@@ -324,22 +324,59 @@ const handler = async (req: Request): Promise<Response> => {
 
         syncedChats++;
 
-        // Fetch and sync messages for this chat
-        try {
-          const messagesUrl = `${W_API_BASE_URL}/chats/fetch-messages/${phone}?instanceId=${W_API_INSTANCE_ID}&limit=100`;
-          const messagesResponse = await fetch(messagesUrl, {
-            method: "GET",
-            headers: getHeaders(),
-          });
+        // Fetch and sync messages for this chat - try multiple phone formats
+        const phoneFormats = [
+          phone, // Just the number: 5527998474152
+          `${phone}@s.whatsapp.net`, // Full ID: 5527998474152@s.whatsapp.net
+          id, // Original chat ID
+        ];
 
-          if (messagesResponse.ok) {
-            const messagesData = await messagesResponse.json();
+        for (const phoneFormat of phoneFormats) {
+          try {
+            // W-API endpoint for fetching messages
+            const messagesUrl = `${W_API_BASE_URL}/chats/fetch-messages/${encodeURIComponent(phoneFormat)}?instanceId=${W_API_INSTANCE_ID}&limit=500`;
+            console.log(`[W-API Sync] Fetching messages for: ${messagesUrl}`);
+            
+            const messagesResponse = await fetch(messagesUrl, {
+              method: "GET",
+              headers: getHeaders(),
+            });
+
+            const messagesText = await messagesResponse.text();
+            console.log(`[W-API Sync] Messages response status: ${messagesResponse.status}`);
+            console.log(`[W-API Sync] Messages response: ${messagesText.substring(0, 500)}`);
+
+            // Skip if HTML response
+            if (messagesText.startsWith("<!DOCTYPE") || messagesText.startsWith("<html")) {
+              console.log(`[W-API Sync] Got HTML response for messages, trying next format`);
+              continue;
+            }
+
+            let messagesData;
+            try {
+              messagesData = JSON.parse(messagesText);
+            } catch (e) {
+              console.log(`[W-API Sync] Failed to parse messages JSON`);
+              continue;
+            }
+
+            if (messagesData.error) {
+              console.log(`[W-API Sync] API error for messages: ${messagesData.message}`);
+              continue;
+            }
+
             const messages = messagesData.messages || messagesData.data || messagesData || [];
+            console.log(`[W-API Sync] Found ${Array.isArray(messages) ? messages.length : 0} messages for ${phoneFormat}`);
 
-            if (Array.isArray(messages)) {
+            if (Array.isArray(messages) && messages.length > 0) {
               for (const msg of messages) {
-                const messageId = msg.id || msg.messageId || msg._id;
+                const messageId = msg.id || msg.messageId || msg._id || msg.key?.id;
                 if (!messageId) continue;
+
+                const msgText = msg.body || msg.text || msg.content || msg.message?.conversation || msg.message?.extendedTextMessage?.text || "";
+                const msgFromMe = msg.fromMe ?? msg.key?.fromMe ?? false;
+                const msgTimestamp = msg.timestamp || msg.messageTimestamp || msg.time;
+                const createdAt = msgTimestamp ? new Date(typeof msgTimestamp === 'number' && msgTimestamp < 10000000000 ? msgTimestamp * 1000 : msgTimestamp).toISOString() : new Date().toISOString();
 
                 const { error: msgError } = await supabase
                   .from("whatsapp_messages")
@@ -347,21 +384,24 @@ const handler = async (req: Request): Promise<Response> => {
                     chat_id: chatData.id,
                     message_id: messageId,
                     phone,
-                    text: msg.body || msg.text || msg.content || "",
-                    from_me: msg.fromMe ?? false,
-                    status: msg.ack === 3 ? "READ" : msg.ack === 2 ? "DELIVERED" : "SENT",
+                    text: msgText,
+                    from_me: msgFromMe,
+                    status: msg.ack === 3 ? "READ" : msg.ack === 2 ? "DELIVERED" : msg.status || "SENT",
                     media_url: msg.mediaUrl || msg.media?.url || null,
-                    media_type: msg.mediaType || msg.type || null,
+                    media_type: msg.mediaType || msg.type || msg.message?.imageMessage ? "image" : null,
+                    created_at: createdAt,
                   }, { onConflict: "message_id" });
 
                 if (!msgError) {
                   syncedMessages++;
                 }
               }
+              // If we got messages, break from trying different formats
+              break;
             }
+          } catch (msgErr: any) {
+            console.error(`[W-API Sync] Error syncing messages for ${phoneFormat}:`, msgErr.message);
           }
-        } catch (msgErr) {
-          console.error(`[W-API Sync] Error syncing messages for ${phone}:`, msgErr);
         }
       }
 
