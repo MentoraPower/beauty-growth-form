@@ -307,16 +307,6 @@ const LeadInfoPanel = ({ phone, photoUrl, contactName, onClose }: LeadInfoPanelP
         </div>
       </div>
 
-      {/* Footer */}
-      <div className="p-4 border-t border-border/20 bg-muted/10">
-        <button
-          onClick={() => navigate(`/admin/crm/${lead.id}`)}
-          className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl text-sm font-semibold transition-colors shadow-lg shadow-emerald-500/20"
-        >
-          <ExternalLink className="w-4 h-4" />
-          Ver no CRM
-        </button>
-      </div>
     </div>
   );
 };
