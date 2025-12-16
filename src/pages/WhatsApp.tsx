@@ -297,6 +297,37 @@ const WhatsApp = () => {
     });
   }, []);
 
+  // Update chat name when lead is found/created in CRM
+  const updateChatName = useCallback(async (chatId: string, newName: string) => {
+    // Update local state
+    setChats(prev => {
+      const newChats = prev.map(c => 
+        c.id === chatId ? { ...c, name: newName } : c
+      );
+      chatsRef.current = newChats;
+      return newChats;
+    });
+
+    // Update selected chat if it's the one being updated
+    setSelectedChat(prev => {
+      if (prev?.id === chatId) {
+        return { ...prev, name: newName };
+      }
+      return prev;
+    });
+
+    // Update in Supabase
+    try {
+      await supabase
+        .from("whatsapp_chats")
+        .update({ name: newName })
+        .eq("id", chatId);
+      console.log("[WhatsApp] Chat name updated to:", newName);
+    } catch (error) {
+      console.error("Error updating chat name:", error);
+    }
+  }, []);
+
   const fetchMessages = async (chatId: string) => {
     setIsLoadingMessages(true);
     try {
@@ -1073,6 +1104,7 @@ const WhatsApp = () => {
               phone={selectedChat.phone} 
               photoUrl={selectedChat.photo_url}
               contactName={selectedChat.name}
+              onNameUpdate={(newName) => updateChatName(selectedChat.id, newName)}
             />
           )}
         </div>
