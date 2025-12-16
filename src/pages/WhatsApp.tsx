@@ -68,9 +68,9 @@ const WhatsApp = () => {
 
   const formatPhoneDisplay = (phone: string): string => {
     if (!phone) return "";
-    // If it's an internal WhatsApp ID, show "Contato" instead
+    // If it's an internal WhatsApp ID, just return the number
     if (isWhatsAppInternalId(phone)) {
-      return "Contato";
+      return phone;
     }
     // Format phone for display: +55 44 9123-4567
     const cleaned = phone.replace(/\D/g, "");
@@ -111,50 +111,19 @@ const WhatsApp = () => {
 
       if (error) throw error;
 
-      // Filter out only channels and groups - keep all other contacts
+      // Filter out channels, groups, and LID contacts
       const validChats = (data || []).filter((chat: any) => {
         const phone = chat.phone || "";
-        // Only exclude clear non-contacts
-        if (phone.includes("@newsletter")) return false; // Channels
-        if (phone.includes("@g.us")) return false; // Groups
+        if (phone.includes("@newsletter")) return false;
+        if (phone.includes("@g.us")) return false;
         if (phone.includes("status@broadcast")) return false;
-        if (phone === "0" || phone === "") return false; // Empty
+        if (phone === "0" || phone === "") return false;
+        // Filter out WhatsApp LIDs (internal IDs, not real phone numbers)
+        if (isWhatsAppInternalId(phone)) return false;
         return true;
       });
 
-      // De-dupe chats that represent the same contact (common with WAHA LIDs)
-      // If two chats share the same photo, prefer the one with a real phone number.
-      const dedupedChats = Object.values(
-        validChats.reduce((acc: Record<string, any>, chat: any) => {
-          const photoKey = chat.photo_url ? String(chat.photo_url).split("?")[0] : "";
-          const key = photoKey || chat.phone;
-          const existing = acc[key];
-          if (!existing) {
-            acc[key] = chat;
-            return acc;
-          }
-
-          const existingIsInternal = isWhatsAppInternalId(existing.phone || "");
-          const currentIsInternal = isWhatsAppInternalId(chat.phone || "");
-
-          // Prefer real phone over internal id
-          if (existingIsInternal && !currentIsInternal) {
-            acc[key] = chat;
-            return acc;
-          }
-          if (!existingIsInternal && currentIsInternal) {
-            return acc;
-          }
-
-          // Otherwise keep the most recent chat
-          const existingTime = existing.last_message_time ? new Date(existing.last_message_time).getTime() : 0;
-          const currentTime = chat.last_message_time ? new Date(chat.last_message_time).getTime() : 0;
-          if (currentTime > existingTime) acc[key] = chat;
-          return acc;
-        }, {})
-      );
-
-      const formattedChats: Chat[] = dedupedChats.map((chat: any) => {
+      const formattedChats: Chat[] = validChats.map((chat: any) => {
         const rawName = chat.name ? String(chat.name).trim() : "";
         const nameLooksLikeNumber = /^\d+$/.test(rawName);
         const displayName = !rawName || nameLooksLikeNumber || rawName === String(chat.phone)
