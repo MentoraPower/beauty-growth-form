@@ -120,15 +120,15 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
       >
         <div className="flex flex-col h-full">
           {/* Logo */}
-          <div className="pt-6 pb-4 px-2 flex justify-center">
-            <div className="w-14 flex items-center">
+          <div className="pt-6 pb-4 px-3 flex justify-center">
+            <div className="w-12 flex items-center">
               <img src={scaleLogo} alt="Scale Beauty" className="w-full h-auto" />
             </div>
           </div>
 
           {/* Navigation */}
-          <nav className="flex-1 overflow-y-auto overflow-x-hidden px-2 py-1">
-            <div className="flex flex-col gap-1">
+          <nav className="flex-1 overflow-y-auto overflow-x-hidden px-3 py-2">
+            <div className="flex flex-col gap-2">
               {navItems.map((item) => {
                 const isActive = item.id === 'dashboard' ? isDashboardActive : false;
                 const isPanelOpen = activePanel === item.id;
@@ -137,7 +137,7 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
                     key={item.id}
                     onClick={() => handleNavClick(item.id)}
                     className={cn(
-                      "relative flex items-center justify-center w-full rounded-xl transition-colors duration-200 p-3",
+                      "relative flex items-center justify-center w-full rounded-xl transition-colors duration-200 p-2.5",
                       isActive || isPanelOpen
                         ? "bg-muted text-foreground before:absolute before:left-0 before:top-1/2 before:-translate-y-1/2 before:h-[70%] before:w-1 before:rounded-r-full before:bg-gradient-to-b before:from-[#F40000] before:to-[#A10000]"
                         : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
@@ -152,7 +152,7 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
               <button
                 onClick={() => handleNavClick('crm')}
                 className={cn(
-                  "relative flex items-center justify-center w-full rounded-xl transition-colors duration-200 p-3",
+                  "relative flex items-center justify-center w-full rounded-xl transition-colors duration-200 p-2.5",
                   isCRMActive || activePanel === 'crm'
                     ? "bg-muted text-foreground before:absolute before:left-0 before:top-1/2 before:-translate-y-1/2 before:h-[70%] before:w-1 before:rounded-r-full before:bg-gradient-to-b before:from-[#F40000] before:to-[#A10000]"
                     : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
@@ -170,7 +170,7 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
                     key={item.id}
                     onClick={() => handleNavClick(item.id)}
                     className={cn(
-                      "relative flex items-center justify-center w-full rounded-xl transition-colors duration-200 p-3",
+                      "relative flex items-center justify-center w-full rounded-xl transition-colors duration-200 p-2.5",
                       isActive || isPanelOpen
                         ? "bg-muted text-foreground before:absolute before:left-0 before:top-1/2 before:-translate-y-1/2 before:h-[70%] before:w-1 before:rounded-r-full before:bg-gradient-to-b before:from-[#F40000] before:to-[#A10000]"
                         : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
@@ -184,10 +184,10 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
           </nav>
 
           {/* Footer */}
-          <div className="border-t border-border p-3">
+          <div className="border-t border-border px-3 py-3">
             <Link
               to="/"
-              className="relative flex items-center justify-center w-full rounded-xl transition-colors duration-200 p-3 text-muted-foreground hover:bg-muted/50 hover:text-foreground"
+              className="relative flex items-center justify-center w-full rounded-xl transition-colors duration-200 p-2.5 text-muted-foreground hover:bg-muted/50 hover:text-foreground"
             >
               <LogOut className="h-5 w-5 flex-shrink-0" strokeWidth={1.5} />
             </Link>
