@@ -99,17 +99,17 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
       )}>
         <LoadingBar />
 
-        {/* White underlay behind the fixed menu (CRM only) */}
+        {/* White strip covering entire left side behind menu (CRM only) */}
         {isCRMLayout && (
           <div
             aria-hidden="true"
             style={{
-              left: 8,
-              top: 8,
-              height: "calc(100vh - 1rem)",
-              width: sidebarWidth + 20,
+              left: 0,
+              top: 0,
+              height: "100vh",
+              width: sidebarWidth + 16,
             }}
-            className="hidden lg:block fixed bg-white rounded-2xl z-20 pointer-events-none"
+            className="hidden lg:block fixed bg-card z-[35] pointer-events-none"
           />
         )}
         
