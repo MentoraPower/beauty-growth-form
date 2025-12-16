@@ -54,10 +54,10 @@ const CallModal = ({
       }, 3000);
     } catch (error: any) {
       const msg = error?.message || "";
-      if (msg.includes("unverified") || msg.includes("Trial accounts")) {
-        setErrorMessage("Conta Twilio em modo trial. Apenas números verificados podem receber chamadas.");
+      if (msg.includes("configuration") || msg.includes("secrets")) {
+        setErrorMessage("Configuração da Infobip incompleta. Verifique os secrets.");
       } else {
-        setErrorMessage("Erro ao iniciar chamada. Tente novamente.");
+        setErrorMessage(msg || "Erro ao iniciar chamada. Tente novamente.");
       }
       setCallStatus("error");
     }

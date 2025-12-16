@@ -18,7 +18,7 @@ verify_jwt = false
 [functions.wasender-webhook]
 verify_jwt = false
 
-[functions.twilio-call]
+[functions.infobip-call]
 verify_jwt = false
 
 [functions.trigger-webhook]

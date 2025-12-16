@@ -756,7 +756,7 @@ const WhatsApp = () => {
   const initiateCall = async () => {
     if (!selectedChat) return;
 
-    const { error } = await supabase.functions.invoke("twilio-call", {
+    const { error } = await supabase.functions.invoke("infobip-call", {
       body: { to: selectedChat.phone },
     });
 
