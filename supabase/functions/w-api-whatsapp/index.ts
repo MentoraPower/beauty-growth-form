@@ -89,7 +89,7 @@ const handler = async (req: Request): Promise<Response> => {
     if (action === "get-chats") {
       const allChats: any[] = [];
       let page = 1;
-      const perPage = 100;
+      const perPage = 20;
       let hasMore = true;
 
       while (hasMore) {
@@ -215,7 +215,7 @@ const handler = async (req: Request): Promise<Response> => {
       // First get all chats
       const allChats: any[] = [];
       let page = 1;
-      const perPage = 100;
+      const perPage = 20;
       let hasMore = true;
 
       while (hasMore) {
