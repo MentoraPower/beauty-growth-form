@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect, memo } from "react";
-import { Link, useLocation } from "react-router-dom";
-import { LayoutDashboard, Menu, X, LogOut, Kanban } from "lucide-react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
+import { LayoutDashboard, Menu, X, LogOut, Kanban, ChevronRight, BarChart3, Users, TrendingUp, Settings } from "lucide-react";
 import { cn } from "@/lib/utils";
 import WhatsAppIcon from "@/components/icons/WhatsApp";
 import scaleLogo from "@/assets/scale-logo.png";
@@ -12,67 +12,84 @@ interface DashboardLayoutProps {
   children: React.ReactNode;
 }
 
+type ActivePanel = 'none' | 'dashboard' | 'crm' | 'whatsapp';
+
 const navItems = [
-  { href: "/admin", icon: LayoutDashboard, label: "Dashboard" },
+  { 
+    id: 'dashboard' as ActivePanel, 
+    href: "/admin", 
+    icon: LayoutDashboard, 
+    label: "Dashboard",
+    subItems: [
+      { href: "/admin", icon: BarChart3, label: "Visão Geral" },
+    ]
+  },
 ];
 
 const bottomNavItems = [
-  { href: "/admin/whatsapp", icon: WhatsAppIcon, label: "WhatsApp" },
+  { 
+    id: 'whatsapp' as ActivePanel, 
+    href: "/admin/whatsapp", 
+    icon: WhatsAppIcon, 
+    label: "WhatsApp",
+    subItems: [
+      { href: "/admin/whatsapp", icon: WhatsAppIcon, label: "Conversas" },
+    ]
+  },
 ];
 
-// Global hover state to persist across navigations
-let globalHoverState = false;
-
 // Load panel state from localStorage
-const getInitialPanelState = () => {
+const getInitialPanelState = (): ActivePanel => {
   if (typeof window !== 'undefined') {
-    const saved = localStorage.getItem('crm_panel_open');
-    return saved === 'true';
+    const saved = localStorage.getItem('active_panel');
+    if (saved === 'dashboard' || saved === 'crm' || saved === 'whatsapp') {
+      return saved;
+    }
   }
-  return false;
+  return 'none';
 };
 
-// Global panel state to persist across re-renders
-let globalCrmPanelOpen = getInitialPanelState();
+let globalActivePanel: ActivePanel = getInitialPanelState();
 
 const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [isHovered, setIsHovered] = useState(globalHoverState);
-  const [crmPanelOpen, setCrmPanelOpen] = useState(globalCrmPanelOpen);
+  const [activePanel, setActivePanel] = useState<ActivePanel>(globalActivePanel);
   const location = useLocation();
+  const navigate = useNavigate();
 
   const isCRMActive = location.pathname.startsWith("/admin/crm");
+  const isDashboardActive = location.pathname === "/admin";
+  const isWhatsAppActive = location.pathname === "/admin/whatsapp";
 
-  // Sync with global state on mount and route change
+  // Sync with global state and localStorage
   useEffect(() => {
-    setIsHovered(globalHoverState);
-  }, [location.pathname]);
+    globalActivePanel = activePanel;
+    localStorage.setItem('active_panel', activePanel);
+  }, [activePanel]);
 
-  // Keep global state and localStorage in sync
-  useEffect(() => {
-    globalCrmPanelOpen = crmPanelOpen;
-    localStorage.setItem('crm_panel_open', String(crmPanelOpen));
-  }, [crmPanelOpen]);
-
-  const handleMouseEnter = useCallback(() => {
-    globalHoverState = true;
-    setIsHovered(true);
-  }, []);
-
-  const handleMouseLeave = useCallback(() => {
-    globalHoverState = false;
-    setIsHovered(false);
-  }, []);
-
-  const shouldBeExpanded = isHovered || sidebarOpen;
-  const sidebarWidth = shouldBeExpanded ? 224 : 72;
-
-  const handleCRMClick = () => {
-    setCrmPanelOpen(!crmPanelOpen);
+  const handleNavClick = (panelId: ActivePanel) => {
+    if (activePanel === panelId) {
+      setActivePanel('none');
+    } else {
+      setActivePanel(panelId);
+    }
   };
 
+  const handleSubItemClick = (href: string) => {
+    navigate(href);
+  };
+
+  // Fixed sidebar width (always collapsed)
+  const sidebarWidth = 72;
+
   // Calculate main content margin based on panel state
-  const mainContentMargin = crmPanelOpen ? sidebarWidth + 272 : 88; // 272 = panel width (256) + gap (16)
+  const getMainContentMargin = () => {
+    if (activePanel === 'crm') return sidebarWidth + 272;
+    if (activePanel === 'dashboard' || activePanel === 'whatsapp') return sidebarWidth + 240;
+    return sidebarWidth + 16;
+  };
+
+  const mainContentMargin = getMainContentMargin();
 
   return (
     <div className="min-h-screen bg-background">
@@ -93,20 +110,15 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
         <div className="w-9" />
       </header>
 
-      {/* Desktop Sidebar */}
+      {/* Desktop Sidebar - Fixed Collapsed */}
       <aside
-        onMouseEnter={handleMouseEnter}
-        onMouseLeave={handleMouseLeave}
         style={{ width: sidebarWidth }}
-        className="hidden lg:flex flex-col fixed left-0 top-0 my-2 ml-2 h-[calc(100vh-1rem)] rounded-3xl border border-[#ffffff15] bg-black overflow-hidden z-50 transition-[width] duration-200 ease-out"
+        className="hidden lg:flex flex-col fixed left-0 top-0 my-2 ml-2 h-[calc(100vh-1rem)] rounded-3xl border border-[#ffffff15] bg-black overflow-hidden z-50"
       >
         <div className="flex flex-col h-full">
           {/* Logo */}
-          <div className="pt-[30px] pb-4 px-4 flex justify-start">
-            <div
-              style={{ width: shouldBeExpanded ? 100 : 40 }}
-              className="flex items-center transition-[width] duration-200 ease-out"
-            >
+          <div className="pt-[30px] pb-4 px-4 flex justify-center">
+            <div className="w-10 flex items-center">
               <img src={scaleLogo} alt="Scale Beauty" className="w-full h-auto" />
             </div>
           </div>
@@ -115,76 +127,54 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
           <nav className="flex-1 overflow-y-auto overflow-x-hidden px-2 py-1">
             <div className="flex flex-col gap-1">
               {navItems.map((item) => {
-                const isActive = location.pathname === item.href;
+                const isActive = item.id === 'dashboard' ? isDashboardActive : false;
+                const isPanelOpen = activePanel === item.id;
                 return (
-                  <Link
-                    key={item.href}
-                    to={item.href}
+                  <button
+                    key={item.id}
+                    onClick={() => handleNavClick(item.id)}
                     className={cn(
-                      "relative flex items-center w-full rounded-xl transition-colors duration-200 px-4 py-3 gap-3",
-                      isActive
+                      "relative flex items-center justify-center w-full rounded-xl transition-colors duration-200 p-3",
+                      isActive || isPanelOpen
                         ? "bg-white/10 text-white before:absolute before:left-0 before:top-1/2 before:-translate-y-1/2 before:h-[70%] before:w-1 before:rounded-r-full before:bg-gradient-to-b before:from-[#F40000] before:to-[#A10000]"
                         : "text-white/60 hover:bg-white/5 hover:text-white"
                     )}
                   >
                     <item.icon className="h-5 w-5 flex-shrink-0" strokeWidth={1.5} />
-                    <span
-                      className={cn(
-                        "text-sm font-medium whitespace-nowrap transition-opacity duration-200",
-                        shouldBeExpanded ? "opacity-100" : "opacity-0 w-0 overflow-hidden"
-                      )}
-                    >
-                      {item.label}
-                    </span>
-                  </Link>
+                  </button>
                 );
               })}
               
               {/* CRM Button */}
               <button
-                onClick={handleCRMClick}
+                onClick={() => handleNavClick('crm')}
                 className={cn(
-                  "relative flex items-center w-full rounded-xl transition-colors duration-200 px-4 py-3 gap-3",
-                  isCRMActive
+                  "relative flex items-center justify-center w-full rounded-xl transition-colors duration-200 p-3",
+                  isCRMActive || activePanel === 'crm'
                     ? "bg-white/10 text-white before:absolute before:left-0 before:top-1/2 before:-translate-y-1/2 before:h-[70%] before:w-1 before:rounded-r-full before:bg-gradient-to-b before:from-[#F40000] before:to-[#A10000]"
                     : "text-white/60 hover:bg-white/5 hover:text-white"
                 )}
               >
                 <Kanban className="h-5 w-5 flex-shrink-0" strokeWidth={1.5} />
-                <span
-                  className={cn(
-                    "text-sm font-medium whitespace-nowrap transition-opacity duration-200",
-                    shouldBeExpanded ? "opacity-100" : "opacity-0 w-0 overflow-hidden"
-                  )}
-                >
-                  CRM
-                </span>
               </button>
               
-              {/* WhatsApp and other bottom nav items */}
+              {/* WhatsApp */}
               {bottomNavItems.map((item) => {
-                const isActive = location.pathname === item.href;
+                const isActive = item.id === 'whatsapp' ? isWhatsAppActive : false;
+                const isPanelOpen = activePanel === item.id;
                 return (
-                  <Link
-                    key={item.href}
-                    to={item.href}
+                  <button
+                    key={item.id}
+                    onClick={() => handleNavClick(item.id)}
                     className={cn(
-                      "relative flex items-center w-full rounded-xl transition-colors duration-200 px-4 py-3 gap-3",
-                      isActive
+                      "relative flex items-center justify-center w-full rounded-xl transition-colors duration-200 p-3",
+                      isActive || isPanelOpen
                         ? "bg-white/10 text-white before:absolute before:left-0 before:top-1/2 before:-translate-y-1/2 before:h-[70%] before:w-1 before:rounded-r-full before:bg-gradient-to-b before:from-[#F40000] before:to-[#A10000]"
                         : "text-white/60 hover:bg-white/5 hover:text-white"
                     )}
                   >
                     <item.icon className="h-5 w-5 flex-shrink-0" />
-                    <span
-                      className={cn(
-                        "text-sm font-medium whitespace-nowrap transition-opacity duration-200",
-                        shouldBeExpanded ? "opacity-100" : "opacity-0 w-0 overflow-hidden"
-                      )}
-                    >
-                      {item.label}
-                    </span>
-                  </Link>
+                  </button>
                 );
               })}
             </div>
@@ -194,26 +184,86 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
           <div className="border-t border-white/10 p-3">
             <Link
               to="/"
-              className="relative flex items-center w-full rounded-xl transition-colors duration-200 px-4 py-3 gap-3 text-white/60 hover:bg-white/5 hover:text-white"
+              className="relative flex items-center justify-center w-full rounded-xl transition-colors duration-200 p-3 text-white/60 hover:bg-white/5 hover:text-white"
             >
               <LogOut className="h-5 w-5 flex-shrink-0" strokeWidth={1.5} />
-              <span
-                className={cn(
-                  "text-sm font-medium whitespace-nowrap transition-opacity duration-200",
-                  shouldBeExpanded ? "opacity-100" : "opacity-0 w-0 overflow-hidden"
-                )}
-              >
-                Voltar ao Site
-              </span>
             </Link>
           </div>
         </div>
       </aside>
 
+      {/* Dashboard Submenu Panel */}
+      <div
+        style={{ left: sidebarWidth + 8 }}
+        className={cn(
+          "hidden lg:block fixed top-0 my-2 h-[calc(100vh-1rem)] w-56 rounded-2xl border border-[#ffffff15] bg-[#0f0f12] z-40 transition-all duration-300 ease-out overflow-hidden",
+          activePanel === 'dashboard' ? "opacity-100 translate-x-0" : "opacity-0 -translate-x-4 pointer-events-none"
+        )}
+      >
+        <div className="p-4 h-full flex flex-col">
+          <h2 className="text-white font-semibold text-sm mb-4 px-2">Dashboard</h2>
+          <div className="flex flex-col gap-1">
+            {navItems[0].subItems.map((subItem) => {
+              const isActive = location.pathname === subItem.href;
+              return (
+                <button
+                  key={subItem.href}
+                  onClick={() => handleSubItemClick(subItem.href)}
+                  className={cn(
+                    "flex items-center gap-3 w-full py-2.5 px-3 rounded-xl transition-all duration-200 text-sm",
+                    isActive 
+                      ? "bg-gradient-to-r from-[#6366f1] to-[#8b5cf6] text-white"
+                      : "text-white/70 hover:text-white hover:bg-white/5"
+                  )}
+                >
+                  <subItem.icon className="h-4 w-4 flex-shrink-0" />
+                  <span>{subItem.label}</span>
+                  {isActive && <ChevronRight className="h-4 w-4 ml-auto" />}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+
+      {/* WhatsApp Submenu Panel */}
+      <div
+        style={{ left: sidebarWidth + 8 }}
+        className={cn(
+          "hidden lg:block fixed top-0 my-2 h-[calc(100vh-1rem)] w-56 rounded-2xl border border-[#ffffff15] bg-[#0f0f12] z-40 transition-all duration-300 ease-out overflow-hidden",
+          activePanel === 'whatsapp' ? "opacity-100 translate-x-0" : "opacity-0 -translate-x-4 pointer-events-none"
+        )}
+      >
+        <div className="p-4 h-full flex flex-col">
+          <h2 className="text-white font-semibold text-sm mb-4 px-2">WhatsApp</h2>
+          <div className="flex flex-col gap-1">
+            {bottomNavItems[0].subItems.map((subItem) => {
+              const isActive = location.pathname === subItem.href;
+              return (
+                <button
+                  key={subItem.href}
+                  onClick={() => handleSubItemClick(subItem.href)}
+                  className={cn(
+                    "flex items-center gap-3 w-full py-2.5 px-3 rounded-xl transition-all duration-200 text-sm",
+                    isActive 
+                      ? "bg-gradient-to-r from-[#6366f1] to-[#8b5cf6] text-white"
+                      : "text-white/70 hover:text-white hover:bg-white/5"
+                  )}
+                >
+                  <subItem.icon className="h-4 w-4 flex-shrink-0" />
+                  <span>{subItem.label}</span>
+                  {isActive && <ChevronRight className="h-4 w-4 ml-auto" />}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+
       {/* CRM Origins Panel - Desktop */}
       <CRMOriginsPanel 
-        isOpen={crmPanelOpen} 
-        onClose={() => setCrmPanelOpen(false)}
+        isOpen={activePanel === 'crm'} 
+        onClose={() => setActivePanel('none')}
         sidebarWidth={sidebarWidth}
       />
 
@@ -232,7 +282,7 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
           <nav className="flex-1 px-2 overflow-y-auto">
             <div className="flex flex-col gap-1">
               {navItems.map((item) => {
-                const isActive = location.pathname === item.href;
+                const isActive = item.id === 'dashboard' ? isDashboardActive : false;
                 return (
                   <Link
                     key={item.href}
@@ -256,7 +306,7 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
               {/* CRM Button - Mobile */}
               <button
                 onClick={() => {
-                  setCrmPanelOpen(!crmPanelOpen);
+                  handleNavClick('crm');
                 }}
                 className={cn(
                   "relative flex items-center w-full rounded-xl transition-colors duration-200 px-4 py-3 gap-3",
@@ -273,7 +323,7 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
               
               {/* WhatsApp and other bottom nav items - Mobile */}
               {bottomNavItems.map((item) => {
-                const isActive = location.pathname === item.href;
+                const isActive = item.id === 'whatsapp' ? isWhatsAppActive : false;
                 return (
                   <Link
                     key={item.href}
@@ -318,10 +368,13 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
         />
       )}
 
-      {/* Main Content */}
+      {/* Main Content with rounded corners */}
       <main 
         style={{ marginLeft: `${mainContentMargin}px` }}
-        className="hidden lg:block pt-6 min-h-screen p-6 transition-[margin-left] duration-300 ease-out"
+        className={cn(
+          "hidden lg:block pt-6 min-h-screen p-6 transition-[margin-left] duration-300 ease-out",
+          (activePanel !== 'none') && "bg-background rounded-l-3xl relative z-30"
+        )}
       >
         <PageTransition>
           {children}
