@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useLayoutEffect } from "react";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import { Search, Smile, Paperclip, Mic, Send, Check, CheckCheck, RefreshCw, Phone, Image, File, Play, Trash2, PanelRightOpen, PanelRightClose } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -49,14 +49,23 @@ const WhatsApp = () => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const shouldScrollToBottomOnOpenRef = useRef(false);
 
-  // Scroll to bottom of messages (always open at last message)
+  // Scroll to bottom of messages (robust for long lists)
   const scrollToBottom = useCallback(() => {
-    setTimeout(() => {
-      if (messagesContainerRef.current) {
-        messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight;
-      }
-    }, 100);
+    const el = messagesContainerRef.current;
+    if (!el) return;
+
+    const doScroll = () => {
+      el.scrollTop = el.scrollHeight;
+    };
+
+    // Try multiple frames to ensure DOM/content has laid out (images, long lists, etc.)
+    doScroll();
+    requestAnimationFrame(() => {
+      doScroll();
+      requestAnimationFrame(doScroll);
+    });
   }, []);
   const imageInputRef = useRef<HTMLInputElement>(null);
   const chatsRef = useRef<Chat[]>([]);
@@ -503,14 +512,20 @@ const WhatsApp = () => {
   // Fetch messages when chat selected
   useEffect(() => {
     if (selectedChat) {
+      shouldScrollToBottomOnOpenRef.current = true;
       fetchMessages(selectedChat.id);
     }
   }, [selectedChat?.id]);
 
-  // Scroll to bottom on new messages
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
+  // Always open a chat at the latest message (but don't force-scroll on every new message)
+  useLayoutEffect(() => {
+    if (!selectedChat || isLoadingMessages) return;
+
+    if (shouldScrollToBottomOnOpenRef.current) {
+      scrollToBottom();
+      shouldScrollToBottomOnOpenRef.current = false;
+    }
+  }, [selectedChat?.id, isLoadingMessages, messages.length, scrollToBottom]);
 
   const filteredChats = chats.filter((chat) =>
     chat.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -581,6 +596,8 @@ const WhatsApp = () => {
             src={msg.mediaUrl} 
             alt="Imagem" 
             className="max-w-[280px] rounded-lg cursor-pointer hover:opacity-90 transition-opacity"
+            loading="lazy"
+            onLoad={scrollToBottom}
             onClick={() => window.open(msg.mediaUrl!, "_blank")}
           />
           {msg.text && <p className="text-sm text-foreground whitespace-pre-wrap">{formatWhatsAppText(msg.text)}</p>}
