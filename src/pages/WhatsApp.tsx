@@ -50,6 +50,7 @@ const WhatsApp = () => {
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const shouldScrollToBottomOnOpenRef = useRef(false);
+  const lastFetchedChatIdRef = useRef<string | null>(null);
 
   // Scroll to bottom of messages (robust for long lists)
   const scrollToBottom = useCallback(() => {
@@ -241,7 +242,7 @@ const WhatsApp = () => {
       }));
 
       setMessages(formattedMessages);
-      scrollToBottom();
+      lastFetchedChatIdRef.current = chatId;
 
       // Mark as read
       await supabase
@@ -512,16 +513,21 @@ const WhatsApp = () => {
   // Fetch messages when chat selected
   useEffect(() => {
     if (selectedChat) {
+      // Important: don't scroll before this chat's messages are actually loaded/rendered
       shouldScrollToBottomOnOpenRef.current = true;
+      lastFetchedChatIdRef.current = null;
+      setMessages([]);
       fetchMessages(selectedChat.id);
     }
   }, [selectedChat?.id]);
 
-  // Always open a chat at the latest message (but don't force-scroll on every new message)
+  // Always open a chat at the latest message (only after messages for that chat were fetched)
   useLayoutEffect(() => {
     if (!selectedChat || isLoadingMessages) return;
 
-    if (shouldScrollToBottomOnOpenRef.current) {
+    const isThisChatLoaded = lastFetchedChatIdRef.current === selectedChat.id;
+
+    if (shouldScrollToBottomOnOpenRef.current && isThisChatLoaded) {
       scrollToBottom();
       shouldScrollToBottomOnOpenRef.current = false;
     }
