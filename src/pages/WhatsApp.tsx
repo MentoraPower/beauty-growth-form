@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 
-import { Search, Smile, Paperclip, Mic, Send, Check, CheckCheck, RefreshCw, Phone, Image, File, Trash2, PanelRightOpen, PanelRightClose, X, Video, MoreVertical, Pencil } from "lucide-react";
+import { Search, Smile, Paperclip, Mic, Send, Check, CheckCheck, RefreshCw, Phone, Image, File, Trash2, PanelRightOpen, PanelRightClose, X, Video, MoreVertical, Pencil, ChevronLeft, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
@@ -53,7 +53,7 @@ const WhatsApp = () => {
   const [isRecording, setIsRecording] = useState(false);
   const [recordingTime, setRecordingTime] = useState(0);
   const [messageMenuId, setMessageMenuId] = useState<string | null>(null);
-  const [lightboxImage, setLightboxImage] = useState<string | null>(null);
+  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
   const [recordingStream, setRecordingStream] = useState<MediaStream | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
@@ -1232,6 +1232,11 @@ const WhatsApp = () => {
     return parts.length > 0 ? parts : text;
   };
 
+  // Get all images from messages for lightbox navigation
+  const allImages = messages
+    .filter(m => m.mediaType === "image" && m.mediaUrl)
+    .map(m => m.mediaUrl!);
+
   const renderMessageContent = (msg: Message) => {
     if (msg.mediaType === "image" && msg.mediaUrl) {
       return (
@@ -1244,8 +1249,8 @@ const WhatsApp = () => {
             onLoad={() => scrollToBottom("auto")}
             onClick={(e) => {
               e.stopPropagation();
-              console.log("Image clicked, opening lightbox:", msg.mediaUrl);
-              setLightboxImage(msg.mediaUrl!);
+              const index = allImages.indexOf(msg.mediaUrl!);
+              setLightboxIndex(index >= 0 ? index : 0);
             }}
           />
           {msg.text && <p className="text-sm text-foreground whitespace-pre-wrap">{formatWhatsAppText(msg.text)}</p>}
@@ -1748,24 +1753,58 @@ const WhatsApp = () => {
         />
       )}
 
-      {/* Image Lightbox */}
-      {lightboxImage && (
+      {/* Image Lightbox with Navigation */}
+      {lightboxIndex !== null && allImages.length > 0 && (
         <div 
           className="fixed inset-0 z-[100] bg-black/90 flex items-center justify-center"
-          onClick={() => setLightboxImage(null)}
+          onClick={() => setLightboxIndex(null)}
         >
+          {/* Close button */}
           <button
-            onClick={() => setLightboxImage(null)}
-            className="absolute top-4 right-4 p-2 rounded-full bg-white/10 hover:bg-white/20 transition-colors"
+            onClick={() => setLightboxIndex(null)}
+            className="absolute top-4 right-4 p-2 rounded-full bg-white/10 hover:bg-white/20 transition-colors z-10"
           >
             <X className="w-6 h-6 text-white" />
           </button>
+
+          {/* Counter */}
+          <div className="absolute top-4 left-4 text-white/80 text-sm">
+            {lightboxIndex + 1} / {allImages.length}
+          </div>
+
+          {/* Previous button */}
+          {allImages.length > 1 && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                setLightboxIndex(lightboxIndex > 0 ? lightboxIndex - 1 : allImages.length - 1);
+              }}
+              className="absolute left-4 p-3 rounded-full bg-white/10 hover:bg-white/20 transition-colors"
+            >
+              <ChevronLeft className="w-8 h-8 text-white" />
+            </button>
+          )}
+
+          {/* Image */}
           <img 
-            src={lightboxImage} 
+            src={allImages[lightboxIndex]} 
             alt="Imagem ampliada" 
-            className="max-w-[90vw] max-h-[90vh] object-contain rounded-lg"
+            className="max-w-[85vw] max-h-[85vh] object-contain rounded-lg"
             onClick={(e) => e.stopPropagation()}
           />
+
+          {/* Next button */}
+          {allImages.length > 1 && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                setLightboxIndex(lightboxIndex < allImages.length - 1 ? lightboxIndex + 1 : 0);
+              }}
+              className="absolute right-4 p-3 rounded-full bg-white/10 hover:bg-white/20 transition-colors"
+            >
+              <ChevronRight className="w-8 h-8 text-white" />
+            </button>
+          )}
         </div>
       )}
     </>
