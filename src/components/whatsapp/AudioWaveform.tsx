@@ -1,5 +1,5 @@
-import { useRef, useEffect, useState } from "react";
-import { Play, Pause, AlertCircle } from "lucide-react";
+import { useRef, useEffect, useState, useCallback } from "react";
+import { Play, Pause } from "lucide-react";
 
 interface AudioWaveformProps {
   src: string;
@@ -9,31 +9,30 @@ interface AudioWaveformProps {
 export const AudioWaveform = ({ src, sent = false }: AudioWaveformProps) => {
   const audioRef = useRef<HTMLAudioElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const animationRef = useRef<number>();
   const [isPlaying, setIsPlaying] = useState(false);
   const [duration, setDuration] = useState(0);
   const [currentTime, setCurrentTime] = useState(0);
   const [waveformData, setWaveformData] = useState<number[]>([]);
-  const [error, setError] = useState(false);
-  const animationRef = useRef<number>();
+  const [isLoaded, setIsLoaded] = useState(false);
 
   // Generate waveform data from audio
   useEffect(() => {
     let cancelled = false;
-
-    // Important: reset error whenever the src changes.
-    setError(false);
+    setIsLoaded(false);
 
     const generateWaveform = async () => {
       try {
-        if (!src) {
-          setError(true);
-          return;
-        }
+        if (!src) return;
 
         const response = await fetch(src);
         if (!response.ok) {
           console.error("[AudioWaveform] Failed to fetch audio:", response.status);
-          setError(true);
+          // Use fallback waveform
+          if (!cancelled) {
+            setWaveformData(Array.from({ length: 40 }, () => Math.random() * 0.5 + 0.2));
+            setIsLoaded(true);
+          }
           return;
         }
 
@@ -42,9 +41,8 @@ export const AudioWaveform = ({ src, sent = false }: AudioWaveformProps) => {
 
         try {
           const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
-
           const rawData = audioBuffer.getChannelData(0);
-          const samples = 40; // Number of bars
+          const samples = 40;
           const blockSize = Math.floor(rawData.length / samples);
           const filteredData: number[] = [];
 
@@ -57,74 +55,92 @@ export const AudioWaveform = ({ src, sent = false }: AudioWaveformProps) => {
             filteredData.push(sum / blockSize);
           }
 
-          // Normalize
-          const multiplier = Math.pow(Math.max(...filteredData), -1);
-          const normalizedData = filteredData.map((n) => n * multiplier);
+          const maxVal = Math.max(...filteredData);
+          const normalizedData = maxVal > 0 
+            ? filteredData.map((n) => n / maxVal) 
+            : filteredData;
 
           if (!cancelled) {
             setWaveformData(normalizedData);
-            setError(false);
+            setIsLoaded(true);
           }
         } finally {
           audioContext.close();
         }
       } catch (err) {
         console.error("[AudioWaveform] Error generating waveform:", err);
-
-        // Fallback waveform if the browser can't decode this audio format.
-        const fallback = Array.from({ length: 40 }, () => Math.random() * 0.5 + 0.2);
         if (!cancelled) {
-          setWaveformData(fallback);
-          setError(false);
+          setWaveformData(Array.from({ length: 40 }, () => Math.random() * 0.5 + 0.2));
+          setIsLoaded(true);
         }
       }
     };
 
     generateWaveform();
-
-    return () => {
-      cancelled = true;
-    };
+    return () => { cancelled = true; };
   }, [src]);
 
-  // Draw waveform
-  useEffect(() => {
+  // Draw waveform with animation frame for smooth progress
+  const drawWaveform = useCallback(() => {
     const canvas = canvasRef.current;
     if (!canvas || waveformData.length === 0) return;
-    
+
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
-    
-    const draw = () => {
-      const width = canvas.width;
-      const height = canvas.height;
-      const barWidth = 3;
-      const gap = 2;
-      const progress = duration > 0 ? currentTime / duration : 0;
-      
-      ctx.clearRect(0, 0, width, height);
-      
-      waveformData.forEach((value, index) => {
-        const x = index * (barWidth + gap);
-        const barHeight = Math.max(4, value * height * 0.8);
-        const y = (height - barHeight) / 2;
-        
-        // Color based on progress and sent/received
-        const progressIndex = progress * waveformData.length;
-        if (index < progressIndex) {
-          ctx.fillStyle = sent ? "#075e54" : "#128c7e";
-        } else {
-          ctx.fillStyle = sent ? "#b3d4d1" : "#a8d8d3";
-        }
-        
-        ctx.beginPath();
-        ctx.roundRect(x, y, barWidth, barHeight, 1.5);
-        ctx.fill();
-      });
-    };
-    
-    draw();
+
+    const width = canvas.width;
+    const height = canvas.height;
+    const barWidth = 3;
+    const gap = 2;
+    const progress = duration > 0 ? currentTime / duration : 0;
+
+    ctx.clearRect(0, 0, width, height);
+
+    waveformData.forEach((value, index) => {
+      const x = index * (barWidth + gap);
+      const barHeight = Math.max(4, value * height * 0.8);
+      const y = (height - barHeight) / 2;
+
+      const progressIndex = progress * waveformData.length;
+      if (index < progressIndex) {
+        ctx.fillStyle = sent ? "#075e54" : "#128c7e";
+      } else {
+        ctx.fillStyle = sent ? "#b3d4d1" : "#a8d8d3";
+      }
+
+      ctx.beginPath();
+      ctx.roundRect(x, y, barWidth, barHeight, 1.5);
+      ctx.fill();
+    });
   }, [waveformData, currentTime, duration, sent]);
+
+  // Redraw on state changes
+  useEffect(() => {
+    drawWaveform();
+  }, [drawWaveform]);
+
+  // Animation loop for smooth progress during playback
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio) return;
+
+    const updateProgress = () => {
+      setCurrentTime(audio.currentTime);
+      if (isPlaying) {
+        animationRef.current = requestAnimationFrame(updateProgress);
+      }
+    };
+
+    if (isPlaying) {
+      animationRef.current = requestAnimationFrame(updateProgress);
+    }
+
+    return () => {
+      if (animationRef.current) {
+        cancelAnimationFrame(animationRef.current);
+      }
+    };
+  }, [isPlaying]);
 
   useEffect(() => {
     const audio = audioRef.current;
@@ -134,39 +150,52 @@ export const AudioWaveform = ({ src, sent = false }: AudioWaveformProps) => {
       setDuration(audio.duration);
     };
 
-    const handleTimeUpdate = () => {
-      setCurrentTime(audio.currentTime);
-    };
-
     const handleEnded = () => {
       setIsPlaying(false);
       setCurrentTime(0);
     };
 
+    const handleDurationChange = () => {
+      if (audio.duration && isFinite(audio.duration)) {
+        setDuration(audio.duration);
+      }
+    };
+
     audio.addEventListener("loadedmetadata", handleLoadedMetadata);
-    audio.addEventListener("timeupdate", handleTimeUpdate);
+    audio.addEventListener("durationchange", handleDurationChange);
     audio.addEventListener("ended", handleEnded);
+
+    // Try to get duration immediately if already loaded
+    if (audio.duration && isFinite(audio.duration)) {
+      setDuration(audio.duration);
+    }
 
     return () => {
       audio.removeEventListener("loadedmetadata", handleLoadedMetadata);
-      audio.removeEventListener("timeupdate", handleTimeUpdate);
+      audio.removeEventListener("durationchange", handleDurationChange);
       audio.removeEventListener("ended", handleEnded);
     };
-  }, []);
+  }, [src]);
 
-  const togglePlay = () => {
+  const togglePlay = async () => {
     const audio = audioRef.current;
     if (!audio) return;
 
-    if (isPlaying) {
-      audio.pause();
-    } else {
-      audio.play();
+    try {
+      if (isPlaying) {
+        audio.pause();
+        setIsPlaying(false);
+      } else {
+        await audio.play();
+        setIsPlaying(true);
+      }
+    } catch (err) {
+      console.error("[AudioWaveform] Play error:", err);
     }
-    setIsPlaying(!isPlaying);
   };
 
   const formatTime = (time: number) => {
+    if (!isFinite(time) || isNaN(time)) return "0:00";
     const minutes = Math.floor(time / 60);
     const seconds = Math.floor(time % 60);
     return `${minutes}:${seconds.toString().padStart(2, "0")}`;
@@ -184,43 +213,49 @@ export const AudioWaveform = ({ src, sent = false }: AudioWaveformProps) => {
     setCurrentTime(audio.currentTime);
   };
 
-  // Show error state if audio URL is missing or failed to load
-  if (error || !src) {
+  // Show loading state while waveform loads
+  if (!isLoaded && src) {
     return (
-      <div className="flex items-center gap-2 min-w-[200px] p-2 bg-muted/30 rounded-lg">
-        <AlertCircle size={18} className="text-muted-foreground" />
+      <div className="flex items-center gap-3 min-w-[200px] py-1">
+        <div className="w-9 h-9 rounded-full bg-muted animate-pulse flex-shrink-0" />
+        <div className="flex-1 h-8 bg-muted/50 rounded animate-pulse" />
+      </div>
+    );
+  }
+
+  // Error state - no src
+  if (!src) {
+    return (
+      <div className="flex items-center gap-2 min-w-[200px] py-2 px-3 bg-muted/30 rounded-xl">
         <span className="text-xs text-muted-foreground">Áudio indisponível</span>
       </div>
     );
   }
 
   return (
-    <div className="flex items-center gap-2 min-w-[200px]">
-      <audio 
-        ref={audioRef} 
-        src={src} 
-        preload="metadata" 
-        onError={() => setError(true)}
-      />
-      
+    <div className="flex items-center gap-3 min-w-[200px]">
+      <audio ref={audioRef} src={src} preload="metadata" />
+
       <button
         onClick={togglePlay}
-        className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${
-          sent ? "bg-[#075e54] text-white" : "bg-[#128c7e] text-white"
+        className={`w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 transition-colors ${
+          sent 
+            ? "bg-[#075e54] text-white hover:bg-[#064e46]" 
+            : "bg-[#128c7e] text-white hover:bg-[#0f7b6f]"
         }`}
       >
-        {isPlaying ? <Pause size={18} /> : <Play size={18} className="ml-0.5" />}
+        {isPlaying ? <Pause size={16} /> : <Play size={16} className="ml-0.5" />}
       </button>
-      
-      <div className="flex-1 flex flex-col gap-1">
+
+      <div className="flex-1 flex flex-col gap-0.5">
         <canvas
           ref={canvasRef}
           width={200}
-          height={32}
+          height={28}
           className="cursor-pointer"
           onClick={handleCanvasClick}
         />
-        <span className="text-[11px] text-muted-foreground">
+        <span className="text-[10px] text-muted-foreground tabular-nums">
           {formatTime(isPlaying || currentTime > 0 ? currentTime : duration)}
         </span>
       </div>
