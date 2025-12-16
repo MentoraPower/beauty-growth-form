@@ -79,8 +79,8 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
     navigate(href);
   };
 
-  // Fixed sidebar width (always collapsed)
-  const sidebarWidth = 72;
+  // Fixed sidebar width (always collapsed) - wider to extend under submenu
+  const sidebarWidth = 88;
 
   // Calculate main content margin based on panel state (accounting for outer padding)
   const getMainContentMargin = () => {
@@ -127,7 +127,7 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
           </div>
 
           {/* Navigation */}
-          <nav className="flex-1 overflow-y-auto overflow-x-hidden px-3 py-2">
+          <nav className="flex-1 overflow-y-auto overflow-x-hidden pl-3 pr-6 py-2">
             <div className="flex flex-col gap-2">
               {navItems.map((item) => {
                 const isActive = item.id === 'dashboard' ? isDashboardActive : false;
@@ -184,7 +184,7 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
           </nav>
 
           {/* Footer */}
-          <div className="border-t border-border px-3 py-3">
+          <div className="border-t border-border pl-3 pr-6 py-3">
             <Link
               to="/"
               className="relative flex items-center justify-center w-full rounded-xl transition-colors duration-200 p-2.5 text-muted-foreground hover:bg-muted/50 hover:text-foreground"
