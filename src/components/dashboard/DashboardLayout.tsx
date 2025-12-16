@@ -80,7 +80,7 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
   // Calculate main content margin
   const getMainContentMargin = () => {
     if (isCRMLayout) {
-      return sidebarWidth - 8 + submenuWidth + 8 + 8; // sidebar + submenu + paddings
+      return sidebarWidth + 4 + (submenuWidth - 16) + 8; // sidebar + gap + submenu + spacing
     }
     return sidebarWidth + 24; // sidebar + gap for WhatsApp layout
   };
@@ -187,13 +187,13 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
         {/* Submenu Panel - Only visible for CRM */}
         <div
           style={{ 
-            left: sidebarWidth - 8,
-            width: submenuWidth + 8,
+            left: sidebarWidth + 4, // Small gap from sidebar
+            width: submenuWidth - 16, // Reduced width from the right
             opacity: isCRMLayout ? 1 : 0,
             transform: isCRMLayout ? 'translateX(0)' : 'translateX(-20px)',
             pointerEvents: isCRMLayout ? 'auto' : 'none'
           }}
-          className="hidden lg:block fixed top-2 h-[calc(100vh-1rem)] rounded-r-2xl bg-[#0f0f12] z-30 overflow-hidden pl-[calc(1rem+8px)] transition-all duration-300 ease-out"
+          className="hidden lg:block fixed top-2 h-[calc(100vh-1rem)] rounded-2xl bg-[#0f0f12] z-50 overflow-hidden pl-4 transition-all duration-300 ease-out"
         >
           {activePanel === 'crm' && (
             <CRMOriginsPanel 
