@@ -125,15 +125,14 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
           <nav className="flex-1 overflow-y-auto overflow-x-hidden pl-2 pr-6 py-2">
             <div className="flex flex-col gap-2">
               {navItems.map((item) => {
-                const isActive = item.id === 'dashboard' ? isDashboardActive : false;
-                const isPanelOpen = activePanel === item.id;
+                const isSelected = activePanel === item.id;
                 return (
                   <button
                     key={item.id}
                     onClick={() => handleNavClick(item.id)}
                     className={cn(
                       "relative flex items-center justify-center w-10 h-10 rounded-lg transition-colors duration-200",
-                      isActive || isPanelOpen
+                      isSelected
                         ? "bg-[#2d2d3a] text-white before:absolute before:-left-2 before:top-1/2 before:-translate-y-1/2 before:h-[70%] before:w-1 before:rounded-r-full before:bg-gradient-to-b before:from-[#F40000] before:to-[#A10000]"
                         : "bg-[#f8f8fa] text-neutral-500 hover:bg-[#ededf0] hover:text-neutral-700"
                     )}
@@ -148,7 +147,7 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
                 onClick={() => handleNavClick('crm')}
                 className={cn(
                   "relative flex items-center justify-center w-10 h-10 rounded-lg transition-colors duration-200",
-                  isCRMActive || activePanel === 'crm'
+                  activePanel === 'crm'
                     ? "bg-[#2d2d3a] text-white before:absolute before:-left-2 before:top-1/2 before:-translate-y-1/2 before:h-[70%] before:w-1 before:rounded-r-full before:bg-gradient-to-b before:from-[#F40000] before:to-[#A10000]"
                     : "bg-[#f8f8fa] text-neutral-500 hover:bg-[#ededf0] hover:text-neutral-700"
                 )}
@@ -158,15 +157,14 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
               
               {/* WhatsApp */}
               {bottomNavItems.map((item) => {
-                const isActive = item.id === 'whatsapp' ? isWhatsAppActive : false;
-                const isPanelOpen = activePanel === item.id;
+                const isSelected = activePanel === item.id;
                 return (
                   <button
                     key={item.id}
                     onClick={() => handleNavClick(item.id)}
                     className={cn(
                       "relative flex items-center justify-center w-10 h-10 rounded-lg transition-colors duration-200",
-                      isActive || isPanelOpen
+                      isSelected
                         ? "bg-[#2d2d3a] text-white before:absolute before:-left-2 before:top-1/2 before:-translate-y-1/2 before:h-[70%] before:w-1 before:rounded-r-full before:bg-gradient-to-b before:from-[#F40000] before:to-[#A10000]"
                         : "bg-[#f8f8fa] text-neutral-500 hover:bg-[#ededf0] hover:text-neutral-700"
                     )}
