@@ -6,6 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Users, TrendingUp, ShoppingCart, DollarSign, Target } from "lucide-react";
 import ModernAreaChart from "@/components/dashboard/ModernAreaChart";
 import ModernBarChart from "@/components/dashboard/ModernBarChart";
@@ -158,9 +159,62 @@ const OriginOverview = () => {
     return `Últimos ${days} dias`;
   };
 
+  if (loading || authLoading) {
+    return (
+      <DashboardLayout>
+        <div className="space-y-6">
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+            <div>
+              <Skeleton className="h-8 w-48 mb-2" />
+              <Skeleton className="h-4 w-32" />
+            </div>
+            <Skeleton className="h-10 w-64" />
+          </div>
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            {[1, 2, 3, 4].map((i) => (
+              <Card key={i} className="bg-white border border-black/5 shadow-none">
+                <CardContent className="pt-5 pb-4">
+                  <div className="flex items-center gap-3 mb-3">
+                    <Skeleton className="w-10 h-10 rounded-full" />
+                    <Skeleton className="h-4 w-20" />
+                  </div>
+                  <Skeleton className="h-8 w-16" />
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+            <Card className="bg-white border border-black/5 shadow-none lg:col-span-2">
+              <CardHeader className="pb-2">
+                <Skeleton className="h-5 w-32 mb-1" />
+                <Skeleton className="h-3 w-24" />
+              </CardHeader>
+              <CardContent>
+                <Skeleton className="h-[200px] w-full rounded-lg" />
+              </CardContent>
+            </Card>
+            <Card className="bg-white border border-black/5 shadow-none">
+              <CardHeader className="pb-2">
+                <Skeleton className="h-5 w-28 mb-1" />
+                <Skeleton className="h-3 w-32" />
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-3 gap-2">
+                  {[1, 2, 3, 4, 5, 6].map((i) => (
+                    <Skeleton key={i} className="h-16 w-full rounded-lg" />
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      </DashboardLayout>
+    );
+  }
+
   return (
     <DashboardLayout>
-      <div className="space-y-6 transition-opacity duration-300 ease-out">
+      <div className="space-y-6">
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
           <div>
             <h1 className="text-2xl font-bold text-foreground">
