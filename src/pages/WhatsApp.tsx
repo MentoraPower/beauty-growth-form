@@ -52,8 +52,14 @@ const WhatsApp = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const shouldScrollToBottomOnOpenRef = useRef(false);
   const lastFetchedChatIdRef = useRef<string | null>(null);
+  const autoScrollChatIdRef = useRef<string | null>(null);
 
-  // Scroll to bottom of messages - using MutationObserver to detect when DOM is ready
+  const isAtBottom = useCallback((el: HTMLElement) => {
+    const threshold = 6;
+    return el.scrollHeight - el.clientHeight - el.scrollTop <= threshold;
+  }, []);
+
+  // Scroll to bottom of messages
   const scrollToBottom = useCallback(() => {
     const el = messagesContainerRef.current;
     if (!el) return;
@@ -66,15 +72,52 @@ const WhatsApp = () => {
     requestAnimationFrame(doScroll);
   }, []);
 
-  // Observe DOM changes to auto-scroll when content loads (images, etc)
+  // Keep auto-scrolling just long enough to reliably reach the latest message
+  const finalizeOpenScroll = useCallback(() => {
+    let frames = 0;
+    let lastHeight = -1;
+
+    const tick = () => {
+      const el = messagesContainerRef.current;
+      if (!el) return;
+
+      const heightNow = el.scrollHeight;
+      const atBottomNow = isAtBottom(el);
+
+      if (atBottomNow && heightNow === lastHeight) {
+        shouldScrollToBottomOnOpenRef.current = false;
+        return;
+      }
+
+      lastHeight = heightNow;
+      scrollToBottom();
+
+      frames += 1;
+      if (frames >= 12) {
+        // Stop forcing scroll so the user can scroll up normally
+        shouldScrollToBottomOnOpenRef.current = false;
+        return;
+      }
+
+      requestAnimationFrame(tick);
+    };
+
+    requestAnimationFrame(tick);
+  }, [isAtBottom, scrollToBottom]);
+
+  // Observe DOM changes (images, formatting, etc) and keep the scroll pinned while opening
   useEffect(() => {
     const el = messagesContainerRef.current;
     if (!el || !selectedChat) return;
 
+    const doScroll = () => {
+      el.scrollTop = el.scrollHeight;
+    };
+
     const observer = new MutationObserver(() => {
-      if (shouldScrollToBottomOnOpenRef.current) {
-        el.scrollTop = el.scrollHeight;
-      }
+      if (!shouldScrollToBottomOnOpenRef.current) return;
+      doScroll();
+      requestAnimationFrame(doScroll);
     });
 
     observer.observe(el, { childList: true, subtree: true, attributes: true });
@@ -569,6 +612,7 @@ const WhatsApp = () => {
     if (selectedChat) {
       // Important: don't scroll before this chat's messages are actually loaded/rendered
       shouldScrollToBottomOnOpenRef.current = true;
+      autoScrollChatIdRef.current = null;
       lastFetchedChatIdRef.current = null;
       setMessages([]);
       fetchMessages(selectedChat.id);
@@ -582,10 +626,14 @@ const WhatsApp = () => {
     const isThisChatLoaded = lastFetchedChatIdRef.current === selectedChat.id;
 
     if (shouldScrollToBottomOnOpenRef.current && isThisChatLoaded) {
-      scrollToBottom();
-      shouldScrollToBottomOnOpenRef.current = false;
+      // Run once per chat open; the observer + rAF loop will handle late DOM changes reliably
+      if (autoScrollChatIdRef.current !== selectedChat.id) {
+        autoScrollChatIdRef.current = selectedChat.id;
+        scrollToBottom();
+        finalizeOpenScroll();
+      }
     }
-  }, [selectedChat?.id, isLoadingMessages, messages.length, scrollToBottom]);
+  }, [selectedChat?.id, isLoadingMessages, messages.length, scrollToBottom, finalizeOpenScroll]);
 
   const filteredChats = chats.filter((chat) =>
     chat.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
