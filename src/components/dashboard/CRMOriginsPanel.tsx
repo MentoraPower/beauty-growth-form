@@ -196,21 +196,42 @@ function SortableOriginItem({
                   strokeLinecap="round"
                 />
               </svg>
-              <button
-                onClick={() => handleOverviewClick(origin.id)}
-                className={cn(
-                  "flex items-center gap-2 w-full py-1.5 px-2 ml-5 rounded-lg transition-all duration-200 ease-out text-xs",
-                  currentOverviewOriginId === origin.id
-                    ? "bg-white/10 text-white font-medium"
-                    : "text-white/70 hover:text-white hover:bg-white/5"
+              <div className="relative ml-5 w-full">
+                <button
+                  onClick={() => handleOverviewClick(origin.id)}
+                  className={cn(
+                    "flex items-center gap-2.5 w-full py-2 px-2 rounded-lg transition-all duration-200 ease-out text-xs",
+                    currentOverviewOriginId === origin.id
+                      ? "text-white"
+                      : "text-white/70 hover:text-white hover:bg-white/5"
+                  )}
+                >
+                  <Home className={cn(
+                    "h-4 w-4 flex-shrink-0",
+                    currentOverviewOriginId === origin.id 
+                      ? "fill-[url(#redGradient)] text-transparent" 
+                      : "text-white/70"
+                  )} 
+                  style={currentOverviewOriginId === origin.id ? { fill: 'url(#redGradient)', stroke: 'url(#redGradient)' } : {}}
+                  />
+                  <span className={cn("truncate", currentOverviewOriginId === origin.id && "font-bold")}>Overview</span>
+                  {/* Red gradient definition */}
+                  <svg width="0" height="0" className="absolute">
+                    <defs>
+                      <linearGradient id="redGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                        <stop offset="0%" stopColor="#F40000" />
+                        <stop offset="100%" stopColor="#A10000" />
+                      </linearGradient>
+                    </defs>
+                  </svg>
+                </button>
+                {/* Bottom line with white gradient for Overview */}
+                {currentOverviewOriginId === origin.id && (
+                  <div className="absolute bottom-0 left-0 right-0 h-[2px]" style={{
+                    background: 'linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.6) 50%, transparent 100%)'
+                  }} />
                 )}
-              >
-                <Home className={cn(
-                  "h-3 w-3 flex-shrink-0",
-                  currentOverviewOriginId === origin.id ? "text-white" : "text-white/70"
-                )} />
-                <span className="truncate">Overview</span>
-              </button>
+              </div>
             </div>
 
             {/* Sub-origins */}
@@ -229,31 +250,39 @@ function SortableOriginItem({
                       strokeLinecap="round"
                     />
                   </svg>
-                  <button
-                    onClick={() => handleSubOriginClick(subOrigin.id)}
-                    className={cn(
-                      "flex items-center gap-2 flex-1 py-1.5 px-2 ml-5 rounded-lg transition-all duration-200 ease-out text-xs",
-                      isActive 
-                        ? "bg-white/10 text-white font-medium"
-                        : "text-white/70 hover:text-white hover:bg-white/5"
-                    )}
-                  >
-                    <Kanban className={cn(
-                      "h-3 w-3 flex-shrink-0",
-                      isActive ? "text-white" : "text-white/70"
-                    )} />
-                    <span className="truncate">{subOrigin.nome}</span>
-                    {leadCount > 0 && (
-                      <span className={cn(
-                        "ml-auto text-[10px] px-1.5 py-0.5 rounded-full",
+                  <div className="relative ml-5 flex-1">
+                    <button
+                      onClick={() => handleSubOriginClick(subOrigin.id)}
+                      className={cn(
+                        "flex items-center gap-2 w-full py-1.5 px-2 rounded-lg transition-all duration-200 ease-out text-xs",
                         isActive 
-                          ? "bg-white/20 text-white"
-                          : "bg-white/10 text-white/60"
-                      )}>
-                        {leadCount}
-                      </span>
+                          ? "text-white font-medium"
+                          : "text-white/70 hover:text-white hover:bg-white/5"
+                      )}
+                    >
+                      <Kanban className={cn(
+                        "h-3 w-3 flex-shrink-0",
+                        isActive ? "text-white" : "text-white/70"
+                      )} />
+                      <span className="truncate">{subOrigin.nome}</span>
+                      {leadCount > 0 && (
+                        <span className={cn(
+                          "ml-auto text-[10px] px-1.5 py-0.5 rounded-full",
+                          isActive 
+                            ? "bg-white/20 text-white"
+                            : "bg-white/10 text-white/60"
+                        )}>
+                          {leadCount}
+                        </span>
+                      )}
+                    </button>
+                    {/* Bottom line with color gradient for selected sub-origin */}
+                    {isActive && (
+                      <div className="absolute bottom-0 left-0 right-0 h-[2px]" style={{
+                        background: 'linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.6) 50%, transparent 100%)'
+                      }} />
                     )}
-                  </button>
+                  </div>
                   
                   {/* Sub-origin Actions */}
                   <DropdownMenu>
