@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect, memo } from "react";
+import { useState, useCallback, useEffect, memo, useRef } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Menu, X, LogOut, Kanban, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -7,6 +7,7 @@ import scaleLogo from "@/assets/scale-logo-new.png";
 import { CRMOriginsPanel } from "./CRMOriginsPanel";
 import { PageTransition } from "./PageTransition";
 import { LoadingBar } from "@/components/LoadingBar";
+import { supabase } from "@/integrations/supabase/client";
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -44,6 +45,7 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
   const [activePanel, setActivePanel] = useState<ActivePanel>(globalActivePanel);
   const location = useLocation();
   const navigate = useNavigate();
+  const hasNavigatedToCRM = useRef(false);
 
   const isCRMActive = location.pathname.startsWith("/admin/crm") || location.pathname === "/admin";
   const isWhatsAppActive = location.pathname === "/admin/whatsapp";
@@ -57,9 +59,22 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
     localStorage.setItem('active_panel', activePanel);
   }, [activePanel]);
 
-  // Submenu stays open, just switches content
-  const handleNavClick = (panelId: ActivePanel) => {
+  // Navigate to first origin overview when CRM is clicked
+  const handleNavClick = async (panelId: ActivePanel) => {
     setActivePanel(panelId);
+    
+    if (panelId === 'crm' && !location.pathname.startsWith('/admin/crm')) {
+      // Fetch first origin and navigate to its overview
+      const { data: origins } = await supabase
+        .from('crm_origins')
+        .select('id')
+        .order('ordem')
+        .limit(1);
+      
+      if (origins && origins.length > 0) {
+        navigate(`/admin/crm/overview?origin=${origins[0].id}`);
+      }
+    }
   };
 
   const handleSubItemClick = (href: string) => {
