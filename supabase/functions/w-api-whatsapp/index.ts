@@ -378,6 +378,79 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
+    // Test connection - check instance status
+    if (action === "test-connection") {
+      console.log(`[W-API Test] Testing connection...`);
+      console.log(`[W-API Test] Instance ID: ${W_API_INSTANCE_ID}`);
+      console.log(`[W-API Test] Token prefix: ${W_API_TOKEN?.substring(0, 10)}...`);
+      
+      // Try multiple endpoints to find instance info
+      const endpoints = [
+        `/instance/info?instanceId=${W_API_INSTANCE_ID}`,
+        `/instance/status?instanceId=${W_API_INSTANCE_ID}`,
+        `/misc/me?instanceId=${W_API_INSTANCE_ID}`,
+        `/profile/me?instanceId=${W_API_INSTANCE_ID}`,
+      ];
+      
+      const results: any[] = [];
+      
+      for (const endpoint of endpoints) {
+        const url = `${W_API_BASE_URL}${endpoint}`;
+        console.log(`[W-API Test] Trying: ${url}`);
+        
+        try {
+          const response = await fetch(url, {
+            method: "GET",
+            headers: getHeaders(),
+          });
+          
+          const text = await response.text();
+          console.log(`[W-API Test] ${endpoint} - Status: ${response.status}, Response: ${text.substring(0, 200)}`);
+          
+          let data = null;
+          try {
+            data = JSON.parse(text);
+          } catch (e) {
+            data = { raw: text.substring(0, 200) };
+          }
+          
+          results.push({
+            endpoint,
+            status: response.status,
+            data,
+          });
+          
+          // If we got a successful response, return it
+          if (response.ok && data && !data.error) {
+            return new Response(
+              JSON.stringify({ 
+                success: true, 
+                instanceId: W_API_INSTANCE_ID,
+                endpoint,
+                data 
+              }),
+              { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+            );
+          }
+        } catch (err: any) {
+          results.push({
+            endpoint,
+            error: err.message,
+          });
+        }
+      }
+      
+      return new Response(
+        JSON.stringify({ 
+          success: false, 
+          instanceId: W_API_INSTANCE_ID,
+          message: "Nenhum endpoint de status funcionou",
+          results 
+        }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     // Clear all data
     if (action === "clear-all") {
       const supabase = createClient(supabaseUrl, supabaseServiceKey);
