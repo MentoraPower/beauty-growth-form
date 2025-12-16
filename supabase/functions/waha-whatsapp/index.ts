@@ -398,6 +398,119 @@ const handler = async (req: Request): Promise<Response> => {
       });
     }
 
+    // Send image message
+    if (action === "send-image") {
+      const { phone, mediaUrl, caption } = await req.json().catch(() => ({}));
+      
+      if (!phone || !mediaUrl) {
+        throw new Error("Phone and mediaUrl are required");
+      }
+
+      const formattedPhone = phone.replace(/\D/g, "");
+      const chatIdFormatted = `${formattedPhone}@c.us`;
+
+      const response = await fetch(`${WAHA_API_URL}/api/sendImage`, {
+        method: "POST",
+        headers: getHeaders(),
+        body: JSON.stringify({
+          chatId: chatIdFormatted,
+          file: { url: mediaUrl },
+          caption: caption || "",
+          session: "default",
+        }),
+      });
+
+      const data = await response.json();
+      console.log("[WAHA] Send image response:", data);
+
+      if (!response.ok) {
+        throw new Error(data.message || "Failed to send image");
+      }
+
+      return new Response(JSON.stringify({ 
+        success: true, 
+        messageId: data.id || data.key?.id 
+      }), {
+        status: 200,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // Send audio/voice message
+    if (action === "send-audio") {
+      const { phone, mediaUrl } = await req.json().catch(() => ({}));
+      
+      if (!phone || !mediaUrl) {
+        throw new Error("Phone and mediaUrl are required");
+      }
+
+      const formattedPhone = phone.replace(/\D/g, "");
+      const chatIdFormatted = `${formattedPhone}@c.us`;
+
+      // Use sendVoice for PTT (push-to-talk) audio messages
+      const response = await fetch(`${WAHA_API_URL}/api/sendVoice`, {
+        method: "POST",
+        headers: getHeaders(),
+        body: JSON.stringify({
+          chatId: chatIdFormatted,
+          file: { url: mediaUrl },
+          session: "default",
+        }),
+      });
+
+      const data = await response.json();
+      console.log("[WAHA] Send audio response:", data);
+
+      if (!response.ok) {
+        throw new Error(data.message || "Failed to send audio");
+      }
+
+      return new Response(JSON.stringify({ 
+        success: true, 
+        messageId: data.id || data.key?.id 
+      }), {
+        status: 200,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // Send file/document message
+    if (action === "send-file") {
+      const { phone, mediaUrl, filename } = await req.json().catch(() => ({}));
+      
+      if (!phone || !mediaUrl) {
+        throw new Error("Phone and mediaUrl are required");
+      }
+
+      const formattedPhone = phone.replace(/\D/g, "");
+      const chatIdFormatted = `${formattedPhone}@c.us`;
+
+      const response = await fetch(`${WAHA_API_URL}/api/sendFile`, {
+        method: "POST",
+        headers: getHeaders(),
+        body: JSON.stringify({
+          chatId: chatIdFormatted,
+          file: { url: mediaUrl, filename: filename || "document" },
+          session: "default",
+        }),
+      });
+
+      const data = await response.json();
+      console.log("[WAHA] Send file response:", data);
+
+      if (!response.ok) {
+        throw new Error(data.message || "Failed to send file");
+      }
+
+      return new Response(JSON.stringify({ 
+        success: true, 
+        messageId: data.id || data.key?.id 
+      }), {
+        status: 200,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     // Sync all chats and messages with full contact resolution
     if (action === "sync-all") {
       console.log("[WAHA Sync] Starting full sync with contacts map...");
