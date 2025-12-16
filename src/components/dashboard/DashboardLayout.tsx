@@ -85,9 +85,9 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
   // Calculate main content margin based on panel state (accounting for outer padding)
   const getMainContentMargin = () => {
     const outerPadding = 8; // p-2 = 8px
-    if (activePanel === 'crm') return sidebarWidth + 272 + outerPadding;
-    if (activePanel === 'dashboard' || activePanel === 'whatsapp') return sidebarWidth + 240 + outerPadding;
-    return sidebarWidth + 16 + outerPadding;
+    if (activePanel === 'crm') return sidebarWidth + 264 + outerPadding;
+    if (activePanel === 'dashboard' || activePanel === 'whatsapp') return sidebarWidth + 232 + outerPadding;
+    return sidebarWidth + 8 + outerPadding;
   };
 
   const mainContentMargin = getMainContentMargin();
@@ -115,24 +115,8 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
       {/* Desktop Sidebar - Fixed Collapsed */}
       <aside
         style={{ width: sidebarWidth }}
-        className="hidden lg:flex flex-col fixed left-2 top-2 h-[calc(100vh-1rem)] bg-card overflow-visible z-50 rounded-l-2xl"
+        className="hidden lg:flex flex-col fixed left-2 top-2 h-[calc(100vh-1rem)] bg-card overflow-hidden z-50 rounded-l-2xl"
       >
-        {/* Inward curve top-right */}
-        <div 
-          className="absolute -right-4 top-0 w-4 h-4 bg-card"
-          style={{ 
-            boxShadow: '8px -8px 0 0 #0f0f12',
-            borderTopRightRadius: '16px'
-          }}
-        />
-        {/* Inward curve bottom-right */}
-        <div 
-          className="absolute -right-4 bottom-0 w-4 h-4 bg-card"
-          style={{ 
-            boxShadow: '8px 8px 0 0 #0f0f12',
-            borderBottomRightRadius: '16px'
-          }}
-        />
         <div className="flex flex-col h-full">
           {/* Logo */}
           <div className="pt-6 pb-4 px-2 flex justify-center">
@@ -212,12 +196,28 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
 
       {/* Dashboard Submenu Panel */}
       <div
-        style={{ left: sidebarWidth + 16 }}
+        style={{ left: sidebarWidth + 8 }}
         className={cn(
-          "hidden lg:block fixed top-2 h-[calc(100vh-1rem)] w-56 rounded-2xl bg-[#0f0f12] z-40 transition-all duration-300 ease-out overflow-hidden",
+          "hidden lg:block fixed top-2 h-[calc(100vh-1rem)] w-56 rounded-2xl bg-[#0f0f12] z-40 transition-all duration-300 ease-out overflow-visible",
           activePanel === 'dashboard' ? "opacity-100 translate-x-0" : "opacity-0 -translate-x-4 pointer-events-none"
         )}
       >
+        {/* Inward curve overlay top-left */}
+        <div 
+          className="absolute -left-4 top-0 w-4 h-4 bg-[#0f0f12]"
+          style={{ 
+            boxShadow: '-8px -8px 0 0 hsl(var(--card))',
+            borderTopLeftRadius: '16px'
+          }}
+        />
+        {/* Inward curve overlay bottom-left */}
+        <div 
+          className="absolute -left-4 bottom-0 w-4 h-4 bg-[#0f0f12]"
+          style={{ 
+            boxShadow: '-8px 8px 0 0 hsl(var(--card))',
+            borderBottomLeftRadius: '16px'
+          }}
+        />
         <div className="p-4 h-full flex flex-col">
           <h2 className="text-white font-semibold text-sm mb-4 px-2">Dashboard</h2>
           <div className="flex flex-col gap-1">
@@ -246,12 +246,28 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
 
       {/* WhatsApp Submenu Panel */}
       <div
-        style={{ left: sidebarWidth + 16 }}
+        style={{ left: sidebarWidth + 8 }}
         className={cn(
-          "hidden lg:block fixed top-2 h-[calc(100vh-1rem)] w-56 rounded-2xl bg-[#0f0f12] z-40 transition-all duration-300 ease-out overflow-hidden",
+          "hidden lg:block fixed top-2 h-[calc(100vh-1rem)] w-56 rounded-2xl bg-[#0f0f12] z-40 transition-all duration-300 ease-out overflow-visible",
           activePanel === 'whatsapp' ? "opacity-100 translate-x-0" : "opacity-0 -translate-x-4 pointer-events-none"
         )}
       >
+        {/* Inward curve overlay top-left */}
+        <div 
+          className="absolute -left-4 top-0 w-4 h-4 bg-[#0f0f12]"
+          style={{ 
+            boxShadow: '-8px -8px 0 0 hsl(var(--card))',
+            borderTopLeftRadius: '16px'
+          }}
+        />
+        {/* Inward curve overlay bottom-left */}
+        <div 
+          className="absolute -left-4 bottom-0 w-4 h-4 bg-[#0f0f12]"
+          style={{ 
+            boxShadow: '-8px 8px 0 0 hsl(var(--card))',
+            borderBottomLeftRadius: '16px'
+          }}
+        />
         <div className="p-4 h-full flex flex-col">
           <h2 className="text-white font-semibold text-sm mb-4 px-2">WhatsApp</h2>
           <div className="flex flex-col gap-1">
