@@ -1346,7 +1346,8 @@ export function AutomationsDropdown({ pipelines, subOriginId }: AutomationsDropd
                 </div>
               )}
 
-              {/* Bulk Send Section */}
+              {/* Bulk Send Section - Hidden for now */}
+              {/* 
               <div className="mt-6 pt-6 border-t border-neutral-800">
                 <div className="flex items-center gap-2 mb-4">
                   <div className="w-6 h-6 rounded bg-orange-500/20 flex items-center justify-center">
@@ -1418,6 +1419,7 @@ export function AutomationsDropdown({ pipelines, subOriginId }: AutomationsDropd
                   </Button>
                 </div>
               </div>
+              */}
             </div>
           )}
 
