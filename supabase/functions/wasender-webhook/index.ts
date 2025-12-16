@@ -282,6 +282,28 @@ async function handler(req: Request): Promise<Response> {
       });
     }
 
+    // Handle message-receipt.update event (read receipts for groups)
+    if (event === "message-receipt.update") {
+      const messageData = payload.data?.message;
+      const messageKey = messageData?.key;
+      const messageId = messageKey?.id;
+      const receipt = messageData?.receipt;
+      
+      if (messageId && receipt) {
+        // If we have a receipt, it means the message was read
+        console.log(`[Wasender Webhook] Receipt update for message ${messageId}`);
+        
+        await supabase
+          .from("whatsapp_messages")
+          .update({ status: "READ" })
+          .eq("message_id", messageId);
+      }
+      
+      return new Response(JSON.stringify({ ok: true }), { 
+        headers: { ...corsHeaders, "Content-Type": "application/json" } 
+      });
+    }
+
     // Handle message deletion (when contact deletes a message)
     if (event === "messages.delete") {
       const deleteData = payload.data;
