@@ -46,7 +46,12 @@ const handler = async (req: Request): Promise<Response> => {
 
     // Infobip Click-to-Call API
     // First calls destinationA (agent), then connects to destinationB (lead)
-    const infobipUrl = `${INFOBIP_BASE_URL}/voice/ctc/1/send`;
+    // Ensure base URL has protocol
+    let baseUrl = INFOBIP_BASE_URL;
+    if (!baseUrl.startsWith("http://") && !baseUrl.startsWith("https://")) {
+      baseUrl = `https://${baseUrl}`;
+    }
+    const infobipUrl = `${baseUrl}/voice/ctc/1/send`;
 
     const response = await fetch(infobipUrl, {
       method: "POST",
