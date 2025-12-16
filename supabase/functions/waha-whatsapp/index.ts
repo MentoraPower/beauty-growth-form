@@ -11,9 +11,12 @@ const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
 const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
 // Check if phone is a WhatsApp LID (internal ID) - not a real phone number
+// LIDs are internal WhatsApp identifiers, typically 20+ digits
 const isWhatsAppLID = (phone: string): boolean => {
   const cleaned = String(phone || "").replace(/\D/g, "");
-  if (cleaned.length > 14) return true;
+  // Only filter if it's clearly a LID (20+ digits)
+  if (cleaned.length >= 20) return true;
+  // Check for @lid suffix
   if (phone?.includes("@lid")) return true;
   return false;
 };
@@ -68,9 +71,48 @@ const handler = async (req: Request): Promise<Response> => {
       if (/^\d+$/.test(nameNoSpaces)) return null;
       if (nameNoSpaces === phoneDigits) return null;
       if (nameNoSpaces === `${phoneDigits}@c.us`) return null;
-      // If name looks like a phone number pattern
       if (/^[\d\s\-\+\(\)]+$/.test(name) && name.replace(/\D/g, '').length >= 8) return null;
       return name;
+    };
+
+    // Extract message text from various WAHA response formats
+    const extractMessageText = (msg: any): string => {
+      if (!msg) return "";
+      
+      // Direct text fields
+      if (msg.body) return String(msg.body);
+      if (msg.text) return String(msg.text);
+      if (msg.content) return String(msg.content);
+      if (msg.caption) return String(msg.caption);
+      
+      // Nested message object (common in WAHA)
+      if (msg.message) {
+        if (msg.message.conversation) return String(msg.message.conversation);
+        if (msg.message.extendedTextMessage?.text) return String(msg.message.extendedTextMessage.text);
+        if (msg.message.imageMessage?.caption) return String(msg.message.imageMessage.caption);
+        if (msg.message.videoMessage?.caption) return String(msg.message.videoMessage.caption);
+        if (msg.message.documentMessage?.caption) return String(msg.message.documentMessage.caption);
+        if (msg.message.buttonsResponseMessage?.selectedDisplayText) return String(msg.message.buttonsResponseMessage.selectedDisplayText);
+        if (msg.message.listResponseMessage?.title) return String(msg.message.listResponseMessage.title);
+        if (msg.message.templateButtonReplyMessage?.selectedDisplayText) return String(msg.message.templateButtonReplyMessage.selectedDisplayText);
+      }
+      
+      // _data object (another WAHA format)
+      if (msg._data) {
+        if (msg._data.body) return String(msg._data.body);
+        if (msg._data.caption) return String(msg._data.caption);
+      }
+      
+      // Media placeholders
+      if (msg.hasMedia || msg.mediaUrl || msg.type === "image") return "📷 Imagem";
+      if (msg.type === "audio" || msg.type === "ptt") return "🎵 Áudio";
+      if (msg.type === "video") return "🎬 Vídeo";
+      if (msg.type === "document" || msg.type === "file") return "📄 Documento";
+      if (msg.type === "sticker") return "🎨 Sticker";
+      if (msg.type === "location") return "📍 Localização";
+      if (msg.type === "contact" || msg.type === "vcard") return "👤 Contato";
+      
+      return "";
     };
 
     // Fetch ALL contacts and build lookup map
@@ -218,6 +260,7 @@ const handler = async (req: Request): Promise<Response> => {
       
       let syncedChats = 0;
       let syncedMessages = 0;
+      let skippedChats = 0;
 
       // STEP 1: Fetch all contacts first to build lookup map
       const contactsMap = await fetchAllContacts();
@@ -266,22 +309,35 @@ const handler = async (req: Request): Promise<Response> => {
       for (const chat of allChats) {
         const chatId = chat.id || chat.chatId || "";
         
-        // Skip groups, channels, status broadcasts
-        if (chatId.includes("@g.us") || chatId.includes("@newsletter") || chatId.includes("status@broadcast")) {
+        // Skip ONLY groups, channels, and status broadcasts
+        if (chatId.includes("@g.us")) {
+          console.log(`[WAHA Sync] Skipping group: ${chatId}`);
+          skippedChats++;
           continue;
         }
-
-        // Skip LID chats
-        if (chatId.includes("@lid")) {
+        if (chatId.includes("@newsletter")) {
+          console.log(`[WAHA Sync] Skipping newsletter: ${chatId}`);
+          skippedChats++;
+          continue;
+        }
+        if (chatId.includes("status@broadcast")) {
+          console.log(`[WAHA Sync] Skipping status: ${chatId}`);
+          skippedChats++;
           continue;
         }
 
         // Extract phone number
         const phone = chatId.split("@")[0].replace(/\D/g, "");
-        if (!phone || phone === "0" || phone.length < 8) continue;
+        if (!phone || phone === "0" || phone.length < 8) {
+          console.log(`[WAHA Sync] Skipping invalid phone: ${chatId}`);
+          skippedChats++;
+          continue;
+        }
 
-        // Skip if it's a LID-style phone number
+        // Skip only true LIDs (20+ digits)
         if (isWhatsAppLID(phone)) {
+          console.log(`[WAHA Sync] Skipping LID: ${phone}`);
+          skippedChats++;
           continue;
         }
 
@@ -337,16 +393,20 @@ const handler = async (req: Request): Promise<Response> => {
           photoUrl = await fetchContactPicture(chatId);
         }
 
-        // Get last message info from overview
-        const lastMessage = chat.lastMessage?.body || chat.lastMessage?.text || 
-                           chat.lastMessage?.caption || chat.lastMessage?.content || "";
-        const lastMessageTimestamp = chat.lastMessage?.timestamp || chat.lastMessage?.t || chat.timestamp;
+        // Get last message info from overview - improved extraction
+        const lastMsgObj = chat.lastMessage || chat.last_message || chat._lastMessage || {};
+        const lastMessage = extractMessageText(lastMsgObj);
+        
+        // Get timestamp
+        const lastMessageTimestamp = lastMsgObj?.timestamp || lastMsgObj?.t || 
+                                     lastMsgObj?.messageTimestamp || chat.conversationTimestamp ||
+                                     chat.timestamp || chat.t;
         const lastMessageTime = lastMessageTimestamp 
           ? new Date(typeof lastMessageTimestamp === 'number' && lastMessageTimestamp < 10000000000 
               ? lastMessageTimestamp * 1000 : lastMessageTimestamp).toISOString()
           : new Date().toISOString();
 
-        console.log(`[WAHA Sync] Chat: ${phone}, Name: ${chatName}, Photo: ${photoUrl ? 'Yes' : 'No'}`);
+        console.log(`[WAHA Sync] Chat: ${phone}, Name: ${chatName}, Photo: ${photoUrl ? 'Yes' : 'No'}, LastMsg: "${lastMessage.substring(0, 30)}..."`);
 
         // Upsert chat
         const { data: chatData, error: chatError } = await supabase
@@ -399,12 +459,7 @@ const handler = async (req: Request): Promise<Response> => {
               const messageId = msg.id || msg.key?.id || msg._id;
               if (!messageId) continue;
 
-              const msgText = msg.body || msg.text || msg.content || 
-                             msg.message?.conversation || 
-                             msg.message?.extendedTextMessage?.text ||
-                             msg.message?.imageMessage?.caption ||
-                             msg.message?.videoMessage?.caption || "";
-              
+              const msgText = extractMessageText(msg);
               const msgFromMe = msg.fromMe ?? msg.key?.fromMe ?? false;
               const msgTimestamp = msg.timestamp || msg.messageTimestamp || msg.t;
               const createdAt = msgTimestamp 
@@ -456,7 +511,7 @@ const handler = async (req: Request): Promise<Response> => {
         }
       }
 
-      // STEP 5: Clean up LID chats from database
+      // STEP 5: Clean up only true LID chats from database
       const { data: existingChats } = await supabase.from("whatsapp_chats").select("id, phone");
       if (existingChats) {
         const lidChatIds = existingChats
@@ -470,12 +525,13 @@ const handler = async (req: Request): Promise<Response> => {
         }
       }
 
-      console.log(`[WAHA Sync] Completed. Chats: ${syncedChats}, Messages: ${syncedMessages}, Contacts in map: ${contactsMap.size}`);
+      console.log(`[WAHA Sync] Completed. Chats: ${syncedChats}, Messages: ${syncedMessages}, Skipped: ${skippedChats}`);
 
       return new Response(JSON.stringify({ 
         success: true, 
         syncedChats, 
         syncedMessages,
+        skippedChats,
         totalContactsInMap: contactsMap.size,
       }), {
         status: 200,
