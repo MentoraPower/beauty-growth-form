@@ -15,6 +15,9 @@ verify_jwt = false
 [functions.waha-whatsapp]
 verify_jwt = false
 
+[functions.waha-webhook]
+verify_jwt = false
+
 [functions.twilio-call]
 verify_jwt = false
 
