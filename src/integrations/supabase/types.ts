@@ -734,6 +734,9 @@ export type Database = {
           media_url: string | null
           message_id: string | null
           phone: string
+          quoted_from_me: boolean | null
+          quoted_message_id: string | null
+          quoted_text: string | null
           status: string | null
           text: string | null
         }
@@ -746,6 +749,9 @@ export type Database = {
           media_url?: string | null
           message_id?: string | null
           phone: string
+          quoted_from_me?: boolean | null
+          quoted_message_id?: string | null
+          quoted_text?: string | null
           status?: string | null
           text?: string | null
         }
@@ -758,6 +764,9 @@ export type Database = {
           media_url?: string | null
           message_id?: string | null
           phone?: string
+          quoted_from_me?: boolean | null
+          quoted_message_id?: string | null
+          quoted_text?: string | null
           status?: string | null
           text?: string | null
         }

@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 
-import { Search, Smile, Paperclip, Mic, Send, Check, CheckCheck, RefreshCw, Phone, Image, File, Trash2, PanelRightOpen, PanelRightClose, X, Video, MoreVertical, Pencil } from "lucide-react";
+import { Search, Smile, Paperclip, Mic, Send, Check, CheckCheck, RefreshCw, Phone, Image, File, Trash2, PanelRightOpen, PanelRightClose, X, Video, MoreVertical, Pencil, Reply } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
@@ -34,6 +34,9 @@ interface Message {
   mediaType?: string | null;
   created_at?: string;
   message_id?: string | number | null;
+  quotedMessageId?: string | null;
+  quotedText?: string | null;
+  quotedFromMe?: boolean | null;
 }
 
 const DEFAULT_AVATAR = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyMTIgMjEyIj48cGF0aCBmaWxsPSIjREZFNUU3IiBkPSJNMCAwaDIxMnYyMTJIMHoiLz48cGF0aCBmaWxsPSIjRkZGIiBkPSJNMTA2IDEwNmMtMjUuNCAwLTQ2LTIwLjYtNDYtNDZzMjAuNi00NiA0Ni00NiA0NiAyMC42IDQ2IDQ2LTIwLjYgNDYtNDYgNDZ6bTAgMTNjMzAuNiAwIDkyIDE1LjQgOTIgNDZ2MjNIMTR2LTIzYzAtMzAuNiA2MS40LTQ2IDkyLTQ2eiIvPjwvc3ZnPg==";
@@ -57,6 +60,7 @@ const WhatsApp = () => {
   const [messageMenuId, setMessageMenuId] = useState<string | null>(null);
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
   const [recordingStream, setRecordingStream] = useState<MediaStream | null>(null);
+  const [replyToMessage, setReplyToMessage] = useState<Message | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -336,6 +340,9 @@ const WhatsApp = () => {
         mediaType: msg.media_type,
         created_at: msg.created_at,
         message_id: msg.message_id,
+        quotedMessageId: msg.quoted_message_id,
+        quotedText: msg.quoted_text,
+        quotedFromMe: msg.quoted_from_me,
       }));
 
       setMessages(formattedMessages);
@@ -360,7 +367,9 @@ const WhatsApp = () => {
     if (!message.trim() || !selectedChat || isSending) return;
 
     const messageText = message.trim();
+    const quotedMsg = replyToMessage;
     setMessage("");
+    setReplyToMessage(null);
     setIsSending(true);
     
     const tempId = `temp-${Date.now()}`;
@@ -372,6 +381,9 @@ const WhatsApp = () => {
       read: false,
       status: "SENDING",
       created_at: new Date().toISOString(),
+      quotedMessageId: quotedMsg?.message_id?.toString() || null,
+      quotedText: quotedMsg?.text || null,
+      quotedFromMe: quotedMsg?.sent || null,
     };
     setMessages(prev => [...prev, tempMessage]);
     scrollToBottom("auto");
@@ -382,6 +394,7 @@ const WhatsApp = () => {
           action: "send-text",
           phone: selectedChat.phone,
           text: messageText,
+          quotedMsgId: quotedMsg?.message_id?.toString(),
         },
       });
 
@@ -398,6 +411,9 @@ const WhatsApp = () => {
           text: messageText,
           from_me: true,
           status: "SENT",
+          quoted_message_id: quotedMsg?.message_id?.toString() || null,
+          quoted_text: quotedMsg?.text || null,
+          quoted_from_me: quotedMsg?.sent || null,
         })
         .select()
         .single();
@@ -1400,7 +1416,7 @@ const WhatsApp = () => {
               filteredChats.map((chat) => (
                 <div
                   key={chat.id}
-                  onClick={() => setSelectedChat(chat)}
+                  onClick={() => { setSelectedChat(chat); setReplyToMessage(null); }}
                   className={cn(
                     "flex items-center gap-3 px-3 py-3 cursor-pointer transition-colors border-b border-border/20",
                     selectedChat?.id === chat.id ? "bg-muted/40" : "hover:bg-muted/20"
@@ -1554,6 +1570,16 @@ const WhatsApp = () => {
                                 {messageMenuId === msg.id && (
                                   <div className="absolute right-full top-0 mr-1 bg-card rounded-lg shadow-lg border border-border overflow-hidden z-50 min-w-[120px]">
                                     <button
+                                      onClick={() => {
+                                        setReplyToMessage(msg);
+                                        setMessageMenuId(null);
+                                      }}
+                                      className="flex items-center gap-2 px-3 py-2 hover:bg-muted/50 w-full text-left text-sm text-foreground"
+                                    >
+                                      <Reply className="w-4 h-4" />
+                                      Responder
+                                    </button>
+                                    <button
                                       onClick={() => deleteMessage(msg)}
                                       className="flex items-center gap-2 px-3 py-2 hover:bg-destructive/10 w-full text-left text-sm text-destructive"
                                     >
@@ -1564,6 +1590,15 @@ const WhatsApp = () => {
                                 )}
                               </div>
                             )}
+                            {/* Reply button for received messages */}
+                            {!msg.sent && msg.status !== "DELETED" && (
+                              <button
+                                onClick={() => setReplyToMessage(msg)}
+                                className="p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity hover:bg-muted/50 mr-1 self-center"
+                              >
+                                <Reply className="w-4 h-4 text-muted-foreground" />
+                              </button>
+                            )}
                             <div
                               className={cn(
                                 "max-w-[65%] rounded-lg px-3 py-1.5 shadow-sm relative",
@@ -1572,6 +1607,23 @@ const WhatsApp = () => {
                                   : "bg-card rounded-tl-none border border-border/30"
                               )}
                             >
+                              {/* Quoted message preview */}
+                              {msg.quotedText && (
+                                <div className={cn(
+                                  "mb-1.5 px-2 py-1 rounded border-l-2 text-xs",
+                                  msg.quotedFromMe 
+                                    ? "bg-emerald-200/50 dark:bg-emerald-800/30 border-emerald-500" 
+                                    : "bg-muted/50 border-muted-foreground/50"
+                                )}>
+                                  <span className={cn(
+                                    "font-medium block",
+                                    msg.quotedFromMe ? "text-emerald-700 dark:text-emerald-400" : "text-muted-foreground"
+                                  )}>
+                                    {msg.quotedFromMe ? "Você" : selectedChat?.name || "Contato"}
+                                  </span>
+                                  <span className="text-muted-foreground line-clamp-2">{msg.quotedText}</span>
+                                </div>
+                              )}
                               {renderMessageContent(msg)}
                               <div className="flex items-center justify-end gap-1 mt-0.5">
                                 <span className="text-[10px] text-muted-foreground">{msg.time}</span>
@@ -1586,6 +1638,15 @@ const WhatsApp = () => {
                                 )}
                               </div>
                             </div>
+                            {/* Reply button for sent messages (right side) */}
+                            {msg.sent && msg.status !== "DELETED" && (
+                              <button
+                                onClick={() => setReplyToMessage(msg)}
+                                className="p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity hover:bg-muted/50 ml-1 self-center"
+                              >
+                                <Reply className="w-4 h-4 text-muted-foreground" />
+                              </button>
+                            )}
                           </div>
                         </div>
                       );
@@ -1594,6 +1655,29 @@ const WhatsApp = () => {
                 )}
                 <div ref={messagesEndRef} />
               </div>
+
+              {/* Reply Preview */}
+              {replyToMessage && (
+                <div className="px-4 py-2 bg-muted/40 border-t border-border/30 flex items-start gap-3">
+                  <div className="flex-1 border-l-2 border-emerald-500 pl-3">
+                    <span className="text-xs font-medium text-emerald-600 dark:text-emerald-400">
+                      {replyToMessage.sent ? "Você" : selectedChat?.name || "Contato"}
+                    </span>
+                    <p className="text-sm text-muted-foreground line-clamp-1">
+                      {replyToMessage.mediaType === "audio" ? "🎵 Áudio" : 
+                       replyToMessage.mediaType === "image" ? "📷 Imagem" : 
+                       replyToMessage.mediaType === "video" ? "🎥 Vídeo" : 
+                       replyToMessage.text || "Mensagem"}
+                    </p>
+                  </div>
+                  <button 
+                    onClick={() => setReplyToMessage(null)}
+                    className="p-1 hover:bg-muted/50 rounded-full"
+                  >
+                    <X className="w-4 h-4 text-muted-foreground" />
+                  </button>
+                </div>
+              )}
 
               {/* Message Input */}
               <div className="px-4 py-3 flex items-center gap-2 bg-muted/30 border-t border-border/30">
