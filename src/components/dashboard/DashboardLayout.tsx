@@ -120,14 +120,14 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
       >
         <div className="flex flex-col h-full">
           {/* Logo */}
-          <div className="pt-6 pb-4 px-3 flex justify-center">
-            <div className="w-12 flex items-center">
+          <div className="pt-6 pb-4 pl-2 pr-6 flex justify-start">
+            <div className="w-10 flex items-center">
               <img src={scaleLogo} alt="Scale Beauty" className="w-full h-auto" />
             </div>
           </div>
 
           {/* Navigation */}
-          <nav className="flex-1 overflow-y-auto overflow-x-hidden pl-3 pr-6 py-2">
+          <nav className="flex-1 overflow-y-auto overflow-x-hidden pl-2 pr-6 py-2">
             <div className="flex flex-col gap-2">
               {navItems.map((item) => {
                 const isActive = item.id === 'dashboard' ? isDashboardActive : false;
@@ -184,7 +184,7 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
           </nav>
 
           {/* Footer */}
-          <div className="border-t border-border pl-3 pr-6 py-3">
+          <div className="border-t border-border pl-2 pr-6 py-3">
             <Link
               to="/"
               className="relative flex items-center justify-center w-full rounded-xl transition-colors duration-200 p-2.5 text-muted-foreground hover:bg-muted/50 hover:text-foreground"
