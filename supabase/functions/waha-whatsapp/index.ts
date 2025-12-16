@@ -47,7 +47,7 @@ const handler = async (req: Request): Promise<Response> => {
       throw new Error("WAHA_API_URL not configured");
     }
 
-    const { action, phone, text } = await req.json();
+    const { action, phone, text, mediaUrl, caption, filename } = await req.json();
     console.log(`[WAHA] Action: ${action}`);
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
@@ -400,8 +400,6 @@ const handler = async (req: Request): Promise<Response> => {
 
     // Send image message
     if (action === "send-image") {
-      const { phone, mediaUrl, caption } = await req.json().catch(() => ({}));
-      
       if (!phone || !mediaUrl) {
         throw new Error("Phone and mediaUrl are required");
       }
@@ -438,8 +436,6 @@ const handler = async (req: Request): Promise<Response> => {
 
     // Send audio/voice message
     if (action === "send-audio") {
-      const { phone, mediaUrl } = await req.json().catch(() => ({}));
-      
       if (!phone || !mediaUrl) {
         throw new Error("Phone and mediaUrl are required");
       }
@@ -476,8 +472,6 @@ const handler = async (req: Request): Promise<Response> => {
 
     // Send file/document message
     if (action === "send-file") {
-      const { phone, mediaUrl, filename } = await req.json().catch(() => ({}));
-      
       if (!phone || !mediaUrl) {
         throw new Error("Phone and mediaUrl are required");
       }
