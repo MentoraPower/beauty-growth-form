@@ -53,7 +53,7 @@ export const LoadingBar = () => {
   if (!isVisible) return null;
 
   return (
-    <div className="fixed top-0 left-0 right-0 h-1 z-[999999] overflow-hidden bg-black/10 pointer-events-none">
+    <div className="absolute top-0 left-0 right-0 h-1 z-[100] overflow-hidden rounded-t-2xl pointer-events-none">
       <div 
         className="h-full transition-all duration-200 ease-out"
         style={{
