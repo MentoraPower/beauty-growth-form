@@ -229,8 +229,43 @@ const handler = async (req: Request): Promise<Response> => {
     
     const chatDbId = chatData.id;
     
+    // Extract media info
+    const hasMedia = messageData.hasMedia || messageData.media || messageData._data?.media;
+    let mediaType: string | null = null;
+    let mediaUrl: string | null = null;
+    
+    if (hasMedia) {
+      // Extract media URL from various locations
+      mediaUrl = messageData.media?.url || 
+        messageData.media?.link ||
+        messageData.mediaUrl || 
+        messageData._data?.media?.url ||
+        messageData._data?.mediaUrl ||
+        null;
+      
+      // Extract media type
+      const mimetype = messageData.media?.mimetype || 
+        messageData._data?.media?.mimetype ||
+        messageData.mimetype ||
+        "";
+      
+      if (mimetype.startsWith('image/') || messageData.type === 'image') {
+        mediaType = 'image';
+      } else if (mimetype.startsWith('audio/') || messageData.type === 'audio' || messageData.type === 'ptt') {
+        mediaType = 'audio';
+      } else if (mimetype.startsWith('video/') || messageData.type === 'video') {
+        mediaType = 'video';
+      } else if (messageData.type === 'sticker') {
+        mediaType = 'sticker';
+      } else if (mimetype.startsWith('application/') || messageData.type === 'document') {
+        mediaType = 'document';
+      } else {
+        mediaType = messageData.type || 'media';
+      }
+    }
+    
     // Insert message (skip if no messageId to avoid duplicates)
-    if (messageId && messageText) {
+    if (messageId && (messageText || mediaUrl)) {
       const { error: msgError } = await supabase
         .from("whatsapp_messages")
         .upsert({
@@ -241,8 +276,8 @@ const handler = async (req: Request): Promise<Response> => {
           from_me: fromMe,
           status: fromMe ? "sent" : "received",
           created_at: timestamp,
-          media_type: messageData.hasMedia ? (messageData.type || "media") : null,
-          media_url: messageData.media?.url || messageData.mediaUrl || null,
+          media_type: mediaType,
+          media_url: mediaUrl,
         }, {
           onConflict: "message_id",
           ignoreDuplicates: true
@@ -251,7 +286,7 @@ const handler = async (req: Request): Promise<Response> => {
       if (msgError) {
         console.error("[WAHA Webhook] Message insert error:", msgError);
       } else {
-        console.log(`[WAHA Webhook] Message saved: ${messageId}`);
+        console.log(`[WAHA Webhook] Message saved: ${messageId}, mediaType: ${mediaType}, hasUrl: ${!!mediaUrl}`);
       }
     }
     
