@@ -202,7 +202,7 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
             left: sidebarWidth + 4,
             width: isCRMLayout ? submenuWidth - 16 : 0,
             opacity: isCRMLayout ? 1 : 0,
-            zIndex: isCRMLayout ? 39 : 30,
+            zIndex: 50,
             pointerEvents: isCRMLayout ? 'auto' : 'none',
             transition: "width 400ms cubic-bezier(0.4,0,0.2,1), opacity 200ms ease-out",
           }}
