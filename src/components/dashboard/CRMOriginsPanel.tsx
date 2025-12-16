@@ -60,6 +60,7 @@ interface CRMOriginsPanelProps {
   isOpen: boolean;
   onClose: () => void;
   sidebarWidth: number;
+  embedded?: boolean;
 }
 
 
@@ -253,7 +254,7 @@ function SortableOriginItem({
   );
 }
 
-export function CRMOriginsPanel({ isOpen, onClose, sidebarWidth }: CRMOriginsPanelProps) {
+export function CRMOriginsPanel({ isOpen, onClose, sidebarWidth, embedded = false }: CRMOriginsPanelProps) {
   const location = useLocation();
   const navigate = useNavigate();
   const [origins, setOrigins] = useState<Origin[]>([]);
@@ -532,77 +533,59 @@ export function CRMOriginsPanel({ isOpen, onClose, sidebarWidth }: CRMOriginsPan
 
   const currentSubOriginId = new URLSearchParams(location.search).get('origin');
 
-  return (
+  // Embedded content for unified submenu
+  const content = (
     <>
-      {/* Backdrop */}
-      {isOpen && (
-        <div 
-          className="fixed inset-0 z-40 lg:hidden"
-          onClick={onClose}
-        />
-      )}
+      {/* Header */}
+      <div className="px-4 pl-0 py-4">
+        <h2 className="text-white font-semibold text-sm px-2">Origens CRM</h2>
+      </div>
 
-      {/* Panel */}
-      <div
-        style={{ left: sidebarWidth - 8 }}
-        className={cn(
-          "hidden lg:block fixed top-2 h-[calc(100vh-1rem)] w-64 rounded-2xl bg-[#0f0f12] z-50 transition-all duration-300 ease-out overflow-hidden pl-4",
-          isOpen 
-            ? "opacity-100 translate-x-0" 
-            : "opacity-0 -translate-x-4 pointer-events-none"
-        )}
-      >
-        {/* Header */}
-        <div className="px-4 pl-0 py-4">
-          <h2 className="text-white font-semibold text-sm px-2">Origens CRM</h2>
-        </div>
-
-        {/* Content */}
-        <div className="flex-1 overflow-y-auto px-3 pl-0 pb-3 space-y-1 max-h-[calc(100vh-6rem)]">
-          <DndContext
-            sensors={sensors}
-            collisionDetection={closestCenter}
-            onDragEnd={handleDragEnd}
+      {/* Content */}
+      <div className="flex-1 overflow-y-auto px-3 pl-0 pb-3 space-y-1 max-h-[calc(100vh-6rem)]">
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          onDragEnd={handleDragEnd}
+        >
+          <SortableContext
+            items={origins.map(o => o.id)}
+            strategy={verticalListSortingStrategy}
           >
-            <SortableContext
-              items={origins.map(o => o.id)}
-              strategy={verticalListSortingStrategy}
-            >
-              {origins.map((origin) => {
-                const originSubOrigins = subOrigins.filter(s => s.origin_id === origin.id);
-                const isOriginExpanded = expandedOrigins.has(origin.id);
+            {origins.map((origin) => {
+              const originSubOrigins = subOrigins.filter(s => s.origin_id === origin.id);
+              const isOriginExpanded = expandedOrigins.has(origin.id);
 
-                return (
-                  <SortableOriginItem
-                    key={origin.id}
-                    origin={origin}
-                    originSubOrigins={originSubOrigins}
-                    isOriginExpanded={isOriginExpanded}
-                    expandedOrigins={expandedOrigins}
-                    toggleOrigin={toggleOrigin}
-                    openEditOriginDialog={openEditOriginDialog}
-                    handleDeleteOrigin={handleDeleteOrigin}
-                    openCreateSubOriginDialog={openCreateSubOriginDialog}
-                    openEditSubOriginDialog={openEditSubOriginDialog}
-                    handleDeleteSubOrigin={handleDeleteSubOrigin}
-                    handleSubOriginClick={handleSubOriginClick}
-                    leadCounts={leadCounts}
-                    currentSubOriginId={currentSubOriginId}
-                  />
-                );
-              })}
-            </SortableContext>
-          </DndContext>
+              return (
+                <SortableOriginItem
+                  key={origin.id}
+                  origin={origin}
+                  originSubOrigins={originSubOrigins}
+                  isOriginExpanded={isOriginExpanded}
+                  expandedOrigins={expandedOrigins}
+                  toggleOrigin={toggleOrigin}
+                  openEditOriginDialog={openEditOriginDialog}
+                  handleDeleteOrigin={handleDeleteOrigin}
+                  openCreateSubOriginDialog={openCreateSubOriginDialog}
+                  openEditSubOriginDialog={openEditSubOriginDialog}
+                  handleDeleteSubOrigin={handleDeleteSubOrigin}
+                  handleSubOriginClick={handleSubOriginClick}
+                  leadCounts={leadCounts}
+                  currentSubOriginId={currentSubOriginId}
+                />
+              );
+            })}
+          </SortableContext>
+        </DndContext>
 
-          {/* Add Origin Button */}
-          <button
-            onClick={openCreateOriginDialog}
-            className="flex items-center gap-2 w-full py-2 px-2 rounded-lg transition-all duration-200 ease-out text-xs text-white/60 hover:text-white hover:bg-white/5"
-          >
-            <Plus className="h-3 w-3" />
-            <span>Nova Origem</span>
-          </button>
-        </div>
+        {/* Add Origin Button */}
+        <button
+          onClick={openCreateOriginDialog}
+          className="flex items-center gap-2 w-full py-2 px-2 rounded-lg transition-colors duration-200 text-xs text-white/60 hover:text-white hover:bg-white/5"
+        >
+          <Plus className="h-3 w-3" />
+          <span>Nova Origem</span>
+        </button>
       </div>
 
       {/* Create/Edit Dialog */}
@@ -634,6 +617,37 @@ export function CRMOriginsPanel({ isOpen, onClose, sidebarWidth }: CRMOriginsPan
           </DialogFooter>
         </DialogContent>
       </Dialog>
+    </>
+  );
+
+  // When embedded, just return the content
+  if (embedded) {
+    return <div className="h-full flex flex-col">{content}</div>;
+  }
+
+  // Standalone mode (mobile/fallback)
+  return (
+    <>
+      {/* Backdrop */}
+      {isOpen && (
+        <div 
+          className="fixed inset-0 z-40 lg:hidden"
+          onClick={onClose}
+        />
+      )}
+
+      {/* Panel - only shown in standalone mode */}
+      <div
+        style={{ left: sidebarWidth - 8 }}
+        className={cn(
+          "hidden lg:block fixed top-2 h-[calc(100vh-1rem)] w-64 rounded-2xl bg-[#0f0f12] z-50 overflow-hidden pl-4",
+          isOpen 
+            ? "opacity-100" 
+            : "opacity-0 pointer-events-none"
+        )}
+      >
+        {content}
+      </div>
     </>
   );
 }
