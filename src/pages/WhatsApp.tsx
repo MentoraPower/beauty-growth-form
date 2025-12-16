@@ -13,6 +13,7 @@ interface Chat {
   name: string;
   lastMessage: string;
   time: string;
+  lastMessageTime: string | null; // Raw ISO timestamp for sorting
   unread: number;
   avatar: string;
   phone: string;
@@ -205,6 +206,7 @@ const WhatsApp = () => {
       name: displayName,
       lastMessage: chat.last_message || "",
       time: chat.last_message_time ? formatTime(chat.last_message_time) : "",
+      lastMessageTime: chat.last_message_time || null,
       unread: chat.unread_count || 0,
       avatar: getInitials(displayName || chat.phone),
       phone: chat.phone,
@@ -255,11 +257,11 @@ const WhatsApp = () => {
         newChats = [formatted, ...prev];
       }
       
-      // Sort by last message time (most recent first)
+      // Sort by last message time (most recent first) using raw timestamp
       newChats.sort((a, b) => {
-        const timeA = a.time || "";
-        const timeB = b.time || "";
-        return timeB.localeCompare(timeA);
+        const timeA = a.lastMessageTime ? new Date(a.lastMessageTime).getTime() : 0;
+        const timeB = b.lastMessageTime ? new Date(b.lastMessageTime).getTime() : 0;
+        return timeB - timeA;
       });
       
       chatsRef.current = newChats;
