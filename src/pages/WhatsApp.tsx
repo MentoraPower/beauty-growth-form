@@ -1,12 +1,14 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
-import { Search, Smile, Paperclip, Mic, Send, Check, CheckCheck, RefreshCw, Phone, Image, File, Play, Trash2, PanelRightOpen, PanelRightClose, Square, X } from "lucide-react";
+import { Search, Smile, Paperclip, Mic, Send, Check, CheckCheck, RefreshCw, Phone, Image, File, Trash2, PanelRightOpen, PanelRightClose, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import CallModal from "@/components/whatsapp/CallModal";
 import LeadInfoPanel from "@/components/whatsapp/LeadInfoPanel";
+import { AudioWaveform } from "@/components/whatsapp/AudioWaveform";
+import { RecordingWaveform } from "@/components/whatsapp/RecordingWaveform";
 
 interface Chat {
   id: string;
@@ -50,6 +52,7 @@ const WhatsApp = () => {
   const [showLeadPanel, setShowLeadPanel] = useState(true);
   const [isRecording, setIsRecording] = useState(false);
   const [recordingTime, setRecordingTime] = useState(0);
+  const [recordingStream, setRecordingStream] = useState<MediaStream | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -565,6 +568,7 @@ const WhatsApp = () => {
 
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      setRecordingStream(stream);
       const mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm' });
       mediaRecorderRef.current = mediaRecorder;
       audioChunksRef.current = [];
@@ -577,6 +581,7 @@ const WhatsApp = () => {
 
       mediaRecorder.onstop = async () => {
         stream.getTracks().forEach(track => track.stop());
+        setRecordingStream(null);
         const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
         await sendAudioMessage(audioBlob);
       };
@@ -616,6 +621,7 @@ const WhatsApp = () => {
       mediaRecorderRef.current.stream.getTracks().forEach(track => track.stop());
       mediaRecorderRef.current = null;
     }
+    setRecordingStream(null);
     audioChunksRef.current = [];
     setIsRecording(false);
     setRecordingTime(0);
@@ -980,17 +986,8 @@ const WhatsApp = () => {
     
     if (msg.mediaType === "audio" && msg.mediaUrl) {
       return (
-        <div className="min-w-[200px] max-w-[280px]">
-          <audio 
-            controls 
-            src={msg.mediaUrl} 
-            className="w-full h-10"
-            preload="metadata"
-            style={{ 
-              borderRadius: '20px',
-              background: 'transparent'
-            }}
-          />
+        <div className="min-w-[220px] max-w-[300px]">
+          <AudioWaveform src={msg.mediaUrl} sent={msg.sent} />
           {msg.text && <p className="text-sm text-foreground whitespace-pre-wrap mt-1">{formatWhatsAppText(msg.text)}</p>}
         </div>
       );
@@ -1279,15 +1276,10 @@ const WhatsApp = () => {
                     
                     <div className="flex-1 flex items-center gap-3 px-4">
                       <div className="w-3 h-3 bg-red-500 rounded-full animate-pulse" />
-                      <span className="text-sm font-medium text-foreground">
+                      <span className="text-sm font-medium text-foreground min-w-[40px]">
                         {formatRecordingTime(recordingTime)}
                       </span>
-                      <div className="flex-1 h-1 bg-muted-foreground/30 rounded-full overflow-hidden">
-                        <div 
-                          className="h-full bg-red-500 rounded-full animate-pulse" 
-                          style={{ width: `${Math.min(recordingTime * 2, 100)}%` }}
-                        />
-                      </div>
+                      <RecordingWaveform stream={recordingStream} isRecording={isRecording} />
                     </div>
                     
                     <button 
