@@ -53,7 +53,6 @@ const WhatsApp = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const shouldScrollToBottomOnOpenRef = useRef(false);
   const lastFetchedChatIdRef = useRef<string | null>(null);
-  const autoScrollChatIdRef = useRef<string | null>(null);
 
   // Scroll to bottom of the messages container (reliable even on long threads)
   const scrollToBottom = useCallback((behavior: ScrollBehavior = "auto") => {
@@ -65,36 +64,6 @@ const WhatsApp = () => {
     messagesEndRef.current?.scrollIntoView({ behavior, block: "end" });
   }, []);
 
-  // Keep auto-scrolling until we're truly at the bottom
-  const finalizeOpenScroll = useCallback(() => {
-    let attempts = 0;
-    const maxAttempts = 20;
-
-    const tick = () => {
-      const el = messagesContainerRef.current;
-      if (!el || !shouldScrollToBottomOnOpenRef.current) return;
-
-      const isAtBottom = el.scrollHeight - el.clientHeight - el.scrollTop <= 10;
-
-      if (isAtBottom && attempts > 3) {
-        shouldScrollToBottomOnOpenRef.current = false;
-        return;
-      }
-
-      // First try smooth (nice UX), then force to bottom (reliability)
-      scrollToBottom(attempts < 4 ? "smooth" : "auto");
-      attempts++;
-
-      if (attempts >= maxAttempts) {
-        shouldScrollToBottomOnOpenRef.current = false;
-        return;
-      }
-
-      requestAnimationFrame(tick);
-    };
-
-    requestAnimationFrame(tick);
-  }, [scrollToBottom]);
 
   // Observe DOM changes and keep scrolling to bottom while opening chat
   useEffect(() => {
@@ -370,6 +339,18 @@ const WhatsApp = () => {
       console.error("Error fetching messages:", error);
     } finally {
       setIsLoadingMessages(false);
+      
+      // Force scroll to bottom after render completes
+      // Double RAF ensures browser has calculated final layout
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          const el = messagesContainerRef.current;
+          if (el) {
+            el.scrollTop = el.scrollHeight;
+            console.log("[WhatsApp] Forced scroll to bottom:", el.scrollHeight);
+          }
+        });
+      });
     }
   };
 
@@ -636,30 +617,23 @@ const WhatsApp = () => {
   // Fetch messages when chat selected
   useEffect(() => {
     if (selectedChat) {
-      // Important: don't scroll before this chat's messages are actually loaded/rendered
       shouldScrollToBottomOnOpenRef.current = true;
-      autoScrollChatIdRef.current = null;
       lastFetchedChatIdRef.current = null;
       setMessages([]);
       fetchMessages(selectedChat.id);
     }
   }, [selectedChat?.id]);
 
-  // Always open a chat at the latest message (only after messages for that chat were fetched)
+  // Always open a chat at the latest message (simplified - main scroll happens in fetchMessages)
   useLayoutEffect(() => {
-    if (!selectedChat || isLoadingMessages) return;
-
-    const isThisChatLoaded = lastFetchedChatIdRef.current === selectedChat.id;
-
-    if (shouldScrollToBottomOnOpenRef.current && isThisChatLoaded) {
-      // Run once per chat open; the observer + rAF loop will handle late DOM changes reliably
-        if (autoScrollChatIdRef.current !== selectedChat.id) {
-          autoScrollChatIdRef.current = selectedChat.id;
-          scrollToBottom("smooth");
-          finalizeOpenScroll();
-        }
+    if (!selectedChat || isLoadingMessages || messages.length === 0) return;
+    
+    // Additional scroll attempt after messages render
+    const el = messagesContainerRef.current;
+    if (el) {
+      el.scrollTop = el.scrollHeight;
     }
-  }, [selectedChat?.id, isLoadingMessages, messages.length, scrollToBottom, finalizeOpenScroll]);
+  }, [selectedChat?.id, isLoadingMessages, messages.length]);
 
   const filteredChats = chats.filter((chat) =>
     chat.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
