@@ -198,6 +198,45 @@ const handler = async (req: Request): Promise<Response> => {
       return "";
     };
 
+    // Resolve LID to real phone number using WAHA API
+    const resolveLidToPhone = async (lid: string): Promise<string | null> => {
+      try {
+        // Extract just the LID part (without @lid suffix)
+        const lidId = lid.split("@")[0];
+        console.log(`[WAHA] Resolving LID: ${lidId}`);
+        
+        const response = await fetch(
+          `${WAHA_API_URL}/api/default/lids/${encodeURIComponent(lidId)}`,
+          { method: "GET", headers: getHeaders() }
+        );
+
+        if (!response.ok) {
+          console.log(`[WAHA] LID resolution failed: ${response.status}`);
+          return null;
+        }
+
+        const data = await response.json();
+        console.log(`[WAHA] LID resolution response:`, JSON.stringify(data));
+        
+        // WAHA returns { phoneNumber: "5527998474152", ... } or similar
+        const phoneNumber = data?.phoneNumber || data?.phone || data?.number || 
+                           data?.wa_id || data?.jid?.split("@")[0];
+        
+        if (phoneNumber) {
+          const cleanPhone = String(phoneNumber).replace(/\D/g, "");
+          if (cleanPhone.length >= 10 && cleanPhone.length <= 15) {
+            console.log(`[WAHA] Resolved LID ${lidId} -> ${cleanPhone}`);
+            return cleanPhone;
+          }
+        }
+        
+        return null;
+      } catch (e: any) {
+        console.error(`[WAHA] Error resolving LID:`, e.message);
+        return null;
+      }
+    };
+
     // Fetch ALL contacts and build lookup map
     const fetchAllContacts = async (): Promise<Map<string, { name: string | null; picture: string | null }>> => {
       const contactsMap = new Map<string, { name: string | null; picture: string | null }>();
@@ -222,7 +261,8 @@ const handler = async (req: Request): Promise<Response> => {
             const contactId = contact.id || contact.jid || "";
             const phoneDigits = contactId.replace(/\D/g, "").replace(/@.*/, "");
             
-            if (isWhatsAppLID(phoneDigits) || phoneDigits.length < 8) continue;
+            // Skip only invalid phones, not LIDs (we'll resolve those separately)
+            if (phoneDigits.length < 8) continue;
             
             const name = normalizeName(
               contact.name || contact.pushname || contact.pushName || 
@@ -437,18 +477,32 @@ const handler = async (req: Request): Promise<Response> => {
           continue;
         }
 
-        // Skip only true LIDs (20+ digits)
-        if (isWhatsAppLID(phone)) {
-          console.log(`[WAHA Sync] Skipping LID: ${phone}`);
-          skippedChats++;
-          continue;
+        // Try to resolve LIDs to real phone numbers
+        let resolvedPhone = phone;
+        const originalChatId = chatId;
+        
+        if (isWhatsAppLID(phone) || chatId.includes("@lid")) {
+          console.log(`[WAHA Sync] Detected LID: ${phone}, attempting resolution...`);
+          const realPhone = await resolveLidToPhone(chatId);
+          
+          if (realPhone) {
+            resolvedPhone = realPhone;
+            console.log(`[WAHA Sync] Successfully resolved LID ${phone} -> ${resolvedPhone}`);
+          } else {
+            console.log(`[WAHA Sync] Could not resolve LID: ${phone}, skipping`);
+            skippedChats++;
+            continue;
+          }
         }
+        
+        // Use resolved phone from now on
+        const phone_final = resolvedPhone;
 
-        // Skip duplicates
-        if (processedPhones.has(phone)) {
+        // Skip duplicates (use resolved phone)
+        if (processedPhones.has(phone_final)) {
           continue;
         }
-        processedPhones.add(phone);
+        processedPhones.add(phone_final);
 
         // RESOLVE NAME with priority chain
         let chatName: string | null = null;
@@ -456,10 +510,13 @@ const handler = async (req: Request): Promise<Response> => {
         // 1. Try name from chat overview
         chatName = normalizeName(
           chat.name || chat.pushName || chat.pushname || chat.notifyName,
-          phone
+          phone_final
         );
         
-        // 2. Try contacts map
+        // 2. Try contacts map (check both original and resolved phone)
+        if (!chatName && contactsMap.has(phone_final)) {
+          chatName = contactsMap.get(phone_final)?.name || null;
+        }
         if (!chatName && contactsMap.has(phone)) {
           chatName = contactsMap.get(phone)?.name || null;
         }
@@ -471,7 +528,7 @@ const handler = async (req: Request): Promise<Response> => {
         
         // 4. Fallback to formatted phone display
         if (!chatName) {
-          chatName = formatPhoneDisplay(phone);
+          chatName = formatPhoneDisplay(phone_final);
         }
 
         // RESOLVE PHOTO with priority chain
@@ -481,7 +538,10 @@ const handler = async (req: Request): Promise<Response> => {
         photoUrl = chat.picture || chat.profilePicUrl || chat.profilePictureURL || 
                    chat.profilePictureUrl || chat.imgUrl || null;
         
-        // 2. Try contacts map
+        // 2. Try contacts map (check both original and resolved phone)
+        if (!photoUrl && contactsMap.has(phone_final)) {
+          photoUrl = contactsMap.get(phone_final)?.picture || null;
+        }
         if (!photoUrl && contactsMap.has(phone)) {
           photoUrl = contactsMap.get(phone)?.picture || null;
         }
@@ -509,13 +569,13 @@ const handler = async (req: Request): Promise<Response> => {
               ? lastMessageTimestamp * 1000 : lastMessageTimestamp).toISOString()
           : new Date().toISOString();
 
-        console.log(`[WAHA Sync] Chat: ${phone}, Name: ${chatName}, Photo: ${photoUrl ? 'Yes' : 'No'}, LastMsg: "${lastMessage.substring(0, 30)}..."`);
+        console.log(`[WAHA Sync] Chat: ${phone_final}, Name: ${chatName}, Photo: ${photoUrl ? 'Yes' : 'No'}, LastMsg: "${lastMessage.substring(0, 30)}..."`);
 
-        // Upsert chat
+        // Upsert chat with resolved phone number
         const { data: chatData, error: chatError } = await supabase
           .from("whatsapp_chats")
           .upsert({
-            phone,
+            phone: phone_final,
             name: chatName,
             last_message: lastMessage,
             last_message_time: lastMessageTime,
@@ -550,7 +610,7 @@ const handler = async (req: Request): Promise<Response> => {
             const messages = Array.isArray(messagesData) ? messagesData : [];
             
             if (msgOffset === 0) {
-              console.log(`[WAHA Sync] Found ${messages.length} messages for ${phone}`);
+              console.log(`[WAHA Sync] Found ${messages.length} messages for ${phone_final}`);
             }
 
             if (messages.length === 0) {
@@ -590,7 +650,7 @@ const handler = async (req: Request): Promise<Response> => {
                 .upsert({
                   chat_id: chatData.id,
                   message_id: messageId,
-                  phone,
+                  phone: phone_final,
                   text: msgText,
                   from_me: msgFromMe,
                   status,
@@ -614,19 +674,8 @@ const handler = async (req: Request): Promise<Response> => {
         }
       }
 
-      // STEP 5: Clean up only true LID chats from database
-      const { data: existingChats } = await supabase.from("whatsapp_chats").select("id, phone");
-      if (existingChats) {
-        const lidChatIds = existingChats
-          .filter((c: any) => isWhatsAppLID(c.phone))
-          .map((c: any) => c.id);
-        
-        if (lidChatIds.length > 0) {
-          await supabase.from("whatsapp_messages").delete().in("chat_id", lidChatIds);
-          await supabase.from("whatsapp_chats").delete().in("id", lidChatIds);
-          console.log(`[WAHA Sync] Cleaned up ${lidChatIds.length} LID chats`);
-        }
-      }
+      // STEP 5: No longer clean up LID chats since they are now resolved to real phone numbers
+      // Old LID chats in database will naturally be replaced when re-synced with resolved numbers
 
       console.log(`[WAHA Sync] Completed. Chats: ${syncedChats}, Messages: ${syncedMessages}, Skipped: ${skippedChats}`);
 
