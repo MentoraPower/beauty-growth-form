@@ -116,7 +116,7 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
       {/* Desktop Sidebar - Fixed Collapsed */}
       <aside
         style={{ width: sidebarWidth }}
-        className="hidden lg:flex flex-col fixed left-2 top-2 h-[calc(100vh-1rem)] bg-card overflow-hidden z-40 rounded-l-2xl"
+        className="hidden lg:flex flex-col fixed left-2 top-2 h-[calc(100vh-1rem)] bg-white overflow-hidden z-40 rounded-l-2xl"
       >
         <div className="flex flex-col h-full">
           {/* Logo */}
@@ -139,8 +139,8 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
                     className={cn(
                       "relative flex items-center justify-center w-full rounded-xl transition-colors duration-200 p-2.5",
                       isActive || isPanelOpen
-                        ? "bg-muted text-foreground before:absolute before:left-0 before:top-1/2 before:-translate-y-1/2 before:h-[70%] before:w-1 before:rounded-r-full before:bg-gradient-to-b before:from-[#F40000] before:to-[#A10000]"
-                        : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
+                        ? "bg-[#1a1a2e] text-white before:absolute before:left-0 before:top-1/2 before:-translate-y-1/2 before:h-[70%] before:w-1 before:rounded-r-full before:bg-gradient-to-b before:from-[#F40000] before:to-[#A10000]"
+                        : "text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900"
                     )}
                   >
                     <item.icon className="h-5 w-5 flex-shrink-0" strokeWidth={1.5} />
@@ -154,8 +154,8 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
                 className={cn(
                   "relative flex items-center justify-center w-full rounded-xl transition-colors duration-200 p-2.5",
                   isCRMActive || activePanel === 'crm'
-                    ? "bg-muted text-foreground before:absolute before:left-0 before:top-1/2 before:-translate-y-1/2 before:h-[70%] before:w-1 before:rounded-r-full before:bg-gradient-to-b before:from-[#F40000] before:to-[#A10000]"
-                    : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
+                    ? "bg-[#1a1a2e] text-white before:absolute before:left-0 before:top-1/2 before:-translate-y-1/2 before:h-[70%] before:w-1 before:rounded-r-full before:bg-gradient-to-b before:from-[#F40000] before:to-[#A10000]"
+                    : "text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900"
                 )}
               >
                 <Kanban className="h-5 w-5 flex-shrink-0" strokeWidth={1.5} />
@@ -172,8 +172,8 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
                     className={cn(
                       "relative flex items-center justify-center w-full rounded-xl transition-colors duration-200 p-2.5",
                       isActive || isPanelOpen
-                        ? "bg-muted text-foreground before:absolute before:left-0 before:top-1/2 before:-translate-y-1/2 before:h-[70%] before:w-1 before:rounded-r-full before:bg-gradient-to-b before:from-[#F40000] before:to-[#A10000]"
-                        : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
+                        ? "bg-[#1a1a2e] text-white before:absolute before:left-0 before:top-1/2 before:-translate-y-1/2 before:h-[70%] before:w-1 before:rounded-r-full before:bg-gradient-to-b before:from-[#F40000] before:to-[#A10000]"
+                        : "text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900"
                     )}
                   >
                     <item.icon className="h-5 w-5 flex-shrink-0" />
@@ -187,7 +187,7 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
           <div className="border-t border-border pl-2 pr-6 py-3">
             <Link
               to="/"
-              className="relative flex items-center justify-center w-full rounded-xl transition-colors duration-200 p-2.5 text-muted-foreground hover:bg-muted/50 hover:text-foreground"
+              className="relative flex items-center justify-center w-full rounded-xl transition-colors duration-200 p-2.5 text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900"
             >
               <LogOut className="h-5 w-5 flex-shrink-0" strokeWidth={1.5} />
             </Link>
