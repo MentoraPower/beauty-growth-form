@@ -80,7 +80,7 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
   // Calculate main content margin
   const getMainContentMargin = () => {
     if (isCRMLayout) {
-      return sidebarWidth + 14 + (submenuWidth - 16) + 8; // sidebar + gap + submenu + spacing
+      return sidebarWidth + 6 + (submenuWidth - 8) + 8; // sidebar + gap + submenu + spacing
     }
     return sidebarWidth + 24; // sidebar + gap for WhatsApp layout
   };
@@ -99,29 +99,17 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
       )}>
         <LoadingBar />
 
-        {/* Permanent white strip on left side - covers submenu when hidden */}
+        {/* White strip on left side - only visible when submenu is hidden */}
         <div
           aria-hidden="true"
           style={{
             left: 0,
             top: 0,
             height: "100vh",
-            width: sidebarWidth + 12,
-          }}
-          className="hidden lg:block fixed bg-card z-[45] pointer-events-none"
-        />
-        
-        {/* Gradient fade overlay - creates modern fade effect */}
-        <div
-          aria-hidden="true"
-          style={{
-            left: sidebarWidth + 12,
-            top: 0,
-            height: "100vh",
-            width: 40,
+            width: sidebarWidth + 20,
             opacity: isCRMLayout ? 0 : 1,
           }}
-          className="hidden lg:block fixed bg-gradient-to-r from-card to-transparent z-[45] pointer-events-none transition-opacity duration-500 ease-[cubic-bezier(0.4,0,0.2,1)]"
+          className="hidden lg:block fixed bg-card z-[42] pointer-events-none transition-opacity duration-500 ease-[cubic-bezier(0.4,0,0.2,1)]"
         />
         
         {/* Mobile Header */}
@@ -212,12 +200,12 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
         {/* Submenu Panel - slides in/out from behind fixed menu */}
         <div
           style={{ 
-            left: sidebarWidth + 14,
-            width: submenuWidth - 16,
-            transform: isCRMLayout ? 'translateX(0)' : `translateX(-${submenuWidth + 20}px)`,
+            left: sidebarWidth + 6,
+            width: submenuWidth - 8,
+            transform: isCRMLayout ? 'translateX(0)' : `translateX(-${submenuWidth + 30}px)`,
           }}
           className={cn(
-            "hidden lg:block fixed top-2 h-[calc(100vh-1rem)] rounded-2xl bg-[#0f0f12] z-[38] overflow-hidden pl-4",
+            "hidden lg:block fixed top-2 h-[calc(100vh-1rem)] rounded-2xl bg-[#0f0f12] z-[48] overflow-hidden pl-4",
             "transition-transform duration-500 ease-[cubic-bezier(0.4,0,0.2,1)]"
           )}
         >
