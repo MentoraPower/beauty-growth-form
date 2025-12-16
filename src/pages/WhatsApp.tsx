@@ -848,7 +848,11 @@ const WhatsApp = () => {
 
           {/* Lead Info Panel */}
           {selectedChat && showLeadPanel && (
-            <LeadInfoPanel phone={selectedChat.phone} />
+            <LeadInfoPanel 
+              phone={selectedChat.phone} 
+              photoUrl={selectedChat.photo_url}
+              contactName={selectedChat.name}
+            />
           )}
         </div>
       </div>
