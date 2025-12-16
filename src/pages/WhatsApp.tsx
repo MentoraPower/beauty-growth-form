@@ -526,12 +526,12 @@ const WhatsApp = () => {
     (m) => Boolean(m.text?.trim()) || Boolean(m.mediaUrl)
   );
 
-  // Format WhatsApp-style text (*bold*, _italic_, ~strikethrough~, ```monospace```)
+  // Format WhatsApp-style text (*bold*, _italic_, ~strikethrough~, ```monospace```, *_bold italic_*)
   const formatWhatsAppText = (text: string) => {
     if (!text) return null;
     
-    // Combined regex for all formatting patterns
-    const regex = /(\*[^*]+\*)|(_[^_]+_)|(~[^~]+~)|(```[^`]+```)/g;
+    // Combined regex - bold+italic first, then individual patterns
+    const regex = /(\*_[^_]+_\*)|(_\*[^*]+\*_)|(\*[^*]+\*)|(_[^_]+_)|(~[^~]+~)|(```[^`]+```)/g;
     const parts: (string | JSX.Element)[] = [];
     let lastIndex = 0;
     let match;
@@ -545,7 +545,11 @@ const WhatsApp = () => {
       
       const matchedText = match[0];
       
-      if (matchedText.startsWith('*') && matchedText.endsWith('*')) {
+      // Bold + Italic (*_text_* or _*text*_)
+      if ((matchedText.startsWith('*_') && matchedText.endsWith('_*')) ||
+          (matchedText.startsWith('_*') && matchedText.endsWith('*_'))) {
+        parts.push(<strong key={keyIndex++}><em>{matchedText.slice(2, -2)}</em></strong>);
+      } else if (matchedText.startsWith('*') && matchedText.endsWith('*')) {
         parts.push(<strong key={keyIndex++}>{matchedText.slice(1, -1)}</strong>);
       } else if (matchedText.startsWith('_') && matchedText.endsWith('_')) {
         parts.push(<em key={keyIndex++}>{matchedText.slice(1, -1)}</em>);
