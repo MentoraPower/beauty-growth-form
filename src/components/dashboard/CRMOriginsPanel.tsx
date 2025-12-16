@@ -182,17 +182,17 @@ function SortableOriginItem({
       >
         <div className="overflow-hidden">
           <div className="ml-4 pt-1 pb-1 relative">
-            {/* Main vertical line from origin */}
-            <div className="absolute left-[3px] top-0 bottom-3 w-[1.5px] bg-white/25" />
+            {/* Main vertical line from origin - higher z-index to be on top */}
+            <div className="absolute left-[3px] top-0 bottom-3 w-[2px] bg-white/30 z-10" />
             
             {/* Overview Item */}
             <div className="relative flex items-center group py-0.5">
-              {/* Curved line branch - starts from vertical line and curves right */}
-              <svg className="absolute left-[3px] top-1/2 -translate-y-1/2 w-4 h-6 overflow-visible" viewBox="0 0 16 24" fill="none">
+              {/* Curved line branch - lighter color and behind vertical line */}
+              <svg className="absolute left-[3px] top-1/2 -translate-y-1/2 w-4 h-6 overflow-visible z-0" viewBox="0 0 16 24" fill="none">
                 <path 
                   d="M0 0 C0 12, 8 12, 16 12" 
-                  stroke="rgba(255,255,255,0.25)" 
-                  strokeWidth="1.5"
+                  stroke="rgba(255,255,255,0.15)" 
+                  strokeWidth="2"
                   strokeLinecap="round"
                 />
               </svg>
@@ -220,12 +220,12 @@ function SortableOriginItem({
               
               return (
                 <div key={subOrigin.id} className="relative flex items-center group py-0.5">
-                  {/* Curved line branch */}
-                  <svg className="absolute left-[3px] top-1/2 -translate-y-1/2 w-4 h-6 overflow-visible" viewBox="0 0 16 24" fill="none">
+                  {/* Curved line branch - lighter color and behind vertical line */}
+                  <svg className="absolute left-[3px] top-1/2 -translate-y-1/2 w-4 h-6 overflow-visible z-0" viewBox="0 0 16 24" fill="none">
                     <path 
                       d="M0 0 C0 12, 8 12, 16 12" 
-                      stroke="rgba(255,255,255,0.25)" 
-                      strokeWidth="1.5"
+                      stroke="rgba(255,255,255,0.15)" 
+                      strokeWidth="2"
                       strokeLinecap="round"
                     />
                   </svg>
@@ -286,12 +286,12 @@ function SortableOriginItem({
 
             {/* Add Sub-origin Button */}
             <div className="relative flex items-center py-0.5">
-              {/* Curved line branch */}
-              <svg className="absolute left-[3px] top-1/2 -translate-y-1/2 w-4 h-6 overflow-visible" viewBox="0 0 16 24" fill="none">
+              {/* Curved line branch - lighter color and behind vertical line */}
+              <svg className="absolute left-[3px] top-1/2 -translate-y-1/2 w-4 h-6 overflow-visible z-0" viewBox="0 0 16 24" fill="none">
                 <path 
                   d="M0 0 C0 12, 8 12, 16 12" 
-                  stroke="rgba(255,255,255,0.15)" 
-                  strokeWidth="1.5"
+                  stroke="rgba(255,255,255,0.12)" 
+                  strokeWidth="2"
                   strokeLinecap="round"
                 />
               </svg>
