@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 
-import { Search, Smile, Paperclip, Mic, Send, Check, CheckCheck, RefreshCw, Phone, Image, File, Trash2, PanelRightOpen, PanelRightClose, X, Video, MoreVertical, Pencil, ChevronLeft, ChevronRight } from "lucide-react";
+import { Search, Smile, Paperclip, Mic, Send, Check, CheckCheck, RefreshCw, Phone, Image, File, Trash2, PanelRightOpen, PanelRightClose, X, Video, MoreVertical, Pencil } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
@@ -9,6 +9,7 @@ import CallModal from "@/components/whatsapp/CallModal";
 import LeadInfoPanel from "@/components/whatsapp/LeadInfoPanel";
 import { AudioWaveform } from "@/components/whatsapp/AudioWaveform";
 import { RecordingWaveform } from "@/components/whatsapp/RecordingWaveform";
+import ImageLightbox from "@/components/whatsapp/ImageLightbox";
 
 interface Chat {
   id: string;
@@ -1755,57 +1756,23 @@ const WhatsApp = () => {
 
       {/* Image Lightbox with Navigation */}
       {lightboxIndex !== null && allImages.length > 0 && (
-        <div 
-          className="fixed inset-0 z-[100] bg-black/90 flex items-center justify-center"
-          onClick={() => setLightboxIndex(null)}
-        >
-          {/* Close button */}
-          <button
-            onClick={() => setLightboxIndex(null)}
-            className="absolute top-4 right-4 p-2 rounded-full bg-white/10 hover:bg-white/20 transition-colors z-10"
-          >
-            <X className="w-6 h-6 text-white" />
-          </button>
-
-          {/* Counter */}
-          <div className="absolute top-4 left-4 text-white/80 text-sm">
-            {lightboxIndex + 1} / {allImages.length}
-          </div>
-
-          {/* Previous button */}
-          {allImages.length > 1 && (
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                setLightboxIndex(lightboxIndex > 0 ? lightboxIndex - 1 : allImages.length - 1);
-              }}
-              className="absolute left-4 p-3 rounded-full bg-white/10 hover:bg-white/20 transition-colors"
-            >
-              <ChevronLeft className="w-8 h-8 text-white" />
-            </button>
-          )}
-
-          {/* Image */}
-          <img 
-            src={allImages[lightboxIndex]} 
-            alt="Imagem ampliada" 
-            className="max-w-[85vw] max-h-[85vh] object-contain rounded-lg"
-            onClick={(e) => e.stopPropagation()}
-          />
-
-          {/* Next button */}
-          {allImages.length > 1 && (
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                setLightboxIndex(lightboxIndex < allImages.length - 1 ? lightboxIndex + 1 : 0);
-              }}
-              className="absolute right-4 p-3 rounded-full bg-white/10 hover:bg-white/20 transition-colors"
-            >
-              <ChevronRight className="w-8 h-8 text-white" />
-            </button>
-          )}
-        </div>
+        <ImageLightbox
+          images={allImages}
+          index={lightboxIndex}
+          onClose={() => setLightboxIndex(null)}
+          onPrev={() =>
+            setLightboxIndex((i) => {
+              if (i === null) return 0;
+              return i > 0 ? i - 1 : allImages.length - 1;
+            })
+          }
+          onNext={() =>
+            setLightboxIndex((i) => {
+              if (i === null) return 0;
+              return i < allImages.length - 1 ? i + 1 : 0;
+            })
+          }
+        />
       )}
     </>
   );
