@@ -336,7 +336,7 @@ async function handler(req: Request): Promise<Response> {
       }
     } else if (message.audioMessage || message.pttMessage) {
       mediaType = "audio";
-      text = text || "🎵 Áudio";
+      // Don't set placeholder text for audio - let the UI handle it
 
       const audioMsg = message.audioMessage || message.pttMessage;
       if (audioMsg?.mediaKey && audioMsg?.url) {

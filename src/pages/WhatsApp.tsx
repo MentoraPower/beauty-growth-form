@@ -933,7 +933,7 @@ const WhatsApp = () => {
 
       // Update chat last message
       await supabase.from("whatsapp_chats").update({
-        last_message: "🎵 Áudio",
+        last_message: "Áudio",
         last_message_time: new Date().toISOString(),
       }).eq("id", selectedChat.id);
 
@@ -1216,9 +1216,8 @@ const WhatsApp = () => {
     
     if (msg.mediaType === "audio" && msg.mediaUrl) {
       return (
-        <div className="min-w-[220px] max-w-[300px]">
+        <div className="min-w-[220px] max-w-[280px]">
           <AudioWaveform src={msg.mediaUrl} sent={msg.sent} />
-          {msg.text && <p className="text-sm text-foreground whitespace-pre-wrap mt-1">{formatWhatsAppText(msg.text)}</p>}
         </div>
       );
     }
