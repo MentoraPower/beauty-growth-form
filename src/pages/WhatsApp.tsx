@@ -426,12 +426,12 @@ const WhatsApp = () => {
     }
   };
 
-  // Fetch profile picture for a chat
-  const fetchProfilePicture = useCallback(async (chat: Chat) => {
-    if (!chat || chat.photo_url) return;
+  // Fetch contact info (photo + name) for a chat
+  const fetchContactInfo = useCallback(async (chat: Chat) => {
+    if (!chat || (chat.photo_url && chat.name)) return;
     
     try {
-      console.log("[WhatsApp] Fetching profile picture for:", chat.phone);
+      console.log("[WhatsApp] Fetching contact info for:", chat.phone);
       
       const { data, error } = await supabase.functions.invoke("wasender-whatsapp", {
         body: {
@@ -441,18 +441,30 @@ const WhatsApp = () => {
       });
 
       if (error) {
-        console.error("[WhatsApp] Error fetching profile picture:", error);
+        console.error("[WhatsApp] Error fetching contact info:", error);
         return;
       }
 
-      if (data?.photoUrl) {
-        console.log("[WhatsApp] Got profile picture for:", chat.phone);
+      const hasUpdates = data?.photoUrl || data?.name;
+      if (hasUpdates) {
+        console.log("[WhatsApp] Got contact info for:", chat.phone, "name:", data?.name, "photo:", data?.photoUrl ? "Yes" : "No");
         
-        // Update local state
+        // Update local state with both photo and name
         setChats(prev => {
-          const newChats = prev.map(c => 
-            c.id === chat.id ? { ...c, photo_url: data.photoUrl, avatar: data.photoUrl } : c
-          );
+          const newChats = prev.map(c => {
+            if (c.id === chat.id) {
+              const updates: Partial<Chat> = {};
+              if (data.photoUrl) {
+                updates.photo_url = data.photoUrl;
+                updates.avatar = data.photoUrl;
+              }
+              if (data.name && !c.name) {
+                updates.name = data.name;
+              }
+              return { ...c, ...updates };
+            }
+            return c;
+          });
           chatsRef.current = newChats;
           return newChats;
         });
@@ -460,22 +472,30 @@ const WhatsApp = () => {
         // Update selectedChat if it's the one being updated
         setSelectedChat(prev => {
           if (prev?.id === chat.id) {
-            return { ...prev, photo_url: data.photoUrl, avatar: data.photoUrl };
+            const updates: Partial<Chat> = {};
+            if (data.photoUrl) {
+              updates.photo_url = data.photoUrl;
+              updates.avatar = data.photoUrl;
+            }
+            if (data.name && !prev.name) {
+              updates.name = data.name;
+            }
+            return { ...prev, ...updates };
           }
           return prev;
         });
       }
     } catch (error) {
-      console.error("[WhatsApp] Error fetching profile picture:", error);
+      console.error("[WhatsApp] Error fetching contact info:", error);
     }
   }, []);
 
-  // Auto-fetch profile picture when chat is selected and doesn't have one
+  // Auto-fetch contact info when chat is selected and doesn't have photo
   useEffect(() => {
     if (selectedChat && !selectedChat.photo_url && !isWhatsAppInternalId(selectedChat.phone)) {
-      fetchProfilePicture(selectedChat);
+      fetchContactInfo(selectedChat);
     }
-  }, [selectedChat?.id, fetchProfilePicture]);
+  }, [selectedChat?.id, fetchContactInfo]);
 
   const clearAllData = async () => {
     try {

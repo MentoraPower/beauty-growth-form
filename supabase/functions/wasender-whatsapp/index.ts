@@ -98,7 +98,33 @@ async function resolveLidToPhone(lid: string): Promise<string | null> {
   }
 }
 
-// Fetch contact profile picture using WasenderAPI
+// Fetch contact info (name, photo) using WasenderAPI
+async function fetchContactInfo(phone: string): Promise<{ name: string | null; imgUrl: string | null }> {
+  try {
+    // WasenderAPI endpoint: GET /api/contacts/{contactPhoneNumber}
+    const formattedPhone = phone.replace(/\D/g, "");
+    
+    console.log(`[Wasender] Fetching contact info for: ${formattedPhone}`);
+    
+    const result = await wasenderRequest(`/contacts/${formattedPhone}`);
+    
+    console.log(`[Wasender] Contact info result:`, JSON.stringify(result));
+    
+    // WasenderAPI returns { success: true, data: { id, name, notify, verifiedName, imgUrl, status } }
+    const data = result?.data || {};
+    const name = data.name || data.notify || data.verifiedName || null;
+    const imgUrl = data.imgUrl || null;
+    
+    console.log(`[Wasender] Contact ${formattedPhone}: name=${name}, photo=${imgUrl ? "Yes" : "No"}`);
+    
+    return { name, imgUrl };
+  } catch (error) {
+    console.error(`[Wasender] Failed to fetch contact info for ${phone}:`, error);
+    return { name: null, imgUrl: null };
+  }
+}
+
+// Fetch contact profile picture using WasenderAPI (dedicated endpoint)
 async function fetchContactPicture(phone: string): Promise<string | null> {
   try {
     // WasenderAPI endpoint: GET /api/contacts/{contactPhoneNumber}/picture
@@ -112,12 +138,6 @@ async function fetchContactPicture(phone: string): Promise<string | null> {
     
     // WasenderAPI returns { success: true, data: { imgUrl: "..." } }
     const imgUrl = result?.data?.imgUrl || result?.imgUrl || null;
-    
-    if (imgUrl) {
-      console.log(`[Wasender] Found profile picture for ${formattedPhone}`);
-    } else {
-      console.log(`[Wasender] No profile picture for ${formattedPhone}`);
-    }
     
     return imgUrl;
   } catch (error) {
@@ -254,32 +274,67 @@ async function handler(req: Request): Promise<Response> {
     }
 
     // =========================
-    // ACTION: get-profile-picture
+    // ACTION: get-profile-picture (also fetches name)
     // =========================
     if (action === "get-profile-picture") {
       const formattedPhone = formatPhoneForApi(phone);
-      console.log(`[Wasender] Getting profile picture for ${formattedPhone}`);
+      console.log(`[Wasender] Getting contact info for ${formattedPhone}`);
       
-      const photoUrl = await fetchContactPicture(formattedPhone);
+      // Use fetchContactInfo to get both name and photo in one call
+      const contactInfo = await fetchContactInfo(formattedPhone);
       
-      // If found, update the chat record in database
-      if (photoUrl) {
-        const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
-        
+      // If no photo from contact info, try dedicated picture endpoint
+      let photoUrl = contactInfo.imgUrl;
+      if (!photoUrl) {
+        photoUrl = await fetchContactPicture(formattedPhone);
+      }
+      
+      // Update the chat record in database with both name and photo
+      const updateData: any = { updated_at: new Date().toISOString() };
+      if (photoUrl) updateData.photo_url = photoUrl;
+      if (contactInfo.name) updateData.name = contactInfo.name;
+      
+      if (photoUrl || contactInfo.name) {
         const { error } = await supabase
           .from("whatsapp_chats")
-          .update({ photo_url: photoUrl, updated_at: new Date().toISOString() })
+          .update(updateData)
           .eq("phone", formattedPhone);
         
         if (error) {
-          console.error(`[Wasender] Error updating chat photo:`, error);
+          console.error(`[Wasender] Error updating chat:`, error);
         } else {
-          console.log(`[Wasender] Updated chat photo for ${formattedPhone}`);
+          console.log(`[Wasender] Updated chat for ${formattedPhone}: name=${contactInfo.name}, photo=${photoUrl ? "Yes" : "No"}`);
         }
       }
 
       return new Response(JSON.stringify({ 
         success: true, 
+        photoUrl,
+        name: contactInfo.name,
+        phone: formattedPhone 
+      }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // =========================
+    // ACTION: get-contact-info
+    // =========================
+    if (action === "get-contact-info") {
+      const formattedPhone = formatPhoneForApi(phone);
+      console.log(`[Wasender] Getting contact info for ${formattedPhone}`);
+      
+      const contactInfo = await fetchContactInfo(formattedPhone);
+      
+      // Also try to get photo from dedicated endpoint if not available
+      let photoUrl = contactInfo.imgUrl;
+      if (!photoUrl) {
+        photoUrl = await fetchContactPicture(formattedPhone);
+      }
+
+      return new Response(JSON.stringify({ 
+        success: true, 
+        name: contactInfo.name,
         photoUrl,
         phone: formattedPhone 
       }), {
