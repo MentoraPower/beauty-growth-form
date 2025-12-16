@@ -163,7 +163,7 @@ const LeadInfoPanel = ({ phone, photoUrl, contactName, onClose }: LeadInfoPanelP
     return (
       <div className="w-[340px] border-l border-border bg-background flex flex-col">
         {/* Header */}
-        <div className="bg-indigo-50 dark:bg-indigo-950/30 px-4 py-6">
+        <div className="bg-muted/50 dark:bg-muted/30 px-4 py-6">
           <div className="flex items-center gap-3">
             <img 
               src={photoUrl || defaultAvatar} 
@@ -184,7 +184,7 @@ const LeadInfoPanel = ({ phone, photoUrl, contactName, onClose }: LeadInfoPanelP
   return (
     <div className="w-[340px] border-l border-border bg-background flex flex-col overflow-hidden">
       {/* Header */}
-      <div className="bg-indigo-50 dark:bg-indigo-950/30 px-4 py-4">
+      <div className="bg-muted/50 dark:bg-muted/30 px-4 py-4">
         <div className="flex items-center gap-3">
           <img 
             src={displayPhoto || defaultAvatar} 
@@ -216,7 +216,7 @@ const LeadInfoPanel = ({ phone, photoUrl, contactName, onClose }: LeadInfoPanelP
         {/* Contato Section */}
         <Collapsible open={openSections.contato} onOpenChange={() => toggleSection('contato')}>
           <CollapsibleTrigger className="w-full flex items-center justify-between px-4 py-3 hover:bg-muted/30 transition-colors border-b border-border">
-            <span className="text-sm font-medium text-indigo-600 dark:text-indigo-400">Contato</span>
+            <span className="text-sm font-medium text-foreground">Contato</span>
             {openSections.contato ? (
               <ChevronDown className="w-4 h-4 text-muted-foreground" />
             ) : (
@@ -283,8 +283,8 @@ const LeadInfoPanel = ({ phone, photoUrl, contactName, onClose }: LeadInfoPanelP
           <CollapsibleContent>
             <div className="px-4 py-4 border-b border-border">
               <div className="flex items-start gap-3">
-                <div className="w-8 h-8 rounded-lg bg-indigo-100 dark:bg-indigo-900/40 flex items-center justify-center flex-shrink-0">
-                  <User className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+                <div className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center flex-shrink-0">
+                  <User className="w-4 h-4 text-muted-foreground" />
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-foreground">Novo contato criado</p>
