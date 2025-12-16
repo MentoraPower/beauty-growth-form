@@ -1,11 +1,12 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
-import { Search, Smile, Paperclip, Mic, Send, Check, CheckCheck, RefreshCw, Phone, Image, File, Play, Trash2 } from "lucide-react";
+import { Search, Smile, Paperclip, Mic, Send, Check, CheckCheck, RefreshCw, Phone, Image, File, Play, Trash2, PanelRightOpen, PanelRightClose } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import CallModal from "@/components/whatsapp/CallModal";
+import LeadInfoPanel from "@/components/whatsapp/LeadInfoPanel";
 
 interface Chat {
   id: string;
@@ -42,6 +43,7 @@ const WhatsApp = () => {
   const [isSyncing, setIsSyncing] = useState(false);
   const [isCallModalOpen, setIsCallModalOpen] = useState(false);
   const [showAttachMenu, setShowAttachMenu] = useState(false);
+  const [showLeadPanel, setShowLeadPanel] = useState(true);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
@@ -647,7 +649,8 @@ const WhatsApp = () => {
         </div>
 
         {/* Right Panel - Chat Area */}
-        <div className="flex-1 flex flex-col bg-muted/10">
+        <div className="flex-1 flex">
+          <div className="flex-1 flex flex-col bg-muted/10">
           {selectedChat ? (
             <>
               {/* Chat Header */}
@@ -671,6 +674,17 @@ const WhatsApp = () => {
                   title="Fazer ligação"
                 >
                   <Phone className="w-5 h-5 text-emerald-500" />
+                </button>
+                <button
+                  onClick={() => setShowLeadPanel(!showLeadPanel)}
+                  className={cn("p-2 hover:bg-muted/50 rounded-full transition-colors", showLeadPanel && "bg-muted/50")}
+                  title={showLeadPanel ? "Ocultar informações do lead" : "Mostrar informações do lead"}
+                >
+                  {showLeadPanel ? (
+                    <PanelRightClose className="w-5 h-5 text-muted-foreground" />
+                  ) : (
+                    <PanelRightOpen className="w-5 h-5 text-muted-foreground" />
+                  )}
                 </button>
                 <button
                   onClick={() => fetchMessages(selectedChat.id)}
@@ -829,6 +843,12 @@ const WhatsApp = () => {
                 )}
               </div>
             </div>
+          )}
+          </div>
+
+          {/* Lead Info Panel */}
+          {selectedChat && showLeadPanel && (
+            <LeadInfoPanel phone={selectedChat.phone} />
           )}
         </div>
       </div>
