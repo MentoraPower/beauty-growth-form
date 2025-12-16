@@ -603,9 +603,9 @@ const WhatsApp = () => {
                 >
                   <div className="relative flex-shrink-0">
                     <img 
-                      src={chat.photo_url || "https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp_default_profile_photo.png"} 
+                      src={chat.photo_url || "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 212 212'%3E%3Cpath fill='%23DFE5E7' d='M0 0h212v212H0z'/%3E%3Cpath fill='%23FFF' d='M106 106c-25.4 0-46-20.6-46-46s20.6-46 46-46 46 20.6 46 46-20.6 46-46 46zm0 13c30.6 0 92 15.4 92 46v23H14v-23c0-30.6 61.4-46 92-46z'/%3E%3C/svg%3E"} 
                       alt={chat.name} 
-                      className="w-12 h-12 rounded-full object-cover" 
+                      className="w-12 h-12 rounded-full object-cover bg-neutral-200" 
                     />
                   </div>
                   <div className="flex-1 min-w-0">
@@ -655,9 +655,9 @@ const WhatsApp = () => {
               <div className="h-14 px-4 flex items-center gap-3 bg-muted/30 border-b border-border/30">
                 <div className="relative flex-shrink-0">
                   <img 
-                    src={selectedChat.photo_url || "https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp_default_profile_photo.png"} 
+                    src={selectedChat.photo_url || "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 212 212'%3E%3Cpath fill='%23DFE5E7' d='M0 0h212v212H0z'/%3E%3Cpath fill='%23FFF' d='M106 106c-25.4 0-46-20.6-46-46s20.6-46 46-46 46 20.6 46 46-20.6 46-46 46zm0 13c30.6 0 92 15.4 92 46v23H14v-23c0-30.6 61.4-46 92-46z'/%3E%3C/svg%3E"} 
                     alt={selectedChat.name} 
-                    className="w-10 h-10 rounded-full object-cover" 
+                    className="w-10 h-10 rounded-full object-cover bg-neutral-200" 
                   />
                 </div>
                 <div className="flex-1">
