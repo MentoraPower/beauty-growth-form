@@ -5,30 +5,32 @@ export const LoadingBar = () => {
   const [progress, setProgress] = useState(0);
   const [isVisible, setIsVisible] = useState(false);
   const location = useLocation();
-  const previousPath = useRef(location.pathname);
+  const previousPath = useRef(`${location.pathname}${location.search}`);
   const animationRef = useRef<number | null>(null);
 
   useEffect(() => {
-    // Only trigger on pathname changes, not query params
-    if (previousPath.current !== location.pathname) {
-      previousPath.current = location.pathname;
-      
+    // Trigger on route changes (including query params)
+    const currentRoute = `${location.pathname}${location.search}`;
+
+    if (previousPath.current !== currentRoute) {
+      previousPath.current = currentRoute;
+
       // Reset and start
       setProgress(0);
       setIsVisible(true);
-      
+
       // Animate progress
       let currentProgress = 0;
       const animate = () => {
         currentProgress += (100 - currentProgress) * 0.1;
         setProgress(Math.min(currentProgress, 90));
-        
+
         if (currentProgress < 90) {
           animationRef.current = requestAnimationFrame(animate);
         }
       };
       animationRef.current = requestAnimationFrame(animate);
-      
+
       // Complete after delay
       const timer = setTimeout(() => {
         if (animationRef.current) {
@@ -40,7 +42,7 @@ export const LoadingBar = () => {
           setProgress(0);
         }, 200);
       }, 400);
-      
+
       return () => {
         clearTimeout(timer);
         if (animationRef.current) {
@@ -48,12 +50,12 @@ export const LoadingBar = () => {
         }
       };
     }
-  }, [location.pathname]);
+  }, [location.pathname, location.search]);
 
   if (!isVisible) return null;
 
   return (
-    <div className="absolute top-0 left-0 right-0 h-1 z-[100] overflow-hidden rounded-t-2xl pointer-events-none">
+    <div className="fixed top-0 left-0 right-0 h-1 z-[999999] overflow-hidden bg-foreground/10 pointer-events-none">
       <div 
         className="h-full transition-all duration-200 ease-out"
         style={{
