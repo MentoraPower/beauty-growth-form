@@ -673,14 +673,21 @@ const WhatsApp = () => {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       setRecordingStream(stream);
       
-      // Determine best supported audio format for WasenderAPI (prefers OGG Opus)
-      let mimeType = 'audio/webm';
-      if (MediaRecorder.isTypeSupported('audio/ogg; codecs=opus')) {
-        mimeType = 'audio/ogg; codecs=opus';
-      } else if (MediaRecorder.isTypeSupported('audio/mp4')) {
-        mimeType = 'audio/mp4';
-      } else if (MediaRecorder.isTypeSupported('audio/webm; codecs=opus')) {
-        mimeType = 'audio/webm; codecs=opus';
+      // Determine best supported audio format for WasenderAPI
+      // Wasender supports: AAC, MP3, OGG, AMR (NOT WebM!)
+      let mimeType = 'audio/webm;codecs=opus'; // fallback
+      
+      // Priority: OGG Opus (most compatible with WhatsApp API)
+      if (MediaRecorder.isTypeSupported('audio/ogg;codecs=opus')) {
+        mimeType = 'audio/ogg;codecs=opus';
+      } else if (MediaRecorder.isTypeSupported('audio/ogg')) {
+        mimeType = 'audio/ogg';
+      } else if (MediaRecorder.isTypeSupported('audio/mp4;codecs=mp4a.40.2')) {
+        // Safari - use AAC codec which is supported
+        mimeType = 'audio/mp4;codecs=mp4a.40.2';
+      } else if (MediaRecorder.isTypeSupported('audio/webm;codecs=opus')) {
+        // WebM as last resort - will upload as .ogg and hope it works
+        mimeType = 'audio/webm;codecs=opus';
       }
       
       console.log("[WhatsApp] Recording with mimeType:", mimeType);
@@ -757,23 +764,28 @@ const WhatsApp = () => {
 
     try {
       // Determine file extension based on mimeType
-      let ext = 'webm';
+      // Wasender supports: AAC, MP3, OGG, AMR
+      let ext = 'ogg'; // default to OGG (most compatible)
       if (mimeType.includes('ogg')) ext = 'ogg';
-      else if (mimeType.includes('mp4')) ext = 'mp4';
+      else if (mimeType.includes('mp4') || mimeType.includes('m4a') || mimeType.includes('aac')) ext = 'm4a';
       else if (mimeType.includes('mp3') || mimeType.includes('mpeg')) ext = 'mp3';
+      else if (mimeType.includes('webm')) ext = 'ogg'; // Upload WebM as OGG
       
       // Generate filename
       const timestamp = Date.now();
       const filename = `${selectedChat.phone}_${timestamp}.${ext}`;
       const filePath = `audios/${filename}`;
+      
+      // For WebM, we need to set contentType to audio/ogg for better compatibility
+      const uploadContentType = mimeType.includes('webm') ? 'audio/ogg' : mimeType;
 
-      console.log("[WhatsApp] Uploading audio:", filename, "mimeType:", mimeType);
+      console.log("[WhatsApp] Uploading audio:", filename, "mimeType:", mimeType, "uploadAs:", uploadContentType);
 
       // Upload to Supabase Storage
       const { error: uploadError } = await supabase.storage
         .from('whatsapp-media')
         .upload(filePath, audioBlob, {
-          contentType: mimeType,
+          contentType: uploadContentType,
           cacheControl: '3600',
         });
 
