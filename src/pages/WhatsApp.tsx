@@ -517,20 +517,44 @@ const WhatsApp = () => {
     (m) => Boolean(m.text?.trim()) || Boolean(m.mediaUrl)
   );
 
-  // Format WhatsApp-style text (bold with *text*)
+  // Format WhatsApp-style text (*bold*, _italic_, ~strikethrough~, ```monospace```)
   const formatWhatsAppText = (text: string) => {
     if (!text) return null;
     
-    // Split by bold pattern *text*
-    const parts = text.split(/(\*[^*]+\*)/g);
+    // Combined regex for all formatting patterns
+    const regex = /(\*[^*]+\*)|(_[^_]+_)|(~[^~]+~)|(```[^`]+```)/g;
+    const parts: (string | JSX.Element)[] = [];
+    let lastIndex = 0;
+    let match;
+    let keyIndex = 0;
     
-    return parts.map((part, index) => {
-      // Check if this part is bold (surrounded by asterisks)
-      if (part.startsWith('*') && part.endsWith('*') && part.length > 2) {
-        return <strong key={index}>{part.slice(1, -1)}</strong>;
+    while ((match = regex.exec(text)) !== null) {
+      // Add text before match
+      if (match.index > lastIndex) {
+        parts.push(text.slice(lastIndex, match.index));
       }
-      return part;
-    });
+      
+      const matchedText = match[0];
+      
+      if (matchedText.startsWith('*') && matchedText.endsWith('*')) {
+        parts.push(<strong key={keyIndex++}>{matchedText.slice(1, -1)}</strong>);
+      } else if (matchedText.startsWith('_') && matchedText.endsWith('_')) {
+        parts.push(<em key={keyIndex++}>{matchedText.slice(1, -1)}</em>);
+      } else if (matchedText.startsWith('~') && matchedText.endsWith('~')) {
+        parts.push(<s key={keyIndex++}>{matchedText.slice(1, -1)}</s>);
+      } else if (matchedText.startsWith('```') && matchedText.endsWith('```')) {
+        parts.push(<code key={keyIndex++} className="bg-muted/50 px-1 rounded text-xs font-mono">{matchedText.slice(3, -3)}</code>);
+      }
+      
+      lastIndex = match.index + matchedText.length;
+    }
+    
+    // Add remaining text
+    if (lastIndex < text.length) {
+      parts.push(text.slice(lastIndex));
+    }
+    
+    return parts.length > 0 ? parts : text;
   };
 
   const renderMessageContent = (msg: Message) => {
