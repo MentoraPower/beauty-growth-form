@@ -546,7 +546,7 @@ export function CRMOriginsPanel({ isOpen, onClose, sidebarWidth }: CRMOriginsPan
       <div
         style={{ left: sidebarWidth - 8 }}
         className={cn(
-          "hidden lg:block fixed top-2 h-[calc(100vh-1rem)] w-64 rounded-2xl bg-[#0f0f12] z-40 transition-all duration-300 ease-out overflow-hidden pl-4",
+          "hidden lg:block fixed top-2 h-[calc(100vh-1rem)] w-64 rounded-2xl bg-[#0f0f12] z-50 transition-all duration-300 ease-out overflow-hidden pl-4",
           isOpen 
             ? "opacity-100 translate-x-0" 
             : "opacity-0 -translate-x-4 pointer-events-none"
