@@ -371,7 +371,7 @@ const WhatsApp = () => {
     scrollToBottom("auto");
 
     try {
-      const { data, error } = await supabase.functions.invoke("waha-whatsapp", {
+      const { data, error } = await supabase.functions.invoke("wasender-whatsapp", {
         body: {
           action: "send-text",
           phone: selectedChat.phone,
@@ -429,7 +429,7 @@ const WhatsApp = () => {
   const clearAllData = async () => {
     try {
       console.log("[WhatsApp] Clearing all data...");
-      const { data, error } = await supabase.functions.invoke("waha-whatsapp", {
+      const { data, error } = await supabase.functions.invoke("wasender-whatsapp", {
         body: { action: "clear-all" },
       });
       console.log("[WhatsApp] Clear response:", data, error);
@@ -444,9 +444,9 @@ const WhatsApp = () => {
   const syncAllChats = async () => {
     setIsSyncing(true);
     try {
-      console.log("[WhatsApp] Syncing WAHA...");
+      console.log("[WhatsApp] Syncing Wasender...");
       
-      const { data, error } = await supabase.functions.invoke("waha-whatsapp", {
+      const { data, error } = await supabase.functions.invoke("wasender-whatsapp", {
         body: { action: "sync-all" },
       });
 
@@ -513,7 +513,7 @@ const WhatsApp = () => {
       scrollToBottom("smooth");
 
       // Send via WAHA
-      const { data, error } = await supabase.functions.invoke("waha-whatsapp", {
+      const { data, error } = await supabase.functions.invoke("wasender-whatsapp", {
         body: { 
           action,
           phone: selectedChat.phone, 
@@ -674,7 +674,7 @@ const WhatsApp = () => {
       scrollToBottom("smooth");
 
       // Send via WAHA
-      const { data, error } = await supabase.functions.invoke("waha-whatsapp", {
+      const { data, error } = await supabase.functions.invoke("wasender-whatsapp", {
         body: { 
           action: "send-audio",
           phone: selectedChat.phone, 
