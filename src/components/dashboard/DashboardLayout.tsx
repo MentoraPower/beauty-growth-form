@@ -202,10 +202,12 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
             left: sidebarWidth + 4,
             width: submenuWidth - 16,
             transform: isCRMLayout ? 'translateX(0)' : `translateX(-${submenuWidth}px)`,
+            opacity: isCRMLayout ? 1 : 0,
+            zIndex: isCRMLayout ? 38 : 30,
           }}
           className={cn(
-            "hidden lg:block fixed top-2 h-[calc(100vh-1rem)] rounded-2xl bg-[#0f0f12] z-[38] overflow-hidden pl-4",
-            "transition-transform duration-500 ease-[cubic-bezier(0.4,0,0.2,1)]"
+            "hidden lg:block fixed top-2 h-[calc(100vh-1rem)] rounded-r-2xl bg-[#0f0f12] overflow-hidden pl-4",
+            "transition-all duration-500 ease-[cubic-bezier(0.4,0,0.2,1)]"
           )}
         >
           <CRMOriginsPanel 
