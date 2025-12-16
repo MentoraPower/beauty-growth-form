@@ -188,7 +188,7 @@ function SortableOriginItem({
                     className={cn(
                       "flex items-center gap-2 flex-1 py-1.5 px-2 rounded-lg transition-all duration-200 ease-out text-xs",
                       isActive 
-                        ? "bg-gradient-to-r from-[#6366f1] to-[#8b5cf6] text-white font-medium"
+                        ? "bg-white/10 text-white font-medium"
                         : "text-white/70 hover:text-white hover:bg-white/5"
                     )}
                   >

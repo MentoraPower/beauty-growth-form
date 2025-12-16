@@ -212,7 +212,7 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
                   className={cn(
                     "flex items-center gap-3 w-full py-2.5 px-3 rounded-xl transition-all duration-200 text-sm",
                     isActive 
-                      ? "bg-gradient-to-r from-[#6366f1] to-[#8b5cf6] text-white"
+                      ? "bg-white/10 text-white"
                       : "text-white/70 hover:text-white hover:bg-white/5"
                   )}
                 >
@@ -246,7 +246,7 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
                   className={cn(
                     "flex items-center gap-3 w-full py-2.5 px-3 rounded-xl transition-all duration-200 text-sm",
                     isActive 
-                      ? "bg-gradient-to-r from-[#6366f1] to-[#8b5cf6] text-white"
+                      ? "bg-white/10 text-white"
                       : "text-white/70 hover:text-white hover:bg-white/5"
                   )}
                 >
