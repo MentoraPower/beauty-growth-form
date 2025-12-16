@@ -472,9 +472,7 @@ const WhatsApp = () => {
 
   // Auto-fetch profile picture when chat is selected and doesn't have one
   useEffect(() => {
-    console.log("[WhatsApp] Profile picture effect - selectedChat:", selectedChat?.phone, "photo_url:", selectedChat?.photo_url, "isInternal:", selectedChat?.phone ? isWhatsAppInternalId(selectedChat.phone) : "N/A");
     if (selectedChat && !selectedChat.photo_url && !isWhatsAppInternalId(selectedChat.phone)) {
-      console.log("[WhatsApp] Triggering fetchProfilePicture for:", selectedChat.phone);
       fetchProfilePicture(selectedChat);
     }
   }, [selectedChat?.id, fetchProfilePicture]);
