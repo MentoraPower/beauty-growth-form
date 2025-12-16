@@ -89,12 +89,12 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
 
   return (
     <div className={cn(
-      "min-h-screen transition-colors duration-300",
+      "min-h-screen transition-all duration-500 ease-[cubic-bezier(0.4,0,0.2,1)]",
       isCRMLayout ? "bg-card p-2" : "bg-card p-3"
     )}>
       {/* Dark wrapper - only visible in CRM mode */}
       <div className={cn(
-        "min-h-[calc(100vh-1rem)] relative transition-all duration-300",
+        "min-h-[calc(100vh-1rem)] relative transition-all duration-500 ease-[cubic-bezier(0.4,0,0.2,1)]",
         isCRMLayout ? "bg-[#0f0f12] rounded-2xl" : "bg-transparent"
       )}>
         <LoadingBar />
@@ -196,25 +196,24 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
           </div>
         </aside>
 
-        {/* Submenu Panel - Only visible for CRM */}
+        {/* Submenu Panel - slides in/out from behind fixed menu */}
         <div
           style={{ 
-            left: sidebarWidth + 4, // Small gap from sidebar
-            width: submenuWidth - 16, // Reduced width from the right
-            opacity: isCRMLayout ? 1 : 0,
-            transform: isCRMLayout ? 'translateX(0)' : 'translateX(-20px)',
-            pointerEvents: isCRMLayout ? 'auto' : 'none'
+            left: sidebarWidth + 4,
+            width: submenuWidth - 16,
+            transform: isCRMLayout ? 'translateX(0)' : `translateX(-${submenuWidth}px)`,
           }}
-          className="hidden lg:block fixed top-2 h-[calc(100vh-1rem)] rounded-2xl bg-[#0f0f12] z-50 overflow-hidden pl-4 transition-all duration-300 ease-out"
-        >
-          {activePanel === 'crm' && (
-            <CRMOriginsPanel 
-              isOpen={true} 
-              onClose={() => {}}
-              sidebarWidth={sidebarWidth}
-              embedded={true}
-            />
+          className={cn(
+            "hidden lg:block fixed top-2 h-[calc(100vh-1rem)] rounded-2xl bg-[#0f0f12] z-[38] overflow-hidden pl-4",
+            "transition-transform duration-500 ease-[cubic-bezier(0.4,0,0.2,1)]"
           )}
+        >
+          <CRMOriginsPanel 
+            isOpen={true} 
+            onClose={() => {}}
+            sidebarWidth={sidebarWidth}
+            embedded={true}
+          />
         </div>
 
         {/* Mobile Sidebar */}
@@ -304,10 +303,10 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
             right: isCRMLayout ? 8 : 12,
             bottom: isCRMLayout ? 8 : 12
           }}
-          className="hidden lg:block fixed transition-all duration-300 ease-out"
+          className="hidden lg:block fixed transition-all duration-500 ease-[cubic-bezier(0.4,0,0.2,1)]"
         >
           <div className={cn(
-            "h-full transition-all duration-300",
+            "h-full transition-all duration-500 ease-[cubic-bezier(0.4,0,0.2,1)]",
             isCRMLayout ? "bg-[#0f0f12] rounded-2xl p-2" : "bg-transparent"
           )}>
             <div className={cn(
