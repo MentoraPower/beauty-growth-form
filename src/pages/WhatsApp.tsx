@@ -55,9 +55,14 @@ const WhatsApp = () => {
   const lastFetchedChatIdRef = useRef<string | null>(null);
   const autoScrollChatIdRef = useRef<string | null>(null);
 
-  // Scroll to bottom using the end ref (most reliable)
-  const scrollToBottom = useCallback(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "instant" });
+  // Scroll to bottom of the messages container (reliable even on long threads)
+  const scrollToBottom = useCallback((behavior: ScrollBehavior = "auto") => {
+    const el = messagesContainerRef.current;
+    if (el) {
+      el.scrollTo({ top: el.scrollHeight, behavior });
+      return;
+    }
+    messagesEndRef.current?.scrollIntoView({ behavior, block: "end" });
   }, []);
 
   // Keep auto-scrolling until we're truly at the bottom
@@ -76,7 +81,8 @@ const WhatsApp = () => {
         return;
       }
 
-      scrollToBottom();
+      // First try smooth (nice UX), then force to bottom (reliability)
+      scrollToBottom(attempts < 4 ? "smooth" : "auto");
       attempts++;
 
       if (attempts >= maxAttempts) {
@@ -97,7 +103,7 @@ const WhatsApp = () => {
 
     const observer = new MutationObserver(() => {
       if (shouldScrollToBottomOnOpenRef.current) {
-        scrollToBottom();
+        scrollToBottom("auto");
       }
     });
 
@@ -354,7 +360,7 @@ const WhatsApp = () => {
       created_at: new Date().toISOString(),
     };
     setMessages(prev => [...prev, tempMessage]);
-    scrollToBottom();
+    scrollToBottom("auto");
 
     try {
       const { data, error } = await supabase.functions.invoke("waha-whatsapp", {
@@ -585,7 +591,7 @@ const WhatsApp = () => {
           
           // Auto-scroll to bottom when new message arrives
           requestAnimationFrame(() => {
-            scrollToBottom();
+            scrollToBottom("auto");
           });
         }
       )
@@ -616,11 +622,11 @@ const WhatsApp = () => {
 
     if (shouldScrollToBottomOnOpenRef.current && isThisChatLoaded) {
       // Run once per chat open; the observer + rAF loop will handle late DOM changes reliably
-      if (autoScrollChatIdRef.current !== selectedChat.id) {
-        autoScrollChatIdRef.current = selectedChat.id;
-        scrollToBottom();
-        finalizeOpenScroll();
-      }
+        if (autoScrollChatIdRef.current !== selectedChat.id) {
+          autoScrollChatIdRef.current = selectedChat.id;
+          scrollToBottom("smooth");
+          finalizeOpenScroll();
+        }
     }
   }, [selectedChat?.id, isLoadingMessages, messages.length, scrollToBottom, finalizeOpenScroll]);
 
@@ -694,7 +700,7 @@ const WhatsApp = () => {
             alt="Imagem" 
             className="max-w-[280px] rounded-lg cursor-pointer hover:opacity-90 transition-opacity"
             loading="lazy"
-            onLoad={scrollToBottom}
+            onLoad={() => scrollToBottom("auto")}
             onClick={() => window.open(msg.mediaUrl!, "_blank")}
           />
           {msg.text && <p className="text-sm text-foreground whitespace-pre-wrap">{formatWhatsAppText(msg.text)}</p>}
