@@ -80,7 +80,7 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
   // Calculate main content margin
   const getMainContentMargin = () => {
     if (isCRMLayout) {
-      return sidebarWidth + 6 + (submenuWidth - 8) + 8; // sidebar + gap + submenu + spacing
+      return sidebarWidth + 4 + (submenuWidth - 16) + 8; // sidebar + gap + submenu + spacing
     }
     return sidebarWidth + 24; // sidebar + gap for WhatsApp layout
   };
@@ -99,17 +99,16 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
       )}>
         <LoadingBar />
 
-        {/* White strip on left side - only visible when submenu is hidden */}
+        {/* Permanent white strip on left side - always visible, no transitions */}
         <div
           aria-hidden="true"
           style={{
             left: 0,
             top: 0,
             height: "100vh",
-            width: sidebarWidth + 20,
-            opacity: isCRMLayout ? 0 : 1,
+            width: sidebarWidth + 16,
           }}
-          className="hidden lg:block fixed bg-card z-[42] pointer-events-none transition-opacity duration-500 ease-[cubic-bezier(0.4,0,0.2,1)]"
+          className="hidden lg:block fixed bg-card z-[35] pointer-events-none"
         />
         
         {/* Mobile Header */}
@@ -137,7 +136,7 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
             height: isCRMLayout ? 'calc(100vh - 1rem)' : 'calc(100vh - 1.5rem)'
           }}
           className={cn(
-            "hidden lg:flex flex-col fixed bg-white overflow-hidden z-[50] transition-all duration-500 ease-[cubic-bezier(0.4,0,0.2,1)]",
+            "hidden lg:flex flex-col fixed bg-white overflow-hidden z-40 transition-all duration-300",
             isCRMLayout ? "rounded-l-2xl" : "rounded-2xl border border-black/5"
           )}
         >
@@ -200,12 +199,12 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
         {/* Submenu Panel - slides in/out from behind fixed menu */}
         <div
           style={{ 
-            left: sidebarWidth + 6,
-            width: submenuWidth - 8,
-            transform: isCRMLayout ? 'translateX(0)' : `translateX(-${submenuWidth + 30}px)`,
+            left: sidebarWidth + 4,
+            width: submenuWidth - 16,
+            transform: isCRMLayout ? 'translateX(0)' : `translateX(-${submenuWidth}px)`,
           }}
           className={cn(
-            "hidden lg:block fixed top-2 h-[calc(100vh-1rem)] rounded-2xl bg-[#0f0f12] z-[48] overflow-hidden pl-4",
+            "hidden lg:block fixed top-2 h-[calc(100vh-1rem)] rounded-2xl bg-[#0f0f12] z-[38] overflow-hidden pl-4",
             "transition-transform duration-500 ease-[cubic-bezier(0.4,0,0.2,1)]"
           )}
         >
