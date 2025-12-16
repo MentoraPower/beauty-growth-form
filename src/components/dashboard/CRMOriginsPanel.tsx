@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { Kanban, ChevronRight, Folder, FolderOpen, MoreVertical, Plus, Pencil, Trash2, GripVertical } from "lucide-react";
+import { Kanban, ChevronRight, Folder, FolderOpen, MoreVertical, Plus, Pencil, Trash2, GripVertical, Home } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import {
@@ -77,8 +77,10 @@ function SortableOriginItem({
   openEditSubOriginDialog,
   handleDeleteSubOrigin,
   handleSubOriginClick,
+  handleOverviewClick,
   leadCounts,
   currentSubOriginId,
+  currentOverviewOriginId,
 }: {
   origin: Origin;
   originSubOrigins: SubOrigin[];
@@ -91,8 +93,10 @@ function SortableOriginItem({
   openEditSubOriginDialog: (subOrigin: SubOrigin) => void;
   handleDeleteSubOrigin: (id: string) => void;
   handleSubOriginClick: (id: string) => void;
+  handleOverviewClick: (originId: string) => void;
   leadCounts: LeadCount[];
   currentSubOriginId: string | null;
+  currentOverviewOriginId: string | null;
 }) {
   const {
     attributes,
@@ -178,6 +182,23 @@ function SortableOriginItem({
       >
         <div className="overflow-hidden">
           <div className="ml-4 pl-2 space-y-0.5 pt-1 pb-1 rounded-lg border-l border-white/10 bg-white/5">
+            {/* Overview Item */}
+            <button
+              onClick={() => handleOverviewClick(origin.id)}
+              className={cn(
+                "flex items-center gap-2 w-full py-1.5 px-2 rounded-lg transition-all duration-200 ease-out text-xs",
+                currentOverviewOriginId === origin.id
+                  ? "bg-white/10 text-white font-medium"
+                  : "text-white/70 hover:text-white hover:bg-white/5"
+              )}
+            >
+              <Home className={cn(
+                "h-3 w-3 flex-shrink-0",
+                currentOverviewOriginId === origin.id ? "text-white" : "text-white/70"
+              )} />
+              <span className="truncate">Overview</span>
+            </button>
+
             {originSubOrigins.map((subOrigin) => {
               const leadCount = leadCounts.find(lc => lc.sub_origin_id === subOrigin.id)?.count || 0;
               const isActive = currentSubOriginId === subOrigin.id;
@@ -531,8 +552,14 @@ export function CRMOriginsPanel({ isOpen, onClose, sidebarWidth, embedded = fals
     navigate(`/admin/crm?origin=${subOriginId}`);
   };
 
-  const currentSubOriginId = new URLSearchParams(location.search).get('origin');
+  const handleOverviewClick = (originId: string) => {
+    navigate(`/admin/crm/overview?origin=${originId}`);
+  };
 
+  const currentSubOriginId = new URLSearchParams(location.search).get('origin');
+  const currentOverviewOriginId = location.pathname === '/admin/crm/overview' 
+    ? new URLSearchParams(location.search).get('origin') 
+    : null;
   // Embedded content for unified submenu
   const content = (
     <>
@@ -570,8 +597,10 @@ export function CRMOriginsPanel({ isOpen, onClose, sidebarWidth, embedded = fals
                   openEditSubOriginDialog={openEditSubOriginDialog}
                   handleDeleteSubOrigin={handleDeleteSubOrigin}
                   handleSubOriginClick={handleSubOriginClick}
+                  handleOverviewClick={handleOverviewClick}
                   leadCounts={leadCounts}
                   currentSubOriginId={currentSubOriginId}
+                  currentOverviewOriginId={currentOverviewOriginId}
                 />
               );
             })}
