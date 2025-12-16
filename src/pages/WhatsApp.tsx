@@ -53,7 +53,7 @@ const WhatsApp = () => {
   const shouldScrollToBottomOnOpenRef = useRef(false);
   const lastFetchedChatIdRef = useRef<string | null>(null);
 
-  // Scroll to bottom of messages (robust for long lists / late layout)
+  // Scroll to bottom of messages - using MutationObserver to detect when DOM is ready
   const scrollToBottom = useCallback(() => {
     const el = messagesContainerRef.current;
     if (!el) return;
@@ -62,17 +62,25 @@ const WhatsApp = () => {
       el.scrollTop = el.scrollHeight;
     };
 
-    // Immediate + a few delayed attempts (images/long DOM can change height after render)
     doScroll();
-    requestAnimationFrame(() => {
-      doScroll();
-      requestAnimationFrame(doScroll);
+    requestAnimationFrame(doScroll);
+  }, []);
+
+  // Observe DOM changes to auto-scroll when content loads (images, etc)
+  useEffect(() => {
+    const el = messagesContainerRef.current;
+    if (!el || !selectedChat) return;
+
+    const observer = new MutationObserver(() => {
+      if (shouldScrollToBottomOnOpenRef.current) {
+        el.scrollTop = el.scrollHeight;
+      }
     });
 
-    setTimeout(doScroll, 150);
-    setTimeout(doScroll, 450);
-    setTimeout(doScroll, 1000);
-  }, []);
+    observer.observe(el, { childList: true, subtree: true, attributes: true });
+
+    return () => observer.disconnect();
+  }, [selectedChat?.id]);
   const imageInputRef = useRef<HTMLInputElement>(null);
   const chatsRef = useRef<Chat[]>([]);
 
