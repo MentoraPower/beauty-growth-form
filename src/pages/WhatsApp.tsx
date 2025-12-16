@@ -1569,7 +1569,7 @@ const WhatsApp = () => {
                               {renderMessageContent(msg)}
                               <div className="flex items-center justify-end gap-1 mt-0.5">
                                 <span className="text-[10px] text-muted-foreground">{msg.time}</span>
-                                {msg.sent && (
+                                {msg.sent && msg.status !== "DELETED" && (
                                   msg.status === "READ" || msg.status === "PLAYED" 
                                     ? <CheckCheck className="w-4 h-4 text-blue-500" /> 
                                     : msg.status === "DELIVERED"
