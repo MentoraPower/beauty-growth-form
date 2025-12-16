@@ -53,9 +53,10 @@ interface LeadInfoPanelProps {
   photoUrl?: string | null;
   contactName?: string | null;
   onClose?: () => void;
+  onNameUpdate?: (newName: string) => void;
 }
 
-const LeadInfoPanel = ({ phone, photoUrl, contactName, onClose }: LeadInfoPanelProps) => {
+const LeadInfoPanel = ({ phone, photoUrl, contactName, onClose, onNameUpdate }: LeadInfoPanelProps) => {
   const [lead, setLead] = useState<Lead | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({
@@ -176,6 +177,11 @@ const LeadInfoPanel = ({ phone, photoUrl, contactName, onClose }: LeadInfoPanelP
       
       setLead(data);
       setIsLoading(false);
+
+      // Update WhatsApp contact name when lead is found
+      if (data && data.name && onNameUpdate) {
+        onNameUpdate(data.name);
+      }
     };
 
     fetchLead();
@@ -221,6 +227,11 @@ const LeadInfoPanel = ({ phone, photoUrl, contactName, onClose }: LeadInfoPanelP
       setLead(data);
       setShowCreateForm(false);
       queryClient.invalidateQueries({ queryKey: ["crm-leads"] });
+
+      // Update WhatsApp contact name when lead is created
+      if (data && data.name && onNameUpdate) {
+        onNameUpdate(data.name);
+      }
     } catch (error) {
       console.error("Error creating lead:", error);
       toast.error("Erro ao criar lead");
