@@ -149,7 +149,7 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
             height: isCRMLayout ? 'calc(100vh - 1rem)' : 'calc(100vh - 1.5rem)'
           }}
           className={cn(
-            "hidden lg:flex flex-col fixed bg-white overflow-hidden z-40 transition-all duration-300",
+            "hidden lg:flex flex-col fixed bg-white overflow-hidden z-[50] transition-all duration-500 ease-[cubic-bezier(0.4,0,0.2,1)]",
             isCRMLayout ? "rounded-l-2xl" : "rounded-2xl border border-black/5"
           )}
         >
