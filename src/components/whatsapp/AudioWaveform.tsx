@@ -14,6 +14,19 @@ export const AudioWaveform = ({ src, sent = false }: AudioWaveformProps) => {
   const [currentTime, setCurrentTime] = useState(0);
   const [waveformData, setWaveformData] = useState<number[]>([]);
   const [isLoaded, setIsLoaded] = useState(false);
+  const [playbackRate, setPlaybackRate] = useState(1);
+
+  const playbackRates = [1, 1.5, 2];
+
+  const cyclePlaybackRate = () => {
+    const currentIndex = playbackRates.indexOf(playbackRate);
+    const nextIndex = (currentIndex + 1) % playbackRates.length;
+    const newRate = playbackRates[nextIndex];
+    setPlaybackRate(newRate);
+    if (audioRef.current) {
+      audioRef.current.playbackRate = newRate;
+    }
+  };
 
   // Generate waveform data from audio
   useEffect(() => {
@@ -265,11 +278,20 @@ export const AudioWaveform = ({ src, sent = false }: AudioWaveformProps) => {
           className="cursor-pointer"
           onClick={handleCanvasClick}
         />
-        <span className="text-[10px] text-muted-foreground tabular-nums">
-          {isPlaying || currentTime > 0
-            ? `${formatTime(currentTime)} / ${formatTime(duration)}`
-            : formatTime(duration)}
-        </span>
+        <div className="flex items-center justify-between">
+          <span className="text-[10px] text-muted-foreground tabular-nums">
+            {isPlaying || currentTime > 0
+              ? `${formatTime(currentTime)} / ${formatTime(duration)}`
+              : formatTime(duration)}
+          </span>
+          <button
+            onClick={cyclePlaybackRate}
+            className="text-[10px] font-medium text-muted-foreground hover:text-foreground transition-colors px-1 py-0.5 rounded bg-muted/50 hover:bg-muted"
+            type="button"
+          >
+            {playbackRate}x
+          </button>
+        </div>
       </div>
     </div>
   );
