@@ -414,7 +414,6 @@ async function handler(req: Request): Promise<Response> {
     // ACTION: upload-media (base64 upload to get temp URL)
     // =========================
     if (action === "upload-media") {
-      const { base64, mimetype } = await req.json().catch(() => ({}));
       console.log(`[Wasender] Uploading media, mimetype: ${mimetype}`);
       
       const result = await wasenderRequest("/upload", {
@@ -431,7 +430,6 @@ async function handler(req: Request): Promise<Response> {
     // ACTION: edit-message
     // =========================
     if (action === "edit-message") {
-      const { msgId, newText } = await req.json().catch(() => ({}));
       console.log(`[Wasender] Editing message ${msgId}`);
       
       const result = await wasenderRequest(`/messages/${msgId}`, {
@@ -448,8 +446,14 @@ async function handler(req: Request): Promise<Response> {
     // ACTION: delete-message
     // =========================
     if (action === "delete-message") {
-      const { msgId } = await req.json().catch(() => ({}));
       console.log(`[Wasender] Deleting message ${msgId}`);
+      
+      if (!msgId) {
+        return new Response(JSON.stringify({ error: "msgId is required" }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
       
       const result = await wasenderRequest(`/messages/${msgId}`, {
         method: "DELETE",
@@ -464,7 +468,6 @@ async function handler(req: Request): Promise<Response> {
     // ACTION: get-message-info
     // =========================
     if (action === "get-message-info") {
-      const { msgId } = await req.json().catch(() => ({}));
       console.log(`[Wasender] Getting info for message ${msgId}`);
       
       const result = await wasenderRequest(`/messages/${msgId}`, {
@@ -480,7 +483,6 @@ async function handler(req: Request): Promise<Response> {
     // ACTION: resend-message
     // =========================
     if (action === "resend-message") {
-      const { msgId } = await req.json().catch(() => ({}));
       console.log(`[Wasender] Resending message ${msgId}`);
       
       const result = await wasenderRequest(`/messages/${msgId}/resend`, {

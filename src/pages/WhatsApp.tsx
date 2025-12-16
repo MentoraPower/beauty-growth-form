@@ -977,7 +977,7 @@ const WhatsApp = () => {
     });
   };
 
-  // Delete message (for both sides)
+  // Delete message (for both sides via WasenderAPI)
   const deleteMessage = async (msg: Message) => {
     if (!msg.sent) {
       toast({ title: "Só é possível apagar mensagens enviadas", variant: "destructive" });
@@ -987,12 +987,19 @@ const WhatsApp = () => {
     setMessageMenuId(null);
     
     try {
-      // Try to delete via WasenderAPI (only works within a few minutes)
+      // Get the Wasender message ID (numeric ID returned from send-message)
       const messageId = (msg as any).message_id;
-      if (messageId && typeof messageId === "number") {
-        await supabase.functions.invoke("wasender-whatsapp", {
+      
+      // Only call Wasender API if we have a valid numeric message ID
+      // (local IDs start with "local-" and won't work with the API)
+      if (messageId && !String(messageId).startsWith("local-")) {
+        const { error } = await supabase.functions.invoke("wasender-whatsapp", {
           body: { action: "delete-message", msgId: messageId },
         });
+        
+        if (error) {
+          console.error("Wasender delete error:", error);
+        }
       }
       
       // Remove from local state
@@ -1001,7 +1008,7 @@ const WhatsApp = () => {
       // Delete from database
       await supabase.from("whatsapp_messages").delete().eq("id", msg.id);
       
-      toast({ title: "Mensagem apagada" });
+      toast({ title: "Mensagem apagada para todos" });
     } catch (error: any) {
       console.error("Error deleting message:", error);
       toast({ title: "Erro ao apagar", description: "Pode ser que o tempo para apagar já tenha expirado", variant: "destructive" });
