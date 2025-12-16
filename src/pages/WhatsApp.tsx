@@ -4,7 +4,6 @@ import { Search, Smile, Paperclip, Mic, Send, Check, CheckCheck, RefreshCw, Phon
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
-import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import CallModal from "@/components/whatsapp/CallModal";
 import LeadInfoPanel from "@/components/whatsapp/LeadInfoPanel";
