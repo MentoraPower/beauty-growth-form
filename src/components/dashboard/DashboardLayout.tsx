@@ -371,7 +371,7 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
       {/* Main Content with rounded corners */}
       <main 
         style={{ marginLeft: `${mainContentMargin}px` }}
-        className="hidden lg:block min-h-screen p-2 transition-[margin-left] duration-300 ease-out"
+        className="hidden lg:block min-h-screen py-2 pr-2 transition-[margin-left] duration-300 ease-out"
       >
         <div className="bg-card rounded-2xl min-h-[calc(100vh-1rem)] p-6">
           <PageTransition>
