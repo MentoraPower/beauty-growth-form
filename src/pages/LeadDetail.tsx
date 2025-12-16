@@ -87,6 +87,7 @@ export default function LeadDetail() {
   const { id } = useParams<{ id: string }>();
   const [searchParams, setSearchParams] = useSearchParams();
   const subOriginId = searchParams.get("origin");
+  const searchQuery = searchParams.get("search");
   const tabParam = searchParams.get("tab");
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -95,6 +96,15 @@ export default function LeadDetail() {
   const [isLoading, setIsLoading] = useState(true);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+
+  // Build CRM URL preserving search params
+  const buildCrmUrl = () => {
+    const params = new URLSearchParams();
+    if (subOriginId) params.set("origin", subOriginId);
+    if (searchQuery) params.set("search", searchQuery);
+    const queryString = params.toString();
+    return `/admin/crm${queryString ? `?${queryString}` : ''}`;
+  };
   
   // Use URL param for tab persistence, default to "atividades"
   const activeTab = tabParam && ["atividades", "contato", "rastreamento"].includes(tabParam) 
@@ -120,12 +130,12 @@ export default function LeadDetail() {
 
       if (error) {
         console.error("Error fetching lead:", error);
-        navigate(subOriginId ? `/admin/crm?origin=${subOriginId}` : "/admin/crm");
+        navigate(buildCrmUrl());
         return;
       }
 
       if (!data) {
-        navigate(subOriginId ? `/admin/crm?origin=${subOriginId}` : "/admin/crm");
+        navigate(buildCrmUrl());
         return;
       }
 
@@ -184,7 +194,7 @@ export default function LeadDetail() {
     }
 
     toast.success("Lead excluído com sucesso");
-    navigate(subOriginId ? `/admin/crm?origin=${subOriginId}` : "/admin/crm");
+    navigate(buildCrmUrl());
   };
 
   const formatCurrency = (value: number | null | undefined) => {
@@ -316,7 +326,7 @@ export default function LeadDetail() {
         {/* Breadcrumb Navigation */}
         <div className="flex items-center gap-2 text-sm">
           <button
-            onClick={() => navigate(subOriginId ? `/admin/crm?origin=${subOriginId}` : "/admin/crm")}
+            onClick={() => navigate(buildCrmUrl())}
             className="text-muted-foreground hover:text-foreground transition-colors"
           >
             Lista Geral
@@ -378,7 +388,7 @@ export default function LeadDetail() {
                   currentSubOriginId={lead.sub_origin_id}
                   onMoved={() => {
                     queryClient.invalidateQueries({ queryKey: ["leads"] });
-                    navigate(subOriginId ? `/admin/crm?origin=${subOriginId}` : "/admin/crm");
+                    navigate(buildCrmUrl());
                   }}
                 >
                   <DropdownMenuItem 
@@ -459,7 +469,7 @@ export default function LeadDetail() {
                   subOriginId={lead.sub_origin_id || subOriginId}
                   onLeadMoved={() => {
                     queryClient.invalidateQueries({ queryKey: ["leads"] });
-                    navigate(subOriginId ? `/admin/crm?origin=${subOriginId}` : "/admin/crm");
+                    navigate(buildCrmUrl());
                   }}
                 />
               </motion.div>
