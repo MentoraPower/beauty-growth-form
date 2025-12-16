@@ -102,13 +102,13 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
       >
         <div className="flex flex-col h-full">
           {/* Logo */}
-          <div className="pt-6 pb-4 flex justify-center items-center">
+          <div className="pt-6 pb-4 flex justify-end pr-4">
             <div className="w-10 flex items-center justify-center">
               <img src={scaleLogo} alt="Scale Beauty" className="w-full h-auto" />
             </div>
           </div>
 
-          <nav className="flex-1 overflow-y-auto overflow-x-hidden py-2 flex flex-col items-center">
+          <nav className="flex-1 overflow-y-auto overflow-x-hidden py-2 flex flex-col items-end pr-4">
             <div className="flex flex-col gap-2">
               {/* CRM Button */}
               <button
@@ -145,7 +145,7 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
           </nav>
 
           {/* Footer */}
-          <div className="border-t border-border py-3 flex justify-center">
+          <div className="border-t border-border py-3 flex justify-end pr-4">
             <Link
               to="/"
               className="relative flex items-center justify-center w-10 h-10 rounded-lg transition-colors duration-200 bg-[#f8f8fa] text-neutral-500 hover:bg-[#ededf0] hover:text-neutral-700"
