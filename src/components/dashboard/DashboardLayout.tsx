@@ -66,8 +66,8 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
     navigate(href);
   };
 
-  // Fixed sidebar width
-  const sidebarWidth = 88;
+  // Fixed sidebar width - narrower
+  const sidebarWidth = 64;
   const submenuWidth = 256;
 
   // Navigate to WhatsApp when panel changes to whatsapp
@@ -129,14 +129,14 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
           )}
         >
           <div className="flex flex-col h-full">
-            {/* Logo */}
-            <div className="pt-6 pb-4 flex justify-center items-center">
-              <div className="w-10 flex items-center justify-center">
+            {/* Logo - aligned to left */}
+            <div className="pt-6 pb-4 flex justify-start items-center pl-3">
+              <div className="w-8 flex items-center justify-center">
                 <img src={scaleLogo} alt="Scale Beauty" className="w-full h-auto" />
               </div>
             </div>
 
-            <nav className="flex-1 overflow-y-auto overflow-x-hidden pl-2 pr-6 py-2">
+            <nav className="flex-1 overflow-y-auto overflow-x-hidden px-3 py-2">
               <div className="flex flex-col gap-2">
                 {/* CRM Button */}
                 <button
@@ -144,7 +144,7 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
                   className={cn(
                     "relative flex items-center justify-center w-10 h-10 rounded-lg transition-colors duration-200",
                     activePanel === 'crm'
-                      ? "bg-[#2d2d3a] text-white before:absolute before:-left-2 before:top-1/2 before:-translate-y-1/2 before:h-[70%] before:w-1 before:rounded-r-full before:bg-gradient-to-b before:from-[#F40000] before:to-[#A10000]"
+                      ? "bg-[#2d2d3a] text-white before:absolute before:-left-3 before:top-1/2 before:-translate-y-1/2 before:h-[70%] before:w-1 before:rounded-r-full before:bg-gradient-to-b before:from-[#F40000] before:to-[#A10000]"
                       : "bg-[#f8f8fa] text-neutral-500 hover:bg-[#ededf0] hover:text-neutral-700"
                   )}
                 >
@@ -161,7 +161,7 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
                       className={cn(
                         "relative flex items-center justify-center w-10 h-10 rounded-lg transition-colors duration-200",
                         isSelected
-                          ? "bg-[#2d2d3a] text-white before:absolute before:-left-2 before:top-1/2 before:-translate-y-1/2 before:h-[70%] before:w-1 before:rounded-r-full before:bg-gradient-to-b before:from-[#F40000] before:to-[#A10000]"
+                          ? "bg-[#2d2d3a] text-white before:absolute before:-left-3 before:top-1/2 before:-translate-y-1/2 before:h-[70%] before:w-1 before:rounded-r-full before:bg-gradient-to-b before:from-[#F40000] before:to-[#A10000]"
                           : "bg-[#f8f8fa] text-neutral-500 hover:bg-[#ededf0] hover:text-neutral-700"
                       )}
                     >
@@ -173,7 +173,7 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
             </nav>
 
             {/* Footer */}
-            <div className="border-t border-border pl-2 pr-6 py-3">
+            <div className="border-t border-border px-3 py-3">
               <Link
                 to="/"
                 className="relative flex items-center justify-center w-10 h-10 rounded-lg transition-colors duration-200 bg-[#f8f8fa] text-neutral-500 hover:bg-[#ededf0] hover:text-neutral-700"
