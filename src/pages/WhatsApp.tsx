@@ -1039,7 +1039,8 @@ const WhatsApp = () => {
   };
 
   return (
-    <div className="h-[calc(100vh-2rem)] flex rounded-2xl overflow-hidden border border-border/50 bg-card -mt-4">
+    <>
+      <div className="h-[calc(100vh-2rem)] flex rounded-2xl overflow-hidden border border-border/50 bg-card -mt-4">
         {/* Left Sidebar - Chat List */}
         <div className="w-[380px] flex flex-col border-r border-border/50 bg-card">
           {/* Header */}
@@ -1430,7 +1431,7 @@ const WhatsApp = () => {
           onInitiateCall={initiateCall}
         />
       )}
-    </div>
+    </>
   );
 };
 
