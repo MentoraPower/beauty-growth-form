@@ -79,14 +79,11 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
   // Fixed sidebar width (always collapsed) - wider to extend under submenu
   const sidebarWidth = 88;
   const submenuWidth = 256; // w-64 = 256px - unified width
-  const submenuOverlap = 20; // overlap to avoid visible seam on rounded corners
-  const submenuLeft = sidebarWidth - submenuOverlap;
 
   // Fixed margin - submenu is always open
   const getMainContentMargin = () => {
     const outerPadding = 8; // p-2 = 8px
-    const gapAfterSubmenu = 8;
-    return submenuLeft + submenuWidth + gapAfterSubmenu + outerPadding;
+    return sidebarWidth - 8 + submenuWidth + 8 + outerPadding;
   };
 
   const mainContentMargin = getMainContentMargin();
@@ -113,7 +110,7 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
 
       {/* Desktop Sidebar - Fixed Collapsed */}
       <aside
-        style={{ width: sidebarWidth }}
+        style={{ width: sidebarWidth + 2 }}
         className="hidden lg:flex flex-col fixed left-2 top-2 h-[calc(100vh-1rem)] bg-white overflow-hidden z-40 rounded-l-2xl"
       >
         <div className="flex flex-col h-full">
@@ -193,7 +190,7 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
 
       {/* Unified Submenu Panel - Always visible */}
       <div
-        style={{ left: submenuLeft, width: submenuWidth }}
+        style={{ left: sidebarWidth - 8, width: submenuWidth }}
         className="hidden lg:block fixed top-2 h-[calc(100vh-1rem)] rounded-2xl bg-[#0f0f12] z-50 overflow-hidden pl-4"
       >
         {/* Dashboard Content */}
