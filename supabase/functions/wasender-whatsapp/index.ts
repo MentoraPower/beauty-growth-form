@@ -200,7 +200,8 @@ async function handler(req: Request): Promise<Response> {
   }
 
   try {
-    const { action, phone, text, mediaUrl, filename, caption, presenceType, delayMs } = await req.json();
+    const body = await req.json();
+    const { action, phone, text, mediaUrl, filename, caption, presenceType, delayMs, msgId, newText, base64, mimetype } = body;
     console.log(`[Wasender] Action: ${action}`);
 
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
@@ -382,6 +383,109 @@ async function handler(req: Request): Promise<Response> {
       });
 
       return new Response(JSON.stringify({ success: true, messageId: result?.messageId || result?.key?.id }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // =========================
+    // ACTION: send-video
+    // =========================
+    if (action === "send-video") {
+      const to = formatPhoneForApi(phone);
+      console.log(`[Wasender] Sending video to ${to}: ${mediaUrl}`);
+      
+      const result = await wasenderRequest("/send-message", {
+        method: "POST",
+        body: JSON.stringify({ 
+          to, 
+          videoUrl: mediaUrl,
+          text: caption || "",
+        }),
+      });
+
+      return new Response(JSON.stringify({ success: true, messageId: result?.data?.msgId || result?.messageId }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // =========================
+    // ACTION: upload-media (base64 upload to get temp URL)
+    // =========================
+    if (action === "upload-media") {
+      const { base64, mimetype } = await req.json().catch(() => ({}));
+      console.log(`[Wasender] Uploading media, mimetype: ${mimetype}`);
+      
+      const result = await wasenderRequest("/upload", {
+        method: "POST",
+        body: JSON.stringify({ base64, mimetype }),
+      });
+
+      return new Response(JSON.stringify({ success: true, url: result?.data?.url || result?.url }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // =========================
+    // ACTION: edit-message
+    // =========================
+    if (action === "edit-message") {
+      const { msgId, newText } = await req.json().catch(() => ({}));
+      console.log(`[Wasender] Editing message ${msgId}`);
+      
+      const result = await wasenderRequest(`/messages/${msgId}`, {
+        method: "PUT",
+        body: JSON.stringify({ text: newText }),
+      });
+
+      return new Response(JSON.stringify({ success: true, data: result }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // =========================
+    // ACTION: delete-message
+    // =========================
+    if (action === "delete-message") {
+      const { msgId } = await req.json().catch(() => ({}));
+      console.log(`[Wasender] Deleting message ${msgId}`);
+      
+      const result = await wasenderRequest(`/messages/${msgId}`, {
+        method: "DELETE",
+      });
+
+      return new Response(JSON.stringify({ success: true, data: result }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // =========================
+    // ACTION: get-message-info
+    // =========================
+    if (action === "get-message-info") {
+      const { msgId } = await req.json().catch(() => ({}));
+      console.log(`[Wasender] Getting info for message ${msgId}`);
+      
+      const result = await wasenderRequest(`/messages/${msgId}`, {
+        method: "GET",
+      });
+
+      return new Response(JSON.stringify({ success: true, data: result }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // =========================
+    // ACTION: resend-message
+    // =========================
+    if (action === "resend-message") {
+      const { msgId } = await req.json().catch(() => ({}));
+      console.log(`[Wasender] Resending message ${msgId}`);
+      
+      const result = await wasenderRequest(`/messages/${msgId}/resend`, {
+        method: "POST",
+      });
+
+      return new Response(JSON.stringify({ success: true, data: result }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
