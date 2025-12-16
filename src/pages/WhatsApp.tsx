@@ -52,7 +52,7 @@ const WhatsApp = () => {
   const shouldScrollToBottomOnOpenRef = useRef(false);
   const lastFetchedChatIdRef = useRef<string | null>(null);
 
-  // Scroll to bottom of messages (robust for long lists)
+  // Scroll to bottom of messages (robust for long lists / late layout)
   const scrollToBottom = useCallback(() => {
     const el = messagesContainerRef.current;
     if (!el) return;
@@ -61,12 +61,16 @@ const WhatsApp = () => {
       el.scrollTop = el.scrollHeight;
     };
 
-    // Try multiple frames to ensure DOM/content has laid out (images, long lists, etc.)
+    // Immediate + a few delayed attempts (images/long DOM can change height after render)
     doScroll();
     requestAnimationFrame(() => {
       doScroll();
       requestAnimationFrame(doScroll);
     });
+
+    setTimeout(doScroll, 150);
+    setTimeout(doScroll, 450);
+    setTimeout(doScroll, 1000);
   }, []);
   const imageInputRef = useRef<HTMLInputElement>(null);
   const chatsRef = useRef<Chat[]>([]);
