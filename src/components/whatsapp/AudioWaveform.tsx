@@ -1,5 +1,5 @@
 import { useRef, useEffect, useState } from "react";
-import { Play, Pause } from "lucide-react";
+import { Play, Pause, AlertCircle } from "lucide-react";
 
 interface AudioWaveformProps {
   src: string;
@@ -13,13 +13,25 @@ export const AudioWaveform = ({ src, sent = false }: AudioWaveformProps) => {
   const [duration, setDuration] = useState(0);
   const [currentTime, setCurrentTime] = useState(0);
   const [waveformData, setWaveformData] = useState<number[]>([]);
+  const [error, setError] = useState(false);
   const animationRef = useRef<number>();
 
   // Generate waveform data from audio
   useEffect(() => {
     const generateWaveform = async () => {
       try {
+        if (!src) {
+          setError(true);
+          return;
+        }
+        
         const response = await fetch(src);
+        if (!response.ok) {
+          console.error("[AudioWaveform] Failed to fetch audio:", response.status);
+          setError(true);
+          return;
+        }
+        
         const arrayBuffer = await response.arrayBuffer();
         const audioContext = new AudioContext();
         const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
@@ -42,9 +54,11 @@ export const AudioWaveform = ({ src, sent = false }: AudioWaveformProps) => {
         const multiplier = Math.pow(Math.max(...filteredData), -1);
         const normalizedData = filteredData.map(n => n * multiplier);
         setWaveformData(normalizedData);
+        setError(false);
         
         audioContext.close();
-      } catch (error) {
+      } catch (err) {
+        console.error("[AudioWaveform] Error generating waveform:", err);
         // Fallback to random waveform if can't decode
         const fallback = Array.from({ length: 40 }, () => Math.random() * 0.5 + 0.2);
         setWaveformData(fallback);
@@ -151,9 +165,24 @@ export const AudioWaveform = ({ src, sent = false }: AudioWaveformProps) => {
     setCurrentTime(audio.currentTime);
   };
 
+  // Show error state if audio URL is missing or failed to load
+  if (error || !src) {
+    return (
+      <div className="flex items-center gap-2 min-w-[200px] p-2 bg-muted/30 rounded-lg">
+        <AlertCircle size={18} className="text-muted-foreground" />
+        <span className="text-xs text-muted-foreground">Áudio indisponível</span>
+      </div>
+    );
+  }
+
   return (
     <div className="flex items-center gap-2 min-w-[200px]">
-      <audio ref={audioRef} src={src} preload="metadata" />
+      <audio 
+        ref={audioRef} 
+        src={src} 
+        preload="metadata" 
+        onError={() => setError(true)}
+      />
       
       <button
         onClick={togglePlay}
