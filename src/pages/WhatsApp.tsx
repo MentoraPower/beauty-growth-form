@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 
 import { Search, Smile, Paperclip, Mic, Send, Check, CheckCheck, RefreshCw, Phone, Image, File, Trash2, PanelRightOpen, PanelRightClose, X } from "lucide-react";
-import { Mp3Encoder } from "lamejs";
+import lamejs from "lamejs";
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
@@ -805,7 +805,7 @@ const WhatsApp = () => {
         mono = ch0;
       }
 
-      const encoder = new Mp3Encoder(1, sampleRate, 128);
+      const encoder = new lamejs.Mp3Encoder(1, sampleRate, 128);
       const mp3Chunks: Uint8Array[] = [];
       const blockSize = 1152;
 
