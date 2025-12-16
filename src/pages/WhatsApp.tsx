@@ -517,6 +517,22 @@ const WhatsApp = () => {
     (m) => Boolean(m.text?.trim()) || Boolean(m.mediaUrl)
   );
 
+  // Format WhatsApp-style text (bold with *text*)
+  const formatWhatsAppText = (text: string) => {
+    if (!text) return null;
+    
+    // Split by bold pattern *text*
+    const parts = text.split(/(\*[^*]+\*)/g);
+    
+    return parts.map((part, index) => {
+      // Check if this part is bold (surrounded by asterisks)
+      if (part.startsWith('*') && part.endsWith('*') && part.length > 2) {
+        return <strong key={index}>{part.slice(1, -1)}</strong>;
+      }
+      return part;
+    });
+  };
+
   const renderMessageContent = (msg: Message) => {
     if (msg.mediaType === "image" && msg.mediaUrl) {
       return (
@@ -527,7 +543,7 @@ const WhatsApp = () => {
             className="max-w-[280px] rounded-lg cursor-pointer hover:opacity-90 transition-opacity"
             onClick={() => window.open(msg.mediaUrl!, "_blank")}
           />
-          {msg.text && <p className="text-sm text-foreground whitespace-pre-wrap">{msg.text}</p>}
+          {msg.text && <p className="text-sm text-foreground whitespace-pre-wrap">{formatWhatsAppText(msg.text)}</p>}
         </div>
       );
     }
@@ -560,7 +576,7 @@ const WhatsApp = () => {
       );
     }
 
-    return <p className="text-sm text-foreground whitespace-pre-wrap">{msg.text}</p>;
+    return <p className="text-sm text-foreground whitespace-pre-wrap">{formatWhatsAppText(msg.text)}</p>;
   };
 
   return (
