@@ -71,13 +71,19 @@ export function MoveLeadDropdown({
   }, [isOpen]);
 
   const handleMove = async (subOriginId: string, pipelineId: string, pipelineName: string) => {
+    // Close menu immediately to avoid UI feeling stuck while network calls happen
+    setIsOpen(false);
+    await new Promise((r) => setTimeout(r, 0));
+
     try {
-      // Fetch current lead so we can send the email automation to the right email
+      // Fetch current lead with a minimal payload (avoid heavy fields like ai_analysis)
       const { data: currentLead, error: currentLeadError } = await supabase
         .from("leads")
-        .select("*")
+        .select(
+          "id,name,email,whatsapp,instagram,service_area,monthly_billing,weekly_attendance,workspace_type,years_experience,clinic_name,average_ticket,estimated_revenue,is_mql,created_at,sub_origin_id,pipeline_id"
+        )
         .eq("id", leadId)
-        .single();
+        .maybeSingle();
 
       if (currentLeadError) {
         console.error("Error fetching lead before move:", currentLeadError);
@@ -111,7 +117,6 @@ export function MoveLeadDropdown({
       }).catch((e) => console.error("Error triggering lead_moved webhook:", e));
 
       toast.success(`Lead movido para ${pipelineName}`);
-      setIsOpen(false);
       onMoved?.();
     } catch (error: any) {
       console.error("Error moving lead:", error);

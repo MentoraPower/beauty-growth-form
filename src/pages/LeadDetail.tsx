@@ -170,15 +170,17 @@ export default function LeadDetail() {
 
   const handleDelete = async () => {
     if (!lead) return;
-    
+
     setIsDeleting(true);
-    
+
+    const keySubOriginId = (lead.sub_origin_id ?? subOriginId) || null;
+
     // Optimistically update the cache immediately
-    queryClient.setQueryData<Lead[]>(["crm-leads"], (oldData) => {
+    queryClient.setQueryData<Lead[]>(["crm-leads", keySubOriginId], (oldData) => {
       if (!oldData) return [];
       return oldData.filter((l) => l.id !== lead.id);
     });
-    
+
     const { error } = await supabase
       .from("leads")
       .delete()
@@ -188,7 +190,7 @@ export default function LeadDetail() {
       console.error("Error deleting lead:", error);
       toast.error("Erro ao excluir lead");
       // Revert the optimistic update
-      queryClient.invalidateQueries({ queryKey: ["crm-leads"] });
+      queryClient.invalidateQueries({ queryKey: ["crm-leads", keySubOriginId] });
       setIsDeleting(false);
       return;
     }
@@ -386,10 +388,14 @@ export default function LeadDetail() {
                   leadId={lead.id}
                   leadName={lead.name}
                   currentSubOriginId={lead.sub_origin_id}
-                   onMoved={() => {
-                     queryClient.invalidateQueries({ queryKey: ["crm-leads", subOriginId] });
-                     navigate(buildCrmUrl());
-                   }}
+                  onMoved={() => {
+                    // Navigate first (snappier), then refresh CRM list in the background
+                    const keySubOriginId = (subOriginId ?? null);
+                    navigate(buildCrmUrl());
+                    window.setTimeout(() => {
+                      queryClient.invalidateQueries({ queryKey: ["crm-leads", keySubOriginId] });
+                    }, 0);
+                  }}
                 >
                   <DropdownMenuItem 
                     className="cursor-pointer"
