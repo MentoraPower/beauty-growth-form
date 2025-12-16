@@ -1,9 +1,9 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 
 import { Search, Smile, Paperclip, Mic, Send, Check, CheckCheck, RefreshCw, Phone, Image, File, Trash2, PanelRightOpen, PanelRightClose, X } from "lucide-react";
-import lamejs from "lamejs";
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
+import { supabase } from "@/integrations/supabase/client";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import CallModal from "@/components/whatsapp/CallModal";
@@ -779,6 +779,8 @@ const WhatsApp = () => {
   };
 
   const transcodeToMp3 = async (inputBlob: Blob): Promise<Blob> => {
+    if (!(window as any).lamejs?.Mp3Encoder) throw new Error("MP3 encoder não carregou");
+
     const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
     if (!AudioContextClass) throw new Error("AudioContext not supported");
 
@@ -805,7 +807,7 @@ const WhatsApp = () => {
         mono = ch0;
       }
 
-      const encoder = new lamejs.Mp3Encoder(1, sampleRate, 128);
+      const encoder = new (window as any).lamejs.Mp3Encoder(1, sampleRate, 128);
       const mp3Chunks: Uint8Array[] = [];
       const blockSize = 1152;
 
