@@ -311,16 +311,17 @@ const WhatsApp = () => {
           .select("id, phone");
 
         if (allChats) {
-          const invalidChatIds = allChats
-            .filter((chat: any) => {
-              const phone = chat.phone || "";
-              if (phone.includes("@newsletter")) return true;
-              if (phone.includes("@g.us")) return true;
-              if (phone.includes("status@broadcast")) return true;
-              if (phone === "0" || phone === "") return true;
-              return false;
-            })
-            .map((chat: any) => chat.id);
+            const invalidChatIds = allChats
+              .filter((chat: any) => {
+                const phone = chat.phone || "";
+                if (phone.includes("@newsletter")) return true;
+                if (phone.includes("@g.us")) return true;
+                if (phone.includes("status@broadcast")) return true;
+                if (phone === "0" || phone === "") return true;
+                if (isWhatsAppInternalId(phone)) return true;
+                return false;
+              })
+              .map((chat: any) => chat.id);
 
           if (invalidChatIds.length > 0) {
             await supabase.from("whatsapp_messages").delete().in("chat_id", invalidChatIds);

@@ -12,13 +12,9 @@ const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
 // Check if phone is a WhatsApp LID (internal ID) - not a real phone number
 const isWhatsAppLID = (phone: string): boolean => {
-  if (!phone) return true;
-  const cleaned = phone.replace(/\D/g, "");
-  // LIDs are typically 15+ digits
-  if (cleaned.length > 14) return true;
-  // LIDs often start with specific patterns
-  if (/^(120|146|180|203|234|447)\d{10,}$/.test(cleaned)) return true;
-  return false;
+  const cleaned = String(phone || "").replace(/\D/g, "");
+  // WhatsApp LIDs are typically very long (15+ digits)
+  return cleaned.length > 14;
 };
 
 const handler = async (req: Request): Promise<Response> => {
@@ -49,44 +45,72 @@ const handler = async (req: Request): Promise<Response> => {
       return headers;
     };
 
-    // Helper to fetch profile picture
-    const fetchProfilePicture = async (chatId: string): Promise<string | null> => {
-      try {
-        // Try to get contact profile picture
-        const response = await fetch(`${WAHA_API_URL}/api/default/contacts/${encodeURIComponent(chatId)}/profile-picture`, {
-          method: "GET",
-          headers: getHeaders(),
-        });
-        
-        if (response.ok) {
-          const data = await response.json();
-          return data.profilePictureURL || data.url || data.profilePicUrl || null;
-        }
-      } catch (e) {
-        // Silently fail - photo is optional
-      }
-      return null;
+    const normalizeName = (value: any, phoneDigits: string): string | null => {
+      if (typeof value !== "string") return null;
+      const name = value.trim();
+      if (!name) return null;
+      const nameNoSpaces = name.replace(/\s+/g, "");
+      if (/^\d+$/.test(nameNoSpaces)) return null;
+      if (nameNoSpaces === phoneDigits) return null;
+      if (nameNoSpaces === `${phoneDigits}@c.us`) return null;
+      return name;
     };
 
-    // Helper to fetch contact info (name)
-    const fetchContactInfo = async (chatId: string): Promise<{ name: string | null; photo: string | null }> => {
+    const fetchContactInfo = async (
+      contactId: string
+    ): Promise<{ name: string | null; photo: string | null }> => {
+      const phoneDigits = contactId.split("@")[0].replace(/\D/g, "");
       try {
-        const response = await fetch(`${WAHA_API_URL}/api/default/contacts/${encodeURIComponent(chatId)}`, {
-          method: "GET",
-          headers: getHeaders(),
-        });
-        
-        if (response.ok) {
-          const data = await response.json();
-          return {
-            name: data.pushName || data.name || data.notifyName || null,
-            photo: data.profilePictureURL || data.profilePicUrl || null,
-          };
+        const response = await fetch(
+          `${WAHA_API_URL}/api/contacts?contactId=${encodeURIComponent(contactId)}&session=default`,
+          { method: "GET", headers: getHeaders() }
+        );
+
+        if (!response.ok) {
+          const text = await response.text();
+          console.log("[WAHA] Contact info not available:", response.status, text.substring(0, 200));
+          return { name: null, photo: null };
         }
-      } catch (e) {
-        // Silently fail
+
+        const data = (await response.json().catch(() => null)) as any;
+
+        const name =
+          normalizeName(data?.name, phoneDigits) ||
+          normalizeName(data?.pushname, phoneDigits) ||
+          normalizeName(data?.pushName, phoneDigits) ||
+          normalizeName(data?.notifyName, phoneDigits) ||
+          normalizeName(data?.shortName, phoneDigits) ||
+          null;
+
+        return { name, photo: null };
+      } catch (e: any) {
+        console.log("[WAHA] Contact info error:", e.message);
+        return { name: null, photo: null };
       }
-      return { name: null, photo: null };
+    };
+
+    const fetchProfilePicture = async (
+      contactId: string,
+      refresh = false
+    ): Promise<string | null> => {
+      try {
+        const response = await fetch(
+          `${WAHA_API_URL}/api/contacts/profile-picture?contactId=${encodeURIComponent(contactId)}&session=default${refresh ? "&refresh=true" : ""}`,
+          { method: "GET", headers: getHeaders() }
+        );
+
+        if (!response.ok) {
+          const text = await response.text();
+          console.log("[WAHA] Profile picture not available:", response.status, text.substring(0, 200));
+          return null;
+        }
+
+        const data = (await response.json().catch(() => null)) as any;
+        return data?.profilePictureURL || data?.profilePictureUrl || data?.url || null;
+      } catch (e: any) {
+        console.log("[WAHA] Profile picture error:", e.message);
+        return null;
+      }
     };
 
     // Send text message
@@ -172,21 +196,29 @@ const handler = async (req: Request): Promise<Response> => {
           continue;
         }
 
-        // Get chat name from the chat data
-        let chatName = chat.name || chat.pushName || chat.notifyName || null;
-        let photoUrl = chat.profilePicUrl || chat.picture || chat.imgUrl || null;
+        // Get chat name/photo from chat payload
+        const chatNameRaw = chat.name || chat.pushName || chat.pushname || chat.notifyName || null;
+        let chatName = normalizeName(chatNameRaw, phone);
 
-        // If no name or photo, try to fetch contact info
-        if (!chatName || !photoUrl) {
+        let photoUrl =
+          chat.profilePicUrl ||
+          chat.profilePictureURL ||
+          chat.profilePictureUrl ||
+          chat.picture ||
+          chat.imgUrl ||
+          null;
+
+        // If name is missing/useless, try contact endpoint
+        if (!chatName) {
           const contactInfo = await fetchContactInfo(chatId);
-          if (!chatName && contactInfo.name) chatName = contactInfo.name;
-          if (!photoUrl && contactInfo.photo) photoUrl = contactInfo.photo;
+          if (contactInfo.name) chatName = normalizeName(contactInfo.name, phone);
         }
 
-        // If still no photo, try dedicated endpoint
-        if (!photoUrl) {
-          photoUrl = await fetchProfilePicture(chatId);
-        }
+        // Profile picture (try chatId first, then phone; refresh only if needed)
+        if (!photoUrl) photoUrl = await fetchProfilePicture(chatId);
+        if (!photoUrl) photoUrl = await fetchProfilePicture(chatId, true);
+        if (!photoUrl) photoUrl = await fetchProfilePicture(phone);
+        if (!photoUrl) photoUrl = await fetchProfilePicture(phone, true);
 
         // Get last message info
         const lastMessage = chat.lastMessage?.body || chat.lastMessage?.text || chat.lastMessage?.caption || "";
