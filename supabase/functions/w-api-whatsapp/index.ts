@@ -212,42 +212,70 @@ const handler = async (req: Request): Promise<Response> => {
     if (action === "sync-all") {
       const supabase = createClient(supabaseUrl, supabaseServiceKey);
       
-      // First get all chats
+      console.log(`[W-API Sync] Starting sync`);
+      console.log(`[W-API Sync] Instance ID: ${W_API_INSTANCE_ID}`);
+      console.log(`[W-API Sync] Token prefix: ${W_API_TOKEN?.substring(0, 10)}...`);
+      
+      // Try fetching chats with the correct endpoint from Postman docs
       const allChats: any[] = [];
       let page = 1;
       const perPage = 20;
       let hasMore = true;
 
       while (hasMore) {
+        // Endpoint from Postman: /chats/fetch-chats
         const url = `${W_API_BASE_URL}/chats/fetch-chats?instanceId=${W_API_INSTANCE_ID}&perPage=${perPage}&page=${page}`;
-        console.log(`[W-API Sync] Fetching chats page ${page}`);
+        console.log(`[W-API Sync] Fetching: ${url}`);
 
-        const response = await fetch(url, {
-          method: "GET",
-          headers: getHeaders(),
-        });
+        try {
+          const response = await fetch(url, {
+            method: "GET",
+            headers: getHeaders(),
+          });
 
-        const data = await response.json();
+          const responseText = await response.text();
+          console.log(`[W-API Sync] Status: ${response.status}`);
+          console.log(`[W-API Sync] Response: ${responseText.substring(0, 300)}`);
+          
+          // Check if response is HTML (error page)
+          if (responseText.startsWith("<!DOCTYPE") || responseText.startsWith("<html")) {
+            console.error(`[W-API Sync] Received HTML instead of JSON - endpoint may not exist`);
+            break;
+          }
+          
+          let data;
+          try {
+            data = JSON.parse(responseText);
+          } catch (e) {
+            console.error(`[W-API Sync] Failed to parse JSON:`, e);
+            break;
+          }
 
-        if (!response.ok) {
-          console.error(`[W-API Sync] Error fetching chats:`, data);
+          if (data.error) {
+            console.error(`[W-API Sync] API error:`, data);
+            break;
+          }
+
+          const chats = data.chats || data.data || data || [];
+          
+          if (Array.isArray(chats) && chats.length > 0) {
+            console.log(`[W-API Sync] Found ${chats.length} chats on page ${page}`);
+            allChats.push(...chats);
+            if (chats.length < perPage) {
+              hasMore = false;
+            } else {
+              page++;
+            }
+          } else {
+            console.log(`[W-API Sync] No more chats found`);
+            hasMore = false;
+          }
+
+          if (page > 50) break;
+        } catch (fetchError: any) {
+          console.error(`[W-API Sync] Fetch error:`, fetchError.message);
           break;
         }
-
-        const chats = data.chats || data.data || data || [];
-        
-        if (Array.isArray(chats) && chats.length > 0) {
-          allChats.push(...chats);
-          if (chats.length < perPage) {
-            hasMore = false;
-          } else {
-            page++;
-          }
-        } else {
-          hasMore = false;
-        }
-
-        if (page > 100) break;
       }
 
       console.log(`[W-API Sync] Total chats to sync: ${allChats.length}`);
