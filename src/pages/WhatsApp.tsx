@@ -50,10 +50,10 @@ const WhatsApp = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Scroll to bottom of messages
-  const scrollToBottom = useCallback(() => {
+  const scrollToBottom = useCallback((instant = true) => {
     setTimeout(() => {
-      messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-    }, 100);
+      messagesEndRef.current?.scrollIntoView({ behavior: instant ? "auto" : "smooth" });
+    }, 150);
   }, []);
   const imageInputRef = useRef<HTMLInputElement>(null);
   const chatsRef = useRef<Chat[]>([]);
@@ -263,7 +263,7 @@ const WhatsApp = () => {
       status: "SENDING",
     };
     setMessages(prev => [...prev, tempMessage]);
-    scrollToBottom();
+    scrollToBottom(false); // smooth scroll when sending
 
     try {
       const { data, error } = await supabase.functions.invoke("waha-whatsapp", {
