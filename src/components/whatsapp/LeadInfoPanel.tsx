@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { User, Mail, Phone, Instagram, Building2, Calendar, DollarSign, Users, MapPin, Clock, TrendingUp, ExternalLink, Sparkles } from "lucide-react";
+import { Phone, Mail, Instagram, ChevronRight, ChevronDown, Clock, User } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 
 interface Lead {
   id: string;
@@ -34,6 +35,11 @@ interface LeadInfoPanelProps {
 const LeadInfoPanel = ({ phone, photoUrl, contactName, onClose }: LeadInfoPanelProps) => {
   const [lead, setLead] = useState<Lead | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [openSections, setOpenSections] = useState<Record<string, boolean>>({
+    contato: true,
+    negocio: false,
+    historico: false,
+  });
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -46,10 +52,8 @@ const LeadInfoPanel = ({ phone, photoUrl, contactName, onClose }: LeadInfoPanelP
 
       setIsLoading(true);
       
-      // Clean phone number for comparison
       const cleanPhone = phone.replace(/\D/g, "");
       
-      // Try different phone formats
       const { data, error } = await supabase
         .from("leads")
         .select("*")
@@ -61,7 +65,6 @@ const LeadInfoPanel = ({ phone, photoUrl, contactName, onClose }: LeadInfoPanelP
         console.error("Error fetching lead:", error);
       }
       
-      // If lead found and we have a photoUrl but lead doesn't have photo_url, save it
       if (data && photoUrl && !data.photo_url) {
         await supabase
           .from("leads")
@@ -93,217 +96,221 @@ const LeadInfoPanel = ({ phone, photoUrl, contactName, onClose }: LeadInfoPanelP
     }).format(value);
   };
 
+  const toggleSection = (section: string) => {
+    setOpenSections(prev => ({ ...prev, [section]: !prev[section] }));
+  };
+
   const displayPhoto = lead?.photo_url || photoUrl;
+  const defaultAvatar = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyMTIgMjEyIj48cGF0aCBmaWxsPSIjREZFNUU3IiBkPSJNMCAwaDIxMnYyMTJIMHoiLz48cGF0aCBmaWxsPSIjRkZGIiBkPSJNMTA2IDEwNmMtMjUuNCAwLTQ2LTIwLjYtNDYtNDZzMjAuNi00NiA0Ni00NiA0NiAyMC42IDQ2IDQ2LTIwLjYgNDYtNDYgNDZ6bTAgMTNjMzAuNiAwIDkyIDE1LjQgOTIgNDZ2MjNIMTR2LTIzYzAtMzAuNiA2MS40LTQ2IDkyLTQ2eiIvPjwvc3ZnPg==";
 
   if (isLoading) {
     return (
-      <div className="w-96 border-l border-border/20 bg-gradient-to-b from-card to-muted/20 flex items-center justify-center">
+      <div className="w-[340px] border-l border-border bg-background flex items-center justify-center">
         <div className="flex flex-col items-center gap-3">
-          <div className="w-16 h-16 rounded-full bg-muted/50 animate-pulse" />
-          <div className="animate-pulse text-muted-foreground text-sm">Buscando lead...</div>
+          <div className="w-12 h-12 rounded-full bg-muted animate-pulse" />
+          <div className="animate-pulse text-muted-foreground text-sm">Carregando...</div>
         </div>
       </div>
     );
   }
 
-  const defaultAvatar = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyMTIgMjEyIj48cGF0aCBmaWxsPSIjREZFNUU3IiBkPSJNMCAwaDIxMnYyMTJIMHoiLz48cGF0aCBmaWxsPSIjRkZGIiBkPSJNMTA2IDEwNmMtMjUuNCAwLTQ2LTIwLjYtNDYtNDZzMjAuNi00NiA0Ni00NiA0NiAyMC42IDQ2IDQ2LTIwLjYgNDYtNDYgNDZ6bTAgMTNjMzAuNiAwIDkyIDE1LjQgOTIgNDZ2MjNIMTR2LTIzYzAtMzAuNiA2MS40LTQ2IDkyLTQ2eiIvPjwvc3ZnPg==";
-
   if (!lead) {
     return (
-      <div className="w-96 border-l border-border/20 bg-gradient-to-b from-card to-muted/20 flex flex-col items-center justify-center p-8 text-center">
-        <img 
-          src={photoUrl || defaultAvatar} 
-          alt={contactName || "Contato"} 
-          className="w-24 h-24 rounded-full object-cover mb-4 ring-4 ring-muted/30 bg-neutral-200" 
-        />
-        <p className="text-lg font-semibold text-foreground">{contactName || phone}</p>
-        <p className="text-sm text-muted-foreground mt-2">Este contato não está no CRM</p>
+      <div className="w-[340px] border-l border-border bg-background flex flex-col">
+        {/* Header */}
+        <div className="bg-indigo-50 dark:bg-indigo-950/30 px-4 py-6">
+          <img 
+            src={photoUrl || defaultAvatar} 
+            alt={contactName || "Contato"} 
+            className="w-12 h-12 rounded-full object-cover bg-muted" 
+          />
+        </div>
+        
+        <div className="p-4 text-center">
+          <p className="text-base font-medium text-foreground">{contactName || phone}</p>
+          <p className="text-sm text-muted-foreground mt-1">Contato não encontrado no CRM</p>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="w-96 border-l border-border/20 bg-gradient-to-b from-card to-muted/10 flex flex-col overflow-hidden">
-      {/* Header with Photo */}
-      <div className="relative">
-        <div className="h-20 bg-gradient-to-r from-emerald-500/20 to-emerald-600/10" />
-        <div className="px-6 pb-4 -mt-10">
-          <div className="flex items-end gap-4">
-            <img 
-              src={displayPhoto || defaultAvatar} 
-              alt={lead.name} 
-              className="w-20 h-20 rounded-2xl object-cover ring-4 ring-card shadow-lg bg-neutral-200" 
-            />
-            <div className="flex-1 min-w-0 pb-1">
-              {lead.clinic_name && (
-                <p className="text-xs text-muted-foreground truncate uppercase tracking-wide">{lead.clinic_name}</p>
-              )}
-              <h3 className="text-lg font-bold text-foreground truncate">{lead.name}</h3>
-            </div>
-          </div>
-          
-          {/* MQL Badge */}
-          {lead.is_mql !== null && (
-            <div className="mt-3">
-              <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold ${
+    <div className="w-[340px] border-l border-border bg-background flex flex-col overflow-hidden">
+      {/* Header */}
+      <div className="bg-indigo-50 dark:bg-indigo-950/30 px-4 py-5">
+        <div className="flex items-start gap-3">
+          <img 
+            src={displayPhoto || defaultAvatar} 
+            alt={lead.name} 
+            className="w-10 h-10 rounded-full object-cover bg-muted flex-shrink-0" 
+          />
+          <div className="flex-1 min-w-0">
+            <h3 className="text-base font-semibold text-foreground truncate">{lead.name}</h3>
+            {lead.clinic_name && (
+              <p className="text-xs text-muted-foreground truncate">{lead.clinic_name}</p>
+            )}
+            {lead.is_mql !== null && (
+              <span className={`inline-flex items-center mt-1.5 px-2 py-0.5 rounded text-[10px] font-medium ${
                 lead.is_mql 
-                  ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300" 
-                  : "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300"
+                  ? "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-400" 
+                  : "bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-400"
               }`}>
-                <Sparkles className="w-3.5 h-3.5" />
-                {lead.is_mql ? "Lead Qualificado" : "Não Qualificado"}
+                {lead.is_mql ? "MQL" : "Não qualificado"}
               </span>
-            </div>
-          )}
+            )}
+          </div>
+        </div>
+
+        {/* Action icons */}
+        <div className="flex items-center gap-2 mt-4">
+          <button className="w-8 h-8 rounded-lg bg-background/60 hover:bg-background flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors">
+            <Phone className="w-4 h-4" />
+          </button>
+          <button className="w-8 h-8 rounded-lg bg-background/60 hover:bg-background flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors">
+            <Mail className="w-4 h-4" />
+          </button>
+          <button 
+            onClick={() => navigate(`/admin/crm/${lead.id}`)}
+            className="w-8 h-8 rounded-lg bg-background/60 hover:bg-background flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
+          >
+            <User className="w-4 h-4" />
+          </button>
         </div>
       </div>
 
-      {/* Content */}
-      <div className="flex-1 overflow-y-auto px-6 py-4 space-y-5">
-        {/* Contact Info */}
-        <div className="space-y-3">
-          <h4 className="text-xs font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
-            <div className="w-1 h-4 bg-emerald-500 rounded-full" />
-            Contato
-          </h4>
-          
-          <div className="space-y-2.5 pl-3">
-            <div className="flex items-center gap-3 text-sm group">
-              <div className="w-8 h-8 rounded-lg bg-muted/50 flex items-center justify-center group-hover:bg-emerald-500/10 transition-colors">
-                <Mail className="w-4 h-4 text-muted-foreground group-hover:text-emerald-600" />
-              </div>
-              <span className="truncate text-foreground">{lead.email}</span>
-            </div>
-            
-            <div className="flex items-center gap-3 text-sm group">
-              <div className="w-8 h-8 rounded-lg bg-muted/50 flex items-center justify-center group-hover:bg-emerald-500/10 transition-colors">
-                <Phone className="w-4 h-4 text-muted-foreground group-hover:text-emerald-600" />
-              </div>
-              <span className="text-foreground">{lead.country_code} {lead.whatsapp}</span>
-            </div>
-            
-            {lead.instagram && (
-              <a 
-                href={`https://instagram.com/${lead.instagram.replace("@", "")}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center gap-3 text-sm group"
-              >
-                <div className="w-8 h-8 rounded-lg bg-muted/50 flex items-center justify-center group-hover:bg-pink-500/10 transition-colors">
-                  <Instagram className="w-4 h-4 text-muted-foreground group-hover:text-pink-600" />
-                </div>
-                <span className="text-emerald-600 hover:underline truncate">{lead.instagram}</span>
-              </a>
+      {/* Scrollable Content */}
+      <div className="flex-1 overflow-y-auto">
+        {/* Contato Section */}
+        <Collapsible open={openSections.contato} onOpenChange={() => toggleSection('contato')}>
+          <CollapsibleTrigger className="w-full flex items-center justify-between px-4 py-3 hover:bg-muted/50 transition-colors border-b border-border">
+            <span className="text-sm font-medium text-indigo-600 dark:text-indigo-400">Contato</span>
+            {openSections.contato ? (
+              <ChevronDown className="w-4 h-4 text-muted-foreground" />
+            ) : (
+              <ChevronRight className="w-4 h-4 text-muted-foreground" />
             )}
-          </div>
-        </div>
-
-        {/* Business Info */}
-        <div className="space-y-3">
-          <h4 className="text-xs font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
-            <div className="w-1 h-4 bg-blue-500 rounded-full" />
-            Negócio
-          </h4>
-          
-          <div className="space-y-2.5 pl-3">
-            {lead.service_area && (
-              <div className="flex items-center gap-3 text-sm">
-                <div className="w-8 h-8 rounded-lg bg-muted/50 flex items-center justify-center">
-                  <MapPin className="w-4 h-4 text-muted-foreground" />
-                </div>
-                <span className="text-foreground">{lead.service_area}</span>
+          </CollapsibleTrigger>
+          <CollapsibleContent>
+            <div className="px-4 py-3 space-y-3 border-b border-border">
+              <div>
+                <label className="text-xs text-muted-foreground">Email</label>
+                <p className="text-sm text-foreground mt-0.5 truncate">{lead.email || "-"}</p>
               </div>
-            )}
-            
-            {lead.workspace_type && (
-              <div className="flex items-center gap-3 text-sm">
-                <div className="w-8 h-8 rounded-lg bg-muted/50 flex items-center justify-center">
-                  <Building2 className="w-4 h-4 text-muted-foreground" />
-                </div>
-                <span className="text-foreground">{lead.workspace_type}</span>
+              <div>
+                <label className="text-xs text-muted-foreground">Telefone</label>
+                <p className="text-sm text-foreground mt-0.5">{lead.country_code} {lead.whatsapp}</p>
               </div>
-            )}
-            
-            {lead.years_experience && (
-              <div className="flex items-center gap-3 text-sm">
-                <div className="w-8 h-8 rounded-lg bg-muted/50 flex items-center justify-center">
-                  <Clock className="w-4 h-4 text-muted-foreground" />
-                </div>
-                <span className="text-foreground">{lead.years_experience} de experiência</span>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Financial Info */}
-        <div className="space-y-3">
-          <h4 className="text-xs font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
-            <div className="w-1 h-4 bg-amber-500 rounded-full" />
-            Financeiro
-          </h4>
-          
-          <div className="space-y-2.5 pl-3">
-            {lead.monthly_billing && (
-              <div className="flex items-center gap-3 text-sm">
-                <div className="w-8 h-8 rounded-lg bg-muted/50 flex items-center justify-center">
-                  <DollarSign className="w-4 h-4 text-muted-foreground" />
-                </div>
-                <span className="text-foreground">{lead.monthly_billing}</span>
-              </div>
-            )}
-            
-            {lead.weekly_attendance && (
-              <div className="flex items-center gap-3 text-sm">
-                <div className="w-8 h-8 rounded-lg bg-muted/50 flex items-center justify-center">
-                  <Users className="w-4 h-4 text-muted-foreground" />
-                </div>
-                <span className="text-foreground">{lead.weekly_attendance} atend./semana</span>
-              </div>
-            )}
-            
-            {lead.average_ticket && (
-              <div className="flex items-center gap-3 text-sm">
-                <div className="w-8 h-8 rounded-lg bg-muted/50 flex items-center justify-center">
-                  <DollarSign className="w-4 h-4 text-muted-foreground" />
-                </div>
-                <span className="text-foreground">Ticket: {formatCurrency(lead.average_ticket)}</span>
-              </div>
-            )}
-            
-            {lead.estimated_revenue && (
-              <div className="bg-gradient-to-r from-emerald-500/10 to-emerald-600/5 rounded-xl p-3 flex items-center gap-3">
-                <div className="w-10 h-10 rounded-lg bg-emerald-500/20 flex items-center justify-center">
-                  <TrendingUp className="w-5 h-5 text-emerald-600" />
-                </div>
+              {lead.instagram && (
                 <div>
-                  <span className="text-xs text-muted-foreground block">Receita Estimada</span>
-                  <span className="text-foreground font-bold">{formatCurrency(lead.estimated_revenue)}</span>
+                  <label className="text-xs text-muted-foreground flex items-center gap-1">
+                    <Instagram className="w-3 h-3" /> Instagram
+                  </label>
+                  <a 
+                    href={`https://instagram.com/${lead.instagram.replace("@", "")}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-sm text-indigo-600 dark:text-indigo-400 hover:underline mt-0.5 block"
+                  >
+                    {lead.instagram}
+                  </a>
+                </div>
+              )}
+            </div>
+          </CollapsibleContent>
+        </Collapsible>
+
+        {/* Negócio Section */}
+        <Collapsible open={openSections.negocio} onOpenChange={() => toggleSection('negocio')}>
+          <CollapsibleTrigger className="w-full flex items-center justify-between px-4 py-3 hover:bg-muted/50 transition-colors border-b border-border">
+            <span className="text-sm font-medium text-foreground">Negócio</span>
+            {openSections.negocio ? (
+              <ChevronDown className="w-4 h-4 text-muted-foreground" />
+            ) : (
+              <ChevronRight className="w-4 h-4 text-muted-foreground" />
+            )}
+          </CollapsibleTrigger>
+          <CollapsibleContent>
+            <div className="px-4 py-3 space-y-3 border-b border-border">
+              {lead.service_area && (
+                <div>
+                  <label className="text-xs text-muted-foreground">Área de Atuação</label>
+                  <p className="text-sm text-foreground mt-0.5">{lead.service_area}</p>
+                </div>
+              )}
+              {lead.workspace_type && (
+                <div>
+                  <label className="text-xs text-muted-foreground">Espaço</label>
+                  <p className="text-sm text-foreground mt-0.5">{lead.workspace_type}</p>
+                </div>
+              )}
+              {lead.years_experience && (
+                <div>
+                  <label className="text-xs text-muted-foreground">Experiência</label>
+                  <p className="text-sm text-foreground mt-0.5">{lead.years_experience}</p>
+                </div>
+              )}
+              {lead.monthly_billing && (
+                <div>
+                  <label className="text-xs text-muted-foreground">Faturamento Mensal</label>
+                  <p className="text-sm text-foreground mt-0.5">{lead.monthly_billing}</p>
+                </div>
+              )}
+              {lead.weekly_attendance && (
+                <div>
+                  <label className="text-xs text-muted-foreground">Atendimentos/semana</label>
+                  <p className="text-sm text-foreground mt-0.5">{lead.weekly_attendance}</p>
+                </div>
+              )}
+              {lead.average_ticket && (
+                <div>
+                  <label className="text-xs text-muted-foreground">Ticket Médio</label>
+                  <p className="text-sm text-foreground mt-0.5">{formatCurrency(lead.average_ticket)}</p>
+                </div>
+              )}
+              {lead.estimated_revenue && (
+                <div>
+                  <label className="text-xs text-muted-foreground">Receita Estimada</label>
+                  <p className="text-sm font-medium text-foreground mt-0.5">{formatCurrency(lead.estimated_revenue)}</p>
+                </div>
+              )}
+              {lead.biggest_difficulty && (
+                <div>
+                  <label className="text-xs text-muted-foreground">Maior Dificuldade</label>
+                  <p className="text-sm text-foreground mt-0.5">{lead.biggest_difficulty}</p>
+                </div>
+              )}
+            </div>
+          </CollapsibleContent>
+        </Collapsible>
+
+        {/* Histórico Section */}
+        <Collapsible open={openSections.historico} onOpenChange={() => toggleSection('historico')}>
+          <CollapsibleTrigger className="w-full flex items-center justify-between px-4 py-3 hover:bg-muted/50 transition-colors border-b border-border">
+            <span className="text-sm font-medium text-foreground">Histórico</span>
+            {openSections.historico ? (
+              <ChevronDown className="w-4 h-4 text-muted-foreground" />
+            ) : (
+              <ChevronRight className="w-4 h-4 text-muted-foreground" />
+            )}
+          </CollapsibleTrigger>
+          <CollapsibleContent>
+            <div className="px-4 py-3 border-b border-border">
+              <div className="flex items-start gap-3">
+                <div className="w-8 h-8 rounded-lg bg-indigo-100 dark:bg-indigo-900/40 flex items-center justify-center flex-shrink-0">
+                  <User className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-foreground">Novo contato criado</p>
+                  <div className="flex items-center gap-1 text-xs text-muted-foreground mt-0.5">
+                    <Clock className="w-3 h-3" />
+                    <span>{formatDate(lead.created_at)}</span>
+                  </div>
                 </div>
               </div>
-            )}
-          </div>
-        </div>
-
-        {/* Difficulty */}
-        {lead.biggest_difficulty && (
-          <div className="space-y-3">
-            <h4 className="text-xs font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
-              <div className="w-1 h-4 bg-red-500 rounded-full" />
-              Maior Dificuldade
-            </h4>
-            <p className="text-sm text-foreground bg-muted/30 rounded-xl p-3 leading-relaxed ml-3">
-              {lead.biggest_difficulty}
-            </p>
-          </div>
-        )}
-
-        {/* Registration Date */}
-        <div className="flex items-center gap-2 text-xs text-muted-foreground pt-3 border-t border-border/30 ml-3">
-          <Calendar className="w-3.5 h-3.5" />
-          <span>Cadastrado em {formatDate(lead.created_at)}</span>
-        </div>
+            </div>
+          </CollapsibleContent>
+        </Collapsible>
       </div>
-
     </div>
   );
 };
