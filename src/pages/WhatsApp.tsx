@@ -1239,10 +1239,14 @@ const WhatsApp = () => {
           <img 
             src={msg.mediaUrl} 
             alt="Imagem" 
-            className="max-w-[280px] rounded-lg cursor-pointer hover:opacity-90 transition-opacity"
+            className="max-w-[280px] rounded-lg cursor-pointer hover:opacity-90 transition-opacity relative z-10"
             loading="lazy"
             onLoad={() => scrollToBottom("auto")}
-            onClick={() => setLightboxImage(msg.mediaUrl!)}
+            onClick={(e) => {
+              e.stopPropagation();
+              console.log("Image clicked, opening lightbox:", msg.mediaUrl);
+              setLightboxImage(msg.mediaUrl!);
+            }}
           />
           {msg.text && <p className="text-sm text-foreground whitespace-pre-wrap">{formatWhatsAppText(msg.text)}</p>}
         </div>
