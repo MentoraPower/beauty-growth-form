@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 
-import { Search, Smile, Paperclip, Mic, Send, Check, CheckCheck, RefreshCw, Phone, Image, File, Trash2, PanelRightOpen, PanelRightClose, X } from "lucide-react";
+import { Search, Smile, Paperclip, Mic, Send, Check, CheckCheck, RefreshCw, Phone, Image, File, Trash2, PanelRightOpen, PanelRightClose, X, Video, MoreVertical, Pencil } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
@@ -52,10 +52,12 @@ const WhatsApp = () => {
   const [showLeadPanel, setShowLeadPanel] = useState(true);
   const [isRecording, setIsRecording] = useState(false);
   const [recordingTime, setRecordingTime] = useState(0);
+  const [messageMenuId, setMessageMenuId] = useState<string | null>(null);
   const [recordingStream, setRecordingStream] = useState<MediaStream | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const videoInputRef = useRef<HTMLInputElement>(null);
   const shouldScrollToBottomOnOpenRef = useRef(false);
   const lastFetchedChatIdRef = useRef<string | null>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
@@ -568,7 +570,7 @@ const WhatsApp = () => {
     await syncAllChats();
   };
 
-  const handleFileUpload = async (file: File, type: "image" | "file") => {
+  const handleFileUpload = async (file: File, type: "image" | "file" | "video") => {
     if (!selectedChat || isSending) return;
     
     setShowAttachMenu(false);
@@ -597,13 +599,13 @@ const WhatsApp = () => {
         .getPublicUrl(filePath);
 
       // Determine action based on type
-      const action = type === "image" ? "send-image" : "send-file";
+      const action = type === "image" ? "send-image" : type === "video" ? "send-video" : "send-file";
 
       // Add temp message to UI
       const tempId = `temp-${Date.now()}`;
       const tempMsg: Message = {
         id: tempId,
-        text: type === "image" ? "" : file.name,
+        text: type === "image" ? "" : type === "video" ? "" : file.name,
         time: new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit", timeZone: "America/Sao_Paulo" }),
         sent: true,
         read: false,
@@ -632,7 +634,7 @@ const WhatsApp = () => {
       const { data: insertedMsg } = await supabase.from("whatsapp_messages").insert({
         chat_id: selectedChat.id,
         phone: selectedChat.phone,
-        text: type === "image" ? "" : file.name,
+        text: type === "image" ? "" : type === "video" ? "" : file.name,
         from_me: true,
         status: "SENT",
         media_url: publicUrl,
@@ -647,11 +649,11 @@ const WhatsApp = () => {
 
       // Update chat last message
       await supabase.from("whatsapp_chats").update({
-        last_message: type === "image" ? "📷 Imagem" : `📄 ${file.name}`,
+        last_message: type === "image" ? "📷 Imagem" : type === "video" ? "🎥 Vídeo" : `📄 ${file.name}`,
         last_message_time: new Date().toISOString(),
       }).eq("id", selectedChat.id);
 
-      toast({ title: type === "image" ? "Imagem enviada" : "Arquivo enviado" });
+      toast({ title: type === "image" ? "Imagem enviada" : type === "video" ? "Vídeo enviado" : "Arquivo enviado" });
 
     } catch (error: any) {
       console.error("Error uploading file:", error);
@@ -971,6 +973,37 @@ const WhatsApp = () => {
       title: "Ligação iniciada",
       description: `Chamando ${selectedChat.name}...`,
     });
+  };
+
+  // Delete message (for both sides)
+  const deleteMessage = async (msg: Message) => {
+    if (!msg.sent) {
+      toast({ title: "Só é possível apagar mensagens enviadas", variant: "destructive" });
+      return;
+    }
+    
+    setMessageMenuId(null);
+    
+    try {
+      // Try to delete via WasenderAPI (only works within a few minutes)
+      const messageId = (msg as any).message_id;
+      if (messageId && typeof messageId === "number") {
+        await supabase.functions.invoke("wasender-whatsapp", {
+          body: { action: "delete-message", msgId: messageId },
+        });
+      }
+      
+      // Remove from local state
+      setMessages(prev => prev.filter(m => m.id !== msg.id));
+      
+      // Delete from database
+      await supabase.from("whatsapp_messages").delete().eq("id", msg.id);
+      
+      toast({ title: "Mensagem apagada" });
+    } catch (error: any) {
+      console.error("Error deleting message:", error);
+      toast({ title: "Erro ao apagar", description: "Pode ser que o tempo para apagar já tenha expirado", variant: "destructive" });
+    }
   };
 
   // Initial load and cleanup
@@ -1460,7 +1493,29 @@ const WhatsApp = () => {
                               </div>
                             </div>
                           )}
-                          <div className={cn("flex", msg.sent ? "justify-end" : "justify-start")}>
+                          <div className={cn("flex group", msg.sent ? "justify-end" : "justify-start")}>
+                            {/* Menu button for sent messages (left of bubble) */}
+                            {msg.sent && (
+                              <div className="relative flex items-start mr-1">
+                                <button
+                                  onClick={() => setMessageMenuId(messageMenuId === msg.id ? null : msg.id)}
+                                  className="p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity hover:bg-muted/50"
+                                >
+                                  <MoreVertical className="w-4 h-4 text-muted-foreground" />
+                                </button>
+                                {messageMenuId === msg.id && (
+                                  <div className="absolute right-full top-0 mr-1 bg-card rounded-lg shadow-lg border border-border overflow-hidden z-50 min-w-[120px]">
+                                    <button
+                                      onClick={() => deleteMessage(msg)}
+                                      className="flex items-center gap-2 px-3 py-2 hover:bg-destructive/10 w-full text-left text-sm text-destructive"
+                                    >
+                                      <Trash2 className="w-4 h-4" />
+                                      Apagar
+                                    </button>
+                                  </div>
+                                )}
+                              </div>
+                            )}
                             <div
                               className={cn(
                                 "max-w-[65%] rounded-lg px-3 py-1.5 shadow-sm relative",
@@ -1547,6 +1602,15 @@ const WhatsApp = () => {
                             <span className="text-foreground">Fotos</span>
                           </button>
                           <button
+                            onClick={() => videoInputRef.current?.click()}
+                            className="flex items-center gap-3 px-4 py-3 hover:bg-muted/50 w-full text-left"
+                          >
+                            <div className="w-10 h-10 rounded-full bg-pink-500 flex items-center justify-center">
+                              <Video className="w-5 h-5 text-white" />
+                            </div>
+                            <span className="text-foreground">Vídeo</span>
+                          </button>
+                          <button
                             onClick={() => fileInputRef.current?.click()}
                             className="flex items-center gap-3 px-4 py-3 hover:bg-muted/50 w-full text-left"
                           >
@@ -1572,6 +1636,13 @@ const WhatsApp = () => {
                       accept=".pdf,.doc,.docx,.xls,.xlsx,.txt"
                       className="hidden"
                       onChange={(e) => e.target.files?.[0] && handleFileUpload(e.target.files[0], "file")}
+                    />
+                    <input
+                      type="file"
+                      ref={videoInputRef}
+                      accept="video/*"
+                      className="hidden"
+                      onChange={(e) => e.target.files?.[0] && handleFileUpload(e.target.files[0], "video")}
                     />
 
                     <div className="flex-1">
@@ -1653,6 +1724,11 @@ const WhatsApp = () => {
       {/* Hidden click outside handler for attach menu */}
       {showAttachMenu && (
         <div className="fixed inset-0 z-40" onClick={() => setShowAttachMenu(false)} />
+      )}
+
+      {/* Hidden click outside handler for message menu */}
+      {messageMenuId && (
+        <div className="fixed inset-0 z-40" onClick={() => setMessageMenuId(null)} />
       )}
 
       {/* Call Modal */}
