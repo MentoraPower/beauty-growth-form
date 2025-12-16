@@ -157,6 +157,24 @@ export const AudioWaveform = ({ src, sent = false }: AudioWaveformProps) => {
     const handleEnded = () => {
       setIsPlaying(false);
       setCurrentTime(0);
+      // Redraw immediately to reset colors
+      if (canvasRef.current && waveformData.length > 0) {
+        const ctx = canvasRef.current.getContext("2d");
+        if (ctx) {
+          const width = canvasRef.current.width;
+          const height = canvasRef.current.height;
+          ctx.clearRect(0, 0, width, height);
+          waveformData.forEach((value, index) => {
+            const x = index * (3 + 2);
+            const barHeight = Math.max(4, value * height * 0.8);
+            const y = (height - barHeight) / 2;
+            ctx.fillStyle = sent ? "rgba(255,255,255,0.4)" : "rgba(0,0,0,0.2)";
+            ctx.beginPath();
+            ctx.roundRect(x, y, 3, barHeight, 1.5);
+            ctx.fill();
+          });
+        }
+      }
     };
 
     const handleDurationChange = () => {
