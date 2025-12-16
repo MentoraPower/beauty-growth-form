@@ -426,6 +426,57 @@ const WhatsApp = () => {
     }
   };
 
+  // Fetch profile picture for a chat
+  const fetchProfilePicture = useCallback(async (chat: Chat) => {
+    if (!chat || chat.photo_url) return;
+    
+    try {
+      console.log("[WhatsApp] Fetching profile picture for:", chat.phone);
+      
+      const { data, error } = await supabase.functions.invoke("wasender-whatsapp", {
+        body: {
+          action: "get-profile-picture",
+          phone: chat.phone,
+        },
+      });
+
+      if (error) {
+        console.error("[WhatsApp] Error fetching profile picture:", error);
+        return;
+      }
+
+      if (data?.photoUrl) {
+        console.log("[WhatsApp] Got profile picture for:", chat.phone);
+        
+        // Update local state
+        setChats(prev => {
+          const newChats = prev.map(c => 
+            c.id === chat.id ? { ...c, photo_url: data.photoUrl, avatar: data.photoUrl } : c
+          );
+          chatsRef.current = newChats;
+          return newChats;
+        });
+
+        // Update selectedChat if it's the one being updated
+        setSelectedChat(prev => {
+          if (prev?.id === chat.id) {
+            return { ...prev, photo_url: data.photoUrl, avatar: data.photoUrl };
+          }
+          return prev;
+        });
+      }
+    } catch (error) {
+      console.error("[WhatsApp] Error fetching profile picture:", error);
+    }
+  }, []);
+
+  // Auto-fetch profile picture when chat is selected and doesn't have one
+  useEffect(() => {
+    if (selectedChat && !selectedChat.photo_url && !isWhatsAppInternalId(selectedChat.phone)) {
+      fetchProfilePicture(selectedChat);
+    }
+  }, [selectedChat?.id, fetchProfilePicture]);
+
   const clearAllData = async () => {
     try {
       console.log("[WhatsApp] Clearing all data...");

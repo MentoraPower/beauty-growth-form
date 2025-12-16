@@ -101,27 +101,22 @@ async function resolveLidToPhone(lid: string): Promise<string | null> {
 // Fetch contact profile picture using WasenderAPI
 async function fetchContactPicture(phone: string): Promise<string | null> {
   try {
-    // WasenderAPI endpoint for profile picture
+    // WasenderAPI endpoint: GET /api/contacts/{contactPhoneNumber}/picture
     const formattedPhone = phone.replace(/\D/g, "");
-    const jid = `${formattedPhone}@s.whatsapp.net`;
     
-    console.log(`[Wasender] Fetching profile picture for: ${jid}`);
+    console.log(`[Wasender] Fetching profile picture for: ${formattedPhone}`);
     
-    // Try the profile-picture endpoint
-    const result = await wasenderRequest(`/profile-picture?id=${encodeURIComponent(jid)}`);
+    const result = await wasenderRequest(`/contacts/${formattedPhone}/picture`);
     
     console.log(`[Wasender] Profile picture result:`, JSON.stringify(result));
     
-    // WasenderAPI returns { success: true, data: { imgUrl: "..." } } or similar
-    const imgUrl = result?.data?.imgUrl 
-      || result?.data?.profilePictureUrl 
-      || result?.imgUrl 
-      || result?.profilePictureUrl 
-      || result?.url
-      || null;
+    // WasenderAPI returns { success: true, data: { imgUrl: "..." } }
+    const imgUrl = result?.data?.imgUrl || result?.imgUrl || null;
     
     if (imgUrl) {
-      console.log(`[Wasender] Found profile picture for ${phone}: ${imgUrl.substring(0, 100)}...`);
+      console.log(`[Wasender] Found profile picture for ${formattedPhone}`);
+    } else {
+      console.log(`[Wasender] No profile picture for ${formattedPhone}`);
     }
     
     return imgUrl;
