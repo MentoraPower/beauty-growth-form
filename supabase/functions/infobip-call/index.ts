@@ -42,6 +42,25 @@ const handler = async (req: Request): Promise<Response> => {
       formattedAgent = "+" + formattedAgent;
     }
 
+    // Format from number
+    let formattedFrom = INFOBIP_FROM_NUMBER.replace(/\D/g, "");
+    if (!formattedFrom.startsWith("+")) {
+      formattedFrom = "+" + formattedFrom;
+    }
+
+    console.log(`Config - From: ${formattedFrom}, Agent: ${formattedAgent}, To: ${formattedTo}`);
+
+    // Validate all required fields
+    if (!formattedFrom || formattedFrom === "+") {
+      throw new Error("INFOBIP_FROM_NUMBER is empty or invalid");
+    }
+    if (!formattedAgent || formattedAgent === "+") {
+      throw new Error("INFOBIP_AGENT_NUMBER is empty or invalid");
+    }
+    if (!formattedTo || formattedTo === "+") {
+      throw new Error("Lead phone number is empty or invalid");
+    }
+
     console.log(`Initiating Click-to-Call: Agent ${formattedAgent} -> Lead ${formattedTo}`);
 
     // Infobip Click-to-Call API
@@ -60,7 +79,7 @@ const handler = async (req: Request): Promise<Response> => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        from: INFOBIP_FROM_NUMBER,
+        from: formattedFrom,
         destinationA: formattedAgent,
         destinationB: formattedTo,
       }),
