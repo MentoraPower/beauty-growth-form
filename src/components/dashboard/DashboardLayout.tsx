@@ -85,9 +85,10 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
   // Calculate main content margin based on panel state (accounting for outer padding)
   const getMainContentMargin = () => {
     const outerPadding = 8; // p-2 = 8px
-    if (activePanel === 'crm') return sidebarWidth + 264 + outerPadding;
-    if (activePanel === 'dashboard' || activePanel === 'whatsapp') return sidebarWidth + 232 + outerPadding;
-    return sidebarWidth + 8 + outerPadding;
+    // Panels now start at sidebarWidth - 8, so we account for that
+    if (activePanel === 'crm') return sidebarWidth - 8 + 256 + 8 + outerPadding; // w-64 = 256px
+    if (activePanel === 'dashboard' || activePanel === 'whatsapp') return sidebarWidth - 8 + 224 + 8 + outerPadding; // w-56 = 224px
+    return sidebarWidth + outerPadding;
   };
 
   const mainContentMargin = getMainContentMargin();
@@ -196,29 +197,13 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
 
       {/* Dashboard Submenu Panel */}
       <div
-        style={{ left: sidebarWidth + 8 }}
+        style={{ left: sidebarWidth - 8 }}
         className={cn(
-          "hidden lg:block fixed top-2 h-[calc(100vh-1rem)] w-56 rounded-2xl bg-[#0f0f12] z-40 transition-all duration-300 ease-out overflow-visible",
+          "hidden lg:block fixed top-2 h-[calc(100vh-1rem)] w-56 rounded-2xl bg-[#0f0f12] z-40 transition-all duration-300 ease-out overflow-hidden pl-4",
           activePanel === 'dashboard' ? "opacity-100 translate-x-0" : "opacity-0 -translate-x-4 pointer-events-none"
         )}
       >
-        {/* Inward curve overlay top-left */}
-        <div 
-          className="absolute -left-4 top-0 w-4 h-4 bg-[#0f0f12]"
-          style={{ 
-            boxShadow: '-8px -8px 0 0 hsl(var(--card))',
-            borderTopLeftRadius: '16px'
-          }}
-        />
-        {/* Inward curve overlay bottom-left */}
-        <div 
-          className="absolute -left-4 bottom-0 w-4 h-4 bg-[#0f0f12]"
-          style={{ 
-            boxShadow: '-8px 8px 0 0 hsl(var(--card))',
-            borderBottomLeftRadius: '16px'
-          }}
-        />
-        <div className="p-4 h-full flex flex-col">
+        <div className="p-4 pl-0 h-full flex flex-col">
           <h2 className="text-white font-semibold text-sm mb-4 px-2">Dashboard</h2>
           <div className="flex flex-col gap-1">
             {navItems[0].subItems.map((subItem) => {
@@ -246,29 +231,13 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
 
       {/* WhatsApp Submenu Panel */}
       <div
-        style={{ left: sidebarWidth + 8 }}
+        style={{ left: sidebarWidth - 8 }}
         className={cn(
-          "hidden lg:block fixed top-2 h-[calc(100vh-1rem)] w-56 rounded-2xl bg-[#0f0f12] z-40 transition-all duration-300 ease-out overflow-visible",
+          "hidden lg:block fixed top-2 h-[calc(100vh-1rem)] w-56 rounded-2xl bg-[#0f0f12] z-40 transition-all duration-300 ease-out overflow-hidden pl-4",
           activePanel === 'whatsapp' ? "opacity-100 translate-x-0" : "opacity-0 -translate-x-4 pointer-events-none"
         )}
       >
-        {/* Inward curve overlay top-left */}
-        <div 
-          className="absolute -left-4 top-0 w-4 h-4 bg-[#0f0f12]"
-          style={{ 
-            boxShadow: '-8px -8px 0 0 hsl(var(--card))',
-            borderTopLeftRadius: '16px'
-          }}
-        />
-        {/* Inward curve overlay bottom-left */}
-        <div 
-          className="absolute -left-4 bottom-0 w-4 h-4 bg-[#0f0f12]"
-          style={{ 
-            boxShadow: '-8px 8px 0 0 hsl(var(--card))',
-            borderBottomLeftRadius: '16px'
-          }}
-        />
-        <div className="p-4 h-full flex flex-col">
+        <div className="p-4 pl-0 h-full flex flex-col">
           <h2 className="text-white font-semibold text-sm mb-4 px-2">WhatsApp</h2>
           <div className="flex flex-col gap-1">
             {bottomNavItems[0].subItems.map((subItem) => {

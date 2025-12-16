@@ -544,37 +544,21 @@ export function CRMOriginsPanel({ isOpen, onClose, sidebarWidth }: CRMOriginsPan
 
       {/* Panel */}
       <div
-        style={{ left: sidebarWidth + 8 }}
+        style={{ left: sidebarWidth - 8 }}
         className={cn(
-          "hidden lg:block fixed top-2 h-[calc(100vh-1rem)] w-64 rounded-2xl bg-[#0f0f12] z-40 transition-all duration-300 ease-out overflow-visible",
+          "hidden lg:block fixed top-2 h-[calc(100vh-1rem)] w-64 rounded-2xl bg-[#0f0f12] z-40 transition-all duration-300 ease-out overflow-hidden pl-4",
           isOpen 
             ? "opacity-100 translate-x-0" 
             : "opacity-0 -translate-x-4 pointer-events-none"
         )}
       >
-        {/* Inward curve overlay top-left */}
-        <div 
-          className="absolute -left-4 top-0 w-4 h-4 bg-[#0f0f12]"
-          style={{ 
-            boxShadow: '-8px -8px 0 0 hsl(var(--card))',
-            borderTopLeftRadius: '16px'
-          }}
-        />
-        {/* Inward curve overlay bottom-left */}
-        <div 
-          className="absolute -left-4 bottom-0 w-4 h-4 bg-[#0f0f12]"
-          style={{ 
-            boxShadow: '-8px 8px 0 0 hsl(var(--card))',
-            borderBottomLeftRadius: '16px'
-          }}
-        />
         {/* Header */}
-        <div className="px-4 py-4">
+        <div className="px-4 pl-0 py-4">
           <h2 className="text-white font-semibold text-sm px-2">Origens CRM</h2>
         </div>
 
         {/* Content */}
-        <div className="flex-1 overflow-y-auto px-3 pb-3 space-y-1 max-h-[calc(100vh-6rem)]">
+        <div className="flex-1 overflow-y-auto px-3 pl-0 pb-3 space-y-1 max-h-[calc(100vh-6rem)]">
           <DndContext
             sensors={sensors}
             collisionDetection={closestCenter}
