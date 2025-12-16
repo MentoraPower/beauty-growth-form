@@ -102,10 +102,14 @@ export const AudioWaveform = ({ src, sent = false }: AudioWaveformProps) => {
       const y = (height - barHeight) / 2;
 
       const progressIndex = progress * waveformData.length;
+      
+      // Played bars: darker/filled color, Unplayed bars: lighter/muted color
       if (index < progressIndex) {
-        ctx.fillStyle = sent ? "#075e54" : "#128c7e";
+        // Played - vibrant green
+        ctx.fillStyle = sent ? "#25D366" : "#25D366";
       } else {
-        ctx.fillStyle = sent ? "#b3d4d1" : "#a8d8d3";
+        // Unplayed - muted gray-green
+        ctx.fillStyle = sent ? "rgba(255,255,255,0.4)" : "rgba(0,0,0,0.2)";
       }
 
       ctx.beginPath();
