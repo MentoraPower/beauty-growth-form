@@ -13,7 +13,6 @@ const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 // Check if phone is a WhatsApp LID (internal ID) - not a real phone number
 const isWhatsAppLID = (phone: string): boolean => {
   const cleaned = String(phone || "").replace(/\D/g, "");
-  // WhatsApp LIDs are typically very long (15+ digits)
   return cleaned.length > 14;
 };
 
@@ -45,6 +44,7 @@ const handler = async (req: Request): Promise<Response> => {
       return headers;
     };
 
+    // Normalize name - return null if it's just a phone number
     const normalizeName = (value: any, phoneDigits: string): string | null => {
       if (typeof value !== "string") return null;
       const name = value.trim();
@@ -56,9 +56,26 @@ const handler = async (req: Request): Promise<Response> => {
       return name;
     };
 
-    const fetchContactInfo = async (
-      contactId: string
-    ): Promise<{ name: string | null; photo: string | null }> => {
+    // Fetch chat picture using dedicated endpoint
+    const fetchChatPicture = async (chatId: string): Promise<string | null> => {
+      try {
+        const response = await fetch(
+          `${WAHA_API_URL}/api/default/chats/${encodeURIComponent(chatId)}/picture`,
+          { method: "GET", headers: getHeaders() }
+        );
+
+        if (!response.ok) return null;
+
+        const data = await response.json().catch(() => null);
+        return data?.url || data?.profilePictureURL || data?.profilePictureUrl || null;
+      } catch (e: any) {
+        console.log(`[WAHA] Chat picture error for ${chatId}:`, e.message);
+        return null;
+      }
+    };
+
+    // Fetch contact info for name
+    const fetchContactInfo = async (contactId: string): Promise<string | null> => {
       const phoneDigits = contactId.split("@")[0].replace(/\D/g, "");
       try {
         const response = await fetch(
@@ -66,49 +83,17 @@ const handler = async (req: Request): Promise<Response> => {
           { method: "GET", headers: getHeaders() }
         );
 
-        if (!response.ok) {
-          const text = await response.text();
-          console.log("[WAHA] Contact info not available:", response.status, text.substring(0, 200));
-          return { name: null, photo: null };
-        }
+        if (!response.ok) return null;
 
-        const data = (await response.json().catch(() => null)) as any;
-
-        const name =
-          normalizeName(data?.name, phoneDigits) ||
+        const data = await response.json().catch(() => null);
+        return normalizeName(data?.name, phoneDigits) ||
           normalizeName(data?.pushname, phoneDigits) ||
           normalizeName(data?.pushName, phoneDigits) ||
           normalizeName(data?.notifyName, phoneDigits) ||
           normalizeName(data?.shortName, phoneDigits) ||
           null;
-
-        return { name, photo: null };
       } catch (e: any) {
-        console.log("[WAHA] Contact info error:", e.message);
-        return { name: null, photo: null };
-      }
-    };
-
-    const fetchProfilePicture = async (
-      contactId: string,
-      refresh = false
-    ): Promise<string | null> => {
-      try {
-        const response = await fetch(
-          `${WAHA_API_URL}/api/contacts/profile-picture?contactId=${encodeURIComponent(contactId)}&session=default${refresh ? "&refresh=true" : ""}`,
-          { method: "GET", headers: getHeaders() }
-        );
-
-        if (!response.ok) {
-          const text = await response.text();
-          console.log("[WAHA] Profile picture not available:", response.status, text.substring(0, 200));
-          return null;
-        }
-
-        const data = (await response.json().catch(() => null)) as any;
-        return data?.profilePictureURL || data?.profilePictureUrl || data?.url || null;
-      } catch (e: any) {
-        console.log("[WAHA] Profile picture error:", e.message);
+        console.log(`[WAHA] Contact info error:`, e.message);
         return null;
       }
     };
@@ -148,39 +133,39 @@ const handler = async (req: Request): Promise<Response> => {
       });
     }
 
-    // Sync all chats and messages
+    // Sync all chats and messages using /chats/overview API
     if (action === "sync-all") {
-      console.log("[WAHA Sync] Starting sync");
+      console.log("[WAHA Sync] Starting sync with /chats/overview");
       
       let syncedChats = 0;
       let syncedMessages = 0;
 
-      // Get all chats
-      const chatsResponse = await fetch(`${WAHA_API_URL}/api/default/chats`, {
-        method: "GET",
-        headers: getHeaders(),
-      });
+      // Use /chats/overview to get chats with picture directly
+      const chatsResponse = await fetch(
+        `${WAHA_API_URL}/api/default/chats/overview?limit=100&offset=0`,
+        { method: "GET", headers: getHeaders() }
+      );
 
       if (!chatsResponse.ok) {
         const errorText = await chatsResponse.text();
-        console.error("[WAHA Sync] Chats error:", errorText);
+        console.error("[WAHA Sync] Chats overview error:", errorText);
         throw new Error(`Failed to fetch chats: ${chatsResponse.status}`);
       }
 
       const chatsData = await chatsResponse.json();
-      console.log(`[WAHA Sync] Found ${chatsData?.length || 0} chats`);
+      console.log(`[WAHA Sync] Found ${chatsData?.length || 0} chats from overview`);
 
       const chats = Array.isArray(chatsData) ? chatsData : [];
 
       for (const chat of chats) {
         const chatId = chat.id || chat.chatId || "";
         
-        // Skip groups, channels, and status broadcasts
+        // Skip groups, channels, status broadcasts
         if (chatId.includes("@g.us") || chatId.includes("@newsletter") || chatId.includes("status@broadcast")) {
           continue;
         }
 
-        // Skip LID chats (WhatsApp internal IDs, not real phone numbers)
+        // Skip LID chats
         if (chatId.includes("@lid")) {
           console.log(`[WAHA Sync] Skipping LID: ${chatId}`);
           continue;
@@ -196,38 +181,35 @@ const handler = async (req: Request): Promise<Response> => {
           continue;
         }
 
-        // Get chat name/photo from chat payload
+        // Get name from overview response
         const chatNameRaw = chat.name || chat.pushName || chat.pushname || chat.notifyName || null;
         let chatName = normalizeName(chatNameRaw, phone);
 
-        let photoUrl =
-          chat.profilePicUrl ||
-          chat.profilePictureURL ||
-          chat.profilePictureUrl ||
-          chat.picture ||
-          chat.imgUrl ||
-          null;
+        // Get picture directly from overview response (this is the key improvement!)
+        let photoUrl = chat.picture || chat.profilePicUrl || chat.profilePictureURL || 
+                       chat.profilePictureUrl || chat.imgUrl || null;
 
-        // If name is missing/useless, try contact endpoint
+        // If name is missing, try contact endpoint
         if (!chatName) {
-          const contactInfo = await fetchContactInfo(chatId);
-          if (contactInfo.name) chatName = normalizeName(contactInfo.name, phone);
+          chatName = await fetchContactInfo(chatId);
         }
 
-        // Profile picture (try chatId first, then phone; refresh only if needed)
-        if (!photoUrl) photoUrl = await fetchProfilePicture(chatId);
-        if (!photoUrl) photoUrl = await fetchProfilePicture(chatId, true);
-        if (!photoUrl) photoUrl = await fetchProfilePicture(phone);
-        if (!photoUrl) photoUrl = await fetchProfilePicture(phone, true);
+        // If photo is missing from overview, use dedicated /chats/{chatId}/picture endpoint
+        if (!photoUrl) {
+          console.log(`[WAHA Sync] Fetching picture for ${phone} via dedicated endpoint`);
+          photoUrl = await fetchChatPicture(chatId);
+        }
 
-        // Get last message info
-        const lastMessage = chat.lastMessage?.body || chat.lastMessage?.text || chat.lastMessage?.caption || "";
+        // Get last message info from overview
+        const lastMessage = chat.lastMessage?.body || chat.lastMessage?.text || 
+                           chat.lastMessage?.caption || chat.lastMessage?.content || "";
         const lastMessageTimestamp = chat.lastMessage?.timestamp || chat.lastMessage?.t || chat.timestamp;
         const lastMessageTime = lastMessageTimestamp 
-          ? new Date(typeof lastMessageTimestamp === 'number' && lastMessageTimestamp < 10000000000 ? lastMessageTimestamp * 1000 : lastMessageTimestamp).toISOString()
+          ? new Date(typeof lastMessageTimestamp === 'number' && lastMessageTimestamp < 10000000000 
+              ? lastMessageTimestamp * 1000 : lastMessageTimestamp).toISOString()
           : new Date().toISOString();
 
-        console.log(`[WAHA Sync] Chat: ${phone}, Name: ${chatName}, Photo: ${photoUrl ? 'Yes' : 'No'}`);
+        console.log(`[WAHA Sync] Chat: ${phone}, Name: ${chatName || 'null'}, Photo: ${photoUrl ? 'Yes' : 'No'}`);
 
         // Upsert chat
         const { data: chatData, error: chatError } = await supabase
@@ -249,68 +231,87 @@ const handler = async (req: Request): Promise<Response> => {
 
         syncedChats++;
 
-        // Fetch messages for this chat
+        // Fetch messages with pagination
         try {
-          const messagesResponse = await fetch(
-            `${WAHA_API_URL}/api/default/chats/${encodeURIComponent(chatId)}/messages?limit=100&downloadMedia=false`,
-            {
-              method: "GET",
-              headers: getHeaders(),
-            }
-          );
+          let offset = 0;
+          const limit = 100;
+          let hasMore = true;
 
-          if (!messagesResponse.ok) continue;
+          while (hasMore) {
+            const messagesResponse = await fetch(
+              `${WAHA_API_URL}/api/default/chats/${encodeURIComponent(chatId)}/messages?limit=${limit}&offset=${offset}&downloadMedia=false`,
+              { method: "GET", headers: getHeaders() }
+            );
 
-          const messagesData = await messagesResponse.json();
-          const messages = Array.isArray(messagesData) ? messagesData : [];
-          console.log(`[WAHA Sync] Found ${messages.length} messages for ${phone}`);
+            if (!messagesResponse.ok) break;
 
-          for (const msg of messages) {
-            const messageId = msg.id || msg.key?.id || msg._id;
-            if (!messageId) continue;
-
-            const msgText = msg.body || msg.text || msg.content || 
-                           msg.message?.conversation || 
-                           msg.message?.extendedTextMessage?.text ||
-                           msg.message?.imageMessage?.caption ||
-                           msg.message?.videoMessage?.caption || "";
+            const messagesData = await messagesResponse.json();
+            const messages = Array.isArray(messagesData) ? messagesData : [];
             
-            const msgFromMe = msg.fromMe ?? msg.key?.fromMe ?? false;
-            const msgTimestamp = msg.timestamp || msg.messageTimestamp || msg.t;
-            const createdAt = msgTimestamp 
-              ? new Date(typeof msgTimestamp === 'number' && msgTimestamp < 10000000000 ? msgTimestamp * 1000 : msgTimestamp).toISOString() 
-              : new Date().toISOString();
-
-            let status = "SENT";
-            if (msg.ack === 3 || msg.ack === "read") status = "READ";
-            else if (msg.ack === 2 || msg.ack === "received") status = "DELIVERED";
-            else if (!msgFromMe) status = "RECEIVED";
-
-            const hasMedia = msg.hasMedia || msg.mediaUrl || msg.message?.imageMessage || msg.message?.audioMessage;
-            const mediaUrl = msg.mediaUrl || msg.media?.url || null;
-            let mediaType = null;
-            if (hasMedia) {
-              if (msg.message?.imageMessage || msg.type === "image") mediaType = "image";
-              else if (msg.message?.audioMessage || msg.type === "audio" || msg.type === "ptt") mediaType = "audio";
-              else if (msg.message?.videoMessage || msg.type === "video") mediaType = "video";
-              else mediaType = msg.type || "file";
+            if (offset === 0) {
+              console.log(`[WAHA Sync] Found ${messages.length} messages for ${phone}`);
             }
 
-            const { error: msgError } = await supabase
-              .from("whatsapp_messages")
-              .upsert({
-                chat_id: chatData.id,
-                message_id: messageId,
-                phone,
-                text: msgText,
-                from_me: msgFromMe,
-                status,
-                media_url: mediaUrl,
-                media_type: mediaType,
-                created_at: createdAt,
-              }, { onConflict: "message_id" });
+            if (messages.length === 0) {
+              hasMore = false;
+              break;
+            }
 
-            if (!msgError) syncedMessages++;
+            for (const msg of messages) {
+              const messageId = msg.id || msg.key?.id || msg._id;
+              if (!messageId) continue;
+
+              const msgText = msg.body || msg.text || msg.content || 
+                             msg.message?.conversation || 
+                             msg.message?.extendedTextMessage?.text ||
+                             msg.message?.imageMessage?.caption ||
+                             msg.message?.videoMessage?.caption || "";
+              
+              const msgFromMe = msg.fromMe ?? msg.key?.fromMe ?? false;
+              const msgTimestamp = msg.timestamp || msg.messageTimestamp || msg.t;
+              const createdAt = msgTimestamp 
+                ? new Date(typeof msgTimestamp === 'number' && msgTimestamp < 10000000000 
+                    ? msgTimestamp * 1000 : msgTimestamp).toISOString() 
+                : new Date().toISOString();
+
+              let status = "SENT";
+              if (msg.ack === 3 || msg.ack === "read") status = "READ";
+              else if (msg.ack === 2 || msg.ack === "received") status = "DELIVERED";
+              else if (!msgFromMe) status = "RECEIVED";
+
+              const hasMedia = msg.hasMedia || msg.mediaUrl || msg.message?.imageMessage || msg.message?.audioMessage;
+              const mediaUrl = msg.mediaUrl || msg.media?.url || null;
+              let mediaType = null;
+              if (hasMedia) {
+                if (msg.message?.imageMessage || msg.type === "image") mediaType = "image";
+                else if (msg.message?.audioMessage || msg.type === "audio" || msg.type === "ptt") mediaType = "audio";
+                else if (msg.message?.videoMessage || msg.type === "video") mediaType = "video";
+                else mediaType = msg.type || "file";
+              }
+
+              const { error: msgError } = await supabase
+                .from("whatsapp_messages")
+                .upsert({
+                  chat_id: chatData.id,
+                  message_id: messageId,
+                  phone,
+                  text: msgText,
+                  from_me: msgFromMe,
+                  status,
+                  media_url: mediaUrl,
+                  media_type: mediaType,
+                  created_at: createdAt,
+                }, { onConflict: "message_id" });
+
+              if (!msgError) syncedMessages++;
+            }
+
+            // If we got less than limit, no more messages
+            if (messages.length < limit) {
+              hasMore = false;
+            } else {
+              offset += limit;
+            }
           }
         } catch (msgErr: any) {
           console.error(`[WAHA Sync] Error fetching messages for ${phone}:`, msgErr.message);
