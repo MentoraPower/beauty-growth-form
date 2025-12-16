@@ -46,7 +46,7 @@ const getInitialPanelState = (): ActivePanel => {
       return saved;
     }
   }
-  return 'none';
+  return 'crm'; // Default to CRM
 };
 
 let globalActivePanel: ActivePanel = getInitialPanelState();
@@ -67,12 +67,9 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
     localStorage.setItem('active_panel', activePanel);
   }, [activePanel]);
 
+  // Submenu stays open, just switches content
   const handleNavClick = (panelId: ActivePanel) => {
-    if (activePanel === panelId) {
-      setActivePanel('none');
-    } else {
-      setActivePanel(panelId);
-    }
+    setActivePanel(panelId);
   };
 
   const handleSubItemClick = (href: string) => {
@@ -81,14 +78,12 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
 
   // Fixed sidebar width (always collapsed) - wider to extend under submenu
   const sidebarWidth = 88;
+  const submenuWidth = 256; // w-64 = 256px - unified width
 
-  // Calculate main content margin based on panel state (accounting for outer padding)
+  // Fixed margin - submenu is always open
   const getMainContentMargin = () => {
     const outerPadding = 8; // p-2 = 8px
-    // Panels now start at sidebarWidth - 8, so we account for that
-    if (activePanel === 'crm') return sidebarWidth - 8 + 256 + 8 + outerPadding; // w-64 = 256px
-    if (activePanel === 'dashboard' || activePanel === 'whatsapp') return sidebarWidth - 8 + 224 + 8 + outerPadding; // w-56 = 224px
-    return sidebarWidth + outerPadding;
+    return sidebarWidth - 8 + submenuWidth + 8 + outerPadding;
   };
 
   const mainContentMargin = getMainContentMargin();
@@ -195,80 +190,77 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
         </div>
       </aside>
 
-      {/* Dashboard Submenu Panel */}
+      {/* Unified Submenu Panel - Always visible */}
       <div
-        style={{ left: sidebarWidth - 8 }}
-        className={cn(
-          "hidden lg:block fixed top-2 h-[calc(100vh-1rem)] w-56 rounded-2xl bg-[#0f0f12] z-50 transition-all duration-300 ease-out overflow-hidden pl-4",
-          activePanel === 'dashboard' ? "opacity-100 translate-x-0" : "opacity-0 -translate-x-4 pointer-events-none"
-        )}
+        style={{ left: sidebarWidth - 8, width: submenuWidth }}
+        className="hidden lg:block fixed top-2 h-[calc(100vh-1rem)] rounded-2xl bg-[#0f0f12] z-50 overflow-hidden pl-4"
       >
-        <div className="p-4 pl-0 h-full flex flex-col">
-          <h2 className="text-white font-semibold text-sm mb-4 px-2">Dashboard</h2>
-          <div className="flex flex-col gap-1">
-            {navItems[0].subItems.map((subItem) => {
-              const isActive = location.pathname === subItem.href;
-              return (
-                <button
-                  key={subItem.href}
-                  onClick={() => handleSubItemClick(subItem.href)}
-                  className={cn(
-                    "flex items-center gap-3 w-full py-2.5 px-3 rounded-xl transition-all duration-200 text-sm",
-                    isActive 
-                      ? "bg-white/10 text-white"
-                      : "text-white/70 hover:text-white hover:bg-white/5"
-                  )}
-                >
-                  <subItem.icon className="h-4 w-4 flex-shrink-0" />
-                  <span>{subItem.label}</span>
-                  {isActive && <ChevronRight className="h-4 w-4 ml-auto" />}
-                </button>
-              );
-            })}
+        {/* Dashboard Content */}
+        {activePanel === 'dashboard' && (
+          <div className="p-4 pl-0 h-full flex flex-col">
+            <h2 className="text-white font-semibold text-sm mb-4 px-2">Dashboard</h2>
+            <div className="flex flex-col gap-1">
+              {navItems[0].subItems.map((subItem) => {
+                const isActive = location.pathname === subItem.href;
+                return (
+                  <button
+                    key={subItem.href}
+                    onClick={() => handleSubItemClick(subItem.href)}
+                    className={cn(
+                      "flex items-center gap-3 w-full py-2.5 px-3 rounded-xl transition-colors duration-200 text-sm",
+                      isActive 
+                        ? "bg-white/10 text-white"
+                        : "text-white/70 hover:text-white hover:bg-white/5"
+                    )}
+                  >
+                    <subItem.icon className="h-4 w-4 flex-shrink-0" />
+                    <span>{subItem.label}</span>
+                    {isActive && <ChevronRight className="h-4 w-4 ml-auto" />}
+                  </button>
+                );
+              })}
+            </div>
           </div>
-        </div>
-      </div>
-
-      {/* WhatsApp Submenu Panel */}
-      <div
-        style={{ left: sidebarWidth - 8 }}
-        className={cn(
-          "hidden lg:block fixed top-2 h-[calc(100vh-1rem)] w-56 rounded-2xl bg-[#0f0f12] z-50 transition-all duration-300 ease-out overflow-hidden pl-4",
-          activePanel === 'whatsapp' ? "opacity-100 translate-x-0" : "opacity-0 -translate-x-4 pointer-events-none"
         )}
-      >
-        <div className="p-4 pl-0 h-full flex flex-col">
-          <h2 className="text-white font-semibold text-sm mb-4 px-2">WhatsApp</h2>
-          <div className="flex flex-col gap-1">
-            {bottomNavItems[0].subItems.map((subItem) => {
-              const isActive = location.pathname === subItem.href;
-              return (
-                <button
-                  key={subItem.href}
-                  onClick={() => handleSubItemClick(subItem.href)}
-                  className={cn(
-                    "flex items-center gap-3 w-full py-2.5 px-3 rounded-xl transition-all duration-200 text-sm",
-                    isActive 
-                      ? "bg-white/10 text-white"
-                      : "text-white/70 hover:text-white hover:bg-white/5"
-                  )}
-                >
-                  <subItem.icon className="h-4 w-4 flex-shrink-0" />
-                  <span>{subItem.label}</span>
-                  {isActive && <ChevronRight className="h-4 w-4 ml-auto" />}
-                </button>
-              );
-            })}
-          </div>
-        </div>
-      </div>
 
-      {/* CRM Origins Panel - Desktop */}
-      <CRMOriginsPanel 
-        isOpen={activePanel === 'crm'} 
-        onClose={() => setActivePanel('none')}
-        sidebarWidth={sidebarWidth}
-      />
+        {/* WhatsApp Content */}
+        {activePanel === 'whatsapp' && (
+          <div className="p-4 pl-0 h-full flex flex-col">
+            <h2 className="text-white font-semibold text-sm mb-4 px-2">WhatsApp</h2>
+            <div className="flex flex-col gap-1">
+              {bottomNavItems[0].subItems.map((subItem) => {
+                const isActive = location.pathname === subItem.href;
+                return (
+                  <button
+                    key={subItem.href}
+                    onClick={() => handleSubItemClick(subItem.href)}
+                    className={cn(
+                      "flex items-center gap-3 w-full py-2.5 px-3 rounded-xl transition-colors duration-200 text-sm",
+                      isActive 
+                        ? "bg-white/10 text-white"
+                        : "text-white/70 hover:text-white hover:bg-white/5"
+                    )}
+                  >
+                    <subItem.icon className="h-4 w-4 flex-shrink-0" />
+                    <span>{subItem.label}</span>
+                    {isActive && <ChevronRight className="h-4 w-4 ml-auto" />}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* CRM Content */}
+        {activePanel === 'crm' && (
+          <CRMOriginsPanel 
+            isOpen={true} 
+            onClose={() => {}}
+            sidebarWidth={sidebarWidth}
+            embedded={true}
+          />
+        )}
+      </div>
 
       {/* Mobile Sidebar */}
       <aside
