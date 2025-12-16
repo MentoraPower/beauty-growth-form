@@ -183,7 +183,7 @@ function SortableOriginItem({
         <div className="overflow-hidden">
           <div className="ml-4 pt-1 pb-1 relative">
             {/* Main vertical line from origin - higher z-index to be on top */}
-            <div className="absolute left-[3px] top-0 bottom-3 w-[2px] bg-white/30 z-10" />
+            <div className="absolute left-[3px] top-0 bottom-3 w-[2px] bg-white z-10" />
             
             {/* Overview Item */}
             <div className="relative flex items-center group py-0.5">
