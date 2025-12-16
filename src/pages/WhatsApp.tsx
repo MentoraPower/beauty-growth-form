@@ -491,6 +491,11 @@ const WhatsApp = () => {
     }
   };
 
+  // Hide empty records (no text and no media)
+  const visibleMessages = messages.filter(
+    (m) => Boolean(m.text?.trim()) || Boolean(m.mediaUrl)
+  );
+
   const renderMessageContent = (msg: Message) => {
     if (msg.mediaType === "image" && msg.mediaUrl) {
       return (
@@ -610,14 +615,18 @@ const WhatsApp = () => {
                         {chat.time}
                       </span>
                     </div>
-                    <div className="flex items-center justify-between mt-0.5">
-                      <p className="text-sm text-muted-foreground truncate pr-2">{chat.lastMessage}</p>
-                      {chat.unread > 0 && (
-                        <span className="min-w-[20px] h-5 rounded-full bg-emerald-500 text-white text-xs font-medium flex items-center justify-center px-1.5">
-                          {chat.unread}
-                        </span>
-                      )}
-                    </div>
+                    {(chat.lastMessage?.trim() || chat.unread > 0) && (
+                      <div className="flex items-center justify-between mt-0.5">
+                        {chat.lastMessage?.trim() && (
+                          <p className="text-sm text-muted-foreground truncate pr-2">{chat.lastMessage}</p>
+                        )}
+                        {chat.unread > 0 && (
+                          <span className="min-w-[20px] h-5 rounded-full bg-emerald-500 text-white text-xs font-medium flex items-center justify-center px-1.5">
+                            {chat.unread}
+                          </span>
+                        )}
+                      </div>
+                    )}
                   </div>
                 </div>
               ))
@@ -684,12 +693,12 @@ const WhatsApp = () => {
                   <div className="flex items-center justify-center h-full">
                     <RefreshCw className="w-6 h-6 text-muted-foreground animate-spin" />
                   </div>
-                ) : messages.length === 0 ? (
+                ) : visibleMessages.length === 0 ? (
                   <div className="flex items-center justify-center h-full">
                     <p className="text-sm text-muted-foreground">Nenhuma mensagem</p>
                   </div>
                 ) : (
-                  messages.map((msg) => (
+                  visibleMessages.map((msg) => (
                     <div key={msg.id} className={cn("flex", msg.sent ? "justify-end" : "justify-start")}>
                       <div
                         className={cn(
