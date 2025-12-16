@@ -109,14 +109,20 @@ const WhatsApp = () => {
   const formatTime = (dateString: string): string => {
     const date = new Date(dateString);
     const now = new Date();
-    const diffDays = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24));
+    
+    // Get São Paulo time for comparison
+    const spOptions = { timeZone: "America/Sao_Paulo" };
+    const dateInSP = new Date(date.toLocaleString("en-US", spOptions));
+    const nowInSP = new Date(now.toLocaleString("en-US", spOptions));
+    
+    const diffDays = Math.floor((nowInSP.getTime() - dateInSP.getTime()) / (1000 * 60 * 60 * 24));
     
     if (diffDays === 0) {
-      return date.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+      return date.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit", timeZone: "America/Sao_Paulo" });
     } else if (diffDays === 1) {
       return "Ontem";
     } else {
-      return date.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" });
+      return date.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", timeZone: "America/Sao_Paulo" });
     }
   };
 
@@ -237,7 +243,11 @@ const WhatsApp = () => {
       const formattedMessages: Message[] = (data || []).map((msg: any) => ({
         id: msg.id,
         text: msg.text || "",
-        time: msg.created_at ? new Date(msg.created_at).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }) : "",
+        time: msg.created_at ? new Date(msg.created_at).toLocaleTimeString("pt-BR", { 
+          hour: "2-digit", 
+          minute: "2-digit",
+          timeZone: "America/Sao_Paulo"
+        }) : "",
         sent: msg.from_me || false,
         read: msg.status === "READ" || msg.status === "PLAYED",
         status: msg.status,
@@ -274,7 +284,7 @@ const WhatsApp = () => {
     const tempMessage: Message = {
       id: tempId,
       text: messageText,
-      time: new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }),
+      time: new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit", timeZone: "America/Sao_Paulo" }),
       sent: true,
       read: false,
       status: "SENDING",
@@ -497,7 +507,7 @@ const WhatsApp = () => {
             return [...prev, {
               id: msg.id,
               text: msg.text || "",
-              time: msg.created_at ? new Date(msg.created_at).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }) : "",
+              time: msg.created_at ? new Date(msg.created_at).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit", timeZone: "America/Sao_Paulo" }) : "",
               sent: msg.from_me || false,
               read: msg.status === "READ",
               status: msg.status,
