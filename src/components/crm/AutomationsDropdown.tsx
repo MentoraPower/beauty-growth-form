@@ -577,12 +577,12 @@ export function AutomationsDropdown({ pipelines, subOriginId }: AutomationsDropd
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
-        <div className="relative">
+        <div className="relative inline-flex overflow-visible">
           <Button variant="outline" size="icon" className="h-9 w-9 border-border">
             <Zap className="w-4 h-4 text-amber-500" />
           </Button>
           {(activeAutomationsCount + activeWebhooksCount + activeEmailAutomationsCount) > 0 && (
-            <span className="absolute -top-1 -right-1 w-4 h-4 text-[10px] font-medium flex items-center justify-center bg-amber-500 text-white rounded-full pointer-events-none">
+            <span className="absolute top-[2px] right-[2px] z-10 h-4 min-w-4 px-1 text-[10px] font-medium flex items-center justify-center bg-amber-500 text-white rounded-full pointer-events-none">
               {activeAutomationsCount + activeWebhooksCount + activeEmailAutomationsCount}
             </span>
           )}
