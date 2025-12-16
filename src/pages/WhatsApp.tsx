@@ -30,6 +30,8 @@ interface Message {
   mediaType?: string | null;
 }
 
+const DEFAULT_AVATAR = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyMTIgMjEyIj48cGF0aCBmaWxsPSIjREZFNUU3IiBkPSJNMCAwaDIxMnYyMTJIMHoiLz48cGF0aCBmaWxsPSIjRkZGIiBkPSJNMTA2IDEwNmMtMjUuNCAwLTQ2LTIwLjYtNDYtNDZzMjAuNi00NiA0Ni00NiA0NiAyMC42IDQ2IDQ2LTIwLjYgNDYtNDYgNDZ6bTAgMTNjMzAuNiAwIDkyIDE1LjQgOTIgNDZ2MjNIMTR2LTIzYzAtMzAuNiA2MS40LTQ2IDkyLTQ2eiIvPjwvc3ZnPg==";
+
 const WhatsApp = () => {
   const { toast } = useToast();
   const [selectedChat, setSelectedChat] = useState<Chat | null>(null);
@@ -603,7 +605,7 @@ const WhatsApp = () => {
                 >
                   <div className="relative flex-shrink-0">
                     <img 
-                      src={chat.photo_url || "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 212 212'%3E%3Cpath fill='%23DFE5E7' d='M0 0h212v212H0z'/%3E%3Cpath fill='%23FFF' d='M106 106c-25.4 0-46-20.6-46-46s20.6-46 46-46 46 20.6 46 46-20.6 46-46 46zm0 13c30.6 0 92 15.4 92 46v23H14v-23c0-30.6 61.4-46 92-46z'/%3E%3C/svg%3E"} 
+                      src={chat.photo_url || DEFAULT_AVATAR} 
                       alt={chat.name} 
                       className="w-12 h-12 rounded-full object-cover bg-neutral-200" 
                     />
@@ -655,7 +657,7 @@ const WhatsApp = () => {
               <div className="h-14 px-4 flex items-center gap-3 bg-muted/30 border-b border-border/30">
                 <div className="relative flex-shrink-0">
                   <img 
-                    src={selectedChat.photo_url || "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 212 212'%3E%3Cpath fill='%23DFE5E7' d='M0 0h212v212H0z'/%3E%3Cpath fill='%23FFF' d='M106 106c-25.4 0-46-20.6-46-46s20.6-46 46-46 46 20.6 46 46-20.6 46-46 46zm0 13c30.6 0 92 15.4 92 46v23H14v-23c0-30.6 61.4-46 92-46z'/%3E%3C/svg%3E"} 
+                    src={selectedChat.photo_url || DEFAULT_AVATAR} 
                     alt={selectedChat.name} 
                     className="w-10 h-10 rounded-full object-cover bg-neutral-200" 
                   />
@@ -670,17 +672,6 @@ const WhatsApp = () => {
                   title="Fazer ligação"
                 >
                   <Phone className="w-5 h-5 text-emerald-500" />
-                </button>
-                <button
-                  onClick={() => setShowLeadPanel(!showLeadPanel)}
-                  className={cn("p-2 hover:bg-muted/50 rounded-full transition-colors", showLeadPanel && "bg-muted/50")}
-                  title={showLeadPanel ? "Ocultar informações do lead" : "Mostrar informações do lead"}
-                >
-                  {showLeadPanel ? (
-                    <PanelRightClose className="w-5 h-5 text-muted-foreground" />
-                  ) : (
-                    <PanelRightOpen className="w-5 h-5 text-muted-foreground" />
-                  )}
                 </button>
                 <button
                   onClick={() => fetchMessages(selectedChat.id)}
