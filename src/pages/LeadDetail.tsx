@@ -67,6 +67,7 @@ interface LeadData {
   is_mql: boolean | null;
   analysis_created_at: string | null;
   biggest_difficulty: string | null;
+  photo_url: string | null;
 }
 
 interface Pipeline {
@@ -330,10 +331,18 @@ export default function LeadDetail() {
         <div>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              {/* Avatar - smaller */}
-              <div className="h-8 w-8 rounded-full bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center border border-black/5">
-                <User className="h-4 w-4 text-primary/70" />
-              </div>
+              {/* Avatar */}
+              {lead.photo_url ? (
+                <img 
+                  src={lead.photo_url} 
+                  alt={lead.name} 
+                  className="h-10 w-10 rounded-full object-cover ring-2 ring-border/20" 
+                />
+              ) : (
+                <div className="h-10 w-10 rounded-full bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center border border-black/5">
+                  <User className="h-5 w-5 text-primary/70" />
+                </div>
+              )}
               
               {/* Name and Company */}
               <div>

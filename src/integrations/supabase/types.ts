@@ -390,6 +390,7 @@ export type Database = {
           monthly_billing: string
           name: string
           ordem: number | null
+          photo_url: string | null
           pipeline_id: string | null
           service_area: string
           sub_origin_id: string | null
@@ -421,6 +422,7 @@ export type Database = {
           monthly_billing: string
           name: string
           ordem?: number | null
+          photo_url?: string | null
           pipeline_id?: string | null
           service_area: string
           sub_origin_id?: string | null
@@ -452,6 +454,7 @@ export type Database = {
           monthly_billing?: string
           name?: string
           ordem?: number | null
+          photo_url?: string | null
           pipeline_id?: string | null
           service_area?: string
           sub_origin_id?: string | null
