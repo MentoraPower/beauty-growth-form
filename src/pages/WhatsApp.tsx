@@ -879,8 +879,26 @@ const WhatsApp = () => {
                 }}
               >
                 {isLoadingMessages ? (
-                  <div className="flex items-center justify-center h-full">
-                    <RefreshCw className="w-6 h-6 text-muted-foreground animate-spin" />
+                  <div className="flex flex-col justify-end h-full gap-2 pb-2">
+                    {/* Skeleton messages - alternating left/right to simulate chat */}
+                    <div className="flex justify-start">
+                      <div className="w-[45%] h-12 bg-card rounded-lg rounded-tl-none animate-pulse border border-border/30" />
+                    </div>
+                    <div className="flex justify-end">
+                      <div className="w-[55%] h-16 bg-emerald-100 dark:bg-emerald-900/30 rounded-lg rounded-tr-none animate-pulse" />
+                    </div>
+                    <div className="flex justify-start">
+                      <div className="w-[40%] h-10 bg-card rounded-lg rounded-tl-none animate-pulse border border-border/30" />
+                    </div>
+                    <div className="flex justify-end">
+                      <div className="w-[50%] h-14 bg-emerald-100 dark:bg-emerald-900/30 rounded-lg rounded-tr-none animate-pulse" />
+                    </div>
+                    <div className="flex justify-start">
+                      <div className="w-[60%] h-12 bg-card rounded-lg rounded-tl-none animate-pulse border border-border/30" />
+                    </div>
+                    <div className="flex justify-end">
+                      <div className="w-[35%] h-10 bg-emerald-100 dark:bg-emerald-900/30 rounded-lg rounded-tr-none animate-pulse" />
+                    </div>
                   </div>
                 ) : visibleMessages.length === 0 ? (
                   <div className="flex items-center justify-center h-full">
