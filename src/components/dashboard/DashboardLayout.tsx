@@ -139,8 +139,8 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
                     className={cn(
                       "relative flex items-center justify-center w-10 h-10 rounded-lg transition-colors duration-200",
                       isActive || isPanelOpen
-                        ? "bg-[#1a1a2e] text-white before:absolute before:-left-2 before:top-1/2 before:-translate-y-1/2 before:h-[70%] before:w-1 before:rounded-r-full before:bg-gradient-to-b before:from-[#F40000] before:to-[#A10000]"
-                        : "text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900"
+                        ? "bg-[#2d2d3a] text-white before:absolute before:-left-2 before:top-1/2 before:-translate-y-1/2 before:h-[70%] before:w-1 before:rounded-r-full before:bg-gradient-to-b before:from-[#F40000] before:to-[#A10000]"
+                        : "bg-[#f8f8fa] text-neutral-500 hover:bg-[#ededf0] hover:text-neutral-700"
                     )}
                   >
                     <item.icon className="h-5 w-5 flex-shrink-0" strokeWidth={1.5} />
@@ -154,8 +154,8 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
                 className={cn(
                   "relative flex items-center justify-center w-10 h-10 rounded-lg transition-colors duration-200",
                   isCRMActive || activePanel === 'crm'
-                    ? "bg-[#1a1a2e] text-white before:absolute before:-left-2 before:top-1/2 before:-translate-y-1/2 before:h-[70%] before:w-1 before:rounded-r-full before:bg-gradient-to-b before:from-[#F40000] before:to-[#A10000]"
-                    : "text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900"
+                    ? "bg-[#2d2d3a] text-white before:absolute before:-left-2 before:top-1/2 before:-translate-y-1/2 before:h-[70%] before:w-1 before:rounded-r-full before:bg-gradient-to-b before:from-[#F40000] before:to-[#A10000]"
+                    : "bg-[#f8f8fa] text-neutral-500 hover:bg-[#ededf0] hover:text-neutral-700"
                 )}
               >
                 <Kanban className="h-5 w-5 flex-shrink-0" strokeWidth={1.5} />
@@ -172,8 +172,8 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
                     className={cn(
                       "relative flex items-center justify-center w-10 h-10 rounded-lg transition-colors duration-200",
                       isActive || isPanelOpen
-                        ? "bg-[#1a1a2e] text-white before:absolute before:-left-2 before:top-1/2 before:-translate-y-1/2 before:h-[70%] before:w-1 before:rounded-r-full before:bg-gradient-to-b before:from-[#F40000] before:to-[#A10000]"
-                        : "text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900"
+                        ? "bg-[#2d2d3a] text-white before:absolute before:-left-2 before:top-1/2 before:-translate-y-1/2 before:h-[70%] before:w-1 before:rounded-r-full before:bg-gradient-to-b before:from-[#F40000] before:to-[#A10000]"
+                        : "bg-[#f8f8fa] text-neutral-500 hover:bg-[#ededf0] hover:text-neutral-700"
                     )}
                   >
                     <item.icon className="h-5 w-5 flex-shrink-0" />
@@ -187,7 +187,7 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
           <div className="border-t border-border pl-2 pr-6 py-3">
             <Link
               to="/"
-              className="relative flex items-center justify-center w-10 h-10 rounded-lg transition-colors duration-200 text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900"
+              className="relative flex items-center justify-center w-10 h-10 rounded-lg transition-colors duration-200 bg-[#f8f8fa] text-neutral-500 hover:bg-[#ededf0] hover:text-neutral-700"
             >
               <LogOut className="h-5 w-5 flex-shrink-0" strokeWidth={1.5} />
             </Link>
