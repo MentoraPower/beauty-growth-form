@@ -1542,8 +1542,8 @@ const WhatsApp = () => {
                             </div>
                           )}
                           <div className={cn("flex group", msg.sent ? "justify-end" : "justify-start")}>
-                            {/* Menu button for sent messages (left of bubble) */}
-                            {msg.sent && (
+                            {/* Menu button for sent messages - only show if not deleted and within 1 hour */}
+                            {msg.sent && msg.status !== "DELETED" && msg.created_at && (Date.now() - new Date(msg.created_at).getTime() < 60 * 60 * 1000) && (
                               <div className="relative flex items-start mr-1">
                                 <button
                                   onClick={() => setMessageMenuId(messageMenuId === msg.id ? null : msg.id)}
