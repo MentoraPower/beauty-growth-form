@@ -243,11 +243,19 @@ async function handler(req: Request): Promise<Response> {
     // =========================
     if (action === "send-text") {
       const to = formatPhoneForApi(phone);
-      console.log(`[Wasender] Sending text to ${to}: ${text?.substring(0, 50)}...`);
+      const quotedMsgId = body.quotedMsgId;
+      console.log(`[Wasender] Sending text to ${to}: ${text?.substring(0, 50)}...${quotedMsgId ? ` (reply to ${quotedMsgId})` : ""}`);
+      
+      const payload: any = { to, text };
+      
+      // Add quoted message reference if replying
+      if (quotedMsgId) {
+        payload.quoted = quotedMsgId;
+      }
       
       const result = await wasenderRequest("/send-message", {
         method: "POST",
-        body: JSON.stringify({ to, text }),
+        body: JSON.stringify(payload),
       });
 
       // Use key.id (WhatsApp message ID) for status tracking, fallback to msgId
