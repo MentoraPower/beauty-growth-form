@@ -1,9 +1,14 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Phone, Mail, Instagram, ChevronRight, ChevronDown, Clock, User } from "lucide-react";
+import { Phone, Mail, Instagram, ChevronRight, ChevronDown, Clock, User, Plus, Loader2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { countries } from "@/data/countries";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 
 interface Lead {
   id: string;
@@ -26,6 +31,23 @@ interface Lead {
   photo_url: string | null;
 }
 
+interface Origin {
+  id: string;
+  nome: string;
+}
+
+interface SubOrigin {
+  id: string;
+  nome: string;
+  origin_id: string;
+}
+
+interface Pipeline {
+  id: string;
+  nome: string;
+  sub_origin_id: string | null;
+}
+
 interface LeadInfoPanelProps {
   phone: string;
   photoUrl?: string | null;
@@ -41,7 +63,85 @@ const LeadInfoPanel = ({ phone, photoUrl, contactName, onClose }: LeadInfoPanelP
     negocio: false,
     historico: false,
   });
+  const [showCreateForm, setShowCreateForm] = useState(false);
+  const [isCreating, setIsCreating] = useState(false);
+  const [newLeadName, setNewLeadName] = useState("");
+  const [newLeadEmail, setNewLeadEmail] = useState("");
+  const [selectedOriginId, setSelectedOriginId] = useState<string>("");
+  const [selectedSubOriginId, setSelectedSubOriginId] = useState<string>("");
+  const [selectedPipelineId, setSelectedPipelineId] = useState<string>("");
+  
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
+
+  // Fetch origins
+  const { data: origins = [] } = useQuery({
+    queryKey: ["origins"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("crm_origins")
+        .select("*")
+        .order("ordem");
+      if (error) throw error;
+      return data as Origin[];
+    },
+    enabled: showCreateForm,
+  });
+
+  // Fetch sub-origins
+  const { data: subOrigins = [] } = useQuery({
+    queryKey: ["sub-origins"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("crm_sub_origins")
+        .select("*")
+        .order("ordem");
+      if (error) throw error;
+      return data as SubOrigin[];
+    },
+    enabled: showCreateForm,
+  });
+
+  // Fetch pipelines
+  const { data: pipelines = [] } = useQuery({
+    queryKey: ["pipelines"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("pipelines")
+        .select("*")
+        .order("ordem");
+      if (error) throw error;
+      return data as Pipeline[];
+    },
+    enabled: showCreateForm,
+  });
+
+  // Filtered sub-origins based on selected origin
+  const filteredSubOrigins = subOrigins.filter(
+    (so) => so.origin_id === selectedOriginId
+  );
+
+  // Filtered pipelines based on selected sub-origin
+  const filteredPipelines = pipelines.filter(
+    (p) => p.sub_origin_id === selectedSubOriginId
+  );
+
+  // Reset selections when parent changes
+  useEffect(() => {
+    setSelectedSubOriginId("");
+    setSelectedPipelineId("");
+  }, [selectedOriginId]);
+
+  useEffect(() => {
+    setSelectedPipelineId("");
+  }, [selectedSubOriginId]);
+
+  // Pre-fill name from contact
+  useEffect(() => {
+    if (contactName && showCreateForm) {
+      setNewLeadName(contactName);
+    }
+  }, [contactName, showCreateForm]);
 
   useEffect(() => {
     const fetchLead = async () => {
@@ -80,6 +180,54 @@ const LeadInfoPanel = ({ phone, photoUrl, contactName, onClose }: LeadInfoPanelP
 
     fetchLead();
   }, [phone, photoUrl]);
+
+  const handleCreateLead = async () => {
+    if (!newLeadName.trim()) {
+      toast.error("Digite o nome do lead");
+      return;
+    }
+    if (!selectedSubOriginId || !selectedPipelineId) {
+      toast.error("Selecione a origem, sub-origem e etapa");
+      return;
+    }
+
+    setIsCreating(true);
+    const cleanPhone = phone.replace(/\D/g, "");
+
+    try {
+      const { data, error } = await supabase
+        .from("leads")
+        .insert({
+          name: newLeadName.trim(),
+          email: newLeadEmail.trim() || "",
+          whatsapp: cleanPhone,
+          country_code: "+55",
+          instagram: "",
+          service_area: "",
+          monthly_billing: "",
+          weekly_attendance: "",
+          workspace_type: "",
+          years_experience: "",
+          sub_origin_id: selectedSubOriginId,
+          pipeline_id: selectedPipelineId,
+          photo_url: photoUrl || null,
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      toast.success("Lead criado com sucesso!");
+      setLead(data);
+      setShowCreateForm(false);
+      queryClient.invalidateQueries({ queryKey: ["crm-leads"] });
+    } catch (error) {
+      console.error("Error creating lead:", error);
+      toast.error("Erro ao criar lead");
+    } finally {
+      setIsCreating(false);
+    }
+  };
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString("pt-BR", {
@@ -174,9 +322,131 @@ const LeadInfoPanel = ({ phone, photoUrl, contactName, onClose }: LeadInfoPanelP
           </div>
         </div>
         
-        <div className="p-4 text-center">
-          <p className="text-sm text-muted-foreground">Contato não encontrado no CRM</p>
-        </div>
+        {!showCreateForm ? (
+          <div className="p-4 flex flex-col items-center gap-4">
+            <p className="text-sm text-muted-foreground text-center">Contato não encontrado no CRM</p>
+            <Button
+              onClick={() => setShowCreateForm(true)}
+              className="w-full bg-gradient-to-r from-[#F40000] to-[#A10000] hover:opacity-90 text-white"
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              Criar Lead no CRM
+            </Button>
+          </div>
+        ) : (
+          <div className="p-4 space-y-4">
+            <p className="text-sm font-medium text-foreground">Criar novo lead</p>
+            
+            <div className="space-y-3">
+              <div className="space-y-1">
+                <label className="text-xs text-muted-foreground">Nome *</label>
+                <Input
+                  placeholder="Nome do lead..."
+                  value={newLeadName}
+                  onChange={(e) => setNewLeadName(e.target.value)}
+                  className="h-9 bg-muted/30 border-border/50"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-xs text-muted-foreground">Email</label>
+                <Input
+                  placeholder="email@exemplo.com"
+                  type="email"
+                  value={newLeadEmail}
+                  onChange={(e) => setNewLeadEmail(e.target.value)}
+                  className="h-9 bg-muted/30 border-border/50"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-xs text-muted-foreground">WhatsApp</label>
+                <Input
+                  value={phone}
+                  disabled
+                  className="h-9 bg-muted/50 border-border/50 text-muted-foreground"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-xs text-muted-foreground">Origem *</label>
+                <Select value={selectedOriginId} onValueChange={setSelectedOriginId}>
+                  <SelectTrigger className="h-9 bg-muted/30 border-border/50">
+                    <SelectValue placeholder="Selecione a origem..." />
+                  </SelectTrigger>
+                  <SelectContent className="bg-background border-border z-[9999]">
+                    {origins.map((origin) => (
+                      <SelectItem key={origin.id} value={origin.id}>
+                        {origin.nome}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {selectedOriginId && (
+                <div className="space-y-1">
+                  <label className="text-xs text-muted-foreground">Sub-origem *</label>
+                  <Select value={selectedSubOriginId} onValueChange={setSelectedSubOriginId}>
+                    <SelectTrigger className="h-9 bg-muted/30 border-border/50">
+                      <SelectValue placeholder="Selecione a sub-origem..." />
+                    </SelectTrigger>
+                    <SelectContent className="bg-background border-border z-[9999]">
+                      {filteredSubOrigins.map((subOrigin) => (
+                        <SelectItem key={subOrigin.id} value={subOrigin.id}>
+                          {subOrigin.nome}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+
+              {selectedSubOriginId && (
+                <div className="space-y-1">
+                  <label className="text-xs text-muted-foreground">Etapa *</label>
+                  <Select value={selectedPipelineId} onValueChange={setSelectedPipelineId}>
+                    <SelectTrigger className="h-9 bg-muted/30 border-border/50">
+                      <SelectValue placeholder="Selecione a etapa..." />
+                    </SelectTrigger>
+                    <SelectContent className="bg-background border-border z-[9999]">
+                      {filteredPipelines.map((pipeline) => (
+                        <SelectItem key={pipeline.id} value={pipeline.id}>
+                          {pipeline.nome}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+            </div>
+
+            <div className="flex gap-2 pt-2">
+              <Button
+                variant="outline"
+                onClick={() => setShowCreateForm(false)}
+                className="flex-1 h-9"
+                disabled={isCreating}
+              >
+                Cancelar
+              </Button>
+              <Button
+                onClick={handleCreateLead}
+                disabled={isCreating || !newLeadName.trim() || !selectedPipelineId}
+                className="flex-1 h-9 bg-gradient-to-r from-[#F40000] to-[#A10000] hover:opacity-90 text-white"
+              >
+                {isCreating ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Criando...
+                  </>
+                ) : (
+                  "Criar Lead"
+                )}
+              </Button>
+            </div>
+          </div>
+        )}
       </div>
     );
   }
