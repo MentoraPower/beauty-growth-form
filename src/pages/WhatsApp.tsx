@@ -48,6 +48,13 @@ const WhatsApp = () => {
   const [showLeadPanel, setShowLeadPanel] = useState(true);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Scroll to bottom of messages
+  const scrollToBottom = useCallback(() => {
+    setTimeout(() => {
+      messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    }, 100);
+  }, []);
   const imageInputRef = useRef<HTMLInputElement>(null);
   const chatsRef = useRef<Chat[]>([]);
 
@@ -222,6 +229,7 @@ const WhatsApp = () => {
       }));
 
       setMessages(formattedMessages);
+      scrollToBottom();
 
       // Mark as read
       await supabase
@@ -255,6 +263,7 @@ const WhatsApp = () => {
       status: "SENDING",
     };
     setMessages(prev => [...prev, tempMessage]);
+    scrollToBottom();
 
     try {
       const { data, error } = await supabase.functions.invoke("waha-whatsapp", {
