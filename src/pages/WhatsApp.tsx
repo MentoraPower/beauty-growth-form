@@ -33,6 +33,7 @@ interface Message {
   mediaUrl?: string | null;
   mediaType?: string | null;
   created_at?: string;
+  message_id?: string | number | null;
 }
 
 const DEFAULT_AVATAR = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyMTIgMjEyIj48cGF0aCBmaWxsPSIjREZFNUU3IiBkPSJNMCAwaDIxMnYyMTJIMHoiLz48cGF0aCBmaWxsPSIjRkZGIiBkPSJNMTA2IDEwNmMtMjUuNCAwLTQ2LTIwLjYtNDYtNDZzMjAuNi00NiA0Ni00NiA0NiAyMC42IDQ2IDQ2LTIwLjYgNDYtNDYgNDZ6bTAgMTNjMzAuNiAwIDkyIDE1LjQgOTIgNDZ2MjNIMTR2LTIzYzAtMzAuNiA2MS40LTQ2IDkyLTQ2eiIvPjwvc3ZnPg==";
@@ -334,6 +335,7 @@ const WhatsApp = () => {
         mediaUrl: msg.media_url,
         mediaType: msg.media_type,
         created_at: msg.created_at,
+        message_id: msg.message_id,
       }));
 
       setMessages(formattedMessages);
@@ -988,11 +990,12 @@ const WhatsApp = () => {
     
     try {
       // Get the Wasender message ID (numeric ID returned from send-message)
-      const messageId = (msg as any).message_id;
+      const messageId = msg.message_id;
       
       // Only call Wasender API if we have a valid numeric message ID
       // (local IDs start with "local-" and won't work with the API)
       if (messageId && !String(messageId).startsWith("local-")) {
+        console.log("[WhatsApp] Deleting message via WasenderAPI, msgId:", messageId);
         const { error } = await supabase.functions.invoke("wasender-whatsapp", {
           body: { action: "delete-message", msgId: messageId },
         });
@@ -1000,6 +1003,8 @@ const WhatsApp = () => {
         if (error) {
           console.error("Wasender delete error:", error);
         }
+      } else {
+        console.log("[WhatsApp] No valid message_id for API deletion, only local delete");
       }
       
       // Mark as deleted in local state (show "mensagem apagada")
@@ -1121,6 +1126,7 @@ const WhatsApp = () => {
               mediaUrl: msg.media_url,
               mediaType: msg.media_type,
               created_at: msg.created_at,
+              message_id: msg.message_id,
             }];
           });
           
