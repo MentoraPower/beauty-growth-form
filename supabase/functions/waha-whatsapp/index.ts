@@ -434,7 +434,7 @@ const handler = async (req: Request): Promise<Response> => {
       });
     }
 
-    // Send audio/voice message
+    // Send audio/voice message (using sendFile since sendVoice requires Plus version)
     if (action === "send-audio") {
       if (!phone || !mediaUrl) {
         throw new Error("Phone and mediaUrl are required");
@@ -443,13 +443,17 @@ const handler = async (req: Request): Promise<Response> => {
       const formattedPhone = phone.replace(/\D/g, "");
       const chatIdFormatted = `${formattedPhone}@c.us`;
 
-      // Use sendVoice for PTT (push-to-talk) audio messages
-      const response = await fetch(`${WAHA_API_URL}/api/sendVoice`, {
+      // Use sendFile for audio (sendVoice requires WAHA Plus)
+      const response = await fetch(`${WAHA_API_URL}/api/sendFile`, {
         method: "POST",
         headers: getHeaders(),
         body: JSON.stringify({
           chatId: chatIdFormatted,
-          file: { url: mediaUrl },
+          file: { 
+            url: mediaUrl,
+            mimetype: "audio/ogg; codecs=opus",
+            filename: "audio.ogg"
+          },
           session: "default",
         }),
       });
