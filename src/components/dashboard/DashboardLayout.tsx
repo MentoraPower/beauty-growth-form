@@ -116,7 +116,7 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
       {/* Desktop Sidebar - Fixed Collapsed */}
       <aside
         style={{ width: sidebarWidth }}
-        className="hidden lg:flex flex-col fixed left-2 top-2 h-[calc(100vh-1rem)] bg-card overflow-hidden z-50 rounded-l-2xl"
+        className="hidden lg:flex flex-col fixed left-2 top-2 h-[calc(100vh-1rem)] bg-card overflow-hidden z-40 rounded-l-2xl"
       >
         <div className="flex flex-col h-full">
           {/* Logo */}
@@ -199,7 +199,7 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
       <div
         style={{ left: sidebarWidth - 8 }}
         className={cn(
-          "hidden lg:block fixed top-2 h-[calc(100vh-1rem)] w-56 rounded-2xl bg-[#0f0f12] z-40 transition-all duration-300 ease-out overflow-hidden pl-4",
+          "hidden lg:block fixed top-2 h-[calc(100vh-1rem)] w-56 rounded-2xl bg-[#0f0f12] z-50 transition-all duration-300 ease-out overflow-hidden pl-4",
           activePanel === 'dashboard' ? "opacity-100 translate-x-0" : "opacity-0 -translate-x-4 pointer-events-none"
         )}
       >
@@ -233,7 +233,7 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
       <div
         style={{ left: sidebarWidth - 8 }}
         className={cn(
-          "hidden lg:block fixed top-2 h-[calc(100vh-1rem)] w-56 rounded-2xl bg-[#0f0f12] z-40 transition-all duration-300 ease-out overflow-hidden pl-4",
+          "hidden lg:block fixed top-2 h-[calc(100vh-1rem)] w-56 rounded-2xl bg-[#0f0f12] z-50 transition-all duration-300 ease-out overflow-hidden pl-4",
           activePanel === 'whatsapp' ? "opacity-100 translate-x-0" : "opacity-0 -translate-x-4 pointer-events-none"
         )}
       >
