@@ -196,17 +196,15 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
           </div>
         </aside>
 
-        {/* Submenu Panel - slides in/out from behind fixed menu */}
+        {/* Submenu Panel - fades in/out without sliding from behind */}
         <div
           style={{ 
             left: sidebarWidth + 4,
             width: submenuWidth - 16,
-            transform: isCRMLayout ? 'translateX(0)' : `translateX(-${submenuWidth}px)`,
             opacity: isCRMLayout ? 1 : 0,
             zIndex: isCRMLayout ? 39 : 30,
             pointerEvents: isCRMLayout ? 'auto' : 'none',
-            transition:
-              "transform 520ms cubic-bezier(0.4,0,0.2,1), opacity 120ms ease-out",
+            transition: "opacity 300ms ease-out",
           }}
           className={cn(
             "hidden lg:block fixed top-2 h-[calc(100vh-1rem)] rounded-r-2xl rounded-tl-2xl bg-[#0f0f12] overflow-hidden pl-4"
