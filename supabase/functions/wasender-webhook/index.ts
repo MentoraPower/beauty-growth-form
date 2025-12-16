@@ -357,7 +357,8 @@ async function handler(req: Request): Promise<Response> {
     // Handle different media types
     if (message.imageMessage) {
       mediaType = "image";
-      text = text || message.imageMessage.caption || "📷 Imagem";
+      // Only use caption if present, no fallback emoji/text
+      text = message.imageMessage.caption || "";
 
       // Try to download and upload media
       if (message.imageMessage.mediaKey && message.imageMessage.url) {
@@ -385,7 +386,8 @@ async function handler(req: Request): Promise<Response> {
       }
     } else if (message.videoMessage) {
       mediaType = "video";
-      text = text || "🎥 Vídeo";
+      // Only use caption if present, no fallback emoji/text
+      text = message.videoMessage.caption || "";
 
       if (message.videoMessage.mediaKey && message.videoMessage.url) {
         mediaUrl = await downloadAndUploadMedia(
