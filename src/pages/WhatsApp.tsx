@@ -556,8 +556,8 @@ const WhatsApp = () => {
   const formatWhatsAppText = (text: string) => {
     if (!text) return null;
     
-    // Combined regex - bold+italic first, then individual patterns
-    const regex = /(\*_[^_]+_\*)|(_\*[^*]+\*_)|(\*[^*]+\*)|(_[^_]+_)|(~[^~]+~)|(```[^`]+```)/g;
+    // Combined regex - bold+italic first (non-greedy), then individual patterns
+    const regex = /(\*_.+?_\*)|(_\*.+?\*_)|(\*[^*]+\*)|(_[^_]+_)|(~[^~]+~)|(```[^`]+```)/g;
     const parts: (string | JSX.Element)[] = [];
     let lastIndex = 0;
     let match;
