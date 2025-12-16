@@ -98,6 +98,20 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
         isCRMLayout ? "bg-[#0f0f12] rounded-2xl" : "bg-transparent"
       )}>
         <LoadingBar />
+
+        {/* White underlay behind the fixed menu (CRM only) */}
+        {isCRMLayout && (
+          <div
+            aria-hidden="true"
+            style={{
+              left: 8,
+              top: 8,
+              height: "calc(100vh - 1rem)",
+              width: sidebarWidth + 20,
+            }}
+            className="hidden lg:block fixed bg-white rounded-2xl z-20 pointer-events-none"
+          />
+        )}
         
         {/* Mobile Header */}
         <header className="lg:hidden fixed top-0 left-0 right-0 h-14 bg-card border-b border-border z-50 flex items-center justify-between px-4">
