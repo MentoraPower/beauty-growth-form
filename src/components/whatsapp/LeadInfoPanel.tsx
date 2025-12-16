@@ -103,6 +103,19 @@ const LeadInfoPanel = ({ phone, photoUrl, contactName, onClose }: LeadInfoPanelP
   const displayPhoto = lead?.photo_url || photoUrl;
   const defaultAvatar = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyMTIgMjEyIj48cGF0aCBmaWxsPSIjREZFNUU3IiBkPSJNMCAwaDIxMnYyMTJIMHoiLz48cGF0aCBmaWxsPSIjRkZGIiBkPSJNMTA2IDEwNmMtMjUuNCAwLTQ2LTIwLjYtNDYtNDZzMjAuNi00NiA0Ni00NiA0NiAyMC42IDQ2IDQ2LTIwLjYgNDYtNDYgNDZ6bTAgMTNjMzAuNiAwIDkyIDE1LjQgOTIgNDZ2MjNIMTR2LTIzYzAtMzAuNiA2MS40LTQ2IDkyLTQ2eiIvPjwvc3ZnPg==";
 
+  // Field component for consistent styling
+  const Field = ({ label, value, icon }: { label: string; value?: string | null; icon?: React.ReactNode }) => (
+    <div className="space-y-1">
+      <label className="text-xs text-muted-foreground flex items-center gap-1.5">
+        {icon}
+        {label}
+      </label>
+      <div className="bg-muted/30 rounded-lg px-3 py-2.5 text-sm text-foreground border border-border/50">
+        {value || <span className="text-muted-foreground/60">Clique aqui para adicionar</span>}
+      </div>
+    </div>
+  );
+
   if (isLoading) {
     return (
       <div className="w-[340px] border-l border-border bg-background flex items-center justify-center">
@@ -119,16 +132,18 @@ const LeadInfoPanel = ({ phone, photoUrl, contactName, onClose }: LeadInfoPanelP
       <div className="w-[340px] border-l border-border bg-background flex flex-col">
         {/* Header */}
         <div className="bg-indigo-50 dark:bg-indigo-950/30 px-4 py-6">
-          <img 
-            src={photoUrl || defaultAvatar} 
-            alt={contactName || "Contato"} 
-            className="w-12 h-12 rounded-full object-cover bg-muted" 
-          />
+          <div className="flex items-center gap-3">
+            <img 
+              src={photoUrl || defaultAvatar} 
+              alt={contactName || "Contato"} 
+              className="w-10 h-10 rounded-full object-cover bg-muted" 
+            />
+            <span className="text-sm font-medium text-foreground">{contactName || phone}</span>
+          </div>
         </div>
         
         <div className="p-4 text-center">
-          <p className="text-base font-medium text-foreground">{contactName || phone}</p>
-          <p className="text-sm text-muted-foreground mt-1">Contato não encontrado no CRM</p>
+          <p className="text-sm text-muted-foreground">Contato não encontrado no CRM</p>
         </div>
       </div>
     );
@@ -137,43 +152,29 @@ const LeadInfoPanel = ({ phone, photoUrl, contactName, onClose }: LeadInfoPanelP
   return (
     <div className="w-[340px] border-l border-border bg-background flex flex-col overflow-hidden">
       {/* Header */}
-      <div className="bg-indigo-50 dark:bg-indigo-950/30 px-4 py-5">
-        <div className="flex items-start gap-3">
+      <div className="bg-indigo-50 dark:bg-indigo-950/30 px-4 py-4">
+        <div className="flex items-center gap-3">
           <img 
             src={displayPhoto || defaultAvatar} 
             alt={lead.name} 
             className="w-10 h-10 rounded-full object-cover bg-muted flex-shrink-0" 
           />
-          <div className="flex-1 min-w-0">
-            <h3 className="text-base font-semibold text-foreground truncate">{lead.name}</h3>
-            {lead.clinic_name && (
-              <p className="text-xs text-muted-foreground truncate">{lead.clinic_name}</p>
-            )}
-            {lead.is_mql !== null && (
-              <span className={`inline-flex items-center mt-1.5 px-2 py-0.5 rounded text-[10px] font-medium ${
-                lead.is_mql 
-                  ? "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-400" 
-                  : "bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-400"
-              }`}>
-                {lead.is_mql ? "MQL" : "Não qualificado"}
-              </span>
-            )}
-          </div>
+          <span className="text-sm font-medium text-foreground truncate">{lead.name}</span>
         </div>
 
         {/* Action icons */}
-        <div className="flex items-center gap-2 mt-4">
-          <button className="w-8 h-8 rounded-lg bg-background/60 hover:bg-background flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors">
-            <Phone className="w-4 h-4" />
+        <div className="flex items-center gap-2 mt-3">
+          <button className="w-7 h-7 rounded-md bg-background/60 hover:bg-background flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors">
+            <Phone className="w-3.5 h-3.5" />
           </button>
-          <button className="w-8 h-8 rounded-lg bg-background/60 hover:bg-background flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors">
-            <Mail className="w-4 h-4" />
+          <button className="w-7 h-7 rounded-md bg-background/60 hover:bg-background flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors">
+            <Mail className="w-3.5 h-3.5" />
           </button>
           <button 
             onClick={() => navigate(`/admin/crm/${lead.id}`)}
-            className="w-8 h-8 rounded-lg bg-background/60 hover:bg-background flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
+            className="w-7 h-7 rounded-md bg-background/60 hover:bg-background flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
           >
-            <User className="w-4 h-4" />
+            <User className="w-3.5 h-3.5" />
           </button>
         </div>
       </div>
@@ -182,7 +183,7 @@ const LeadInfoPanel = ({ phone, photoUrl, contactName, onClose }: LeadInfoPanelP
       <div className="flex-1 overflow-y-auto">
         {/* Contato Section */}
         <Collapsible open={openSections.contato} onOpenChange={() => toggleSection('contato')}>
-          <CollapsibleTrigger className="w-full flex items-center justify-between px-4 py-3 hover:bg-muted/50 transition-colors border-b border-border">
+          <CollapsibleTrigger className="w-full flex items-center justify-between px-4 py-3 hover:bg-muted/30 transition-colors border-b border-border">
             <span className="text-sm font-medium text-indigo-600 dark:text-indigo-400">Contato</span>
             {openSections.contato ? (
               <ChevronDown className="w-4 h-4 text-muted-foreground" />
@@ -191,37 +192,25 @@ const LeadInfoPanel = ({ phone, photoUrl, contactName, onClose }: LeadInfoPanelP
             )}
           </CollapsibleTrigger>
           <CollapsibleContent>
-            <div className="px-4 py-3 space-y-3 border-b border-border">
-              <div>
-                <label className="text-xs text-muted-foreground">Email</label>
-                <p className="text-sm text-foreground mt-0.5 truncate">{lead.email || "-"}</p>
-              </div>
-              <div>
-                <label className="text-xs text-muted-foreground">Telefone</label>
-                <p className="text-sm text-foreground mt-0.5">{lead.country_code} {lead.whatsapp}</p>
-              </div>
-              {lead.instagram && (
-                <div>
-                  <label className="text-xs text-muted-foreground flex items-center gap-1">
-                    <Instagram className="w-3 h-3" /> Instagram
-                  </label>
-                  <a 
-                    href={`https://instagram.com/${lead.instagram.replace("@", "")}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-sm text-indigo-600 dark:text-indigo-400 hover:underline mt-0.5 block"
-                  >
-                    {lead.instagram}
-                  </a>
-                </div>
-              )}
+            <div className="px-4 py-4 space-y-4 border-b border-border">
+              <Field label="Nome" value={lead.name} />
+              <Field label="Email" value={lead.email} />
+              <Field 
+                label="Telefone" 
+                value={`${lead.country_code} ${lead.whatsapp}`}
+              />
+              <Field 
+                label="Instagram" 
+                value={lead.instagram}
+                icon={<Instagram className="w-3 h-3" />}
+              />
             </div>
           </CollapsibleContent>
         </Collapsible>
 
         {/* Negócio Section */}
         <Collapsible open={openSections.negocio} onOpenChange={() => toggleSection('negocio')}>
-          <CollapsibleTrigger className="w-full flex items-center justify-between px-4 py-3 hover:bg-muted/50 transition-colors border-b border-border">
+          <CollapsibleTrigger className="w-full flex items-center justify-between px-4 py-3 hover:bg-muted/30 transition-colors border-b border-border">
             <span className="text-sm font-medium text-foreground">Negócio</span>
             {openSections.negocio ? (
               <ChevronDown className="w-4 h-4 text-muted-foreground" />
@@ -230,54 +219,20 @@ const LeadInfoPanel = ({ phone, photoUrl, contactName, onClose }: LeadInfoPanelP
             )}
           </CollapsibleTrigger>
           <CollapsibleContent>
-            <div className="px-4 py-3 space-y-3 border-b border-border">
-              {lead.service_area && (
-                <div>
-                  <label className="text-xs text-muted-foreground">Área de Atuação</label>
-                  <p className="text-sm text-foreground mt-0.5">{lead.service_area}</p>
-                </div>
-              )}
-              {lead.workspace_type && (
-                <div>
-                  <label className="text-xs text-muted-foreground">Espaço</label>
-                  <p className="text-sm text-foreground mt-0.5">{lead.workspace_type}</p>
-                </div>
-              )}
-              {lead.years_experience && (
-                <div>
-                  <label className="text-xs text-muted-foreground">Experiência</label>
-                  <p className="text-sm text-foreground mt-0.5">{lead.years_experience}</p>
-                </div>
-              )}
-              {lead.monthly_billing && (
-                <div>
-                  <label className="text-xs text-muted-foreground">Faturamento Mensal</label>
-                  <p className="text-sm text-foreground mt-0.5">{lead.monthly_billing}</p>
-                </div>
-              )}
-              {lead.weekly_attendance && (
-                <div>
-                  <label className="text-xs text-muted-foreground">Atendimentos/semana</label>
-                  <p className="text-sm text-foreground mt-0.5">{lead.weekly_attendance}</p>
-                </div>
-              )}
+            <div className="px-4 py-4 space-y-4 border-b border-border">
+              <Field label="Área de Atuação" value={lead.service_area} />
+              <Field label="Espaço" value={lead.workspace_type} />
+              <Field label="Experiência" value={lead.years_experience} />
+              <Field label="Faturamento Mensal" value={lead.monthly_billing} />
+              <Field label="Atendimentos/semana" value={lead.weekly_attendance} />
               {lead.average_ticket && (
-                <div>
-                  <label className="text-xs text-muted-foreground">Ticket Médio</label>
-                  <p className="text-sm text-foreground mt-0.5">{formatCurrency(lead.average_ticket)}</p>
-                </div>
+                <Field label="Ticket Médio" value={formatCurrency(lead.average_ticket)} />
               )}
               {lead.estimated_revenue && (
-                <div>
-                  <label className="text-xs text-muted-foreground">Receita Estimada</label>
-                  <p className="text-sm font-medium text-foreground mt-0.5">{formatCurrency(lead.estimated_revenue)}</p>
-                </div>
+                <Field label="Receita Estimada" value={formatCurrency(lead.estimated_revenue)} />
               )}
               {lead.biggest_difficulty && (
-                <div>
-                  <label className="text-xs text-muted-foreground">Maior Dificuldade</label>
-                  <p className="text-sm text-foreground mt-0.5">{lead.biggest_difficulty}</p>
-                </div>
+                <Field label="Maior Dificuldade" value={lead.biggest_difficulty} />
               )}
             </div>
           </CollapsibleContent>
@@ -285,7 +240,7 @@ const LeadInfoPanel = ({ phone, photoUrl, contactName, onClose }: LeadInfoPanelP
 
         {/* Histórico Section */}
         <Collapsible open={openSections.historico} onOpenChange={() => toggleSection('historico')}>
-          <CollapsibleTrigger className="w-full flex items-center justify-between px-4 py-3 hover:bg-muted/50 transition-colors border-b border-border">
+          <CollapsibleTrigger className="w-full flex items-center justify-between px-4 py-3 hover:bg-muted/30 transition-colors border-b border-border">
             <span className="text-sm font-medium text-foreground">Histórico</span>
             {openSections.historico ? (
               <ChevronDown className="w-4 h-4 text-muted-foreground" />
@@ -294,7 +249,7 @@ const LeadInfoPanel = ({ phone, photoUrl, contactName, onClose }: LeadInfoPanelP
             )}
           </CollapsibleTrigger>
           <CollapsibleContent>
-            <div className="px-4 py-3 border-b border-border">
+            <div className="px-4 py-4 border-b border-border">
               <div className="flex items-start gap-3">
                 <div className="w-8 h-8 rounded-lg bg-indigo-100 dark:bg-indigo-900/40 flex items-center justify-center flex-shrink-0">
                   <User className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
