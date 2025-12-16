@@ -577,14 +577,16 @@ export function AutomationsDropdown({ pipelines, subOriginId }: AutomationsDropd
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
-        <Button variant="outline" size="icon" className="h-9 w-9 relative border-border">
-          <Zap className="w-4 h-4 text-amber-500" />
-          {(activeAutomationsCount + activeWebhooksCount) > 0 && (
-            <span className="absolute -top-1 -right-1 w-4 h-4 text-[10px] font-medium flex items-center justify-center bg-amber-500 text-white rounded-full">
-              {activeAutomationsCount + activeWebhooksCount}
+        <div className="relative">
+          <Button variant="outline" size="icon" className="h-9 w-9 border-border">
+            <Zap className="w-4 h-4 text-amber-500" />
+          </Button>
+          {(activeAutomationsCount + activeWebhooksCount + activeEmailAutomationsCount) > 0 && (
+            <span className="absolute -top-1 -right-1 w-4 h-4 text-[10px] font-medium flex items-center justify-center bg-amber-500 text-white rounded-full pointer-events-none">
+              {activeAutomationsCount + activeWebhooksCount + activeEmailAutomationsCount}
             </span>
           )}
-        </Button>
+        </div>
       </DialogTrigger>
       <DialogContent className="max-w-4xl h-[700px] overflow-hidden p-0 bg-neutral-900 border-neutral-800" aria-describedby={undefined}>
         <DialogTitle className="sr-only">Automações</DialogTitle>
