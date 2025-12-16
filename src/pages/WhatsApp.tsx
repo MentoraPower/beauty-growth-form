@@ -53,6 +53,7 @@ const WhatsApp = () => {
   const [isRecording, setIsRecording] = useState(false);
   const [recordingTime, setRecordingTime] = useState(0);
   const [messageMenuId, setMessageMenuId] = useState<string | null>(null);
+  const [lightboxImage, setLightboxImage] = useState<string | null>(null);
   const [recordingStream, setRecordingStream] = useState<MediaStream | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
@@ -1241,7 +1242,7 @@ const WhatsApp = () => {
             className="max-w-[280px] rounded-lg cursor-pointer hover:opacity-90 transition-opacity"
             loading="lazy"
             onLoad={() => scrollToBottom("auto")}
-            onClick={() => window.open(msg.mediaUrl!, "_blank")}
+            onClick={() => setLightboxImage(msg.mediaUrl!)}
           />
           {msg.text && <p className="text-sm text-foreground whitespace-pre-wrap">{formatWhatsAppText(msg.text)}</p>}
         </div>
@@ -1741,6 +1742,27 @@ const WhatsApp = () => {
           contactAvatar={selectedChat.photo_url}
           onInitiateCall={initiateCall}
         />
+      )}
+
+      {/* Image Lightbox */}
+      {lightboxImage && (
+        <div 
+          className="fixed inset-0 z-[100] bg-black/90 flex items-center justify-center"
+          onClick={() => setLightboxImage(null)}
+        >
+          <button
+            onClick={() => setLightboxImage(null)}
+            className="absolute top-4 right-4 p-2 rounded-full bg-white/10 hover:bg-white/20 transition-colors"
+          >
+            <X className="w-6 h-6 text-white" />
+          </button>
+          <img 
+            src={lightboxImage} 
+            alt="Imagem ampliada" 
+            className="max-w-[90vw] max-h-[90vh] object-contain rounded-lg"
+            onClick={(e) => e.stopPropagation()}
+          />
+        </div>
       )}
     </>
   );
