@@ -137,9 +137,9 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
                     key={item.id}
                     onClick={() => handleNavClick(item.id)}
                     className={cn(
-                      "relative flex items-center justify-center w-full rounded-xl transition-colors duration-200 p-2.5",
+                      "relative flex items-center justify-center w-10 h-10 rounded-lg transition-colors duration-200",
                       isActive || isPanelOpen
-                        ? "bg-[#1a1a2e] text-white before:absolute before:left-0 before:top-1/2 before:-translate-y-1/2 before:h-[70%] before:w-1 before:rounded-r-full before:bg-gradient-to-b before:from-[#F40000] before:to-[#A10000]"
+                        ? "bg-[#1a1a2e] text-white before:absolute before:-left-2 before:top-1/2 before:-translate-y-1/2 before:h-[70%] before:w-1 before:rounded-r-full before:bg-gradient-to-b before:from-[#F40000] before:to-[#A10000]"
                         : "text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900"
                     )}
                   >
@@ -152,9 +152,9 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
               <button
                 onClick={() => handleNavClick('crm')}
                 className={cn(
-                  "relative flex items-center justify-center w-full rounded-xl transition-colors duration-200 p-2.5",
+                  "relative flex items-center justify-center w-10 h-10 rounded-lg transition-colors duration-200",
                   isCRMActive || activePanel === 'crm'
-                    ? "bg-[#1a1a2e] text-white before:absolute before:left-0 before:top-1/2 before:-translate-y-1/2 before:h-[70%] before:w-1 before:rounded-r-full before:bg-gradient-to-b before:from-[#F40000] before:to-[#A10000]"
+                    ? "bg-[#1a1a2e] text-white before:absolute before:-left-2 before:top-1/2 before:-translate-y-1/2 before:h-[70%] before:w-1 before:rounded-r-full before:bg-gradient-to-b before:from-[#F40000] before:to-[#A10000]"
                     : "text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900"
                 )}
               >
@@ -170,9 +170,9 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
                     key={item.id}
                     onClick={() => handleNavClick(item.id)}
                     className={cn(
-                      "relative flex items-center justify-center w-full rounded-xl transition-colors duration-200 p-2.5",
+                      "relative flex items-center justify-center w-10 h-10 rounded-lg transition-colors duration-200",
                       isActive || isPanelOpen
-                        ? "bg-[#1a1a2e] text-white before:absolute before:left-0 before:top-1/2 before:-translate-y-1/2 before:h-[70%] before:w-1 before:rounded-r-full before:bg-gradient-to-b before:from-[#F40000] before:to-[#A10000]"
+                        ? "bg-[#1a1a2e] text-white before:absolute before:-left-2 before:top-1/2 before:-translate-y-1/2 before:h-[70%] before:w-1 before:rounded-r-full before:bg-gradient-to-b before:from-[#F40000] before:to-[#A10000]"
                         : "text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900"
                     )}
                   >
@@ -187,7 +187,7 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
           <div className="border-t border-border pl-2 pr-6 py-3">
             <Link
               to="/"
-              className="relative flex items-center justify-center w-full rounded-xl transition-colors duration-200 p-2.5 text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900"
+              className="relative flex items-center justify-center w-10 h-10 rounded-lg transition-colors duration-200 text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900"
             >
               <LogOut className="h-5 w-5 flex-shrink-0" strokeWidth={1.5} />
             </Link>
