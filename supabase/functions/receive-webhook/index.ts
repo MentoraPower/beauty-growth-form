@@ -633,10 +633,29 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    // Fast-path for Elementor: when sub_origin_id is provided, avoid extra DB lookups to prevent WP timeout (~5s)
+    // Fast-path for Elementor: when sub_origin_id is provided
     if (subOriginId) {
       const targetSubOriginId = subOriginId;
-      const targetPipelineId = url.searchParams.get("pipeline_id") || "b62bdfc2-cfda-4cc2-9a72-f87f9ac1f724"; // Novo
+      
+      // Get the pipeline_id from URL or find the first pipeline for this sub-origin
+      let targetPipelineId = url.searchParams.get("pipeline_id");
+      
+      if (!targetPipelineId) {
+        // Quick lookup for first pipeline of the sub-origin
+        const { data: pipelines } = await supabase
+          .from("pipelines")
+          .select("id")
+          .eq("sub_origin_id", targetSubOriginId)
+          .order("ordem")
+          .limit(1);
+        
+        if (pipelines && pipelines.length > 0) {
+          targetPipelineId = pipelines[0].id;
+        } else {
+          // Fallback only if no pipeline exists for sub-origin
+          targetPipelineId = "b62bdfc2-cfda-4cc2-9a72-f87f9ac1f724";
+        }
+      }
 
       const leadData: Record<string, any> = {
         name: String(payload.name).trim(),
