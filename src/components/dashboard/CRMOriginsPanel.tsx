@@ -181,20 +181,25 @@ function SortableOriginItem({
         style={{ gridTemplateRows: isOriginExpanded ? '1fr' : '0fr' }}
       >
         <div className="overflow-hidden">
-          <div className="ml-3 pt-1 pb-1 relative">
+          <div className="ml-4 pt-1 pb-1 relative">
             {/* Main vertical line from origin */}
-            <div className="absolute left-[7px] top-0 bottom-4 w-[2px] bg-white/20 rounded-full" />
+            <div className="absolute left-[3px] top-0 bottom-3 w-[1.5px] bg-white/25" />
             
             {/* Overview Item */}
-            <div className="relative flex items-center group py-0.5">
-              {/* Horizontal branch line */}
-              <div className="absolute left-[7px] top-1/2 w-3 h-[2px] bg-white/20 rounded-full" />
-              {/* Dot connector */}
-              <div className="absolute left-[5px] top-1/2 -translate-y-1/2 w-[6px] h-[6px] rounded-full bg-white/30 border border-white/40" />
+            <div className="relative flex items-center group py-0.5 pl-4">
+              {/* Curved line branch */}
+              <svg className="absolute left-0 top-1/2 -translate-y-1/2 w-4 h-5" viewBox="0 0 16 20" fill="none">
+                <path 
+                  d="M0 0 L0 10 Q0 10, 4 10 L16 10" 
+                  stroke="rgba(255,255,255,0.25)" 
+                  strokeWidth="1.5"
+                  strokeLinecap="round"
+                />
+              </svg>
               <button
                 onClick={() => handleOverviewClick(origin.id)}
                 className={cn(
-                  "flex items-center gap-2 w-full py-1.5 px-2 ml-5 rounded-lg transition-all duration-200 ease-out text-xs",
+                  "flex items-center gap-2 w-full py-1.5 px-2 rounded-lg transition-all duration-200 ease-out text-xs",
                   currentOverviewOriginId === origin.id
                     ? "bg-white/10 text-white font-medium"
                     : "text-white/70 hover:text-white hover:bg-white/5"
@@ -214,15 +219,20 @@ function SortableOriginItem({
               const isActive = currentSubOriginId === subOrigin.id;
               
               return (
-                <div key={subOrigin.id} className="relative flex items-center group py-0.5">
-                  {/* Horizontal branch line */}
-                  <div className="absolute left-[7px] top-1/2 w-3 h-[2px] bg-white/20 rounded-full" />
-                  {/* Dot connector */}
-                  <div className="absolute left-[5px] top-1/2 -translate-y-1/2 w-[6px] h-[6px] rounded-full bg-white/30 border border-white/40" />
+                <div key={subOrigin.id} className="relative flex items-center group py-0.5 pl-4">
+                  {/* Curved line branch */}
+                  <svg className="absolute left-0 top-1/2 -translate-y-1/2 w-4 h-5" viewBox="0 0 16 20" fill="none">
+                    <path 
+                      d="M0 0 L0 10 Q0 10, 4 10 L16 10" 
+                      stroke="rgba(255,255,255,0.25)" 
+                      strokeWidth="1.5"
+                      strokeLinecap="round"
+                    />
+                  </svg>
                   <button
                     onClick={() => handleSubOriginClick(subOrigin.id)}
                     className={cn(
-                      "flex items-center gap-2 flex-1 py-1.5 px-2 ml-5 rounded-lg transition-all duration-200 ease-out text-xs",
+                      "flex items-center gap-2 flex-1 py-1.5 px-2 rounded-lg transition-all duration-200 ease-out text-xs",
                       isActive 
                         ? "bg-white/10 text-white font-medium"
                         : "text-white/70 hover:text-white hover:bg-white/5"
@@ -275,14 +285,19 @@ function SortableOriginItem({
             })}
 
             {/* Add Sub-origin Button */}
-            <div className="relative flex items-center py-0.5">
-              {/* Horizontal branch line */}
-              <div className="absolute left-[7px] top-1/2 w-3 h-[2px] bg-white/15 rounded-full" />
-              {/* Dot connector */}
-              <div className="absolute left-[5px] top-1/2 -translate-y-1/2 w-[6px] h-[6px] rounded-full bg-white/20 border border-white/30" />
+            <div className="relative flex items-center py-0.5 pl-4">
+              {/* Curved line branch */}
+              <svg className="absolute left-0 top-1/2 -translate-y-1/2 w-4 h-5" viewBox="0 0 16 20" fill="none">
+                <path 
+                  d="M0 0 L0 10 Q0 10, 4 10 L16 10" 
+                  stroke="rgba(255,255,255,0.15)" 
+                  strokeWidth="1.5"
+                  strokeLinecap="round"
+                />
+              </svg>
               <button
                 onClick={() => openCreateSubOriginDialog(origin.id)}
-                className="flex items-center gap-2 w-full py-1.5 px-2 ml-5 rounded-lg transition-all duration-200 ease-out text-xs text-white/50 hover:text-white hover:bg-white/5"
+                className="flex items-center gap-2 w-full py-1.5 px-2 rounded-lg transition-all duration-200 ease-out text-xs text-white/50 hover:text-white hover:bg-white/5"
               >
                 <Plus className="h-3 w-3" />
                 <span>Criar sub origem</span>
