@@ -187,13 +187,13 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
         {/* Submenu Panel - Only visible for CRM */}
         <div
           style={{ 
-            left: sidebarWidth - 16, // Move background slightly left to cover corner gaps
-            width: submenuWidth + 16, // Compensate width
+            left: sidebarWidth - 8,
+            width: submenuWidth + 8,
             opacity: isCRMLayout ? 1 : 0,
             transform: isCRMLayout ? 'translateX(0)' : 'translateX(-20px)',
             pointerEvents: isCRMLayout ? 'auto' : 'none'
           }}
-          className="hidden lg:block fixed top-2 h-[calc(100vh-1rem)] rounded-2xl bg-[#0f0f12] z-30 overflow-hidden pl-[calc(1rem+16px)] transition-all duration-300 ease-out"
+          className="hidden lg:block fixed top-2 h-[calc(100vh-1rem)] rounded-r-2xl bg-[#0f0f12] z-30 overflow-hidden pl-[calc(1rem+8px)] transition-all duration-300 ease-out"
         >
           {activePanel === 'crm' && (
             <CRMOriginsPanel 
