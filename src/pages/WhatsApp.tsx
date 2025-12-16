@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
-import { Search, Smile, Paperclip, Mic, Send, Check, CheckCheck, RefreshCw, Phone, Image, File, Play, Trash2, Wifi } from "lucide-react";
+import { Search, Smile, Paperclip, Mic, Send, Check, CheckCheck, RefreshCw, Phone, Image, File, Play } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
@@ -40,8 +40,6 @@ const WhatsApp = () => {
   const [isLoadingMessages, setIsLoadingMessages] = useState(false);
   const [isSending, setIsSending] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
-  const [isClearing, setIsClearing] = useState(false);
-  const [isTesting, setIsTesting] = useState(false);
   const [isCallModalOpen, setIsCallModalOpen] = useState(false);
   const [showAttachMenu, setShowAttachMenu] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -293,216 +291,19 @@ const WhatsApp = () => {
   const syncAllChats = async () => {
     setIsSyncing(true);
     try {
-      toast({
-        title: "Sincronizando...",
-        description: "Buscando todas as conversas do WhatsApp. Isso pode levar alguns minutos.",
-      });
-
-      // Test connection first with a simple get-chats call
-      console.log("[WhatsApp] Testing WAHA connection...");
+      console.log("[WhatsApp] Syncing WAHA...");
       
       const { data, error } = await supabase.functions.invoke("waha-whatsapp", {
         body: { action: "sync-all" },
       });
 
       console.log("[WhatsApp] Sync response:", data, error);
-
-      if (error) {
-        console.error("[WhatsApp] Sync error details:", JSON.stringify(error, null, 2));
-        throw new Error(error.message || "Falha ao conectar com a Edge Function. Verifique se as credenciais WAHA estão corretas.");
-      }
-
-      if (data?.error) {
-        throw new Error(data.error);
-      }
-
       await fetchChats();
       
-      toast({
-        title: "Sincronização completa",
-        description: `${data?.syncedChats || 0} conversas e ${data?.syncedMessages || 0} mensagens sincronizadas`,
-      });
     } catch (error: any) {
       console.error("[WhatsApp] Error syncing:", error);
-      
-      let errorMessage = "Erro desconhecido";
-      if (error.message?.includes("Failed to fetch")) {
-        errorMessage = "Edge Function não acessível. Aguarde o deploy ou verifique as credenciais WAHA.";
-      } else if (error.message?.includes("FunctionsFetchError")) {
-        errorMessage = "Falha ao conectar com a Edge Function. Tente novamente em alguns segundos.";
-      } else {
-        errorMessage = error.message || "Erro ao sincronizar";
-      }
-      
-      toast({
-        title: "Erro ao sincronizar",
-        description: errorMessage,
-        variant: "destructive",
-      });
     } finally {
       setIsSyncing(false);
-    }
-  };
-
-  const testConnection = async () => {
-    setIsTesting(true);
-    try {
-      toast({
-        title: "Testando conexão...",
-        description: "Verificando credenciais WAHA",
-      });
-
-      const { data, error } = await supabase.functions.invoke("waha-whatsapp", {
-        body: { action: "test-connection" },
-      });
-
-      console.log("[WhatsApp] Test connection response:", data, error);
-
-      if (error) {
-        throw new Error(error.message || "Erro ao testar conexão");
-      }
-
-      if (data?.success) {
-        toast({
-          title: "Conexão OK!",
-          description: `Sessions: ${JSON.stringify(data.sessions)} - URL: ${data.apiUrl}`,
-        });
-      } else {
-        toast({
-          title: "Problema na conexão",
-          description: data?.error || "WAHA não respondeu. Verifique se WAHA_API_URL está correto.",
-          variant: "destructive",
-        });
-        console.log("[WhatsApp] Test results:", data);
-      }
-    } catch (error: any) {
-      console.error("[WhatsApp] Test error:", error);
-      toast({
-        title: "Erro ao testar",
-        description: error.message,
-        variant: "destructive",
-      });
-    } finally {
-      setIsTesting(false);
-    }
-  };
-
-  const clearAllChats = async () => {
-    if (!confirm("Tem certeza que deseja apagar TODAS as conversas e mensagens? Esta ação não pode ser desfeita.")) {
-      return;
-    }
-
-    setIsClearing(true);
-    try {
-      // First get all chat IDs to delete their messages
-      const { data: chatsToDelete } = await supabase
-        .from("whatsapp_chats")
-        .select("id");
-
-      if (chatsToDelete && chatsToDelete.length > 0) {
-        const chatIds = chatsToDelete.map((c: any) => c.id);
-        
-        // Delete messages for these chats
-        const { error: messagesError } = await supabase
-          .from("whatsapp_messages")
-          .delete()
-          .in("chat_id", chatIds);
-
-        if (messagesError) throw messagesError;
-      }
-
-      // Delete all chats
-      const { error: chatsError } = await supabase
-        .from("whatsapp_chats")
-        .delete()
-        .neq("id", "00000000-0000-0000-0000-000000000000");
-
-      if (chatsError) throw chatsError;
-
-      setChats([]);
-      setMessages([]);
-      setSelectedChat(null);
-
-      toast({
-        title: "Dados limpos",
-        description: "Todas as conversas e mensagens foram apagadas",
-      });
-    } catch (error: any) {
-      console.error("Error clearing:", error);
-      toast({
-        title: "Erro ao limpar",
-        description: error.message || "Falha ao apagar conversas",
-        variant: "destructive",
-      });
-    } finally {
-      setIsClearing(false);
-    }
-  };
-
-  // Cleanup invalid chats (channels, duplicates, etc.)
-  const cleanupInvalidChats = async () => {
-    setIsClearing(true);
-    try {
-      // Get all chats that should be removed
-      const { data: allChats } = await supabase
-        .from("whatsapp_chats")
-        .select("id, phone");
-
-      if (!allChats) {
-        toast({ title: "Nenhum chat encontrado" });
-        setIsClearing(false);
-        return;
-      }
-
-      // Only cleanup clear non-contacts
-      const invalidChatIds = allChats
-        .filter((chat: any) => {
-          const phone = chat.phone || "";
-          if (phone.includes("@newsletter")) return true;
-          if (phone.includes("@g.us")) return true;
-          if (phone.includes("status@broadcast")) return true;
-          if (phone === "0" || phone === "") return true;
-          return false;
-        })
-        .map((chat: any) => chat.id);
-
-      if (invalidChatIds.length === 0) {
-        toast({ title: "Nenhum contato inválido encontrado" });
-        setIsClearing(false);
-        return;
-      }
-
-      // Delete messages first
-      const { error: messagesError } = await supabase
-        .from("whatsapp_messages")
-        .delete()
-        .in("chat_id", invalidChatIds);
-
-      if (messagesError) throw messagesError;
-
-      // Delete invalid chats
-      const { error: chatsError } = await supabase
-        .from("whatsapp_chats")
-        .delete()
-        .in("id", invalidChatIds);
-
-      if (chatsError) throw chatsError;
-
-      await fetchChats();
-
-      toast({
-        title: "Limpeza concluída",
-        description: `${invalidChatIds.length} contatos inválidos removidos (canais, grupos, duplicados)`,
-      });
-    } catch (error: any) {
-      console.error("Error cleaning up:", error);
-      toast({
-        title: "Erro na limpeza",
-        description: error.message,
-        variant: "destructive",
-      });
-    } finally {
-      setIsClearing(false);
     }
   };
 
@@ -531,7 +332,7 @@ const WhatsApp = () => {
     });
   };
 
-  // Initial cleanup and fetch
+  // Initial cleanup, fetch, and auto-sync
   useEffect(() => {
     const init = async () => {
       // Silently cleanup invalid chats first
@@ -541,7 +342,6 @@ const WhatsApp = () => {
           .select("id, phone");
 
         if (allChats) {
-          // Only cleanup clear non-contacts
           const invalidChatIds = allChats
             .filter((chat: any) => {
               const phone = chat.phone || "";
@@ -554,18 +354,8 @@ const WhatsApp = () => {
             .map((chat: any) => chat.id);
 
           if (invalidChatIds.length > 0) {
-            // Delete messages first
-            await supabase
-              .from("whatsapp_messages")
-              .delete()
-              .in("chat_id", invalidChatIds);
-
-            // Delete invalid chats
-            await supabase
-              .from("whatsapp_chats")
-              .delete()
-              .in("id", invalidChatIds);
-
+            await supabase.from("whatsapp_messages").delete().in("chat_id", invalidChatIds);
+            await supabase.from("whatsapp_chats").delete().in("id", invalidChatIds);
             console.log(`Cleaned up ${invalidChatIds.length} invalid chats`);
           }
         }
@@ -573,8 +363,11 @@ const WhatsApp = () => {
         console.error("Cleanup error:", error);
       }
       
-      // Then fetch valid chats
+      // Fetch local chats first for fast UI
       await fetchChats();
+      
+      // Then auto-sync from WAHA in background
+      syncAllChats();
     };
     
     init();
@@ -707,32 +500,9 @@ const WhatsApp = () => {
           {/* Header */}
           <div className="h-14 px-4 flex items-center justify-between bg-muted/30 border-b border-border/30">
             <h2 className="font-semibold text-foreground">Conversas</h2>
-            <div className="flex items-center gap-1">
-              <button
-                onClick={testConnection}
-                disabled={isTesting}
-                className="p-2 hover:bg-emerald-500/10 rounded-full transition-colors"
-                title="Testar conexão W-API"
-              >
-                <Wifi className={cn("w-5 h-5 text-emerald-500", isTesting && "animate-pulse")} />
-              </button>
-              <button
-                onClick={clearAllChats}
-                disabled={isClearing}
-                className="p-2 hover:bg-destructive/10 rounded-full transition-colors"
-                title="Apagar todas as conversas"
-              >
-                <Trash2 className={cn("w-5 h-5 text-destructive", isClearing && "animate-pulse")} />
-              </button>
-              <button
-                onClick={syncAllChats}
-                disabled={isSyncing}
-                className="p-2 hover:bg-muted/50 rounded-full transition-colors"
-                title="Sincronizar todas as conversas"
-              >
-                <RefreshCw className={cn("w-5 h-5 text-muted-foreground", isSyncing && "animate-spin")} />
-              </button>
-            </div>
+            {isSyncing && (
+              <RefreshCw className="w-4 h-4 text-muted-foreground animate-spin" />
+            )}
           </div>
 
           {/* Search */}
@@ -793,15 +563,8 @@ const WhatsApp = () => {
               ))
             ) : (
               <div className="flex-1 flex flex-col items-center justify-center h-full py-20 gap-3">
-                <p className="text-sm text-muted-foreground">Nenhuma conversa</p>
-                <button
-                  onClick={syncAllChats}
-                  disabled={isSyncing}
-                  className="text-sm text-emerald-500 hover:underline flex items-center gap-2"
-                >
-                  <RefreshCw className={cn("w-4 h-4", isSyncing && "animate-spin")} />
-                  Sincronizar do WhatsApp
-                </button>
+                <RefreshCw className="w-6 h-6 text-muted-foreground animate-spin" />
+                <p className="text-sm text-muted-foreground">Sincronizando conversas...</p>
               </div>
             )}
           </div>
