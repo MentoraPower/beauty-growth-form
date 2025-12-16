@@ -218,6 +218,7 @@ export function KanbanBoard() {
   // Track previous values to prevent unnecessary updates
   const prevDataUpdatedAtRef = useRef(dataUpdatedAt);
   const prevSubOriginIdRef = useRef(subOriginId);
+  const invalidateLeadsTimeoutRef = useRef<number | null>(null);
 
   // Sync local state with fetched data - only when data actually changes
   useEffect(() => {
@@ -238,8 +239,18 @@ export function KanbanBoard() {
 
   // Real-time subscription
   useEffect(() => {
+    const scheduleLeadsInvalidate = () => {
+      if (invalidateLeadsTimeoutRef.current) {
+        window.clearTimeout(invalidateLeadsTimeoutRef.current);
+      }
+      invalidateLeadsTimeoutRef.current = window.setTimeout(() => {
+        queryClient.invalidateQueries({ queryKey: ["crm-leads", subOriginId] });
+        invalidateLeadsTimeoutRef.current = null;
+      }, 250);
+    };
+
     const channel = supabase
-      .channel(`crm-realtime-${subOriginId || 'all'}`)
+      .channel(`crm-realtime-${subOriginId || "all"}`)
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "leads" },
@@ -263,10 +274,12 @@ export function KanbanBoard() {
               );
             }
           } else if (payload.eventType === "DELETE") {
-            const deletedId = payload.old.id;
+            const deletedId = (payload.old as any).id;
             setLocalLeads((prev) => prev.filter((l) => l.id !== deletedId));
           }
-          queryClient.invalidateQueries({ queryKey: ["crm-leads", subOriginId] });
+
+          // Debounce invalidation to avoid UI freezes during batch updates/moves
+          scheduleLeadsInvalidate();
         }
       )
       .on(
@@ -279,6 +292,10 @@ export function KanbanBoard() {
       .subscribe();
 
     return () => {
+      if (invalidateLeadsTimeoutRef.current) {
+        window.clearTimeout(invalidateLeadsTimeoutRef.current);
+        invalidateLeadsTimeoutRef.current = null;
+      }
       supabase.removeChannel(channel);
     };
   }, [queryClient, subOriginId]);
