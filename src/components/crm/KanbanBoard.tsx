@@ -56,8 +56,13 @@ export function KanbanBoard() {
   const [filterTags, setFilterTags] = useState<string[]>([]);
   const queryClient = useQueryClient();
 
-  // Sync search query to URL only when user types
-  const updateSearchUrl = useCallback((value: string) => {
+  // Sync search from URL when navigating (e.g., coming back from lead detail)
+  useEffect(() => {
+    setSearchQuery(urlSearchQuery);
+  }, [urlSearchQuery]);
+
+  // Update URL when search changes (user typing)
+  const handleSearchChange = (value: string) => {
     setSearchQuery(value);
     const newParams = new URLSearchParams(searchParams);
     if (value) {
@@ -66,7 +71,7 @@ export function KanbanBoard() {
       newParams.delete("search");
     }
     setSearchParams(newParams, { replace: true });
-  }, [searchParams, setSearchParams]);
+  };
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -574,7 +579,7 @@ export function KanbanBoard() {
               type="text"
               placeholder="Pesquisar leads..."
               value={searchQuery}
-              onChange={(e) => updateSearchUrl(e.target.value)}
+              onChange={(e) => handleSearchChange(e.target.value)}
               className="pl-9 h-9"
             />
           </div>
