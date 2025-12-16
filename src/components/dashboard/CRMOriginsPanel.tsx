@@ -175,36 +175,62 @@ function SortableOriginItem({
         </div>
       </div>
 
-      {/* Sub-origins */}
+      {/* Sub-origins with curved lines */}
       <div 
         className="grid transition-[grid-template-rows] duration-300 ease-out"
         style={{ gridTemplateRows: isOriginExpanded ? '1fr' : '0fr' }}
       >
         <div className="overflow-hidden">
-          <div className="ml-4 pl-2 space-y-0.5 pt-1 pb-1 rounded-lg border-l border-white/10 bg-white/5">
-            {/* Overview Item */}
-            <button
-              onClick={() => handleOverviewClick(origin.id)}
-              className={cn(
-                "flex items-center gap-2 w-full py-1.5 px-2 rounded-lg transition-all duration-200 ease-out text-xs",
-                currentOverviewOriginId === origin.id
-                  ? "bg-white/10 text-white font-medium"
-                  : "text-white/70 hover:text-white hover:bg-white/5"
-              )}
-            >
-              <Home className={cn(
-                "h-3 w-3 flex-shrink-0",
-                currentOverviewOriginId === origin.id ? "text-white" : "text-white/70"
-              )} />
-              <span className="truncate">Overview</span>
-            </button>
+          <div className="ml-6 pt-1 pb-1 relative">
+            {/* Overview Item with curve */}
+            <div className="relative flex items-center group">
+              {/* Curved line from origin to overview */}
+              <svg className="absolute -left-4 top-1/2 -translate-y-1/2 w-4 h-6" viewBox="0 0 16 24">
+                <path 
+                  d="M0 0 Q0 12, 16 12" 
+                  fill="none" 
+                  stroke="rgba(255,255,255,0.15)" 
+                  strokeWidth="1.5"
+                />
+              </svg>
+              <button
+                onClick={() => handleOverviewClick(origin.id)}
+                className={cn(
+                  "flex items-center gap-2 w-full py-1.5 px-2 rounded-lg transition-all duration-200 ease-out text-xs",
+                  currentOverviewOriginId === origin.id
+                    ? "bg-white/10 text-white font-medium"
+                    : "text-white/70 hover:text-white hover:bg-white/5"
+                )}
+              >
+                <Home className={cn(
+                  "h-3 w-3 flex-shrink-0",
+                  currentOverviewOriginId === origin.id ? "text-white" : "text-white/70"
+                )} />
+                <span className="truncate">Overview</span>
+              </button>
+            </div>
 
-            {originSubOrigins.map((subOrigin) => {
+            {/* Sub-origins with curves from overview */}
+            {originSubOrigins.map((subOrigin, index) => {
               const leadCount = leadCounts.find(lc => lc.sub_origin_id === subOrigin.id)?.count || 0;
               const isActive = currentSubOriginId === subOrigin.id;
+              const isLast = index === originSubOrigins.length - 1;
               
               return (
-                <div key={subOrigin.id} className="flex items-center group">
+                <div key={subOrigin.id} className="relative flex items-center group ml-4">
+                  {/* Curved line from overview to sub-origin */}
+                  <svg className="absolute -left-4 top-1/2 -translate-y-1/2 w-4 h-6" viewBox="0 0 16 24">
+                    <path 
+                      d="M0 0 Q0 12, 16 12" 
+                      fill="none" 
+                      stroke="rgba(255,255,255,0.15)" 
+                      strokeWidth="1.5"
+                    />
+                  </svg>
+                  {/* Vertical line connecting to next item */}
+                  {!isLast && (
+                    <div className="absolute -left-4 top-1/2 w-px h-full bg-white/15" />
+                  )}
                   <button
                     onClick={() => handleSubOriginClick(subOrigin.id)}
                     className={cn(
@@ -260,14 +286,24 @@ function SortableOriginItem({
               );
             })}
 
-            {/* Add Sub-origin Button */}
-            <button
-              onClick={() => openCreateSubOriginDialog(origin.id)}
-              className="flex items-center gap-2 w-full py-1.5 px-2 rounded-lg transition-all duration-200 ease-out text-xs text-white/50 hover:text-white hover:bg-white/5"
-            >
-              <Plus className="h-3 w-3" />
-              <span>Criar sub origem</span>
-            </button>
+            {/* Add Sub-origin Button with curve */}
+            <div className="relative flex items-center ml-4">
+              <svg className="absolute -left-4 top-1/2 -translate-y-1/2 w-4 h-6" viewBox="0 0 16 24">
+                <path 
+                  d="M0 0 Q0 12, 16 12" 
+                  fill="none" 
+                  stroke="rgba(255,255,255,0.1)" 
+                  strokeWidth="1.5"
+                />
+              </svg>
+              <button
+                onClick={() => openCreateSubOriginDialog(origin.id)}
+                className="flex items-center gap-2 w-full py-1.5 px-2 rounded-lg transition-all duration-200 ease-out text-xs text-white/50 hover:text-white hover:bg-white/5"
+              >
+                <Plus className="h-3 w-3" />
+                <span>Criar sub origem</span>
+              </button>
+            </div>
           </div>
         </div>
       </div>
