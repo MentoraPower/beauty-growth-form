@@ -79,9 +79,13 @@ const handler = async (req: Request): Promise<Response> => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        from: formattedFrom,
-        destinationA: formattedAgent,
-        destinationB: formattedTo,
+        messages: [
+          {
+            from: formattedFrom,
+            destinationA: formattedAgent,
+            destinationB: formattedTo,
+          }
+        ]
       }),
     });
 
@@ -97,7 +101,7 @@ const handler = async (req: Request): Promise<Response> => {
 
     return new Response(JSON.stringify({ 
       success: true, 
-      callId: data.callId || data.bulkId 
+      callId: data.bulkId || data.messages?.[0]?.messageId
     }), {
       status: 200,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
