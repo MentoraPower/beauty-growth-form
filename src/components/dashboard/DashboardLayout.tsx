@@ -110,7 +110,7 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
 
       {/* Desktop Sidebar - Fixed Collapsed */}
       <aside
-        style={{ width: sidebarWidth }}
+        style={{ width: sidebarWidth + 2 }}
         className="hidden lg:flex flex-col fixed left-2 top-2 h-[calc(100vh-1rem)] bg-white overflow-hidden z-40 rounded-l-2xl"
       >
         <div className="flex flex-col h-full">
