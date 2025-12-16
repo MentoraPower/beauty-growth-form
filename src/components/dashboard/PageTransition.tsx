@@ -13,12 +13,12 @@ export function PageTransition({ children }: PageTransitionProps) {
     <AnimatePresence mode="wait">
       <motion.div
         key={location.pathname + location.search}
-        initial={{ opacity: 0, y: 8 }}
-        animate={{ opacity: 1, y: 0 }}
-        exit={{ opacity: 0, y: -8 }}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
         transition={{ 
-          duration: 0.25, 
-          ease: [0.4, 0, 0.2, 1]
+          duration: 0.3, 
+          ease: "easeOut"
         }}
         className="h-full"
       >
