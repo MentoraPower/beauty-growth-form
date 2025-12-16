@@ -108,7 +108,7 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
             </div>
           </div>
 
-          <nav className="flex-1 overflow-y-auto overflow-x-hidden pl-2 pr-6 py-2">
+          <nav className="flex-1 overflow-y-auto overflow-x-hidden py-2 flex flex-col items-center">
             <div className="flex flex-col gap-2">
               {/* CRM Button */}
               <button
@@ -145,7 +145,7 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
           </nav>
 
           {/* Footer */}
-          <div className="border-t border-border pl-2 pr-6 py-3">
+          <div className="border-t border-border py-3 flex justify-center">
             <Link
               to="/"
               className="relative flex items-center justify-center w-10 h-10 rounded-lg transition-colors duration-200 bg-[#f8f8fa] text-neutral-500 hover:bg-[#ededf0] hover:text-neutral-700"
