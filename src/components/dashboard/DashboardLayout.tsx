@@ -375,10 +375,12 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
         style={{ left: `${mainContentMargin}px` }}
         className="hidden lg:block fixed top-2 right-2 bottom-2 transition-[left] duration-300 ease-out"
       >
-        <div className="bg-card rounded-2xl h-full p-6 overflow-auto relative">
-          <PageTransition>
-            {children}
-          </PageTransition>
+        <div className="bg-[#0f0f12] rounded-2xl h-full p-2">
+          <div className="bg-card rounded-xl h-full p-6 overflow-auto relative">
+            <PageTransition>
+              {children}
+            </PageTransition>
+          </div>
         </div>
       </main>
       
