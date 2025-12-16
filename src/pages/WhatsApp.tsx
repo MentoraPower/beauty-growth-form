@@ -49,6 +49,29 @@ const WhatsApp = () => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const scrollPositionsRef = useRef<Record<string, number>>({});
+
+  // Save scroll position for current chat
+  const saveScrollPosition = useCallback((chatId: string | undefined) => {
+    if (chatId && messagesContainerRef.current) {
+      scrollPositionsRef.current[chatId] = messagesContainerRef.current.scrollTop;
+    }
+  }, []);
+
+  // Restore scroll position or scroll to bottom
+  const restoreScrollPosition = useCallback((chatId: string) => {
+    setTimeout(() => {
+      if (messagesContainerRef.current) {
+        const savedPosition = scrollPositionsRef.current[chatId];
+        if (savedPosition !== undefined) {
+          messagesContainerRef.current.scrollTop = savedPosition;
+        } else {
+          // First time opening - scroll to bottom
+          messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight;
+        }
+      }
+    }, 50);
+  }, []);
 
   // Scroll to bottom of messages
   const scrollToBottom = useCallback((instant = true) => {
@@ -232,7 +255,7 @@ const WhatsApp = () => {
       }));
 
       setMessages(formattedMessages);
-      scrollToBottom();
+      restoreScrollPosition(chatId);
 
       // Mark as read
       await supabase
@@ -670,7 +693,10 @@ const WhatsApp = () => {
               filteredChats.map((chat) => (
                 <div
                   key={chat.id}
-                  onClick={() => setSelectedChat(chat)}
+                  onClick={() => {
+                    saveScrollPosition(selectedChat?.id);
+                    setSelectedChat(chat);
+                  }}
                   className={cn(
                     "flex items-center gap-3 px-3 py-3 cursor-pointer transition-colors border-b border-border/20",
                     selectedChat?.id === chat.id ? "bg-muted/40" : "hover:bg-muted/20"
