@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
-import { Search, Smile, Paperclip, Mic, Send, Check, CheckCheck, RefreshCw, Phone, Image, File, Play, Trash2 } from "lucide-react";
+import { Search, Smile, Paperclip, Mic, Send, Check, CheckCheck, RefreshCw, Phone, Image, File, Play, Trash2, Wifi } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
@@ -41,6 +41,7 @@ const WhatsApp = () => {
   const [isSending, setIsSending] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
   const [isClearing, setIsClearing] = useState(false);
+  const [isTesting, setIsTesting] = useState(false);
   const [isCallModalOpen, setIsCallModalOpen] = useState(false);
   const [showAttachMenu, setShowAttachMenu] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -340,6 +341,49 @@ const WhatsApp = () => {
       });
     } finally {
       setIsSyncing(false);
+    }
+  };
+
+  const testConnection = async () => {
+    setIsTesting(true);
+    try {
+      toast({
+        title: "Testando conexão...",
+        description: "Verificando credenciais W-API",
+      });
+
+      const { data, error } = await supabase.functions.invoke("w-api-whatsapp", {
+        body: { action: "test-connection" },
+      });
+
+      console.log("[WhatsApp] Test connection response:", data, error);
+
+      if (error) {
+        throw new Error(error.message || "Erro ao testar conexão");
+      }
+
+      if (data?.success) {
+        toast({
+          title: "Conexão OK!",
+          description: `Instance: ${data.instanceId} - Endpoint: ${data.endpoint}`,
+        });
+      } else {
+        toast({
+          title: "Problema na conexão",
+          description: data?.message || "Nenhum endpoint respondeu corretamente. Verifique suas credenciais W-API.",
+          variant: "destructive",
+        });
+        console.log("[WhatsApp] Test results:", data?.results);
+      }
+    } catch (error: any) {
+      console.error("[WhatsApp] Test error:", error);
+      toast({
+        title: "Erro ao testar",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setIsTesting(false);
     }
   };
 
@@ -664,6 +708,14 @@ const WhatsApp = () => {
           <div className="h-14 px-4 flex items-center justify-between bg-muted/30 border-b border-border/30">
             <h2 className="font-semibold text-foreground">Conversas</h2>
             <div className="flex items-center gap-1">
+              <button
+                onClick={testConnection}
+                disabled={isTesting}
+                className="p-2 hover:bg-emerald-500/10 rounded-full transition-colors"
+                title="Testar conexão W-API"
+              >
+                <Wifi className={cn("w-5 h-5 text-emerald-500", isTesting && "animate-pulse")} />
+              </button>
               <button
                 onClick={clearAllChats}
                 disabled={isClearing}
