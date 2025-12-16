@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect, memo } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { LayoutDashboard, Menu, X, LogOut, Kanban, ChevronRight, BarChart3, Users, TrendingUp, Settings } from "lucide-react";
+import { Menu, X, LogOut, Kanban, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import WhatsAppIcon from "@/components/icons/WhatsApp";
 import scaleLogo from "@/assets/scale-logo-new.png";
@@ -12,19 +12,7 @@ interface DashboardLayoutProps {
   children: React.ReactNode;
 }
 
-type ActivePanel = 'none' | 'dashboard' | 'crm' | 'whatsapp';
-
-const navItems = [
-  { 
-    id: 'dashboard' as ActivePanel, 
-    href: "/admin", 
-    icon: LayoutDashboard, 
-    label: "Dashboard",
-    subItems: [
-      { href: "/admin", icon: BarChart3, label: "Visão Geral" },
-    ]
-  },
-];
+type ActivePanel = 'none' | 'crm' | 'whatsapp';
 
 const bottomNavItems = [
   { 
@@ -42,7 +30,7 @@ const bottomNavItems = [
 const getInitialPanelState = (): ActivePanel => {
   if (typeof window !== 'undefined') {
     const saved = localStorage.getItem('active_panel');
-    if (saved === 'dashboard' || saved === 'crm' || saved === 'whatsapp') {
+    if (saved === 'crm' || saved === 'whatsapp') {
       return saved;
     }
   }
@@ -57,8 +45,7 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
   const location = useLocation();
   const navigate = useNavigate();
 
-  const isCRMActive = location.pathname.startsWith("/admin/crm");
-  const isDashboardActive = location.pathname === "/admin";
+  const isCRMActive = location.pathname.startsWith("/admin/crm") || location.pathname === "/admin";
   const isWhatsAppActive = location.pathname === "/admin/whatsapp";
 
   // Sync with global state and localStorage
@@ -121,27 +108,8 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
             </div>
           </div>
 
-          {/* Navigation */}
           <nav className="flex-1 overflow-y-auto overflow-x-hidden pl-2 pr-6 py-2">
             <div className="flex flex-col gap-2">
-              {navItems.map((item) => {
-                const isSelected = activePanel === item.id;
-                return (
-                  <button
-                    key={item.id}
-                    onClick={() => handleNavClick(item.id)}
-                    className={cn(
-                      "relative flex items-center justify-center w-10 h-10 rounded-lg transition-colors duration-200",
-                      isSelected
-                        ? "bg-[#2d2d3a] text-white before:absolute before:-left-2 before:top-1/2 before:-translate-y-1/2 before:h-[70%] before:w-1 before:rounded-r-full before:bg-gradient-to-b before:from-[#F40000] before:to-[#A10000]"
-                        : "bg-[#f8f8fa] text-neutral-500 hover:bg-[#ededf0] hover:text-neutral-700"
-                    )}
-                  >
-                    <item.icon className="h-5 w-5 flex-shrink-0" strokeWidth={1.5} />
-                  </button>
-                );
-              })}
-              
               {/* CRM Button */}
               <button
                 onClick={() => handleNavClick('crm')}
@@ -193,34 +161,6 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
         style={{ left: sidebarWidth - 8, width: submenuWidth }}
         className="hidden lg:block fixed top-2 h-[calc(100vh-1rem)] rounded-2xl bg-[#0f0f12] z-50 overflow-hidden pl-4"
       >
-        {/* Dashboard Content */}
-        {activePanel === 'dashboard' && (
-          <div className="p-4 pl-0 h-full flex flex-col">
-            <h2 className="text-white font-semibold text-sm mb-4 px-2">Dashboard</h2>
-            <div className="flex flex-col gap-1">
-              {navItems[0].subItems.map((subItem) => {
-                const isActive = location.pathname === subItem.href;
-                return (
-                  <button
-                    key={subItem.href}
-                    onClick={() => handleSubItemClick(subItem.href)}
-                    className={cn(
-                      "flex items-center gap-3 w-full py-2.5 px-3 rounded-xl transition-colors duration-200 text-sm",
-                      isActive 
-                        ? "bg-white/10 text-white"
-                        : "text-white/70 hover:text-white hover:bg-white/5"
-                    )}
-                  >
-                    <subItem.icon className="h-4 w-4 flex-shrink-0" />
-                    <span>{subItem.label}</span>
-                    {isActive && <ChevronRight className="h-4 w-4 ml-auto" />}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        )}
-
         {/* WhatsApp Content */}
         {activePanel === 'whatsapp' && (
           <div className="p-4 pl-0 h-full flex flex-col">
@@ -274,28 +214,6 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
 
           <nav className="flex-1 px-2 overflow-y-auto">
             <div className="flex flex-col gap-1">
-              {navItems.map((item) => {
-                const isActive = item.id === 'dashboard' ? isDashboardActive : false;
-                return (
-                  <Link
-                    key={item.href}
-                    to={item.href}
-                    onClick={() => setSidebarOpen(false)}
-                    className={cn(
-                      "relative flex items-center w-full rounded-xl transition-colors duration-200 px-4 py-3 gap-3",
-                      isActive
-                        ? "bg-white/10 text-white before:absolute before:left-0 before:top-1/2 before:-translate-y-1/2 before:h-[70%] before:w-1 before:rounded-r-full before:bg-gradient-to-b before:from-[#F40000] before:to-[#A10000]"
-                        : "text-white/60 hover:bg-white/5 hover:text-white"
-                    )}
-                  >
-                    <item.icon className="h-5 w-5 flex-shrink-0" strokeWidth={1.5} />
-                    <span className="text-sm font-medium whitespace-nowrap">
-                      {item.label}
-                    </span>
-                  </Link>
-                );
-              })}
-              
               {/* CRM Button - Mobile */}
               <button
                 onClick={() => {
