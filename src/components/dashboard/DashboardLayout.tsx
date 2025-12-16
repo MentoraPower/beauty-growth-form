@@ -196,7 +196,7 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
       <div
         style={{ left: sidebarWidth + 8 }}
         className={cn(
-          "hidden lg:block fixed top-0 my-2 h-[calc(100vh-1rem)] w-56 rounded-2xl border border-[#ffffff15] bg-[#0f0f12] z-40 transition-all duration-300 ease-out overflow-hidden",
+          "hidden lg:block fixed top-0 my-2 h-[calc(100vh-1rem)] w-56 rounded-2xl bg-[#0f0f12] z-40 transition-all duration-300 ease-out overflow-hidden",
           activePanel === 'dashboard' ? "opacity-100 translate-x-0" : "opacity-0 -translate-x-4 pointer-events-none"
         )}
       >
@@ -230,7 +230,7 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
       <div
         style={{ left: sidebarWidth + 8 }}
         className={cn(
-          "hidden lg:block fixed top-0 my-2 h-[calc(100vh-1rem)] w-56 rounded-2xl border border-[#ffffff15] bg-[#0f0f12] z-40 transition-all duration-300 ease-out overflow-hidden",
+          "hidden lg:block fixed top-0 my-2 h-[calc(100vh-1rem)] w-56 rounded-2xl bg-[#0f0f12] z-40 transition-all duration-300 ease-out overflow-hidden",
           activePanel === 'whatsapp' ? "opacity-100 translate-x-0" : "opacity-0 -translate-x-4 pointer-events-none"
         )}
       >
