@@ -4,7 +4,7 @@ import { subDays, startOfDay, endOfDay, format, differenceInDays, eachDayOfInter
 import { ptBR } from "date-fns/locale";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import DashboardLayout from "@/components/dashboard/DashboardLayout";
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Users, TrendingUp, ShoppingCart, DollarSign, Target } from "lucide-react";
@@ -161,9 +161,8 @@ const OriginOverview = () => {
 
   if (loading || authLoading) {
     return (
-      <DashboardLayout>
-        <div className="space-y-6">
-          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+      <div className="space-y-6">
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
             <div>
               <Skeleton className="h-8 w-48 mb-2" />
               <Skeleton className="h-4 w-32" />
@@ -208,14 +207,12 @@ const OriginOverview = () => {
             </Card>
           </div>
         </div>
-      </DashboardLayout>
-    );
+      );
   }
 
   return (
-    <DashboardLayout>
-      <div className="space-y-6">
-        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+    <div className="space-y-6">
+      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
           <div>
             <h1 className="text-2xl font-bold text-foreground">
               {origin?.nome || "Overview"}
@@ -343,8 +340,7 @@ const OriginOverview = () => {
             <ModernBarChart data={getLeadsByDayOfWeek()} />
           </CardContent>
         </Card>
-      </div>
-    </DashboardLayout>
+    </div>
   );
 };
 

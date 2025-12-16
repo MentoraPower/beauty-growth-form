@@ -4,7 +4,7 @@ import { subDays, startOfDay, endOfDay, format, differenceInDays, eachDayOfInter
 import { ptBR } from "date-fns/locale";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import DashboardLayout from "@/components/dashboard/DashboardLayout";
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Users, TrendingUp, ShoppingCart, DollarSign, Target } from "lucide-react";
 import ModernAreaChart from "@/components/dashboard/ModernAreaChart";
@@ -273,8 +273,7 @@ const Dashboard = () => {
   };
 
   return (
-    <DashboardLayout>
-      <div className="space-y-6 transition-opacity duration-300 ease-out">
+    <div className="space-y-6 transition-opacity duration-300 ease-out">
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
           <div>
             <h1 className="text-2xl font-bold text-foreground">Dashboard</h1>
@@ -412,8 +411,7 @@ const Dashboard = () => {
             <ModernBarChart data={getLeadsByDayOfWeek()} />
           </CardContent>
         </Card>
-      </div>
-    </DashboardLayout>
+    </div>
   );
 };
 
