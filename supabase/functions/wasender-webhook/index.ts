@@ -281,6 +281,26 @@ async function handler(req: Request): Promise<Response> {
         headers: { ...corsHeaders, "Content-Type": "application/json" } 
       });
     }
+
+    // Handle message deletion (when contact deletes a message)
+    if (event === "messages.delete") {
+      const deleteData = payload.data;
+      const messageKey = deleteData?.key || deleteData;
+      const messageId = messageKey?.id;
+      
+      if (messageId) {
+        console.log(`[Wasender Webhook] Message deleted by contact: ${messageId}`);
+        
+        await supabase
+          .from("whatsapp_messages")
+          .update({ status: "DELETED" })
+          .eq("message_id", messageId);
+      }
+      
+      return new Response(JSON.stringify({ ok: true }), { 
+        headers: { ...corsHeaders, "Content-Type": "application/json" } 
+      });
+    }
     
     // Only process message events
     if (event !== "messages.received" && event !== "messages.upsert") {

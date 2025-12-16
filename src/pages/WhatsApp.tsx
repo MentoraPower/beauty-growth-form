@@ -1002,11 +1002,13 @@ const WhatsApp = () => {
         }
       }
       
-      // Remove from local state
-      setMessages(prev => prev.filter(m => m.id !== msg.id));
+      // Mark as deleted in local state (show "mensagem apagada")
+      setMessages(prev => prev.map(m => 
+        m.id === msg.id ? { ...m, status: "DELETED" } : m
+      ));
       
-      // Delete from database
-      await supabase.from("whatsapp_messages").delete().eq("id", msg.id);
+      // Update status to DELETED in database
+      await supabase.from("whatsapp_messages").update({ status: "DELETED" }).eq("id", msg.id);
       
       toast({ title: "Mensagem apagada para todos" });
     } catch (error: any) {
@@ -1128,6 +1130,19 @@ const WhatsApp = () => {
           });
         }
       )
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "whatsapp_messages", filter: `chat_id=eq.${selectedChat.id}` },
+        (payload) => {
+          const msg = payload.new as any;
+          console.log("[WhatsApp] Realtime message updated:", msg.id, "status:", msg.status);
+          
+          // Update message status (for DELETED, READ, etc.)
+          setMessages(prev => prev.map(m => 
+            m.id === msg.id ? { ...m, status: msg.status, read: msg.status === "READ" } : m
+          ));
+        }
+      )
       .subscribe();
 
     return () => {
@@ -1246,6 +1261,15 @@ const WhatsApp = () => {
     .map(m => m.mediaUrl!);
 
   const renderMessageContent = (msg: Message) => {
+    // Show "mensagem apagada" for deleted messages
+    if (msg.status === "DELETED") {
+      return (
+        <p className="text-sm text-muted-foreground italic">
+          mensagem apagada
+        </p>
+      );
+    }
+
     if (msg.mediaType === "image" && msg.mediaUrl) {
       return (
         <div className="space-y-1">
