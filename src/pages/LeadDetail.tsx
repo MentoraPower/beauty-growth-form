@@ -386,10 +386,10 @@ export default function LeadDetail() {
                   leadId={lead.id}
                   leadName={lead.name}
                   currentSubOriginId={lead.sub_origin_id}
-                  onMoved={() => {
-                    queryClient.invalidateQueries({ queryKey: ["leads"] });
-                    navigate(buildCrmUrl());
-                  }}
+                   onMoved={() => {
+                     queryClient.invalidateQueries({ queryKey: ["crm-leads", subOriginId] });
+                     navigate(buildCrmUrl());
+                   }}
                 >
                   <DropdownMenuItem 
                     className="cursor-pointer"
