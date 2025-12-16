@@ -159,6 +159,25 @@ const handler = async (req: Request): Promise<Response> => {
       if (msg._data) {
         if (msg._data.body && typeof msg._data.body === 'string' && msg._data.body.trim()) return msg._data.body.trim();
         if (msg._data.caption && typeof msg._data.caption === 'string' && msg._data.caption.trim()) return msg._data.caption.trim();
+        
+        // Check _data.Message (capitalized - WEBJS format with protobuf)
+        if (msg._data.Message) {
+          const dataMsg = msg._data.Message;
+          if (dataMsg.conversation) return String(dataMsg.conversation);
+          if (dataMsg.extendedTextMessage?.text) return String(dataMsg.extendedTextMessage.text);
+          if (dataMsg.imageMessage?.caption) return String(dataMsg.imageMessage.caption);
+          if (dataMsg.videoMessage?.caption) return String(dataMsg.videoMessage.caption);
+          if (dataMsg.documentMessage?.caption) return String(dataMsg.documentMessage.caption);
+          if (dataMsg.documentMessage?.fileName) return `📄 ${dataMsg.documentMessage.fileName}`;
+          // Media type detection for _data.Message
+          if (dataMsg.imageMessage) return "📷 Imagem";
+          if (dataMsg.videoMessage) return "🎥 Vídeo";
+          if (dataMsg.audioMessage || dataMsg.pttMessage) return "🎵 Áudio";
+          if (dataMsg.documentMessage) return "📄 Documento";
+          if (dataMsg.stickerMessage) return "🎨 Sticker";
+          if (dataMsg.contactMessage) return "👤 Contato";
+          if (dataMsg.locationMessage) return "📍 Localização";
+        }
       }
       
       // Check for media filename in various locations
@@ -170,12 +189,11 @@ const handler = async (req: Request): Promise<Response> => {
       const mediaPlaceholder = getMediaPlaceholder(msg);
       if (mediaPlaceholder) return mediaPlaceholder;
       
-      // Log empty messages with _data content for debugging
+      // Log empty messages with _data.Message content for debugging
       const msgId = msg.id || msg.key?.id || msg._id || 'unknown';
       const msgType = msg.type || msg._data?.type || 'unknown';
-      const dataKeys = msg._data ? Object.keys(msg._data).join(', ') : 'no _data';
-      const dataBody = msg._data?.body || msg._data?.caption || msg._data?.content || 'no body';
-      console.log(`[WAHA Debug] Empty msg id=${msgId} type=${msgType}, _data keys: [${dataKeys}], _data.body: "${String(dataBody).substring(0, 50)}"`);
+      const dataMsgKeys = msg._data?.Message ? Object.keys(msg._data.Message).join(', ') : 'no Message';
+      console.log(`[WAHA Debug] Empty msg id=${msgId} type=${msgType}, _data.Message keys: [${dataMsgKeys}]`);
       
       return "";
     };
