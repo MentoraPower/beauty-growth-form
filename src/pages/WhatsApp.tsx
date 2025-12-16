@@ -54,47 +54,31 @@ const WhatsApp = () => {
   const lastFetchedChatIdRef = useRef<string | null>(null);
   const autoScrollChatIdRef = useRef<string | null>(null);
 
-  const isAtBottom = useCallback((el: HTMLElement) => {
-    const threshold = 6;
-    return el.scrollHeight - el.clientHeight - el.scrollTop <= threshold;
-  }, []);
-
-  // Scroll to bottom of messages
+  // Scroll to bottom using the end ref (most reliable)
   const scrollToBottom = useCallback(() => {
-    const el = messagesContainerRef.current;
-    if (!el) return;
-
-    const doScroll = () => {
-      el.scrollTop = el.scrollHeight;
-    };
-
-    doScroll();
-    requestAnimationFrame(doScroll);
+    messagesEndRef.current?.scrollIntoView({ behavior: "instant" });
   }, []);
 
-  // Keep auto-scrolling just long enough to reliably reach the latest message
+  // Keep auto-scrolling until we're truly at the bottom
   const finalizeOpenScroll = useCallback(() => {
-    let frames = 0;
-    let lastHeight = -1;
+    let attempts = 0;
+    const maxAttempts = 20;
 
     const tick = () => {
       const el = messagesContainerRef.current;
-      if (!el) return;
+      if (!el || !shouldScrollToBottomOnOpenRef.current) return;
 
-      const heightNow = el.scrollHeight;
-      const atBottomNow = isAtBottom(el);
+      const isAtBottom = el.scrollHeight - el.clientHeight - el.scrollTop <= 10;
 
-      if (atBottomNow && heightNow === lastHeight) {
+      if (isAtBottom && attempts > 3) {
         shouldScrollToBottomOnOpenRef.current = false;
         return;
       }
 
-      lastHeight = heightNow;
       scrollToBottom();
+      attempts++;
 
-      frames += 1;
-      if (frames >= 12) {
-        // Stop forcing scroll so the user can scroll up normally
+      if (attempts >= maxAttempts) {
         shouldScrollToBottomOnOpenRef.current = false;
         return;
       }
@@ -103,27 +87,23 @@ const WhatsApp = () => {
     };
 
     requestAnimationFrame(tick);
-  }, [isAtBottom, scrollToBottom]);
+  }, [scrollToBottom]);
 
-  // Observe DOM changes (images, formatting, etc) and keep the scroll pinned while opening
+  // Observe DOM changes and keep scrolling to bottom while opening chat
   useEffect(() => {
     const el = messagesContainerRef.current;
     if (!el || !selectedChat) return;
 
-    const doScroll = () => {
-      el.scrollTop = el.scrollHeight;
-    };
-
     const observer = new MutationObserver(() => {
-      if (!shouldScrollToBottomOnOpenRef.current) return;
-      doScroll();
-      requestAnimationFrame(doScroll);
+      if (shouldScrollToBottomOnOpenRef.current) {
+        scrollToBottom();
+      }
     });
 
     observer.observe(el, { childList: true, subtree: true, attributes: true });
 
     return () => observer.disconnect();
-  }, [selectedChat?.id]);
+  }, [selectedChat?.id, scrollToBottom]);
   const imageInputRef = useRef<HTMLInputElement>(null);
   const chatsRef = useRef<Chat[]>([]);
 
