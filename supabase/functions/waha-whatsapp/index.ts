@@ -75,42 +75,105 @@ const handler = async (req: Request): Promise<Response> => {
       return name;
     };
 
+    // Get mimetype from various locations in message object
+    const getMimeType = (msg: any): string | null => {
+      if (msg.media?.mimetype) return msg.media.mimetype;
+      if (msg.mimetype) return msg.mimetype;
+      if (msg._data?.mimetype) return msg._data.mimetype;
+      if (msg.message?.imageMessage?.mimetype) return msg.message.imageMessage.mimetype;
+      if (msg.message?.audioMessage?.mimetype) return msg.message.audioMessage.mimetype;
+      if (msg.message?.videoMessage?.mimetype) return msg.message.videoMessage.mimetype;
+      if (msg.message?.documentMessage?.mimetype) return msg.message.documentMessage.mimetype;
+      if (msg.message?.stickerMessage?.mimetype) return msg.message.stickerMessage.mimetype;
+      return null;
+    };
+
+    // Get media placeholder based on mimetype or type
+    const getMediaPlaceholder = (msg: any): string => {
+      const mimetype = getMimeType(msg);
+      
+      // Check mimetype first (most reliable)
+      if (mimetype) {
+        if (mimetype.startsWith('image/')) return "📷 Imagem";
+        if (mimetype.startsWith('audio/')) return "🎵 Áudio";
+        if (mimetype.startsWith('video/')) return "🎬 Vídeo";
+        if (mimetype === 'application/pdf') return "📄 PDF";
+        if (mimetype.startsWith('application/')) return "📄 Documento";
+      }
+      
+      // Check type field
+      const msgType = msg.type || msg._data?.type || "";
+      if (msgType === "image" || msgType === "sticker") return "📷 Imagem";
+      if (msgType === "audio" || msgType === "ptt" || msgType === "voice") return "🎵 Áudio";
+      if (msgType === "video") return "🎬 Vídeo";
+      if (msgType === "document" || msgType === "file") return "📄 Documento";
+      if (msgType === "location") return "📍 Localização";
+      if (msgType === "contact" || msgType === "vcard") return "👤 Contato";
+      if (msgType === "sticker") return "🎨 Sticker";
+      
+      // Check for media presence
+      if (msg.hasMedia || msg.mediaUrl || msg.media?.url) return "📎 Mídia";
+      
+      // Check for specific message types in WAHA format
+      if (msg.message?.imageMessage) return "📷 Imagem";
+      if (msg.message?.audioMessage) return "🎵 Áudio";
+      if (msg.message?.videoMessage) return "🎬 Vídeo";
+      if (msg.message?.documentMessage) {
+        const filename = msg.message.documentMessage.fileName || msg.message.documentMessage.title;
+        return filename ? `📄 ${filename}` : "📄 Documento";
+      }
+      if (msg.message?.stickerMessage) return "🎨 Sticker";
+      if (msg.message?.locationMessage) return "📍 Localização";
+      if (msg.message?.contactMessage || msg.message?.contactsArrayMessage) return "👤 Contato";
+      
+      return "";
+    };
+
     // Extract message text from various WAHA response formats
     const extractMessageText = (msg: any): string => {
       if (!msg) return "";
       
-      // Direct text fields
-      if (msg.body) return String(msg.body);
-      if (msg.text) return String(msg.text);
-      if (msg.content) return String(msg.content);
-      if (msg.caption) return String(msg.caption);
+      // Direct text fields (highest priority)
+      if (msg.body && typeof msg.body === 'string' && msg.body.trim()) return msg.body.trim();
+      if (msg.text && typeof msg.text === 'string' && msg.text.trim()) return msg.text.trim();
+      if (msg.content && typeof msg.content === 'string' && msg.content.trim()) return msg.content.trim();
+      if (msg.caption && typeof msg.caption === 'string' && msg.caption.trim()) return msg.caption.trim();
       
-      // Nested message object (common in WAHA)
+      // Nested message object (common in WAHA NOWEB engine)
       if (msg.message) {
         if (msg.message.conversation) return String(msg.message.conversation);
         if (msg.message.extendedTextMessage?.text) return String(msg.message.extendedTextMessage.text);
+        // Media captions
         if (msg.message.imageMessage?.caption) return String(msg.message.imageMessage.caption);
         if (msg.message.videoMessage?.caption) return String(msg.message.videoMessage.caption);
         if (msg.message.documentMessage?.caption) return String(msg.message.documentMessage.caption);
+        if (msg.message.documentMessage?.fileName) return `📄 ${msg.message.documentMessage.fileName}`;
+        if (msg.message.documentMessage?.title) return `📄 ${msg.message.documentMessage.title}`;
+        // Button responses
         if (msg.message.buttonsResponseMessage?.selectedDisplayText) return String(msg.message.buttonsResponseMessage.selectedDisplayText);
         if (msg.message.listResponseMessage?.title) return String(msg.message.listResponseMessage.title);
         if (msg.message.templateButtonReplyMessage?.selectedDisplayText) return String(msg.message.templateButtonReplyMessage.selectedDisplayText);
       }
       
-      // _data object (another WAHA format)
+      // _data object (WEBJS engine format)
       if (msg._data) {
-        if (msg._data.body) return String(msg._data.body);
-        if (msg._data.caption) return String(msg._data.caption);
+        if (msg._data.body && typeof msg._data.body === 'string' && msg._data.body.trim()) return msg._data.body.trim();
+        if (msg._data.caption && typeof msg._data.caption === 'string' && msg._data.caption.trim()) return msg._data.caption.trim();
       }
       
-      // Media placeholders
-      if (msg.hasMedia || msg.mediaUrl || msg.type === "image") return "📷 Imagem";
-      if (msg.type === "audio" || msg.type === "ptt") return "🎵 Áudio";
-      if (msg.type === "video") return "🎬 Vídeo";
-      if (msg.type === "document" || msg.type === "file") return "📄 Documento";
-      if (msg.type === "sticker") return "🎨 Sticker";
-      if (msg.type === "location") return "📍 Localização";
-      if (msg.type === "contact" || msg.type === "vcard") return "👤 Contato";
+      // Check for media filename in various locations
+      const filename = msg.media?.filename || msg.filename || msg._data?.filename || 
+                       msg.message?.documentMessage?.fileName || msg.message?.documentMessage?.title;
+      if (filename) return `📄 ${filename}`;
+      
+      // Return media placeholder if it's a media message
+      const mediaPlaceholder = getMediaPlaceholder(msg);
+      if (mediaPlaceholder) return mediaPlaceholder;
+      
+      // Log empty messages for debugging
+      const msgId = msg.id || msg.key?.id || msg._id || 'unknown';
+      const msgType = msg.type || msg._data?.type || 'unknown';
+      console.log(`[WAHA Debug] Empty message id=${msgId} type=${msgType}, keys: ${Object.keys(msg).join(', ')}`);
       
       return "";
     };
