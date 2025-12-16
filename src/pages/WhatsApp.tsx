@@ -65,28 +65,18 @@ const WhatsApp = () => {
   }, []);
 
 
-  // Observe DOM changes and keep scrolling to bottom while opening chat (backup mechanism)
+  // Observe DOM changes and scroll to bottom (simple backup)
   useEffect(() => {
     const el = messagesContainerRef.current;
     if (!el || !selectedChat) return;
 
-    let scrollAttempts = 0;
-    const maxAttempts = 15;
-
     const observer = new MutationObserver(() => {
-      if (shouldScrollToBottomOnOpenRef.current && scrollAttempts < maxAttempts) {
+      if (shouldScrollToBottomOnOpenRef.current) {
         el.scrollTop = el.scrollHeight;
-        scrollAttempts++;
-        
-        // Check if we're at the bottom
-        const isAtBottom = el.scrollHeight - el.clientHeight - el.scrollTop < 10;
-        if (isAtBottom && scrollAttempts > 5) {
-          shouldScrollToBottomOnOpenRef.current = false;
-        }
       }
     });
 
-    observer.observe(el, { childList: true, subtree: true, attributes: true });
+    observer.observe(el, { childList: true, subtree: true });
 
     return () => observer.disconnect();
   }, [selectedChat?.id]);
@@ -622,20 +612,37 @@ const WhatsApp = () => {
     }
   }, [selectedChat?.id]);
 
-  // Always open a chat at the latest message - uses setTimeout to ensure DOM is fully rendered
+  // Always open a chat at the latest message - retry loop until scroll succeeds
   useEffect(() => {
     if (!selectedChat || isLoadingMessages || messages.length === 0) return;
     
-    // setTimeout(0) puts this in the macrotask queue, executing AFTER browser layout/paint
-    const timeoutId = setTimeout(() => {
-      const el = messagesContainerRef.current;
-      if (el) {
-        el.scrollTop = el.scrollHeight;
-        console.log("[WhatsApp] Scroll applied after paint:", el.scrollHeight);
-      }
-    }, 0);
+    let attempts = 0;
+    const maxAttempts = 30; // 30 * 50ms = 1.5s max
     
-    return () => clearTimeout(timeoutId);
+    const intervalId = setInterval(() => {
+      const el = messagesContainerRef.current;
+      attempts++;
+      
+      if (!el) {
+        if (attempts >= maxAttempts) clearInterval(intervalId);
+        return;
+      }
+      
+      // Force scroll to bottom
+      el.scrollTop = el.scrollHeight;
+      
+      // Check if content exists and we're at bottom
+      const hasScrollableContent = el.scrollHeight > el.clientHeight;
+      const isAtBottom = el.scrollHeight - el.clientHeight - el.scrollTop < 10;
+      
+      // Stop if: at bottom with content, OR no scrollable content but has height, OR max attempts
+      if ((hasScrollableContent && isAtBottom) || (!hasScrollableContent && el.scrollHeight > 0) || attempts >= maxAttempts) {
+        clearInterval(intervalId);
+        shouldScrollToBottomOnOpenRef.current = false;
+      }
+    }, 50);
+    
+    return () => clearInterval(intervalId);
   }, [selectedChat?.id, isLoadingMessages, messages.length]);
 
   const filteredChats = chats.filter((chat) =>
