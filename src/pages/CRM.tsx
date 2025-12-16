@@ -1,6 +1,5 @@
 import { Suspense } from "react";
 import { KanbanBoard } from "@/components/crm/KanbanBoard";
-import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import { useAuth } from "@/hooks/useAuth";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -31,23 +30,15 @@ function KanbanLoading() {
 }
 
 export default function CRM() {
-  // Auth check happens in background, DashboardLayout handles redirect
   const { isLoading: authLoading } = useAuth("/auth");
-  
-  // Show loading during auth check to prevent flash
+
   if (authLoading) {
-    return (
-      <DashboardLayout>
-        <KanbanLoading />
-      </DashboardLayout>
-    );
+    return <KanbanLoading />;
   }
-  
+
   return (
-    <DashboardLayout>
-      <Suspense fallback={<KanbanLoading />}>
-        <KanbanBoard />
-      </Suspense>
-    </DashboardLayout>
+    <Suspense fallback={<KanbanLoading />}>
+      <KanbanBoard />
+    </Suspense>
   );
 }

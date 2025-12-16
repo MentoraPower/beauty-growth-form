@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
-import DashboardLayout from "@/components/dashboard/DashboardLayout";
+
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -161,11 +161,7 @@ export default function LeadDetail() {
   }, [id, navigate, authLoading, subOriginId]);
 
   if (authLoading) {
-    return (
-      <DashboardLayout>
-        <div className="h-screen" />
-      </DashboardLayout>
-    );
+    return <div className="h-screen" />;
   }
 
   const handleDelete = async () => {
@@ -261,66 +257,63 @@ export default function LeadDetail() {
 
   if (isLoading) {
     return (
-      <DashboardLayout>
-        <div className="space-y-3">
-          {/* Breadcrumb skeleton */}
-          <div className="flex items-center gap-2">
-            <Skeleton className="h-4 w-20" />
-            <span className="text-muted-foreground">&gt;</span>
-            <Skeleton className="h-4 w-32" />
-          </div>
+      <div className="space-y-3">
+        {/* Breadcrumb skeleton */}
+        <div className="flex items-center gap-2">
+          <Skeleton className="h-4 w-20" />
+          <span className="text-muted-foreground">&gt;</span>
+          <Skeleton className="h-4 w-32" />
+        </div>
 
-          {/* Header skeleton */}
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <Skeleton className="h-8 w-8 rounded-full" />
-              <div className="space-y-1.5">
-                <Skeleton className="h-3 w-24" />
-                <Skeleton className="h-6 w-40" />
-              </div>
+        {/* Header skeleton */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <Skeleton className="h-8 w-8 rounded-full" />
+            <div className="space-y-1.5">
+              <Skeleton className="h-3 w-24" />
+              <Skeleton className="h-6 w-40" />
             </div>
-            <Skeleton className="h-10 w-10 rounded-md" />
           </div>
+          <Skeleton className="h-10 w-10 rounded-md" />
+        </div>
 
-          {/* Tags skeleton */}
-          <div className="pl-[44px] flex gap-2">
-            <Skeleton className="h-5 w-16 rounded-full" />
-            <Skeleton className="h-5 w-20 rounded-full" />
+        {/* Tags skeleton */}
+        <div className="pl-[44px] flex gap-2">
+          <Skeleton className="h-5 w-16 rounded-full" />
+          <Skeleton className="h-5 w-20 rounded-full" />
+        </div>
+
+        {/* Separator */}
+        <div className="px-8 py-2">
+          <div className="border-t border-black/10" />
+        </div>
+
+        {/* Tabs skeleton */}
+        <div className="flex gap-6 border-b border-black/10 pb-3">
+          <Skeleton className="h-4 w-20" />
+          <Skeleton className="h-4 w-16" />
+          <Skeleton className="h-4 w-24" />
+        </div>
+
+        {/* Content skeleton */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 pt-4">
+          <div className="lg:col-span-2 space-y-4">
+            <Skeleton className="h-48 w-full rounded-xl" />
+            <Skeleton className="h-32 w-full rounded-xl" />
           </div>
-
-          {/* Separator */}
-          <div className="px-8 py-2">
-            <div className="border-t border-black/10" />
-          </div>
-
-          {/* Tabs skeleton */}
-          <div className="flex gap-6 border-b border-black/10 pb-3">
-            <Skeleton className="h-4 w-20" />
-            <Skeleton className="h-4 w-16" />
-            <Skeleton className="h-4 w-24" />
-          </div>
-
-          {/* Content skeleton */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 pt-4">
-            <div className="lg:col-span-2 space-y-4">
-              <Skeleton className="h-48 w-full rounded-xl" />
-              <Skeleton className="h-32 w-full rounded-xl" />
-            </div>
-            <div className="space-y-4">
-              <Skeleton className="h-64 w-full rounded-xl" />
-            </div>
+          <div className="space-y-4">
+            <Skeleton className="h-64 w-full rounded-xl" />
           </div>
         </div>
-      </DashboardLayout>
+      </div>
     );
   }
 
   if (!lead) return null;
 
   return (
-    <DashboardLayout>
-      <motion.div 
-        initial={{ opacity: 0 }}
+    <motion.div 
+      initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.25, ease: "easeOut" }}
         className="space-y-3"
@@ -754,6 +747,6 @@ export default function LeadDetail() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </DashboardLayout>
+    );
   );
 }
