@@ -9,13 +9,17 @@
       "destination": "https://ytdfwkchsumgdvcroaqg.supabase.co/functions/v1/receive-webhook/:path*"
     },
     {
+      "source": "/api/waha-webhook",
+      "destination": "https://ytdfwkchsumgdvcroaqg.supabase.co/functions/v1/waha-webhook"
+    },
+    {
       "source": "/(.*)",
       "destination": "/index.html"
     }
   ],
   "headers": [
     {
-      "source": "/api/webhook(.*)",
+      "source": "/api/(.*)",
       "headers": [
         { "key": "Access-Control-Allow-Origin", "value": "*" },
         { "key": "Access-Control-Allow-Methods", "value": "GET, POST, OPTIONS" },
