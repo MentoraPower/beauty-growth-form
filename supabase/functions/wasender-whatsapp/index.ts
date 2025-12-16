@@ -250,7 +250,9 @@ async function handler(req: Request): Promise<Response> {
         body: JSON.stringify({ to, text }),
       });
 
-      return new Response(JSON.stringify({ success: true, messageId: result?.data?.msgId || result?.messageId || result?.key?.id }), {
+      // Use key.id (WhatsApp message ID) for status tracking, fallback to msgId
+      const whatsappMsgId = result?.key?.id || result?.data?.key?.id || result?.data?.msgId || result?.messageId;
+      return new Response(JSON.stringify({ success: true, messageId: whatsappMsgId }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
@@ -272,7 +274,9 @@ async function handler(req: Request): Promise<Response> {
         body: JSON.stringify(payload),
       });
 
-      return new Response(JSON.stringify({ success: true, messageId: result?.data?.msgId || result?.messageId || result?.key?.id }), {
+      // Use key.id (WhatsApp message ID) for status tracking
+      const whatsappMsgId = result?.key?.id || result?.data?.key?.id || result?.data?.msgId || result?.messageId;
+      return new Response(JSON.stringify({ success: true, messageId: whatsappMsgId }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
@@ -293,7 +297,9 @@ async function handler(req: Request): Promise<Response> {
         }),
       });
 
-      return new Response(JSON.stringify({ success: true, messageId: result?.data?.msgId || result?.messageId }), {
+      // Use key.id (WhatsApp message ID) for status tracking
+      const whatsappMsgId = result?.key?.id || result?.data?.key?.id || result?.data?.msgId || result?.messageId;
+      return new Response(JSON.stringify({ success: true, messageId: whatsappMsgId }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
@@ -383,7 +389,9 @@ async function handler(req: Request): Promise<Response> {
         }),
       });
 
-      return new Response(JSON.stringify({ success: true, messageId: result?.data?.msgId || result?.messageId || result?.key?.id }), {
+      // Use key.id (WhatsApp message ID) for status tracking
+      const whatsappMsgId = result?.key?.id || result?.data?.key?.id || result?.data?.msgId || result?.messageId;
+      return new Response(JSON.stringify({ success: true, messageId: whatsappMsgId }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
