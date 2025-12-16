@@ -93,6 +93,7 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
 
   return (
     <div className="min-h-screen bg-[#0f0f12]">
+      <LoadingBar />
       {/* Mobile Header */}
       <header className="lg:hidden fixed top-0 left-0 right-0 h-14 bg-card border-b border-border z-50 flex items-center justify-between px-4">
         <button
@@ -373,7 +374,6 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
         className="hidden lg:block h-screen py-2 pr-2 transition-[margin-left] duration-300 ease-out"
       >
         <div className="bg-card rounded-2xl h-full p-6 overflow-auto relative">
-          <LoadingBar />
           <PageTransition>
             {children}
           </PageTransition>
