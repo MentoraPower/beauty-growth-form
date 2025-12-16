@@ -82,17 +82,19 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
   // Fixed sidebar width (always collapsed)
   const sidebarWidth = 72;
 
-  // Calculate main content margin based on panel state
+  // Calculate main content margin based on panel state (accounting for outer padding)
   const getMainContentMargin = () => {
-    if (activePanel === 'crm') return sidebarWidth + 272;
-    if (activePanel === 'dashboard' || activePanel === 'whatsapp') return sidebarWidth + 240;
-    return sidebarWidth + 16;
+    const outerPadding = 8; // p-2 = 8px
+    if (activePanel === 'crm') return sidebarWidth + 272 + outerPadding;
+    if (activePanel === 'dashboard' || activePanel === 'whatsapp') return sidebarWidth + 240 + outerPadding;
+    return sidebarWidth + 16 + outerPadding;
   };
 
   const mainContentMargin = getMainContentMargin();
 
   return (
-    <div className="min-h-screen bg-[#0f0f12]">
+    <div className="min-h-screen bg-card p-2">
+      <div className="min-h-[calc(100vh-1rem)] bg-[#0f0f12] rounded-2xl relative">
       <LoadingBar />
       {/* Mobile Header */}
       <header className="lg:hidden fixed top-0 left-0 right-0 h-14 bg-card border-b border-border z-50 flex items-center justify-between px-4">
@@ -113,7 +115,7 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
       {/* Desktop Sidebar - Fixed Collapsed */}
       <aside
         style={{ width: sidebarWidth }}
-        className="hidden lg:flex flex-col fixed left-0 top-0 h-screen border-r border-border bg-card overflow-hidden z-50"
+        className="hidden lg:flex flex-col fixed left-2 top-2 h-[calc(100vh-1rem)] border-r border-border bg-card overflow-hidden z-50 rounded-l-2xl"
       >
         <div className="flex flex-col h-full">
           {/* Logo */}
@@ -194,9 +196,9 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
 
       {/* Dashboard Submenu Panel */}
       <div
-        style={{ left: sidebarWidth + 8 }}
+        style={{ left: sidebarWidth + 16 }}
         className={cn(
-          "hidden lg:block fixed top-0 my-2 h-[calc(100vh-1rem)] w-56 rounded-2xl bg-[#0f0f12] z-40 transition-all duration-300 ease-out overflow-hidden",
+          "hidden lg:block fixed top-2 h-[calc(100vh-1rem)] w-56 rounded-2xl bg-[#0f0f12] z-40 transition-all duration-300 ease-out overflow-hidden",
           activePanel === 'dashboard' ? "opacity-100 translate-x-0" : "opacity-0 -translate-x-4 pointer-events-none"
         )}
       >
@@ -228,9 +230,9 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
 
       {/* WhatsApp Submenu Panel */}
       <div
-        style={{ left: sidebarWidth + 8 }}
+        style={{ left: sidebarWidth + 16 }}
         className={cn(
-          "hidden lg:block fixed top-0 my-2 h-[calc(100vh-1rem)] w-56 rounded-2xl bg-[#0f0f12] z-40 transition-all duration-300 ease-out overflow-hidden",
+          "hidden lg:block fixed top-2 h-[calc(100vh-1rem)] w-56 rounded-2xl bg-[#0f0f12] z-40 transition-all duration-300 ease-out overflow-hidden",
           activePanel === 'whatsapp' ? "opacity-100 translate-x-0" : "opacity-0 -translate-x-4 pointer-events-none"
         )}
       >
@@ -371,7 +373,7 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
       {/* Main Content with rounded corners */}
       <main 
         style={{ marginLeft: `${mainContentMargin}px` }}
-        className="hidden lg:block h-screen py-2 pr-2 transition-[margin-left] duration-300 ease-out"
+        className="hidden lg:block h-[calc(100vh-1rem)] mt-2 mr-2 transition-[margin-left] duration-300 ease-out"
       >
         <div className="bg-card rounded-2xl h-full p-6 overflow-auto relative">
           <PageTransition>
@@ -381,11 +383,13 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
       </main>
       
       {/* Mobile Main Content */}
+      {/* Mobile Main Content */}
       <main className="lg:hidden pt-14 min-h-screen p-4">
         <PageTransition>
           {children}
         </PageTransition>
       </main>
+      </div>
     </div>
   );
 });
