@@ -3,7 +3,7 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import { LayoutDashboard, Menu, X, LogOut, Kanban, ChevronRight, BarChart3, Users, TrendingUp, Settings } from "lucide-react";
 import { cn } from "@/lib/utils";
 import WhatsAppIcon from "@/components/icons/WhatsApp";
-import scaleLogo from "@/assets/scale-logo.png";
+import scaleLogo from "@/assets/scale-logo-new.png";
 import { CRMOriginsPanel } from "./CRMOriginsPanel";
 import { PageTransition } from "./PageTransition";
 import { LoadingBar } from "@/components/LoadingBar";
@@ -116,8 +116,8 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
       >
         <div className="flex flex-col h-full">
           {/* Logo */}
-          <div className="pt-[30px] pb-4 px-4 flex justify-center">
-            <div className="w-10 flex items-center">
+          <div className="pt-6 pb-4 px-2 flex justify-center">
+            <div className="w-14 flex items-center">
               <img src={scaleLogo} alt="Scale Beauty" className="w-full h-auto" />
             </div>
           </div>
