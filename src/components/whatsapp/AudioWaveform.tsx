@@ -93,6 +93,10 @@ export const AudioWaveform = ({ src, sent = false }: AudioWaveformProps) => {
     const gap = 2;
     const progress = duration > 0 ? currentTime / duration : 0;
 
+    // Use design tokens (HSL) for colors
+    const playedColor = sent ? "hsl(var(--primary-dark))" : "hsl(var(--primary))";
+    const unplayedColor = "hsl(var(--muted-foreground) / 0.35)";
+
     ctx.clearRect(0, 0, width, height);
 
     waveformData.forEach((value, index) => {
@@ -101,15 +105,7 @@ export const AudioWaveform = ({ src, sent = false }: AudioWaveformProps) => {
       const y = (height - barHeight) / 2;
 
       const progressIndex = progress * waveformData.length;
-      
-      // Played bars: darker/filled color, Unplayed bars: lighter/muted color
-      if (index < progressIndex) {
-        // Played - vibrant green
-        ctx.fillStyle = sent ? "#25D366" : "#25D366";
-      } else {
-        // Unplayed - muted gray-green
-        ctx.fillStyle = sent ? "rgba(255,255,255,0.4)" : "rgba(0,0,0,0.2)";
-      }
+      ctx.fillStyle = index < progressIndex ? playedColor : unplayedColor;
 
       ctx.beginPath();
       ctx.roundRect(x, y, barWidth, barHeight, 1.5);
@@ -249,11 +245,9 @@ export const AudioWaveform = ({ src, sent = false }: AudioWaveformProps) => {
 
       <button
         onClick={togglePlay}
-        className={`w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 transition-colors ${
-          sent 
-            ? "bg-[#075e54] text-white hover:bg-[#064e46]" 
-            : "bg-[#128c7e] text-white hover:bg-[#0f7b6f]"
-        }`}
+        className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 transition-colors bg-primary text-primary-foreground hover:bg-primary/90"
+        aria-label={isPlaying ? "Pausar áudio" : "Reproduzir áudio"}
+        type="button"
       >
         {isPlaying ? <Pause size={16} /> : <Play size={16} className="ml-0.5" />}
       </button>
@@ -267,7 +261,7 @@ export const AudioWaveform = ({ src, sent = false }: AudioWaveformProps) => {
           onClick={handleCanvasClick}
         />
         <span className="text-[10px] text-muted-foreground tabular-nums">
-          {formatTime(isPlaying || currentTime > 0 ? currentTime : duration)}
+          {formatTime(currentTime)} / {formatTime(duration)}
         </span>
       </div>
     </div>

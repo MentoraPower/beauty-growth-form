@@ -1149,8 +1149,9 @@ const WhatsApp = () => {
   };
 
   // Hide empty records (no text and no media)
+  // (Keep media messages visible even when text/mediaUrl is missing, so we can show a proper UI for them.)
   const visibleMessages = messages.filter(
-    (m) => Boolean(m.text?.trim()) || Boolean(m.mediaUrl)
+    (m) => Boolean(m.mediaType) || Boolean(m.text?.trim()) || Boolean(m.mediaUrl)
   );
 
   // Format WhatsApp-style text (*bold*, _italic_, ~strikethrough~, ```monospace```, *_bold italic_*)
@@ -1214,10 +1215,10 @@ const WhatsApp = () => {
       );
     }
     
-    if (msg.mediaType === "audio" && msg.mediaUrl) {
+    if (msg.mediaType === "audio") {
       return (
         <div className="min-w-[220px] max-w-[280px]">
-          <AudioWaveform src={msg.mediaUrl} sent={msg.sent} />
+          <AudioWaveform src={msg.mediaUrl || ""} sent={msg.sent} />
         </div>
       );
     }
