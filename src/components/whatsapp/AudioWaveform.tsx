@@ -80,7 +80,7 @@ export const AudioWaveform = ({ src, sent = false }: AudioWaveformProps) => {
   }, [src]);
 
   // Draw waveform with animation frame for smooth progress
-  const drawWaveform = useCallback(() => {
+  const drawWaveform = useCallback((progressOverride?: number) => {
     const canvas = canvasRef.current;
     if (!canvas || waveformData.length === 0) return;
 
@@ -91,7 +91,8 @@ export const AudioWaveform = ({ src, sent = false }: AudioWaveformProps) => {
     const height = canvas.height;
     const barWidth = 3;
     const gap = 2;
-    const progress = duration > 0 ? currentTime / duration : 0;
+    const progress =
+      typeof progressOverride === "number" ? progressOverride : duration > 0 ? currentTime / duration : 0;
 
     // Use design tokens (HSL) for colors
     const playedColor = sent ? "hsl(var(--primary-dark))" : "hsl(var(--primary))";
@@ -159,8 +160,12 @@ export const AudioWaveform = ({ src, sent = false }: AudioWaveformProps) => {
     };
 
     const handleEnded = () => {
+      // Reset to the "normal" state like WhatsApp
+      audio.pause();
+      audio.currentTime = 0;
       setIsPlaying(false);
       setCurrentTime(0);
+      drawWaveform(0);
     };
 
     const handleTimeUpdate = () => {
@@ -182,7 +187,7 @@ export const AudioWaveform = ({ src, sent = false }: AudioWaveformProps) => {
       audio.removeEventListener("ended", handleEnded);
       audio.removeEventListener("timeupdate", handleTimeUpdate);
     };
-  }, [src]);
+  }, [src, drawWaveform]);
 
   const togglePlay = async () => {
     const audio = audioRef.current;
@@ -261,7 +266,9 @@ export const AudioWaveform = ({ src, sent = false }: AudioWaveformProps) => {
           onClick={handleCanvasClick}
         />
         <span className="text-[10px] text-muted-foreground tabular-nums">
-          {formatTime(currentTime)} / {formatTime(duration)}
+          {isPlaying || currentTime > 0
+            ? `${formatTime(currentTime)} / ${formatTime(duration)}`
+            : formatTime(duration)}
         </span>
       </div>
     </div>
