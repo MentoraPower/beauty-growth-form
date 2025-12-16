@@ -239,7 +239,7 @@ const WhatsApp = () => {
   };
 
   const sendMessage = async () => {
-    if (!message.trim() || !selectedChat) return;
+    if (!message.trim() || !selectedChat || isSending) return;
 
     const messageText = message.trim();
     setMessage("");
@@ -267,16 +267,20 @@ const WhatsApp = () => {
 
       if (error) throw error;
 
-      await supabase
+      const messageId = data?.messageId || `local-${Date.now()}`;
+
+      const { data: insertedMsg } = await supabase
         .from("whatsapp_messages")
         .insert({
           chat_id: selectedChat.id,
-          message_id: data?.messageId || `local-${Date.now()}`,
+          message_id: messageId,
           phone: selectedChat.phone,
           text: messageText,
           from_me: true,
           status: "SENT",
-        });
+        })
+        .select()
+        .single();
 
       await supabase
         .from("whatsapp_chats")
@@ -286,7 +290,14 @@ const WhatsApp = () => {
         })
         .eq("id", selectedChat.id);
 
-      setMessages(prev => prev.map(m => m.id === tempId ? { ...m, status: "SENT" } : m));
+      // Replace temp message with real one (prevent realtime duplicate)
+      if (insertedMsg) {
+        setMessages(prev => prev.map(m => m.id === tempId ? { 
+          ...m, 
+          id: insertedMsg.id, 
+          status: "SENT" 
+        } : m));
+      }
       
     } catch (error: any) {
       console.error("Error sending message:", error);
@@ -450,7 +461,13 @@ const WhatsApp = () => {
         (payload) => {
           const msg = payload.new as any;
           setMessages(prev => {
-            if (prev.some(m => m.id === msg.id || m.id === msg.message_id)) return prev;
+            // Skip if already exists by id, message_id, or same text+from_me combo
+            const isDuplicate = prev.some(m => 
+              m.id === msg.id || 
+              m.id === msg.message_id ||
+              (msg.from_me && m.sent && m.text === msg.text && m.status === "SENT")
+            );
+            if (isDuplicate) return prev;
             return [...prev, {
               id: msg.id,
               text: msg.text || "",
