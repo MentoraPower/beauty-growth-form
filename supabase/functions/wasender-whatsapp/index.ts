@@ -262,13 +262,14 @@ async function handler(req: Request): Promise<Response> {
       const to = formatPhoneForApi(phone);
       console.log(`[Wasender] Sending image to ${to}: ${mediaUrl}`);
       
+      const payload: any = { to, imageUrl: mediaUrl };
+      if (caption && typeof caption === "string" && caption.trim()) {
+        payload.text = caption;
+      }
+      
       const result = await wasenderRequest("/send-message", {
         method: "POST",
-        body: JSON.stringify({ 
-          to, 
-          imageUrl: mediaUrl,
-          text: caption || "",
-        }),
+        body: JSON.stringify(payload),
       });
 
       return new Response(JSON.stringify({ success: true, messageId: result?.messageId || result?.key?.id }), {
@@ -394,13 +395,14 @@ async function handler(req: Request): Promise<Response> {
       const to = formatPhoneForApi(phone);
       console.log(`[Wasender] Sending video to ${to}: ${mediaUrl}`);
       
+      const payload: any = { to, videoUrl: mediaUrl };
+      if (caption && typeof caption === "string" && caption.trim()) {
+        payload.text = caption;
+      }
+      
       const result = await wasenderRequest("/send-message", {
         method: "POST",
-        body: JSON.stringify({ 
-          to, 
-          videoUrl: mediaUrl,
-          text: caption || "",
-        }),
+        body: JSON.stringify(payload),
       });
 
       return new Response(JSON.stringify({ success: true, messageId: result?.data?.msgId || result?.messageId }), {
