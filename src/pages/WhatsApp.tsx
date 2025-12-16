@@ -41,6 +41,35 @@ interface Message {
 
 const DEFAULT_AVATAR = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyMTIgMjEyIj48cGF0aCBmaWxsPSIjREZFNUU3IiBkPSJNMCAwaDIxMnYyMTJIMHoiLz48cGF0aCBmaWxsPSIjRkZGIiBkPSJNMTA2IDEwNmMtMjUuNCAwLTQ2LTIwLjYtNDYtNDZzMjAuNi00NiA0Ni00NiA0NiAyMC42IDQ2IDQ2LTIwLjYgNDYtNDYgNDZ6bTAgMTNjMzAuNiAwIDkyIDE1LjQgOTIgNDZ2MjNIMTR2LTIzYzAtMzAuNiA2MS40LTQ2IDkyLTQ2eiIvPjwvc3ZnPg==";
 
+type WhatsAppMessageStatus = string | null | undefined;
+
+const isViewedStatus = (status: WhatsAppMessageStatus) => status === "READ" || status === "PLAYED";
+
+const getStatusRank = (status: WhatsAppMessageStatus) => {
+  switch (status) {
+    case "SENDING":
+      return 0;
+    case "SENT":
+      return 1;
+    case "DELIVERED":
+      return 2;
+    case "READ":
+      return 3;
+    case "PLAYED":
+      return 4;
+    case "DELETED":
+      return 99;
+    default:
+      return -1;
+  }
+};
+
+const mergeStatus = (current: WhatsAppMessageStatus, incoming: WhatsAppMessageStatus) => {
+  if (!incoming) return current;
+  if (!current) return incoming;
+  return getStatusRank(incoming) >= getStatusRank(current) ? incoming : current;
+};
+
 const WhatsApp = () => {
   const { toast } = useToast();
   const [selectedChat, setSelectedChat] = useState<Chat | null>(null);
@@ -1137,7 +1166,7 @@ const WhatsApp = () => {
               text: msg.text || "",
               time: msg.created_at ? new Date(msg.created_at).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit", timeZone: "America/Sao_Paulo" }) : "",
               sent: msg.from_me || false,
-              read: msg.status === "READ",
+              read: isViewedStatus(msg.status),
               status: msg.status,
               mediaUrl: msg.media_url,
               mediaType: msg.media_type,
@@ -1160,9 +1189,16 @@ const WhatsApp = () => {
           console.log("[WhatsApp] Realtime message updated:", msg.id, "status:", msg.status);
           
           // Update message status (for DELETED, READ, etc.)
-          setMessages(prev => prev.map(m => 
-            m.id === msg.id ? { ...m, status: msg.status, read: msg.status === "READ" } : m
-          ));
+          setMessages(prev => prev.map(m => {
+            if (m.id !== msg.id) return m;
+
+            const nextStatus = mergeStatus(m.status, msg.status);
+            return {
+              ...m,
+              status: nextStatus,
+              read: isViewedStatus(nextStatus),
+            };
+          }));
         }
       )
       .subscribe();
