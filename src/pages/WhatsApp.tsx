@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import { Search, Smile, Paperclip, Mic, Send, Check, CheckCheck, RefreshCw, Phone, Image, File, Play } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -36,7 +36,7 @@ const WhatsApp = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [chats, setChats] = useState<Chat[]>([]);
   const [messages, setMessages] = useState<Message[]>([]);
-  const [isLoadingChats, setIsLoadingChats] = useState(false);
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
   const [isLoadingMessages, setIsLoadingMessages] = useState(false);
   const [isSending, setIsSending] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
@@ -45,6 +45,7 @@ const WhatsApp = () => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
+  const chatsRef = useRef<Chat[]>([]);
 
   const getInitials = (name: string): string => {
     if (!name) return "?";
@@ -55,33 +56,23 @@ const WhatsApp = () => {
     return name.substring(0, 2).toUpperCase();
   };
 
-  // Check if phone is a WhatsApp internal ID (LID) instead of a real number
   const isWhatsAppInternalId = (phone: string): boolean => {
     if (!phone) return false;
     const cleaned = phone.replace(/\D/g, "");
-    // WhatsApp LIDs are typically very long (15+ digits) and start with specific patterns
     if (cleaned.length > 14) return true;
-    // LIDs often start with 120, 146, 180, 203, 234, 447 patterns
     if (/^(120|146|180|203|234|447)\d{10,}$/.test(cleaned)) return true;
     return false;
   };
 
   const formatPhoneDisplay = (phone: string): string => {
     if (!phone) return "";
-    // If it's an internal WhatsApp ID, just return the number
-    if (isWhatsAppInternalId(phone)) {
-      return phone;
-    }
-    // Format phone for display: +55 44 9123-4567
+    if (isWhatsAppInternalId(phone)) return phone;
     const cleaned = phone.replace(/\D/g, "");
     if (cleaned.length === 13) {
-      // Brazilian format: 55 + DDD (2) + number (9)
       return `+${cleaned.slice(0, 2)} ${cleaned.slice(2, 4)} ${cleaned.slice(4, 9)}-${cleaned.slice(9)}`;
     } else if (cleaned.length === 12) {
-      // Brazilian format without 9: 55 + DDD (2) + number (8)
       return `+${cleaned.slice(0, 2)} ${cleaned.slice(2, 4)} ${cleaned.slice(4, 8)}-${cleaned.slice(8)}`;
     } else if (cleaned.length >= 10) {
-      // Generic format
       return `+${cleaned.slice(0, 2)} ${cleaned.slice(2)}`;
     }
     return phone;
@@ -101,8 +92,36 @@ const WhatsApp = () => {
     }
   };
 
-  const fetchChats = async () => {
-    setIsLoadingChats(true);
+  const formatChatData = useCallback((chat: any): Chat | null => {
+    const phone = chat.phone || "";
+    if (phone.includes("@newsletter") || phone.includes("@g.us") || 
+        phone.includes("status@broadcast") || phone === "0" || phone === "" ||
+        isWhatsAppInternalId(phone)) {
+      return null;
+    }
+
+    const rawName = chat.name ? String(chat.name).trim() : "";
+    const nameLooksLikeNumber = /^\d+$/.test(rawName);
+    const displayName = !rawName || nameLooksLikeNumber || rawName === String(chat.phone)
+      ? formatPhoneDisplay(chat.phone)
+      : rawName;
+
+    return {
+      id: chat.id,
+      name: displayName,
+      lastMessage: chat.last_message || "",
+      time: chat.last_message_time ? formatTime(chat.last_message_time) : "",
+      unread: chat.unread_count || 0,
+      avatar: getInitials(displayName || chat.phone),
+      phone: chat.phone,
+      photo_url: chat.photo_url,
+    };
+  }, []);
+
+  // Initial load - fetch chats once
+  const fetchChats = useCallback(async (showLoading = false) => {
+    if (showLoading) setIsInitialLoad(true);
+    
     try {
       const { data, error } = await supabase
         .from("whatsapp_chats")
@@ -111,44 +130,70 @@ const WhatsApp = () => {
 
       if (error) throw error;
 
-      // Filter out channels, groups, and LID contacts
-      const validChats = (data || []).filter((chat: any) => {
-        const phone = chat.phone || "";
-        if (phone.includes("@newsletter")) return false;
-        if (phone.includes("@g.us")) return false;
-        if (phone.includes("status@broadcast")) return false;
-        if (phone === "0" || phone === "") return false;
-        // Filter out WhatsApp LIDs (internal IDs, not real phone numbers)
-        if (isWhatsAppInternalId(phone)) return false;
-        return true;
-      });
+      const formattedChats = (data || [])
+        .map(formatChatData)
+        .filter((chat): chat is Chat => chat !== null);
 
-      const formattedChats: Chat[] = validChats.map((chat: any) => {
-        const rawName = chat.name ? String(chat.name).trim() : "";
-        const nameLooksLikeNumber = /^\d+$/.test(rawName);
-        const displayName = !rawName || nameLooksLikeNumber || rawName === String(chat.phone)
-          ? formatPhoneDisplay(chat.phone)
-          : rawName;
-
-        return {
-          id: chat.id,
-          name: displayName,
-          lastMessage: chat.last_message || "",
-          time: chat.last_message_time ? formatTime(chat.last_message_time) : "",
-          unread: chat.unread_count || 0,
-          avatar: getInitials(displayName || chat.phone),
-          phone: chat.phone,
-          photo_url: chat.photo_url,
-        };
-      });
-
+      chatsRef.current = formattedChats;
       setChats(formattedChats);
     } catch (error: any) {
       console.error("Error fetching chats:", error);
     } finally {
-      setIsLoadingChats(false);
+      setIsInitialLoad(false);
     }
-  };
+  }, [formatChatData]);
+
+  // Update single chat in state without refetching all
+  const updateChatInState = useCallback((updatedChat: any) => {
+    const formatted = formatChatData(updatedChat);
+    if (!formatted) return;
+
+    setChats(prev => {
+      const existingIndex = prev.findIndex(c => c.id === formatted.id);
+      let newChats: Chat[];
+      
+      if (existingIndex >= 0) {
+        // Update existing chat
+        newChats = [...prev];
+        newChats[existingIndex] = formatted;
+      } else {
+        // Add new chat at beginning
+        newChats = [formatted, ...prev];
+      }
+      
+      // Sort by last message time (most recent first)
+      newChats.sort((a, b) => {
+        const timeA = a.time || "";
+        const timeB = b.time || "";
+        return timeB.localeCompare(timeA);
+      });
+      
+      chatsRef.current = newChats;
+      return newChats;
+    });
+
+    // Update selectedChat if it's the one being updated
+    setSelectedChat(prev => {
+      if (prev?.id === formatted.id) {
+        return formatted;
+      }
+      return prev;
+    });
+  }, [formatChatData]);
+
+  // Remove chat from state
+  const removeChatFromState = useCallback((chatId: string) => {
+    setChats(prev => {
+      const newChats = prev.filter(c => c.id !== chatId);
+      chatsRef.current = newChats;
+      return newChats;
+    });
+    
+    setSelectedChat(prev => {
+      if (prev?.id === chatId) return null;
+      return prev;
+    });
+  }, []);
 
   const fetchMessages = async (chatId: string) => {
     setIsLoadingMessages(true);
@@ -196,7 +241,6 @@ const WhatsApp = () => {
     setMessage("");
     setIsSending(true);
     
-    // Optimistic update
     const tempId = `temp-${Date.now()}`;
     const tempMessage: Message = {
       id: tempId,
@@ -219,7 +263,6 @@ const WhatsApp = () => {
 
       if (error) throw error;
 
-      // Save to database
       await supabase
         .from("whatsapp_messages")
         .insert({
@@ -231,7 +274,6 @@ const WhatsApp = () => {
           status: "SENT",
         });
 
-      // Update chat last message
       await supabase
         .from("whatsapp_chats")
         .update({
@@ -240,12 +282,10 @@ const WhatsApp = () => {
         })
         .eq("id", selectedChat.id);
 
-      // Update optimistic message status
       setMessages(prev => prev.map(m => m.id === tempId ? { ...m, status: "SENT" } : m));
       
     } catch (error: any) {
       console.error("Error sending message:", error);
-      // Remove failed message
       setMessages(prev => prev.filter(m => m.id !== tempId));
       toast({
         title: "Erro ao enviar",
@@ -267,7 +307,7 @@ const WhatsApp = () => {
       });
 
       console.log("[WhatsApp] Sync response:", data, error);
-      await fetchChats();
+      // Chats will update via realtime subscription
       
     } catch (error: any) {
       console.error("[WhatsApp] Error syncing:", error);
@@ -301,77 +341,92 @@ const WhatsApp = () => {
     });
   };
 
-  // Initial cleanup, fetch, and auto-sync
+  // Initial load and cleanup
   useEffect(() => {
     const init = async () => {
-      // Silently cleanup invalid chats first
+      // Cleanup invalid chats
       try {
         const { data: allChats } = await supabase
           .from("whatsapp_chats")
           .select("id, phone");
 
         if (allChats) {
-            const invalidChatIds = allChats
-              .filter((chat: any) => {
-                const phone = chat.phone || "";
-                if (phone.includes("@newsletter")) return true;
-                if (phone.includes("@g.us")) return true;
-                if (phone.includes("status@broadcast")) return true;
-                if (phone === "0" || phone === "") return true;
-                if (isWhatsAppInternalId(phone)) return true;
-                return false;
-              })
-              .map((chat: any) => chat.id);
+          const invalidChatIds = allChats
+            .filter((chat: any) => {
+              const phone = chat.phone || "";
+              return phone.includes("@newsletter") || phone.includes("@g.us") ||
+                     phone.includes("status@broadcast") || phone === "0" || 
+                     phone === "" || isWhatsAppInternalId(phone);
+            })
+            .map((chat: any) => chat.id);
 
           if (invalidChatIds.length > 0) {
             await supabase.from("whatsapp_messages").delete().in("chat_id", invalidChatIds);
             await supabase.from("whatsapp_chats").delete().in("id", invalidChatIds);
-            console.log(`Cleaned up ${invalidChatIds.length} invalid chats`);
           }
         }
       } catch (error) {
         console.error("Cleanup error:", error);
       }
       
-      // Fetch local chats first for fast UI
-      await fetchChats();
+      // Fetch chats
+      await fetchChats(true);
       
-      // Then auto-sync from WAHA in background
+      // Background sync
       syncAllChats();
     };
     
     init();
-  }, []);
+  }, [fetchChats]);
 
-  // Realtime subscription for chats
+  // Realtime subscription for chats - UPDATE INCREMENTALLY
   useEffect(() => {
     const channel = supabase
       .channel("whatsapp-chats-realtime")
       .on(
         "postgres_changes",
-        { event: "*", schema: "public", table: "whatsapp_chats" },
-        () => fetchChats()
+        { event: "INSERT", schema: "public", table: "whatsapp_chats" },
+        (payload) => {
+          console.log("[WhatsApp] Chat inserted:", payload.new);
+          updateChatInState(payload.new);
+        }
+      )
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "whatsapp_chats" },
+        (payload) => {
+          console.log("[WhatsApp] Chat updated:", payload.new);
+          updateChatInState(payload.new);
+        }
+      )
+      .on(
+        "postgres_changes",
+        { event: "DELETE", schema: "public", table: "whatsapp_chats" },
+        (payload) => {
+          console.log("[WhatsApp] Chat deleted:", payload.old);
+          removeChatFromState((payload.old as any).id);
+        }
       )
       .subscribe();
 
     return () => {
       supabase.removeChannel(channel);
     };
-  }, []);
+  }, [updateChatInState, removeChatFromState]);
 
   // Realtime subscription for messages
   useEffect(() => {
     if (!selectedChat) return;
 
     const channel = supabase
-      .channel("whatsapp-messages-realtime")
+      .channel(`whatsapp-messages-${selectedChat.id}`)
       .on(
         "postgres_changes",
         { event: "INSERT", schema: "public", table: "whatsapp_messages", filter: `chat_id=eq.${selectedChat.id}` },
         (payload) => {
           const msg = payload.new as any;
           setMessages(prev => {
-            if (prev.some(m => m.id === msg.id)) return prev;
+            if (prev.some(m => m.id === msg.id || m.id === msg.message_id)) return prev;
             return [...prev, {
               id: msg.id,
               text: msg.text || "",
@@ -390,14 +445,14 @@ const WhatsApp = () => {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [selectedChat]);
+  }, [selectedChat?.id]);
 
   // Fetch messages when chat selected
   useEffect(() => {
     if (selectedChat) {
       fetchMessages(selectedChat.id);
     }
-  }, [selectedChat]);
+  }, [selectedChat?.id]);
 
   // Scroll to bottom on new messages
   useEffect(() => {
@@ -470,9 +525,14 @@ const WhatsApp = () => {
           {/* Header */}
           <div className="h-14 px-4 flex items-center justify-between bg-muted/30 border-b border-border/30">
             <h2 className="font-semibold text-foreground">Conversas</h2>
-            {isSyncing && (
-              <RefreshCw className="w-4 h-4 text-muted-foreground animate-spin" />
-            )}
+            <button
+              onClick={syncAllChats}
+              disabled={isSyncing}
+              className="p-1.5 hover:bg-muted/50 rounded-full transition-colors"
+              title="Sincronizar"
+            >
+              <RefreshCw className={cn("w-4 h-4 text-muted-foreground", isSyncing && "animate-spin")} />
+            </button>
           </div>
 
           {/* Search */}
@@ -488,9 +548,9 @@ const WhatsApp = () => {
             </div>
           </div>
 
-          {/* Chat List */}
+          {/* Chat List - Always visible, no loading spinner */}
           <div className="flex-1 overflow-y-auto">
-            {isLoadingChats || isSyncing ? (
+            {isInitialLoad && chats.length === 0 ? (
               <div className="flex items-center justify-center h-full py-20">
                 <RefreshCw className="w-6 h-6 text-muted-foreground animate-spin" />
               </div>
@@ -533,8 +593,15 @@ const WhatsApp = () => {
               ))
             ) : (
               <div className="flex-1 flex flex-col items-center justify-center h-full py-20 gap-3">
-                <RefreshCw className="w-6 h-6 text-muted-foreground animate-spin" />
-                <p className="text-sm text-muted-foreground">Sincronizando conversas...</p>
+                <p className="text-sm text-muted-foreground">Nenhuma conversa encontrada</p>
+                <button
+                  onClick={syncAllChats}
+                  disabled={isSyncing}
+                  className="px-4 py-2 bg-emerald-500 text-white rounded-full hover:bg-emerald-600 transition-colors flex items-center gap-2 text-sm"
+                >
+                  <RefreshCw className={cn("w-4 h-4", isSyncing && "animate-spin")} />
+                  Sincronizar
+                </button>
               </div>
             )}
           </div>
