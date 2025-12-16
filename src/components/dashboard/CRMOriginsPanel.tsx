@@ -186,11 +186,11 @@ function SortableOriginItem({
             <div className="absolute left-[3px] top-0 bottom-3 w-[1.5px] bg-white/25" />
             
             {/* Overview Item */}
-            <div className="relative flex items-center group py-0.5 pl-4">
-              {/* Curved line branch */}
-              <svg className="absolute left-0 top-1/2 -translate-y-1/2 w-4 h-5" viewBox="0 0 16 20" fill="none">
+            <div className="relative flex items-center group py-0.5">
+              {/* Curved line branch - starts from vertical line and curves right */}
+              <svg className="absolute left-[3px] top-1/2 -translate-y-1/2 w-4 h-6 overflow-visible" viewBox="0 0 16 24" fill="none">
                 <path 
-                  d="M0 0 L0 10 Q0 10, 4 10 L16 10" 
+                  d="M0 0 C0 12, 8 12, 16 12" 
                   stroke="rgba(255,255,255,0.25)" 
                   strokeWidth="1.5"
                   strokeLinecap="round"
@@ -199,7 +199,7 @@ function SortableOriginItem({
               <button
                 onClick={() => handleOverviewClick(origin.id)}
                 className={cn(
-                  "flex items-center gap-2 w-full py-1.5 px-2 rounded-lg transition-all duration-200 ease-out text-xs",
+                  "flex items-center gap-2 w-full py-1.5 px-2 ml-5 rounded-lg transition-all duration-200 ease-out text-xs",
                   currentOverviewOriginId === origin.id
                     ? "bg-white/10 text-white font-medium"
                     : "text-white/70 hover:text-white hover:bg-white/5"
@@ -219,11 +219,11 @@ function SortableOriginItem({
               const isActive = currentSubOriginId === subOrigin.id;
               
               return (
-                <div key={subOrigin.id} className="relative flex items-center group py-0.5 pl-4">
+                <div key={subOrigin.id} className="relative flex items-center group py-0.5">
                   {/* Curved line branch */}
-                  <svg className="absolute left-0 top-1/2 -translate-y-1/2 w-4 h-5" viewBox="0 0 16 20" fill="none">
+                  <svg className="absolute left-[3px] top-1/2 -translate-y-1/2 w-4 h-6 overflow-visible" viewBox="0 0 16 24" fill="none">
                     <path 
-                      d="M0 0 L0 10 Q0 10, 4 10 L16 10" 
+                      d="M0 0 C0 12, 8 12, 16 12" 
                       stroke="rgba(255,255,255,0.25)" 
                       strokeWidth="1.5"
                       strokeLinecap="round"
@@ -232,7 +232,7 @@ function SortableOriginItem({
                   <button
                     onClick={() => handleSubOriginClick(subOrigin.id)}
                     className={cn(
-                      "flex items-center gap-2 flex-1 py-1.5 px-2 rounded-lg transition-all duration-200 ease-out text-xs",
+                      "flex items-center gap-2 flex-1 py-1.5 px-2 ml-5 rounded-lg transition-all duration-200 ease-out text-xs",
                       isActive 
                         ? "bg-white/10 text-white font-medium"
                         : "text-white/70 hover:text-white hover:bg-white/5"
@@ -285,11 +285,11 @@ function SortableOriginItem({
             })}
 
             {/* Add Sub-origin Button */}
-            <div className="relative flex items-center py-0.5 pl-4">
+            <div className="relative flex items-center py-0.5">
               {/* Curved line branch */}
-              <svg className="absolute left-0 top-1/2 -translate-y-1/2 w-4 h-5" viewBox="0 0 16 20" fill="none">
+              <svg className="absolute left-[3px] top-1/2 -translate-y-1/2 w-4 h-6 overflow-visible" viewBox="0 0 16 24" fill="none">
                 <path 
-                  d="M0 0 L0 10 Q0 10, 4 10 L16 10" 
+                  d="M0 0 C0 12, 8 12, 16 12" 
                   stroke="rgba(255,255,255,0.15)" 
                   strokeWidth="1.5"
                   strokeLinecap="round"
@@ -297,7 +297,7 @@ function SortableOriginItem({
               </svg>
               <button
                 onClick={() => openCreateSubOriginDialog(origin.id)}
-                className="flex items-center gap-2 w-full py-1.5 px-2 rounded-lg transition-all duration-200 ease-out text-xs text-white/50 hover:text-white hover:bg-white/5"
+                className="flex items-center gap-2 w-full py-1.5 px-2 ml-5 rounded-lg transition-all duration-200 ease-out text-xs text-white/50 hover:text-white hover:bg-white/5"
               >
                 <Plus className="h-3 w-3" />
                 <span>Criar sub origem</span>
