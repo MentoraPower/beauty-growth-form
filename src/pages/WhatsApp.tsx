@@ -497,6 +497,38 @@ const WhatsApp = () => {
     }
   }, [selectedChat?.id, fetchContactInfo]);
 
+  // Send presence update (typing/recording indicator)
+  const lastPresenceRef = useRef<{ phone: string; type: string; time: number } | null>(null);
+  
+  const sendPresenceUpdate = useCallback(async (presenceType: "composing" | "recording") => {
+    if (!selectedChat) return;
+    
+    // Debounce: don't send if same presence was sent in last 3 seconds
+    const now = Date.now();
+    if (lastPresenceRef.current && 
+        lastPresenceRef.current.phone === selectedChat.phone &&
+        lastPresenceRef.current.type === presenceType &&
+        now - lastPresenceRef.current.time < 3000) {
+      return;
+    }
+    
+    lastPresenceRef.current = { phone: selectedChat.phone, type: presenceType, time: now };
+    
+    try {
+      await supabase.functions.invoke("wasender-whatsapp", {
+        body: {
+          action: "send-presence",
+          phone: selectedChat.phone,
+          presenceType,
+          delayMs: 3000,
+        },
+      });
+    } catch (error) {
+      // Silent fail - presence is not critical
+      console.log("[WhatsApp] Presence update failed:", error);
+    }
+  }, [selectedChat]);
+
   const clearAllData = async () => {
     try {
       console.log("[WhatsApp] Clearing all data...");
@@ -673,6 +705,9 @@ const WhatsApp = () => {
       mediaRecorder.start();
       setIsRecording(true);
       setRecordingTime(0);
+      
+      // Send "recording" presence to contact
+      sendPresenceUpdate("recording");
 
       // Start timer
       recordingIntervalRef.current = setInterval(() => {
@@ -1444,7 +1479,12 @@ const WhatsApp = () => {
                       <Input
                         placeholder="Digite uma mensagem"
                         value={message}
-                        onChange={(e) => setMessage(e.target.value)}
+                        onChange={(e) => {
+                          setMessage(e.target.value);
+                          if (e.target.value.trim()) {
+                            sendPresenceUpdate("composing");
+                          }
+                        }}
                         onKeyDown={handleKeyPress}
                         disabled={isSending}
                         className="bg-card border-border/50 h-10 text-sm rounded-lg"

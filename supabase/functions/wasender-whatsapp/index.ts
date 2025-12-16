@@ -200,10 +200,32 @@ async function handler(req: Request): Promise<Response> {
   }
 
   try {
-    const { action, phone, text, mediaUrl, filename, caption } = await req.json();
+    const { action, phone, text, mediaUrl, filename, caption, presenceType, delayMs } = await req.json();
     console.log(`[Wasender] Action: ${action}`);
 
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+
+    // =========================
+    // ACTION: send-presence
+    // =========================
+    if (action === "send-presence") {
+      const formattedPhone = formatPhoneForApi(phone);
+      const jid = `${formattedPhone}@s.whatsapp.net`;
+      
+      console.log(`[Wasender] Sending presence ${presenceType} to ${jid}`);
+      
+      const body: any = { jid, type: presenceType };
+      if (delayMs) body.delayMs = delayMs;
+      
+      const result = await wasenderRequest("/send-presence-update", {
+        method: "POST",
+        body: JSON.stringify(body),
+      });
+
+      return new Response(JSON.stringify({ success: true, data: result }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
     // =========================
     // ACTION: clear-all
