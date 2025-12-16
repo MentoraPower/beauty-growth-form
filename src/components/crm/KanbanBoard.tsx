@@ -23,7 +23,7 @@ import { KanbanCard } from "./KanbanCard";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Settings, Search, Filter, X } from "lucide-react";
+import { Settings, Search, Filter, X, CalendarIcon } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -33,6 +33,11 @@ import {
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
+import { cn } from "@/lib/utils";
 
 import { toast } from "sonner";
 import { AutomationsDropdown } from "./AutomationsDropdown";
@@ -54,6 +59,8 @@ export function KanbanBoard() {
   const [searchQuery, setSearchQuery] = useState(urlSearchQuery);
   const [filterMQL, setFilterMQL] = useState<"all" | "mql" | "non-mql">("all");
   const [filterTags, setFilterTags] = useState<string[]>([]);
+  const [startDate, setStartDate] = useState<Date | undefined>(undefined);
+  const [endDate, setEndDate] = useState<Date | undefined>(undefined);
   const queryClient = useQueryClient();
 
   // Sync search from URL when navigating (e.g., coming back from lead detail)
@@ -538,14 +545,28 @@ export function KanbanBoard() {
       baseLeads = baseLeads.filter(lead => leadIdsWithTags.has(lead.id));
     }
     
+    // Filter by date range
+    if (startDate) {
+      const start = new Date(startDate);
+      start.setHours(0, 0, 0, 0);
+      baseLeads = baseLeads.filter(lead => new Date(lead.created_at) >= start);
+    }
+    if (endDate) {
+      const end = new Date(endDate);
+      end.setHours(23, 59, 59, 999);
+      baseLeads = baseLeads.filter(lead => new Date(lead.created_at) <= end);
+    }
+    
     return baseLeads;
-  }, [localLeads, leads, searchQuery, filterMQL, filterTags, leadTags]);
+  }, [localLeads, leads, searchQuery, filterMQL, filterTags, leadTags, startDate, endDate]);
 
-  const hasActiveFilters = filterMQL !== "all" || filterTags.length > 0;
+  const hasActiveFilters = filterMQL !== "all" || filterTags.length > 0 || startDate !== undefined || endDate !== undefined;
 
   const clearFilters = () => {
     setFilterMQL("all");
     setFilterTags([]);
+    setStartDate(undefined);
+    setEndDate(undefined);
   };
 
   // Memoize leads grouped by pipeline for Kanban view
@@ -616,7 +637,7 @@ export function KanbanBoard() {
                 Filtros
                 {hasActiveFilters && (
                   <span className="ml-1 px-1.5 py-0.5 text-[10px] bg-white/20 rounded-full">
-                    {(filterMQL !== "all" ? 1 : 0) + filterTags.length}
+                    {(filterMQL !== "all" ? 1 : 0) + filterTags.length + (startDate ? 1 : 0) + (endDate ? 1 : 0)}
                   </span>
                 )}
               </Button>
@@ -685,6 +706,75 @@ export function KanbanBoard() {
                       </button>
                     </div>
                   </div>
+                </div>
+
+                {/* Date Filter Section */}
+                <div className="space-y-2">
+                  <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">
+                    Data de Cadastro
+                  </span>
+                  
+                  <div className="grid grid-cols-2 gap-2">
+                    {/* Start Date */}
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <button
+                          className={cn(
+                            "flex items-center gap-2 w-full px-3 py-2 text-xs rounded-lg bg-background border border-border text-left",
+                            !startDate && "text-muted-foreground"
+                          )}
+                        >
+                          <CalendarIcon className="w-3.5 h-3.5" />
+                          {startDate ? format(startDate, "dd/MM/yy", { locale: ptBR }) : "Início"}
+                        </button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0 z-[99999]" align="start">
+                        <Calendar
+                          mode="single"
+                          selected={startDate}
+                          onSelect={setStartDate}
+                          initialFocus
+                          locale={ptBR}
+                          className="pointer-events-auto"
+                        />
+                      </PopoverContent>
+                    </Popover>
+
+                    {/* End Date */}
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <button
+                          className={cn(
+                            "flex items-center gap-2 w-full px-3 py-2 text-xs rounded-lg bg-background border border-border text-left",
+                            !endDate && "text-muted-foreground"
+                          )}
+                        >
+                          <CalendarIcon className="w-3.5 h-3.5" />
+                          {endDate ? format(endDate, "dd/MM/yy", { locale: ptBR }) : "Fim"}
+                        </button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0 z-[99999]" align="end">
+                        <Calendar
+                          mode="single"
+                          selected={endDate}
+                          onSelect={setEndDate}
+                          initialFocus
+                          locale={ptBR}
+                          className="pointer-events-auto"
+                        />
+                      </PopoverContent>
+                    </Popover>
+                  </div>
+
+                  {/* Clear dates */}
+                  {(startDate || endDate) && (
+                    <button
+                      onClick={() => { setStartDate(undefined); setEndDate(undefined); }}
+                      className="text-[10px] text-muted-foreground hover:text-foreground transition-colors"
+                    >
+                      Limpar datas
+                    </button>
+                  )}
                 </div>
                 
                 {/* Tags Section */}
