@@ -102,8 +102,8 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
       >
         <div className="flex flex-col h-full">
           {/* Logo */}
-          <div className="pt-6 pb-4 px-3 flex justify-center">
-            <div className="w-10 flex items-center">
+          <div className="pt-6 pb-4 flex justify-center items-center">
+            <div className="w-10 flex items-center justify-center">
               <img src={scaleLogo} alt="Scale Beauty" className="w-full h-auto" />
             </div>
           </div>
