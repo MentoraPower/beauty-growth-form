@@ -218,18 +218,19 @@ const handler = async (req: Request): Promise<Response> => {
         const data = await response.json();
         console.log(`[WAHA] LID resolution response:`, JSON.stringify(data));
         
-        // WAHA returns { phoneNumber: "5527998474152", ... } or similar
-        const phoneNumber = data?.phoneNumber || data?.phone || data?.number || 
-                           data?.wa_id || data?.jid?.split("@")[0];
-        
+        // WAHA commonly returns: { lid: "...@lid", pn: "5527...@c.us" }
+        const rawPn = data?.pn;
+        const phoneNumber = rawPn || data?.phoneNumber || data?.phone || data?.number || data?.wa_id || data?.jid;
+
         if (phoneNumber) {
-          const cleanPhone = String(phoneNumber).replace(/\D/g, "");
+          const base = String(phoneNumber).split("@")[0];
+          const cleanPhone = base.replace(/\D/g, "");
           if (cleanPhone.length >= 10 && cleanPhone.length <= 15) {
             console.log(`[WAHA] Resolved LID ${lidId} -> ${cleanPhone}`);
             return cleanPhone;
           }
         }
-        
+
         return null;
       } catch (e: any) {
         console.error(`[WAHA] Error resolving LID:`, e.message);
