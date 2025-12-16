@@ -102,7 +102,8 @@ async function resolveLidToPhone(lid: string): Promise<string | null> {
 async function fetchContactPicture(phone: string): Promise<string | null> {
   try {
     const result = await wasenderRequest(`/contacts/${phone}/picture`);
-    return result?.imgUrl || result?.profilePictureUrl || null;
+    // WasenderAPI returns { success: true, data: { imgUrl: "..." } }
+    return result?.data?.imgUrl || result?.imgUrl || result?.profilePictureUrl || null;
   } catch (error) {
     console.error(`[Wasender] Failed to fetch picture for ${phone}:`, error);
     return null;
@@ -115,16 +116,22 @@ async function fetchAllContacts(): Promise<Map<string, { name: string; imgUrl: s
   
   try {
     const result = await wasenderRequest("/contacts");
-    const contacts = result?.contacts || result || [];
+    // WasenderAPI returns { success: true, data: [...] }
+    const contacts = result?.data || [];
     
-    console.log(`[Wasender] Fetched ${contacts.length} contacts`);
+    console.log(`[Wasender] Fetched ${contacts?.length || 0} contacts`);
+    
+    if (!Array.isArray(contacts)) {
+      console.error("[Wasender] Contacts is not an array:", typeof contacts);
+      return contactsMap;
+    }
     
     for (const contact of contacts) {
       const jid = contact.id || contact.jid || "";
-      const phone = jid.replace("@c.us", "").replace("@s.whatsapp.net", "").replace(/\D/g, "");
+      const phone = jid.replace("@c.us", "").replace("@s.whatsapp.net", "").replace("@lid", "").replace(/\D/g, "");
       
       if (phone && phone.length >= 8) {
-        const name = contact.name || contact.notify || contact.pushname || null;
+        const name = contact.name || contact.notify || contact.pushname || contact.verifiedName || null;
         const imgUrl = contact.imgUrl || contact.profilePictureUrl || null;
         contactsMap.set(phone, { name, imgUrl });
       }
@@ -138,26 +145,17 @@ async function fetchAllContacts(): Promise<Map<string, { name: string; imgUrl: s
   return contactsMap;
 }
 
-// Fetch all chats with messages
+// WasenderAPI does NOT support fetching existing chats/messages via API
+// Only new messages come through webhooks
+// Return empty arrays for sync functions
 async function fetchAllChats(): Promise<any[]> {
-  try {
-    const result = await wasenderRequest("/chats");
-    return result?.chats || result || [];
-  } catch (error) {
-    console.error("[Wasender] Error fetching chats:", error);
-    return [];
-  }
+  console.log("[Wasender] Note: WasenderAPI does not have /api/chats endpoint. Returning empty array.");
+  return [];
 }
 
-// Fetch messages for a chat
 async function fetchChatMessages(chatId: string, limit = 100): Promise<any[]> {
-  try {
-    const result = await wasenderRequest(`/chats/${encodeURIComponent(chatId)}/messages?limit=${limit}`);
-    return result?.messages || result || [];
-  } catch (error) {
-    console.error(`[Wasender] Error fetching messages for ${chatId}:`, error);
-    return [];
-  }
+  console.log("[Wasender] Note: WasenderAPI does not support fetching chat messages via API. Returning empty array.");
+  return [];
 }
 
 async function handler(req: Request): Promise<Response> {
