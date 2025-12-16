@@ -274,9 +274,15 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
       {/* Main Content with rounded corners */}
       <main 
         style={{ left: `${mainContentMargin}px` }}
-        className="hidden lg:block fixed top-2 right-2 bottom-2 transition-[left] duration-300 ease-out"
+        className={cn(
+          "hidden lg:block fixed top-2 right-2 bottom-2 transition-all duration-300 ease-out",
+          !isSubmenuVisible && "rounded-l-2xl overflow-hidden"
+        )}
       >
-        <div className="bg-[#0f0f12] rounded-2xl h-full p-2">
+        <div className={cn(
+          "bg-[#0f0f12] h-full p-2",
+          isSubmenuVisible ? "rounded-2xl" : "rounded-l-2xl rounded-r-2xl"
+        )}>
           <div className="bg-card rounded-xl h-full p-6 overflow-auto relative">
             <PageTransition>
               {children}
