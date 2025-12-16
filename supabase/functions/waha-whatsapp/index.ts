@@ -170,10 +170,12 @@ const handler = async (req: Request): Promise<Response> => {
       const mediaPlaceholder = getMediaPlaceholder(msg);
       if (mediaPlaceholder) return mediaPlaceholder;
       
-      // Log empty messages for debugging
+      // Log empty messages with _data content for debugging
       const msgId = msg.id || msg.key?.id || msg._id || 'unknown';
       const msgType = msg.type || msg._data?.type || 'unknown';
-      console.log(`[WAHA Debug] Empty message id=${msgId} type=${msgType}, keys: ${Object.keys(msg).join(', ')}`);
+      const dataKeys = msg._data ? Object.keys(msg._data).join(', ') : 'no _data';
+      const dataBody = msg._data?.body || msg._data?.caption || msg._data?.content || 'no body';
+      console.log(`[WAHA Debug] Empty msg id=${msgId} type=${msgType}, _data keys: [${dataKeys}], _data.body: "${String(dataBody).substring(0, 50)}"`);
       
       return "";
     };
@@ -281,6 +283,26 @@ const handler = async (req: Request): Promise<Response> => {
         return null;
       }
     };
+
+    // Clear all WhatsApp data
+    if (action === "clear-all") {
+      console.log("[WAHA] Clearing all WhatsApp data...");
+      
+      // Delete all messages first (foreign key constraint)
+      const { error: msgError } = await supabase.from("whatsapp_messages").delete().neq("id", "00000000-0000-0000-0000-000000000000");
+      if (msgError) console.error("[WAHA] Error deleting messages:", msgError);
+      
+      // Delete all chats
+      const { error: chatError } = await supabase.from("whatsapp_chats").delete().neq("id", "00000000-0000-0000-0000-000000000000");
+      if (chatError) console.error("[WAHA] Error deleting chats:", chatError);
+      
+      console.log("[WAHA] All data cleared");
+      
+      return new Response(JSON.stringify({ success: true, message: "All data cleared" }), {
+        status: 200,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
     // Send text message
     if (action === "send-text") {
