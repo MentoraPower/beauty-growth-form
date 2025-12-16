@@ -56,103 +56,140 @@ function normalizeMediaKey(mediaKey: any): string {
 
 // Download and upload media to Supabase Storage
 async function downloadAndUploadMedia(
-  url: string, 
-  mediaKey: any, 
+  url: string,
+  mediaKey: any,
   mimetype: string,
-  supabase: any
+  supabase: any,
+  decryptMessageData?: any
 ): Promise<string | null> {
   try {
+    if (!url) return null;
+
+    // If it already points to our Storage, just use it.
+    if (url.includes(`${SUPABASE_URL}/storage/v1/object/public/`)) {
+      return url;
+    }
+
     const normalizedKey = normalizeMediaKey(mediaKey);
-    console.log(`[Wasender Webhook] Processing media - mimetype: ${mimetype}, key length: ${normalizedKey.length}`);
-    
-    // Try WasenderAPI decrypt-media endpoint first
-    if (normalizedKey) {
+    const looksEncrypted = /mmg\.whatsapp\.net/i.test(url) || /\.enc(\?|$)/i.test(url);
+
+    console.log(
+      `[Wasender Webhook] Processing media - mimetype: ${mimetype}, key length: ${normalizedKey.length}, encrypted: ${looksEncrypted}`
+    );
+
+    // 1) Prefer decrypt-media for WhatsApp encrypted URLs
+    if (looksEncrypted && normalizedKey && decryptMessageData) {
       try {
         console.log(`[Wasender Webhook] Attempting decrypt via WasenderAPI...`);
+
+        const msgForDecrypt = JSON.parse(JSON.stringify(decryptMessageData));
+
+        // Ensure the nested media object uses the normalized key / url / mimetype.
+        const m = msgForDecrypt?.message;
+        if (m && typeof m === "object") {
+          const candidates = ["audioMessage", "pttMessage", "imageMessage", "videoMessage", "documentMessage"];
+          for (const k of candidates) {
+            if (m[k] && typeof m[k] === "object") {
+              // Best-effort matching (same URL or has mediaKey)
+              const sameUrl = m[k]?.url === url;
+              if (sameUrl || m[k]?.mediaKey) {
+                m[k].url = url;
+                m[k].mediaKey = normalizedKey;
+                m[k].mimetype = mimetype;
+              }
+            }
+          }
+        }
+
         const decryptResponse = await fetch("https://www.wasenderapi.com/api/decrypt-media", {
           method: "POST",
           headers: {
-            "Authorization": `Bearer ${WASENDER_API_KEY}`,
+            Authorization: `Bearer ${WASENDER_API_KEY}`,
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({ 
-            mediaKey: normalizedKey, 
-            url, 
-            mimetype 
+          body: JSON.stringify({
+            data: {
+              messages: msgForDecrypt,
+            },
           }),
         });
 
         const decryptText = await decryptResponse.text();
-        console.log(`[Wasender Webhook] Decrypt response ${decryptResponse.status}: ${decryptText.substring(0, 300)}`);
+        console.log(
+          `[Wasender Webhook] Decrypt response ${decryptResponse.status}: ${decryptText.substring(0, 300)}`
+        );
 
         if (decryptResponse.ok) {
           const decryptResult = JSON.parse(decryptText);
-          
-          // If we get a public URL, use it
-          if (decryptResult?.publicUrl) {
+
+          // Some variants return a public URL
+          const publicUrl = decryptResult?.publicUrl || decryptResult?.url;
+          if (publicUrl) {
             console.log(`[Wasender Webhook] Got public URL from decrypt`);
-            return decryptResult.publicUrl;
+            return publicUrl;
           }
-          
-          // If we get base64 data, upload to storage
-          if (decryptResult?.data || decryptResult?.base64) {
-            const base64Data = decryptResult.data || decryptResult.base64;
-            const ext = mimetype.split("/")[1]?.split(";")[0] || "ogg";
+
+          // Others return base64 data
+          const base64Data = decryptResult?.data || decryptResult?.base64;
+          if (base64Data) {
+            const ext = mimetype.split("/")[1]?.split(";")[0] || "bin";
             const filename = `received_${Date.now()}.${ext}`;
             const filePath = `audios/${filename}`;
-            
+
             const binaryString = atob(base64Data);
             const bytes = new Uint8Array(binaryString.length);
             for (let i = 0; i < binaryString.length; i++) {
               bytes[i] = binaryString.charCodeAt(i);
             }
-            
-            const { error: uploadError } = await supabase.storage
-              .from("whatsapp-media")
-              .upload(filePath, bytes, {
-                contentType: mimetype.split(";")[0],
-                cacheControl: "31536000",
-              });
-            
+
+            const { error: uploadError } = await supabase.storage.from("whatsapp-media").upload(filePath, bytes, {
+              contentType: mimetype.split(";")[0],
+              cacheControl: "31536000",
+            });
+
             if (!uploadError) {
-              const { data: { publicUrl } } = supabase.storage
-                .from("whatsapp-media")
-                .getPublicUrl(filePath);
-              console.log(`[Wasender Webhook] Media uploaded: ${publicUrl}`);
-              return publicUrl;
+              const {
+                data: { publicUrl: uploadedUrl },
+              } = supabase.storage.from("whatsapp-media").getPublicUrl(filePath);
+              console.log(`[Wasender Webhook] Media uploaded: ${uploadedUrl}`);
+              return uploadedUrl;
             }
+
             console.error("[Wasender Webhook] Upload error:", uploadError);
           }
         }
       } catch (decryptError) {
         console.error("[Wasender Webhook] Decrypt API error:", decryptError);
       }
+
+      // If it's encrypted and decryption failed, don't upload the encrypted file.
+      return null;
     }
-    
-    // Fallback: Try direct download (some URLs might work without decryption)
+
+    // 2) Fallback direct download for non-encrypted URLs
     try {
       console.log(`[Wasender Webhook] Trying direct download...`);
       const downloadResponse = await fetch(url, {
-        headers: { "User-Agent": "WhatsApp/2.24.1.7" }
+        headers: { "User-Agent": "WhatsApp/2.24.1.7" },
       });
-      
+
       if (downloadResponse.ok) {
         const arrayBuffer = await downloadResponse.arrayBuffer();
-        const ext = mimetype.split("/")[1]?.split(";")[0] || "ogg";
+        const ext = mimetype.split("/")[1]?.split(";")[0] || "bin";
         const filename = `received_${Date.now()}.${ext}`;
         const filePath = `audios/${filename}`;
-        
+
         const { error: uploadError } = await supabase.storage
           .from("whatsapp-media")
           .upload(filePath, new Uint8Array(arrayBuffer), {
             contentType: mimetype.split(";")[0],
             cacheControl: "31536000",
           });
-        
+
         if (!uploadError) {
-          const { data: { publicUrl } } = supabase.storage
-            .from("whatsapp-media")
-            .getPublicUrl(filePath);
+          const {
+            data: { publicUrl },
+          } = supabase.storage.from("whatsapp-media").getPublicUrl(filePath);
           console.log(`[Wasender Webhook] Direct download succeeded: ${publicUrl}`);
           return publicUrl;
         }
@@ -160,7 +197,7 @@ async function downloadAndUploadMedia(
     } catch (downloadError) {
       console.error("[Wasender Webhook] Direct download failed:", downloadError);
     }
-    
+
     return null;
   } catch (error) {
     console.error("[Wasender Webhook] Error processing media:", error);
@@ -286,51 +323,55 @@ async function handler(req: Request): Promise<Response> {
     if (message.imageMessage) {
       mediaType = "image";
       text = text || message.imageMessage.caption || "📷 Imagem";
-      
+
       // Try to download and upload media
       if (message.imageMessage.mediaKey && message.imageMessage.url) {
         mediaUrl = await downloadAndUploadMedia(
           message.imageMessage.url,
           message.imageMessage.mediaKey,
           message.imageMessage.mimetype || "image/jpeg",
-          supabase
+          supabase,
+          messageData
         );
       }
     } else if (message.audioMessage || message.pttMessage) {
       mediaType = "audio";
       text = text || "🎵 Áudio";
-      
+
       const audioMsg = message.audioMessage || message.pttMessage;
       if (audioMsg?.mediaKey && audioMsg?.url) {
         mediaUrl = await downloadAndUploadMedia(
           audioMsg.url,
           audioMsg.mediaKey,
           audioMsg.mimetype || "audio/ogg; codecs=opus",
-          supabase
+          supabase,
+          messageData
         );
       }
     } else if (message.videoMessage) {
       mediaType = "video";
       text = text || "🎥 Vídeo";
-      
+
       if (message.videoMessage.mediaKey && message.videoMessage.url) {
         mediaUrl = await downloadAndUploadMedia(
           message.videoMessage.url,
           message.videoMessage.mediaKey,
           message.videoMessage.mimetype || "video/mp4",
-          supabase
+          supabase,
+          messageData
         );
       }
     } else if (message.documentMessage) {
       mediaType = "document";
       text = text || `📄 ${message.documentMessage.fileName || "Documento"}`;
-      
+
       if (message.documentMessage.mediaKey && message.documentMessage.url) {
         mediaUrl = await downloadAndUploadMedia(
           message.documentMessage.url,
           message.documentMessage.mediaKey,
           message.documentMessage.mimetype || "application/octet-stream",
-          supabase
+          supabase,
+          messageData
         );
       }
     } else if (message.stickerMessage) {

@@ -18,54 +18,73 @@ export const AudioWaveform = ({ src, sent = false }: AudioWaveformProps) => {
 
   // Generate waveform data from audio
   useEffect(() => {
+    let cancelled = false;
+
+    // Important: reset error whenever the src changes.
+    setError(false);
+
     const generateWaveform = async () => {
       try {
         if (!src) {
           setError(true);
           return;
         }
-        
+
         const response = await fetch(src);
         if (!response.ok) {
           console.error("[AudioWaveform] Failed to fetch audio:", response.status);
           setError(true);
           return;
         }
-        
+
         const arrayBuffer = await response.arrayBuffer();
         const audioContext = new AudioContext();
-        const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
-        
-        const rawData = audioBuffer.getChannelData(0);
-        const samples = 40; // Number of bars
-        const blockSize = Math.floor(rawData.length / samples);
-        const filteredData: number[] = [];
-        
-        for (let i = 0; i < samples; i++) {
-          let blockStart = blockSize * i;
-          let sum = 0;
-          for (let j = 0; j < blockSize; j++) {
-            sum += Math.abs(rawData[blockStart + j]);
+
+        try {
+          const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
+
+          const rawData = audioBuffer.getChannelData(0);
+          const samples = 40; // Number of bars
+          const blockSize = Math.floor(rawData.length / samples);
+          const filteredData: number[] = [];
+
+          for (let i = 0; i < samples; i++) {
+            const blockStart = blockSize * i;
+            let sum = 0;
+            for (let j = 0; j < blockSize; j++) {
+              sum += Math.abs(rawData[blockStart + j]);
+            }
+            filteredData.push(sum / blockSize);
           }
-          filteredData.push(sum / blockSize);
+
+          // Normalize
+          const multiplier = Math.pow(Math.max(...filteredData), -1);
+          const normalizedData = filteredData.map((n) => n * multiplier);
+
+          if (!cancelled) {
+            setWaveformData(normalizedData);
+            setError(false);
+          }
+        } finally {
+          audioContext.close();
         }
-        
-        // Normalize
-        const multiplier = Math.pow(Math.max(...filteredData), -1);
-        const normalizedData = filteredData.map(n => n * multiplier);
-        setWaveformData(normalizedData);
-        setError(false);
-        
-        audioContext.close();
       } catch (err) {
         console.error("[AudioWaveform] Error generating waveform:", err);
-        // Fallback to random waveform if can't decode
+
+        // Fallback waveform if the browser can't decode this audio format.
         const fallback = Array.from({ length: 40 }, () => Math.random() * 0.5 + 0.2);
-        setWaveformData(fallback);
+        if (!cancelled) {
+          setWaveformData(fallback);
+          setError(false);
+        }
       }
     };
-    
+
     generateWaveform();
+
+    return () => {
+      cancelled = true;
+    };
   }, [src]);
 
   // Draw waveform
