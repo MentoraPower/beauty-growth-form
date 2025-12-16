@@ -242,7 +242,7 @@ const WhatsApp = () => {
     setMessages(prev => [...prev, tempMessage]);
 
     try {
-      const { data, error } = await supabase.functions.invoke("w-api-whatsapp", {
+      const { data, error } = await supabase.functions.invoke("waha-whatsapp", {
         body: {
           action: "send-text",
           phone: selectedChat.phone,
@@ -299,9 +299,9 @@ const WhatsApp = () => {
       });
 
       // Test connection first with a simple get-chats call
-      console.log("[WhatsApp] Testing W-API connection...");
+      console.log("[WhatsApp] Testing WAHA connection...");
       
-      const { data, error } = await supabase.functions.invoke("w-api-whatsapp", {
+      const { data, error } = await supabase.functions.invoke("waha-whatsapp", {
         body: { action: "sync-all" },
       });
 
@@ -309,7 +309,7 @@ const WhatsApp = () => {
 
       if (error) {
         console.error("[WhatsApp] Sync error details:", JSON.stringify(error, null, 2));
-        throw new Error(error.message || "Falha ao conectar com a Edge Function. Verifique se as credenciais W_API estão corretas.");
+        throw new Error(error.message || "Falha ao conectar com a Edge Function. Verifique se as credenciais WAHA estão corretas.");
       }
 
       if (data?.error) {
@@ -327,7 +327,7 @@ const WhatsApp = () => {
       
       let errorMessage = "Erro desconhecido";
       if (error.message?.includes("Failed to fetch")) {
-        errorMessage = "Edge Function não acessível. Aguarde o deploy ou verifique as credenciais W_API.";
+        errorMessage = "Edge Function não acessível. Aguarde o deploy ou verifique as credenciais WAHA.";
       } else if (error.message?.includes("FunctionsFetchError")) {
         errorMessage = "Falha ao conectar com a Edge Function. Tente novamente em alguns segundos.";
       } else {
@@ -349,10 +349,10 @@ const WhatsApp = () => {
     try {
       toast({
         title: "Testando conexão...",
-        description: "Verificando credenciais W-API",
+        description: "Verificando credenciais WAHA",
       });
 
-      const { data, error } = await supabase.functions.invoke("w-api-whatsapp", {
+      const { data, error } = await supabase.functions.invoke("waha-whatsapp", {
         body: { action: "test-connection" },
       });
 
@@ -365,15 +365,15 @@ const WhatsApp = () => {
       if (data?.success) {
         toast({
           title: "Conexão OK!",
-          description: `Instance: ${data.instanceId} - Endpoint: ${data.endpoint}`,
+          description: `Sessions: ${JSON.stringify(data.sessions)} - URL: ${data.apiUrl}`,
         });
       } else {
         toast({
           title: "Problema na conexão",
-          description: data?.message || "Nenhum endpoint respondeu corretamente. Verifique suas credenciais W-API.",
+          description: data?.error || "WAHA não respondeu. Verifique se WAHA_API_URL está correto.",
           variant: "destructive",
         });
-        console.log("[WhatsApp] Test results:", data?.results);
+        console.log("[WhatsApp] Test results:", data);
       }
     } catch (error: any) {
       console.error("[WhatsApp] Test error:", error);
