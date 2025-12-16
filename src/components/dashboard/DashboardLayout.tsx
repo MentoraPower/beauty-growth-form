@@ -67,13 +67,27 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
   const sidebarWidth = 88;
   const submenuWidth = 256; // w-64 = 256px - unified width
 
-  // Fixed margin - submenu is always open
+  // Check if submenu should be visible (only for CRM, not WhatsApp)
+  const isSubmenuVisible = activePanel === 'crm';
+
+  // Margin changes based on whether submenu is visible
   const getMainContentMargin = () => {
     const outerPadding = 8; // p-2 = 8px
-    return sidebarWidth - 8 + submenuWidth + 8 + outerPadding;
+    if (isSubmenuVisible) {
+      return sidebarWidth - 8 + submenuWidth + 8 + outerPadding;
+    }
+    // When WhatsApp is active, content extends to sidebar edge
+    return sidebarWidth + outerPadding;
   };
 
   const mainContentMargin = getMainContentMargin();
+
+  // Navigate to WhatsApp when panel changes to whatsapp
+  useEffect(() => {
+    if (activePanel === 'whatsapp' && location.pathname !== '/admin/whatsapp') {
+      navigate('/admin/whatsapp');
+    }
+  }, [activePanel, location.pathname, navigate]);
 
   return (
     <div className="min-h-screen bg-card p-2">
@@ -156,39 +170,17 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
         </div>
       </aside>
 
-      {/* Unified Submenu Panel - Always visible */}
+      {/* Unified Submenu Panel - Only visible for CRM */}
       <div
-        style={{ left: sidebarWidth - 8, width: submenuWidth }}
-        className="hidden lg:block fixed top-2 h-[calc(100vh-1rem)] rounded-2xl bg-[#0f0f12] z-50 overflow-hidden pl-4"
+        style={{ 
+          left: sidebarWidth - 8, 
+          width: submenuWidth,
+          opacity: isSubmenuVisible ? 1 : 0,
+          transform: isSubmenuVisible ? 'translateX(0)' : 'translateX(-20px)',
+          pointerEvents: isSubmenuVisible ? 'auto' : 'none'
+        }}
+        className="hidden lg:block fixed top-2 h-[calc(100vh-1rem)] rounded-2xl bg-[#0f0f12] z-50 overflow-hidden pl-4 transition-all duration-300 ease-out"
       >
-        {/* WhatsApp Content */}
-        {activePanel === 'whatsapp' && (
-          <div className="p-4 pl-0 h-full flex flex-col">
-            <h2 className="text-white font-semibold text-sm mb-4 px-2">WhatsApp</h2>
-            <div className="flex flex-col gap-1">
-              {bottomNavItems[0].subItems.map((subItem) => {
-                const isActive = location.pathname === subItem.href;
-                return (
-                  <button
-                    key={subItem.href}
-                    onClick={() => handleSubItemClick(subItem.href)}
-                    className={cn(
-                      "flex items-center gap-3 w-full py-2.5 px-3 rounded-xl transition-colors duration-200 text-sm",
-                      isActive 
-                        ? "bg-white/10 text-white"
-                        : "text-white/70 hover:text-white hover:bg-white/5"
-                    )}
-                  >
-                    <subItem.icon className="h-4 w-4 flex-shrink-0" />
-                    <span>{subItem.label}</span>
-                    {isActive && <ChevronRight className="h-4 w-4 ml-auto" />}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        )}
-
         {/* CRM Content */}
         {activePanel === 'crm' && (
           <CRMOriginsPanel 
