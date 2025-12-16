@@ -137,7 +137,7 @@ export function KanbanBoard() {
   });
 
   // Fetch current sub-origin name for display
-  const { data: currentSubOrigin } = useQuery({
+  const { data: currentSubOrigin, isLoading: isLoadingSubOrigin } = useQuery({
     queryKey: ["sub-origin", subOriginId],
     queryFn: async () => {
       if (!subOriginId) return null;
@@ -220,7 +220,8 @@ export function KanbanBoard() {
     enabled: leads.length > 0,
   });
 
-  const isLoading = isLoadingPipelines || isLoadingLeads;
+  // Consider loading if queries haven't resolved yet OR if subOriginId just changed
+  const isLoading = isLoadingPipelines || isLoadingLeads || isLoadingSubOrigin || (subOriginId && !currentSubOrigin && pipelines.length === 0);
 
   // Track previous values to prevent unnecessary updates
   const prevDataUpdatedAtRef = useRef(dataUpdatedAt);
