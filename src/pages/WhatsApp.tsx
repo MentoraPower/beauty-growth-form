@@ -562,14 +562,27 @@ const WhatsApp = () => {
     }
   };
 
-  // Audio recording functions
+  // Audio recording functions - use OGG or MP4 for WasenderAPI compatibility
   const startRecording = async () => {
     if (!selectedChat) return;
 
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       setRecordingStream(stream);
-      const mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm' });
+      
+      // Determine best supported audio format for WasenderAPI (prefers OGG Opus)
+      let mimeType = 'audio/webm';
+      if (MediaRecorder.isTypeSupported('audio/ogg; codecs=opus')) {
+        mimeType = 'audio/ogg; codecs=opus';
+      } else if (MediaRecorder.isTypeSupported('audio/mp4')) {
+        mimeType = 'audio/mp4';
+      } else if (MediaRecorder.isTypeSupported('audio/webm; codecs=opus')) {
+        mimeType = 'audio/webm; codecs=opus';
+      }
+      
+      console.log("[WhatsApp] Recording with mimeType:", mimeType);
+      
+      const mediaRecorder = new MediaRecorder(stream, { mimeType });
       mediaRecorderRef.current = mediaRecorder;
       audioChunksRef.current = [];
 
@@ -582,8 +595,8 @@ const WhatsApp = () => {
       mediaRecorder.onstop = async () => {
         stream.getTracks().forEach(track => track.stop());
         setRecordingStream(null);
-        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
-        await sendAudioMessage(audioBlob);
+        const audioBlob = new Blob(audioChunksRef.current, { type: mimeType });
+        await sendAudioMessage(audioBlob, mimeType);
       };
 
       mediaRecorder.start();
@@ -631,22 +644,30 @@ const WhatsApp = () => {
     }
   };
 
-  const sendAudioMessage = async (audioBlob: Blob) => {
+  const sendAudioMessage = async (audioBlob: Blob, mimeType: string = 'audio/webm') => {
     if (!selectedChat) return;
 
     setIsSending(true);
 
     try {
+      // Determine file extension based on mimeType
+      let ext = 'webm';
+      if (mimeType.includes('ogg')) ext = 'ogg';
+      else if (mimeType.includes('mp4')) ext = 'mp4';
+      else if (mimeType.includes('mp3') || mimeType.includes('mpeg')) ext = 'mp3';
+      
       // Generate filename
       const timestamp = Date.now();
-      const filename = `${selectedChat.phone}_${timestamp}.webm`;
+      const filename = `${selectedChat.phone}_${timestamp}.${ext}`;
       const filePath = `audios/${filename}`;
+
+      console.log("[WhatsApp] Uploading audio:", filename, "mimeType:", mimeType);
 
       // Upload to Supabase Storage
       const { error: uploadError } = await supabase.storage
         .from('whatsapp-media')
         .upload(filePath, audioBlob, {
-          contentType: 'audio/webm',
+          contentType: mimeType,
           cacheControl: '3600',
         });
 
@@ -656,6 +677,8 @@ const WhatsApp = () => {
       const { data: { publicUrl } } = supabase.storage
         .from('whatsapp-media')
         .getPublicUrl(filePath);
+
+      console.log("[WhatsApp] Audio uploaded, URL:", publicUrl);
 
       // Add temp message to UI
       const tempId = `temp-${Date.now()}`;
@@ -673,7 +696,7 @@ const WhatsApp = () => {
       setMessages(prev => [...prev, tempMsg]);
       scrollToBottom("smooth");
 
-      // Send via WAHA
+      // Send via WasenderAPI
       const { data, error } = await supabase.functions.invoke("wasender-whatsapp", {
         body: { 
           action: "send-audio",
@@ -683,6 +706,8 @@ const WhatsApp = () => {
       });
 
       if (error) throw error;
+
+      console.log("[WhatsApp] Audio sent via WasenderAPI:", data);
 
       // Insert into database
       const { data: insertedMsg } = await supabase.from("whatsapp_messages").insert({

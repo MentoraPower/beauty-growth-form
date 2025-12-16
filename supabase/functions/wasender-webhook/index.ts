@@ -69,6 +69,37 @@ async function handler(req: Request): Promise<Response> {
     console.log("[Wasender Webhook] Received:", JSON.stringify(payload).substring(0, 1000));
 
     const event = payload.event;
+    const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+    
+    // Handle message status updates (read receipts, delivery status)
+    if (event === "messages.update") {
+      const updateData = payload.data;
+      const messageKey = updateData?.key || updateData;
+      const messageId = messageKey?.id;
+      
+      // Status codes: 2=SENT, 3=DELIVERED, 4=READ, 5=PLAYED
+      const statusCode = updateData?.update?.status || updateData?.status;
+      const statusMap: Record<number, string> = {
+        2: "SENT",
+        3: "DELIVERED", 
+        4: "READ",
+        5: "PLAYED"
+      };
+      
+      if (messageId && statusMap[statusCode]) {
+        const newStatus = statusMap[statusCode];
+        console.log(`[Wasender Webhook] Updating message ${messageId} status to ${newStatus}`);
+        
+        await supabase
+          .from("whatsapp_messages")
+          .update({ status: newStatus })
+          .eq("message_id", messageId);
+      }
+      
+      return new Response(JSON.stringify({ ok: true }), { 
+        headers: { ...corsHeaders, "Content-Type": "application/json" } 
+      });
+    }
     
     // Only process message events
     if (event !== "messages.received" && event !== "messages.upsert") {
@@ -77,8 +108,6 @@ async function handler(req: Request): Promise<Response> {
         headers: { ...corsHeaders, "Content-Type": "application/json" } 
       });
     }
-
-    const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
     const messageData = payload.data?.messages || payload.data;
     
     if (!messageData) {
