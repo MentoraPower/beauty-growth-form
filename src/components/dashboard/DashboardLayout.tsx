@@ -115,8 +115,24 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
       {/* Desktop Sidebar - Fixed Collapsed */}
       <aside
         style={{ width: sidebarWidth }}
-        className="hidden lg:flex flex-col fixed left-2 top-2 h-[calc(100vh-1rem)] border-r border-border bg-card overflow-hidden z-50 rounded-l-2xl rounded-r-xl"
+        className="hidden lg:flex flex-col fixed left-2 top-2 h-[calc(100vh-1rem)] bg-card overflow-visible z-50 rounded-l-2xl"
       >
+        {/* Inward curve top-right */}
+        <div 
+          className="absolute -right-4 top-0 w-4 h-4 bg-card"
+          style={{ 
+            boxShadow: '8px -8px 0 0 #0f0f12',
+            borderTopRightRadius: '16px'
+          }}
+        />
+        {/* Inward curve bottom-right */}
+        <div 
+          className="absolute -right-4 bottom-0 w-4 h-4 bg-card"
+          style={{ 
+            boxShadow: '8px 8px 0 0 #0f0f12',
+            borderBottomRightRadius: '16px'
+          }}
+        />
         <div className="flex flex-col h-full">
           {/* Logo */}
           <div className="pt-6 pb-4 px-2 flex justify-center">
