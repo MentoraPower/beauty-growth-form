@@ -106,7 +106,7 @@ const LeadInfoPanel = ({ phone, photoUrl, contactName, onClose }: LeadInfoPanelP
     );
   }
 
-  const defaultAvatar = "https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp_default_profile_photo.png";
+  const defaultAvatar = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 212 212'%3E%3Cpath fill='%23DFE5E7' d='M0 0h212v212H0z'/%3E%3Cpath fill='%23FFF' d='M106 106c-25.4 0-46-20.6-46-46s20.6-46 46-46 46 20.6 46 46-20.6 46-46 46zm0 13c30.6 0 92 15.4 92 46v23H14v-23c0-30.6 61.4-46 92-46z'/%3E%3C/svg%3E";
 
   if (!lead) {
     return (
@@ -114,13 +114,10 @@ const LeadInfoPanel = ({ phone, photoUrl, contactName, onClose }: LeadInfoPanelP
         <img 
           src={photoUrl || defaultAvatar} 
           alt={contactName || "Contato"} 
-          className="w-24 h-24 rounded-full object-cover mb-4 ring-4 ring-muted/30" 
+          className="w-24 h-24 rounded-full object-cover mb-4 ring-4 ring-muted/30 bg-neutral-200" 
         />
         <p className="text-lg font-semibold text-foreground">{contactName || phone}</p>
         <p className="text-sm text-muted-foreground mt-2">Este contato não está no CRM</p>
-        <button className="mt-6 px-4 py-2 bg-primary/10 hover:bg-primary/20 text-primary rounded-lg text-sm font-medium transition-colors">
-          Criar lead
-        </button>
       </div>
     );
   }
@@ -135,7 +132,7 @@ const LeadInfoPanel = ({ phone, photoUrl, contactName, onClose }: LeadInfoPanelP
             <img 
               src={displayPhoto || defaultAvatar} 
               alt={lead.name} 
-              className="w-20 h-20 rounded-2xl object-cover ring-4 ring-card shadow-lg" 
+              className="w-20 h-20 rounded-2xl object-cover ring-4 ring-card shadow-lg bg-neutral-200" 
             />
             <div className="flex-1 min-w-0 pb-1">
               {lead.clinic_name && (
