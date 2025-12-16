@@ -559,7 +559,7 @@ export function KanbanBoard() {
     : "Selecione uma sub-origem";
 
   return (
-    <div className="flex flex-col h-[calc(100vh-2rem)]">
+    <div className="flex flex-col h-[calc(100vh-2rem)] overflow-hidden">
       {/* Header - all on same line */}
       <div className="flex items-center gap-4 mb-4">
         {/* Title - left */}
@@ -769,9 +769,9 @@ export function KanbanBoard() {
       >
         {isLoading ? (
           // Loading skeletons
-          <div className="flex gap-4 overflow-x-auto flex-1 pb-0 h-full animate-in fade-in duration-300">
+          <div className="flex gap-4 overflow-x-auto flex-1 pb-0 min-h-0 animate-in fade-in duration-300">
             {[1, 2, 3, 4].map((i) => (
-              <div key={i} className="flex-shrink-0 w-72 bg-muted/40 rounded-xl p-3 h-full">
+              <div key={i} className="flex-shrink-0 w-72 bg-muted/40 rounded-xl p-3 min-h-0">
                 <Skeleton className="h-6 w-24 mb-4" />
                 <div className="space-y-3">
                   <Skeleton className="h-20 w-full rounded-lg" />
@@ -782,7 +782,7 @@ export function KanbanBoard() {
             ))}
           </div>
         ) : (
-          <div className="flex gap-4 overflow-x-auto flex-1 pb-0 h-full animate-in fade-in duration-300">
+          <div className="flex gap-4 overflow-x-auto flex-1 pb-0 min-h-0 animate-in fade-in duration-300">
             {pipelines.map((pipeline) => (
               <KanbanColumn
                 key={pipeline.id}
