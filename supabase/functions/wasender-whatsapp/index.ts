@@ -98,12 +98,33 @@ async function resolveLidToPhone(lid: string): Promise<string | null> {
   }
 }
 
-// Fetch contact profile picture
+// Fetch contact profile picture using WasenderAPI
 async function fetchContactPicture(phone: string): Promise<string | null> {
   try {
-    const result = await wasenderRequest(`/contacts/${phone}/picture`);
-    // WasenderAPI returns { success: true, data: { imgUrl: "..." } }
-    return result?.data?.imgUrl || result?.imgUrl || result?.profilePictureUrl || null;
+    // WasenderAPI endpoint for profile picture
+    const formattedPhone = phone.replace(/\D/g, "");
+    const jid = `${formattedPhone}@s.whatsapp.net`;
+    
+    console.log(`[Wasender] Fetching profile picture for: ${jid}`);
+    
+    // Try the profile-picture endpoint
+    const result = await wasenderRequest(`/profile-picture?id=${encodeURIComponent(jid)}`);
+    
+    console.log(`[Wasender] Profile picture result:`, JSON.stringify(result));
+    
+    // WasenderAPI returns { success: true, data: { imgUrl: "..." } } or similar
+    const imgUrl = result?.data?.imgUrl 
+      || result?.data?.profilePictureUrl 
+      || result?.imgUrl 
+      || result?.profilePictureUrl 
+      || result?.url
+      || null;
+    
+    if (imgUrl) {
+      console.log(`[Wasender] Found profile picture for ${phone}: ${imgUrl.substring(0, 100)}...`);
+    }
+    
+    return imgUrl;
   } catch (error) {
     console.error(`[Wasender] Failed to fetch picture for ${phone}:`, error);
     return null;
@@ -233,6 +254,40 @@ async function handler(req: Request): Promise<Response> {
       });
 
       return new Response(JSON.stringify({ success: true, messageId: result?.messageId || result?.key?.id }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // =========================
+    // ACTION: get-profile-picture
+    // =========================
+    if (action === "get-profile-picture") {
+      const formattedPhone = formatPhoneForApi(phone);
+      console.log(`[Wasender] Getting profile picture for ${formattedPhone}`);
+      
+      const photoUrl = await fetchContactPicture(formattedPhone);
+      
+      // If found, update the chat record in database
+      if (photoUrl) {
+        const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+        
+        const { error } = await supabase
+          .from("whatsapp_chats")
+          .update({ photo_url: photoUrl, updated_at: new Date().toISOString() })
+          .eq("phone", formattedPhone);
+        
+        if (error) {
+          console.error(`[Wasender] Error updating chat photo:`, error);
+        } else {
+          console.log(`[Wasender] Updated chat photo for ${formattedPhone}`);
+        }
+      }
+
+      return new Response(JSON.stringify({ 
+        success: true, 
+        photoUrl,
+        phone: formattedPhone 
+      }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
