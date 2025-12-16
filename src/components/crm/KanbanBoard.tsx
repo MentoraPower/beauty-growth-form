@@ -43,17 +43,32 @@ const ManagePipelinesDialog = lazy(() =>
 );
 
 export function KanbanBoard() {
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const subOriginId = searchParams.get("origin");
+  const urlSearchQuery = searchParams.get("search") || "";
   
   const [activeId, setActiveId] = useState<string | null>(null);
   const [overId, setOverId] = useState<string | null>(null);
   const [isPipelinesDialogOpen, setIsPipelinesDialogOpen] = useState(false);
   const [localLeads, setLocalLeads] = useState<Lead[]>([]);
-  const [searchQuery, setSearchQuery] = useState("");
+  const [searchQuery, setSearchQuery] = useState(urlSearchQuery);
   const [filterMQL, setFilterMQL] = useState<"all" | "mql" | "non-mql">("all");
   const [filterTags, setFilterTags] = useState<string[]>([]);
   const queryClient = useQueryClient();
+
+  // Sync search query to URL
+  useEffect(() => {
+    const currentSearch = searchParams.get("search") || "";
+    if (searchQuery !== currentSearch) {
+      const newParams = new URLSearchParams(searchParams);
+      if (searchQuery) {
+        newParams.set("search", searchQuery);
+      } else {
+        newParams.delete("search");
+      }
+      setSearchParams(newParams, { replace: true });
+    }
+  }, [searchQuery]);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {

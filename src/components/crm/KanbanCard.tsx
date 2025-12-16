@@ -5,7 +5,7 @@ import { Lead } from "@/types/crm";
 import { Card, CardContent } from "@/components/ui/card";
 import { Mail, Phone, User } from "lucide-react";
 import Instagram from "@/components/icons/Instagram";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
@@ -17,6 +17,7 @@ interface KanbanCardProps {
 
 export const KanbanCard = memo(function KanbanCard({ lead, isDragging: isDraggingOverlay, subOriginId }: KanbanCardProps) {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const dragStartPos = useRef<{ x: number; y: number } | null>(null);
   const wasDragged = useRef(false);
   
@@ -63,9 +64,12 @@ export const KanbanCard = memo(function KanbanCard({ lead, isDragging: isDraggin
   const handleClick = (e: React.MouseEvent) => {
     if (!wasDragged.current && !isDragging) {
       e.stopPropagation();
-      const url = subOriginId 
-        ? `/admin/crm/${lead.id}?origin=${subOriginId}` 
-        : `/admin/crm/${lead.id}`;
+      const params = new URLSearchParams();
+      if (subOriginId) params.set("origin", subOriginId);
+      const searchQuery = searchParams.get("search");
+      if (searchQuery) params.set("search", searchQuery);
+      const queryString = params.toString();
+      const url = `/admin/crm/${lead.id}${queryString ? `?${queryString}` : ''}`;
       navigate(url);
     }
     dragStartPos.current = null;
