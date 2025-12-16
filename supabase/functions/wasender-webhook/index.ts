@@ -126,7 +126,42 @@ async function downloadAndUploadMedia(
           const publicUrl = decryptResult?.publicUrl || decryptResult?.url;
           if (publicUrl) {
             console.log(`[Wasender Webhook] Got public URL from decrypt`);
-            return publicUrl;
+
+            // IMPORTANT: do NOT return the Wasender publicUrl directly to the frontend (CORS / playback issues).
+            // Instead, download it server-side and upload to Supabase Storage.
+            try {
+              const dl = await fetch(publicUrl);
+              if (dl.ok) {
+                const arrayBuffer = await dl.arrayBuffer();
+                const ext = mimetype.split("/")[1]?.split(";")[0] || "bin";
+                const filename = `received_${Date.now()}.${ext}`;
+                const filePath = `audios/${filename}`;
+
+                const { error: uploadError } = await supabase.storage
+                  .from("whatsapp-media")
+                  .upload(filePath, new Uint8Array(arrayBuffer), {
+                    contentType: mimetype.split(";")[0],
+                    cacheControl: "31536000",
+                  });
+
+                if (!uploadError) {
+                  const {
+                    data: { publicUrl: uploadedUrl },
+                  } = supabase.storage.from("whatsapp-media").getPublicUrl(filePath);
+                  console.log(`[Wasender Webhook] Media uploaded from decrypt URL: ${uploadedUrl}`);
+                  return uploadedUrl;
+                }
+
+                console.error("[Wasender Webhook] Upload error (decrypt URL):", uploadError);
+              } else {
+                console.error("[Wasender Webhook] Download failed (decrypt URL):", dl.status);
+              }
+            } catch (e) {
+              console.error("[Wasender Webhook] Download/upload error (decrypt URL):", e);
+            }
+
+            // If we can't upload, better to return null than a URL the browser can't play.
+            return null;
           }
 
           // Others return base64 data
