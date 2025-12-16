@@ -196,26 +196,28 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
           </div>
         </aside>
 
-        {/* Submenu Panel - fades in/out without sliding from behind */}
+        {/* Submenu Panel - expands from fixed menu edge pushing outward */}
         <div
           style={{ 
             left: sidebarWidth + 4,
-            width: submenuWidth - 16,
+            width: isCRMLayout ? submenuWidth - 16 : 0,
             opacity: isCRMLayout ? 1 : 0,
             zIndex: isCRMLayout ? 39 : 30,
             pointerEvents: isCRMLayout ? 'auto' : 'none',
-            transition: "opacity 300ms ease-out",
+            transition: "width 400ms cubic-bezier(0.4,0,0.2,1), opacity 200ms ease-out",
           }}
           className={cn(
-            "hidden lg:block fixed top-2 h-[calc(100vh-1rem)] rounded-r-2xl rounded-tl-2xl bg-[#0f0f12] overflow-hidden pl-4"
+            "hidden lg:block fixed top-2 h-[calc(100vh-1rem)] rounded-r-2xl rounded-tl-2xl bg-[#0f0f12] overflow-hidden"
           )}
         >
-          <CRMOriginsPanel 
-            isOpen={true} 
-            onClose={() => {}}
-            sidebarWidth={sidebarWidth}
-            embedded={true}
-          />
+          <div className="pl-4 h-full" style={{ width: submenuWidth - 16, minWidth: submenuWidth - 16 }}>
+            <CRMOriginsPanel 
+              isOpen={true} 
+              onClose={() => {}}
+              sidebarWidth={sidebarWidth}
+              embedded={true}
+            />
+          </div>
         </div>
 
         {/* Mobile Sidebar */}
