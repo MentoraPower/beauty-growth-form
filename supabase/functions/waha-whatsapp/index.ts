@@ -23,8 +23,8 @@ const handler = async (req: Request): Promise<Response> => {
       throw new Error("WAHA_API_URL not configured");
     }
 
-    const { action, phone, text, chatId } = await req.json();
-    console.log(`[WAHA] Action: ${action}`, { phone, chatId });
+    const { action, phone, text } = await req.json();
+    console.log(`[WAHA] Action: ${action}`);
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
@@ -38,43 +38,12 @@ const handler = async (req: Request): Promise<Response> => {
       return headers;
     };
 
-    // Test connection
-    if (action === "test-connection") {
-      try {
-        const response = await fetch(`${WAHA_API_URL}/api/sessions`, {
-          method: "GET",
-          headers: getHeaders(),
-        });
-        const data = await response.json();
-        console.log("[WAHA] Sessions:", data);
-        
-        return new Response(JSON.stringify({ 
-          success: response.ok, 
-          sessions: data,
-          apiUrl: WAHA_API_URL 
-        }), {
-          status: 200,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      } catch (e: any) {
-        return new Response(JSON.stringify({ 
-          success: false, 
-          error: e.message,
-          apiUrl: WAHA_API_URL 
-        }), {
-          status: 200,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-    }
-
     // Send text message
     if (action === "send-text") {
       if (!phone || !text) {
         throw new Error("Phone and text are required");
       }
 
-      // Format phone for WAHA (needs @c.us suffix)
       const formattedPhone = phone.replace(/\D/g, "");
       const chatIdFormatted = `${formattedPhone}@c.us`;
 
@@ -131,29 +100,39 @@ const handler = async (req: Request): Promise<Response> => {
       for (const chat of chats) {
         const chatId = chat.id || chat.chatId || "";
         
-        // Skip groups and channels
+        // Skip groups, channels, and status broadcasts
         if (chatId.includes("@g.us") || chatId.includes("@newsletter") || chatId.includes("status@broadcast")) {
           continue;
         }
 
+        // Extract phone number - remove @c.us or @s.whatsapp.net suffix
         const phone = chatId.split("@")[0].replace(/\D/g, "");
-        if (!phone) continue;
+        if (!phone || phone === "0") continue;
 
-        const chatName = chat.name || chat.pushName || chat.notifyName || phone;
-        const lastMessage = chat.lastMessage?.body || chat.lastMessage?.text || "";
-        const lastMessageTime = chat.lastMessage?.timestamp 
-          ? new Date(chat.lastMessage.timestamp * 1000).toISOString()
+        // Get chat name - prioritize actual name over phone
+        const chatName = chat.name || chat.pushName || chat.notifyName || null;
+        
+        // Get last message info
+        const lastMessage = chat.lastMessage?.body || chat.lastMessage?.text || chat.lastMessage?.caption || "";
+        const lastMessageTimestamp = chat.lastMessage?.timestamp || chat.lastMessage?.t || chat.timestamp;
+        const lastMessageTime = lastMessageTimestamp 
+          ? new Date(typeof lastMessageTimestamp === 'number' && lastMessageTimestamp < 10000000000 ? lastMessageTimestamp * 1000 : lastMessageTimestamp).toISOString()
           : new Date().toISOString();
+
+        // Get profile picture URL
+        const photoUrl = chat.profilePicUrl || chat.picture || chat.imgUrl || null;
+
+        console.log(`[WAHA Sync] Chat: ${phone}, Name: ${chatName}, Photo: ${photoUrl ? 'Yes' : 'No'}`);
 
         // Upsert chat
         const { data: chatData, error: chatError } = await supabase
           .from("whatsapp_chats")
           .upsert({
             phone,
-            name: chatName !== phone ? chatName : null,
+            name: chatName,
             last_message: lastMessage,
             last_message_time: lastMessageTime,
-            photo_url: chat.profilePicUrl || null,
+            photo_url: photoUrl,
           }, { onConflict: "phone", ignoreDuplicates: false })
           .select()
           .single();
@@ -165,32 +144,66 @@ const handler = async (req: Request): Promise<Response> => {
 
         syncedChats++;
 
-        // Fetch messages for this chat
-        try {
-          const messagesResponse = await fetch(
-            `${WAHA_API_URL}/api/default/chats/${encodeURIComponent(chatId)}/messages?limit=100`,
-            {
+        // Fetch messages for this chat - try multiple endpoints
+        const messageEndpoints = [
+          `${WAHA_API_URL}/api/default/chats/${encodeURIComponent(chatId)}/messages?limit=100`,
+          `${WAHA_API_URL}/api/default/chats/${encodeURIComponent(chatId)}/messages?downloadMedia=false&limit=100`,
+        ];
+
+        for (const endpoint of messageEndpoints) {
+          try {
+            console.log(`[WAHA Sync] Fetching messages: ${endpoint}`);
+            const messagesResponse = await fetch(endpoint, {
               method: "GET",
               headers: getHeaders(),
-            }
-          );
+            });
 
-          if (messagesResponse.ok) {
+            if (!messagesResponse.ok) {
+              console.log(`[WAHA Sync] Messages endpoint failed: ${messagesResponse.status}`);
+              continue;
+            }
+
             const messagesData = await messagesResponse.json();
             const messages = Array.isArray(messagesData) ? messagesData : [];
             console.log(`[WAHA Sync] Found ${messages.length} messages for ${phone}`);
 
+            if (messages.length === 0) continue;
+
             for (const msg of messages) {
-              const messageId = msg.id || msg.key?.id;
+              const messageId = msg.id || msg.key?.id || msg._id;
               if (!messageId) continue;
 
-              const msgText = msg.body || msg.text || msg.message?.conversation || 
-                             msg.message?.extendedTextMessage?.text || "";
+              // Extract message text from various possible locations
+              const msgText = msg.body || msg.text || msg.content || 
+                             msg.message?.conversation || 
+                             msg.message?.extendedTextMessage?.text ||
+                             msg.message?.imageMessage?.caption ||
+                             msg.message?.videoMessage?.caption ||
+                             "";
+              
               const msgFromMe = msg.fromMe ?? msg.key?.fromMe ?? false;
-              const msgTimestamp = msg.timestamp || msg.messageTimestamp;
+              const msgTimestamp = msg.timestamp || msg.messageTimestamp || msg.t;
               const createdAt = msgTimestamp 
                 ? new Date(typeof msgTimestamp === 'number' && msgTimestamp < 10000000000 ? msgTimestamp * 1000 : msgTimestamp).toISOString() 
                 : new Date().toISOString();
+
+              // Determine message status
+              let status = "SENT";
+              if (msg.ack === 3 || msg.ack === "read") status = "READ";
+              else if (msg.ack === 2 || msg.ack === "received") status = "DELIVERED";
+              else if (!msgFromMe) status = "RECEIVED";
+
+              // Check for media
+              const hasMedia = msg.hasMedia || msg.mediaUrl || msg.message?.imageMessage || msg.message?.audioMessage || msg.message?.videoMessage || msg.message?.documentMessage;
+              const mediaUrl = msg.mediaUrl || msg.media?.url || null;
+              let mediaType = null;
+              if (hasMedia) {
+                if (msg.message?.imageMessage || msg.type === "image") mediaType = "image";
+                else if (msg.message?.audioMessage || msg.type === "audio" || msg.type === "ptt") mediaType = "audio";
+                else if (msg.message?.videoMessage || msg.type === "video") mediaType = "video";
+                else if (msg.message?.documentMessage || msg.type === "document") mediaType = "document";
+                else mediaType = msg.type || "file";
+              }
 
               const { error: msgError } = await supabase
                 .from("whatsapp_messages")
@@ -200,9 +213,9 @@ const handler = async (req: Request): Promise<Response> => {
                   phone,
                   text: msgText,
                   from_me: msgFromMe,
-                  status: msg.ack === 3 ? "READ" : msg.ack === 2 ? "DELIVERED" : "SENT",
-                  media_url: msg.mediaUrl || null,
-                  media_type: msg.hasMedia ? (msg.type || "file") : null,
+                  status,
+                  media_url: mediaUrl,
+                  media_type: mediaType,
                   created_at: createdAt,
                 }, { onConflict: "message_id" });
 
@@ -210,9 +223,13 @@ const handler = async (req: Request): Promise<Response> => {
                 syncedMessages++;
               }
             }
+            
+            // If we got messages, don't try other endpoints
+            if (messages.length > 0) break;
+            
+          } catch (msgErr: any) {
+            console.error(`[WAHA Sync] Error fetching messages for ${phone}:`, msgErr.message);
           }
-        } catch (msgErr: any) {
-          console.error(`[WAHA Sync] Error fetching messages for ${phone}:`, msgErr.message);
         }
       }
 
