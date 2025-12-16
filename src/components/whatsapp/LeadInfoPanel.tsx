@@ -106,16 +106,16 @@ const LeadInfoPanel = ({ phone, photoUrl, contactName, onClose }: LeadInfoPanelP
     );
   }
 
+  const defaultAvatar = "https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp_default_profile_photo.png";
+
   if (!lead) {
     return (
       <div className="w-96 border-l border-border/20 bg-gradient-to-b from-card to-muted/20 flex flex-col items-center justify-center p-8 text-center">
-        {photoUrl ? (
-          <img src={photoUrl} alt={contactName || "Contato"} className="w-24 h-24 rounded-full object-cover mb-4 ring-4 ring-muted/30" />
-        ) : (
-          <div className="w-24 h-24 rounded-full bg-muted/30 flex items-center justify-center mb-4">
-            <User className="w-12 h-12 text-muted-foreground/40" />
-          </div>
-        )}
+        <img 
+          src={photoUrl || defaultAvatar} 
+          alt={contactName || "Contato"} 
+          className="w-24 h-24 rounded-full object-cover mb-4 ring-4 ring-muted/30" 
+        />
         <p className="text-lg font-semibold text-foreground">{contactName || phone}</p>
         <p className="text-sm text-muted-foreground mt-2">Este contato não está no CRM</p>
         <button className="mt-6 px-4 py-2 bg-primary/10 hover:bg-primary/20 text-primary rounded-lg text-sm font-medium transition-colors">
@@ -132,17 +132,11 @@ const LeadInfoPanel = ({ phone, photoUrl, contactName, onClose }: LeadInfoPanelP
         <div className="h-20 bg-gradient-to-r from-emerald-500/20 to-emerald-600/10" />
         <div className="px-6 pb-4 -mt-10">
           <div className="flex items-end gap-4">
-            {displayPhoto ? (
-              <img 
-                src={displayPhoto} 
-                alt={lead.name} 
-                className="w-20 h-20 rounded-2xl object-cover ring-4 ring-card shadow-lg" 
-              />
-            ) : (
-              <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center text-white font-bold text-2xl ring-4 ring-card shadow-lg">
-                {lead.name.charAt(0).toUpperCase()}
-              </div>
-            )}
+            <img 
+              src={displayPhoto || defaultAvatar} 
+              alt={lead.name} 
+              className="w-20 h-20 rounded-2xl object-cover ring-4 ring-card shadow-lg" 
+            />
             <div className="flex-1 min-w-0 pb-1">
               {lead.clinic_name && (
                 <p className="text-xs text-muted-foreground truncate uppercase tracking-wide">{lead.clinic_name}</p>
