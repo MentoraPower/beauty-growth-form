@@ -31,4 +31,5 @@ export interface Lead {
   is_mql?: boolean | null;
   ai_analysis?: string | null;
   analysis_created_at?: string | null;
+  photo_url?: string | null;
 }

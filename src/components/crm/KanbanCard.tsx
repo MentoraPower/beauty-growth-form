@@ -3,7 +3,7 @@ import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { Lead } from "@/types/crm";
 import { Card, CardContent } from "@/components/ui/card";
-import { Mail, Phone } from "lucide-react";
+import { Mail, Phone, User } from "lucide-react";
 import Instagram from "@/components/icons/Instagram";
 import { useNavigate } from "react-router-dom";
 import { formatDistanceToNow } from "date-fns";
@@ -86,7 +86,20 @@ export const KanbanCard = memo(function KanbanCard({ lead, isDragging: isDraggin
     >
       <CardContent className="p-4 space-y-2">
         <div className="flex items-center justify-between gap-2">
-          <h3 className="font-semibold text-sm truncate">{lead.name}</h3>
+          <div className="flex items-center gap-2 min-w-0">
+            {lead.photo_url ? (
+              <img 
+                src={lead.photo_url} 
+                alt={lead.name} 
+                className="w-6 h-6 rounded-full object-cover flex-shrink-0"
+              />
+            ) : (
+              <div className="w-6 h-6 rounded-full bg-muted flex items-center justify-center flex-shrink-0">
+                <User className="w-3.5 h-3.5 text-muted-foreground" />
+              </div>
+            )}
+            <h3 className="font-semibold text-sm truncate">{lead.name}</h3>
+          </div>
           {lead.is_mql !== null && (
             <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded flex-shrink-0 ${
               lead.is_mql 
