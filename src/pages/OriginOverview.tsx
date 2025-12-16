@@ -1,0 +1,297 @@
+import { useEffect, useState, useMemo } from "react";
+import { useSearchParams } from "react-router-dom";
+import { subDays, startOfDay, endOfDay, format, differenceInDays, eachDayOfInterval } from "date-fns";
+import { ptBR } from "date-fns/locale";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
+import DashboardLayout from "@/components/dashboard/DashboardLayout";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Users, TrendingUp, ShoppingCart, DollarSign, Target } from "lucide-react";
+import ModernAreaChart from "@/components/dashboard/ModernAreaChart";
+import ModernBarChart from "@/components/dashboard/ModernBarChart";
+import MiniGaugeChart from "@/components/dashboard/MiniGaugeChart";
+import DateFilter, { DateRange } from "@/components/dashboard/DateFilter";
+
+interface Lead {
+  id: string;
+  name: string;
+  email: string;
+  service_area: string;
+  created_at: string;
+  is_mql: boolean | null;
+  sub_origin_id: string | null;
+}
+
+interface DayData {
+  day: string;
+  leads: number;
+}
+
+interface Origin {
+  id: string;
+  nome: string;
+}
+
+interface SubOrigin {
+  id: string;
+  origin_id: string;
+  nome: string;
+}
+
+const OriginOverview = () => {
+  const { isLoading: authLoading } = useAuth("/auth");
+  const [searchParams] = useSearchParams();
+  const originId = searchParams.get('origin');
+  
+  const [origin, setOrigin] = useState<Origin | null>(null);
+  const [subOrigins, setSubOrigins] = useState<SubOrigin[]>([]);
+  const [allLeads, setAllLeads] = useState<Lead[]>([]);
+  const [loading, setLoading] = useState(true);
+  
+  const [dateRange, setDateRange] = useState<DateRange>({
+    from: startOfDay(subDays(new Date(), 29)),
+    to: endOfDay(new Date())
+  });
+
+  // Get sub_origin_ids for this origin
+  const subOriginIds = useMemo(() => {
+    return subOrigins.filter(s => s.origin_id === originId).map(s => s.id);
+  }, [subOrigins, originId]);
+
+  // Filter leads by sub_origins of this origin and date range
+  const leads = useMemo(() => {
+    return allLeads.filter(lead => {
+      if (!lead.sub_origin_id || !subOriginIds.includes(lead.sub_origin_id)) return false;
+      const date = new Date(lead.created_at);
+      return date >= dateRange.from && date <= dateRange.to;
+    });
+  }, [allLeads, subOriginIds, dateRange]);
+
+  useEffect(() => {
+    if (!originId) return;
+    
+    const fetchData = async () => {
+      setLoading(true);
+      try {
+        const [originRes, subOriginsRes, leadsRes] = await Promise.all([
+          supabase.from("crm_origins").select("*").eq("id", originId).single(),
+          supabase.from("crm_sub_origins").select("*"),
+          supabase.from("leads").select("id, name, email, service_area, created_at, is_mql, sub_origin_id").order("created_at", { ascending: false }),
+        ]);
+
+        if (originRes.data) setOrigin(originRes.data);
+        if (subOriginsRes.data) setSubOrigins(subOriginsRes.data);
+        if (leadsRes.data) setAllLeads(leadsRes.data);
+      } catch (error) {
+        console.error("Error fetching data:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+
+    // Subscribe to realtime updates
+    const channel = supabase
+      .channel("origin-overview-leads")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "leads" },
+        (payload) => {
+          if (payload.eventType === "INSERT") {
+            setAllLeads((prev) => [payload.new as Lead, ...prev]);
+          } else if (payload.eventType === "DELETE") {
+            setAllLeads((prev) => prev.filter((lead) => lead.id !== payload.old.id));
+          } else if (payload.eventType === "UPDATE") {
+            setAllLeads((prev) =>
+              prev.map((lead) =>
+                lead.id === payload.new.id ? (payload.new as Lead) : lead
+              )
+            );
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [originId]);
+
+  const getLeadsByDayOfWeek = (): DayData[] => {
+    const days = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
+    const dayCount = [0, 0, 0, 0, 0, 0, 0];
+
+    leads.forEach((lead) => {
+      const date = new Date(lead.created_at);
+      dayCount[date.getDay()]++;
+    });
+
+    return days.map((day, index) => ({
+      day,
+      leads: dayCount[index],
+    }));
+  };
+
+  const getLeadsTrend = () => {
+    const days = eachDayOfInterval({ start: dateRange.from, end: dateRange.to });
+    
+    return days.map(day => ({
+      date: format(day, "dd/MMM", { locale: ptBR }),
+      count: leads.filter((lead) => {
+        const leadDate = new Date(lead.created_at);
+        return leadDate.toDateString() === day.toDateString();
+      }).length,
+    }));
+  };
+
+  const getMQLPercentage = () => {
+    const leadsWithMQL = leads.filter(lead => lead.is_mql !== null);
+    if (leadsWithMQL.length === 0) return "0";
+    const mqlCount = leadsWithMQL.filter(lead => lead.is_mql === true).length;
+    return ((mqlCount / leadsWithMQL.length) * 100).toFixed(1);
+  };
+
+  const getPeriodLabel = () => {
+    const days = differenceInDays(dateRange.to, dateRange.from) + 1;
+    if (days === 1) return "Hoje";
+    return `Últimos ${days} dias`;
+  };
+
+  return (
+    <DashboardLayout>
+      <div className="space-y-6 transition-opacity duration-300 ease-out">
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+          <div>
+            <h1 className="text-2xl font-bold text-foreground">
+              {origin?.nome || "Overview"}
+            </h1>
+            <p className="text-muted-foreground text-sm mt-1">
+              Visão geral da origem
+            </p>
+          </div>
+          <DateFilter onDateChange={setDateRange} />
+        </div>
+
+        {/* Stats Cards */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          <Card className="bg-white border border-black/5 shadow-none">
+            <CardContent className="pt-5 pb-4">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="w-10 h-10 rounded-full border border-emerald-400 flex items-center justify-center">
+                  <Users className="h-5 w-5 text-emerald-500" />
+                </div>
+                <p className="text-sm text-foreground font-medium">Total Leads</p>
+              </div>
+              <p className="text-3xl font-bold text-foreground">{leads.length}</p>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-white border border-black/5 shadow-none">
+            <CardContent className="pt-5 pb-4">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="w-10 h-10 rounded-full border border-rose-400 flex items-center justify-center">
+                  <Target className="h-5 w-5 text-rose-500" />
+                </div>
+                <p className="text-sm text-foreground font-medium">Taxa MQL</p>
+              </div>
+              <p className="text-3xl font-bold text-foreground">{getMQLPercentage()}%</p>
+              <p className="text-xs text-muted-foreground mt-1">{leads.filter(l => l.is_mql === true).length} MQLs</p>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-white border border-black/5 shadow-none">
+            <CardContent className="pt-5 pb-4">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="w-10 h-10 rounded-full border border-violet-400 flex items-center justify-center">
+                  <TrendingUp className="h-5 w-5 text-violet-500" />
+                </div>
+                <p className="text-sm text-foreground font-medium">Sub-origens</p>
+              </div>
+              <p className="text-3xl font-bold text-foreground">{subOriginIds.length}</p>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-white border border-black/5 shadow-none">
+            <CardContent className="pt-5 pb-4">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="w-10 h-10 rounded-full border border-sky-400 flex items-center justify-center">
+                  <Users className="h-5 w-5 text-sky-500" />
+                </div>
+                <p className="text-sm text-foreground font-medium">Média/Dia</p>
+              </div>
+              <p className="text-3xl font-bold text-foreground">
+                {(leads.length / Math.max(differenceInDays(dateRange.to, dateRange.from) + 1, 1)).toFixed(1)}
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Charts Row */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+          <Card className="bg-white border border-black/5 shadow-none lg:col-span-2">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base font-semibold text-foreground">
+                Tendência de Leads
+              </CardTitle>
+              <p className="text-xs text-muted-foreground">{getPeriodLabel()}</p>
+            </CardHeader>
+            <CardContent>
+              <ModernAreaChart data={getLeadsTrend()} title="Leads" />
+            </CardContent>
+          </Card>
+
+          <Card className="bg-white border border-black/5 shadow-none">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base font-semibold text-foreground">
+                Leads por Área
+              </CardTitle>
+              <p className="text-xs text-muted-foreground">Distribuição por serviço</p>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-3 gap-2">
+                {(() => {
+                  const areas = leads.reduce((acc, lead) => {
+                    if (lead.service_area) {
+                      acc[lead.service_area] = (acc[lead.service_area] || 0) + 1;
+                    }
+                    return acc;
+                  }, {} as Record<string, number>);
+                  
+                  const maxLeads = Math.max(...Object.values(areas), 1);
+                  
+                  return Object.entries(areas)
+                    .sort((a, b) => b[1] - a[1])
+                    .slice(0, 6)
+                    .map(([area, count]) => (
+                      <MiniGaugeChart
+                        key={area}
+                        value={count}
+                        maxValue={maxLeads}
+                        label={area}
+                      />
+                    ));
+                })()}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Bar Chart */}
+        <Card className="bg-white border border-black/5 shadow-none">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base font-semibold text-foreground">
+              Leads por Dia da Semana
+            </CardTitle>
+            <p className="text-xs text-muted-foreground">Distribuição semanal</p>
+          </CardHeader>
+          <CardContent>
+            <ModernBarChart data={getLeadsByDayOfWeek()} />
+          </CardContent>
+        </Card>
+      </div>
+    </DashboardLayout>
+  );
+};
+
+export default OriginOverview;

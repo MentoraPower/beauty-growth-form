@@ -12,6 +12,7 @@ import CRM from "./pages/CRM";
 import LeadDetail from "./pages/LeadDetail";
 import Auth from "./pages/Auth";
 import WhatsApp from "./pages/WhatsApp";
+import OriginOverview from "./pages/OriginOverview";
 
 const queryClient = new QueryClient();
 
@@ -28,6 +29,7 @@ const App = () => (
           <Route path="/auth" element={<Auth />} />
           <Route path="/admin" element={<Dashboard />} />
           <Route path="/admin/crm" element={<CRM />} />
+          <Route path="/admin/crm/overview" element={<OriginOverview />} />
           <Route path="/admin/crm/:id" element={<LeadDetail />} />
           <Route path="/admin/whatsapp" element={<WhatsApp />} />
           <Route path="*" element={<NotFound />} />
