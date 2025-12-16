@@ -256,7 +256,8 @@ async function handler(req: Request): Promise<Response> {
     if (event === "messages.update") {
       const updateData = payload.data;
       const messageKey = updateData?.key || updateData;
-      const messageId = messageKey?.id;
+      const whatsappMsgId = messageKey?.id; // e.g. "3EB0456C612BC6D9A6C54E"
+      const numericMsgId = updateData?.msgId?.toString(); // e.g. "16663681"
       
       // Status codes: 2=SENT, 3=DELIVERED, 4=READ, 5=PLAYED
       const statusCode = updateData?.update?.status || updateData?.status;
@@ -267,14 +268,36 @@ async function handler(req: Request): Promise<Response> {
         5: "PLAYED"
       };
       
-      if (messageId && statusMap[statusCode]) {
+      if (statusMap[statusCode]) {
         const newStatus = statusMap[statusCode];
-        console.log(`[Wasender Webhook] Updating message ${messageId} status to ${newStatus}`);
         
-        await supabase
-          .from("whatsapp_messages")
-          .update({ status: newStatus })
-          .eq("message_id", messageId);
+        // Try to update by WhatsApp message ID first
+        if (whatsappMsgId) {
+          console.log(`[Wasender Webhook] Updating message ${whatsappMsgId} status to ${newStatus}`);
+          const { data: updated1 } = await supabase
+            .from("whatsapp_messages")
+            .update({ status: newStatus })
+            .eq("message_id", whatsappMsgId)
+            .select("id");
+          
+          if (updated1 && updated1.length > 0) {
+            console.log(`[Wasender Webhook] Updated ${updated1.length} message(s) by whatsappMsgId`);
+          }
+        }
+        
+        // Also try to update by numeric msgId (for older messages)
+        if (numericMsgId) {
+          console.log(`[Wasender Webhook] Also trying numeric msgId ${numericMsgId}`);
+          const { data: updated2 } = await supabase
+            .from("whatsapp_messages")
+            .update({ status: newStatus })
+            .eq("message_id", numericMsgId)
+            .select("id");
+          
+          if (updated2 && updated2.length > 0) {
+            console.log(`[Wasender Webhook] Updated ${updated2.length} message(s) by numericMsgId`);
+          }
+        }
       }
       
       return new Response(JSON.stringify({ ok: true }), { 
