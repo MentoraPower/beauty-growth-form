@@ -28,6 +28,7 @@ interface Message {
   status: string;
   mediaUrl?: string | null;
   mediaType?: string | null;
+  created_at?: string;
 }
 
 const DEFAULT_AVATAR = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyMTIgMjEyIj48cGF0aCBmaWxsPSIjREZFNUU3IiBkPSJNMCAwaDIxMnYyMTJIMHoiLz48cGF0aCBmaWxsPSIjRkZGIiBkPSJNMTA2IDEwNmMtMjUuNCAwLTQ2LTIwLjYtNDYtNDZzMjAuNi00NiA0Ni00NiA0NiAyMC42IDQ2IDQ2LTIwLjYgNDYtNDYgNDZ6bTAgMTNjMzAuNiAwIDkyIDE1LjQgOTIgNDZ2MjNIMTR2LTIzYzAtMzAuNiA2MS40LTQ2IDkyLTQ2eiIvPjwvc3ZnPg==";
@@ -124,6 +125,34 @@ const WhatsApp = () => {
     } else {
       return date.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", timeZone: "America/Sao_Paulo" });
     }
+  };
+
+  const getDateLabel = (dateString: string): string => {
+    const date = new Date(dateString);
+    const now = new Date();
+    
+    const spOptions = { timeZone: "America/Sao_Paulo" };
+    const dateInSP = new Date(date.toLocaleString("en-US", spOptions));
+    const nowInSP = new Date(now.toLocaleString("en-US", spOptions));
+    
+    // Reset hours to compare just dates
+    const dateOnly = new Date(dateInSP.getFullYear(), dateInSP.getMonth(), dateInSP.getDate());
+    const nowOnly = new Date(nowInSP.getFullYear(), nowInSP.getMonth(), nowInSP.getDate());
+    
+    const diffDays = Math.floor((nowOnly.getTime() - dateOnly.getTime()) / (1000 * 60 * 60 * 24));
+    
+    if (diffDays === 0) return "Hoje";
+    if (diffDays === 1) return "Ontem";
+    if (diffDays < 7) {
+      const dayNames = ["Domingo", "Segunda-feira", "Terça-feira", "Quarta-feira", "Quinta-feira", "Sexta-feira", "Sábado"];
+      return dayNames[dateInSP.getDay()];
+    }
+    return date.toLocaleDateString("pt-BR", { day: "2-digit", month: "long", year: "numeric", timeZone: "America/Sao_Paulo" });
+  };
+
+  const getMessageDateKey = (dateString: string): string => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString("en-US", { year: "numeric", month: "2-digit", day: "2-digit", timeZone: "America/Sao_Paulo" });
   };
 
   const formatChatData = useCallback((chat: any): Chat | null => {
@@ -253,6 +282,7 @@ const WhatsApp = () => {
         status: msg.status,
         mediaUrl: msg.media_url,
         mediaType: msg.media_type,
+        created_at: msg.created_at,
       }));
 
       setMessages(formattedMessages);
@@ -288,6 +318,7 @@ const WhatsApp = () => {
       sent: true,
       read: false,
       status: "SENDING",
+      created_at: new Date().toISOString(),
     };
     setMessages(prev => [...prev, tempMessage]);
     scrollToBottom();
@@ -513,6 +544,7 @@ const WhatsApp = () => {
               status: msg.status,
               mediaUrl: msg.media_url,
               mediaType: msg.media_type,
+              created_at: msg.created_at,
             }];
           });
         }
@@ -810,32 +842,54 @@ const WhatsApp = () => {
                     <p className="text-sm text-muted-foreground">Nenhuma mensagem</p>
                   </div>
                 ) : (
-                  visibleMessages.map((msg) => (
-                    <div key={msg.id} className={cn("flex", msg.sent ? "justify-end" : "justify-start")}>
-                      <div
-                        className={cn(
-                          "max-w-[65%] rounded-lg px-3 py-1.5 shadow-sm relative",
-                          msg.sent 
-                            ? "bg-emerald-100 dark:bg-emerald-900/30 rounded-tr-none" 
-                            : "bg-card rounded-tl-none border border-border/30"
-                        )}
-                      >
-                        {renderMessageContent(msg)}
-                        <div className="flex items-center justify-end gap-1 mt-0.5">
-                          <span className="text-[10px] text-muted-foreground">{msg.time}</span>
-                          {msg.sent && (
-                            msg.status === "READ" || msg.status === "PLAYED" 
-                              ? <CheckCheck className="w-4 h-4 text-blue-500" /> 
-                              : msg.status === "DELIVERED"
-                                ? <CheckCheck className="w-4 h-4 text-muted-foreground" />
-                                : msg.status === "SENDING"
-                                  ? <div className="w-3 h-3 border-2 border-muted-foreground border-t-transparent rounded-full animate-spin" />
-                                  : <Check className="w-4 h-4 text-muted-foreground" />
+                  (() => {
+                    let lastDateKey = "";
+                    return visibleMessages.map((msg, index) => {
+                      const currentDateKey = msg.created_at ? getMessageDateKey(msg.created_at) : "";
+                      const showDateSeparator = currentDateKey && currentDateKey !== lastDateKey;
+                      if (currentDateKey) lastDateKey = currentDateKey;
+                      
+                      return (
+                        <div key={msg.id}>
+                          {showDateSeparator && msg.created_at && (
+                            <div className="flex items-center justify-center my-4">
+                              <div className="flex items-center gap-3 w-full max-w-[280px]">
+                                <div className="flex-1 h-px bg-muted-foreground/20" />
+                                <span className="text-xs text-muted-foreground bg-muted/40 px-3 py-1 rounded-full font-medium">
+                                  {getDateLabel(msg.created_at)}
+                                </span>
+                                <div className="flex-1 h-px bg-muted-foreground/20" />
+                              </div>
+                            </div>
                           )}
+                          <div className={cn("flex", msg.sent ? "justify-end" : "justify-start")}>
+                            <div
+                              className={cn(
+                                "max-w-[65%] rounded-lg px-3 py-1.5 shadow-sm relative",
+                                msg.sent 
+                                  ? "bg-emerald-100 dark:bg-emerald-900/30 rounded-tr-none" 
+                                  : "bg-card rounded-tl-none border border-border/30"
+                              )}
+                            >
+                              {renderMessageContent(msg)}
+                              <div className="flex items-center justify-end gap-1 mt-0.5">
+                                <span className="text-[10px] text-muted-foreground">{msg.time}</span>
+                                {msg.sent && (
+                                  msg.status === "READ" || msg.status === "PLAYED" 
+                                    ? <CheckCheck className="w-4 h-4 text-blue-500" /> 
+                                    : msg.status === "DELIVERED"
+                                      ? <CheckCheck className="w-4 h-4 text-muted-foreground" />
+                                      : msg.status === "SENDING"
+                                        ? <div className="w-3 h-3 border-2 border-muted-foreground border-t-transparent rounded-full animate-spin" />
+                                        : <Check className="w-4 h-4 text-muted-foreground" />
+                                )}
+                              </div>
+                            </div>
+                          </div>
                         </div>
-                      </div>
-                    </div>
-                  ))
+                      );
+                    });
+                  })()
                 )}
                 <div ref={messagesEndRef} />
               </div>
