@@ -92,7 +92,7 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
   const mainContentMargin = getMainContentMargin();
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-[#0f0f12]">
       <LoadingBar />
       {/* Mobile Header */}
       <header className="lg:hidden fixed top-0 left-0 right-0 h-14 bg-card border-b border-border z-50 flex items-center justify-between px-4">
@@ -371,14 +371,13 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
       {/* Main Content with rounded corners */}
       <main 
         style={{ marginLeft: `${mainContentMargin}px` }}
-        className={cn(
-          "hidden lg:block pt-6 min-h-screen p-6 transition-[margin-left] duration-300 ease-out",
-          (activePanel !== 'none') && "bg-background rounded-l-3xl relative z-30"
-        )}
+        className="hidden lg:block min-h-screen p-2 transition-[margin-left] duration-300 ease-out"
       >
-        <PageTransition>
-          {children}
-        </PageTransition>
+        <div className="bg-card rounded-2xl min-h-[calc(100vh-1rem)] p-6">
+          <PageTransition>
+            {children}
+          </PageTransition>
+        </div>
       </main>
       
       {/* Mobile Main Content */}
