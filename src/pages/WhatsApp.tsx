@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
-import { Search, Smile, Paperclip, Mic, Send, Check, CheckCheck, RefreshCw, Phone, Image, File, Play } from "lucide-react";
+import { Search, Smile, Paperclip, Mic, Send, Check, CheckCheck, RefreshCw, Phone, Image, File, Play, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
@@ -297,6 +297,21 @@ const WhatsApp = () => {
     }
   };
 
+  const clearAllData = async () => {
+    try {
+      console.log("[WhatsApp] Clearing all data...");
+      const { data, error } = await supabase.functions.invoke("waha-whatsapp", {
+        body: { action: "clear-all" },
+      });
+      console.log("[WhatsApp] Clear response:", data, error);
+      setChats([]);
+      setMessages([]);
+      setSelectedChat(null);
+    } catch (error: any) {
+      console.error("[WhatsApp] Error clearing:", error);
+    }
+  };
+
   const syncAllChats = async () => {
     setIsSyncing(true);
     try {
@@ -314,6 +329,11 @@ const WhatsApp = () => {
     } finally {
       setIsSyncing(false);
     }
+  };
+
+  const clearAndSync = async () => {
+    await clearAllData();
+    await syncAllChats();
   };
 
   const handleFileUpload = async (file: File, type: "image" | "file") => {
@@ -525,14 +545,24 @@ const WhatsApp = () => {
           {/* Header */}
           <div className="h-14 px-4 flex items-center justify-between bg-muted/30 border-b border-border/30">
             <h2 className="font-semibold text-foreground">Conversas</h2>
-            <button
-              onClick={syncAllChats}
-              disabled={isSyncing}
-              className="p-1.5 hover:bg-muted/50 rounded-full transition-colors"
-              title="Sincronizar"
-            >
-              <RefreshCw className={cn("w-4 h-4 text-muted-foreground", isSyncing && "animate-spin")} />
-            </button>
+            <div className="flex items-center gap-1">
+              <button
+                onClick={clearAndSync}
+                disabled={isSyncing}
+                className="p-1.5 hover:bg-muted/50 rounded-full transition-colors"
+                title="Limpar e Sincronizar"
+              >
+                <Trash2 className="w-4 h-4 text-muted-foreground" />
+              </button>
+              <button
+                onClick={syncAllChats}
+                disabled={isSyncing}
+                className="p-1.5 hover:bg-muted/50 rounded-full transition-colors"
+                title="Sincronizar"
+              >
+                <RefreshCw className={cn("w-4 h-4 text-muted-foreground", isSyncing && "animate-spin")} />
+              </button>
+            </div>
           </div>
 
           {/* Search */}
