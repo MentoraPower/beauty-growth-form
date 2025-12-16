@@ -250,7 +250,7 @@ async function handler(req: Request): Promise<Response> {
         body: JSON.stringify({ to, text }),
       });
 
-      return new Response(JSON.stringify({ success: true, messageId: result?.messageId || result?.key?.id }), {
+      return new Response(JSON.stringify({ success: true, messageId: result?.data?.msgId || result?.messageId || result?.key?.id }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
@@ -272,7 +272,7 @@ async function handler(req: Request): Promise<Response> {
         body: JSON.stringify(payload),
       });
 
-      return new Response(JSON.stringify({ success: true, messageId: result?.messageId || result?.key?.id }), {
+      return new Response(JSON.stringify({ success: true, messageId: result?.data?.msgId || result?.messageId || result?.key?.id }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
@@ -383,7 +383,7 @@ async function handler(req: Request): Promise<Response> {
         }),
       });
 
-      return new Response(JSON.stringify({ success: true, messageId: result?.messageId || result?.key?.id }), {
+      return new Response(JSON.stringify({ success: true, messageId: result?.data?.msgId || result?.messageId || result?.key?.id }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
