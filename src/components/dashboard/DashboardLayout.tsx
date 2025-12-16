@@ -76,8 +76,8 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
     if (isSubmenuVisible) {
       return sidebarWidth - 8 + submenuWidth + 8 + outerPadding;
     }
-    // When WhatsApp is active, content extends to sidebar edge
-    return sidebarWidth + outerPadding;
+    // When WhatsApp is active, add gap after sidebar for rounded border effect
+    return sidebarWidth + outerPadding + 8; // +8 for gap between sidebar and content
   };
 
   const mainContentMargin = getMainContentMargin();
@@ -274,15 +274,9 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
       {/* Main Content with rounded corners */}
       <main 
         style={{ left: `${mainContentMargin}px` }}
-        className={cn(
-          "hidden lg:block fixed top-2 right-2 bottom-2 transition-all duration-300 ease-out",
-          !isSubmenuVisible && "rounded-l-2xl overflow-hidden"
-        )}
+        className="hidden lg:block fixed top-2 right-2 bottom-2 transition-all duration-300 ease-out"
       >
-        <div className={cn(
-          "bg-[#0f0f12] h-full p-2",
-          isSubmenuVisible ? "rounded-2xl" : "rounded-l-2xl rounded-r-2xl"
-        )}>
+        <div className="bg-[#0f0f12] rounded-2xl h-full p-2">
           <div className="bg-card rounded-xl h-full p-6 overflow-auto relative">
             <PageTransition>
               {children}
