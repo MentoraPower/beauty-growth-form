@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Phone, Mail, Instagram, ChevronRight, ChevronDown, Clock, User } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { countries } from "@/data/countries";
 
 interface Lead {
   id: string;
@@ -100,6 +101,12 @@ const LeadInfoPanel = ({ phone, photoUrl, contactName, onClose }: LeadInfoPanelP
     setOpenSections(prev => ({ ...prev, [section]: !prev[section] }));
   };
 
+  // Get country code from dial code
+  const getCountryFromDialCode = (dialCode: string) => {
+    const cleanDialCode = dialCode?.replace(/[^+\d]/g, "") || "+55";
+    return countries.find(c => c.dialCode === cleanDialCode) || countries[0]; // Default to Brazil
+  };
+
   const displayPhoto = lead?.photo_url || photoUrl;
   const defaultAvatar = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyMTIgMjEyIj48cGF0aCBmaWxsPSIjREZFNUU3IiBkPSJNMCAwaDIxMnYyMTJIMHoiLz48cGF0aCBmaWxsPSIjRkZGIiBkPSJNMTA2IDEwNmMtMjUuNCAwLTQ2LTIwLjYtNDYtNDZzMjAuNi00NiA0Ni00NiA0NiAyMC42IDQ2IDQ2LTIwLjYgNDYtNDYgNDZ6bTAgMTNjMzAuNiAwIDkyIDE1LjQgOTIgNDZ2MjNIMTR2LTIzYzAtMzAuNiA2MS40LTQ2IDkyLTQ2eiIvPjwvc3ZnPg==";
 
@@ -115,6 +122,31 @@ const LeadInfoPanel = ({ phone, photoUrl, contactName, onClose }: LeadInfoPanelP
       </div>
     </div>
   );
+
+  // Phone field with flag
+  const PhoneField = ({ dialCode, phoneNumber }: { dialCode: string; phoneNumber: string }) => {
+    const country = getCountryFromDialCode(dialCode);
+    const flagUrl = `https://flagcdn.com/w40/${country.code.toLowerCase()}.png`;
+    
+    return (
+      <div className="space-y-1">
+        <label className="text-xs text-muted-foreground">Telefone</label>
+        <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 bg-muted/30 rounded-lg px-2.5 py-2.5 border border-border/50">
+            <img 
+              src={flagUrl} 
+              alt={country.name}
+              className="w-5 h-3.5 object-cover rounded-sm"
+            />
+            <ChevronDown className="w-3 h-3 text-muted-foreground" />
+          </div>
+          <div className="flex-1 bg-muted/30 rounded-lg px-3 py-2.5 text-sm text-foreground border border-border/50">
+            {phoneNumber || <span className="text-muted-foreground/60">Clique aqui para adicionar</span>}
+          </div>
+        </div>
+      </div>
+    );
+  };
 
   if (isLoading) {
     return (
@@ -195,9 +227,9 @@ const LeadInfoPanel = ({ phone, photoUrl, contactName, onClose }: LeadInfoPanelP
             <div className="px-4 py-4 space-y-4 border-b border-border">
               <Field label="Nome" value={lead.name} />
               <Field label="Email" value={lead.email} />
-              <Field 
-                label="Telefone" 
-                value={`${lead.country_code} ${lead.whatsapp}`}
+              <PhoneField 
+                dialCode={lead.country_code}
+                phoneNumber={lead.whatsapp}
               />
               <Field 
                 label="Instagram" 
