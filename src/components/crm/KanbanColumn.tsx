@@ -13,6 +13,7 @@ interface DropIndicator {
 interface KanbanColumnProps {
   pipeline: Pipeline;
   leads: Lead[];
+  leadCount?: number; // Exact count from database (bypasses 1000 limit)
   isOver?: boolean;
   subOriginId?: string | null;
   activeId?: string | null;
@@ -23,12 +24,15 @@ interface KanbanColumnProps {
 export const KanbanColumn = memo(function KanbanColumn({ 
   pipeline, 
   leads, 
+  leadCount,
   isOver, 
   subOriginId,
   activeId,
   dropIndicator,
   activePipelineId,
 }: KanbanColumnProps) {
+  // Use exact count if provided, fallback to leads array length
+  const displayCount = leadCount !== undefined ? leadCount : leads.length;
   const { setNodeRef } = useDroppable({
     id: pipeline.id,
   });
@@ -64,7 +68,7 @@ export const KanbanColumn = memo(function KanbanColumn({
                 ? "bg-black/5 text-foreground" 
                 : "text-muted-foreground bg-muted"
             }`}>
-              {leads.length}
+              {displayCount.toLocaleString('pt-BR')}
             </span>
           </div>
         </div>
