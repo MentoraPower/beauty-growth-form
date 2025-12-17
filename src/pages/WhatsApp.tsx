@@ -10,6 +10,7 @@ import LeadInfoPanel from "@/components/whatsapp/LeadInfoPanel";
 import { AudioWaveform } from "@/components/whatsapp/AudioWaveform";
 import { RecordingWaveform } from "@/components/whatsapp/RecordingWaveform";
 import ImageLightbox from "@/components/whatsapp/ImageLightbox";
+import { formatWhatsAppText, stripWhatsAppFormatting } from "@/lib/whatsapp-format";
 
 interface Chat {
   id: string;
@@ -1636,7 +1637,7 @@ const WhatsApp = () => {
                                   ? <CheckCheck className="w-4 h-4 text-muted-foreground flex-shrink-0" />
                                   : <Check className="w-4 h-4 text-muted-foreground flex-shrink-0" />
                             )}
-                            <p className="text-sm text-muted-foreground truncate">{formatWhatsAppText(chat.lastMessage)}</p>
+                            <p className="text-sm text-muted-foreground truncate">{stripWhatsAppFormatting(chat.lastMessage)}</p>
                           </div>
                         )}
                         {chat.unread > 0 && (
@@ -1824,7 +1825,7 @@ const WhatsApp = () => {
                                   )}>
                                     {msg.quotedFromMe ? "Você" : selectedChat?.name || "Contato"}
                                   </span>
-                                  <span className="text-muted-foreground line-clamp-2">{msg.quotedText}</span>
+                                  <span className="text-muted-foreground line-clamp-2">{formatWhatsAppText(msg.quotedText || "")}</span>
                                 </div>
                               )}
                               {renderMessageContent(msg)}
@@ -1873,7 +1874,7 @@ const WhatsApp = () => {
                       {replyToMessage.mediaType === "audio" ? "🎵 Áudio" : 
                        replyToMessage.mediaType === "image" ? "📷 Imagem" : 
                        replyToMessage.mediaType === "video" ? "🎥 Vídeo" : 
-                       replyToMessage.text || "Mensagem"}
+                       stripWhatsAppFormatting(replyToMessage.text || "Mensagem")}
                     </p>
                   </div>
                   <button 
