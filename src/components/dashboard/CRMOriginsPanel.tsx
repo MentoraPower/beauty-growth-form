@@ -183,11 +183,11 @@ function SortableOriginItem({
         <div className="overflow-hidden">
           <div className="ml-4 pt-1 pb-1 relative">
             
-            {/* Overview Item */}
+            {/* Overview Item - receives curved line from origin */}
             <div className="relative flex items-center group py-0.5">
-              {/* Vertical line segment coming from origin - stops at curve start */}
+              {/* Vertical line from origin - stops before curve */}
               <div className="absolute left-[3px] top-0 h-[12px] w-[2px] bg-[#b0b0b0] z-10" />
-              {/* Curved line completing to Overview */}
+              {/* Curved line to Overview */}
               <svg className="absolute left-[3px] top-[10px] w-5 h-4 z-0" viewBox="0 0 20 16" fill="none">
                 <path 
                   d="M0 0 C0 8, 8 14, 18 14" 
@@ -214,101 +214,108 @@ function SortableOriginItem({
               </button>
             </div>
 
-            {/* Sub-origins */}
-            {originSubOrigins.map((subOrigin, index) => {
-              const leadCount = leadCounts.find(lc => lc.sub_origin_id === subOrigin.id)?.count || 0;
-              const isActive = currentSubOriginId === subOrigin.id;
-              
-              return (
-                <div key={subOrigin.id} className="relative flex items-center group py-0.5">
-                  {/* Vertical line segment - stops at curve start */}
-                  <div className="absolute left-[3px] top-0 h-[12px] w-[2px] bg-[#b0b0b0] z-10" />
-                  {/* Curved line completing to sub-origin */}
-                  <svg className="absolute left-[3px] top-[10px] w-5 h-4 z-0" viewBox="0 0 20 16" fill="none">
-                    <path 
-                      d="M0 0 C0 8, 8 14, 18 14" 
-                      stroke="#b0b0b0" 
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      fill="none"
-                    />
-                  </svg>
-                  <button
-                    onClick={() => handleSubOriginClick(subOrigin.id)}
-                    className={cn(
-                      "flex items-center gap-2 flex-1 py-1.5 px-2 ml-5 rounded-lg transition-all duration-200 ease-out text-xs",
-                      isActive 
-                        ? "bg-black/10 text-foreground font-medium"
-                        : "text-foreground/70 hover:text-foreground hover:bg-black/5"
-                    )}
-                  >
-                    <Kanban className={cn(
-                      "h-3 w-3 flex-shrink-0",
-                      isActive ? "text-foreground" : "text-foreground/70"
-                    )} />
-                    <span className="truncate">{subOrigin.nome}</span>
-                    {leadCount > 0 && (
-                      <span className={cn(
-                        "ml-auto text-[10px] px-1.5 py-0.5 rounded-full",
-                        isActive 
-                          ? "bg-black/10 text-foreground"
-                          : "bg-black/5 text-foreground/60"
-                      )}>
-                        {leadCount}
-                      </span>
-                    )}
-                  </button>
-                  
-                  {/* Sub-origin Actions */}
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <button 
-                        onClick={(e) => e.stopPropagation()}
-                        className="p-1.5 rounded opacity-0 group-hover:opacity-100 transition-all duration-200 ease-out hover:bg-black/5"
-                      >
-                        <MoreVertical className="h-4 w-4 text-foreground/70" />
-                      </button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="w-40 z-[9999] bg-popover">
-                      <DropdownMenuItem onClick={() => openEditSubOriginDialog(subOrigin)}>
-                        <Pencil className="h-4 w-4 mr-2" />
-                        Editar
-                      </DropdownMenuItem>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem 
-                        className="text-destructive focus:text-destructive"
-                        onClick={() => handleDeleteSubOrigin(subOrigin.id)}
-                      >
-                        <Trash2 className="h-4 w-4 mr-2" />
-                        Excluir
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </div>
-              );
-            })}
-
-            {/* Add Sub-origin Button */}
-            <div className="relative flex items-center py-0.5">
-              {/* Vertical line segment - stops at curve start */}
-              <div className="absolute left-[3px] top-0 h-[12px] w-[2px] bg-[#b0b0b0] z-10" />
-              {/* Curved line completing to button */}
-              <svg className="absolute left-[3px] top-[10px] w-5 h-4 z-0" viewBox="0 0 20 16" fill="none">
-                <path 
-                  d="M0 0 C0 8, 8 14, 18 14" 
-                  stroke="#b0b0b0" 
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  fill="none"
+            {/* Sub-origins section - vertical line coming from Overview */}
+            <div className="relative ml-4 mt-1">
+              {/* Vertical line from Overview down through all sub-origins */}
+              {(originSubOrigins.length > 0) && (
+                <div 
+                  className="absolute left-[3px] top-0 w-[2px] bg-[#b0b0b0] z-10" 
+                  style={{ height: `calc(100% - 14px)` }}
                 />
-              </svg>
-              <button
-                onClick={() => openCreateSubOriginDialog(origin.id)}
-                className="flex items-center gap-2 w-full py-1.5 px-2 ml-5 rounded-lg transition-all duration-200 ease-out text-xs text-foreground/50 hover:text-foreground hover:bg-black/5"
-              >
-                <Plus className="h-3 w-3" />
-                <span>Criar sub origem</span>
-              </button>
+              )}
+              
+              {/* Sub-origins */}
+              {originSubOrigins.map((subOrigin, index) => {
+                const leadCount = leadCounts.find(lc => lc.sub_origin_id === subOrigin.id)?.count || 0;
+                const isActive = currentSubOriginId === subOrigin.id;
+                
+                return (
+                  <div key={subOrigin.id} className="relative flex items-center group py-0.5">
+                    {/* Curved line from vertical line to sub-origin */}
+                    <svg className="absolute left-[3px] top-1/2 -translate-y-1/2 w-4 h-5 overflow-hidden z-0" viewBox="0 0 16 20" fill="none">
+                      <path 
+                        d="M0 0 L0 10 C0 14, 4 16, 14 16" 
+                        stroke="#b0b0b0" 
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        fill="none"
+                      />
+                    </svg>
+                    <button
+                      onClick={() => handleSubOriginClick(subOrigin.id)}
+                      className={cn(
+                        "flex items-center gap-2 flex-1 py-1.5 px-2 ml-4 rounded-lg transition-all duration-200 ease-out text-xs",
+                        isActive 
+                          ? "bg-black/10 text-foreground font-medium"
+                          : "text-foreground/70 hover:text-foreground hover:bg-black/5"
+                      )}
+                    >
+                      <Kanban className={cn(
+                        "h-3 w-3 flex-shrink-0",
+                        isActive ? "text-foreground" : "text-foreground/70"
+                      )} />
+                      <span className="truncate">{subOrigin.nome}</span>
+                      {leadCount > 0 && (
+                        <span className={cn(
+                          "ml-auto text-[10px] px-1.5 py-0.5 rounded-full",
+                          isActive 
+                            ? "bg-black/10 text-foreground"
+                            : "bg-black/5 text-foreground/60"
+                        )}>
+                          {leadCount}
+                        </span>
+                      )}
+                    </button>
+                    
+                    {/* Sub-origin Actions */}
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <button 
+                          onClick={(e) => e.stopPropagation()}
+                          className="p-1.5 rounded opacity-0 group-hover:opacity-100 transition-all duration-200 ease-out hover:bg-black/5"
+                        >
+                          <MoreVertical className="h-4 w-4 text-foreground/70" />
+                        </button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="w-40 z-[9999] bg-popover">
+                        <DropdownMenuItem onClick={() => openEditSubOriginDialog(subOrigin)}>
+                          <Pencil className="h-4 w-4 mr-2" />
+                          Editar
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem 
+                          className="text-destructive focus:text-destructive"
+                          onClick={() => handleDeleteSubOrigin(subOrigin.id)}
+                        >
+                          <Trash2 className="h-4 w-4 mr-2" />
+                          Excluir
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
+                );
+              })}
+
+              {/* Add Sub-origin Button */}
+              <div className="relative flex items-center py-0.5">
+                {/* Curved line from vertical line */}
+                <svg className="absolute left-[3px] top-1/2 -translate-y-1/2 w-4 h-5 overflow-hidden z-0" viewBox="0 0 16 20" fill="none">
+                  <path 
+                    d="M0 0 L0 10 C0 14, 4 16, 14 16" 
+                    stroke="#b0b0b0" 
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    fill="none"
+                  />
+                </svg>
+                <button
+                  onClick={() => openCreateSubOriginDialog(origin.id)}
+                  className="flex items-center gap-2 w-full py-1.5 px-2 ml-4 rounded-lg transition-all duration-200 ease-out text-xs text-foreground/50 hover:text-foreground hover:bg-black/5"
+                >
+                  <Plus className="h-3 w-3" />
+                  <span>Criar sub origem</span>
+                </button>
+              </div>
             </div>
           </div>
         </div>
