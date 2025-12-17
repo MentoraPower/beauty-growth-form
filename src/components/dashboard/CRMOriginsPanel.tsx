@@ -184,12 +184,11 @@ function SortableOriginItem({
           {/* Tree container */}
           <ul className="ml-4 pt-1 pb-1 list-none pl-0 relative">
             
-            {/* Linha vertical principal - do Overview até a última sub-origem */}
+            {/* Linha vertical principal - cor escura, sem transparência, z-index alto */}
             <div 
-              className="absolute left-[11px] w-[2px] bg-neutral-300"
+              className="absolute left-[11px] w-[2px] bg-neutral-400 z-10"
               style={{
                 top: '14px',
-                // Altura: vai até a metade da última sub-origem
                 height: originSubOrigins.length > 0 
                   ? `calc(${originSubOrigins.length * 32}px + 2px)` 
                   : '0px'
@@ -200,7 +199,7 @@ function SortableOriginItem({
             <li className="relative pl-6 py-0.5">
               {/* Curva SVG perfeita */}
               <svg 
-                className="absolute left-[4px] top-1/2 -translate-y-1/2" 
+                className="absolute left-[4px] top-1/2 -translate-y-1/2 z-0" 
                 width="18" 
                 height="18" 
                 viewBox="0 0 18 18"
@@ -208,7 +207,7 @@ function SortableOriginItem({
               >
                 <path 
                   d="M 8 0 L 8 5 Q 8 9 12 9 L 18 9" 
-                  stroke="#b0b0b0"
+                  stroke="#a3a3a3"
                   strokeWidth="2" 
                   fill="none"
                 />
@@ -253,7 +252,7 @@ function SortableOriginItem({
                 >
                   {/* Curva SVG perfeita */}
                   <svg 
-                    className="absolute left-[4px] top-1/2 -translate-y-1/2" 
+                    className="absolute left-[4px] top-1/2 -translate-y-1/2 z-0" 
                     width="18" 
                     height="18" 
                     viewBox="0 0 18 18"
@@ -261,7 +260,7 @@ function SortableOriginItem({
                   >
                     <path 
                       d="M 8 0 L 8 5 Q 8 9 12 9 L 18 9" 
-                      stroke="#b0b0b0"
+                      stroke="#a3a3a3"
                       strokeWidth="2" 
                       fill="none"
                     />
