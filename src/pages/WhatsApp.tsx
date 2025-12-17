@@ -1466,7 +1466,29 @@ const WhatsApp = () => {
     if (msg.mediaType === "audio") {
       return (
         <div className="min-w-[280px] max-w-[320px]">
-          <AudioWaveform src={msg.mediaUrl || ""} sent={msg.sent} />
+          <AudioWaveform 
+            src={msg.mediaUrl || ""} 
+            sent={msg.sent}
+            renderFooter={(audioDuration) => (
+              <div className="flex items-center justify-between mt-1 px-1">
+                <span className="text-[10px] text-muted-foreground tabular-nums">
+                  {audioDuration}
+                </span>
+                <div className="flex items-center gap-1">
+                  <span className="text-[10px] text-muted-foreground">{msg.time}</span>
+                  {msg.sent && msg.status !== "DELETED" && (
+                    msg.status === "READ" || msg.status === "PLAYED" 
+                      ? <CheckCheck className="w-4 h-4 text-blue-500" /> 
+                      : msg.status === "DELIVERED"
+                        ? <CheckCheck className="w-4 h-4 text-muted-foreground" />
+                        : msg.status === "SENDING"
+                          ? <div className="w-3 h-3 border-2 border-muted-foreground border-t-transparent rounded-full animate-spin" />
+                          : <Check className="w-4 h-4 text-muted-foreground" />
+                  )}
+                </div>
+              </div>
+            )}
+          />
         </div>
       );
     }
@@ -1785,18 +1807,21 @@ const WhatsApp = () => {
                                 </div>
                               )}
                               {renderMessageContent(msg)}
-                              <div className="flex items-center justify-end gap-1 mt-0.5">
-                                <span className="text-[10px] text-muted-foreground">{msg.time}</span>
-                                {msg.sent && msg.status !== "DELETED" && (
-                                  msg.status === "READ" || msg.status === "PLAYED" 
-                                    ? <CheckCheck className="w-4 h-4 text-blue-500" /> 
-                                    : msg.status === "DELIVERED"
-                                      ? <CheckCheck className="w-4 h-4 text-muted-foreground" />
-                                      : msg.status === "SENDING"
-                                        ? <div className="w-3 h-3 border-2 border-muted-foreground border-t-transparent rounded-full animate-spin" />
-                                        : <Check className="w-4 h-4 text-muted-foreground" />
-                                )}
-                              </div>
+                              {/* Hide time row for audio since it's in the AudioWaveform footer */}
+                              {msg.mediaType !== "audio" && (
+                                <div className="flex items-center justify-end gap-1 mt-0.5">
+                                  <span className="text-[10px] text-muted-foreground">{msg.time}</span>
+                                  {msg.sent && msg.status !== "DELETED" && (
+                                    msg.status === "READ" || msg.status === "PLAYED" 
+                                      ? <CheckCheck className="w-4 h-4 text-blue-500" /> 
+                                      : msg.status === "DELIVERED"
+                                        ? <CheckCheck className="w-4 h-4 text-muted-foreground" />
+                                        : msg.status === "SENDING"
+                                          ? <div className="w-3 h-3 border-2 border-muted-foreground border-t-transparent rounded-full animate-spin" />
+                                          : <Check className="w-4 h-4 text-muted-foreground" />
+                                  )}
+                                </div>
+                              )}
                             </div>
                             {/* Reply button for sent messages (right side) */}
                             {msg.sent && msg.status !== "DELETED" && (

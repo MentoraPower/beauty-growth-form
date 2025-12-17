@@ -4,9 +4,10 @@ import { Play, Pause } from "lucide-react";
 interface AudioWaveformProps {
   src: string;
   sent?: boolean;
+  renderFooter?: (audioDuration: string) => React.ReactNode;
 }
 
-export const AudioWaveform = ({ src, sent = false }: AudioWaveformProps) => {
+export const AudioWaveform = ({ src, sent = false, renderFooter }: AudioWaveformProps) => {
   const audioRef = useRef<HTMLAudioElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -257,6 +258,8 @@ export const AudioWaveform = ({ src, sent = false }: AudioWaveformProps) => {
     );
   }
 
+  const audioDuration = isPlaying || currentTime > 0 ? formatTime(currentTime) : formatTime(duration);
+
   return (
     <div className="flex flex-col min-w-[260px]">
       <audio ref={audioRef} src={src} preload="metadata" />
@@ -293,12 +296,14 @@ export const AudioWaveform = ({ src, sent = false }: AudioWaveformProps) => {
         </button>
       </div>
 
-      {/* Time below - aligned left under play button */}
-      <span className="text-[10px] text-muted-foreground tabular-nums mt-1 ml-2">
-        {isPlaying || currentTime > 0
-          ? formatTime(currentTime)
-          : formatTime(duration)}
-      </span>
+      {/* Footer - either custom or default time */}
+      {renderFooter ? (
+        renderFooter(audioDuration)
+      ) : (
+        <span className="text-[10px] text-muted-foreground tabular-nums mt-1 ml-2">
+          {audioDuration}
+        </span>
+      )}
     </div>
   );
 };
