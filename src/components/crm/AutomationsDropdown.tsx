@@ -74,6 +74,8 @@ interface EmailEditingContext {
   emailTriggerPipeline: string;
   editingEmailId: string | null;
   isCreating: boolean;
+  emailSubject: string;
+  emailBodyHtml: string;
 }
 
 interface AutomationsDropdownProps {
@@ -148,6 +150,8 @@ export function AutomationsDropdown({
       setEmailTriggerPipeline(emailEditingContext.emailTriggerPipeline);
       setEditingEmailId(emailEditingContext.editingEmailId);
       setIsCreatingEmail(emailEditingContext.isCreating);
+      setEmailSubject(emailEditingContext.emailSubject || "");
+      setEmailBodyHtml(emailEditingContext.emailBodyHtml || "");
       setActiveTab("emails");
     }
   }, [open, emailEditingContext]);
@@ -760,6 +764,8 @@ export function AutomationsDropdown({
           emailTriggerPipeline,
           editingEmailId,
           isCreating: isCreatingEmail,
+          emailSubject,
+          emailBodyHtml,
         },
       });
     } else {
