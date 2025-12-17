@@ -118,6 +118,9 @@ export function KanbanBoard() {
 
   // Close email builder and return to CRM with automations popup open
   const closeEmailBuilder = useCallback(() => {
+    // Clear builder props first so conditional render switches immediately
+    setEmailBuilderProps(null);
+    
     // NOTE: react-router-dom's setSearchParams does NOT support functional updates
     const next = new URLSearchParams(searchParams);
     next.delete("emailBuilder");
@@ -126,8 +129,8 @@ export function KanbanBoard() {
     next.delete("emailTrigger");
     setSearchParams(next, { replace: true });
 
-    // Reopen automations dropdown after a small delay
-    setTimeout(() => setAutomationsOpen(true), 100);
+    // Reopen automations dropdown immediately
+    setAutomationsOpen(true);
   }, [searchParams, setSearchParams]);
 
   // Sync search from URL when navigating (e.g., coming back from lead detail)
