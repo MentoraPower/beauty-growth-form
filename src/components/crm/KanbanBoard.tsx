@@ -745,6 +745,9 @@ export function KanbanBoard() {
           setTimeout(() => { isReorderingRef.current = false; }, 500);
         }
       }
+
+      // No-op drop (ex: soltou no fundo da mesma coluna): libera o lock do realtime
+      isReorderingRef.current = false;
     },
     [localLeads, pipelines, automations, queryClient, subOriginId, dropIndicator]
   );
@@ -825,12 +828,13 @@ export function KanbanBoard() {
         if (arr) arr.push(lead);
       }
     });
-    // Sort each pipeline's leads - by created_at (newest first), respecting manual ordem when set
+    // Sort each pipeline's leads
     map.forEach((pipelineLeads) => {
+      const hasManualOrder = pipelineLeads.some((l) => (l.ordem ?? 0) !== 0);
+
       pipelineLeads.sort((a, b) => {
-        // If both have ordem set (manual reorder), use ordem
-        if (a.ordem !== null && a.ordem !== undefined && a.ordem !== 0 && 
-            b.ordem !== null && b.ordem !== undefined && b.ordem !== 0) {
+        // If manual order exists in this pipeline, always respect ordem (including 0)
+        if (hasManualOrder) {
           return (a.ordem ?? 0) - (b.ordem ?? 0);
         }
         // Otherwise, sort by created_at (newest first)
