@@ -281,21 +281,31 @@ const handler = async (req: Request): Promise<Response> => {
                       targetEmailNodeId = matchingEdge.target;
                       console.log(`[EmailAutomation] Found edge to email node: ${targetEmailNodeId}`);
                     } else {
-                      console.log(`[EmailAutomation] No matching edge found for handle: ${expectedHandle}`);
+                      console.log(`[EmailAutomation] No matching edge found for handle: ${expectedHandle} - skipping email`);
+                      // No connection from trigger to any node - skip this automation
+                      continue;
                     }
                   }
                 }
                 
-                // Find the target email node or fallback to first email node
-                let emailNode = targetEmailNodeId 
-                  ? flowSteps.find((step) => step?.id === targetEmailNodeId && step?.type === "email")
-                  : flowSteps.find((step) => step?.type === "email");
-                
-                if (emailNode?.data) {
-                  subject = emailNode.data.subject || subject;
-                  bodyHtml = emailNode.data.bodyHtml || bodyHtml;
-                  console.log(`[EmailAutomation] Using email node: ${emailNode.id}`);
+                // Only send if there's a valid connected email node
+                // Do NOT fallback to first email node if no connection exists
+                if (!targetEmailNodeId) {
+                  console.log(`[EmailAutomation] No valid connection path - skipping automation "${automation.name}"`);
+                  continue;
                 }
+                
+                // Find the target email node (must have explicit connection)
+                let emailNode = flowSteps.find((step) => step?.id === targetEmailNodeId && step?.type === "email");
+                
+                if (!emailNode?.data) {
+                  console.log(`[EmailAutomation] Target node "${targetEmailNodeId}" is not an email node - skipping`);
+                  continue;
+                }
+                
+                subject = emailNode.data.subject || subject;
+                bodyHtml = emailNode.data.bodyHtml || bodyHtml;
+                console.log(`[EmailAutomation] Using email node: ${emailNode.id}`);
               }
 
               subject = replaceName(subject);
