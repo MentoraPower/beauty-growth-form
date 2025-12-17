@@ -66,6 +66,8 @@ interface EmailBuilderState {
     onCancel: () => void;
     initialSteps?: any[];
     editingContext?: EmailEditingContext;
+    pipelines?: Pipeline[];
+    subOriginId?: string | null;
   };
 }
 
@@ -704,6 +706,8 @@ export function KanbanBoard() {
             closeEmailBuilder();
           }}
           initialSteps={emailBuilderProps.initialSteps}
+          pipelines={emailBuilderProps.pipelines || pipelines}
+          subOriginId={emailBuilderProps.subOriginId || subOriginId}
         />
       </div>
     );
