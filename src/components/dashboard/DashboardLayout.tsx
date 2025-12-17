@@ -237,16 +237,16 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
         {/* CRM Submenu Panel - appears below fixed menu */}
         <div
           style={{ 
-            left: currentSidebarWidth + 8,
+            left: currentSidebarWidth + 12,
             width: crmSubmenuOpen ? submenuWidth : 0,
             opacity: crmSubmenuOpen ? 1 : 0,
             zIndex: 39,
             pointerEvents: crmSubmenuOpen ? 'auto' : 'none',
             transition: "width 400ms cubic-bezier(0.4,0,0.2,1), opacity 200ms ease-out, left 300ms cubic-bezier(0.4,0,0.2,1)",
           }}
-          className="hidden lg:block fixed top-3 h-[calc(100vh-1.5rem)] rounded-2xl bg-[#f5f5f7] overflow-hidden"
+          className="hidden lg:block fixed top-3 h-[calc(100vh-1.5rem)] rounded-r-2xl bg-[#ebebed] overflow-hidden"
         >
-          <div className="h-full" style={{ width: submenuWidth, minWidth: submenuWidth }}>
+          <div className="h-full pl-4 pr-2" style={{ width: submenuWidth, minWidth: submenuWidth }}>
             <CRMOriginsPanel 
               isOpen={true} 
               onClose={() => {}}
