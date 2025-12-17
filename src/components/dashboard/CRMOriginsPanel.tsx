@@ -481,6 +481,11 @@ export function CRMOriginsPanel({ isOpen, onClose, sidebarWidth, embedded = fals
       setLeadCounts(counts);
     };
 
+    // Initial count fetch when subOrigins are loaded
+    if (subOrigins.length > 0) {
+      updateLeadCounts();
+    }
+
     const leadsChannel = supabase
       .channel('crm-leads-panel-count-changes')
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'leads' }, updateLeadCounts)
