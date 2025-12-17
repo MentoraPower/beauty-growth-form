@@ -1113,7 +1113,7 @@ const WhatsApp = () => {
         "postgres_changes",
         { event: "INSERT", schema: "public", table: "whatsapp_chats" },
         (payload) => {
-          console.log("[WhatsApp] Chat inserted:", payload.new);
+          console.log("[WhatsApp] Realtime: Chat inserted:", payload.new);
           updateChatInState(payload.new);
         }
       )
@@ -1121,7 +1121,7 @@ const WhatsApp = () => {
         "postgres_changes",
         { event: "UPDATE", schema: "public", table: "whatsapp_chats" },
         (payload) => {
-          console.log("[WhatsApp] Chat updated:", payload.new);
+          console.log("[WhatsApp] Realtime: Chat updated:", payload.new);
           updateChatInState(payload.new);
         }
       )
@@ -1129,16 +1129,53 @@ const WhatsApp = () => {
         "postgres_changes",
         { event: "DELETE", schema: "public", table: "whatsapp_chats" },
         (payload) => {
-          console.log("[WhatsApp] Chat deleted:", payload.old);
+          console.log("[WhatsApp] Realtime: Chat deleted:", payload.old);
           removeChatFromState((payload.old as any).id);
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        console.log("[WhatsApp] Chats channel status:", status);
+      });
 
     return () => {
       supabase.removeChannel(channel);
     };
   }, [updateChatInState, removeChatFromState]);
+
+  // Global realtime subscription for ALL messages - updates chat list sidebar
+  useEffect(() => {
+    const channel = supabase
+      .channel("whatsapp-messages-global")
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "whatsapp_messages" },
+        async (payload) => {
+          const msg = payload.new as any;
+          console.log("[WhatsApp] Realtime: New message globally:", msg.id, "chat_id:", msg.chat_id);
+          
+          // If this is for a different chat than selected, refresh that chat's data
+          if (msg.chat_id && msg.chat_id !== selectedChat?.id) {
+            // Fetch updated chat to get latest last_message and last_message_time
+            const { data: updatedChat } = await supabase
+              .from("whatsapp_chats")
+              .select("*")
+              .eq("id", msg.chat_id)
+              .single();
+            
+            if (updatedChat) {
+              updateChatInState(updatedChat);
+            }
+          }
+        }
+      )
+      .subscribe((status) => {
+        console.log("[WhatsApp] Messages global channel status:", status);
+      });
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [selectedChat?.id, updateChatInState]);
 
   // Realtime subscription for messages
   useEffect(() => {
