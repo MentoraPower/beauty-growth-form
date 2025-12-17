@@ -1,64 +1,24 @@
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState } from "react";
 import { useLocation } from "react-router-dom";
 
 export const LoadingBar = () => {
-  const [progress, setProgress] = useState(0);
-  const [isVisible, setIsVisible] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const location = useLocation();
-  const previousPath = useRef(location.pathname);
-  const animationRef = useRef<number | null>(null);
 
   useEffect(() => {
-    // Trigger only on pathname changes (not query params)
-    if (previousPath.current !== location.pathname) {
-      previousPath.current = location.pathname;
-
-      // Reset and start
-      setProgress(0);
-      setIsVisible(true);
-
-      // Animate progress
-      let currentProgress = 0;
-      const animate = () => {
-        currentProgress += (100 - currentProgress) * 0.1;
-        setProgress(Math.min(currentProgress, 90));
-
-        if (currentProgress < 90) {
-          animationRef.current = requestAnimationFrame(animate);
-        }
-      };
-      animationRef.current = requestAnimationFrame(animate);
-
-      // Complete after delay
-      const timer = setTimeout(() => {
-        if (animationRef.current) {
-          cancelAnimationFrame(animationRef.current);
-        }
-        setProgress(100);
-        setTimeout(() => {
-          setIsVisible(false);
-          setProgress(0);
-        }, 200);
-      }, 400);
-
-      return () => {
-        clearTimeout(timer);
-        if (animationRef.current) {
-          cancelAnimationFrame(animationRef.current);
-        }
-      };
-    }
+    setIsLoading(true);
+    const timer = setTimeout(() => setIsLoading(false), 1500);
+    return () => clearTimeout(timer);
   }, [location.pathname]);
 
-  if (!isVisible) return null;
+  if (!isLoading) return null;
 
   return (
-    <div className="fixed top-0 left-0 right-0 h-1 z-[999999] overflow-hidden bg-foreground/10 pointer-events-none">
+    <div className="fixed top-0 left-0 right-0 h-1 z-[99999] overflow-hidden pointer-events-none">
       <div 
-        className="h-full transition-all duration-200 ease-out"
+        className="h-full w-full animate-loading-bar"
         style={{
-          width: `${progress}%`,
-          background: "linear-gradient(90deg, #F40000, #A10000)"
+          background: "linear-gradient(90deg, transparent, #DD2A7B, transparent)"
         }}
       />
     </div>
