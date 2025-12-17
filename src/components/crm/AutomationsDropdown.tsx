@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { createPortal } from "react-dom";
 import { Zap, Plus, Trash2, ArrowRight, Webhook, FolderSync, Copy, Check, Send, Download, X, Play, Settings, Mail, Loader2, ListOrdered, Workflow } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -759,63 +758,38 @@ export function AutomationsDropdown({ pipelines, subOriginId }: AutomationsDropd
     { id: "lead_updated", label: "Lead atualizado", icon: Settings },
   ];
 
-  // If showing email flow builder, render as full content replacement
+  // If showing email flow builder, render full screen
   if (showEmailFlowBuilder) {
     const triggerPipelineName = pipelines.find(p => p.id === emailTriggerPipeline)?.nome || "";
-    const overlayRoot = typeof document !== "undefined"
-      ? document.getElementById("dashboard-overlay-root")
-      : null;
-
     return (
-      <>
-        <div className="relative inline-flex overflow-visible">
-          <Button variant="outline" size="icon" className="h-9 w-9 border-border">
-            <Zap className="w-4 h-4 text-amber-500" />
-          </Button>
-          {(activeAutomationsCount + activeWebhooksCount + activeEmailAutomationsCount) > 0 && (
-            <span className="absolute top-[2px] right-[2px] z-10 h-4 min-w-4 px-1 text-[10px] font-medium flex items-center justify-center bg-amber-500 text-white rounded-full pointer-events-none">
-              {activeAutomationsCount + activeWebhooksCount + activeEmailAutomationsCount}
-            </span>
-          )}
-        </div>
-
-        {overlayRoot
-          ? createPortal(
-              <div className="pointer-events-auto absolute inset-0 bg-card rounded-2xl overflow-hidden">
-                <EmailFlowBuilder
-                  automationName={emailName}
-                  triggerPipelineName={triggerPipelineName}
-                  onSave={handleSaveEmailFlow}
-                  onCancel={() => setShowEmailFlowBuilder(false)}
-                  initialSteps={editingEmailId ? [
-                    { id: "start-1", type: "start", data: { label: "Automação iniciada" } },
-                    { id: "email-1", type: "email", data: { label: "Enviar e-mail", subject: emailSubject, bodyHtml: emailBodyHtml } },
-                    { id: "end-1", type: "end", data: { label: "Fluxo finalizado" } },
-                  ] : undefined}
-                />
-              </div>,
-              overlayRoot
-            )
-          : (
-              // Fallback if portal root is not present
-              <div
-                className="fixed z-[100] bg-card overflow-hidden"
-                style={{ top: 12, right: 12, bottom: 12, left: 336 }}
-              >
-                <EmailFlowBuilder
-                  automationName={emailName}
-                  triggerPipelineName={triggerPipelineName}
-                  onSave={handleSaveEmailFlow}
-                  onCancel={() => setShowEmailFlowBuilder(false)}
-                  initialSteps={editingEmailId ? [
-                    { id: "start-1", type: "start", data: { label: "Automação iniciada" } },
-                    { id: "email-1", type: "email", data: { label: "Enviar e-mail", subject: emailSubject, bodyHtml: emailBodyHtml } },
-                    { id: "end-1", type: "end", data: { label: "Fluxo finalizado" } },
-                  ] : undefined}
-                />
-              </div>
+      <Dialog open={open} onOpenChange={handleOpenChange}>
+        <DialogTrigger asChild>
+          <div className="relative inline-flex overflow-visible">
+            <Button variant="outline" size="icon" className="h-9 w-9 border-border">
+              <Zap className="w-4 h-4 text-amber-500" />
+            </Button>
+            {(activeAutomationsCount + activeWebhooksCount + activeEmailAutomationsCount) > 0 && (
+              <span className="absolute top-[2px] right-[2px] z-10 h-4 min-w-4 px-1 text-[10px] font-medium flex items-center justify-center bg-amber-500 text-white rounded-full pointer-events-none">
+                {activeAutomationsCount + activeWebhooksCount + activeEmailAutomationsCount}
+              </span>
             )}
-      </>
+          </div>
+        </DialogTrigger>
+        <DialogContent className="max-w-6xl h-[85vh] overflow-hidden p-0 bg-background border-border" aria-describedby={undefined}>
+          <DialogTitle className="sr-only">Editor de Fluxo de E-mail</DialogTitle>
+          <EmailFlowBuilder
+            automationName={emailName}
+            triggerPipelineName={triggerPipelineName}
+            onSave={handleSaveEmailFlow}
+            onCancel={() => setShowEmailFlowBuilder(false)}
+            initialSteps={editingEmailId ? [
+              { id: "start-1", type: "start", data: { label: "Automação iniciada" } },
+              { id: "email-1", type: "email", data: { label: "Enviar e-mail", subject: emailSubject, bodyHtml: emailBodyHtml } },
+              { id: "end-1", type: "end", data: { label: "Fluxo finalizado" } },
+            ] : undefined}
+          />
+        </DialogContent>
+      </Dialog>
     );
   }
 
