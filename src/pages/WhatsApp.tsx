@@ -1310,82 +1310,108 @@ const WhatsApp = () => {
   const formatWhatsAppText = (text: string): React.ReactNode => {
     if (!text) return null;
     
-    const result: React.ReactNode[] = [];
-    let remaining = text;
-    let keyIndex = 0;
+    // Simple string replacement approach for reliability
+    const parts: React.ReactNode[] = [];
+    let currentText = text;
+    let keyCounter = 0;
     
-    while (remaining.length > 0) {
-      // Try to match patterns at current position or find first match
-      let earliestMatch: { index: number; length: number; element: React.ReactNode } | null = null;
+    // Process the text character by character looking for patterns
+    const processFormatting = (input: string): React.ReactNode[] => {
+      const nodes: React.ReactNode[] = [];
+      let i = 0;
+      let buffer = '';
       
-      // Bold + Italic patterns: _*text*_ or *_text_*
-      const boldItalicMatch1 = remaining.match(/_\*(.+?)\*_/);
-      const boldItalicMatch2 = remaining.match(/\*_(.+?)_\*/);
-      
-      // Bold: *text*
-      const boldMatch = remaining.match(/\*([^*\n]+)\*/);
-      
-      // Italic: _text_
-      const italicMatch = remaining.match(/_([^_\n]+)_/);
-      
-      // Strikethrough: ~text~
-      const strikeMatch = remaining.match(/~([^~\n]+)~/);
-      
-      // Monospace: ```text```
-      const monoMatch = remaining.match(/```([^`]+)```/);
-      
-      // Find earliest match
-      const matches = [
-        boldItalicMatch1 && { match: boldItalicMatch1, type: 'bolditalic' },
-        boldItalicMatch2 && { match: boldItalicMatch2, type: 'bolditalic' },
-        boldMatch && { match: boldMatch, type: 'bold' },
-        italicMatch && { match: italicMatch, type: 'italic' },
-        strikeMatch && { match: strikeMatch, type: 'strike' },
-        monoMatch && { match: monoMatch, type: 'mono' },
-      ].filter(Boolean) as { match: RegExpMatchArray; type: string }[];
-      
-      // Sort by index to find earliest
-      matches.sort((a, b) => (a.match.index ?? 0) - (b.match.index ?? 0));
-      
-      if (matches.length > 0) {
-        const firstMatch = matches[0];
-        const matchIndex = firstMatch.match.index ?? 0;
-        const matchText = firstMatch.match[1]; // captured group
-        const fullMatch = firstMatch.match[0];
-        
-        // Add text before match
-        if (matchIndex > 0) {
-          result.push(remaining.slice(0, matchIndex));
+      while (i < input.length) {
+        // Check for bold+italic: _*text*_ or *_text_*
+        if (input.slice(i, i + 2) === '_*' || input.slice(i, i + 2) === '*_') {
+          const startPattern = input.slice(i, i + 2);
+          const endPattern = startPattern === '_*' ? '*_' : '_*';
+          const endIdx = input.indexOf(endPattern, i + 2);
+          
+          if (endIdx > i + 2) {
+            if (buffer) {
+              nodes.push(buffer);
+              buffer = '';
+            }
+            const content = input.slice(i + 2, endIdx);
+            nodes.push(<strong key={keyCounter++}><em>{content}</em></strong>);
+            i = endIdx + 2;
+            continue;
+          }
         }
         
-        // Add formatted element
-        switch (firstMatch.type) {
-          case 'bolditalic':
-            result.push(<strong key={keyIndex++}><em>{matchText}</em></strong>);
-            break;
-          case 'bold':
-            result.push(<strong key={keyIndex++}>{matchText}</strong>);
-            break;
-          case 'italic':
-            result.push(<em key={keyIndex++}>{matchText}</em>);
-            break;
-          case 'strike':
-            result.push(<s key={keyIndex++}>{matchText}</s>);
-            break;
-          case 'mono':
-            result.push(<code key={keyIndex++} className="bg-muted/50 px-1 rounded text-xs font-mono">{matchText}</code>);
-            break;
+        // Check for bold: *text*
+        if (input[i] === '*') {
+          const endIdx = input.indexOf('*', i + 1);
+          if (endIdx > i + 1 && !input.slice(i + 1, endIdx).includes('\n')) {
+            if (buffer) {
+              nodes.push(buffer);
+              buffer = '';
+            }
+            const content = input.slice(i + 1, endIdx);
+            nodes.push(<strong key={keyCounter++}>{content}</strong>);
+            i = endIdx + 1;
+            continue;
+          }
         }
         
-        remaining = remaining.slice(matchIndex + fullMatch.length);
-      } else {
-        // No more matches, add remaining text
-        result.push(remaining);
-        break;
+        // Check for italic: _text_
+        if (input[i] === '_') {
+          const endIdx = input.indexOf('_', i + 1);
+          if (endIdx > i + 1 && !input.slice(i + 1, endIdx).includes('\n')) {
+            if (buffer) {
+              nodes.push(buffer);
+              buffer = '';
+            }
+            const content = input.slice(i + 1, endIdx);
+            nodes.push(<em key={keyCounter++}>{content}</em>);
+            i = endIdx + 1;
+            continue;
+          }
+        }
+        
+        // Check for strikethrough: ~text~
+        if (input[i] === '~') {
+          const endIdx = input.indexOf('~', i + 1);
+          if (endIdx > i + 1 && !input.slice(i + 1, endIdx).includes('\n')) {
+            if (buffer) {
+              nodes.push(buffer);
+              buffer = '';
+            }
+            const content = input.slice(i + 1, endIdx);
+            nodes.push(<s key={keyCounter++}>{content}</s>);
+            i = endIdx + 1;
+            continue;
+          }
+        }
+        
+        // Check for monospace: ```text```
+        if (input.slice(i, i + 3) === '```') {
+          const endIdx = input.indexOf('```', i + 3);
+          if (endIdx > i + 3) {
+            if (buffer) {
+              nodes.push(buffer);
+              buffer = '';
+            }
+            const content = input.slice(i + 3, endIdx);
+            nodes.push(<code key={keyCounter++} className="bg-muted/50 px-1 rounded text-xs font-mono">{content}</code>);
+            i = endIdx + 3;
+            continue;
+          }
+        }
+        
+        buffer += input[i];
+        i++;
       }
-    }
+      
+      if (buffer) {
+        nodes.push(buffer);
+      }
+      
+      return nodes;
+    };
     
-    return result.length > 0 ? result : text;
+    return processFormatting(currentText);
   };
 
   // Get all images from messages for lightbox navigation
