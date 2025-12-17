@@ -1213,13 +1213,10 @@ export function KanbanBoard() {
         )}
 
         <DragOverlay 
-          dropAnimation={{
-            duration: 200,
-            easing: 'cubic-bezier(0.25, 1, 0.5, 1)',
-          }}
+          dropAnimation={null}
         >
           {activeLead ? (
-            <div className="rotate-2 scale-[1.02] opacity-95 cursor-grabbing">
+            <div className="rotate-2 scale-[1.02] opacity-95 cursor-grabbing pointer-events-none">
               <KanbanCard lead={activeLead} isDragging />
             </div>
           ) : null}

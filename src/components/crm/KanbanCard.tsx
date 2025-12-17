@@ -46,14 +46,13 @@ export const KanbanCard = memo(function KanbanCard({ lead, isDragging: isDraggin
     },
   });
 
-  // Use CSS.Transform for smooth transitions
+  // Use CSS.Transform for smooth transitions - disable transition when not actively transforming
   const style: React.CSSProperties = {
     transform: CSS.Transform.toString(transform),
-    transition: transition || 'transform 150ms ease-out',
+    transition: transform ? 'transform 150ms ease-out' : undefined,
     opacity: isDragging ? 0 : 1,
     position: 'relative',
     zIndex: isDragging ? 0 : 1,
-    willChange: 'transform',
   };
 
   const isBeingDragged = isDraggingOverlay;
