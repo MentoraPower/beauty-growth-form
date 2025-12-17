@@ -165,9 +165,9 @@ const WaitNode = ({ data, id, selected }: NodeProps) => {
           </span>
         </div>
 
-        {/* Editor Dropdown */}
+        {/* Editor Dropdown - Side */}
         {isEditing && (
-          <div className="absolute top-full left-0 mt-2 w-[280px] bg-background border border-border rounded-lg shadow-xl z-50 nodrag">
+          <div className="absolute top-0 left-full ml-2 w-[280px] bg-background border border-border rounded-lg shadow-xl z-50 nodrag">
             <div className="p-4 border-b border-border bg-muted/30">
               <h4 className="text-sm font-semibold text-foreground">Configurar tempo</h4>
             </div>
@@ -218,12 +218,12 @@ const WaitNode = ({ data, id, selected }: NodeProps) => {
         />
       </div>
 
-      {/* Action buttons - slide up from bottom */}
+      {/* Action buttons - slide down from top */}
       <div 
         className={`absolute left-1/2 -translate-x-1/2 flex gap-1.5 transition-all duration-200 nodrag ${
-          selected ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2 pointer-events-none'
+          selected ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-2 pointer-events-none'
         }`}
-        style={{ top: 'calc(100% + 8px)' }}
+        style={{ bottom: 'calc(100% + 8px)' }}
       >
         <button
           onClick={handleDuplicate}
@@ -336,9 +336,9 @@ const EmailNode = ({ id, data, selected }: NodeProps) => {
           />
         </div>
 
-        {/* Editor Dropdown */}
+        {/* Editor Dropdown - Side */}
         {isEditing && (
-          <div className="absolute top-full left-0 mt-2 w-[500px] bg-background border border-border rounded-lg shadow-xl z-50 nodrag">
+          <div className="absolute top-0 left-full ml-2 w-[500px] bg-background border border-border rounded-lg shadow-xl z-50 nodrag">
             <div className="p-4 border-b border-border bg-muted/30">
               <h4 className="text-sm font-semibold text-foreground">Editar E-mail</h4>
             </div>
@@ -378,12 +378,12 @@ const EmailNode = ({ id, data, selected }: NodeProps) => {
         />
       </div>
 
-      {/* Action buttons - slide up from bottom */}
+      {/* Action buttons - slide down from top */}
       <div 
         className={`absolute left-1/2 -translate-x-1/2 flex gap-1.5 transition-all duration-200 nodrag ${
-          selected ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2 pointer-events-none'
+          selected ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-2 pointer-events-none'
         }`}
-        style={{ top: 'calc(100% + 8px)' }}
+        style={{ bottom: 'calc(100% + 8px)' }}
       >
         <button
           onClick={handleDuplicate}
@@ -426,12 +426,12 @@ const EndNode = ({ data, id, selected }: NodeProps) => {
         <span className="text-sm font-medium text-foreground">{data.label as string}</span>
       </div>
 
-      {/* Action button - slide up from bottom */}
+      {/* Action button - slide down from top */}
       <div 
         className={`absolute left-1/2 -translate-x-1/2 flex gap-1.5 transition-all duration-200 nodrag ${
-          selected ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2 pointer-events-none'
+          selected ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-2 pointer-events-none'
         }`}
-        style={{ top: 'calc(100% + 8px)' }}
+        style={{ bottom: 'calc(100% + 8px)' }}
       >
         <button
           onClick={handleDelete}
