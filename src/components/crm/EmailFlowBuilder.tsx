@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useMemo, useRef } from "react";
 import {
   ReactFlow,
   Controls,
@@ -407,14 +407,26 @@ export function EmailFlowBuilder({
     setEdges((eds) => eds.filter((e) => e.id !== edgeId));
   }, [setEdges]);
 
-  // Edges with data callbacks
-  const edgesWithData = edges.map((edge) => ({
-    ...edge,
-    data: {
-      onAddNode: addNodeBetween,
-      onDeleteEdge: deleteEdge,
-    },
-  }));
+  // Use refs for stable callback references to avoid re-renders
+  const addNodeBetweenRef = useRef(addNodeBetween);
+  addNodeBetweenRef.current = addNodeBetween;
+
+  const deleteEdgeRef = useRef(deleteEdge);
+  deleteEdgeRef.current = deleteEdge;
+
+  // Memoized edges with data callbacks - only recalculates when edges change
+  const edgesWithData = useMemo(() => 
+    edges.map((edge) => ({
+      ...edge,
+      data: {
+        onAddNode: (edgeId: string, type: "wait" | "email") => 
+          addNodeBetweenRef.current(edgeId, type),
+        onDeleteEdge: (edgeId: string) => 
+          deleteEdgeRef.current(edgeId),
+      },
+    })),
+    [edges]
+  );
 
   const deleteSelectedNode = () => {
     if (!selectedNode || selectedNode.type === "start") return;

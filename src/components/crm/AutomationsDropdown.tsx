@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { Zap, Plus, Trash2, ArrowRight, Webhook, FolderSync, Copy, Check, Send, X, Settings, Mail, Loader2, Workflow } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -166,34 +166,37 @@ export function AutomationsDropdown({
   const [isBulkSending, setIsBulkSending] = useState(false);
   const [bulkSendProgress, setBulkSendProgress] = useState({ sent: 0, total: 0 });
 
-  // Fetch origins
+  // Fetch origins - only when dropdown is open
   const { data: origins = [] } = useQuery({
     queryKey: ["crm-origins"],
     queryFn: async () => {
       const { data } = await supabase.from("crm_origins").select("*").order("ordem");
       return data as Origin[] || [];
     },
+    enabled: open,
   });
 
-  // Fetch sub-origins
+  // Fetch sub-origins - only when dropdown is open
   const { data: subOrigins = [] } = useQuery({
     queryKey: ["crm-sub-origins"],
     queryFn: async () => {
       const { data } = await supabase.from("crm_sub_origins").select("*").order("ordem");
       return data as SubOrigin[] || [];
     },
+    enabled: open,
   });
 
-  // Fetch all pipelines for target selection
+  // Fetch all pipelines for target selection - only when dropdown is open
   const { data: allPipelines = [] } = useQuery({
     queryKey: ["all-pipelines"],
     queryFn: async () => {
       const { data } = await supabase.from("pipelines").select("*").order("ordem");
       return data as Pipeline[] || [];
     },
+    enabled: open,
   });
 
-  // Fetch automations
+  // Fetch automations - only when dropdown is open
   const { data: automations = [], refetch: refetchAutomations } = useQuery({
     queryKey: ["pipeline-automations", subOriginId],
     queryFn: async () => {
@@ -204,9 +207,10 @@ export function AutomationsDropdown({
       const { data } = await query;
       return data as Automation[] || [];
     },
+    enabled: open,
   });
 
-  // Fetch webhooks
+  // Fetch webhooks - only when dropdown is open
   const { data: webhooks = [], refetch: refetchWebhooks } = useQuery({
     queryKey: ["crm-webhooks"],
     queryFn: async () => {
@@ -216,9 +220,10 @@ export function AutomationsDropdown({
         .order("created_at", { ascending: false });
       return (data || []) as CrmWebhook[];
     },
+    enabled: open,
   });
 
-  // Fetch email automations
+  // Fetch email automations - only when dropdown is open
   const { data: emailAutomations = [], refetch: refetchEmailAutomations } = useQuery({
     queryKey: ["email-automations", subOriginId],
     queryFn: async () => {
@@ -233,6 +238,7 @@ export function AutomationsDropdown({
       }
       return filtered as EmailAutomation[];
     },
+    enabled: open,
   });
 
   const activeEmailAutomationsCount = emailAutomations.filter(e => e.is_active).length;
