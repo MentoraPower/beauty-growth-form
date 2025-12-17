@@ -17,9 +17,10 @@ import {
   EdgeLabelRenderer,
   getBezierPath,
   EdgeProps,
+  useReactFlow,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
-import { Play, Clock, CheckCircle2, Trash2, Copy, ArrowLeft, Plus } from "lucide-react";
+import { Play, Clock, CheckCircle2, Trash2, Copy, ArrowLeft, Plus, Mail } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -44,6 +45,7 @@ import {
   DropdownMenuTrigger,
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
+import gmailLogo from "@/assets/gmail-logo.png";
 
 
 interface EmailFlowStep {
@@ -110,51 +112,64 @@ const WaitNode = ({ data, id }: NodeProps) => {
   );
 };
 
-// Mail Icon - Simple black/white
-const MailIcon = ({ className }: { className?: string }) => (
-  <svg viewBox="0 0 24 24" className={className} fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <rect width="20" height="16" x="2" y="4" rx="2"/>
-    <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/>
-  </svg>
-);
-
 // Email Node Component - Square shape with inline editor
-const EmailNode = ({ data }: NodeProps) => {
+const EmailNode = ({ id, data }: NodeProps) => {
+  const { setNodes } = useReactFlow();
   const subject = (data.subject as string) || "";
   const bodyHtml = (data.bodyHtml as string) || "";
 
+  const updateNodeData = useCallback((key: string, value: string) => {
+    setNodes((nds) =>
+      nds.map((node) =>
+        node.id === id
+          ? { ...node, data: { ...node.data, [key]: value } }
+          : node
+      )
+    );
+  }, [id, setNodes]);
+
   return (
-    <div className="w-[520px] border border-border bg-background shadow-sm transition-all rounded-lg overflow-hidden">
+    <div className="w-[560px] border border-border bg-background shadow-sm transition-all rounded-lg overflow-hidden">
       <Handle
         type="target"
         position={Position.Left}
         className="!w-2.5 !h-2.5 !bg-foreground !border-2 !border-background"
       />
-      <div className="px-4 py-3 border-b border-border bg-muted/30 flex items-center gap-2">
-        <MailIcon className="w-4 h-4 text-foreground" />
-        <span className="text-xs font-semibold text-foreground uppercase">E-mail</span>
+      {/* Red gradient header with Gmail logo */}
+      <div 
+        className="px-4 py-3 flex items-center gap-3"
+        style={{ background: "linear-gradient(135deg, #F40000 0%, #A10000 100%)" }}
+      >
+        <img src={gmailLogo} alt="Gmail" className="w-8 h-8 rounded" />
+        <span className="text-sm font-semibold text-white uppercase tracking-wide">E-mail</span>
       </div>
       <div className="flex">
         {/* Editor side */}
         <div className="flex-1 p-3 border-r border-border">
-          <div className="mb-2">
-            <label className="text-[10px] font-semibold text-muted-foreground uppercase">Assunto</label>
-            <div className="text-sm text-foreground mt-0.5 truncate">
-              {subject || <span className="text-muted-foreground italic">Clique para editar</span>}
-            </div>
+          <div className="mb-3">
+            <label className="text-[10px] font-semibold text-muted-foreground uppercase mb-1 block">Assunto</label>
+            <Input
+              value={subject}
+              onChange={(e) => updateNodeData("subject", e.target.value)}
+              placeholder="Ex: {{nome}}, seu e-book está pronto!"
+              className="h-8 text-sm nodrag"
+            />
           </div>
           <div>
-            <label className="text-[10px] font-semibold text-muted-foreground uppercase">HTML</label>
-            <div className="text-xs text-muted-foreground mt-0.5 font-mono line-clamp-3 whitespace-pre-wrap">
-              {bodyHtml || <span className="italic">Sem conteúdo</span>}
-            </div>
+            <label className="text-[10px] font-semibold text-muted-foreground uppercase mb-1 block">HTML</label>
+            <Textarea
+              value={bodyHtml}
+              onChange={(e) => updateNodeData("bodyHtml", e.target.value)}
+              placeholder="<h1>Olá {{nome}}!</h1>"
+              className="min-h-[100px] text-xs font-mono nodrag resize-none"
+            />
           </div>
         </div>
         {/* Preview side */}
         <div className="w-[200px] p-3 bg-muted/20">
           <label className="text-[10px] font-semibold text-muted-foreground uppercase mb-1 block">Preview</label>
           <div 
-            className="text-xs bg-background rounded border border-border p-2 min-h-[60px] max-h-[80px] overflow-hidden"
+            className="text-xs bg-background rounded border border-border p-2 min-h-[120px] max-h-[140px] overflow-auto"
             dangerouslySetInnerHTML={{ __html: bodyHtml || '<span style="color:#999">Prévia do e-mail</span>' }}
           />
         </div>
@@ -257,7 +272,7 @@ const CustomEdge = ({
                 Tempo de Espera
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => data?.onAddNode?.(id, "email")}>
-                <MailIcon className="w-4 h-4 mr-2" />
+                <Mail className="w-4 h-4 mr-2" />
                 Enviar E-mail
               </DropdownMenuItem>
               <DropdownMenuSeparator />
@@ -568,7 +583,7 @@ export function EmailFlowBuilder({
                 onClick={() => addNode("email")}
                 className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg border border-border bg-muted/30 hover:bg-muted/60 transition-colors text-left"
               >
-                <MailIcon className="w-4 h-4 text-foreground" />
+                <Mail className="w-4 h-4 text-foreground" />
                 <span className="text-sm font-medium text-foreground">Enviar E-mail</span>
               </button>
 
@@ -686,7 +701,7 @@ export function EmailFlowBuilder({
             <div className="space-y-5">
               {/* Gmail-style Header */}
               <div className="flex items-center gap-3 pb-3 border-b border-border">
-                <MailIcon className="w-6 h-6 text-foreground" />
+                <Mail className="w-6 h-6 text-foreground" />
                 <div>
                   <h4 className="text-sm font-semibold text-foreground">Configurar E-mail</h4>
                   <p className="text-xs text-muted-foreground">Edite o assunto e conteúdo do e-mail</p>
