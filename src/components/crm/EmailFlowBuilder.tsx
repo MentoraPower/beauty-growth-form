@@ -95,6 +95,10 @@ const TriggerNode = ({ data, id, selected }: NodeProps & { data: {
   
   const triggers = getTriggers();
 
+  // Filter out pipelines that are already selected as triggers
+  const selectedPipelineIds = triggers.map(t => t.pipelineId).filter(Boolean);
+  const availablePipelines = data.pipelines?.filter(p => !selectedPipelineIds.includes(p.id)) || [];
+
   const getTriggerLabel = (trigger: TriggerItem) => {
     if (trigger.type === "lead_entered_pipeline" && trigger.pipelineId) {
       const pipeline = data.pipelines?.find(p => p.id === trigger.pipelineId);
@@ -169,19 +173,21 @@ const TriggerNode = ({ data, id, selected }: NodeProps & { data: {
             </div>
           ))}
           
-          {/* Add trigger button with dashed border */}
-          <button
-            onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-            className="w-full p-3 rounded-lg border-2 border-dashed border-muted-foreground/30 hover:border-muted-foreground/50 hover:bg-muted/20 transition-all flex items-center justify-center gap-2 text-muted-foreground"
-          >
-            <Plus className="w-4 h-4" />
-            <span className="text-sm font-medium">Adicionar gatilho</span>
-          </button>
+          {/* Add trigger button with dashed border - only show if there are available pipelines */}
+          {availablePipelines.length > 0 && (
+            <button
+              onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+              className="w-full p-3 rounded-lg border-2 border-dashed border-muted-foreground/30 hover:border-muted-foreground/50 hover:bg-muted/20 transition-all flex items-center justify-center gap-2 text-muted-foreground"
+            >
+              <Plus className="w-4 h-4" />
+              <span className="text-sm font-medium">Adicionar gatilho</span>
+            </button>
+          )}
         </div>
       </div>
       
-      {/* Pipeline dropdown - Shows pipelines directly */}
-      {isDropdownOpen && (
+      {/* Pipeline dropdown - Shows only available pipelines */}
+      {isDropdownOpen && availablePipelines.length > 0 && (
         <div 
           className="absolute left-3 right-3 rounded-lg shadow-xl nodrag"
           style={{ 
@@ -195,7 +201,7 @@ const TriggerNode = ({ data, id, selected }: NodeProps & { data: {
           <div className="px-3 py-2 text-xs font-semibold text-muted-foreground border-b border-gray-100" style={{ backgroundColor: '#f9fafb' }}>
             Lead entrou em pipeline
           </div>
-          {data.pipelines?.map(pipeline => (
+          {availablePipelines.map(pipeline => (
             <button
               key={pipeline.id}
               onClick={() => addTriggerWithPipeline(pipeline.id)}

@@ -225,6 +225,27 @@ export function KanbanBoard() {
     staleTime: 5000,
   });
 
+  // Fetch email automations for this sub-origin
+  const { data: emailAutomations = [] } = useQuery({
+    queryKey: ["email-automations-triggers", subOriginId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("email_automations")
+        .select("*")
+        .eq("is_active", true);
+
+      if (error) throw error;
+      
+      // Filter by sub_origin_id if available, or by trigger_pipeline belonging to current sub-origin
+      if (subOriginId && data) {
+        return data.filter(ea => ea.sub_origin_id === subOriginId);
+      }
+      return data || [];
+    },
+    staleTime: 5000,
+    enabled: !!subOriginId,
+  });
+
   // Fetch current sub-origin name for display
   const { data: currentSubOrigin, isLoading: isLoadingSubOrigin } = useQuery({
     queryKey: ["sub-origin", subOriginId],
@@ -579,6 +600,30 @@ export function KanbanBoard() {
             previous_pipeline_id: activeLead.pipeline_id,
             sub_origin_id: subOriginId,
           }).catch(console.error);
+
+          // Check for email automations triggered by this pipeline
+          const emailAutomation = emailAutomations.find(
+            ea => ea.trigger_pipeline_id === newPipelineId && ea.is_active
+          );
+          
+          if (emailAutomation) {
+            // Trigger send-email edge function
+            supabase.functions.invoke("send-email", {
+              body: {
+                to: activeLead.email,
+                name: activeLead.name,
+                subject: emailAutomation.subject,
+                bodyHtml: emailAutomation.body_html,
+                leadId: activeLead.id,
+              },
+            }).then(({ error }) => {
+              if (error) {
+                console.error("Erro ao enviar email automático:", error);
+              } else {
+                console.log("Email automático enviado para:", activeLead.email);
+              }
+            }).catch(console.error);
+          }
         } catch (error) {
           setLocalLeads((prev) =>
             prev.map((l) =>
@@ -592,7 +637,7 @@ export function KanbanBoard() {
         }
       }
     },
-    [localLeads, pipelines, automations, queryClient, subOriginId]
+    [localLeads, pipelines, automations, emailAutomations, queryClient, subOriginId]
   );
 
   const handleDragCancel = useCallback(() => {
