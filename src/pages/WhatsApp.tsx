@@ -1912,7 +1912,11 @@ const WhatsApp = () => {
                       disabled={isSending}
                       className="p-2 bg-emerald-500 hover:bg-emerald-600 rounded-full transition-colors disabled:opacity-50"
                     >
-                      <Send className={cn("w-6 h-6 text-white", isSending && "animate-pulse")} />
+                      {isSending ? (
+                        <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      ) : (
+                        <Send className="w-6 h-6 text-white" />
+                      )}
                     </button>
                   </>
                 ) : (
@@ -2036,7 +2040,11 @@ const WhatsApp = () => {
                         disabled={isSending}
                         className="p-2 hover:bg-muted/50 rounded-full transition-colors disabled:opacity-50"
                       >
-                        <Send className={cn("w-6 h-6 text-emerald-500", isSending && "animate-pulse")} />
+                        {isSending ? (
+                          <div className="w-5 h-5 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin" />
+                        ) : (
+                          <Send className="w-6 h-6 text-emerald-500" />
+                        )}
                       </button>
                     ) : (
                       <button
