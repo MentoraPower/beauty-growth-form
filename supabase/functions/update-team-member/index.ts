@@ -82,6 +82,8 @@ Deno.serve(async (req) => {
     const role = String(body.role ?? "").trim() as AppRole;
 
     const canAccessWhatsapp = !!body.can_access_whatsapp;
+    const canCreateOrigins = !!body.can_create_origins;
+    const canCreateSubOrigins = !!body.can_create_sub_origins;
     const allowedOriginIds = Array.isArray(body.allowed_origin_ids) ? body.allowed_origin_ids : [];
     const allowedSubOriginIds = Array.isArray(body.allowed_sub_origin_ids) ? body.allowed_sub_origin_ids : [];
 
@@ -120,6 +122,8 @@ Deno.serve(async (req) => {
       const { error: permError } = await supabaseAdmin.from("user_permissions").upsert({
         user_id: userId,
         can_access_whatsapp: canAccessWhatsapp,
+        can_create_origins: canCreateOrigins,
+        can_create_sub_origins: canCreateSubOrigins,
         allowed_origin_ids: allowedOriginIds,
         allowed_sub_origin_ids: allowedSubOriginIds,
       });

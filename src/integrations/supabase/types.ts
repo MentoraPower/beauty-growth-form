@@ -720,6 +720,8 @@ export type Database = {
           allowed_origin_ids: string[] | null
           allowed_sub_origin_ids: string[] | null
           can_access_whatsapp: boolean
+          can_create_origins: boolean
+          can_create_sub_origins: boolean
           created_at: string
           id: string
           updated_at: string
@@ -729,6 +731,8 @@ export type Database = {
           allowed_origin_ids?: string[] | null
           allowed_sub_origin_ids?: string[] | null
           can_access_whatsapp?: boolean
+          can_create_origins?: boolean
+          can_create_sub_origins?: boolean
           created_at?: string
           id?: string
           updated_at?: string
@@ -738,6 +742,8 @@ export type Database = {
           allowed_origin_ids?: string[] | null
           allowed_sub_origin_ids?: string[] | null
           can_access_whatsapp?: boolean
+          can_create_origins?: boolean
+          can_create_sub_origins?: boolean
           created_at?: string
           id?: string
           updated_at?: string

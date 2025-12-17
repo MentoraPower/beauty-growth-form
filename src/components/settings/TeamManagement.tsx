@@ -16,6 +16,8 @@ interface TeamMember {
   user_id: string;
   permissions?: {
     can_access_whatsapp: boolean;
+    can_create_origins: boolean;
+    can_create_sub_origins: boolean;
     allowed_origin_ids: string[];
     allowed_sub_origin_ids: string[];
   } | null;
