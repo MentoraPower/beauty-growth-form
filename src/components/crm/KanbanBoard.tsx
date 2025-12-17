@@ -367,6 +367,9 @@ export function KanbanBoard() {
       return;
     }
     
+    // Don't overwrite local state during reordering operations
+    if (isReorderingRef.current) return;
+    
     // Update when data changes
     if (dataUpdatedAt && dataUpdatedAt !== prevDataUpdatedAtRef.current) {
       prevDataUpdatedAtRef.current = dataUpdatedAt;
@@ -590,6 +593,15 @@ export function KanbanBoard() {
               .update({ ordem: update.ordem })
               .eq("id", update.id);
           }
+          
+          // Also update react-query cache to prevent refetch from overwriting
+          queryClient.setQueryData<Lead[]>(["crm-leads", subOriginId], (oldData) => {
+            if (!oldData) return oldData;
+            return oldData.map((l) => {
+              const update = updates.find((u) => u.id === l.id);
+              return update ? { ...l, ordem: update.ordem } : l;
+            });
+          });
         } catch (error) {
           console.error("Erro ao reordenar leads:", error);
           toast.error("Erro ao reordenar leads");
