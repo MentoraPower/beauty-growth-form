@@ -48,6 +48,15 @@ const ManagePipelinesDialog = lazy(() =>
   import("./ManagePipelinesDialog").then(m => ({ default: m.ManagePipelinesDialog }))
 );
 
+interface EmailEditingContext {
+  emailName: string;
+  emailTriggerPipeline: string;
+  editingEmailId: string | null;
+  isCreating: boolean;
+  emailSubject: string;
+  emailBodyHtml: string;
+}
+
 interface EmailBuilderState {
   show: boolean;
   props?: {
@@ -56,14 +65,8 @@ interface EmailBuilderState {
     onSave: (steps: any[]) => Promise<void>;
     onCancel: () => void;
     initialSteps?: any[];
+    editingContext?: EmailEditingContext;
   };
-}
-
-interface EmailEditingContext {
-  emailName: string;
-  emailTriggerPipeline: string;
-  editingEmailId: string | null;
-  isCreating: boolean;
 }
 
 export function KanbanBoard() {
@@ -71,6 +74,9 @@ export function KanbanBoard() {
   const subOriginId = searchParams.get("origin");
   const urlSearchQuery = searchParams.get("search") || "";
   const isEmailBuilderOpen = searchParams.get("emailBuilder") === "open";
+  const emailBuilderEmailId = searchParams.get("emailId");
+  const emailBuilderName = searchParams.get("emailName");
+  const emailBuilderTriggerPipelineId = searchParams.get("emailTrigger");
   
   const [activeId, setActiveId] = useState<string | null>(null);
   const [overId, setOverId] = useState<string | null>(null);
@@ -87,22 +93,41 @@ export function KanbanBoard() {
   const queryClient = useQueryClient();
   const searchTimeoutRef = useRef<number | null>(null);
 
-  // Open email builder with URL param
+  // Open email builder with URL param (and persist minimum state in URL for refresh/deep-link)
   const openEmailBuilder = useCallback((props: EmailBuilderState["props"]) => {
     setEmailBuilderProps(props);
     setAutomationsOpen(false);
-    setSearchParams(prev => {
-      prev.set("emailBuilder", "open");
-      return prev;
+
+    const ctx = props.editingContext;
+
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      next.set("emailBuilder", "open");
+
+      if (ctx?.editingEmailId) next.set("emailId", ctx.editingEmailId);
+      else next.delete("emailId");
+
+      if (ctx?.emailName) next.set("emailName", ctx.emailName);
+      else next.delete("emailName");
+
+      if (ctx?.emailTriggerPipeline) next.set("emailTrigger", ctx.emailTriggerPipeline);
+      else next.delete("emailTrigger");
+
+      return next;
     });
   }, [setSearchParams]);
 
   // Close email builder and return to CRM with automations popup open
   const closeEmailBuilder = useCallback(() => {
-    setSearchParams(prev => {
-      prev.delete("emailBuilder");
-      return prev;
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      next.delete("emailBuilder");
+      next.delete("emailId");
+      next.delete("emailName");
+      next.delete("emailTrigger");
+      return next;
     });
+
     // Reopen automations dropdown after a small delay
     setTimeout(() => setAutomationsOpen(true), 100);
   }, [setSearchParams]);
