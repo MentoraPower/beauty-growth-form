@@ -24,13 +24,6 @@ import { Play, Clock, CheckCircle2, Trash2, Copy, ArrowLeft, Plus, Mail } from "
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Label } from "@/components/ui/label";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import {
   Select,
   SelectContent,
@@ -76,33 +69,122 @@ const StartNode = ({ data }: NodeProps) => {
   );
 };
 
-// Wait Node Component - Square shape
+// Wait Node Component - Modern yellow design with dropdown
 const WaitNode = ({ data, id }: NodeProps) => {
+  const { setNodes } = useReactFlow();
+  const [isEditing, setIsEditing] = useState(false);
+  const [localWaitTime, setLocalWaitTime] = useState((data.waitTime as number) || 1);
+  const [localWaitUnit, setLocalWaitUnit] = useState((data.waitUnit as string) || "hours");
+  
   const waitTime = (data.waitTime as number) || 1;
   const waitUnit = (data.waitUnit as string) || "hours";
+  
   const unitLabels: Record<string, string> = {
-    minutes: "min",
-    hours: "h",
-    days: "d",
-    months: "m",
+    minutes: "minutos",
+    hours: "horas",
+    days: "dias",
+    months: "meses",
+  };
+
+  // Auto-save on change while editing
+  useEffect(() => {
+    if (!isEditing) return;
+    
+    const timeout = setTimeout(() => {
+      setNodes((nds) =>
+        nds.map((node) =>
+          node.id === id
+            ? { ...node, data: { ...node.data, waitTime: localWaitTime, waitUnit: localWaitUnit } }
+            : node
+        )
+      );
+    }, 300);
+
+    return () => clearTimeout(timeout);
+  }, [localWaitTime, localWaitUnit, isEditing, id, setNodes]);
+
+  const handleOpen = () => {
+    setLocalWaitTime(waitTime);
+    setLocalWaitUnit(waitUnit);
+    setIsEditing(true);
   };
 
   return (
-    <div className="w-44 border border-border bg-background shadow-sm transition-all rounded-lg overflow-hidden">
+    <div className="w-56 border border-border bg-background shadow-sm transition-all rounded-xl overflow-hidden">
       <Handle
         type="target"
         position={Position.Left}
         className="!w-2.5 !h-2.5 !bg-foreground !border-2 !border-background"
       />
-      <div className="px-4 py-3 border-b border-border bg-muted/30 flex items-center gap-2">
-        <Clock className="w-4 h-4 text-foreground" />
-        <span className="text-xs font-semibold text-foreground uppercase">Espera</span>
+      {/* Yellow header */}
+      <div 
+        className="px-4 py-3 flex items-center justify-between cursor-pointer hover:opacity-90 transition-opacity"
+        style={{ background: "linear-gradient(135deg, #FBBF24 0%, #F59E0B 100%)" }}
+        onClick={handleOpen}
+      >
+        <div className="flex items-center gap-2.5">
+          <div className="w-8 h-8 rounded-lg bg-black/10 flex items-center justify-center">
+            <Clock className="w-4 h-4 text-black" />
+          </div>
+          <span className="text-sm font-semibold text-black uppercase tracking-wide">Espera</span>
+        </div>
       </div>
-      <div className="px-4 py-3">
-        <span className="text-lg font-semibold text-foreground">
-          {waitTime} {unitLabels[waitUnit]}
+      
+      {/* Time display */}
+      <div className="px-4 py-4 flex items-center justify-center">
+        <span className="text-2xl font-bold text-foreground">
+          {waitTime}
+        </span>
+        <span className="text-sm text-muted-foreground ml-2">
+          {unitLabels[waitUnit]}
         </span>
       </div>
+
+      {/* Editor Dropdown */}
+      {isEditing && (
+        <div className="absolute top-full left-0 mt-2 w-[280px] bg-background border border-border rounded-lg shadow-xl z-50 nodrag">
+          <div className="p-4 border-b border-border bg-muted/30">
+            <h4 className="text-sm font-semibold text-foreground">Configurar tempo</h4>
+          </div>
+          <div className="p-4 space-y-4">
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="text-xs font-semibold text-muted-foreground uppercase mb-1.5 block">Tempo</label>
+                <Input
+                  type="number"
+                  min={1}
+                  value={localWaitTime}
+                  onChange={(e) => setLocalWaitTime(parseInt(e.target.value) || 1)}
+                  className="h-9 text-sm"
+                />
+              </div>
+              <div>
+                <label className="text-xs font-semibold text-muted-foreground uppercase mb-1.5 block">Unidade</label>
+                <Select
+                  value={localWaitUnit}
+                  onValueChange={(v) => setLocalWaitUnit(v)}
+                >
+                  <SelectTrigger className="h-9">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="minutes">Minutos</SelectItem>
+                    <SelectItem value="hours">Horas</SelectItem>
+                    <SelectItem value="days">Dias</SelectItem>
+                    <SelectItem value="months">Meses</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div className="flex justify-end pt-2">
+              <Button size="sm" onClick={() => setIsEditing(false)} className="bg-foreground text-background hover:bg-foreground/90">
+                Fechar
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+      
       <Handle
         type="source"
         position={Position.Right}
@@ -352,13 +434,6 @@ export function EmailFlowBuilder({
   triggerPipelineName,
 }: EmailFlowBuilderProps) {
   const [selectedNode, setSelectedNode] = useState<Node | null>(null);
-  const [editDialogOpen, setEditDialogOpen] = useState(false);
-  const [editData, setEditData] = useState<{
-    waitTime?: number;
-    waitUnit?: string;
-    subject?: string;
-    bodyHtml?: string;
-  }>({});
 
   // Initialize nodes and edges (use saved positions if available)
   const initialNodes: Node[] = initialSteps?.length
@@ -405,13 +480,6 @@ export function EmailFlowBuilder({
 
   const onNodeClick = useCallback((_: React.MouseEvent, node: Node) => {
     setSelectedNode(node);
-    if (node.type === "wait") {
-      setEditData({
-        waitTime: node.data.waitTime as number,
-        waitUnit: node.data.waitUnit as string,
-      });
-      setEditDialogOpen(true);
-    }
   }, []);
 
   const addNode = useCallback((type: "wait" | "email" | "end", position?: { x: number; y: number }) => {
@@ -569,25 +637,6 @@ export function EmailFlowBuilder({
     setNodes((nds) => [...nds, newNode]);
   };
 
-  const saveEditData = () => {
-    if (!selectedNode) return;
-
-    setNodes((nds) =>
-      nds.map((n) =>
-        n.id === selectedNode.id
-          ? {
-              ...n,
-              data: {
-                ...n.data,
-                ...editData,
-              },
-            }
-          : n
-      )
-    );
-    setEditDialogOpen(false);
-    setSelectedNode(null);
-  };
 
   const handleSave = () => {
     const steps: EmailFlowStep[] = nodes.map((node) => ({
@@ -730,60 +779,6 @@ export function EmailFlowBuilder({
         </div>
       </div>
 
-      {/* Edit Dialog */}
-      <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
-        <DialogContent className="max-w-lg">
-          <DialogHeader>
-            <DialogTitle>
-              {selectedNode?.type === "wait" ? "Configurar tempo de espera" : "Configurar e-mail"}
-            </DialogTitle>
-          </DialogHeader>
-
-          {selectedNode?.type === "wait" && (
-            <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label>Tempo</Label>
-                  <Input
-                    type="number"
-                    min={1}
-                    value={editData.waitTime || 1}
-                    onChange={(e) =>
-                      setEditData({ ...editData, waitTime: parseInt(e.target.value) || 1 })
-                    }
-                  />
-                </div>
-                <div>
-                  <Label>Unidade</Label>
-                  <Select
-                    value={editData.waitUnit || "hours"}
-                    onValueChange={(v) => setEditData({ ...editData, waitUnit: v })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="minutes">Minutos</SelectItem>
-                      <SelectItem value="hours">Horas</SelectItem>
-                      <SelectItem value="days">Dias</SelectItem>
-                      <SelectItem value="months">Meses</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-            </div>
-          )}
-
-          <div className="flex justify-end gap-2 mt-4">
-            <Button variant="outline" onClick={() => setEditDialogOpen(false)}>
-              Cancelar
-            </Button>
-            <Button onClick={saveEditData} className="bg-foreground text-background hover:bg-foreground/90">
-              Salvar
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }
