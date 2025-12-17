@@ -207,39 +207,41 @@ const TriggerNode = ({ data, id, selected }: NodeProps & { data: {
           ))}
           
           {/* Add trigger button with dashed border */}
-          <div className="relative">
-            <button
-              onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-              className="w-full p-3 rounded-lg border-2 border-dashed border-muted-foreground/30 hover:border-muted-foreground/50 hover:bg-muted/20 transition-all flex items-center justify-center gap-2 text-muted-foreground"
-            >
-              <Plus className="w-4 h-4" />
-              <span className="text-sm font-medium">Adicionar gatilho</span>
-            </button>
-            
-            {/* Dropdown */}
-            {isDropdownOpen && (
-              <div 
-                className="absolute top-full left-0 right-0 mt-1 rounded-lg shadow-xl overflow-hidden nodrag"
-                style={{ zIndex: 9999, backgroundColor: '#ffffff' }}
-                onClick={(e) => e.stopPropagation()}
-              >
-                {triggerOptions.map(option => (
-                  <button
-                    key={option.id}
-                    onClick={() => addTrigger(option.id)}
-                    className="w-full px-3 py-2.5 text-left text-sm hover:bg-gray-100 transition-colors flex items-center gap-2 text-foreground"
-                    style={{ backgroundColor: '#ffffff' }}
-                  >
-                    <Zap className="w-4 h-4 text-[#F40000]" />
-                    {option.label}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
+          <button
+            onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+            className="w-full p-3 rounded-lg border-2 border-dashed border-muted-foreground/30 hover:border-muted-foreground/50 hover:bg-muted/20 transition-all flex items-center justify-center gap-2 text-muted-foreground"
+          >
+            <Plus className="w-4 h-4" />
+            <span className="text-sm font-medium">Adicionar gatilho</span>
+          </button>
         </div>
-        
       </div>
+      
+      {/* Dropdown - Outside overflow-hidden container */}
+      {isDropdownOpen && (
+        <div 
+          className="absolute left-3 right-3 rounded-lg shadow-xl nodrag"
+          style={{ 
+            zIndex: 9999, 
+            backgroundColor: '#ffffff',
+            top: 'calc(100% - 8px)',
+            border: '1px solid #e5e7eb'
+          }}
+          onClick={(e) => e.stopPropagation()}
+        >
+          {triggerOptions.map(option => (
+            <button
+              key={option.id}
+              onClick={() => addTrigger(option.id)}
+              className="w-full px-3 py-2.5 text-left text-sm hover:bg-gray-100 transition-colors flex items-center gap-2 text-foreground first:rounded-t-lg last:rounded-b-lg"
+              style={{ backgroundColor: '#ffffff' }}
+            >
+              <Zap className="w-4 h-4 text-[#F40000]" />
+              {option.label}
+            </button>
+          ))}
+        </div>
+      )}
     </div>
   );
 };
