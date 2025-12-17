@@ -61,9 +61,17 @@ interface TriggerItem {
   pipelineId?: string;
 }
 
+interface SavedEdge {
+  id: string;
+  source: string;
+  target: string;
+  sourceHandle?: string | null;
+  targetHandle?: string | null;
+}
+
 interface EmailFlowStep {
   id: string;
-  type: "trigger" | "start" | "wait" | "email" | "end" | "entry";
+  type: "trigger" | "start" | "wait" | "email" | "end" | "entry" | "_edges";
   position?: { x: number; y: number };
   data: {
     label?: string;
@@ -75,6 +83,8 @@ interface EmailFlowStep {
     // Legacy support
     triggerType?: string;
     triggerPipelineId?: string;
+    // Edges storage (for _edges type)
+    edges?: SavedEdge[];
   };
 }
 
@@ -795,9 +805,12 @@ export function EmailFlowBuilder({
   // Initialize nodes and edges (use saved positions if available)
   const initialNodes: Node[] = useMemo(() => {
     if (initialSteps?.length) {
+      // Filter out the _edges type which is used for storing edges
+      const nodeSteps = initialSteps.filter(step => step.type !== "_edges");
+      
       // Check if entry node exists
-      const hasEntryNode = initialSteps.some(step => step.type === "entry");
-      const nodes = initialSteps.map((step, index) => {
+      const hasEntryNode = nodeSteps.some(step => step.type === "entry");
+      const nodes = nodeSteps.map((step, index) => {
         // Convert old 'start' nodes to 'trigger' nodes
         const nodeType = step.type === "start" ? "trigger" : step.type;
         return {
@@ -850,18 +863,33 @@ export function EmailFlowBuilder({
 
   const initialEdges: Edge[] = useMemo(() => {
     if (initialSteps?.length) {
-      // Check if we have entry -> trigger edge already
-      const hasEntryNode = initialSteps.some(step => step.type === "entry");
-      const edges: Edge[] = initialSteps.slice(0, -1).map((step, index) => ({
-        id: `e-${step.id}-${initialSteps[index + 1].id}`,
+      // Check if edges are saved in the steps (look for _edges type)
+      const edgesStep = initialSteps.find(step => step.type === "_edges");
+      if (edgesStep?.data?.edges && edgesStep.data.edges.length > 0) {
+        // Use saved edges
+        return edgesStep.data.edges.map((e: SavedEdge) => ({
+          id: e.id,
+          source: e.source,
+          target: e.target,
+          sourceHandle: e.sourceHandle || null,
+          targetHandle: e.targetHandle || null,
+          type: "custom",
+        }));
+      }
+
+      // Legacy fallback: reconstruct edges sequentially
+      const nodeSteps = initialSteps.filter(step => step.type !== "_edges");
+      const hasEntryNode = nodeSteps.some(step => step.type === "entry");
+      const edges: Edge[] = nodeSteps.slice(0, -1).map((step, index) => ({
+        id: `e-${step.id}-${nodeSteps[index + 1].id}`,
         source: step.id,
-        target: initialSteps[index + 1].id,
+        target: nodeSteps[index + 1].id,
         type: "custom",
       }));
       
       // Add entry -> trigger edge if entry node was added
       if (!hasEntryNode) {
-        const triggerNode = initialSteps.find(step => step.type === "trigger" || step.type === "start");
+        const triggerNode = nodeSteps.find(step => step.type === "trigger" || step.type === "start");
         if (triggerNode) {
           edges.unshift({
             id: `e-entry-1-${triggerNode.id}`,
@@ -1175,7 +1203,8 @@ export function EmailFlowBuilder({
       console.warn("No trigger type selected");
     }
 
-    const steps: EmailFlowStep[] = nodes.map((node) => ({
+    // Save nodes as steps
+    const nodeSteps: EmailFlowStep[] = nodes.map((node) => ({
       id: node.id,
       type: node.type as EmailFlowStep["type"],
       position: { x: node.position.x, y: node.position.y },
@@ -1184,8 +1213,27 @@ export function EmailFlowBuilder({
         // Clean up internal props before saving
         pipelines: undefined,
         onTriggerChange: undefined,
+        onTriggersChange: undefined,
       },
     }));
+
+    // Save edges as a special step type
+    const edgesStep: EmailFlowStep = {
+      id: "_edges",
+      type: "_edges",
+      data: {
+        edges: edges.map((e) => ({
+          id: e.id,
+          source: e.source,
+          target: e.target,
+          sourceHandle: e.sourceHandle || null,
+          targetHandle: e.targetHandle || null,
+        })),
+      },
+    };
+
+    // Combine nodes and edges
+    const steps = [...nodeSteps, edgesStep];
     onSave(steps);
   };
 
