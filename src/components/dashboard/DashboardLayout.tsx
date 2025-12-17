@@ -107,7 +107,10 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
   const mainContentMargin = getMainContentMargin();
 
   return (
-    <div className="min-h-screen bg-card p-3">
+    <div
+      className="min-h-screen bg-card p-3"
+      style={{ "--dashboard-main-left": `${mainContentMargin}px` } as any}
+    >
       <div className="min-h-[calc(100vh-1.5rem)] relative">
         <LoadingBar />
         
@@ -343,6 +346,12 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
             <PageTransition>
               {children}
             </PageTransition>
+
+            {/* Portal root for full-page overlays inside the content area */}
+            <div
+              id="dashboard-overlay-root"
+              className="absolute inset-0 z-50 pointer-events-none"
+            />
           </div>
         </main>
         

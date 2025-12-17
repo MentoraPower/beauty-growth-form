@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Zap, Plus, Trash2, ArrowRight, Webhook, FolderSync, Copy, Check, Send, Download, X, Play, Settings, Mail, Loader2, ListOrdered, Workflow } from "lucide-react";
+import { createPortal } from "react-dom";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -761,6 +761,10 @@ export function AutomationsDropdown({ pipelines, subOriginId }: AutomationsDropd
   // If showing email flow builder, render as full content replacement
   if (showEmailFlowBuilder) {
     const triggerPipelineName = pipelines.find(p => p.id === emailTriggerPipeline)?.nome || "";
+    const overlayRoot = typeof document !== "undefined"
+      ? document.getElementById("dashboard-overlay-root")
+      : null;
+
     return (
       <>
         <div className="relative inline-flex overflow-visible">
@@ -773,28 +777,43 @@ export function AutomationsDropdown({ pipelines, subOriginId }: AutomationsDropd
             </span>
           )}
         </div>
-        {/* Full screen overlay positioned within main content area - flush with submenu */}
-        <div 
-          className="fixed z-[100] bg-neutral-100"
-          style={{
-            top: 0,
-            right: 0,
-            bottom: 0,
-            left: 336,
-          }}
-        >
-          <EmailFlowBuilder
-            automationName={emailName}
-            triggerPipelineName={triggerPipelineName}
-            onSave={handleSaveEmailFlow}
-            onCancel={() => setShowEmailFlowBuilder(false)}
-            initialSteps={editingEmailId ? [
-              { id: "start-1", type: "start", data: { label: "Automação iniciada" } },
-              { id: "email-1", type: "email", data: { label: "Enviar e-mail", subject: emailSubject, bodyHtml: emailBodyHtml } },
-              { id: "end-1", type: "end", data: { label: "Fluxo finalizado" } },
-            ] : undefined}
-          />
-        </div>
+
+        {overlayRoot
+          ? createPortal(
+              <div className="pointer-events-auto absolute inset-0 bg-card rounded-2xl overflow-hidden">
+                <EmailFlowBuilder
+                  automationName={emailName}
+                  triggerPipelineName={triggerPipelineName}
+                  onSave={handleSaveEmailFlow}
+                  onCancel={() => setShowEmailFlowBuilder(false)}
+                  initialSteps={editingEmailId ? [
+                    { id: "start-1", type: "start", data: { label: "Automação iniciada" } },
+                    { id: "email-1", type: "email", data: { label: "Enviar e-mail", subject: emailSubject, bodyHtml: emailBodyHtml } },
+                    { id: "end-1", type: "end", data: { label: "Fluxo finalizado" } },
+                  ] : undefined}
+                />
+              </div>,
+              overlayRoot
+            )
+          : (
+              // Fallback if portal root is not present
+              <div
+                className="fixed z-[100] bg-card overflow-hidden"
+                style={{ top: 12, right: 12, bottom: 12, left: 336 }}
+              >
+                <EmailFlowBuilder
+                  automationName={emailName}
+                  triggerPipelineName={triggerPipelineName}
+                  onSave={handleSaveEmailFlow}
+                  onCancel={() => setShowEmailFlowBuilder(false)}
+                  initialSteps={editingEmailId ? [
+                    { id: "start-1", type: "start", data: { label: "Automação iniciada" } },
+                    { id: "email-1", type: "email", data: { label: "Enviar e-mail", subject: emailSubject, bodyHtml: emailBodyHtml } },
+                    { id: "end-1", type: "end", data: { label: "Fluxo finalizado" } },
+                  ] : undefined}
+                />
+              </div>
+            )}
       </>
     );
   }
