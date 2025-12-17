@@ -773,14 +773,14 @@ export function AutomationsDropdown({ pipelines, subOriginId }: AutomationsDropd
             </span>
           )}
         </div>
-        {/* Full screen overlay positioned within main content area - no borders/gaps */}
+        {/* Full screen overlay positioned within main content area - flush with submenu */}
         <div 
           className="fixed z-[100] bg-neutral-100"
           style={{
             top: 0,
             right: 0,
             bottom: 0,
-            left: 0,
+            left: 336,
           }}
         >
           <EmailFlowBuilder
