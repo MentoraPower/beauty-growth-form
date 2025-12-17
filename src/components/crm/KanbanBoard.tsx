@@ -63,6 +63,7 @@ export function KanbanBoard() {
   const [searchParams, setSearchParams] = useSearchParams();
   const subOriginId = searchParams.get("origin");
   const urlSearchQuery = searchParams.get("search") || "";
+  const isEmailBuilderOpen = searchParams.get("emailBuilder") === "open";
   
   const [activeId, setActiveId] = useState<string | null>(null);
   const [overId, setOverId] = useState<string | null>(null);
@@ -73,9 +74,30 @@ export function KanbanBoard() {
   const [filterTags, setFilterTags] = useState<string[]>([]);
   const [startDate, setStartDate] = useState<Date | undefined>(undefined);
   const [endDate, setEndDate] = useState<Date | undefined>(undefined);
-  const [emailBuilder, setEmailBuilder] = useState<EmailBuilderState>({ show: false });
+  const [emailBuilderProps, setEmailBuilderProps] = useState<EmailBuilderState["props"] | null>(null);
+  const [automationsOpen, setAutomationsOpen] = useState(false);
   const queryClient = useQueryClient();
   const searchTimeoutRef = useRef<number | null>(null);
+
+  // Open email builder with URL param
+  const openEmailBuilder = useCallback((props: EmailBuilderState["props"]) => {
+    setEmailBuilderProps(props);
+    setAutomationsOpen(false);
+    setSearchParams(prev => {
+      prev.set("emailBuilder", "open");
+      return prev;
+    });
+  }, [setSearchParams]);
+
+  // Close email builder and return to CRM with automations popup open
+  const closeEmailBuilder = useCallback(() => {
+    setSearchParams(prev => {
+      prev.delete("emailBuilder");
+      return prev;
+    });
+    // Reopen automations dropdown after a small delay
+    setTimeout(() => setAutomationsOpen(true), 100);
+  }, [setSearchParams]);
 
   // Sync search from URL when navigating (e.g., coming back from lead detail)
   useEffect(() => {
@@ -631,6 +653,27 @@ export function KanbanBoard() {
     ? currentSubOrigin.nome
     : "Selecione uma sub-origem";
 
+  // If email builder is open, show only EmailFlowBuilder
+  if (isEmailBuilderOpen && emailBuilderProps) {
+    return (
+      <div className="relative flex flex-col h-[calc(100vh-2rem)] overflow-hidden">
+        <EmailFlowBuilder
+          automationName={emailBuilderProps.automationName}
+          triggerPipelineName={emailBuilderProps.triggerPipelineName}
+          onSave={async (steps) => {
+            await emailBuilderProps.onSave(steps);
+            closeEmailBuilder();
+          }}
+          onCancel={() => {
+            emailBuilderProps.onCancel();
+            closeEmailBuilder();
+          }}
+          initialSteps={emailBuilderProps.initialSteps}
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="relative flex flex-col h-[calc(100vh-2rem)] overflow-hidden">
       {/* Header - all on same line */}
@@ -644,7 +687,15 @@ export function KanbanBoard() {
             <AutomationsDropdown 
               pipelines={pipelines} 
               subOriginId={subOriginId}
-              onShowEmailBuilder={(show, props) => setEmailBuilder({ show, props })}
+              externalOpen={automationsOpen}
+              onOpenChange={setAutomationsOpen}
+              onShowEmailBuilder={(show, props) => {
+                if (show && props) {
+                  openEmailBuilder(props);
+                } else {
+                  closeEmailBuilder();
+                }
+              }}
             />
           )}
           <div className="relative w-full max-w-md">
@@ -958,22 +1009,6 @@ export function KanbanBoard() {
           subOriginId={subOriginId}
         />
       </Suspense>
-
-      {/* Email Flow Builder Overlay */}
-      {emailBuilder.show && emailBuilder.props && (
-        <div className="absolute inset-0 z-50 p-4 bg-muted/50">
-          <EmailFlowBuilder
-            automationName={emailBuilder.props.automationName}
-            triggerPipelineName={emailBuilder.props.triggerPipelineName}
-            onSave={emailBuilder.props.onSave}
-            onCancel={() => {
-              emailBuilder.props?.onCancel();
-              setEmailBuilder({ show: false });
-            }}
-            initialSteps={emailBuilder.props.initialSteps}
-          />
-        </div>
-      )}
     </div>
   );
 }
