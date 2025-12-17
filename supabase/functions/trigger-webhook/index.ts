@@ -258,24 +258,30 @@ const handler = async (req: Request): Promise<Response> => {
                 if (triggers && edges && triggerNode) {
                   // Find which trigger matched and its index
                   const matchedTriggerIndex = triggers.findIndex((t: any) => t?.pipelineId === effectivePipelineId);
+                  console.log(`[EmailAutomation] Matched trigger index: ${matchedTriggerIndex}, pipeline: ${effectivePipelineId}`);
                   
                   if (matchedTriggerIndex >= 0) {
                     // Determine the sourceHandle for this trigger index
-                    // Index 0 uses null/undefined, index 1+ uses "trigger-handle-{index}"
-                    const expectedSourceHandle = matchedTriggerIndex === 0 ? null : `trigger-handle-${matchedTriggerIndex}`;
+                    // Can be "trigger-handle-{index}" or null/undefined for legacy connections
+                    const expectedHandle = `trigger-handle-${matchedTriggerIndex}`;
                     
                     // Find edge from trigger node with matching sourceHandle
                     const matchingEdge = edges.find((edge: any) => {
                       if (edge.source !== triggerNode.id) return false;
-                      // Match null/undefined handles and exact string matches
-                      if (expectedSourceHandle === null) {
-                        return !edge.sourceHandle || edge.sourceHandle === null;
+                      // Check for exact handle match
+                      if (edge.sourceHandle === expectedHandle) return true;
+                      // For index 0, also match null/undefined (legacy connections)
+                      if (matchedTriggerIndex === 0 && (!edge.sourceHandle || edge.sourceHandle === null)) {
+                        return true;
                       }
-                      return edge.sourceHandle === expectedSourceHandle;
+                      return false;
                     });
                     
                     if (matchingEdge) {
                       targetEmailNodeId = matchingEdge.target;
+                      console.log(`[EmailAutomation] Found edge to email node: ${targetEmailNodeId}`);
+                    } else {
+                      console.log(`[EmailAutomation] No matching edge found for handle: ${expectedHandle}`);
                     }
                   }
                 }
