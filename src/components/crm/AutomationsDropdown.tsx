@@ -773,8 +773,8 @@ export function AutomationsDropdown({ pipelines, subOriginId }: AutomationsDropd
             </span>
           )}
         </div>
-        {/* Full page email flow builder */}
-        <div className="fixed inset-0 z-50 bg-background">
+        {/* Full page email flow builder - positioned after sidebar */}
+        <div className="fixed top-0 right-0 bottom-0 left-[72px] z-40 bg-white">
           <EmailFlowBuilder
             automationName={emailName}
             triggerPipelineName={triggerPipelineName}
