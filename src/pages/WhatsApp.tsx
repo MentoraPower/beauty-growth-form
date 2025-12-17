@@ -839,12 +839,14 @@ const WhatsApp = () => {
       setIsRecording(true);
       setRecordingTime(0);
       
-      // Send "recording" presence to contact
+      // Send "recording" presence immediately
       sendPresenceUpdate("recording");
 
-      // Start timer
+      // Start timer and keep sending recording presence every 3 seconds
       recordingIntervalRef.current = setInterval(() => {
         setRecordingTime(prev => prev + 1);
+        // Send recording presence every 3 seconds to keep indicator active
+        sendPresenceUpdate("recording");
       }, 1000);
 
     } catch (error: any) {
