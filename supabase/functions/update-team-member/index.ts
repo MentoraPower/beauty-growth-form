@@ -137,15 +137,23 @@ Deno.serve(async (req) => {
     if (role === "admin") {
       await supabaseAdmin.from("user_permissions").delete().eq("user_id", userId);
     } else {
-      const { error: permError } = await supabaseAdmin.from("user_permissions").upsert({
-        user_id: userId,
-        can_access_whatsapp: canAccessWhatsapp,
-        can_create_origins: canCreateOrigins,
-        can_create_sub_origins: canCreateSubOrigins,
-        allowed_origin_ids: allowedOriginIds,
-        allowed_sub_origin_ids: allowedSubOriginIds,
-      });
-      if (permError) return json(400, { error: "Erro ao salvar permissões" });
+      const { error: permError } = await supabaseAdmin
+        .from("user_permissions")
+        .upsert(
+          {
+            user_id: userId,
+            can_access_whatsapp: canAccessWhatsapp,
+            can_create_origins: canCreateOrigins,
+            can_create_sub_origins: canCreateSubOrigins,
+            allowed_origin_ids: allowedOriginIds,
+            allowed_sub_origin_ids: allowedSubOriginIds,
+          },
+          { onConflict: "user_id" }
+        );
+      if (permError) {
+        console.error("[update-team-member] Permissions upsert error:", permError);
+        return json(400, { error: "Erro ao salvar permissões" });
+      }
     }
 
     return json(200, { success: true });
