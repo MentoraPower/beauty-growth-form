@@ -96,6 +96,8 @@ interface EmailBuilderProps {
   onCancel: () => void;
   initialSteps?: any[];
   editingContext?: EmailEditingContext;
+  pipelines?: Pipeline[];
+  subOriginId?: string | null;
 }
 
 type ActiveTab = "automations" | "webhooks" | "emails";
@@ -770,9 +772,9 @@ export function AutomationsDropdown({
       }
       if (editingEmailId) {
         return [
-          { id: "start-1", type: "start", position: { x: 100, y: 200 }, data: { label: "Automação iniciada" } },
-          { id: "email-1", type: "email", position: { x: 320, y: 200 }, data: { label: "Enviar e-mail", subject: emailSubject, bodyHtml: emailBodyHtml } },
-          { id: "end-1", type: "end", position: { x: 540, y: 200 }, data: { label: "Fluxo finalizado" } },
+          { id: "trigger-1", type: "trigger", position: { x: 100, y: 200 }, data: { label: "Gatilho", triggerType: "lead_entered_pipeline", triggerPipelineId: emailTriggerPipeline } },
+          { id: "email-1", type: "email", position: { x: 380, y: 200 }, data: { label: "Enviar e-mail", subject: emailSubject, bodyHtml: emailBodyHtml } },
+          { id: "end-1", type: "end", position: { x: 660, y: 200 }, data: { label: "Fluxo finalizado" } },
         ];
       }
       return undefined;
@@ -797,6 +799,8 @@ export function AutomationsDropdown({
           emailSubject,
           emailBodyHtml,
         },
+        pipelines: allPipelines,
+        subOriginId,
       });
     } else {
       setShowEmailFlowBuilder(true);
@@ -881,9 +885,9 @@ export function AutomationsDropdown({
       }
       if (editingEmailId) {
         return [
-          { id: "start-1", type: "start", position: { x: 100, y: 200 }, data: { label: "Automação iniciada" } },
-          { id: "email-1", type: "email", position: { x: 320, y: 200 }, data: { label: "Enviar e-mail", subject: emailSubject, bodyHtml: emailBodyHtml } },
-          { id: "end-1", type: "end", position: { x: 540, y: 200 }, data: { label: "Fluxo finalizado" } },
+          { id: "trigger-1", type: "trigger", position: { x: 100, y: 200 }, data: { label: "Gatilho", triggerType: "lead_entered_pipeline", triggerPipelineId: emailTriggerPipeline } },
+          { id: "email-1", type: "email", position: { x: 380, y: 200 }, data: { label: "Enviar e-mail", subject: emailSubject, bodyHtml: emailBodyHtml } },
+          { id: "end-1", type: "end", position: { x: 660, y: 200 }, data: { label: "Fluxo finalizado" } },
         ];
       }
       return undefined;
@@ -911,6 +915,8 @@ export function AutomationsDropdown({
             onSave={handleSaveEmailFlow}
             onCancel={() => setShowEmailFlowBuilder(false)}
             initialSteps={getFallbackInitialSteps()}
+            pipelines={allPipelines}
+            subOriginId={subOriginId}
           />
         </DialogContent>
       </Dialog>
@@ -939,7 +945,7 @@ export function AutomationsDropdown({
             <span className="text-base font-semibold text-foreground">Automações</span>
           </div>
           
-          {/* Tabs */}
+          {/* Tabs - Remove email tab, keep automations and webhooks */}
           <div className="flex items-center gap-6 px-6">
             <button
               onClick={() => setActiveTab("automations")}
@@ -983,6 +989,11 @@ export function AutomationsDropdown({
               )}
             >
               E-mail
+              {activeEmailAutomationsCount > 0 && (
+                <span className="ml-2 px-1.5 py-0.5 text-[10px] rounded bg-muted text-muted-foreground">
+                  {activeEmailAutomationsCount}
+                </span>
+              )}
             </button>
           </div>
         </div>

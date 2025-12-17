@@ -20,7 +20,7 @@ import {
   useReactFlow,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
-import { Play, Clock, CheckCircle2, Trash2, Copy, ArrowLeft, Plus, Mail } from "lucide-react";
+import { Play, Clock, CheckCircle2, Trash2, Copy, ArrowLeft, Plus, Mail, Zap, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -40,10 +40,15 @@ import {
 } from "@/components/ui/dropdown-menu";
 import gmailLogo from "@/assets/gmail-logo.png";
 
+interface Pipeline {
+  id: string;
+  nome: string;
+  sub_origin_id?: string | null;
+}
 
 interface EmailFlowStep {
   id: string;
-  type: "start" | "wait" | "email" | "end";
+  type: "trigger" | "start" | "wait" | "email" | "end";
   position?: { x: number; y: number };
   data: {
     label: string;
@@ -51,10 +56,130 @@ interface EmailFlowStep {
     waitUnit?: "minutes" | "hours" | "days" | "months";
     subject?: string;
     bodyHtml?: string;
+    triggerType?: string;
+    triggerPipelineId?: string;
   };
 }
 
-// Start Node Component - Pill shape, black/white
+// Trigger Node Component - Main entry point with trigger selection
+const TriggerNode = ({ data, id, selected }: NodeProps & { data: { 
+  label: string; 
+  triggerType?: string; 
+  triggerPipelineId?: string;
+  pipelines?: Pipeline[];
+  onTriggerChange?: (triggerType: string, pipelineId?: string) => void;
+}}) => {
+  const [isEditing, setIsEditing] = useState(false);
+  const [localTriggerType, setLocalTriggerType] = useState(data.triggerType || "");
+  const [localPipelineId, setLocalPipelineId] = useState(data.triggerPipelineId || "");
+
+  const triggerOptions = [
+    { id: "lead_created", label: "Lead criado" },
+    { id: "lead_updated", label: "Lead atualizado" },
+    { id: "lead_entered_pipeline", label: "Lead entrou em pipeline" },
+  ];
+
+  const getTriggerLabel = () => {
+    if (!localTriggerType) return "Adicionar gatilho";
+    const option = triggerOptions.find(o => o.id === localTriggerType);
+    if (localTriggerType === "lead_entered_pipeline" && localPipelineId) {
+      const pipeline = data.pipelines?.find(p => p.id === localPipelineId);
+      return `${option?.label}: ${pipeline?.nome || ""}`;
+    }
+    return option?.label || "Adicionar gatilho";
+  };
+
+  const handleSaveTrigger = () => {
+    if (data.onTriggerChange) {
+      data.onTriggerChange(localTriggerType, localPipelineId);
+    }
+    setIsEditing(false);
+  };
+
+  return (
+    <div className="relative">
+      <div 
+        className="min-w-[200px] border border-border bg-foreground shadow-sm transition-all rounded-xl overflow-hidden cursor-pointer"
+        onClick={() => setIsEditing(!isEditing)}
+      >
+        <div className="px-4 py-3 flex items-center gap-2">
+          <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: "linear-gradient(135deg, #F40000 0%, #A10000 100%)" }}>
+            <Zap className="w-4 h-4 text-white" />
+          </div>
+          <div className="flex-1">
+            <span className="text-xs text-muted-foreground block">Gatilho</span>
+            <span className="text-sm font-medium text-background">{getTriggerLabel()}</span>
+          </div>
+          <ChevronDown className="w-4 h-4 text-background/60" />
+        </div>
+        <Handle
+          type="source"
+          position={Position.Right}
+          className="!w-2.5 !h-2.5 !bg-background !border-2 !border-foreground"
+        />
+      </div>
+
+      {/* Dropdown editor */}
+      {isEditing && (
+        <div 
+          className="absolute top-0 left-full ml-2 z-50 bg-background border border-border rounded-lg shadow-lg p-3 w-64 nodrag"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div className="space-y-3">
+            <div>
+              <label className="text-xs font-medium text-muted-foreground mb-1.5 block">
+                Tipo de gatilho
+              </label>
+              <Select value={localTriggerType} onValueChange={setLocalTriggerType}>
+                <SelectTrigger className="h-9 text-sm">
+                  <SelectValue placeholder="Selecione..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {triggerOptions.map(option => (
+                    <SelectItem key={option.id} value={option.id}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {localTriggerType === "lead_entered_pipeline" && (
+              <div>
+                <label className="text-xs font-medium text-muted-foreground mb-1.5 block">
+                  Pipeline
+                </label>
+                <Select value={localPipelineId} onValueChange={setLocalPipelineId}>
+                  <SelectTrigger className="h-9 text-sm">
+                    <SelectValue placeholder="Selecione a pipeline..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {data.pipelines?.map(pipeline => (
+                      <SelectItem key={pipeline.id} value={pipeline.id}>
+                        {pipeline.nome}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+
+            <Button 
+              size="sm" 
+              className="w-full"
+              onClick={handleSaveTrigger}
+              disabled={!localTriggerType || (localTriggerType === "lead_entered_pipeline" && !localPipelineId)}
+            >
+              Salvar
+            </Button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+// Start Node Component - Pill shape, black/white (legacy support)
 const StartNode = ({ data }: NodeProps) => {
   return (
     <div className="px-5 py-2.5 rounded-full border border-foreground bg-foreground shadow-sm transition-all flex items-center gap-2">
@@ -446,6 +571,7 @@ const EndNode = ({ data, id, selected }: NodeProps) => {
 };
 
 const nodeTypes = {
+  trigger: TriggerNode,
   start: StartNode,
   wait: WaitNode,
   email: EmailNode,
@@ -547,7 +673,9 @@ interface EmailFlowBuilderProps {
   onSave: (steps: EmailFlowStep[]) => void;
   onCancel: () => void;
   automationName: string;
-  triggerPipelineName: string;
+  triggerPipelineName?: string;
+  pipelines?: Pipeline[];
+  subOriginId?: string | null;
 }
 
 export function EmailFlowBuilder({
@@ -556,25 +684,71 @@ export function EmailFlowBuilder({
   onCancel,
   automationName,
   triggerPipelineName,
+  pipelines = [],
+  subOriginId,
 }: EmailFlowBuilderProps) {
   const [selectedNode, setSelectedNode] = useState<Node | null>(null);
+  const [triggerType, setTriggerType] = useState<string>("");
+  const [triggerPipelineId, setTriggerPipelineId] = useState<string>("");
+
+  // Filter pipelines for current sub-origin
+  const filteredPipelines = useMemo(() => {
+    if (!subOriginId) return pipelines;
+    return pipelines.filter(p => p.sub_origin_id === subOriginId);
+  }, [pipelines, subOriginId]);
+
+  // Handle trigger changes from the node
+  const handleTriggerChange = useCallback((type: string, pipelineId?: string) => {
+    setTriggerType(type);
+    if (pipelineId) setTriggerPipelineId(pipelineId);
+    
+    // Update the trigger node data
+    setNodes((nds) => nds.map((n) => {
+      if (n.type === "trigger") {
+        return {
+          ...n,
+          data: {
+            ...n.data,
+            triggerType: type,
+            triggerPipelineId: pipelineId,
+          },
+        };
+      }
+      return n;
+    }));
+  }, []);
 
   // Initialize nodes and edges (use saved positions if available)
-  const initialNodes: Node[] = initialSteps?.length
-    ? initialSteps.map((step, index) => ({
-        id: step.id,
-        type: step.type,
-        position: step.position || { x: 150 + index * 220, y: 200 },
-        data: step.data,
-      }))
-    : [
-        {
-          id: "start-1",
-          type: "start",
-          position: { x: 100, y: 200 },
-          data: { label: "Início" },
+  const initialNodes: Node[] = useMemo(() => {
+    if (initialSteps?.length) {
+      return initialSteps.map((step, index) => {
+        // Convert old 'start' nodes to 'trigger' nodes
+        const nodeType = step.type === "start" ? "trigger" : step.type;
+        return {
+          id: step.id,
+          type: nodeType,
+          position: step.position || { x: 150 + index * 220, y: 200 },
+          data: {
+            ...step.data,
+            pipelines: filteredPipelines,
+            onTriggerChange: handleTriggerChange,
+          },
+        };
+      });
+    }
+    return [
+      {
+        id: "trigger-1",
+        type: "trigger",
+        position: { x: 100, y: 200 },
+        data: { 
+          label: "Gatilho",
+          pipelines: filteredPipelines,
+          onTriggerChange: handleTriggerChange,
         },
-      ];
+      },
+    ];
+  }, [initialSteps, filteredPipelines, handleTriggerChange]);
 
   const initialEdges: Edge[] = initialSteps?.length
     ? initialSteps.slice(0, -1).map((step, index) => ({
@@ -737,13 +911,50 @@ export function EmailFlowBuilder({
 
 
   const handleSave = () => {
+    // Get trigger data from the trigger node
+    const triggerNode = nodes.find(n => n.type === "trigger");
+    const currentTriggerType = triggerNode?.data?.triggerType as string || triggerType;
+    const currentTriggerPipelineId = triggerNode?.data?.triggerPipelineId as string || triggerPipelineId;
+
+    if (!currentTriggerType) {
+      // Could show a toast here, but for now just warn
+      console.warn("No trigger type selected");
+    }
+
     const steps: EmailFlowStep[] = nodes.map((node) => ({
       id: node.id,
       type: node.type as EmailFlowStep["type"],
       position: { x: node.position.x, y: node.position.y },
-      data: node.data as EmailFlowStep["data"],
+      data: {
+        ...node.data as EmailFlowStep["data"],
+        // Clean up internal props before saving
+        pipelines: undefined,
+        onTriggerChange: undefined,
+      },
     }));
     onSave(steps);
+  };
+
+  // Get current trigger label for header
+  const getTriggerHeaderLabel = () => {
+    const triggerNode = nodes.find(n => n.type === "trigger");
+    const type = triggerNode?.data?.triggerType as string || triggerType;
+    const pipelineId = triggerNode?.data?.triggerPipelineId as string || triggerPipelineId;
+    
+    if (!type) return "Nenhum gatilho definido";
+    
+    const triggerLabels: Record<string, string> = {
+      lead_created: "Lead criado",
+      lead_updated: "Lead atualizado", 
+      lead_entered_pipeline: "Lead entrou em pipeline",
+    };
+    
+    if (type === "lead_entered_pipeline" && pipelineId) {
+      const pipeline = filteredPipelines.find(p => p.id === pipelineId);
+      return `${triggerLabels[type]}: ${pipeline?.nome || ""}`;
+    }
+    
+    return triggerLabels[type] || type;
   };
 
   return (
@@ -757,7 +968,7 @@ export function EmailFlowBuilder({
           <div>
             <h2 className="text-sm font-semibold text-foreground">{automationName}</h2>
             <p className="text-xs text-muted-foreground">
-              Gatilho: <span className="font-medium">{triggerPipelineName}</span>
+              Gatilho: <span className="font-medium">{getTriggerHeaderLabel()}</span>
             </p>
           </div>
         </div>
