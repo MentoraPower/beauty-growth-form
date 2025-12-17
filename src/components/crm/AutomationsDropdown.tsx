@@ -73,6 +73,8 @@ interface AutomationsDropdownProps {
   pipelines: Pipeline[];
   subOriginId: string | null;
   onShowEmailBuilder?: (show: boolean, props?: EmailBuilderProps) => void;
+  externalOpen?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }
 
 interface EmailBuilderProps {
@@ -85,10 +87,12 @@ interface EmailBuilderProps {
 
 type ActiveTab = "automations" | "webhooks" | "emails";
 
-export function AutomationsDropdown({ pipelines, subOriginId, onShowEmailBuilder }: AutomationsDropdownProps) {
+export function AutomationsDropdown({ pipelines, subOriginId, onShowEmailBuilder, externalOpen, onOpenChange }: AutomationsDropdownProps) {
   const queryClient = useQueryClient();
-  const [open, setOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState<ActiveTab>("automations");
+  const [internalOpen, setInternalOpen] = useState(false);
+  const open = externalOpen !== undefined ? externalOpen : internalOpen;
+  const setOpen = onOpenChange || setInternalOpen;
+  const [activeTab, setActiveTab] = useState<ActiveTab>("emails");
   
   // Automation creation/edit states
   const [isCreatingAutomation, setIsCreatingAutomation] = useState(false);
