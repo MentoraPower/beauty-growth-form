@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Zap, Plus, Trash2, ArrowRight, Webhook, FolderSync, Copy, Check, Send, Download, X, Play, Settings, Mail, Loader2, ListOrdered, Workflow } from "lucide-react";
+import { Zap, Plus, Trash2, ArrowRight, Webhook, FolderSync, Copy, Check, Send, X, Settings, Mail, Loader2, Workflow } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -766,10 +766,10 @@ export function AutomationsDropdown({ pipelines, subOriginId }: AutomationsDropd
         <DialogTrigger asChild>
           <div className="relative inline-flex overflow-visible">
             <Button variant="outline" size="icon" className="h-9 w-9 border-border">
-              <Zap className="w-4 h-4 text-amber-500" />
+              <Zap className="w-4 h-4 text-foreground" />
             </Button>
             {(activeAutomationsCount + activeWebhooksCount + activeEmailAutomationsCount) > 0 && (
-              <span className="absolute top-[2px] right-[2px] z-10 h-4 min-w-4 px-1 text-[10px] font-medium flex items-center justify-center bg-amber-500 text-white rounded-full pointer-events-none">
+              <span className="absolute top-[2px] right-[2px] z-10 h-4 min-w-4 px-1 text-[10px] font-medium flex items-center justify-center bg-foreground text-background rounded-full pointer-events-none">
                 {activeAutomationsCount + activeWebhooksCount + activeEmailAutomationsCount}
               </span>
             )}
@@ -798,10 +798,10 @@ export function AutomationsDropdown({ pipelines, subOriginId }: AutomationsDropd
       <DialogTrigger asChild>
         <div className="relative inline-flex overflow-visible">
           <Button variant="outline" size="icon" className="h-9 w-9 border-border">
-            <Zap className="w-4 h-4 text-amber-500" />
+            <Zap className="w-4 h-4 text-foreground" />
           </Button>
           {(activeAutomationsCount + activeWebhooksCount + activeEmailAutomationsCount) > 0 && (
-            <span className="absolute top-[2px] right-[2px] z-10 h-4 min-w-4 px-1 text-[10px] font-medium flex items-center justify-center bg-amber-500 text-white rounded-full pointer-events-none">
+            <span className="absolute top-[2px] right-[2px] z-10 h-4 min-w-4 px-1 text-[10px] font-medium flex items-center justify-center bg-foreground text-background rounded-full pointer-events-none">
               {activeAutomationsCount + activeWebhooksCount + activeEmailAutomationsCount}
             </span>
           )}
@@ -809,12 +809,9 @@ export function AutomationsDropdown({ pipelines, subOriginId }: AutomationsDropd
       </DialogTrigger>
       <DialogContent className="max-w-4xl h-[700px] overflow-hidden p-0 bg-background border-border" aria-describedby={undefined}>
         <DialogTitle className="sr-only">Automações</DialogTitle>
-        {/* Header with icon and tabs */}
+        {/* Header with tabs */}
         <div className="border-b border-border">
           <div className="flex items-center gap-3 px-6 py-4">
-            <div className="w-8 h-8 rounded-lg bg-amber-500/20 flex items-center justify-center">
-              <Zap className="w-4 h-4 text-amber-500" />
-            </div>
             <span className="text-base font-semibold text-foreground">Automações</span>
           </div>
           
@@ -825,13 +822,13 @@ export function AutomationsDropdown({ pipelines, subOriginId }: AutomationsDropd
               className={cn(
                 "pb-3 text-sm font-medium border-b-2 transition-colors",
                 activeTab === "automations"
-                  ? "border-purple-500 text-foreground"
+                  ? "border-foreground text-foreground"
                   : "border-transparent text-muted-foreground hover:text-foreground"
               )}
             >
               Automações
               {activeAutomationsCount > 0 && (
-                <span className="ml-2 px-1.5 py-0.5 text-[10px] rounded bg-purple-500/20 text-purple-600">
+                <span className="ml-2 px-1.5 py-0.5 text-[10px] rounded bg-muted text-muted-foreground">
                   {activeAutomationsCount}
                 </span>
               )}
@@ -841,13 +838,13 @@ export function AutomationsDropdown({ pipelines, subOriginId }: AutomationsDropd
               className={cn(
                 "pb-3 text-sm font-medium border-b-2 transition-colors",
                 activeTab === "webhooks"
-                  ? "border-purple-500 text-foreground"
+                  ? "border-foreground text-foreground"
                   : "border-transparent text-muted-foreground hover:text-foreground"
               )}
             >
               Webhooks
               {activeWebhooksCount > 0 && (
-                <span className="ml-2 px-1.5 py-0.5 text-[10px] rounded bg-blue-500/20 text-blue-600">
+                <span className="ml-2 px-1.5 py-0.5 text-[10px] rounded bg-muted text-muted-foreground">
                   {activeWebhooksCount}
                 </span>
               )}
@@ -857,14 +854,11 @@ export function AutomationsDropdown({ pipelines, subOriginId }: AutomationsDropd
               className={cn(
                 "pb-3 text-sm font-medium border-b-2 transition-colors",
                 activeTab === "emails"
-                  ? "border-purple-500 text-foreground"
+                  ? "border-foreground text-foreground"
                   : "border-transparent text-muted-foreground hover:text-foreground"
               )}
             >
-              <span className="flex items-center gap-1.5">
-                <Mail className="w-3.5 h-3.5" />
-                E-mail
-              </span>
+              E-mail
             </button>
           </div>
         </div>
@@ -875,7 +869,7 @@ export function AutomationsDropdown({ pipelines, subOriginId }: AutomationsDropd
             <div className="p-6">
               {/* Active/Inactive filter */}
               <div className="flex items-center gap-2 mb-6">
-                <button className="px-3 py-1.5 text-sm rounded-lg bg-purple-500/20 text-purple-600 font-medium">
+                <button className="px-3 py-1.5 text-sm rounded-lg bg-foreground/10 text-foreground font-medium">
                   Ativo {activeAutomationsCount}
                 </button>
                 <button className="px-3 py-1.5 text-sm rounded-lg text-muted-foreground hover:bg-muted transition-colors">
@@ -884,7 +878,7 @@ export function AutomationsDropdown({ pipelines, subOriginId }: AutomationsDropd
                 <div className="flex-1" />
                 <Button
                   onClick={() => setIsCreatingAutomation(true)}
-                  className="bg-purple-600 hover:bg-purple-700 text-white"
+                  className="bg-foreground hover:bg-foreground/90 text-background"
                   disabled={isCreatingAutomation}
                 >
                   <Plus className="w-4 h-4 mr-2" />
@@ -915,9 +909,6 @@ export function AutomationsDropdown({ pipelines, subOriginId }: AutomationsDropd
                     <div className="flex-1">
                       <div className="rounded-lg bg-background border border-border h-full">
                         <div className="flex items-center gap-2 p-3 border-b border-border">
-                          <div className="w-6 h-6 rounded bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
-                            <Play className="w-3 h-3 text-white" />
-                          </div>
                           <span className="text-foreground text-sm font-medium">Quando</span>
                         </div>
                         
@@ -949,9 +940,6 @@ export function AutomationsDropdown({ pipelines, subOriginId }: AutomationsDropd
                     <div className="flex-1">
                       <div className="rounded-lg bg-background border border-border h-full">
                         <div className="flex items-center gap-2 p-3 border-b border-border">
-                          <div className="w-6 h-6 rounded bg-gradient-to-br from-pink-500 to-orange-500 flex items-center justify-center">
-                            <FolderSync className="w-3 h-3 text-white" />
-                          </div>
                           <span className="text-foreground text-sm font-medium">Então</span>
                         </div>
                         
@@ -1018,15 +1006,15 @@ export function AutomationsDropdown({ pipelines, subOriginId }: AutomationsDropd
 
                   {/* Footer */}
                   <div className="flex items-center justify-between mt-4 pt-4 border-t border-border">
-                    <div className="flex items-center gap-1.5 text-xs text-neutral-400">
+                    <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
                       <span>Quando</span>
-                      <span className="px-1.5 py-0.5 bg-neutral-700 rounded text-white text-xs">
+                      <span className="px-1.5 py-0.5 bg-muted rounded text-foreground text-xs">
                         {selectedTriggerPipeline 
                           ? getPipelineName(selectedTriggerPipeline)
                           : "..."}
                       </span>
                       <ArrowRight className="w-3 h-3" />
-                      <span className="px-1.5 py-0.5 bg-neutral-700 rounded text-white text-xs">
+                      <span className="px-1.5 py-0.5 bg-muted rounded text-foreground text-xs">
                         {selectedActionPipeline
                           ? `${getOriginName(selectedActionOrigin)} / ${getSubOriginName(selectedActionSubOrigin)} / ${getPipelineName(selectedActionPipeline, allPipelines)}`
                           : "..."}
@@ -1035,7 +1023,7 @@ export function AutomationsDropdown({ pipelines, subOriginId }: AutomationsDropd
                     <Button
                       size="sm"
                       onClick={editingAutomationId ? saveAutomationEdit : createAutomation}
-                      className="h-8 bg-purple-600 hover:bg-purple-700 text-white text-xs"
+                      className="h-8 bg-foreground hover:bg-foreground/90 text-background text-xs"
                       disabled={!selectedTriggerPipeline}
                     >
                       {editingAutomationId ? "Salvar" : "Criar"}
@@ -1047,16 +1035,16 @@ export function AutomationsDropdown({ pipelines, subOriginId }: AutomationsDropd
               {/* Existing automations list */}
               {automations.length === 0 && !isCreatingAutomation ? (
                 <div className="flex flex-col items-center justify-center py-16 text-center">
-                  <div className="w-12 h-12 rounded-full bg-neutral-800 flex items-center justify-center mb-4">
-                    <FolderSync className="w-6 h-6 text-neutral-500" />
+                  <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center mb-4">
+                    <FolderSync className="w-6 h-6 text-muted-foreground" />
                   </div>
-                  <h3 className="text-white font-medium mb-2">Nenhuma automação configurada</h3>
-                  <p className="text-neutral-400 text-sm max-w-md mb-6">
+                  <h3 className="text-foreground font-medium mb-2">Nenhuma automação configurada</h3>
+                  <p className="text-muted-foreground text-sm max-w-md mb-6">
                     Configure automações para mover leads automaticamente entre pipelines e origens.
                   </p>
                   <Button
                     onClick={() => setIsCreatingAutomation(true)}
-                    className="bg-purple-600 hover:bg-purple-700 text-white"
+                    className="bg-foreground hover:bg-foreground/90 text-background"
                   >
                     Criar automação
                   </Button>
@@ -1069,8 +1057,8 @@ export function AutomationsDropdown({ pipelines, subOriginId }: AutomationsDropd
                       className={cn(
                         "p-4 rounded-xl border transition-colors",
                         automation.is_active 
-                          ? "bg-neutral-800/50 border-neutral-700" 
-                          : "bg-neutral-800/20 border-neutral-800 opacity-60"
+                          ? "bg-muted/50 border-border" 
+                          : "bg-muted/20 border-border opacity-60"
                       )}
                     >
                       <div className="flex items-center justify-between">
@@ -1079,21 +1067,21 @@ export function AutomationsDropdown({ pipelines, subOriginId }: AutomationsDropd
                             onClick={() => updateAutomation(automation.id, { is_active: !automation.is_active })}
                             className={cn(
                               "relative w-11 h-6 rounded-full transition-colors",
-                              automation.is_active ? "bg-purple-500" : "bg-neutral-600"
+                              automation.is_active ? "bg-foreground" : "bg-muted-foreground/30"
                             )}
                           >
                             <span
                               className={cn(
-                                "absolute left-0.5 top-0.5 w-5 h-5 rounded-full bg-white shadow-sm transition-transform",
+                                "absolute left-0.5 top-0.5 w-5 h-5 rounded-full bg-background shadow-sm transition-transform",
                                 automation.is_active ? "translate-x-5" : "translate-x-0"
                               )}
                             />
                           </button>
                           <div>
-                            <div className="flex items-center gap-2 text-sm text-white">
+                            <div className="flex items-center gap-2 text-sm text-foreground">
                               <span className="font-medium">{getPipelineName(automation.pipeline_id)}</span>
-                              <ArrowRight className="w-4 h-4 text-neutral-500" />
-                              <span className="text-neutral-400">
+                              <ArrowRight className="w-4 h-4 text-muted-foreground" />
+                              <span className="text-muted-foreground">
                                 {getOriginName(automation.target_origin_id)} / {getSubOriginName(automation.target_sub_origin_id)} / {getPipelineName(automation.target_pipeline_id, allPipelines)}
                               </span>
                             </div>
@@ -1103,7 +1091,7 @@ export function AutomationsDropdown({ pipelines, subOriginId }: AutomationsDropd
                           <Button
                             size="sm"
                             variant="ghost"
-                            className="h-8 w-8 p-0 text-neutral-400 hover:text-white hover:bg-neutral-700"
+                            className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground"
                             onClick={() => startEditingAutomation(automation)}
                           >
                             <Settings className="h-4 w-4" />
@@ -1111,7 +1099,7 @@ export function AutomationsDropdown({ pipelines, subOriginId }: AutomationsDropd
                           <Button
                             size="sm"
                             variant="ghost"
-                            className="h-8 w-8 p-0 text-neutral-400 hover:text-red-400 hover:bg-red-500/10"
+                            className="h-8 w-8 p-0 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
                             onClick={() => deleteAutomation(automation.id)}
                           >
                             <Trash2 className="h-4 w-4" />
@@ -1130,16 +1118,16 @@ export function AutomationsDropdown({ pipelines, subOriginId }: AutomationsDropd
             <div className="p-6">
               {/* Active/Inactive filter */}
               <div className="flex items-center gap-2 mb-6">
-                <button className="px-3 py-1.5 text-sm rounded-lg bg-blue-500/20 text-blue-400 font-medium">
+                <button className="px-3 py-1.5 text-sm rounded-lg bg-foreground/10 text-foreground font-medium">
                   Ativo {activeWebhooksCount}
                 </button>
-                <button className="px-3 py-1.5 text-sm rounded-lg text-neutral-400 hover:bg-neutral-800 transition-colors">
+                <button className="px-3 py-1.5 text-sm rounded-lg text-muted-foreground hover:bg-muted transition-colors">
                   Inativo {webhooks.length - activeWebhooksCount}
                 </button>
                 <div className="flex-1" />
                 <Button
                   onClick={() => setIsCreatingWebhook(true)}
-                  className="bg-purple-600 hover:bg-purple-700 text-white"
+                  className="bg-foreground hover:bg-foreground/90 text-background"
                   disabled={isCreatingWebhook}
                 >
                   <Plus className="w-4 h-4 mr-2" />
@@ -1149,13 +1137,13 @@ export function AutomationsDropdown({ pipelines, subOriginId }: AutomationsDropd
 
               {/* Create webhook form */}
               {isCreatingWebhook && (
-                <div className="mb-6 p-5 rounded-xl bg-neutral-800/50 border border-neutral-700 space-y-4">
+                <div className="mb-6 p-5 rounded-xl bg-muted/50 border border-border space-y-4">
                   <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium text-white">Novo Webhook</span>
+                    <span className="text-sm font-medium text-foreground">Novo Webhook</span>
                     <Button
                       size="sm"
                       variant="ghost"
-                      className="h-8 w-8 p-0 text-neutral-400 hover:text-white"
+                      className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground"
                       onClick={resetWebhookForm}
                     >
                       <X className="w-4 h-4" />
@@ -1167,25 +1155,15 @@ export function AutomationsDropdown({ pipelines, subOriginId }: AutomationsDropd
                       placeholder="Nome do webhook..."
                       value={webhookName}
                       onChange={(e) => setWebhookName(e.target.value)}
-                      className="h-10 bg-neutral-700 border-neutral-600 text-white placeholder:text-neutral-500"
+                      className="h-10"
                     />
                     <Select value={webhookType} onValueChange={(v: "receive" | "send") => setWebhookType(v)}>
-                      <SelectTrigger className="h-10 bg-neutral-700 border-neutral-600 text-white">
+                      <SelectTrigger className="h-10">
                         <SelectValue />
                       </SelectTrigger>
-                      <SelectContent className="bg-neutral-800 border-neutral-700">
-                        <SelectItem value="receive" className="text-white">
-                          <div className="flex items-center gap-2">
-                            <Download className="w-4 h-4" />
-                            Receber
-                          </div>
-                        </SelectItem>
-                        <SelectItem value="send" className="text-white">
-                          <div className="flex items-center gap-2">
-                            <Send className="w-4 h-4" />
-                            Enviar
-                          </div>
-                        </SelectItem>
+                      <SelectContent>
+                        <SelectItem value="receive">Receber</SelectItem>
+                        <SelectItem value="send">Enviar</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -1196,31 +1174,31 @@ export function AutomationsDropdown({ pipelines, subOriginId }: AutomationsDropd
                         placeholder="URL de destino..."
                         value={webhookUrl}
                         onChange={(e) => setWebhookUrl(e.target.value)}
-                        className="h-10 bg-neutral-700 border-neutral-600 text-white placeholder:text-neutral-500"
+                        className="h-10"
                       />
                       <Select value={webhookTrigger} onValueChange={(v) => {
                         setWebhookTrigger(v);
                         setWebhookTriggerPipelineId("");
                       }}>
-                        <SelectTrigger className="h-10 bg-neutral-700 border-neutral-600 text-white">
+                        <SelectTrigger className="h-10">
                           <SelectValue placeholder="Selecione o gatilho..." />
                         </SelectTrigger>
-                        <SelectContent className="bg-neutral-800 border-neutral-700">
-                          <SelectItem value="lead_created" className="text-white">Lead criado</SelectItem>
-                          <SelectItem value="lead_moved" className="text-white">Lead movido para pipeline</SelectItem>
-                          <SelectItem value="lead_updated" className="text-white">Lead atualizado</SelectItem>
-                          <SelectItem value="lead_deleted" className="text-white">Lead excluído</SelectItem>
+                        <SelectContent>
+                          <SelectItem value="lead_created">Lead criado</SelectItem>
+                          <SelectItem value="lead_moved">Lead movido para pipeline</SelectItem>
+                          <SelectItem value="lead_updated">Lead atualizado</SelectItem>
+                          <SelectItem value="lead_deleted">Lead excluído</SelectItem>
                         </SelectContent>
                       </Select>
 
                       {webhookTrigger === "lead_moved" && (
                         <Select value={webhookTriggerPipelineId} onValueChange={setWebhookTriggerPipelineId}>
-                          <SelectTrigger className="h-10 bg-neutral-700 border-neutral-600 text-white">
+                          <SelectTrigger className="h-10">
                             <SelectValue placeholder="Selecione a pipeline..." />
                           </SelectTrigger>
-                          <SelectContent className="bg-neutral-800 border-neutral-700">
+                          <SelectContent>
                             {getSendTriggerPipelines().map((pipeline) => (
-                              <SelectItem key={pipeline.id} value={pipeline.id} className="text-white">
+                              <SelectItem key={pipeline.id} value={pipeline.id}>
                                 {pipeline.nome}
                               </SelectItem>
                             ))}
@@ -1235,24 +1213,24 @@ export function AutomationsDropdown({ pipelines, subOriginId }: AutomationsDropd
                     setWebhookOriginId("");
                     setWebhookSubOriginId("");
                   }}>
-                    <SelectTrigger className="h-10 bg-neutral-700 border-neutral-600 text-white">
+                    <SelectTrigger className="h-10">
                       <SelectValue />
                     </SelectTrigger>
-                    <SelectContent className="bg-neutral-800 border-neutral-700">
-                      <SelectItem value="all" className="text-white">Todas as origens</SelectItem>
-                      <SelectItem value="origin" className="text-white">Origem específica</SelectItem>
-                      <SelectItem value="sub_origin" className="text-white">Sub-origem específica</SelectItem>
+                    <SelectContent>
+                      <SelectItem value="all">Todas as origens</SelectItem>
+                      <SelectItem value="origin">Origem específica</SelectItem>
+                      <SelectItem value="sub_origin">Sub-origem específica</SelectItem>
                     </SelectContent>
                   </Select>
 
                   {webhookScope === "origin" && (
                     <Select value={webhookOriginId} onValueChange={setWebhookOriginId}>
-                      <SelectTrigger className="h-10 bg-neutral-700 border-neutral-600 text-white">
+                      <SelectTrigger className="h-10">
                         <SelectValue placeholder="Selecione a origem..." />
                       </SelectTrigger>
-                      <SelectContent className="bg-neutral-800 border-neutral-700">
+                      <SelectContent>
                         {origins.map((origin) => (
-                          <SelectItem key={origin.id} value={origin.id} className="text-white">
+                          <SelectItem key={origin.id} value={origin.id}>
                             {origin.nome}
                           </SelectItem>
                         ))}
@@ -1262,14 +1240,14 @@ export function AutomationsDropdown({ pipelines, subOriginId }: AutomationsDropd
 
                   {webhookScope === "sub_origin" && (
                     <Select value={webhookSubOriginId} onValueChange={setWebhookSubOriginId}>
-                      <SelectTrigger className="h-10 bg-neutral-700 border-neutral-600 text-white">
+                      <SelectTrigger className="h-10">
                         <SelectValue placeholder="Selecione a sub-origem..." />
                       </SelectTrigger>
-                      <SelectContent className="bg-neutral-800 border-neutral-700">
+                      <SelectContent>
                         {subOrigins.map((subOrigin) => {
                           const origin = origins.find(o => o.id === subOrigin.origin_id);
                           return (
-                            <SelectItem key={subOrigin.id} value={subOrigin.id} className="text-white">
+                            <SelectItem key={subOrigin.id} value={subOrigin.id}>
                               {origin?.nome} / {subOrigin.nome}
                             </SelectItem>
                           );
@@ -1279,30 +1257,30 @@ export function AutomationsDropdown({ pipelines, subOriginId }: AutomationsDropd
                   )}
 
                   {webhookType === "receive" && (
-                    <div className="p-3 rounded-lg bg-blue-500/10 border border-blue-500/20">
-                      <span className="text-[10px] font-medium text-blue-400 uppercase tracking-wider block mb-2">
+                    <div className="p-3 rounded-lg bg-muted/50 border border-border">
+                      <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider block mb-2">
                         URL gerada
                       </span>
                       <div className="flex gap-2">
                         <Input
                           value={getGeneratedWebhookUrl()}
                           readOnly
-                          className="flex-1 h-9 text-xs bg-neutral-800 border-neutral-700 text-white font-mono"
+                          className="flex-1 h-9 text-xs font-mono"
                         />
                         <Button
                           variant="outline"
                           size="sm"
-                          className="h-9 px-3 bg-neutral-700 border-neutral-600 text-white hover:bg-neutral-600"
+                          className="h-9 px-3"
                           onClick={() => copyWebhookUrl(getGeneratedWebhookUrl())}
                         >
-                          {copied ? <Check className="w-4 h-4 text-green-400" /> : <Copy className="w-4 h-4" />}
+                          {copied ? <Check className="w-4 h-4 text-green-600" /> : <Copy className="w-4 h-4" />}
                         </Button>
                       </div>
                     </div>
                   )}
 
                   <Button
-                    className="w-full h-10 bg-purple-600 hover:bg-purple-700 text-white"
+                    className="w-full h-10 bg-foreground hover:bg-foreground/90 text-background"
                     onClick={createWebhook}
                   >
                     Salvar Webhook
@@ -1313,16 +1291,16 @@ export function AutomationsDropdown({ pipelines, subOriginId }: AutomationsDropd
               {/* Webhooks list */}
               {webhooks.length === 0 && !isCreatingWebhook ? (
                 <div className="flex flex-col items-center justify-center py-16 text-center">
-                  <div className="w-12 h-12 rounded-full bg-neutral-800 flex items-center justify-center mb-4">
-                    <Webhook className="w-6 h-6 text-neutral-500" />
+                  <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center mb-4">
+                    <Webhook className="w-6 h-6 text-muted-foreground" />
                   </div>
-                  <h3 className="text-white font-medium mb-2">Vamos configurar seu primeiro webhook.</h3>
-                  <p className="text-neutral-400 text-sm max-w-md mb-6">
+                  <h3 className="text-foreground font-medium mb-2">Vamos configurar seu primeiro webhook.</h3>
+                  <p className="text-muted-foreground text-sm max-w-md mb-6">
                     Conecte seus aplicativos facilmente com webhooks para enviar atualizações em tempo real, automatizar processos e turbinar suas integrações.
                   </p>
                   <Button
                     onClick={() => setIsCreatingWebhook(true)}
-                    className="bg-purple-600 hover:bg-purple-700 text-white"
+                    className="bg-foreground hover:bg-foreground/90 text-background"
                   >
                     Criar webhook
                   </Button>
@@ -1332,8 +1310,7 @@ export function AutomationsDropdown({ pipelines, subOriginId }: AutomationsDropd
                   {/* Receive Webhooks */}
                   {receiveWebhooks.length > 0 && (
                     <div className="space-y-3">
-                      <span className="text-xs font-medium text-neutral-500 uppercase tracking-wider flex items-center gap-2">
-                        <Download className="w-4 h-4" />
+                      <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
                         Webhooks de Recebimento ({receiveWebhooks.length})
                       </span>
                       {receiveWebhooks.map((webhook) => (
@@ -1342,8 +1319,8 @@ export function AutomationsDropdown({ pipelines, subOriginId }: AutomationsDropd
                           className={cn(
                             "p-4 rounded-xl border transition-colors",
                             webhook.is_active 
-                              ? "bg-blue-500/5 border-blue-500/20" 
-                              : "bg-neutral-800/20 border-neutral-800 opacity-60"
+                              ? "bg-muted/50 border-border" 
+                              : "bg-muted/20 border-border opacity-60"
                           )}
                         >
                           <div className="flex items-center justify-between mb-2">
@@ -1352,22 +1329,22 @@ export function AutomationsDropdown({ pipelines, subOriginId }: AutomationsDropd
                                 onClick={() => toggleWebhook(webhook.id, webhook.is_active)}
                                 className={cn(
                                   "relative w-10 h-5 rounded-full transition-colors",
-                                  webhook.is_active ? "bg-blue-500" : "bg-neutral-600"
+                                  webhook.is_active ? "bg-foreground" : "bg-muted-foreground/30"
                                 )}
                               >
                                 <span
                                   className={cn(
-                                    "absolute left-0.5 top-0.5 w-4 h-4 rounded-full bg-white shadow-sm transition-transform",
+                                    "absolute left-0.5 top-0.5 w-4 h-4 rounded-full bg-background shadow-sm transition-transform",
                                     webhook.is_active ? "translate-x-5" : "translate-x-0"
                                   )}
                                 />
                               </button>
-                              <span className="text-sm font-medium text-white">{webhook.name}</span>
+                              <span className="text-sm font-medium text-foreground">{webhook.name}</span>
                             </div>
                             <Button
                               size="sm"
                               variant="ghost"
-                              className="h-8 w-8 p-0 text-neutral-400 hover:text-red-400 hover:bg-red-500/10"
+                              className="h-8 w-8 p-0 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
                               onClick={() => deleteWebhook(webhook.id)}
                             >
                               <Trash2 className="h-4 w-4" />
@@ -1377,15 +1354,15 @@ export function AutomationsDropdown({ pipelines, subOriginId }: AutomationsDropd
                             <Input
                               value={webhook.url || ""}
                               readOnly
-                              className="flex-1 h-8 text-xs bg-neutral-800 border-neutral-700 text-neutral-300 font-mono"
+                              className="flex-1 h-8 text-xs font-mono"
                             />
                             <Button
                               variant="outline"
                               size="sm"
-                              className="h-8 px-2 bg-neutral-700 border-neutral-600 hover:bg-neutral-600"
+                              className="h-8 px-2"
                               onClick={() => copyWebhookUrl(webhook.url || "")}
                             >
-                              <Copy className="w-3.5 h-3.5 text-white" />
+                              <Copy className="w-3.5 h-3.5" />
                             </Button>
                           </div>
                         </div>
@@ -1396,8 +1373,7 @@ export function AutomationsDropdown({ pipelines, subOriginId }: AutomationsDropd
                   {/* Send Webhooks */}
                   {sendWebhooks.length > 0 && (
                     <div className="space-y-3">
-                      <span className="text-xs font-medium text-neutral-500 uppercase tracking-wider flex items-center gap-2">
-                        <Send className="w-4 h-4" />
+                      <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
                         Webhooks de Envio ({sendWebhooks.length})
                       </span>
                       {sendWebhooks.map((webhook) => (
@@ -1406,8 +1382,8 @@ export function AutomationsDropdown({ pipelines, subOriginId }: AutomationsDropd
                           className={cn(
                             "p-4 rounded-xl border transition-colors",
                             webhook.is_active 
-                              ? "bg-green-500/5 border-green-500/20" 
-                              : "bg-neutral-800/20 border-neutral-800 opacity-60"
+                              ? "bg-muted/50 border-border" 
+                              : "bg-muted/20 border-border opacity-60"
                           )}
                         >
                           <div className="flex items-center justify-between mb-2">
@@ -1416,19 +1392,19 @@ export function AutomationsDropdown({ pipelines, subOriginId }: AutomationsDropd
                                 onClick={() => toggleWebhook(webhook.id, webhook.is_active)}
                                 className={cn(
                                   "relative w-10 h-5 rounded-full transition-colors",
-                                  webhook.is_active ? "bg-green-500" : "bg-neutral-600"
+                                  webhook.is_active ? "bg-foreground" : "bg-muted-foreground/30"
                                 )}
                               >
                                 <span
                                   className={cn(
-                                    "absolute left-0.5 top-0.5 w-4 h-4 rounded-full bg-white shadow-sm transition-transform",
+                                    "absolute left-0.5 top-0.5 w-4 h-4 rounded-full bg-background shadow-sm transition-transform",
                                     webhook.is_active ? "translate-x-5" : "translate-x-0"
                                   )}
                                 />
                               </button>
                               <div>
-                                <span className="text-sm font-medium text-white block">{webhook.name}</span>
-                                <span className="text-xs text-neutral-400">
+                                <span className="text-sm font-medium text-foreground block">{webhook.name}</span>
+                                <span className="text-xs text-muted-foreground">
                                   {getTriggerLabel(webhook.trigger, webhook.trigger_pipeline_id)}
                                 </span>
                               </div>
@@ -1436,13 +1412,13 @@ export function AutomationsDropdown({ pipelines, subOriginId }: AutomationsDropd
                             <Button
                               size="sm"
                               variant="ghost"
-                              className="h-8 w-8 p-0 text-neutral-400 hover:text-red-400 hover:bg-red-500/10"
+                              className="h-8 w-8 p-0 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
                               onClick={() => deleteWebhook(webhook.id)}
                             >
                               <Trash2 className="h-4 w-4" />
                             </Button>
                           </div>
-                          <div className="text-xs text-neutral-500 font-mono truncate">
+                          <div className="text-xs text-muted-foreground font-mono truncate">
                             {webhook.url}
                           </div>
                         </div>
@@ -1534,7 +1510,7 @@ export function AutomationsDropdown({ pipelines, subOriginId }: AutomationsDropd
             <div className="p-6">
               {/* Header */}
               <div className="flex items-center gap-2 mb-6">
-                <button className="px-3 py-1.5 text-sm rounded-lg bg-pink-500/20 text-pink-600 font-medium">
+                <button className="px-3 py-1.5 text-sm rounded-lg bg-foreground/10 text-foreground font-medium">
                   Ativo {activeEmailAutomationsCount}
                 </button>
                 <button className="px-3 py-1.5 text-sm rounded-lg text-muted-foreground hover:bg-muted transition-colors">
@@ -1543,7 +1519,7 @@ export function AutomationsDropdown({ pipelines, subOriginId }: AutomationsDropd
                 <div className="flex-1" />
                 <Button
                   onClick={() => setIsCreatingEmail(true)}
-                  className="bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white"
+                  className="bg-foreground hover:bg-foreground/90 text-background"
                   disabled={isCreatingEmail}
                 >
                   <Plus className="w-4 h-4 mr-2" />
@@ -1591,7 +1567,7 @@ export function AutomationsDropdown({ pipelines, subOriginId }: AutomationsDropd
 
                   <div className="flex gap-3">
                     <Button
-                      className="flex-1 h-10 bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white"
+                      className="flex-1 h-10 bg-foreground hover:bg-foreground/90 text-background"
                       onClick={handleOpenEmailFlowBuilder}
                     >
                       <Workflow className="w-4 h-4 mr-2" />
@@ -1613,7 +1589,7 @@ export function AutomationsDropdown({ pipelines, subOriginId }: AutomationsDropd
                   </p>
                   <Button
                     onClick={() => setIsCreatingEmail(true)}
-                    className="bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white"
+                    className="bg-foreground hover:bg-foreground/90 text-background"
                   >
                     Criar automação
                   </Button>
@@ -1626,7 +1602,7 @@ export function AutomationsDropdown({ pipelines, subOriginId }: AutomationsDropd
                       className={cn(
                         "p-4 rounded-xl border transition-colors",
                         email.is_active 
-                          ? "bg-pink-500/5 border-pink-500/20" 
+                          ? "bg-muted/50 border-border" 
                           : "bg-muted/30 border-border opacity-60"
                       )}
                     >
@@ -1636,12 +1612,12 @@ export function AutomationsDropdown({ pipelines, subOriginId }: AutomationsDropd
                             onClick={() => toggleEmailAutomation(email.id, email.is_active)}
                             className={cn(
                               "relative w-10 h-5 rounded-full transition-colors",
-                              email.is_active ? "bg-pink-500" : "bg-muted-foreground/30"
+                              email.is_active ? "bg-foreground" : "bg-muted-foreground/30"
                             )}
                           >
                             <span
                               className={cn(
-                                "absolute left-0.5 top-0.5 w-4 h-4 rounded-full bg-white shadow-sm transition-transform",
+                                "absolute left-0.5 top-0.5 w-4 h-4 rounded-full bg-background shadow-sm transition-transform",
                                 email.is_active ? "translate-x-5" : "translate-x-0"
                               )}
                             />
