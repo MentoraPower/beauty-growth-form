@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Zap, Plus, Trash2, ArrowRight, Webhook, FolderSync, Copy, Check, Send, X, Settings, Mail, Loader2, Workflow } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -717,18 +717,18 @@ export function AutomationsDropdown({
     return label;
   };
 
-  const [openingEmailBuilder, setOpeningEmailBuilder] = useState(false);
+  const openingEmailBuilderRef = useRef(false);
 
   const handleOpenChange = (isOpen: boolean) => {
     setOpen(isOpen);
-    if (!isOpen && !openingEmailBuilder) {
+    if (!isOpen && !openingEmailBuilderRef.current) {
       resetAutomationForm();
       resetWebhookForm();
       resetEmailForm();
       setShowEmailFlowBuilder(false);
     }
     if (!isOpen) {
-      setOpeningEmailBuilder(false);
+      openingEmailBuilderRef.current = false;
     }
   };
 
@@ -745,7 +745,7 @@ export function AutomationsDropdown({
     const triggerPipelineName = pipelines.find(p => p.id === emailTriggerPipeline)?.nome || "";
     
     if (onShowEmailBuilder) {
-      setOpeningEmailBuilder(true);
+      openingEmailBuilderRef.current = true;
       setOpen(false); // Close the dropdown
       onShowEmailBuilder(true, {
         automationName: emailName,
