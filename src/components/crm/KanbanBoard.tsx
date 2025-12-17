@@ -439,6 +439,16 @@ export function KanbanBoard() {
 
     const overId = over.id as string;
 
+    // Check if hovering over a top drop zone
+    if (overId.endsWith("-top-zone")) {
+      const pipelineId = overId.replace("-top-zone", "");
+      setDropIndicator({
+        pipelineId,
+        position: "top",
+      });
+      return;
+    }
+
     // Check if hovering over a pipeline column (empty area)
     const overPipeline = pipelines.find((p) => p.id === overId);
     if (overPipeline) {
@@ -497,14 +507,20 @@ export function KanbanBoard() {
       const activeLead = localLeads.find((l) => l.id === activeId);
       if (!activeLead) return;
 
+      // Check if dropping on a top-zone
+      const isTopZone = overId.endsWith("-top-zone");
+      const topZonePipelineId = isTopZone ? overId.replace("-top-zone", "") : null;
+
       // Check if dropping on a pipeline column or another lead
-      const overPipeline = pipelines.find((p) => p.id === overId);
+      const overPipeline = pipelines.find((p) => p.id === overId || p.id === topZonePipelineId);
       const overLead = localLeads.find((l) => l.id === overId);
 
       // Determine target pipeline
-      let newPipelineId: string | null = overPipeline
-        ? overPipeline.id
-        : overLead?.pipeline_id ?? null;
+      let newPipelineId: string | null = topZonePipelineId
+        ? topZonePipelineId
+        : overPipeline
+          ? overPipeline.id
+          : overLead?.pipeline_id ?? null;
 
       if (!newPipelineId) return;
 

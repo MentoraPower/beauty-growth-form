@@ -34,6 +34,31 @@ const DropPlaceholder = memo(function DropPlaceholder({ isActive }: { isActive?:
   );
 });
 
+// Top drop zone component
+const TopDropZone = memo(function TopDropZone({ 
+  pipelineId, 
+  isActive 
+}: { 
+  pipelineId: string; 
+  isActive: boolean;
+}) {
+  const { setNodeRef, isOver } = useDroppable({
+    id: `${pipelineId}-top-zone`,
+    data: { pipelineId, isTopZone: true },
+  });
+
+  return (
+    <div 
+      ref={setNodeRef}
+      className={`min-h-[20px] -mb-2 transition-all duration-150 ${
+        isOver || isActive ? "min-h-[100px] mb-0" : ""
+      }`}
+    >
+      {(isOver || isActive) && <DropPlaceholder isActive />}
+    </div>
+  );
+});
+
 export const KanbanColumn = memo(function KanbanColumn({ 
   pipeline, 
   leads, 
@@ -89,13 +114,21 @@ export const KanbanColumn = memo(function KanbanColumn({
 
         {/* Cards container */}
         <div className="p-3 flex-1 overflow-y-auto">
+          {/* Top drop zone - always visible when dragging */}
+          {activeId && visibleLeads.length > 0 && (
+            <TopDropZone 
+              pipelineId={pipeline.id} 
+              isActive={showTopPlaceholder}
+            />
+          )}
+          
           <SortableContext
             items={leads.map((l) => l.id)}
             strategy={verticalListSortingStrategy}
           >
             <div className="space-y-2 pb-12">
-              {/* Top placeholder - shows when hovering at top of column */}
-              {showTopPlaceholder && (
+              {/* Top placeholder for empty column */}
+              {showTopPlaceholder && visibleLeads.length === 0 && (
                 <div className="animate-in fade-in slide-in-from-top-2 duration-150">
                   <DropPlaceholder isActive />
                 </div>
