@@ -41,11 +41,23 @@ import { cn } from "@/lib/utils";
 
 import { toast } from "sonner";
 import { AutomationsDropdown } from "./AutomationsDropdown";
+import { EmailFlowBuilder } from "./EmailFlowBuilder";
 
 // Lazy load heavy dialog
 const ManagePipelinesDialog = lazy(() => 
   import("./ManagePipelinesDialog").then(m => ({ default: m.ManagePipelinesDialog }))
 );
+
+interface EmailBuilderState {
+  show: boolean;
+  props?: {
+    automationName: string;
+    triggerPipelineName: string;
+    onSave: (steps: any[]) => Promise<void>;
+    onCancel: () => void;
+    initialSteps?: any[];
+  };
+}
 
 export function KanbanBoard() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -61,6 +73,7 @@ export function KanbanBoard() {
   const [filterTags, setFilterTags] = useState<string[]>([]);
   const [startDate, setStartDate] = useState<Date | undefined>(undefined);
   const [endDate, setEndDate] = useState<Date | undefined>(undefined);
+  const [emailBuilder, setEmailBuilder] = useState<EmailBuilderState>({ show: false });
   const queryClient = useQueryClient();
   const searchTimeoutRef = useRef<number | null>(null);
 
@@ -619,7 +632,7 @@ export function KanbanBoard() {
     : "Selecione uma sub-origem";
 
   return (
-    <div className="flex flex-col h-[calc(100vh-2rem)] overflow-hidden">
+    <div className="relative flex flex-col h-[calc(100vh-2rem)] overflow-hidden">
       {/* Header - all on same line */}
       <div className="flex items-center gap-4 mb-4">
         {/* Title - left */}
@@ -628,7 +641,11 @@ export function KanbanBoard() {
         {/* Search centered with filters */}
         <div className="flex-1 flex items-center justify-center gap-2">
           {subOriginId && (
-            <AutomationsDropdown pipelines={pipelines} subOriginId={subOriginId} />
+            <AutomationsDropdown 
+              pipelines={pipelines} 
+              subOriginId={subOriginId}
+              onShowEmailBuilder={(show, props) => setEmailBuilder({ show, props })}
+            />
           )}
           <div className="relative w-full max-w-md">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
@@ -941,6 +958,22 @@ export function KanbanBoard() {
           subOriginId={subOriginId}
         />
       </Suspense>
+
+      {/* Email Flow Builder Overlay */}
+      {emailBuilder.show && emailBuilder.props && (
+        <div className="absolute inset-0 z-50 bg-background">
+          <EmailFlowBuilder
+            automationName={emailBuilder.props.automationName}
+            triggerPipelineName={emailBuilder.props.triggerPipelineName}
+            onSave={emailBuilder.props.onSave}
+            onCancel={() => {
+              emailBuilder.props?.onCancel();
+              setEmailBuilder({ show: false });
+            }}
+            initialSteps={emailBuilder.props.initialSteps}
+          />
+        </div>
+      )}
     </div>
   );
 }

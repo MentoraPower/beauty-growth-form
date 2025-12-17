@@ -72,11 +72,20 @@ interface EmailAutomation {
 interface AutomationsDropdownProps {
   pipelines: Pipeline[];
   subOriginId: string | null;
+  onShowEmailBuilder?: (show: boolean, props?: EmailBuilderProps) => void;
+}
+
+interface EmailBuilderProps {
+  automationName: string;
+  triggerPipelineName: string;
+  onSave: (steps: any[]) => Promise<void>;
+  onCancel: () => void;
+  initialSteps?: any[];
 }
 
 type ActiveTab = "automations" | "webhooks" | "emails";
 
-export function AutomationsDropdown({ pipelines, subOriginId }: AutomationsDropdownProps) {
+export function AutomationsDropdown({ pipelines, subOriginId, onShowEmailBuilder }: AutomationsDropdownProps) {
   const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<ActiveTab>("automations");
@@ -690,7 +699,28 @@ export function AutomationsDropdown({ pipelines, subOriginId }: AutomationsDropd
       toast.error("Selecione a pipeline de gatilho");
       return;
     }
-    setShowEmailFlowBuilder(true);
+    
+    const triggerPipelineName = pipelines.find(p => p.id === emailTriggerPipeline)?.nome || "";
+    
+    if (onShowEmailBuilder) {
+      setOpen(false); // Close the dropdown
+      onShowEmailBuilder(true, {
+        automationName: emailName,
+        triggerPipelineName,
+        onSave: handleSaveEmailFlow,
+        onCancel: () => {
+          onShowEmailBuilder(false);
+          resetEmailForm();
+        },
+        initialSteps: editingEmailId ? [
+          { id: "start-1", type: "start", data: { label: "Automação iniciada" } },
+          { id: "email-1", type: "email", data: { label: "Enviar e-mail", subject: emailSubject, bodyHtml: emailBodyHtml } },
+          { id: "end-1", type: "end", data: { label: "Fluxo finalizado" } },
+        ] : undefined,
+      });
+    } else {
+      setShowEmailFlowBuilder(true);
+    }
   };
 
   const handleSaveEmailFlow = async (steps: any[]) => {
@@ -758,8 +788,8 @@ export function AutomationsDropdown({ pipelines, subOriginId }: AutomationsDropd
     { id: "lead_updated", label: "Lead atualizado", icon: Settings },
   ];
 
-  // If showing email flow builder, render full screen
-  if (showEmailFlowBuilder) {
+  // If using local state for email flow builder (fallback when no callback provided)
+  if (showEmailFlowBuilder && !onShowEmailBuilder) {
     const triggerPipelineName = pipelines.find(p => p.id === emailTriggerPipeline)?.nome || "";
     return (
       <Dialog open={open} onOpenChange={handleOpenChange}>
