@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo, useRef } from "react";
+import { useState, useCallback, useMemo, useRef, useEffect } from "react";
 import {
   ReactFlow,
   Controls,
@@ -122,16 +122,22 @@ const EmailNode = ({ id, data }: NodeProps) => {
   const subject = (data.subject as string) || "";
   const bodyHtml = (data.bodyHtml as string) || "";
 
-  const handleSave = useCallback(() => {
-    setNodes((nds) =>
-      nds.map((node) =>
-        node.id === id
-          ? { ...node, data: { ...node.data, subject: localSubject, bodyHtml: localBodyHtml } }
-          : node
-      )
-    );
-    setIsEditing(false);
-  }, [id, setNodes, localSubject, localBodyHtml]);
+  // Auto-save on change while editing
+  useEffect(() => {
+    if (!isEditing) return;
+    
+    const timeout = setTimeout(() => {
+      setNodes((nds) =>
+        nds.map((node) =>
+          node.id === id
+            ? { ...node, data: { ...node.data, subject: localSubject, bodyHtml: localBodyHtml } }
+            : node
+        )
+      );
+    }, 300); // Debounce 300ms
+
+    return () => clearTimeout(timeout);
+  }, [localSubject, localBodyHtml, isEditing, id, setNodes]);
 
   const handleOpen = () => {
     setLocalSubject(subject);
@@ -200,12 +206,9 @@ const EmailNode = ({ id, data }: NodeProps) => {
                 className="h-[200px] text-xs font-mono resize-none overflow-y-auto nowheel"
               />
             </div>
-            <div className="flex justify-end gap-2 pt-2">
-              <Button variant="outline" size="sm" onClick={() => setIsEditing(false)}>
-                Cancelar
-              </Button>
-              <Button size="sm" onClick={handleSave} className="bg-foreground text-background hover:bg-foreground/90">
-                Salvar
+            <div className="flex justify-end pt-2">
+              <Button size="sm" onClick={() => setIsEditing(false)} className="bg-foreground text-background hover:bg-foreground/90">
+                Fechar
               </Button>
             </div>
           </div>
