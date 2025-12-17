@@ -189,8 +189,9 @@ function SortableOriginItem({
               className="absolute left-[11px] w-[2px] bg-neutral-400 z-10"
               style={{
                 top: '14px',
+                // Altura: para exatamente na metade do último item (onde a curva conecta)
                 height: originSubOrigins.length > 0 
-                  ? `calc(${originSubOrigins.length * 32}px + 2px)` 
+                  ? `${originSubOrigins.length * 32}px` 
                   : '0px'
               }}
             />
