@@ -758,25 +758,23 @@ export function AutomationsDropdown({ pipelines, subOriginId }: AutomationsDropd
     { id: "lead_updated", label: "Lead atualizado", icon: Settings },
   ];
 
-  // If showing email flow builder, render full screen
+  // If showing email flow builder, render as full page overlay
   if (showEmailFlowBuilder) {
     const triggerPipelineName = pipelines.find(p => p.id === emailTriggerPipeline)?.nome || "";
     return (
-      <Dialog open={open} onOpenChange={handleOpenChange}>
-        <DialogTrigger asChild>
-          <div className="relative inline-flex overflow-visible">
-            <Button variant="outline" size="icon" className="h-9 w-9 border-border">
-              <Zap className="w-4 h-4 text-amber-500" />
-            </Button>
-            {(activeAutomationsCount + activeWebhooksCount + activeEmailAutomationsCount) > 0 && (
-              <span className="absolute top-[2px] right-[2px] z-10 h-4 min-w-4 px-1 text-[10px] font-medium flex items-center justify-center bg-amber-500 text-white rounded-full pointer-events-none">
-                {activeAutomationsCount + activeWebhooksCount + activeEmailAutomationsCount}
-              </span>
-            )}
-          </div>
-        </DialogTrigger>
-        <DialogContent className="max-w-6xl h-[85vh] overflow-hidden p-0 bg-background border-border" aria-describedby={undefined}>
-          <DialogTitle className="sr-only">Editor de Fluxo de E-mail</DialogTitle>
+      <>
+        <div className="relative inline-flex overflow-visible">
+          <Button variant="outline" size="icon" className="h-9 w-9 border-border">
+            <Zap className="w-4 h-4 text-amber-500" />
+          </Button>
+          {(activeAutomationsCount + activeWebhooksCount + activeEmailAutomationsCount) > 0 && (
+            <span className="absolute top-[2px] right-[2px] z-10 h-4 min-w-4 px-1 text-[10px] font-medium flex items-center justify-center bg-amber-500 text-white rounded-full pointer-events-none">
+              {activeAutomationsCount + activeWebhooksCount + activeEmailAutomationsCount}
+            </span>
+          )}
+        </div>
+        {/* Full page email flow builder */}
+        <div className="fixed inset-0 z-50 bg-background">
           <EmailFlowBuilder
             automationName={emailName}
             triggerPipelineName={triggerPipelineName}
@@ -788,8 +786,8 @@ export function AutomationsDropdown({ pipelines, subOriginId }: AutomationsDropd
               { id: "end-1", type: "end", data: { label: "Fluxo finalizado" } },
             ] : undefined}
           />
-        </DialogContent>
-      </Dialog>
+        </div>
+      </>
     );
   }
 

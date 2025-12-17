@@ -16,7 +16,7 @@ import {
   NodeProps,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
-import { Play, Clock, Mail, CheckCircle2, Trash2, Copy, GripVertical, X, Plus } from "lucide-react";
+import { Play, Clock, Mail, CheckCircle2, Trash2, Copy, ArrowLeft, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -53,30 +53,30 @@ const StartNode = ({ data, selected }: NodeProps) => {
   return (
     <div
       className={cn(
-        "px-4 py-3 rounded-xl border-2 bg-white shadow-lg transition-all min-w-[180px]",
-        selected ? "border-emerald-500 ring-2 ring-emerald-500/20" : "border-emerald-300"
+        "px-4 py-3 rounded-lg bg-card border border-border shadow-sm transition-all min-w-[200px]",
+        selected && "ring-2 ring-primary/30"
       )}
     >
       <div className="flex items-center gap-3">
-        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center shadow-md">
-          <Play className="w-5 h-5 text-white" />
+        <div className="w-9 h-9 rounded-lg bg-emerald-500 flex items-center justify-center">
+          <Play className="w-4 h-4 text-white" />
         </div>
         <div>
-          <span className="text-xs text-emerald-600 font-medium uppercase tracking-wide">Início</span>
-          <p className="text-sm font-semibold text-foreground">{data.label as string}</p>
+          <span className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">Início</span>
+          <p className="text-sm font-medium text-foreground">{data.label as string}</p>
         </div>
       </div>
       <Handle
         type="source"
         position={Position.Bottom}
-        className="!w-3 !h-3 !bg-emerald-500 !border-2 !border-white"
+        className="!w-2.5 !h-2.5 !bg-muted-foreground !border-2 !border-card"
       />
     </div>
   );
 };
 
 // Wait Node Component
-const WaitNode = ({ data, selected, id }: NodeProps) => {
+const WaitNode = ({ data, selected }: NodeProps) => {
   const waitTime = (data.waitTime as number) || 1;
   const waitUnit = (data.waitUnit as string) || "hours";
   const unitLabels: Record<string, string> = {
@@ -89,22 +89,22 @@ const WaitNode = ({ data, selected, id }: NodeProps) => {
   return (
     <div
       className={cn(
-        "px-4 py-3 rounded-xl border-2 bg-white shadow-lg transition-all min-w-[180px]",
-        selected ? "border-amber-500 ring-2 ring-amber-500/20" : "border-amber-300"
+        "px-4 py-3 rounded-lg bg-card border border-border shadow-sm transition-all min-w-[200px]",
+        selected && "ring-2 ring-primary/30"
       )}
     >
       <Handle
         type="target"
         position={Position.Top}
-        className="!w-3 !h-3 !bg-amber-500 !border-2 !border-white"
+        className="!w-2.5 !h-2.5 !bg-muted-foreground !border-2 !border-card"
       />
       <div className="flex items-center gap-3">
-        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center shadow-md">
-          <Clock className="w-5 h-5 text-white" />
+        <div className="w-9 h-9 rounded-lg bg-amber-500 flex items-center justify-center">
+          <Clock className="w-4 h-4 text-white" />
         </div>
         <div>
-          <span className="text-xs text-amber-600 font-medium uppercase tracking-wide">Espera</span>
-          <p className="text-sm font-semibold text-foreground">
+          <span className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">Espera</span>
+          <p className="text-sm font-medium text-foreground">
             {waitTime} {unitLabels[waitUnit]}
           </p>
         </div>
@@ -112,41 +112,57 @@ const WaitNode = ({ data, selected, id }: NodeProps) => {
       <Handle
         type="source"
         position={Position.Bottom}
-        className="!w-3 !h-3 !bg-amber-500 !border-2 !border-white"
+        className="!w-2.5 !h-2.5 !bg-muted-foreground !border-2 !border-card"
       />
     </div>
   );
 };
 
-// Email Node Component
+// Email Node Component with HTML preview
 const EmailNode = ({ data, selected }: NodeProps) => {
   const subject = (data.subject as string) || "Sem assunto";
+  const bodyHtml = (data.bodyHtml as string) || "";
 
   return (
     <div
       className={cn(
-        "px-4 py-3 rounded-xl border-2 bg-white shadow-lg transition-all min-w-[200px] max-w-[250px]",
-        selected ? "border-blue-500 ring-2 ring-blue-500/20" : "border-blue-300"
+        "rounded-lg bg-card border border-border shadow-sm transition-all min-w-[240px] max-w-[280px] overflow-hidden",
+        selected && "ring-2 ring-primary/30"
       )}
     >
       <Handle
         type="target"
         position={Position.Top}
-        className="!w-3 !h-3 !bg-blue-500 !border-2 !border-white"
+        className="!w-2.5 !h-2.5 !bg-muted-foreground !border-2 !border-card"
       />
-      <div className="flex items-center gap-3">
-        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center shadow-md">
-          <Mail className="w-5 h-5 text-white" />
+      {/* Header */}
+      <div className="flex items-center gap-3 px-4 py-3 border-b border-border">
+        <div className="w-9 h-9 rounded-lg bg-blue-500 flex items-center justify-center">
+          <Mail className="w-4 h-4 text-white" />
         </div>
         <div className="flex-1 min-w-0">
-          <span className="text-xs text-blue-600 font-medium uppercase tracking-wide">E-mail</span>
-          <p className="text-sm font-semibold text-foreground truncate">{subject}</p>
+          <span className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">E-mail</span>
+          <p className="text-sm font-medium text-foreground truncate">{subject}</p>
         </div>
       </div>
+      {/* Email preview */}
+      {bodyHtml && (
+        <div className="px-3 py-2 bg-muted/30">
+          <div 
+            className="text-[8px] leading-tight text-muted-foreground max-h-[60px] overflow-hidden pointer-events-none"
+            style={{ 
+              transform: 'scale(0.8)', 
+              transformOrigin: 'top left',
+              width: '125%'
+            }}
+            dangerouslySetInnerHTML={{ __html: bodyHtml }}
+          />
+        </div>
+      )}
       <Handle
         type="source"
         position={Position.Bottom}
-        className="!w-3 !h-3 !bg-blue-500 !border-2 !border-white"
+        className="!w-2.5 !h-2.5 !bg-muted-foreground !border-2 !border-card"
       />
     </div>
   );
@@ -157,22 +173,22 @@ const EndNode = ({ data, selected }: NodeProps) => {
   return (
     <div
       className={cn(
-        "px-4 py-3 rounded-xl border-2 bg-white shadow-lg transition-all min-w-[180px]",
-        selected ? "border-rose-500 ring-2 ring-rose-500/20" : "border-rose-300"
+        "px-4 py-3 rounded-lg bg-card border border-border shadow-sm transition-all min-w-[200px]",
+        selected && "ring-2 ring-primary/30"
       )}
     >
       <Handle
         type="target"
         position={Position.Top}
-        className="!w-3 !h-3 !bg-rose-500 !border-2 !border-white"
+        className="!w-2.5 !h-2.5 !bg-muted-foreground !border-2 !border-card"
       />
       <div className="flex items-center gap-3">
-        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-rose-400 to-rose-600 flex items-center justify-center shadow-md">
-          <CheckCircle2 className="w-5 h-5 text-white" />
+        <div className="w-9 h-9 rounded-lg bg-rose-500 flex items-center justify-center">
+          <CheckCircle2 className="w-4 h-4 text-white" />
         </div>
         <div>
-          <span className="text-xs text-rose-600 font-medium uppercase tracking-wide">Fim</span>
-          <p className="text-sm font-semibold text-foreground">{data.label as string}</p>
+          <span className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">Fim</span>
+          <p className="text-sm font-medium text-foreground">{data.label as string}</p>
         </div>
       </div>
     </div>
@@ -184,6 +200,13 @@ const nodeTypes = {
   wait: WaitNode,
   email: EmailNode,
   end: EndNode,
+};
+
+// Dashed edge style
+const dashedEdgeStyle = {
+  strokeWidth: 2,
+  stroke: "#94a3b8",
+  strokeDasharray: "5 5",
 };
 
 interface EmailFlowBuilderProps {
@@ -215,7 +238,7 @@ export function EmailFlowBuilder({
     ? initialSteps.map((step, index) => ({
         id: step.id,
         type: step.type,
-        position: { x: 250, y: index * 150 },
+        position: { x: 250, y: index * 180 },
         data: step.data,
       }))
     : [
@@ -232,8 +255,8 @@ export function EmailFlowBuilder({
         id: `e-${step.id}-${initialSteps[index + 1].id}`,
         source: step.id,
         target: initialSteps[index + 1].id,
-        markerEnd: { type: MarkerType.ArrowClosed },
-        style: { strokeWidth: 2, stroke: "#94a3b8" },
+        markerEnd: { type: MarkerType.ArrowClosed, color: "#94a3b8" },
+        style: dashedEdgeStyle,
       }))
     : [];
 
@@ -246,8 +269,8 @@ export function EmailFlowBuilder({
         addEdge(
           {
             ...params,
-            markerEnd: { type: MarkerType.ArrowClosed },
-            style: { strokeWidth: 2, stroke: "#94a3b8" },
+            markerEnd: { type: MarkerType.ArrowClosed, color: "#94a3b8" },
+            style: dashedEdgeStyle,
           },
           eds
         )
@@ -271,7 +294,7 @@ export function EmailFlowBuilder({
   const addNode = (type: "wait" | "email" | "end") => {
     const lastNode = nodes[nodes.length - 1];
     const newId = `${type}-${Date.now()}`;
-    const newY = lastNode ? lastNode.position.y + 150 : 50;
+    const newY = lastNode ? lastNode.position.y + 180 : 50;
 
     const defaultData: Record<string, any> = {
       wait: { label: "Tempo de espera", waitTime: 1, waitUnit: "hours" },
@@ -296,8 +319,8 @@ export function EmailFlowBuilder({
           id: `e-${lastNode.id}-${newId}`,
           source: lastNode.id,
           target: newId,
-          markerEnd: { type: MarkerType.ArrowClosed },
-          style: { strokeWidth: 2, stroke: "#94a3b8" },
+          markerEnd: { type: MarkerType.ArrowClosed, color: "#94a3b8" },
+          style: dashedEdgeStyle,
         },
       ]);
     }
@@ -359,33 +382,41 @@ export function EmailFlowBuilder({
   };
 
   return (
-    <div className="flex flex-col h-full">
-      {/* Header */}
-      <div className="flex items-center justify-between px-6 py-4 border-b border-border bg-muted/30">
-        <div>
-          <h2 className="text-lg font-semibold text-foreground">{automationName}</h2>
-          <p className="text-sm text-muted-foreground">
-            Gatilho: Lead movido para <span className="font-medium">{triggerPipelineName}</span>
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" onClick={onCancel}>
-            Cancelar
+    <div className="flex flex-col h-full bg-background">
+      {/* Header with back button */}
+      <div className="flex items-center justify-between px-6 py-4 border-b border-border bg-card">
+        <div className="flex items-center gap-4">
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            onClick={onCancel}
+            className="h-9 w-9"
+          >
+            <ArrowLeft className="w-5 h-5" />
           </Button>
-          <Button onClick={handleSave} className="bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700">
-            Salvar fluxo
-          </Button>
+          <div>
+            <h2 className="text-lg font-semibold text-foreground">{automationName}</h2>
+            <p className="text-sm text-muted-foreground">
+              Gatilho: Lead movido para <span className="font-medium">{triggerPipelineName}</span>
+            </p>
+          </div>
         </div>
+        <Button 
+          onClick={handleSave} 
+          className="bg-gradient-to-r from-primary to-primary-dark hover:opacity-90"
+        >
+          Salvar fluxo
+        </Button>
       </div>
 
       {/* Toolbar */}
-      <div className="flex items-center gap-2 px-6 py-3 border-b border-border bg-background">
+      <div className="flex items-center gap-2 px-6 py-3 border-b border-border bg-muted/20">
         <span className="text-sm font-medium text-muted-foreground mr-2">Adicionar:</span>
         <Button
           variant="outline"
           size="sm"
           onClick={() => addNode("wait")}
-          className="gap-2"
+          className="gap-2 border-border"
         >
           <Clock className="w-4 h-4 text-amber-500" />
           Tempo de espera
@@ -394,7 +425,7 @@ export function EmailFlowBuilder({
           variant="outline"
           size="sm"
           onClick={() => addNode("email")}
-          className="gap-2"
+          className="gap-2 border-border"
         >
           <Mail className="w-4 h-4 text-blue-500" />
           E-mail
@@ -403,7 +434,7 @@ export function EmailFlowBuilder({
           variant="outline"
           size="sm"
           onClick={() => addNode("end")}
-          className="gap-2"
+          className="gap-2 border-border"
         >
           <CheckCircle2 className="w-4 h-4 text-rose-500" />
           Finalizar
@@ -416,7 +447,7 @@ export function EmailFlowBuilder({
               variant="outline"
               size="sm"
               onClick={duplicateSelectedNode}
-              className="gap-2"
+              className="gap-2 border-border"
               disabled={selectedNode.type === "end"}
             >
               <Copy className="w-4 h-4" />
@@ -426,7 +457,7 @@ export function EmailFlowBuilder({
               variant="outline"
               size="sm"
               onClick={deleteSelectedNode}
-              className="gap-2 text-destructive hover:text-destructive"
+              className="gap-2 text-destructive hover:text-destructive border-border"
             >
               <Trash2 className="w-4 h-4" />
               Excluir
@@ -436,7 +467,7 @@ export function EmailFlowBuilder({
       </div>
 
       {/* Flow Canvas */}
-      <div className="flex-1 bg-muted/20">
+      <div className="flex-1 bg-muted/10">
         <ReactFlow
           nodes={nodes}
           edges={edges}
@@ -449,12 +480,12 @@ export function EmailFlowBuilder({
           snapToGrid
           snapGrid={[15, 15]}
           defaultEdgeOptions={{
-            markerEnd: { type: MarkerType.ArrowClosed },
-            style: { strokeWidth: 2, stroke: "#94a3b8" },
+            markerEnd: { type: MarkerType.ArrowClosed, color: "#94a3b8" },
+            style: dashedEdgeStyle,
           }}
         >
-          <Controls className="!bg-white !border-border !shadow-lg" />
-          <Background variant={BackgroundVariant.Dots} gap={20} size={1} color="#e2e8f0" />
+          <Controls className="!bg-card !border-border !shadow-sm !rounded-lg" />
+          <Background variant={BackgroundVariant.Dots} gap={20} size={1} color="#d4d4d8" />
         </ReactFlow>
       </div>
 
