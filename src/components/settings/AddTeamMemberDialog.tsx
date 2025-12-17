@@ -65,8 +65,30 @@ export function AddTeamMemberDialog({
         body: { name, email, password, role },
       });
 
-      if (error) throw error;
-      if (data?.error) throw new Error(data.error);
+      // Handle edge function errors - the error object or data might contain the message
+      if (error) {
+        // Try to extract error message from edge function response
+        let errorMessage = error.message || "Erro ao criar membro";
+        
+        // Try to parse JSON from error message (edge function returns JSON in error body)
+        const jsonMatch = errorMessage.match(/\{.*\}/);
+        if (jsonMatch) {
+          try {
+            const parsed = JSON.parse(jsonMatch[0]);
+            if (parsed.error) {
+              errorMessage = parsed.error;
+            }
+          } catch {
+            // Keep original error message
+          }
+        }
+        
+        throw new Error(errorMessage);
+      }
+      
+      if (data?.error) {
+        throw new Error(data.error);
+      }
 
       return data;
     },
