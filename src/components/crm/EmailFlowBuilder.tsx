@@ -194,8 +194,9 @@ const EmailNode = ({ id, data }: NodeProps) => {
               <Textarea
                 value={localBodyHtml}
                 onChange={(e) => setLocalBodyHtml(e.target.value)}
+                onWheelCapture={(e) => e.stopPropagation()}
                 placeholder="<h1>Olá {{nome}}!</h1>&#10;<p>Seu conteúdo aqui...</p>"
-                className="h-[200px] text-xs font-mono resize-none overflow-y-auto"
+                className="h-[200px] text-xs font-mono resize-none overflow-y-auto nowheel"
               />
             </div>
             <div className="flex justify-end gap-2 pt-2">
