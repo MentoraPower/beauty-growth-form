@@ -693,6 +693,8 @@ export type Database = {
           created_at: string
           id: string
           last_message: string | null
+          last_message_from_me: boolean | null
+          last_message_status: string | null
           last_message_time: string | null
           name: string | null
           phone: string
@@ -704,6 +706,8 @@ export type Database = {
           created_at?: string
           id?: string
           last_message?: string | null
+          last_message_from_me?: boolean | null
+          last_message_status?: string | null
           last_message_time?: string | null
           name?: string | null
           phone: string
@@ -715,6 +719,8 @@ export type Database = {
           created_at?: string
           id?: string
           last_message?: string | null
+          last_message_from_me?: boolean | null
+          last_message_status?: string | null
           last_message_time?: string | null
           name?: string | null
           phone?: string

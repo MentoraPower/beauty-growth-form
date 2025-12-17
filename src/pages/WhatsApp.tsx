@@ -21,6 +21,8 @@ interface Chat {
   avatar: string;
   phone: string;
   photo_url: string | null;
+  lastMessageStatus: string | null;
+  lastMessageFromMe: boolean;
 }
 
 interface Message {
@@ -232,6 +234,8 @@ const WhatsApp = () => {
       avatar: getInitials(displayName || chat.phone),
       phone: chat.phone,
       photo_url: chat.photo_url,
+      lastMessageStatus: chat.last_message_status || null,
+      lastMessageFromMe: chat.last_message_from_me || false,
     };
   }, []);
 
@@ -452,6 +456,8 @@ const WhatsApp = () => {
         .update({
           last_message: messageText,
           last_message_time: new Date().toISOString(),
+          last_message_status: "SENT",
+          last_message_from_me: true,
         })
         .eq("id", selectedChat.id);
 
@@ -700,6 +706,8 @@ const WhatsApp = () => {
       await supabase.from("whatsapp_chats").update({
         last_message: type === "image" ? "📷 Imagem" : type === "video" ? "🎥 Vídeo" : `📄 ${file.name}`,
         last_message_time: new Date().toISOString(),
+        last_message_status: "SENT",
+        last_message_from_me: true,
       }).eq("id", selectedChat.id);
 
       toast({ title: type === "image" ? "Imagem enviada" : type === "video" ? "Vídeo enviado" : "Arquivo enviado" });
@@ -986,6 +994,8 @@ const WhatsApp = () => {
       await supabase.from("whatsapp_chats").update({
         last_message: "Áudio",
         last_message_time: new Date().toISOString(),
+        last_message_status: "SENT",
+        last_message_from_me: true,
       }).eq("id", selectedChat.id);
 
       toast({ title: "Áudio enviado" });
@@ -1576,7 +1586,16 @@ const WhatsApp = () => {
                     {(chat.lastMessage?.trim() || chat.unread > 0) && (
                       <div className="flex items-center justify-between mt-0.5">
                         {chat.lastMessage?.trim() && (
-                          <p className="text-sm text-muted-foreground truncate pr-2">{formatWhatsAppText(chat.lastMessage)}</p>
+                          <div className="flex items-center gap-1 min-w-0 flex-1 pr-2">
+                            {chat.lastMessageFromMe && (
+                              chat.lastMessageStatus === "READ" || chat.lastMessageStatus === "PLAYED" 
+                                ? <CheckCheck className="w-4 h-4 text-blue-500 flex-shrink-0" /> 
+                                : chat.lastMessageStatus === "DELIVERED"
+                                  ? <CheckCheck className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                                  : <Check className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                            )}
+                            <p className="text-sm text-muted-foreground truncate">{formatWhatsAppText(chat.lastMessage)}</p>
+                          </div>
                         )}
                         {chat.unread > 0 && (
                           <span className="min-w-[20px] h-5 rounded-full bg-emerald-500 text-white text-xs font-medium flex items-center justify-center px-1.5">
