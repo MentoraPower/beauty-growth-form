@@ -258,41 +258,44 @@ export const AudioWaveform = ({ src, sent = false }: AudioWaveformProps) => {
   }
 
   return (
-    <div className="flex items-center gap-3 min-w-[200px]">
+    <div className="flex items-center gap-2 min-w-[220px]">
       <audio ref={audioRef} src={src} preload="metadata" />
 
+      {/* Play/Pause Button */}
       <button
         onClick={togglePlay}
-        className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 transition-colors bg-primary text-primary-foreground hover:bg-primary/90"
+        className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 transition-all duration-200 bg-primary text-primary-foreground hover:bg-primary/90 hover:scale-105 shadow-sm"
         aria-label={isPlaying ? "Pausar áudio" : "Reproduzir áudio"}
         type="button"
       >
-        {isPlaying ? <Pause size={16} /> : <Play size={16} className="ml-0.5" />}
+        {isPlaying ? <Pause size={18} fill="currentColor" /> : <Play size={18} fill="currentColor" className="ml-0.5" />}
       </button>
 
-      <div className="flex-1 flex flex-col gap-0.5">
+      {/* Waveform + Time */}
+      <div className="flex-1 flex flex-col gap-1">
         <canvas
           ref={canvasRef}
           width={200}
-          height={28}
-          className="cursor-pointer"
+          height={32}
+          className="cursor-pointer hover:opacity-80 transition-opacity"
           onClick={handleCanvasClick}
         />
-        <div className="flex items-center justify-between">
-          <span className="text-[10px] text-muted-foreground tabular-nums">
-            {isPlaying || currentTime > 0
-              ? `${formatTime(currentTime)} / ${formatTime(duration)}`
-              : formatTime(duration)}
-          </span>
-          <button
-            onClick={cyclePlaybackRate}
-            className="text-[10px] font-medium text-muted-foreground hover:text-foreground transition-colors px-1 py-0.5 rounded bg-muted/50 hover:bg-muted"
-            type="button"
-          >
-            {playbackRate}x
-          </button>
-        </div>
+        <span className="text-[10px] text-muted-foreground tabular-nums">
+          {isPlaying || currentTime > 0
+            ? formatTime(currentTime)
+            : formatTime(duration)}
+        </span>
       </div>
+
+      {/* Playback Speed Button - Larger and Round */}
+      <button
+        onClick={cyclePlaybackRate}
+        className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 text-xs font-semibold transition-all duration-200 bg-muted/80 text-muted-foreground hover:bg-muted hover:text-foreground hover:scale-105"
+        type="button"
+        title="Velocidade de reprodução"
+      >
+        {playbackRate}x
+      </button>
     </div>
   );
 };
