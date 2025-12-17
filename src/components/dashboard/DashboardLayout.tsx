@@ -215,9 +215,12 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
 
             {/* Footer */}
             <div className="border-t border-white/10 px-3 py-3">
-              <Link
-                to="/"
-                className="relative flex items-center h-10 rounded-lg transition-all duration-200 bg-white/10 text-white/70 hover:bg-white/20 hover:text-white"
+              <button
+                onClick={async () => {
+                  await supabase.auth.signOut();
+                  navigate("/auth");
+                }}
+                className="relative flex items-center h-10 w-full rounded-lg transition-all duration-200 bg-white/10 text-white/70 hover:bg-white/20 hover:text-white"
               >
                 <div className="w-10 flex items-center justify-center flex-shrink-0">
                   <LogOut className="h-5 w-5" strokeWidth={1.5} />
@@ -230,7 +233,7 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
                 >
                   Sair
                 </span>
-              </Link>
+              </button>
             </div>
           </div>
         </aside>
