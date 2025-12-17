@@ -59,27 +59,23 @@ interface EmailFlowStep {
   };
 }
 
-// Start Node Component
+// Start Node Component - Pill shape, black/white
 const StartNode = ({ data }: NodeProps) => {
   return (
-    <div
-      className="px-5 py-3 rounded-full border border-border bg-background shadow-sm transition-all flex items-center gap-3"
-    >
-      <div className="w-8 h-8 rounded-full bg-emerald-500 flex items-center justify-center">
-        <Play className="w-4 h-4 text-white fill-white" />
-      </div>
-      <span className="text-sm font-medium text-foreground pr-2">{data.label as string}</span>
+    <div className="px-5 py-2.5 rounded-full border border-foreground bg-foreground shadow-sm transition-all flex items-center gap-2">
+      <Play className="w-4 h-4 text-background fill-background" />
+      <span className="text-sm font-medium text-background">{data.label as string}</span>
       <Handle
         type="source"
         position={Position.Right}
-        className="!w-2.5 !h-2.5 !bg-foreground !border-2 !border-background"
+        className="!w-2.5 !h-2.5 !bg-background !border-2 !border-foreground"
       />
     </div>
   );
 };
 
-// Wait Node Component
-const WaitNode = ({ data }: NodeProps) => {
+// Wait Node Component - Square shape
+const WaitNode = ({ data, id }: NodeProps) => {
   const waitTime = (data.waitTime as number) || 1;
   const waitUnit = (data.waitUnit as string) || "hours";
   const unitLabels: Record<string, string> = {
@@ -90,20 +86,21 @@ const WaitNode = ({ data }: NodeProps) => {
   };
 
   return (
-    <div
-      className="px-5 py-3 rounded-full border border-border bg-background shadow-sm transition-all flex items-center gap-3"
-    >
+    <div className="w-44 border border-border bg-background shadow-sm transition-all rounded-lg overflow-hidden">
       <Handle
         type="target"
         position={Position.Left}
         className="!w-2.5 !h-2.5 !bg-foreground !border-2 !border-background"
       />
-      <div className="w-8 h-8 rounded-full bg-amber-500 flex items-center justify-center">
-        <Clock className="w-4 h-4 text-white" />
+      <div className="px-4 py-3 border-b border-border bg-muted/30 flex items-center gap-2">
+        <Clock className="w-4 h-4 text-foreground" />
+        <span className="text-xs font-semibold text-foreground uppercase">Espera</span>
       </div>
-      <span className="text-sm font-medium text-foreground pr-2">
-        Esperar {waitTime}{unitLabels[waitUnit]}
-      </span>
+      <div className="px-4 py-3">
+        <span className="text-lg font-semibold text-foreground">
+          {waitTime} {unitLabels[waitUnit]}
+        </span>
+      </div>
       <Handle
         type="source"
         position={Position.Right}
@@ -113,37 +110,55 @@ const WaitNode = ({ data }: NodeProps) => {
   );
 };
 
-// Gmail-style SVG Icon
-const GmailIcon = ({ className }: { className?: string }) => (
-  <svg viewBox="0 0 24 24" className={className} fill="none">
-    <path d="M2 6C2 4.89543 2.89543 4 4 4H20C21.1046 4 22 4.89543 22 6V18C22 19.1046 21.1046 20 20 20H4C2.89543 20 2 19.1046 2 18V6Z" fill="#F1F3F4"/>
-    <path d="M2 6L12 13L22 6" stroke="#EA4335" strokeWidth="2" strokeLinecap="round"/>
-    <path d="M2 6V18C2 19.1046 2.89543 20 4 20H6V9L12 13" stroke="#4285F4" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-    <path d="M22 6V18C22 19.1046 21.1046 20 20 20H18V9L12 13" stroke="#34A853" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-    <path d="M6 20V9L2 6" stroke="#4285F4" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-    <path d="M18 20V9L22 6" stroke="#34A853" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-    <path d="M2 6L12 13" stroke="#EA4335" strokeWidth="2" strokeLinecap="round"/>
-    <path d="M22 6L12 13" stroke="#FBBC05" strokeWidth="2" strokeLinecap="round"/>
+// Mail Icon - Simple black/white
+const MailIcon = ({ className }: { className?: string }) => (
+  <svg viewBox="0 0 24 24" className={className} fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <rect width="20" height="16" x="2" y="4" rx="2"/>
+    <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/>
   </svg>
 );
 
-// Email Node Component
+// Email Node Component - Square shape with inline editor
 const EmailNode = ({ data }: NodeProps) => {
-  const subject = (data.subject as string) || "E-mail";
+  const subject = (data.subject as string) || "";
+  const bodyHtml = (data.bodyHtml as string) || "";
 
   return (
-    <div
-      className="px-5 py-3 rounded-full border border-border bg-background shadow-sm transition-all flex items-center gap-3 max-w-[280px] hover:shadow-md hover:border-red-200 cursor-pointer"
-    >
+    <div className="w-[520px] border border-border bg-background shadow-sm transition-all rounded-lg overflow-hidden">
       <Handle
         type="target"
         position={Position.Left}
         className="!w-2.5 !h-2.5 !bg-foreground !border-2 !border-background"
       />
-      <div className="w-8 h-8 rounded-full bg-white border border-gray-200 flex items-center justify-center overflow-hidden">
-        <GmailIcon className="w-5 h-5" />
+      <div className="px-4 py-3 border-b border-border bg-muted/30 flex items-center gap-2">
+        <MailIcon className="w-4 h-4 text-foreground" />
+        <span className="text-xs font-semibold text-foreground uppercase">E-mail</span>
       </div>
-      <span className="text-sm font-medium text-foreground truncate pr-2">{subject || "Clique para editar"}</span>
+      <div className="flex">
+        {/* Editor side */}
+        <div className="flex-1 p-3 border-r border-border">
+          <div className="mb-2">
+            <label className="text-[10px] font-semibold text-muted-foreground uppercase">Assunto</label>
+            <div className="text-sm text-foreground mt-0.5 truncate">
+              {subject || <span className="text-muted-foreground italic">Clique para editar</span>}
+            </div>
+          </div>
+          <div>
+            <label className="text-[10px] font-semibold text-muted-foreground uppercase">HTML</label>
+            <div className="text-xs text-muted-foreground mt-0.5 font-mono line-clamp-3 whitespace-pre-wrap">
+              {bodyHtml || <span className="italic">Sem conteúdo</span>}
+            </div>
+          </div>
+        </div>
+        {/* Preview side */}
+        <div className="w-[200px] p-3 bg-muted/20">
+          <label className="text-[10px] font-semibold text-muted-foreground uppercase mb-1 block">Preview</label>
+          <div 
+            className="text-xs bg-background rounded border border-border p-2 min-h-[60px] max-h-[80px] overflow-hidden"
+            dangerouslySetInnerHTML={{ __html: bodyHtml || '<span style="color:#999">Prévia do e-mail</span>' }}
+          />
+        </div>
+      </div>
       <Handle
         type="source"
         position={Position.Right}
@@ -153,21 +168,17 @@ const EmailNode = ({ data }: NodeProps) => {
   );
 };
 
-// End Node Component
+// End Node Component - Pill shape, black/white
 const EndNode = ({ data }: NodeProps) => {
   return (
-    <div
-      className="px-5 py-3 rounded-full border border-border bg-background shadow-sm transition-all flex items-center gap-3"
-    >
+    <div className="px-5 py-2.5 rounded-full border border-border bg-background shadow-sm transition-all flex items-center gap-2">
       <Handle
         type="target"
         position={Position.Left}
         className="!w-2.5 !h-2.5 !bg-foreground !border-2 !border-background"
       />
-      <div className="w-8 h-8 rounded-full bg-foreground flex items-center justify-center">
-        <CheckCircle2 className="w-4 h-4 text-background" />
-      </div>
-      <span className="text-sm font-medium text-foreground pr-2">{data.label as string}</span>
+      <CheckCircle2 className="w-4 h-4 text-foreground" />
+      <span className="text-sm font-medium text-foreground">{data.label as string}</span>
     </div>
   );
 };
@@ -246,9 +257,7 @@ const CustomEdge = ({
                 Tempo de Espera
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => data?.onAddNode?.(id, "email")}>
-                <div className="w-4 h-4 mr-2">
-                  <GmailIcon className="w-4 h-4" />
-                </div>
+                <MailIcon className="w-4 h-4 mr-2" />
                 Enviar E-mail
               </DropdownMenuItem>
               <DropdownMenuSeparator />
@@ -550,20 +559,16 @@ export function EmailFlowBuilder({
                 onClick={() => addNode("wait")}
                 className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg border border-border bg-muted/30 hover:bg-muted/60 transition-colors text-left"
               >
-                <div className="w-7 h-7 rounded-full bg-amber-500 flex items-center justify-center">
-                  <Clock className="w-3.5 h-3.5 text-white" />
-                </div>
+                <Clock className="w-4 h-4 text-foreground" />
                 <span className="text-sm font-medium text-foreground">Tempo de Espera</span>
               </button>
 
-              {/* Email Node with Gmail Icon */}
+              {/* Email Node */}
               <button
                 onClick={() => addNode("email")}
                 className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg border border-border bg-muted/30 hover:bg-muted/60 transition-colors text-left"
               >
-                <div className="w-7 h-7 rounded-lg bg-white border border-gray-200 flex items-center justify-center">
-                  <GmailIcon className="w-4 h-4" />
-                </div>
+                <MailIcon className="w-4 h-4 text-foreground" />
                 <span className="text-sm font-medium text-foreground">Enviar E-mail</span>
               </button>
 
@@ -572,9 +577,7 @@ export function EmailFlowBuilder({
                 onClick={() => addNode("end")}
                 className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg border border-border bg-muted/30 hover:bg-muted/60 transition-colors text-left"
               >
-                <div className="w-7 h-7 rounded-full bg-foreground flex items-center justify-center">
-                  <CheckCircle2 className="w-3.5 h-3.5 text-background" />
-                </div>
+                <CheckCircle2 className="w-4 h-4 text-foreground" />
                 <span className="text-sm font-medium text-foreground">Finalizar</span>
               </button>
             </div>
@@ -683,9 +686,7 @@ export function EmailFlowBuilder({
             <div className="space-y-5">
               {/* Gmail-style Header */}
               <div className="flex items-center gap-3 pb-3 border-b border-border">
-                <div className="w-10 h-10 rounded-lg bg-white border border-gray-200 flex items-center justify-center">
-                  <GmailIcon className="w-6 h-6" />
-                </div>
+                <MailIcon className="w-6 h-6 text-foreground" />
                 <div>
                   <h4 className="text-sm font-semibold text-foreground">Configurar E-mail</h4>
                   <p className="text-xs text-muted-foreground">Edite o assunto e conteúdo do e-mail</p>
