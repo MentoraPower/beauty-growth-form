@@ -14,6 +14,7 @@ import Auth from "./pages/Auth";
 import WhatsApp from "./pages/WhatsApp";
 import OriginOverview from "./pages/OriginOverview";
 import AdminShell from "./pages/AdminShell";
+import Settings from "./pages/Settings";
 
 const queryClient = new QueryClient();
 
@@ -35,6 +36,7 @@ const App = () => (
             <Route path="crm/overview" element={<OriginOverview />} />
             <Route path="crm/:id" element={<LeadDetail />} />
             <Route path="whatsapp" element={<WhatsApp />} />
+            <Route path="settings" element={<Settings />} />
           </Route>
 
           <Route path="*" element={<NotFound />} />

@@ -617,6 +617,30 @@ export type Database = {
           },
         ]
       }
+      profiles: {
+        Row: {
+          created_at: string
+          email: string | null
+          id: string
+          name: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          email?: string | null
+          id: string
+          name?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          email?: string | null
+          id?: string
+          name?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       sales: {
         Row: {
           amount: number
@@ -690,6 +714,57 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      user_permissions: {
+        Row: {
+          allowed_origin_ids: string[] | null
+          allowed_sub_origin_ids: string[] | null
+          can_access_whatsapp: boolean
+          created_at: string
+          id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          allowed_origin_ids?: string[] | null
+          allowed_sub_origin_ids?: string[] | null
+          can_access_whatsapp?: boolean
+          created_at?: string
+          id?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          allowed_origin_ids?: string[] | null
+          allowed_sub_origin_ids?: string[] | null
+          can_access_whatsapp?: boolean
+          created_at?: string
+          id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
       }
       whatsapp_chats: {
         Row: {
@@ -794,13 +869,21 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
       increment_unread_count: {
         Args: { chat_uuid: string }
         Returns: undefined
       }
+      is_admin: { Args: { _user_id: string }; Returns: boolean }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "admin" | "suporte" | "gestor_trafego" | "closer" | "sdr"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -927,6 +1010,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["admin", "suporte", "gestor_trafego", "closer", "sdr"],
+    },
   },
 } as const
