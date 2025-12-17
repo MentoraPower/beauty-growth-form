@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { createPortal } from "react-dom";
+import { Zap, Plus, Trash2, ArrowRight, Webhook, FolderSync, Copy, Check, Send, Download, X, Play, Settings, Mail, Loader2, ListOrdered, Workflow } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
