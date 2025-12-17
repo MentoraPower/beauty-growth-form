@@ -107,6 +107,11 @@ const WhatsApp = () => {
   const audioChunksRef = useRef<Blob[]>([]);
   const recordingIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
+  const emojiButtonRef = useRef<HTMLButtonElement>(null);
+  const emojiPickerRef = useRef<HTMLDivElement>(null);
+  const attachButtonRef = useRef<HTMLButtonElement>(null);
+  const attachMenuRef = useRef<HTMLDivElement>(null);
+
   // Scroll to bottom of the messages container (reliable even on long threads)
   const scrollToBottom = useCallback((behavior: ScrollBehavior = "auto") => {
     const el = messagesContainerRef.current;
@@ -133,6 +138,39 @@ const WhatsApp = () => {
 
     return () => observer.disconnect();
   }, [selectedChat?.id]);
+
+  // Close menus on outside click (avoid fullscreen overlays that can block image clicks)
+  useEffect(() => {
+    const onPointerDown = (e: PointerEvent) => {
+      const targetNode = e.target as Node | null;
+      if (!targetNode) return;
+
+      const targetEl = targetNode instanceof Element ? targetNode : null;
+
+      if (showEmojiPicker) {
+        const insideEmoji =
+          (emojiPickerRef.current && emojiPickerRef.current.contains(targetNode)) ||
+          (emojiButtonRef.current && emojiButtonRef.current.contains(targetNode));
+        if (!insideEmoji) setShowEmojiPicker(false);
+      }
+
+      if (showAttachMenu) {
+        const insideAttach =
+          (attachMenuRef.current && attachMenuRef.current.contains(targetNode)) ||
+          (attachButtonRef.current && attachButtonRef.current.contains(targetNode));
+        if (!insideAttach) setShowAttachMenu(false);
+      }
+
+      if (messageMenuId) {
+        const insideMessageMenu = !!targetEl?.closest("[data-message-menu], [data-message-menu-trigger]");
+        if (!insideMessageMenu) setMessageMenuId(null);
+      }
+    };
+
+    document.addEventListener("pointerdown", onPointerDown, true);
+    return () => document.removeEventListener("pointerdown", onPointerDown, true);
+  }, [showAttachMenu, showEmojiPicker, messageMenuId]);
+
   const imageInputRef = useRef<HTMLInputElement>(null);
   const chatsRef = useRef<Chat[]>([]);
 
@@ -1770,13 +1808,14 @@ const WhatsApp = () => {
                             {msg.sent && msg.status !== "DELETED" && msg.created_at && (Date.now() - new Date(msg.created_at).getTime() < 60 * 60 * 1000) && (
                               <div className="relative flex items-start mr-1">
                                 <button
+                                  data-message-menu-trigger
                                   onClick={() => setMessageMenuId(messageMenuId === msg.id ? null : msg.id)}
                                   className="p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity hover:bg-muted/50"
                                 >
                                   <MoreVertical className="w-4 h-4 text-muted-foreground" />
                                 </button>
                                 {messageMenuId === msg.id && (
-                                  <div className="absolute right-full top-0 mr-1 bg-card rounded-lg shadow-lg border border-border overflow-hidden z-50 min-w-[120px]">
+                                  <div data-message-menu className="absolute right-full top-0 mr-1 bg-card rounded-lg shadow-lg border border-border overflow-hidden z-50 min-w-[120px]">
                                     <button
                                       onClick={() => {
                                         setReplyToMessage(msg);
@@ -1952,6 +1991,7 @@ const WhatsApp = () => {
                   <>
                     <div className="relative">
                       <button 
+                        ref={emojiButtonRef}
                         onClick={() => setShowEmojiPicker(!showEmojiPicker)}
                         className="p-2 hover:bg-muted/50 rounded-full transition-colors"
                       >
@@ -1959,7 +1999,7 @@ const WhatsApp = () => {
                       </button>
                       
                       {showEmojiPicker && (
-                        <div className="absolute bottom-full left-0 mb-2 bg-card rounded-lg shadow-lg border border-border p-3 z-50 w-72">
+                        <div ref={emojiPickerRef} className="absolute bottom-full left-0 mb-2 bg-card rounded-lg shadow-lg border border-border p-3 z-50 w-72">
                           <div className="grid grid-cols-8 gap-1">
                             {["😀", "😂", "😍", "🥰", "😊", "😎", "🤔", "😅",
                               "❤️", "🔥", "👍", "👏", "🙏", "💪", "✨", "🎉",
@@ -1985,6 +2025,7 @@ const WhatsApp = () => {
                     
                     <div className="relative">
                       <button 
+                        ref={attachButtonRef}
                         onClick={() => setShowAttachMenu(!showAttachMenu)}
                         className="p-2 hover:bg-muted/50 rounded-full transition-colors"
                       >
@@ -1992,7 +2033,7 @@ const WhatsApp = () => {
                       </button>
                       
                       {showAttachMenu && (
-                        <div className="absolute bottom-full left-0 mb-2 bg-card rounded-lg shadow-lg border border-border overflow-hidden z-50">
+                        <div ref={attachMenuRef} className="absolute bottom-full left-0 mb-2 bg-card rounded-lg shadow-lg border border-border overflow-hidden z-50">
                           <button
                             onClick={() => imageInputRef.current?.click()}
                             className="flex items-center gap-3 px-4 py-3 hover:bg-muted/50 w-full text-left"
@@ -2126,25 +2167,8 @@ const WhatsApp = () => {
         </div>
       </div>
 
-      {/* Hidden click outside handler for attach menu - use pointer-events to not block images */}
-      {showAttachMenu && (
-        <div 
-          className="fixed inset-0 z-40" 
-          onPointerDown={() => setShowAttachMenu(false)} 
-          style={{ pointerEvents: 'auto' }}
-        />
-      )}
+      {/* Click-outside dos menus é feito via listener no document (sem overlay fullscreen) */}
 
-      {/* Hidden click outside handler for message menu */}
-      {messageMenuId && (
-        <div 
-          className="fixed inset-0 z-40" 
-          onPointerDown={() => setMessageMenuId(null)} 
-          style={{ pointerEvents: 'auto' }}
-        />
-      )}
-
-      {/* Call Modal */}
       {selectedChat && (
         <CallModal
           isOpen={isCallModalOpen}
