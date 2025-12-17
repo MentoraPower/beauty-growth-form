@@ -479,7 +479,7 @@ export function EmailFlowBuilder({
   ];
 
   return (
-    <div className="flex flex-col h-[calc(100vh-3rem)] w-full max-w-[1400px] mx-auto bg-muted/30 rounded-2xl overflow-hidden border border-border">
+    <div className="flex flex-col h-full w-full bg-muted/30 overflow-hidden">
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-border bg-background">
         <div className="flex items-center gap-3">
