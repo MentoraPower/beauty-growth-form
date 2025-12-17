@@ -1849,10 +1849,10 @@ const WhatsApp = () => {
                               ) : msg.mediaType === "audio" ? (
                                 renderMessageContent(msg)
                               ) : (
-                                <div className="inline">
-                                  {renderMessageContent(msg)}
-                                  <span className="inline-flex items-center gap-1 ml-2 align-bottom float-right mt-1">
-                                    <span className="text-[10px] text-muted-foreground">{msg.time}</span>
+                                <p className="text-sm text-foreground whitespace-pre-wrap">
+                                  {formatWhatsAppText(msg.text)}
+                                  <span className="inline-flex items-center gap-1 ml-2 text-[10px] text-muted-foreground align-middle">
+                                    {msg.time}
                                     {msg.sent && msg.status !== "DELETED" && (
                                       msg.status === "READ" || msg.status === "PLAYED" 
                                         ? <CheckCheck className="w-3.5 h-3.5 text-blue-500" /> 
@@ -1863,7 +1863,7 @@ const WhatsApp = () => {
                                             : <Check className="w-3.5 h-3.5 text-muted-foreground" />
                                     )}
                                   </span>
-                                </div>
+                                </p>
                               )}
                             </div>
                             {/* Reply button for sent messages (right side) */}
