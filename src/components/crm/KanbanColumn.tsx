@@ -39,8 +39,8 @@ export const KanbanColumn = memo(function KanbanColumn({
   // Check if this is a cross-pipeline drag (card coming from different pipeline)
   const isCrossPipelineDrag = activeId && activePipelineId && activePipelineId !== pipeline.id;
   
-  // Show top placeholder when dragging from another pipeline to this one
-  const showTopPlaceholder = isTargeted && isCrossPipelineDrag;
+  // Only show placeholder in EMPTY columns to avoid layout "bounce" when dropping
+  const showTopPlaceholder = isTargeted && isCrossPipelineDrag && leads.length === 0;
 
   // IDs for SortableContext - must include all items
   const leadIds = useMemo(() => leads.map(l => l.id), [leads]);
@@ -76,17 +76,12 @@ export const KanbanColumn = memo(function KanbanColumn({
             strategy={verticalListSortingStrategy}
           >
             <div className="space-y-2 pb-12">
-              {/* Top placeholder for cross-pipeline drag */}
-              <div 
-                className="transition-all duration-200 ease-out overflow-hidden"
-                style={{
-                  height: showTopPlaceholder ? 108 : 0,
-                  marginBottom: showTopPlaceholder ? 8 : 0,
-                  opacity: showTopPlaceholder ? 1 : 0,
-                }}
-              >
-                <div className="h-[100px] rounded-lg border-2 border-dashed border-black/20 bg-black/[0.03]" />
-              </div>
+              {/* Top placeholder for cross-pipeline drag (only when column is empty) */}
+              {showTopPlaceholder && (
+                <div className="mb-2">
+                  <div className="h-[100px] rounded-lg border-2 border-dashed border-black/20 bg-black/[0.03]" />
+                </div>
+              )}
 
               {leads.map((lead) => (
                 <KanbanCard 
