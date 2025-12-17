@@ -578,13 +578,10 @@ async function handler(req: Request): Promise<Response> {
       console.log(`[Wasender Webhook] Message saved: ${messageId}`);
     }
 
-    // Increment unread count (if not from self)
+    // Increment unread count atomically (if not from self)
     if (!fromMe) {
-      const currentUnread = chatData.unread_count || 0;
-      await supabase
-        .from("whatsapp_chats")
-        .update({ unread_count: currentUnread + 1 })
-        .eq("id", chatData.id);
+      await supabase.rpc("increment_unread_count", { chat_uuid: chatData.id });
+      console.log(`[Wasender Webhook] Incremented unread count for chat ${chatData.id}`);
     }
 
     return new Response(JSON.stringify({ ok: true, messageId }), {
