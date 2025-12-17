@@ -5,15 +5,13 @@ export const LoadingBar = () => {
   const [progress, setProgress] = useState(0);
   const [isVisible, setIsVisible] = useState(false);
   const location = useLocation();
-  const previousPath = useRef(`${location.pathname}${location.search}`);
+  const previousPath = useRef(location.pathname);
   const animationRef = useRef<number | null>(null);
 
   useEffect(() => {
-    // Trigger on route changes (including query params)
-    const currentRoute = `${location.pathname}${location.search}`;
-
-    if (previousPath.current !== currentRoute) {
-      previousPath.current = currentRoute;
+    // Trigger only on pathname changes (not query params)
+    if (previousPath.current !== location.pathname) {
+      previousPath.current = location.pathname;
 
       // Reset and start
       setProgress(0);
@@ -50,7 +48,7 @@ export const LoadingBar = () => {
         }
       };
     }
-  }, [location.pathname, location.search]);
+  }, [location.pathname]);
 
   if (!isVisible) return null;
 
