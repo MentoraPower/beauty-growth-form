@@ -323,7 +323,7 @@ const WaitNode = ({ data, id, selected }: NodeProps) => {
         {
           ...currentNode,
           id: `wait-${Date.now()}`,
-          position: { x: currentNode.position.x, y: currentNode.position.y + 120 },
+          position: { x: currentNode.position.x + 280, y: currentNode.position.y },
           selected: false,
           zIndex: maxZIndex + 1,
         },
@@ -492,7 +492,7 @@ const EmailNode = ({ id, data, selected }: NodeProps) => {
         {
           ...currentNode,
           id: `email-${Date.now()}`,
-          position: { x: currentNode.position.x, y: currentNode.position.y + 120 },
+          position: { x: currentNode.position.x + 320, y: currentNode.position.y },
           selected: false,
           zIndex: maxZIndex + 1,
         },
