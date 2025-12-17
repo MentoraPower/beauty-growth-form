@@ -237,14 +237,6 @@ const TriggerNode = ({ data, id, selected }: NodeProps & { data: {
           </div>
         </div>
         
-        {/* Default handle when no triggers */}
-        {triggers.length === 0 && (
-          <Handle
-            type="source"
-            position={Position.Right}
-            className="!w-3 !h-3 !bg-muted-foreground !border-2 !border-background"
-          />
-        )}
       </div>
     </div>
   );
