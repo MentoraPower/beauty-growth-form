@@ -143,18 +143,10 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
         >
           <div className="flex flex-col h-full">
             {/* Logo */}
-            <div className="pt-6 pb-4 flex items-center pl-4">
+            <div className="pt-6 pb-4 flex items-center justify-center">
               <div className="w-8 flex-shrink-0 flex items-center justify-center">
                 <img src={scaleLogo} alt="Scale Beauty" className="w-full h-auto" />
               </div>
-              <span 
-                className={cn(
-                  "ml-3 text-white font-semibold text-sm whitespace-nowrap transition-opacity duration-200",
-                  sidebarExpanded ? "opacity-100" : "opacity-0"
-                )}
-              >
-                SCALE
-              </span>
             </div>
 
             <nav className="flex-1 overflow-y-auto overflow-x-hidden px-3 py-2">
@@ -164,17 +156,18 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
                   onClick={() => handleNavClick('crm')}
                   className={cn(
                     "relative flex items-center h-10 rounded-lg transition-all duration-200",
-                    sidebarExpanded ? "px-3 w-full" : "justify-center w-10 mx-auto",
                     activePanel === 'crm'
                       ? "bg-white text-[#0f0f12] before:absolute before:-left-3 before:top-1/2 before:-translate-y-1/2 before:h-[70%] before:w-1 before:rounded-r-full before:bg-gradient-to-b before:from-[#F40000] before:to-[#A10000]"
                       : "bg-white/10 text-white/70 hover:bg-white/20 hover:text-white"
                   )}
                 >
-                  <Kanban className={cn("h-5 w-5 flex-shrink-0", !sidebarExpanded && "mx-auto")} strokeWidth={1.5} />
+                  <div className="w-10 flex items-center justify-center flex-shrink-0">
+                    <Kanban className="h-5 w-5" strokeWidth={1.5} />
+                  </div>
                   <span 
                     className={cn(
-                      "ml-3 text-sm font-medium whitespace-nowrap transition-opacity duration-200",
-                      sidebarExpanded ? "opacity-100" : "opacity-0 w-0 ml-0"
+                      "text-sm font-medium whitespace-nowrap transition-all duration-200 overflow-hidden",
+                      sidebarExpanded ? "opacity-100 w-auto" : "opacity-0 w-0"
                     )}
                   >
                     CRM
@@ -190,17 +183,18 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
                       onClick={() => handleNavClick(item.id)}
                       className={cn(
                         "relative flex items-center h-10 rounded-lg transition-all duration-200",
-                        sidebarExpanded ? "px-3 w-full" : "justify-center w-10 mx-auto",
                         isSelected
                           ? "bg-white text-[#0f0f12] before:absolute before:-left-3 before:top-1/2 before:-translate-y-1/2 before:h-[70%] before:w-1 before:rounded-r-full before:bg-gradient-to-b before:from-[#F40000] before:to-[#A10000]"
                           : "bg-white/10 text-white/70 hover:bg-white/20 hover:text-white"
                       )}
                     >
-                      <item.icon className={cn("h-5 w-5 flex-shrink-0", !sidebarExpanded && "mx-auto")} />
+                      <div className="w-10 flex items-center justify-center flex-shrink-0">
+                        <item.icon className="h-5 w-5" />
+                      </div>
                       <span 
                         className={cn(
-                          "ml-3 text-sm font-medium whitespace-nowrap transition-opacity duration-200",
-                          sidebarExpanded ? "opacity-100" : "opacity-0 w-0 ml-0"
+                          "text-sm font-medium whitespace-nowrap transition-all duration-200 overflow-hidden",
+                          sidebarExpanded ? "opacity-100 w-auto" : "opacity-0 w-0"
                         )}
                       >
                         {item.label}
@@ -215,16 +209,15 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
             <div className="border-t border-white/10 px-3 py-3">
               <Link
                 to="/"
-                className={cn(
-                  "relative flex items-center h-10 rounded-lg transition-all duration-200 bg-white/10 text-white/70 hover:bg-white/20 hover:text-white",
-                  sidebarExpanded ? "px-3 w-full" : "justify-center w-10"
-                )}
+                className="relative flex items-center h-10 rounded-lg transition-all duration-200 bg-white/10 text-white/70 hover:bg-white/20 hover:text-white"
               >
-                <LogOut className="h-5 w-5 flex-shrink-0" strokeWidth={1.5} />
+                <div className="w-10 flex items-center justify-center flex-shrink-0">
+                  <LogOut className="h-5 w-5" strokeWidth={1.5} />
+                </div>
                 <span 
                   className={cn(
-                    "ml-3 text-sm font-medium whitespace-nowrap transition-opacity duration-200",
-                    sidebarExpanded ? "opacity-100" : "opacity-0 w-0"
+                    "text-sm font-medium whitespace-nowrap transition-all duration-200 overflow-hidden",
+                    sidebarExpanded ? "opacity-100 w-auto" : "opacity-0 w-0"
                   )}
                 >
                   Sair
