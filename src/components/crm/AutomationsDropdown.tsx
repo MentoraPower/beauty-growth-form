@@ -759,6 +759,7 @@ export function AutomationsDropdown({
     const subject = emailData?.subject || emailSubject;
     const bodyHtml = emailData?.body_html || emailBodyHtml;
     const editId = emailData?.id || editingEmailId;
+    const triggerPipelineId = emailData?.trigger_pipeline_id || emailTriggerPipeline;
     
     // Use saved flow_steps if available, otherwise create default structure when editing
     const getInitialSteps = () => {
@@ -767,12 +768,75 @@ export function AutomationsDropdown({
       }
       if (editId) {
         return [
-          { id: "trigger-1", type: "trigger", position: { x: 100, y: 200 }, data: { label: "Adicionar gatilhos" } },
+          { id: "trigger-1", type: "trigger", position: { x: 100, y: 200 }, data: { label: "Adicionar gatilhos", triggerType: "lead_entered_pipeline", triggerPipelineId } },
           { id: "email-1", type: "email", position: { x: 380, y: 200 }, data: { label: "Enviar e-mail", subject, bodyHtml } },
           { id: "end-1", type: "end", position: { x: 660, y: 200 }, data: { label: "Fluxo finalizado" } },
         ];
       }
       return undefined;
+    };
+    
+    // Create save handler with captured context
+    const handleSave = async (steps: any[]) => {
+      // Extract email steps to build HTML
+      const emailSteps = steps.filter(s => s.type === "email");
+      if (emailSteps.length === 0) {
+        toast.error("Adicione pelo menos um passo de e-mail");
+        return;
+      }
+
+      // Extract trigger configuration from TriggerNode
+      const triggerStep = steps.find(s => s.type === "trigger");
+      const extractedTriggerPipelineId = triggerStep?.data?.triggerPipelineId || triggerPipelineId;
+
+      // For now, use the first email step's data
+      const firstEmail = emailSteps[0];
+      const finalSubject = firstEmail.data.subject || subject;
+      const finalBodyHtml = firstEmail.data.bodyHtml || bodyHtml;
+
+      if (!finalSubject.trim()) {
+        toast.error("Digite o assunto do e-mail");
+        return;
+      }
+      if (!finalBodyHtml.trim()) {
+        toast.error("Digite o conteúdo HTML do e-mail");
+        return;
+      }
+
+      try {
+        if (editId) {
+          const { error } = await (supabase as any)
+            .from("email_automations")
+            .update({
+              name,
+              trigger_pipeline_id: extractedTriggerPipelineId,
+              subject: finalSubject,
+              body_html: finalBodyHtml,
+              flow_steps: steps,
+            })
+            .eq("id", editId);
+          if (error) throw error;
+        } else {
+          const { error } = await (supabase as any).from("email_automations").insert({
+            name,
+            trigger_pipeline_id: extractedTriggerPipelineId,
+            sub_origin_id: subOriginId,
+            subject: finalSubject,
+            body_html: finalBodyHtml,
+            is_active: true,
+            flow_steps: steps,
+          });
+          if (error) throw error;
+        }
+
+        refetchEmailAutomations();
+        resetEmailForm();
+        setShowEmailFlowBuilder(false);
+        toast.success(editId ? "Automação atualizada!" : "Automação de e-mail criada!");
+      } catch (error) {
+        console.error("Erro ao salvar automação de e-mail:", error);
+        toast.error("Erro ao salvar automação de e-mail");
+      }
     };
     
     if (onShowEmailBuilder) {
@@ -781,14 +845,14 @@ export function AutomationsDropdown({
       onShowEmailBuilder(true, {
         automationName: name,
         triggerPipelineName: "",
-        onSave: handleSaveEmailFlow,
+        onSave: handleSave,
         onCancel: () => {
           onShowEmailBuilder(false);
         },
         initialSteps: getInitialSteps(),
         editingContext: {
           emailName: name,
-          emailTriggerPipeline: emailData?.trigger_pipeline_id || "",
+          emailTriggerPipeline: triggerPipelineId || "",
           editingEmailId: editId || null,
           isCreating: true,
           emailSubject: subject,
@@ -803,14 +867,16 @@ export function AutomationsDropdown({
   };
 
   const handleSaveEmailFlow = async (steps: any[]) => {
-    // Extract email steps to build HTML
+    // This is kept for the fallback local flow builder
     const emailSteps = steps.filter(s => s.type === "email");
     if (emailSteps.length === 0) {
       toast.error("Adicione pelo menos um passo de e-mail");
       return;
     }
 
-    // For now, use the first email step's data
+    const triggerStep = steps.find(s => s.type === "trigger");
+    const triggerPipelineId = triggerStep?.data?.triggerPipelineId || emailTriggerPipeline;
+
     const firstEmail = emailSteps[0];
     const subject = firstEmail.data.subject || emailSubject;
     const bodyHtml = firstEmail.data.bodyHtml || emailBodyHtml;
@@ -830,22 +896,22 @@ export function AutomationsDropdown({
           .from("email_automations")
           .update({
             name: emailName,
-            trigger_pipeline_id: emailTriggerPipeline,
+            trigger_pipeline_id: triggerPipelineId,
             subject,
             body_html: bodyHtml,
-            flow_steps: steps, // Save node positions
+            flow_steps: steps,
           })
           .eq("id", editingEmailId);
         if (error) throw error;
       } else {
         const { error } = await (supabase as any).from("email_automations").insert({
           name: emailName,
-          trigger_pipeline_id: emailTriggerPipeline,
+          trigger_pipeline_id: triggerPipelineId,
           sub_origin_id: subOriginId,
           subject,
           body_html: bodyHtml,
           is_active: true,
-          flow_steps: steps, // Save node positions
+          flow_steps: steps,
         });
         if (error) throw error;
       }
