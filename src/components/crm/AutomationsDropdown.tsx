@@ -159,6 +159,28 @@ export function AutomationsDropdown({
       setActiveTab("automations");
     }
   }, [open, emailEditingContext]);
+
+  // Real-time subscription for email automations
+  useEffect(() => {
+    const channel = supabase
+      .channel('email-automations-realtime')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'email_automations'
+        },
+        () => {
+          queryClient.invalidateQueries({ queryKey: ["email-automations"] });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [queryClient]);
   
   const [copied, setCopied] = useState(false);
   const [triggerDropdownOpen, setTriggerDropdownOpen] = useState(false);
