@@ -112,24 +112,35 @@ const WaitNode = ({ data, id }: NodeProps) => {
   );
 };
 
-// Email Node Component - Square shape with inline editor
+// Email Node Component - Large preview with dropdown editor
 const EmailNode = ({ id, data }: NodeProps) => {
   const { setNodes } = useReactFlow();
+  const [isEditing, setIsEditing] = useState(false);
+  const [localSubject, setLocalSubject] = useState((data.subject as string) || "");
+  const [localBodyHtml, setLocalBodyHtml] = useState((data.bodyHtml as string) || "");
+  
   const subject = (data.subject as string) || "";
   const bodyHtml = (data.bodyHtml as string) || "";
 
-  const updateNodeData = useCallback((key: string, value: string) => {
+  const handleSave = useCallback(() => {
     setNodes((nds) =>
       nds.map((node) =>
         node.id === id
-          ? { ...node, data: { ...node.data, [key]: value } }
+          ? { ...node, data: { ...node.data, subject: localSubject, bodyHtml: localBodyHtml } }
           : node
       )
     );
-  }, [id, setNodes]);
+    setIsEditing(false);
+  }, [id, setNodes, localSubject, localBodyHtml]);
+
+  const handleOpen = () => {
+    setLocalSubject(subject);
+    setLocalBodyHtml(bodyHtml);
+    setIsEditing(true);
+  };
 
   return (
-    <div className="w-[560px] border border-border bg-background shadow-sm transition-all rounded-lg overflow-hidden">
+    <div className="w-[420px] border border-border bg-background shadow-sm transition-all rounded-lg overflow-hidden">
       <Handle
         type="target"
         position={Position.Left}
@@ -137,43 +148,68 @@ const EmailNode = ({ id, data }: NodeProps) => {
       />
       {/* Red gradient header with Gmail logo */}
       <div 
-        className="px-4 py-3 flex items-center gap-3"
+        className="px-4 py-2.5 flex items-center justify-between cursor-pointer hover:opacity-90 transition-opacity"
         style={{ background: "linear-gradient(135deg, #F40000 0%, #A10000 100%)" }}
+        onClick={handleOpen}
       >
-        <img src={gmailLogo} alt="Gmail" className="w-8 h-8 rounded" />
-        <span className="text-sm font-semibold text-white uppercase tracking-wide">E-mail</span>
-      </div>
-      <div className="flex">
-        {/* Editor side */}
-        <div className="flex-1 p-3 border-r border-border">
-          <div className="mb-3">
-            <label className="text-[10px] font-semibold text-muted-foreground uppercase mb-1 block">Assunto</label>
-            <Input
-              value={subject}
-              onChange={(e) => updateNodeData("subject", e.target.value)}
-              placeholder="Ex: {{nome}}, seu e-book está pronto!"
-              className="h-8 text-sm nodrag"
-            />
-          </div>
+        <div className="flex items-center gap-3">
+          <img src={gmailLogo} alt="Gmail" className="w-7 h-7 rounded" />
           <div>
-            <label className="text-[10px] font-semibold text-muted-foreground uppercase mb-1 block">HTML</label>
-            <Textarea
-              value={bodyHtml}
-              onChange={(e) => updateNodeData("bodyHtml", e.target.value)}
-              placeholder="<h1>Olá {{nome}}!</h1>"
-              className="min-h-[100px] text-xs font-mono nodrag resize-none"
-            />
+            <span className="text-xs font-semibold text-white uppercase tracking-wide block">E-mail</span>
+            {subject && <span className="text-[11px] text-white/80 truncate block max-w-[280px]">{subject}</span>}
           </div>
         </div>
-        {/* Preview side */}
-        <div className="w-[200px] p-3 bg-muted/20">
-          <label className="text-[10px] font-semibold text-muted-foreground uppercase mb-1 block">Preview</label>
-          <div 
-            className="text-xs bg-background rounded border border-border p-2 min-h-[120px] max-h-[140px] overflow-auto"
-            dangerouslySetInnerHTML={{ __html: bodyHtml || '<span style="color:#999">Prévia do e-mail</span>' }}
-          />
-        </div>
+        <span className="text-white/70 text-xs">Clique para editar</span>
       </div>
+      
+      {/* Email Preview - Large */}
+      <div className="p-4 bg-muted/10 min-h-[180px]">
+        <div 
+          className="bg-background rounded-lg border border-border p-4 min-h-[160px] text-sm overflow-auto nodrag"
+          style={{ maxHeight: "200px" }}
+          dangerouslySetInnerHTML={{ 
+            __html: bodyHtml || '<div style="color:#999; text-align:center; padding-top:60px;">Clique no cabeçalho para editar o e-mail</div>' 
+          }}
+        />
+      </div>
+
+      {/* Editor Dropdown */}
+      {isEditing && (
+        <div className="absolute top-full left-0 mt-2 w-[500px] bg-background border border-border rounded-lg shadow-xl z-50 nodrag">
+          <div className="p-4 border-b border-border bg-muted/30">
+            <h4 className="text-sm font-semibold text-foreground">Editar E-mail</h4>
+          </div>
+          <div className="p-4 space-y-4">
+            <div>
+              <label className="text-xs font-semibold text-muted-foreground uppercase mb-1.5 block">Assunto</label>
+              <Input
+                value={localSubject}
+                onChange={(e) => setLocalSubject(e.target.value)}
+                placeholder="Ex: {{nome}}, seu e-book está pronto!"
+                className="h-9 text-sm"
+              />
+            </div>
+            <div>
+              <label className="text-xs font-semibold text-muted-foreground uppercase mb-1.5 block">Código HTML</label>
+              <Textarea
+                value={localBodyHtml}
+                onChange={(e) => setLocalBodyHtml(e.target.value)}
+                placeholder="<h1>Olá {{nome}}!</h1>&#10;<p>Seu conteúdo aqui...</p>"
+                className="min-h-[200px] text-xs font-mono resize-none"
+              />
+            </div>
+            <div className="flex justify-end gap-2 pt-2">
+              <Button variant="outline" size="sm" onClick={() => setIsEditing(false)}>
+                Cancelar
+              </Button>
+              <Button size="sm" onClick={handleSave} className="bg-foreground text-background hover:bg-foreground/90">
+                Salvar
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+      
       <Handle
         type="source"
         position={Position.Right}
@@ -364,12 +400,10 @@ export function EmailFlowBuilder({
 
   const onNodeClick = useCallback((_: React.MouseEvent, node: Node) => {
     setSelectedNode(node);
-    if (node.type === "wait" || node.type === "email") {
+    if (node.type === "wait") {
       setEditData({
         waitTime: node.data.waitTime as number,
         waitUnit: node.data.waitUnit as string,
-        subject: node.data.subject as string,
-        bodyHtml: node.data.bodyHtml as string,
       });
       setEditDialogOpen(true);
     }
@@ -692,47 +726,6 @@ export function EmailFlowBuilder({
                       <SelectItem value="months">Meses</SelectItem>
                     </SelectContent>
                   </Select>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {selectedNode?.type === "email" && (
-            <div className="space-y-5">
-              {/* Gmail-style Header */}
-              <div className="flex items-center gap-3 pb-3 border-b border-border">
-                <Mail className="w-6 h-6 text-foreground" />
-                <div>
-                  <h4 className="text-sm font-semibold text-foreground">Configurar E-mail</h4>
-                  <p className="text-xs text-muted-foreground">Edite o assunto e conteúdo do e-mail</p>
-                </div>
-              </div>
-
-              <div>
-                <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Assunto</Label>
-                <Input
-                  placeholder="Ex: {{nome}}, seu e-book está pronto!"
-                  value={editData.subject || ""}
-                  onChange={(e) => setEditData({ ...editData, subject: e.target.value })}
-                  className="mt-1.5 h-11 text-sm"
-                />
-                <p className="text-xs text-muted-foreground mt-1.5 flex items-center gap-1">
-                  <span className="px-1.5 py-0.5 bg-muted rounded text-[10px] font-mono">{"{{nome}}"}</span>
-                  <span>insere o nome do lead</span>
-                </p>
-              </div>
-
-              <div>
-                <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Corpo do E-mail (HTML)</Label>
-                <Textarea
-                  placeholder="<h1>Olá {{nome}}!</h1>&#10;<p>Seu conteúdo aqui...</p>"
-                  value={editData.bodyHtml || ""}
-                  onChange={(e) => setEditData({ ...editData, bodyHtml: e.target.value })}
-                  className="mt-1.5 min-h-[220px] font-mono text-sm leading-relaxed resize-none"
-                />
-                <div className="flex items-center gap-2 mt-2">
-                  <span className="px-1.5 py-0.5 bg-red-50 text-red-600 rounded text-[10px] font-medium">HTML</span>
-                  <span className="text-xs text-muted-foreground">Suporta formatação HTML completa</span>
                 </div>
               </div>
             </div>
