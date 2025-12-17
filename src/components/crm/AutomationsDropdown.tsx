@@ -210,14 +210,20 @@ export function AutomationsDropdown({
     enabled: open,
   });
 
-  // Fetch webhooks - only when dropdown is open
+  // Fetch webhooks - only when dropdown is open, filtered by sub_origin
   const { data: webhooks = [], refetch: refetchWebhooks } = useQuery({
-    queryKey: ["crm-webhooks"],
+    queryKey: ["crm-webhooks", subOriginId],
     queryFn: async () => {
-      const { data } = await supabase
+      let query = supabase
         .from("crm_webhooks")
         .select("*")
         .order("created_at", { ascending: false });
+      
+      if (subOriginId) {
+        query = query.eq("sub_origin_id", subOriginId);
+      }
+      
+      const { data } = await query;
       return (data || []) as CrmWebhook[];
     },
     enabled: open,
@@ -432,7 +438,7 @@ export function AutomationsDropdown({
         url: webhookType === "send" ? webhookUrl : getGeneratedWebhookUrl(),
         scope: webhookScope,
         origin_id: webhookOriginId || null,
-        sub_origin_id: webhookSubOriginId || null,
+        sub_origin_id: subOriginId, // Always use current sub_origin
         trigger: webhookType === "send" ? webhookTrigger : null,
         trigger_pipeline_id: webhookType === "send" && webhookTrigger === "lead_moved" ? webhookTriggerPipelineId : null,
         is_active: true,
@@ -441,6 +447,7 @@ export function AutomationsDropdown({
       if (error) throw error;
 
       refetchWebhooks();
+      queryClient.invalidateQueries({ queryKey: ["crm-webhooks", subOriginId] });
       resetWebhookForm();
       toast.success("Webhook criado!");
     } catch (error) {
@@ -458,6 +465,7 @@ export function AutomationsDropdown({
 
       if (error) throw error;
       refetchWebhooks();
+      queryClient.invalidateQueries({ queryKey: ["crm-webhooks", subOriginId] });
     } catch (error) {
       console.error("Erro ao atualizar webhook:", error);
       toast.error("Erro ao atualizar webhook");
@@ -469,6 +477,7 @@ export function AutomationsDropdown({
       const { error } = await supabase.from("crm_webhooks").delete().eq("id", id);
       if (error) throw error;
       refetchWebhooks();
+      queryClient.invalidateQueries({ queryKey: ["crm-webhooks", subOriginId] });
       toast.success("Webhook removido!");
     } catch (error) {
       console.error("Erro ao remover webhook:", error);
@@ -855,7 +864,7 @@ export function AutomationsDropdown({
               <Zap className="w-4 h-4 text-foreground" />
             </Button>
             {(activeAutomationsCount + activeWebhooksCount + activeEmailAutomationsCount) > 0 && (
-              <span className="absolute top-[2px] right-[2px] z-10 h-4 min-w-4 px-1 text-[10px] font-medium flex items-center justify-center bg-foreground text-background rounded-full pointer-events-none">
+              <span className="absolute top-[2px] right-[2px] z-10 h-4 min-w-4 px-1 text-[10px] font-medium flex items-center justify-center bg-yellow-400 text-black rounded-full pointer-events-none">
                 {activeAutomationsCount + activeWebhooksCount + activeEmailAutomationsCount}
               </span>
             )}
@@ -887,7 +896,7 @@ export function AutomationsDropdown({
             <Zap className="w-4 h-4 text-foreground" />
           </Button>
           {(activeAutomationsCount + activeWebhooksCount + activeEmailAutomationsCount) > 0 && (
-            <span className="absolute top-[2px] right-[2px] z-10 h-4 min-w-4 px-1 text-[10px] font-medium flex items-center justify-center bg-foreground text-background rounded-full pointer-events-none">
+            <span className="absolute top-[2px] right-[2px] z-10 h-4 min-w-4 px-1 text-[10px] font-medium flex items-center justify-center bg-yellow-400 text-black rounded-full pointer-events-none">
               {activeAutomationsCount + activeWebhooksCount + activeEmailAutomationsCount}
             </span>
           )}
