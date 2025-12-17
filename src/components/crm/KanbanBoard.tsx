@@ -59,6 +59,13 @@ interface EmailBuilderState {
   };
 }
 
+interface EmailEditingContext {
+  emailName: string;
+  emailTriggerPipeline: string;
+  editingEmailId: string | null;
+  isCreating: boolean;
+}
+
 export function KanbanBoard() {
   const [searchParams, setSearchParams] = useSearchParams();
   const subOriginId = searchParams.get("origin");
@@ -75,6 +82,7 @@ export function KanbanBoard() {
   const [startDate, setStartDate] = useState<Date | undefined>(undefined);
   const [endDate, setEndDate] = useState<Date | undefined>(undefined);
   const [emailBuilderProps, setEmailBuilderProps] = useState<EmailBuilderState["props"] | null>(null);
+  const [emailEditingContext, setEmailEditingContext] = useState<EmailEditingContext | null>(null);
   const [automationsOpen, setAutomationsOpen] = useState(false);
   const queryClient = useQueryClient();
   const searchTimeoutRef = useRef<number | null>(null);
@@ -662,6 +670,7 @@ export function KanbanBoard() {
           triggerPipelineName={emailBuilderProps.triggerPipelineName}
           onSave={async (steps) => {
             await emailBuilderProps.onSave(steps);
+            setEmailEditingContext(null); // Clear context after successful save
             closeEmailBuilder();
           }}
           onCancel={() => {
@@ -689,8 +698,14 @@ export function KanbanBoard() {
               subOriginId={subOriginId}
               externalOpen={automationsOpen}
               onOpenChange={setAutomationsOpen}
+              emailEditingContext={emailEditingContext}
+              onEmailContextChange={setEmailEditingContext}
               onShowEmailBuilder={(show, props) => {
                 if (show && props) {
+                  // Save the editing context for when we come back
+                  if (props.editingContext) {
+                    setEmailEditingContext(props.editingContext);
+                  }
                   openEmailBuilder(props);
                 } else {
                   closeEmailBuilder();

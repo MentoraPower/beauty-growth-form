@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Zap, Plus, Trash2, ArrowRight, Webhook, FolderSync, Copy, Check, Send, X, Settings, Mail, Loader2, Workflow } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -69,12 +69,21 @@ interface EmailAutomation {
   created_at: string;
 }
 
+interface EmailEditingContext {
+  emailName: string;
+  emailTriggerPipeline: string;
+  editingEmailId: string | null;
+  isCreating: boolean;
+}
+
 interface AutomationsDropdownProps {
   pipelines: Pipeline[];
   subOriginId: string | null;
   onShowEmailBuilder?: (show: boolean, props?: EmailBuilderProps) => void;
   externalOpen?: boolean;
   onOpenChange?: (open: boolean) => void;
+  emailEditingContext?: EmailEditingContext | null;
+  onEmailContextChange?: (context: EmailEditingContext | null) => void;
 }
 
 interface EmailBuilderProps {
@@ -83,11 +92,20 @@ interface EmailBuilderProps {
   onSave: (steps: any[]) => Promise<void>;
   onCancel: () => void;
   initialSteps?: any[];
+  editingContext?: EmailEditingContext;
 }
 
 type ActiveTab = "automations" | "webhooks" | "emails";
 
-export function AutomationsDropdown({ pipelines, subOriginId, onShowEmailBuilder, externalOpen, onOpenChange }: AutomationsDropdownProps) {
+export function AutomationsDropdown({ 
+  pipelines, 
+  subOriginId, 
+  onShowEmailBuilder, 
+  externalOpen, 
+  onOpenChange,
+  emailEditingContext,
+  onEmailContextChange 
+}: AutomationsDropdownProps) {
   const queryClient = useQueryClient();
   const [internalOpen, setInternalOpen] = useState(false);
   const open = externalOpen !== undefined ? externalOpen : internalOpen;
@@ -122,6 +140,17 @@ export function AutomationsDropdown({ pipelines, subOriginId, onShowEmailBuilder
   const [emailTriggerPipeline, setEmailTriggerPipeline] = useState<string>("");
   const [emailSubject, setEmailSubject] = useState("");
   const [emailBodyHtml, setEmailBodyHtml] = useState("");
+
+  // Restore email editing context when dropdown opens with context
+  useEffect(() => {
+    if (open && emailEditingContext) {
+      setEmailName(emailEditingContext.emailName);
+      setEmailTriggerPipeline(emailEditingContext.emailTriggerPipeline);
+      setEditingEmailId(emailEditingContext.editingEmailId);
+      setIsCreatingEmail(emailEditingContext.isCreating);
+      setActiveTab("emails");
+    }
+  }, [open, emailEditingContext]);
   
   const [copied, setCopied] = useState(false);
   const [triggerDropdownOpen, setTriggerDropdownOpen] = useState(false);
@@ -714,13 +743,18 @@ export function AutomationsDropdown({ pipelines, subOriginId, onShowEmailBuilder
         onSave: handleSaveEmailFlow,
         onCancel: () => {
           onShowEmailBuilder(false);
-          resetEmailForm();
         },
         initialSteps: editingEmailId ? [
           { id: "start-1", type: "start", data: { label: "Automação iniciada" } },
           { id: "email-1", type: "email", data: { label: "Enviar e-mail", subject: emailSubject, bodyHtml: emailBodyHtml } },
           { id: "end-1", type: "end", data: { label: "Fluxo finalizado" } },
         ] : undefined,
+        editingContext: {
+          emailName,
+          emailTriggerPipeline,
+          editingEmailId,
+          isCreating: isCreatingEmail,
+        },
       });
     } else {
       setShowEmailFlowBuilder(true);
