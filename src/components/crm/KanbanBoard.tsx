@@ -9,7 +9,9 @@ import {
   TouchSensor,
   useSensor,
   useSensors,
-  closestCenter,
+  pointerWithin,
+  rectIntersection,
+  CollisionDetection,
   MeasuringStrategy,
 } from "@dnd-kit/core";
 import { arrayMove } from "@dnd-kit/sortable";
@@ -178,16 +180,27 @@ export function KanbanBoard() {
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
-        distance: 3,
+        distance: 5,
       },
     }),
     useSensor(TouchSensor, {
       activationConstraint: {
-        delay: 100,
-        tolerance: 5,
+        delay: 50,
+        tolerance: 8,
       },
     })
   );
+
+  // Custom collision detection - more responsive and anticipatory
+  const collisionDetection: CollisionDetection = useCallback((args) => {
+    // First check pointer within (most precise for cards)
+    const pointerCollisions = pointerWithin(args);
+    if (pointerCollisions.length > 0) {
+      return pointerCollisions;
+    }
+    // Fallback to rect intersection (catches columns better)
+    return rectIntersection(args);
+  }, []);
 
   const { data: pipelines = [], isLoading: isLoadingPipelines } = useQuery({
     queryKey: ["pipelines", subOriginId],
@@ -1153,7 +1166,7 @@ export function KanbanBoard() {
 
       <DndContext
         sensors={sensors}
-        collisionDetection={closestCenter}
+        collisionDetection={collisionDetection}
         onDragStart={handleDragStart}
         onDragOver={handleDragOver}
         onDragEnd={handleDragEnd}
