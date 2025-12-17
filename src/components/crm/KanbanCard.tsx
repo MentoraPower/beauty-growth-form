@@ -28,19 +28,20 @@ export const KanbanCard = memo(function KanbanCard({ lead, isDragging: isDraggin
     transform,
     transition,
     isDragging,
+    isOver,
   } = useSortable({ 
     id: lead.id,
     transition: {
-      duration: 200,
+      duration: 250,
       easing: 'cubic-bezier(0.25, 1, 0.5, 1)',
     },
   });
 
   const style: React.CSSProperties = {
     transform: CSS.Transform.toString(transform),
-    transition: transition || 'transform 200ms cubic-bezier(0.25, 1, 0.5, 1), opacity 200ms ease-out',
-    border: '1px solid #00000020',
+    transition: transition || 'transform 250ms cubic-bezier(0.25, 1, 0.5, 1), opacity 150ms ease-out, box-shadow 200ms ease-out',
     opacity: isDragging ? 0 : 1,
+    zIndex: isDragging ? 0 : isOver ? 10 : 1,
   };
 
   const isBeingDragged = isDraggingOverlay;
@@ -81,9 +82,13 @@ export const KanbanCard = memo(function KanbanCard({ lead, isDragging: isDraggin
       ref={setNodeRef}
       style={style}
       {...attributes}
-      className={`cursor-grab active:cursor-grabbing bg-card shadow-none select-none touch-none ${
-        isBeingDragged ? "opacity-100" : ""
-      }`}
+      className={`
+        cursor-grab active:cursor-grabbing bg-card shadow-none select-none touch-none
+        border border-black/10 transition-shadow duration-200
+        ${isBeingDragged ? "opacity-100 shadow-xl ring-2 ring-primary/20" : ""}
+        ${isOver ? "ring-2 ring-primary/30" : ""}
+        hover:shadow-md
+      `}
       onPointerDown={handlePointerDown}
       onPointerMove={handlePointerMove}
       onClick={handleClick}
