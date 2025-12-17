@@ -1194,6 +1194,7 @@ export function KanbanBoard() {
                 subOriginId={subOriginId}
                 activeId={activeId}
                 dropIndicator={dropIndicator}
+                activePipelineId={activeLead?.pipeline_id}
               />
             ))}
           </div>
