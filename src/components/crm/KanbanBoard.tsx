@@ -439,14 +439,15 @@ export function KanbanBoard() {
 
     const overId = over.id as string;
     const activeLeadId = active.id as string;
+    const activeLead = localLeads.find((l) => l.id === activeLeadId);
 
     // Check if hovering over a pipeline column
     const overPipeline = pipelines.find((p) => p.id === overId);
     if (overPipeline) {
-      // Hovering over column - show placeholder at bottom
+      // Hovering over column - show placeholder at top
       setDropIndicator({
         pipelineId: overPipeline.id,
-        position: "bottom",
+        position: "top",
       });
       return;
     }
@@ -454,16 +455,22 @@ export function KanbanBoard() {
     // Check if hovering over a lead card
     const overLead = localLeads.find((l) => l.id === overId);
     if (overLead && overLead.pipeline_id) {
-      // Get the rect of the element being hovered
+      // If dragging to a different pipeline, show at top
+      if (activeLead && overLead.pipeline_id !== activeLead.pipeline_id) {
+        setDropIndicator({
+          pipelineId: overLead.pipeline_id,
+          position: "top",
+        });
+        return;
+      }
+
+      // Same pipeline - show above or below based on drag position
       const overRect = over.rect;
       const activeRect = active.rect.current.translated;
       
       if (overRect && activeRect) {
-        // Determine if we're in the top or bottom half
         const overCenter = overRect.top + overRect.height / 2;
         const activeCenter = activeRect.top + activeRect.height / 2;
-        
-        // Position above if we're dragging from above, below if from below
         const position = activeCenter < overCenter ? "top" : "bottom";
         
         setDropIndicator({
