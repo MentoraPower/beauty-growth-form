@@ -30,6 +30,8 @@ interface TeamMember {
   user_id: string;
   permissions?: {
     can_access_whatsapp: boolean;
+    can_create_origins: boolean;
+    can_create_sub_origins: boolean;
     allowed_origin_ids: string[];
     allowed_sub_origin_ids: string[];
   } | null;
@@ -57,6 +59,8 @@ export function EditPermissionsDialog({
   const [name, setName] = useState(member.name || "");
   const [role, setRole] = useState(member.role || "");
   const [canAccessWhatsapp, setCanAccessWhatsapp] = useState(false);
+  const [canCreateOrigins, setCanCreateOrigins] = useState(false);
+  const [canCreateSubOrigins, setCanCreateSubOrigins] = useState(false);
   const [selectedOrigins, setSelectedOrigins] = useState<string[]>([]);
   const [selectedSubOrigins, setSelectedSubOrigins] = useState<string[]>([]);
   const queryClient = useQueryClient();
@@ -67,10 +71,14 @@ export function EditPermissionsDialog({
     setRole(member.role || "");
     if (member.permissions) {
       setCanAccessWhatsapp(member.permissions.can_access_whatsapp);
+      setCanCreateOrigins(member.permissions.can_create_origins ?? false);
+      setCanCreateSubOrigins(member.permissions.can_create_sub_origins ?? false);
       setSelectedOrigins(member.permissions.allowed_origin_ids);
       setSelectedSubOrigins(member.permissions.allowed_sub_origin_ids);
     } else {
       setCanAccessWhatsapp(false);
+      setCanCreateOrigins(false);
+      setCanCreateSubOrigins(false);
       setSelectedOrigins([]);
       setSelectedSubOrigins([]);
     }
@@ -115,6 +123,8 @@ export function EditPermissionsDialog({
           name: trimmedName,
           role,
           can_access_whatsapp: canAccessWhatsapp,
+          can_create_origins: canCreateOrigins,
+          can_create_sub_origins: canCreateSubOrigins,
           allowed_origin_ids: selectedOrigins,
           allowed_sub_origin_ids: selectedSubOrigins,
         },
@@ -220,6 +230,34 @@ export function EditPermissionsDialog({
                 <Switch
                   checked={canAccessWhatsapp}
                   onCheckedChange={setCanAccessWhatsapp}
+                />
+              </div>
+
+              {/* Create Origins Permission */}
+              <div className="flex items-center justify-between p-4 rounded-lg border border-border">
+                <div>
+                  <Label className="font-medium">Criar Origens</Label>
+                  <p className="text-sm text-muted-foreground">
+                    Permite criar novas origens no CRM
+                  </p>
+                </div>
+                <Switch
+                  checked={canCreateOrigins}
+                  onCheckedChange={setCanCreateOrigins}
+                />
+              </div>
+
+              {/* Create Sub-Origins Permission */}
+              <div className="flex items-center justify-between p-4 rounded-lg border border-border">
+                <div>
+                  <Label className="font-medium">Criar Sub-origens</Label>
+                  <p className="text-sm text-muted-foreground">
+                    Permite criar novas sub-origens no CRM
+                  </p>
+                </div>
+                <Switch
+                  checked={canCreateSubOrigins}
+                  onCheckedChange={setCanCreateSubOrigins}
                 />
               </div>
 

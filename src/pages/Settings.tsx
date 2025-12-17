@@ -14,6 +14,24 @@ export default function Settings() {
   const [email, setEmail] = useState("");
   const queryClient = useQueryClient();
 
+  // Check if current user is admin
+  const { data: isAdmin } = useQuery({
+    queryKey: ["current-user-is-admin"],
+    queryFn: async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return false;
+
+      const { data } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", user.id)
+        .eq("role", "admin")
+        .maybeSingle();
+
+      return !!data;
+    },
+  });
+
   // Fetch current user profile
   const { data: profile, isLoading } = useQuery({
     queryKey: ["user-profile"],
@@ -68,7 +86,7 @@ export default function Settings() {
 
   const tabs = [
     { id: "profile" as const, label: "Perfil" },
-    { id: "team" as const, label: "Equipe" },
+    ...(isAdmin ? [{ id: "team" as const, label: "Equipe" }] : []),
   ];
 
   return (

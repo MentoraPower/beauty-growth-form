@@ -87,6 +87,8 @@ Deno.serve(async (req) => {
       role: AppRole | null;
       permissions: {
         can_access_whatsapp: boolean;
+        can_create_origins: boolean;
+        can_create_sub_origins: boolean;
         allowed_origin_ids: string[];
         allowed_sub_origin_ids: string[];
       } | null;
@@ -106,7 +108,7 @@ Deno.serve(async (req) => {
       const [{ data: profiles }, { data: roles }, { data: perms }] = await Promise.all([
         supabaseAdmin.from("profiles").select("id, name, email").in("id", ids),
         supabaseAdmin.from("user_roles").select("user_id, role, created_at").in("user_id", ids),
-        supabaseAdmin.from("user_permissions").select("user_id, can_access_whatsapp, allowed_origin_ids, allowed_sub_origin_ids").in("user_id", ids),
+        supabaseAdmin.from("user_permissions").select("user_id, can_access_whatsapp, can_create_origins, can_create_sub_origins, allowed_origin_ids, allowed_sub_origin_ids").in("user_id", ids),
       ]);
 
       const roleByUser = new Map<string, AppRole>();
@@ -135,6 +137,8 @@ Deno.serve(async (req) => {
           permissions: perm
             ? {
                 can_access_whatsapp: !!perm.can_access_whatsapp,
+                can_create_origins: !!perm.can_create_origins,
+                can_create_sub_origins: !!perm.can_create_sub_origins,
                 allowed_origin_ids: perm.allowed_origin_ids ?? [],
                 allowed_sub_origin_ids: perm.allowed_sub_origin_ids ?? [],
               }
