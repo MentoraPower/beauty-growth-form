@@ -113,6 +113,35 @@ function SortableOriginItem({
     opacity: isDragging ? 0.5 : 1,
   };
 
+  const LINE_TOP_PX = 14;
+  const lastSubOriginRef = useRef<HTMLLIElement | null>(null);
+  const [treeLineHeightPx, setTreeLineHeightPx] = useState(0);
+
+  const updateTreeLineHeight = useCallback(() => {
+    if (!isOriginExpanded) return;
+
+    if (originSubOrigins.length === 0) {
+      setTreeLineHeightPx(0);
+      return;
+    }
+
+    const lastEl = lastSubOriginRef.current;
+    if (!lastEl) return;
+
+    const centerY = lastEl.offsetTop + lastEl.offsetHeight / 2;
+    const next = Math.max(0, Math.round(centerY - LINE_TOP_PX));
+    setTreeLineHeightPx((prev) => (prev === next ? prev : next));
+  }, [isOriginExpanded, originSubOrigins.length]);
+
+  useEffect(() => {
+    const raf = requestAnimationFrame(() => updateTreeLineHeight());
+    window.addEventListener("resize", updateTreeLineHeight);
+    return () => {
+      cancelAnimationFrame(raf);
+      window.removeEventListener("resize", updateTreeLineHeight);
+    };
+  }, [updateTreeLineHeight]);
+
   return (
     <div ref={setNodeRef} style={style} className="animate-in fade-in duration-200">
       {/* Origin (Folder) */}
@@ -186,13 +215,11 @@ function SortableOriginItem({
             
             {/* Linha vertical principal - cor escura, sem transparência, z-index alto */}
             <div 
-              className="absolute left-[11px] w-[2px] bg-neutral-400 z-10"
+              className="absolute left-[11px] w-[2px] z-20"
               style={{
-                top: '14px',
-                // Altura: vai do Overview até a última sub-origin (totalItems - 1) * 32px + 2px para conectar na curva
-                height: originSubOrigins.length > 0 
-                  ? `${(originSubOrigins.length) * 32 + 2}px` 
-                  : '0px'
+                top: `${LINE_TOP_PX}px`,
+                height: `${treeLineHeightPx}px`,
+                backgroundColor: "hsl(var(--muted-foreground))",
               }}
             />
             
@@ -208,7 +235,7 @@ function SortableOriginItem({
               >
                 <path 
                   d="M 8 0 L 8 5 Q 8 9 12 9 L 18 9" 
-                  stroke="#a3a3a3"
+                  stroke="hsl(var(--muted-foreground))"
                   strokeWidth="2" 
                   fill="none"
                 />
@@ -250,6 +277,7 @@ function SortableOriginItem({
                 <li 
                   key={subOrigin.id} 
                   className="relative pl-6 py-0.5"
+                  ref={isLast ? (el) => { lastSubOriginRef.current = el; } : undefined}
                 >
                   {/* Curva SVG perfeita */}
                   <svg 
@@ -261,7 +289,7 @@ function SortableOriginItem({
                   >
                     <path 
                       d="M 8 0 L 8 5 Q 8 9 12 9 L 18 9" 
-                      stroke="#a3a3a3"
+                      stroke="hsl(var(--muted-foreground))"
                       strokeWidth="2" 
                       fill="none"
                     />
