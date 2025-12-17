@@ -602,18 +602,47 @@ export function KanbanBoard() {
           }).catch(console.error);
 
           // Check for email automations triggered by this pipeline
-          const emailAutomation = emailAutomations.find(
-            ea => ea.trigger_pipeline_id === newPipelineId && ea.is_active
-          );
+          // Look through flow_steps to find all trigger pipelines, not just trigger_pipeline_id
+          const matchingEmailAutomation = emailAutomations.find(ea => {
+            if (!ea.is_active) return false;
+            
+            // First check trigger_pipeline_id for backward compatibility
+            if (ea.trigger_pipeline_id === newPipelineId) return true;
+            
+            // Then check flow_steps for multiple triggers
+            const flowSteps = ea.flow_steps as any[] | null;
+            if (flowSteps && Array.isArray(flowSteps)) {
+              const triggerNode = flowSteps.find((step) => step.type === 'trigger');
+              if (triggerNode?.data?.triggers && Array.isArray(triggerNode.data.triggers)) {
+                return triggerNode.data.triggers.some((t: any) => t.pipelineId === newPipelineId);
+              }
+            }
+            
+            return false;
+          });
           
-          if (emailAutomation) {
+          if (matchingEmailAutomation) {
+            // Find the email node in flow_steps for subject and body
+            let emailSubject = matchingEmailAutomation.subject;
+            let emailBody = matchingEmailAutomation.body_html;
+            
+            // If flow_steps has email node, use that content
+            const flowSteps = matchingEmailAutomation.flow_steps as any[] | null;
+            if (flowSteps && Array.isArray(flowSteps)) {
+              const emailNode = flowSteps.find((step) => step.type === 'email');
+              if (emailNode?.data) {
+                emailSubject = emailNode.data.subject || emailSubject;
+                emailBody = emailNode.data.bodyHtml || emailBody;
+              }
+            }
+            
             // Trigger send-email edge function
             supabase.functions.invoke("send-email", {
               body: {
                 to: activeLead.email,
                 name: activeLead.name,
-                subject: emailAutomation.subject,
-                bodyHtml: emailAutomation.body_html,
+                subject: emailSubject,
+                bodyHtml: emailBody,
                 leadId: activeLead.id,
               },
             }).then(({ error }) => {
