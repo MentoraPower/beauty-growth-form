@@ -235,8 +235,8 @@ const handler = async (req: Request): Promise<Response> => {
                 .limit(1)
                 .single();
 
-              const fromName = settings?.from_name || "Scale Beauty";
-              const fromEmail = settings?.from_email || "contato@scalebeauty.com.br";
+              const fromName = settings?.from_name || "Mentora Beauty Academy";
+              const fromEmail = settings?.from_email || "contato@mentorabeautyacademy.com.br";
 
               const emailResponse = await resend.emails.send({
                 from: `${fromName} <${fromEmail}>`,
