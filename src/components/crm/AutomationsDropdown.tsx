@@ -713,13 +713,18 @@ export function AutomationsDropdown({
     return label;
   };
 
+  const [openingEmailBuilder, setOpeningEmailBuilder] = useState(false);
+
   const handleOpenChange = (isOpen: boolean) => {
     setOpen(isOpen);
-    if (!isOpen) {
+    if (!isOpen && !openingEmailBuilder) {
       resetAutomationForm();
       resetWebhookForm();
       resetEmailForm();
       setShowEmailFlowBuilder(false);
+    }
+    if (!isOpen) {
+      setOpeningEmailBuilder(false);
     }
   };
 
@@ -736,6 +741,7 @@ export function AutomationsDropdown({
     const triggerPipelineName = pipelines.find(p => p.id === emailTriggerPipeline)?.nome || "";
     
     if (onShowEmailBuilder) {
+      setOpeningEmailBuilder(true);
       setOpen(false); // Close the dropdown
       onShowEmailBuilder(true, {
         automationName: emailName,
