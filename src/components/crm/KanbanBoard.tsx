@@ -62,23 +62,41 @@ export function KanbanBoard() {
   const [startDate, setStartDate] = useState<Date | undefined>(undefined);
   const [endDate, setEndDate] = useState<Date | undefined>(undefined);
   const queryClient = useQueryClient();
+  const searchTimeoutRef = useRef<number | null>(null);
 
   // Sync search from URL when navigating (e.g., coming back from lead detail)
   useEffect(() => {
     setSearchQuery(urlSearchQuery);
   }, [urlSearchQuery]);
 
-  // Update URL when search changes (user typing)
+  // Update URL with debounce to avoid triggering loading bar on every keystroke
   const handleSearchChange = (value: string) => {
     setSearchQuery(value);
-    const newParams = new URLSearchParams(searchParams);
-    if (value) {
-      newParams.set("search", value);
-    } else {
-      newParams.delete("search");
+    
+    // Debounce URL update to avoid loading bar flicker
+    if (searchTimeoutRef.current) {
+      window.clearTimeout(searchTimeoutRef.current);
     }
-    setSearchParams(newParams, { replace: true });
+    searchTimeoutRef.current = window.setTimeout(() => {
+      const newParams = new URLSearchParams(searchParams);
+      if (value) {
+        newParams.set("search", value);
+      } else {
+        newParams.delete("search");
+      }
+      setSearchParams(newParams, { replace: true });
+      searchTimeoutRef.current = null;
+    }, 500);
   };
+  
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (searchTimeoutRef.current) {
+        window.clearTimeout(searchTimeoutRef.current);
+      }
+    };
+  }, []);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
