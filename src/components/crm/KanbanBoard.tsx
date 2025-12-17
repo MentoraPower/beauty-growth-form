@@ -89,6 +89,7 @@ export function KanbanBoard() {
   } | null>(null);
   const [isPipelinesDialogOpen, setIsPipelinesDialogOpen] = useState(false);
   const [localLeads, setLocalLeads] = useState<Lead[]>([]);
+  const isReorderingRef = useRef(false);
   const [searchQuery, setSearchQuery] = useState(urlSearchQuery);
   const [filterMQL, setFilterMQL] = useState<"all" | "mql" | "non-mql">("all");
   const [filterTags, setFilterTags] = useState<string[]>([]);
@@ -378,6 +379,9 @@ export function KanbanBoard() {
         "postgres_changes",
         { event: "*", schema: "public", table: "leads" },
         (payload) => {
+          // Ignore real-time updates during reordering to prevent conflicts
+          if (isReorderingRef.current) return;
+
           if (payload.eventType === "INSERT") {
             const newLead = payload.new as Lead;
             // Only add if matches current sub_origin filter
@@ -426,6 +430,7 @@ export function KanbanBoard() {
   const handleDragStart = useCallback((event: DragStartEvent) => {
     setActiveId(event.active.id as string);
     setDropIndicator(null);
+    isReorderingRef.current = true;
   }, []);
 
   const handleDragOver = useCallback((event: DragOverEvent) => {
@@ -499,13 +504,19 @@ export function KanbanBoard() {
       setOverId(null);
       setDropIndicator(null);
 
-      if (!over) return;
+      if (!over) {
+        isReorderingRef.current = false;
+        return;
+      }
 
       const activeId = active.id as string;
       const overId = over.id as string;
 
       const activeLead = localLeads.find((l) => l.id === activeId);
-      if (!activeLead) return;
+      if (!activeLead) {
+        isReorderingRef.current = false;
+        return;
+      }
 
       // Check if dropping on a top-zone
       const isTopZone = overId.endsWith("-top-zone");
@@ -522,7 +533,10 @@ export function KanbanBoard() {
           ? overPipeline.id
           : overLead?.pipeline_id ?? null;
 
-      if (!newPipelineId) return;
+      if (!newPipelineId) {
+        isReorderingRef.current = false;
+        return;
+      }
 
       // Same pipeline - handle reordering
       if (newPipelineId === activeLead.pipeline_id && overLead) {
@@ -531,17 +545,25 @@ export function KanbanBoard() {
           .sort((a, b) => (a.ordem ?? 0) - (b.ordem ?? 0));
 
         const oldIndex = pipelineLeads.findIndex((l) => l.id === activeId);
-        let newIndex = pipelineLeads.findIndex((l) => l.id === overId);
-
-        // Adjust newIndex based on drop indicator position
+        const targetIndex = pipelineLeads.findIndex((l) => l.id === overId);
+        
+        // Calculate new index based on drop position
+        let newIndex: number;
         if (currentDropIndicator?.position === "bottom" && currentDropIndicator?.targetLeadId === overId) {
-          newIndex = newIndex + 1;
+          // Dropping below the target card
+          newIndex = targetIndex < oldIndex ? targetIndex + 1 : targetIndex;
+        } else {
+          // Dropping above the target card
+          newIndex = targetIndex > oldIndex ? targetIndex - 1 : targetIndex;
         }
 
-        // Clamp to valid range
+        // Ensure valid range (allow inserting at end)
         newIndex = Math.max(0, Math.min(newIndex, pipelineLeads.length - 1));
 
-        if (oldIndex === newIndex) return;
+        if (oldIndex === newIndex) {
+          isReorderingRef.current = false;
+          return;
+        }
 
         const reorderedLeads = arrayMove(pipelineLeads, oldIndex, newIndex);
 
@@ -571,6 +593,9 @@ export function KanbanBoard() {
           console.error("Erro ao reordenar leads:", error);
           toast.error("Erro ao reordenar leads");
           queryClient.invalidateQueries({ queryKey: ["crm-leads", subOriginId] });
+        } finally {
+          // Clear reordering flag after a short delay to let DB sync
+          setTimeout(() => { isReorderingRef.current = false; }, 500);
         }
         return;
       }
@@ -610,6 +635,8 @@ export function KanbanBoard() {
             setLocalLeads((prev) => [...prev, activeLead]);
             console.error("Erro ao transferir lead:", error);
             toast.error("Erro ao transferir lead");
+          } finally {
+            setTimeout(() => { isReorderingRef.current = false; }, 500);
           }
           return;
         }
@@ -713,6 +740,8 @@ export function KanbanBoard() {
           );
           console.error("Erro ao mover lead:", error);
           toast.error("Erro ao mover lead");
+        } finally {
+          setTimeout(() => { isReorderingRef.current = false; }, 500);
         }
       }
     },
@@ -723,6 +752,7 @@ export function KanbanBoard() {
     setActiveId(null);
     setOverId(null);
     setDropIndicator(null);
+    isReorderingRef.current = false;
   }, []);
 
   const activeLead = useMemo(
