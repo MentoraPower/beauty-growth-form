@@ -81,6 +81,7 @@ const TriggerNode = ({ data, id, selected }: NodeProps & { data: {
   triggerPipelineId?: string;
 }}) => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [pipelineDropdownTriggerId, setPipelineDropdownTriggerId] = useState<string | null>(null);
   
   // Convert legacy single trigger to array format
   const getTriggers = (): TriggerItem[] => {
@@ -96,18 +97,15 @@ const TriggerNode = ({ data, id, selected }: NodeProps & { data: {
   const triggers = getTriggers();
 
   const triggerOptions = [
-    { id: "lead_created", label: "Lead criado" },
-    { id: "lead_updated", label: "Lead atualizado" },
     { id: "lead_entered_pipeline", label: "Lead entrou em pipeline" },
   ];
 
   const getTriggerLabel = (trigger: TriggerItem) => {
-    const option = triggerOptions.find(o => o.id === trigger.type);
     if (trigger.type === "lead_entered_pipeline" && trigger.pipelineId) {
       const pipeline = data.pipelines?.find(p => p.id === trigger.pipelineId);
-      return `${option?.label}: ${pipeline?.nome || ""}`;
+      return `Lead entrou em: ${pipeline?.nome || ""}`;
     }
-    return option?.label || trigger.type;
+    return "Lead entrou em pipeline";
   };
 
   const addTrigger = (type: string) => {
@@ -121,12 +119,17 @@ const TriggerNode = ({ data, id, selected }: NodeProps & { data: {
       data.onTriggersChange(newTriggers);
     }
     setIsDropdownOpen(false);
+    // Auto-open pipeline selector
+    setPipelineDropdownTriggerId(newTrigger.id);
   };
 
   const removeTrigger = (triggerId: string) => {
     const newTriggers = triggers.filter(t => t.id !== triggerId);
     if (data.onTriggersChange) {
       data.onTriggersChange(newTriggers);
+    }
+    if (pipelineDropdownTriggerId === triggerId) {
+      setPipelineDropdownTriggerId(null);
     }
   };
 
@@ -137,7 +140,11 @@ const TriggerNode = ({ data, id, selected }: NodeProps & { data: {
     if (data.onTriggersChange) {
       data.onTriggersChange(newTriggers);
     }
+    setPipelineDropdownTriggerId(null);
   };
+
+  // Get the trigger that needs pipeline selection
+  const triggerNeedingPipeline = triggers.find(t => t.id === pipelineDropdownTriggerId && t.type === "lead_entered_pipeline" && !t.pipelineId);
 
   return (
     <div className="relative">
@@ -164,27 +171,16 @@ const TriggerNode = ({ data, id, selected }: NodeProps & { data: {
             >
               <div className="flex items-center gap-2 p-3 rounded-lg border border-border bg-muted/30">
                 <div className="flex-1">
-                  <span className="text-sm text-foreground font-medium">{getTriggerLabel(trigger)}</span>
-                  
-                  {/* Pipeline selector for lead_entered_pipeline */}
-                  {trigger.type === "lead_entered_pipeline" && !trigger.pipelineId && (
-                    <div className="mt-2">
-                      <Select 
-                        value={trigger.pipelineId || ""} 
-                        onValueChange={(v) => updateTriggerPipeline(trigger.id, v)}
-                      >
-                        <SelectTrigger className="h-8 text-xs">
-                          <SelectValue placeholder="Selecione a pipeline..." />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {data.pipelines?.map(pipeline => (
-                            <SelectItem key={pipeline.id} value={pipeline.id}>
-                              {pipeline.nome}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
+                  {trigger.pipelineId ? (
+                    <span className="text-sm text-foreground font-medium">{getTriggerLabel(trigger)}</span>
+                  ) : (
+                    <button
+                      onClick={() => setPipelineDropdownTriggerId(trigger.id)}
+                      className="text-sm text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1"
+                    >
+                      Selecione a pipeline...
+                      <ChevronDown className="w-3 h-3" />
+                    </button>
                   )}
                 </div>
                 <button
@@ -195,14 +191,16 @@ const TriggerNode = ({ data, id, selected }: NodeProps & { data: {
                 </button>
               </div>
               
-              {/* Individual handle for each trigger */}
-              <Handle
-                type="source"
-                position={Position.Right}
-                id={`trigger-handle-${index}`}
-                className="!w-3 !h-3 !bg-[#F40000] !border-2 !border-white"
-                style={{ top: "50%", transform: "translateY(-50%)" }}
-              />
+              {/* Individual handle for each trigger - only show when pipeline is selected */}
+              {trigger.pipelineId && (
+                <Handle
+                  type="source"
+                  position={Position.Right}
+                  id={`trigger-handle-${index}`}
+                  className="!w-3 !h-3 !bg-[#F40000] !border-2 !border-white"
+                  style={{ top: "50%", transform: "translateY(-50%)" }}
+                />
+              )}
             </div>
           ))}
           
@@ -217,7 +215,7 @@ const TriggerNode = ({ data, id, selected }: NodeProps & { data: {
         </div>
       </div>
       
-      {/* Dropdown - Outside overflow-hidden container */}
+      {/* Add trigger dropdown - Outside overflow-hidden container */}
       {isDropdownOpen && (
         <div 
           className="absolute left-3 right-3 rounded-lg shadow-xl nodrag"
@@ -238,6 +236,34 @@ const TriggerNode = ({ data, id, selected }: NodeProps & { data: {
             >
               <Zap className="w-4 h-4 text-[#F40000]" />
               {option.label}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {/* Pipeline selector dropdown - Outside overflow-hidden container */}
+      {pipelineDropdownTriggerId && triggerNeedingPipeline && (
+        <div 
+          className="absolute left-3 right-3 rounded-lg shadow-xl nodrag"
+          style={{ 
+            zIndex: 9999, 
+            backgroundColor: '#ffffff',
+            top: 'calc(100% - 8px)',
+            border: '1px solid #e5e7eb'
+          }}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div className="px-3 py-2 text-xs font-semibold text-muted-foreground border-b border-gray-100" style={{ backgroundColor: '#f9fafb' }}>
+            Selecione a pipeline
+          </div>
+          {data.pipelines?.map(pipeline => (
+            <button
+              key={pipeline.id}
+              onClick={() => updateTriggerPipeline(pipelineDropdownTriggerId, pipeline.id)}
+              className="w-full px-3 py-2.5 text-left text-sm hover:bg-gray-100 transition-colors flex items-center gap-2 text-foreground last:rounded-b-lg"
+              style={{ backgroundColor: '#ffffff' }}
+            >
+              {pipeline.nome}
             </button>
           ))}
         </div>
