@@ -46,6 +46,13 @@ interface Pipeline {
   sub_origin_id?: string | null;
 }
 
+// Trigger type interface
+interface TriggerItem {
+  id: string;
+  type: string;
+  pipelineId?: string;
+}
+
 interface EmailFlowStep {
   id: string;
   type: "trigger" | "start" | "wait" | "email" | "end";
@@ -56,22 +63,37 @@ interface EmailFlowStep {
     waitUnit?: "minutes" | "hours" | "days" | "months";
     subject?: string;
     bodyHtml?: string;
+    triggers?: TriggerItem[];
+    // Legacy support
     triggerType?: string;
     triggerPipelineId?: string;
   };
 }
 
-// Trigger Node Component - Main entry point with trigger selection
+// Trigger Node Component - Main entry point with multiple triggers
 const TriggerNode = ({ data, id, selected }: NodeProps & { data: { 
   label: string; 
+  triggers?: TriggerItem[];
+  pipelines?: Pipeline[];
+  onTriggersChange?: (triggers: TriggerItem[]) => void;
+  // Legacy support
   triggerType?: string; 
   triggerPipelineId?: string;
-  pipelines?: Pipeline[];
-  onTriggerChange?: (triggerType: string, pipelineId?: string) => void;
 }}) => {
-  const [isEditing, setIsEditing] = useState(false);
-  const [localTriggerType, setLocalTriggerType] = useState(data.triggerType || "");
-  const [localPipelineId, setLocalPipelineId] = useState(data.triggerPipelineId || "");
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  
+  // Convert legacy single trigger to array format
+  const getTriggers = (): TriggerItem[] => {
+    if (data.triggers && data.triggers.length > 0) {
+      return data.triggers;
+    }
+    if (data.triggerType) {
+      return [{ id: "legacy-1", type: data.triggerType, pipelineId: data.triggerPipelineId }];
+    }
+    return [];
+  };
+  
+  const triggers = getTriggers();
 
   const triggerOptions = [
     { id: "lead_created", label: "Lead criado" },
@@ -79,102 +101,151 @@ const TriggerNode = ({ data, id, selected }: NodeProps & { data: {
     { id: "lead_entered_pipeline", label: "Lead entrou em pipeline" },
   ];
 
-  const getTriggerLabel = () => {
-    if (!localTriggerType) return "Adicionar gatilho";
-    const option = triggerOptions.find(o => o.id === localTriggerType);
-    if (localTriggerType === "lead_entered_pipeline" && localPipelineId) {
-      const pipeline = data.pipelines?.find(p => p.id === localPipelineId);
+  const getTriggerLabel = (trigger: TriggerItem) => {
+    const option = triggerOptions.find(o => o.id === trigger.type);
+    if (trigger.type === "lead_entered_pipeline" && trigger.pipelineId) {
+      const pipeline = data.pipelines?.find(p => p.id === trigger.pipelineId);
       return `${option?.label}: ${pipeline?.nome || ""}`;
     }
-    return option?.label || "Adicionar gatilho";
+    return option?.label || trigger.type;
   };
 
-  const handleSaveTrigger = () => {
-    if (data.onTriggerChange) {
-      data.onTriggerChange(localTriggerType, localPipelineId);
+  const addTrigger = (type: string) => {
+    const newTrigger: TriggerItem = {
+      id: `trigger-${Date.now()}`,
+      type,
+      pipelineId: undefined,
+    };
+    const newTriggers = [...triggers, newTrigger];
+    if (data.onTriggersChange) {
+      data.onTriggersChange(newTriggers);
     }
-    setIsEditing(false);
+    setIsDropdownOpen(false);
+  };
+
+  const removeTrigger = (triggerId: string) => {
+    const newTriggers = triggers.filter(t => t.id !== triggerId);
+    if (data.onTriggersChange) {
+      data.onTriggersChange(newTriggers);
+    }
+  };
+
+  const updateTriggerPipeline = (triggerId: string, pipelineId: string) => {
+    const newTriggers = triggers.map(t => 
+      t.id === triggerId ? { ...t, pipelineId } : t
+    );
+    if (data.onTriggersChange) {
+      data.onTriggersChange(newTriggers);
+    }
   };
 
   return (
     <div className="relative">
       <div 
-        className="min-w-[200px] border border-border bg-foreground shadow-sm transition-all rounded-xl overflow-hidden cursor-pointer"
-        onClick={() => setIsEditing(!isEditing)}
+        className="min-w-[280px] border border-border bg-background shadow-sm transition-all rounded-xl overflow-hidden"
       >
-        <div className="px-4 py-3 flex items-center gap-2">
-          <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: "linear-gradient(135deg, #F40000 0%, #A10000 100%)" }}>
-            <Zap className="w-4 h-4 text-white" />
-          </div>
-          <div className="flex-1">
-            <span className="text-xs text-muted-foreground block">Gatilho</span>
-            <span className="text-sm font-medium text-background">{getTriggerLabel()}</span>
-          </div>
-          <ChevronDown className="w-4 h-4 text-background/60" />
-        </div>
-        <Handle
-          type="source"
-          position={Position.Right}
-          className="!w-2.5 !h-2.5 !bg-background !border-2 !border-foreground"
-        />
-      </div>
-
-      {/* Dropdown editor */}
-      {isEditing && (
+        {/* Red accent header */}
         <div 
-          className="absolute top-0 left-full ml-2 z-50 bg-background border border-border rounded-lg shadow-lg p-3 w-64 nodrag"
-          onClick={(e) => e.stopPropagation()}
+          className="px-4 py-4 flex items-center gap-3"
+          style={{ background: "linear-gradient(135deg, #F40000 0%, #A10000 100%)" }}
         >
-          <div className="space-y-3">
-            <div>
-              <label className="text-xs font-medium text-muted-foreground mb-1.5 block">
-                Tipo de gatilho
-              </label>
-              <Select value={localTriggerType} onValueChange={setLocalTriggerType}>
-                <SelectTrigger className="h-9 text-sm">
-                  <SelectValue placeholder="Selecione..." />
-                </SelectTrigger>
-                <SelectContent>
-                  {triggerOptions.map(option => (
-                    <SelectItem key={option.id} value={option.id}>
-                      {option.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+          <div className="w-10 h-10 rounded-lg bg-white/20 flex items-center justify-center">
+            <Zap className="w-5 h-5 text-white" />
+          </div>
+          <span className="text-base font-semibold text-white">Gatilho</span>
+        </div>
+        
+        {/* Triggers list */}
+        <div className="p-3 space-y-2">
+          {triggers.map((trigger, index) => (
+            <div 
+              key={trigger.id}
+              className="relative group"
+            >
+              <div className="flex items-center gap-2 p-3 rounded-lg border border-border bg-muted/30">
+                <div className="flex-1">
+                  <span className="text-sm text-foreground font-medium">{getTriggerLabel(trigger)}</span>
+                  
+                  {/* Pipeline selector for lead_entered_pipeline */}
+                  {trigger.type === "lead_entered_pipeline" && !trigger.pipelineId && (
+                    <div className="mt-2">
+                      <Select 
+                        value={trigger.pipelineId || ""} 
+                        onValueChange={(v) => updateTriggerPipeline(trigger.id, v)}
+                      >
+                        <SelectTrigger className="h-8 text-xs">
+                          <SelectValue placeholder="Selecione a pipeline..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {data.pipelines?.map(pipeline => (
+                            <SelectItem key={pipeline.id} value={pipeline.id}>
+                              {pipeline.nome}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
+                </div>
+                <button
+                  onClick={() => removeTrigger(trigger.id)}
+                  className="opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded hover:bg-destructive/10 text-destructive"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                </button>
+              </div>
+              
+              {/* Individual handle for each trigger */}
+              <Handle
+                type="source"
+                position={Position.Right}
+                id={`trigger-handle-${index}`}
+                className="!w-3 !h-3 !bg-[#F40000] !border-2 !border-white"
+                style={{ top: "50%", transform: "translateY(-50%)" }}
+              />
             </div>
-
-            {localTriggerType === "lead_entered_pipeline" && (
-              <div>
-                <label className="text-xs font-medium text-muted-foreground mb-1.5 block">
-                  Pipeline
-                </label>
-                <Select value={localPipelineId} onValueChange={setLocalPipelineId}>
-                  <SelectTrigger className="h-9 text-sm">
-                    <SelectValue placeholder="Selecione a pipeline..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {data.pipelines?.map(pipeline => (
-                      <SelectItem key={pipeline.id} value={pipeline.id}>
-                        {pipeline.nome}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+          ))}
+          
+          {/* Add trigger button with dashed border */}
+          <div className="relative">
+            <button
+              onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+              className="w-full p-3 rounded-lg border-2 border-dashed border-muted-foreground/30 hover:border-muted-foreground/50 hover:bg-muted/20 transition-all flex items-center justify-center gap-2 text-muted-foreground"
+            >
+              <Plus className="w-4 h-4" />
+              <span className="text-sm font-medium">Adicionar gatilho</span>
+            </button>
+            
+            {/* Dropdown */}
+            {isDropdownOpen && (
+              <div 
+                className="absolute top-full left-0 right-0 mt-1 z-50 bg-background border border-border rounded-lg shadow-lg overflow-hidden nodrag"
+                onClick={(e) => e.stopPropagation()}
+              >
+                {triggerOptions.map(option => (
+                  <button
+                    key={option.id}
+                    onClick={() => addTrigger(option.id)}
+                    className="w-full px-3 py-2.5 text-left text-sm hover:bg-muted transition-colors flex items-center gap-2"
+                  >
+                    <Zap className="w-4 h-4 text-[#F40000]" />
+                    {option.label}
+                  </button>
+                ))}
               </div>
             )}
-
-            <Button 
-              size="sm" 
-              className="w-full"
-              onClick={handleSaveTrigger}
-              disabled={!localTriggerType || (localTriggerType === "lead_entered_pipeline" && !localPipelineId)}
-            >
-              Salvar
-            </Button>
           </div>
         </div>
-      )}
+        
+        {/* Default handle when no triggers */}
+        {triggers.length === 0 && (
+          <Handle
+            type="source"
+            position={Position.Right}
+            className="!w-3 !h-3 !bg-muted-foreground !border-2 !border-background"
+          />
+        )}
+      </div>
     </div>
   );
 };
@@ -697,11 +768,8 @@ export function EmailFlowBuilder({
     return pipelines.filter(p => p.sub_origin_id === subOriginId);
   }, [pipelines, subOriginId]);
 
-  // Handle trigger changes from the node
-  const handleTriggerChange = useCallback((type: string, pipelineId?: string) => {
-    setTriggerType(type);
-    if (pipelineId) setTriggerPipelineId(pipelineId);
-    
+  // Handle triggers changes from the node (new array format)
+  const handleTriggersChange = useCallback((triggers: TriggerItem[]) => {
     // Update the trigger node data
     setNodes((nds) => nds.map((n) => {
       if (n.type === "trigger") {
@@ -709,8 +777,7 @@ export function EmailFlowBuilder({
           ...n,
           data: {
             ...n.data,
-            triggerType: type,
-            triggerPipelineId: pipelineId,
+            triggers,
           },
         };
       }
@@ -731,7 +798,7 @@ export function EmailFlowBuilder({
           data: {
             ...step.data,
             pipelines: filteredPipelines,
-            onTriggerChange: handleTriggerChange,
+            onTriggersChange: handleTriggersChange,
           },
         };
       });
@@ -743,12 +810,13 @@ export function EmailFlowBuilder({
         position: { x: 100, y: 200 },
         data: { 
           label: "Gatilho",
+          triggers: [],
           pipelines: filteredPipelines,
-          onTriggerChange: handleTriggerChange,
+          onTriggersChange: handleTriggersChange,
         },
       },
     ];
-  }, [initialSteps, filteredPipelines, handleTriggerChange]);
+  }, [initialSteps, filteredPipelines, handleTriggersChange]);
 
   const initialEdges: Edge[] = initialSteps?.length
     ? initialSteps.slice(0, -1).map((step, index) => ({
