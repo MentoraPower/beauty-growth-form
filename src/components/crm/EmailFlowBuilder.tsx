@@ -172,7 +172,7 @@ const TriggerNode = ({ data, id, selected }: NodeProps & { data: {
         className="!w-4 !h-4 !bg-foreground !border-2 !border-background"
       />
       <div 
-        className="min-w-[280px] border border-border bg-background shadow-sm transition-all rounded-xl overflow-hidden"
+        className="min-w-[280px] border border-border bg-card transition-all rounded-xl overflow-hidden"
       >
         {/* Red accent header */}
         <div 
@@ -343,7 +343,7 @@ const WaitNode = ({ data, id, selected }: NodeProps) => {
 
   return (
     <div className="relative">
-      <div className="w-56 border border-border bg-background shadow-sm transition-all rounded-xl overflow-hidden">
+      <div className="w-56 border border-border bg-card transition-all rounded-xl overflow-hidden">
         <Handle
           type="target"
           position={Position.Left}
@@ -626,7 +626,7 @@ const EndNode = ({ data, id, selected }: NodeProps) => {
 
   return (
     <div className="relative">
-      <div className="px-5 py-2.5 rounded-full border border-border bg-background shadow-sm transition-all flex items-center gap-2">
+      <div className="px-5 py-2.5 rounded-full border border-border bg-card transition-all flex items-center gap-2">
         <Handle
           type="target"
           position={Position.Left}
