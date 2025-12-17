@@ -211,10 +211,16 @@ const CustomEdge = ({
       <path
         d={edgePath}
         fill="none"
-        stroke="url(#edge-gradient)"
+        stroke="#EA4335"
         strokeWidth={2}
-        strokeDasharray="6 4"
-        markerEnd="url(#circle-end)"
+        strokeDasharray="8 6"
+        strokeLinecap="round"
+      />
+      <circle
+        cx={targetX}
+        cy={targetY}
+        r={4}
+        fill="#A10000"
       />
       <EdgeLabelRenderer>
         <div
@@ -622,24 +628,6 @@ export function EmailFlowBuilder({
               showInteractive={false}
             />
             <Background variant={BackgroundVariant.Dots} gap={24} size={1} color="#d4d4d8" />
-            <svg width="0" height="0">
-              <defs>
-                <linearGradient id="edge-gradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                  <stop offset="0%" stopColor="#F40000" />
-                  <stop offset="100%" stopColor="#A10000" />
-                </linearGradient>
-                <marker
-                  id="circle-end"
-                  viewBox="0 0 10 10"
-                  refX="5"
-                  refY="5"
-                  markerWidth="8"
-                  markerHeight="8"
-                >
-                  <circle cx="5" cy="5" r="4" fill="#A10000" />
-                </marker>
-              </defs>
-            </svg>
           </ReactFlow>
         </div>
       </div>
