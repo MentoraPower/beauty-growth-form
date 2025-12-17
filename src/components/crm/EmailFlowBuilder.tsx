@@ -478,9 +478,9 @@ export function EmailFlowBuilder({
       </div>
 
       {/* Main content area with flow and side panel */}
-      <div className="flex-1 flex overflow-hidden">
+      <div className="flex-1 flex overflow-hidden relative">
         {/* Flow Canvas */}
-        <div className={cn("flex-1 transition-all", editPanelOpen && "mr-[400px]")}>
+        <div className="flex-1">
           <ReactFlow
             nodes={nodes}
             edges={edges}
@@ -502,15 +502,16 @@ export function EmailFlowBuilder({
           </ReactFlow>
         </div>
 
-        {/* Side Panel for Email Editing */}
+        {/* Side Panel for Email Editing - Dropdown style */}
         {editPanelOpen && selectedNode?.type === "email" && (
-          <div className="fixed right-0 top-0 bottom-0 w-[400px] bg-white border-l border-neutral-200 shadow-xl z-50 flex flex-col">
-            <div className="flex items-center justify-between px-5 py-4 border-b border-neutral-200">
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-lg bg-blue-500 flex items-center justify-center">
-                  <Mail className="w-4 h-4 text-white" />
+          <div className="absolute right-4 top-4 w-[360px] bg-white border border-neutral-200 rounded-2xl shadow-2xl z-50 flex flex-col max-h-[calc(100%-2rem)] overflow-hidden">
+            {/* Header */}
+            <div className="flex items-center justify-between px-4 py-3 border-b border-neutral-100">
+              <div className="flex items-center gap-2.5">
+                <div className="w-7 h-7 rounded-lg bg-blue-500 flex items-center justify-center">
+                  <Mail className="w-3.5 h-3.5 text-white" />
                 </div>
-                <h3 className="text-base font-semibold text-neutral-900">Editar E-mail</h3>
+                <h3 className="text-sm font-semibold text-neutral-900">Editar E-mail</h3>
               </div>
               <Button
                 variant="ghost"
@@ -519,43 +520,44 @@ export function EmailFlowBuilder({
                   setEditPanelOpen(false);
                   setSelectedNode(null);
                 }}
-                className="h-8 w-8 text-neutral-500 hover:text-neutral-700"
+                className="h-7 w-7 text-neutral-400 hover:text-neutral-600"
               >
                 <X className="w-4 h-4" />
               </Button>
             </div>
 
-            <div className="flex-1 overflow-y-auto p-5 space-y-5">
+            {/* Content */}
+            <div className="flex-1 overflow-y-auto p-4 space-y-4">
               <div>
-                <Label className="text-neutral-700">Assunto do e-mail</Label>
+                <Label className="text-xs font-medium text-neutral-600">Assunto</Label>
                 <Input
                   placeholder="Ex: {{nome}}, seu e-book está pronto!"
                   value={editData.subject || ""}
                   onChange={(e) => setEditData({ ...editData, subject: e.target.value })}
-                  className="mt-1.5 border-neutral-300 text-neutral-900"
+                  className="mt-1 h-9 text-sm border-neutral-200 text-neutral-900 bg-neutral-50 focus:bg-white"
                 />
-                <p className="text-xs text-neutral-500 mt-1.5">
+                <p className="text-[10px] text-neutral-400 mt-1">
                   Use {"{{nome}}"} para inserir o nome do lead
                 </p>
               </div>
 
-              <div className="flex-1">
-                <Label className="text-neutral-700">Corpo do e-mail (HTML)</Label>
+              <div>
+                <Label className="text-xs font-medium text-neutral-600">Corpo do e-mail (HTML)</Label>
                 <Textarea
                   placeholder="<h1>Olá {{nome}}!</h1><p>Seu conteúdo aqui...</p>"
                   value={editData.bodyHtml || ""}
                   onChange={(e) => setEditData({ ...editData, bodyHtml: e.target.value })}
-                  className="mt-1.5 min-h-[300px] font-mono text-sm border-neutral-300 text-neutral-900"
+                  className="mt-1 min-h-[160px] font-mono text-xs border-neutral-200 text-neutral-900 bg-neutral-50 focus:bg-white resize-none"
                 />
               </div>
 
               {/* Preview */}
               {editData.bodyHtml && (
                 <div>
-                  <Label className="text-neutral-700">Pré-visualização</Label>
-                  <div className="mt-1.5 p-4 border border-neutral-200 rounded-lg bg-neutral-50 max-h-[200px] overflow-y-auto">
+                  <Label className="text-xs font-medium text-neutral-600">Preview</Label>
+                  <div className="mt-1 p-3 border border-neutral-200 rounded-lg bg-neutral-50 max-h-[120px] overflow-y-auto">
                     <div 
-                      className="text-sm text-neutral-700"
+                      className="text-xs text-neutral-700"
                       dangerouslySetInnerHTML={{ __html: editData.bodyHtml }}
                     />
                   </div>
@@ -563,12 +565,14 @@ export function EmailFlowBuilder({
               )}
             </div>
 
-            <div className="p-5 border-t border-neutral-200">
+            {/* Footer */}
+            <div className="p-4 pt-3 border-t border-neutral-100">
               <Button 
                 onClick={saveEditData} 
-                className="w-full bg-gradient-to-r from-red-500 to-red-700 hover:opacity-90 text-white"
+                size="sm"
+                className="w-full bg-gradient-to-r from-red-500 to-red-700 hover:opacity-90 text-white text-sm h-9"
               >
-                Salvar alterações
+                Salvar
               </Button>
             </div>
           </div>
