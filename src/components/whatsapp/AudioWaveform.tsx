@@ -258,30 +258,30 @@ export const AudioWaveform = ({ src, sent = false }: AudioWaveformProps) => {
   }
 
   return (
-    <div className="flex flex-col gap-1 min-w-[260px]">
+    <div className="flex items-center gap-3 min-w-[260px]">
       <audio ref={audioRef} src={src} preload="metadata" />
 
-      {/* Player Row - Play, Waveform, Speed all aligned center */}
-      <div className="flex items-center gap-3">
-        {/* Play/Pause Button */}
-        <button
-          onClick={togglePlay}
-          className="w-11 h-11 rounded-full flex items-center justify-center flex-shrink-0 transition-all duration-200 bg-primary text-primary-foreground hover:bg-primary/90 hover:scale-105 shadow-sm"
-          aria-label={isPlaying ? "Pausar áudio" : "Reproduzir áudio"}
-          type="button"
-        >
-          {isPlaying ? <Pause size={20} fill="currentColor" /> : <Play size={20} fill="currentColor" className="ml-0.5" />}
-        </button>
+      {/* Play/Pause Button */}
+      <button
+        onClick={togglePlay}
+        className="w-11 h-11 rounded-full flex items-center justify-center flex-shrink-0 transition-all duration-200 bg-primary text-primary-foreground hover:bg-primary/90 hover:scale-105 shadow-sm"
+        aria-label={isPlaying ? "Pausar áudio" : "Reproduzir áudio"}
+        type="button"
+      >
+        {isPlaying ? <Pause size={20} fill="currentColor" /> : <Play size={20} fill="currentColor" className="ml-0.5" />}
+      </button>
 
-        {/* Waveform */}
-        <canvas
-          ref={canvasRef}
-          width={180}
-          height={36}
-          className="flex-1 cursor-pointer hover:opacity-80 transition-opacity"
-          onClick={handleCanvasClick}
-        />
+      {/* Waveform */}
+      <canvas
+        ref={canvasRef}
+        width={180}
+        height={36}
+        className="flex-1 cursor-pointer hover:opacity-80 transition-opacity"
+        onClick={handleCanvasClick}
+      />
 
+      {/* Time + Speed aligned together */}
+      <div className="flex flex-col items-center gap-0.5">
         {/* Playback Speed Button */}
         <button
           onClick={cyclePlaybackRate}
@@ -291,14 +291,14 @@ export const AudioWaveform = ({ src, sent = false }: AudioWaveformProps) => {
         >
           {playbackRate}x
         </button>
+        
+        {/* Time below speed button */}
+        <span className="text-[10px] text-muted-foreground tabular-nums">
+          {isPlaying || currentTime > 0
+            ? formatTime(currentTime)
+            : formatTime(duration)}
+        </span>
       </div>
-
-      {/* Time below - aligned with message send time */}
-      <span className="text-[11px] text-muted-foreground tabular-nums ml-14">
-        {isPlaying || currentTime > 0
-          ? formatTime(currentTime)
-          : formatTime(duration)}
-      </span>
     </div>
   );
 };
