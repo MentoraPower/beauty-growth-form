@@ -88,7 +88,8 @@ const EntryNode = ({ data }: NodeProps) => {
         id="entry-out"
         type="source"
         position={Position.Right}
-        className="!w-3 !h-3 !bg-background !border-2 !border-foreground"
+        isConnectable
+        className="!w-4 !h-4 !bg-background !border-2 !border-foreground !cursor-crosshair"
       />
     </div>
   );
@@ -157,7 +158,8 @@ const TriggerNode = ({ data, id, selected }: NodeProps & { data: {
         id="trigger-in"
         type="target"
         position={Position.Left}
-        className="!w-3 !h-3 !bg-foreground !border-2 !border-background"
+        isConnectable
+        className="!w-4 !h-4 !bg-foreground !border-2 !border-background"
       />
       <div 
         className="min-w-[280px] border border-border bg-background shadow-sm transition-all rounded-xl overflow-hidden"
@@ -884,7 +886,50 @@ export function EmailFlowBuilder({
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
 
-  // Update trigger node with latest pipelines when they change
+  // Ensure Start (entry) is always connected to the first Trigger
+  useEffect(() => {
+    const entryNode = nodes.find((n) => n.type === "entry");
+    const triggerNode = nodes.find((n) => n.type === "trigger");
+    if (!entryNode || !triggerNode) return;
+
+    setEdges((eds) => {
+      // Remove duplicate entry->trigger edges
+      const entryToTrigger = eds.filter((e) => e.source === entryNode.id && e.target === triggerNode.id);
+
+      const desired: Partial<Edge> = {
+        sourceHandle: "entry-out",
+        targetHandle: "trigger-in",
+        type: "custom",
+      };
+
+      if (entryToTrigger.length === 0) {
+        return [
+          ...eds,
+          {
+            id: `e-${entryNode.id}-${triggerNode.id}`,
+            source: entryNode.id,
+            target: triggerNode.id,
+            ...(desired as any),
+          } as Edge,
+        ];
+      }
+
+      // Keep the first, fix handles, drop the rest
+      const keepId = entryToTrigger[0].id;
+      const next = eds
+        .filter((e) => !(e.source === entryNode.id && e.target === triggerNode.id && e.id !== keepId))
+        .map((e) => {
+          if (e.id !== keepId) return e;
+          return {
+            ...e,
+            ...desired,
+          } as Edge;
+        });
+
+      return next;
+    });
+  }, [nodes, setEdges]);
+
   useEffect(() => {
     if (filteredPipelines.length > 0) {
       setNodes((nds) => nds.map((n) => {
