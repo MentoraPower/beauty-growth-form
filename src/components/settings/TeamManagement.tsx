@@ -12,7 +12,7 @@ interface TeamMember {
   id: string;
   name: string | null;
   email: string | null;
-  role: string;
+  role: string | null;
   user_id: string;
   permissions?: {
     can_access_whatsapp: boolean;
@@ -42,58 +42,18 @@ export function TeamManagement() {
   const [editingMember, setEditingMember] = useState<TeamMember | null>(null);
   const queryClient = useQueryClient();
 
-  // Fetch team members with their roles and permissions
+  // Fetch team members (existing emails) with roles and permissions via edge function
   const { data: teamMembers, isLoading } = useQuery({
     queryKey: ["team-members"],
     queryFn: async () => {
-      // Get all user roles
-      const { data: roles, error: rolesError } = await supabase
-        .from("user_roles")
-        .select("*");
+      const { data, error } = await supabase.functions.invoke("list-team-members");
 
-      if (rolesError) throw rolesError;
+      if (error) {
+        // This can happen if the current user is not admin
+        throw new Error(error.message);
+      }
 
-      // Get profiles for those users
-      const userIds = roles?.map((r) => r.user_id) || [];
-      if (userIds.length === 0) return [];
-
-      const { data: profiles, error: profilesError } = await supabase
-        .from("profiles")
-        .select("*")
-        .in("id", userIds);
-
-      if (profilesError) throw profilesError;
-
-      // Get permissions
-      const { data: permissions, error: permissionsError } = await supabase
-        .from("user_permissions")
-        .select("*")
-        .in("user_id", userIds);
-
-      if (permissionsError) throw permissionsError;
-
-      // Combine data
-      const members: TeamMember[] = roles?.map((role) => {
-        const profile = profiles?.find((p) => p.id === role.user_id);
-        const permission = permissions?.find((p) => p.user_id === role.user_id);
-
-        return {
-          id: role.id,
-          user_id: role.user_id,
-          name: profile?.name || null,
-          email: profile?.email || null,
-          role: role.role,
-          permissions: permission
-            ? {
-                can_access_whatsapp: permission.can_access_whatsapp,
-                allowed_origin_ids: permission.allowed_origin_ids || [],
-                allowed_sub_origin_ids: permission.allowed_sub_origin_ids || [],
-              }
-            : null,
-        };
-      }) || [];
-
-      return members;
+      return (data?.members || []) as TeamMember[];
     },
   });
 
@@ -185,10 +145,10 @@ export function TeamManagement() {
               <span
                 className={cn(
                   "px-3 py-1 rounded-full text-xs font-medium border",
-                  roleColors[member.role] || "bg-gray-100 text-gray-700"
+                  member.role ? (roleColors[member.role] || "bg-gray-100 text-gray-700") : "bg-gray-100 text-gray-700"
                 )}
               >
-                {roleLabels[member.role] || member.role}
+                {member.role ? (roleLabels[member.role] || member.role) : "Sem função"}
               </span>
 
               <Button

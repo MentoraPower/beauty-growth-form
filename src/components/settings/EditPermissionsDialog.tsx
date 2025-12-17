@@ -26,7 +26,7 @@ interface TeamMember {
   id: string;
   name: string | null;
   email: string | null;
-  role: string;
+  role: string | null;
   user_id: string;
   permissions?: {
     can_access_whatsapp: boolean;
@@ -55,7 +55,7 @@ export function EditPermissionsDialog({
   member,
 }: EditPermissionsDialogProps) {
   const [name, setName] = useState(member.name || "");
-  const [role, setRole] = useState(member.role);
+  const [role, setRole] = useState(member.role || "");
   const [canAccessWhatsapp, setCanAccessWhatsapp] = useState(false);
   const [selectedOrigins, setSelectedOrigins] = useState<string[]>([]);
   const [selectedSubOrigins, setSelectedSubOrigins] = useState<string[]>([]);
@@ -64,7 +64,7 @@ export function EditPermissionsDialog({
   // Initialize state from member
   useEffect(() => {
     setName(member.name || "");
-    setRole(member.role);
+    setRole(member.role || "");
     if (member.permissions) {
       setCanAccessWhatsapp(member.permissions.can_access_whatsapp);
       setSelectedOrigins(member.permissions.allowed_origin_ids);
@@ -102,55 +102,48 @@ export function EditPermissionsDialog({
     },
   });
 
-  // Save member data and permissions
+  // Save member data and permissions via edge function (admin-only)
   const saveMember = useMutation({
     mutationFn: async () => {
-      // Update profile name
-      const { error: profileError } = await supabase
-        .from("profiles")
-        .update({ name })
-        .eq("id", member.user_id);
+      const trimmedName = name.trim();
+      if (!trimmedName) throw new Error("Nome é obrigatório");
+      if (!role) throw new Error("Selecione a função");
 
-      if (profileError) throw profileError;
+      const { data, error } = await supabase.functions.invoke("update-team-member", {
+        body: {
+          user_id: member.user_id,
+          name: trimmedName,
+          role,
+          can_access_whatsapp: canAccessWhatsapp,
+          allowed_origin_ids: selectedOrigins,
+          allowed_sub_origin_ids: selectedSubOrigins,
+        },
+      });
 
-      // Update role if changed
-      if (role !== member.role) {
-        const { error: roleError } = await supabase
-          .from("user_roles")
-          .update({ role: role as "admin" | "suporte" | "gestor_trafego" | "closer" | "sdr" })
-          .eq("user_id", member.user_id);
-
-        if (roleError) throw roleError;
+      if (error) {
+        let msg = error.message || "Erro ao salvar";
+        const jsonMatch = msg.match(/\{.*\}/);
+        if (jsonMatch) {
+          try {
+            const parsed = JSON.parse(jsonMatch[0]);
+            if (parsed.error) msg = parsed.error;
+          } catch {
+            // ignore
+          }
+        }
+        throw new Error(msg);
       }
 
-      // Update permissions (only for non-admin)
-      if (role !== "admin") {
-        const { error: permError } = await supabase
-          .from("user_permissions")
-          .upsert({
-            user_id: member.user_id,
-            can_access_whatsapp: canAccessWhatsapp,
-            allowed_origin_ids: selectedOrigins,
-            allowed_sub_origin_ids: selectedSubOrigins,
-          });
-
-        if (permError) throw permError;
-      } else {
-        // Delete permissions for admin (they have full access)
-        await supabase
-          .from("user_permissions")
-          .delete()
-          .eq("user_id", member.user_id);
-      }
+      if (data?.error) throw new Error(data.error);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["team-members"] });
       toast.success("Membro atualizado!");
       onOpenChange(false);
     },
-    onError: (error) => {
+    onError: (error: any) => {
       console.error("Erro ao salvar:", error);
-      toast.error("Erro ao salvar alterações");
+      toast.error(error.message || "Erro ao salvar alterações");
     },
   });
 

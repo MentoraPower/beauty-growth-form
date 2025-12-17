@@ -26,6 +26,3 @@ verify_jwt = false
 
 [functions.receive-webhook]
 verify_jwt = false
-
-[functions.create-team-member]
-verify_jwt = false
