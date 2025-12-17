@@ -1233,6 +1233,7 @@ export function EmailFlowBuilder({
         {/* Left Sidebar */}
         <div className="border-r border-border bg-background p-4 flex flex-col gap-4">
           <div className="bg-muted/30 rounded-xl p-3 flex flex-col gap-2" style={{ border: "1px solid #00000015" }}>
+            <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider text-center">Ações</span>
             {/* Wait Node - Yellow icon */}
             <div
               draggable
