@@ -1866,7 +1866,7 @@ const WhatsApp = () => {
                               )}
                             >
                               {/* Quoted message preview - clickable to scroll */}
-                              {msg.quotedText && (() => {
+                              {(msg.quotedText || msg.quotedMessageId) && (() => {
                                 // Find quoted message to get media info
                                 const quotedMessage = messages.find(m => 
                                   m.message_id?.toString() === msg.quotedMessageId?.toString()
