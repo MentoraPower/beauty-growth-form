@@ -391,7 +391,10 @@ async function handler(req: Request): Promise<Response> {
 
     // Extract key information
     const key = messageData.key || {};
-    const messageId = key.id || messageData.id || `${Date.now()}`;
+    // Prefer numeric msgId from WasenderAPI (needed for replies), fallback to WhatsApp key.id
+    const numericMsgId = messageData.msgId || payload.data?.msgId;
+    const messageId = numericMsgId ? String(numericMsgId) : (key.id || messageData.id || `${Date.now()}`);
+    console.log(`[Wasender Webhook] Message ID: ${messageId} (numeric: ${numericMsgId || "N/A"}, key.id: ${key.id || "N/A"})`);
     const fromMe = key.fromMe || false;
     const remoteJid = key.remoteJid || "";
 
