@@ -560,25 +560,13 @@ export function KanbanBoard() {
         const oldIndex = pipelineLeads.findIndex((l) => l.id === activeId);
         const targetIndex = pipelineLeads.findIndex((l) => l.id === overId);
         
-        // Calculate new index based on drop position
-        let newIndex: number;
-        if (currentDropIndicator?.position === "bottom" && currentDropIndicator?.targetLeadId === overId) {
-          // Dropping below the target card
-          newIndex = targetIndex < oldIndex ? targetIndex + 1 : targetIndex;
-        } else {
-          // Dropping above the target card
-          newIndex = targetIndex > oldIndex ? targetIndex - 1 : targetIndex;
-        }
-
-        // Ensure valid range (allow inserting at end)
-        newIndex = Math.max(0, Math.min(newIndex, pipelineLeads.length - 1));
-
-        if (oldIndex === newIndex) {
+        if (oldIndex === -1 || targetIndex === -1 || oldIndex === targetIndex) {
           isReorderingRef.current = false;
           return;
         }
 
-        const reorderedLeads = arrayMove(pipelineLeads, oldIndex, newIndex);
+        // Simple swap using arrayMove - let dnd-kit handle the logic
+        const reorderedLeads = arrayMove(pipelineLeads, oldIndex, targetIndex);
 
         // Update ordem for all reordered leads
         const updates = reorderedLeads.map((lead, index) => ({

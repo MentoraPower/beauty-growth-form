@@ -19,22 +19,6 @@ interface KanbanColumnProps {
   dropIndicator?: DropIndicator | null;
 }
 
-// Simple placeholder with smooth transition
-const DropPlaceholder = memo(function DropPlaceholder({ visible }: { visible: boolean }) {
-  return (
-    <div 
-      className="overflow-hidden transition-all duration-150 ease-out"
-      style={{
-        height: visible ? 100 : 0,
-        opacity: visible ? 1 : 0,
-        marginBottom: visible ? 8 : 0,
-      }}
-    >
-      <div className="h-[100px] rounded-lg border-2 border-dashed border-black/20 bg-black/[0.03]" />
-    </div>
-  );
-});
-
 export const KanbanColumn = memo(function KanbanColumn({ 
   pipeline, 
   leads, 
@@ -47,33 +31,11 @@ export const KanbanColumn = memo(function KanbanColumn({
     id: pipeline.id,
   });
 
-  // Filter out the active dragging card from display
-  const visibleLeads = useMemo(() => {
-    if (!activeId) return leads;
-    return leads.filter(l => l.id !== activeId);
-  }, [leads, activeId]);
-
   // Check if column is being targeted for drop
   const isTargeted = isOver || (dropIndicator?.pipelineId === pipeline.id);
 
-  // Calculate placeholder position as a single index
-  const placeholderIndex = useMemo(() => {
-    if (!activeId || !dropIndicator || dropIndicator.pipelineId !== pipeline.id) {
-      return -1;
-    }
-    
-    // No target lead - show at top
-    if (!dropIndicator.targetLeadId) {
-      return 0;
-    }
-    
-    // Find target lead index
-    const targetIdx = visibleLeads.findIndex(l => l.id === dropIndicator.targetLeadId);
-    if (targetIdx === -1) return 0;
-    
-    // Position above or below target
-    return dropIndicator.position === "bottom" ? targetIdx + 1 : targetIdx;
-  }, [activeId, dropIndicator, pipeline.id, visibleLeads]);
+  // IDs for SortableContext - must include all items
+  const leadIds = useMemo(() => leads.map(l => l.id), [leads]);
 
   return (
     <div className="flex-shrink-0 w-80 flex flex-col min-h-0 relative">
@@ -102,38 +64,20 @@ export const KanbanColumn = memo(function KanbanColumn({
         {/* Cards container */}
         <div className="p-3 flex-1 overflow-y-auto">
           <SortableContext
-            items={leads.map((l) => l.id)}
+            items={leadIds}
             strategy={verticalListSortingStrategy}
           >
             <div className="space-y-2 pb-12">
-              {/* Single placeholder at calculated index */}
-              {visibleLeads.length === 0 && placeholderIndex === 0 && (
-                <DropPlaceholder visible={true} />
-              )}
-
-              {visibleLeads.map((lead, index) => (
-                <div key={lead.id}>
-                  {/* Placeholder before this card */}
-                  {placeholderIndex === index && (
-                    <DropPlaceholder visible={true} />
-                  )}
-                  
-                  <KanbanCard 
-                    lead={lead} 
-                    subOriginId={subOriginId}
-                  />
-                  
-                  {/* Placeholder after last card if index matches */}
-                  {index === visibleLeads.length - 1 && placeholderIndex === visibleLeads.length && (
-                    <div className="mt-2">
-                      <DropPlaceholder visible={true} />
-                    </div>
-                  )}
-                </div>
+              {leads.map((lead) => (
+                <KanbanCard 
+                  key={lead.id}
+                  lead={lead} 
+                  subOriginId={subOriginId}
+                />
               ))}
 
               {/* Empty state */}
-              {visibleLeads.length === 0 && placeholderIndex !== 0 && (
+              {leads.length === 0 && (
                 <div className={`text-center text-sm py-8 rounded-lg border-2 border-dashed transition-colors duration-100 ${
                   isTargeted 
                     ? "border-black/20 text-foreground bg-black/[0.02]" 
