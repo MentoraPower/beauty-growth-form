@@ -754,17 +754,6 @@ export function AutomationsDropdown({
   };
 
   const handleOpenEmailFlowBuilder = () => {
-    if (!emailName.trim()) {
-      toast.error("Digite um nome para a automação");
-      return;
-    }
-    if (!emailTriggerPipeline) {
-      toast.error("Selecione a pipeline de gatilho");
-      return;
-    }
-    
-    const triggerPipelineName = pipelines.find(p => p.id === emailTriggerPipeline)?.nome || "";
-    
     // Use saved flow_steps if available, otherwise create default structure when editing
     const getInitialSteps = () => {
       if (emailFlowSteps && emailFlowSteps.length > 0) {
@@ -772,7 +761,7 @@ export function AutomationsDropdown({
       }
       if (editingEmailId) {
         return [
-          { id: "trigger-1", type: "trigger", position: { x: 100, y: 200 }, data: { label: "Gatilho", triggerType: "lead_entered_pipeline", triggerPipelineId: emailTriggerPipeline } },
+          { id: "trigger-1", type: "trigger", position: { x: 100, y: 200 }, data: { label: "Adicionar gatilhos" } },
           { id: "email-1", type: "email", position: { x: 380, y: 200 }, data: { label: "Enviar e-mail", subject: emailSubject, bodyHtml: emailBodyHtml } },
           { id: "end-1", type: "end", position: { x: 660, y: 200 }, data: { label: "Fluxo finalizado" } },
         ];
@@ -784,16 +773,16 @@ export function AutomationsDropdown({
       openingEmailBuilderRef.current = true;
       setOpen(false); // Close the dropdown
       onShowEmailBuilder(true, {
-        automationName: emailName,
-        triggerPipelineName,
+        automationName: emailName || "Nova automação",
+        triggerPipelineName: "",
         onSave: handleSaveEmailFlow,
         onCancel: () => {
           onShowEmailBuilder(false);
         },
         initialSteps: getInitialSteps(),
         editingContext: {
-          emailName,
-          emailTriggerPipeline,
+          emailName: emailName || "Nova automação",
+          emailTriggerPipeline: "",
           editingEmailId,
           isCreating: isCreatingEmail,
           emailSubject,
