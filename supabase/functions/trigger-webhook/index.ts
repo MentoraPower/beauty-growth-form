@@ -262,44 +262,87 @@ const handler = async (req: Request): Promise<Response> => {
                   
                   if (matchedTriggerIndex >= 0) {
                     // Determine the sourceHandle for this trigger index
-                    // Can be "trigger-handle-{index}" or null/undefined for legacy connections
                     const expectedHandle = `trigger-handle-${matchedTriggerIndex}`;
                     
                     // Find edge from trigger node with matching sourceHandle
-                    const matchingEdge = edges.find((edge: any) => {
+                    const startingEdge = edges.find((edge: any) => {
                       if (edge.source !== triggerNode.id) return false;
-                      // Check for exact handle match
                       if (edge.sourceHandle === expectedHandle) return true;
-                      // For index 0, also match null/undefined (legacy connections)
                       if (matchedTriggerIndex === 0 && (!edge.sourceHandle || edge.sourceHandle === null)) {
                         return true;
                       }
                       return false;
                     });
                     
-                    if (matchingEdge) {
-                      targetEmailNodeId = matchingEdge.target;
-                      console.log(`[EmailAutomation] Found edge to email node: ${targetEmailNodeId}`);
+                    if (startingEdge) {
+                      // Follow the path of edges to find the email node
+                      // This handles cases like: trigger → wait → email
+                      let currentNodeId = startingEdge.target;
+                      const visitedNodes = new Set<string>();
+                      const maxIterations = 20; // Safety limit
+                      let iterations = 0;
+                      
+                      while (currentNodeId && iterations < maxIterations) {
+                        iterations++;
+                        
+                        // Avoid infinite loops
+                        if (visitedNodes.has(currentNodeId)) {
+                          console.log(`[EmailAutomation] Detected cycle at node: ${currentNodeId}`);
+                          break;
+                        }
+                        visitedNodes.add(currentNodeId);
+                        
+                        // Find the current node
+                        const currentNode = flowSteps.find((step) => step?.id === currentNodeId);
+                        
+                        if (!currentNode) {
+                          console.log(`[EmailAutomation] Node not found: ${currentNodeId}`);
+                          break;
+                        }
+                        
+                        console.log(`[EmailAutomation] Visiting node: ${currentNodeId}, type: ${currentNode.type}`);
+                        
+                        // If it's an email node, we found our target
+                        if (currentNode.type === "email") {
+                          targetEmailNodeId = currentNodeId;
+                          console.log(`[EmailAutomation] Found email node: ${targetEmailNodeId}`);
+                          break;
+                        }
+                        
+                        // If it's an end node, stop the chain
+                        if (currentNode.type === "end") {
+                          console.log(`[EmailAutomation] Reached end node - no email in path`);
+                          break;
+                        }
+                        
+                        // Find the next edge from this node (for wait nodes, etc.)
+                        const nextEdge = edges.find((edge: any) => edge.source === currentNodeId);
+                        
+                        if (nextEdge) {
+                          currentNodeId = nextEdge.target;
+                        } else {
+                          console.log(`[EmailAutomation] No outgoing edge from node: ${currentNodeId}`);
+                          break;
+                        }
+                      }
                     } else {
                       console.log(`[EmailAutomation] No matching edge found for handle: ${expectedHandle} - skipping email`);
-                      // No connection from trigger to any node - skip this automation
                       continue;
                     }
                   }
                 }
                 
                 // Only send if there's a valid connected email node
-                // Do NOT fallback to first email node if no connection exists
                 if (!targetEmailNodeId) {
-                  console.log(`[EmailAutomation] No valid connection path - skipping automation "${automation.name}"`);
+                  console.log(`[EmailAutomation] No valid email node in connection path - skipping automation "${automation.name}"`);
                   continue;
                 }
                 
-                // Find the target email node (must have explicit connection)
+                // Find the target email node
                 let emailNode = flowSteps.find((step) => step?.id === targetEmailNodeId && step?.type === "email");
                 
                 if (!emailNode?.data) {
-                  console.log(`[EmailAutomation] Target node "${targetEmailNodeId}" is not an email node - skipping`);
+                  console.log(`[EmailAutomation] Email node "${targetEmailNodeId}" has no data - skipping`);
                   continue;
                 }
                 
