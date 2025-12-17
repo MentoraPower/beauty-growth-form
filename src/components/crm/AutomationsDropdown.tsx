@@ -775,11 +775,11 @@ export function AutomationsDropdown({ pipelines, subOriginId }: AutomationsDropd
         </div>
         {/* Full screen overlay positioned within main content area */}
         <div 
-          className="fixed z-[100] bg-white rounded-2xl overflow-hidden shadow-xl"
+          className="fixed z-[100] bg-neutral-100 overflow-hidden border-0"
           style={{
-            top: 12,
-            right: 12,
-            bottom: 12,
+            top: 0,
+            right: 0,
+            bottom: 0,
             // Match DashboardLayout: sidebarCollapsed(64) + gap(4) + submenu(256) + gap(12) = 336
             left: 336,
           }}
