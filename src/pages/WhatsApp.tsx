@@ -1866,26 +1866,50 @@ const WhatsApp = () => {
                               )}
                             >
                               {/* Quoted message preview - clickable to scroll */}
-                              {msg.quotedText && (
-                                <div 
-                                  onClick={() => msg.quotedMessageId && scrollToQuotedMessage(msg.quotedMessageId)}
-                                  className={cn(
-                                    "mb-1.5 px-2 py-1 rounded border-l-2 text-xs transition-colors",
-                                    msg.quotedFromMe 
-                                      ? "bg-emerald-200/50 dark:bg-emerald-800/30 border-emerald-500" 
-                                      : "bg-muted/50 border-muted-foreground/50",
-                                    msg.quotedMessageId && "cursor-pointer hover:bg-muted/70"
-                                  )}
-                                >
-                                  <span className={cn(
-                                    "font-medium block",
-                                    msg.quotedFromMe ? "text-emerald-700 dark:text-emerald-400" : "text-muted-foreground"
-                                  )}>
-                                    {msg.quotedFromMe ? "Você" : selectedChat?.name || "Contato"}
-                                  </span>
-                                  <span className="text-muted-foreground line-clamp-2">{formatWhatsAppText(msg.quotedText || "")}</span>
-                                </div>
-                              )}
+                              {msg.quotedText && (() => {
+                                // Find quoted message to get media info
+                                const quotedMessage = messages.find(m => 
+                                  m.message_id?.toString() === msg.quotedMessageId?.toString()
+                                );
+                                const hasQuotedImage = quotedMessage?.mediaType === "image" && quotedMessage?.mediaUrl;
+                                
+                                return (
+                                  <div 
+                                    onClick={() => msg.quotedMessageId && scrollToQuotedMessage(msg.quotedMessageId)}
+                                    className={cn(
+                                      "mb-1.5 px-2 py-1 rounded border-l-2 text-xs transition-colors flex gap-2",
+                                      msg.quotedFromMe 
+                                        ? "bg-emerald-200/50 dark:bg-emerald-800/30 border-emerald-500" 
+                                        : "bg-muted/50 border-muted-foreground/50",
+                                      msg.quotedMessageId && "cursor-pointer hover:bg-muted/70"
+                                    )}
+                                  >
+                                    <div className="flex-1 min-w-0">
+                                      <span className={cn(
+                                        "font-medium block",
+                                        msg.quotedFromMe ? "text-emerald-700 dark:text-emerald-400" : "text-muted-foreground"
+                                      )}>
+                                        {msg.quotedFromMe ? "Você" : selectedChat?.name || "Contato"}
+                                      </span>
+                                      {hasQuotedImage ? (
+                                        <span className="text-muted-foreground flex items-center gap-1">
+                                          <Image className="w-3 h-3" />
+                                          Foto
+                                        </span>
+                                      ) : (
+                                        <span className="text-muted-foreground line-clamp-2">{formatWhatsAppText(msg.quotedText || "")}</span>
+                                      )}
+                                    </div>
+                                    {hasQuotedImage && (
+                                      <img 
+                                        src={quotedMessage.mediaUrl!} 
+                                        alt="Imagem citada" 
+                                        className="w-10 h-10 rounded object-cover flex-shrink-0"
+                                      />
+                                    )}
+                                  </div>
+                                );
+                              })()}
                               {/* Inline layout for text messages, stacked for media */}
                               {msg.mediaType && msg.mediaType !== "audio" ? (
                                 <>
