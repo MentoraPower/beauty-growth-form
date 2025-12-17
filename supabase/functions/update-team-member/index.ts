@@ -79,6 +79,8 @@ Deno.serve(async (req) => {
 
     const userId = String(body.user_id ?? "").trim();
     const name = String(body.name ?? "").trim();
+    const email = String(body.email ?? "").trim();
+    const password = body.password ? String(body.password) : null;
     const role = String(body.role ?? "").trim() as AppRole;
 
     const canAccessWhatsapp = !!body.can_access_whatsapp;
@@ -89,21 +91,37 @@ Deno.serve(async (req) => {
 
     if (!userId) return json(400, { error: "user_id é obrigatório" });
     if (!name) return json(400, { error: "Nome é obrigatório" });
+    if (!email) return json(400, { error: "E-mail é obrigatório" });
+
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) return json(400, { error: "E-mail inválido" });
+
+    // Validate password if provided
+    if (password && password.length < 6) {
+      return json(400, { error: "A senha deve ter pelo menos 6 caracteres" });
+    }
 
     const validRoles: AppRole[] = ["admin", "suporte", "gestor_trafego", "closer", "sdr"];
     if (!validRoles.includes(role)) return json(400, { error: "Função inválida" });
 
-    // Keep auth user metadata name in sync
-    const { error: authUpdateError } = await supabaseAdmin.auth.admin.updateUserById(userId, {
+    // Build auth update object
+    const authUpdate: any = {
       user_metadata: { name },
-    });
+      email,
+    };
+
+    // Only update password if provided
+    if (password) {
+      authUpdate.password = password;
+    }
+
+    // Update auth user (name, email, password)
+    const { error: authUpdateError } = await supabaseAdmin.auth.admin.updateUserById(userId, authUpdate);
 
     if (authUpdateError) return json(400, { error: authUpdateError.message });
 
-    // Get email from auth to keep profile consistent
-    const { data: authUserData } = await supabaseAdmin.auth.admin.getUserById(userId);
-    const email = authUserData?.user?.email ?? null;
-
+    // Update profile
     const { error: profileError } = await supabaseAdmin
       .from("profiles")
       .upsert({ id: userId, name, email });
