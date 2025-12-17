@@ -258,11 +258,12 @@ export const AudioWaveform = ({ src, sent = false }: AudioWaveformProps) => {
   }
 
   return (
-    <div className="flex items-center gap-3 min-w-[260px]">
+    <div className="flex flex-col min-w-[260px]">
       <audio ref={audioRef} src={src} preload="metadata" />
 
-      {/* Play Button + Time stacked */}
-      <div className="flex flex-col items-center gap-0.5">
+      {/* Player Row */}
+      <div className="flex items-center gap-3">
+        {/* Play Button */}
         <button
           onClick={togglePlay}
           className="w-11 h-11 rounded-full flex items-center justify-center flex-shrink-0 transition-all duration-200 bg-primary text-primary-foreground hover:bg-primary/90 hover:scale-105 shadow-sm"
@@ -271,33 +272,33 @@ export const AudioWaveform = ({ src, sent = false }: AudioWaveformProps) => {
         >
           {isPlaying ? <Pause size={20} fill="currentColor" /> : <Play size={20} fill="currentColor" className="ml-0.5" />}
         </button>
-        
-        {/* Time below play button */}
-        <span className="text-[10px] text-muted-foreground tabular-nums">
-          {isPlaying || currentTime > 0
-            ? formatTime(currentTime)
-            : formatTime(duration)}
-        </span>
+
+        {/* Waveform */}
+        <canvas
+          ref={canvasRef}
+          width={180}
+          height={36}
+          className="flex-1 cursor-pointer hover:opacity-80 transition-opacity"
+          onClick={handleCanvasClick}
+        />
+
+        {/* Playback Speed Button */}
+        <button
+          onClick={cyclePlaybackRate}
+          className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 text-sm font-semibold transition-all duration-200 bg-muted/80 text-muted-foreground hover:bg-muted hover:text-foreground hover:scale-105"
+          type="button"
+          title="Velocidade de reprodução"
+        >
+          {playbackRate}x
+        </button>
       </div>
 
-      {/* Waveform */}
-      <canvas
-        ref={canvasRef}
-        width={180}
-        height={36}
-        className="flex-1 cursor-pointer hover:opacity-80 transition-opacity"
-        onClick={handleCanvasClick}
-      />
-
-      {/* Playback Speed Button */}
-      <button
-        onClick={cyclePlaybackRate}
-        className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 text-sm font-semibold transition-all duration-200 bg-muted/80 text-muted-foreground hover:bg-muted hover:text-foreground hover:scale-105"
-        type="button"
-        title="Velocidade de reprodução"
-      >
-        {playbackRate}x
-      </button>
+      {/* Time below - aligned left under play button */}
+      <span className="text-[10px] text-muted-foreground tabular-nums mt-1 ml-2">
+        {isPlaying || currentTime > 0
+          ? formatTime(currentTime)
+          : formatTime(duration)}
+      </span>
     </div>
   );
 };
