@@ -46,6 +46,7 @@ interface EmailAutomation {
   subject: string;
   body_html: string;
   is_active: boolean;
+  flow_steps: any[] | null;
 }
 
 const handler = async (req: Request): Promise<Response> => {
