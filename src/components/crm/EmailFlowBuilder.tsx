@@ -80,6 +80,7 @@ const WaitNode = ({ data, id }: NodeProps) => {
   const waitUnit = (data.waitUnit as string) || "hours";
   
   const unitLabels: Record<string, string> = {
+    seconds: "segundos",
     minutes: "minutos",
     hours: "horas",
     days: "dias",
@@ -168,6 +169,7 @@ const WaitNode = ({ data, id }: NodeProps) => {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
+                    <SelectItem value="seconds">Segundos</SelectItem>
                     <SelectItem value="minutes">Minutos</SelectItem>
                     <SelectItem value="hours">Horas</SelectItem>
                     <SelectItem value="days">Dias</SelectItem>
