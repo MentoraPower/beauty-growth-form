@@ -113,7 +113,7 @@ function SortableOriginItem({
     opacity: isDragging ? 0.5 : 1,
   };
 
-  const LINE_TOP_PX = 14;
+  const LINE_TOP_PX = 20;
   const lastSubOriginRef = useRef<HTMLLIElement | null>(null);
   const [treeLineHeightPx, setTreeLineHeightPx] = useState(0);
 
@@ -212,7 +212,7 @@ function SortableOriginItem({
       >
         <div className="overflow-hidden">
           {/* Tree container */}
-          <ul className="ml-4 pt-1 pb-1 list-none pl-0 relative">
+          <ul className="ml-4 pt-2 pb-1 list-none pl-0 relative">
             
             {/* Linha vertical principal - cor escura, sem transparência, z-index alto */}
             <div 
@@ -225,7 +225,7 @@ function SortableOriginItem({
             />
             
             {/* Overview Item */}
-            <li className="relative pl-6 py-0.5">
+            <li className="relative pl-6 py-1">
               {/* Curva SVG perfeita */}
               <svg 
                 className="absolute left-[4px] top-1/2 -translate-y-1/2 z-0" 
@@ -246,24 +246,24 @@ function SortableOriginItem({
                 <button
                   onClick={() => handleOverviewClick(origin.id)}
                   className={cn(
-                    "flex items-center gap-2 w-full py-1.5 px-2.5 rounded-lg transition-all duration-200 ease-out text-xs border",
+                    "flex items-center gap-1.5 w-full py-1 px-2 rounded-lg transition-all duration-200 ease-out text-[11px] border",
                     currentOverviewOriginId === origin.id
                       ? "bg-white border-black/10 text-foreground shadow-sm"
                       : "bg-white/50 border-transparent text-foreground/80 hover:bg-white hover:border-black/5 hover:shadow-sm"
                   )}
                 >
                   <div className={cn(
-                    "w-6 h-6 rounded-md flex items-center justify-center",
+                    "w-5 h-5 rounded flex items-center justify-center",
                     currentOverviewOriginId === origin.id
-                      ? "bg-gradient-to-br from-[#F40000] to-[#A10000]"
+                      ? "bg-black/10"
                       : "bg-black/5"
                   )}>
                     <Home className={cn(
-                      "h-3.5 w-3.5",
-                      currentOverviewOriginId === origin.id ? "text-white" : "text-foreground/70"
+                      "h-3 w-3",
+                      currentOverviewOriginId === origin.id ? "text-foreground" : "text-foreground/70"
                     )} />
                   </div>
-                  <span className="font-semibold">Overview</span>
+                  <span className="font-medium">Overview</span>
                 </button>
               </div>
             </li>
@@ -277,7 +277,7 @@ function SortableOriginItem({
               return (
                 <li 
                   key={subOrigin.id} 
-                  className="relative pl-6 py-0.5"
+                  className="relative pl-6 py-1"
                   ref={isLast ? (el) => { lastSubOriginRef.current = el; } : undefined}
                 >
                   {/* Curva SVG perfeita */}
