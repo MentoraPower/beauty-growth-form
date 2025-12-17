@@ -221,16 +221,13 @@ function SortableOriginItem({
             </div>
 
             {/* Sub-origins section - vertical line coming from below Overview */}
-            <div className="relative ml-4 mt-0">
-              {/* Vertical line starting from below Overview going down through all sub-origins */}
+            <div className="relative ml-[29px] mt-0">
+              {/* Vertical line starting from below Overview home icon */}
               {(originSubOrigins.length > 0) && (
-                <>
-                  {/* Vertical line from Overview to first sub-origin and beyond */}
-                  <div 
-                    className="absolute left-[7px] -top-1 w-[2px] bg-[#b0b0b0] z-10" 
-                    style={{ height: `calc(100% - 10px)` }}
-                  />
-                </>
+                <div 
+                  className="absolute left-[3px] top-0 w-[2px] bg-[#b0b0b0] z-10" 
+                  style={{ height: `calc(100% - 14px)` }}
+                />
               )}
               
               {/* Sub-origins */}
@@ -241,7 +238,7 @@ function SortableOriginItem({
                 return (
                   <div key={subOrigin.id} className="relative flex items-center group py-0.5">
                     {/* Curved line from vertical line to sub-origin */}
-                    <svg className="absolute left-[7px] top-1/2 -translate-y-1/2 w-4 h-5 overflow-hidden z-0" viewBox="0 0 16 20" fill="none">
+                    <svg className="absolute left-[3px] top-1/2 -translate-y-1/2 w-4 h-5 overflow-hidden z-0" viewBox="0 0 16 20" fill="none">
                       <path 
                         d="M0 0 L0 10 C0 14, 4 16, 14 16" 
                         stroke="#b0b0b0" 
@@ -307,16 +304,6 @@ function SortableOriginItem({
 
               {/* Add Sub-origin Button */}
               <div className="relative flex items-center py-0.5">
-                {/* Curved line from vertical line */}
-                <svg className="absolute left-[7px] top-1/2 -translate-y-1/2 w-4 h-5 overflow-hidden z-0" viewBox="0 0 16 20" fill="none">
-                  <path 
-                    d="M0 0 L0 10 C0 14, 4 16, 14 16" 
-                    stroke="#b0b0b0" 
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    fill="none"
-                  />
-                </svg>
                 <button
                   onClick={() => openCreateSubOriginDialog(origin.id)}
                   className="flex items-center gap-2 w-full py-1.5 px-2 ml-4 rounded-lg transition-all duration-200 ease-out text-xs text-foreground/50 hover:text-foreground hover:bg-black/5"
