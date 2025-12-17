@@ -208,10 +208,20 @@ const CustomEdge = ({
 
   return (
     <>
+      <defs>
+        <linearGradient id={`edge-gradient-${id}`} x1="0%" y1="0%" x2="100%" y2="0%">
+          <stop offset="0%" stopColor="#F40000" />
+          <stop offset="100%" stopColor="#A10000" />
+        </linearGradient>
+      </defs>
       <BaseEdge
         path={edgePath}
-        style={{ strokeWidth: 1.5, stroke: "#a1a1aa" }}
-        markerEnd="url(#arrow)"
+        style={{ 
+          strokeWidth: 2, 
+          stroke: `url(#edge-gradient-${id})`,
+          strokeDasharray: "8 4",
+        }}
+        markerEnd="url(#arrow-red)"
       />
       <EdgeLabelRenderer>
         <div
@@ -621,16 +631,20 @@ export function EmailFlowBuilder({
             <Background variant={BackgroundVariant.Dots} gap={24} size={1} color="#d4d4d8" />
             <svg>
               <defs>
+                <linearGradient id="arrow-gradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                  <stop offset="0%" stopColor="#F40000" />
+                  <stop offset="100%" stopColor="#A10000" />
+                </linearGradient>
                 <marker
-                  id="arrow"
+                  id="arrow-red"
                   viewBox="0 0 10 10"
                   refX="10"
                   refY="5"
-                  markerWidth="5"
-                  markerHeight="5"
+                  markerWidth="6"
+                  markerHeight="6"
                   orient="auto-start-reverse"
                 >
-                  <path d="M 0 0 L 10 5 L 0 10 z" fill="#a1a1aa" />
+                  <path d="M 0 0 L 10 5 L 0 10 z" fill="#A10000" />
                 </marker>
               </defs>
             </svg>
