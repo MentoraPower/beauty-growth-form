@@ -100,7 +100,7 @@ interface EmailBuilderProps {
   subOriginId?: string | null;
 }
 
-type ActiveTab = "automations" | "webhooks" | "emails";
+type ActiveTab = "automations" | "webhooks";
 
 export function AutomationsDropdown({ 
   pipelines, 
@@ -115,7 +115,7 @@ export function AutomationsDropdown({
   const [internalOpen, setInternalOpen] = useState(false);
   const open = externalOpen !== undefined ? externalOpen : internalOpen;
   const setOpen = onOpenChange || setInternalOpen;
-  const [activeTab, setActiveTab] = useState<ActiveTab>("emails");
+  const [activeTab, setActiveTab] = useState<ActiveTab>("automations");
   
   // Automation creation/edit states
   const [isCreatingAutomation, setIsCreatingAutomation] = useState(false);
@@ -156,7 +156,7 @@ export function AutomationsDropdown({
       setIsCreatingEmail(emailEditingContext.isCreating);
       setEmailSubject(emailEditingContext.emailSubject || "");
       setEmailBodyHtml(emailEditingContext.emailBodyHtml || "");
-      setActiveTab("emails");
+      setActiveTab("automations");
     }
   }, [open, emailEditingContext]);
   
@@ -979,22 +979,6 @@ export function AutomationsDropdown({
                 </span>
               )}
             </button>
-            <button
-              onClick={() => setActiveTab("emails")}
-              className={cn(
-                "pb-3 text-sm font-medium border-b-2 transition-colors",
-                activeTab === "emails"
-                  ? "border-foreground text-foreground"
-                  : "border-transparent text-muted-foreground hover:text-foreground"
-              )}
-            >
-              E-mail
-              {activeEmailAutomationsCount > 0 && (
-                <span className="ml-2 px-1.5 py-0.5 text-[10px] rounded bg-muted text-muted-foreground">
-                  {activeEmailAutomationsCount}
-                </span>
-              )}
-            </button>
           </div>
         </div>
 
@@ -1018,6 +1002,23 @@ export function AutomationsDropdown({
                 >
                   <Plus className="w-4 h-4 mr-2" />
                   Criar automação
+                </Button>
+                <Button
+                  onClick={() => {
+                    setIsCreatingEmail(true);
+                    setEmailName("Nova automação de e-mail");
+                    handleOpenEmailFlowBuilder();
+                  }}
+                  variant="outline"
+                  className="border-border"
+                >
+                  <Mail className="w-4 h-4 mr-2" />
+                  E-mail
+                  {activeEmailAutomationsCount > 0 && (
+                    <span className="ml-2 px-1.5 py-0.5 text-[10px] rounded bg-muted text-muted-foreground">
+                      {activeEmailAutomationsCount}
+                    </span>
+                  )}
                 </Button>
               </div>
 
@@ -1637,159 +1638,6 @@ export function AutomationsDropdown({
                 </div>
               </div>
               */}
-            </div>
-          )}
-
-          {/* Email Automations Tab */}
-          {activeTab === "emails" && (
-            <div className="p-6">
-              {/* Header */}
-              <div className="flex items-center gap-2 mb-6">
-                <button className="px-3 py-1.5 text-sm rounded-lg bg-foreground/10 text-foreground font-medium">
-                  Ativo {activeEmailAutomationsCount}
-                </button>
-                <button className="px-3 py-1.5 text-sm rounded-lg text-muted-foreground hover:bg-muted transition-colors">
-                  Inativo {emailAutomations.length - activeEmailAutomationsCount}
-                </button>
-                <div className="flex-1" />
-                <Button
-                  onClick={() => setIsCreatingEmail(true)}
-                  className="bg-foreground hover:bg-foreground/90 text-background"
-                  disabled={isCreatingEmail}
-                >
-                  <Plus className="w-4 h-4 mr-2" />
-                  Criar automação
-                </Button>
-              </div>
-
-              {/* Create/Edit form */}
-              {isCreatingEmail && (
-                <div className="mb-6 p-5 rounded-xl bg-muted/50 border border-border space-y-4">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium text-foreground">
-                      {editingEmailId ? "Editar automação de e-mail" : "Nova automação de e-mail"}
-                    </span>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground"
-                      onClick={resetEmailForm}
-                    >
-                      <X className="w-4 h-4" />
-                    </Button>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-3">
-                    <Input
-                      placeholder="Nome da automação..."
-                      value={emailName}
-                      onChange={(e) => setEmailName(e.target.value)}
-                      className="h-10"
-                    />
-                    <Select value={emailTriggerPipeline} onValueChange={setEmailTriggerPipeline}>
-                      <SelectTrigger className="h-10">
-                        <SelectValue placeholder="Quando lead entrar na pipeline..." />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {pipelines.map((pipeline) => (
-                          <SelectItem key={pipeline.id} value={pipeline.id}>
-                            {pipeline.nome}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div className="flex gap-3">
-                    <Button
-                      className="flex-1 h-10 bg-foreground hover:bg-foreground/90 text-background"
-                      onClick={handleOpenEmailFlowBuilder}
-                    >
-                      <Workflow className="w-4 h-4 mr-2" />
-                      {editingEmailId ? "Editar fluxo de e-mail" : "Criar fluxo de e-mail"}
-                    </Button>
-                  </div>
-                </div>
-              )}
-
-              {/* List */}
-              {emailAutomations.length === 0 && !isCreatingEmail ? (
-                <div className="flex flex-col items-center justify-center py-16 text-center">
-                  <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center mb-4">
-                    <Mail className="w-6 h-6 text-muted-foreground" />
-                  </div>
-                  <h3 className="text-foreground font-medium mb-2">Nenhuma automação de e-mail</h3>
-                  <p className="text-muted-foreground text-sm max-w-md mb-6">
-                    Configure automações para enviar e-mails automaticamente quando leads entrarem em pipelines específicas.
-                  </p>
-                  <Button
-                    onClick={() => setIsCreatingEmail(true)}
-                    className="bg-foreground hover:bg-foreground/90 text-background"
-                  >
-                    Criar automação
-                  </Button>
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  {emailAutomations.map((email) => (
-                    <div
-                      key={email.id}
-                      className={cn(
-                        "p-4 rounded-xl border transition-colors",
-                        email.is_active 
-                          ? "bg-muted/50 border-border" 
-                          : "bg-muted/30 border-border opacity-60"
-                      )}
-                    >
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          <button
-                            onClick={() => toggleEmailAutomation(email.id, email.is_active)}
-                            className={cn(
-                              "relative w-10 h-5 rounded-full transition-colors",
-                              email.is_active ? "bg-foreground" : "bg-muted-foreground/30"
-                            )}
-                          >
-                            <span
-                              className={cn(
-                                "absolute left-0.5 top-0.5 w-4 h-4 rounded-full bg-background shadow-sm transition-transform",
-                                email.is_active ? "translate-x-5" : "translate-x-0"
-                              )}
-                            />
-                          </button>
-                          <div>
-                            <span className="text-sm font-medium text-foreground block">{email.name}</span>
-                            <span className="text-xs text-muted-foreground">
-                              Quando lead entrar em: {getPipelineName(email.trigger_pipeline_id)}
-                            </span>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground"
-                            onClick={() => startEditingEmail(email)}
-                          >
-                            <Settings className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            className="h-8 w-8 p-0 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
-                            onClick={() => deleteEmailAutomation(email.id)}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </div>
-                      <div className="mt-2 text-xs text-muted-foreground">
-                        Assunto: {email.subject}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
             </div>
           )}
         </div>
