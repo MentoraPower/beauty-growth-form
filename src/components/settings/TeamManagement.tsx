@@ -191,16 +191,14 @@ export function TeamManagement() {
                 {roleLabels[member.role] || member.role}
               </span>
 
-              {member.role !== "admin" && (
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => setEditingMember(member)}
-                  className="h-8 w-8"
-                >
-                  <Edit2 className="w-4 h-4" />
-                </Button>
-              )}
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setEditingMember(member)}
+                className="h-8 w-8"
+              >
+                <Edit2 className="w-4 h-4" />
+              </Button>
 
               <Button
                 variant="ghost"
