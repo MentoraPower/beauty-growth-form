@@ -1467,18 +1467,20 @@ const WhatsApp = () => {
           <img 
             src={msg.mediaUrl} 
             alt="Imagem" 
-            className="max-w-[280px] rounded-lg cursor-pointer hover:opacity-90 transition-opacity relative z-50"
+            className="max-w-[280px] rounded-lg cursor-pointer hover:opacity-90 transition-opacity"
             loading="lazy"
             onLoad={() => scrollToBottom("auto")}
-            onClick={(e) => {
+            onPointerDown={(e) => {
+              // Use onPointerDown to capture before any overlay can intercept
               e.stopPropagation();
-
-              // If any overlay menus are open, close them first (their click-capture layer can block the image)
+              
+              // Close any open menus
               setShowAttachMenu(false);
               setMessageMenuId(null);
               setShowEmojiPicker(false);
 
               const index = allImages.indexOf(msg.mediaUrl!);
+              console.log("[Lightbox] Opening image", { index, url: msg.mediaUrl, allImages });
               setLightboxIndex(index >= 0 ? index : 0);
             }}
           />
@@ -1564,7 +1566,7 @@ const WhatsApp = () => {
 
   return (
     <>
-      <div className="h-[calc(100vh-2rem)] flex rounded-2xl overflow-hidden border border-border/50 bg-card -mt-4">
+      <div className="h-[calc(100vh-2rem)] flex rounded-2xl overflow-hidden border border-border/50 bg-card -mt-4 relative z-50">
         {/* Left Sidebar - Chat List */}
         <div className="w-[380px] flex flex-col border-r border-border/50 bg-card">
           {/* Header */}
@@ -2124,14 +2126,22 @@ const WhatsApp = () => {
         </div>
       </div>
 
-      {/* Hidden click outside handler for attach menu */}
+      {/* Hidden click outside handler for attach menu - use pointer-events to not block images */}
       {showAttachMenu && (
-        <div className="fixed inset-0 z-40" onClick={() => setShowAttachMenu(false)} />
+        <div 
+          className="fixed inset-0 z-40" 
+          onPointerDown={() => setShowAttachMenu(false)} 
+          style={{ pointerEvents: 'auto' }}
+        />
       )}
 
       {/* Hidden click outside handler for message menu */}
       {messageMenuId && (
-        <div className="fixed inset-0 z-40" onClick={() => setMessageMenuId(null)} />
+        <div 
+          className="fixed inset-0 z-40" 
+          onPointerDown={() => setMessageMenuId(null)} 
+          style={{ pointerEvents: 'auto' }}
+        />
       )}
 
       {/* Call Modal */}
