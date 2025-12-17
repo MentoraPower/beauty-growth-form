@@ -212,14 +212,17 @@ const CustomEdge = ({
         d={edgePath}
         fill="none"
         stroke="#EA4335"
-        strokeWidth={2}
-        strokeDasharray="8 6"
+        strokeWidth={1.5}
+        strokeDasharray="6 4"
         strokeLinecap="round"
+        style={{
+          animation: "flowDash 1s linear infinite",
+        }}
       />
       <circle
         cx={targetX}
         cy={targetY}
-        r={4}
+        r={3}
         fill="#A10000"
       />
       <EdgeLabelRenderer>
