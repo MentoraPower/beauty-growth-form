@@ -1576,7 +1576,7 @@ const WhatsApp = () => {
                     {(chat.lastMessage?.trim() || chat.unread > 0) && (
                       <div className="flex items-center justify-between mt-0.5">
                         {chat.lastMessage?.trim() && (
-                          <p className="text-sm text-muted-foreground truncate pr-2">{chat.lastMessage}</p>
+                          <p className="text-sm text-muted-foreground truncate pr-2">{formatWhatsAppText(chat.lastMessage)}</p>
                         )}
                         {chat.unread > 0 && (
                           <span className="min-w-[20px] h-5 rounded-full bg-emerald-500 text-white text-xs font-medium flex items-center justify-center px-1.5">
