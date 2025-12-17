@@ -687,7 +687,7 @@ export function KanbanBoard() {
   // If email builder is open, show only EmailFlowBuilder
   if (isEmailBuilderOpen && emailBuilderProps) {
     return (
-      <div className="relative flex flex-col items-center justify-center h-[calc(100vh-1rem)] w-full overflow-hidden p-4">
+      <div className="relative flex flex-col h-full w-full overflow-hidden">
         <EmailFlowBuilder
           automationName={emailBuilderProps.automationName}
           triggerPipelineName={emailBuilderProps.triggerPipelineName}
