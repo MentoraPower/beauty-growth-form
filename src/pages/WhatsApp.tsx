@@ -1235,6 +1235,9 @@ const WhatsApp = () => {
               mediaType: msg.media_type,
               created_at: msg.created_at,
               message_id: msg.message_id,
+              quotedMessageId: msg.quoted_message_id,
+              quotedText: msg.quoted_text,
+              quotedFromMe: msg.quoted_from_me,
             }];
           });
           
