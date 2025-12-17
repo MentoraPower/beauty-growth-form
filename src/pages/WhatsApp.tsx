@@ -47,6 +47,9 @@ type WhatsAppMessageStatus = string | null | undefined;
 
 const isViewedStatus = (status: WhatsAppMessageStatus) => status === "READ" || status === "PLAYED";
 
+const isOutgoingStatus = (status: WhatsAppMessageStatus) =>
+  status === "SENDING" || status === "SENT" || status === "DELIVERED" || isViewedStatus(status);
+
 const getStatusRank = (status: WhatsAppMessageStatus) => {
   switch (status) {
     case "SENDING":
@@ -366,8 +369,8 @@ const WhatsApp = () => {
           minute: "2-digit",
           timeZone: "America/Sao_Paulo"
         }) : "",
-        sent: msg.from_me || false,
-        read: msg.status === "READ" || msg.status === "PLAYED",
+        sent: Boolean(msg.from_me) || isOutgoingStatus(msg.status),
+        read: isViewedStatus(msg.status),
         status: msg.status,
         mediaUrl: msg.media_url,
         mediaType: msg.media_type,
@@ -1212,7 +1215,7 @@ const WhatsApp = () => {
               id: msg.id,
               text: msg.text || "",
               time: msg.created_at ? new Date(msg.created_at).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit", timeZone: "America/Sao_Paulo" }) : "",
-              sent: msg.from_me || false,
+              sent: Boolean(msg.from_me) || isOutgoingStatus(msg.status),
               read: isViewedStatus(msg.status),
               status: msg.status,
               mediaUrl: msg.media_url,
@@ -1244,6 +1247,7 @@ const WhatsApp = () => {
               ...m,
               status: nextStatus,
               read: isViewedStatus(nextStatus),
+              sent: m.sent || isOutgoingStatus(nextStatus),
             };
           }));
         }
