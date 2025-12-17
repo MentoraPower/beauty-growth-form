@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect, memo, useRef } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { Menu, X, LogOut, LayoutGrid, ChevronRight } from "lucide-react";
+import { Menu, X, LogOut, LayoutGrid, Settings } from "lucide-react";
 import { cn } from "@/lib/utils";
 import WhatsAppIcon from "@/components/icons/WhatsApp";
 import scaleLogo from "@/assets/scale-logo-white.png";
@@ -13,7 +13,7 @@ interface DashboardLayoutProps {
   children: React.ReactNode;
 }
 
-type ActivePanel = 'none' | 'crm' | 'whatsapp';
+type ActivePanel = 'none' | 'crm' | 'whatsapp' | 'settings';
 
 const bottomNavItems = [
   { 
@@ -21,6 +21,12 @@ const bottomNavItems = [
     href: "/admin/whatsapp", 
     icon: WhatsAppIcon, 
     label: "WhatsApp",
+  },
+  { 
+    id: 'settings' as ActivePanel, 
+    href: "/admin/settings", 
+    icon: Settings, 
+    label: "Configurações",
   },
 ];
 
@@ -48,6 +54,7 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
 
   const isCRMActive = location.pathname.startsWith("/admin/crm") || location.pathname === "/admin";
   const isWhatsAppActive = location.pathname === "/admin/whatsapp";
+  const isSettingsActive = location.pathname === "/admin/settings";
 
   // Sync with global state and localStorage
   useEffect(() => {
@@ -81,10 +88,13 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
     }
   };
 
-  // Navigate to WhatsApp when panel changes to whatsapp
+  // Navigate when panel changes
   useEffect(() => {
     if (activePanel === 'whatsapp' && location.pathname !== '/admin/whatsapp') {
       navigate('/admin/whatsapp');
+    }
+    if (activePanel === 'settings' && location.pathname !== '/admin/settings') {
+      navigate('/admin/settings');
     }
   }, [activePanel, location.pathname, navigate]);
 
@@ -279,9 +289,9 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
                   </span>
                 </button>
                 
-                {/* WhatsApp - Mobile */}
+                {/* WhatsApp & Settings - Mobile */}
                 {bottomNavItems.map((item) => {
-                  const isActive = item.id === 'whatsapp' ? isWhatsAppActive : false;
+                  const isActive = item.id === 'whatsapp' ? isWhatsAppActive : item.id === 'settings' ? isSettingsActive : false;
                   return (
                     <Link
                       key={item.href}
