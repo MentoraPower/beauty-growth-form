@@ -153,6 +153,11 @@ const TriggerNode = ({ data, id, selected }: NodeProps & { data: {
 
   return (
     <div className="relative">
+      <Handle
+        type="target"
+        position={Position.Left}
+        className="!w-3 !h-3 !bg-foreground !border-2 !border-background"
+      />
       <div 
         className="min-w-[280px] border border-border bg-background shadow-sm transition-all rounded-xl overflow-hidden"
       >
