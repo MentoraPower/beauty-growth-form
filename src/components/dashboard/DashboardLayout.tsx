@@ -3,7 +3,7 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Menu, X, LogOut, Kanban, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import WhatsAppIcon from "@/components/icons/WhatsApp";
-import scaleLogo from "@/assets/scale-logo-new.png";
+import scaleLogo from "@/assets/scale-logo-white.png";
 import { CRMOriginsPanel } from "./CRMOriginsPanel";
 import { PageTransition } from "./PageTransition";
 import { LoadingBar } from "@/components/LoadingBar";
@@ -21,9 +21,6 @@ const bottomNavItems = [
     href: "/admin/whatsapp", 
     icon: WhatsAppIcon, 
     label: "WhatsApp",
-    subItems: [
-      { href: "/admin/whatsapp", icon: WhatsAppIcon, label: "Conversas" },
-    ]
   },
 ];
 
@@ -42,48 +39,47 @@ let globalActivePanel: ActivePanel = getInitialPanelState();
 
 const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sidebarExpanded, setSidebarExpanded] = useState(false);
   const [activePanel, setActivePanel] = useState<ActivePanel>(globalActivePanel);
+  const [crmSubmenuOpen, setCrmSubmenuOpen] = useState(activePanel === 'crm');
   const location = useLocation();
   const navigate = useNavigate();
-  const hasNavigatedToCRM = useRef(false);
+  const sidebarRef = useRef<HTMLElement>(null);
 
   const isCRMActive = location.pathname.startsWith("/admin/crm") || location.pathname === "/admin";
   const isWhatsAppActive = location.pathname === "/admin/whatsapp";
-
-  // Check if we're in CRM mode (dark layout with submenu)
-  const isCRMLayout = activePanel === 'crm';
 
   // Sync with global state and localStorage
   useEffect(() => {
     globalActivePanel = activePanel;
     localStorage.setItem('active_panel', activePanel);
+    
+    // Open/close CRM submenu based on active panel
+    setCrmSubmenuOpen(activePanel === 'crm');
   }, [activePanel]);
 
   // Navigate to first origin overview when CRM is clicked
   const handleNavClick = async (panelId: ActivePanel) => {
     setActivePanel(panelId);
     
-    if (panelId === 'crm' && !location.pathname.startsWith('/admin/crm')) {
-      // Fetch first origin and navigate to its overview
-      const { data: origins } = await supabase
-        .from('crm_origins')
-        .select('id')
-        .order('ordem')
-        .limit(1);
-      
-      if (origins && origins.length > 0) {
-        navigate(`/admin/crm/overview?origin=${origins[0].id}`);
+    if (panelId === 'crm') {
+      setCrmSubmenuOpen(true);
+      if (!location.pathname.startsWith('/admin/crm')) {
+        // Fetch first origin and navigate to its overview
+        const { data: origins } = await supabase
+          .from('crm_origins')
+          .select('id')
+          .order('ordem')
+          .limit(1);
+        
+        if (origins && origins.length > 0) {
+          navigate(`/admin/crm/overview?origin=${origins[0].id}`);
+        }
       }
+    } else {
+      setCrmSubmenuOpen(false);
     }
   };
-
-  const handleSubItemClick = (href: string) => {
-    navigate(href);
-  };
-
-  // Fixed sidebar width - narrower
-  const sidebarWidth = 64;
-  const submenuWidth = 256;
 
   // Navigate to WhatsApp when panel changes to whatsapp
   useEffect(() => {
@@ -92,39 +88,32 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
     }
   }, [activePanel, location.pathname, navigate]);
 
+  // Sidebar dimensions
+  const sidebarCollapsedWidth = 64;
+  const sidebarExpandedWidth = 180;
+  const submenuWidth = 256;
+
+  // Current sidebar width based on expanded state
+  const currentSidebarWidth = sidebarExpanded ? sidebarExpandedWidth : sidebarCollapsedWidth;
+
   // Calculate main content margin
   const getMainContentMargin = () => {
-    if (isCRMLayout) {
-      return sidebarWidth + 4 + (submenuWidth - 16) + 8; // sidebar + gap + submenu + spacing
+    if (crmSubmenuOpen) {
+      return currentSidebarWidth + 8 + submenuWidth;
     }
-    return sidebarWidth + 24; // sidebar + gap for WhatsApp layout
+    return currentSidebarWidth + 24;
   };
 
   const mainContentMargin = getMainContentMargin();
 
   return (
-    <div className={cn(
-      "min-h-screen transition-all duration-500 ease-[cubic-bezier(0.4,0,0.2,1)]",
-      isCRMLayout ? "bg-card p-2" : "bg-card p-3"
-    )}>
+    <div className="min-h-screen bg-card p-3">
       {/* Dark wrapper - only visible in CRM mode */}
       <div className={cn(
-        "min-h-[calc(100vh-1rem)] relative transition-all duration-500 ease-[cubic-bezier(0.4,0,0.2,1)]",
-        isCRMLayout ? "bg-[#0f0f12] rounded-2xl" : "bg-transparent"
+        "min-h-[calc(100vh-1.5rem)] relative transition-all duration-500 ease-[cubic-bezier(0.4,0,0.2,1)]",
+        crmSubmenuOpen ? "bg-[#0f0f12] rounded-2xl" : "bg-transparent"
       )}>
         <LoadingBar />
-
-        {/* Permanent white strip on left side - always visible, no transitions */}
-        <div
-          aria-hidden="true"
-          style={{
-            left: 0,
-            top: 0,
-            height: "100vh",
-            width: sidebarWidth + 16,
-          }}
-          className="hidden lg:block fixed bg-card z-[35] pointer-events-none"
-        />
         
         {/* Mobile Header */}
         <header className="lg:hidden fixed top-0 left-0 right-0 h-14 bg-card border-b border-border z-50 flex items-center justify-between px-4">
@@ -142,25 +131,37 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
           <div className="w-9" />
         </header>
 
-        {/* Desktop Sidebar */}
+        {/* Desktop Sidebar - Black background, collapsible on hover */}
         <aside
+          ref={sidebarRef}
+          onMouseEnter={() => setSidebarExpanded(true)}
+          onMouseLeave={() => setSidebarExpanded(false)}
           style={{ 
-            width: sidebarWidth + 2,
-            left: isCRMLayout ? 8 : 12,
-            top: isCRMLayout ? 8 : 12,
-            height: isCRMLayout ? 'calc(100vh - 1rem)' : 'calc(100vh - 1.5rem)'
+            width: currentSidebarWidth,
+            left: crmSubmenuOpen ? 8 : 12,
+            top: crmSubmenuOpen ? 8 : 12,
+            height: crmSubmenuOpen ? 'calc(100vh - 1rem)' : 'calc(100vh - 1.5rem)',
+            transition: 'width 300ms cubic-bezier(0.4,0,0.2,1), left 500ms cubic-bezier(0.4,0,0.2,1), top 500ms cubic-bezier(0.4,0,0.2,1), height 500ms cubic-bezier(0.4,0,0.2,1)'
           }}
           className={cn(
-            "hidden lg:flex flex-col fixed bg-white overflow-hidden z-40 transition-all duration-300",
-            isCRMLayout ? "rounded-l-2xl" : "rounded-2xl border border-black/5"
+            "hidden lg:flex flex-col fixed bg-[#0f0f12] overflow-hidden z-40",
+            crmSubmenuOpen ? "rounded-l-2xl" : "rounded-2xl"
           )}
         >
           <div className="flex flex-col h-full">
-            {/* Logo - aligned to left */}
-            <div className="pt-6 pb-4 flex justify-start items-center pl-3">
-              <div className="w-8 flex items-center justify-center">
+            {/* Logo */}
+            <div className="pt-6 pb-4 flex items-center pl-4">
+              <div className="w-8 flex-shrink-0 flex items-center justify-center">
                 <img src={scaleLogo} alt="Scale Beauty" className="w-full h-auto" />
               </div>
+              <span 
+                className={cn(
+                  "ml-3 text-white font-semibold text-sm whitespace-nowrap transition-opacity duration-200",
+                  sidebarExpanded ? "opacity-100" : "opacity-0"
+                )}
+              >
+                SCALE
+              </span>
             </div>
 
             <nav className="flex-1 overflow-y-auto overflow-x-hidden px-3 py-2">
@@ -169,13 +170,22 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
                 <button
                   onClick={() => handleNavClick('crm')}
                   className={cn(
-                    "relative flex items-center justify-center w-10 h-10 rounded-lg transition-colors duration-200",
+                    "relative flex items-center h-10 rounded-lg transition-all duration-200",
+                    sidebarExpanded ? "px-3 w-full" : "justify-center w-10",
                     activePanel === 'crm'
-                      ? "bg-[#2d2d3a] text-white before:absolute before:-left-3 before:top-1/2 before:-translate-y-1/2 before:h-[70%] before:w-1 before:rounded-r-full before:bg-gradient-to-b before:from-[#F40000] before:to-[#A10000]"
-                      : "bg-[#f8f8fa] text-neutral-500 hover:bg-[#ededf0] hover:text-neutral-700"
+                      ? "bg-white text-[#0f0f12] before:absolute before:-left-3 before:top-1/2 before:-translate-y-1/2 before:h-[70%] before:w-1 before:rounded-r-full before:bg-gradient-to-b before:from-[#F40000] before:to-[#A10000]"
+                      : "bg-white/10 text-white/70 hover:bg-white/20 hover:text-white"
                   )}
                 >
                   <Kanban className="h-5 w-5 flex-shrink-0" strokeWidth={1.5} />
+                  <span 
+                    className={cn(
+                      "ml-3 text-sm font-medium whitespace-nowrap transition-opacity duration-200",
+                      sidebarExpanded ? "opacity-100" : "opacity-0 w-0"
+                    )}
+                  >
+                    CRM
+                  </span>
                 </button>
                 
                 {/* WhatsApp */}
@@ -186,13 +196,22 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
                       key={item.id}
                       onClick={() => handleNavClick(item.id)}
                       className={cn(
-                        "relative flex items-center justify-center w-10 h-10 rounded-lg transition-colors duration-200",
+                        "relative flex items-center h-10 rounded-lg transition-all duration-200",
+                        sidebarExpanded ? "px-3 w-full" : "justify-center w-10",
                         isSelected
-                          ? "bg-[#2d2d3a] text-white before:absolute before:-left-3 before:top-1/2 before:-translate-y-1/2 before:h-[70%] before:w-1 before:rounded-r-full before:bg-gradient-to-b before:from-[#F40000] before:to-[#A10000]"
-                          : "bg-[#f8f8fa] text-neutral-500 hover:bg-[#ededf0] hover:text-neutral-700"
+                          ? "bg-white text-[#0f0f12] before:absolute before:-left-3 before:top-1/2 before:-translate-y-1/2 before:h-[70%] before:w-1 before:rounded-r-full before:bg-gradient-to-b before:from-[#F40000] before:to-[#A10000]"
+                          : "bg-white/10 text-white/70 hover:bg-white/20 hover:text-white"
                       )}
                     >
                       <item.icon className="h-5 w-5 flex-shrink-0" />
+                      <span 
+                        className={cn(
+                          "ml-3 text-sm font-medium whitespace-nowrap transition-opacity duration-200",
+                          sidebarExpanded ? "opacity-100" : "opacity-0 w-0"
+                        )}
+                      >
+                        {item.label}
+                      </span>
                     </button>
                   );
                 })}
@@ -200,36 +219,45 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
             </nav>
 
             {/* Footer */}
-            <div className="border-t border-border px-3 py-3">
+            <div className="border-t border-white/10 px-3 py-3">
               <Link
                 to="/"
-                className="relative flex items-center justify-center w-10 h-10 rounded-lg transition-colors duration-200 bg-[#f8f8fa] text-neutral-500 hover:bg-[#ededf0] hover:text-neutral-700"
+                className={cn(
+                  "relative flex items-center h-10 rounded-lg transition-all duration-200 bg-white/10 text-white/70 hover:bg-white/20 hover:text-white",
+                  sidebarExpanded ? "px-3 w-full" : "justify-center w-10"
+                )}
               >
                 <LogOut className="h-5 w-5 flex-shrink-0" strokeWidth={1.5} />
+                <span 
+                  className={cn(
+                    "ml-3 text-sm font-medium whitespace-nowrap transition-opacity duration-200",
+                    sidebarExpanded ? "opacity-100" : "opacity-0 w-0"
+                  )}
+                >
+                  Sair
+                </span>
               </Link>
             </div>
           </div>
         </aside>
 
-        {/* Submenu Panel - expands from fixed menu edge pushing outward */}
+        {/* CRM Submenu Panel - appears below fixed menu */}
         <div
           style={{ 
-            left: sidebarWidth + 4,
-            width: isCRMLayout ? submenuWidth - 16 : 0,
-            opacity: isCRMLayout ? 1 : 0,
-            zIndex: 50,
-            pointerEvents: isCRMLayout ? 'auto' : 'none',
-            transition: "width 400ms cubic-bezier(0.4,0,0.2,1), opacity 200ms ease-out",
+            left: currentSidebarWidth + 8,
+            width: crmSubmenuOpen ? submenuWidth : 0,
+            opacity: crmSubmenuOpen ? 1 : 0,
+            zIndex: 39,
+            pointerEvents: crmSubmenuOpen ? 'auto' : 'none',
+            transition: "width 400ms cubic-bezier(0.4,0,0.2,1), opacity 200ms ease-out, left 300ms cubic-bezier(0.4,0,0.2,1)",
           }}
-          className={cn(
-            "hidden lg:block fixed top-2 h-[calc(100vh-1rem)] rounded-r-2xl rounded-tl-2xl rounded-bl-2xl bg-[#0f0f12] overflow-hidden"
-          )}
+          className="hidden lg:block fixed top-2 h-[calc(100vh-1rem)] rounded-r-2xl bg-[#0f0f12] overflow-hidden"
         >
-          <div className="pl-4 h-full" style={{ width: submenuWidth - 16, minWidth: submenuWidth - 16 }}>
+          <div className="h-full" style={{ width: submenuWidth, minWidth: submenuWidth }}>
             <CRMOriginsPanel 
               isOpen={true} 
               onClose={() => {}}
-              sidebarWidth={sidebarWidth}
+              sidebarWidth={currentSidebarWidth}
               embedded={true}
             />
           </div>
@@ -238,7 +266,7 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
         {/* Mobile Sidebar */}
         <aside
           className={cn(
-            "lg:hidden fixed top-14 left-0 bottom-0 w-64 bg-black border-r border-[#ffffff15] z-40 transform transition-transform duration-300 ease-in-out",
+            "lg:hidden fixed top-14 left-0 bottom-0 w-64 bg-[#0f0f12] border-r border-white/10 z-40 transform transition-transform duration-300 ease-in-out",
             sidebarOpen ? "translate-x-0" : "-translate-x-full"
           )}
         >
@@ -318,19 +346,20 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
         <main 
           style={{ 
             left: `${mainContentMargin}px`,
-            top: isCRMLayout ? 8 : 12,
-            right: isCRMLayout ? 8 : 12,
-            bottom: isCRMLayout ? 8 : 12
+            top: crmSubmenuOpen ? 8 : 12,
+            right: crmSubmenuOpen ? 8 : 12,
+            bottom: crmSubmenuOpen ? 8 : 12,
+            transition: 'left 300ms cubic-bezier(0.4,0,0.2,1), top 500ms cubic-bezier(0.4,0,0.2,1), right 500ms cubic-bezier(0.4,0,0.2,1), bottom 500ms cubic-bezier(0.4,0,0.2,1)'
           }}
-          className="hidden lg:block fixed transition-all duration-500 ease-[cubic-bezier(0.4,0,0.2,1)]"
+          className="hidden lg:block fixed"
         >
           <div className={cn(
             "h-full transition-all duration-500 ease-[cubic-bezier(0.4,0,0.2,1)]",
-            isCRMLayout ? "bg-[#0f0f12] rounded-2xl p-2" : "bg-transparent"
+            crmSubmenuOpen ? "bg-[#0f0f12] rounded-2xl p-2" : "bg-transparent"
           )}>
             <div className={cn(
               "h-full overflow-auto relative transition-all duration-300",
-              isCRMLayout 
+              crmSubmenuOpen 
                 ? "bg-card rounded-xl p-6" 
                 : "bg-card rounded-2xl p-6 border border-black/5"
             )}>
