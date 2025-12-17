@@ -49,13 +49,10 @@ interface EmailFlowStep {
 }
 
 // Start Node Component
-const StartNode = ({ data, selected }: NodeProps) => {
+const StartNode = ({ data }: NodeProps) => {
   return (
     <div
-      className={cn(
-        "px-5 py-3 rounded-full border bg-background shadow-sm transition-all flex items-center gap-3",
-        selected ? "border-foreground ring-2 ring-foreground/10" : "border-border"
-      )}
+      className="px-5 py-3 rounded-full border border-border bg-background shadow-sm transition-all flex items-center gap-3"
     >
       <div className="w-8 h-8 rounded-full bg-emerald-500 flex items-center justify-center">
         <Play className="w-4 h-4 text-white fill-white" />
@@ -71,7 +68,7 @@ const StartNode = ({ data, selected }: NodeProps) => {
 };
 
 // Wait Node Component
-const WaitNode = ({ data, selected }: NodeProps) => {
+const WaitNode = ({ data }: NodeProps) => {
   const waitTime = (data.waitTime as number) || 1;
   const waitUnit = (data.waitUnit as string) || "hours";
   const unitLabels: Record<string, string> = {
@@ -83,10 +80,7 @@ const WaitNode = ({ data, selected }: NodeProps) => {
 
   return (
     <div
-      className={cn(
-        "px-5 py-3 rounded-full border bg-background shadow-sm transition-all flex items-center gap-3",
-        selected ? "border-foreground ring-2 ring-foreground/10" : "border-border"
-      )}
+      className="px-5 py-3 rounded-full border border-border bg-background shadow-sm transition-all flex items-center gap-3"
     >
       <Handle
         type="target"
@@ -109,15 +103,12 @@ const WaitNode = ({ data, selected }: NodeProps) => {
 };
 
 // Email Node Component
-const EmailNode = ({ data, selected }: NodeProps) => {
+const EmailNode = ({ data }: NodeProps) => {
   const subject = (data.subject as string) || "E-mail";
 
   return (
     <div
-      className={cn(
-        "px-5 py-3 rounded-full border bg-background shadow-sm transition-all flex items-center gap-3 max-w-[280px]",
-        selected ? "border-foreground ring-2 ring-foreground/10" : "border-border"
-      )}
+      className="px-5 py-3 rounded-full border border-border bg-background shadow-sm transition-all flex items-center gap-3 max-w-[280px]"
     >
       <Handle
         type="target"
@@ -138,13 +129,10 @@ const EmailNode = ({ data, selected }: NodeProps) => {
 };
 
 // End Node Component
-const EndNode = ({ data, selected }: NodeProps) => {
+const EndNode = ({ data }: NodeProps) => {
   return (
     <div
-      className={cn(
-        "px-5 py-3 rounded-full border bg-background shadow-sm transition-all flex items-center gap-3",
-        selected ? "border-foreground ring-2 ring-foreground/10" : "border-border"
-      )}
+      className="px-5 py-3 rounded-full border border-border bg-background shadow-sm transition-all flex items-center gap-3"
     >
       <Handle
         type="target"
