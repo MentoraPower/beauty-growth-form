@@ -175,82 +175,65 @@ function SortableOriginItem({
         </div>
       </div>
 
-      {/* Sub-origins with tree lines */}
+      {/* Sub-origins with tree lines - CSS-only approach */}
       <div 
         className="grid transition-[grid-template-rows] duration-300 ease-out"
         style={{ gridTemplateRows: isOriginExpanded ? '1fr' : '0fr' }}
       >
         <div className="overflow-hidden">
-          <div className="ml-4 pt-1 pb-1 relative">
+          {/* Tree container with CSS lines */}
+          <ul className="ml-4 pt-1 pb-1 list-none pl-0 relative">
             
-            {/* Overview Item - receives curved line from origin */}
-            <div className="relative flex items-center group py-0.5">
-              {/* Smooth curved line from origin to Overview */}
-              <svg className="absolute left-0 top-0 w-5 h-7 z-0" viewBox="0 0 20 28" fill="none">
-                <path 
-                  d="M4 0 L4 6 Q4 14 10 17 L18 20" 
-                  stroke="#b0b0b0" 
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  fill="none"
-                />
-              </svg>
-              <button
-                onClick={() => handleOverviewClick(origin.id)}
-                className={cn(
-                  "flex items-center gap-2 w-full py-1.5 px-2.5 ml-5 rounded-lg transition-all duration-200 ease-out text-xs border",
-                  currentOverviewOriginId === origin.id
-                    ? "bg-white border-black/10 text-foreground shadow-sm"
-                    : "bg-white/50 border-transparent text-foreground/80 hover:bg-white hover:border-black/5 hover:shadow-sm"
-                )}
-              >
-                <div className={cn(
-                  "w-6 h-6 rounded-md flex items-center justify-center",
-                  currentOverviewOriginId === origin.id
-                    ? "bg-gradient-to-br from-[#F40000] to-[#A10000]"
-                    : "bg-black/5"
-                )}>
-                  <Home className={cn(
-                    "h-3.5 w-3.5",
-                    currentOverviewOriginId === origin.id ? "text-white" : "text-foreground/70"
-                  )} />
-                </div>
-                <span className="font-semibold">Overview</span>
-              </button>
-            </div>
+            {/* Overview Item */}
+            <li className="relative pl-6 py-0.5 before:content-[''] before:absolute before:left-[3px] before:top-0 before:w-[14px] before:h-[calc(50%+1px)] before:border-l-2 before:border-b-2 before:border-[#b0b0b0] before:rounded-bl-lg">
+              <div className="flex items-center group">
+                <button
+                  onClick={() => handleOverviewClick(origin.id)}
+                  className={cn(
+                    "flex items-center gap-2 w-full py-1.5 px-2.5 rounded-lg transition-all duration-200 ease-out text-xs border",
+                    currentOverviewOriginId === origin.id
+                      ? "bg-white border-black/10 text-foreground shadow-sm"
+                      : "bg-white/50 border-transparent text-foreground/80 hover:bg-white hover:border-black/5 hover:shadow-sm"
+                  )}
+                >
+                  <div className={cn(
+                    "w-6 h-6 rounded-md flex items-center justify-center",
+                    currentOverviewOriginId === origin.id
+                      ? "bg-gradient-to-br from-[#F40000] to-[#A10000]"
+                      : "bg-black/5"
+                  )}>
+                    <Home className={cn(
+                      "h-3.5 w-3.5",
+                      currentOverviewOriginId === origin.id ? "text-white" : "text-foreground/70"
+                    )} />
+                  </div>
+                  <span className="font-semibold">Overview</span>
+                </button>
+              </div>
+            </li>
 
-            {/* Sub-origins section - vertical line coming from below Overview */}
-            <div className="relative ml-[29px] mt-0">
-              {/* Vertical line starting from below Overview home icon - ends at last sub-origin */}
-              {(originSubOrigins.length > 0) && (
-                <div 
-                  className="absolute left-[3px] top-0 w-[2px] bg-[#b0b0b0] z-10" 
-                  style={{ height: `calc(100% - ${originSubOrigins.length > 0 ? '44px' : '14px'})` }}
-                />
-              )}
+            {/* Sub-origins - each item has vertical line (border-left) and curved connector (::before) */}
+            {originSubOrigins.map((subOrigin, index) => {
+              const leadCount = leadCounts.find(lc => lc.sub_origin_id === subOrigin.id)?.count || 0;
+              const isActive = currentSubOriginId === subOrigin.id;
+              const isLast = index === originSubOrigins.length - 1;
               
-              {/* Sub-origins */}
-              {originSubOrigins.map((subOrigin, index) => {
-                const leadCount = leadCounts.find(lc => lc.sub_origin_id === subOrigin.id)?.count || 0;
-                const isActive = currentSubOriginId === subOrigin.id;
-                
-                return (
-                  <div key={subOrigin.id} className="relative flex items-center group py-0.5">
-                    {/* Curved line from vertical line to sub-origin */}
-                    <svg className="absolute left-[3px] top-1/2 -translate-y-1/2 w-4 h-5 overflow-hidden z-0" viewBox="0 0 16 20" fill="none">
-                      <path 
-                        d="M0 0 L0 10 C0 14, 4 16, 14 16" 
-                        stroke="#b0b0b0" 
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        fill="none"
-                      />
-                    </svg>
+              return (
+                <li 
+                  key={subOrigin.id} 
+                  className={cn(
+                    "relative pl-6 py-0.5",
+                    // Vertical line from top to center (stops at curve)
+                    "before:content-[''] before:absolute before:left-[3px] before:top-0 before:w-[14px] before:h-[calc(50%+1px)] before:border-l-2 before:border-b-2 before:border-[#b0b0b0] before:rounded-bl-lg",
+                    // Continue vertical line below (only if not last)
+                    !isLast && "after:content-[''] after:absolute after:left-[3px] after:top-[calc(50%+1px)] after:w-[2px] after:h-[calc(50%-1px)] after:bg-[#b0b0b0]"
+                  )}
+                >
+                  <div className="flex items-center group">
                     <button
                       onClick={() => handleSubOriginClick(subOrigin.id)}
                       className={cn(
-                        "flex items-center gap-2 flex-1 py-1.5 px-2 ml-4 rounded-lg transition-all duration-200 ease-out text-xs",
+                        "flex items-center gap-2 flex-1 py-1.5 px-2 rounded-lg transition-all duration-200 ease-out text-xs",
                         isActive 
                           ? "bg-black/10 text-foreground font-medium"
                           : "text-foreground/70 hover:text-foreground hover:bg-black/5"
@@ -299,21 +282,21 @@ function SortableOriginItem({
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </div>
-                );
-              })}
+                </li>
+              );
+            })}
 
-              {/* Add Sub-origin Button */}
-              <div className="relative flex items-center py-0.5">
-                <button
-                  onClick={() => openCreateSubOriginDialog(origin.id)}
-                  className="flex items-center gap-2 w-full py-1.5 px-2 ml-4 rounded-lg transition-all duration-200 ease-out text-xs text-foreground/50 hover:text-foreground hover:bg-black/5"
-                >
-                  <Plus className="h-3 w-3" />
-                  <span>Criar sub origem</span>
-                </button>
-              </div>
-            </div>
-          </div>
+            {/* Add Sub-origin Button - no lines */}
+            <li className="relative pl-6 py-0.5">
+              <button
+                onClick={() => openCreateSubOriginDialog(origin.id)}
+                className="flex items-center gap-2 w-full py-1.5 px-2 rounded-lg transition-all duration-200 ease-out text-xs text-foreground/50 hover:text-foreground hover:bg-black/5"
+              >
+                <Plus className="h-3 w-3" />
+                <span>Criar sub origem</span>
+              </button>
+            </li>
+          </ul>
         </div>
       </div>
     </div>
