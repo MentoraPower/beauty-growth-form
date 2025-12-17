@@ -100,37 +100,35 @@ export function KanbanBoard() {
 
     const ctx = props.editingContext;
 
-    setSearchParams((prev) => {
-      const next = new URLSearchParams(prev);
-      next.set("emailBuilder", "open");
+    // NOTE: react-router-dom's setSearchParams does NOT support functional updates
+    const next = new URLSearchParams(searchParams);
+    next.set("emailBuilder", "open");
 
-      if (ctx?.editingEmailId) next.set("emailId", ctx.editingEmailId);
-      else next.delete("emailId");
+    if (ctx?.editingEmailId) next.set("emailId", ctx.editingEmailId);
+    else next.delete("emailId");
 
-      if (ctx?.emailName) next.set("emailName", ctx.emailName);
-      else next.delete("emailName");
+    if (ctx?.emailName) next.set("emailName", ctx.emailName);
+    else next.delete("emailName");
 
-      if (ctx?.emailTriggerPipeline) next.set("emailTrigger", ctx.emailTriggerPipeline);
-      else next.delete("emailTrigger");
+    if (ctx?.emailTriggerPipeline) next.set("emailTrigger", ctx.emailTriggerPipeline);
+    else next.delete("emailTrigger");
 
-      return next;
-    });
-  }, [setSearchParams]);
+    setSearchParams(next, { replace: true });
+  }, [searchParams, setSearchParams]);
 
   // Close email builder and return to CRM with automations popup open
   const closeEmailBuilder = useCallback(() => {
-    setSearchParams((prev) => {
-      const next = new URLSearchParams(prev);
-      next.delete("emailBuilder");
-      next.delete("emailId");
-      next.delete("emailName");
-      next.delete("emailTrigger");
-      return next;
-    });
+    // NOTE: react-router-dom's setSearchParams does NOT support functional updates
+    const next = new URLSearchParams(searchParams);
+    next.delete("emailBuilder");
+    next.delete("emailId");
+    next.delete("emailName");
+    next.delete("emailTrigger");
+    setSearchParams(next, { replace: true });
 
     // Reopen automations dropdown after a small delay
     setTimeout(() => setAutomationsOpen(true), 100);
-  }, [setSearchParams]);
+  }, [searchParams, setSearchParams]);
 
   // Sync search from URL when navigating (e.g., coming back from lead detail)
   useEffect(() => {
@@ -724,7 +722,7 @@ export function KanbanBoard() {
               externalOpen={automationsOpen}
               onOpenChange={setAutomationsOpen}
               emailEditingContext={emailEditingContext}
-              onEmailContextChange={setEmailEditingContext}
+              onEmailContextChange={(ctx) => setEmailEditingContext(ctx)}
               onShowEmailBuilder={(show, props) => {
                 if (show && props) {
                   // Save the editing context for when we come back
