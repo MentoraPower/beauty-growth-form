@@ -222,11 +222,11 @@ function SortableOriginItem({
 
             {/* Sub-origins section - vertical line coming from below Overview */}
             <div className="relative ml-[29px] mt-0">
-              {/* Vertical line starting from below Overview home icon */}
+              {/* Vertical line starting from below Overview home icon - ends at last sub-origin */}
               {(originSubOrigins.length > 0) && (
                 <div 
                   className="absolute left-[3px] top-0 w-[2px] bg-[#b0b0b0] z-10" 
-                  style={{ height: `calc(100% - 14px)` }}
+                  style={{ height: `calc(100% - ${originSubOrigins.length > 0 ? '44px' : '14px'})` }}
                 />
               )}
               
