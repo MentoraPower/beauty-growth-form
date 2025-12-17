@@ -82,6 +82,11 @@ export function KanbanBoard() {
   
   const [activeId, setActiveId] = useState<string | null>(null);
   const [overId, setOverId] = useState<string | null>(null);
+  const [dropIndicator, setDropIndicator] = useState<{
+    pipelineId: string;
+    position: "top" | "bottom";
+    targetLeadId?: string;
+  } | null>(null);
   const [isPipelinesDialogOpen, setIsPipelinesDialogOpen] = useState(false);
   const [localLeads, setLocalLeads] = useState<Lead[]>([]);
   const [searchQuery, setSearchQuery] = useState(urlSearchQuery);
@@ -420,12 +425,55 @@ export function KanbanBoard() {
 
   const handleDragStart = useCallback((event: DragStartEvent) => {
     setActiveId(event.active.id as string);
+    setDropIndicator(null);
   }, []);
 
   const handleDragOver = useCallback((event: DragOverEvent) => {
-    const { over } = event;
+    const { over, active } = event;
     setOverId(over?.id as string | null);
-  }, []);
+
+    if (!over || !active) {
+      setDropIndicator(null);
+      return;
+    }
+
+    const overId = over.id as string;
+    const activeLeadId = active.id as string;
+
+    // Check if hovering over a pipeline column
+    const overPipeline = pipelines.find((p) => p.id === overId);
+    if (overPipeline) {
+      // Hovering over column - show placeholder at bottom
+      setDropIndicator({
+        pipelineId: overPipeline.id,
+        position: "bottom",
+      });
+      return;
+    }
+
+    // Check if hovering over a lead card
+    const overLead = localLeads.find((l) => l.id === overId);
+    if (overLead && overLead.pipeline_id) {
+      // Get the rect of the element being hovered
+      const overRect = over.rect;
+      const activeRect = active.rect.current.translated;
+      
+      if (overRect && activeRect) {
+        // Determine if we're in the top or bottom half
+        const overCenter = overRect.top + overRect.height / 2;
+        const activeCenter = activeRect.top + activeRect.height / 2;
+        
+        // Position above if we're dragging from above, below if from below
+        const position = activeCenter < overCenter ? "top" : "bottom";
+        
+        setDropIndicator({
+          pipelineId: overLead.pipeline_id,
+          position,
+          targetLeadId: overId,
+        });
+      }
+    }
+  }, [pipelines, localLeads]);
 
   const handleDragEnd = useCallback(
     async (event: DragEndEvent) => {
@@ -433,6 +481,7 @@ export function KanbanBoard() {
 
       setActiveId(null);
       setOverId(null);
+      setDropIndicator(null);
 
       if (!over) return;
 
@@ -460,7 +509,15 @@ export function KanbanBoard() {
           .sort((a, b) => (a.ordem ?? 0) - (b.ordem ?? 0));
 
         const oldIndex = pipelineLeads.findIndex((l) => l.id === activeId);
-        const newIndex = pipelineLeads.findIndex((l) => l.id === overId);
+        let newIndex = pipelineLeads.findIndex((l) => l.id === overId);
+
+        // Adjust newIndex based on drop indicator position
+        if (dropIndicator?.position === "bottom" && dropIndicator?.targetLeadId === overId) {
+          newIndex = newIndex + 1;
+        }
+
+        // Clamp to valid range
+        newIndex = Math.max(0, Math.min(newIndex, pipelineLeads.length - 1));
 
         if (oldIndex === newIndex) return;
 
@@ -540,11 +597,18 @@ export function KanbanBoard() {
           .filter((l) => l.pipeline_id === newPipelineId)
           .sort((a, b) => (a.ordem ?? 0) - (b.ordem ?? 0));
 
-        // Determine insertion index
+        // Determine insertion index using drop indicator for precise placement
         let insertIndex = 0;
         if (overLead) {
           const overIndex = targetPipelineLeads.findIndex((l) => l.id === overId);
-          insertIndex = overIndex >= 0 ? overIndex : targetPipelineLeads.length;
+          if (overIndex >= 0) {
+            // Use dropIndicator position for accurate placement
+            const wasDroppedBelow = dropIndicator?.position === "bottom" && 
+                                    dropIndicator?.targetLeadId === overId;
+            insertIndex = wasDroppedBelow ? overIndex + 1 : overIndex;
+          } else {
+            insertIndex = targetPipelineLeads.length;
+          }
         } else {
           insertIndex = targetPipelineLeads.length;
         }
@@ -616,12 +680,13 @@ export function KanbanBoard() {
         }
       }
     },
-    [localLeads, pipelines, automations, queryClient, subOriginId]
+    [localLeads, pipelines, automations, queryClient, subOriginId, dropIndicator]
   );
 
   const handleDragCancel = useCallback(() => {
     setActiveId(null);
     setOverId(null);
+    setDropIndicator(null);
   }, []);
 
   const activeLead = useMemo(
@@ -1056,14 +1121,21 @@ export function KanbanBoard() {
                 leads={leadsByPipeline.get(pipeline.id) || []}
                 isOver={overId === pipeline.id}
                 subOriginId={subOriginId}
+                activeId={activeId}
+                dropIndicator={dropIndicator}
               />
             ))}
           </div>
         )}
 
-        <DragOverlay dropAnimation={null}>
+        <DragOverlay 
+          dropAnimation={{
+            duration: 200,
+            easing: 'cubic-bezier(0.25, 1, 0.5, 1)',
+          }}
+        >
           {activeLead ? (
-            <div className="rotate-3 scale-105">
+            <div className="rotate-2 scale-[1.02] opacity-95 cursor-grabbing">
               <KanbanCard lead={activeLead} isDragging />
             </div>
           ) : null}
