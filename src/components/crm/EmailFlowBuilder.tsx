@@ -535,9 +535,9 @@ const EmailNode = ({ id, data, selected }: NodeProps) => {
         </div>
         
         {/* Email Preview - Large */}
-        <div className="p-4 bg-muted/10 min-h-[500px]">
+        <div className="p-4 bg-card min-h-[500px]">
           <div 
-            className="bg-background rounded-lg border border-border p-4 min-h-[480px] text-sm overflow-y-auto nodrag nowheel"
+            className="bg-card rounded-lg border border-border p-4 min-h-[480px] text-sm overflow-y-auto nodrag nowheel"
             style={{ maxHeight: "520px" }}
             onWheelCapture={(e) => e.stopPropagation()}
             dangerouslySetInnerHTML={{ 
