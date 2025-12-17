@@ -142,11 +142,9 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
           className="hidden lg:flex flex-col fixed bg-[#0f0f12] overflow-hidden z-40 rounded-2xl"
         >
           <div className="flex flex-col h-full relative">
-            {/* Logo - Fixed at top left */}
-            <div className="px-3 py-4 flex items-center justify-center">
-              <div className="w-8 flex-shrink-0 flex items-center justify-center">
-                <img src={scaleLogo} alt="Scale Beauty" className="w-full h-auto opacity-50" />
-              </div>
+            {/* Logo - Fixed at top left corner */}
+            <div className="h-14 flex items-center pl-[18px]">
+              <img src={scaleLogo} alt="Scale Beauty" className="w-7 h-auto opacity-50" />
             </div>
 
             <nav className="flex-1 overflow-y-auto overflow-x-hidden px-3 py-2">
