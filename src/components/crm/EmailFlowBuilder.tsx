@@ -774,7 +774,7 @@ export function EmailFlowBuilder({
       <div className="flex flex-1 min-h-0">
         {/* Left Sidebar */}
         <div className="border-r border-border bg-background p-4 flex flex-col gap-4">
-          <div className="bg-muted/50 rounded-xl p-3 flex flex-col gap-2">
+          <div className="bg-muted/30 rounded-xl p-3 flex flex-col gap-2" style={{ border: "1px solid #00000015" }}>
             {/* Wait Node - Yellow icon */}
             <div
               draggable
@@ -782,7 +782,8 @@ export function EmailFlowBuilder({
                 e.dataTransfer.setData("application/reactflow", "wait");
                 e.dataTransfer.effectAllowed = "move";
               }}
-              className="w-10 h-10 flex items-center justify-center rounded-lg bg-foreground cursor-grab active:cursor-grabbing hover:scale-105 transition-transform"
+              className="w-10 h-10 flex items-center justify-center rounded-lg bg-muted/50 cursor-grab active:cursor-grabbing hover:scale-105 transition-transform"
+              style={{ border: "1px solid #00000015" }}
               title="Tempo de Espera"
             >
               <Clock className="w-5 h-5" style={{ color: "#FBBF24" }} />
@@ -795,10 +796,11 @@ export function EmailFlowBuilder({
                 e.dataTransfer.setData("application/reactflow", "email");
                 e.dataTransfer.effectAllowed = "move";
               }}
-              className="w-10 h-10 flex items-center justify-center rounded-lg bg-foreground cursor-grab active:cursor-grabbing hover:scale-105 transition-transform"
+              className="w-10 h-10 flex items-center justify-center rounded-lg bg-muted/50 cursor-grab active:cursor-grabbing hover:scale-105 transition-transform"
+              style={{ border: "1px solid #00000015" }}
               title="Enviar E-mail"
             >
-              <Mail className="w-5 h-5 text-white" />
+              <Mail className="w-5 h-5 text-foreground" />
             </div>
 
             {/* End Node - Red icon */}
@@ -808,7 +810,8 @@ export function EmailFlowBuilder({
                 e.dataTransfer.setData("application/reactflow", "end");
                 e.dataTransfer.effectAllowed = "move";
               }}
-              className="w-10 h-10 flex items-center justify-center rounded-lg bg-foreground cursor-grab active:cursor-grabbing hover:scale-105 transition-transform"
+              className="w-10 h-10 flex items-center justify-center rounded-lg bg-muted/50 cursor-grab active:cursor-grabbing hover:scale-105 transition-transform"
+              style={{ border: "1px solid #00000015" }}
               title="Finalizar"
             >
               <CheckCircle2 className="w-5 h-5" style={{ color: "#F40000" }} />
