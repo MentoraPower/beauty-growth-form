@@ -81,6 +81,7 @@ function SortableOriginItem({
   leadCounts,
   currentSubOriginId,
   currentOverviewOriginId,
+  userPermissions,
 }: {
   origin: Origin;
   originSubOrigins: SubOrigin[];
@@ -97,6 +98,13 @@ function SortableOriginItem({
   leadCounts: LeadCount[];
   currentSubOriginId: string | null;
   currentOverviewOriginId: string | null;
+  userPermissions: {
+    isAdmin: boolean;
+    canCreateOrigins: boolean;
+    canCreateSubOrigins: boolean;
+    allowedOriginIds: string[];
+    allowedSubOriginIds: string[];
+  };
 }) {
   const {
     attributes,
@@ -147,20 +155,25 @@ function SortableOriginItem({
     <div ref={setNodeRef} style={style} className="animate-in fade-in duration-200">
       {/* Origin (Folder) */}
       <div className="flex items-center group/origin relative">
-        {/* Drag Handle - slides in from left, hides when actions hovered */}
-        <div className="absolute -left-1 top-1/2 -translate-y-1/2 transition-all duration-200 ease-out opacity-0 -translate-x-2 group-hover/origin:opacity-100 group-hover/origin:translate-x-0 group-has-[.actions-area:hover]/origin:opacity-0 group-has-[.actions-area:hover]/origin:-translate-x-2">
-          <button
-            {...attributes}
-            {...listeners}
-            className="p-1 rounded cursor-grab active:cursor-grabbing hover:bg-black/5"
-          >
-            <GripVertical className="h-3 w-3 text-foreground/50" />
-          </button>
-        </div>
+        {/* Drag Handle - only show for admins */}
+        {userPermissions.isAdmin && (
+          <div className="absolute -left-1 top-1/2 -translate-y-1/2 transition-all duration-200 ease-out opacity-0 -translate-x-2 group-hover/origin:opacity-100 group-hover/origin:translate-x-0 group-has-[.actions-area:hover]/origin:opacity-0 group-has-[.actions-area:hover]/origin:-translate-x-2">
+            <button
+              {...attributes}
+              {...listeners}
+              className="p-1 rounded cursor-grab active:cursor-grabbing hover:bg-black/5"
+            >
+              <GripVertical className="h-3 w-3 text-foreground/50" />
+            </button>
+          </div>
+        )}
         
         <button
           onClick={() => toggleOrigin(origin.id)}
-          className="flex items-center gap-2 flex-1 py-2 px-2 rounded-lg transition-all duration-200 ease-out text-sm text-foreground/80 hover:text-foreground hover:bg-black/5 group-hover/origin:translate-x-4 group-has-[.actions-area:hover]/origin:translate-x-0"
+          className={cn(
+            "flex items-center gap-2 flex-1 py-2 px-2 rounded-lg transition-all duration-200 ease-out text-sm text-foreground/80 hover:text-foreground hover:bg-black/5",
+            userPermissions.isAdmin && "group-hover/origin:translate-x-4 group-has-[.actions-area:hover]/origin:translate-x-0"
+          )}
         >
           {isOriginExpanded ? (
             <FolderOpen className="h-4 w-4 flex-shrink-0 fill-current text-foreground/80" />
@@ -176,33 +189,35 @@ function SortableOriginItem({
           />
         </button>
         
-        {/* Origin Actions */}
-        <div className="actions-area transition-all duration-200 ease-out group-hover/origin:translate-x-4 hover:!translate-x-0">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <button 
-                onClick={(e) => e.stopPropagation()}
-                className="p-1.5 rounded opacity-0 group-hover/origin:opacity-100 transition-all duration-200 ease-out hover:bg-black/5"
-              >
-                <MoreVertical className="h-4 w-4 text-foreground/70" />
-              </button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-40 z-[9999] bg-popover">
-              <DropdownMenuItem onClick={() => openEditOriginDialog(origin)}>
-                <Pencil className="h-4 w-4 mr-2" />
-                Editar
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem 
-                className="text-destructive focus:text-destructive"
-                onClick={() => handleDeleteOrigin(origin.id)}
-              >
-                <Trash2 className="h-4 w-4 mr-2" />
-                Excluir
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
+        {/* Origin Actions - only show for admins */}
+        {userPermissions.isAdmin && (
+          <div className="actions-area transition-all duration-200 ease-out group-hover/origin:translate-x-4 hover:!translate-x-0">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button 
+                  onClick={(e) => e.stopPropagation()}
+                  className="p-1.5 rounded opacity-0 group-hover/origin:opacity-100 transition-all duration-200 ease-out hover:bg-black/5"
+                >
+                  <MoreVertical className="h-4 w-4 text-foreground/70" />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-40 z-[9999] bg-popover">
+                <DropdownMenuItem onClick={() => openEditOriginDialog(origin)}>
+                  <Pencil className="h-4 w-4 mr-2" />
+                  Editar
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem 
+                  className="text-destructive focus:text-destructive"
+                  onClick={() => handleDeleteOrigin(origin.id)}
+                >
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Excluir
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        )}
       </div>
 
       {/* Sub-origins with tree lines - SVG curves approach */}
@@ -323,51 +338,63 @@ function SortableOriginItem({
                       )}
                     </button>
                     
-                    {/* Sub-origin Actions */}
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <button 
-                          onClick={(e) => e.stopPropagation()}
-                          className="p-1.5 rounded opacity-0 group-hover:opacity-100 transition-all duration-200 ease-out hover:bg-black/5"
-                        >
-                          <MoreVertical className="h-4 w-4 text-foreground/70" />
-                        </button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" className="w-40 z-[9999] bg-popover">
-                        <DropdownMenuItem onClick={() => openEditSubOriginDialog(subOrigin)}>
-                          <Pencil className="h-4 w-4 mr-2" />
-                          Editar
-                        </DropdownMenuItem>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem 
-                          className="text-destructive focus:text-destructive"
-                          onClick={() => handleDeleteSubOrigin(subOrigin.id)}
-                        >
-                          <Trash2 className="h-4 w-4 mr-2" />
-                          Excluir
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
+                    {/* Sub-origin Actions - only show for admins */}
+                    {userPermissions.isAdmin && (
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <button 
+                            onClick={(e) => e.stopPropagation()}
+                            className="p-1.5 rounded opacity-0 group-hover:opacity-100 transition-all duration-200 ease-out hover:bg-black/5"
+                          >
+                            <MoreVertical className="h-4 w-4 text-foreground/70" />
+                          </button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="w-40 z-[9999] bg-popover">
+                          <DropdownMenuItem onClick={() => openEditSubOriginDialog(subOrigin)}>
+                            <Pencil className="h-4 w-4 mr-2" />
+                            Editar
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem 
+                            className="text-destructive focus:text-destructive"
+                            onClick={() => handleDeleteSubOrigin(subOrigin.id)}
+                          >
+                            <Trash2 className="h-4 w-4 mr-2" />
+                            Excluir
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    )}
                   </div>
                 </li>
               );
             })}
 
-            {/* Add Sub-origin Button - sem linhas */}
-            <li className="relative pl-6 py-0.5">
-              <button
-                onClick={() => openCreateSubOriginDialog(origin.id)}
-                className="flex items-center gap-2 w-full py-1.5 px-2 rounded-lg transition-all duration-200 ease-out text-xs text-foreground/50 hover:text-foreground hover:bg-black/5"
-              >
-                <Plus className="h-3 w-3" />
-                <span>Criar sub origem</span>
-              </button>
-            </li>
+            {/* Add Sub-origin Button - only show for admins or users with permission */}
+            {(userPermissions.isAdmin || userPermissions.canCreateSubOrigins) && (
+              <li className="relative pl-6 py-0.5">
+                <button
+                  onClick={() => openCreateSubOriginDialog(origin.id)}
+                  className="flex items-center gap-2 w-full py-1.5 px-2 rounded-lg transition-all duration-200 ease-out text-xs text-foreground/50 hover:text-foreground hover:bg-black/5"
+                >
+                  <Plus className="h-3 w-3" />
+                  <span>Criar sub origem</span>
+                </button>
+              </li>
+            )}
           </ul>
         </div>
       </div>
     </div>
   );
+}
+
+interface UserPermissions {
+  isAdmin: boolean;
+  canCreateOrigins: boolean;
+  canCreateSubOrigins: boolean;
+  allowedOriginIds: string[];
+  allowedSubOriginIds: string[];
 }
 
 export function CRMOriginsPanel({ isOpen, onClose, sidebarWidth, embedded = false }: CRMOriginsPanelProps) {
@@ -377,6 +404,15 @@ export function CRMOriginsPanel({ isOpen, onClose, sidebarWidth, embedded = fals
   const [subOrigins, setSubOrigins] = useState<SubOrigin[]>([]);
   const [leadCounts, setLeadCounts] = useState<LeadCount[]>([]);
   const hasInitialized = useRef(false);
+  
+  // User permissions state
+  const [userPermissions, setUserPermissions] = useState<UserPermissions>({
+    isAdmin: false,
+    canCreateOrigins: false,
+    canCreateSubOrigins: false,
+    allowedOriginIds: [],
+    allowedSubOriginIds: [],
+  });
   
   const [expandedOrigins, setExpandedOrigins] = useState<Set<string>>(() => {
     const saved = localStorage.getItem('crm_expanded_origins');
@@ -401,6 +437,50 @@ export function CRMOriginsPanel({ isOpen, onClose, sidebarWidth, embedded = fals
   useEffect(() => {
     localStorage.setItem('crm_expanded_origins', JSON.stringify([...expandedOrigins]));
   }, [expandedOrigins]);
+
+  // Fetch user permissions
+  const fetchUserPermissions = useCallback(async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      // Check if user is admin
+      const { data: roleData } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", user.id)
+        .single();
+
+      const isAdmin = roleData?.role === "admin";
+
+      if (isAdmin) {
+        setUserPermissions({
+          isAdmin: true,
+          canCreateOrigins: true,
+          canCreateSubOrigins: true,
+          allowedOriginIds: [],
+          allowedSubOriginIds: [],
+        });
+      } else {
+        // Fetch user permissions
+        const { data: permData } = await supabase
+          .from("user_permissions")
+          .select("*")
+          .eq("user_id", user.id)
+          .single();
+
+        setUserPermissions({
+          isAdmin: false,
+          canCreateOrigins: permData?.can_create_origins ?? false,
+          canCreateSubOrigins: permData?.can_create_sub_origins ?? false,
+          allowedOriginIds: permData?.allowed_origin_ids ?? [],
+          allowedSubOriginIds: permData?.allowed_sub_origin_ids ?? [],
+        });
+      }
+    } catch (error) {
+      console.error('Error fetching user permissions:', error);
+    }
+  }, []);
 
   const fetchData = useCallback(async () => {
     try {
@@ -438,12 +518,22 @@ export function CRMOriginsPanel({ isOpen, onClose, sidebarWidth, embedded = fals
     }
   }, []);
 
-  // Fetch data only on first mount
+  // Fetch data and permissions on first mount
   useEffect(() => {
+    fetchUserPermissions();
     if (!hasInitialized.current) {
       fetchData();
     }
-  }, [fetchData]);
+  }, [fetchData, fetchUserPermissions]);
+
+  // Filter origins and sub-origins based on user permissions
+  const filteredOrigins = userPermissions.isAdmin 
+    ? origins 
+    : origins.filter(origin => userPermissions.allowedOriginIds.includes(origin.id));
+  
+  const filteredSubOrigins = userPermissions.isAdmin
+    ? subOrigins
+    : subOrigins.filter(subOrigin => userPermissions.allowedSubOriginIds.includes(subOrigin.id));
 
   // Real-time subscriptions - only for structure changes, not navigation
   useEffect(() => {
@@ -678,11 +768,11 @@ export function CRMOriginsPanel({ isOpen, onClose, sidebarWidth, embedded = fals
           onDragEnd={handleDragEnd}
         >
           <SortableContext
-            items={origins.map(o => o.id)}
+            items={filteredOrigins.map(o => o.id)}
             strategy={verticalListSortingStrategy}
           >
-            {origins.map((origin) => {
-              const originSubOrigins = subOrigins.filter(s => s.origin_id === origin.id);
+            {filteredOrigins.map((origin) => {
+              const originSubOrigins = filteredSubOrigins.filter(s => s.origin_id === origin.id);
               const isOriginExpanded = expandedOrigins.has(origin.id);
 
               return (
@@ -703,20 +793,23 @@ export function CRMOriginsPanel({ isOpen, onClose, sidebarWidth, embedded = fals
                   leadCounts={leadCounts}
                   currentSubOriginId={currentSubOriginId}
                   currentOverviewOriginId={currentOverviewOriginId}
+                  userPermissions={userPermissions}
                 />
               );
             })}
           </SortableContext>
         </DndContext>
 
-        {/* Add Origin Button */}
-        <button
-          onClick={openCreateOriginDialog}
-          className="flex items-center gap-2 w-full py-2 px-2 rounded-lg transition-colors duration-200 text-xs text-foreground/60 hover:text-foreground hover:bg-black/5"
-        >
-          <Plus className="h-3 w-3" />
-          <span>Nova Origem</span>
-        </button>
+        {/* Add Origin Button - only show for admins or users with permission */}
+        {(userPermissions.isAdmin || userPermissions.canCreateOrigins) && (
+          <button
+            onClick={openCreateOriginDialog}
+            className="flex items-center gap-2 w-full py-2 px-2 rounded-lg transition-colors duration-200 text-xs text-foreground/60 hover:text-foreground hover:bg-black/5"
+          >
+            <Plus className="h-3 w-3" />
+            <span>Nova Origem</span>
+          </button>
+        )}
       </div>
 
       {/* Create/Edit Dialog */}
