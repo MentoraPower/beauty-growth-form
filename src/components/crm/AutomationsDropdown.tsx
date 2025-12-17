@@ -753,16 +753,22 @@ export function AutomationsDropdown({
     }
   };
 
-  const handleOpenEmailFlowBuilder = () => {
+  const handleOpenEmailFlowBuilder = (emailData?: EmailAutomation | null) => {
+    const name = emailData?.name || emailName || "Nova automação";
+    const flowSteps = emailData?.flow_steps || emailFlowSteps;
+    const subject = emailData?.subject || emailSubject;
+    const bodyHtml = emailData?.body_html || emailBodyHtml;
+    const editId = emailData?.id || editingEmailId;
+    
     // Use saved flow_steps if available, otherwise create default structure when editing
     const getInitialSteps = () => {
-      if (emailFlowSteps && emailFlowSteps.length > 0) {
-        return emailFlowSteps;
+      if (flowSteps && flowSteps.length > 0) {
+        return flowSteps;
       }
-      if (editingEmailId) {
+      if (editId) {
         return [
           { id: "trigger-1", type: "trigger", position: { x: 100, y: 200 }, data: { label: "Adicionar gatilhos" } },
-          { id: "email-1", type: "email", position: { x: 380, y: 200 }, data: { label: "Enviar e-mail", subject: emailSubject, bodyHtml: emailBodyHtml } },
+          { id: "email-1", type: "email", position: { x: 380, y: 200 }, data: { label: "Enviar e-mail", subject, bodyHtml } },
           { id: "end-1", type: "end", position: { x: 660, y: 200 }, data: { label: "Fluxo finalizado" } },
         ];
       }
@@ -773,7 +779,7 @@ export function AutomationsDropdown({
       openingEmailBuilderRef.current = true;
       setOpen(false); // Close the dropdown
       onShowEmailBuilder(true, {
-        automationName: emailName || "Nova automação",
+        automationName: name,
         triggerPipelineName: "",
         onSave: handleSaveEmailFlow,
         onCancel: () => {
@@ -781,12 +787,12 @@ export function AutomationsDropdown({
         },
         initialSteps: getInitialSteps(),
         editingContext: {
-          emailName: emailName || "Nova automação",
-          emailTriggerPipeline: "",
-          editingEmailId,
-          isCreating: isCreatingEmail,
-          emailSubject,
-          emailBodyHtml,
+          emailName: name,
+          emailTriggerPipeline: emailData?.trigger_pipeline_id || "",
+          editingEmailId: editId || null,
+          isCreating: true,
+          emailSubject: subject,
+          emailBodyHtml: bodyHtml,
         },
         pipelines: allPipelines,
         subOriginId,
@@ -994,9 +1000,13 @@ export function AutomationsDropdown({
                 </Button>
                 <Button
                   onClick={() => {
-                    setIsCreatingEmail(true);
-                    setEmailName("Nova automação de e-mail");
-                    handleOpenEmailFlowBuilder();
+                    // Check if there's an existing email automation for this sub_origin
+                    const existingEmail = emailAutomations.find(e => e.sub_origin_id === subOriginId);
+                    if (existingEmail) {
+                      handleOpenEmailFlowBuilder(existingEmail);
+                    } else {
+                      handleOpenEmailFlowBuilder(null);
+                    }
                   }}
                   variant="outline"
                   className="border-border"
