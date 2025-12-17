@@ -89,6 +89,7 @@ const WhatsApp = () => {
   const [isSyncing, setIsSyncing] = useState(false);
   const [isCallModalOpen, setIsCallModalOpen] = useState(false);
   const [showAttachMenu, setShowAttachMenu] = useState(false);
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [showLeadPanel, setShowLeadPanel] = useState(true);
   const [isRecording, setIsRecording] = useState(false);
   const [recordingTime, setRecordingTime] = useState(0);
@@ -1917,9 +1918,38 @@ const WhatsApp = () => {
                 ) : (
                   // Normal input UI
                   <>
-                    <button className="p-2 hover:bg-muted/50 rounded-full transition-colors">
-                      <Smile className="w-6 h-6 text-muted-foreground" />
-                    </button>
+                    <div className="relative">
+                      <button 
+                        onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+                        className="p-2 hover:bg-muted/50 rounded-full transition-colors"
+                      >
+                        <Smile className="w-6 h-6 text-muted-foreground" />
+                      </button>
+                      
+                      {showEmojiPicker && (
+                        <div className="absolute bottom-full left-0 mb-2 bg-card rounded-lg shadow-lg border border-border p-3 z-50 w-72">
+                          <div className="grid grid-cols-8 gap-1">
+                            {["😀", "😂", "😍", "🥰", "😊", "😎", "🤔", "😅",
+                              "❤️", "🔥", "👍", "👏", "🙏", "💪", "✨", "🎉",
+                              "😢", "😭", "😤", "😡", "🤗", "😴", "🤮", "🤧",
+                              "👋", "✌️", "🤝", "💯", "⭐", "🌟", "💫", "✅",
+                              "❌", "⚠️", "📍", "📅", "💰", "🛒", "📱", "💻"
+                            ].map((emoji) => (
+                              <button
+                                key={emoji}
+                                onClick={() => {
+                                  setMessage(prev => prev + emoji);
+                                  setShowEmojiPicker(false);
+                                }}
+                                className="w-8 h-8 flex items-center justify-center text-xl hover:bg-muted/50 rounded transition-colors"
+                              >
+                                {emoji}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
                     
                     <div className="relative">
                       <button 
