@@ -773,51 +773,49 @@ export function EmailFlowBuilder({
 
       <div className="flex flex-1 min-h-0">
         {/* Left Sidebar */}
-        <div className="w-32 border-r border-border bg-background p-3 flex flex-col gap-4">
-          <div>
-            <h3 className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide mb-3 text-center">
+        <div className="border-r border-border bg-background p-4 flex flex-col gap-4">
+          <div className="bg-foreground rounded-xl px-3 pt-3 pb-2">
+            <h3 className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide mb-2 text-center">
               Arraste
             </h3>
-            <div className="grid grid-cols-2 gap-2">
-              {/* Wait Node - Yellow */}
+            <div className="flex gap-2">
+              {/* Wait Node - Yellow icon */}
               <div
                 draggable
                 onDragStart={(e) => {
                   e.dataTransfer.setData("application/reactflow", "wait");
                   e.dataTransfer.effectAllowed = "move";
                 }}
-                className="aspect-square flex items-center justify-center rounded-xl cursor-grab active:cursor-grabbing hover:scale-105 transition-transform"
-                style={{ background: "linear-gradient(135deg, #FBBF24 0%, #F59E0B 100%)" }}
+                className="w-10 h-10 flex items-center justify-center rounded-lg bg-background/10 cursor-grab active:cursor-grabbing hover:scale-105 transition-transform"
                 title="Tempo de Espera"
               >
-                <Clock className="w-5 h-5 text-black" />
+                <Clock className="w-5 h-5" style={{ color: "#FBBF24" }} />
               </div>
 
-              {/* Email Node - Black */}
+              {/* Email Node - White icon */}
               <div
                 draggable
                 onDragStart={(e) => {
                   e.dataTransfer.setData("application/reactflow", "email");
                   e.dataTransfer.effectAllowed = "move";
                 }}
-                className="aspect-square flex items-center justify-center rounded-xl bg-foreground cursor-grab active:cursor-grabbing hover:scale-105 transition-transform"
+                className="w-10 h-10 flex items-center justify-center rounded-lg bg-background/10 cursor-grab active:cursor-grabbing hover:scale-105 transition-transform"
                 title="Enviar E-mail"
               >
-                <Mail className="w-5 h-5 text-background" />
+                <Mail className="w-5 h-5 text-white" />
               </div>
 
-              {/* End Node - Red Gradient */}
+              {/* End Node - Red gradient icon */}
               <div
                 draggable
                 onDragStart={(e) => {
                   e.dataTransfer.setData("application/reactflow", "end");
                   e.dataTransfer.effectAllowed = "move";
                 }}
-                className="aspect-square flex items-center justify-center rounded-xl cursor-grab active:cursor-grabbing hover:scale-105 transition-transform"
-                style={{ background: "linear-gradient(135deg, #F40000 0%, #A10000 100%)" }}
+                className="w-10 h-10 flex items-center justify-center rounded-lg bg-background/10 cursor-grab active:cursor-grabbing hover:scale-105 transition-transform"
                 title="Finalizar"
               >
-                <CheckCircle2 className="w-5 h-5 text-white" />
+                <CheckCircle2 className="w-5 h-5" style={{ color: "#F40000" }} />
               </div>
             </div>
           </div>
