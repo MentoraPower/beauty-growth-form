@@ -239,15 +239,56 @@ const handler = async (req: Request): Promise<Response> => {
                   .replace(/\{name\}/g, leadName)
                   .replace(/\{nome\}/g, leadName);
 
-              // If flow_steps has email node, prefer it
+              // Find the correct email node by tracing edges from the matched trigger
               let subject = automation.subject;
               let bodyHtml = automation.body_html;
               const flowSteps = automation.flow_steps as any[] | null;
+              
               if (flowSteps && Array.isArray(flowSteps)) {
-                const emailNode = flowSteps.find((step) => step?.type === "email");
+                // Get edges from _edges step
+                const edgesStep = flowSteps.find((step) => step?.type === "_edges");
+                const edges = edgesStep?.data?.edges as any[] | null;
+                
+                // Find trigger node and determine which trigger index matched
+                const triggerNode = flowSteps.find((step) => step?.type === "trigger");
+                const triggers = triggerNode?.data?.triggers as any[] | null;
+                
+                let targetEmailNodeId: string | null = null;
+                
+                if (triggers && edges && triggerNode) {
+                  // Find which trigger matched and its index
+                  const matchedTriggerIndex = triggers.findIndex((t: any) => t?.pipelineId === effectivePipelineId);
+                  
+                  if (matchedTriggerIndex >= 0) {
+                    // Determine the sourceHandle for this trigger index
+                    // Index 0 uses null/undefined, index 1+ uses "trigger-handle-{index}"
+                    const expectedSourceHandle = matchedTriggerIndex === 0 ? null : `trigger-handle-${matchedTriggerIndex}`;
+                    
+                    // Find edge from trigger node with matching sourceHandle
+                    const matchingEdge = edges.find((edge: any) => {
+                      if (edge.source !== triggerNode.id) return false;
+                      // Match null/undefined handles and exact string matches
+                      if (expectedSourceHandle === null) {
+                        return !edge.sourceHandle || edge.sourceHandle === null;
+                      }
+                      return edge.sourceHandle === expectedSourceHandle;
+                    });
+                    
+                    if (matchingEdge) {
+                      targetEmailNodeId = matchingEdge.target;
+                    }
+                  }
+                }
+                
+                // Find the target email node or fallback to first email node
+                let emailNode = targetEmailNodeId 
+                  ? flowSteps.find((step) => step?.id === targetEmailNodeId && step?.type === "email")
+                  : flowSteps.find((step) => step?.type === "email");
+                
                 if (emailNode?.data) {
                   subject = emailNode.data.subject || subject;
                   bodyHtml = emailNode.data.bodyHtml || bodyHtml;
+                  console.log(`[EmailAutomation] Using email node: ${emailNode.id}`);
                 }
               }
 
