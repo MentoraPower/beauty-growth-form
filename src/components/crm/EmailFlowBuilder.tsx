@@ -317,13 +317,15 @@ const WaitNode = ({ data, id, selected }: NodeProps) => {
     setNodes((nds) => {
       const currentNode = nds.find((n) => n.id === id);
       if (!currentNode) return nds;
+      const maxZIndex = Math.max(...nds.map((n) => n.zIndex ?? 0), 0);
       return [
         ...nds,
         {
           ...currentNode,
           id: `wait-${Date.now()}`,
-          position: { x: currentNode.position.x + 50, y: currentNode.position.y + 80 },
+          position: { x: currentNode.position.x, y: currentNode.position.y + 120 },
           selected: false,
+          zIndex: maxZIndex + 1,
         },
       ];
     });
@@ -484,13 +486,15 @@ const EmailNode = ({ id, data, selected }: NodeProps) => {
     setNodes((nds) => {
       const currentNode = nds.find((n) => n.id === id);
       if (!currentNode) return nds;
+      const maxZIndex = Math.max(...nds.map((n) => n.zIndex ?? 0), 0);
       return [
         ...nds,
         {
           ...currentNode,
           id: `email-${Date.now()}`,
-          position: { x: currentNode.position.x + 50, y: currentNode.position.y + 80 },
+          position: { x: currentNode.position.x, y: currentNode.position.y + 120 },
           selected: false,
+          zIndex: maxZIndex + 1,
         },
       ];
     });
