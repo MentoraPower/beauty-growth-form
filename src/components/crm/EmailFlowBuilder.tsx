@@ -411,10 +411,11 @@ export function EmailFlowBuilder({
     }
   }, []);
 
-  const addNode = (type: "wait" | "email" | "end") => {
+  const addNode = useCallback((type: "wait" | "email" | "end", position?: { x: number; y: number }) => {
     const lastNode = nodes[nodes.length - 1];
     const newId = `${type}-${Date.now()}`;
-    const newX = lastNode ? lastNode.position.x + 220 : 100;
+    const newX = position?.x ?? (lastNode ? lastNode.position.x + 220 : 100);
+    const newY = position?.y ?? 200;
 
     const defaultData: Record<string, any> = {
       wait: { label: "Espera", waitTime: 1, waitUnit: "hours" },
@@ -425,14 +426,14 @@ export function EmailFlowBuilder({
     const newNode: Node = {
       id: newId,
       type,
-      position: { x: newX, y: 200 },
+      position: { x: newX, y: newY },
       data: defaultData[type],
     };
 
     setNodes((nds) => [...nds, newNode]);
 
-    // Auto-connect to last node
-    if (lastNode) {
+    // Auto-connect to last node only if no position was specified (non-drag)
+    if (!position && lastNode) {
       setEdges((eds) => [
         ...eds,
         {
@@ -443,7 +444,30 @@ export function EmailFlowBuilder({
         },
       ]);
     }
-  };
+  }, [nodes, setNodes, setEdges]);
+
+  const onDragOver = useCallback((event: React.DragEvent) => {
+    event.preventDefault();
+    event.dataTransfer.dropEffect = "move";
+  }, []);
+
+  const onDrop = useCallback(
+    (event: React.DragEvent) => {
+      event.preventDefault();
+
+      const type = event.dataTransfer.getData("application/reactflow") as "wait" | "email" | "end";
+      if (!type) return;
+
+      const reactFlowBounds = event.currentTarget.getBoundingClientRect();
+      const position = {
+        x: event.clientX - reactFlowBounds.left - 100,
+        y: event.clientY - reactFlowBounds.top - 50,
+      };
+
+      addNode(type, position);
+    },
+    [addNode]
+  );
 
   // Add node between two connected nodes
   const addNodeBetween = useCallback((edgeId: string, type: "wait" | "email") => {
@@ -602,35 +626,47 @@ export function EmailFlowBuilder({
         <div className="w-56 border-r border-border bg-background p-4 flex flex-col gap-4">
           <div>
             <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-3">
-              Adicionar Nó
+              Arraste para adicionar
             </h3>
             <div className="space-y-2">
               {/* Wait Node */}
-              <button
-                onClick={() => addNode("wait")}
-                className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg border border-border bg-muted/30 hover:bg-muted/60 transition-colors text-left"
+              <div
+                draggable
+                onDragStart={(e) => {
+                  e.dataTransfer.setData("application/reactflow", "wait");
+                  e.dataTransfer.effectAllowed = "move";
+                }}
+                className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg border border-border bg-muted/30 hover:bg-muted/60 transition-colors cursor-grab active:cursor-grabbing"
               >
                 <Clock className="w-4 h-4 text-foreground" />
                 <span className="text-sm font-medium text-foreground">Tempo de Espera</span>
-              </button>
+              </div>
 
               {/* Email Node */}
-              <button
-                onClick={() => addNode("email")}
-                className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg border border-border bg-muted/30 hover:bg-muted/60 transition-colors text-left"
+              <div
+                draggable
+                onDragStart={(e) => {
+                  e.dataTransfer.setData("application/reactflow", "email");
+                  e.dataTransfer.effectAllowed = "move";
+                }}
+                className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg border border-border bg-muted/30 hover:bg-muted/60 transition-colors cursor-grab active:cursor-grabbing"
               >
                 <Mail className="w-4 h-4 text-foreground" />
                 <span className="text-sm font-medium text-foreground">Enviar E-mail</span>
-              </button>
+              </div>
 
               {/* End Node */}
-              <button
-                onClick={() => addNode("end")}
-                className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg border border-border bg-muted/30 hover:bg-muted/60 transition-colors text-left"
+              <div
+                draggable
+                onDragStart={(e) => {
+                  e.dataTransfer.setData("application/reactflow", "end");
+                  e.dataTransfer.effectAllowed = "move";
+                }}
+                className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg border border-border bg-muted/30 hover:bg-muted/60 transition-colors cursor-grab active:cursor-grabbing"
               >
                 <CheckCircle2 className="w-4 h-4 text-foreground" />
                 <span className="text-sm font-medium text-foreground">Finalizar</span>
-              </button>
+              </div>
             </div>
           </div>
 
@@ -670,6 +706,8 @@ export function EmailFlowBuilder({
             onEdgesChange={onEdgesChange}
             onConnect={onConnect}
             onNodeClick={onNodeClick}
+            onDragOver={onDragOver}
+            onDrop={onDrop}
             nodeTypes={nodeTypes}
             edgeTypes={edgeTypes}
             fitView
