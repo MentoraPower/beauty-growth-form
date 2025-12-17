@@ -1306,48 +1306,86 @@ const WhatsApp = () => {
     (m) => Boolean(m.mediaType) || Boolean(m.text?.trim()) || Boolean(m.mediaUrl)
   );
 
-  // Format WhatsApp-style text (*bold*, _italic_, ~strikethrough~, ```monospace```, *_bold italic_*)
-  const formatWhatsAppText = (text: string) => {
+  // Format WhatsApp-style text (*bold*, _italic_, ~strikethrough~, ```monospace```, *_bold italic_*, _*bold italic*_)
+  const formatWhatsAppText = (text: string): React.ReactNode => {
     if (!text) return null;
     
-    // Combined regex - bold+italic first (non-greedy), then individual patterns
-    const regex = /(\*_.+?_\*)|(_\*.+?\*_)|(\*[^*]+\*)|(_[^_]+_)|(~[^~]+~)|(```[^`]+```)/g;
-    const parts: (string | JSX.Element)[] = [];
-    let lastIndex = 0;
-    let match;
+    const result: React.ReactNode[] = [];
+    let remaining = text;
     let keyIndex = 0;
     
-    while ((match = regex.exec(text)) !== null) {
-      // Add text before match
-      if (match.index > lastIndex) {
-        parts.push(text.slice(lastIndex, match.index));
+    while (remaining.length > 0) {
+      // Try to match patterns at current position or find first match
+      let earliestMatch: { index: number; length: number; element: React.ReactNode } | null = null;
+      
+      // Bold + Italic patterns: _*text*_ or *_text_*
+      const boldItalicMatch1 = remaining.match(/_\*(.+?)\*_/);
+      const boldItalicMatch2 = remaining.match(/\*_(.+?)_\*/);
+      
+      // Bold: *text*
+      const boldMatch = remaining.match(/\*([^*\n]+)\*/);
+      
+      // Italic: _text_
+      const italicMatch = remaining.match(/_([^_\n]+)_/);
+      
+      // Strikethrough: ~text~
+      const strikeMatch = remaining.match(/~([^~\n]+)~/);
+      
+      // Monospace: ```text```
+      const monoMatch = remaining.match(/```([^`]+)```/);
+      
+      // Find earliest match
+      const matches = [
+        boldItalicMatch1 && { match: boldItalicMatch1, type: 'bolditalic' },
+        boldItalicMatch2 && { match: boldItalicMatch2, type: 'bolditalic' },
+        boldMatch && { match: boldMatch, type: 'bold' },
+        italicMatch && { match: italicMatch, type: 'italic' },
+        strikeMatch && { match: strikeMatch, type: 'strike' },
+        monoMatch && { match: monoMatch, type: 'mono' },
+      ].filter(Boolean) as { match: RegExpMatchArray; type: string }[];
+      
+      // Sort by index to find earliest
+      matches.sort((a, b) => (a.match.index ?? 0) - (b.match.index ?? 0));
+      
+      if (matches.length > 0) {
+        const firstMatch = matches[0];
+        const matchIndex = firstMatch.match.index ?? 0;
+        const matchText = firstMatch.match[1]; // captured group
+        const fullMatch = firstMatch.match[0];
+        
+        // Add text before match
+        if (matchIndex > 0) {
+          result.push(remaining.slice(0, matchIndex));
+        }
+        
+        // Add formatted element
+        switch (firstMatch.type) {
+          case 'bolditalic':
+            result.push(<strong key={keyIndex++}><em>{matchText}</em></strong>);
+            break;
+          case 'bold':
+            result.push(<strong key={keyIndex++}>{matchText}</strong>);
+            break;
+          case 'italic':
+            result.push(<em key={keyIndex++}>{matchText}</em>);
+            break;
+          case 'strike':
+            result.push(<s key={keyIndex++}>{matchText}</s>);
+            break;
+          case 'mono':
+            result.push(<code key={keyIndex++} className="bg-muted/50 px-1 rounded text-xs font-mono">{matchText}</code>);
+            break;
+        }
+        
+        remaining = remaining.slice(matchIndex + fullMatch.length);
+      } else {
+        // No more matches, add remaining text
+        result.push(remaining);
+        break;
       }
-      
-      const matchedText = match[0];
-      
-      // Bold + Italic (*_text_* or _*text*_)
-      if ((matchedText.startsWith('*_') && matchedText.endsWith('_*')) ||
-          (matchedText.startsWith('_*') && matchedText.endsWith('*_'))) {
-        parts.push(<strong key={keyIndex++}><em>{matchedText.slice(2, -2)}</em></strong>);
-      } else if (matchedText.startsWith('*') && matchedText.endsWith('*')) {
-        parts.push(<strong key={keyIndex++}>{matchedText.slice(1, -1)}</strong>);
-      } else if (matchedText.startsWith('_') && matchedText.endsWith('_')) {
-        parts.push(<em key={keyIndex++}>{matchedText.slice(1, -1)}</em>);
-      } else if (matchedText.startsWith('~') && matchedText.endsWith('~')) {
-        parts.push(<s key={keyIndex++}>{matchedText.slice(1, -1)}</s>);
-      } else if (matchedText.startsWith('```') && matchedText.endsWith('```')) {
-        parts.push(<code key={keyIndex++} className="bg-muted/50 px-1 rounded text-xs font-mono">{matchedText.slice(3, -3)}</code>);
-      }
-      
-      lastIndex = match.index + matchedText.length;
     }
     
-    // Add remaining text
-    if (lastIndex < text.length) {
-      parts.push(text.slice(lastIndex));
-    }
-    
-    return parts.length > 0 ? parts : text;
+    return result.length > 0 ? result : text;
   };
 
   // Get all images from messages for lightbox navigation
