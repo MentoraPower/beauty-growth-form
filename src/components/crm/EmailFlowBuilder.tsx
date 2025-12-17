@@ -393,41 +393,41 @@ export function EmailFlowBuilder({
   };
 
   return (
-    <div className="flex flex-col h-full bg-neutral-100">
+    <div className="flex flex-col h-full bg-background">
       {/* Header with back button */}
-      <div className="flex items-center justify-between px-6 py-4 border-b border-neutral-200 bg-white">
+      <div className="flex items-center justify-between px-6 py-4 border-b border-black/5 bg-card">
         <div className="flex items-center gap-4">
           <Button 
             variant="ghost" 
             size="icon" 
             onClick={onCancel}
-            className="h-9 w-9 text-neutral-600 hover:text-neutral-900"
+            className="h-9 w-9"
           >
             <ArrowLeft className="w-5 h-5" />
           </Button>
           <div>
-            <h2 className="text-lg font-semibold text-neutral-900">{automationName}</h2>
-            <p className="text-sm text-neutral-500">
-              Gatilho: Lead movido para <span className="font-medium text-neutral-700">{triggerPipelineName}</span>
+            <h2 className="text-lg font-semibold text-foreground">{automationName}</h2>
+            <p className="text-sm text-muted-foreground">
+              Gatilho: Lead movido para <span className="font-medium text-foreground">{triggerPipelineName}</span>
             </p>
           </div>
         </div>
         <Button 
           onClick={handleSave} 
-          className="bg-gradient-to-r from-red-500 to-red-700 hover:opacity-90 text-white"
+          className="bg-gradient-to-r from-primary to-primary-dark hover:opacity-90 text-white"
         >
           Salvar fluxo
         </Button>
       </div>
 
       {/* Toolbar */}
-      <div className="flex items-center gap-2 px-6 py-3 border-b border-neutral-200 bg-white">
-        <span className="text-sm font-medium text-neutral-500 mr-2">Adicionar:</span>
+      <div className="flex items-center gap-2 px-6 py-3 border-b border-black/5 bg-card">
+        <span className="text-sm font-medium text-muted-foreground mr-2">Adicionar:</span>
         <Button
           variant="outline"
           size="sm"
           onClick={() => addNode("wait")}
-          className="gap-2 border-neutral-300 text-neutral-700 hover:bg-neutral-50"
+          className="gap-2"
         >
           <Clock className="w-4 h-4 text-amber-500" />
           Tempo de espera
@@ -436,7 +436,7 @@ export function EmailFlowBuilder({
           variant="outline"
           size="sm"
           onClick={() => addNode("email")}
-          className="gap-2 border-neutral-300 text-neutral-700 hover:bg-neutral-50"
+          className="gap-2"
         >
           <Mail className="w-4 h-4 text-blue-500" />
           E-mail
@@ -445,7 +445,7 @@ export function EmailFlowBuilder({
           variant="outline"
           size="sm"
           onClick={() => addNode("end")}
-          className="gap-2 border-neutral-300 text-neutral-700 hover:bg-neutral-50"
+          className="gap-2"
         >
           <CheckCircle2 className="w-4 h-4 text-rose-500" />
           Finalizar
@@ -453,12 +453,12 @@ export function EmailFlowBuilder({
 
         {selectedNode && selectedNode.type !== "start" && (
           <>
-            <div className="h-6 w-px bg-neutral-300 mx-2" />
+            <div className="h-6 w-px bg-border mx-2" />
             <Button
               variant="outline"
               size="sm"
               onClick={duplicateSelectedNode}
-              className="gap-2 border-neutral-300 text-neutral-700 hover:bg-neutral-50"
+              className="gap-2"
               disabled={selectedNode.type === "end"}
             >
               <Copy className="w-4 h-4" />
@@ -468,7 +468,7 @@ export function EmailFlowBuilder({
               variant="outline"
               size="sm"
               onClick={deleteSelectedNode}
-              className="gap-2 text-red-600 hover:text-red-700 border-neutral-300 hover:bg-red-50"
+              className="gap-2 text-destructive hover:text-destructive"
             >
               <Trash2 className="w-4 h-4" />
               Excluir
@@ -497,21 +497,21 @@ export function EmailFlowBuilder({
               style: dashedEdgeStyle,
             }}
           >
-            <Controls className="!bg-white !border-neutral-200 !shadow-sm !rounded-lg" />
+            <Controls className="!bg-card !border-border !shadow-sm !rounded-lg" />
             <Background variant={BackgroundVariant.Dots} gap={20} size={1} color="#d4d4d4" />
           </ReactFlow>
         </div>
 
         {/* Side Panel for Email Editing - Dropdown style */}
         {editPanelOpen && selectedNode?.type === "email" && (
-          <div className="absolute right-4 top-4 w-[360px] bg-white border border-neutral-200 rounded-2xl shadow-2xl z-50 flex flex-col max-h-[calc(100%-2rem)] overflow-hidden">
+          <div className="absolute right-4 top-4 w-[360px] bg-card border border-border rounded-2xl shadow-lg z-50 flex flex-col max-h-[calc(100%-2rem)] overflow-hidden">
             {/* Header */}
-            <div className="flex items-center justify-between px-4 py-3 border-b border-neutral-100">
+            <div className="flex items-center justify-between px-4 py-3 border-b border-border">
               <div className="flex items-center gap-2.5">
                 <div className="w-7 h-7 rounded-lg bg-blue-500 flex items-center justify-center">
                   <Mail className="w-3.5 h-3.5 text-white" />
                 </div>
-                <h3 className="text-sm font-semibold text-neutral-900">Editar E-mail</h3>
+                <h3 className="text-sm font-semibold text-foreground">Editar E-mail</h3>
               </div>
               <Button
                 variant="ghost"
@@ -520,7 +520,7 @@ export function EmailFlowBuilder({
                   setEditPanelOpen(false);
                   setSelectedNode(null);
                 }}
-                className="h-7 w-7 text-neutral-400 hover:text-neutral-600"
+                className="h-7 w-7"
               >
                 <X className="w-4 h-4" />
               </Button>
@@ -529,35 +529,35 @@ export function EmailFlowBuilder({
             {/* Content */}
             <div className="flex-1 overflow-y-auto p-4 space-y-4">
               <div>
-                <Label className="text-xs font-medium text-neutral-600">Assunto</Label>
+                <Label className="text-xs font-medium text-muted-foreground">Assunto</Label>
                 <Input
                   placeholder="Ex: {{nome}}, seu e-book está pronto!"
                   value={editData.subject || ""}
                   onChange={(e) => setEditData({ ...editData, subject: e.target.value })}
-                  className="mt-1 h-9 text-sm border-neutral-200 text-neutral-900 bg-neutral-50 focus:bg-white"
+                  className="mt-1 h-9 text-sm"
                 />
-                <p className="text-[10px] text-neutral-400 mt-1">
+                <p className="text-[10px] text-muted-foreground mt-1">
                   Use {"{{nome}}"} para inserir o nome do lead
                 </p>
               </div>
 
               <div>
-                <Label className="text-xs font-medium text-neutral-600">Corpo do e-mail (HTML)</Label>
+                <Label className="text-xs font-medium text-muted-foreground">Corpo do e-mail (HTML)</Label>
                 <Textarea
                   placeholder="<h1>Olá {{nome}}!</h1><p>Seu conteúdo aqui...</p>"
                   value={editData.bodyHtml || ""}
                   onChange={(e) => setEditData({ ...editData, bodyHtml: e.target.value })}
-                  className="mt-1 min-h-[160px] font-mono text-xs border-neutral-200 text-neutral-900 bg-neutral-50 focus:bg-white resize-none"
+                  className="mt-1 min-h-[160px] font-mono text-xs resize-none"
                 />
               </div>
 
               {/* Preview */}
               {editData.bodyHtml && (
                 <div>
-                  <Label className="text-xs font-medium text-neutral-600">Preview</Label>
-                  <div className="mt-1 p-3 border border-neutral-200 rounded-lg bg-neutral-50 max-h-[120px] overflow-y-auto">
+                  <Label className="text-xs font-medium text-muted-foreground">Preview</Label>
+                  <div className="mt-1 p-3 border border-border rounded-lg bg-muted/30 max-h-[120px] overflow-y-auto">
                     <div 
-                      className="text-xs text-neutral-700"
+                      className="text-xs text-foreground"
                       dangerouslySetInnerHTML={{ __html: editData.bodyHtml }}
                     />
                   </div>
@@ -566,11 +566,11 @@ export function EmailFlowBuilder({
             </div>
 
             {/* Footer */}
-            <div className="p-4 pt-3 border-t border-neutral-100">
+            <div className="p-4 pt-3 border-t border-border">
               <Button 
                 onClick={saveEditData} 
                 size="sm"
-                className="w-full bg-gradient-to-r from-red-500 to-red-700 hover:opacity-90 text-white text-sm h-9"
+                className="w-full bg-gradient-to-r from-primary to-primary-dark hover:opacity-90 text-white text-sm h-9"
               >
                 Salvar
               </Button>
@@ -583,13 +583,13 @@ export function EmailFlowBuilder({
       <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle className="text-neutral-900">Configurar tempo de espera</DialogTitle>
+            <DialogTitle>Configurar tempo de espera</DialogTitle>
           </DialogHeader>
 
           <div className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label className="text-neutral-700">Tempo</Label>
+                <Label>Tempo</Label>
                 <Input
                   type="number"
                   min={1}
@@ -597,16 +597,15 @@ export function EmailFlowBuilder({
                   onChange={(e) =>
                     setEditData({ ...editData, waitTime: parseInt(e.target.value) || 1 })
                   }
-                  className="border-neutral-300 text-neutral-900"
                 />
               </div>
               <div>
-                <Label className="text-neutral-700">Unidade</Label>
+                <Label>Unidade</Label>
                 <Select
                   value={editData.waitUnit || "hours"}
                   onValueChange={(v) => setEditData({ ...editData, waitUnit: v })}
                 >
-                  <SelectTrigger className="border-neutral-300 text-neutral-900">
+                  <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -621,10 +620,10 @@ export function EmailFlowBuilder({
           </div>
 
           <div className="flex justify-end gap-2 mt-4">
-            <Button variant="outline" onClick={() => setEditDialogOpen(false)} className="border-neutral-300 text-neutral-700">
+            <Button variant="outline" onClick={() => setEditDialogOpen(false)}>
               Cancelar
             </Button>
-            <Button onClick={saveEditData} className="bg-gradient-to-r from-red-500 to-red-700 text-white">
+            <Button onClick={saveEditData} className="bg-gradient-to-r from-primary to-primary-dark text-white">
               Salvar
             </Button>
           </div>

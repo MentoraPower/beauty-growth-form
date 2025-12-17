@@ -775,7 +775,7 @@ export function AutomationsDropdown({ pipelines, subOriginId }: AutomationsDropd
         </div>
         {/* Full screen overlay positioned within main content area */}
         <div 
-          className="fixed z-[100] bg-white rounded-2xl overflow-hidden shadow-xl"
+          className="fixed z-[100] bg-card rounded-2xl overflow-hidden border border-black/5"
           style={{
             top: 12,
             right: 12,
