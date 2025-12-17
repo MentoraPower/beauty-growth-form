@@ -1,5 +1,5 @@
 import { memo, useRef } from "react";
-import { useSortable } from "@dnd-kit/sortable";
+import { useSortable, defaultAnimateLayoutChanges, AnimateLayoutChanges } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { Lead } from "@/types/crm";
 import { Card, CardContent } from "@/components/ui/card";
@@ -15,6 +15,15 @@ interface KanbanCardProps {
   subOriginId?: string | null;
 }
 
+// Custom animateLayoutChanges - only animate when not dragging
+const animateLayoutChanges: AnimateLayoutChanges = (args) => {
+  const { isSorting, wasDragging } = args;
+  if (isSorting || wasDragging) {
+    return defaultAnimateLayoutChanges(args);
+  }
+  return true;
+};
+
 export const KanbanCard = memo(function KanbanCard({ lead, isDragging: isDraggingOverlay, subOriginId }: KanbanCardProps) {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -28,20 +37,22 @@ export const KanbanCard = memo(function KanbanCard({ lead, isDragging: isDraggin
     transform,
     transition,
     isDragging,
-    isOver,
   } = useSortable({ 
     id: lead.id,
+    animateLayoutChanges,
     transition: {
-      duration: 250,
-      easing: 'cubic-bezier(0.25, 1, 0.5, 1)',
+      duration: 200,
+      easing: 'ease-out',
     },
   });
 
+  // Use CSS.Transform for smooth transitions
   const style: React.CSSProperties = {
     transform: CSS.Transform.toString(transform),
-    transition: transition || 'transform 250ms cubic-bezier(0.25, 1, 0.5, 1), opacity 150ms ease-out, box-shadow 200ms ease-out',
+    transition: transition || undefined,
     opacity: isDragging ? 0 : 1,
-    zIndex: isDragging ? 0 : isOver ? 10 : 1,
+    position: 'relative',
+    zIndex: isDragging ? 0 : 1,
   };
 
   const isBeingDragged = isDraggingOverlay;
@@ -82,9 +93,10 @@ export const KanbanCard = memo(function KanbanCard({ lead, isDragging: isDraggin
       ref={setNodeRef}
       style={style}
       {...attributes}
+      data-lead-id={lead.id}
       className={`
         cursor-grab active:cursor-grabbing bg-card shadow-none select-none touch-none
-        border border-black/10 transition-all duration-150
+        border border-black/10
         ${isBeingDragged ? "opacity-100 shadow-lg scale-[1.02]" : ""}
         hover:shadow-md
       `}
