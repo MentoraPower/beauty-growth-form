@@ -129,7 +129,8 @@ function SortableOriginItem({
     if (!lastEl) return;
 
     const centerY = lastEl.offsetTop + lastEl.offsetHeight / 2;
-    const next = Math.max(0, Math.round(centerY - LINE_TOP_PX));
+    // Para no meio da curva (não no centro do item), subtraindo 4px
+    const next = Math.max(0, Math.round(centerY - LINE_TOP_PX - 4));
     setTreeLineHeightPx((prev) => (prev === next ? prev : next));
   }, [isOriginExpanded, originSubOrigins.length]);
 
