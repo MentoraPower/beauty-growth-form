@@ -601,58 +601,8 @@ export function KanbanBoard() {
             sub_origin_id: subOriginId,
           }).catch(console.error);
 
-          // Check for email automations triggered by this pipeline
-          // Look through flow_steps to find all trigger pipelines, not just trigger_pipeline_id
-          const matchingEmailAutomation = emailAutomations.find(ea => {
-            if (!ea.is_active) return false;
-            
-            // First check trigger_pipeline_id for backward compatibility
-            if (ea.trigger_pipeline_id === newPipelineId) return true;
-            
-            // Then check flow_steps for multiple triggers
-            const flowSteps = ea.flow_steps as any[] | null;
-            if (flowSteps && Array.isArray(flowSteps)) {
-              const triggerNode = flowSteps.find((step) => step.type === 'trigger');
-              if (triggerNode?.data?.triggers && Array.isArray(triggerNode.data.triggers)) {
-                return triggerNode.data.triggers.some((t: any) => t.pipelineId === newPipelineId);
-              }
-            }
-            
-            return false;
-          });
-          
-          if (matchingEmailAutomation) {
-            // Find the email node in flow_steps for subject and body
-            let emailSubject = matchingEmailAutomation.subject;
-            let emailBody = matchingEmailAutomation.body_html;
-            
-            // If flow_steps has email node, use that content
-            const flowSteps = matchingEmailAutomation.flow_steps as any[] | null;
-            if (flowSteps && Array.isArray(flowSteps)) {
-              const emailNode = flowSteps.find((step) => step.type === 'email');
-              if (emailNode?.data) {
-                emailSubject = emailNode.data.subject || emailSubject;
-                emailBody = emailNode.data.bodyHtml || emailBody;
-              }
-            }
-            
-            // Trigger send-email edge function
-            supabase.functions.invoke("send-email", {
-              body: {
-                to: activeLead.email,
-                name: activeLead.name,
-                subject: emailSubject,
-                bodyHtml: emailBody,
-                leadId: activeLead.id,
-              },
-            }).then(({ error }) => {
-              if (error) {
-                console.error("Erro ao enviar email automático:", error);
-              } else {
-                console.log("Email automático enviado para:", activeLead.email);
-              }
-            }).catch(console.error);
-          }
+          // Email automations are handled server-side by the trigger-webhook edge function.
+
         } catch (error) {
           setLocalLeads((prev) =>
             prev.map((l) =>
@@ -666,7 +616,7 @@ export function KanbanBoard() {
         }
       }
     },
-    [localLeads, pipelines, automations, emailAutomations, queryClient, subOriginId]
+    [localLeads, pipelines, automations, queryClient, subOriginId]
   );
 
   const handleDragCancel = useCallback(() => {
