@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect, memo, useRef } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { Menu, X, LogOut, Kanban, ChevronRight } from "lucide-react";
+import { Menu, X, LogOut, LayoutGrid, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import WhatsAppIcon from "@/components/icons/WhatsApp";
 import scaleLogo from "@/assets/scale-logo-white.png";
@@ -162,7 +162,7 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
                   )}
                 >
                   <div className="w-10 flex items-center justify-center flex-shrink-0">
-                    <Kanban className="h-5 w-5" strokeWidth={1.5} />
+                    <LayoutGrid className="h-5 w-5" strokeWidth={1.5} />
                   </div>
                   <span 
                     className={cn(
@@ -275,7 +275,7 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
                       : "text-white/60 hover:bg-white/5 hover:text-white"
                   )}
                 >
-                  <Kanban className="h-5 w-5 flex-shrink-0" strokeWidth={1.5} />
+                  <LayoutGrid className="h-5 w-5 flex-shrink-0" strokeWidth={1.5} />
                   <span className="text-sm font-medium whitespace-nowrap">
                     CRM
                   </span>
