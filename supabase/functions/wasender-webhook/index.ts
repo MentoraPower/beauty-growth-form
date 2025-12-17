@@ -391,6 +391,41 @@ async function handler(req: Request): Promise<Response> {
       });
     }
     
+    // Handle presence updates (typing/recording indicators from contacts)
+    if (event === "presence.update") {
+      const presenceData = payload.data;
+      const remoteJid = presenceData?.id || presenceData?.remoteJid || "";
+      const presences = presenceData?.presences || {};
+      
+      // Extract phone from remoteJid
+      const phone = remoteJid.replace("@c.us", "").replace("@s.whatsapp.net", "").replace(/\D/g, "");
+      
+      if (phone && phone.length >= 8) {
+        // Get the presence type from the presences object
+        const presenceInfo = Object.values(presences)[0] as { lastKnownPresence?: string } | undefined;
+        const presenceType = presenceInfo?.lastKnownPresence || "available";
+        
+        console.log(`[Wasender Webhook] Presence update from ${phone}: ${presenceType}`);
+        
+        // Broadcast presence via Supabase Realtime channel
+        const broadcastChannel = supabase.channel("whatsapp-presence");
+        await broadcastChannel.send({
+          type: "broadcast",
+          event: "presence",
+          payload: {
+            phone,
+            presenceType,
+            timestamp: Date.now(),
+          },
+        });
+        supabase.removeChannel(broadcastChannel);
+      }
+      
+      return new Response(JSON.stringify({ ok: true }), { 
+        headers: { ...corsHeaders, "Content-Type": "application/json" } 
+      });
+    }
+    
     // Only process message events
     if (event !== "messages.received" && event !== "messages.upsert") {
       console.log(`[Wasender Webhook] Ignoring event: ${event}`);

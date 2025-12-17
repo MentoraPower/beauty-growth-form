@@ -97,6 +97,7 @@ const WhatsApp = () => {
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
   const [recordingStream, setRecordingStream] = useState<MediaStream | null>(null);
   const [replyToMessage, setReplyToMessage] = useState<Message | null>(null);
+  const [contactPresence, setContactPresence] = useState<{ phone: string; type: string; timestamp: number } | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -1306,6 +1307,41 @@ const WhatsApp = () => {
     };
   }, [selectedChat?.id, scrollToBottom]);
 
+  // Realtime subscription for contact presence (typing/recording indicators)
+  useEffect(() => {
+    const channel = supabase
+      .channel("whatsapp-presence")
+      .on("broadcast", { event: "presence" }, (payload) => {
+        const { phone, presenceType, timestamp } = payload.payload as { phone: string; presenceType: string; timestamp: number };
+        
+        // Only show presence for the currently selected chat
+        if (selectedChat && phone === selectedChat.phone.replace(/\D/g, "")) {
+          if (presenceType === "composing" || presenceType === "recording") {
+            setContactPresence({ phone, type: presenceType, timestamp });
+          } else {
+            // Clear presence when available/unavailable
+            setContactPresence(null);
+          }
+        }
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [selectedChat?.phone]);
+
+  // Auto-clear contact presence after 5 seconds of no updates
+  useEffect(() => {
+    if (!contactPresence) return;
+    
+    const timeout = setTimeout(() => {
+      setContactPresence(null);
+    }, 5000);
+    
+    return () => clearTimeout(timeout);
+  }, [contactPresence?.timestamp]);
+
   // Fetch messages when chat selected
   useEffect(() => {
     if (selectedChat) {
@@ -1697,7 +1733,13 @@ const WhatsApp = () => {
                 </div>
                 <div className="flex-1">
                   <h3 className="font-medium text-foreground">{selectedChat.name}</h3>
-                  <p className="text-xs text-muted-foreground">{formatPhoneDisplay(selectedChat.phone)}</p>
+                  {contactPresence && contactPresence.phone === selectedChat.phone.replace(/\D/g, "") ? (
+                    <p className="text-xs text-emerald-500 animate-pulse">
+                      {contactPresence.type === "composing" ? "digitando..." : "gravando áudio..."}
+                    </p>
+                  ) : (
+                    <p className="text-xs text-muted-foreground">{formatPhoneDisplay(selectedChat.phone)}</p>
+                  )}
                 </div>
                 <button
                   onClick={() => setIsCallModalOpen(true)}
