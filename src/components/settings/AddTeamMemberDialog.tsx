@@ -6,6 +6,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -18,7 +19,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { toast } from "sonner";
-import { Loader2, Eye, EyeOff } from "lucide-react";
+import { Loader2, Eye, EyeOff, UserPlus, Mail, Lock, Briefcase } from "lucide-react";
 
 interface AddTeamMemberDialogProps {
   open: boolean;
@@ -26,11 +27,11 @@ interface AddTeamMemberDialogProps {
 }
 
 const roles = [
-  { value: "admin", label: "Administrador" },
-  { value: "suporte", label: "Suporte" },
-  { value: "gestor_trafego", label: "Gestor de Tráfego" },
-  { value: "closer", label: "Closer" },
-  { value: "sdr", label: "SDR" },
+  { value: "admin", label: "Administrador", description: "Acesso total ao sistema" },
+  { value: "suporte", label: "Suporte", description: "Atendimento ao cliente" },
+  { value: "gestor_trafego", label: "Gestor de Tráfego", description: "Gerencia campanhas" },
+  { value: "closer", label: "Closer", description: "Fechamento de vendas" },
+  { value: "sdr", label: "SDR", description: "Prospecção de leads" },
 ];
 
 export function AddTeamMemberDialog({
@@ -62,17 +63,12 @@ export function AddTeamMemberDialog({
         throw new Error("A senha deve ter pelo menos 6 caracteres");
       }
 
-      // Create user via Supabase Admin API through edge function
       const { data, error } = await supabase.functions.invoke("create-team-member", {
         body: { name, email, password, role },
       });
 
-      // Handle edge function errors - the error object or data might contain the message
       if (error) {
-        // Try to extract error message from edge function response
         let errorMessage = error.message || "Erro ao criar membro";
-        
-        // Try to parse JSON from error message (edge function returns JSON in error body)
         const jsonMatch = errorMessage.match(/\{.*\}/);
         if (jsonMatch) {
           try {
@@ -84,7 +80,6 @@ export function AddTeamMemberDialog({
             // Keep original error message
           }
         }
-        
         throw new Error(errorMessage);
       }
       
@@ -108,35 +103,64 @@ export function AddTeamMemberDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle>Adicionar membro</DialogTitle>
-        </DialogHeader>
+      <DialogContent className="sm:max-w-[480px] p-0 gap-0 overflow-hidden">
+        {/* Header */}
+        <div className="bg-foreground px-6 py-5">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-full bg-background/10 flex items-center justify-center">
+              <UserPlus className="w-5 h-5 text-background" />
+            </div>
+            <div>
+              <DialogTitle className="text-background text-lg">Novo membro</DialogTitle>
+              <DialogDescription className="text-background/60 text-sm">
+                Adicione um novo membro à equipe
+              </DialogDescription>
+            </div>
+          </div>
+        </div>
 
-        <div className="space-y-4 pt-4">
+        {/* Form */}
+        <div className="p-6 space-y-5">
+          {/* Name field */}
           <div className="space-y-2">
-            <Label htmlFor="member-name">Nome</Label>
-            <Input
-              id="member-name"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="Nome do membro"
-            />
+            <Label htmlFor="member-name" className="text-sm font-medium">
+              Nome completo
+            </Label>
+            <div className="relative">
+              <Input
+                id="member-name"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="Digite o nome"
+                className="pl-10 h-11 bg-muted/30 border-border/50 focus:bg-background transition-colors"
+              />
+              <UserPlus className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            </div>
           </div>
 
+          {/* Email field */}
           <div className="space-y-2">
-            <Label htmlFor="member-email">E-mail</Label>
-            <Input
-              id="member-email"
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="email@exemplo.com"
-            />
+            <Label htmlFor="member-email" className="text-sm font-medium">
+              E-mail
+            </Label>
+            <div className="relative">
+              <Input
+                id="member-email"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="email@exemplo.com"
+                className="pl-10 h-11 bg-muted/30 border-border/50 focus:bg-background transition-colors"
+              />
+              <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            </div>
           </div>
 
+          {/* Password field */}
           <div className="space-y-2">
-            <Label htmlFor="member-password">Senha</Label>
+            <Label htmlFor="member-password" className="text-sm font-medium">
+              Senha
+            </Label>
             <div className="relative">
               <Input
                 id="member-password"
@@ -144,8 +168,9 @@ export function AddTeamMemberDialog({
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="Mínimo 6 caracteres"
-                className="pr-10"
+                className="pl-10 pr-10 h-11 bg-muted/30 border-border/50 focus:bg-background transition-colors"
               />
+              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
               <Button
                 type="button"
                 variant="ghost"
@@ -162,45 +187,53 @@ export function AddTeamMemberDialog({
             </div>
           </div>
 
+          {/* Role field */}
           <div className="space-y-2">
-            <Label>Função</Label>
-            <Select value={role} onValueChange={setRole}>
-              <SelectTrigger>
-                <SelectValue placeholder="Selecione a função" />
-              </SelectTrigger>
-              <SelectContent>
-                {roles.map((r) => (
-                  <SelectItem key={r.value} value={r.value}>
-                    {r.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <Label className="text-sm font-medium">Função</Label>
+            <div className="relative">
+              <Select value={role} onValueChange={setRole}>
+                <SelectTrigger className="pl-10 h-11 bg-muted/30 border-border/50 focus:bg-background transition-colors">
+                  <SelectValue placeholder="Selecione a função" />
+                </SelectTrigger>
+                <SelectContent>
+                  {roles.map((r) => (
+                    <SelectItem key={r.value} value={r.value} className="py-3">
+                      <div className="flex flex-col">
+                        <span className="font-medium">{r.label}</span>
+                        <span className="text-xs text-muted-foreground">{r.description}</span>
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Briefcase className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+            </div>
           </div>
+        </div>
 
-          <div className="flex gap-3 pt-4">
-            <Button
-              variant="outline"
-              onClick={() => onOpenChange(false)}
-              className="flex-1"
-            >
-              Cancelar
-            </Button>
-            <Button
-              onClick={() => createMember.mutate()}
-              disabled={createMember.isPending}
-              className="flex-1 bg-foreground text-background hover:bg-foreground/90"
-            >
-              {createMember.isPending ? (
-                <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Criando...
-                </>
-              ) : (
-                "Adicionar"
-              )}
-            </Button>
-          </div>
+        {/* Footer */}
+        <div className="px-6 py-4 bg-muted/30 border-t border-border/50 flex gap-3">
+          <Button
+            variant="outline"
+            onClick={() => onOpenChange(false)}
+            className="flex-1 h-11"
+          >
+            Cancelar
+          </Button>
+          <Button
+            onClick={() => createMember.mutate()}
+            disabled={createMember.isPending}
+            className="flex-1 h-11 bg-foreground text-background hover:bg-foreground/90"
+          >
+            {createMember.isPending ? (
+              <>
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                Criando...
+              </>
+            ) : (
+              "Adicionar membro"
+            )}
+          </Button>
         </div>
       </DialogContent>
     </Dialog>

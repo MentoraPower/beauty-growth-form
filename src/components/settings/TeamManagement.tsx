@@ -2,7 +2,15 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Plus, Trash2, Edit2, Shield, ShieldCheck, User } from "lucide-react";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Plus, Trash2, Pencil, Users, CheckCircle, XCircle } from "lucide-react";
 import { toast } from "sonner";
 import { AddTeamMemberDialog } from "./AddTeamMemberDialog";
 import { EditPermissionsDialog } from "./EditPermissionsDialog";
@@ -32,11 +40,11 @@ const roleLabels: Record<string, string> = {
 };
 
 const roleColors: Record<string, string> = {
-  admin: "bg-red-100 text-red-700 border-red-200",
-  suporte: "bg-blue-100 text-blue-700 border-blue-200",
-  gestor_trafego: "bg-purple-100 text-purple-700 border-purple-200",
-  closer: "bg-green-100 text-green-700 border-green-200",
-  sdr: "bg-orange-100 text-orange-700 border-orange-200",
+  admin: "bg-red-50 text-red-700 border-red-200",
+  suporte: "bg-blue-50 text-blue-700 border-blue-200",
+  gestor_trafego: "bg-purple-50 text-purple-700 border-purple-200",
+  closer: "bg-green-50 text-green-700 border-green-200",
+  sdr: "bg-orange-50 text-orange-700 border-orange-200",
 };
 
 export function TeamManagement() {
@@ -44,14 +52,12 @@ export function TeamManagement() {
   const [editingMember, setEditingMember] = useState<TeamMember | null>(null);
   const queryClient = useQueryClient();
 
-  // Fetch team members (existing emails) with roles and permissions via edge function
   const { data: teamMembers, isLoading } = useQuery({
     queryKey: ["team-members"],
     queryFn: async () => {
       const { data, error } = await supabase.functions.invoke("list-team-members");
 
       if (error) {
-        // This can happen if the current user is not admin
         throw new Error(error.message);
       }
 
@@ -59,10 +65,8 @@ export function TeamManagement() {
     },
   });
 
-  // Delete team member
   const deleteMember = useMutation({
     mutationFn: async (userId: string) => {
-      // Delete role
       const { error: roleError } = await supabase
         .from("user_roles")
         .delete()
@@ -70,7 +74,6 @@ export function TeamManagement() {
 
       if (roleError) throw roleError;
 
-      // Delete permissions
       await supabase
         .from("user_permissions")
         .delete()
@@ -96,6 +99,7 @@ export function TeamManagement() {
 
   return (
     <div className="space-y-6">
+      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-lg font-semibold">Equipe</h2>
@@ -112,80 +116,103 @@ export function TeamManagement() {
         </Button>
       </div>
 
-      {/* Team members list */}
-      <div className="space-y-3">
-        {teamMembers?.length === 0 && (
-          <div className="text-center py-12 text-muted-foreground">
-            <User className="w-12 h-12 mx-auto mb-3 opacity-50" />
-            <p>Nenhum membro na equipe</p>
-            <p className="text-sm">Adicione membros para gerenciar permissões</p>
+      {/* Table */}
+      <div className="border border-border rounded-xl overflow-hidden bg-background">
+        {teamMembers?.length === 0 ? (
+          <div className="text-center py-16 text-muted-foreground">
+            <Users className="w-12 h-12 mx-auto mb-3 opacity-40" />
+            <p className="font-medium">Nenhum membro na equipe</p>
+            <p className="text-sm mt-1">Adicione membros para gerenciar permissões</p>
           </div>
+        ) : (
+          <Table>
+            <TableHeader>
+              <TableRow className="bg-muted/30 hover:bg-muted/30">
+                <TableHead className="font-semibold text-foreground">Nome</TableHead>
+                <TableHead className="font-semibold text-foreground">E-mail</TableHead>
+                <TableHead className="font-semibold text-foreground">Função</TableHead>
+                <TableHead className="font-semibold text-foreground">Status</TableHead>
+                <TableHead className="font-semibold text-foreground text-right">Ações</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {teamMembers?.map((member) => (
+                <TableRow key={member.user_id} className="group">
+                  <TableCell>
+                    <div className="flex items-center gap-3">
+                      <div className="w-9 h-9 rounded-full bg-muted flex items-center justify-center text-sm font-medium text-muted-foreground">
+                        {(member.name || member.email || "?").charAt(0).toUpperCase()}
+                      </div>
+                      <span className="font-medium text-foreground">
+                        {member.name || "—"}
+                      </span>
+                    </div>
+                  </TableCell>
+                  <TableCell className="text-muted-foreground">
+                    {member.email || "—"}
+                  </TableCell>
+                  <TableCell>
+                    <span
+                      className={cn(
+                        "inline-flex px-2.5 py-1 rounded-full text-xs font-medium border",
+                        member.role
+                          ? roleColors[member.role] || "bg-gray-50 text-gray-700 border-gray-200"
+                          : "bg-gray-50 text-gray-700 border-gray-200"
+                      )}
+                    >
+                      {member.role ? roleLabels[member.role] || member.role : "Sem função"}
+                    </span>
+                  </TableCell>
+                  <TableCell>
+                    {member.role ? (
+                      <div className="flex items-center gap-1.5 text-emerald-600">
+                        <CheckCircle className="w-4 h-4" />
+                        <span className="text-sm font-medium">Ativo</span>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-1.5 text-muted-foreground">
+                        <XCircle className="w-4 h-4" />
+                        <span className="text-sm">Inativo</span>
+                      </div>
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => setEditingMember(member)}
+                        className="h-8 w-8 hover:bg-muted"
+                      >
+                        <Pencil className="w-4 h-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => {
+                          if (confirm("Tem certeza que deseja remover este membro?")) {
+                            deleteMember.mutate(member.user_id);
+                          }
+                        }}
+                        className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
         )}
-
-        {teamMembers?.map((member) => (
-          <div
-            key={member.id}
-            className="flex items-center justify-between p-4 rounded-xl border border-border bg-background"
-          >
-            <div className="flex items-center gap-4">
-              <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center">
-                {member.role === "admin" ? (
-                  <ShieldCheck className="w-5 h-5 text-red-600" />
-                ) : (
-                  <User className="w-5 h-5 text-muted-foreground" />
-                )}
-              </div>
-              <div>
-                <p className="font-medium text-foreground">
-                  {member.name || "Sem nome"}
-                </p>
-                <p className="text-sm text-muted-foreground">{member.email}</p>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-3">
-              <span
-                className={cn(
-                  "px-3 py-1 rounded-full text-xs font-medium border",
-                  member.role ? (roleColors[member.role] || "bg-gray-100 text-gray-700") : "bg-gray-100 text-gray-700"
-                )}
-              >
-                {member.role ? (roleLabels[member.role] || member.role) : "Sem função"}
-              </span>
-
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => setEditingMember(member)}
-                className="h-8 w-8"
-              >
-                <Edit2 className="w-4 h-4" />
-              </Button>
-
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => {
-                  if (confirm("Tem certeza que deseja remover este membro?")) {
-                    deleteMember.mutate(member.user_id);
-                  }
-                }}
-                className="h-8 w-8 text-destructive hover:text-destructive"
-              >
-                <Trash2 className="w-4 h-4" />
-              </Button>
-            </div>
-          </div>
-        ))}
       </div>
 
-      {/* Add dialog */}
+      {/* Dialogs */}
       <AddTeamMemberDialog
         open={isAddDialogOpen}
         onOpenChange={setIsAddDialogOpen}
       />
 
-      {/* Edit permissions dialog */}
       {editingMember && (
         <EditPermissionsDialog
           open={!!editingMember}
