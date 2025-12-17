@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Zap, Plus, Trash2, ArrowRight, Webhook, FolderSync, Copy, Check, Send, Download, X, Play, Settings, Mail, Loader2, ListOrdered } from "lucide-react";
+import { Zap, Plus, Trash2, ArrowRight, Webhook, FolderSync, Copy, Check, Send, Download, X, Play, Settings, Mail, Loader2, ListOrdered, Workflow } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -21,6 +21,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Pipeline } from "@/types/crm";
 import { cn } from "@/lib/utils";
+import { EmailFlowBuilder } from "./EmailFlowBuilder";
 
 interface Origin {
   id: string;
@@ -102,6 +103,7 @@ export function AutomationsDropdown({ pipelines, subOriginId }: AutomationsDropd
   
   // Email automation states
   const [isCreatingEmail, setIsCreatingEmail] = useState(false);
+  const [showEmailFlowBuilder, setShowEmailFlowBuilder] = useState(false);
   const [editingEmailId, setEditingEmailId] = useState<string | null>(null);
   const [emailName, setEmailName] = useState("");
   const [emailTriggerPipeline, setEmailTriggerPipeline] = useState<string>("");
@@ -675,6 +677,75 @@ export function AutomationsDropdown({ pipelines, subOriginId }: AutomationsDropd
       resetAutomationForm();
       resetWebhookForm();
       resetEmailForm();
+      setShowEmailFlowBuilder(false);
+    }
+  };
+
+  const handleOpenEmailFlowBuilder = () => {
+    if (!emailName.trim()) {
+      toast.error("Digite um nome para a automação");
+      return;
+    }
+    if (!emailTriggerPipeline) {
+      toast.error("Selecione a pipeline de gatilho");
+      return;
+    }
+    setShowEmailFlowBuilder(true);
+  };
+
+  const handleSaveEmailFlow = async (steps: any[]) => {
+    // Extract email steps to build HTML
+    const emailSteps = steps.filter(s => s.type === "email");
+    if (emailSteps.length === 0) {
+      toast.error("Adicione pelo menos um passo de e-mail");
+      return;
+    }
+
+    // For now, use the first email step's data
+    const firstEmail = emailSteps[0];
+    const subject = firstEmail.data.subject || emailSubject;
+    const bodyHtml = firstEmail.data.bodyHtml || emailBodyHtml;
+
+    if (!subject.trim()) {
+      toast.error("Digite o assunto do e-mail");
+      return;
+    }
+    if (!bodyHtml.trim()) {
+      toast.error("Digite o conteúdo HTML do e-mail");
+      return;
+    }
+
+    try {
+      if (editingEmailId) {
+        const { error } = await (supabase as any)
+          .from("email_automations")
+          .update({
+            name: emailName,
+            trigger_pipeline_id: emailTriggerPipeline,
+            subject,
+            body_html: bodyHtml,
+          })
+          .eq("id", editingEmailId);
+        if (error) throw error;
+      } else {
+        const { error } = await (supabase as any).from("email_automations").insert({
+          name: emailName,
+          trigger_pipeline_id: emailTriggerPipeline,
+          sub_origin_id: subOriginId,
+          subject,
+          body_html: bodyHtml,
+          is_active: true,
+        });
+        if (error) throw error;
+      }
+
+      refetchEmailAutomations();
+      resetEmailForm();
+      setShowEmailFlowBuilder(false);
+      toast.success(editingEmailId ? "Automação atualizada!" : "Automação de e-mail criada!");
+    } catch (error) {
+      console.error("Erro ao salvar automação de e-mail:", error);
+      toast.error("Erro ao salvar automação de e-mail");
     }
   };
 
@@ -686,6 +757,41 @@ export function AutomationsDropdown({ pipelines, subOriginId }: AutomationsDropd
     { id: "lead_created", label: "Lead criado", icon: Plus },
     { id: "lead_updated", label: "Lead atualizado", icon: Settings },
   ];
+
+  // If showing email flow builder, render full screen
+  if (showEmailFlowBuilder) {
+    const triggerPipelineName = pipelines.find(p => p.id === emailTriggerPipeline)?.nome || "";
+    return (
+      <Dialog open={open} onOpenChange={handleOpenChange}>
+        <DialogTrigger asChild>
+          <div className="relative inline-flex overflow-visible">
+            <Button variant="outline" size="icon" className="h-9 w-9 border-border">
+              <Zap className="w-4 h-4 text-amber-500" />
+            </Button>
+            {(activeAutomationsCount + activeWebhooksCount + activeEmailAutomationsCount) > 0 && (
+              <span className="absolute top-[2px] right-[2px] z-10 h-4 min-w-4 px-1 text-[10px] font-medium flex items-center justify-center bg-amber-500 text-white rounded-full pointer-events-none">
+                {activeAutomationsCount + activeWebhooksCount + activeEmailAutomationsCount}
+              </span>
+            )}
+          </div>
+        </DialogTrigger>
+        <DialogContent className="max-w-6xl h-[85vh] overflow-hidden p-0 bg-background border-border" aria-describedby={undefined}>
+          <DialogTitle className="sr-only">Editor de Fluxo de E-mail</DialogTitle>
+          <EmailFlowBuilder
+            automationName={emailName}
+            triggerPipelineName={triggerPipelineName}
+            onSave={handleSaveEmailFlow}
+            onCancel={() => setShowEmailFlowBuilder(false)}
+            initialSteps={editingEmailId ? [
+              { id: "start-1", type: "start", data: { label: "Automação iniciada" } },
+              { id: "email-1", type: "email", data: { label: "Enviar e-mail", subject: emailSubject, bodyHtml: emailBodyHtml } },
+              { id: "end-1", type: "end", data: { label: "Fluxo finalizado" } },
+            ] : undefined}
+          />
+        </DialogContent>
+      </Dialog>
+    );
+  }
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
@@ -701,15 +807,15 @@ export function AutomationsDropdown({ pipelines, subOriginId }: AutomationsDropd
           )}
         </div>
       </DialogTrigger>
-      <DialogContent className="max-w-4xl h-[700px] overflow-hidden p-0 bg-neutral-900 border-neutral-800" aria-describedby={undefined}>
+      <DialogContent className="max-w-4xl h-[700px] overflow-hidden p-0 bg-background border-border" aria-describedby={undefined}>
         <DialogTitle className="sr-only">Automações</DialogTitle>
         {/* Header with icon and tabs */}
-        <div className="border-b border-neutral-800">
+        <div className="border-b border-border">
           <div className="flex items-center gap-3 px-6 py-4">
             <div className="w-8 h-8 rounded-lg bg-amber-500/20 flex items-center justify-center">
               <Zap className="w-4 h-4 text-amber-500" />
             </div>
-            <span className="text-base font-semibold text-white">Automações</span>
+            <span className="text-base font-semibold text-foreground">Automações</span>
           </div>
           
           {/* Tabs */}
@@ -719,13 +825,13 @@ export function AutomationsDropdown({ pipelines, subOriginId }: AutomationsDropd
               className={cn(
                 "pb-3 text-sm font-medium border-b-2 transition-colors",
                 activeTab === "automations"
-                  ? "border-purple-500 text-white"
-                  : "border-transparent text-neutral-400 hover:text-white"
+                  ? "border-purple-500 text-foreground"
+                  : "border-transparent text-muted-foreground hover:text-foreground"
               )}
             >
               Automações
               {activeAutomationsCount > 0 && (
-                <span className="ml-2 px-1.5 py-0.5 text-[10px] rounded bg-purple-500/20 text-purple-400">
+                <span className="ml-2 px-1.5 py-0.5 text-[10px] rounded bg-purple-500/20 text-purple-600">
                   {activeAutomationsCount}
                 </span>
               )}
@@ -735,13 +841,13 @@ export function AutomationsDropdown({ pipelines, subOriginId }: AutomationsDropd
               className={cn(
                 "pb-3 text-sm font-medium border-b-2 transition-colors",
                 activeTab === "webhooks"
-                  ? "border-purple-500 text-white"
-                  : "border-transparent text-neutral-400 hover:text-white"
+                  ? "border-purple-500 text-foreground"
+                  : "border-transparent text-muted-foreground hover:text-foreground"
               )}
             >
               Webhooks
               {activeWebhooksCount > 0 && (
-                <span className="ml-2 px-1.5 py-0.5 text-[10px] rounded bg-blue-500/20 text-blue-400">
+                <span className="ml-2 px-1.5 py-0.5 text-[10px] rounded bg-blue-500/20 text-blue-600">
                   {activeWebhooksCount}
                 </span>
               )}
@@ -751,8 +857,8 @@ export function AutomationsDropdown({ pipelines, subOriginId }: AutomationsDropd
               className={cn(
                 "pb-3 text-sm font-medium border-b-2 transition-colors",
                 activeTab === "emails"
-                  ? "border-purple-500 text-white"
-                  : "border-transparent text-neutral-400 hover:text-white"
+                  ? "border-purple-500 text-foreground"
+                  : "border-transparent text-muted-foreground hover:text-foreground"
               )}
             >
               <span className="flex items-center gap-1.5">
@@ -769,10 +875,10 @@ export function AutomationsDropdown({ pipelines, subOriginId }: AutomationsDropd
             <div className="p-6">
               {/* Active/Inactive filter */}
               <div className="flex items-center gap-2 mb-6">
-                <button className="px-3 py-1.5 text-sm rounded-lg bg-purple-500/20 text-purple-400 font-medium">
+                <button className="px-3 py-1.5 text-sm rounded-lg bg-purple-500/20 text-purple-600 font-medium">
                   Ativo {activeAutomationsCount}
                 </button>
-                <button className="px-3 py-1.5 text-sm rounded-lg text-neutral-400 hover:bg-neutral-800 transition-colors">
+                <button className="px-3 py-1.5 text-sm rounded-lg text-muted-foreground hover:bg-muted transition-colors">
                   Inativo {automations.length - activeAutomationsCount}
                 </button>
                 <div className="flex-1" />
@@ -788,15 +894,15 @@ export function AutomationsDropdown({ pipelines, subOriginId }: AutomationsDropd
 
               {/* Create automation flow */}
               {isCreatingAutomation && (
-                <div className="mb-6 p-5 rounded-xl bg-neutral-800/50 border border-neutral-700">
+                <div className="mb-6 p-5 rounded-xl bg-muted/50 border border-border">
                   <div className="flex items-center justify-between mb-4">
-                    <span className="text-sm font-medium text-white">
+                    <span className="text-sm font-medium text-foreground">
                       {editingAutomationId ? "Editar automação" : "Nova automação"}
                     </span>
                     <Button
                       size="sm"
                       variant="ghost"
-                      className="h-7 w-7 p-0 text-neutral-400 hover:text-white"
+                      className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground"
                       onClick={resetAutomationForm}
                     >
                       <X className="w-4 h-4" />
@@ -807,22 +913,22 @@ export function AutomationsDropdown({ pipelines, subOriginId }: AutomationsDropd
                   <div className="flex items-stretch gap-3">
                     {/* Trigger Column */}
                     <div className="flex-1">
-                      <div className="rounded-lg bg-neutral-800 border border-neutral-700 h-full">
-                        <div className="flex items-center gap-2 p-3 border-b border-neutral-700">
+                      <div className="rounded-lg bg-background border border-border h-full">
+                        <div className="flex items-center gap-2 p-3 border-b border-border">
                           <div className="w-6 h-6 rounded bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
                             <Play className="w-3 h-3 text-white" />
                           </div>
-                          <span className="text-white text-sm font-medium">Quando</span>
+                          <span className="text-foreground text-sm font-medium">Quando</span>
                         </div>
                         
                         <div className="p-3">
                           <Select value={selectedTriggerPipeline} onValueChange={setSelectedTriggerPipeline}>
-                            <SelectTrigger className="h-9 bg-neutral-700/50 border-neutral-600 text-white text-sm">
+                            <SelectTrigger className="h-9 text-sm">
                               <SelectValue placeholder="Lead movido para..." />
                             </SelectTrigger>
-                            <SelectContent className="bg-neutral-800 border-neutral-700">
+                            <SelectContent>
                               {pipelines.map((pipeline) => (
-                                <SelectItem key={pipeline.id} value={pipeline.id} className="text-white">
+                                <SelectItem key={pipeline.id} value={pipeline.id}>
                                   Lead movido para {pipeline.nome}
                                 </SelectItem>
                               ))}
@@ -834,19 +940,19 @@ export function AutomationsDropdown({ pipelines, subOriginId }: AutomationsDropd
 
                     {/* Arrow */}
                     <div className="flex items-center justify-center">
-                      <div className="w-8 h-8 rounded-full bg-neutral-800 border border-neutral-700 flex items-center justify-center">
-                        <ArrowRight className="w-4 h-4 text-neutral-400" />
+                      <div className="w-8 h-8 rounded-full bg-muted border border-border flex items-center justify-center">
+                        <ArrowRight className="w-4 h-4 text-muted-foreground" />
                       </div>
                     </div>
 
                     {/* Action Column */}
                     <div className="flex-1">
-                      <div className="rounded-lg bg-neutral-800 border border-neutral-700 h-full">
-                        <div className="flex items-center gap-2 p-3 border-b border-neutral-700">
+                      <div className="rounded-lg bg-background border border-border h-full">
+                        <div className="flex items-center gap-2 p-3 border-b border-border">
                           <div className="w-6 h-6 rounded bg-gradient-to-br from-pink-500 to-orange-500 flex items-center justify-center">
                             <FolderSync className="w-3 h-3 text-white" />
                           </div>
-                          <span className="text-white text-sm font-medium">Então</span>
+                          <span className="text-foreground text-sm font-medium">Então</span>
                         </div>
                         
                         <div className="p-3 space-y-2">
@@ -855,12 +961,12 @@ export function AutomationsDropdown({ pipelines, subOriginId }: AutomationsDropd
                             setSelectedActionSubOrigin("");
                             setSelectedActionPipeline("");
                           }}>
-                            <SelectTrigger className="h-9 bg-neutral-700/50 border-neutral-600 text-white text-sm">
+                            <SelectTrigger className="h-9 text-sm">
                               <SelectValue placeholder="Origem..." />
                             </SelectTrigger>
-                            <SelectContent className="bg-neutral-800 border-neutral-700">
+                            <SelectContent>
                               {origins.map((origin) => (
-                                <SelectItem key={origin.id} value={origin.id} className="text-white">
+                                <SelectItem key={origin.id} value={origin.id}>
                                   {origin.nome}
                                 </SelectItem>
                               ))}
@@ -875,14 +981,14 @@ export function AutomationsDropdown({ pipelines, subOriginId }: AutomationsDropd
                             }}
                             disabled={!selectedActionOrigin}
                           >
-                            <SelectTrigger className="h-9 bg-neutral-700/50 border-neutral-600 text-white text-sm disabled:opacity-50">
+                            <SelectTrigger className="h-9 text-sm disabled:opacity-50">
                               <SelectValue placeholder="Sub-origem..." />
                             </SelectTrigger>
-                            <SelectContent className="bg-neutral-800 border-neutral-700">
+                            <SelectContent>
                               {subOrigins
                                 .filter(s => s.origin_id === selectedActionOrigin)
                                 .map((subOrigin) => (
-                                  <SelectItem key={subOrigin.id} value={subOrigin.id} className="text-white">
+                                  <SelectItem key={subOrigin.id} value={subOrigin.id}>
                                     {subOrigin.nome}
                                   </SelectItem>
                                 ))}
@@ -894,12 +1000,12 @@ export function AutomationsDropdown({ pipelines, subOriginId }: AutomationsDropd
                             onValueChange={setSelectedActionPipeline}
                             disabled={!selectedActionSubOrigin}
                           >
-                            <SelectTrigger className="h-9 bg-neutral-700/50 border-neutral-600 text-white text-sm disabled:opacity-50">
+                            <SelectTrigger className="h-9 text-sm disabled:opacity-50">
                               <SelectValue placeholder="Pipeline..." />
                             </SelectTrigger>
-                            <SelectContent className="bg-neutral-800 border-neutral-700">
+                            <SelectContent>
                               {getTargetPipelines(selectedActionSubOrigin).map((pipeline) => (
-                                <SelectItem key={pipeline.id} value={pipeline.id} className="text-white">
+                                <SelectItem key={pipeline.id} value={pipeline.id}>
                                   {pipeline.nome}
                                 </SelectItem>
                               ))}
@@ -911,7 +1017,7 @@ export function AutomationsDropdown({ pipelines, subOriginId }: AutomationsDropd
                   </div>
 
                   {/* Footer */}
-                  <div className="flex items-center justify-between mt-4 pt-4 border-t border-neutral-700">
+                  <div className="flex items-center justify-between mt-4 pt-4 border-t border-border">
                     <div className="flex items-center gap-1.5 text-xs text-neutral-400">
                       <span>Quando</span>
                       <span className="px-1.5 py-0.5 bg-neutral-700 rounded text-white text-xs">
@@ -1428,16 +1534,16 @@ export function AutomationsDropdown({ pipelines, subOriginId }: AutomationsDropd
             <div className="p-6">
               {/* Header */}
               <div className="flex items-center gap-2 mb-6">
-                <button className="px-3 py-1.5 text-sm rounded-lg bg-pink-500/20 text-pink-400 font-medium">
+                <button className="px-3 py-1.5 text-sm rounded-lg bg-pink-500/20 text-pink-600 font-medium">
                   Ativo {activeEmailAutomationsCount}
                 </button>
-                <button className="px-3 py-1.5 text-sm rounded-lg text-neutral-400 hover:bg-neutral-800 transition-colors">
+                <button className="px-3 py-1.5 text-sm rounded-lg text-muted-foreground hover:bg-muted transition-colors">
                   Inativo {emailAutomations.length - activeEmailAutomationsCount}
                 </button>
                 <div className="flex-1" />
                 <Button
                   onClick={() => setIsCreatingEmail(true)}
-                  className="bg-purple-600 hover:bg-purple-700 text-white"
+                  className="bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white"
                   disabled={isCreatingEmail}
                 >
                   <Plus className="w-4 h-4 mr-2" />
@@ -1447,15 +1553,15 @@ export function AutomationsDropdown({ pipelines, subOriginId }: AutomationsDropd
 
               {/* Create/Edit form */}
               {isCreatingEmail && (
-                <div className="mb-6 p-5 rounded-xl bg-neutral-800/50 border border-neutral-700 space-y-4">
+                <div className="mb-6 p-5 rounded-xl bg-muted/50 border border-border space-y-4">
                   <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium text-white">
+                    <span className="text-sm font-medium text-foreground">
                       {editingEmailId ? "Editar automação de e-mail" : "Nova automação de e-mail"}
                     </span>
                     <Button
                       size="sm"
                       variant="ghost"
-                      className="h-7 w-7 p-0 text-neutral-400 hover:text-white"
+                      className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground"
                       onClick={resetEmailForm}
                     >
                       <X className="w-4 h-4" />
@@ -1467,15 +1573,15 @@ export function AutomationsDropdown({ pipelines, subOriginId }: AutomationsDropd
                       placeholder="Nome da automação..."
                       value={emailName}
                       onChange={(e) => setEmailName(e.target.value)}
-                      className="h-10 bg-neutral-700 border-neutral-600 text-white placeholder:text-neutral-500"
+                      className="h-10"
                     />
                     <Select value={emailTriggerPipeline} onValueChange={setEmailTriggerPipeline}>
-                      <SelectTrigger className="h-10 bg-neutral-700 border-neutral-600 text-white">
+                      <SelectTrigger className="h-10">
                         <SelectValue placeholder="Quando lead entrar na pipeline..." />
                       </SelectTrigger>
-                      <SelectContent className="bg-neutral-800 border-neutral-700">
+                      <SelectContent>
                         {pipelines.map((pipeline) => (
-                          <SelectItem key={pipeline.id} value={pipeline.id} className="text-white">
+                          <SelectItem key={pipeline.id} value={pipeline.id}>
                             {pipeline.nome}
                           </SelectItem>
                         ))}
@@ -1483,47 +1589,31 @@ export function AutomationsDropdown({ pipelines, subOriginId }: AutomationsDropd
                     </Select>
                   </div>
 
-                  <Input
-                    placeholder="Assunto do e-mail..."
-                    value={emailSubject}
-                    onChange={(e) => setEmailSubject(e.target.value)}
-                    className="h-10 bg-neutral-700 border-neutral-600 text-white placeholder:text-neutral-500"
-                  />
-
-                  <div>
-                    <label className="text-xs text-neutral-400 mb-2 block">
-                      Conteúdo HTML do e-mail (use {"{{nome}}"}, {"{{email}}"} para variáveis)
-                    </label>
-                    <Textarea
-                      placeholder="<html>...</html>"
-                      value={emailBodyHtml}
-                      onChange={(e) => setEmailBodyHtml(e.target.value)}
-                      className="min-h-[200px] bg-neutral-700 border-neutral-600 text-white placeholder:text-neutral-500 font-mono text-xs"
-                    />
+                  <div className="flex gap-3">
+                    <Button
+                      className="flex-1 h-10 bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white"
+                      onClick={handleOpenEmailFlowBuilder}
+                    >
+                      <Workflow className="w-4 h-4 mr-2" />
+                      {editingEmailId ? "Editar fluxo de e-mail" : "Criar fluxo de e-mail"}
+                    </Button>
                   </div>
-
-                  <Button
-                    className="w-full h-10 bg-purple-600 hover:bg-purple-700 text-white"
-                    onClick={editingEmailId ? updateEmailAutomation : createEmailAutomation}
-                  >
-                    {editingEmailId ? "Salvar alterações" : "Criar automação"}
-                  </Button>
                 </div>
               )}
 
               {/* List */}
               {emailAutomations.length === 0 && !isCreatingEmail ? (
                 <div className="flex flex-col items-center justify-center py-16 text-center">
-                  <div className="w-12 h-12 rounded-full bg-neutral-800 flex items-center justify-center mb-4">
-                    <Mail className="w-6 h-6 text-neutral-500" />
+                  <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center mb-4">
+                    <Mail className="w-6 h-6 text-muted-foreground" />
                   </div>
-                  <h3 className="text-white font-medium mb-2">Nenhuma automação de e-mail</h3>
-                  <p className="text-neutral-400 text-sm max-w-md mb-6">
+                  <h3 className="text-foreground font-medium mb-2">Nenhuma automação de e-mail</h3>
+                  <p className="text-muted-foreground text-sm max-w-md mb-6">
                     Configure automações para enviar e-mails automaticamente quando leads entrarem em pipelines específicas.
                   </p>
                   <Button
                     onClick={() => setIsCreatingEmail(true)}
-                    className="bg-purple-600 hover:bg-purple-700 text-white"
+                    className="bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white"
                   >
                     Criar automação
                   </Button>
@@ -1537,7 +1627,7 @@ export function AutomationsDropdown({ pipelines, subOriginId }: AutomationsDropd
                         "p-4 rounded-xl border transition-colors",
                         email.is_active 
                           ? "bg-pink-500/5 border-pink-500/20" 
-                          : "bg-neutral-800/20 border-neutral-800 opacity-60"
+                          : "bg-muted/30 border-border opacity-60"
                       )}
                     >
                       <div className="flex items-center justify-between">
@@ -1546,7 +1636,7 @@ export function AutomationsDropdown({ pipelines, subOriginId }: AutomationsDropd
                             onClick={() => toggleEmailAutomation(email.id, email.is_active)}
                             className={cn(
                               "relative w-10 h-5 rounded-full transition-colors",
-                              email.is_active ? "bg-pink-500" : "bg-neutral-600"
+                              email.is_active ? "bg-pink-500" : "bg-muted-foreground/30"
                             )}
                           >
                             <span
@@ -1557,8 +1647,8 @@ export function AutomationsDropdown({ pipelines, subOriginId }: AutomationsDropd
                             />
                           </button>
                           <div>
-                            <span className="text-sm font-medium text-white block">{email.name}</span>
-                            <span className="text-xs text-neutral-400">
+                            <span className="text-sm font-medium text-foreground block">{email.name}</span>
+                            <span className="text-xs text-muted-foreground">
                               Quando lead entrar em: {getPipelineName(email.trigger_pipeline_id)}
                             </span>
                           </div>
@@ -1567,7 +1657,7 @@ export function AutomationsDropdown({ pipelines, subOriginId }: AutomationsDropd
                           <Button
                             size="sm"
                             variant="ghost"
-                            className="h-8 w-8 p-0 text-neutral-400 hover:text-white hover:bg-neutral-700"
+                            className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground"
                             onClick={() => startEditingEmail(email)}
                           >
                             <Settings className="h-4 w-4" />
@@ -1575,14 +1665,14 @@ export function AutomationsDropdown({ pipelines, subOriginId }: AutomationsDropd
                           <Button
                             size="sm"
                             variant="ghost"
-                            className="h-8 w-8 p-0 text-neutral-400 hover:text-red-400 hover:bg-red-500/10"
+                            className="h-8 w-8 p-0 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
                             onClick={() => deleteEmailAutomation(email.id)}
                           >
                             <Trash2 className="h-4 w-4" />
                           </Button>
                         </div>
                       </div>
-                      <div className="mt-2 text-xs text-neutral-500">
+                      <div className="mt-2 text-xs text-muted-foreground">
                         Assunto: {email.subject}
                       </div>
                     </div>
