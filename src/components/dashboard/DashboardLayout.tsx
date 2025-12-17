@@ -157,16 +157,16 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
               </span>
             </div>
 
-            <nav className="flex-1 overflow-y-auto overflow-x-hidden px-2 py-2">
-              <div className="flex flex-col gap-2 items-center">
+            <nav className="flex-1 overflow-y-auto overflow-x-hidden px-3 py-2">
+              <div className="flex flex-col gap-2">
                 {/* CRM Button */}
                 <button
                   onClick={() => handleNavClick('crm')}
                   className={cn(
                     "relative flex items-center h-10 rounded-lg transition-all duration-200",
-                    sidebarExpanded ? "px-3 w-full justify-start" : "justify-center w-10",
+                    sidebarExpanded ? "px-3 w-full" : "justify-center w-10",
                     activePanel === 'crm'
-                      ? "bg-white text-[#0f0f12] before:absolute before:-left-2 before:top-1/2 before:-translate-y-1/2 before:h-[70%] before:w-1 before:rounded-r-full before:bg-gradient-to-b before:from-[#F40000] before:to-[#A10000]"
+                      ? "bg-white text-[#0f0f12] before:absolute before:-left-3 before:top-1/2 before:-translate-y-1/2 before:h-[70%] before:w-1 before:rounded-r-full before:bg-gradient-to-b before:from-[#F40000] before:to-[#A10000]"
                       : "bg-white/10 text-white/70 hover:bg-white/20 hover:text-white"
                   )}
                 >
@@ -190,9 +190,9 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
                       onClick={() => handleNavClick(item.id)}
                       className={cn(
                         "relative flex items-center h-10 rounded-lg transition-all duration-200",
-                        sidebarExpanded ? "px-3 w-full justify-start" : "justify-center w-10",
+                        sidebarExpanded ? "px-3 w-full" : "justify-center w-10",
                         isSelected
-                          ? "bg-white text-[#0f0f12] before:absolute before:-left-2 before:top-1/2 before:-translate-y-1/2 before:h-[70%] before:w-1 before:rounded-r-full before:bg-gradient-to-b before:from-[#F40000] before:to-[#A10000]"
+                          ? "bg-white text-[#0f0f12] before:absolute before:-left-3 before:top-1/2 before:-translate-y-1/2 before:h-[70%] before:w-1 before:rounded-r-full before:bg-gradient-to-b before:from-[#F40000] before:to-[#A10000]"
                           : "bg-white/10 text-white/70 hover:bg-white/20 hover:text-white"
                       )}
                     >
