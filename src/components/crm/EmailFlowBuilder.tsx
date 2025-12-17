@@ -18,6 +18,7 @@ import {
   getBezierPath,
   EdgeProps,
   useReactFlow,
+  useStoreApi,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import { Play, Clock, CheckCircle2, Trash2, Copy, ArrowLeft, Plus, Mail, Zap, ChevronDown } from "lucide-react";
@@ -40,6 +41,14 @@ import {
 } from "@/components/ui/dropdown-menu";
 import gmailLogo from "@/assets/gmail-logo.png";
 
+// Connection dropdown state interface
+interface ConnectionDropdown {
+  x: number;
+  y: number;
+  sourceNodeId: string;
+  sourceHandleId: string | null;
+}
+
 interface Pipeline {
   id: string;
   nome: string;
@@ -55,10 +64,10 @@ interface TriggerItem {
 
 interface EmailFlowStep {
   id: string;
-  type: "trigger" | "start" | "wait" | "email" | "end";
+  type: "trigger" | "start" | "wait" | "email" | "end" | "entry";
   position?: { x: number; y: number };
   data: {
-    label: string;
+    label?: string;
     waitTime?: number;
     waitUnit?: "minutes" | "hours" | "days" | "months";
     subject?: string;
@@ -69,6 +78,21 @@ interface EmailFlowStep {
     triggerPipelineId?: string;
   };
 }
+
+// Entry Node Component - Fully rounded pill shape "Start"
+const EntryNode = ({ data }: NodeProps) => {
+  return (
+    <div className="px-6 py-3 rounded-full bg-foreground shadow-sm transition-all flex items-center gap-2">
+      <Play className="w-4 h-4 text-background fill-background" />
+      <span className="text-sm font-semibold text-background tracking-wide">Start</span>
+      <Handle
+        type="source"
+        position={Position.Right}
+        className="!w-3 !h-3 !bg-background !border-2 !border-foreground"
+      />
+    </div>
+  );
+};
 
 // Trigger Node Component - Main entry point with multiple triggers
 const TriggerNode = ({ data, id, selected }: NodeProps & { data: { 
@@ -610,6 +634,7 @@ const EndNode = ({ data, id, selected }: NodeProps) => {
 };
 
 const nodeTypes = {
+  entry: EntryNode,
   trigger: TriggerNode,
   start: StartNode,
   wait: WaitNode,
@@ -729,6 +754,8 @@ export function EmailFlowBuilder({
   const [selectedNode, setSelectedNode] = useState<Node | null>(null);
   const [triggerType, setTriggerType] = useState<string>("");
   const [triggerPipelineId, setTriggerPipelineId] = useState<string>("");
+  const [connectionDropdown, setConnectionDropdown] = useState<ConnectionDropdown | null>(null);
+  const reactFlowWrapper = useRef<HTMLDivElement>(null);
 
   // Filter pipelines for current sub-origin
   const filteredPipelines = useMemo(() => {
@@ -756,7 +783,9 @@ export function EmailFlowBuilder({
   // Initialize nodes and edges (use saved positions if available)
   const initialNodes: Node[] = useMemo(() => {
     if (initialSteps?.length) {
-      return initialSteps.map((step, index) => {
+      // Check if entry node exists
+      const hasEntryNode = initialSteps.some(step => step.type === "entry");
+      const nodes = initialSteps.map((step, index) => {
         // Convert old 'start' nodes to 'trigger' nodes
         const nodeType = step.type === "start" ? "trigger" : step.type;
         return {
@@ -770,12 +799,33 @@ export function EmailFlowBuilder({
           },
         };
       });
+      
+      // If no entry node, add one before trigger
+      if (!hasEntryNode) {
+        const triggerNode = nodes.find(n => n.type === "trigger");
+        if (triggerNode) {
+          nodes.unshift({
+            id: "entry-1",
+            type: "entry",
+            position: { x: triggerNode.position.x - 200, y: triggerNode.position.y + 50 },
+            data: { label: "Start" } as any,
+          });
+        }
+      }
+      
+      return nodes;
     }
     return [
       {
+        id: "entry-1",
+        type: "entry",
+        position: { x: 100, y: 250 },
+        data: { label: "Start" } as any,
+      },
+      {
         id: "trigger-1",
         type: "trigger",
-        position: { x: 100, y: 200 },
+        position: { x: 300, y: 200 },
         data: { 
           label: "Gatilho",
           triggers: [],
@@ -786,14 +836,40 @@ export function EmailFlowBuilder({
     ];
   }, [initialSteps, filteredPipelines, handleTriggersChange]);
 
-  const initialEdges: Edge[] = initialSteps?.length
-    ? initialSteps.slice(0, -1).map((step, index) => ({
+  const initialEdges: Edge[] = useMemo(() => {
+    if (initialSteps?.length) {
+      // Check if we have entry -> trigger edge already
+      const hasEntryNode = initialSteps.some(step => step.type === "entry");
+      const edges = initialSteps.slice(0, -1).map((step, index) => ({
         id: `e-${step.id}-${initialSteps[index + 1].id}`,
         source: step.id,
         target: initialSteps[index + 1].id,
         type: "custom",
-      }))
-    : [];
+      }));
+      
+      // Add entry -> trigger edge if entry node was added
+      if (!hasEntryNode) {
+        const triggerNode = initialSteps.find(step => step.type === "trigger" || step.type === "start");
+        if (triggerNode) {
+          edges.unshift({
+            id: `e-entry-1-${triggerNode.id}`,
+            source: "entry-1",
+            target: triggerNode.id,
+            type: "custom",
+          });
+        }
+      }
+      
+      return edges;
+    }
+    // Default: connect entry to trigger
+    return [{
+      id: "e-entry-1-trigger-1",
+      source: "entry-1",
+      target: "trigger-1",
+      type: "custom",
+    }];
+  }, [initialSteps]);
 
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
@@ -818,7 +894,8 @@ export function EmailFlowBuilder({
   }, [filteredPipelines, handleTriggersChange, setNodes]);
 
   const onConnect = useCallback(
-    (params: Connection) =>
+    (params: Connection) => {
+      setConnectionDropdown(null);
       setEdges((eds) =>
         addEdge(
           {
@@ -827,9 +904,72 @@ export function EmailFlowBuilder({
           },
           eds
         )
-      ),
+      );
+    },
     [setEdges]
   );
+
+  // Handle connection end (when user drags connection line and releases)
+  const onConnectEnd = useCallback(
+    (event: MouseEvent | TouchEvent, connectionState: any) => {
+      // Only show dropdown if connection was not completed (dropped on empty space)
+      if (!connectionState.isValid && connectionState.fromNode) {
+        const targetIsPane = (event.target as HTMLElement).classList.contains('react-flow__pane');
+        
+        if (targetIsPane && reactFlowWrapper.current) {
+          const { clientX, clientY } = 'changedTouches' in event ? event.changedTouches[0] : event;
+          const bounds = reactFlowWrapper.current.getBoundingClientRect();
+          
+          setConnectionDropdown({
+            x: clientX - bounds.left,
+            y: clientY - bounds.top,
+            sourceNodeId: connectionState.fromNode.id,
+            sourceHandleId: connectionState.fromHandle?.id || null,
+          });
+        }
+      }
+    },
+    []
+  );
+
+  // Add node from connection dropdown
+  const addNodeFromConnection = useCallback((type: "wait" | "email" | "end") => {
+    if (!connectionDropdown || !reactFlowWrapper.current) return;
+
+    const newId = `${type}-${Date.now()}`;
+    const defaultData: Record<string, any> = {
+      wait: { label: "Espera", waitTime: 1, waitUnit: "hours" },
+      email: { label: "E-mail", subject: "", bodyHtml: "" },
+      end: { label: "Fim" },
+    };
+
+    // Convert screen position to flow position (approximate)
+    const newNode: Node = {
+      id: newId,
+      type,
+      position: { 
+        x: connectionDropdown.x - 100, 
+        y: connectionDropdown.y - 50 
+      },
+      data: defaultData[type],
+    };
+
+    setNodes((nds) => [...nds, newNode]);
+
+    // Connect from source node to new node
+    setEdges((eds) => [
+      ...eds,
+      {
+        id: `e-${connectionDropdown.sourceNodeId}-${newId}`,
+        source: connectionDropdown.sourceNodeId,
+        sourceHandle: connectionDropdown.sourceHandleId,
+        target: newId,
+        type: "custom",
+      },
+    ]);
+
+    setConnectionDropdown(null);
+  }, [connectionDropdown, setNodes, setEdges]);
 
   const onNodeClick = useCallback((_: React.MouseEvent, node: Node) => {
     setSelectedNode(node);
@@ -1086,16 +1226,18 @@ export function EmailFlowBuilder({
         </div>
 
         {/* Flow Canvas */}
-        <div className="flex-1">
+        <div className="flex-1 relative" ref={reactFlowWrapper}>
           <ReactFlow
             nodes={nodes}
             edges={edgesWithData}
             onNodesChange={onNodesChange}
             onEdgesChange={onEdgesChange}
             onConnect={onConnect}
+            onConnectEnd={onConnectEnd}
             onNodeClick={onNodeClick}
             onDragOver={onDragOver}
             onDrop={onDrop}
+            onPaneClick={() => setConnectionDropdown(null)}
             nodeTypes={nodeTypes}
             edgeTypes={edgeTypes}
             fitView
@@ -1112,6 +1254,46 @@ export function EmailFlowBuilder({
             />
             <Background variant={BackgroundVariant.Dots} gap={24} size={1} color="#d4d4d8" />
           </ReactFlow>
+
+          {/* Connection Dropdown - shows when dragging connection to empty space */}
+          {connectionDropdown && (
+            <div
+              className="absolute z-50 bg-background rounded-lg shadow-xl border border-border overflow-hidden"
+              style={{
+                left: connectionDropdown.x,
+                top: connectionDropdown.y,
+                transform: 'translate(-50%, -50%)',
+              }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="px-3 py-2 text-xs font-semibold text-muted-foreground border-b border-border bg-muted/30">
+                Adicionar ação
+              </div>
+              <div className="py-1">
+                <button
+                  onClick={() => addNodeFromConnection("wait")}
+                  className="w-full px-3 py-2.5 text-left text-sm hover:bg-muted/50 transition-colors flex items-center gap-2"
+                >
+                  <Clock className="w-4 h-4" style={{ color: "#FBBF24" }} />
+                  <span className="text-foreground">Tempo de Espera</span>
+                </button>
+                <button
+                  onClick={() => addNodeFromConnection("email")}
+                  className="w-full px-3 py-2.5 text-left text-sm hover:bg-muted/50 transition-colors flex items-center gap-2"
+                >
+                  <Mail className="w-4 h-4 text-foreground" />
+                  <span className="text-foreground">Enviar E-mail</span>
+                </button>
+                <button
+                  onClick={() => addNodeFromConnection("end")}
+                  className="w-full px-3 py-2.5 text-left text-sm hover:bg-muted/50 transition-colors flex items-center gap-2"
+                >
+                  <CheckCircle2 className="w-4 h-4" style={{ color: "#F40000" }} />
+                  <span className="text-foreground">Finalizar</span>
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
