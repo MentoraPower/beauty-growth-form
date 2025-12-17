@@ -792,6 +792,25 @@ export function EmailFlowBuilder({
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
 
+  // Update trigger node with latest pipelines when they change
+  useEffect(() => {
+    if (filteredPipelines.length > 0) {
+      setNodes((nds) => nds.map((n) => {
+        if (n.type === "trigger") {
+          return {
+            ...n,
+            data: {
+              ...n.data,
+              pipelines: filteredPipelines,
+              onTriggersChange: handleTriggersChange,
+            },
+          };
+        }
+        return n;
+      }));
+    }
+  }, [filteredPipelines, handleTriggersChange, setNodes]);
+
   const onConnect = useCallback(
     (params: Connection) =>
       setEdges((eds) =>
