@@ -187,17 +187,30 @@ const handler = async (req: Request): Promise<Response> => {
         lead_email: payload.lead?.email,
       });
 
-      const { data: emailAutomations, error: emailError } = await supabase
+      const { data: allEmailAutomations, error: emailError } = await supabase
         .from("email_automations")
         .select("*")
-        .eq("trigger_pipeline_id", effectivePipelineId)
         .eq("is_active", true);
 
       if (emailError) {
         console.error("[EmailAutomation] Error fetching email automations:", emailError);
       }
 
-      if (emailAutomations && emailAutomations.length > 0) {
+      const emailAutomations = (allEmailAutomations ?? []).filter((automation: any) => {
+        // Backward compatibility
+        if (automation.trigger_pipeline_id === effectivePipelineId) return true;
+
+        const flowSteps = automation.flow_steps as any[] | null;
+        if (!flowSteps || !Array.isArray(flowSteps)) return false;
+
+        const triggerNode = flowSteps.find((step) => step?.type === "trigger");
+        const triggers = triggerNode?.data?.triggers;
+        if (!triggers || !Array.isArray(triggers)) return false;
+
+        return triggers.some((t: any) => t?.pipelineId === effectivePipelineId);
+      });
+
+      if (emailAutomations.length > 0) {
         const resendApiKey = Deno.env.get("RESEND_API_KEY");
 
         if (!resendApiKey) {
@@ -225,8 +238,20 @@ const handler = async (req: Request): Promise<Response> => {
                   .replace(/\{name\}/g, leadName)
                   .replace(/\{nome\}/g, leadName);
 
-              const subject = replaceName(automation.subject);
-              const bodyHtml = replaceName(automation.body_html);
+              // If flow_steps has email node, prefer it
+              let subject = automation.subject;
+              let bodyHtml = automation.body_html;
+              const flowSteps = automation.flow_steps as any[] | null;
+              if (flowSteps && Array.isArray(flowSteps)) {
+                const emailNode = flowSteps.find((step) => step?.type === "email");
+                if (emailNode?.data) {
+                  subject = emailNode.data.subject || subject;
+                  bodyHtml = emailNode.data.bodyHtml || bodyHtml;
+                }
+              }
+
+              subject = replaceName(subject);
+              bodyHtml = replaceName(bodyHtml);
 
               // Get email settings for from address
               const { data: settings } = await supabase
