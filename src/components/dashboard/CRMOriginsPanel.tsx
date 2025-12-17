@@ -175,17 +175,45 @@ function SortableOriginItem({
         </div>
       </div>
 
-      {/* Sub-origins with tree lines - CSS-only approach */}
+      {/* Sub-origins with tree lines - SVG curves approach */}
       <div 
         className="grid transition-[grid-template-rows] duration-300 ease-out"
         style={{ gridTemplateRows: isOriginExpanded ? '1fr' : '0fr' }}
       >
         <div className="overflow-hidden">
-          {/* Tree container with CSS lines */}
+          {/* Tree container */}
           <ul className="ml-4 pt-1 pb-1 list-none pl-0 relative">
             
+            {/* Linha vertical principal - do Overview até a última sub-origem */}
+            <div 
+              className="absolute left-[11px] w-[2px] bg-neutral-300"
+              style={{
+                top: '14px',
+                // Altura: vai até a metade da última sub-origem
+                height: originSubOrigins.length > 0 
+                  ? `calc(${originSubOrigins.length * 32}px + 2px)` 
+                  : '0px'
+              }}
+            />
+            
             {/* Overview Item */}
-            <li className="relative pl-6 py-0.5 before:content-[''] before:absolute before:left-[3px] before:top-0 before:w-[14px] before:h-[calc(50%+1px)] before:border-l-2 before:border-b-2 before:border-[#b0b0b0] before:rounded-bl-lg">
+            <li className="relative pl-6 py-0.5">
+              {/* Curva SVG perfeita */}
+              <svg 
+                className="absolute left-[4px] top-1/2 -translate-y-1/2" 
+                width="18" 
+                height="18" 
+                viewBox="0 0 18 18"
+                fill="none"
+              >
+                <path 
+                  d="M 8 0 L 8 5 Q 8 9 12 9 L 18 9" 
+                  stroke="#b0b0b0"
+                  strokeWidth="2" 
+                  fill="none"
+                />
+              </svg>
+              
               <div className="flex items-center group">
                 <button
                   onClick={() => handleOverviewClick(origin.id)}
@@ -212,7 +240,7 @@ function SortableOriginItem({
               </div>
             </li>
 
-            {/* Sub-origins - each item has vertical line (border-left) and curved connector (::before) */}
+            {/* Sub-origins */}
             {originSubOrigins.map((subOrigin, index) => {
               const leadCount = leadCounts.find(lc => lc.sub_origin_id === subOrigin.id)?.count || 0;
               const isActive = currentSubOriginId === subOrigin.id;
@@ -221,14 +249,24 @@ function SortableOriginItem({
               return (
                 <li 
                   key={subOrigin.id} 
-                  className={cn(
-                    "relative pl-6 py-0.5",
-                    // Vertical line from top to center (stops at curve)
-                    "before:content-[''] before:absolute before:left-[3px] before:top-0 before:w-[14px] before:h-[calc(50%+1px)] before:border-l-2 before:border-b-2 before:border-[#b0b0b0] before:rounded-bl-lg",
-                    // Continue vertical line below (only if not last)
-                    !isLast && "after:content-[''] after:absolute after:left-[3px] after:top-[calc(50%+1px)] after:w-[2px] after:h-[calc(50%-1px)] after:bg-[#b0b0b0]"
-                  )}
+                  className="relative pl-6 py-0.5"
                 >
+                  {/* Curva SVG perfeita */}
+                  <svg 
+                    className="absolute left-[4px] top-1/2 -translate-y-1/2" 
+                    width="18" 
+                    height="18" 
+                    viewBox="0 0 18 18"
+                    fill="none"
+                  >
+                    <path 
+                      d="M 8 0 L 8 5 Q 8 9 12 9 L 18 9" 
+                      stroke="#b0b0b0"
+                      strokeWidth="2" 
+                      fill="none"
+                    />
+                  </svg>
+                  
                   <div className="flex items-center group">
                     <button
                       onClick={() => handleSubOriginClick(subOrigin.id)}
@@ -286,7 +324,7 @@ function SortableOriginItem({
               );
             })}
 
-            {/* Add Sub-origin Button - no lines */}
+            {/* Add Sub-origin Button - sem linhas */}
             <li className="relative pl-6 py-0.5">
               <button
                 onClick={() => openCreateSubOriginDialog(origin.id)}
