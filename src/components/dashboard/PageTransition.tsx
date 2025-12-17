@@ -11,7 +11,7 @@ export function PageTransition({ children }: PageTransitionProps) {
 
   return (
     <motion.div
-      key={location.pathname + location.search}
+      key={location.pathname}
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ 
