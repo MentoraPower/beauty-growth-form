@@ -1467,15 +1467,18 @@ const WhatsApp = () => {
           <img 
             src={msg.mediaUrl} 
             alt="Imagem" 
-            className="max-w-[280px] rounded-lg cursor-pointer hover:opacity-90 transition-opacity relative z-10"
+            className="max-w-[280px] rounded-lg cursor-pointer hover:opacity-90 transition-opacity relative z-50"
             loading="lazy"
             onLoad={() => scrollToBottom("auto")}
             onClick={(e) => {
               e.stopPropagation();
-              e.preventDefault();
-              console.log("Image clicked!", msg.mediaUrl, allImages);
+
+              // If any overlay menus are open, close them first (their click-capture layer can block the image)
+              setShowAttachMenu(false);
+              setMessageMenuId(null);
+              setShowEmojiPicker(false);
+
               const index = allImages.indexOf(msg.mediaUrl!);
-              console.log("Index:", index);
               setLightboxIndex(index >= 0 ? index : 0);
             }}
           />
