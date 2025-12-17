@@ -122,25 +122,25 @@ function SortableOriginItem({
           <button
             {...attributes}
             {...listeners}
-            className="p-1 rounded cursor-grab active:cursor-grabbing hover:bg-white/10"
+            className="p-1 rounded cursor-grab active:cursor-grabbing hover:bg-black/5"
           >
-            <GripVertical className="h-3 w-3 text-white/50" />
+            <GripVertical className="h-3 w-3 text-foreground/50" />
           </button>
         </div>
         
         <button
           onClick={() => toggleOrigin(origin.id)}
-          className="flex items-center gap-2 flex-1 py-2 px-2 rounded-lg transition-all duration-200 ease-out text-sm text-white/80 hover:text-white hover:bg-white/5 group-hover/origin:translate-x-4 group-has-[.actions-area:hover]/origin:translate-x-0"
+          className="flex items-center gap-2 flex-1 py-2 px-2 rounded-lg transition-all duration-200 ease-out text-sm text-foreground/80 hover:text-foreground hover:bg-black/5 group-hover/origin:translate-x-4 group-has-[.actions-area:hover]/origin:translate-x-0"
         >
           {isOriginExpanded ? (
-            <FolderOpen className="h-4 w-4 flex-shrink-0 fill-current text-white/80" />
+            <FolderOpen className="h-4 w-4 flex-shrink-0 fill-current text-foreground/80" />
           ) : (
-            <Folder className="h-4 w-4 flex-shrink-0 fill-current text-white/80" />
+            <Folder className="h-4 w-4 flex-shrink-0 fill-current text-foreground/80" />
           )}
           <span className="flex-1 text-left truncate font-bold">{origin.nome}</span>
           <ChevronRight 
             className={cn(
-              "h-3 w-3 transition-transform duration-300 text-white/60",
+              "h-3 w-3 transition-transform duration-300 text-foreground/60",
               isOriginExpanded ? "rotate-90" : ""
             )} 
           />
@@ -152,9 +152,9 @@ function SortableOriginItem({
             <DropdownMenuTrigger asChild>
               <button 
                 onClick={(e) => e.stopPropagation()}
-                className="p-1.5 rounded opacity-0 group-hover/origin:opacity-100 transition-all duration-200 ease-out hover:bg-white/10"
+                className="p-1.5 rounded opacity-0 group-hover/origin:opacity-100 transition-all duration-200 ease-out hover:bg-black/5"
               >
-                <MoreVertical className="h-4 w-4 text-white/70" />
+                <MoreVertical className="h-4 w-4 text-foreground/70" />
               </button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-40 z-[9999] bg-popover">
@@ -183,7 +183,7 @@ function SortableOriginItem({
         <div className="overflow-hidden">
           <div className="ml-4 pt-1 pb-1 relative">
             {/* Main vertical line from origin - higher z-index to be on top */}
-            <div className="absolute left-[3px] top-0 bottom-3 w-[2px] bg-white z-10" />
+            <div className="absolute left-[3px] top-0 bottom-3 w-[2px] bg-foreground/20 z-10" />
             
             {/* Overview Item */}
             <div className="relative flex items-center group py-0.5">
@@ -191,7 +191,7 @@ function SortableOriginItem({
               <svg className="absolute left-[3px] top-1/2 -translate-y-1/2 w-4 h-6 overflow-visible z-0" viewBox="0 0 16 24" fill="none">
                 <path 
                   d="M0 0 C0 12, 8 12, 16 12" 
-                  stroke="rgba(255,255,255,0.15)" 
+                  stroke="rgba(0,0,0,0.1)" 
                   strokeWidth="2"
                   strokeLinecap="round"
                 />
@@ -201,13 +201,13 @@ function SortableOriginItem({
                 className={cn(
                   "flex items-center gap-2 w-full py-1.5 px-2 ml-5 rounded-lg transition-all duration-200 ease-out text-xs",
                   currentOverviewOriginId === origin.id
-                    ? "bg-white/10 text-white font-medium"
-                    : "text-white/70 hover:text-white hover:bg-white/5"
+                    ? "bg-black/10 text-foreground font-medium"
+                    : "text-foreground/70 hover:text-foreground hover:bg-black/5"
                 )}
               >
                 <Home className={cn(
                   "h-3 w-3 flex-shrink-0",
-                  currentOverviewOriginId === origin.id ? "text-white" : "text-white/70"
+                  currentOverviewOriginId === origin.id ? "text-foreground" : "text-foreground/70"
                 )} />
                 <span className="truncate">Overview</span>
               </button>
@@ -224,7 +224,7 @@ function SortableOriginItem({
                   <svg className="absolute left-[3px] top-1/2 -translate-y-1/2 w-4 h-6 overflow-visible z-0" viewBox="0 0 16 24" fill="none">
                     <path 
                       d="M0 0 C0 12, 8 12, 16 12" 
-                      stroke="rgba(255,255,255,0.15)" 
+                      stroke="rgba(0,0,0,0.1)" 
                       strokeWidth="2"
                       strokeLinecap="round"
                     />
@@ -234,21 +234,21 @@ function SortableOriginItem({
                     className={cn(
                       "flex items-center gap-2 flex-1 py-1.5 px-2 ml-5 rounded-lg transition-all duration-200 ease-out text-xs",
                       isActive 
-                        ? "bg-white/10 text-white font-medium"
-                        : "text-white/70 hover:text-white hover:bg-white/5"
+                        ? "bg-black/10 text-foreground font-medium"
+                        : "text-foreground/70 hover:text-foreground hover:bg-black/5"
                     )}
                   >
                     <Kanban className={cn(
                       "h-3 w-3 flex-shrink-0",
-                      isActive ? "text-white" : "text-white/70"
+                      isActive ? "text-foreground" : "text-foreground/70"
                     )} />
                     <span className="truncate">{subOrigin.nome}</span>
                     {leadCount > 0 && (
                       <span className={cn(
                         "ml-auto text-[10px] px-1.5 py-0.5 rounded-full",
                         isActive 
-                          ? "bg-white/20 text-white"
-                          : "bg-white/10 text-white/60"
+                          ? "bg-black/10 text-foreground"
+                          : "bg-black/5 text-foreground/60"
                       )}>
                         {leadCount}
                       </span>
@@ -260,9 +260,9 @@ function SortableOriginItem({
                     <DropdownMenuTrigger asChild>
                       <button 
                         onClick={(e) => e.stopPropagation()}
-                        className="p-1.5 rounded opacity-0 group-hover:opacity-100 transition-all duration-200 ease-out hover:bg-white/10"
+                        className="p-1.5 rounded opacity-0 group-hover:opacity-100 transition-all duration-200 ease-out hover:bg-black/5"
                       >
-                        <MoreVertical className="h-4 w-4 text-white/70" />
+                        <MoreVertical className="h-4 w-4 text-foreground/70" />
                       </button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end" className="w-40 z-[9999] bg-popover">
@@ -290,14 +290,14 @@ function SortableOriginItem({
               <svg className="absolute left-[3px] top-1/2 -translate-y-1/2 w-4 h-6 overflow-visible z-0" viewBox="0 0 16 24" fill="none">
                 <path 
                   d="M0 0 C0 12, 8 12, 16 12" 
-                  stroke="rgba(255,255,255,0.12)" 
+                  stroke="rgba(0,0,0,0.08)" 
                   strokeWidth="2"
                   strokeLinecap="round"
                 />
               </svg>
               <button
                 onClick={() => openCreateSubOriginDialog(origin.id)}
-                className="flex items-center gap-2 w-full py-1.5 px-2 ml-5 rounded-lg transition-all duration-200 ease-out text-xs text-white/50 hover:text-white hover:bg-white/5"
+                className="flex items-center gap-2 w-full py-1.5 px-2 ml-5 rounded-lg transition-all duration-200 ease-out text-xs text-foreground/50 hover:text-foreground hover:bg-black/5"
               >
                 <Plus className="h-3 w-3" />
                 <span>Criar sub origem</span>
@@ -600,7 +600,7 @@ export function CRMOriginsPanel({ isOpen, onClose, sidebarWidth, embedded = fals
     <>
       {/* Header */}
       <div className="px-4 pl-0 py-4">
-        <h2 className="text-white font-semibold text-sm px-2">Origens CRM</h2>
+        <h2 className="text-foreground font-semibold text-sm px-2">Origens CRM</h2>
       </div>
 
       {/* Content */}
@@ -645,7 +645,7 @@ export function CRMOriginsPanel({ isOpen, onClose, sidebarWidth, embedded = fals
         {/* Add Origin Button */}
         <button
           onClick={openCreateOriginDialog}
-          className="flex items-center gap-2 w-full py-2 px-2 rounded-lg transition-colors duration-200 text-xs text-white/60 hover:text-white hover:bg-white/5"
+          className="flex items-center gap-2 w-full py-2 px-2 rounded-lg transition-colors duration-200 text-xs text-foreground/60 hover:text-foreground hover:bg-black/5"
         >
           <Plus className="h-3 w-3" />
           <span>Nova Origem</span>
@@ -704,7 +704,7 @@ export function CRMOriginsPanel({ isOpen, onClose, sidebarWidth, embedded = fals
       <div
         style={{ left: sidebarWidth - 8 }}
         className={cn(
-          "hidden lg:block fixed top-2 h-[calc(100vh-1rem)] w-64 rounded-2xl bg-[#0f0f12] z-50 overflow-hidden pl-4",
+          "hidden lg:block fixed top-2 h-[calc(100vh-1rem)] w-64 rounded-2xl bg-[#f5f5f7] z-50 overflow-hidden pl-4",
           isOpen 
             ? "opacity-100" 
             : "opacity-0 pointer-events-none"
