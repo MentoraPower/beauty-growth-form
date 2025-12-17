@@ -18,7 +18,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { toast } from "sonner";
-import { Loader2 } from "lucide-react";
+import { Loader2, Eye, EyeOff } from "lucide-react";
 
 interface AddTeamMemberDialogProps {
   open: boolean;
@@ -40,6 +40,7 @@ export function AddTeamMemberDialog({
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [role, setRole] = useState("");
   const queryClient = useQueryClient();
 
@@ -47,6 +48,7 @@ export function AddTeamMemberDialog({
     setName("");
     setEmail("");
     setPassword("");
+    setShowPassword(false);
     setRole("");
   };
 
@@ -135,13 +137,29 @@ export function AddTeamMemberDialog({
 
           <div className="space-y-2">
             <Label htmlFor="member-password">Senha</Label>
-            <Input
-              id="member-password"
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="Mínimo 6 caracteres"
-            />
+            <div className="relative">
+              <Input
+                id="member-password"
+                type={showPassword ? "text" : "password"}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="Mínimo 6 caracteres"
+                className="pr-10"
+              />
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
+                onClick={() => setShowPassword(!showPassword)}
+              >
+                {showPassword ? (
+                  <EyeOff className="h-4 w-4 text-muted-foreground" />
+                ) : (
+                  <Eye className="h-4 w-4 text-muted-foreground" />
+                )}
+              </Button>
+            </div>
           </div>
 
           <div className="space-y-2">
