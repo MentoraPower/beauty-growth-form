@@ -1472,7 +1472,10 @@ const WhatsApp = () => {
             onLoad={() => scrollToBottom("auto")}
             onClick={(e) => {
               e.stopPropagation();
+              e.preventDefault();
+              console.log("Image clicked!", msg.mediaUrl, allImages);
               const index = allImages.indexOf(msg.mediaUrl!);
+              console.log("Index:", index);
               setLightboxIndex(index >= 0 ? index : 0);
             }}
           />
