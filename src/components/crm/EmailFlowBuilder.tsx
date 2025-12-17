@@ -219,14 +219,16 @@ const TriggerNode = ({ data, id, selected }: NodeProps & { data: {
             {/* Dropdown */}
             {isDropdownOpen && (
               <div 
-                className="absolute top-full left-0 right-0 mt-1 z-50 bg-background border border-border rounded-lg shadow-lg overflow-hidden nodrag"
+                className="absolute top-full left-0 right-0 mt-1 rounded-lg shadow-xl overflow-hidden nodrag"
+                style={{ zIndex: 9999, backgroundColor: '#ffffff' }}
                 onClick={(e) => e.stopPropagation()}
               >
                 {triggerOptions.map(option => (
                   <button
                     key={option.id}
                     onClick={() => addTrigger(option.id)}
-                    className="w-full px-3 py-2.5 text-left text-sm hover:bg-muted transition-colors flex items-center gap-2"
+                    className="w-full px-3 py-2.5 text-left text-sm hover:bg-gray-100 transition-colors flex items-center gap-2 text-foreground"
+                    style={{ backgroundColor: '#ffffff' }}
                   >
                     <Zap className="w-4 h-4 text-[#F40000]" />
                     {option.label}
