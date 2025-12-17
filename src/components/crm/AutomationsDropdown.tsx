@@ -67,6 +67,7 @@ interface EmailAutomation {
   body_html: string;
   is_active: boolean;
   created_at: string;
+  flow_steps: any[] | null;
 }
 
 interface EmailEditingContext {
@@ -142,6 +143,7 @@ export function AutomationsDropdown({
   const [emailTriggerPipeline, setEmailTriggerPipeline] = useState<string>("");
   const [emailSubject, setEmailSubject] = useState("");
   const [emailBodyHtml, setEmailBodyHtml] = useState("");
+  const [emailFlowSteps, setEmailFlowSteps] = useState<any[] | null>(null);
 
   // Restore email editing context when dropdown opens with context
   useEffect(() => {
@@ -703,6 +705,7 @@ export function AutomationsDropdown({
     setEmailTriggerPipeline(email.trigger_pipeline_id);
     setEmailSubject(email.subject);
     setEmailBodyHtml(email.body_html);
+    setEmailFlowSteps(email.flow_steps || null);
   };
 
   const resetEmailForm = () => {
@@ -712,6 +715,7 @@ export function AutomationsDropdown({
     setEmailTriggerPipeline("");
     setEmailSubject("");
     setEmailBodyHtml("");
+    setEmailFlowSteps(null);
   };
 
   const getTriggerLabel = (trigger: string | null, pipelineId?: string | null) => {
@@ -759,6 +763,21 @@ export function AutomationsDropdown({
     
     const triggerPipelineName = pipelines.find(p => p.id === emailTriggerPipeline)?.nome || "";
     
+    // Use saved flow_steps if available, otherwise create default structure when editing
+    const getInitialSteps = () => {
+      if (emailFlowSteps && emailFlowSteps.length > 0) {
+        return emailFlowSteps;
+      }
+      if (editingEmailId) {
+        return [
+          { id: "start-1", type: "start", position: { x: 100, y: 200 }, data: { label: "Automação iniciada" } },
+          { id: "email-1", type: "email", position: { x: 320, y: 200 }, data: { label: "Enviar e-mail", subject: emailSubject, bodyHtml: emailBodyHtml } },
+          { id: "end-1", type: "end", position: { x: 540, y: 200 }, data: { label: "Fluxo finalizado" } },
+        ];
+      }
+      return undefined;
+    };
+    
     if (onShowEmailBuilder) {
       openingEmailBuilderRef.current = true;
       setOpen(false); // Close the dropdown
@@ -769,11 +788,7 @@ export function AutomationsDropdown({
         onCancel: () => {
           onShowEmailBuilder(false);
         },
-        initialSteps: editingEmailId ? [
-          { id: "start-1", type: "start", data: { label: "Automação iniciada" } },
-          { id: "email-1", type: "email", data: { label: "Enviar e-mail", subject: emailSubject, bodyHtml: emailBodyHtml } },
-          { id: "end-1", type: "end", data: { label: "Fluxo finalizado" } },
-        ] : undefined,
+        initialSteps: getInitialSteps(),
         editingContext: {
           emailName,
           emailTriggerPipeline,
@@ -819,6 +834,7 @@ export function AutomationsDropdown({
             trigger_pipeline_id: emailTriggerPipeline,
             subject,
             body_html: bodyHtml,
+            flow_steps: steps, // Save node positions
           })
           .eq("id", editingEmailId);
         if (error) throw error;
@@ -830,6 +846,7 @@ export function AutomationsDropdown({
           subject,
           body_html: bodyHtml,
           is_active: true,
+          flow_steps: steps, // Save node positions
         });
         if (error) throw error;
       }
@@ -856,6 +873,22 @@ export function AutomationsDropdown({
   // If using local state for email flow builder (fallback when no callback provided)
   if (showEmailFlowBuilder && !onShowEmailBuilder) {
     const triggerPipelineName = pipelines.find(p => p.id === emailTriggerPipeline)?.nome || "";
+    
+    // Use saved flow_steps if available, otherwise create default structure when editing
+    const getFallbackInitialSteps = () => {
+      if (emailFlowSteps && emailFlowSteps.length > 0) {
+        return emailFlowSteps;
+      }
+      if (editingEmailId) {
+        return [
+          { id: "start-1", type: "start", position: { x: 100, y: 200 }, data: { label: "Automação iniciada" } },
+          { id: "email-1", type: "email", position: { x: 320, y: 200 }, data: { label: "Enviar e-mail", subject: emailSubject, bodyHtml: emailBodyHtml } },
+          { id: "end-1", type: "end", position: { x: 540, y: 200 }, data: { label: "Fluxo finalizado" } },
+        ];
+      }
+      return undefined;
+    };
+    
     return (
       <Dialog open={open} onOpenChange={handleOpenChange}>
         <DialogTrigger asChild>
@@ -877,11 +910,7 @@ export function AutomationsDropdown({
             triggerPipelineName={triggerPipelineName}
             onSave={handleSaveEmailFlow}
             onCancel={() => setShowEmailFlowBuilder(false)}
-            initialSteps={editingEmailId ? [
-              { id: "start-1", type: "start", data: { label: "Automação iniciada" } },
-              { id: "email-1", type: "email", data: { label: "Enviar e-mail", subject: emailSubject, bodyHtml: emailBodyHtml } },
-              { id: "end-1", type: "end", data: { label: "Fluxo finalizado" } },
-            ] : undefined}
+            initialSteps={getFallbackInitialSteps()}
           />
         </DialogContent>
       </Dialog>

@@ -138,6 +138,7 @@ export type Database = {
         Row: {
           body_html: string
           created_at: string | null
+          flow_steps: Json | null
           id: string
           is_active: boolean | null
           name: string
@@ -148,6 +149,7 @@ export type Database = {
         Insert: {
           body_html: string
           created_at?: string | null
+          flow_steps?: Json | null
           id?: string
           is_active?: boolean | null
           name: string
@@ -158,6 +160,7 @@ export type Database = {
         Update: {
           body_html?: string
           created_at?: string | null
+          flow_steps?: Json | null
           id?: string
           is_active?: boolean | null
           name?: string
