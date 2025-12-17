@@ -108,11 +108,7 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
 
   return (
     <div className="min-h-screen bg-card p-3">
-      {/* Dark wrapper - only visible in CRM mode */}
-      <div className={cn(
-        "min-h-[calc(100vh-1.5rem)] relative transition-all duration-500 ease-[cubic-bezier(0.4,0,0.2,1)]",
-        crmSubmenuOpen ? "bg-[#0f0f12] rounded-2xl" : "bg-transparent"
-      )}>
+      <div className="min-h-[calc(100vh-1.5rem)] relative">
         <LoadingBar />
         
         {/* Mobile Header */}
@@ -138,15 +134,12 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
           onMouseLeave={() => setSidebarExpanded(false)}
           style={{ 
             width: currentSidebarWidth,
-            left: crmSubmenuOpen ? 8 : 12,
-            top: crmSubmenuOpen ? 8 : 12,
-            height: crmSubmenuOpen ? 'calc(100vh - 1rem)' : 'calc(100vh - 1.5rem)',
-            transition: 'width 300ms cubic-bezier(0.4,0,0.2,1), left 500ms cubic-bezier(0.4,0,0.2,1), top 500ms cubic-bezier(0.4,0,0.2,1), height 500ms cubic-bezier(0.4,0,0.2,1)'
+            left: 12,
+            top: 12,
+            height: 'calc(100vh - 1.5rem)',
+            transition: 'width 300ms cubic-bezier(0.4,0,0.2,1)'
           }}
-          className={cn(
-            "hidden lg:flex flex-col fixed bg-[#0f0f12] overflow-hidden z-40",
-            crmSubmenuOpen ? "rounded-l-2xl" : "rounded-2xl"
-          )}
+          className="hidden lg:flex flex-col fixed bg-[#0f0f12] overflow-hidden z-40 rounded-2xl"
         >
           <div className="flex flex-col h-full">
             {/* Logo */}
@@ -251,7 +244,7 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
             pointerEvents: crmSubmenuOpen ? 'auto' : 'none',
             transition: "width 400ms cubic-bezier(0.4,0,0.2,1), opacity 200ms ease-out, left 300ms cubic-bezier(0.4,0,0.2,1)",
           }}
-          className="hidden lg:block fixed top-2 h-[calc(100vh-1rem)] rounded-r-2xl bg-[#0f0f12] overflow-hidden"
+          className="hidden lg:block fixed top-3 h-[calc(100vh-1.5rem)] rounded-2xl bg-[#f5f5f7] overflow-hidden"
         >
           <div className="h-full" style={{ width: submenuWidth, minWidth: submenuWidth }}>
             <CRMOriginsPanel 
@@ -346,27 +339,17 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
         <main 
           style={{ 
             left: `${mainContentMargin}px`,
-            top: crmSubmenuOpen ? 8 : 12,
-            right: crmSubmenuOpen ? 8 : 12,
-            bottom: crmSubmenuOpen ? 8 : 12,
-            transition: 'left 300ms cubic-bezier(0.4,0,0.2,1), top 500ms cubic-bezier(0.4,0,0.2,1), right 500ms cubic-bezier(0.4,0,0.2,1), bottom 500ms cubic-bezier(0.4,0,0.2,1)'
+            top: 12,
+            right: 12,
+            bottom: 12,
+            transition: 'left 300ms cubic-bezier(0.4,0,0.2,1)'
           }}
           className="hidden lg:block fixed"
         >
-          <div className={cn(
-            "h-full transition-all duration-500 ease-[cubic-bezier(0.4,0,0.2,1)]",
-            crmSubmenuOpen ? "bg-[#0f0f12] rounded-2xl p-2" : "bg-transparent"
-          )}>
-            <div className={cn(
-              "h-full overflow-auto relative transition-all duration-300",
-              crmSubmenuOpen 
-                ? "bg-card rounded-xl p-6" 
-                : "bg-card rounded-2xl p-6 border border-black/5"
-            )}>
-              <PageTransition>
-                {children}
-              </PageTransition>
-            </div>
+          <div className="h-full overflow-auto relative bg-card rounded-2xl p-6 border border-black/5">
+            <PageTransition>
+              {children}
+            </PageTransition>
           </div>
         </main>
         
