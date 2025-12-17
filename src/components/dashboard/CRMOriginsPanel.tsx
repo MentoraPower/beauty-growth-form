@@ -318,7 +318,7 @@ function SortableOriginItem({
                             ? "bg-black/10 text-foreground"
                             : "bg-black/5 text-foreground/60"
                         )}>
-                          {leadCount}
+                          {leadCount.toLocaleString('pt-BR')}
                         </span>
                       )}
                     </button>
@@ -404,10 +404,9 @@ export function CRMOriginsPanel({ isOpen, onClose, sidebarWidth, embedded = fals
 
   const fetchData = useCallback(async () => {
     try {
-      const [originsRes, subOriginsRes, leadsRes] = await Promise.all([
+      const [originsRes, subOriginsRes] = await Promise.all([
         supabase.from("crm_origins").select("*").order("ordem"),
         supabase.from("crm_sub_origins").select("*").order("ordem"),
-        supabase.from("leads").select("sub_origin_id"),
       ]);
 
       if (originsRes.data) {
@@ -415,17 +414,22 @@ export function CRMOriginsPanel({ isOpen, onClose, sidebarWidth, embedded = fals
       }
       if (subOriginsRes.data) {
         setSubOrigins(subOriginsRes.data);
-      }
-      
-      if (leadsRes.data) {
-        const counts: Record<string, number> = {};
-        leadsRes.data.forEach((lead) => {
-          if (lead.sub_origin_id) {
-            counts[lead.sub_origin_id] = (counts[lead.sub_origin_id] || 0) + 1;
-          }
+        
+        // Fetch exact counts for each sub-origin using head:true (no 1000 limit)
+        const countPromises = subOriginsRes.data.map(async (subOrigin) => {
+          const { count, error } = await supabase
+            .from("leads")
+            .select("*", { count: "exact", head: true })
+            .eq("sub_origin_id", subOrigin.id);
+          
+          return {
+            sub_origin_id: subOrigin.id,
+            count: error ? 0 : (count || 0),
+          };
         });
-        const newCounts = Object.entries(counts).map(([sub_origin_id, count]) => ({ sub_origin_id, count }));
-        setLeadCounts(newCounts);
+        
+        const counts = await Promise.all(countPromises);
+        setLeadCounts(counts);
       }
       
       hasInitialized.current = true;
@@ -457,33 +461,31 @@ export function CRMOriginsPanel({ isOpen, onClose, sidebarWidth, embedded = fals
       .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'crm_sub_origins' }, fetchData)
       .subscribe();
 
-    // Only update lead counts, not full reload
+    // Update lead counts using exact count queries (bypasses 1000 limit)
+    const updateLeadCounts = async () => {
+      if (subOrigins.length === 0) return;
+      
+      const countPromises = subOrigins.map(async (subOrigin) => {
+        const { count, error } = await supabase
+          .from("leads")
+          .select("*", { count: "exact", head: true })
+          .eq("sub_origin_id", subOrigin.id);
+        
+        return {
+          sub_origin_id: subOrigin.id,
+          count: error ? 0 : (count || 0),
+        };
+      });
+      
+      const counts = await Promise.all(countPromises);
+      setLeadCounts(counts);
+    };
+
     const leadsChannel = supabase
       .channel('crm-leads-panel-count-changes')
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'leads' }, async () => {
-        const { data } = await supabase.from("leads").select("sub_origin_id");
-        if (data) {
-          const counts: Record<string, number> = {};
-          data.forEach((lead) => {
-            if (lead.sub_origin_id) {
-              counts[lead.sub_origin_id] = (counts[lead.sub_origin_id] || 0) + 1;
-            }
-          });
-          setLeadCounts(Object.entries(counts).map(([sub_origin_id, count]) => ({ sub_origin_id, count })));
-        }
-      })
-      .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'leads' }, async () => {
-        const { data } = await supabase.from("leads").select("sub_origin_id");
-        if (data) {
-          const counts: Record<string, number> = {};
-          data.forEach((lead) => {
-            if (lead.sub_origin_id) {
-              counts[lead.sub_origin_id] = (counts[lead.sub_origin_id] || 0) + 1;
-            }
-          });
-          setLeadCounts(Object.entries(counts).map(([sub_origin_id, count]) => ({ sub_origin_id, count })));
-        }
-      })
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'leads' }, updateLeadCounts)
+      .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'leads' }, updateLeadCounts)
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'leads' }, updateLeadCounts)
       .subscribe();
 
     return () => {
@@ -491,7 +493,7 @@ export function CRMOriginsPanel({ isOpen, onClose, sidebarWidth, embedded = fals
       supabase.removeChannel(subOriginsChannel);
       supabase.removeChannel(leadsChannel);
     };
-  }, [fetchData]);
+  }, [fetchData, subOrigins]);
 
   const handleDragEnd = async (event: DragEndEvent) => {
     const { active, over } = event;

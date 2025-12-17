@@ -223,6 +223,34 @@ export function KanbanBoard() {
     staleTime: 5000,
   });
 
+  // Fetch exact lead counts per pipeline (bypasses 1000 row limit)
+  const { data: pipelineCounts = {} } = useQuery({
+    queryKey: ["pipeline-counts", subOriginId, pipelines.map(p => p.id).join(",")],
+    queryFn: async () => {
+      if (pipelines.length === 0) return {};
+      
+      const countPromises = pipelines.map(async (pipeline) => {
+        const { count, error } = await supabase
+          .from("leads")
+          .select("*", { count: "exact", head: true })
+          .eq("pipeline_id", pipeline.id);
+        
+        return {
+          pipelineId: pipeline.id,
+          count: error ? 0 : (count || 0),
+        };
+      });
+      
+      const counts = await Promise.all(countPromises);
+      return counts.reduce((acc, { pipelineId, count }) => {
+        acc[pipelineId] = count;
+        return acc;
+      }, {} as Record<string, number>);
+    },
+    staleTime: 5000,
+    enabled: pipelines.length > 0,
+  });
+
   // Fetch automations for pipeline transfers (filtered by sub_origin_id)
   const { data: automations = [] } = useQuery({
     queryKey: ["pipeline-automations", subOriginId],
@@ -385,6 +413,8 @@ export function KanbanBoard() {
       }
       invalidateLeadsTimeoutRef.current = window.setTimeout(() => {
         queryClient.invalidateQueries({ queryKey: ["crm-leads", subOriginId] });
+        // Also invalidate pipeline counts to keep them in sync
+        queryClient.invalidateQueries({ queryKey: ["pipeline-counts", subOriginId] });
         invalidateLeadsTimeoutRef.current = null;
       }, 250);
     };
@@ -1274,6 +1304,7 @@ export function KanbanBoard() {
                 key={pipeline.id}
                 pipeline={pipeline}
                 leads={leadsByPipeline.get(pipeline.id) || []}
+                leadCount={pipelineCounts[pipeline.id]}
                 isOver={overId === pipeline.id}
                 subOriginId={subOriginId}
                 activeId={activeId}
