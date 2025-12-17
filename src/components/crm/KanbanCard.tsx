@@ -15,13 +15,14 @@ interface KanbanCardProps {
   subOriginId?: string | null;
 }
 
-// Custom animateLayoutChanges - only animate when not dragging
+// Custom animateLayoutChanges - disable animations after drop for instant positioning
 const animateLayoutChanges: AnimateLayoutChanges = (args) => {
-  const { isSorting, wasDragging } = args;
-  if (isSorting || wasDragging) {
-    return defaultAnimateLayoutChanges(args);
+  const { wasDragging } = args;
+  // Nunca animar após soltar - card vai direto para posição final
+  if (wasDragging) {
+    return false;
   }
-  return true;
+  return false;
 };
 
 export const KanbanCard = memo(function KanbanCard({ lead, isDragging: isDraggingOverlay, subOriginId }: KanbanCardProps) {
@@ -35,21 +36,16 @@ export const KanbanCard = memo(function KanbanCard({ lead, isDragging: isDraggin
     listeners,
     setNodeRef,
     transform,
-    transition,
     isDragging,
   } = useSortable({ 
     id: lead.id,
     animateLayoutChanges,
-    transition: {
-      duration: 200,
-      easing: 'ease-out',
-    },
   });
 
-  // Use CSS.Transform for smooth transitions - disable transition when not actively transforming
+  // Posicionamento instantâneo sem animação
   const style: React.CSSProperties = {
     transform: CSS.Transform.toString(transform),
-    transition: transform ? 'transform 150ms ease-out' : undefined,
+    transition: undefined,
     opacity: isDragging ? 0 : 1,
     position: 'relative',
     zIndex: isDragging ? 0 : 1,
