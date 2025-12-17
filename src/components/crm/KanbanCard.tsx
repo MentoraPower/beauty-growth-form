@@ -84,9 +84,8 @@ export const KanbanCard = memo(function KanbanCard({ lead, isDragging: isDraggin
       {...attributes}
       className={`
         cursor-grab active:cursor-grabbing bg-card shadow-none select-none touch-none
-        border border-black/10 transition-shadow duration-200
-        ${isBeingDragged ? "opacity-100 shadow-xl ring-2 ring-primary/20" : ""}
-        ${isOver ? "ring-2 ring-primary/30" : ""}
+        border border-black/10 transition-all duration-150
+        ${isBeingDragged ? "opacity-100 shadow-lg scale-[1.02]" : ""}
         hover:shadow-md
       `}
       onPointerDown={handlePointerDown}

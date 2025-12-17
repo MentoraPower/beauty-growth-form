@@ -478,6 +478,9 @@ export function KanbanBoard() {
   const handleDragEnd = useCallback(
     async (event: DragEndEvent) => {
       const { active, over } = event;
+      
+      // Capture drop indicator before clearing state
+      const currentDropIndicator = dropIndicator;
 
       setActiveId(null);
       setOverId(null);
@@ -512,7 +515,7 @@ export function KanbanBoard() {
         let newIndex = pipelineLeads.findIndex((l) => l.id === overId);
 
         // Adjust newIndex based on drop indicator position
-        if (dropIndicator?.position === "bottom" && dropIndicator?.targetLeadId === overId) {
+        if (currentDropIndicator?.position === "bottom" && currentDropIndicator?.targetLeadId === overId) {
           newIndex = newIndex + 1;
         }
 
@@ -602,9 +605,9 @@ export function KanbanBoard() {
         if (overLead) {
           const overIndex = targetPipelineLeads.findIndex((l) => l.id === overId);
           if (overIndex >= 0) {
-            // Use dropIndicator position for accurate placement
-            const wasDroppedBelow = dropIndicator?.position === "bottom" && 
-                                    dropIndicator?.targetLeadId === overId;
+            // Use captured dropIndicator position for accurate placement
+            const wasDroppedBelow = currentDropIndicator?.position === "bottom" && 
+                                    currentDropIndicator?.targetLeadId === overId;
             insertIndex = wasDroppedBelow ? overIndex + 1 : overIndex;
           } else {
             insertIndex = targetPipelineLeads.length;
