@@ -438,13 +438,11 @@ export function KanbanBoard() {
     }
 
     const overId = over.id as string;
-    const activeLeadId = active.id as string;
-    const activeLead = localLeads.find((l) => l.id === activeLeadId);
 
-    // Check if hovering over a pipeline column
+    // Check if hovering over a pipeline column (empty area)
     const overPipeline = pipelines.find((p) => p.id === overId);
     if (overPipeline) {
-      // Hovering over column - show placeholder at top
+      // Hovering over empty column area - show placeholder at top
       setDropIndicator({
         pipelineId: overPipeline.id,
         position: "top",
@@ -455,16 +453,7 @@ export function KanbanBoard() {
     // Check if hovering over a lead card
     const overLead = localLeads.find((l) => l.id === overId);
     if (overLead && overLead.pipeline_id) {
-      // If dragging to a different pipeline, show at top
-      if (activeLead && overLead.pipeline_id !== activeLead.pipeline_id) {
-        setDropIndicator({
-          pipelineId: overLead.pipeline_id,
-          position: "top",
-        });
-        return;
-      }
-
-      // Same pipeline - show above or below based on drag position
+      // Calculate position based on mouse/drag position relative to the card
       const overRect = over.rect;
       const activeRect = active.rect.current.translated;
       
@@ -476,6 +465,13 @@ export function KanbanBoard() {
         setDropIndicator({
           pipelineId: overLead.pipeline_id,
           position,
+          targetLeadId: overId,
+        });
+      } else {
+        // Fallback to top if no rects available
+        setDropIndicator({
+          pipelineId: overLead.pipeline_id,
+          position: "top",
           targetLeadId: overId,
         });
       }
@@ -604,23 +600,37 @@ export function KanbanBoard() {
 
         // No automation - normal pipeline move
         const targetPipelineLeads = localLeads
-          .filter((l) => l.pipeline_id === newPipelineId)
+          .filter((l) => l.pipeline_id === newPipelineId && l.id !== activeId)
           .sort((a, b) => (a.ordem ?? 0) - (b.ordem ?? 0));
 
         // Determine insertion index using drop indicator for precise placement
         let insertIndex = 0;
-        if (overLead) {
+        
+        // Check if we have a specific target lead from the drop indicator
+        const targetLeadId = currentDropIndicator?.targetLeadId;
+        if (targetLeadId) {
+          const targetIndex = targetPipelineLeads.findIndex((l) => l.id === targetLeadId);
+          if (targetIndex >= 0) {
+            // Insert above or below based on position
+            insertIndex = currentDropIndicator?.position === "bottom" 
+              ? targetIndex + 1 
+              : targetIndex;
+          } else {
+            insertIndex = 0;
+          }
+        } else if (overLead && overLead.id !== activeId) {
+          // Fallback: use overId if no targetLeadId
           const overIndex = targetPipelineLeads.findIndex((l) => l.id === overId);
           if (overIndex >= 0) {
-            // Use captured dropIndicator position for accurate placement
-            const wasDroppedBelow = currentDropIndicator?.position === "bottom" && 
-                                    currentDropIndicator?.targetLeadId === overId;
-            insertIndex = wasDroppedBelow ? overIndex + 1 : overIndex;
+            insertIndex = currentDropIndicator?.position === "bottom" 
+              ? overIndex + 1 
+              : overIndex;
           } else {
-            insertIndex = targetPipelineLeads.length;
+            insertIndex = 0;
           }
         } else {
-          insertIndex = targetPipelineLeads.length;
+          // Dropped on empty column or no specific position - insert at top
+          insertIndex = 0;
         }
 
         // Calculate new ordem values
