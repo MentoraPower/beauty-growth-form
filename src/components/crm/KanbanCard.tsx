@@ -49,10 +49,11 @@ export const KanbanCard = memo(function KanbanCard({ lead, isDragging: isDraggin
   // Use CSS.Transform for smooth transitions
   const style: React.CSSProperties = {
     transform: CSS.Transform.toString(transform),
-    transition: transition || undefined,
+    transition: transition || 'transform 150ms ease-out',
     opacity: isDragging ? 0 : 1,
     position: 'relative',
     zIndex: isDragging ? 0 : 1,
+    willChange: 'transform',
   };
 
   const isBeingDragged = isDraggingOverlay;

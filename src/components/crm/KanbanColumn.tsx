@@ -19,40 +19,18 @@ interface KanbanColumnProps {
   dropIndicator?: DropIndicator | null;
 }
 
-// Placeholder component - simple, no animations
-const DropPlaceholder = memo(function DropPlaceholder() {
+// Simple placeholder with smooth transition
+const DropPlaceholder = memo(function DropPlaceholder({ visible }: { visible: boolean }) {
   return (
     <div 
-      className="h-[100px] rounded-lg border-2 border-dashed border-black/20 bg-black/[0.02]"
-    />
-  );
-});
-
-// Top drop zone component - always present when dragging
-const TopDropZone = memo(function TopDropZone({ 
-  pipelineId, 
-  showPlaceholder 
-}: { 
-  pipelineId: string; 
-  showPlaceholder: boolean;
-}) {
-  const { setNodeRef, isOver } = useDroppable({
-    id: `${pipelineId}-top-zone`,
-    data: { pipelineId, isTopZone: true },
-  });
-
-  const isActive = isOver || showPlaceholder;
-
-  return (
-    <div 
-      ref={setNodeRef}
-      className="transition-all duration-200 ease-out"
+      className="overflow-hidden transition-all duration-150 ease-out"
       style={{
-        height: isActive ? 108 : 8, // 100px + 8px margin
-        marginBottom: isActive ? 8 : 0,
+        height: visible ? 100 : 0,
+        opacity: visible ? 1 : 0,
+        marginBottom: visible ? 8 : 0,
       }}
     >
-      {isActive && <DropPlaceholder />}
+      <div className="h-[100px] rounded-lg border-2 border-dashed border-black/20 bg-black/[0.03]" />
     </div>
   );
 });
@@ -75,28 +53,39 @@ export const KanbanColumn = memo(function KanbanColumn({
     return leads.filter(l => l.id !== activeId);
   }, [leads, activeId]);
 
-  // Check if this column should show a drop indicator at the top (no specific target)
-  const showTopPlaceholder = useMemo(() => {
-    if (!dropIndicator || !activeId) return false;
-    return dropIndicator.pipelineId === pipeline.id && 
-           dropIndicator.position === "top" && 
-           !dropIndicator.targetLeadId;
-  }, [dropIndicator, activeId, pipeline.id]);
-
   // Check if column is being targeted for drop
   const isTargeted = isOver || (dropIndicator?.pipelineId === pipeline.id);
+
+  // Calculate placeholder position as a single index
+  const placeholderIndex = useMemo(() => {
+    if (!activeId || !dropIndicator || dropIndicator.pipelineId !== pipeline.id) {
+      return -1;
+    }
+    
+    // No target lead - show at top
+    if (!dropIndicator.targetLeadId) {
+      return 0;
+    }
+    
+    // Find target lead index
+    const targetIdx = visibleLeads.findIndex(l => l.id === dropIndicator.targetLeadId);
+    if (targetIdx === -1) return 0;
+    
+    // Position above or below target
+    return dropIndicator.position === "bottom" ? targetIdx + 1 : targetIdx;
+  }, [activeId, dropIndicator, pipeline.id, visibleLeads]);
 
   return (
     <div className="flex-shrink-0 w-80 flex flex-col min-h-0 relative">
       <div
         ref={setNodeRef}
-        className={`flex-1 min-h-0 rounded-xl rounded-b-none border border-b-0 transition-colors duration-150 flex flex-col overflow-hidden ${
+        className={`flex-1 min-h-0 rounded-xl rounded-b-none border border-b-0 transition-colors duration-100 flex flex-col overflow-hidden ${
           isTargeted
             ? "bg-black/[0.02] border-black/15 border-dashed"
             : "bg-muted/40 border-black/10"
         }`}
       >
-        {/* Header inside column */}
+        {/* Header */}
         <div className="px-4 pt-4 pb-3 border-b border-black/5">
           <div className="flex items-center gap-2">
             <h2 className="font-semibold text-sm">{pipeline.nome}</h2>
@@ -112,82 +101,46 @@ export const KanbanColumn = memo(function KanbanColumn({
 
         {/* Cards container */}
         <div className="p-3 flex-1 overflow-y-auto">
-          {/* Top drop zone - only visible when dragging and column has cards */}
-          {activeId && (
-            <TopDropZone 
-              pipelineId={pipeline.id} 
-              showPlaceholder={showTopPlaceholder && visibleLeads.length > 0}
-            />
-          )}
-          
           <SortableContext
             items={leads.map((l) => l.id)}
             strategy={verticalListSortingStrategy}
           >
             <div className="space-y-2 pb-12">
-              {/* Top placeholder for empty column */}
-              {showTopPlaceholder && visibleLeads.length === 0 && (
-                <DropPlaceholder />
+              {/* Single placeholder at calculated index */}
+              {visibleLeads.length === 0 && placeholderIndex === 0 && (
+                <DropPlaceholder visible={true} />
               )}
 
-              {visibleLeads.map((lead) => {
-                // Check if we should show placeholder above or below this card
-                const showPlaceholderAbove = dropIndicator?.pipelineId === pipeline.id && 
-                  dropIndicator?.position === "top" && 
-                  dropIndicator?.targetLeadId === lead.id;
-                
-                const showPlaceholderBelow = dropIndicator?.pipelineId === pipeline.id && 
-                  dropIndicator?.position === "bottom" && 
-                  dropIndicator?.targetLeadId === lead.id;
-
-                return (
-                  <div key={lead.id}>
-                    {/* Placeholder above card - smooth height transition */}
-                    <div 
-                      className="transition-all duration-200 ease-out overflow-hidden"
-                      style={{
-                        height: showPlaceholderAbove ? 108 : 0,
-                        marginBottom: showPlaceholderAbove ? 8 : 0,
-                        opacity: showPlaceholderAbove ? 1 : 0,
-                      }}
-                    >
-                      <DropPlaceholder />
+              {visibleLeads.map((lead, index) => (
+                <div key={lead.id}>
+                  {/* Placeholder before this card */}
+                  {placeholderIndex === index && (
+                    <DropPlaceholder visible={true} />
+                  )}
+                  
+                  <KanbanCard 
+                    lead={lead} 
+                    subOriginId={subOriginId}
+                  />
+                  
+                  {/* Placeholder after last card if index matches */}
+                  {index === visibleLeads.length - 1 && placeholderIndex === visibleLeads.length && (
+                    <div className="mt-2">
+                      <DropPlaceholder visible={true} />
                     </div>
-                    
-                    <KanbanCard 
-                      lead={lead} 
-                      subOriginId={subOriginId}
-                    />
-
-                    {/* Placeholder below card - smooth height transition */}
-                    <div 
-                      className="transition-all duration-200 ease-out overflow-hidden"
-                      style={{
-                        height: showPlaceholderBelow ? 108 : 0,
-                        marginTop: showPlaceholderBelow ? 8 : 0,
-                        opacity: showPlaceholderBelow ? 1 : 0,
-                      }}
-                    >
-                      <DropPlaceholder />
-                    </div>
-                  </div>
-                );
-              })}
+                  )}
+                </div>
+              ))}
 
               {/* Empty state */}
-              {visibleLeads.length === 0 && !showTopPlaceholder && (
-                <div className={`text-center text-sm py-8 rounded-lg border-2 border-dashed transition-colors duration-150 ${
+              {visibleLeads.length === 0 && placeholderIndex !== 0 && (
+                <div className={`text-center text-sm py-8 rounded-lg border-2 border-dashed transition-colors duration-100 ${
                   isTargeted 
                     ? "border-black/20 text-foreground bg-black/[0.02]" 
                     : "border-transparent text-muted-foreground"
                 }`}>
                   {isTargeted ? "Solte aqui" : "Nenhum lead"}
                 </div>
-              )}
-
-              {/* Bottom drop zone when column is targeted but no specific position */}
-              {isTargeted && visibleLeads.length > 0 && !dropIndicator?.targetLeadId && !showTopPlaceholder && (
-                <DropPlaceholder />
               )}
             </div>
           </SortableContext>
