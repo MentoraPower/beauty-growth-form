@@ -473,10 +473,20 @@ export function KanbanBoard() {
     // Check if hovering over a pipeline column (empty area)
     const overPipeline = pipelines.find((p) => p.id === overId);
     if (overPipeline) {
-      // Hovering over empty column area - show placeholder at top
+      // Decide top/bottom based on pointer position inside the column
+      const overRect = over.rect;
+      const activeRect = active.rect.current.translated;
+
+      let position: "top" | "bottom" = "top";
+      if (overRect && activeRect) {
+        const overCenter = overRect.top + overRect.height / 2;
+        const activeCenter = activeRect.top + activeRect.height / 2;
+        position = activeCenter > overCenter ? "bottom" : "top";
+      }
+
       setDropIndicator({
         pipelineId: overPipeline.id,
-        position: "top",
+        position,
       });
       return;
     }
@@ -613,7 +623,67 @@ export function KanbanBoard() {
         return;
       }
 
-      // Different pipeline - move lead and position it
+      // Same pipeline - dropped on the column (not directly on a card)
+      if (newPipelineId === activeLead.pipeline_id && !overLead) {
+        const pipelineLeads = localLeads
+          .filter((l) => l.pipeline_id === newPipelineId)
+          .sort((a, b) => (a.ordem ?? 0) - (b.ordem ?? 0));
+
+        const oldIndex = pipelineLeads.findIndex((l) => l.id === activeId);
+        if (oldIndex === -1) {
+          isReorderingRef.current = false;
+          return;
+        }
+
+        const wantsBottom =
+          currentDropIndicator?.pipelineId === newPipelineId &&
+          currentDropIndicator?.position === "bottom";
+
+        const targetIndex = wantsBottom ? Math.max(pipelineLeads.length - 1, 0) : 0;
+        if (oldIndex === targetIndex) {
+          isReorderingRef.current = false;
+          return;
+        }
+
+        const reorderedLeads = arrayMove(pipelineLeads, oldIndex, targetIndex);
+
+        const updates = reorderedLeads.map((lead, index) => ({
+          id: lead.id,
+          ordem: index,
+        }));
+
+        setLocalLeads((prev) =>
+          prev.map((l) => {
+            const update = updates.find((u) => u.id === l.id);
+            return update ? { ...l, ordem: update.ordem } : l;
+          })
+        );
+
+        try {
+          for (const update of updates) {
+            await supabase
+              .from("leads")
+              .update({ ordem: update.ordem })
+              .eq("id", update.id);
+          }
+
+          queryClient.setQueryData<Lead[]>(["crm-leads", subOriginId], (oldData) => {
+            if (!oldData) return oldData;
+            return oldData.map((l) => {
+              const update = updates.find((u) => u.id === l.id);
+              return update ? { ...l, ordem: update.ordem } : l;
+            });
+          });
+        } catch (error) {
+          console.error("Erro ao reordenar leads:", error);
+          toast.error("Erro ao reordenar leads");
+          queryClient.invalidateQueries({ queryKey: ["crm-leads", subOriginId] });
+        } finally {
+          setTimeout(() => { isReorderingRef.current = false; }, 500);
+        }
+
+        return;
+      }
       if (newPipelineId !== activeLead.pipeline_id) {
         // Check for automation on this pipeline
         const automation = automations.find(
@@ -721,14 +791,16 @@ export function KanbanBoard() {
               .eq("id", update.id);
           }
 
-          // Force update the query cache to prevent stale data on navigation
+          // Force update the query cache to prevent stale data from overwriting local state
           queryClient.setQueryData<Lead[]>(["crm-leads", subOriginId], (oldData) => {
             if (!oldData) return oldData;
-            return oldData.map((l) => 
-              l.id === activeId 
-                ? { ...l, pipeline_id: newPipelineId, ordem: insertIndex }
-                : l
-            );
+            return oldData.map((l) => {
+              if (l.id === activeId) {
+                return { ...l, pipeline_id: newPipelineId, ordem: insertIndex };
+              }
+              const upd = updatesForTarget.find((u) => u.id === l.id);
+              return upd ? { ...l, ordem: upd.ordem } : l;
+            });
           });
 
           // Trigger webhook for lead moved (fire and forget)
