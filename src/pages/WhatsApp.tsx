@@ -165,6 +165,19 @@ const WhatsApp = () => {
     return phone;
   };
 
+  // Scroll to a quoted message by message_id
+  const scrollToQuotedMessage = (quotedMessageId: string) => {
+    const messageElement = document.querySelector(`[data-message-id="${quotedMessageId}"]`);
+    if (messageElement) {
+      messageElement.scrollIntoView({ behavior: "smooth", block: "center" });
+      // Add highlight effect
+      messageElement.classList.add("ring-2", "ring-primary", "ring-offset-2");
+      setTimeout(() => {
+        messageElement.classList.remove("ring-2", "ring-primary", "ring-offset-2");
+      }, 2000);
+    }
+  };
+
   const formatTime = (dateString: string): string => {
     const date = new Date(dateString);
     const now = new Date();
@@ -1782,21 +1795,26 @@ const WhatsApp = () => {
                               </button>
                             )}
                             <div
+                              data-message-id={msg.message_id}
                               className={cn(
-                                "max-w-[65%] rounded-lg px-3 py-1.5 shadow-sm relative",
+                                "max-w-[65%] rounded-lg px-3 py-1.5 shadow-sm relative transition-all duration-300",
                                 msg.sent 
                                   ? "bg-emerald-100 dark:bg-emerald-900/30 rounded-tr-none" 
                                   : "bg-card rounded-tl-none border border-border/30"
                               )}
                             >
-                              {/* Quoted message preview */}
+                              {/* Quoted message preview - clickable to scroll */}
                               {msg.quotedText && (
-                                <div className={cn(
-                                  "mb-1.5 px-2 py-1 rounded border-l-2 text-xs",
-                                  msg.quotedFromMe 
-                                    ? "bg-emerald-200/50 dark:bg-emerald-800/30 border-emerald-500" 
-                                    : "bg-muted/50 border-muted-foreground/50"
-                                )}>
+                                <div 
+                                  onClick={() => msg.quotedMessageId && scrollToQuotedMessage(msg.quotedMessageId)}
+                                  className={cn(
+                                    "mb-1.5 px-2 py-1 rounded border-l-2 text-xs transition-colors",
+                                    msg.quotedFromMe 
+                                      ? "bg-emerald-200/50 dark:bg-emerald-800/30 border-emerald-500" 
+                                      : "bg-muted/50 border-muted-foreground/50",
+                                    msg.quotedMessageId && "cursor-pointer hover:bg-muted/70"
+                                  )}
+                                >
                                   <span className={cn(
                                     "font-medium block",
                                     msg.quotedFromMe ? "text-emerald-700 dark:text-emerald-400" : "text-muted-foreground"

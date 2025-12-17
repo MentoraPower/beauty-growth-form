@@ -514,6 +514,39 @@ async function handler(req: Request): Promise<Response> {
       text = text || "📍 Localização";
     }
 
+    // Extract quoted message info (contextInfo)
+    const contextInfo = message.extendedTextMessage?.contextInfo || 
+                        message.imageMessage?.contextInfo ||
+                        message.videoMessage?.contextInfo ||
+                        message.audioMessage?.contextInfo ||
+                        message.documentMessage?.contextInfo || null;
+    
+    let quotedMessageId: string | null = null;
+    let quotedText: string | null = null;
+    let quotedFromMe: boolean | null = null;
+
+    if (contextInfo) {
+      quotedMessageId = contextInfo.stanzaId || null;
+      quotedFromMe = contextInfo.participant?.includes(Deno.env.get("WASENDER_PHONE") || "") || false;
+      
+      // Extract quoted message text based on type
+      const quotedMessage = contextInfo.quotedMessage;
+      if (quotedMessage) {
+        quotedText = quotedMessage.conversation ||
+                     quotedMessage.extendedTextMessage?.text ||
+                     (quotedMessage.imageMessage ? "📷 Imagem" : null) ||
+                     (quotedMessage.videoMessage ? "🎥 Vídeo" : null) ||
+                     (quotedMessage.audioMessage || quotedMessage.pttMessage ? "🎵 Áudio" : null) ||
+                     (quotedMessage.documentMessage ? `📄 ${quotedMessage.documentMessage.fileName || "Documento"}` : null) ||
+                     (quotedMessage.stickerMessage ? "🎨 Sticker" : null) ||
+                     (quotedMessage.locationMessage ? "📍 Localização" : null) ||
+                     (quotedMessage.contactMessage ? `👤 ${quotedMessage.contactMessage.displayName || "Contato"}` : null) ||
+                     null;
+      }
+      
+      console.log(`[Wasender Webhook] Quoted message: ${quotedMessageId}, text: ${quotedText?.substring(0, 50) || "N/A"}`);
+    }
+
     // Skip empty messages
     if (!text && !mediaType) {
       console.log("[Wasender Webhook] Skipping empty message");
@@ -570,6 +603,9 @@ async function handler(req: Request): Promise<Response> {
         media_type: mediaType,
         media_url: mediaUrl,
         created_at: timestamp,
+        quoted_message_id: quotedMessageId,
+        quoted_text: quotedText,
+        quoted_from_me: quotedFromMe,
       }, { onConflict: "message_id" });
 
     if (msgError) {
