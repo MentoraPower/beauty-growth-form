@@ -24,10 +24,10 @@ const DropPlaceholder = memo(function DropPlaceholder({ isActive }: { isActive?:
   return (
     <div 
       className={`
-        h-[120px] rounded-lg border-2 border-dashed transition-all duration-200
+        h-[100px] rounded-lg border-2 border-dashed transition-all duration-150
         ${isActive 
-          ? "border-primary/60 bg-primary/5" 
-          : "border-muted-foreground/20 bg-muted/20"
+          ? "border-black/20 bg-black/[0.02]" 
+          : "border-black/10 bg-black/[0.01]"
         }
       `}
     />
@@ -67,9 +67,9 @@ export const KanbanColumn = memo(function KanbanColumn({
     <div className="flex-shrink-0 w-80 flex flex-col min-h-0 relative">
       <div
         ref={setNodeRef}
-        className={`flex-1 min-h-0 rounded-xl rounded-b-none border border-b-0 transition-all duration-200 flex flex-col overflow-hidden ${
+        className={`flex-1 min-h-0 rounded-xl rounded-b-none border border-b-0 transition-all duration-150 flex flex-col overflow-hidden ${
           isTargeted
-            ? "bg-muted/50 border-primary/30 border-dashed shadow-sm"
+            ? "bg-black/[0.02] border-black/15 border-dashed"
             : "bg-muted/40 border-black/10"
         }`}
       >
@@ -79,7 +79,7 @@ export const KanbanColumn = memo(function KanbanColumn({
             <h2 className="font-semibold text-sm">{pipeline.nome}</h2>
             <span className={`text-xs px-2 py-0.5 rounded-full transition-colors ${
               isTargeted 
-                ? "bg-primary/10 text-primary" 
+                ? "bg-black/5 text-foreground" 
                 : "text-muted-foreground bg-muted"
             }`}>
               {leads.length}
@@ -142,9 +142,9 @@ export const KanbanColumn = memo(function KanbanColumn({
 
               {/* Empty state */}
               {visibleLeads.length === 0 && !showTopPlaceholder && (
-                <div className={`text-center text-sm py-8 rounded-lg border-2 border-dashed transition-all duration-200 ${
+                <div className={`text-center text-sm py-8 rounded-lg border-2 border-dashed transition-all duration-150 ${
                   isTargeted 
-                    ? "border-primary/40 text-primary bg-primary/5" 
+                    ? "border-black/20 text-foreground bg-black/[0.02]" 
                     : "border-transparent text-muted-foreground"
                 }`}>
                   {isTargeted ? "Solte aqui" : "Nenhum lead"}
