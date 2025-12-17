@@ -184,33 +184,39 @@ function SortableOriginItem({
           <div className="ml-4 pt-1 pb-1 relative">
             
             {/* Overview Item - receives curved line from origin */}
-            <div className="relative flex items-center group py-0.5">
-              {/* Vertical line from origin - stops before curve */}
-              <div className="absolute left-[3px] top-0 h-[12px] w-[2px] bg-[#b0b0b0] z-10" />
-              {/* Curved line to Overview */}
-              <svg className="absolute left-[3px] top-[10px] w-5 h-4 z-0" viewBox="0 0 20 16" fill="none">
+            <div className="relative flex items-center group py-1">
+              {/* Smooth curved line from origin to Overview */}
+              <svg className="absolute left-0 top-0 w-6 h-8 z-0" viewBox="0 0 24 32" fill="none">
                 <path 
-                  d="M0 0 C0 8, 8 14, 18 14" 
+                  d="M4 0 L4 8 Q4 16 12 20 L22 24" 
                   stroke="#b0b0b0" 
                   strokeWidth="2"
                   strokeLinecap="round"
+                  strokeLinejoin="round"
                   fill="none"
                 />
               </svg>
               <button
                 onClick={() => handleOverviewClick(origin.id)}
                 className={cn(
-                  "flex items-center gap-2 w-full py-1.5 px-2 ml-5 rounded-lg transition-all duration-200 ease-out text-xs",
+                  "flex items-center gap-3 w-full py-2.5 px-3 ml-6 rounded-xl transition-all duration-200 ease-out text-sm border",
                   currentOverviewOriginId === origin.id
-                    ? "bg-black/10 text-foreground font-medium"
-                    : "text-foreground/70 hover:text-foreground hover:bg-black/5"
+                    ? "bg-white border-black/10 text-foreground shadow-sm"
+                    : "bg-white/50 border-transparent text-foreground/80 hover:bg-white hover:border-black/5 hover:shadow-sm"
                 )}
               >
-                <Home className={cn(
-                  "h-3 w-3 flex-shrink-0",
-                  currentOverviewOriginId === origin.id ? "text-foreground" : "text-foreground/70"
-                )} />
-                <span className="truncate">Overview</span>
+                <div className={cn(
+                  "w-8 h-8 rounded-lg flex items-center justify-center",
+                  currentOverviewOriginId === origin.id
+                    ? "bg-gradient-to-br from-[#F40000] to-[#A10000]"
+                    : "bg-black/5"
+                )}>
+                  <Home className={cn(
+                    "h-4 w-4",
+                    currentOverviewOriginId === origin.id ? "text-white" : "text-foreground/70"
+                  )} />
+                </div>
+                <span className="font-semibold">Overview</span>
               </button>
             </div>
 
