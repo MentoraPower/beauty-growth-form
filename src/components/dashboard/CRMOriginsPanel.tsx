@@ -184,11 +184,11 @@ function SortableOriginItem({
           <div className="ml-4 pt-1 pb-1 relative">
             
             {/* Overview Item - receives curved line from origin */}
-            <div className="relative flex items-center group py-1">
+            <div className="relative flex items-center group py-0.5">
               {/* Smooth curved line from origin to Overview */}
-              <svg className="absolute left-0 top-0 w-6 h-8 z-0" viewBox="0 0 24 32" fill="none">
+              <svg className="absolute left-0 top-0 w-5 h-7 z-0" viewBox="0 0 20 28" fill="none">
                 <path 
-                  d="M4 0 L4 8 Q4 16 12 20 L22 24" 
+                  d="M4 0 L4 6 Q4 14 10 17 L18 20" 
                   stroke="#b0b0b0" 
                   strokeWidth="2"
                   strokeLinecap="round"
@@ -199,20 +199,20 @@ function SortableOriginItem({
               <button
                 onClick={() => handleOverviewClick(origin.id)}
                 className={cn(
-                  "flex items-center gap-3 w-full py-2.5 px-3 ml-6 rounded-xl transition-all duration-200 ease-out text-sm border",
+                  "flex items-center gap-2 w-full py-1.5 px-2.5 ml-5 rounded-lg transition-all duration-200 ease-out text-xs border",
                   currentOverviewOriginId === origin.id
                     ? "bg-white border-black/10 text-foreground shadow-sm"
                     : "bg-white/50 border-transparent text-foreground/80 hover:bg-white hover:border-black/5 hover:shadow-sm"
                 )}
               >
                 <div className={cn(
-                  "w-8 h-8 rounded-lg flex items-center justify-center",
+                  "w-6 h-6 rounded-md flex items-center justify-center",
                   currentOverviewOriginId === origin.id
                     ? "bg-gradient-to-br from-[#F40000] to-[#A10000]"
                     : "bg-black/5"
                 )}>
                   <Home className={cn(
-                    "h-4 w-4",
+                    "h-3.5 w-3.5",
                     currentOverviewOriginId === origin.id ? "text-white" : "text-foreground/70"
                   )} />
                 </div>
