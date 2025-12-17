@@ -1179,7 +1179,6 @@ const WhatsApp = () => {
         "postgres_changes",
         { event: "INSERT", schema: "public", table: "whatsapp_chats" },
         (payload) => {
-          console.log("[WhatsApp] Realtime: Chat inserted:", payload.new);
           updateChatInState(payload.new);
         }
       )
@@ -1187,7 +1186,6 @@ const WhatsApp = () => {
         "postgres_changes",
         { event: "UPDATE", schema: "public", table: "whatsapp_chats" },
         (payload) => {
-          console.log("[WhatsApp] Realtime: Chat updated:", payload.new);
           updateChatInState(payload.new);
         }
       )
@@ -1195,13 +1193,10 @@ const WhatsApp = () => {
         "postgres_changes",
         { event: "DELETE", schema: "public", table: "whatsapp_chats" },
         (payload) => {
-          console.log("[WhatsApp] Realtime: Chat deleted:", payload.old);
           removeChatFromState((payload.old as any).id);
         }
       )
-      .subscribe((status) => {
-        console.log("[WhatsApp] Chats channel status:", status);
-      });
+      .subscribe();
 
     return () => {
       supabase.removeChannel(channel);
@@ -1217,11 +1212,9 @@ const WhatsApp = () => {
         { event: "INSERT", schema: "public", table: "whatsapp_messages" },
         async (payload) => {
           const msg = payload.new as any;
-          console.log("[WhatsApp] Realtime: New message globally:", msg.id, "chat_id:", msg.chat_id);
           
           // If this is for a different chat than selected, refresh that chat's data
           if (msg.chat_id && msg.chat_id !== selectedChat?.id) {
-            // Fetch updated chat to get latest last_message and last_message_time
             const { data: updatedChat } = await supabase
               .from("whatsapp_chats")
               .select("*")
@@ -1234,9 +1227,7 @@ const WhatsApp = () => {
           }
         }
       )
-      .subscribe((status) => {
-        console.log("[WhatsApp] Messages global channel status:", status);
-      });
+      .subscribe();
 
     return () => {
       supabase.removeChannel(channel);
@@ -1254,7 +1245,6 @@ const WhatsApp = () => {
         { event: "INSERT", schema: "public", table: "whatsapp_messages", filter: `chat_id=eq.${selectedChat.id}` },
         (payload) => {
           const msg = payload.new as any;
-          console.log("[WhatsApp] Realtime message received:", msg.id);
           
           setMessages(prev => {
             // Skip if already exists by id, message_id, or same text+from_me combo
@@ -1292,7 +1282,6 @@ const WhatsApp = () => {
         { event: "UPDATE", schema: "public", table: "whatsapp_messages", filter: `chat_id=eq.${selectedChat.id}` },
         (payload) => {
           const msg = payload.new as any;
-          console.log("[WhatsApp] Realtime message updated:", msg.id, "status:", msg.status);
           
           // Update message status (for DELETED, READ, etc.)
           setMessages(prev => prev.map(m => {
@@ -1608,26 +1597,8 @@ const WhatsApp = () => {
         {/* Left Sidebar - Chat List */}
         <div className="w-[380px] flex flex-col border-r border-border/50 bg-card">
           {/* Header */}
-          <div className="h-14 px-4 flex items-center justify-between bg-muted/30 border-b border-border/30">
+          <div className="h-14 px-4 flex items-center bg-muted/30 border-b border-border/30">
             <h2 className="font-semibold text-foreground">Conversas</h2>
-            <div className="flex items-center gap-1">
-              <button
-                onClick={clearAndSync}
-                disabled={isSyncing}
-                className="p-1.5 hover:bg-muted/50 rounded-full transition-colors"
-                title="Limpar e Sincronizar"
-              >
-                <Trash2 className="w-4 h-4 text-muted-foreground" />
-              </button>
-              <button
-                onClick={syncAllChats}
-                disabled={isSyncing}
-                className="p-1.5 hover:bg-muted/50 rounded-full transition-colors"
-                title="Sincronizar"
-              >
-                <RefreshCw className={cn("w-4 h-4 text-muted-foreground", isSyncing && "animate-spin")} />
-              </button>
-            </div>
           </div>
 
           {/* Search */}
@@ -1699,15 +1670,10 @@ const WhatsApp = () => {
               ))
             ) : (
               <div className="flex-1 flex flex-col items-center justify-center h-full py-20 gap-3">
-                <p className="text-sm text-muted-foreground">Nenhuma conversa encontrada</p>
-                <button
-                  onClick={syncAllChats}
-                  disabled={isSyncing}
-                  className="px-4 py-2 bg-emerald-500 text-white rounded-full hover:bg-emerald-600 transition-colors flex items-center gap-2 text-sm"
-                >
-                  <RefreshCw className={cn("w-4 h-4", isSyncing && "animate-spin")} />
-                  Sincronizar
-                </button>
+                <p className="text-sm text-muted-foreground">
+                  {isSyncing ? "Sincronizando conversas..." : "Nenhuma conversa encontrada"}
+                </p>
+                {isSyncing && <RefreshCw className="w-5 h-5 text-muted-foreground animate-spin" />}
               </div>
             )}
           </div>
@@ -1739,11 +1705,11 @@ const WhatsApp = () => {
                   <Phone className="w-5 h-5 text-emerald-500" />
                 </button>
                 <button
-                  onClick={() => fetchMessages(selectedChat.id)}
-                  disabled={isLoadingMessages}
+                  onClick={() => setShowLeadPanel(!showLeadPanel)}
                   className="p-2 hover:bg-muted/50 rounded-full transition-colors"
+                  title={showLeadPanel ? "Ocultar painel" : "Mostrar painel"}
                 >
-                  <RefreshCw className={cn("w-4 h-4 text-muted-foreground", isLoadingMessages && "animate-spin")} />
+                  {showLeadPanel ? <PanelRightClose className="w-5 h-5 text-muted-foreground" /> : <PanelRightOpen className="w-5 h-5 text-muted-foreground" />}
                 </button>
               </div>
 
@@ -2140,15 +2106,11 @@ const WhatsApp = () => {
                 <p className="text-sm text-muted-foreground max-w-md">
                   Envie e receba mensagens diretamente do seu CRM
                 </p>
-                {chats.length === 0 && (
-                  <button
-                    onClick={syncAllChats}
-                    disabled={isSyncing}
-                    className="mt-4 px-6 py-2 bg-emerald-500 text-white rounded-full hover:bg-emerald-600 transition-colors flex items-center gap-2 mx-auto"
-                  >
-                    <RefreshCw className={cn("w-4 h-4", isSyncing && "animate-spin")} />
-                    Sincronizar conversas
-                  </button>
+                {chats.length === 0 && isSyncing && (
+                  <div className="flex items-center gap-2 justify-center text-sm text-muted-foreground">
+                    <RefreshCw className="w-4 h-4 animate-spin" />
+                    Sincronizando conversas...
+                  </div>
                 )}
               </div>
             </div>
