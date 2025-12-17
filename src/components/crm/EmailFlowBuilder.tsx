@@ -195,7 +195,7 @@ const EmailNode = ({ id, data }: NodeProps) => {
                 value={localBodyHtml}
                 onChange={(e) => setLocalBodyHtml(e.target.value)}
                 placeholder="<h1>Olá {{nome}}!</h1>&#10;<p>Seu conteúdo aqui...</p>"
-                className="min-h-[200px] text-xs font-mono resize-none"
+                className="h-[200px] text-xs font-mono resize-none overflow-y-auto"
               />
             </div>
             <div className="flex justify-end gap-2 pt-2">
