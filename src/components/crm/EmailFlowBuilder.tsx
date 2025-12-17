@@ -1217,9 +1217,6 @@ export function EmailFlowBuilder({
           </Button>
           <div>
             <h2 className="text-sm font-semibold text-foreground">{automationName}</h2>
-            <p className="text-xs text-muted-foreground">
-              Gatilho: <span className="font-medium">{getTriggerHeaderLabel()}</span>
-            </p>
           </div>
         </div>
         <div className="flex items-center gap-2">
