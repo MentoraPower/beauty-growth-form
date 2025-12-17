@@ -49,6 +49,7 @@ import { cn } from "@/lib/utils";
 interface EmailFlowStep {
   id: string;
   type: "start" | "wait" | "email" | "end";
+  position?: { x: number; y: number };
   data: {
     label: string;
     waitTime?: number;
@@ -266,12 +267,12 @@ export function EmailFlowBuilder({
     bodyHtml?: string;
   }>({});
 
-  // Initialize nodes and edges
+  // Initialize nodes and edges (use saved positions if available)
   const initialNodes: Node[] = initialSteps?.length
     ? initialSteps.map((step, index) => ({
         id: step.id,
         type: step.type,
-        position: { x: 150 + index * 220, y: 200 },
+        position: step.position || { x: 150 + index * 220, y: 200 },
         data: step.data,
       }))
     : [
@@ -465,6 +466,7 @@ export function EmailFlowBuilder({
     const steps: EmailFlowStep[] = nodes.map((node) => ({
       id: node.id,
       type: node.type as EmailFlowStep["type"],
+      position: { x: node.position.x, y: node.position.y },
       data: node.data as EmailFlowStep["data"],
     }));
     onSave(steps);
@@ -477,7 +479,7 @@ export function EmailFlowBuilder({
   ];
 
   return (
-    <div className="flex flex-col h-full bg-muted/30 rounded-2xl overflow-hidden border border-border">
+    <div className="flex flex-col h-[calc(100vh-3rem)] w-full max-w-[1400px] mx-auto bg-muted/30 rounded-2xl overflow-hidden border border-border">
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-border bg-background">
         <div className="flex items-center gap-3">
