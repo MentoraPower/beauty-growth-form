@@ -246,14 +246,14 @@ function SortableOriginItem({
                 <button
                   onClick={() => handleOverviewClick(origin.id)}
                   className={cn(
-                    "flex items-center gap-1.5 w-full py-1 px-2 rounded-lg transition-all duration-200 ease-out text-[11px] border",
+                    "flex items-center gap-2 w-full py-1.5 px-2.5 rounded-lg transition-all duration-200 ease-out text-xs border",
                     currentOverviewOriginId === origin.id
                       ? "bg-white border-black/10 text-foreground shadow-sm"
                       : "bg-white/50 border-transparent text-foreground/80 hover:bg-white hover:border-black/5 hover:shadow-sm"
                   )}
                 >
                   <div className={cn(
-                    "w-5 h-5 rounded flex items-center justify-center",
+                    "w-5 h-5 rounded-full flex items-center justify-center",
                     currentOverviewOriginId === origin.id
                       ? "bg-black/10"
                       : "bg-black/5"
