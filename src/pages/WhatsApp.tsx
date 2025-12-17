@@ -1553,7 +1553,7 @@ const WhatsApp = () => {
       );
     }
 
-    return <p className="text-sm text-foreground whitespace-pre-wrap">{formatWhatsAppText(msg.text)}</p>;
+    return <span className="text-sm text-foreground whitespace-pre-wrap">{formatWhatsAppText(msg.text)}</span>;
   };
 
   return (
@@ -1829,20 +1829,40 @@ const WhatsApp = () => {
                                   <span className="text-muted-foreground line-clamp-2">{formatWhatsAppText(msg.quotedText || "")}</span>
                                 </div>
                               )}
-                              {renderMessageContent(msg)}
-                              {/* Hide time row for audio since it's in the AudioWaveform footer */}
-                              {msg.mediaType !== "audio" && (
-                                <div className="flex items-center justify-end gap-1 mt-0.5">
-                                  <span className="text-[10px] text-muted-foreground">{msg.time}</span>
-                                  {msg.sent && msg.status !== "DELETED" && (
-                                    msg.status === "READ" || msg.status === "PLAYED" 
-                                      ? <CheckCheck className="w-4 h-4 text-blue-500" /> 
-                                      : msg.status === "DELIVERED"
-                                        ? <CheckCheck className="w-4 h-4 text-muted-foreground" />
-                                        : msg.status === "SENDING"
-                                          ? <div className="w-3 h-3 border-2 border-muted-foreground border-t-transparent rounded-full animate-spin" />
-                                          : <Check className="w-4 h-4 text-muted-foreground" />
-                                  )}
+                              {/* Inline layout for text messages, stacked for media */}
+                              {msg.mediaType && msg.mediaType !== "audio" ? (
+                                <>
+                                  {renderMessageContent(msg)}
+                                  <div className="flex items-center justify-end gap-1 mt-0.5">
+                                    <span className="text-[10px] text-muted-foreground">{msg.time}</span>
+                                    {msg.sent && msg.status !== "DELETED" && (
+                                      msg.status === "READ" || msg.status === "PLAYED" 
+                                        ? <CheckCheck className="w-3.5 h-3.5 text-blue-500" /> 
+                                        : msg.status === "DELIVERED"
+                                          ? <CheckCheck className="w-3.5 h-3.5 text-muted-foreground" />
+                                          : msg.status === "SENDING"
+                                            ? <div className="w-3 h-3 border-2 border-muted-foreground border-t-transparent rounded-full animate-spin" />
+                                            : <Check className="w-3.5 h-3.5 text-muted-foreground" />
+                                    )}
+                                  </div>
+                                </>
+                              ) : msg.mediaType === "audio" ? (
+                                renderMessageContent(msg)
+                              ) : (
+                                <div className="inline">
+                                  {renderMessageContent(msg)}
+                                  <span className="inline-flex items-center gap-1 ml-2 align-bottom float-right mt-1">
+                                    <span className="text-[10px] text-muted-foreground">{msg.time}</span>
+                                    {msg.sent && msg.status !== "DELETED" && (
+                                      msg.status === "READ" || msg.status === "PLAYED" 
+                                        ? <CheckCheck className="w-3.5 h-3.5 text-blue-500" /> 
+                                        : msg.status === "DELIVERED"
+                                          ? <CheckCheck className="w-3.5 h-3.5 text-muted-foreground" />
+                                          : msg.status === "SENDING"
+                                            ? <div className="w-3 h-3 border-2 border-muted-foreground border-t-transparent rounded-full animate-spin" />
+                                            : <Check className="w-3.5 h-3.5 text-muted-foreground" />
+                                    )}
+                                  </span>
                                 </div>
                               )}
                             </div>
