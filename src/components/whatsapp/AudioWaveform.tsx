@@ -258,44 +258,47 @@ export const AudioWaveform = ({ src, sent = false }: AudioWaveformProps) => {
   }
 
   return (
-    <div className="flex items-center gap-3 min-w-[260px]">
+    <div className="flex flex-col gap-1 min-w-[260px]">
       <audio ref={audioRef} src={src} preload="metadata" />
 
-      {/* Play/Pause Button */}
-      <button
-        onClick={togglePlay}
-        className="w-11 h-11 rounded-full flex items-center justify-center flex-shrink-0 transition-all duration-200 bg-primary text-primary-foreground hover:bg-primary/90 hover:scale-105 shadow-sm"
-        aria-label={isPlaying ? "Pausar áudio" : "Reproduzir áudio"}
-        type="button"
-      >
-        {isPlaying ? <Pause size={20} fill="currentColor" /> : <Play size={20} fill="currentColor" className="ml-0.5" />}
-      </button>
+      {/* Player Row - Play, Waveform, Speed all aligned center */}
+      <div className="flex items-center gap-3">
+        {/* Play/Pause Button */}
+        <button
+          onClick={togglePlay}
+          className="w-11 h-11 rounded-full flex items-center justify-center flex-shrink-0 transition-all duration-200 bg-primary text-primary-foreground hover:bg-primary/90 hover:scale-105 shadow-sm"
+          aria-label={isPlaying ? "Pausar áudio" : "Reproduzir áudio"}
+          type="button"
+        >
+          {isPlaying ? <Pause size={20} fill="currentColor" /> : <Play size={20} fill="currentColor" className="ml-0.5" />}
+        </button>
 
-      {/* Waveform */}
-      <div className="flex-1 flex flex-col gap-1">
+        {/* Waveform */}
         <canvas
           ref={canvasRef}
-          width={200}
+          width={180}
           height={36}
-          className="cursor-pointer hover:opacity-80 transition-opacity"
+          className="flex-1 cursor-pointer hover:opacity-80 transition-opacity"
           onClick={handleCanvasClick}
         />
-        <span className="text-[11px] text-muted-foreground tabular-nums">
-          {isPlaying || currentTime > 0
-            ? formatTime(currentTime)
-            : formatTime(duration)}
-        </span>
+
+        {/* Playback Speed Button */}
+        <button
+          onClick={cyclePlaybackRate}
+          className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 text-sm font-semibold transition-all duration-200 bg-muted/80 text-muted-foreground hover:bg-muted hover:text-foreground hover:scale-105"
+          type="button"
+          title="Velocidade de reprodução"
+        >
+          {playbackRate}x
+        </button>
       </div>
 
-      {/* Playback Speed Button */}
-      <button
-        onClick={cyclePlaybackRate}
-        className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 text-sm font-semibold transition-all duration-200 bg-muted/80 text-muted-foreground hover:bg-muted hover:text-foreground hover:scale-105"
-        type="button"
-        title="Velocidade de reprodução"
-      >
-        {playbackRate}x
-      </button>
+      {/* Time below - aligned with message send time */}
+      <span className="text-[11px] text-muted-foreground tabular-nums ml-14">
+        {isPlaying || currentTime > 0
+          ? formatTime(currentTime)
+          : formatTime(duration)}
+      </span>
     </div>
   );
 };
