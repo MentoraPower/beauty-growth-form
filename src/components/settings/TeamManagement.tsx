@@ -177,26 +177,27 @@ export function TeamManagement() {
                     )}
                   </TableCell>
                   <TableCell>
-                    <div className="flex items-center justify-end gap-1">
+                    <div className="flex items-center justify-end gap-2">
                       <Button
-                        variant="ghost"
-                        size="icon"
+                        variant="outline"
+                        size="sm"
                         onClick={() => setEditingMember(member)}
-                        className="h-8 w-8 hover:bg-muted"
+                        className="h-8 px-3 gap-1.5 text-xs font-medium"
                       >
-                        <Pencil className="w-4 h-4" />
+                        <Pencil className="w-3.5 h-3.5" />
+                        Editar
                       </Button>
                       <Button
-                        variant="ghost"
+                        variant="outline"
                         size="icon"
                         onClick={() => {
                           if (confirm("Tem certeza que deseja remover este membro?")) {
                             deleteMember.mutate(member.user_id);
                           }
                         }}
-                        className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+                        className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10 hover:border-destructive/30"
                       >
-                        <Trash2 className="w-4 h-4" />
+                        <Trash2 className="w-3.5 h-3.5" />
                       </Button>
                     </div>
                   </TableCell>
