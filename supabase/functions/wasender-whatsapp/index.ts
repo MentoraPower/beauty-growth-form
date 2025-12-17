@@ -249,8 +249,16 @@ async function handler(req: Request): Promise<Response> {
       const payload: any = { to, text };
       
       // Add quoted message reference if replying
+      // WasenderAPI uses "replyTo" parameter with integer msgId
       if (quotedMsgId) {
-        payload.quoted = quotedMsgId;
+        // Convert to integer if it's a number string, otherwise try to parse
+        const replyToId = parseInt(quotedMsgId, 10);
+        if (!isNaN(replyToId)) {
+          payload.replyTo = replyToId;
+          console.log(`[Wasender] Adding replyTo: ${replyToId}`);
+        } else {
+          console.log(`[Wasender] quotedMsgId "${quotedMsgId}" is not a valid integer, skipping reply`);
+        }
       }
       
       const result = await wasenderRequest("/send-message", {
