@@ -18,7 +18,6 @@ import {
   getBezierPath,
   EdgeProps,
   useReactFlow,
-  useStoreApi,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import { Play, Clock, CheckCircle2, Trash2, Copy, ArrowLeft, Plus, Mail, Zap, ChevronDown } from "lucide-react";
@@ -86,6 +85,7 @@ const EntryNode = ({ data }: NodeProps) => {
       <Play className="w-4 h-4 text-background fill-background" />
       <span className="text-sm font-semibold text-background tracking-wide">Start</span>
       <Handle
+        id="entry-out"
         type="source"
         position={Position.Right}
         className="!w-3 !h-3 !bg-background !border-2 !border-foreground"
@@ -154,6 +154,7 @@ const TriggerNode = ({ data, id, selected }: NodeProps & { data: {
   return (
     <div className="relative">
       <Handle
+        id="trigger-in"
         type="target"
         position={Position.Left}
         className="!w-3 !h-3 !bg-foreground !border-2 !border-background"
@@ -845,7 +846,7 @@ export function EmailFlowBuilder({
     if (initialSteps?.length) {
       // Check if we have entry -> trigger edge already
       const hasEntryNode = initialSteps.some(step => step.type === "entry");
-      const edges = initialSteps.slice(0, -1).map((step, index) => ({
+      const edges: Edge[] = initialSteps.slice(0, -1).map((step, index) => ({
         id: `e-${step.id}-${initialSteps[index + 1].id}`,
         source: step.id,
         target: initialSteps[index + 1].id,
@@ -859,7 +860,9 @@ export function EmailFlowBuilder({
           edges.unshift({
             id: `e-entry-1-${triggerNode.id}`,
             source: "entry-1",
+            sourceHandle: "entry-out",
             target: triggerNode.id,
+            targetHandle: "trigger-in",
             type: "custom",
           });
         }
@@ -871,7 +874,9 @@ export function EmailFlowBuilder({
     return [{
       id: "e-entry-1-trigger-1",
       source: "entry-1",
+      sourceHandle: "entry-out",
       target: "trigger-1",
+      targetHandle: "trigger-in",
       type: "custom",
     }];
   }, [initialSteps]);
