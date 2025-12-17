@@ -1465,7 +1465,7 @@ const WhatsApp = () => {
     
     if (msg.mediaType === "audio") {
       return (
-        <div className="min-w-[220px] max-w-[280px]">
+        <div className="min-w-[280px] max-w-[320px]">
           <AudioWaveform src={msg.mediaUrl || ""} sent={msg.sent} />
         </div>
       );
