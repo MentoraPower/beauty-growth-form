@@ -135,7 +135,7 @@ const WaitNode = ({ data, id, selected }: NodeProps) => {
 
   return (
     <div className="relative">
-      <div className={`w-56 border bg-background shadow-sm transition-all rounded-xl overflow-hidden ${selected ? 'border-foreground ring-2 ring-foreground/20' : 'border-border'}`}>
+      <div className="w-56 border border-border bg-background shadow-sm transition-all rounded-xl overflow-hidden">
         <Handle
           type="target"
           position={Position.Left}
@@ -302,7 +302,7 @@ const EmailNode = ({ id, data, selected }: NodeProps) => {
 
   return (
     <div className="relative">
-      <div className={`w-[420px] border bg-background shadow-sm transition-all rounded-lg overflow-hidden ${selected ? 'border-foreground ring-2 ring-foreground/20' : 'border-border'}`}>
+      <div className="w-[420px] border border-border bg-background shadow-sm transition-all rounded-lg overflow-hidden">
         <Handle
           type="target"
           position={Position.Left}
@@ -416,7 +416,7 @@ const EndNode = ({ data, id, selected }: NodeProps) => {
 
   return (
     <div className="relative">
-      <div className={`px-5 py-2.5 rounded-full border bg-background shadow-sm transition-all flex items-center gap-2 ${selected ? 'border-foreground ring-2 ring-foreground/20' : 'border-border'}`}>
+      <div className="px-5 py-2.5 rounded-full border border-border bg-background shadow-sm transition-all flex items-center gap-2">
         <Handle
           type="target"
           position={Position.Left}
