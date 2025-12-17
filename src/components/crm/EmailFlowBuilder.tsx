@@ -9,14 +9,17 @@ import {
   Connection,
   Edge,
   Node,
-  MarkerType,
   BackgroundVariant,
   Handle,
   Position,
   NodeProps,
+  BaseEdge,
+  EdgeLabelRenderer,
+  getBezierPath,
+  EdgeProps,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
-import { Play, Clock, Mail, CheckCircle2, Trash2, Copy, X, ArrowLeft } from "lucide-react";
+import { Play, Clock, Mail, CheckCircle2, Trash2, Copy, ArrowLeft, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -34,6 +37,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 
 interface EmailFlowStep {
@@ -154,6 +164,84 @@ const nodeTypes = {
   end: EndNode,
 };
 
+// Custom Edge with + button
+interface CustomEdgeProps extends EdgeProps {
+  data?: {
+    onAddNode?: (edgeId: string, type: "wait" | "email") => void;
+    onDeleteEdge?: (edgeId: string) => void;
+  };
+}
+
+const CustomEdge = ({
+  id,
+  sourceX,
+  sourceY,
+  targetX,
+  targetY,
+  sourcePosition,
+  targetPosition,
+  data,
+}: CustomEdgeProps) => {
+  const [edgePath, labelX, labelY] = getBezierPath({
+    sourceX,
+    sourceY,
+    sourcePosition,
+    targetX,
+    targetY,
+    targetPosition,
+  });
+
+  return (
+    <>
+      <BaseEdge
+        path={edgePath}
+        style={{ strokeWidth: 1.5, stroke: "#a1a1aa" }}
+        markerEnd="url(#arrow)"
+      />
+      <EdgeLabelRenderer>
+        <div
+          style={{
+            position: "absolute",
+            transform: `translate(-50%, -50%) translate(${labelX}px,${labelY}px)`,
+            pointerEvents: "all",
+          }}
+          className="nodrag nopan"
+        >
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button className="w-6 h-6 rounded-full bg-background border border-border shadow-sm flex items-center justify-center hover:bg-muted hover:scale-110 transition-all">
+                <Plus className="w-3 h-3 text-muted-foreground" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="center" className="w-40">
+              <DropdownMenuItem onClick={() => data?.onAddNode?.(id, "wait")}>
+                <Clock className="w-4 h-4 mr-2 text-amber-500" />
+                Tempo de Espera
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => data?.onAddNode?.(id, "email")}>
+                <Mail className="w-4 h-4 mr-2 text-blue-500" />
+                Enviar E-mail
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem 
+                onClick={() => data?.onDeleteEdge?.(id)}
+                className="text-destructive focus:text-destructive"
+              >
+                <Trash2 className="w-4 h-4 mr-2" />
+                Apagar conexão
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      </EdgeLabelRenderer>
+    </>
+  );
+};
+
+const edgeTypes = {
+  custom: CustomEdge,
+};
+
 interface EmailFlowBuilderProps {
   initialSteps?: EmailFlowStep[];
   onSave: (steps: EmailFlowStep[]) => void;
@@ -200,8 +288,7 @@ export function EmailFlowBuilder({
         id: `e-${step.id}-${initialSteps[index + 1].id}`,
         source: step.id,
         target: initialSteps[index + 1].id,
-        markerEnd: { type: MarkerType.ArrowClosed, color: "#a1a1aa" },
-        style: { strokeWidth: 1.5, stroke: "#a1a1aa" },
+        type: "custom",
       }))
     : [];
 
@@ -214,8 +301,7 @@ export function EmailFlowBuilder({
         addEdge(
           {
             ...params,
-            markerEnd: { type: MarkerType.ArrowClosed, color: "#a1a1aa" },
-            style: { strokeWidth: 1.5, stroke: "#a1a1aa" },
+            type: "custom",
           },
           eds
         )
@@ -264,12 +350,70 @@ export function EmailFlowBuilder({
           id: `e-${lastNode.id}-${newId}`,
           source: lastNode.id,
           target: newId,
-          markerEnd: { type: MarkerType.ArrowClosed, color: "#a1a1aa" },
-          style: { strokeWidth: 1.5, stroke: "#a1a1aa" },
+          type: "custom",
         },
       ]);
     }
   };
+
+  // Add node between two connected nodes
+  const addNodeBetween = useCallback((edgeId: string, type: "wait" | "email") => {
+    const edge = edges.find((e) => e.id === edgeId);
+    if (!edge) return;
+
+    const sourceNode = nodes.find((n) => n.id === edge.source);
+    const targetNode = nodes.find((n) => n.id === edge.target);
+    if (!sourceNode || !targetNode) return;
+
+    const newId = `${type}-${Date.now()}`;
+    const defaultData: Record<string, any> = {
+      wait: { label: "Espera", waitTime: 1, waitUnit: "hours" },
+      email: { label: "E-mail", subject: "", bodyHtml: "" },
+    };
+
+    // Position the new node between source and target
+    const newNode: Node = {
+      id: newId,
+      type,
+      position: {
+        x: (sourceNode.position.x + targetNode.position.x) / 2,
+        y: (sourceNode.position.y + targetNode.position.y) / 2,
+      },
+      data: defaultData[type],
+    };
+
+    // Remove the old edge and create two new edges
+    setNodes((nds) => [...nds, newNode]);
+    setEdges((eds) => [
+      ...eds.filter((e) => e.id !== edgeId),
+      {
+        id: `e-${edge.source}-${newId}`,
+        source: edge.source,
+        target: newId,
+        type: "custom",
+      },
+      {
+        id: `e-${newId}-${edge.target}`,
+        source: newId,
+        target: edge.target,
+        type: "custom",
+      },
+    ]);
+  }, [edges, nodes, setNodes, setEdges]);
+
+  // Delete edge
+  const deleteEdge = useCallback((edgeId: string) => {
+    setEdges((eds) => eds.filter((e) => e.id !== edgeId));
+  }, [setEdges]);
+
+  // Edges with data callbacks
+  const edgesWithData = edges.map((edge) => ({
+    ...edge,
+    data: {
+      onAddNode: addNodeBetween,
+      onDeleteEdge: deleteEdge,
+    },
+  }));
 
   const deleteSelectedNode = () => {
     if (!selectedNode || selectedNode.type === "start") return;
@@ -411,18 +555,18 @@ export function EmailFlowBuilder({
         <div className="flex-1">
           <ReactFlow
             nodes={nodes}
-            edges={edges}
+            edges={edgesWithData}
             onNodesChange={onNodesChange}
             onEdgesChange={onEdgesChange}
             onConnect={onConnect}
             onNodeClick={onNodeClick}
             nodeTypes={nodeTypes}
+            edgeTypes={edgeTypes}
             fitView
             snapToGrid
             snapGrid={[20, 20]}
             defaultEdgeOptions={{
-              markerEnd: { type: MarkerType.ArrowClosed, color: "#a1a1aa" },
-              style: { strokeWidth: 1.5, stroke: "#a1a1aa" },
+              type: "custom",
             }}
             proOptions={{ hideAttribution: true }}
           >
@@ -431,6 +575,21 @@ export function EmailFlowBuilder({
               showInteractive={false}
             />
             <Background variant={BackgroundVariant.Dots} gap={24} size={1} color="#d4d4d8" />
+            <svg>
+              <defs>
+                <marker
+                  id="arrow"
+                  viewBox="0 0 10 10"
+                  refX="10"
+                  refY="5"
+                  markerWidth="5"
+                  markerHeight="5"
+                  orient="auto-start-reverse"
+                >
+                  <path d="M 0 0 L 10 5 L 0 10 z" fill="#a1a1aa" />
+                </marker>
+              </defs>
+            </svg>
           </ReactFlow>
         </div>
       </div>
