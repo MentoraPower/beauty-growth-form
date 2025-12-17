@@ -961,7 +961,7 @@ export function KanbanBoard() {
 
       {/* Email Flow Builder Overlay */}
       {emailBuilder.show && emailBuilder.props && (
-        <div className="absolute inset-0 z-50 bg-background">
+        <div className="absolute inset-0 z-50 p-4 bg-muted/50">
           <EmailFlowBuilder
             automationName={emailBuilder.props.automationName}
             triggerPipelineName={emailBuilder.props.triggerPipelineName}
