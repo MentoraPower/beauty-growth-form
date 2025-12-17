@@ -268,40 +268,57 @@ async function handler(req: Request): Promise<Response> {
         5: "PLAYED"
       };
       
+      // Status progression rank (higher = more advanced)
+      const statusRank: Record<string, number> = {
+        "SENDING": 0,
+        "SENT": 1,
+        "DELIVERED": 2,
+        "READ": 3,
+        "PLAYED": 4,
+      };
+      
       if (statusMap[statusCode]) {
         const newStatus = statusMap[statusCode];
+        const newRank = statusRank[newStatus] || 0;
         let updatedMessageChatId: string | null = null;
+        
+        // Helper to conditionally update only if new status is higher
+        const updateIfHigherStatus = async (messageId: string) => {
+          // First get current status
+          const { data: currentMsg } = await supabase
+            .from("whatsapp_messages")
+            .select("id, chat_id, status")
+            .eq("message_id", messageId)
+            .single();
+          
+          if (!currentMsg) return null;
+          
+          const currentRank = statusRank[currentMsg.status] || 0;
+          
+          // Only update if new status is higher (more progressed)
+          if (newRank > currentRank) {
+            console.log(`[Wasender Webhook] Updating message ${messageId} status: ${currentMsg.status} -> ${newStatus}`);
+            await supabase
+              .from("whatsapp_messages")
+              .update({ status: newStatus })
+              .eq("id", currentMsg.id);
+            return currentMsg.chat_id;
+          } else {
+            console.log(`[Wasender Webhook] Skipping status update for ${messageId}: ${currentMsg.status} >= ${newStatus}`);
+            return null;
+          }
+        };
         
         // Try to update by WhatsApp message ID first
         if (whatsappMsgId) {
-          console.log(`[Wasender Webhook] Updating message ${whatsappMsgId} status to ${newStatus}`);
-          const { data: updated1 } = await supabase
-            .from("whatsapp_messages")
-            .update({ status: newStatus })
-            .eq("message_id", whatsappMsgId)
-            .select("id, chat_id");
-          
-          if (updated1 && updated1.length > 0) {
-            console.log(`[Wasender Webhook] Updated ${updated1.length} message(s) by whatsappMsgId`);
-            updatedMessageChatId = updated1[0].chat_id;
-          }
+          const chatId = await updateIfHigherStatus(whatsappMsgId);
+          if (chatId) updatedMessageChatId = chatId;
         }
         
-        // Also try to update by numeric msgId (for older messages)
-        if (numericMsgId) {
-          console.log(`[Wasender Webhook] Also trying numeric msgId ${numericMsgId}`);
-          const { data: updated2 } = await supabase
-            .from("whatsapp_messages")
-            .update({ status: newStatus })
-            .eq("message_id", numericMsgId)
-            .select("id, chat_id");
-          
-          if (updated2 && updated2.length > 0) {
-            console.log(`[Wasender Webhook] Updated ${updated2.length} message(s) by numericMsgId`);
-            if (!updatedMessageChatId) {
-              updatedMessageChatId = updated2[0].chat_id;
-            }
-          }
+        // Also try to update by numeric msgId
+        if (numericMsgId && !updatedMessageChatId) {
+          const chatId = await updateIfHigherStatus(numericMsgId);
+          if (chatId) updatedMessageChatId = chatId;
         }
 
         // Update chat's last_message_status if this is the latest message
@@ -309,7 +326,7 @@ async function handler(req: Request): Promise<Response> {
           // Get the latest message for this chat
           const { data: latestMsg } = await supabase
             .from("whatsapp_messages")
-            .select("message_id")
+            .select("message_id, status")
             .eq("chat_id", updatedMessageChatId)
             .order("created_at", { ascending: false })
             .limit(1)
@@ -317,11 +334,12 @@ async function handler(req: Request): Promise<Response> {
           
           // If the updated message is the latest, update the chat status
           if (latestMsg && (latestMsg.message_id === whatsappMsgId || latestMsg.message_id === numericMsgId)) {
+            // Use the actual message status (which might be higher than newStatus due to race conditions)
             await supabase
               .from("whatsapp_chats")
-              .update({ last_message_status: newStatus })
+              .update({ last_message_status: latestMsg.status })
               .eq("id", updatedMessageChatId);
-            console.log(`[Wasender Webhook] Updated chat ${updatedMessageChatId} last_message_status to ${newStatus}`);
+            console.log(`[Wasender Webhook] Updated chat ${updatedMessageChatId} last_message_status to ${latestMsg.status}`);
           }
         }
       }
