@@ -70,8 +70,8 @@ const StartNode = ({ data }: NodeProps) => {
 };
 
 // Wait Node Component - Modern yellow design with dropdown
-const WaitNode = ({ data, id }: NodeProps) => {
-  const { setNodes } = useReactFlow();
+const WaitNode = ({ data, id, selected }: NodeProps) => {
+  const { setNodes, setEdges } = useReactFlow();
   const [isEditing, setIsEditing] = useState(false);
   const [localWaitTime, setLocalWaitTime] = useState((data.waitTime as number) || 1);
   const [localWaitUnit, setLocalWaitUnit] = useState((data.waitUnit as string) || "hours");
@@ -110,95 +110,143 @@ const WaitNode = ({ data, id }: NodeProps) => {
     setIsEditing(true);
   };
 
+  const handleDelete = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setNodes((nds) => nds.filter((n) => n.id !== id));
+    setEdges((eds) => eds.filter((e) => e.source !== id && e.target !== id));
+  };
+
+  const handleDuplicate = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setNodes((nds) => {
+      const currentNode = nds.find((n) => n.id === id);
+      if (!currentNode) return nds;
+      return [
+        ...nds,
+        {
+          ...currentNode,
+          id: `wait-${Date.now()}`,
+          position: { x: currentNode.position.x + 50, y: currentNode.position.y + 80 },
+          selected: false,
+        },
+      ];
+    });
+  };
+
   return (
-    <div className="w-56 border border-border bg-background shadow-sm transition-all rounded-xl overflow-hidden">
-      <Handle
-        type="target"
-        position={Position.Left}
-        className="!w-2.5 !h-2.5 !bg-foreground !border-2 !border-background"
-      />
-      {/* Yellow header */}
-      <div 
-        className="px-4 py-3 flex items-center justify-between cursor-pointer hover:opacity-90 transition-opacity"
-        style={{ background: "linear-gradient(135deg, #FBBF24 0%, #F59E0B 100%)" }}
-        onClick={handleOpen}
-      >
-        <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-lg bg-black/10 flex items-center justify-center">
-            <Clock className="w-4 h-4 text-black" />
+    <div className="relative">
+      <div className={`w-56 border bg-background shadow-sm transition-all rounded-xl overflow-hidden ${selected ? 'border-foreground ring-2 ring-foreground/20' : 'border-border'}`}>
+        <Handle
+          type="target"
+          position={Position.Left}
+          className="!w-2.5 !h-2.5 !bg-foreground !border-2 !border-background"
+        />
+        {/* Yellow header */}
+        <div 
+          className="px-4 py-3 flex items-center justify-between cursor-pointer hover:opacity-90 transition-opacity"
+          style={{ background: "linear-gradient(135deg, #FBBF24 0%, #F59E0B 100%)" }}
+          onClick={handleOpen}
+        >
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-lg bg-black/10 flex items-center justify-center">
+              <Clock className="w-4 h-4 text-black" />
+            </div>
+            <span className="text-sm font-semibold text-black uppercase tracking-wide">Espera</span>
           </div>
-          <span className="text-sm font-semibold text-black uppercase tracking-wide">Espera</span>
         </div>
-      </div>
-      
-      {/* Time display */}
-      <div className="px-4 py-4 flex items-center justify-center">
-        <span className="text-2xl font-bold text-foreground">
-          {waitTime}
-        </span>
-        <span className="text-sm text-muted-foreground ml-2">
-          {unitLabels[waitUnit]}
-        </span>
+        
+        {/* Time display */}
+        <div className="px-4 py-4 flex items-center justify-center">
+          <span className="text-2xl font-bold text-foreground">
+            {waitTime}
+          </span>
+          <span className="text-sm text-muted-foreground ml-2">
+            {unitLabels[waitUnit]}
+          </span>
+        </div>
+
+        {/* Editor Dropdown */}
+        {isEditing && (
+          <div className="absolute top-full left-0 mt-2 w-[280px] bg-background border border-border rounded-lg shadow-xl z-50 nodrag">
+            <div className="p-4 border-b border-border bg-muted/30">
+              <h4 className="text-sm font-semibold text-foreground">Configurar tempo</h4>
+            </div>
+            <div className="p-4 space-y-4">
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs font-semibold text-muted-foreground uppercase mb-1.5 block">Tempo</label>
+                  <Input
+                    type="number"
+                    min={1}
+                    value={localWaitTime}
+                    onChange={(e) => setLocalWaitTime(parseInt(e.target.value) || 1)}
+                    className="h-9 text-sm"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs font-semibold text-muted-foreground uppercase mb-1.5 block">Unidade</label>
+                  <Select
+                    value={localWaitUnit}
+                    onValueChange={(v) => setLocalWaitUnit(v)}
+                  >
+                    <SelectTrigger className="h-9">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="seconds">Segundos</SelectItem>
+                      <SelectItem value="minutes">Minutos</SelectItem>
+                      <SelectItem value="hours">Horas</SelectItem>
+                      <SelectItem value="days">Dias</SelectItem>
+                      <SelectItem value="months">Meses</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div className="flex justify-end pt-2">
+                <Button size="sm" onClick={() => setIsEditing(false)} className="bg-foreground text-background hover:bg-foreground/90">
+                  Fechar
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
+        
+        <Handle
+          type="source"
+          position={Position.Right}
+          className="!w-2.5 !h-2.5 !bg-foreground !border-2 !border-background"
+        />
       </div>
 
-      {/* Editor Dropdown */}
-      {isEditing && (
-        <div className="absolute top-full left-0 mt-2 w-[280px] bg-background border border-border rounded-lg shadow-xl z-50 nodrag">
-          <div className="p-4 border-b border-border bg-muted/30">
-            <h4 className="text-sm font-semibold text-foreground">Configurar tempo</h4>
-          </div>
-          <div className="p-4 space-y-4">
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="text-xs font-semibold text-muted-foreground uppercase mb-1.5 block">Tempo</label>
-                <Input
-                  type="number"
-                  min={1}
-                  value={localWaitTime}
-                  onChange={(e) => setLocalWaitTime(parseInt(e.target.value) || 1)}
-                  className="h-9 text-sm"
-                />
-              </div>
-              <div>
-                <label className="text-xs font-semibold text-muted-foreground uppercase mb-1.5 block">Unidade</label>
-                <Select
-                  value={localWaitUnit}
-                  onValueChange={(v) => setLocalWaitUnit(v)}
-                >
-                  <SelectTrigger className="h-9">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="seconds">Segundos</SelectItem>
-                    <SelectItem value="minutes">Minutos</SelectItem>
-                    <SelectItem value="hours">Horas</SelectItem>
-                    <SelectItem value="days">Dias</SelectItem>
-                    <SelectItem value="months">Meses</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-            <div className="flex justify-end pt-2">
-              <Button size="sm" onClick={() => setIsEditing(false)} className="bg-foreground text-background hover:bg-foreground/90">
-                Fechar
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
-      
-      <Handle
-        type="source"
-        position={Position.Right}
-        className="!w-2.5 !h-2.5 !bg-foreground !border-2 !border-background"
-      />
+      {/* Action buttons - slide up from bottom */}
+      <div 
+        className={`absolute left-1/2 -translate-x-1/2 flex gap-1.5 transition-all duration-200 nodrag ${
+          selected ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2 pointer-events-none'
+        }`}
+        style={{ top: 'calc(100% + 8px)' }}
+      >
+        <button
+          onClick={handleDuplicate}
+          className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-background border border-border hover:bg-muted/60 transition-colors text-xs font-medium text-foreground shadow-sm"
+        >
+          <Copy className="w-3.5 h-3.5" />
+          Duplicar
+        </button>
+        <button
+          onClick={handleDelete}
+          className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-destructive/10 border border-destructive/30 hover:bg-destructive/20 transition-colors text-xs font-medium text-destructive shadow-sm"
+        >
+          <Trash2 className="w-3.5 h-3.5" />
+          Apagar
+        </button>
+      </div>
     </div>
   );
 };
 
 // Email Node Component - Large preview with dropdown editor
-const EmailNode = ({ id, data }: NodeProps) => {
-  const { setNodes } = useReactFlow();
+const EmailNode = ({ id, data, selected }: NodeProps) => {
+  const { setNodes, setEdges } = useReactFlow();
   const [isEditing, setIsEditing] = useState(false);
   const [localSubject, setLocalSubject] = useState((data.subject as string) || "");
   const [localBodyHtml, setLocalBodyHtml] = useState((data.bodyHtml as string) || "");
@@ -229,96 +277,170 @@ const EmailNode = ({ id, data }: NodeProps) => {
     setIsEditing(true);
   };
 
+  const handleDelete = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setNodes((nds) => nds.filter((n) => n.id !== id));
+    setEdges((eds) => eds.filter((e) => e.source !== id && e.target !== id));
+  };
+
+  const handleDuplicate = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setNodes((nds) => {
+      const currentNode = nds.find((n) => n.id === id);
+      if (!currentNode) return nds;
+      return [
+        ...nds,
+        {
+          ...currentNode,
+          id: `email-${Date.now()}`,
+          position: { x: currentNode.position.x + 50, y: currentNode.position.y + 80 },
+          selected: false,
+        },
+      ];
+    });
+  };
+
   return (
-    <div className="w-[420px] border border-border bg-background shadow-sm transition-all rounded-lg overflow-hidden">
-      <Handle
-        type="target"
-        position={Position.Left}
-        className="!w-2.5 !h-2.5 !bg-foreground !border-2 !border-background"
-      />
-      {/* Red gradient header with Gmail logo */}
-      <div 
-        className="px-4 py-2.5 flex items-center justify-between cursor-pointer hover:opacity-90 transition-opacity"
-        style={{ background: "linear-gradient(135deg, #F40000 0%, #A10000 100%)" }}
-        onClick={handleOpen}
-      >
-        <div className="flex items-center gap-3">
-          <img src={gmailLogo} alt="Gmail" className="w-7 h-7 rounded" />
-          <div>
-            <span className="text-xs font-semibold text-white uppercase tracking-wide block">E-mail</span>
-            {subject && <span className="text-[11px] text-white/80 truncate block max-w-[280px]">{subject}</span>}
-          </div>
-        </div>
-        <span className="text-white/70 text-xs">Clique para editar</span>
-      </div>
-      
-      {/* Email Preview - Large */}
-      <div className="p-4 bg-muted/10 min-h-[500px]">
+    <div className="relative">
+      <div className={`w-[420px] border bg-background shadow-sm transition-all rounded-lg overflow-hidden ${selected ? 'border-foreground ring-2 ring-foreground/20' : 'border-border'}`}>
+        <Handle
+          type="target"
+          position={Position.Left}
+          className="!w-2.5 !h-2.5 !bg-foreground !border-2 !border-background"
+        />
+        {/* Red gradient header with Gmail logo */}
         <div 
-          className="bg-background rounded-lg border border-border p-4 min-h-[480px] text-sm overflow-y-auto nodrag nowheel"
-          style={{ maxHeight: "520px" }}
-          onWheelCapture={(e) => e.stopPropagation()}
-          dangerouslySetInnerHTML={{ 
-            __html: bodyHtml || '<div style="color:#999; text-align:center; padding-top:220px;">Clique no cabeçalho para editar o e-mail</div>' 
-          }}
+          className="px-4 py-2.5 flex items-center justify-between cursor-pointer hover:opacity-90 transition-opacity"
+          style={{ background: "linear-gradient(135deg, #F40000 0%, #A10000 100%)" }}
+          onClick={handleOpen}
+        >
+          <div className="flex items-center gap-3">
+            <img src={gmailLogo} alt="Gmail" className="w-7 h-7 rounded" />
+            <div>
+              <span className="text-xs font-semibold text-white uppercase tracking-wide block">E-mail</span>
+              {subject && <span className="text-[11px] text-white/80 truncate block max-w-[280px]">{subject}</span>}
+            </div>
+          </div>
+          <span className="text-white/70 text-xs">Clique para editar</span>
+        </div>
+        
+        {/* Email Preview - Large */}
+        <div className="p-4 bg-muted/10 min-h-[500px]">
+          <div 
+            className="bg-background rounded-lg border border-border p-4 min-h-[480px] text-sm overflow-y-auto nodrag nowheel"
+            style={{ maxHeight: "520px" }}
+            onWheelCapture={(e) => e.stopPropagation()}
+            dangerouslySetInnerHTML={{ 
+              __html: bodyHtml || '<div style="color:#999; text-align:center; padding-top:220px;">Clique no cabeçalho para editar o e-mail</div>' 
+            }}
+          />
+        </div>
+
+        {/* Editor Dropdown */}
+        {isEditing && (
+          <div className="absolute top-full left-0 mt-2 w-[500px] bg-background border border-border rounded-lg shadow-xl z-50 nodrag">
+            <div className="p-4 border-b border-border bg-muted/30">
+              <h4 className="text-sm font-semibold text-foreground">Editar E-mail</h4>
+            </div>
+            <div className="p-4 space-y-4">
+              <div>
+                <label className="text-xs font-semibold text-muted-foreground uppercase mb-1.5 block">Assunto</label>
+                <Input
+                  value={localSubject}
+                  onChange={(e) => setLocalSubject(e.target.value)}
+                  placeholder="Ex: {{nome}}, seu e-book está pronto!"
+                  className="h-9 text-sm"
+                />
+              </div>
+              <div>
+                <label className="text-xs font-semibold text-muted-foreground uppercase mb-1.5 block">Código HTML</label>
+                <Textarea
+                  value={localBodyHtml}
+                  onChange={(e) => setLocalBodyHtml(e.target.value)}
+                  onWheelCapture={(e) => e.stopPropagation()}
+                  placeholder="<h1>Olá {{nome}}!</h1>&#10;<p>Seu conteúdo aqui...</p>"
+                  className="h-[200px] text-xs font-mono resize-none overflow-y-auto nowheel"
+                />
+              </div>
+              <div className="flex justify-end pt-2">
+                <Button size="sm" onClick={() => setIsEditing(false)} className="bg-foreground text-background hover:bg-foreground/90">
+                  Fechar
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
+        
+        <Handle
+          type="source"
+          position={Position.Right}
+          className="!w-2.5 !h-2.5 !bg-foreground !border-2 !border-background"
         />
       </div>
 
-      {/* Editor Dropdown */}
-      {isEditing && (
-        <div className="absolute top-full left-0 mt-2 w-[500px] bg-background border border-border rounded-lg shadow-xl z-50 nodrag">
-          <div className="p-4 border-b border-border bg-muted/30">
-            <h4 className="text-sm font-semibold text-foreground">Editar E-mail</h4>
-          </div>
-          <div className="p-4 space-y-4">
-            <div>
-              <label className="text-xs font-semibold text-muted-foreground uppercase mb-1.5 block">Assunto</label>
-              <Input
-                value={localSubject}
-                onChange={(e) => setLocalSubject(e.target.value)}
-                placeholder="Ex: {{nome}}, seu e-book está pronto!"
-                className="h-9 text-sm"
-              />
-            </div>
-            <div>
-              <label className="text-xs font-semibold text-muted-foreground uppercase mb-1.5 block">Código HTML</label>
-              <Textarea
-                value={localBodyHtml}
-                onChange={(e) => setLocalBodyHtml(e.target.value)}
-                onWheelCapture={(e) => e.stopPropagation()}
-                placeholder="<h1>Olá {{nome}}!</h1>&#10;<p>Seu conteúdo aqui...</p>"
-                className="h-[200px] text-xs font-mono resize-none overflow-y-auto nowheel"
-              />
-            </div>
-            <div className="flex justify-end pt-2">
-              <Button size="sm" onClick={() => setIsEditing(false)} className="bg-foreground text-background hover:bg-foreground/90">
-                Fechar
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
-      
-      <Handle
-        type="source"
-        position={Position.Right}
-        className="!w-2.5 !h-2.5 !bg-foreground !border-2 !border-background"
-      />
+      {/* Action buttons - slide up from bottom */}
+      <div 
+        className={`absolute left-1/2 -translate-x-1/2 flex gap-1.5 transition-all duration-200 nodrag ${
+          selected ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2 pointer-events-none'
+        }`}
+        style={{ top: 'calc(100% + 8px)' }}
+      >
+        <button
+          onClick={handleDuplicate}
+          className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-background border border-border hover:bg-muted/60 transition-colors text-xs font-medium text-foreground shadow-sm"
+        >
+          <Copy className="w-3.5 h-3.5" />
+          Duplicar
+        </button>
+        <button
+          onClick={handleDelete}
+          className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-destructive/10 border border-destructive/30 hover:bg-destructive/20 transition-colors text-xs font-medium text-destructive shadow-sm"
+        >
+          <Trash2 className="w-3.5 h-3.5" />
+          Apagar
+        </button>
+      </div>
     </div>
   );
 };
 
-// End Node Component - Pill shape, black/white
-const EndNode = ({ data }: NodeProps) => {
+// End Node Component - Pill shape, black/white with delete
+const EndNode = ({ data, id, selected }: NodeProps) => {
+  const { setNodes, setEdges } = useReactFlow();
+
+  const handleDelete = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setNodes((nds) => nds.filter((n) => n.id !== id));
+    setEdges((eds) => eds.filter((e) => e.source !== id && e.target !== id));
+  };
+
   return (
-    <div className="px-5 py-2.5 rounded-full border border-border bg-background shadow-sm transition-all flex items-center gap-2">
-      <Handle
-        type="target"
-        position={Position.Left}
-        className="!w-2.5 !h-2.5 !bg-foreground !border-2 !border-background"
-      />
-      <CheckCircle2 className="w-4 h-4 text-foreground" />
-      <span className="text-sm font-medium text-foreground">{data.label as string}</span>
+    <div className="relative">
+      <div className={`px-5 py-2.5 rounded-full border bg-background shadow-sm transition-all flex items-center gap-2 ${selected ? 'border-foreground ring-2 ring-foreground/20' : 'border-border'}`}>
+        <Handle
+          type="target"
+          position={Position.Left}
+          className="!w-2.5 !h-2.5 !bg-foreground !border-2 !border-background"
+        />
+        <CheckCircle2 className="w-4 h-4 text-foreground" />
+        <span className="text-sm font-medium text-foreground">{data.label as string}</span>
+      </div>
+
+      {/* Action button - slide up from bottom */}
+      <div 
+        className={`absolute left-1/2 -translate-x-1/2 flex gap-1.5 transition-all duration-200 nodrag ${
+          selected ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2 pointer-events-none'
+        }`}
+        style={{ top: 'calc(100% + 8px)' }}
+      >
+        <button
+          onClick={handleDelete}
+          className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-destructive/10 border border-destructive/30 hover:bg-destructive/20 transition-colors text-xs font-medium text-destructive shadow-sm"
+        >
+          <Trash2 className="w-3.5 h-3.5" />
+          Apagar
+        </button>
+      </div>
     </div>
   );
 };
@@ -613,32 +735,6 @@ export function EmailFlowBuilder({
     [edges]
   );
 
-  const deleteSelectedNode = () => {
-    if (!selectedNode || selectedNode.type === "start") return;
-
-    setNodes((nds) => nds.filter((n) => n.id !== selectedNode.id));
-    setEdges((eds) =>
-      eds.filter((e) => e.source !== selectedNode.id && e.target !== selectedNode.id)
-    );
-    setSelectedNode(null);
-  };
-
-  const duplicateSelectedNode = () => {
-    if (!selectedNode || selectedNode.type === "start" || selectedNode.type === "end") return;
-
-    const newId = `${selectedNode.type}-${Date.now()}`;
-    const newNode: Node = {
-      ...selectedNode,
-      id: newId,
-      position: {
-        x: selectedNode.position.x + 50,
-        y: selectedNode.position.y + 80,
-      },
-    };
-
-    setNodes((nds) => [...nds, newNode]);
-  };
-
 
   const handleSave = () => {
     const steps: EmailFlowStep[] = nodes.map((node) => ({
@@ -724,31 +820,6 @@ export function EmailFlowBuilder({
             </div>
           </div>
 
-          {selectedNode && selectedNode.type !== "start" && (
-            <div className="border-t border-border pt-4">
-              <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-3">
-                Ações
-              </h3>
-              <div className="space-y-2">
-                {selectedNode.type !== "end" && (
-                  <button
-                    onClick={duplicateSelectedNode}
-                    className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg border border-border bg-muted/30 hover:bg-muted/60 transition-colors text-left"
-                  >
-                    <Copy className="w-4 h-4 text-muted-foreground" />
-                    <span className="text-sm font-medium text-foreground">Duplicar</span>
-                  </button>
-                )}
-                <button
-                  onClick={deleteSelectedNode}
-                  className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg border border-destructive/30 bg-destructive/5 hover:bg-destructive/10 transition-colors text-left"
-                >
-                  <Trash2 className="w-4 h-4 text-destructive" />
-                  <span className="text-sm font-medium text-destructive">Excluir</span>
-                </button>
-              </div>
-            </div>
-          )}
         </div>
 
         {/* Flow Canvas */}
