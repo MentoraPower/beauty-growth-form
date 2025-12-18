@@ -75,7 +75,7 @@ function SortablePipelineItem({
 
   const style = {
     transform: CSS.Transform.toString(transform),
-    transition: isSortableDragging ? undefined : "transform 80ms linear",
+    transition: undefined, // Sem transição para evitar pulo
   };
 
   const dragging = isDragging || isSortableDragging;
@@ -85,11 +85,11 @@ function SortablePipelineItem({
       ref={isOverlay ? undefined : setNodeRef}
       style={isOverlay ? undefined : style}
       className={cn(
-        "group rounded-xl border p-4 transition-all duration-150",
+        "group rounded-xl border p-4",
         dragging && !isOverlay
-          ? "opacity-30 scale-[0.98] border-dashed border-muted-foreground/30 bg-muted/10"
+          ? "opacity-30 border-dashed border-muted-foreground/30 bg-muted/10"
           : "bg-gradient-to-br from-background to-muted/30 border-border/60 hover:border-border hover:shadow-md",
-        isOverlay && "shadow-2xl border-border bg-background scale-[1.02]"
+        isOverlay && "shadow-2xl border-border bg-background"
       )}
     >
       <div className="flex items-center gap-4">
