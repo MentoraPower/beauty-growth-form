@@ -174,23 +174,30 @@ export default function OnboardingForm() {
           <Input
             value={(responses[field.id] as string) || ""}
             onChange={(e) => {
-              // Remove non-numeric characters except comma and dot
-              let value = e.target.value.replace(/[^\d,\.]/g, "");
-              // Replace dot with comma for BR format
-              value = value.replace(".", ",");
-              // Only allow one comma
-              const parts = value.split(",");
-              if (parts.length > 2) {
-                value = parts[0] + "," + parts.slice(1).join("");
+              // Remove everything except digits
+              let digits = e.target.value.replace(/\D/g, "");
+              
+              // Limit to reasonable amount (prevent overflow)
+              if (digits.length > 12) {
+                digits = digits.slice(0, 12);
               }
-              // Limit decimals to 2
-              if (parts.length === 2 && parts[1].length > 2) {
-                value = parts[0] + "," + parts[1].slice(0, 2);
-              }
-              handleInputChange(field.id, value);
+              
+              // Convert to number (in cents)
+              const numericValue = parseInt(digits || "0", 10);
+              
+              // Format as Brazilian Real
+              const formatted = new Intl.NumberFormat("pt-BR", {
+                style: "currency",
+                currency: "BRL",
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2,
+              }).format(numericValue / 100);
+              
+              handleInputChange(field.id, formatted);
             }}
             placeholder="R$ 0,00"
             className="font-mono h-14 text-base"
+            inputMode="numeric"
           />
         );
 
