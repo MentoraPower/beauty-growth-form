@@ -193,29 +193,29 @@ export function OnboardingSection({ leadId, leadName, inline = false }: Onboardi
               <MoreVertical className="h-4 w-4" />
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="min-w-[180px]">
+          <DropdownMenuContent align="end" className="z-[99999] w-44">
             {!form ? (
               <DropdownMenuItem onClick={handleCreateForm} className="cursor-pointer">
-                <Plus className="h-4 w-4 mr-2" />
-                Criar Formulário
+                <Plus className="h-4 w-4 mr-2 flex-shrink-0" />
+                <span className="truncate">Criar Formulário</span>
               </DropdownMenuItem>
             ) : (
               <>
                 <DropdownMenuItem onClick={() => setShowBuilder(true)} className="cursor-pointer">
-                  <Pencil className="h-4 w-4 mr-2" />
-                  Editar Formulário
+                  <Pencil className="h-4 w-4 mr-2 flex-shrink-0" />
+                  <span className="truncate">Editar Formulário</span>
                 </DropdownMenuItem>
                 {form.is_published && (
                   <>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem onClick={copyLink} className="cursor-pointer">
-                      <Copy className="h-4 w-4 mr-2" />
-                      Copiar Link
+                      <Copy className="h-4 w-4 mr-2 flex-shrink-0" />
+                      <span className="truncate">Copiar Link</span>
                     </DropdownMenuItem>
                     <DropdownMenuItem asChild className="cursor-pointer">
-                      <a href={getFormLink()} target="_blank" rel="noopener noreferrer">
-                        <ExternalLink className="h-4 w-4 mr-2" />
-                        Abrir Formulário
+                      <a href={getFormLink()} target="_blank" rel="noopener noreferrer" className="flex items-center">
+                        <ExternalLink className="h-4 w-4 mr-2 flex-shrink-0" />
+                        <span className="truncate">Abrir Formulário</span>
                       </a>
                     </DropdownMenuItem>
                   </>
