@@ -363,17 +363,22 @@ export default function OnboardingForm() {
   if (isSubmitted) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center p-4">
-        <Card className="max-w-md w-full">
-          <CardContent className="p-8 text-center">
-            <div className="h-16 w-16 rounded-full bg-green-100 flex items-center justify-center mx-auto mb-4">
-              <CheckCircle className="h-8 w-8 text-green-600" />
-            </div>
-            <h1 className="text-xl font-semibold mb-2">Obrigado!</h1>
-            <p className="text-muted-foreground">
-              Suas respostas foram enviadas com sucesso.
-            </p>
-          </CardContent>
-        </Card>
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+          className="max-w-md w-full text-center"
+        >
+          <img 
+            src={scaleLogo} 
+            alt="Scale" 
+            className="h-16 w-auto mx-auto mb-8"
+          />
+          <h1 className="text-2xl font-semibold mb-4">Obrigado!</h1>
+          <p className="text-muted-foreground leading-relaxed">
+            Nosso time da Scale entrará em contato para agendar seu onboarding.
+          </p>
+        </motion.div>
       </div>
     );
   }
