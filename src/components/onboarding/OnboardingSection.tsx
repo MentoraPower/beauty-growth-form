@@ -121,7 +121,7 @@ export function OnboardingSection({ leadId, leadName }: OnboardingSectionProps) 
 
   const getFormLink = () => {
     if (!form) return "";
-    return `https://io.scalebuilt.com.br/form/${form.slug}`;
+    return `https://io.scalebeauty.com.br/form/${form.slug}`;
   };
 
   const copyLink = async () => {
@@ -135,6 +135,7 @@ export function OnboardingSection({ leadId, leadName }: OnboardingSectionProps) 
     const labels: Record<string, string> = {
       text_short: "Texto Curto",
       text_long: "Texto Longo",
+      number: "Número (R$)",
       dropdown: "Menu Suspenso",
       checkbox: "Caixa de Seleção",
       radio: "Botão Rádio",

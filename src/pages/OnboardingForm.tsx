@@ -157,6 +157,31 @@ export default function OnboardingForm() {
           />
         );
 
+      case "number":
+        return (
+          <Input
+            value={(responses[field.id] as string) || ""}
+            onChange={(e) => {
+              // Remove non-numeric characters except comma and dot
+              let value = e.target.value.replace(/[^\d,\.]/g, "");
+              // Replace dot with comma for BR format
+              value = value.replace(".", ",");
+              // Only allow one comma
+              const parts = value.split(",");
+              if (parts.length > 2) {
+                value = parts[0] + "," + parts.slice(1).join("");
+              }
+              // Limit decimals to 2
+              if (parts.length === 2 && parts[1].length > 2) {
+                value = parts[0] + "," + parts[1].slice(0, 2);
+              }
+              handleInputChange(field.id, value);
+            }}
+            placeholder="R$ 0,00"
+            className="font-mono"
+          />
+        );
+
       case "dropdown":
         return (
           <Select
