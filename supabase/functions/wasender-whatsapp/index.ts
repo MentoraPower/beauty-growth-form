@@ -267,14 +267,14 @@ async function handler(req: Request): Promise<Response> {
       });
 
       // WasenderAPI returns both:
-      // - msgId (integer) - used for replyTo parameter
-      // - key.id (string) - WhatsApp internal message ID for status tracking
+      // - msgId (integer) - used for replyTo parameter when replying
+      // - key.id (string) - WhatsApp internal message ID for status tracking and quoted message matching
       const numericMsgId = result?.data?.msgId || result?.msgId;
       const whatsappKeyId = result?.key?.id || result?.data?.key?.id;
       // Return numericMsgId for replies (prioritize), fallback to key.id for status
       const messageId = numericMsgId ? String(numericMsgId) : whatsappKeyId;
       console.log(`[Wasender] Send result - msgId: ${numericMsgId}, key.id: ${whatsappKeyId}, using: ${messageId}`);
-      return new Response(JSON.stringify({ success: true, messageId }), {
+      return new Response(JSON.stringify({ success: true, messageId, whatsappKeyId }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
@@ -296,12 +296,12 @@ async function handler(req: Request): Promise<Response> {
         body: JSON.stringify(payload),
       });
 
-      // Prioritize numericMsgId for replies
+      // Return both IDs for proper message tracking
       const numericMsgId = result?.data?.msgId || result?.msgId;
       const whatsappKeyId = result?.key?.id || result?.data?.key?.id;
       const messageId = numericMsgId ? String(numericMsgId) : whatsappKeyId;
       console.log(`[Wasender] Send image result - msgId: ${numericMsgId}, key.id: ${whatsappKeyId}`);
-      return new Response(JSON.stringify({ success: true, messageId }), {
+      return new Response(JSON.stringify({ success: true, messageId, whatsappKeyId }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
@@ -322,12 +322,12 @@ async function handler(req: Request): Promise<Response> {
         }),
       });
 
-      // Prioritize numericMsgId for replies
+      // Return both IDs for proper message tracking
       const numericMsgId = result?.data?.msgId || result?.msgId;
       const whatsappKeyId = result?.key?.id || result?.data?.key?.id;
       const messageId = numericMsgId ? String(numericMsgId) : whatsappKeyId;
       console.log(`[Wasender] Send audio result - msgId: ${numericMsgId}, key.id: ${whatsappKeyId}`);
-      return new Response(JSON.stringify({ success: true, messageId }), {
+      return new Response(JSON.stringify({ success: true, messageId, whatsappKeyId }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
@@ -417,9 +417,11 @@ async function handler(req: Request): Promise<Response> {
         }),
       });
 
-      // Use key.id (WhatsApp message ID) for status tracking
-      const whatsappMsgId = result?.key?.id || result?.data?.key?.id || result?.data?.msgId || result?.messageId;
-      return new Response(JSON.stringify({ success: true, messageId: whatsappMsgId }), {
+      // Return both IDs for proper message tracking
+      const numericMsgId = result?.data?.msgId || result?.msgId;
+      const whatsappKeyId = result?.key?.id || result?.data?.key?.id;
+      const messageId = numericMsgId ? String(numericMsgId) : whatsappKeyId;
+      return new Response(JSON.stringify({ success: true, messageId, whatsappKeyId }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
@@ -441,7 +443,11 @@ async function handler(req: Request): Promise<Response> {
         body: JSON.stringify(payload),
       });
 
-      return new Response(JSON.stringify({ success: true, messageId: result?.data?.msgId || result?.messageId }), {
+      // Return both IDs for proper message tracking
+      const numericMsgId = result?.data?.msgId || result?.msgId;
+      const whatsappKeyId = result?.key?.id || result?.data?.key?.id;
+      const messageId = numericMsgId ? String(numericMsgId) : whatsappKeyId;
+      return new Response(JSON.stringify({ success: true, messageId, whatsappKeyId }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }

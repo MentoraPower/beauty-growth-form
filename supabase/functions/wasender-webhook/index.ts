@@ -515,10 +515,14 @@ async function handler(req: Request): Promise<Response> {
 
     // Extract key information
     const key = messageData.key || {};
-    // Prefer numeric msgId from WasenderAPI (needed for replies), fallback to WhatsApp key.id
+    // WasenderAPI provides two types of IDs:
+    // 1. msgId (numeric) - used for replyTo parameter when sending replies
+    // 2. key.id (string) - WhatsApp's internal message ID, used in contextInfo.stanzaId for quoted messages
     const numericMsgId = messageData.msgId || payload.data?.msgId;
-    const messageId = numericMsgId ? String(numericMsgId) : (key.id || messageData.id || `${Date.now()}`);
-    console.log(`[Wasender Webhook] Message ID: ${messageId} (numeric: ${numericMsgId || "N/A"}, key.id: ${key.id || "N/A"})`);
+    const whatsappKeyId = key.id || messageData.id || null;
+    // For message_id, prioritize numeric msgId (needed for replyTo), fallback to key.id
+    const messageId = numericMsgId ? String(numericMsgId) : (whatsappKeyId || `${Date.now()}`);
+    console.log(`[Wasender Webhook] Message IDs - message_id: ${messageId}, whatsapp_key_id: ${whatsappKeyId || "N/A"}, numeric: ${numericMsgId || "N/A"}`);
     const fromMe = key.fromMe || false;
     const remoteJid = key.remoteJid || "";
 
@@ -639,6 +643,7 @@ async function handler(req: Request): Promise<Response> {
     }
 
     // Extract quoted message info (contextInfo)
+    // Note: stanzaId is WhatsApp's internal key.id, we need to look up the message by whatsapp_key_id
     const contextInfo = message.extendedTextMessage?.contextInfo || 
                         message.imageMessage?.contextInfo ||
                         message.videoMessage?.contextInfo ||
@@ -650,8 +655,29 @@ async function handler(req: Request): Promise<Response> {
     let quotedFromMe: boolean | null = null;
 
     if (contextInfo) {
-      quotedMessageId = contextInfo.stanzaId || null;
+      // stanzaId is the WhatsApp key.id of the quoted message
+      const stanzaId = contextInfo.stanzaId || null;
       quotedFromMe = contextInfo.participant?.includes(Deno.env.get("WASENDER_PHONE") || "") || false;
+      
+      // Look up the quoted message by whatsapp_key_id to get the numeric message_id
+      if (stanzaId) {
+        const { data: quotedMsg } = await supabase
+          .from("whatsapp_messages")
+          .select("message_id, whatsapp_key_id, text, media_type, from_me")
+          .or(`whatsapp_key_id.eq.${stanzaId},message_id.eq.${stanzaId}`)
+          .maybeSingle();
+        
+        if (quotedMsg) {
+          // Store the message_id (numeric) which can be used for our replies
+          quotedMessageId = quotedMsg.message_id;
+          quotedFromMe = quotedMsg.from_me;
+          console.log(`[Wasender Webhook] Found quoted message: stanzaId=${stanzaId} -> message_id=${quotedMessageId}`);
+        } else {
+          // If not found, store the stanzaId as fallback
+          quotedMessageId = stanzaId;
+          console.log(`[Wasender Webhook] Quoted message not found in DB, using stanzaId: ${stanzaId}`);
+        }
+      }
       
       // Extract quoted message text based on type
       const quotedMessage = contextInfo.quotedMessage;
@@ -715,11 +741,13 @@ async function handler(req: Request): Promise<Response> {
     console.log(`[Wasender Webhook] Chat upserted: ${chatData.id}`);
 
     // Upsert message (prevent duplicates)
+    // Store both message_id (numeric for replyTo) and whatsapp_key_id (for quoted message matching)
     const { error: msgError } = await supabase
       .from("whatsapp_messages")
       .upsert({
         chat_id: chatData.id,
         message_id: messageId,
+        whatsapp_key_id: whatsappKeyId,
         phone,
         text: text.substring(0, 2000),
         from_me: fromMe,

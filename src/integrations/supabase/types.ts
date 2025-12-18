@@ -830,6 +830,7 @@ export type Database = {
           reaction: string | null
           status: string | null
           text: string | null
+          whatsapp_key_id: string | null
         }
         Insert: {
           chat_id?: string | null
@@ -846,6 +847,7 @@ export type Database = {
           reaction?: string | null
           status?: string | null
           text?: string | null
+          whatsapp_key_id?: string | null
         }
         Update: {
           chat_id?: string | null
@@ -862,6 +864,7 @@ export type Database = {
           reaction?: string | null
           status?: string | null
           text?: string | null
+          whatsapp_key_id?: string | null
         }
         Relationships: [
           {
