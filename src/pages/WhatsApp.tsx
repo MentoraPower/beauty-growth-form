@@ -523,8 +523,14 @@ const WhatsApp = () => {
         setMessages(prev => prev.map(m => m.id === tempId ? { 
           ...m, 
           id: insertedMsg.id, 
+          message_id: messageId, // Store for deletion
           status: "SENT" 
         } : m));
+      }
+      
+      // Auto-fetch profile picture if not already present
+      if (selectedChat && !selectedChat.photo_url && !isWhatsAppInternalId(selectedChat.phone)) {
+        fetchContactInfo(selectedChat);
       }
       
     } catch (error: any) {
@@ -1107,15 +1113,26 @@ const WhatsApp = () => {
       const messageId = msg.message_id;
       
       // Only call Wasender API if we have a valid numeric message ID
+      // WasenderAPI expects integer msgId for DELETE /api/messages/{msgId}
       // (local IDs start with "local-" and won't work with the API)
       if (messageId && !String(messageId).startsWith("local-")) {
-        console.log("[WhatsApp] Deleting message via WasenderAPI, msgId:", messageId);
-        const { error } = await supabase.functions.invoke("wasender-whatsapp", {
-          body: { action: "delete-message", msgId: messageId },
-        });
+        // Parse to integer as required by WasenderAPI
+        const numericMsgId = parseInt(String(messageId), 10);
         
-        if (error) {
-          console.error("Wasender delete error:", error);
+        if (!isNaN(numericMsgId)) {
+          console.log("[WhatsApp] Deleting message via WasenderAPI, msgId:", numericMsgId);
+          const { data, error } = await supabase.functions.invoke("wasender-whatsapp", {
+            body: { action: "delete-message", msgId: numericMsgId },
+          });
+          
+          if (error) {
+            console.error("Wasender delete error:", error);
+            throw error;
+          }
+          
+          console.log("[WhatsApp] Delete response:", data);
+        } else {
+          console.log("[WhatsApp] message_id is not a valid integer:", messageId);
         }
       } else {
         console.log("[WhatsApp] No valid message_id for API deletion, only local delete");
@@ -1132,7 +1149,7 @@ const WhatsApp = () => {
       toast({ title: "Mensagem apagada para todos" });
     } catch (error: any) {
       console.error("Error deleting message:", error);
-      toast({ title: "Erro ao apagar", description: "Pode ser que o tempo para apagar já tenha expirado", variant: "destructive" });
+      toast({ title: "Erro ao apagar", description: error?.message || "Pode ser que o tempo para apagar já tenha expirado", variant: "destructive" });
     }
   };
 
@@ -1662,7 +1679,12 @@ const WhatsApp = () => {
               filteredChats.map((chat) => (
                 <div
                   key={chat.id}
-                  onClick={() => { setSelectedChat(chat); setReplyToMessage(null); }}
+                  onClick={() => { 
+                    setSelectedChat(chat); 
+                    setReplyToMessage(null); 
+                    setIsSending(false); // Reset sending state when switching chats
+                    setMessage(""); // Clear message input
+                  }}
                   className={cn(
                     "flex items-center gap-3 px-3 py-3 cursor-pointer transition-colors border-b border-border/20",
                     selectedChat?.id === chat.id ? "bg-muted/40" : "hover:bg-muted/20"
