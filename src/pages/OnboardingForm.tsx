@@ -375,7 +375,7 @@ export default function OnboardingForm() {
             className="h-16 w-auto mx-auto mb-8"
           />
           <h1 className="text-2xl font-semibold mb-4">Obrigado!</h1>
-          <p className="text-muted-foreground leading-relaxed">
+          <p className="text-muted-foreground leading-relaxed max-w-[280px] md:max-w-none mx-auto">
             Nosso time da Scale entrará em contato para agendar seu onboarding.
           </p>
         </motion.div>
