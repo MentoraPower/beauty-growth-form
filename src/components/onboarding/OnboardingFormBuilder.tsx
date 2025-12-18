@@ -26,6 +26,23 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { OnboardingPreview } from "./OnboardingPreview";
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 
 interface OnboardingForm {
   id: string;
@@ -63,6 +80,177 @@ const FIELD_TYPES = [
   { id: "checkbox", label: "Caixa de Seleção", icon: CheckSquare },
 ];
 
+interface SortableFieldCardProps {
+  field: OnboardingField;
+  isEditing: boolean;
+  onEdit: () => void;
+  onClose: () => void;
+  onUpdate: (updates: Partial<OnboardingField>) => void;
+  onDelete: () => void;
+  onAddOption: () => void;
+  onUpdateOption: (optionIndex: number, value: string) => void;
+  onRemoveOption: (optionIndex: number) => void;
+  getFieldIcon: (type: string) => any;
+  getFieldLabel: (type: string) => string;
+}
+
+function SortableFieldCard({
+  field,
+  isEditing,
+  onEdit,
+  onClose,
+  onUpdate,
+  onDelete,
+  onAddOption,
+  onUpdateOption,
+  onRemoveOption,
+  getFieldIcon,
+  getFieldLabel,
+}: SortableFieldCardProps) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: field.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  };
+
+  const Icon = getFieldIcon(field.field_type);
+
+  return (
+    <Card
+      ref={setNodeRef}
+      style={style}
+      className={`border-[#00000010] shadow-none transition-all ${
+        isEditing ? "ring-2 ring-primary/20" : ""
+      } ${isDragging ? "z-50" : ""}`}
+    >
+      <CardContent className="p-4">
+        <div className="flex items-start gap-3">
+          <div className="flex items-center gap-2 pt-1">
+            <button
+              {...attributes}
+              {...listeners}
+              className="cursor-grab active:cursor-grabbing touch-none"
+            >
+              <GripVertical className="h-4 w-4 text-muted-foreground" />
+            </button>
+            <div className="h-8 w-8 rounded bg-muted/50 flex items-center justify-center">
+              <Icon className="h-4 w-4 text-muted-foreground" />
+            </div>
+          </div>
+
+          <div className="flex-1 space-y-3">
+            {isEditing ? (
+              <>
+                <Input
+                  value={field.title}
+                  onChange={(e) => onUpdate({ title: e.target.value })}
+                  placeholder="Título da pergunta"
+                  className="font-medium"
+                />
+                <Textarea
+                  value={field.description || ""}
+                  onChange={(e) =>
+                    onUpdate({ description: e.target.value || null })
+                  }
+                  placeholder="Descrição (opcional)"
+                  className="resize-none min-h-[60px]"
+                />
+
+                {/* Options for dropdown, checkbox, radio */}
+                {["dropdown", "checkbox", "radio"].includes(field.field_type) && (
+                  <div className="space-y-2">
+                    <Label className="text-xs text-muted-foreground">Opções</Label>
+                    {field.options?.map((option: string, optIndex: number) => (
+                      <div key={optIndex} className="flex items-center gap-2">
+                        <Input
+                          value={option}
+                          onChange={(e) => onUpdateOption(optIndex, e.target.value)}
+                          placeholder={`Opção ${optIndex + 1}`}
+                          className="flex-1"
+                        />
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8"
+                          onClick={() => onRemoveOption(optIndex)}
+                          disabled={(field.options?.length || 0) <= 1}
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    ))}
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={onAddOption}
+                    >
+                      <Plus className="h-3 w-3 mr-1" />
+                      Adicionar opção
+                    </Button>
+                  </div>
+                )}
+
+                <div className="flex items-center gap-2">
+                  <Switch
+                    checked={field.is_required}
+                    onCheckedChange={(checked) =>
+                      onUpdate({ is_required: checked })
+                    }
+                  />
+                  <Label className="text-xs">Obrigatório</Label>
+                </div>
+              </>
+            ) : (
+              <button
+                onClick={onEdit}
+                className="text-left w-full"
+              >
+                <p className="font-medium">{field.title}</p>
+                {field.description && (
+                  <p className="text-sm text-muted-foreground">{field.description}</p>
+                )}
+                <p className="text-xs text-muted-foreground mt-1">
+                  {getFieldLabel(field.field_type)}
+                  {field.is_required && " • Obrigatório"}
+                </p>
+              </button>
+            )}
+          </div>
+
+          <div className="flex items-center gap-1">
+            {isEditing && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={onClose}
+              >
+                Fechar
+              </Button>
+            )}
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 text-destructive hover:text-destructive"
+              onClick={onDelete}
+            >
+              <Trash2 className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
 export function OnboardingFormBuilder({
   form,
   fields: initialFields,
@@ -74,6 +262,44 @@ export function OnboardingFormBuilder({
   const [editingField, setEditingField] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [isPublishing, setIsPublishing] = useState(false);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 5,
+      },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
+  const handleDragEnd = async (event: DragEndEvent) => {
+    const { active, over } = event;
+
+    if (over && active.id !== over.id) {
+      const oldIndex = fields.findIndex((f) => f.id === active.id);
+      const newIndex = fields.findIndex((f) => f.id === over.id);
+
+      const newFields = arrayMove(fields, oldIndex, newIndex);
+      
+      // Update local state immediately
+      setFields(newFields);
+
+      // Update ordem in database for all affected fields
+      const updates = newFields.map((field, index) => ({
+        id: field.id,
+        ordem: index,
+      }));
+
+      for (const update of updates) {
+        await supabase
+          .from("lead_onboarding_fields")
+          .update({ ordem: update.ordem })
+          .eq("id", update.id);
+      }
+    }
+  };
 
   const addField = async (fieldType: string) => {
     const fieldData = {
@@ -260,134 +486,36 @@ export function OnboardingFormBuilder({
             </CardContent>
           </Card>
 
-          {/* Fields list */}
-          <div className="space-y-3">
-            {fields.map((field, index) => {
-              const Icon = getFieldIcon(field.field_type);
-              const isEditing = editingField === field.id;
-
-              return (
-                <Card
-                  key={field.id}
-                  className={`border-[#00000010] shadow-none transition-all ${
-                    isEditing ? "ring-2 ring-primary/20" : ""
-                  }`}
-                >
-                  <CardContent className="p-4">
-                    <div className="flex items-start gap-3">
-                      <div className="flex items-center gap-2 pt-1">
-                        <GripVertical className="h-4 w-4 text-muted-foreground cursor-grab" />
-                        <div className="h-8 w-8 rounded bg-muted/50 flex items-center justify-center">
-                          <Icon className="h-4 w-4 text-muted-foreground" />
-                        </div>
-                      </div>
-
-                      <div className="flex-1 space-y-3">
-                        {isEditing ? (
-                          <>
-                            <Input
-                              value={field.title}
-                              onChange={(e) => updateField(field.id, { title: e.target.value })}
-                              placeholder="Título da pergunta"
-                              className="font-medium"
-                            />
-                            <Textarea
-                              value={field.description || ""}
-                              onChange={(e) =>
-                                updateField(field.id, { description: e.target.value || null })
-                              }
-                              placeholder="Descrição (opcional)"
-                              className="resize-none min-h-[60px]"
-                            />
-
-                            {/* Options for dropdown, checkbox, radio */}
-                            {["dropdown", "checkbox", "radio"].includes(field.field_type) && (
-                              <div className="space-y-2">
-                                <Label className="text-xs text-muted-foreground">Opções</Label>
-                                {field.options?.map((option: string, optIndex: number) => (
-                                  <div key={optIndex} className="flex items-center gap-2">
-                                    <Input
-                                      value={option}
-                                      onChange={(e) =>
-                                        updateOption(field.id, optIndex, e.target.value)
-                                      }
-                                      placeholder={`Opção ${optIndex + 1}`}
-                                      className="flex-1"
-                                    />
-                                    <Button
-                                      variant="ghost"
-                                      size="icon"
-                                      className="h-8 w-8"
-                                      onClick={() => removeOption(field.id, optIndex)}
-                                      disabled={(field.options?.length || 0) <= 1}
-                                    >
-                                      <X className="h-4 w-4" />
-                                    </Button>
-                                  </div>
-                                ))}
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() => addOption(field.id)}
-                                >
-                                  <Plus className="h-3 w-3 mr-1" />
-                                  Adicionar opção
-                                </Button>
-                              </div>
-                            )}
-
-                            <div className="flex items-center gap-2">
-                              <Switch
-                                checked={field.is_required}
-                                onCheckedChange={(checked) =>
-                                  updateField(field.id, { is_required: checked })
-                                }
-                              />
-                              <Label className="text-xs">Obrigatório</Label>
-                            </div>
-                          </>
-                        ) : (
-                          <button
-                            onClick={() => setEditingField(field.id)}
-                            className="text-left w-full"
-                          >
-                            <p className="font-medium">{field.title}</p>
-                            {field.description && (
-                              <p className="text-sm text-muted-foreground">{field.description}</p>
-                            )}
-                            <p className="text-xs text-muted-foreground mt-1">
-                              {getFieldLabel(field.field_type)}
-                              {field.is_required && " • Obrigatório"}
-                            </p>
-                          </button>
-                        )}
-                      </div>
-
-                      <div className="flex items-center gap-1">
-                        {isEditing && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => setEditingField(null)}
-                          >
-                            Fechar
-                          </Button>
-                        )}
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8 text-destructive hover:text-destructive"
-                          onClick={() => deleteField(field.id)}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              );
-            })}
-          </div>
+          {/* Fields list with drag and drop */}
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragEnd={handleDragEnd}
+          >
+            <SortableContext
+              items={fields.map((f) => f.id)}
+              strategy={verticalListSortingStrategy}
+            >
+              <div className="space-y-3">
+                {fields.map((field) => (
+                  <SortableFieldCard
+                    key={field.id}
+                    field={field}
+                    isEditing={editingField === field.id}
+                    onEdit={() => setEditingField(field.id)}
+                    onClose={() => setEditingField(null)}
+                    onUpdate={(updates) => updateField(field.id, updates)}
+                    onDelete={() => deleteField(field.id)}
+                    onAddOption={() => addOption(field.id)}
+                    onUpdateOption={(optIndex, value) => updateOption(field.id, optIndex, value)}
+                    onRemoveOption={(optIndex) => removeOption(field.id, optIndex)}
+                    getFieldIcon={getFieldIcon}
+                    getFieldLabel={getFieldLabel}
+                  />
+                ))}
+              </div>
+            </SortableContext>
+          </DndContext>
 
           {/* Add field button */}
           <DropdownMenu>
