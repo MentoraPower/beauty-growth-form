@@ -330,8 +330,8 @@ export default function OnboardingForm() {
               </motion.div>
             </AnimatePresence>
 
-            <div className="flex justify-between">
-              {currentStep > 0 ? (
+            <div className={`flex ${currentStep === 0 ? "justify-center" : "justify-between"}`}>
+              {currentStep > 0 && (
                 <Button
                   variant="outline"
                   onClick={() => setCurrentStep((s) => s - 1)}
@@ -339,15 +339,13 @@ export default function OnboardingForm() {
                   <ArrowLeft className="h-4 w-4 mr-2" />
                   Voltar
                 </Button>
-              ) : (
-                <div />
               )}
 
               {isLastStep ? (
                 <Button
                   onClick={handleSubmit}
                   disabled={!canProceed || isSubmitting}
-                  className="bg-gradient-to-r from-[#F40000] to-[#A10000]"
+                  className={`bg-gradient-to-r from-[#F40000] to-[#A10000] ${currentStep === 0 ? "w-full max-w-xs" : ""}`}
                 >
                   {isSubmitting ? "Enviando..." : "Enviar"}
                 </Button>
@@ -355,6 +353,7 @@ export default function OnboardingForm() {
                 <Button
                   onClick={() => setCurrentStep((s) => s + 1)}
                   disabled={!canProceed}
+                  className={currentStep === 0 ? "w-full max-w-xs" : ""}
                 >
                   Próximo
                   <ArrowRight className="h-4 w-4 ml-2" />
