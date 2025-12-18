@@ -18,6 +18,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { CheckCircle, ArrowRight, ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
+import scaleLogo from "@/assets/scale-logo-red.png";
 
 interface OnboardingForm {
   id: string;
@@ -321,6 +322,15 @@ export default function OnboardingForm() {
 
         <div className="flex-1 flex items-center justify-center px-6 py-8">
           <div className="max-w-lg w-full">
+            {/* Logo */}
+            <div className="flex justify-center mb-8">
+              <img 
+                src={scaleLogo} 
+                alt="Scale" 
+                className="h-12 md:h-16 w-auto"
+              />
+            </div>
+
             <AnimatePresence mode="wait">
               <motion.div
                 key={currentStep}
@@ -386,8 +396,17 @@ export default function OnboardingForm() {
 
   // All fields at once mode
   return (
-    <div className="min-h-screen bg-background py-8 px-4">
+    <div className="min-h-screen bg-background py-8 px-6">
       <div className="max-w-lg mx-auto">
+        {/* Logo */}
+        <div className="flex justify-center mb-8">
+          <img 
+            src={scaleLogo} 
+            alt="Scale" 
+            className="h-12 md:h-16 w-auto"
+          />
+        </div>
+
         <h1 className="text-2xl font-semibold mb-6 text-center">{form?.name}</h1>
 
         <div className="space-y-6">
