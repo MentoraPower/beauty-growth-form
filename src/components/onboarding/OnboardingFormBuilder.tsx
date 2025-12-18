@@ -129,7 +129,6 @@ function SortableFieldCard({
     transition: undefined, // No transition for smooth movement
   };
 
-  const dragging = isDragging || isSortableDragging;
   const Icon = getFieldIcon(field.field_type);
 
   return (
@@ -137,12 +136,9 @@ function SortableFieldCard({
       ref={isOverlay ? undefined : setNodeRef}
       style={isOverlay ? undefined : style}
       className={cn(
-        "shadow-none transition-none",
-        dragging && !isOverlay
-          ? "opacity-30 border-dashed border-muted-foreground/30 bg-muted/10"
-          : "border-[#00000010]",
-        isOverlay && "shadow-2xl border-border bg-background",
-        isEditing && !isOverlay && "ring-2 ring-primary/20"
+        "shadow-none transition-none border-[#00000010]",
+        isDragging && !isOverlay && "opacity-30 border-dashed border-muted-foreground/30 bg-muted/10",
+        isOverlay && "shadow-2xl border-border bg-background"
       )}
     >
       <CardContent className="p-4">
