@@ -75,7 +75,7 @@ function SortablePipelineItem({
 
   const style = {
     transform: CSS.Transform.toString(transform),
-    transition: isSortableDragging ? undefined : (transition ?? "transform 180ms ease"),
+    transition: isSortableDragging ? undefined : "transform 80ms linear",
   };
 
   const dragging = isDragging || isSortableDragging;
@@ -373,10 +373,7 @@ export function ManagePipelinesDialog({
                 ? createPortal(
                     <DragOverlay
                       zIndex={99999}
-                      dropAnimation={{
-                        duration: 200,
-                        easing: "cubic-bezier(0.18, 0.67, 0.6, 1.22)",
-                      }}
+                      dropAnimation={null}
                     >
                       {activePipeline ? (
                         <SortablePipelineItem
