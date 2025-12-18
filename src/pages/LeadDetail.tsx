@@ -567,6 +567,9 @@ export default function LeadDetail() {
                 </CardContent>
               </Card>
 
+              {/* Onboarding Section - below Contact Info */}
+              <OnboardingSection leadId={lead.id} leadName={lead.name} />
+
               {/* Business Info */}
               <Card className="border-[#00000010] shadow-none">
                 <CardContent className="p-6 space-y-4">
@@ -700,9 +703,6 @@ export default function LeadDetail() {
                 </CardContent>
               </Card>
                 </div>
-
-                {/* Onboarding Section */}
-                <OnboardingSection leadId={lead.id} leadName={lead.name} />
               </motion.div>
             )}
 
