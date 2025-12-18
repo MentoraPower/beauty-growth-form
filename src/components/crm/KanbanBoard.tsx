@@ -316,7 +316,7 @@ export function KanbanBoard() {
       let query = supabase
         .from("leads")
         .select("*")
-        .order("ordem", { ascending: true, nullsFirst: false });
+        .order("created_at", { ascending: false });
 
       // Filter by sub_origin_id if one is selected
       if (subOriginId) {
@@ -598,7 +598,7 @@ export function KanbanBoard() {
       if (newPipelineId === activeLead.pipeline_id && overLead) {
         const pipelineLeads = localLeads
           .filter((l) => l.pipeline_id === newPipelineId)
-          .sort((a, b) => (a.ordem ?? 0) - (b.ordem ?? 0));
+          .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
 
         const oldIndex = pipelineLeads.findIndex((l) => l.id === activeId);
         const targetIndex = pipelineLeads.findIndex((l) => l.id === overId);
@@ -657,7 +657,7 @@ export function KanbanBoard() {
       if (newPipelineId === activeLead.pipeline_id && !overLead) {
         const pipelineLeads = localLeads
           .filter((l) => l.pipeline_id === newPipelineId)
-          .sort((a, b) => (a.ordem ?? 0) - (b.ordem ?? 0));
+          .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
 
         const oldIndex = pipelineLeads.findIndex((l) => l.id === activeId);
         if (oldIndex === -1) {
