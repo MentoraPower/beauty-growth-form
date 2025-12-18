@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { MoreVertical, Plus, Pencil, Link as LinkIcon, Copy, Check, ExternalLink, ClipboardList } from "lucide-react";
@@ -47,9 +46,10 @@ interface OnboardingResponse {
 interface OnboardingSectionProps {
   leadId: string;
   leadName: string;
+  inline?: boolean;
 }
 
-export function OnboardingSection({ leadId, leadName }: OnboardingSectionProps) {
+export function OnboardingSection({ leadId, leadName, inline = false }: OnboardingSectionProps) {
   const [form, setForm] = useState<OnboardingForm | null>(null);
   const [fields, setFields] = useState<OnboardingField[]>([]);
   const [responses, setResponses] = useState<OnboardingResponse[]>([]);
@@ -166,150 +166,158 @@ export function OnboardingSection({ leadId, leadName }: OnboardingSectionProps) 
 
   if (isLoading) {
     return (
-      <Card className="border-[#00000010] shadow-none">
-        <CardContent className="p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
-              Onboarding
-            </h3>
-          </div>
-          <div className="h-20 flex items-center justify-center">
-            <div className="animate-pulse text-sm text-muted-foreground">Carregando...</div>
-          </div>
-        </CardContent>
-      </Card>
-    );
-  }
-
-  return (
-    <Card className="border-[#00000010] shadow-none">
-      <CardContent className="p-6 space-y-4">
-        {/* Header with title and menu */}
+      <div className="space-y-4">
         <div className="flex items-center justify-between">
           <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
             Onboarding
           </h3>
-          
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" className="h-8 w-8">
-                <MoreVertical className="h-4 w-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              {!form ? (
-                <DropdownMenuItem onClick={handleCreateForm} className="cursor-pointer">
-                  <Plus className="h-4 w-4 mr-2" />
-                  Criar Formulário
-                </DropdownMenuItem>
-              ) : (
-                <>
-                  <DropdownMenuItem onClick={() => setShowBuilder(true)} className="cursor-pointer">
-                    <Pencil className="h-4 w-4 mr-2" />
-                    Editar Formulário
-                  </DropdownMenuItem>
-                  {form.is_published && (
-                    <>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem onClick={copyLink} className="cursor-pointer">
-                        <Copy className="h-4 w-4 mr-2" />
-                        Copiar Link
-                      </DropdownMenuItem>
-                      <DropdownMenuItem asChild className="cursor-pointer">
-                        <a href={getFormLink()} target="_blank" rel="noopener noreferrer">
-                          <ExternalLink className="h-4 w-4 mr-2" />
-                          Abrir Formulário
-                        </a>
-                      </DropdownMenuItem>
-                    </>
-                  )}
-                </>
-              )}
-            </DropdownMenuContent>
-          </DropdownMenu>
         </div>
+        <div className="h-12 flex items-center justify-center">
+          <div className="animate-pulse text-sm text-muted-foreground">Carregando...</div>
+        </div>
+      </div>
+    );
+  }
 
-        {/* Content */}
-        {!form ? (
-          // Empty state
+  const content = (
+    <div className="space-y-4">
+      {/* Header with title and menu */}
+      <div className="flex items-center justify-between">
+        <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
+          Onboarding
+        </h3>
+        
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" size="icon" className="h-8 w-8">
+              <MoreVertical className="h-4 w-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            {!form ? (
+              <DropdownMenuItem onClick={handleCreateForm} className="cursor-pointer">
+                <Plus className="h-4 w-4 mr-2" />
+                Criar Formulário
+              </DropdownMenuItem>
+            ) : (
+              <>
+                <DropdownMenuItem onClick={() => setShowBuilder(true)} className="cursor-pointer">
+                  <Pencil className="h-4 w-4 mr-2" />
+                  Editar Formulário
+                </DropdownMenuItem>
+                {form.is_published && (
+                  <>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={copyLink} className="cursor-pointer">
+                      <Copy className="h-4 w-4 mr-2" />
+                      Copiar Link
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild className="cursor-pointer">
+                      <a href={getFormLink()} target="_blank" rel="noopener noreferrer">
+                        <ExternalLink className="h-4 w-4 mr-2" />
+                        Abrir Formulário
+                      </a>
+                    </DropdownMenuItem>
+                  </>
+                )}
+              </>
+            )}
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
+
+      {/* Content */}
+      {!form ? (
+        // Empty state
+        <div className="flex items-center gap-3 p-3 bg-muted/30 border border-[#00000010] rounded-lg">
+          <div className="h-10 w-10 rounded-full border border-black/10 flex items-center justify-center">
+            <ClipboardList className="h-5 w-5 text-neutral-600" />
+          </div>
+          <div>
+            <p className="text-xs text-muted-foreground">Status</p>
+            <p className="text-sm font-medium text-muted-foreground italic">Nenhum formulário criado</p>
+          </div>
+        </div>
+      ) : (
+        // Form exists - show status and responses
+        <>
+          {/* Status row */}
           <div className="flex items-center gap-3 p-3 bg-muted/30 border border-[#00000010] rounded-lg">
             <div className="h-10 w-10 rounded-full border border-black/10 flex items-center justify-center">
               <ClipboardList className="h-5 w-5 text-neutral-600" />
             </div>
-            <div>
-              <p className="text-xs text-muted-foreground">Status</p>
-              <p className="text-sm font-medium text-muted-foreground italic">Nenhum formulário criado</p>
+            <div className="flex-1">
+              <p className="text-xs text-muted-foreground">Status do Formulário</p>
+              <div className="flex items-center gap-2">
+                <p className="text-sm font-medium">{form.name}</p>
+                {form.is_published ? (
+                  <Badge className="bg-green-500 text-[10px] px-1.5 py-0 h-4">Publicado</Badge>
+                ) : (
+                  <Badge variant="secondary" className="text-[10px] px-1.5 py-0 h-4">Rascunho</Badge>
+                )}
+              </div>
             </div>
           </div>
-        ) : (
-          // Form exists - show status and responses
-          <>
-            {/* Status row */}
+
+          {/* Link row if published */}
+          {form.is_published && (
             <div className="flex items-center gap-3 p-3 bg-muted/30 border border-[#00000010] rounded-lg">
               <div className="h-10 w-10 rounded-full border border-black/10 flex items-center justify-center">
-                <ClipboardList className="h-5 w-5 text-neutral-600" />
+                <LinkIcon className="h-5 w-5 text-neutral-600" />
               </div>
-              <div className="flex-1">
-                <p className="text-xs text-muted-foreground">Status do Formulário</p>
-                <div className="flex items-center gap-2">
-                  <p className="text-sm font-medium">{form.name}</p>
-                  {form.is_published ? (
-                    <Badge className="bg-green-500 text-[10px] px-1.5 py-0 h-4">Publicado</Badge>
-                  ) : (
-                    <Badge variant="secondary" className="text-[10px] px-1.5 py-0 h-4">Rascunho</Badge>
-                  )}
-                </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-xs text-muted-foreground">Link do Formulário</p>
+                <p className="text-sm font-medium truncate">{getFormLink()}</p>
               </div>
+              <Button variant="ghost" size="icon" className="h-8 w-8 flex-shrink-0" onClick={copyLink}>
+                {copiedLink ? (
+                  <Check className="h-4 w-4 text-green-500" />
+                ) : (
+                  <Copy className="h-4 w-4" />
+                )}
+              </Button>
             </div>
+          )}
 
-            {/* Link row if published */}
-            {form.is_published && (
-              <div className="flex items-center gap-3 p-3 bg-muted/30 border border-[#00000010] rounded-lg">
+          {/* Responses - only show fields that have responses */}
+          {fields.length > 0 && fields.map((field) => {
+            const response = getResponseForField(field.id);
+            
+            return (
+              <div key={field.id} className="flex items-center gap-3 p-3 bg-muted/30 border border-[#00000010] rounded-lg">
                 <div className="h-10 w-10 rounded-full border border-black/10 flex items-center justify-center">
-                  <LinkIcon className="h-5 w-5 text-neutral-600" />
+                  <ClipboardList className="h-5 w-5 text-neutral-600" />
                 </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-xs text-muted-foreground">Link do Formulário</p>
-                  <p className="text-sm font-medium truncate">{getFormLink()}</p>
-                </div>
-                <Button variant="ghost" size="icon" className="h-8 w-8 flex-shrink-0" onClick={copyLink}>
-                  {copiedLink ? (
-                    <Check className="h-4 w-4 text-green-500" />
-                  ) : (
-                    <Copy className="h-4 w-4" />
-                  )}
-                </Button>
-              </div>
-            )}
-
-            {/* Responses - only show fields that have responses */}
-            {fields.length > 0 && fields.map((field) => {
-              const response = getResponseForField(field.id);
-              
-              return (
-                <div key={field.id} className="flex items-center gap-3 p-3 bg-muted/30 border border-[#00000010] rounded-lg">
-                  <div className="h-10 w-10 rounded-full border border-black/10 flex items-center justify-center">
-                    <ClipboardList className="h-5 w-5 text-neutral-600" />
-                  </div>
-                  <div className="flex-1">
-                    <p className="text-xs text-muted-foreground">{field.title}</p>
-                    {response ? (
-                      <p className="text-sm font-medium">{formatResponseValue(response)}</p>
-                    ) : (
-                      <p className="text-sm font-medium text-muted-foreground italic">Aguardando resposta</p>
-                    )}
-                  </div>
+                <div className="flex-1">
+                  <p className="text-xs text-muted-foreground">{field.title}</p>
                   {response ? (
-                    <Badge className="bg-green-500 text-[10px] px-1.5 py-0 h-4 flex-shrink-0">Respondido</Badge>
+                    <p className="text-sm font-medium">{formatResponseValue(response)}</p>
                   ) : (
-                    <Badge variant="secondary" className="text-[10px] px-1.5 py-0 h-4 flex-shrink-0">Pendente</Badge>
+                    <p className="text-sm font-medium text-muted-foreground italic">Aguardando resposta</p>
                   )}
                 </div>
-              );
-            })}
-          </>
-        )}
-      </CardContent>
-    </Card>
+                {response ? (
+                  <Badge className="bg-green-500 text-[10px] px-1.5 py-0 h-4 flex-shrink-0">Respondido</Badge>
+                ) : (
+                  <Badge variant="secondary" className="text-[10px] px-1.5 py-0 h-4 flex-shrink-0">Pendente</Badge>
+                )}
+              </div>
+            );
+          })}
+        </>
+      )}
+    </div>
+  );
+
+  // If inline, just return the content without Card wrapper
+  if (inline) {
+    return content;
+  }
+
+  // Otherwise, wrap in Card (for standalone use)
+  return (
+    <div className="border border-[#00000010] rounded-lg p-6">
+      {content}
+    </div>
   );
 }
