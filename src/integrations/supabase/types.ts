@@ -827,6 +827,7 @@ export type Database = {
           quoted_from_me: boolean | null
           quoted_message_id: string | null
           quoted_text: string | null
+          reaction: string | null
           status: string | null
           text: string | null
         }
@@ -842,6 +843,7 @@ export type Database = {
           quoted_from_me?: boolean | null
           quoted_message_id?: string | null
           quoted_text?: string | null
+          reaction?: string | null
           status?: string | null
           text?: string | null
         }
@@ -857,6 +859,7 @@ export type Database = {
           quoted_from_me?: boolean | null
           quoted_message_id?: string | null
           quoted_text?: string | null
+          reaction?: string | null
           status?: string | null
           text?: string | null
         }
