@@ -651,6 +651,7 @@ export type Database = {
           target_pipeline_id: string | null
           target_sub_origin_id: string | null
           target_type: string
+          trigger_type: string
           updated_at: string
         }
         Insert: {
@@ -663,6 +664,7 @@ export type Database = {
           target_pipeline_id?: string | null
           target_sub_origin_id?: string | null
           target_type: string
+          trigger_type?: string
           updated_at?: string
         }
         Update: {
@@ -675,6 +677,7 @@ export type Database = {
           target_pipeline_id?: string | null
           target_sub_origin_id?: string | null
           target_type?: string
+          trigger_type?: string
           updated_at?: string
         }
         Relationships: [
