@@ -12,12 +12,149 @@ import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Plus, Trash2, Pencil, Check, GripVertical, X } from "lucide-react";
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 
 interface ManagePipelinesDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   pipelines: Pipeline[];
   subOriginId: string | null;
+}
+
+interface SortablePipelineItemProps {
+  pipeline: Pipeline;
+  editingId: string | null;
+  editingName: string;
+  setEditingId: (id: string | null) => void;
+  setEditingName: (name: string) => void;
+  updatePipeline: (id: string) => void;
+  deletePipeline: (id: string) => void;
+}
+
+function SortablePipelineItem({
+  pipeline,
+  editingId,
+  editingName,
+  setEditingId,
+  setEditingName,
+  updatePipeline,
+  deletePipeline,
+}: SortablePipelineItemProps) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: pipeline.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+    zIndex: isDragging ? 1000 : 1,
+  };
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className="group rounded-xl bg-gradient-to-br from-background to-muted/30 border border-border/60 p-4 transition-all duration-200 hover:border-border hover:shadow-md"
+    >
+      <div className="flex items-center gap-4">
+        {/* Drag Handle */}
+        <div
+          {...attributes}
+          {...listeners}
+          className="opacity-40 group-hover:opacity-100 transition-opacity cursor-grab active:cursor-grabbing"
+        >
+          <GripVertical className="w-5 h-5 text-muted-foreground" />
+        </div>
+
+        {/* Content */}
+        <div className="flex-1 min-w-0">
+          {editingId === pipeline.id ? (
+            <div className="flex items-center gap-2">
+              <Input
+                value={editingName}
+                onChange={(e) => setEditingName(e.target.value)}
+                onKeyDown={(e) => {
+                  e.stopPropagation();
+                  if (e.key === "Enter") updatePipeline(pipeline.id);
+                  if (e.key === "Escape") setEditingId(null);
+                }}
+                onClick={(e) => e.stopPropagation()}
+                autoFocus
+                className="h-9 flex-1"
+              />
+              <Button
+                size="sm"
+                className="h-9 px-3 bg-green-600 hover:bg-green-700 text-white"
+                onClick={() => updatePipeline(pipeline.id)}
+              >
+                <Check className="h-4 w-4" />
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-9 px-3"
+                onClick={() => setEditingId(null)}
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+          ) : (
+            <h3 className="font-medium text-sm truncate">
+              {pipeline.nome}
+            </h3>
+          )}
+        </div>
+
+        {/* Actions */}
+        {editingId !== pipeline.id && (
+          <div className="flex items-center gap-1">
+            <Button
+              size="sm"
+              variant="ghost"
+              className="h-8 px-3 text-xs gap-1.5 hover:bg-muted"
+              onClick={() => {
+                setEditingId(pipeline.id);
+                setEditingName(pipeline.nome);
+              }}
+            >
+              <Pencil className="h-3.5 w-3.5" />
+              Editar
+            </Button>
+            <Button
+              size="sm"
+              variant="ghost"
+              className="h-8 w-8 p-0 text-destructive hover:text-destructive hover:bg-destructive/10"
+              onClick={() => deletePipeline(pipeline.id)}
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+            </Button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
 }
 
 export function ManagePipelinesDialog({
@@ -30,6 +167,53 @@ export function ManagePipelinesDialog({
   const [newPipelineName, setNewPipelineName] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingName, setEditingName] = useState("");
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 5,
+      },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
+  const sortedPipelines = [...pipelines].sort((a, b) => a.ordem - b.ordem);
+
+  const handleDragEnd = async (event: DragEndEvent) => {
+    const { active, over } = event;
+
+    if (!over || active.id === over.id) return;
+
+    const oldIndex = sortedPipelines.findIndex((p) => p.id === active.id);
+    const newIndex = sortedPipelines.findIndex((p) => p.id === over.id);
+
+    if (oldIndex === -1 || newIndex === -1) return;
+
+    const reorderedPipelines = arrayMove(sortedPipelines, oldIndex, newIndex);
+
+    // Update ordem for all affected pipelines
+    try {
+      const updates = reorderedPipelines.map((pipeline, index) => ({
+        id: pipeline.id,
+        ordem: index,
+      }));
+
+      for (const update of updates) {
+        await supabase
+          .from("pipelines")
+          .update({ ordem: update.ordem })
+          .eq("id", update.id);
+      }
+
+      queryClient.invalidateQueries({ queryKey: ["pipelines", subOriginId] });
+      toast.success("Ordem das pipelines atualizada!");
+    } catch (error) {
+      console.error("Erro ao reordenar pipelines:", error);
+      toast.error("Erro ao reordenar pipelines");
+    }
+  };
 
   const addPipeline = async () => {
     if (!newPipelineName.trim()) return;
@@ -117,86 +301,31 @@ export function ManagePipelinesDialog({
             </Button>
           </div>
 
-          {/* Vertical Scroll Container */}
+          {/* Vertical Scroll Container with DnD */}
           <div className="space-y-3 max-h-[400px] overflow-y-auto pr-2">
-            {pipelines.map((pipeline) => (
-              <div
-                key={pipeline.id}
-                className="group rounded-xl bg-gradient-to-br from-background to-muted/30 border border-border/60 p-4 transition-all duration-200 hover:border-border hover:shadow-md"
+            <DndContext
+              sensors={sensors}
+              collisionDetection={closestCenter}
+              onDragEnd={handleDragEnd}
+            >
+              <SortableContext
+                items={sortedPipelines.map((p) => p.id)}
+                strategy={verticalListSortingStrategy}
               >
-                <div className="flex items-center gap-4">
-                  {/* Drag Handle */}
-                  <div className="opacity-40 group-hover:opacity-100 transition-opacity cursor-grab">
-                    <GripVertical className="w-5 h-5 text-muted-foreground" />
-                  </div>
-
-                  {/* Content */}
-                  <div className="flex-1 min-w-0">
-                    {editingId === pipeline.id ? (
-                      <div className="flex items-center gap-2">
-                        <Input
-                          value={editingName}
-                          onChange={(e) => setEditingName(e.target.value)}
-                          onKeyDown={(e) => {
-                            e.stopPropagation();
-                            if (e.key === "Enter") updatePipeline(pipeline.id);
-                            if (e.key === "Escape") setEditingId(null);
-                          }}
-                          onClick={(e) => e.stopPropagation()}
-                          autoFocus
-                          className="h-9 flex-1"
-                        />
-                        <Button
-                          size="sm"
-                          className="h-9 px-3 bg-green-600 hover:bg-green-700 text-white"
-                          onClick={() => updatePipeline(pipeline.id)}
-                        >
-                          <Check className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="h-9 px-3"
-                          onClick={() => setEditingId(null)}
-                        >
-                          <X className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    ) : (
-                      <h3 className="font-medium text-sm truncate">
-                        {pipeline.nome}
-                      </h3>
-                    )}
-                  </div>
-
-                  {/* Actions */}
-                  {editingId !== pipeline.id && (
-                    <div className="flex items-center gap-1">
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        className="h-8 px-3 text-xs gap-1.5 hover:bg-muted"
-                        onClick={() => {
-                          setEditingId(pipeline.id);
-                          setEditingName(pipeline.nome);
-                        }}
-                      >
-                        <Pencil className="h-3.5 w-3.5" />
-                        Editar
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        className="h-8 w-8 p-0 text-destructive hover:text-destructive hover:bg-destructive/10"
-                        onClick={() => deletePipeline(pipeline.id)}
-                      >
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </Button>
-                    </div>
-                  )}
-                </div>
-              </div>
-            ))}
+                {sortedPipelines.map((pipeline) => (
+                  <SortablePipelineItem
+                    key={pipeline.id}
+                    pipeline={pipeline}
+                    editingId={editingId}
+                    editingName={editingName}
+                    setEditingId={setEditingId}
+                    setEditingName={setEditingName}
+                    updatePipeline={updatePipeline}
+                    deletePipeline={deletePipeline}
+                  />
+                ))}
+              </SortableContext>
+            </DndContext>
           </div>
 
           {pipelines.length === 0 && (
