@@ -492,12 +492,14 @@ const WhatsApp = () => {
       if (error) throw error;
 
       const messageId = data?.messageId || `local-${Date.now()}`;
+      const whatsappKeyId = data?.whatsappKeyId || null;
 
       const { data: insertedMsg } = await supabase
         .from("whatsapp_messages")
         .insert({
           chat_id: selectedChat.id,
           message_id: messageId,
+          whatsapp_key_id: whatsappKeyId,
           phone: selectedChat.phone,
           text: messageText,
           from_me: true,
@@ -749,7 +751,7 @@ const WhatsApp = () => {
 
       if (error) throw error;
 
-      // Insert into database
+      // Insert into database with both message IDs
       const { data: insertedMsg } = await supabase.from("whatsapp_messages").insert({
         chat_id: selectedChat.id,
         phone: selectedChat.phone,
@@ -759,6 +761,7 @@ const WhatsApp = () => {
         media_url: publicUrl,
         media_type: type,
         message_id: data?.messageId,
+        whatsapp_key_id: data?.whatsappKeyId || null,
         created_at: new Date().toISOString(),
       }).select().single();
 
@@ -1039,7 +1042,7 @@ const WhatsApp = () => {
 
       console.log("[WhatsApp] Audio sent via WasenderAPI:", data);
 
-      // Insert into database
+      // Insert into database with both message IDs
       const { data: insertedMsg } = await supabase.from("whatsapp_messages").insert({
         chat_id: selectedChat.id,
         phone: selectedChat.phone,
@@ -1049,6 +1052,7 @@ const WhatsApp = () => {
         media_url: publicUrl,
         media_type: "audio",
         message_id: data?.messageId,
+        whatsapp_key_id: data?.whatsappKeyId || null,
         created_at: new Date().toISOString(),
       }).select().single();
 
