@@ -164,7 +164,7 @@ export function InlineAddContact({ pipelineId, subOriginId }: InlineAddContactPr
     return (
       <button
         onClick={() => setIsOpen(true)}
-        className="w-full flex items-center justify-center gap-1.5 py-2 text-xs text-muted-foreground hover:text-foreground hover:bg-muted/50 rounded-lg transition-colors"
+        className="flex items-center gap-1.5 py-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
       >
         <Plus className="w-3.5 h-3.5" />
         <span>Adicionar contato</span>
