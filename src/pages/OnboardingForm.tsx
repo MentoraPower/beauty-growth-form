@@ -417,10 +417,10 @@ export default function OnboardingForm() {
             <AnimatePresence mode="wait">
               <motion.div
                 key={currentStep}
-                initial={{ opacity: 0, filter: "blur(10px)" }}
-                animate={{ opacity: 1, filter: "blur(0px)" }}
-                exit={{ opacity: 0, filter: "blur(10px)" }}
-                transition={{ duration: 0.25 }}
+                initial={{ opacity: 0, filter: "blur(4px)", x: 40 }}
+                animate={{ opacity: 1, filter: "blur(0px)", x: 0 }}
+                exit={{ opacity: 0, filter: "blur(4px)", x: -40 }}
+                transition={{ duration: 0.3, ease: "easeOut" }}
               >
                 <h2 className="text-2xl font-semibold mb-2">{currentField.title}</h2>
                 {currentField.description && (
