@@ -564,11 +564,14 @@ export default function LeadDetail() {
                       <p className="text-sm font-medium">{formatDate(lead.created_at)}</p>
                     </div>
                   </div>
+
+                  {/* Separator */}
+                  <div className="border-t border-[#00000010] my-4" />
+
+                  {/* Onboarding Section - inline */}
+                  <OnboardingSection leadId={lead.id} leadName={lead.name} inline />
                 </CardContent>
               </Card>
-
-              {/* Onboarding Section - below Contact Info */}
-              <OnboardingSection leadId={lead.id} leadName={lead.name} />
 
               {/* Business Info */}
               <Card className="border-[#00000010] shadow-none">
