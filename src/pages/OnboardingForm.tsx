@@ -347,11 +347,12 @@ export default function OnboardingForm() {
               </motion.div>
             </AnimatePresence>
 
-            <div className={`flex ${currentStep === 0 ? "justify-center" : "justify-between"}`}>
+            <div className={`flex ${currentStep === 0 ? "justify-center" : "justify-center gap-3"}`}>
               {currentStep > 0 && (
                 <Button
                   variant="outline"
                   onClick={() => setCurrentStep((s) => s - 1)}
+                  className="h-12 md:h-10 rounded-full px-6"
                 >
                   <ArrowLeft className="h-4 w-4 mr-2" />
                   Voltar
@@ -368,7 +369,7 @@ export default function OnboardingForm() {
                     handleSubmit();
                   }}
                   disabled={isSubmitting}
-                  className={`bg-gradient-to-r from-[#F40000] to-[#A10000] hover:from-[#D40000] hover:to-[#910000] text-white ${currentStep === 0 ? "w-full max-w-xs" : ""}`}
+                  className={`bg-gradient-to-r from-[#F40000] to-[#A10000] hover:from-[#D40000] hover:to-[#910000] text-white h-12 md:h-10 rounded-full px-6 ${currentStep === 0 ? "w-full max-w-xs" : ""}`}
                 >
                   {isSubmitting ? "Enviando..." : "Enviar"}
                 </Button>
@@ -381,7 +382,7 @@ export default function OnboardingForm() {
                     }
                     setCurrentStep((s) => s + 1);
                   }}
-                  className={`bg-gradient-to-r from-[#F40000] to-[#A10000] hover:from-[#D40000] hover:to-[#910000] text-white ${currentStep === 0 ? "w-full max-w-xs" : ""}`}
+                  className={`bg-gradient-to-r from-[#F40000] to-[#A10000] hover:from-[#D40000] hover:to-[#910000] text-white h-12 md:h-10 rounded-full px-6 ${currentStep === 0 ? "w-full max-w-xs" : ""}`}
                 >
                   Próximo
                   <ArrowRight className="h-4 w-4 ml-2" />
