@@ -15,21 +15,6 @@ interface DashboardLayoutProps {
 
 type ActivePanel = 'none' | 'crm' | 'whatsapp' | 'settings';
 
-const bottomNavItems = [
-  { 
-    id: 'whatsapp' as ActivePanel, 
-    href: "/admin/whatsapp", 
-    icon: WhatsAppIcon, 
-    label: "WhatsApp",
-  },
-  { 
-    id: 'settings' as ActivePanel, 
-    href: "/admin/settings", 
-    icon: Settings, 
-    label: "Configurações",
-  },
-];
-
 // Load panel state from localStorage
 const getInitialPanelState = (): ActivePanel => {
   if (typeof window !== 'undefined') {
@@ -48,6 +33,7 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
   const [sidebarExpanded, setSidebarExpanded] = useState(false);
   const [activePanel, setActivePanel] = useState<ActivePanel>(globalActivePanel);
   const [crmSubmenuOpen, setCrmSubmenuOpen] = useState(activePanel === 'crm');
+  const [canAccessWhatsapp, setCanAccessWhatsapp] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
   const sidebarRef = useRef<HTMLElement>(null);
@@ -55,6 +41,53 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
   const isCRMActive = location.pathname.startsWith("/admin/crm") || location.pathname === "/admin";
   const isWhatsAppActive = location.pathname === "/admin/whatsapp";
   const isSettingsActive = location.pathname === "/admin/settings";
+
+  // Fetch user permissions for WhatsApp access
+  useEffect(() => {
+    const fetchPermissions = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      // Check if user is admin first
+      const { data: roleData } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', user.id)
+        .single();
+
+      if (roleData?.role === 'admin') {
+        setCanAccessWhatsapp(true);
+        return;
+      }
+
+      // Check user_permissions
+      const { data: permissions } = await supabase
+        .from('user_permissions')
+        .select('can_access_whatsapp')
+        .eq('user_id', user.id)
+        .single();
+
+      setCanAccessWhatsapp(permissions?.can_access_whatsapp ?? false);
+    };
+
+    fetchPermissions();
+  }, []);
+
+  // Build nav items based on permissions
+  const bottomNavItems = [
+    ...(canAccessWhatsapp ? [{ 
+      id: 'whatsapp' as ActivePanel, 
+      href: "/admin/whatsapp", 
+      icon: WhatsAppIcon, 
+      label: "WhatsApp",
+    }] : []),
+    { 
+      id: 'settings' as ActivePanel, 
+      href: "/admin/settings", 
+      icon: Settings, 
+      label: "Configurações",
+    },
+  ];
 
   // Sync with global state and localStorage
   useEffect(() => {
