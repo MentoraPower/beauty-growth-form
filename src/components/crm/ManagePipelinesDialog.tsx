@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { Pipeline } from "@/types/crm";
 import {
   Dialog,
@@ -74,7 +75,7 @@ function SortablePipelineItem({
 
   const style = {
     transform: CSS.Transform.toString(transform),
-    transition: transition || 'transform 150ms ease',
+    transition: isSortableDragging ? undefined : (transition ?? "transform 180ms ease"),
   };
 
   const dragging = isDragging || isSortableDragging;
@@ -368,23 +369,31 @@ export function ManagePipelinesDialog({
                 ))}
               </SortableContext>
 
-              <DragOverlay dropAnimation={{
-                duration: 200,
-                easing: 'cubic-bezier(0.18, 0.67, 0.6, 1.22)',
-              }}>
-                {activePipeline ? (
-                  <SortablePipelineItem
-                    pipeline={activePipeline}
-                    editingId={null}
-                    editingName=""
-                    setEditingId={() => {}}
-                    setEditingName={() => {}}
-                    updatePipeline={() => {}}
-                    deletePipeline={() => {}}
-                    isOverlay
-                  />
-                ) : null}
-              </DragOverlay>
+              {typeof document !== "undefined"
+                ? createPortal(
+                    <DragOverlay
+                      zIndex={99999}
+                      dropAnimation={{
+                        duration: 200,
+                        easing: "cubic-bezier(0.18, 0.67, 0.6, 1.22)",
+                      }}
+                    >
+                      {activePipeline ? (
+                        <SortablePipelineItem
+                          pipeline={activePipeline}
+                          editingId={null}
+                          editingName=""
+                          setEditingId={() => {}}
+                          setEditingName={() => {}}
+                          updatePipeline={() => {}}
+                          deletePipeline={() => {}}
+                          isOverlay
+                        />
+                      ) : null}
+                    </DragOverlay>,
+                    document.body
+                  )
+                : null}
             </DndContext>
           </div>
 
