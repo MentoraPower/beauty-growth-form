@@ -18,6 +18,8 @@ import {
   CheckSquare,
   X,
   Eye,
+  MoreVertical,
+  Hash,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -79,7 +81,7 @@ interface OnboardingFormBuilderProps {
 const FIELD_TYPES = [
   { id: "text_short", label: "Texto Curto", icon: Type },
   { id: "text_long", label: "Texto Longo", icon: AlignLeft },
-  { id: "number", label: "Número (R$)", icon: Type },
+  { id: "number", label: "Número (R$)", icon: Hash },
   { id: "dropdown", label: "Menu Suspenso", icon: ChevronDown },
   { id: "checkbox", label: "Caixa de Seleção", icon: CheckSquare },
 ];
@@ -94,6 +96,7 @@ interface SortableFieldCardProps {
   onAddOption: () => void;
   onUpdateOption: (optionIndex: number, value: string) => void;
   onRemoveOption: (optionIndex: number) => void;
+  onChangeFieldType: (newType: string) => void;
   getFieldIcon: (type: string) => any;
   getFieldLabel: (type: string) => string;
   isDragging?: boolean;
@@ -110,6 +113,7 @@ function SortableFieldCard({
   onAddOption,
   onUpdateOption,
   onRemoveOption,
+  onChangeFieldType,
   getFieldIcon,
   getFieldLabel,
   isDragging = false,
@@ -249,6 +253,32 @@ function SortableFieldCard({
                   Fechar
                 </Button>
               )}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8"
+                  >
+                    <MoreVertical className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-48">
+                  <div className="px-2 py-1.5 text-xs font-medium text-muted-foreground">
+                    Alterar tipo para:
+                  </div>
+                  {FIELD_TYPES.filter(t => t.id !== field.field_type).map((type) => (
+                    <DropdownMenuItem
+                      key={type.id}
+                      onClick={() => onChangeFieldType(type.id)}
+                      className="cursor-pointer"
+                    >
+                      <type.icon className="h-4 w-4 mr-2" />
+                      {type.label}
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
               <Button
                 variant="ghost"
                 size="icon"
@@ -433,6 +463,22 @@ export function OnboardingFormBuilder({
     updateField(fieldId, { options: newOptions });
   };
 
+  const changeFieldType = async (fieldId: string, newType: string) => {
+    const field = fields.find((f) => f.id === fieldId);
+    if (!field) return;
+
+    const needsOptions = ["dropdown", "checkbox", "radio"].includes(newType);
+    const hasOptions = field.options && field.options.length > 0;
+
+    const updates: Partial<OnboardingField> = {
+      field_type: newType,
+      options: needsOptions && !hasOptions ? ["Opção 1"] : needsOptions ? field.options : null,
+    };
+
+    await updateField(fieldId, updates);
+    toast.success("Tipo de campo alterado");
+  };
+
   const saveSequentialMode = async (newValue: boolean) => {
     setIsSequential(newValue);
     setIsSaving(true);
@@ -552,6 +598,7 @@ export function OnboardingFormBuilder({
                     onAddOption={() => addOption(field.id)}
                     onUpdateOption={(optIndex, value) => updateOption(field.id, optIndex, value)}
                     onRemoveOption={(optIndex) => removeOption(field.id, optIndex)}
+                    onChangeFieldType={(newType) => changeFieldType(field.id, newType)}
                     getFieldIcon={getFieldIcon}
                     getFieldLabel={getFieldLabel}
                     isDragging={activeId === field.id}
@@ -577,6 +624,7 @@ export function OnboardingFormBuilder({
                         onAddOption={() => {}}
                         onUpdateOption={() => {}}
                         onRemoveOption={() => {}}
+                        onChangeFieldType={() => {}}
                         getFieldIcon={getFieldIcon}
                         getFieldLabel={getFieldLabel}
                         isOverlay
