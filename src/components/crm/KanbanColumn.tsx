@@ -3,6 +3,7 @@ import { useDroppable } from "@dnd-kit/core";
 import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { Lead, Pipeline } from "@/types/crm";
 import { KanbanCard } from "./KanbanCard";
+import { InlineAddContact } from "./InlineAddContact";
 
 interface DropIndicator {
   pipelineId: string;
@@ -60,8 +61,8 @@ export const KanbanColumn = memo(function KanbanColumn({
         }`}
       >
         {/* Header */}
-        <div className="px-4 pt-4 pb-3 border-b border-black/5">
-          <div className="flex items-center gap-2">
+        <div className="px-4 pt-4 pb-2 border-b border-black/5">
+          <div className="flex items-center gap-2 mb-2">
             <h2 className="font-semibold text-sm">{pipeline.nome}</h2>
             <span className={`text-xs px-2 py-0.5 rounded-full transition-colors ${
               isTargeted 
@@ -71,6 +72,7 @@ export const KanbanColumn = memo(function KanbanColumn({
               {displayCount.toLocaleString('pt-BR')}
             </span>
           </div>
+          <InlineAddContact pipelineId={pipeline.id} subOriginId={subOriginId || null} />
         </div>
 
         {/* Cards container */}
