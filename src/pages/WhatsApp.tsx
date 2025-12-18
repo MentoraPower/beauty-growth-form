@@ -1937,6 +1937,9 @@ const WhatsApp = () => {
                                 <>
                                   {renderMessageContent(msg)}
                                   <div className="flex items-center justify-end gap-1 mt-0.5">
+                                    {msg.status === "DELETED" && (
+                                      <span className="text-[10px] text-muted-foreground/70 italic mr-1">mensagem apagada</span>
+                                    )}
                                     <span className="text-[10px] text-muted-foreground">{msg.time}</span>
                                     {msg.sent && msg.status !== "DELETED" && (
                                       msg.status === "READ" || msg.status === "PLAYED" 
@@ -1950,11 +1953,21 @@ const WhatsApp = () => {
                                   </div>
                                 </>
                               ) : msg.mediaType === "audio" ? (
-                                renderMessageContent(msg)
+                                <>
+                                  {renderMessageContent(msg)}
+                                  {msg.status === "DELETED" && (
+                                    <div className="flex justify-end mt-0.5">
+                                      <span className="text-[10px] text-muted-foreground/70 italic">mensagem apagada</span>
+                                    </div>
+                                  )}
+                                </>
                               ) : (
                                 <p className="text-sm text-foreground whitespace-pre-wrap">
                                   {formatWhatsAppText(msg.text)}
                                   <span className="inline-flex items-center gap-1 ml-2 text-[10px] text-muted-foreground align-middle">
+                                    {msg.status === "DELETED" && (
+                                      <span className="text-muted-foreground/70 italic mr-1">mensagem apagada</span>
+                                    )}
                                     {msg.time}
                                     {msg.sent && msg.status !== "DELETED" && (
                                       msg.status === "READ" || msg.status === "PLAYED" 
