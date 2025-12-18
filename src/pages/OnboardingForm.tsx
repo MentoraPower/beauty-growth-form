@@ -321,9 +321,9 @@ export default function OnboardingForm() {
         </div>
 
         <div className="flex-1 flex items-center justify-center px-6 py-8">
-          <div className="max-w-lg w-full">
+          <div className="max-w-lg w-full -mt-16 md:-mt-24">
             {/* Logo */}
-            <div className="flex justify-center mb-8">
+            <div className="flex justify-center mb-10 md:mb-12">
               <img 
                 src={scaleLogo} 
                 alt="Scale" 
@@ -399,7 +399,7 @@ export default function OnboardingForm() {
     <div className="min-h-screen bg-background py-8 px-6">
       <div className="max-w-lg mx-auto">
         {/* Logo */}
-        <div className="flex justify-center mb-8">
+        <div className="flex justify-center mb-10 md:mb-12">
           <img 
             src={scaleLogo} 
             alt="Scale" 
