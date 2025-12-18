@@ -15,6 +15,7 @@ import WhatsApp from "./pages/WhatsApp";
 import OriginOverview from "./pages/OriginOverview";
 import AdminShell from "./pages/AdminShell";
 import Settings from "./pages/Settings";
+import OnboardingForm from "./pages/OnboardingForm";
 
 const queryClient = new QueryClient();
 
@@ -28,6 +29,7 @@ const App = () => (
           <Route path="/" element={<Index />} />
           <Route path="/termos" element={<TermsOfUse />} />
           <Route path="/privacidade" element={<PrivacyPolicy />} />
+          <Route path="/form/:slug" element={<OnboardingForm />} />
           <Route path="/auth" element={<Auth />} />
 
           <Route path="/admin" element={<AdminShell />}>
