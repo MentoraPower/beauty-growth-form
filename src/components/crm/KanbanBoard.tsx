@@ -1304,7 +1304,7 @@ export function KanbanBoard() {
                 key={pipeline.id}
                 pipeline={pipeline}
                 leads={leadsByPipeline.get(pipeline.id) || []}
-                leadCount={pipelineCounts[pipeline.id]}
+                leadCount={hasActiveFilters || searchQuery ? undefined : pipelineCounts[pipeline.id]}
                 isOver={overId === pipeline.id}
                 subOriginId={subOriginId}
                 activeId={activeId}
