@@ -101,7 +101,7 @@ export function InlineAddContact({ pipelineId, subOriginId }: InlineAddContactPr
 
       toast.success("Contato adicionado!");
       resetForm();
-      queryClient.invalidateQueries({ queryKey: ["leads"] });
+      queryClient.invalidateQueries({ queryKey: ["crm-leads", subOriginId] });
       queryClient.invalidateQueries({ queryKey: ["lead-counts"] });
     } catch (error) {
       console.error("Erro ao adicionar contato:", error);
