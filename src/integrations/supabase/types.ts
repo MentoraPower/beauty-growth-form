@@ -645,7 +645,7 @@ export type Database = {
           created_at: string
           id: string
           is_active: boolean
-          pipeline_id: string
+          pipeline_id: string | null
           sub_origin_id: string | null
           target_origin_id: string | null
           target_pipeline_id: string | null
@@ -658,7 +658,7 @@ export type Database = {
           created_at?: string
           id?: string
           is_active?: boolean
-          pipeline_id: string
+          pipeline_id?: string | null
           sub_origin_id?: string | null
           target_origin_id?: string | null
           target_pipeline_id?: string | null
@@ -671,7 +671,7 @@ export type Database = {
           created_at?: string
           id?: string
           is_active?: boolean
-          pipeline_id?: string
+          pipeline_id?: string | null
           sub_origin_id?: string | null
           target_origin_id?: string | null
           target_pipeline_id?: string | null
