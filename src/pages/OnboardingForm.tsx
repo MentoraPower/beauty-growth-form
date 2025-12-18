@@ -149,7 +149,7 @@ export default function OnboardingForm() {
               e.target.style.height = e.target.scrollHeight + "px";
             }}
             placeholder="Digite sua resposta"
-            className="min-h-[56px] resize-none overflow-hidden"
+            className="min-h-[56px] resize-none overflow-hidden text-base"
             rows={1}
           />
         );
@@ -165,7 +165,7 @@ export default function OnboardingForm() {
               e.target.style.height = e.target.scrollHeight + "px";
             }}
             placeholder="Digite sua resposta"
-            className="min-h-[100px] resize-none overflow-hidden"
+            className="min-h-[100px] resize-none overflow-hidden text-base"
           />
         );
 
@@ -190,7 +190,7 @@ export default function OnboardingForm() {
               handleInputChange(field.id, value);
             }}
             placeholder="R$ 0,00"
-            className="font-mono h-14"
+            className="font-mono h-14 text-base"
           />
         );
 
