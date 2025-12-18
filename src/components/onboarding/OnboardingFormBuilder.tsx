@@ -57,6 +57,7 @@ interface OnboardingFormBuilderProps {
 const FIELD_TYPES = [
   { id: "text_short", label: "Texto Curto", icon: Type },
   { id: "text_long", label: "Texto Longo", icon: AlignLeft },
+  { id: "number", label: "Número (R$)", icon: Type },
   { id: "dropdown", label: "Menu Suspenso", icon: ChevronDown },
   { id: "checkbox", label: "Caixa de Seleção", icon: CheckSquare },
   { id: "radio", label: "Botão Rádio", icon: Circle },
