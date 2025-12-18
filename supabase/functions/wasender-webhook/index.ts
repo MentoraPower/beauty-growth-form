@@ -372,18 +372,89 @@ async function handler(req: Request): Promise<Response> {
     }
 
     // Handle message deletion (when contact deletes a message)
-    if (event === "messages.delete") {
+    // WasenderAPI sends "messages.deleted" event
+    if (event === "messages.delete" || event === "messages.deleted") {
       const deleteData = payload.data;
       const messageKey = deleteData?.key || deleteData;
       const messageId = messageKey?.id;
+      const numericMsgId = deleteData?.msgId?.toString();
       
+      console.log(`[Wasender Webhook] Message deleted event - messageId: ${messageId}, numericMsgId: ${numericMsgId}`);
+      
+      // Try both message_id formats
       if (messageId) {
-        console.log(`[Wasender Webhook] Message deleted by contact: ${messageId}`);
-        
-        await supabase
+        const { error } = await supabase
           .from("whatsapp_messages")
           .update({ status: "DELETED" })
           .eq("message_id", messageId);
+        
+        if (error) {
+          console.log(`[Wasender Webhook] Error updating by messageId: ${error.message}`);
+        } else {
+          console.log(`[Wasender Webhook] Message ${messageId} marked as DELETED`);
+        }
+      }
+      
+      // Also try numeric msgId if different
+      if (numericMsgId && numericMsgId !== messageId) {
+        const { error } = await supabase
+          .from("whatsapp_messages")
+          .update({ status: "DELETED" })
+          .eq("message_id", numericMsgId);
+        
+        if (error) {
+          console.log(`[Wasender Webhook] Error updating by numericMsgId: ${error.message}`);
+        } else {
+          console.log(`[Wasender Webhook] Message ${numericMsgId} marked as DELETED`);
+        }
+      }
+      
+      return new Response(JSON.stringify({ ok: true }), { 
+        headers: { ...corsHeaders, "Content-Type": "application/json" } 
+      });
+    }
+    
+    // Handle message reactions
+    if (event === "messages.reaction") {
+      const reactionData = payload.data;
+      const reactionKey = reactionData?.key || reactionData?.reaction?.key || {};
+      const messageId = reactionKey?.id;
+      const numericMsgId = reactionData?.msgId?.toString();
+      
+      // Get reaction emoji - can be empty string if reaction was removed
+      const reaction = reactionData?.reaction?.text || reactionData?.text || "";
+      const fromMe = reactionKey?.fromMe || false;
+      
+      console.log(`[Wasender Webhook] Reaction event - messageId: ${messageId}, reaction: "${reaction}", fromMe: ${fromMe}`);
+      
+      // Update message with reaction
+      if (messageId || numericMsgId) {
+        const targetId = messageId || numericMsgId;
+        
+        // Get current message to update reactions
+        const { data: currentMsg } = await supabase
+          .from("whatsapp_messages")
+          .select("id, reaction")
+          .eq("message_id", targetId)
+          .single();
+        
+        if (currentMsg) {
+          // If reaction is empty, it means reaction was removed
+          const newReaction = reaction || null;
+          
+          const { error } = await supabase
+            .from("whatsapp_messages")
+            .update({ reaction: newReaction })
+            .eq("id", currentMsg.id);
+          
+          if (error) {
+            console.log(`[Wasender Webhook] Error updating reaction: ${error.message}`);
+          } else {
+            console.log(`[Wasender Webhook] Message ${targetId} reaction updated to: "${newReaction || 'removed'}"`);
+          }
+        } else {
+          console.log(`[Wasender Webhook] Message not found for reaction: ${targetId}`);
+        }
       }
       
       return new Response(JSON.stringify({ ok: true }), { 
