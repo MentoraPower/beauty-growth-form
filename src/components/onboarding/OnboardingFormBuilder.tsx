@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -34,6 +35,8 @@ import {
   useSensor,
   useSensors,
   DragEndEvent,
+  DragStartEvent,
+  DragOverlay,
 } from "@dnd-kit/core";
 import {
   arrayMove,
@@ -43,6 +46,7 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
+import { cn } from "@/lib/utils";
 
 interface OnboardingForm {
   id: string;
@@ -92,6 +96,8 @@ interface SortableFieldCardProps {
   onRemoveOption: (optionIndex: number) => void;
   getFieldIcon: (type: string) => any;
   getFieldLabel: (type: string) => string;
+  isDragging?: boolean;
+  isOverlay?: boolean;
 }
 
 function SortableFieldCard({
@@ -106,6 +112,8 @@ function SortableFieldCard({
   onRemoveOption,
   getFieldIcon,
   getFieldLabel,
+  isDragging = false,
+  isOverlay = false,
 }: SortableFieldCardProps) {
   const {
     attributes,
@@ -113,42 +121,50 @@ function SortableFieldCard({
     setNodeRef,
     transform,
     transition,
-    isDragging,
-  } = useSortable({ id: field.id });
+    isDragging: isSortableDragging,
+  } = useSortable({ id: field.id, disabled: isOverlay });
 
   const style = {
     transform: CSS.Transform.toString(transform),
-    transition,
-    opacity: isDragging ? 0.5 : 1,
+    transition: undefined, // No transition for smooth movement
   };
 
+  const dragging = isDragging || isSortableDragging;
   const Icon = getFieldIcon(field.field_type);
 
   return (
     <Card
-      ref={setNodeRef}
-      style={style}
-      className={`border-[#00000010] shadow-none transition-all ${
-        isEditing ? "ring-2 ring-primary/20" : ""
-      } ${isDragging ? "z-50" : ""}`}
+      ref={isOverlay ? undefined : setNodeRef}
+      style={isOverlay ? undefined : style}
+      className={cn(
+        "shadow-none transition-none",
+        dragging && !isOverlay
+          ? "opacity-30 border-dashed border-muted-foreground/30 bg-muted/10"
+          : "border-[#00000010]",
+        isOverlay && "shadow-2xl border-border bg-background",
+        isEditing && !isOverlay && "ring-2 ring-primary/20"
+      )}
     >
       <CardContent className="p-4">
         <div className="flex items-start gap-3">
           <div className="flex items-center gap-2 pt-1">
-            <button
-              {...attributes}
-              {...listeners}
-              className="cursor-grab active:cursor-grabbing touch-none"
+            <div
+              {...(isOverlay ? {} : attributes)}
+              {...(isOverlay ? {} : listeners)}
+              className={cn(
+                "p-1 -m-1 rounded cursor-grab active:cursor-grabbing touch-none",
+                isOverlay ? "opacity-100" : "opacity-50 hover:opacity-100"
+              )}
             >
-              <GripVertical className="h-4 w-4 text-muted-foreground" />
-            </button>
+              <GripVertical className="h-4 w-4 text-muted-foreground pointer-events-none" />
+            </div>
             <div className="h-8 w-8 rounded bg-muted/50 flex items-center justify-center">
               <Icon className="h-4 w-4 text-muted-foreground" />
             </div>
           </div>
 
           <div className="flex-1 space-y-3">
-            {isEditing ? (
+            {isEditing && !isOverlay ? (
               <>
                 <Input
                   value={field.title}
@@ -211,7 +227,7 @@ function SortableFieldCard({
               </>
             ) : (
               <button
-                onClick={onEdit}
+                onClick={isOverlay ? undefined : onEdit}
                 className="text-left w-full"
               >
                 <p className="font-medium">{field.title}</p>
@@ -226,25 +242,27 @@ function SortableFieldCard({
             )}
           </div>
 
-          <div className="flex items-center gap-1">
-            {isEditing && (
+          {!isOverlay && (
+            <div className="flex items-center gap-1">
+              {isEditing && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={onClose}
+                >
+                  Fechar
+                </Button>
+              )}
               <Button
                 variant="ghost"
-                size="sm"
-                onClick={onClose}
+                size="icon"
+                className="h-8 w-8 text-destructive hover:text-destructive"
+                onClick={onDelete}
               >
-                Fechar
+                <Trash2 className="h-4 w-4" />
               </Button>
-            )}
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8 text-destructive hover:text-destructive"
-              onClick={onDelete}
-            >
-              <Trash2 className="h-4 w-4" />
-            </Button>
-          </div>
+            </div>
+          )}
         </div>
       </CardContent>
     </Card>
@@ -262,11 +280,18 @@ export function OnboardingFormBuilder({
   const [editingField, setEditingField] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [isPublishing, setIsPublishing] = useState(false);
+  const [activeId, setActiveId] = useState<string | null>(null);
+
+  // Sync local state with props
+  useEffect(() => {
+    const sorted = [...initialFields].sort((a, b) => a.ordem - b.ordem);
+    setFields(sorted);
+  }, [initialFields]);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
-        distance: 5,
+        distance: 8,
       },
     }),
     useSensor(KeyboardSensor, {
@@ -274,31 +299,51 @@ export function OnboardingFormBuilder({
     })
   );
 
+  const activeField = activeId ? fields.find(f => f.id === activeId) : null;
+
+  const handleDragStart = (event: DragStartEvent) => {
+    setActiveId(event.active.id as string);
+  };
+
   const handleDragEnd = async (event: DragEndEvent) => {
     const { active, over } = event;
+    setActiveId(null);
 
-    if (over && active.id !== over.id) {
-      const oldIndex = fields.findIndex((f) => f.id === active.id);
-      const newIndex = fields.findIndex((f) => f.id === over.id);
+    if (!over || active.id === over.id) return;
 
-      const newFields = arrayMove(fields, oldIndex, newIndex);
-      
-      // Update local state immediately
-      setFields(newFields);
+    const oldIndex = fields.findIndex((f) => f.id === active.id);
+    const newIndex = fields.findIndex((f) => f.id === over.id);
 
-      // Update ordem in database for all affected fields
+    if (oldIndex === -1 || newIndex === -1) return;
+
+    // Optimistic update
+    const newFields = arrayMove(fields, oldIndex, newIndex);
+    setFields(newFields);
+
+    // Background database update
+    try {
       const updates = newFields.map((field, index) => ({
         id: field.id,
         ordem: index,
       }));
 
-      for (const update of updates) {
-        await supabase
-          .from("lead_onboarding_fields")
-          .update({ ordem: update.ordem })
-          .eq("id", update.id);
-      }
+      await Promise.all(
+        updates.map((update) =>
+          supabase
+            .from("lead_onboarding_fields")
+            .update({ ordem: update.ordem })
+            .eq("id", update.id)
+        )
+      );
+    } catch (error) {
+      // Revert on error
+      setFields([...initialFields].sort((a, b) => a.ordem - b.ordem));
+      toast.error("Erro ao reordenar campos");
     }
+  };
+
+  const handleDragCancel = () => {
+    setActiveId(null);
   };
 
   const addField = async (fieldType: string) => {
@@ -490,7 +535,9 @@ export function OnboardingFormBuilder({
           <DndContext
             sensors={sensors}
             collisionDetection={closestCenter}
+            onDragStart={handleDragStart}
             onDragEnd={handleDragEnd}
+            onDragCancel={handleDragCancel}
           >
             <SortableContext
               items={fields.map((f) => f.id)}
@@ -511,10 +558,38 @@ export function OnboardingFormBuilder({
                     onRemoveOption={(optIndex) => removeOption(field.id, optIndex)}
                     getFieldIcon={getFieldIcon}
                     getFieldLabel={getFieldLabel}
+                    isDragging={activeId === field.id}
                   />
                 ))}
               </div>
             </SortableContext>
+
+            {typeof document !== "undefined"
+              ? createPortal(
+                  <DragOverlay
+                    zIndex={99999}
+                    dropAnimation={null}
+                  >
+                    {activeField ? (
+                      <SortableFieldCard
+                        field={activeField}
+                        isEditing={false}
+                        onEdit={() => {}}
+                        onClose={() => {}}
+                        onUpdate={() => {}}
+                        onDelete={() => {}}
+                        onAddOption={() => {}}
+                        onUpdateOption={() => {}}
+                        onRemoveOption={() => {}}
+                        getFieldIcon={getFieldIcon}
+                        getFieldLabel={getFieldLabel}
+                        isOverlay
+                      />
+                    ) : null}
+                  </DragOverlay>,
+                  document.body
+                )
+              : null}
           </DndContext>
 
           {/* Add field button */}
