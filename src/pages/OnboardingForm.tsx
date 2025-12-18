@@ -50,6 +50,11 @@ export default function OnboardingForm() {
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [currentStep, setCurrentStep] = useState(0);
   const [notFound, setNotFound] = useState(false);
+  
+  // Intro animation states
+  const [introPhase, setIntroPhase] = useState<'logo' | 'message' | 'form'>('logo');
+  const [displayedText, setDisplayedText] = useState('');
+  const welcomeMessage = "Seja bem-vinda a Scale Beauty.";
 
   useEffect(() => {
     const fetchForm = async () => {
@@ -82,6 +87,39 @@ export default function OnboardingForm() {
 
     fetchForm();
   }, [slug]);
+
+  // Intro animation sequence
+  useEffect(() => {
+    if (isLoading || notFound) return;
+
+    // Show logo for 1.5 seconds
+    const logoTimer = setTimeout(() => {
+      setIntroPhase('message');
+    }, 1500);
+
+    return () => clearTimeout(logoTimer);
+  }, [isLoading, notFound]);
+
+  // Typewriter effect for message
+  useEffect(() => {
+    if (introPhase !== 'message') return;
+
+    let currentIndex = 0;
+    const typeInterval = setInterval(() => {
+      if (currentIndex <= welcomeMessage.length) {
+        setDisplayedText(welcomeMessage.slice(0, currentIndex));
+        currentIndex++;
+      } else {
+        clearInterval(typeInterval);
+        // After message is complete, wait 1 second then show form
+        setTimeout(() => {
+          setIntroPhase('form');
+        }, 1000);
+      }
+    }, 50);
+
+    return () => clearInterval(typeInterval);
+  }, [introPhase]);
 
   const handleInputChange = (fieldId: string, value: string | string[]) => {
     setResponses((prev) => ({ ...prev, [fieldId]: value }));
@@ -268,6 +306,45 @@ export default function OnboardingForm() {
             </p>
           </CardContent>
         </Card>
+      </div>
+    );
+  }
+
+  // Intro animation - Logo phase
+  if (introPhase === 'logo') {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          exit={{ opacity: 0, scale: 0.9 }}
+          transition={{ duration: 0.5 }}
+        >
+          <img 
+            src={scaleLogo} 
+            alt="Scale" 
+            className="h-16 md:h-20 w-auto"
+          />
+        </motion.div>
+      </div>
+    );
+  }
+
+  // Intro animation - Message phase
+  if (introPhase === 'message') {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center px-8">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4 }}
+          className="text-center"
+        >
+          <h1 className="text-2xl md:text-3xl font-semibold text-foreground">
+            {displayedText}
+            <span className="animate-pulse">|</span>
+          </h1>
+        </motion.div>
       </div>
     );
   }
