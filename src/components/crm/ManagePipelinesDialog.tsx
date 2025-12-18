@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Pipeline } from "@/types/crm";
 import {
   Dialog,
@@ -20,6 +20,8 @@ import {
   useSensor,
   useSensors,
   DragEndEvent,
+  DragStartEvent,
+  DragOverlay,
 } from "@dnd-kit/core";
 import {
   arrayMove,
@@ -29,6 +31,7 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
+import { cn } from "@/lib/utils";
 
 interface ManagePipelinesDialogProps {
   open: boolean;
@@ -45,6 +48,8 @@ interface SortablePipelineItemProps {
   setEditingName: (name: string) => void;
   updatePipeline: (id: string) => void;
   deletePipeline: (id: string) => void;
+  isDragging?: boolean;
+  isOverlay?: boolean;
 }
 
 function SortablePipelineItem({
@@ -55,6 +60,8 @@ function SortablePipelineItem({
   setEditingName,
   updatePipeline,
   deletePipeline,
+  isDragging = false,
+  isOverlay = false,
 }: SortablePipelineItemProps) {
   const {
     attributes,
@@ -62,35 +69,44 @@ function SortablePipelineItem({
     setNodeRef,
     transform,
     transition,
-    isDragging,
-  } = useSortable({ id: pipeline.id });
+    isDragging: isSortableDragging,
+  } = useSortable({ id: pipeline.id, disabled: isOverlay });
 
   const style = {
     transform: CSS.Transform.toString(transform),
-    transition,
-    opacity: isDragging ? 0.5 : 1,
-    zIndex: isDragging ? 1000 : 1,
+    transition: transition || 'transform 150ms ease',
   };
+
+  const dragging = isDragging || isSortableDragging;
 
   return (
     <div
-      ref={setNodeRef}
-      style={style}
-      className="group rounded-xl bg-gradient-to-br from-background to-muted/30 border border-border/60 p-4 transition-all duration-200 hover:border-border hover:shadow-md"
+      ref={isOverlay ? undefined : setNodeRef}
+      style={isOverlay ? undefined : style}
+      className={cn(
+        "group rounded-xl border p-4 transition-all duration-150",
+        dragging && !isOverlay
+          ? "opacity-40 scale-[0.98] border-dashed border-muted-foreground/50 bg-muted/20"
+          : "bg-gradient-to-br from-background to-muted/30 border-border/60 hover:border-border hover:shadow-md",
+        isOverlay && "shadow-2xl border-primary/50 bg-background rotate-1 scale-105"
+      )}
     >
       <div className="flex items-center gap-4">
         {/* Drag Handle */}
         <div
-          {...attributes}
-          {...listeners}
-          className="opacity-40 group-hover:opacity-100 transition-opacity cursor-grab active:cursor-grabbing"
+          {...(isOverlay ? {} : attributes)}
+          {...(isOverlay ? {} : listeners)}
+          className={cn(
+            "transition-all cursor-grab active:cursor-grabbing",
+            isOverlay ? "opacity-100" : "opacity-40 group-hover:opacity-100"
+          )}
         >
           <GripVertical className="w-5 h-5 text-muted-foreground" />
         </div>
 
         {/* Content */}
         <div className="flex-1 min-w-0">
-          {editingId === pipeline.id ? (
+          {editingId === pipeline.id && !isOverlay ? (
             <div className="flex items-center gap-2">
               <Input
                 value={editingName}
@@ -128,7 +144,7 @@ function SortablePipelineItem({
         </div>
 
         {/* Actions */}
-        {editingId !== pipeline.id && (
+        {editingId !== pipeline.id && !isOverlay && (
           <div className="flex items-center gap-1">
             <Button
               size="sm"
@@ -167,11 +183,19 @@ export function ManagePipelinesDialog({
   const [newPipelineName, setNewPipelineName] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingName, setEditingName] = useState("");
+  const [activeId, setActiveId] = useState<string | null>(null);
+  const [localPipelines, setLocalPipelines] = useState<Pipeline[]>([]);
+
+  // Sync local state with props
+  useEffect(() => {
+    const sorted = [...pipelines].sort((a, b) => a.ordem - b.ordem);
+    setLocalPipelines(sorted);
+  }, [pipelines]);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
-        distance: 5,
+        distance: 3,
       },
     }),
     useSensor(KeyboardSensor, {
@@ -179,40 +203,55 @@ export function ManagePipelinesDialog({
     })
   );
 
-  const sortedPipelines = [...pipelines].sort((a, b) => a.ordem - b.ordem);
+  const activePipeline = activeId ? localPipelines.find(p => p.id === activeId) : null;
+
+  const handleDragStart = (event: DragStartEvent) => {
+    setActiveId(event.active.id as string);
+  };
 
   const handleDragEnd = async (event: DragEndEvent) => {
     const { active, over } = event;
+    setActiveId(null);
 
     if (!over || active.id === over.id) return;
 
-    const oldIndex = sortedPipelines.findIndex((p) => p.id === active.id);
-    const newIndex = sortedPipelines.findIndex((p) => p.id === over.id);
+    const oldIndex = localPipelines.findIndex((p) => p.id === active.id);
+    const newIndex = localPipelines.findIndex((p) => p.id === over.id);
 
     if (oldIndex === -1 || newIndex === -1) return;
 
-    const reorderedPipelines = arrayMove(sortedPipelines, oldIndex, newIndex);
+    // Optimistic update - immediately update local state
+    const reorderedPipelines = arrayMove(localPipelines, oldIndex, newIndex);
+    setLocalPipelines(reorderedPipelines);
 
-    // Update ordem for all affected pipelines
+    // Background database update
     try {
       const updates = reorderedPipelines.map((pipeline, index) => ({
         id: pipeline.id,
         ordem: index,
       }));
 
-      for (const update of updates) {
-        await supabase
-          .from("pipelines")
-          .update({ ordem: update.ordem })
-          .eq("id", update.id);
-      }
+      // Use Promise.all for parallel updates
+      await Promise.all(
+        updates.map((update) =>
+          supabase
+            .from("pipelines")
+            .update({ ordem: update.ordem })
+            .eq("id", update.id)
+        )
+      );
 
       queryClient.invalidateQueries({ queryKey: ["pipelines", subOriginId] });
-      toast.success("Ordem das pipelines atualizada!");
     } catch (error) {
+      // Revert on error
+      setLocalPipelines([...pipelines].sort((a, b) => a.ordem - b.ordem));
       console.error("Erro ao reordenar pipelines:", error);
       toast.error("Erro ao reordenar pipelines");
     }
+  };
+
+  const handleDragCancel = () => {
+    setActiveId(null);
   };
 
   const addPipeline = async () => {
@@ -302,17 +341,19 @@ export function ManagePipelinesDialog({
           </div>
 
           {/* Vertical Scroll Container with DnD */}
-          <div className="space-y-3 max-h-[400px] overflow-y-auto pr-2">
+          <div className="space-y-2 max-h-[400px] overflow-y-auto pr-2">
             <DndContext
               sensors={sensors}
               collisionDetection={closestCenter}
+              onDragStart={handleDragStart}
               onDragEnd={handleDragEnd}
+              onDragCancel={handleDragCancel}
             >
               <SortableContext
-                items={sortedPipelines.map((p) => p.id)}
+                items={localPipelines.map((p) => p.id)}
                 strategy={verticalListSortingStrategy}
               >
-                {sortedPipelines.map((pipeline) => (
+                {localPipelines.map((pipeline) => (
                   <SortablePipelineItem
                     key={pipeline.id}
                     pipeline={pipeline}
@@ -322,9 +363,28 @@ export function ManagePipelinesDialog({
                     setEditingName={setEditingName}
                     updatePipeline={updatePipeline}
                     deletePipeline={deletePipeline}
+                    isDragging={activeId === pipeline.id}
                   />
                 ))}
               </SortableContext>
+
+              <DragOverlay dropAnimation={{
+                duration: 200,
+                easing: 'cubic-bezier(0.18, 0.67, 0.6, 1.22)',
+              }}>
+                {activePipeline ? (
+                  <SortablePipelineItem
+                    pipeline={activePipeline}
+                    editingId={null}
+                    editingName=""
+                    setEditingId={() => {}}
+                    setEditingName={() => {}}
+                    updatePipeline={() => {}}
+                    deletePipeline={() => {}}
+                    isOverlay
+                  />
+                ) : null}
+              </DragOverlay>
             </DndContext>
           </div>
 
