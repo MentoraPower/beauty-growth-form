@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -15,8 +15,8 @@ import {
   AlignLeft,
   ChevronDown,
   CheckSquare,
-  Circle,
   X,
+  Eye,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -25,6 +25,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { OnboardingPreview } from "./OnboardingPreview";
 
 interface OnboardingForm {
   id: string;
@@ -42,7 +43,7 @@ interface OnboardingField {
   field_type: string;
   title: string;
   description: string | null;
-  options: any; // JSON from database
+  options: any;
   is_required: boolean;
   ordem: number;
 }
@@ -111,6 +112,9 @@ export function OnboardingFormBuilder({
   };
 
   const updateField = async (fieldId: string, updates: Partial<OnboardingField>) => {
+    // Update local state immediately for real-time preview
+    setFields(fields.map((f) => (f.id === fieldId ? { ...f, ...updates } : f)));
+
     const { error } = await supabase
       .from("lead_onboarding_fields")
       .update(updates)
@@ -118,10 +122,7 @@ export function OnboardingFormBuilder({
 
     if (error) {
       toast.error("Erro ao atualizar campo");
-      return;
     }
-
-    setFields(fields.map((f) => (f.id === fieldId ? { ...f, ...updates } : f)));
   };
 
   const deleteField = async (fieldId: string) => {
@@ -161,15 +162,16 @@ export function OnboardingFormBuilder({
     const field = fields.find((f) => f.id === fieldId);
     if (!field || !field.options) return;
 
-    const newOptions = field.options.filter((_, i) => i !== optionIndex);
+    const newOptions = field.options.filter((_: any, i: number) => i !== optionIndex);
     updateField(fieldId, { options: newOptions });
   };
 
-  const saveSequentialMode = async () => {
+  const saveSequentialMode = async (newValue: boolean) => {
+    setIsSequential(newValue);
     setIsSaving(true);
     const { error } = await supabase
       .from("lead_onboarding_forms")
-      .update({ is_sequential: isSequential })
+      .update({ is_sequential: newValue })
       .eq("id", form.id);
 
     if (error) {
@@ -216,9 +218,9 @@ export function OnboardingFormBuilder({
   };
 
   return (
-    <div className="space-y-4">
+    <div className="fixed inset-0 bg-background z-50 overflow-hidden">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="h-16 border-b border-[#00000010] flex items-center justify-between px-6">
         <div className="flex items-center gap-3">
           <Button variant="ghost" size="icon" onClick={onClose}>
             <ArrowLeft className="h-5 w-5" />
@@ -234,179 +236,197 @@ export function OnboardingFormBuilder({
         </Button>
       </div>
 
-      {/* Mode toggle */}
-      <Card className="border-[#00000010] shadow-none">
-        <CardContent className="p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <Label className="text-sm font-medium">Modo Sequência</Label>
-              <p className="text-xs text-muted-foreground mt-0.5">
-                {isSequential
-                  ? "Perguntas aparecem uma por vez"
-                  : "Todas as perguntas aparecem juntas"}
-              </p>
-            </div>
-            <Switch
-              checked={isSequential}
-              onCheckedChange={(checked) => {
-                setIsSequential(checked);
-                saveSequentialMode();
-              }}
-            />
-          </div>
-        </CardContent>
-      </Card>
+      {/* Split view */}
+      <div className="flex h-[calc(100vh-64px)]">
+        {/* Left side - Editor */}
+        <div className="w-1/2 border-r border-[#00000010] overflow-y-auto p-6 space-y-4">
+          {/* Mode toggle */}
+          <Card className="border-[#00000010] shadow-none">
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <Label className="text-sm font-medium">Modo Sequência</Label>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    {isSequential
+                      ? "Perguntas aparecem uma por vez"
+                      : "Todas as perguntas aparecem juntas"}
+                  </p>
+                </div>
+                <Switch
+                  checked={isSequential}
+                  onCheckedChange={saveSequentialMode}
+                />
+              </div>
+            </CardContent>
+          </Card>
 
-      {/* Fields list */}
-      <div className="space-y-3">
-        {fields.map((field, index) => {
-          const Icon = getFieldIcon(field.field_type);
-          const isEditing = editingField === field.id;
+          {/* Fields list */}
+          <div className="space-y-3">
+            {fields.map((field, index) => {
+              const Icon = getFieldIcon(field.field_type);
+              const isEditing = editingField === field.id;
 
-          return (
-            <Card
-              key={field.id}
-              className={`border-[#00000010] shadow-none transition-all ${
-                isEditing ? "ring-2 ring-primary/20" : ""
-              }`}
-            >
-              <CardContent className="p-4">
-                <div className="flex items-start gap-3">
-                  <div className="flex items-center gap-2 pt-1">
-                    <GripVertical className="h-4 w-4 text-muted-foreground cursor-grab" />
-                    <div className="h-8 w-8 rounded bg-muted/50 flex items-center justify-center">
-                      <Icon className="h-4 w-4 text-muted-foreground" />
-                    </div>
-                  </div>
+              return (
+                <Card
+                  key={field.id}
+                  className={`border-[#00000010] shadow-none transition-all ${
+                    isEditing ? "ring-2 ring-primary/20" : ""
+                  }`}
+                >
+                  <CardContent className="p-4">
+                    <div className="flex items-start gap-3">
+                      <div className="flex items-center gap-2 pt-1">
+                        <GripVertical className="h-4 w-4 text-muted-foreground cursor-grab" />
+                        <div className="h-8 w-8 rounded bg-muted/50 flex items-center justify-center">
+                          <Icon className="h-4 w-4 text-muted-foreground" />
+                        </div>
+                      </div>
 
-                  <div className="flex-1 space-y-3">
-                    {isEditing ? (
-                      <>
-                        <Input
-                          value={field.title}
-                          onChange={(e) => updateField(field.id, { title: e.target.value })}
-                          placeholder="Título da pergunta"
-                          className="font-medium"
-                        />
-                        <Textarea
-                          value={field.description || ""}
-                          onChange={(e) =>
-                            updateField(field.id, { description: e.target.value || null })
-                          }
-                          placeholder="Descrição (opcional)"
-                          className="resize-none min-h-[60px]"
-                        />
+                      <div className="flex-1 space-y-3">
+                        {isEditing ? (
+                          <>
+                            <Input
+                              value={field.title}
+                              onChange={(e) => updateField(field.id, { title: e.target.value })}
+                              placeholder="Título da pergunta"
+                              className="font-medium"
+                            />
+                            <Textarea
+                              value={field.description || ""}
+                              onChange={(e) =>
+                                updateField(field.id, { description: e.target.value || null })
+                              }
+                              placeholder="Descrição (opcional)"
+                              className="resize-none min-h-[60px]"
+                            />
 
-                        {/* Options for dropdown, checkbox, radio */}
-                        {["dropdown", "checkbox", "radio"].includes(field.field_type) && (
-                          <div className="space-y-2">
-                            <Label className="text-xs text-muted-foreground">Opções</Label>
-                            {field.options?.map((option, optIndex) => (
-                              <div key={optIndex} className="flex items-center gap-2">
-                                <Input
-                                  value={option}
-                                  onChange={(e) =>
-                                    updateOption(field.id, optIndex, e.target.value)
-                                  }
-                                  placeholder={`Opção ${optIndex + 1}`}
-                                  className="flex-1"
-                                />
+                            {/* Options for dropdown, checkbox, radio */}
+                            {["dropdown", "checkbox", "radio"].includes(field.field_type) && (
+                              <div className="space-y-2">
+                                <Label className="text-xs text-muted-foreground">Opções</Label>
+                                {field.options?.map((option: string, optIndex: number) => (
+                                  <div key={optIndex} className="flex items-center gap-2">
+                                    <Input
+                                      value={option}
+                                      onChange={(e) =>
+                                        updateOption(field.id, optIndex, e.target.value)
+                                      }
+                                      placeholder={`Opção ${optIndex + 1}`}
+                                      className="flex-1"
+                                    />
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      className="h-8 w-8"
+                                      onClick={() => removeOption(field.id, optIndex)}
+                                      disabled={(field.options?.length || 0) <= 1}
+                                    >
+                                      <X className="h-4 w-4" />
+                                    </Button>
+                                  </div>
+                                ))}
                                 <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="h-8 w-8"
-                                  onClick={() => removeOption(field.id, optIndex)}
-                                  disabled={(field.options?.length || 0) <= 1}
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => addOption(field.id)}
                                 >
-                                  <X className="h-4 w-4" />
+                                  <Plus className="h-3 w-3 mr-1" />
+                                  Adicionar opção
                                 </Button>
                               </div>
-                            ))}
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => addOption(field.id)}
-                            >
-                              <Plus className="h-3 w-3 mr-1" />
-                              Adicionar opção
-                            </Button>
-                          </div>
-                        )}
+                            )}
 
-                        <div className="flex items-center gap-2">
-                          <Switch
-                            checked={field.is_required}
-                            onCheckedChange={(checked) =>
-                              updateField(field.id, { is_required: checked })
-                            }
-                          />
-                          <Label className="text-xs">Obrigatório</Label>
-                        </div>
-                      </>
-                    ) : (
-                      <button
-                        onClick={() => setEditingField(field.id)}
-                        className="text-left w-full"
-                      >
-                        <p className="font-medium">{field.title}</p>
-                        {field.description && (
-                          <p className="text-sm text-muted-foreground">{field.description}</p>
+                            <div className="flex items-center gap-2">
+                              <Switch
+                                checked={field.is_required}
+                                onCheckedChange={(checked) =>
+                                  updateField(field.id, { is_required: checked })
+                                }
+                              />
+                              <Label className="text-xs">Obrigatório</Label>
+                            </div>
+                          </>
+                        ) : (
+                          <button
+                            onClick={() => setEditingField(field.id)}
+                            className="text-left w-full"
+                          >
+                            <p className="font-medium">{field.title}</p>
+                            {field.description && (
+                              <p className="text-sm text-muted-foreground">{field.description}</p>
+                            )}
+                            <p className="text-xs text-muted-foreground mt-1">
+                              {getFieldLabel(field.field_type)}
+                              {field.is_required && " • Obrigatório"}
+                            </p>
+                          </button>
                         )}
-                        <p className="text-xs text-muted-foreground mt-1">
-                          {getFieldLabel(field.field_type)}
-                          {field.is_required && " • Obrigatório"}
-                        </p>
-                      </button>
-                    )}
-                  </div>
+                      </div>
 
-                  <div className="flex items-center gap-1">
-                    {isEditing && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => setEditingField(null)}
-                      >
-                        Fechar
-                      </Button>
-                    )}
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8 text-destructive hover:text-destructive"
-                      onClick={() => deleteField(field.id)}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          );
-        })}
+                      <div className="flex items-center gap-1">
+                        {isEditing && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setEditingField(null)}
+                          >
+                            Fechar
+                          </Button>
+                        )}
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 text-destructive hover:text-destructive"
+                          onClick={() => deleteField(field.id)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
+
+          {/* Add field button */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button className="w-full border-2 border-dashed border-black/20 rounded-lg p-4 flex items-center justify-center gap-2 hover:border-black/40 hover:bg-muted/20 transition-colors cursor-pointer">
+                <Plus className="h-5 w-5 text-muted-foreground" />
+                <span className="text-sm text-muted-foreground font-medium">Adicionar Campo</span>
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="center" className="w-48">
+              {FIELD_TYPES.map((type) => (
+                <DropdownMenuItem
+                  key={type.id}
+                  onClick={() => addField(type.id)}
+                  className="cursor-pointer"
+                >
+                  <type.icon className="h-4 w-4 mr-2" />
+                  {type.label}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+
+        {/* Right side - Preview */}
+        <div className="w-1/2 bg-muted/30 overflow-y-auto">
+          <div className="p-6">
+            <div className="flex items-center gap-2 mb-4 text-muted-foreground">
+              <Eye className="h-4 w-4" />
+              <span className="text-sm font-medium">Pré-visualização em tempo real</span>
+            </div>
+            <OnboardingPreview
+              fields={fields}
+              isSequential={isSequential}
+              formName={form.name}
+            />
+          </div>
+        </div>
       </div>
-
-      {/* Add field button */}
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <button className="w-full border-2 border-dashed border-black/20 rounded-lg p-4 flex items-center justify-center gap-2 hover:border-black/40 hover:bg-muted/20 transition-colors cursor-pointer">
-            <Plus className="h-5 w-5 text-muted-foreground" />
-            <span className="text-sm text-muted-foreground font-medium">Adicionar Campo</span>
-          </button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="center" className="w-48">
-          {FIELD_TYPES.map((type) => (
-            <DropdownMenuItem
-              key={type.id}
-              onClick={() => addField(type.id)}
-              className="cursor-pointer"
-            >
-              <type.icon className="h-4 w-4 mr-2" />
-              {type.label}
-            </DropdownMenuItem>
-          ))}
-        </DropdownMenuContent>
-      </DropdownMenu>
     </div>
   );
 }
