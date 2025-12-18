@@ -138,7 +138,6 @@ export function OnboardingSection({ leadId, leadName }: OnboardingSectionProps) 
       number: "Número (R$)",
       dropdown: "Menu Suspenso",
       checkbox: "Caixa de Seleção",
-      radio: "Botão Rádio",
     };
     return labels[type] || type;
   };

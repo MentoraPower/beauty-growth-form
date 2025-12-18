@@ -208,13 +208,16 @@ export default function OnboardingForm() {
             value={(responses[field.id] as string) || ""}
             onValueChange={(value) => handleInputChange(field.id, value)}
           >
-            <SelectTrigger>
+            <SelectTrigger className="h-14 text-base">
               <SelectValue placeholder="Selecione uma opção" />
             </SelectTrigger>
             <SelectContent>
               {field.options?.map((option, index) => (
-                <SelectItem key={index} value={option}>
-                  {option}
+                <SelectItem key={index} value={option} className="text-base py-3">
+                  <div className="flex items-center gap-3">
+                    <div className="w-1 h-5 bg-gradient-to-b from-[#F40000] to-[#A10000] rounded-full" />
+                    {option}
+                  </div>
                 </SelectItem>
               ))}
             </SelectContent>
@@ -222,33 +225,20 @@ export default function OnboardingForm() {
         );
 
       case "radio":
-        return (
-          <RadioGroup
-            value={(responses[field.id] as string) || ""}
-            onValueChange={(value) => handleInputChange(field.id, value)}
-          >
-            {field.options?.map((option, index) => (
-              <div key={index} className="flex items-center space-x-2">
-                <RadioGroupItem value={option} id={`${field.id}-${index}`} />
-                <Label htmlFor={`${field.id}-${index}`}>{option}</Label>
-              </div>
-            ))}
-          </RadioGroup>
-        );
-
       case "checkbox":
         return (
-          <div className="space-y-2">
+          <div className="space-y-3">
             {field.options?.map((option, index) => (
-              <div key={index} className="flex items-center space-x-2">
+              <div key={index} className="flex items-center space-x-3">
                 <Checkbox
                   id={`${field.id}-${index}`}
                   checked={((responses[field.id] as string[]) || []).includes(option)}
                   onCheckedChange={(checked) =>
                     handleCheckboxChange(field.id, option, checked as boolean)
                   }
+                  className="h-6 w-6"
                 />
-                <Label htmlFor={`${field.id}-${index}`}>{option}</Label>
+                <Label htmlFor={`${field.id}-${index}`} className="text-base">{option}</Label>
               </div>
             ))}
           </div>

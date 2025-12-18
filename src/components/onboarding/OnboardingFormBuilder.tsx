@@ -60,7 +60,6 @@ const FIELD_TYPES = [
   { id: "number", label: "Número (R$)", icon: Type },
   { id: "dropdown", label: "Menu Suspenso", icon: ChevronDown },
   { id: "checkbox", label: "Caixa de Seleção", icon: CheckSquare },
-  { id: "radio", label: "Botão Rádio", icon: Circle },
 ];
 
 export function OnboardingFormBuilder({
