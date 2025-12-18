@@ -1079,7 +1079,10 @@ export function AutomationsDropdown({
                 </button>
                 <div className="flex-1" />
                 <Button
-                  onClick={() => setIsCreatingAutomation(true)}
+                  onClick={() => {
+                    setIsCreatingAutomation(true);
+                    setSelectedTrigger("lead_moved"); // Auto-set trigger type
+                  }}
                   className="bg-foreground hover:bg-foreground/90 text-background"
                   disabled={isCreatingAutomation}
                 >
@@ -1266,7 +1269,10 @@ export function AutomationsDropdown({
                     Configure automações para mover leads automaticamente entre pipelines e origens.
                   </p>
                   <Button
-                    onClick={() => setIsCreatingAutomation(true)}
+                    onClick={() => {
+                      setIsCreatingAutomation(true);
+                      setSelectedTrigger("lead_moved");
+                    }}
                     className="bg-foreground hover:bg-foreground/90 text-background"
                   >
                     Criar automação
