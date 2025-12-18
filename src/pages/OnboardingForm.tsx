@@ -54,7 +54,8 @@ export default function OnboardingForm() {
   // Intro animation states
   const [introPhase, setIntroPhase] = useState<'logo' | 'message' | 'form'>('logo');
   const [displayedText, setDisplayedText] = useState('');
-  const welcomeMessage = "Seja bem-vinda a Scale Beauty.";
+  const welcomeMessage = "Seja bem-vinda a SCALE BEAUTY.";
+  const gradientStartIndex = 17; // "Seja bem-vinda a " length
 
   useEffect(() => {
     const fetchForm = async () => {
@@ -338,9 +339,21 @@ export default function OnboardingForm() {
           transition={{ duration: 0.4 }}
           className="text-center"
         >
-          <h1 className="text-2xl md:text-3xl font-semibold text-foreground">
-            {displayedText}
-            <span className="animate-pulse">|</span>
+          <h1 className="text-lg md:text-3xl font-semibold text-foreground">
+            {displayedText.length <= gradientStartIndex ? (
+              <>
+                {displayedText}
+                <span className="animate-pulse">|</span>
+              </>
+            ) : (
+              <>
+                {displayedText.slice(0, gradientStartIndex)}
+                <span className="bg-gradient-to-r from-[#F40000] to-[#A10000] bg-clip-text text-transparent">
+                  {displayedText.slice(gradientStartIndex)}
+                </span>
+                <span className="animate-pulse">|</span>
+              </>
+            )}
           </h1>
         </motion.div>
       </div>
