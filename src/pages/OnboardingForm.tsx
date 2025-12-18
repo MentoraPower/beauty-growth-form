@@ -379,15 +379,15 @@ export default function OnboardingForm() {
 
     return (
       <div className="min-h-screen bg-background flex flex-col">
-        {/* Progress bar */}
-        <div className="w-full h-1 bg-muted">
+        {/* Progress bar - fixed at top */}
+        <div className="fixed top-0 left-0 right-0 z-50 w-full h-2 bg-muted">
           <div
             className="h-full bg-gradient-to-r from-[#F40000] to-[#A10000] transition-all duration-300"
             style={{ width: `${((currentStep + 1) / fields.length) * 100}%` }}
           />
         </div>
 
-        <div className="flex-1 flex items-center justify-center px-8 md:px-6 py-8">
+        <div className="flex-1 flex items-center justify-center px-8 md:px-6 py-8 pt-10">
           <div className="max-w-lg w-full -mt-16 md:-mt-24">
             {/* Logo */}
             <div className="flex justify-center mb-10 md:mb-12">
@@ -401,10 +401,10 @@ export default function OnboardingForm() {
             <AnimatePresence mode="wait">
               <motion.div
                 key={currentStep}
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -20 }}
-                transition={{ duration: 0.2 }}
+                initial={{ opacity: 0, filter: "blur(10px)", x: 20 }}
+                animate={{ opacity: 1, filter: "blur(0px)", x: 0 }}
+                exit={{ opacity: 0, filter: "blur(10px)", x: -20 }}
+                transition={{ duration: 0.25 }}
               >
                 <h2 className="text-2xl font-semibold mb-2">{currentField.title}</h2>
                 {currentField.description && (
@@ -419,7 +419,7 @@ export default function OnboardingForm() {
                 <Button
                   variant="outline"
                   onClick={() => setCurrentStep((s) => s - 1)}
-                  className="h-12 md:h-10 rounded-full px-6"
+                  className="h-14 md:h-10 rounded-full px-6"
                 >
                   <ArrowLeft className="h-4 w-4 mr-2" />
                   Voltar
@@ -436,7 +436,7 @@ export default function OnboardingForm() {
                     handleSubmit();
                   }}
                   disabled={isSubmitting}
-                  className={`bg-gradient-to-r from-[#F40000] to-[#A10000] hover:from-[#D40000] hover:to-[#910000] text-white h-12 md:h-10 rounded-full px-6 ${currentStep === 0 ? "w-full max-w-xs" : ""}`}
+                  className={`bg-gradient-to-r from-[#F40000] to-[#A10000] hover:from-[#D40000] hover:to-[#910000] text-white h-14 md:h-10 rounded-full px-6 ${currentStep === 0 ? "w-full max-w-xs" : ""}`}
                 >
                   {isSubmitting ? "Enviando..." : "Enviar"}
                 </Button>
@@ -449,7 +449,7 @@ export default function OnboardingForm() {
                     }
                     setCurrentStep((s) => s + 1);
                   }}
-                  className={`bg-gradient-to-r from-[#F40000] to-[#A10000] hover:from-[#D40000] hover:to-[#910000] text-white h-12 md:h-10 rounded-full px-6 ${currentStep === 0 ? "w-full max-w-xs" : ""}`}
+                  className={`bg-gradient-to-r from-[#F40000] to-[#A10000] hover:from-[#D40000] hover:to-[#910000] text-white h-14 md:h-10 rounded-full px-6 ${currentStep === 0 ? "w-full max-w-xs" : ""}`}
                 >
                   Próximo
                   <ArrowRight className="h-4 w-4 ml-2" />
