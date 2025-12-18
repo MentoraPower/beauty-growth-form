@@ -86,9 +86,9 @@ function SortablePipelineItem({
       className={cn(
         "group rounded-xl border p-4 transition-all duration-150",
         dragging && !isOverlay
-          ? "opacity-40 scale-[0.98] border-dashed border-muted-foreground/50 bg-muted/20"
+          ? "opacity-30 scale-[0.98] border-dashed border-muted-foreground/30 bg-muted/10"
           : "bg-gradient-to-br from-background to-muted/30 border-border/60 hover:border-border hover:shadow-md",
-        isOverlay && "shadow-2xl border-primary/50 bg-background rotate-1 scale-105"
+        isOverlay && "shadow-2xl border-border bg-background scale-[1.02]"
       )}
     >
       <div className="flex items-center gap-4">
@@ -97,11 +97,11 @@ function SortablePipelineItem({
           {...(isOverlay ? {} : attributes)}
           {...(isOverlay ? {} : listeners)}
           className={cn(
-            "transition-all cursor-grab active:cursor-grabbing",
-            isOverlay ? "opacity-100" : "opacity-40 group-hover:opacity-100"
+            "p-1 -m-1 rounded transition-all cursor-grab active:cursor-grabbing touch-none",
+            isOverlay ? "opacity-100" : "opacity-50 group-hover:opacity-100 hover:bg-muted"
           )}
         >
-          <GripVertical className="w-5 h-5 text-muted-foreground" />
+          <GripVertical className="w-5 h-5 text-muted-foreground pointer-events-none" />
         </div>
 
         {/* Content */}
@@ -195,7 +195,7 @@ export function ManagePipelinesDialog({
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
-        distance: 3,
+        distance: 8,
       },
     }),
     useSensor(KeyboardSensor, {
