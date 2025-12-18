@@ -246,8 +246,6 @@ export function OnboardingPreview({ fields, isSequential, formName }: Onboarding
           <img src={scaleLogo} alt="Scale" className="h-12 w-auto" />
         </div>
 
-        <h1 className="text-2xl font-semibold mb-6 text-center">{formName}</h1>
-
         {/* Fields */}
         <div className="space-y-6">
           {fields.map((field) => (
