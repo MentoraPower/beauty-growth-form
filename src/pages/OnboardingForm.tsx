@@ -555,7 +555,6 @@ export default function OnboardingForm() {
               <CardContent className="p-6">
                 <Label className="text-base font-medium">
                   {field.title}
-                  {field.is_required && <span className="text-destructive ml-1">*</span>}
                 </Label>
                 {field.description && (
                   <p className="text-sm text-muted-foreground mb-3">{field.description}</p>
