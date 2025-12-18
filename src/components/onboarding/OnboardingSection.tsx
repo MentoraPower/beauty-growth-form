@@ -193,7 +193,7 @@ export function OnboardingSection({ leadId, leadName, inline = false }: Onboardi
               <MoreVertical className="h-4 w-4" />
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
+          <DropdownMenuContent align="end" className="min-w-[180px]">
             {!form ? (
               <DropdownMenuItem onClick={handleCreateForm} className="cursor-pointer">
                 <Plus className="h-4 w-4 mr-2" />
