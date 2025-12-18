@@ -17,6 +17,7 @@ import { LeadTagsManager } from "@/components/crm/LeadTagsManager";
 import { LeadTrackingTimeline } from "@/components/crm/LeadTrackingTimeline";
 import { LeadAnalysis } from "@/components/crm/LeadAnalysis";
 import { MoveLeadDropdown } from "@/components/crm/MoveLeadDropdown";
+import { EditableField } from "@/components/crm/EditableField";
 import { OnboardingSection, OnboardingBuilderData } from "@/components/onboarding/OnboardingSection";
 import { OnboardingFormBuilder } from "@/components/onboarding/OnboardingFormBuilder";
 import {
@@ -196,6 +197,23 @@ export default function LeadDetail() {
 
     toast.success("Lead excluído com sucesso");
     navigate(buildCrmUrl());
+  };
+
+  const updateLeadField = async (field: string, value: string) => {
+    if (!lead) return;
+    
+    const { error } = await supabase
+      .from("leads")
+      .update({ [field]: value })
+      .eq("id", lead.id);
+
+    if (error) {
+      toast.error("Erro ao atualizar campo");
+      throw error;
+    }
+
+    setLead({ ...lead, [field]: value });
+    toast.success("Campo atualizado");
   };
 
   const formatCurrency = (value: number | null | undefined) => {
@@ -516,60 +534,65 @@ export default function LeadDetail() {
                   
                   
                   <div className="flex items-center gap-3 p-3 bg-muted/30 border border-[#00000010] rounded-lg">
-                    <div className="h-10 w-10 rounded-full border border-black/10 flex items-center justify-center">
+                    <div className="h-10 w-10 rounded-full border border-black/10 flex items-center justify-center flex-shrink-0">
                       <Mail className="h-5 w-5 text-neutral-600" />
                     </div>
-                    <div>
+                    <div className="flex-1 min-w-0">
                       <p className="text-xs text-muted-foreground">Email</p>
-                      {isIncompleteEmail(lead.email) ? (
-                        <span className="text-sm font-medium text-muted-foreground italic">incompleto</span>
-                      ) : (
-                        <a href={`mailto:${lead.email}`} className="text-sm font-medium hover:underline">
-                          {lead.email}
-                        </a>
-                      )}
+                      <EditableField
+                        value={isIncompleteEmail(lead.email) ? "" : lead.email}
+                        onSave={(value) => updateLeadField("email", value)}
+                        placeholder="Digite o email"
+                        displayValue={
+                          isIncompleteEmail(lead.email) ? (
+                            <span className="text-sm font-medium text-muted-foreground italic">incompleto</span>
+                          ) : (
+                            <span className="text-sm font-medium">{lead.email}</span>
+                          )
+                        }
+                      />
                     </div>
                   </div>
 
                   <div className="flex items-center gap-3 p-3 bg-muted/30 border border-[#00000010] rounded-lg">
-                    <div className="h-10 w-10 rounded-full border border-black/10 flex items-center justify-center">
+                    <div className="h-10 w-10 rounded-full border border-black/10 flex items-center justify-center flex-shrink-0">
                       <WhatsApp className="h-5 w-5 text-neutral-600" />
                     </div>
-                    <div>
+                    <div className="flex-1 min-w-0">
                       <p className="text-xs text-muted-foreground">WhatsApp</p>
-                      {!lead.whatsapp || lead.whatsapp === "" ? (
-                        <span className="text-sm font-medium text-muted-foreground italic">incompleto</span>
-                      ) : (
-                        <a 
-                          href={`https://wa.me/${lead.country_code.replace("+", "")}${lead.whatsapp}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-sm font-medium hover:underline"
-                        >
-                          {lead.country_code} {lead.whatsapp}
-                        </a>
-                      )}
+                      <EditableField
+                        value={lead.whatsapp || ""}
+                        onSave={(value) => updateLeadField("whatsapp", value)}
+                        placeholder="Digite o WhatsApp"
+                        displayValue={
+                          !lead.whatsapp || lead.whatsapp === "" ? (
+                            <span className="text-sm font-medium text-muted-foreground italic">incompleto</span>
+                          ) : (
+                            <span className="text-sm font-medium">{lead.country_code} {lead.whatsapp}</span>
+                          )
+                        }
+                      />
                     </div>
                   </div>
 
                   <div className="flex items-center gap-3 p-3 bg-muted/30 border border-[#00000010] rounded-lg">
-                    <div className="h-10 w-10 rounded-full border border-black/10 flex items-center justify-center">
+                    <div className="h-10 w-10 rounded-full border border-black/10 flex items-center justify-center flex-shrink-0">
                       <Instagram className="h-5 w-5 text-neutral-600" />
                     </div>
-                    <div>
+                    <div className="flex-1 min-w-0">
                       <p className="text-xs text-muted-foreground">Instagram</p>
-                      {!lead.instagram || lead.instagram === "" ? (
-                        <span className="text-sm font-medium text-muted-foreground italic">incompleto</span>
-                      ) : (
-                        <a 
-                          href={`https://instagram.com/${lead.instagram}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-sm font-medium hover:underline"
-                        >
-                          @{lead.instagram}
-                        </a>
-                      )}
+                      <EditableField
+                        value={lead.instagram || ""}
+                        onSave={(value) => updateLeadField("instagram", value)}
+                        placeholder="Digite o Instagram"
+                        displayValue={
+                          !lead.instagram || lead.instagram === "" ? (
+                            <span className="text-sm font-medium text-muted-foreground italic">incompleto</span>
+                          ) : (
+                            <span className="text-sm font-medium">@{lead.instagram}</span>
+                          )
+                        }
+                      />
                     </div>
                   </div>
 
