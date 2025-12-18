@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useMemo } from "react";
-import { Zap, Plus, Trash2, ArrowRight, Webhook, FolderSync, Copy, Check, Send, X, Settings, Mail, Loader2, Workflow } from "lucide-react";
+import { Zap, Plus, Trash2, ArrowRight, Webhook, FolderSync, Copy, Check, Send, X, Settings, Mail, Loader2, Workflow, ClipboardCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -43,6 +43,7 @@ interface Automation {
   target_pipeline_id: string | null;
   is_active: boolean;
   sub_origin_id: string | null;
+  trigger_type: string;
 }
 
 interface CrmWebhook {
@@ -121,6 +122,7 @@ export function AutomationsDropdown({
   const [isCreatingAutomation, setIsCreatingAutomation] = useState(false);
   const [editingAutomationId, setEditingAutomationId] = useState<string | null>(null);
   const [selectedTrigger, setSelectedTrigger] = useState<string>("");
+  const [selectedTriggerType, setSelectedTriggerType] = useState<string>("lead_moved");
   const [selectedTriggerPipeline, setSelectedTriggerPipeline] = useState<string>("");
   const [selectedActionOrigin, setSelectedActionOrigin] = useState<string>("");
   const [selectedActionSubOrigin, setSelectedActionSubOrigin] = useState<string>("");
@@ -294,20 +296,22 @@ export function AutomationsDropdown({
   };
 
   const createAutomation = async () => {
-    if (!selectedTrigger || !selectedTriggerPipeline) {
-      toast.error("Selecione o gatilho e a pipeline");
+    // For lead_moved, require pipeline; for onboarding_completed, pipeline is optional
+    if (selectedTriggerType === "lead_moved" && !selectedTriggerPipeline) {
+      toast.error("Selecione a pipeline de gatilho");
       return;
     }
 
     try {
       const { error } = await supabase.from("pipeline_automations").insert({
-        pipeline_id: selectedTriggerPipeline,
+        pipeline_id: selectedTriggerPipeline || null,
         target_type: 'sub_origin',
         target_origin_id: selectedActionOrigin || null,
         target_sub_origin_id: selectedActionSubOrigin || null,
         target_pipeline_id: selectedActionPipeline || null,
         is_active: true,
         sub_origin_id: subOriginId,
+        trigger_type: selectedTriggerType,
       });
 
       if (error) throw error;
@@ -329,10 +333,11 @@ export function AutomationsDropdown({
       const { error } = await supabase
         .from("pipeline_automations")
         .update({
-          pipeline_id: selectedTriggerPipeline,
+          pipeline_id: selectedTriggerPipeline || null,
           target_origin_id: selectedActionOrigin || null,
           target_sub_origin_id: selectedActionSubOrigin || null,
           target_pipeline_id: selectedActionPipeline || null,
+          trigger_type: selectedTriggerType,
         })
         .eq("id", editingAutomationId);
 
@@ -351,8 +356,9 @@ export function AutomationsDropdown({
   const startEditingAutomation = (automation: Automation) => {
     setEditingAutomationId(automation.id);
     setIsCreatingAutomation(true);
+    setSelectedTriggerType(automation.trigger_type || "lead_moved");
     setSelectedTrigger("lead_moved");
-    setSelectedTriggerPipeline(automation.pipeline_id);
+    setSelectedTriggerPipeline(automation.pipeline_id || "");
     setSelectedActionOrigin(automation.target_origin_id || "");
     setSelectedActionSubOrigin(automation.target_sub_origin_id || "");
     setSelectedActionPipeline(automation.target_pipeline_id || "");
@@ -362,6 +368,7 @@ export function AutomationsDropdown({
     setIsCreatingAutomation(false);
     setEditingAutomationId(null);
     setSelectedTrigger("");
+    setSelectedTriggerType("lead_moved");
     setSelectedTriggerPipeline("");
     setSelectedActionOrigin("");
     setSelectedActionSubOrigin("");
@@ -1138,19 +1145,46 @@ export function AutomationsDropdown({
                           <span className="text-foreground text-sm font-medium">Quando</span>
                         </div>
                         
-                        <div className="p-3">
-                          <Select value={selectedTriggerPipeline} onValueChange={setSelectedTriggerPipeline}>
+                        <div className="p-3 space-y-2">
+                          {/* Trigger type selector */}
+                          <Select value={selectedTriggerType} onValueChange={(v) => {
+                            setSelectedTriggerType(v);
+                            setSelectedTriggerPipeline("");
+                          }}>
                             <SelectTrigger className="h-9 text-sm">
-                              <SelectValue placeholder="Lead movido para..." />
+                              <SelectValue placeholder="Selecione o gatilho..." />
                             </SelectTrigger>
                             <SelectContent>
-                              {pipelines.map((pipeline) => (
-                                <SelectItem key={pipeline.id} value={pipeline.id}>
-                                  Lead movido para {pipeline.nome}
-                                </SelectItem>
-                              ))}
+                              <SelectItem value="lead_moved">
+                                <div className="flex items-center gap-2">
+                                  <ArrowRight className="h-4 w-4" />
+                                  Lead movido para pipeline
+                                </div>
+                              </SelectItem>
+                              <SelectItem value="onboarding_completed">
+                                <div className="flex items-center gap-2">
+                                  <ClipboardCheck className="h-4 w-4" />
+                                  Onboarding preenchido
+                                </div>
+                              </SelectItem>
                             </SelectContent>
                           </Select>
+
+                          {/* Pipeline selector - only for lead_moved */}
+                          {selectedTriggerType === "lead_moved" && (
+                            <Select value={selectedTriggerPipeline} onValueChange={setSelectedTriggerPipeline}>
+                              <SelectTrigger className="h-9 text-sm">
+                                <SelectValue placeholder="Selecione a pipeline..." />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {pipelines.map((pipeline) => (
+                                  <SelectItem key={pipeline.id} value={pipeline.id}>
+                                    {pipeline.nome}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -1235,9 +1269,11 @@ export function AutomationsDropdown({
                     <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
                       <span>Quando</span>
                       <span className="px-1.5 py-0.5 bg-muted rounded text-foreground text-xs">
-                        {selectedTriggerPipeline 
-                          ? getPipelineName(selectedTriggerPipeline)
-                          : "..."}
+                        {selectedTriggerType === "onboarding_completed" 
+                          ? "Onboarding preenchido"
+                          : selectedTriggerPipeline 
+                            ? `Movido para ${getPipelineName(selectedTriggerPipeline)}`
+                            : "..."}
                       </span>
                       <ArrowRight className="w-3 h-3" />
                       <span className="px-1.5 py-0.5 bg-muted rounded text-foreground text-xs">
@@ -1250,7 +1286,7 @@ export function AutomationsDropdown({
                       size="sm"
                       onClick={editingAutomationId ? saveAutomationEdit : createAutomation}
                       className="h-8 bg-foreground hover:bg-foreground/90 text-background text-xs"
-                      disabled={!selectedTriggerPipeline}
+                      disabled={selectedTriggerType === "lead_moved" && !selectedTriggerPipeline}
                     >
                       {editingAutomationId ? "Salvar" : "Criar"}
                     </Button>
@@ -1308,7 +1344,11 @@ export function AutomationsDropdown({
                           </button>
                           <div>
                             <div className="flex items-center gap-2 text-sm text-foreground">
-                              <span className="font-medium">{getPipelineName(automation.pipeline_id)}</span>
+                              <span className="font-medium">
+                                {automation.trigger_type === "onboarding_completed" 
+                                  ? "Onboarding preenchido"
+                                  : getPipelineName(automation.pipeline_id)}
+                              </span>
                               <ArrowRight className="w-4 h-4 text-muted-foreground" />
                               <span className="text-muted-foreground">
                                 {getOriginName(automation.target_origin_id)} / {getSubOriginName(automation.target_sub_origin_id)} / {getPipelineName(automation.target_pipeline_id, allPipelines)}

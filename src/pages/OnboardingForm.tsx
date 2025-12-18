@@ -172,6 +172,59 @@ export default function OnboardingForm() {
       return;
     }
 
+    // Check for onboarding_completed automations and move lead
+    try {
+      // Get lead info to find sub_origin_id
+      const { data: leadData } = await supabase
+        .from("leads")
+        .select("id, sub_origin_id, pipeline_id")
+        .eq("id", form.lead_id)
+        .single();
+
+      if (leadData?.sub_origin_id) {
+        // Find active automations for this sub_origin with onboarding_completed trigger
+        const { data: automations } = await supabase
+          .from("pipeline_automations")
+          .select("*")
+          .eq("sub_origin_id", leadData.sub_origin_id)
+          .eq("trigger_type", "onboarding_completed")
+          .eq("is_active", true);
+
+        if (automations && automations.length > 0) {
+          // Use the first matching automation
+          const automation = automations[0];
+          
+          // Move lead to the target
+          const updateData: any = {};
+          if (automation.target_sub_origin_id) {
+            updateData.sub_origin_id = automation.target_sub_origin_id;
+          }
+          if (automation.target_pipeline_id) {
+            updateData.pipeline_id = automation.target_pipeline_id;
+          }
+
+          if (Object.keys(updateData).length > 0) {
+            await supabase
+              .from("leads")
+              .update(updateData)
+              .eq("id", form.lead_id);
+
+            // Add tracking entry
+            await supabase.from("lead_tracking").insert({
+              lead_id: form.lead_id,
+              tipo: "automacao",
+              titulo: "Automação: Onboarding preenchido",
+              descricao: "Lead movido automaticamente após preenchimento do onboarding",
+              origem: "onboarding",
+            });
+          }
+        }
+      }
+    } catch (autoError) {
+      console.error("Error processing automation:", autoError);
+      // Don't fail the submission if automation fails
+    }
+
     setIsSubmitted(true);
     setIsSubmitting(false);
   };
