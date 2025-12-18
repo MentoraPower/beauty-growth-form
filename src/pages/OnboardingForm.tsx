@@ -343,17 +343,28 @@ export default function OnboardingForm() {
 
               {isLastStep ? (
                 <Button
-                  onClick={handleSubmit}
-                  disabled={!canProceed || isSubmitting}
-                  className={`bg-gradient-to-r from-[#F40000] to-[#A10000] ${currentStep === 0 ? "w-full max-w-xs" : ""}`}
+                  onClick={() => {
+                    if (!canProceed) {
+                      toast.error("Preencha o campo para continuar");
+                      return;
+                    }
+                    handleSubmit();
+                  }}
+                  disabled={isSubmitting}
+                  className={`bg-gradient-to-r from-[#F40000] to-[#A10000] hover:from-[#D40000] hover:to-[#910000] text-white ${currentStep === 0 ? "w-full max-w-xs" : ""}`}
                 >
                   {isSubmitting ? "Enviando..." : "Enviar"}
                 </Button>
               ) : (
                 <Button
-                  onClick={() => setCurrentStep((s) => s + 1)}
-                  disabled={!canProceed}
-                  className={currentStep === 0 ? "w-full max-w-xs" : ""}
+                  onClick={() => {
+                    if (!canProceed) {
+                      toast.error("Preencha o campo para continuar");
+                      return;
+                    }
+                    setCurrentStep((s) => s + 1);
+                  }}
+                  className={`bg-gradient-to-r from-[#F40000] to-[#A10000] hover:from-[#D40000] hover:to-[#910000] text-white ${currentStep === 0 ? "w-full max-w-xs" : ""}`}
                 >
                   Próximo
                   <ArrowRight className="h-4 w-4 ml-2" />
