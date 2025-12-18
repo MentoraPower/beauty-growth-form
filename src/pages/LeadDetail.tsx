@@ -7,7 +7,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Mail, Calendar, Building2, Clock, DollarSign, Users, Briefcase, MoreVertical, Trash2, User, MessageSquare, ArrowRightLeft } from "lucide-react";
+import { Mail, Calendar, Building2, Clock, DollarSign, Users, Briefcase, MoreVertical, Trash2, User, MessageSquare, ArrowRightLeft, ClipboardList } from "lucide-react";
 import Instagram from "@/components/icons/Instagram";
 import WhatsApp from "@/components/icons/WhatsApp";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -17,6 +17,7 @@ import { LeadTagsManager } from "@/components/crm/LeadTagsManager";
 import { LeadTrackingTimeline } from "@/components/crm/LeadTrackingTimeline";
 import { LeadAnalysis } from "@/components/crm/LeadAnalysis";
 import { MoveLeadDropdown } from "@/components/crm/MoveLeadDropdown";
+import { OnboardingSection } from "@/components/onboarding/OnboardingSection";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -699,6 +700,9 @@ export default function LeadDetail() {
                 </CardContent>
               </Card>
                 </div>
+
+                {/* Onboarding Section */}
+                <OnboardingSection leadId={lead.id} leadName={lead.name} />
               </motion.div>
             )}
 
