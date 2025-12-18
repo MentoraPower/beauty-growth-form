@@ -218,7 +218,7 @@ export function OnboardingFormBuilder({
   };
 
   return (
-    <div className="relative w-full h-[85vh] overflow-hidden rounded-xl border border-[#00000010] bg-background">
+    <div className="relative w-full h-full overflow-hidden rounded-xl border border-[#00000010] bg-background">
       {/* Header */}
       <div className="h-16 border-b border-[#00000010] flex items-center justify-between px-6">
         <div className="flex items-center gap-3">
@@ -236,10 +236,10 @@ export function OnboardingFormBuilder({
         </Button>
       </div>
 
-      {/* Split view */}
-      <div className="flex h-[calc(85vh-64px)]"> 
+      {/* Content */}
+      <div className="flex h-[calc(100%-64px)]"> 
         {/* Left side - Editor */}
-        <div className="flex-1 border-r border-[#00000010] overflow-y-auto p-6 space-y-4">
+        <div className="flex-1 overflow-y-auto p-6 space-y-4">
           {/* Mode toggle */}
           <Card className="border-[#00000010] shadow-none">
             <CardContent className="p-4">
@@ -412,9 +412,19 @@ export function OnboardingFormBuilder({
           </DropdownMenu>
         </div>
 
-        {/* Right side - Preview (hidden to avoid overlapping sidebar/submenu) */}
-        <div className="hidden"> 
-          {/* preview intentionally hidden */}
+        {/* Right side - Preview */}
+        <div className="w-[400px] bg-muted/30 overflow-y-auto border-l border-[#00000010] hidden xl:block">
+          <div className="p-6">
+            <div className="flex items-center gap-2 mb-4 text-muted-foreground">
+              <Eye className="h-4 w-4" />
+              <span className="text-sm font-medium">Pré-visualização em tempo real</span>
+            </div>
+            <OnboardingPreview
+              fields={fields}
+              isSequential={isSequential}
+              formName={form.name}
+            />
+          </div>
         </div>
       </div>
     </div>

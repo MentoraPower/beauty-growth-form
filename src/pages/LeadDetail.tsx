@@ -17,7 +17,8 @@ import { LeadTagsManager } from "@/components/crm/LeadTagsManager";
 import { LeadTrackingTimeline } from "@/components/crm/LeadTrackingTimeline";
 import { LeadAnalysis } from "@/components/crm/LeadAnalysis";
 import { MoveLeadDropdown } from "@/components/crm/MoveLeadDropdown";
-import { OnboardingSection } from "@/components/onboarding/OnboardingSection";
+import { OnboardingSection, OnboardingBuilderData } from "@/components/onboarding/OnboardingSection";
+import { OnboardingFormBuilder } from "@/components/onboarding/OnboardingFormBuilder";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -97,6 +98,7 @@ export default function LeadDetail() {
   const [isLoading, setIsLoading] = useState(true);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [onboardingBuilderData, setOnboardingBuilderData] = useState<OnboardingBuilderData | null>(null);
 
   // Build CRM URL preserving search params
   const buildCrmUrl = () => {
@@ -311,6 +313,22 @@ export default function LeadDetail() {
   }
 
   if (!lead) return null;
+
+  // If onboarding builder is open, show only the builder
+  if (onboardingBuilderData) {
+    return (
+      <div className="relative flex flex-col h-[calc(100vh-2rem)] w-full overflow-hidden">
+        <OnboardingFormBuilder
+          form={onboardingBuilderData.form}
+          fields={onboardingBuilderData.fields}
+          onClose={() => setOnboardingBuilderData(null)}
+          onUpdate={() => {
+            // Will refresh data when builder closes
+          }}
+        />
+      </div>
+    );
+  }
 
   return (
     <>
@@ -569,7 +587,12 @@ export default function LeadDetail() {
                   <div className="border-t border-[#00000010] my-4" />
 
                   {/* Onboarding Section - inline */}
-                  <OnboardingSection leadId={lead.id} leadName={lead.name} inline />
+                  <OnboardingSection 
+                    leadId={lead.id} 
+                    leadName={lead.name} 
+                    inline 
+                    onOpenBuilder={(data) => setOnboardingBuilderData(data)}
+                  />
                 </CardContent>
               </Card>
 
