@@ -140,10 +140,17 @@ export default function OnboardingForm() {
     switch (field.field_type) {
       case "text_short":
         return (
-          <Input
+          <Textarea
             value={(responses[field.id] as string) || ""}
-            onChange={(e) => handleInputChange(field.id, e.target.value)}
+            onChange={(e) => {
+              handleInputChange(field.id, e.target.value);
+              // Auto-resize
+              e.target.style.height = "auto";
+              e.target.style.height = e.target.scrollHeight + "px";
+            }}
             placeholder="Digite sua resposta"
+            className="min-h-[56px] resize-none overflow-hidden"
+            rows={1}
           />
         );
 
@@ -151,9 +158,14 @@ export default function OnboardingForm() {
         return (
           <Textarea
             value={(responses[field.id] as string) || ""}
-            onChange={(e) => handleInputChange(field.id, e.target.value)}
+            onChange={(e) => {
+              handleInputChange(field.id, e.target.value);
+              // Auto-resize
+              e.target.style.height = "auto";
+              e.target.style.height = e.target.scrollHeight + "px";
+            }}
             placeholder="Digite sua resposta"
-            className="min-h-[100px]"
+            className="min-h-[100px] resize-none overflow-hidden"
           />
         );
 
@@ -178,7 +190,7 @@ export default function OnboardingForm() {
               handleInputChange(field.id, value);
             }}
             placeholder="R$ 0,00"
-            className="font-mono"
+            className="font-mono h-14"
           />
         );
 
@@ -300,7 +312,7 @@ export default function OnboardingForm() {
           />
         </div>
 
-        <div className="flex-1 flex items-center justify-center p-4">
+        <div className="flex-1 flex items-center justify-center px-6 py-8">
           <div className="max-w-lg w-full">
             <AnimatePresence mode="wait">
               <motion.div
@@ -310,9 +322,6 @@ export default function OnboardingForm() {
                 exit={{ opacity: 0, x: -20 }}
                 transition={{ duration: 0.2 }}
               >
-                <div className="mb-2 text-sm text-muted-foreground">
-                  Pergunta {currentStep + 1} de {fields.length}
-                </div>
                 <h2 className="text-2xl font-semibold mb-2">{currentField.title}</h2>
                 {currentField.description && (
                   <p className="text-muted-foreground mb-6">{currentField.description}</p>
@@ -322,14 +331,17 @@ export default function OnboardingForm() {
             </AnimatePresence>
 
             <div className="flex justify-between">
-              <Button
-                variant="outline"
-                onClick={() => setCurrentStep((s) => s - 1)}
-                disabled={currentStep === 0}
-              >
-                <ArrowLeft className="h-4 w-4 mr-2" />
-                Voltar
-              </Button>
+              {currentStep > 0 ? (
+                <Button
+                  variant="outline"
+                  onClick={() => setCurrentStep((s) => s - 1)}
+                >
+                  <ArrowLeft className="h-4 w-4 mr-2" />
+                  Voltar
+                </Button>
+              ) : (
+                <div />
+              )}
 
               {isLastStep ? (
                 <Button
