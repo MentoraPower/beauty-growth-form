@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 import { Search, Smile, Paperclip, Mic, Send, Check, CheckCheck, RefreshCw, Phone, Image, File, Trash2, PanelRightOpen, PanelRightClose, X, Video, MoreVertical, Pencil, Reply } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -1938,7 +1939,14 @@ const WhatsApp = () => {
                                   {renderMessageContent(msg)}
                                   <div className="flex items-center justify-end gap-1 mt-0.5">
                                     {msg.status === "DELETED" && (
-                                      <span className="text-[10px] text-muted-foreground/70 italic mr-1">mensagem apagada</span>
+                                      <Tooltip>
+                                        <TooltipTrigger asChild>
+                                          <span className="text-[10px] text-muted-foreground/70 italic mr-1 cursor-help">mensagem apagada</span>
+                                        </TooltipTrigger>
+                                        <TooltipContent side="top" className="max-w-xs">
+                                          <p className="text-xs">{msg.text || "Mídia apagada"}</p>
+                                        </TooltipContent>
+                                      </Tooltip>
                                     )}
                                     <span className="text-[10px] text-muted-foreground">{msg.time}</span>
                                     {msg.sent && msg.status !== "DELETED" && (
@@ -1957,7 +1965,14 @@ const WhatsApp = () => {
                                   {renderMessageContent(msg)}
                                   {msg.status === "DELETED" && (
                                     <div className="flex justify-end mt-0.5">
-                                      <span className="text-[10px] text-muted-foreground/70 italic">mensagem apagada</span>
+                                      <Tooltip>
+                                        <TooltipTrigger asChild>
+                                          <span className="text-[10px] text-muted-foreground/70 italic cursor-help">mensagem apagada</span>
+                                        </TooltipTrigger>
+                                        <TooltipContent side="top" className="max-w-xs">
+                                          <p className="text-xs">Áudio apagado</p>
+                                        </TooltipContent>
+                                      </Tooltip>
                                     </div>
                                   )}
                                 </>
@@ -1966,7 +1981,14 @@ const WhatsApp = () => {
                                   {formatWhatsAppText(msg.text)}
                                   <span className="inline-flex items-center gap-1 ml-2 text-[10px] text-muted-foreground align-middle">
                                     {msg.status === "DELETED" && (
-                                      <span className="text-muted-foreground/70 italic mr-1">mensagem apagada</span>
+                                      <Tooltip>
+                                        <TooltipTrigger asChild>
+                                          <span className="text-muted-foreground/70 italic mr-1 cursor-help">mensagem apagada</span>
+                                        </TooltipTrigger>
+                                        <TooltipContent side="top" className="max-w-xs">
+                                          <p className="text-xs">{msg.text || "Mensagem apagada"}</p>
+                                        </TooltipContent>
+                                      </Tooltip>
                                     )}
                                     {msg.time}
                                     {msg.sent && msg.status !== "DELETED" && (
