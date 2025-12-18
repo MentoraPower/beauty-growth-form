@@ -89,15 +89,14 @@ const Auth = () => {
       </div>;
   }
   return (
-    <div className="min-h-screen bg-gradient-to-br from-neutral-950 via-neutral-900 to-neutral-950 flex items-center justify-center px-4">
+    <div className="min-h-screen bg-neutral-950 flex items-center justify-center px-4">
       <div className="w-full max-w-md">
         {/* Modern Glass Card Container */}
         <div className="relative">
           <div className="relative bg-neutral-900/80 backdrop-blur-xl border border-white/10 rounded-2xl p-8">
             {/* Header */}
             <div className="text-center mb-8">
-              <h1 className="text-2xl font-semibold text-white tracking-tight">Admin Scale Beauty</h1>
-              <p className="text-neutral-400 mt-2 text-sm">Acesse sua conta para continuar</p>
+              <h1 className="text-2xl font-semibold text-white tracking-tight">Acesse sua conta para continuar</h1>
             </div>
 
             {/* Login Form */}
@@ -147,10 +146,6 @@ const Auth = () => {
                 {isLoading ? "Entrando..." : "Entrar"}
               </Button>
             </form>
-
-            <p className="text-center text-neutral-500 text-xs mt-8">
-              © 2025 Scale Beauty - Área Restrita
-            </p>
           </div>
         </div>
       </div>
