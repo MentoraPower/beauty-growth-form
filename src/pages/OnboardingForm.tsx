@@ -289,9 +289,7 @@ export default function OnboardingForm() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="animate-pulse text-muted-foreground">Carregando...</div>
-      </div>
+      <div className="min-h-screen bg-background" />
     );
   }
 
@@ -378,7 +376,12 @@ export default function OnboardingForm() {
           : (responses[currentField.id] as string[]).length > 0));
 
     return (
-      <div className="min-h-screen bg-background flex flex-col">
+      <motion.div 
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.5 }}
+        className="min-h-screen bg-background flex flex-col"
+      >
         {/* Progress bar - fixed at top */}
         <div className="fixed top-0 left-0 right-0 z-50 w-full h-2 bg-muted">
           <div
@@ -458,7 +461,7 @@ export default function OnboardingForm() {
             </div>
           </div>
         </div>
-      </div>
+      </motion.div>
     );
   }
 
