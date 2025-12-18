@@ -496,8 +496,6 @@ export default function OnboardingForm() {
           />
         </div>
 
-        <h1 className="text-2xl font-semibold mb-6 text-center">{form?.name}</h1>
-
         <div className="space-y-6">
           {fields.map((field) => (
             <Card key={field.id} className="border-[#00000010] shadow-none">
