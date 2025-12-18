@@ -4,7 +4,6 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { MoreVertical, Plus, Pencil, Link as LinkIcon, Copy, Check, ExternalLink, ClipboardList } from "lucide-react";
 import { toast } from "sonner";
-import { OnboardingFormBuilder } from "./OnboardingFormBuilder";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -43,18 +42,23 @@ interface OnboardingResponse {
   answered_at: string;
 }
 
+export interface OnboardingBuilderData {
+  form: OnboardingForm;
+  fields: OnboardingField[];
+}
+
 interface OnboardingSectionProps {
   leadId: string;
   leadName: string;
   inline?: boolean;
+  onOpenBuilder?: (data: OnboardingBuilderData) => void;
 }
 
-export function OnboardingSection({ leadId, leadName, inline = false }: OnboardingSectionProps) {
+export function OnboardingSection({ leadId, leadName, inline = false, onOpenBuilder }: OnboardingSectionProps) {
   const [form, setForm] = useState<OnboardingForm | null>(null);
   const [fields, setFields] = useState<OnboardingField[]>([]);
   const [responses, setResponses] = useState<OnboardingResponse[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [showBuilder, setShowBuilder] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
 
   const fetchOnboardingData = async () => {
@@ -123,7 +127,16 @@ export function OnboardingSection({ leadId, leadName, inline = false }: Onboardi
     }
     
     setForm(data);
-    setShowBuilder(true);
+    // Open builder with the new form
+    if (onOpenBuilder) {
+      onOpenBuilder({ form: data, fields: [] });
+    }
+  };
+
+  const handleOpenBuilder = () => {
+    if (form && onOpenBuilder) {
+      onOpenBuilder({ form, fields });
+    }
   };
 
   const getFormLink = () => {
@@ -149,20 +162,6 @@ export function OnboardingSection({ leadId, leadName, inline = false }: Onboardi
     }
     return "-";
   };
-
-  if (showBuilder && form) {
-    return (
-      <OnboardingFormBuilder
-        form={form}
-        fields={fields}
-        onClose={() => {
-          setShowBuilder(false);
-          fetchOnboardingData();
-        }}
-        onUpdate={() => fetchOnboardingData()}
-      />
-    );
-  }
 
   if (isLoading) {
     return (
@@ -193,7 +192,7 @@ export function OnboardingSection({ leadId, leadName, inline = false }: Onboardi
               <MoreVertical className="h-4 w-4" />
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="z-[99999] w-44">
+          <DropdownMenuContent align="end" className="w-44">
             {!form ? (
               <DropdownMenuItem onClick={handleCreateForm} className="cursor-pointer">
                 <Plus className="h-4 w-4 mr-2 flex-shrink-0" />
@@ -201,7 +200,7 @@ export function OnboardingSection({ leadId, leadName, inline = false }: Onboardi
               </DropdownMenuItem>
             ) : (
               <>
-                <DropdownMenuItem onClick={() => setShowBuilder(true)} className="cursor-pointer">
+                <DropdownMenuItem onClick={handleOpenBuilder} className="cursor-pointer">
                   <Pencil className="h-4 w-4 mr-2 flex-shrink-0" />
                   <span className="truncate">Editar Formulário</span>
                 </DropdownMenuItem>
