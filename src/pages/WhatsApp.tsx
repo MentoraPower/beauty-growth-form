@@ -1378,37 +1378,58 @@ const WhatsApp = () => {
     
     setMessageMenuId(null);
     
+    // Get the Wasender message ID (numeric ID returned from send-message)
+    const messageId = msg.message_id;
+    console.log("[WhatsApp] Delete message clicked, msg:", { id: msg.id, message_id: messageId, text: msg.text?.substring(0, 30) });
+    
+    // Only call Wasender API if we have a valid numeric message ID
+    if (!messageId) {
+      console.log("[WhatsApp] No message_id, only local delete");
+      toast({ title: "Mensagem sem ID, apagando apenas localmente", variant: "destructive" });
+      setMessages(prev => prev.map(m => m.id === msg.id ? { ...m, status: "DELETED" } : m));
+      await supabase.from("whatsapp_messages").update({ status: "DELETED" }).eq("id", msg.id);
+      return;
+    }
+    
+    if (String(messageId).startsWith("local-")) {
+      console.log("[WhatsApp] Local message ID, only local delete");
+      toast({ title: "Mensagem local, apagando apenas localmente" });
+      setMessages(prev => prev.map(m => m.id === msg.id ? { ...m, status: "DELETED" } : m));
+      await supabase.from("whatsapp_messages").update({ status: "DELETED" }).eq("id", msg.id);
+      return;
+    }
+    
+    // Parse to integer as required by WasenderAPI
+    const numericMsgId = parseInt(String(messageId), 10);
+    
+    if (isNaN(numericMsgId)) {
+      console.log("[WhatsApp] message_id is not a valid integer:", messageId);
+      toast({ title: "ID inválido, apagando apenas localmente", variant: "destructive" });
+      setMessages(prev => prev.map(m => m.id === msg.id ? { ...m, status: "DELETED" } : m));
+      await supabase.from("whatsapp_messages").update({ status: "DELETED" }).eq("id", msg.id);
+      return;
+    }
+    
     try {
-      // Get the Wasender message ID (numeric ID returned from send-message)
-      const messageId = msg.message_id;
+      console.log("[WhatsApp] Deleting message via WasenderAPI, msgId:", numericMsgId);
       
-      // Only call Wasender API if we have a valid numeric message ID
-      // WasenderAPI expects integer msgId for DELETE /api/messages/{msgId}
-      // (local IDs start with "local-" and won't work with the API)
-      if (messageId && !String(messageId).startsWith("local-")) {
-        // Parse to integer as required by WasenderAPI
-        const numericMsgId = parseInt(String(messageId), 10);
-        
-        if (!isNaN(numericMsgId)) {
-          console.log("[WhatsApp] Deleting message via WasenderAPI, msgId:", numericMsgId);
-          const { data, error } = await supabase.functions.invoke("wasender-whatsapp", {
-            body: { action: "delete-message", msgId: numericMsgId },
-          });
-          
-          if (error) {
-            console.error("Wasender delete error:", error);
-            throw error;
-          }
-          
-          console.log("[WhatsApp] Delete response:", data);
-        } else {
-          console.log("[WhatsApp] message_id is not a valid integer:", messageId);
-        }
-      } else {
-        console.log("[WhatsApp] No valid message_id for API deletion, only local delete");
+      const { data, error } = await supabase.functions.invoke("wasender-whatsapp", {
+        body: { action: "delete-message", msgId: numericMsgId },
+      });
+      
+      console.log("[WhatsApp] Delete API response:", { data, error });
+      
+      if (error) {
+        console.error("[WhatsApp] Wasender delete error:", error);
+        throw new Error(error.message || "Erro ao apagar na API");
       }
       
-      // Mark as deleted in local state (show "mensagem apagada")
+      if (data?.error) {
+        console.error("[WhatsApp] Wasender API returned error:", data.error);
+        throw new Error(data.error);
+      }
+      
+      // Success - mark as deleted in local state
       setMessages(prev => prev.map(m => 
         m.id === msg.id ? { ...m, status: "DELETED" } : m
       ));
@@ -1418,8 +1439,20 @@ const WhatsApp = () => {
       
       toast({ title: "Mensagem apagada para todos" });
     } catch (error: any) {
-      console.error("Error deleting message:", error);
-      toast({ title: "Erro ao apagar", description: error?.message || "Pode ser que o tempo para apagar já tenha expirado", variant: "destructive" });
+      console.error("[WhatsApp] Error deleting message:", error);
+      
+      // Still mark as deleted locally even if API fails
+      setMessages(prev => prev.map(m => 
+        m.id === msg.id ? { ...m, status: "DELETED" } : m
+      ));
+      await supabase.from("whatsapp_messages").update({ status: "DELETED" }).eq("id", msg.id);
+      
+      const errorMsg = error?.message || "Erro desconhecido";
+      if (errorMsg.includes("422") || errorMsg.includes("time") || errorMsg.includes("expired")) {
+        toast({ title: "Tempo expirado", description: "O WhatsApp só permite apagar mensagens recentes", variant: "destructive" });
+      } else {
+        toast({ title: "Erro ao apagar para todos", description: errorMsg, variant: "destructive" });
+      }
     }
   };
 
