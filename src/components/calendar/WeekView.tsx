@@ -31,6 +31,7 @@ interface WeekViewProps {
     newStartTime: Date,
     newEndTime: Date
   ) => void;
+  onAppointmentClick?: (appointment: Appointment, event: React.MouseEvent) => void;
   pendingSlot?: PendingSlot | null;
 }
 
@@ -70,6 +71,7 @@ export function WeekView({
   appointments,
   onDayClick,
   onAppointmentDrop,
+  onAppointmentClick,
   pendingSlot,
 }: WeekViewProps) {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -233,6 +235,7 @@ export function WeekView({
                         key={apt.id}
                         appointment={apt}
                         style={{ top, height }}
+                        onClick={onAppointmentClick}
                       />
                     );
                   })}

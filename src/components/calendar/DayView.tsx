@@ -11,6 +11,7 @@ interface DayViewProps {
   appointments: Appointment[];
   onDayClick: (date: Date, hour: number, event?: React.MouseEvent) => void;
   onAppointmentDrop: (appointmentId: string, newStartTime: Date, newEndTime: Date) => void;
+  onAppointmentClick?: (appointment: Appointment, event: React.MouseEvent) => void;
   pendingSlot?: PendingSlot | null;
 }
 
@@ -50,6 +51,7 @@ export function DayView({
   appointments,
   onDayClick,
   onAppointmentDrop,
+  onAppointmentClick,
   pendingSlot,
 }: DayViewProps) {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -193,6 +195,7 @@ export function DayView({
                     key={apt.id}
                     appointment={apt}
                     style={{ top, height }}
+                    onClick={onAppointmentClick}
                   />
                 );
               })}
