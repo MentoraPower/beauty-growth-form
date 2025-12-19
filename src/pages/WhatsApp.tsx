@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
 import { Search, Smile, Paperclip, Mic, Send, Check, CheckCheck, RefreshCw, Phone, Image, File, Trash2, PanelRightOpen, PanelRightClose, X, Video, MoreVertical, Pencil, Reply, Zap, ArrowUp, Plus, FileImage, FileVideo, Sticker } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -541,6 +542,83 @@ const WhatsApp = () => {
       console.error("Error fetching messages:", error);
     } finally {
       setIsLoadingMessages(false);
+    }
+  };
+
+  // Delete all messages from a chat
+  const handleDeleteChatMessages = async (chatId: string) => {
+    try {
+      const { error } = await supabase
+        .from("whatsapp_messages")
+        .delete()
+        .eq("chat_id", chatId);
+
+      if (error) throw error;
+
+      // Update chat last message
+      await supabase
+        .from("whatsapp_chats")
+        .update({ 
+          last_message: null,
+          last_message_time: null,
+          last_message_status: null,
+          last_message_from_me: false
+        })
+        .eq("id", chatId);
+
+      // Update local state
+      setChats(prev => prev.map(c => 
+        c.id === chatId 
+          ? { ...c, lastMessage: "", lastMessageTime: null, lastMessageStatus: null, lastMessageFromMe: false }
+          : c
+      ));
+
+      // Clear messages if it's the selected chat
+      if (selectedChat?.id === chatId) {
+        setMessages([]);
+      }
+
+      toast({ title: "Mensagens apagadas com sucesso" });
+    } catch (error: any) {
+      console.error("Error deleting messages:", error);
+      toast({ title: "Erro ao apagar mensagens", variant: "destructive" });
+    }
+  };
+
+  // Delete a chat and all its messages
+  const handleDeleteChat = async (chatId: string) => {
+    try {
+      // First delete all messages
+      await supabase
+        .from("whatsapp_messages")
+        .delete()
+        .eq("chat_id", chatId);
+
+      // Then delete the chat
+      const { error } = await supabase
+        .from("whatsapp_chats")
+        .delete()
+        .eq("id", chatId);
+
+      if (error) throw error;
+
+      // Update local state
+      setChats(prev => {
+        const updated = prev.filter(c => c.id !== chatId);
+        chatsRef.current = updated;
+        return updated;
+      });
+
+      // Clear selection if it was the selected chat
+      if (selectedChat?.id === chatId) {
+        setSelectedChat(null);
+        setMessages([]);
+      }
+
+      toast({ title: "Contato apagado com sucesso" });
+    } catch (error: any) {
+      console.error("Error deleting chat:", error);
+      toast({ title: "Erro ao apagar contato", variant: "destructive" });
     }
   };
 
@@ -1866,53 +1944,87 @@ const WhatsApp = () => {
                 filteredChats.map((chat) => (
                   <div
                     key={chat.id}
-                    onClick={() => { 
-                      setSelectedChat(chat); 
-                      setReplyToMessage(null); 
-                      setIsSending(false);
-                      setMessage("");
-                    }}
                     className={cn(
-                      "flex items-center gap-3 px-3 py-3 cursor-pointer transition-colors border-b border-border/20",
+                      "flex items-center gap-3 px-3 py-3 cursor-pointer transition-colors border-b border-border/20 group relative",
                       selectedChat?.id === chat.id ? "bg-muted/40" : "hover:bg-muted/20"
                     )}
                   >
-                    <div className="relative flex-shrink-0">
-                      <img 
-                        src={chat.photo_url || DEFAULT_AVATAR} 
-                        alt={chat.name} 
-                        className="w-12 h-12 rounded-full object-cover bg-neutral-200" 
-                      />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center justify-between">
-                        <span className="font-medium text-foreground truncate">{chat.name}</span>
-                        <span className={cn("text-xs flex-shrink-0", chat.unread > 0 ? "text-emerald-500" : "text-muted-foreground")}>
-                          {chat.time}
-                        </span>
+                    <div 
+                      className="flex items-center gap-3 flex-1 min-w-0"
+                      onClick={() => { 
+                        setSelectedChat(chat); 
+                        setReplyToMessage(null); 
+                        setIsSending(false);
+                        setMessage("");
+                      }}
+                    >
+                      <div className="relative flex-shrink-0">
+                        <img 
+                          src={chat.photo_url || DEFAULT_AVATAR} 
+                          alt={chat.name} 
+                          className="w-12 h-12 rounded-full object-cover bg-neutral-200" 
+                        />
                       </div>
-                      {(chat.lastMessage?.trim() || chat.unread > 0) && (
-                        <div className="flex items-center justify-between mt-0.5">
-                          {chat.lastMessage?.trim() && (
-                            <div className="flex items-center gap-1 min-w-0 flex-1 pr-2">
-                              {chat.lastMessageFromMe && (
-                                chat.lastMessageStatus === "READ" || chat.lastMessageStatus === "PLAYED" 
-                                  ? <CheckCheck className="w-4 h-4 text-blue-500 flex-shrink-0" /> 
-                                  : chat.lastMessageStatus === "DELIVERED"
-                                    ? <CheckCheck className="w-4 h-4 text-muted-foreground flex-shrink-0" />
-                                    : <Check className="w-4 h-4 text-muted-foreground flex-shrink-0" />
-                              )}
-                              <p className="text-sm text-muted-foreground truncate">{stripWhatsAppFormatting(chat.lastMessage)}</p>
-                            </div>
-                          )}
+                      <div className="flex-1 min-w-0 overflow-hidden">
+                        <div className="flex items-center gap-2">
+                          <span className="font-medium text-foreground truncate flex-1 max-w-[140px]">{chat.name}</span>
+                          <span className={cn("text-xs flex-shrink-0 whitespace-nowrap", chat.unread > 0 ? "text-emerald-500" : "text-muted-foreground")}>
+                            {chat.time}
+                          </span>
+                        </div>
+                        <div className="flex items-center justify-between mt-0.5 gap-2">
+                          <div className="flex items-center gap-1 min-w-0 flex-1 overflow-hidden">
+                            {chat.lastMessageFromMe && (
+                              chat.lastMessageStatus === "READ" || chat.lastMessageStatus === "PLAYED" 
+                                ? <CheckCheck className="w-4 h-4 text-blue-500 flex-shrink-0" /> 
+                                : chat.lastMessageStatus === "DELIVERED"
+                                  ? <CheckCheck className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                                  : <Check className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                            )}
+                            <p className="text-sm text-muted-foreground truncate max-w-[160px]">
+                              {chat.lastMessage?.trim() ? stripWhatsAppFormatting(chat.lastMessage) : "Sem mensagens"}
+                            </p>
+                          </div>
                           {chat.unread > 0 && (
-                            <span className="min-w-[20px] h-5 rounded-full bg-emerald-500 text-white text-xs font-medium flex items-center justify-center px-1.5">
+                            <span className="min-w-[20px] h-5 rounded-full bg-emerald-500 text-white text-xs font-medium flex items-center justify-center px-1.5 flex-shrink-0">
                               {chat.unread}
                             </span>
                           )}
                         </div>
-                      )}
+                      </div>
                     </div>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <button 
+                          className="p-1.5 rounded-full hover:bg-muted/60 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <MoreVertical className="w-4 h-4 text-muted-foreground" />
+                        </button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="w-48">
+                        <DropdownMenuItem 
+                          className="text-destructive focus:text-destructive cursor-pointer"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDeleteChatMessages(chat.id);
+                          }}
+                        >
+                          <Trash2 className="w-4 h-4 mr-2" />
+                          Apagar mensagens
+                        </DropdownMenuItem>
+                        <DropdownMenuItem 
+                          className="text-destructive focus:text-destructive cursor-pointer"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDeleteChat(chat.id);
+                          }}
+                        >
+                          <Trash2 className="w-4 h-4 mr-2" />
+                          Apagar contato
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </div>
                 ))
               ) : (
