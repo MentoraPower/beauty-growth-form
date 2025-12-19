@@ -347,7 +347,7 @@ export function WhatsAppChatDropdown({ phone, countryCode, contactName }: WhatsA
 
       {/* Fixed dropdown in bottom right corner */}
       {isOpen && (
-        <div className="fixed bottom-6 right-6 z-50 w-[400px] h-[500px] bg-background border rounded-lg shadow-xl">
+        <div className="fixed bottom-6 right-6 z-50 w-[400px] h-[650px] bg-background border rounded-lg shadow-xl">
         <div className="flex flex-col h-full">
           {/* Header */}
           <div className="flex items-center gap-3 p-3 border-b bg-muted/30">
