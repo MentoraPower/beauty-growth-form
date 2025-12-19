@@ -2676,7 +2676,7 @@ const WhatsApp = () => {
           className="fixed z-[9999] shadow-2xl"
           style={{ 
             bottom: '80px',
-            left: '50px'
+            right: '50px'
           }}
         >
           <QuickMessages 
