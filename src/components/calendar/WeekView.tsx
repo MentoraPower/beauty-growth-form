@@ -13,10 +13,10 @@ import { ptBR } from "date-fns/locale";
 import {
   DndContext,
   DragEndEvent,
+  DragMoveEvent,
   PointerSensor,
   useSensor,
   useSensors,
-  useDroppable,
 } from "@dnd-kit/core";
 import { cn } from "@/lib/utils";
 import { AppointmentCard } from "./AppointmentCard";
@@ -39,32 +39,7 @@ const HOUR_HEIGHT = 60;
 const HOURS = Array.from({ length: 24 }, (_, i) => i);
 const TOTAL_HEIGHT = HOUR_HEIGHT * 24;
 const SAO_PAULO_TZ = "America/Sao_Paulo";
-
-function HourCell({
-  hour,
-  day,
-  onClick,
-}: {
-  hour: number;
-  day: Date;
-  onClick: (e: React.MouseEvent) => void;
-}) {
-  const { setNodeRef, isOver } = useDroppable({
-    id: `week-${day.toISOString()}-${hour}`,
-    data: { hour, date: day },
-  });
-
-  return (
-    <div
-      ref={setNodeRef}
-      onClick={onClick}
-      className={cn(
-        "h-[60px] border-t border-l border-border/50 cursor-pointer hover:bg-muted/30 transition-colors",
-        isOver && "bg-primary/10"
-      )}
-    />
-  );
-}
+const MINUTE_SNAP = 5; // Snap to 5-minute intervals
 
 export function WeekView({
   date,
@@ -75,8 +50,10 @@ export function WeekView({
   pendingSlot,
 }: WeekViewProps) {
   const containerRef = useRef<HTMLDivElement>(null);
+  const gridRef = useRef<HTMLDivElement>(null);
   const [currentTimeTop, setCurrentTimeTop] = useState(0);
   const [todayInSaoPaulo, setTodayInSaoPaulo] = useState<Date | null>(null);
+  const [dragPreview, setDragPreview] = useState<{ dayIndex: number; top: number; height: number; time: string } | null>(null);
 
   const weekStart = startOfWeek(date, { weekStartsOn: 0 });
   const days = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
@@ -131,31 +108,80 @@ export function WeekView({
     return { top, height };
   };
 
-  const handleDragEnd = (event: DragEndEvent) => {
-    const { active, over } = event;
-    if (!over) return;
+  const getMinutesAndDayFromPosition = (clientX: number, clientY: number): { minutes: number; dayIndex: number } => {
+    if (!gridRef.current || !containerRef.current) return { minutes: 0, dayIndex: 0 };
+    
+    const gridRect = gridRef.current.getBoundingClientRect();
+    const scrollTop = containerRef.current.scrollTop;
+    const relativeY = clientY - gridRect.top + scrollTop;
+    
+    // Convert Y position to minutes
+    const totalMinutes = (relativeY / HOUR_HEIGHT) * 60;
+    const snappedMinutes = Math.round(totalMinutes / MINUTE_SNAP) * MINUTE_SNAP;
+    const clampedMinutes = Math.max(0, Math.min(snappedMinutes, 24 * 60 - MINUTE_SNAP));
+    
+    // Calculate which day column
+    const relativeX = clientX - gridRect.left;
+    const columnWidth = gridRect.width / 7;
+    const dayIndex = Math.max(0, Math.min(Math.floor(relativeX / columnWidth), 6));
+    
+    return { minutes: clampedMinutes, dayIndex };
+  };
 
+  const formatMinutesToTime = (minutes: number): string => {
+    const h = Math.floor(minutes / 60);
+    const m = minutes % 60;
+    return `${h.toString().padStart(2, "0")}:${m.toString().padStart(2, "0")}`;
+  };
+
+  const handleDragMove = (event: DragMoveEvent) => {
+    const { active } = event;
     const appointment = active.data.current?.appointment as Appointment;
     if (!appointment) return;
 
-    const dropData = over.data.current as
-      | { hour: number; date: Date }
-      | undefined;
-    if (!dropData) return;
+    const pointerX = (event.activatorEvent as PointerEvent).clientX + (event.delta?.x || 0);
+    const pointerY = (event.activatorEvent as PointerEvent).clientY + (event.delta?.y || 0);
+    const { minutes, dayIndex } = getMinutesAndDayFromPosition(pointerX, pointerY);
+    
+    const oldStart = new Date(appointment.start_time);
+    const oldEnd = new Date(appointment.end_time);
+    const duration = differenceInMinutes(oldEnd, oldStart);
+    
+    const top = (minutes / 60) * HOUR_HEIGHT;
+    const height = Math.max((duration / 60) * HOUR_HEIGHT, 20);
+    
+    setDragPreview({ dayIndex, top, height, time: formatMinutesToTime(minutes) });
+  };
 
+  const handleDragEnd = (event: DragEndEvent) => {
+    setDragPreview(null);
+    
+    const { active } = event;
+    const appointment = active.data.current?.appointment as Appointment;
+    if (!appointment) return;
+
+    const pointerX = (event.activatorEvent as PointerEvent).clientX + (event.delta?.x || 0);
+    const pointerY = (event.activatorEvent as PointerEvent).clientY + (event.delta?.y || 0);
+    const { minutes, dayIndex } = getMinutesAndDayFromPosition(pointerX, pointerY);
+    
     const oldStart = new Date(appointment.start_time);
     const oldEnd = new Date(appointment.end_time);
     const duration = differenceInMinutes(oldEnd, oldStart);
 
-    const newStart = new Date(dropData.date);
-    newStart.setHours(dropData.hour, 0, 0, 0);
+    const targetDay = days[dayIndex];
+    const newStart = new Date(targetDay);
+    newStart.setHours(0, minutes, 0, 0);
     const newEnd = addMinutes(newStart, duration);
 
     onAppointmentDrop(appointment.id, newStart, newEnd);
   };
 
   return (
-    <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
+    <DndContext 
+      sensors={sensors} 
+      onDragMove={handleDragMove}
+      onDragEnd={handleDragEnd}
+    >
       <div className="h-full flex flex-col">
         {/* Header */}
         <div className="flex border-b border-border">
@@ -186,7 +212,7 @@ export function WeekView({
           ref={containerRef} 
           className="flex-1 overflow-y-auto"
         >
-          <div className="relative flex" style={{ height: TOTAL_HEIGHT }}>
+          <div ref={gridRef} className="relative flex" style={{ height: TOTAL_HEIGHT }}>
             {/* Time labels */}
             <div className="w-16 flex-shrink-0 pt-2">
               {HOURS.map((hour) => (
@@ -200,7 +226,7 @@ export function WeekView({
             </div>
 
             {/* Days columns */}
-            {days.map((day) => {
+            {days.map((day, dayIndex) => {
               const dayAppointments = getAppointmentsForDay(day);
               const showCurrentTime = todayInSaoPaulo && isSameDay(day, todayInSaoPaulo);
 
@@ -208,11 +234,10 @@ export function WeekView({
                 <div key={day.toISOString()} className="flex-1 relative border-l border-border/50 pt-2">
                   {/* Hour cells */}
                   {HOURS.map((hour) => (
-                    <HourCell
+                    <div
                       key={hour}
-                      hour={hour}
-                      day={day}
                       onClick={(e) => onDayClick(day, hour, e)}
+                      className="h-[60px] border-t border-l border-border/50 cursor-pointer hover:bg-muted/30 transition-colors"
                     />
                   ))}
 
@@ -224,6 +249,18 @@ export function WeekView({
                     >
                       <div className="w-2 h-2 rounded-full bg-red-500" />
                       <div className="flex-1 h-[1px] bg-red-500" />
+                    </div>
+                  )}
+
+                  {/* Drag preview for this column */}
+                  {dragPreview && dragPreview.dayIndex === dayIndex && (
+                    <div
+                      className="absolute left-1 right-1 bg-primary/30 rounded-md border-2 border-primary border-dashed z-30 flex items-center justify-center pointer-events-none"
+                      style={{ top: dragPreview.top, height: dragPreview.height }}
+                    >
+                      <span className="text-primary text-xs font-medium bg-background/80 px-1 py-0.5 rounded">
+                        {dragPreview.time}
+                      </span>
                     </div>
                   )}
 

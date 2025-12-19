@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { format, isSameDay, startOfDay, addMinutes, differenceInMinutes } from "date-fns";
 import { toZonedTime } from "date-fns-tz";
-import { DndContext, DragEndEvent, PointerSensor, useSensor, useSensors, useDroppable } from "@dnd-kit/core";
+import { DndContext, DragEndEvent, DragMoveEvent, PointerSensor, useSensor, useSensors } from "@dnd-kit/core";
 import { cn } from "@/lib/utils";
 import { AppointmentCard } from "./AppointmentCard";
 import type { Appointment, PendingSlot } from "@/pages/CalendarPage";
@@ -19,32 +19,7 @@ const HOUR_HEIGHT = 60; // pixels per hour
 const HOURS = Array.from({ length: 24 }, (_, i) => i);
 const TOTAL_HEIGHT = HOUR_HEIGHT * 24;
 const SAO_PAULO_TZ = "America/Sao_Paulo";
-
-function HourSlot({
-  hour,
-  date,
-  onClick,
-}: {
-  hour: number;
-  date: Date;
-  onClick: (e: React.MouseEvent) => void;
-}) {
-  const { setNodeRef, isOver } = useDroppable({
-    id: `hour-${hour}`,
-    data: { hour, date },
-  });
-
-  return (
-    <div
-      ref={setNodeRef}
-      onClick={onClick}
-      className={cn(
-        "h-[60px] border-t border-border/50 cursor-pointer hover:bg-muted/30 transition-colors relative",
-        isOver && "bg-primary/10"
-      )}
-    />
-  );
-}
+const MINUTE_SNAP = 5; // Snap to 5-minute intervals
 
 export function DayView({
   date,
@@ -55,7 +30,9 @@ export function DayView({
   pendingSlot,
 }: DayViewProps) {
   const containerRef = useRef<HTMLDivElement>(null);
+  const gridRef = useRef<HTMLDivElement>(null);
   const [currentTimeTop, setCurrentTimeTop] = useState(0);
+  const [dragPreview, setDragPreview] = useState<{ top: number; height: number; time: string } | null>(null);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -111,29 +88,76 @@ export function DayView({
     return { top, height };
   };
 
-  const handleDragEnd = (event: DragEndEvent) => {
-    const { active, over } = event;
-    if (!over) return;
+  const getMinutesFromY = (clientY: number): number => {
+    if (!gridRef.current || !containerRef.current) return 0;
+    
+    const gridRect = gridRef.current.getBoundingClientRect();
+    const scrollTop = containerRef.current.scrollTop;
+    const relativeY = clientY - gridRect.top + scrollTop;
+    
+    // Convert Y position to minutes
+    const totalMinutes = (relativeY / HOUR_HEIGHT) * 60;
+    
+    // Snap to MINUTE_SNAP intervals
+    const snappedMinutes = Math.round(totalMinutes / MINUTE_SNAP) * MINUTE_SNAP;
+    
+    // Clamp between 0 and 23:55
+    return Math.max(0, Math.min(snappedMinutes, 24 * 60 - MINUTE_SNAP));
+  };
 
+  const formatMinutesToTime = (minutes: number): string => {
+    const h = Math.floor(minutes / 60);
+    const m = minutes % 60;
+    return `${h.toString().padStart(2, "0")}:${m.toString().padStart(2, "0")}`;
+  };
+
+  const handleDragMove = (event: DragMoveEvent) => {
+    const { active } = event;
     const appointment = active.data.current?.appointment as Appointment;
     if (!appointment) return;
 
-    const dropData = over.data.current as { hour: number; date: Date } | undefined;
-    if (!dropData) return;
+    // Get pointer position from the event
+    const pointerY = (event.activatorEvent as PointerEvent).clientY + (event.delta?.y || 0);
+    const minutes = getMinutesFromY(pointerY);
+    
+    const oldStart = new Date(appointment.start_time);
+    const oldEnd = new Date(appointment.end_time);
+    const duration = differenceInMinutes(oldEnd, oldStart);
+    
+    const top = (minutes / 60) * HOUR_HEIGHT;
+    const height = Math.max((duration / 60) * HOUR_HEIGHT, 20);
+    
+    setDragPreview({ top, height, time: formatMinutesToTime(minutes) });
+  };
 
+  const handleDragEnd = (event: DragEndEvent) => {
+    setDragPreview(null);
+    
+    const { active } = event;
+    const appointment = active.data.current?.appointment as Appointment;
+    if (!appointment) return;
+
+    // Get final pointer position
+    const pointerY = (event.activatorEvent as PointerEvent).clientY + (event.delta?.y || 0);
+    const minutes = getMinutesFromY(pointerY);
+    
     const oldStart = new Date(appointment.start_time);
     const oldEnd = new Date(appointment.end_time);
     const duration = differenceInMinutes(oldEnd, oldStart);
 
     const newStart = new Date(date);
-    newStart.setHours(dropData.hour, 0, 0, 0);
+    newStart.setHours(0, minutes, 0, 0);
     const newEnd = addMinutes(newStart, duration);
 
     onAppointmentDrop(appointment.id, newStart, newEnd);
   };
 
   return (
-    <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
+    <DndContext 
+      sensors={sensors} 
+      onDragMove={handleDragMove}
+      onDragEnd={handleDragEnd}
+    >
       <div className="h-full flex flex-col">
         {/* Header */}
         <div className="flex border-b border-border">
@@ -165,14 +189,13 @@ export function DayView({
             </div>
 
             {/* Grid */}
-            <div className="flex-1 relative border-l border-border pt-2">
+            <div ref={gridRef} className="flex-1 relative border-l border-border pt-2">
               {/* Hour slots */}
               {HOURS.map((hour) => (
-                <HourSlot
+                <div
                   key={`slot-${hour}`}
-                  hour={hour}
-                  date={date}
                   onClick={(e) => onDayClick(date, hour, e)}
+                  className="h-[60px] border-t border-border/50 cursor-pointer hover:bg-muted/30 transition-colors relative"
                 />
               ))}
 
@@ -184,6 +207,18 @@ export function DayView({
                 >
                   <div className="w-2 h-2 rounded-full bg-red-500" />
                   <div className="flex-1 h-[1px] bg-red-500" />
+                </div>
+              )}
+
+              {/* Drag preview */}
+              {dragPreview && (
+                <div
+                  className="absolute left-1 right-1 bg-primary/30 rounded-md border-2 border-primary border-dashed z-30 flex items-center justify-center pointer-events-none"
+                  style={{ top: dragPreview.top, height: dragPreview.height }}
+                >
+                  <span className="text-primary text-sm font-medium bg-background/80 px-2 py-0.5 rounded">
+                    {dragPreview.time}
+                  </span>
                 </div>
               )}
 
