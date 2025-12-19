@@ -340,7 +340,7 @@ export function QuickMessages({ onSelect, onSelectAudio }: QuickMessagesProps) {
   });
 
   return (
-    <div className="w-[420px] bg-card rounded-xl border border-border overflow-hidden shadow-xl" style={{ backgroundColor: 'hsl(var(--card))' }}>
+    <div className="w-[520px] bg-card rounded-xl border border-border overflow-hidden shadow-xl" style={{ backgroundColor: 'hsl(var(--card))' }}>
       {/* Header */}
       <div className="px-3 py-2 border-b border-border flex items-center justify-between bg-muted/30">
         <div className="flex items-center gap-2">
@@ -508,7 +508,7 @@ export function QuickMessages({ onSelect, onSelectAudio }: QuickMessagesProps) {
       )}
 
       {/* Messages list - Two column layout */}
-      <ScrollArea className="max-h-80">
+      <ScrollArea className="max-h-[400px]">
         <div className="p-2">
           {isLoading ? (
             <div className="py-8 text-center">

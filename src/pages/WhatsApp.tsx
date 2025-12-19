@@ -2675,8 +2675,8 @@ const WhatsApp = () => {
           ref={quickMsgPickerRef} 
           className="fixed z-[9999] shadow-2xl"
           style={{ 
-            bottom: '100px',
-            left: '320px'
+            bottom: '80px',
+            left: '50px'
           }}
         >
           <QuickMessages 
