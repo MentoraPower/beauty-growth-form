@@ -9,6 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import CallModal from "@/components/whatsapp/CallModal";
 import LeadInfoPanel from "@/components/whatsapp/LeadInfoPanel";
+import { EmojiPicker } from "@/components/whatsapp/EmojiPicker";
 import { AudioWaveform } from "@/components/whatsapp/AudioWaveform";
 import { RecordingWaveform } from "@/components/whatsapp/RecordingWaveform";
 import ImageLightbox from "@/components/whatsapp/ImageLightbox";
@@ -2126,26 +2127,13 @@ const WhatsApp = () => {
                       </button>
                       
                       {showEmojiPicker && (
-                        <div ref={emojiPickerRef} className="absolute bottom-full left-0 mb-2 bg-card rounded-lg shadow-lg border border-border p-3 z-50 w-72">
-                          <div className="grid grid-cols-8 gap-1">
-                            {["😀", "😂", "😍", "🥰", "😊", "😎", "🤔", "😅",
-                              "❤️", "🔥", "👍", "👏", "🙏", "💪", "✨", "🎉",
-                              "😢", "😭", "😤", "😡", "🤗", "😴", "🤮", "🤧",
-                              "👋", "✌️", "🤝", "💯", "⭐", "🌟", "💫", "✅",
-                              "❌", "⚠️", "📍", "📅", "💰", "🛒", "📱", "💻"
-                            ].map((emoji) => (
-                              <button
-                                key={emoji}
-                                onClick={() => {
-                                  setMessage(prev => prev + emoji);
-                                  setShowEmojiPicker(false);
-                                }}
-                                className="w-8 h-8 flex items-center justify-center text-xl hover:bg-muted/50 rounded transition-colors"
-                              >
-                                {emoji}
-                              </button>
-                            ))}
-                          </div>
+                        <div ref={emojiPickerRef} className="absolute bottom-full left-0 mb-2 z-50">
+                          <EmojiPicker 
+                            onSelect={(emoji) => {
+                              setMessage(prev => prev + emoji);
+                              setShowEmojiPicker(false);
+                            }}
+                          />
                         </div>
                       )}
                     </div>
