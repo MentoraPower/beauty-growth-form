@@ -146,11 +146,9 @@ export default function CalendarPage() {
   const getHeaderTitle = () => {
     switch (view) {
       case "day":
-        return format(currentDate, "d 'de' MMMM 'de' yyyy", { locale: ptBR });
+        return format(currentDate, "d 'de' MMMM", { locale: ptBR });
       case "week":
-        const weekStart = startOfWeek(currentDate, { weekStartsOn: 0 });
-        const weekEnd = addDays(weekStart, 6);
-        return `${format(weekStart, "d MMM", { locale: ptBR })} - ${format(weekEnd, "d MMM yyyy", { locale: ptBR })}`;
+        return format(currentDate, "MMMM 'de' yyyy", { locale: ptBR });
       case "month":
         return format(currentDate, "MMMM 'de' yyyy", { locale: ptBR });
       case "year":
