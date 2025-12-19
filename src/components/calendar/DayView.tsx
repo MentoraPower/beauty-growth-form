@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { format, isSameDay, startOfDay, addMinutes, differenceInMinutes } from "date-fns";
+import { toZonedTime } from "date-fns-tz";
 import { DndContext, DragEndEvent, PointerSensor, useSensor, useSensors, useDroppable } from "@dnd-kit/core";
 import { cn } from "@/lib/utils";
 import { AppointmentCard } from "./AppointmentCard";
@@ -15,6 +16,7 @@ interface DayViewProps {
 const HOUR_HEIGHT = 60; // pixels per hour
 const HOURS = Array.from({ length: 24 }, (_, i) => i);
 const TOTAL_HEIGHT = HOUR_HEIGHT * 24;
+const SAO_PAULO_TZ = "America/Sao_Paulo";
 
 function HourSlot({
   hour,
@@ -60,12 +62,16 @@ export function DayView({
     })
   );
 
-  // Calculate current time position
+  // Calculate current time position using São Paulo timezone
   useEffect(() => {
     const updateTime = () => {
       const now = new Date();
-      if (isSameDay(now, date)) {
-        const minutesSinceMidnight = now.getHours() * 60 + now.getMinutes();
+      const nowSaoPaulo = toZonedTime(now, SAO_PAULO_TZ);
+      
+      // Check if viewing today in São Paulo time
+      const dateSaoPaulo = toZonedTime(date, SAO_PAULO_TZ);
+      if (isSameDay(nowSaoPaulo, dateSaoPaulo)) {
+        const minutesSinceMidnight = nowSaoPaulo.getHours() * 60 + nowSaoPaulo.getMinutes();
         setCurrentTimeTop((minutesSinceMidnight / 60) * HOUR_HEIGHT);
       } else {
         setCurrentTimeTop(-1);
@@ -73,7 +79,7 @@ export function DayView({
     };
 
     updateTime();
-    const interval = setInterval(updateTime, 60000);
+    const interval = setInterval(updateTime, 1000); // Update every second for real-time
     return () => clearInterval(interval);
   }, [date]);
 

@@ -7,8 +7,8 @@ import {
   startOfDay,
   differenceInMinutes,
   addMinutes,
-  isToday,
 } from "date-fns";
+import { toZonedTime } from "date-fns-tz";
 import { ptBR } from "date-fns/locale";
 import {
   DndContext,
@@ -36,6 +36,7 @@ interface WeekViewProps {
 const HOUR_HEIGHT = 60;
 const HOURS = Array.from({ length: 24 }, (_, i) => i);
 const TOTAL_HEIGHT = HOUR_HEIGHT * 24;
+const SAO_PAULO_TZ = "America/Sao_Paulo";
 
 function HourCell({
   hour,
@@ -71,6 +72,7 @@ export function WeekView({
 }: WeekViewProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [currentTimeTop, setCurrentTimeTop] = useState(0);
+  const [todayInSaoPaulo, setTodayInSaoPaulo] = useState<Date | null>(null);
   const isScrollingRef = useRef(false);
 
   const weekStart = startOfWeek(date, { weekStartsOn: 0 });
@@ -84,16 +86,18 @@ export function WeekView({
     })
   );
 
-  // Calculate current time position
+  // Calculate current time position using São Paulo timezone
   useEffect(() => {
     const updateTime = () => {
       const now = new Date();
-      const minutesSinceMidnight = now.getHours() * 60 + now.getMinutes();
+      const nowSaoPaulo = toZonedTime(now, SAO_PAULO_TZ);
+      const minutesSinceMidnight = nowSaoPaulo.getHours() * 60 + nowSaoPaulo.getMinutes();
       setCurrentTimeTop((minutesSinceMidnight / 60) * HOUR_HEIGHT);
+      setTodayInSaoPaulo(nowSaoPaulo);
     };
 
     updateTime();
-    const interval = setInterval(updateTime, 60000);
+    const interval = setInterval(updateTime, 1000); // Update every second for real-time
     return () => clearInterval(interval);
   }, []);
 
@@ -185,7 +189,7 @@ export function WeekView({
       {/* Days columns */}
       {days.map((day) => {
         const dayAppointments = getAppointmentsForDay(day);
-        const showCurrentTime = isToday(day);
+        const showCurrentTime = todayInSaoPaulo && isSameDay(day, todayInSaoPaulo);
 
         return (
           <div key={`${offset}-${day.toISOString()}`} className="flex-1 relative border-l border-border/50">
@@ -244,7 +248,7 @@ export function WeekView({
               <div
                 className={cn(
                   "text-lg font-semibold mt-0.5",
-                  isToday(day) &&
+                  todayInSaoPaulo && isSameDay(day, todayInSaoPaulo) &&
                     "bg-primary text-primary-foreground w-8 h-8 rounded-full flex items-center justify-center mx-auto"
                 )}
               >
