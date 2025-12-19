@@ -7,7 +7,8 @@ import { useAuth } from "@/hooks/useAuth";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Users, TrendingUp, ShoppingCart, DollarSign, Target } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
+import { Users, TrendingUp, Calendar, Settings } from "lucide-react";
 import ModernAreaChart from "@/components/dashboard/ModernAreaChart";
 import ModernBarChart from "@/components/dashboard/ModernBarChart";
 import MiniGaugeChart from "@/components/dashboard/MiniGaugeChart";
@@ -48,6 +49,7 @@ const OriginOverview = () => {
   const [subOrigins, setSubOrigins] = useState<SubOrigin[]>([]);
   const [allLeads, setAllLeads] = useState<Lead[]>([]);
   const [loading, setLoading] = useState(true);
+  const [agendaMode, setAgendaMode] = useState(false);
   
   const [dateRange, setDateRange] = useState<DateRange>({
     from: startOfDay(subDays(new Date(), 29)),
@@ -244,125 +246,168 @@ const OriginOverview = () => {
               Visão geral da origem
             </p>
           </div>
-          <DateFilter onDateChange={setDateRange} />
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2 px-3 py-2 rounded-lg border border-border bg-card">
+              <Settings className="h-4 w-4 text-muted-foreground" />
+              <span className="text-sm font-medium text-foreground">Agenda</span>
+              <Switch 
+                checked={agendaMode} 
+                onCheckedChange={setAgendaMode}
+              />
+            </div>
+            <DateFilter onDateChange={setDateRange} />
+          </div>
         </div>
 
-        {/* Stats Cards */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          <Card className="bg-white border border-black/5 shadow-none">
-            <CardContent className="pt-5 pb-4">
-              <div className="flex items-center gap-3 mb-3">
-                <div className="w-10 h-10 rounded-full border border-emerald-400 flex items-center justify-center">
-                  <Users className="h-5 w-5 text-emerald-500" />
-                </div>
-                <p className="text-sm text-foreground font-medium">Total Leads</p>
-              </div>
-              <p className="text-3xl font-bold text-foreground">{leads.length}</p>
-            </CardContent>
-          </Card>
+        {agendaMode ? (
+          <>
+            {/* Agenda Mode - Simplified Stats */}
+            <div className="grid grid-cols-2 lg:grid-cols-2 gap-4">
+              <Card className="bg-white border border-black/5 shadow-none">
+                <CardContent className="pt-5 pb-4">
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="w-10 h-10 rounded-full border border-emerald-400 flex items-center justify-center">
+                      <Users className="h-5 w-5 text-emerald-500" />
+                    </div>
+                    <p className="text-sm text-foreground font-medium">Total Leads</p>
+                  </div>
+                  <p className="text-3xl font-bold text-foreground">{leads.length}</p>
+                </CardContent>
+              </Card>
 
-          <Card className="bg-white border border-black/5 shadow-none">
-            <CardContent className="pt-5 pb-4">
-              <div className="flex items-center gap-3 mb-3">
-                <div className="w-10 h-10 rounded-full border border-rose-400 flex items-center justify-center">
-                  <Target className="h-5 w-5 text-rose-500" />
-                </div>
-                <p className="text-sm text-foreground font-medium">Taxa MQL</p>
-              </div>
-              <p className="text-3xl font-bold text-foreground">{getMQLPercentage()}%</p>
-              <p className="text-xs text-muted-foreground mt-1">{leads.filter(l => l.is_mql === true).length} MQLs</p>
-            </CardContent>
-          </Card>
+              <Card className="bg-white border border-black/5 shadow-none">
+                <CardContent className="pt-5 pb-4">
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="w-10 h-10 rounded-full border border-violet-400 flex items-center justify-center">
+                      <Calendar className="h-5 w-5 text-violet-500" />
+                    </div>
+                    <p className="text-sm text-foreground font-medium">Agenda Ativa</p>
+                  </div>
+                  <p className="text-3xl font-bold text-emerald-500">ON</p>
+                </CardContent>
+              </Card>
+            </div>
+          </>
+        ) : (
+          <>
+            {/* Normal Mode - Full Stats */}
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+              <Card className="bg-white border border-black/5 shadow-none">
+                <CardContent className="pt-5 pb-4">
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="w-10 h-10 rounded-full border border-emerald-400 flex items-center justify-center">
+                      <Users className="h-5 w-5 text-emerald-500" />
+                    </div>
+                    <p className="text-sm text-foreground font-medium">Total Leads</p>
+                  </div>
+                  <p className="text-3xl font-bold text-foreground">{leads.length}</p>
+                </CardContent>
+              </Card>
 
-          <Card className="bg-white border border-black/5 shadow-none">
-            <CardContent className="pt-5 pb-4">
-              <div className="flex items-center gap-3 mb-3">
-                <div className="w-10 h-10 rounded-full border border-violet-400 flex items-center justify-center">
-                  <TrendingUp className="h-5 w-5 text-violet-500" />
-                </div>
-                <p className="text-sm text-foreground font-medium">Sub-origens</p>
-              </div>
-              <p className="text-3xl font-bold text-foreground">{subOriginIds.length}</p>
-            </CardContent>
-          </Card>
+              <Card className="bg-white border border-black/5 shadow-none">
+                <CardContent className="pt-5 pb-4">
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="w-10 h-10 rounded-full border border-rose-400 flex items-center justify-center">
+                      <TrendingUp className="h-5 w-5 text-rose-500" />
+                    </div>
+                    <p className="text-sm text-foreground font-medium">Taxa MQL</p>
+                  </div>
+                  <p className="text-3xl font-bold text-foreground">{getMQLPercentage()}%</p>
+                  <p className="text-xs text-muted-foreground mt-1">{leads.filter(l => l.is_mql === true).length} MQLs</p>
+                </CardContent>
+              </Card>
 
-          <Card className="bg-white border border-black/5 shadow-none">
-            <CardContent className="pt-5 pb-4">
-              <div className="flex items-center gap-3 mb-3">
-                <div className="w-10 h-10 rounded-full border border-sky-400 flex items-center justify-center">
-                  <Users className="h-5 w-5 text-sky-500" />
-                </div>
-                <p className="text-sm text-foreground font-medium">Média/Dia</p>
-              </div>
-              <p className="text-3xl font-bold text-foreground">
-                {(leads.length / Math.max(differenceInDays(dateRange.to, dateRange.from) + 1, 1)).toFixed(1)}
-              </p>
-            </CardContent>
-          </Card>
-        </div>
+              <Card className="bg-white border border-black/5 shadow-none">
+                <CardContent className="pt-5 pb-4">
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="w-10 h-10 rounded-full border border-violet-400 flex items-center justify-center">
+                      <TrendingUp className="h-5 w-5 text-violet-500" />
+                    </div>
+                    <p className="text-sm text-foreground font-medium">Sub-origens</p>
+                  </div>
+                  <p className="text-3xl font-bold text-foreground">{subOriginIds.length}</p>
+                </CardContent>
+              </Card>
 
-        {/* Charts Row */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-          <Card className="bg-white border border-black/5 shadow-none lg:col-span-2">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-base font-semibold text-foreground">
-                Tendência de Leads
-              </CardTitle>
-              <p className="text-xs text-muted-foreground">{getPeriodLabel()}</p>
-            </CardHeader>
-            <CardContent>
-              <ModernAreaChart data={getLeadsTrend()} title="Leads" />
-            </CardContent>
-          </Card>
+              <Card className="bg-white border border-black/5 shadow-none">
+                <CardContent className="pt-5 pb-4">
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="w-10 h-10 rounded-full border border-sky-400 flex items-center justify-center">
+                      <Users className="h-5 w-5 text-sky-500" />
+                    </div>
+                    <p className="text-sm text-foreground font-medium">Média/Dia</p>
+                  </div>
+                  <p className="text-3xl font-bold text-foreground">
+                    {(leads.length / Math.max(differenceInDays(dateRange.to, dateRange.from) + 1, 1)).toFixed(1)}
+                  </p>
+                </CardContent>
+              </Card>
+            </div>
 
-          <Card className="bg-white border border-black/5 shadow-none">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-base font-semibold text-foreground">
-                Leads por Área
-              </CardTitle>
-              <p className="text-xs text-muted-foreground">Distribuição por serviço</p>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-3 gap-2">
-                {(() => {
-                  const areas = leads.reduce((acc, lead) => {
-                    if (lead.service_area) {
-                      acc[lead.service_area] = (acc[lead.service_area] || 0) + 1;
-                    }
-                    return acc;
-                  }, {} as Record<string, number>);
-                  
-                  const maxLeads = Math.max(...Object.values(areas), 1);
-                  
-                  return Object.entries(areas)
-                    .sort((a, b) => b[1] - a[1])
-                    .slice(0, 6)
-                    .map(([area, count]) => (
-                      <MiniGaugeChart
-                        key={area}
-                        value={count}
-                        maxValue={maxLeads}
-                        label={area}
-                      />
-                    ));
-                })()}
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+            {/* Charts Row */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+              <Card className="bg-white border border-black/5 shadow-none lg:col-span-2">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-base font-semibold text-foreground">
+                    Tendência de Leads
+                  </CardTitle>
+                  <p className="text-xs text-muted-foreground">{getPeriodLabel()}</p>
+                </CardHeader>
+                <CardContent>
+                  <ModernAreaChart data={getLeadsTrend()} title="Leads" />
+                </CardContent>
+              </Card>
 
-        {/* Bar Chart */}
-        <Card className="bg-white border border-black/5 shadow-none">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-base font-semibold text-foreground">
-              Leads por Dia da Semana
-            </CardTitle>
-            <p className="text-xs text-muted-foreground">Distribuição semanal</p>
-          </CardHeader>
-          <CardContent>
-            <ModernBarChart data={getLeadsByDayOfWeek()} />
-          </CardContent>
-        </Card>
+              <Card className="bg-white border border-black/5 shadow-none">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-base font-semibold text-foreground">
+                    Leads por Área
+                  </CardTitle>
+                  <p className="text-xs text-muted-foreground">Distribuição por serviço</p>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-3 gap-2">
+                    {(() => {
+                      const areas = leads.reduce((acc, lead) => {
+                        if (lead.service_area) {
+                          acc[lead.service_area] = (acc[lead.service_area] || 0) + 1;
+                        }
+                        return acc;
+                      }, {} as Record<string, number>);
+                      
+                      const maxLeads = Math.max(...Object.values(areas), 1);
+                      
+                      return Object.entries(areas)
+                        .sort((a, b) => b[1] - a[1])
+                        .slice(0, 6)
+                        .map(([area, count]) => (
+                          <MiniGaugeChart
+                            key={area}
+                            value={count}
+                            maxValue={maxLeads}
+                            label={area}
+                          />
+                        ));
+                    })()}
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Bar Chart */}
+            <Card className="bg-white border border-black/5 shadow-none">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-base font-semibold text-foreground">
+                  Leads por Dia da Semana
+                </CardTitle>
+                <p className="text-xs text-muted-foreground">Distribuição semanal</p>
+              </CardHeader>
+              <CardContent>
+                <ModernBarChart data={getLeadsByDayOfWeek()} />
+              </CardContent>
+            </Card>
+          </>
+        )}
     </div>
   );
 };
