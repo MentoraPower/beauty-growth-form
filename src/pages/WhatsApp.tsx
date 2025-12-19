@@ -1337,7 +1337,7 @@ const WhatsApp = () => {
         return updatedChats;
       });
 
-      toast({ title: "Áudio enviado" });
+      // Audio sent successfully - no toast needed
 
     } catch (error: any) {
       console.error("Error sending audio:", error);
