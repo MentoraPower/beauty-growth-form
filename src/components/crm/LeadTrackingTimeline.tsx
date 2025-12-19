@@ -2,8 +2,7 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Clock, PhoneOff, UserCheck, Webhook, Globe, Tag, ChevronDown, ChevronUp, Instagram, MessageCircle, Megaphone, Search, Link2, Mail, Smartphone } from "lucide-react";
+import { Clock, PhoneOff, UserCheck, Webhook, Globe, Tag, ChevronDown, ChevronUp, Instagram, MessageCircle, Megaphone, Search, Link2, Mail, Smartphone, ArrowRight, ListOrdered, MoveRight, UserPlus, FileText } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
@@ -157,30 +156,42 @@ const identifyTrafficSource = (utmData: UTMData): {
 const getIconForType = (tipo: string) => {
   switch (tipo) {
     case "chamada_recusada":
-      return <PhoneOff className="h-4 w-4" />;
+      return <PhoneOff className="h-5 w-5" />;
     case "mudou_usuario":
-      return <UserCheck className="h-4 w-4" />;
+      return <UserCheck className="h-5 w-5" />;
     case "webhook":
-      return <Webhook className="h-4 w-4" />;
+      return <Webhook className="h-5 w-5" />;
     case "mudou_pipeline":
-      return <Tag className="h-4 w-4" />;
+      return <MoveRight className="h-5 w-5" />;
+    case "mudou_posicao":
+      return <ListOrdered className="h-5 w-5" />;
+    case "cadastro":
+      return <UserPlus className="h-5 w-5" />;
+    case "formulario":
+      return <FileText className="h-5 w-5" />;
     default:
-      return <Clock className="h-4 w-4" />;
+      return <ListOrdered className="h-5 w-5" />;
   }
 };
 
-const getIconBgColor = (tipo: string) => {
+const getIconColors = (tipo: string): { bg: string; text: string } => {
   switch (tipo) {
     case "chamada_recusada":
-      return "bg-red-100 text-red-600";
+      return { bg: "bg-red-500", text: "text-white" };
     case "mudou_usuario":
-      return "bg-pink-100 text-pink-600";
+      return { bg: "bg-pink-500", text: "text-white" };
     case "webhook":
-      return "bg-indigo-100 text-indigo-600";
+      return { bg: "bg-indigo-500", text: "text-white" };
     case "mudou_pipeline":
-      return "bg-blue-100 text-blue-600";
+      return { bg: "bg-violet-500", text: "text-white" };
+    case "mudou_posicao":
+      return { bg: "bg-violet-500", text: "text-white" };
+    case "cadastro":
+      return { bg: "bg-emerald-500", text: "text-white" };
+    case "formulario":
+      return { bg: "bg-blue-500", text: "text-white" };
     default:
-      return "bg-gray-100 text-gray-600";
+      return { bg: "bg-violet-500", text: "text-white" };
   }
 };
 
@@ -341,113 +352,118 @@ export function LeadTrackingTimeline({ leadId, utmData }: LeadTrackingTimelinePr
           </CardContent>
         </Card>
 
-        {/* Timeline */}
+        {/* Timeline - New Visual */}
         <div className="space-y-0">
-          <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-6 px-4">
+          <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-6">
             Histórico de Atualizações
           </h3>
           
           {isLoading ? (
-            <div className="space-y-4 px-4">
+            <div className="space-y-4">
               {[1, 2, 3].map((i) => (
-                <div key={i} className="flex gap-4 animate-pulse py-6">
-                  <div className="h-10 w-10 rounded-lg bg-muted flex-shrink-0" />
-                  <div className="flex-1 space-y-2">
-                    <div className="h-4 bg-muted rounded w-1/3" />
-                    <div className="h-3 bg-muted rounded w-1/4" />
-                    <div className="h-3 bg-muted rounded w-2/3 mt-3" />
+                <div key={i} className="animate-pulse">
+                  <div className="flex gap-4">
+                    <div className="h-10 w-10 rounded-lg bg-muted flex-shrink-0" />
+                    <div className="flex-1 bg-muted rounded-lg h-24" />
                   </div>
                 </div>
               ))}
             </div>
           ) : events.length === 0 ? (
-            <div className="p-4 bg-muted/20 rounded-lg border border-dashed border-black/10 mx-4">
+            <div className="p-4 bg-muted/20 rounded-lg border border-dashed border-black/10">
               <p className="text-sm text-muted-foreground text-center">Nenhuma atualização registrada</p>
             </div>
           ) : (
             <div className="relative">
-              {/* Vertical timeline line on left edge */}
-              <div className="absolute left-0 top-0 bottom-0 w-[3px] bg-gray-200 rounded-full" />
-              
-              <div>
-                {events.map((event, index) => (
-                  <div key={event.id}>
-                    {/* Event Item */}
-                    <div className="relative flex gap-4 py-6 pl-8 pr-4 bg-white">
+              {/* Timeline Events */}
+              {events.map((event, index) => {
+                const iconColors = getIconColors(event.tipo);
+                const isLast = index === events.length - 1;
+                
+                return (
+                  <div key={event.id} className="relative flex">
+                    {/* Left side - Icon and vertical line */}
+                    <div className="flex flex-col items-center mr-4">
                       {/* Icon */}
-                      <div className={`h-10 w-10 rounded-lg flex items-center justify-center flex-shrink-0 ${getIconBgColor(event.tipo)}`}>
+                      <div className={`h-10 w-10 rounded-lg flex items-center justify-center flex-shrink-0 ${iconColors.bg} ${iconColors.text} shadow-md z-10`}>
                         {getIconForType(event.tipo)}
                       </div>
                       
-                      {/* Content */}
-                      <div className="flex-1 min-w-0">
-                        {/* Title */}
-                        <p className="text-sm font-semibold text-foreground">{event.titulo}</p>
-                        
-                        {/* Origin subtitle */}
-                        {event.origem && (
-                          <p className="text-xs text-muted-foreground mt-0.5">
-                            ORIGEM: <span className="font-medium">{event.origem}</span> <span className="mx-1 text-gray-400">&gt;</span> <span className="font-medium">LISTA GERAL</span>
-                          </p>
-                        )}
-                        
-                        {/* Description */}
-                        {event.descricao && (
-                          <p className="text-sm text-foreground mt-3">
-                            {event.descricao}
-                          </p>
-                        )}
-                        
-                        {/* Expandable data */}
-                        {event.dados && typeof event.dados === 'object' && Object.keys(event.dados as object).length > 0 && (
-                          <div className="mt-3">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="h-7 text-xs border-gray-200"
-                              onClick={() => setExpandedEvent(expandedEvent === event.id ? null : event.id)}
-                            >
-                              {expandedEvent === event.id ? (
-                                <>
-                                  <ChevronUp className="h-3 w-3 mr-1" />
-                                  Ocultar dados
-                                </>
-                              ) : (
-                                <>
-                                  <ChevronDown className="h-3 w-3 mr-1" />
-                                  Mostrar dados
-                                </>
-                              )}
-                            </Button>
-                            
-                            {expandedEvent === event.id && (
-                              <pre className="mt-2 p-3 bg-gray-50 rounded-lg text-xs overflow-x-auto border border-gray-100">
-                                {JSON.stringify(event.dados, null, 2)}
-                              </pre>
-                            )}
-                          </div>
-                        )}
-                        
-                        {/* Timestamp */}
-                        <div className="flex items-center gap-1.5 mt-3 text-xs text-muted-foreground">
-                          <Clock className="h-3 w-3" />
-                          <span>
-                            {formatDistanceToNow(new Date(event.created_at), {
-                              addSuffix: true,
-                              locale: ptBR
-                            })}
-                          </span>
-                        </div>
-                      </div>
+                      {/* Vertical line */}
+                      {!isLast && (
+                        <div className="w-0.5 flex-1 bg-gray-200 my-2" />
+                      )}
                     </div>
                     
-                    {/* Separator line between items */}
-                    {index < events.length - 1 && (
-                      <div className="border-b border-gray-100 ml-8" />
-                    )}
+                    {/* Right side - Card content */}
+                    <div className="flex-1 pb-6">
+                      <Card className="border-[#00000010] shadow-sm hover:shadow-md transition-shadow">
+                        <CardContent className="p-4">
+                          {/* Title */}
+                          <p className="text-sm font-semibold text-foreground">{event.titulo}</p>
+                          
+                          {/* Origin breadcrumb */}
+                          {event.origem && (
+                            <p className="text-[11px] text-muted-foreground mt-0.5 uppercase tracking-wide flex items-center gap-1">
+                              ORIGEM: <span className="font-semibold text-foreground">{event.origem.toUpperCase()}</span> 
+                              <ArrowRight className="h-3 w-3" /> 
+                              <span className="font-semibold text-foreground">{event.origem.toUpperCase()}</span>
+                            </p>
+                          )}
+                          
+                          {/* Description */}
+                          {event.descricao && (
+                            <p className="text-sm text-muted-foreground mt-3">
+                              {event.descricao}
+                            </p>
+                          )}
+                          
+                          {/* Expandable data */}
+                          {event.dados && typeof event.dados === 'object' && Object.keys(event.dados as object).length > 0 && (
+                            <div className="mt-3">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="h-7 text-xs border-gray-200"
+                                onClick={() => setExpandedEvent(expandedEvent === event.id ? null : event.id)}
+                              >
+                                {expandedEvent === event.id ? (
+                                  <>
+                                    <ChevronUp className="h-3 w-3 mr-1" />
+                                    Ocultar dados
+                                  </>
+                                ) : (
+                                  <>
+                                    <ChevronDown className="h-3 w-3 mr-1" />
+                                    Mostrar dados
+                                  </>
+                                )}
+                              </Button>
+                              
+                              {expandedEvent === event.id && (
+                                <pre className="mt-2 p-3 bg-muted/50 rounded-lg text-xs overflow-x-auto border border-[#00000010]">
+                                  {JSON.stringify(event.dados, null, 2)}
+                                </pre>
+                              )}
+                            </div>
+                          )}
+                          
+                          {/* Timestamp */}
+                          <div className="flex items-center gap-1.5 mt-3 text-xs text-muted-foreground">
+                            <Clock className="h-3 w-3" />
+                            <span>
+                              {formatDistanceToNow(new Date(event.created_at), {
+                                addSuffix: true,
+                                locale: ptBR
+                              })}
+                            </span>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    </div>
                   </div>
-                ))}
-              </div>
+                );
+              })}
             </div>
           )}
         </div>
