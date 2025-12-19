@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { X, Clock, Mail, FileText, User, Users } from "lucide-react";
+import { X, Clock, Mail, FileText, User, Users, CalendarDays } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -15,7 +15,6 @@ import {
 } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { cn } from "@/lib/utils";
 
 interface AddAppointmentDropdownProps {
   open: boolean;
@@ -115,102 +114,94 @@ export function AddAppointmentDropdown({
 
   if (!open) return null;
 
-  // Calculate position
-  const dropdownStyle: React.CSSProperties = anchorPosition
-    ? {
-        position: "fixed",
-        top: Math.min(anchorPosition.y, window.innerHeight - 600),
-        left: Math.min(anchorPosition.x, window.innerWidth - 480),
-        zIndex: 50,
-      }
-    : {
-        position: "fixed",
-        top: "50%",
-        left: "50%",
-        transform: "translate(-50%, -50%)",
-        zIndex: 50,
-      };
-
   return (
     <>
       {/* Backdrop */}
       <div
-        className="fixed inset-0 bg-black/20 z-40"
+        className="fixed inset-0 bg-black/30 backdrop-blur-sm z-[100]"
         onClick={() => onOpenChange(false)}
       />
 
       {/* Dropdown */}
       <div
-        style={dropdownStyle}
-        className="w-[460px] bg-background rounded-xl border border-border shadow-2xl overflow-hidden"
+        className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[520px] max-h-[90vh] bg-background rounded-2xl border border-border shadow-2xl overflow-hidden z-[101]"
       >
         {/* Header */}
-        <div className="flex items-center justify-between px-5 py-4 border-b border-border bg-muted/30">
-          <div>
-            <h3 className="text-base font-semibold text-foreground">
-              Novo Agendamento
-            </h3>
-            {selectedDate && (
-              <p className="text-sm text-muted-foreground mt-0.5">
-                {format(selectedDate, "EEEE, d 'de' MMMM", { locale: ptBR })}
-              </p>
-            )}
+        <div className="flex items-center justify-between px-6 py-5 border-b border-border bg-gradient-to-r from-emerald-600/10 to-transparent">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-emerald-600 flex items-center justify-center">
+              <CalendarDays className="h-5 w-5 text-white" />
+            </div>
+            <div>
+              <h3 className="text-lg font-semibold text-foreground">
+                Novo Agendamento
+              </h3>
+              {selectedDate && (
+                <p className="text-sm text-muted-foreground capitalize">
+                  {format(selectedDate, "EEEE, d 'de' MMMM", { locale: ptBR })}
+                </p>
+              )}
+            </div>
           </div>
           <button
             onClick={() => onOpenChange(false)}
-            className="p-1.5 rounded-lg hover:bg-muted transition-colors"
+            className="p-2 rounded-lg hover:bg-muted transition-colors"
           >
-            <X className="h-4 w-4 text-muted-foreground" />
+            <X className="h-5 w-5 text-muted-foreground" />
           </button>
         </div>
 
         {/* Content */}
-        <form onSubmit={handleSubmit} className="p-5 space-y-5">
+        <form onSubmit={handleSubmit} className="p-6 space-y-6 overflow-y-auto max-h-[calc(90vh-140px)]">
           {/* Title */}
           <div className="space-y-2">
-            <Label htmlFor="title" className="text-sm font-medium">
-              Nome do Agendamento
+            <Label htmlFor="title" className="text-sm font-medium text-foreground">
+              Nome do Agendamento *
             </Label>
             <Input
               id="title"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="Ex: Reunião com cliente"
-              className="h-11"
+              className="h-12 text-base"
               required
             />
           </div>
 
-          {/* Time Selection */}
-          <div className="space-y-2">
-            <Label className="text-sm font-medium flex items-center gap-2">
-              <Clock className="h-4 w-4 text-muted-foreground" />
+          {/* Time Selection - Modern Card Style */}
+          <div className="space-y-3">
+            <Label className="text-sm font-medium text-foreground flex items-center gap-2">
+              <Clock className="h-4 w-4 text-emerald-600" />
               Horário
             </Label>
-            <div className="flex items-center gap-3">
-              <div className="flex-1 flex items-center gap-2 p-3 rounded-lg bg-muted/50 border border-border">
-                <span className="text-xs text-muted-foreground font-medium uppercase">Início</span>
-                <div className="flex items-center gap-1 ml-auto">
+            
+            <div className="grid grid-cols-2 gap-4">
+              {/* Start Time */}
+              <div className="bg-muted/40 rounded-xl p-4 border border-border">
+                <span className="text-xs text-muted-foreground font-semibold uppercase tracking-wide">
+                  Início
+                </span>
+                <div className="flex items-center gap-2 mt-2">
                   <Select value={startHour} onValueChange={setStartHour}>
-                    <SelectTrigger className="w-16 h-8 text-sm font-medium">
+                    <SelectTrigger className="flex-1 h-11 text-lg font-semibold bg-background">
                       <SelectValue />
                     </SelectTrigger>
-                    <SelectContent className="max-h-60">
+                    <SelectContent className="max-h-60 z-[102]">
                       {hours.map((h) => (
-                        <SelectItem key={h} value={h}>
+                        <SelectItem key={h} value={h} className="text-base">
                           {h}
                         </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
-                  <span className="text-muted-foreground font-bold">:</span>
+                  <span className="text-xl font-bold text-muted-foreground">:</span>
                   <Select value={startMinute} onValueChange={setStartMinute}>
-                    <SelectTrigger className="w-16 h-8 text-sm font-medium">
+                    <SelectTrigger className="flex-1 h-11 text-lg font-semibold bg-background">
                       <SelectValue />
                     </SelectTrigger>
-                    <SelectContent className="max-h-60">
+                    <SelectContent className="max-h-60 z-[102]">
                       {minutes.map((m) => (
-                        <SelectItem key={m} value={m}>
+                        <SelectItem key={m} value={m} className="text-base">
                           {m}
                         </SelectItem>
                       ))}
@@ -219,31 +210,32 @@ export function AddAppointmentDropdown({
                 </div>
               </div>
 
-              <div className="text-muted-foreground">→</div>
-
-              <div className="flex-1 flex items-center gap-2 p-3 rounded-lg bg-muted/50 border border-border">
-                <span className="text-xs text-muted-foreground font-medium uppercase">Fim</span>
-                <div className="flex items-center gap-1 ml-auto">
+              {/* End Time */}
+              <div className="bg-muted/40 rounded-xl p-4 border border-border">
+                <span className="text-xs text-muted-foreground font-semibold uppercase tracking-wide">
+                  Término
+                </span>
+                <div className="flex items-center gap-2 mt-2">
                   <Select value={endHour} onValueChange={setEndHour}>
-                    <SelectTrigger className="w-16 h-8 text-sm font-medium">
+                    <SelectTrigger className="flex-1 h-11 text-lg font-semibold bg-background">
                       <SelectValue />
                     </SelectTrigger>
-                    <SelectContent className="max-h-60">
+                    <SelectContent className="max-h-60 z-[102]">
                       {hours.map((h) => (
-                        <SelectItem key={h} value={h}>
+                        <SelectItem key={h} value={h} className="text-base">
                           {h}
                         </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
-                  <span className="text-muted-foreground font-bold">:</span>
+                  <span className="text-xl font-bold text-muted-foreground">:</span>
                   <Select value={endMinute} onValueChange={setEndMinute}>
-                    <SelectTrigger className="w-16 h-8 text-sm font-medium">
+                    <SelectTrigger className="flex-1 h-11 text-lg font-semibold bg-background">
                       <SelectValue />
                     </SelectTrigger>
-                    <SelectContent className="max-h-60">
+                    <SelectContent className="max-h-60 z-[102]">
                       {minutes.map((m) => (
-                        <SelectItem key={m} value={m}>
+                        <SelectItem key={m} value={m} className="text-base">
                           {m}
                         </SelectItem>
                       ))}
@@ -256,8 +248,8 @@ export function AddAppointmentDropdown({
 
           {/* Email */}
           <div className="space-y-2">
-            <Label htmlFor="email" className="text-sm font-medium flex items-center gap-2">
-              <Mail className="h-4 w-4 text-muted-foreground" />
+            <Label htmlFor="email" className="text-sm font-medium text-foreground flex items-center gap-2">
+              <Mail className="h-4 w-4 text-emerald-600" />
               Email
             </Label>
             <Input
@@ -266,14 +258,14 @@ export function AddAppointmentDropdown({
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="email@exemplo.com"
-              className="h-11"
+              className="h-12 text-base"
             />
           </div>
 
           {/* Description */}
           <div className="space-y-2">
-            <Label htmlFor="description" className="text-sm font-medium flex items-center gap-2">
-              <FileText className="h-4 w-4 text-muted-foreground" />
+            <Label htmlFor="description" className="text-sm font-medium text-foreground flex items-center gap-2">
+              <FileText className="h-4 w-4 text-emerald-600" />
               Descrição
             </Label>
             <Textarea
@@ -281,57 +273,57 @@ export function AddAppointmentDropdown({
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               placeholder="Detalhes do agendamento..."
-              rows={2}
-              className="resize-none"
+              rows={3}
+              className="resize-none text-base"
             />
           </div>
 
-          {/* Responsible */}
+          {/* Responsible - Grid Layout */}
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="closer" className="text-sm font-medium flex items-center gap-2">
-                <User className="h-4 w-4 text-muted-foreground" />
-                Closer
+              <Label htmlFor="closer" className="text-sm font-medium text-foreground flex items-center gap-2">
+                <User className="h-4 w-4 text-emerald-600" />
+                Closer Responsável
               </Label>
               <Input
                 id="closer"
                 value={closerName}
                 onChange={(e) => setCloserName(e.target.value)}
                 placeholder="Nome do Closer"
-                className="h-11"
+                className="h-12 text-base"
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="sdr" className="text-sm font-medium flex items-center gap-2">
-                <Users className="h-4 w-4 text-muted-foreground" />
-                SDR
+              <Label htmlFor="sdr" className="text-sm font-medium text-foreground flex items-center gap-2">
+                <Users className="h-4 w-4 text-emerald-600" />
+                SDR Responsável
               </Label>
               <Input
                 id="sdr"
                 value={sdrName}
                 onChange={(e) => setSdrName(e.target.value)}
                 placeholder="Nome do SDR"
-                className="h-11"
+                className="h-12 text-base"
               />
             </div>
           </div>
 
           {/* Actions */}
-          <div className="flex justify-end gap-3 pt-2">
+          <div className="flex justify-end gap-3 pt-4 border-t border-border">
             <Button
               type="button"
               variant="outline"
               onClick={() => onOpenChange(false)}
-              className="h-10 px-5"
+              className="h-11 px-6"
             >
               Cancelar
             </Button>
             <Button
               type="submit"
               disabled={loading || !title.trim()}
-              className="h-10 px-5 bg-emerald-600 hover:bg-emerald-700"
+              className="h-11 px-6 bg-emerald-600 hover:bg-emerald-700 text-white font-medium"
             >
-              {loading ? "Salvando..." : "Salvar Agendamento"}
+              {loading ? "Salvando..." : "Criar Agendamento"}
             </Button>
           </div>
         </form>
