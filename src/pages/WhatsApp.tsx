@@ -1,5 +1,6 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 import { Search, Smile, Paperclip, Mic, Send, Check, CheckCheck, RefreshCw, Phone, Image, File, Trash2, PanelRightOpen, PanelRightClose, X, Video, MoreVertical, Pencil, Reply } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -1704,73 +1705,75 @@ const WhatsApp = () => {
           </div>
 
           {/* Chat List - Always visible, no loading spinner */}
-          <div className="flex-1 overflow-y-auto">
-            {isInitialLoad && chats.length === 0 ? (
-              <div className="flex items-center justify-center h-full py-20">
-                <RefreshCw className="w-6 h-6 text-muted-foreground animate-spin" />
-              </div>
-            ) : filteredChats.length > 0 ? (
-              filteredChats.map((chat) => (
-                <div
-                  key={chat.id}
-                  onClick={() => { 
-                    setSelectedChat(chat); 
-                    setReplyToMessage(null); 
-                    setIsSending(false); // Reset sending state when switching chats
-                    setMessage(""); // Clear message input
-                  }}
-                  className={cn(
-                    "flex items-center gap-3 px-3 py-3 cursor-pointer transition-colors border-b border-border/20",
-                    selectedChat?.id === chat.id ? "bg-muted/40" : "hover:bg-muted/20"
-                  )}
-                >
-                  <div className="relative flex-shrink-0">
-                    <img 
-                      src={chat.photo_url || DEFAULT_AVATAR} 
-                      alt={chat.name} 
-                      className="w-12 h-12 rounded-full object-cover bg-neutral-200" 
-                    />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between">
-                      <span className="font-medium text-foreground truncate">{chat.name}</span>
-                      <span className={cn("text-xs flex-shrink-0", chat.unread > 0 ? "text-emerald-500" : "text-muted-foreground")}>
-                        {chat.time}
-                      </span>
-                    </div>
-                    {(chat.lastMessage?.trim() || chat.unread > 0) && (
-                      <div className="flex items-center justify-between mt-0.5">
-                        {chat.lastMessage?.trim() && (
-                          <div className="flex items-center gap-1 min-w-0 flex-1 pr-2">
-                            {chat.lastMessageFromMe && (
-                              chat.lastMessageStatus === "READ" || chat.lastMessageStatus === "PLAYED" 
-                                ? <CheckCheck className="w-4 h-4 text-blue-500 flex-shrink-0" /> 
-                                : chat.lastMessageStatus === "DELIVERED"
-                                  ? <CheckCheck className="w-4 h-4 text-muted-foreground flex-shrink-0" />
-                                  : <Check className="w-4 h-4 text-muted-foreground flex-shrink-0" />
-                            )}
-                            <p className="text-sm text-muted-foreground truncate">{stripWhatsAppFormatting(chat.lastMessage)}</p>
-                          </div>
-                        )}
-                        {chat.unread > 0 && (
-                          <span className="min-w-[20px] h-5 rounded-full bg-emerald-500 text-white text-xs font-medium flex items-center justify-center px-1.5">
-                            {chat.unread}
-                          </span>
-                        )}
-                      </div>
-                    )}
-                  </div>
+          <ScrollArea className="flex-1">
+            <div className="flex flex-col">
+              {isInitialLoad && chats.length === 0 ? (
+                <div className="flex items-center justify-center h-full py-20">
+                  <RefreshCw className="w-6 h-6 text-muted-foreground animate-spin" />
                 </div>
-              ))
-            ) : (
-              <div className="flex-1 flex flex-col items-center justify-center h-full py-20 gap-3">
-                <p className="text-sm text-muted-foreground">
-                  {isSyncing ? "Sincronizando conversas..." : "Nenhuma conversa encontrada"}
-                </p>
-                {isSyncing && <RefreshCw className="w-5 h-5 text-muted-foreground animate-spin" />}
-              </div>
-            )}
-          </div>
+              ) : filteredChats.length > 0 ? (
+                filteredChats.map((chat) => (
+                  <div
+                    key={chat.id}
+                    onClick={() => { 
+                      setSelectedChat(chat); 
+                      setReplyToMessage(null); 
+                      setIsSending(false);
+                      setMessage("");
+                    }}
+                    className={cn(
+                      "flex items-center gap-3 px-3 py-3 cursor-pointer transition-colors border-b border-border/20",
+                      selectedChat?.id === chat.id ? "bg-muted/40" : "hover:bg-muted/20"
+                    )}
+                  >
+                    <div className="relative flex-shrink-0">
+                      <img 
+                        src={chat.photo_url || DEFAULT_AVATAR} 
+                        alt={chat.name} 
+                        className="w-12 h-12 rounded-full object-cover bg-neutral-200" 
+                      />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between">
+                        <span className="font-medium text-foreground truncate">{chat.name}</span>
+                        <span className={cn("text-xs flex-shrink-0", chat.unread > 0 ? "text-emerald-500" : "text-muted-foreground")}>
+                          {chat.time}
+                        </span>
+                      </div>
+                      {(chat.lastMessage?.trim() || chat.unread > 0) && (
+                        <div className="flex items-center justify-between mt-0.5">
+                          {chat.lastMessage?.trim() && (
+                            <div className="flex items-center gap-1 min-w-0 flex-1 pr-2">
+                              {chat.lastMessageFromMe && (
+                                chat.lastMessageStatus === "READ" || chat.lastMessageStatus === "PLAYED" 
+                                  ? <CheckCheck className="w-4 h-4 text-blue-500 flex-shrink-0" /> 
+                                  : chat.lastMessageStatus === "DELIVERED"
+                                    ? <CheckCheck className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                                    : <Check className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                              )}
+                              <p className="text-sm text-muted-foreground truncate">{stripWhatsAppFormatting(chat.lastMessage)}</p>
+                            </div>
+                          )}
+                          {chat.unread > 0 && (
+                            <span className="min-w-[20px] h-5 rounded-full bg-emerald-500 text-white text-xs font-medium flex items-center justify-center px-1.5">
+                              {chat.unread}
+                            </span>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="flex-1 flex flex-col items-center justify-center h-full py-20 gap-3">
+                  <p className="text-sm text-muted-foreground">
+                    {isSyncing ? "Sincronizando conversas..." : "Nenhuma conversa encontrada"}
+                  </p>
+                  {isSyncing && <RefreshCw className="w-5 h-5 text-muted-foreground animate-spin" />}
+                </div>
+              )}
+            </div>
+          </ScrollArea>
         </div>
 
         {/* Right Panel - Chat Area */}
