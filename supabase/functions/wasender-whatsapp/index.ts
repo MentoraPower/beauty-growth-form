@@ -542,18 +542,32 @@ async function handler(req: Request): Promise<Response> {
     if (action === "fetch-missing-photos") {
       console.log("[Wasender] Fetching missing profile photos...");
       
-      // Get all chats without photos
+      // Get all chats without photos - limit to 5 per call to avoid rate limiting
       const { data: chatsWithoutPhotos, error: fetchError } = await supabase
         .from("whatsapp_chats")
         .select("id, phone, name")
-        .is("photo_url", null);
+        .is("photo_url", null)
+        .limit(5);
       
       if (fetchError) {
         console.error("[Wasender] Error fetching chats:", fetchError);
         throw fetchError;
       }
       
-      console.log(`[Wasender] Found ${chatsWithoutPhotos?.length || 0} chats without photos`);
+      const totalChats = chatsWithoutPhotos?.length || 0;
+      console.log(`[Wasender] Processing ${totalChats} chats (limited batch)`);
+      
+      if (totalChats === 0) {
+        return new Response(JSON.stringify({ 
+          success: true, 
+          updated: 0,
+          failed: 0,
+          total: 0,
+          message: "No chats without photos"
+        }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
       
       let updated = 0;
       let failed = 0;
@@ -566,48 +580,43 @@ async function handler(req: Request): Promise<Response> {
             continue;
           }
           
-          // Fetch contact info (includes photo and name)
-          const contactInfo = await fetchContactInfo(phone);
-          let photoUrl = contactInfo.imgUrl;
+          // Only try the picture endpoint to minimize API calls
+          const photoUrl = await fetchContactPicture(phone);
           
-          // Try dedicated photo endpoint if no photo
-          if (!photoUrl) {
-            photoUrl = await fetchContactPicture(phone);
-          }
-          
-          const updateData: any = {};
-          if (photoUrl) updateData.photo_url = photoUrl;
-          
-          // Also update name if we got a better one and current is just a phone number
-          const currentNameIsPhone = !chat.name || /^[\d\s+\-()]+$/.test(chat.name);
-          if (contactInfo.name && currentNameIsPhone) {
-            updateData.name = contactInfo.name;
-          }
-          
-          if (Object.keys(updateData).length > 0) {
+          if (photoUrl) {
             const { error: updateError } = await supabase
               .from("whatsapp_chats")
-              .update(updateData)
+              .update({ photo_url: photoUrl })
               .eq("id", chat.id);
             
             if (!updateError) {
               updated++;
-              console.log(`[Wasender] Updated ${phone}: photo=${photoUrl ? "Yes" : "No"}, name=${updateData.name || "unchanged"}`);
+              console.log(`[Wasender] Updated ${phone}: photo=Yes`);
             } else {
               console.error(`[Wasender] Error updating ${phone}:`, updateError);
               failed++;
             }
           } else {
-            console.log(`[Wasender] No photo found for ${phone}`);
+            // Mark as checked by setting empty string to avoid re-checking
+            await supabase
+              .from("whatsapp_chats")
+              .update({ photo_url: "" })
+              .eq("id", chat.id);
+            console.log(`[Wasender] No photo available for ${phone}`);
             failed++;
           }
           
-          // Small delay to avoid rate limiting
-          await new Promise(resolve => setTimeout(resolve, 100));
+          // Longer delay to respect rate limiting (60 req/min = 1 per second)
+          await new Promise(resolve => setTimeout(resolve, 1500));
           
         } catch (error) {
           console.error(`[Wasender] Error processing chat ${chat.phone}:`, error);
           failed++;
+          // On rate limit error, stop processing
+          if (String(error).includes("429")) {
+            console.log("[Wasender] Rate limited, stopping batch");
+            break;
+          }
         }
       }
       
@@ -617,7 +626,7 @@ async function handler(req: Request): Promise<Response> {
         success: true, 
         updated,
         failed,
-        total: chatsWithoutPhotos?.length || 0
+        total: totalChats
       }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
