@@ -109,6 +109,8 @@ const WhatsApp = () => {
   const [contactPresence, setContactPresence] = useState<{ phone: string; type: string; timestamp: number } | null>(null);
   const [blockedContacts, setBlockedContacts] = useState<Set<string>>(new Set());
   const [blockConfirmDialog, setBlockConfirmDialog] = useState<{ open: boolean; phone: string; chatId: string; name: string } | null>(null);
+  const [editingMessage, setEditingMessage] = useState<Message | null>(null);
+  const [editText, setEditText] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -1456,6 +1458,74 @@ const WhatsApp = () => {
     }
   };
 
+  // Edit message via WasenderAPI
+  const editMessage = async () => {
+    if (!editingMessage || !editText.trim()) {
+      setEditingMessage(null);
+      setEditText("");
+      return;
+    }
+    
+    const messageId = editingMessage.message_id;
+    console.log("[WhatsApp] Edit message:", { id: editingMessage.id, message_id: messageId, newText: editText.substring(0, 30) });
+    
+    if (!messageId || String(messageId).startsWith("local-")) {
+      toast({ title: "Mensagem sem ID válido para editar", variant: "destructive" });
+      setEditingMessage(null);
+      setEditText("");
+      return;
+    }
+    
+    const numericMsgId = parseInt(String(messageId), 10);
+    
+    if (isNaN(numericMsgId)) {
+      toast({ title: "ID inválido para editar", variant: "destructive" });
+      setEditingMessage(null);
+      setEditText("");
+      return;
+    }
+    
+    try {
+      console.log("[WhatsApp] Editing message via WasenderAPI, msgId:", numericMsgId);
+      
+      const { data, error } = await supabase.functions.invoke("wasender-whatsapp", {
+        body: { action: "edit-message", msgId: numericMsgId, newText: editText.trim() },
+      });
+      
+      console.log("[WhatsApp] Edit API response:", { data, error });
+      
+      if (error) {
+        throw new Error(error.message || "Erro ao editar na API");
+      }
+      
+      if (data?.error) {
+        throw new Error(data.error);
+      }
+      
+      // Success - update local state
+      setMessages(prev => prev.map(m => 
+        m.id === editingMessage.id ? { ...m, text: editText.trim() } : m
+      ));
+      
+      // Update in database
+      await supabase.from("whatsapp_messages").update({ text: editText.trim() }).eq("id", editingMessage.id);
+      
+      toast({ title: "Mensagem editada" });
+    } catch (error: any) {
+      console.error("[WhatsApp] Error editing message:", error);
+      
+      const errorMsg = error?.message || "Erro desconhecido";
+      if (errorMsg.includes("422") || errorMsg.includes("time") || errorMsg.includes("expired")) {
+        toast({ title: "Tempo expirado", description: "O WhatsApp só permite editar mensagens recentes", variant: "destructive" });
+      } else {
+        toast({ title: "Erro ao editar", description: errorMsg, variant: "destructive" });
+      }
+    } finally {
+      setEditingMessage(null);
+      setEditText("");
+    }
+  };
+
   // Fetch missing profile photos in background
   const fetchMissingPhotos = useCallback(async () => {
     try {
@@ -2253,6 +2323,20 @@ const WhatsApp = () => {
                                       <Reply className="w-4 h-4" />
                                       Responder
                                     </button>
+                                    {/* Edit option - only for text messages without media */}
+                                    {!msg.mediaType && msg.text && (
+                                      <button
+                                        onClick={() => {
+                                          setEditingMessage(msg);
+                                          setEditText(msg.text);
+                                          setMessageMenuId(null);
+                                        }}
+                                        className="flex items-center gap-2 px-3 py-2 hover:bg-muted/50 w-full text-left text-sm text-foreground"
+                                      >
+                                        <Pencil className="w-4 h-4" />
+                                        Editar
+                                      </button>
+                                    )}
                                     <button
                                       onClick={() => deleteMessage(msg)}
                                       className="flex items-center gap-2 px-3 py-2 hover:bg-destructive/10 w-full text-left text-sm text-destructive"
@@ -2415,6 +2499,55 @@ const WhatsApp = () => {
                 )}
                 <div ref={messagesEndRef} />
               </div>
+
+              {/* Edit Message Preview */}
+              {editingMessage && (
+                <div className="px-4 py-2 bg-amber-50 dark:bg-amber-900/20 border-t border-amber-200 dark:border-amber-800 flex items-start gap-3">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-1">
+                      <Pencil className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
+                      <span className="text-xs font-medium text-amber-600 dark:text-amber-400">
+                        Editando mensagem
+                      </span>
+                    </div>
+                    <Input
+                      value={editText}
+                      onChange={(e) => setEditText(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" && !e.shiftKey) {
+                          e.preventDefault();
+                          editMessage();
+                        }
+                        if (e.key === "Escape") {
+                          setEditingMessage(null);
+                          setEditText("");
+                        }
+                      }}
+                      placeholder="Digite o novo texto..."
+                      className="text-sm bg-background"
+                      autoFocus
+                    />
+                  </div>
+                  <div className="flex gap-1">
+                    <button 
+                      onClick={() => {
+                        setEditingMessage(null);
+                        setEditText("");
+                      }}
+                      className="p-2 hover:bg-muted/50 rounded-full text-muted-foreground"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                    <button 
+                      onClick={editMessage}
+                      disabled={!editText.trim()}
+                      className="p-2 hover:bg-emerald-100 dark:hover:bg-emerald-900/30 rounded-full text-emerald-600 dark:text-emerald-400 disabled:opacity-50"
+                    >
+                      <Check className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+              )}
 
               {/* Reply Preview */}
               {replyToMessage && (
