@@ -8,6 +8,7 @@ import React from "react";
  * - ~text~ = strikethrough
  * - ```text``` = monospace (code block)
  * - `text` = inline code
+ * - URLs = clickable links
  */
 export function formatWhatsAppText(text: string | unknown): React.ReactNode {
   // Handle null, undefined, or non-string values
@@ -31,6 +32,9 @@ export function formatWhatsAppText(text: string | unknown): React.ReactNode {
   // Process in order: code blocks first, then inline formatting
   let keyIndex = 0;
 
+  // URL regex pattern
+  const urlRegex = /(https?:\/\/[^\s<>"{}|\\^`\[\]]+)/g;
+
   // Regex patterns for WhatsApp formatting
   const patterns = [
     { regex: /```([\s\S]*?)```/g, wrapper: (content: string, key: number) => <code key={key} className="block bg-muted/50 px-2 py-1 rounded text-xs font-mono whitespace-pre-wrap">{content}</code> },
@@ -39,6 +43,46 @@ export function formatWhatsAppText(text: string | unknown): React.ReactNode {
     { regex: /_([^_]+)_/g, wrapper: (content: string, key: number) => <em key={key}>{content}</em> },
     { regex: /~([^~]+)~/g, wrapper: (content: string, key: number) => <s key={key} className="line-through">{content}</s> },
   ];
+
+  // Process URLs in text
+  const processUrls = (input: string, startKey: number): React.ReactNode[] => {
+    const result: React.ReactNode[] = [];
+    let lastIndex = 0;
+    let match;
+    let currentKey = startKey;
+    
+    const regex = new RegExp(urlRegex.source, 'g');
+    while ((match = regex.exec(input)) !== null) {
+      // Add text before URL
+      if (match.index > lastIndex) {
+        result.push(input.slice(lastIndex, match.index));
+      }
+      
+      // Add clickable link
+      const url = match[1];
+      result.push(
+        <a 
+          key={currentKey++} 
+          href={url} 
+          target="_blank" 
+          rel="noopener noreferrer"
+          className="text-blue-600 dark:text-blue-400 hover:underline break-all"
+          onClick={(e) => e.stopPropagation()}
+        >
+          {url}
+        </a>
+      );
+      
+      lastIndex = match.index + match[0].length;
+    }
+    
+    // Add remaining text
+    if (lastIndex < input.length) {
+      result.push(input.slice(lastIndex));
+    }
+    
+    return result.length > 0 ? result : [input];
+  };
 
   // Process text with all patterns
   const processText = (input: string): React.ReactNode[] => {
@@ -83,9 +127,11 @@ export function formatWhatsAppText(text: string | unknown): React.ReactNode {
     
     // Build result
     for (const match of filteredMatches) {
-      // Add text before match
+      // Add text before match (process URLs in plain text)
       if (match.index > lastIndex) {
-        result.push(input.slice(lastIndex, match.index));
+        const plainText = input.slice(lastIndex, match.index);
+        result.push(...processUrls(plainText, keyIndex));
+        keyIndex += 10; // Reserve some keys for URLs
       }
       
       // Add formatted element
@@ -95,12 +141,13 @@ export function formatWhatsAppText(text: string | unknown): React.ReactNode {
       lastIndex = match.index + match.length;
     }
     
-    // Add remaining text
+    // Add remaining text (process URLs)
     if (lastIndex < input.length) {
-      result.push(input.slice(lastIndex));
+      const remainingText = input.slice(lastIndex);
+      result.push(...processUrls(remainingText, keyIndex));
     }
     
-    return result.length > 0 ? result : [input];
+    return result.length > 0 ? result : processUrls(input, keyIndex);
   };
 
   return <>{processText(text)}</>;
