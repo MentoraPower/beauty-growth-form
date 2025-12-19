@@ -242,7 +242,7 @@ export const AudioWaveform = ({ src, sent = false, renderFooter }: AudioWaveform
   // Show loading state while waveform loads
   if (!isLoaded && src) {
     return (
-      <div className="flex items-center gap-3 min-w-[200px] py-1">
+      <div className="flex items-center gap-3 w-full max-w-[260px] py-1">
         <div className="w-9 h-9 rounded-full bg-muted animate-pulse flex-shrink-0" />
         <div className="flex-1 h-8 bg-muted/50 rounded animate-pulse" />
       </div>
@@ -252,7 +252,7 @@ export const AudioWaveform = ({ src, sent = false, renderFooter }: AudioWaveform
   // Error state - no src
   if (!src) {
     return (
-      <div className="flex items-center gap-2 min-w-[200px] py-2 px-3 bg-muted/30 rounded-xl">
+      <div className="flex items-center gap-2 w-full max-w-[260px] py-2 px-3 bg-muted/30 rounded-xl">
         <span className="text-xs text-muted-foreground">Áudio indisponível</span>
       </div>
     );
@@ -261,7 +261,7 @@ export const AudioWaveform = ({ src, sent = false, renderFooter }: AudioWaveform
   const audioDuration = isPlaying || currentTime > 0 ? formatTime(currentTime) : formatTime(duration);
 
   return (
-    <div className="flex flex-col min-w-[260px]">
+    <div className="flex flex-col w-full max-w-[260px]">
       <audio ref={audioRef} src={src} preload="metadata" />
 
       {/* Player Row */}
