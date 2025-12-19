@@ -73,20 +73,22 @@ export function AddAppointmentDropdown({
 
   const computePosition = useCallback(() => {
     const x = anchorPosition?.x ?? window.innerWidth / 2;
-    const y = anchorPosition?.y ?? 120;
+    const y = anchorPosition?.y ?? window.innerHeight / 2;
 
     const rect = panelRef.current?.getBoundingClientRect();
-    const width = rect?.width ?? 380;
+    const width = rect?.width ?? 340;
     const height = rect?.height ?? 420;
     const margin = 12;
 
-    let left = x - width / 2;
+    // Prefer right side of click, fallback to left
+    let left = x + 12;
+    if (left + width + margin > window.innerWidth) {
+      left = x - width - 12;
+    }
     left = Math.max(margin, Math.min(left, window.innerWidth - width - margin));
 
-    let top = y + 12;
-    if (top + height + margin > window.innerHeight) {
-      top = y - height - 12;
-    }
+    // Center vertically relative to click
+    let top = y - height / 2;
     top = Math.max(margin, Math.min(top, window.innerHeight - height - margin));
 
     setPanelPosition({ left, top });
