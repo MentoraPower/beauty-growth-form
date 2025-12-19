@@ -26,7 +26,8 @@ export interface Appointment {
 
 export interface PendingSlot {
   date: Date;
-  hour: number;
+  startTime: string; // "HH:MM"
+  endTime: string;   // "HH:MM"
 }
 
 export default function CalendarPage() {
@@ -111,7 +112,9 @@ export default function CalendarPage() {
     const h = hour ?? 9;
     setSelectedDate(date);
     setSelectedHour(h);
-    setPendingSlot({ date, hour: h });
+    const startTimeStr = `${h.toString().padStart(2, "0")}:00`;
+    const endTimeStr = `${Math.min(h + 1, 23).toString().padStart(2, "0")}:00`;
+    setPendingSlot({ date, startTime: startTimeStr, endTime: endTimeStr });
     
     if (event) {
       setAnchorPosition({ x: event.clientX, y: event.clientY });
@@ -120,6 +123,12 @@ export default function CalendarPage() {
     }
     
     setDialogOpen(true);
+  };
+
+  const handlePendingSlotUpdate = (startTime: string, endTime: string) => {
+    if (pendingSlot) {
+      setPendingSlot({ ...pendingSlot, startTime, endTime });
+    }
   };
 
   const handleDialogOpenChange = (open: boolean) => {
@@ -273,6 +282,7 @@ export default function CalendarPage() {
         selectedHour={selectedHour}
         onSuccess={handleSuccess}
         anchorPosition={anchorPosition}
+        onPendingSlotUpdate={handlePendingSlotUpdate}
       />
     </div>
   );

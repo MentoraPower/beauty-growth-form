@@ -23,6 +23,7 @@ interface AddAppointmentDropdownProps {
   selectedHour: number | null;
   onSuccess: () => void;
   anchorPosition?: { x: number; y: number };
+  onPendingSlotUpdate?: (startTime: string, endTime: string) => void;
 }
 
 export function AddAppointmentDropdown({
@@ -32,6 +33,7 @@ export function AddAppointmentDropdown({
   selectedHour,
   onSuccess,
   anchorPosition,
+  onPendingSlotUpdate,
 }: AddAppointmentDropdownProps) {
   const [loading, setLoading] = useState(false);
   const [title, setTitle] = useState("");
@@ -66,10 +68,20 @@ export function AddAppointmentDropdown({
 
   const handleTimeChange = (
     value: string,
-    setter: React.Dispatch<React.SetStateAction<string>>
+    setter: React.Dispatch<React.SetStateAction<string>>,
+    isStart: boolean
   ) => {
     const formatted = formatTimeInput(value);
     setter(formatted);
+    
+    // Update pending slot in real-time
+    if (onPendingSlotUpdate && formatted.length === 5) {
+      if (isStart) {
+        onPendingSlotUpdate(formatted, endTime);
+      } else {
+        onPendingSlotUpdate(startTime, formatted);
+      }
+    }
   };
 
   const panelRef = useRef<HTMLDivElement>(null);
@@ -90,11 +102,14 @@ export function AddAppointmentDropdown({
   useEffect(() => {
     if (selectedHour !== null) {
       const h = selectedHour.toString().padStart(2, "0");
-      setStartTime(`${h}:00`);
+      const newStartTime = `${h}:00`;
       const endH = Math.min(selectedHour + 1, 23).toString().padStart(2, "0");
-      setEndTime(`${endH}:00`);
+      const newEndTime = `${endH}:00`;
+      setStartTime(newStartTime);
+      setEndTime(newEndTime);
+      onPendingSlotUpdate?.(newStartTime, newEndTime);
     }
-  }, [selectedHour]);
+  }, [selectedHour, onPendingSlotUpdate]);
 
   useEffect(() => {
     if (!open) resetForm();
@@ -253,7 +268,7 @@ export function AddAppointmentDropdown({
                   type="text"
                   inputMode="numeric"
                   value={startTime}
-                  onChange={(e) => handleTimeChange(e.target.value, setStartTime)}
+                  onChange={(e) => handleTimeChange(e.target.value, setStartTime, true)}
                   placeholder="00:00"
                   maxLength={5}
                   className="h-9 text-sm font-medium text-center"
@@ -267,7 +282,7 @@ export function AddAppointmentDropdown({
                   type="text"
                   inputMode="numeric"
                   value={endTime}
-                  onChange={(e) => handleTimeChange(e.target.value, setEndTime)}
+                  onChange={(e) => handleTimeChange(e.target.value, setEndTime, false)}
                   placeholder="00:00"
                   maxLength={5}
                   className="h-9 text-sm font-medium text-center"
