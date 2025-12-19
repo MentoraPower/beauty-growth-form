@@ -20,6 +20,7 @@ import { MoveLeadDropdown } from "@/components/crm/MoveLeadDropdown";
 import { EditableField } from "@/components/crm/EditableField";
 import { OnboardingSection, OnboardingBuilderData } from "@/components/onboarding/OnboardingSection";
 import { OnboardingFormBuilder } from "@/components/onboarding/OnboardingFormBuilder";
+import { WhatsAppChatDropdown } from "@/components/crm/WhatsAppChatDropdown";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -388,22 +389,24 @@ export default function LeadDetail() {
               )}
               
               {/* Name and Company */}
-              <div>
+              <div className="flex-1">
                 <div className="flex items-center gap-2">
                   {lead.clinic_name && (
                     <p className="uppercase tracking-wide text-xs text-muted-foreground font-medium">
                       {lead.clinic_name}
                     </p>
                   )}
-                  {isLeadIncomplete(lead) && (
-                    <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-4 border-amber-400 text-amber-600 bg-amber-50">
-                      Cadastro incompleto
-                    </Badge>
-                  )}
                 </div>
-                <h1 className="text-xl font-bold leading-tight">
-                  {lead.name === "Incompleto" ? "incompleto" : lead.name}
-                </h1>
+                <div className="flex items-center gap-2">
+                  <h1 className="text-xl font-bold leading-tight">
+                    {lead.name === "Incompleto" ? "incompleto" : lead.name}
+                  </h1>
+                  <WhatsAppChatDropdown 
+                    phone={lead.whatsapp || ""}
+                    countryCode={lead.country_code || "+55"}
+                    contactName={lead.name}
+                  />
+                </div>
               </div>
             </div>
             
