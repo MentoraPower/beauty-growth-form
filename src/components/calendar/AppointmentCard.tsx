@@ -1,8 +1,10 @@
 import { useDraggable } from "@dnd-kit/core";
-import { CSS } from "@dnd-kit/utilities";
-import { format } from "date-fns";
+import { format, addMinutes } from "date-fns";
 import { cn } from "@/lib/utils";
 import type { Appointment } from "@/pages/CalendarPage";
+
+const HOUR_HEIGHT = 60;
+const MINUTE_SNAP = 1;
 
 interface AppointmentCardProps {
   appointment: Appointment;
@@ -24,12 +26,33 @@ export function AppointmentCard({
     });
 
   const startTime = new Date(appointment.start_time);
-  const timeStr = format(startTime, "HH:mm");
+  const endTime = new Date(appointment.end_time);
+  
+  // Calculate real-time position based on drag delta
+  let displayStartTime = startTime;
+  let displayEndTime = endTime;
+  
+  if (isDragging && transform) {
+    const deltaMinutes = Math.round((transform.y / HOUR_HEIGHT) * 60 / MINUTE_SNAP) * MINUTE_SNAP;
+    displayStartTime = addMinutes(startTime, deltaMinutes);
+    displayEndTime = addMinutes(endTime, deltaMinutes);
+    
+    // Clamp to valid range
+    const startHour = displayStartTime.getHours();
+    const startMin = displayStartTime.getMinutes();
+    if (startHour < 0 || (startHour === 0 && startMin < 0)) {
+      displayStartTime = new Date(startTime);
+      displayStartTime.setHours(0, 0, 0, 0);
+      const duration = endTime.getTime() - startTime.getTime();
+      displayEndTime = new Date(displayStartTime.getTime() + duration);
+    }
+  }
+  
+  const timeStr = format(displayStartTime, "HH:mm");
 
   const dragStyle: React.CSSProperties = {
     ...style,
-    transform: CSS.Translate.toString(transform),
-    transition: isDragging ? undefined : 'transform 150ms ease',
+    transform: transform ? `translate3d(0, ${transform.y}px, 0)` : undefined,
     cursor: isDragging ? "grabbing" : "grab",
     zIndex: isDragging ? 100 : undefined,
   };
@@ -49,8 +72,8 @@ export function AppointmentCard({
         style={dragStyle}
         onClick={handleClick}
         className={cn(
-          "text-xs px-1.5 py-0.5 rounded bg-emerald-700 text-white truncate hover:bg-emerald-600 transition-colors",
-          isDragging && "shadow-xl scale-105"
+          "text-xs px-1.5 py-0.5 rounded bg-emerald-700 text-white truncate hover:bg-emerald-600",
+          isDragging && "shadow-lg opacity-90"
         )}
       >
         {appointment.title}
@@ -67,7 +90,7 @@ export function AppointmentCard({
       onClick={handleClick}
       className={cn(
         "absolute left-1 right-1 px-2 py-1 rounded-md bg-emerald-700 text-white text-xs overflow-hidden hover:bg-emerald-600",
-        isDragging && "shadow-xl scale-[1.02] ring-2 ring-primary/50"
+        isDragging && "shadow-lg opacity-95"
       )}
     >
       <div className="font-medium truncate">{appointment.title}</div>
