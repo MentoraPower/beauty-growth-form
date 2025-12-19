@@ -13,6 +13,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { TimePicker } from "@/components/ui/time-picker";
 import { supabase } from "@/integrations/supabase/client";
 import type { Appointment } from "@/pages/CalendarPage";
 
@@ -364,22 +365,20 @@ export function AddAppointmentDropdown({
             <div className="flex-1">
               <p className="text-sm font-medium text-foreground capitalize">{formattedDate}</p>
               <div className="flex items-center gap-2 mt-1">
-                <Input
-                  type="time"
-                  step={60}
+                <TimePicker
                   value={startTime}
-                  onChange={(e) => handleTimeChange(e.target.value, setStartTime, true)}
-                  onBlur={() => handleTimeBlur(startTime, setStartTime, true)}
-                  className="h-8 w-24 text-sm text-center bg-muted/50 border-0"
+                  onChange={(val) => {
+                    setStartTime(val);
+                    syncPendingSlot(val, endTime);
+                  }}
                 />
                 <span className="text-muted-foreground">–</span>
-                <Input
-                  type="time"
-                  step={60}
+                <TimePicker
                   value={endTime}
-                  onChange={(e) => handleTimeChange(e.target.value, setEndTime, false)}
-                  onBlur={() => handleTimeBlur(endTime, setEndTime, false)}
-                  className="h-8 w-24 text-sm text-center bg-muted/50 border-0"
+                  onChange={(val) => {
+                    setEndTime(val);
+                    syncPendingSlot(startTime, val);
+                  }}
                 />
               </div>
             </div>
