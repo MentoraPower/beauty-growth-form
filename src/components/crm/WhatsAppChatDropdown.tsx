@@ -351,13 +351,6 @@ export function WhatsAppChatDropdown({ phone, countryCode, contactName }: WhatsA
               <p className="font-medium text-sm truncate">{contactName}</p>
               <p className="text-xs text-muted-foreground">{countryCode} {phone}</p>
             </div>
-            <button 
-              onClick={() => fetchChatData()}
-              className="p-1.5 rounded-full hover:bg-muted transition-colors"
-              title="Atualizar"
-            >
-              <RefreshCw className={cn("h-4 w-4 text-muted-foreground", isLoading && "animate-spin")} />
-            </button>
           </div>
 
           {/* Messages Area */}
