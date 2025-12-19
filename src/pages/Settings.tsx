@@ -4,19 +4,15 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { TeamManagement } from "@/components/settings/TeamManagement";
-import { useAppSettings } from "@/hooks/useAppSettings";
-import { CalendarDays } from "lucide-react";
 
 export default function Settings() {
-  const [activeTab, setActiveTab] = useState<"profile" | "team" | "customize">("profile");
+  const [activeTab, setActiveTab] = useState<"profile" | "team">("profile");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const queryClient = useQueryClient();
-  const { settings, updateSetting } = useAppSettings();
 
   // Check if current user is admin
   const { data: isAdmin } = useQuery({
@@ -91,7 +87,6 @@ export default function Settings() {
   const tabs = [
     { id: "profile" as const, label: "Perfil" },
     ...(isAdmin ? [{ id: "team" as const, label: "Equipe" }] : []),
-    { id: "customize" as const, label: "Personalizado" },
   ];
 
   return (
@@ -165,34 +160,6 @@ export default function Settings() {
       )}
 
       {activeTab === "team" && <TeamManagement />}
-
-      {activeTab === "customize" && (
-        <div className="max-w-md space-y-6">
-          <div className="space-y-4">
-            {/* Agenda Toggle */}
-            <div className="flex items-center justify-between p-4 rounded-lg border border-border bg-muted/30">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                  <CalendarDays className="h-5 w-5 text-primary" />
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-foreground">Agenda</p>
-                  <p className="text-xs text-muted-foreground">
-                    Mostrar a Agenda no menu lateral
-                  </p>
-                </div>
-              </div>
-              <Switch
-                checked={settings.agendaEnabled}
-                onCheckedChange={(checked) => {
-                  updateSetting("agendaEnabled", checked);
-                  toast.success(checked ? "Agenda ativada" : "Agenda desativada");
-                }}
-              />
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

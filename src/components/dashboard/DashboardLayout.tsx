@@ -8,7 +8,6 @@ import { CRMOriginsPanel } from "./CRMOriginsPanel";
 import { PageTransition } from "./PageTransition";
 import { LoadingBar } from "@/components/LoadingBar";
 import { supabase } from "@/integrations/supabase/client";
-import { useAppSettingsListener } from "@/hooks/useAppSettings";
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -35,7 +34,6 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
   const [activePanel, setActivePanel] = useState<ActivePanel>(globalActivePanel);
   const [crmSubmenuOpen, setCrmSubmenuOpen] = useState(activePanel === 'crm');
   const [canAccessWhatsapp, setCanAccessWhatsapp] = useState(false);
-  const appSettings = useAppSettingsListener();
   const location = useLocation();
   const navigate = useNavigate();
   const sidebarRef = useRef<HTMLElement>(null);
@@ -93,7 +91,7 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
     fetchPermissions();
   }, []);
 
-  // Build nav items based on permissions and settings
+  // Build nav items based on permissions
   const bottomNavItems = [
     ...(canAccessWhatsapp ? [{ 
       id: 'whatsapp' as ActivePanel, 
@@ -101,12 +99,12 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
       icon: WhatsAppIcon, 
       label: "WhatsApp",
     }] : []),
-    ...(appSettings.agendaEnabled ? [{ 
+    { 
       id: 'agenda' as ActivePanel, 
       href: "/admin/agenda", 
       icon: CalendarDays, 
       label: "Agenda",
-    }] : []),
+    },
     { 
       id: 'settings' as ActivePanel, 
       href: "/admin/settings", 
