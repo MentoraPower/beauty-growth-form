@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import { Plus, X, Zap, Trash2, Edit2, Check, Search } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
+import { Plus, X, Zap, Trash2, Edit2, Check, Search, Mic, Square, Play, Pause, Type, Volume2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -7,37 +7,54 @@ import { cn } from "@/lib/utils";
 
 interface QuickMessagesProps {
   onSelect: (message: string) => void;
+  onSelectAudio?: (audioBase64: string) => void;
 }
 
 interface QuickMessage {
   id: string;
   name: string;
   text: string;
+  type: "text" | "audio";
+  audioData?: string; // base64 encoded audio
+  audioDuration?: number; // duration in seconds
 }
 
 const STORAGE_KEY = "whatsapp_quick_messages";
 
-export function QuickMessages({ onSelect }: QuickMessagesProps) {
+export function QuickMessages({ onSelect, onSelectAudio }: QuickMessagesProps) {
   const [messages, setMessages] = useState<QuickMessage[]>(() => {
     try {
       const stored = localStorage.getItem(STORAGE_KEY);
       const parsed = stored ? JSON.parse(stored) : [];
-      // Migrate old format (without name) to new format
       return parsed.map((m: any) => ({
         ...m,
         name: m.name || m.text?.slice(0, 30) || "Mensagem",
+        type: m.type || "text",
       }));
     } catch {
       return [];
     }
   });
   const [isAdding, setIsAdding] = useState(false);
+  const [addingType, setAddingType] = useState<"text" | "audio">("text");
   const [newName, setNewName] = useState("");
   const [newMessage, setNewMessage] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editName, setEditName] = useState("");
   const [editText, setEditText] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
+  
+  // Audio recording state
+  const [isRecording, setIsRecording] = useState(false);
+  const [recordingTime, setRecordingTime] = useState(0);
+  const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
+  const [audioUrl, setAudioUrl] = useState<string | null>(null);
+  const [playingId, setPlayingId] = useState<string | null>(null);
+  
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
+  const recordingIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
 
   useEffect(() => {
     try {
@@ -45,26 +62,135 @@ export function QuickMessages({ onSelect }: QuickMessagesProps) {
     } catch {}
   }, [messages]);
 
-  const handleAdd = () => {
+  // Cleanup audio URL on unmount
+  useEffect(() => {
+    return () => {
+      if (audioUrl) URL.revokeObjectURL(audioUrl);
+    };
+  }, [audioUrl]);
+
+  const startRecording = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mediaRecorder = new MediaRecorder(stream, { mimeType: "audio/webm" });
+      mediaRecorderRef.current = mediaRecorder;
+      audioChunksRef.current = [];
+
+      mediaRecorder.ondataavailable = (e) => {
+        if (e.data.size > 0) {
+          audioChunksRef.current.push(e.data);
+        }
+      };
+
+      mediaRecorder.onstop = () => {
+        const blob = new Blob(audioChunksRef.current, { type: "audio/webm" });
+        setAudioBlob(blob);
+        const url = URL.createObjectURL(blob);
+        setAudioUrl(url);
+        stream.getTracks().forEach((track) => track.stop());
+      };
+
+      mediaRecorder.start(100);
+      setIsRecording(true);
+      setRecordingTime(0);
+
+      recordingIntervalRef.current = setInterval(() => {
+        setRecordingTime((prev) => prev + 1);
+      }, 1000);
+    } catch (error) {
+      console.error("Error starting recording:", error);
+    }
+  };
+
+  const stopRecording = () => {
+    if (mediaRecorderRef.current && isRecording) {
+      mediaRecorderRef.current.stop();
+      setIsRecording(false);
+      if (recordingIntervalRef.current) {
+        clearInterval(recordingIntervalRef.current);
+      }
+    }
+  };
+
+  const cancelRecording = () => {
+    if (mediaRecorderRef.current && isRecording) {
+      mediaRecorderRef.current.stop();
+    }
+    setIsRecording(false);
+    setAudioBlob(null);
+    if (audioUrl) {
+      URL.revokeObjectURL(audioUrl);
+      setAudioUrl(null);
+    }
+    setRecordingTime(0);
+    if (recordingIntervalRef.current) {
+      clearInterval(recordingIntervalRef.current);
+    }
+  };
+
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, "0")}`;
+  };
+
+  const handleAddText = () => {
     if (!newMessage.trim()) return;
     
     const msg: QuickMessage = {
       id: `qm-${Date.now()}`,
       name: newName.trim() || newMessage.slice(0, 30),
       text: newMessage.trim(),
+      type: "text",
     };
     
     setMessages((prev) => [...prev, msg]);
+    resetAddForm();
+  };
+
+  const handleAddAudio = async () => {
+    if (!audioBlob || !newName.trim()) return;
+
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      const base64 = reader.result as string;
+      const msg: QuickMessage = {
+        id: `qm-${Date.now()}`,
+        name: newName.trim(),
+        text: "🎵 Áudio",
+        type: "audio",
+        audioData: base64,
+        audioDuration: recordingTime,
+      };
+      setMessages((prev) => [...prev, msg]);
+      resetAddForm();
+    };
+    reader.readAsDataURL(audioBlob);
+  };
+
+  const resetAddForm = () => {
     setNewName("");
     setNewMessage("");
     setIsAdding(false);
+    setAddingType("text");
+    setAudioBlob(null);
+    if (audioUrl) {
+      URL.revokeObjectURL(audioUrl);
+      setAudioUrl(null);
+    }
+    setRecordingTime(0);
   };
 
   const handleDelete = (id: string) => {
     setMessages((prev) => prev.filter((m) => m.id !== id));
+    if (playingId === id) {
+      audioRef.current?.pause();
+      setPlayingId(null);
+    }
   };
 
   const handleStartEdit = (msg: QuickMessage) => {
+    if (msg.type === "audio") return; // Can't edit audio content
     setEditingId(msg.id);
     setEditName(msg.name);
     setEditText(msg.text);
@@ -91,6 +217,35 @@ export function QuickMessages({ onSelect }: QuickMessagesProps) {
     setEditText("");
   };
 
+  const handleSelectMessage = (msg: QuickMessage) => {
+    if (msg.type === "audio" && msg.audioData && onSelectAudio) {
+      onSelectAudio(msg.audioData);
+    } else {
+      onSelect(msg.text);
+    }
+  };
+
+  const playAudio = (msg: QuickMessage, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!msg.audioData) return;
+
+    if (playingId === msg.id) {
+      audioRef.current?.pause();
+      setPlayingId(null);
+      return;
+    }
+
+    if (audioRef.current) {
+      audioRef.current.pause();
+    }
+
+    const audio = new Audio(msg.audioData);
+    audioRef.current = audio;
+    audio.onended = () => setPlayingId(null);
+    audio.play();
+    setPlayingId(msg.id);
+  };
+
   const filteredMessages = messages.filter((msg) => {
     if (!searchQuery.trim()) return true;
     const query = searchQuery.toLowerCase();
@@ -110,10 +265,10 @@ export function QuickMessages({ onSelect }: QuickMessagesProps) {
         </div>
         <button
           onClick={() => {
-            setIsAdding(!isAdding);
             if (isAdding) {
-              setNewName("");
-              setNewMessage("");
+              resetAddForm();
+            } else {
+              setIsAdding(true);
             }
           }}
           className={cn(
@@ -142,7 +297,38 @@ export function QuickMessages({ onSelect }: QuickMessagesProps) {
 
       {/* Add new message */}
       {isAdding && (
-        <div className="p-3 border-b border-border bg-muted/20 space-y-2">
+        <div className="p-3 border-b border-border bg-muted/20 space-y-3">
+          {/* Type selector */}
+          <div className="flex gap-2">
+            <button
+              onClick={() => {
+                setAddingType("text");
+                cancelRecording();
+              }}
+              className={cn(
+                "flex-1 py-2 rounded-lg text-sm font-medium flex items-center justify-center gap-2 transition-colors",
+                addingType === "text"
+                  ? "bg-emerald-500 text-white"
+                  : "bg-muted hover:bg-muted/80 text-muted-foreground"
+              )}
+            >
+              <Type className="w-4 h-4" />
+              Texto
+            </button>
+            <button
+              onClick={() => setAddingType("audio")}
+              className={cn(
+                "flex-1 py-2 rounded-lg text-sm font-medium flex items-center justify-center gap-2 transition-colors",
+                addingType === "audio"
+                  ? "bg-emerald-500 text-white"
+                  : "bg-muted hover:bg-muted/80 text-muted-foreground"
+              )}
+            >
+              <Volume2 className="w-4 h-4" />
+              Áudio
+            </button>
+          </div>
+
           <Input
             placeholder="Nome da mensagem (ex: Saudação)"
             value={newName}
@@ -150,19 +336,90 @@ export function QuickMessages({ onSelect }: QuickMessagesProps) {
             className="h-9 text-sm bg-background"
             autoFocus
           />
-          <Textarea
-            placeholder="Digite o conteúdo da mensagem..."
-            value={newMessage}
-            onChange={(e) => setNewMessage(e.target.value)}
-            className="text-sm bg-background min-h-[80px] resize-none"
-          />
-          <button
-            onClick={handleAdd}
-            disabled={!newMessage.trim()}
-            className="w-full py-2 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-          >
-            Salvar Mensagem
-          </button>
+
+          {addingType === "text" ? (
+            <>
+              <Textarea
+                placeholder="Digite o conteúdo da mensagem..."
+                value={newMessage}
+                onChange={(e) => setNewMessage(e.target.value)}
+                className="text-sm bg-background min-h-[80px] resize-none"
+              />
+              <button
+                onClick={handleAddText}
+                disabled={!newMessage.trim()}
+                className="w-full py-2 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                Salvar Mensagem
+              </button>
+            </>
+          ) : (
+            <>
+              {/* Audio Recording UI */}
+              <div className="bg-background rounded-lg p-3 border border-border/50">
+                {!audioBlob ? (
+                  <div className="flex items-center justify-center gap-4">
+                    {isRecording ? (
+                      <>
+                        <div className="flex items-center gap-2">
+                          <div className="w-3 h-3 bg-red-500 rounded-full animate-pulse" />
+                          <span className="text-sm font-medium">{formatTime(recordingTime)}</span>
+                        </div>
+                        <button
+                          onClick={stopRecording}
+                          className="p-3 bg-red-500 hover:bg-red-600 text-white rounded-full transition-colors"
+                        >
+                          <Square className="w-5 h-5" />
+                        </button>
+                        <button
+                          onClick={cancelRecording}
+                          className="p-2 hover:bg-muted rounded-full transition-colors"
+                        >
+                          <X className="w-5 h-5 text-muted-foreground" />
+                        </button>
+                      </>
+                    ) : (
+                      <button
+                        onClick={startRecording}
+                        className="p-4 bg-emerald-500 hover:bg-emerald-600 text-white rounded-full transition-colors"
+                      >
+                        <Mic className="w-6 h-6" />
+                      </button>
+                    )}
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-3">
+                    <button
+                      onClick={() => {
+                        const audio = new Audio(audioUrl!);
+                        audio.play();
+                      }}
+                      className="p-2 bg-emerald-500 hover:bg-emerald-600 text-white rounded-full transition-colors"
+                    >
+                      <Play className="w-4 h-4" />
+                    </button>
+                    <div className="flex-1 h-1 bg-muted rounded-full">
+                      <div className="h-full w-full bg-emerald-500/30 rounded-full" />
+                    </div>
+                    <span className="text-xs text-muted-foreground">{formatTime(recordingTime)}</span>
+                    <button
+                      onClick={cancelRecording}
+                      className="p-1 hover:bg-muted rounded transition-colors"
+                    >
+                      <X className="w-4 h-4 text-muted-foreground" />
+                    </button>
+                  </div>
+                )}
+              </div>
+              <button
+                onClick={handleAddAudio}
+                disabled={!audioBlob || !newName.trim()}
+                className="w-full py-2 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                Salvar Áudio
+              </button>
+            </>
+          )}
         </div>
       )}
 
@@ -225,30 +482,78 @@ export function QuickMessages({ onSelect }: QuickMessagesProps) {
                     </div>
                   ) : (
                     <div
-                      onClick={() => onSelect(msg.text)}
+                      onClick={() => handleSelectMessage(msg)}
                       className="flex items-stretch cursor-pointer hover:bg-muted/40 rounded-lg transition-colors overflow-hidden"
                     >
                       {/* Left side - Name */}
-                      <div className="w-28 shrink-0 bg-emerald-500/10 dark:bg-emerald-500/20 px-3 py-2.5 flex items-center border-r border-emerald-500/20">
-                        <p className="text-xs font-semibold text-emerald-700 dark:text-emerald-400 truncate">{msg.name}</p>
+                      <div className={cn(
+                        "w-28 shrink-0 px-3 py-2.5 flex items-center border-r",
+                        msg.type === "audio" 
+                          ? "bg-purple-500/10 dark:bg-purple-500/20 border-purple-500/20"
+                          : "bg-emerald-500/10 dark:bg-emerald-500/20 border-emerald-500/20"
+                      )}>
+                        <div className="flex items-center gap-1.5 min-w-0">
+                          {msg.type === "audio" && (
+                            <Volume2 className="w-3 h-3 text-purple-500 shrink-0" />
+                          )}
+                          <p className={cn(
+                            "text-xs font-semibold truncate",
+                            msg.type === "audio" 
+                              ? "text-purple-700 dark:text-purple-400"
+                              : "text-emerald-700 dark:text-emerald-400"
+                          )}>{msg.name}</p>
+                        </div>
                       </div>
                       
-                      {/* Right side - Message */}
-                      <div className="flex-1 px-3 py-2 bg-muted/20 relative">
-                        <p className="text-sm text-foreground whitespace-pre-wrap line-clamp-2 pr-14">{msg.text}</p>
+                      {/* Right side - Message/Audio */}
+                      <div className="flex-1 px-3 py-2 bg-muted/20 relative flex items-center">
+                        {msg.type === "audio" ? (
+                          <div className="flex items-center gap-2 pr-14">
+                            <button
+                              onClick={(e) => playAudio(msg, e)}
+                              className={cn(
+                                "p-1.5 rounded-full transition-colors",
+                                playingId === msg.id 
+                                  ? "bg-purple-500 text-white" 
+                                  : "bg-purple-500/20 text-purple-500 hover:bg-purple-500/30"
+                              )}
+                            >
+                              {playingId === msg.id ? (
+                                <Pause className="w-3 h-3" />
+                              ) : (
+                                <Play className="w-3 h-3" />
+                              )}
+                            </button>
+                            <div className="flex-1 h-1 bg-purple-500/20 rounded-full min-w-[60px]">
+                              <div className={cn(
+                                "h-full bg-purple-500 rounded-full transition-all",
+                                playingId === msg.id ? "w-full animate-pulse" : "w-0"
+                              )} />
+                            </div>
+                            {msg.audioDuration && (
+                              <span className="text-xs text-muted-foreground">
+                                {formatTime(msg.audioDuration)}
+                              </span>
+                            )}
+                          </div>
+                        ) : (
+                          <p className="text-sm text-foreground whitespace-pre-wrap line-clamp-2 pr-14">{msg.text}</p>
+                        )}
                         
                         {/* Action buttons */}
                         <div className="absolute right-2 top-1/2 -translate-y-1/2 flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleStartEdit(msg);
-                            }}
-                            className="p-1.5 hover:bg-muted rounded transition-colors"
-                            title="Editar"
-                          >
-                            <Edit2 className="w-3.5 h-3.5 text-muted-foreground" />
-                          </button>
+                          {msg.type === "text" && (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleStartEdit(msg);
+                              }}
+                              className="p-1.5 hover:bg-muted rounded transition-colors"
+                              title="Editar"
+                            >
+                              <Edit2 className="w-3.5 h-3.5 text-muted-foreground" />
+                            </button>
+                          )}
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
