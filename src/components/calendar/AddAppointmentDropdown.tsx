@@ -52,43 +52,64 @@ export function AddAppointmentDropdown({
 
   const isEditing = !!editingAppointment;
 
-  // Simple time input - just let user type, format on blur
+  // Time inputs: keep native typing (always shows HH:MM), but still auto-fix on blur.
+  const syncPendingSlot = useCallback(
+    (nextStart: string, nextEnd: string) => {
+      onPendingSlotUpdate?.(nextStart, nextEnd);
+    },
+    [onPendingSlotUpdate]
+  );
+
+  const handleTimeChange = useCallback(
+    (
+      value: string,
+      setter: React.Dispatch<React.SetStateAction<string>>,
+      isStart: boolean
+    ) => {
+      setter(value);
+      if (!value || value.length !== 5) return;
+
+      syncPendingSlot(isStart ? value : startTime, isStart ? endTime : value);
+    },
+    [syncPendingSlot, startTime, endTime]
+  );
+
   const handleTimeBlur = (
     value: string,
     setter: React.Dispatch<React.SetStateAction<string>>,
     isStart: boolean
   ) => {
     const digits = value.replace(/\D/g, "");
-    
+
     if (digits.length === 0) {
       const defaultTime = isStart ? "09:00" : "10:00";
       setter(defaultTime);
-      onPendingSlotUpdate?.(isStart ? defaultTime : startTime, isStart ? endTime : defaultTime);
+      syncPendingSlot(isStart ? defaultTime : startTime, isStart ? endTime : defaultTime);
       return;
     }
-    
+
     let hours = 0;
     let minutes = 0;
-    
-    if (digits.length === 1) {
-      hours = parseInt(digits, 10);
-    } else if (digits.length === 2) {
-      hours = parseInt(digits, 10);
+
+    if (digits.length <= 2) {
+      hours = parseInt(digits, 10) || 0;
     } else if (digits.length === 3) {
-      hours = parseInt(digits.slice(0, 1), 10);
-      minutes = parseInt(digits.slice(1, 3), 10);
+      hours = parseInt(digits.slice(0, 1), 10) || 0;
+      minutes = parseInt(digits.slice(1, 3), 10) || 0;
     } else {
-      hours = parseInt(digits.slice(0, 2), 10);
-      minutes = parseInt(digits.slice(2, 4), 10);
+      hours = parseInt(digits.slice(0, 2), 10) || 0;
+      minutes = parseInt(digits.slice(2, 4), 10) || 0;
     }
-    
+
     hours = Math.min(Math.max(hours, 0), 23);
     minutes = Math.min(Math.max(minutes, 0), 59);
-    
-    const formatted = `${hours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}`;
+
+    const formatted = `${hours.toString().padStart(2, "0")}:${minutes
+      .toString()
+      .padStart(2, "0")}`;
+
     setter(formatted);
-    
-    onPendingSlotUpdate?.(isStart ? formatted : startTime, isStart ? endTime : formatted);
+    syncPendingSlot(isStart ? formatted : startTime, isStart ? endTime : formatted);
   };
 
   const panelRef = useRef<HTMLDivElement>(null);
@@ -344,25 +365,21 @@ export function AddAppointmentDropdown({
               <p className="text-sm font-medium text-foreground capitalize">{formattedDate}</p>
               <div className="flex items-center gap-2 mt-1">
                 <Input
-                  type="text"
-                  inputMode="numeric"
+                  type="time"
+                  step={60}
                   value={startTime}
-                  onChange={(e) => setStartTime(e.target.value)}
+                  onChange={(e) => handleTimeChange(e.target.value, setStartTime, true)}
                   onBlur={() => handleTimeBlur(startTime, setStartTime, true)}
-                  placeholder="00:00"
-                  maxLength={5}
-                  className="h-8 w-20 text-sm text-center bg-muted/50 border-0"
+                  className="h-8 w-24 text-sm text-center bg-muted/50 border-0"
                 />
                 <span className="text-muted-foreground">–</span>
                 <Input
-                  type="text"
-                  inputMode="numeric"
+                  type="time"
+                  step={60}
                   value={endTime}
-                  onChange={(e) => setEndTime(e.target.value)}
+                  onChange={(e) => handleTimeChange(e.target.value, setEndTime, false)}
                   onBlur={() => handleTimeBlur(endTime, setEndTime, false)}
-                  placeholder="00:00"
-                  maxLength={5}
-                  className="h-8 w-20 text-sm text-center bg-muted/50 border-0"
+                  className="h-8 w-24 text-sm text-center bg-muted/50 border-0"
                 />
               </div>
             </div>
