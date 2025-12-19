@@ -318,14 +318,58 @@ async function handler(req: Request): Promise<Response> {
     // =========================
     if (action === "send-audio") {
       const to = formatPhoneForApi(phone);
-      console.log(`[Wasender] Sending audio to ${to}: ${mediaUrl}`);
+      
+      // Support both mediaUrl and audioBase64
+      let audioUrl = mediaUrl;
+      
+      // If audioBase64 is provided (from dropdown), upload to storage first
+      if (!audioUrl && body.audioBase64) {
+        console.log(`[Wasender] Converting audioBase64 to storage URL...`);
+        
+        // Decode base64 and upload to storage
+        const base64Data = body.audioBase64;
+        const binaryStr = atob(base64Data);
+        const bytes = new Uint8Array(binaryStr.length);
+        for (let i = 0; i < binaryStr.length; i++) {
+          bytes[i] = binaryStr.charCodeAt(i);
+        }
+        
+        const timestamp = Date.now();
+        const filename = `${to}_${timestamp}.mp3`;
+        const filePath = `audios/${filename}`;
+        
+        const { error: uploadError } = await supabase.storage
+          .from('whatsapp-media')
+          .upload(filePath, bytes, {
+            contentType: 'audio/mpeg',
+            cacheControl: '3600',
+          });
+        
+        if (uploadError) {
+          console.error(`[Wasender] Upload error:`, uploadError);
+          throw new Error(`Failed to upload audio: ${uploadError.message}`);
+        }
+        
+        const { data: { publicUrl } } = supabase.storage
+          .from('whatsapp-media')
+          .getPublicUrl(filePath);
+        
+        audioUrl = publicUrl;
+        console.log(`[Wasender] Audio uploaded to: ${audioUrl}`);
+      }
+      
+      console.log(`[Wasender] Sending audio to ${to}: ${audioUrl}`);
+      
+      if (!audioUrl) {
+        throw new Error("No audio URL or base64 data provided");
+      }
       
       // Use /send-message with audioUrl parameter
       const result = await wasenderRequest("/send-message", {
         method: "POST",
         body: JSON.stringify({ 
           to, 
-          audioUrl: mediaUrl,
+          audioUrl: audioUrl,
         }),
       });
 

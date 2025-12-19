@@ -1722,13 +1722,17 @@ const WhatsApp = () => {
         (payload) => {
           const msg = payload.new as any;
           
-          // Update message status (for DELETED, READ, etc.)
+          // Update message status and text (for DELETED, READ, edited messages, etc.)
           setMessages(prev => prev.map(m => {
             if (m.id !== msg.id) return m;
 
             const nextStatus = mergeStatus(m.status, msg.status);
             return {
               ...m,
+              // Update text if it changed (for edited messages)
+              text: msg.text !== undefined ? msg.text : m.text,
+              // Preserve message_id from DB
+              message_id: msg.message_id ?? m.message_id,
               status: nextStatus,
               read: isViewedStatus(nextStatus),
               sent: m.sent || isOutgoingStatus(nextStatus),
@@ -2472,7 +2476,7 @@ const WhatsApp = () => {
                                   )}
                                 </>
                               ) : (
-                                <p className="text-sm text-foreground whitespace-pre-wrap">
+                                <div className="text-sm text-foreground whitespace-pre-wrap break-words">
                                   {formatWhatsAppText(msg.text)}
                                   <span className="inline-flex items-center gap-1 ml-2 text-[10px] text-muted-foreground align-middle">
                                     {msg.status === "DELETED" && (
@@ -2496,7 +2500,7 @@ const WhatsApp = () => {
                                             : <Check className="w-3.5 h-3.5 text-muted-foreground" />
                                     )}
                                   </span>
-                                </p>
+                                </div>
                               )}
                             </div>
                             {/* Reply button for sent messages (right side) */}
