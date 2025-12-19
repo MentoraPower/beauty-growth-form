@@ -2776,6 +2776,26 @@ const WhatsApp = () => {
                           >
                             <Zap className={cn("w-5 h-5 transition-colors", showQuickMessages ? "text-amber-500" : "text-muted-foreground")} />
                           </button>
+                          
+                          {showQuickMessages && (
+                            <div 
+                              ref={quickMsgPickerRef}
+                              className="absolute bottom-full right-0 mb-2 z-50"
+                            >
+                              <QuickMessages 
+                                onSelect={(text) => {
+                                  setMessage(text);
+                                  setShowQuickMessages(false);
+                                }}
+                                onSelectAudio={async (audioBase64) => {
+                                  setShowQuickMessages(false);
+                                  const response = await fetch(audioBase64);
+                                  const blob = await response.blob();
+                                  await sendAudioMessage(blob, blob.type || "audio/webm");
+                                }}
+                              />
+                            </div>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -2850,32 +2870,6 @@ const WhatsApp = () => {
             })
           }
         />
-      )}
-
-      {/* Quick Messages Popup - Fixed position to avoid overflow issues */}
-      {showQuickMessages && (
-        <div 
-          ref={quickMsgPickerRef} 
-          className="fixed z-[9999] shadow-2xl"
-          style={{ 
-            bottom: '80px',
-            right: '50px'
-          }}
-        >
-          <QuickMessages 
-            onSelect={(text) => {
-              setMessage(text);
-              setShowQuickMessages(false);
-            }}
-            onSelectAudio={async (audioBase64) => {
-              setShowQuickMessages(false);
-              // Convert base64 data URL to blob
-              const response = await fetch(audioBase64);
-              const blob = await response.blob();
-              await sendAudioMessage(blob, blob.type || "audio/webm");
-            }}
-          />
-        </div>
       )}
 
       {/* Block Contact Confirmation Dialog */}
