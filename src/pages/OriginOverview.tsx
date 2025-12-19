@@ -367,13 +367,13 @@ const OriginOverview = () => {
 
             {/* SDR Appointments Chart */}
             <Card className="bg-white border border-black/5 shadow-none">
-              <CardHeader className="pb-2">
+              <CardHeader className="pb-4">
                 <CardTitle className="text-base font-semibold text-foreground">
                   Agendamentos por SDR
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="space-y-3">
+                <div className="space-y-4">
                   {(() => {
                     const sdrCounts = appointments.reduce((acc, apt) => {
                       const sdr = apt.sdr_name || "Sem SDR";
@@ -393,20 +393,20 @@ const OriginOverview = () => {
                     }
 
                     return sortedSdrs.map(([sdr, count]) => (
-                      <div key={sdr} className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-full bg-violet-100 flex items-center justify-center flex-shrink-0">
-                          <User className="h-4 w-4 text-violet-600" />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center justify-between mb-1">
-                            <span className="text-sm font-medium text-foreground truncate">{sdr}</span>
-                            <span className="text-sm font-bold text-foreground ml-2">{count}</span>
-                          </div>
-                          <div className="h-2 bg-muted rounded-full overflow-hidden">
+                      <div key={sdr} className="space-y-1.5">
+                        <span className="text-sm font-medium text-foreground">{sdr}</span>
+                        <div className="flex items-center gap-3">
+                          <div className="flex-1 h-8 bg-muted/50 rounded-lg overflow-hidden">
                             <div 
-                              className="h-full bg-gradient-to-r from-violet-500 to-violet-400 rounded-full transition-all duration-500"
+                              className="h-full bg-foreground rounded-lg transition-all duration-700 ease-out"
                               style={{ width: `${(count / maxCount) * 100}%` }}
                             />
+                          </div>
+                          <div className="flex items-center gap-2 flex-shrink-0">
+                            <div className="w-8 h-8 rounded-full bg-foreground flex items-center justify-center">
+                              <User className="h-4 w-4 text-background" />
+                            </div>
+                            <span className="text-lg font-bold text-foreground min-w-[24px]">{count}</span>
                           </div>
                         </div>
                       </div>
