@@ -76,12 +76,22 @@ function DayCell({
       >
         {format(day, "d")}
       </div>
-      <div className="space-y-0.5">
-        {dayAppointments.slice(0, 3).map((apt) => (
-          <AppointmentCard key={apt.id} appointment={apt} compact />
-        ))}
+      <div className="space-y-0.5 overflow-hidden">
+        {dayAppointments.slice(0, 3).map((apt) => {
+          const time = format(new Date(apt.start_time), "HH:mm");
+          return (
+            <div
+              key={apt.id}
+              className="flex items-center gap-1 text-[10px] text-foreground truncate"
+            >
+              <span className="text-primary">•</span>
+              <span className="text-muted-foreground">{time}</span>
+              <span className="truncate">{apt.title}</span>
+            </div>
+          );
+        })}
         {dayAppointments.length > 3 && (
-          <div className="text-xs text-muted-foreground pl-1">
+          <div className="text-[10px] text-muted-foreground pl-2">
             +{dayAppointments.length - 3} mais
           </div>
         )}
