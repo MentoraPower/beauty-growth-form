@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
-import { Search, Smile, Paperclip, Mic, Send, Check, CheckCheck, RefreshCw, Phone, Image, File, Trash2, PanelRightOpen, PanelRightClose, X, Video, MoreVertical, Pencil, Reply, MessageSquare, ArrowUp, Plus, FileImage, FileVideo, Sticker } from "lucide-react";
+import { Search, Smile, Paperclip, Mic, Send, Check, CheckCheck, RefreshCw, Phone, Image, File, Trash2, PanelRightOpen, PanelRightClose, X, Video, MoreVertical, Pencil, Reply, Zap, ArrowUp, Plus, FileImage, FileVideo, Sticker } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -2365,7 +2365,7 @@ const WhatsApp = () => {
                               className="p-2 hover:bg-muted/50 rounded-full transition-colors"
                               title="Mensagens rápidas"
                             >
-                              <MessageSquare className={cn("w-5 h-5 text-muted-foreground", showQuickMessages && "text-emerald-500")} />
+                              <Zap className={cn("w-5 h-5 text-muted-foreground", showQuickMessages && "text-amber-500")} />
                             </button>
                             
                             {showQuickMessages && (

@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Plus, X, MessageSquare, Trash2, Edit2, Check, Search } from "lucide-react";
+import { Plus, X, Zap, Trash2, Edit2, Check, Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -105,7 +105,7 @@ export function QuickMessages({ onSelect }: QuickMessagesProps) {
       {/* Header */}
       <div className="px-3 py-2 border-b border-border flex items-center justify-between bg-muted/30">
         <div className="flex items-center gap-2">
-          <MessageSquare className="w-4 h-4 text-emerald-500" />
+          <Zap className="w-4 h-4 text-amber-500" />
           <span className="text-sm font-medium text-foreground">Mensagens Rápidas</span>
         </div>
         <button
@@ -171,7 +171,7 @@ export function QuickMessages({ onSelect }: QuickMessagesProps) {
         <div className="p-2">
           {messages.length === 0 ? (
             <div className="py-8 text-center">
-              <MessageSquare className="w-8 h-8 text-muted-foreground/40 mx-auto mb-2" />
+              <Zap className="w-8 h-8 text-muted-foreground/40 mx-auto mb-2" />
               <p className="text-xs text-muted-foreground">
                 Nenhuma mensagem rápida salva
               </p>
