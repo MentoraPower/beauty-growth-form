@@ -20,7 +20,7 @@ import {
 } from "@dnd-kit/core";
 import { cn } from "@/lib/utils";
 import { AppointmentCard } from "./AppointmentCard";
-import type { Appointment } from "@/pages/CalendarPage";
+import type { Appointment, PendingSlot } from "@/pages/CalendarPage";
 
 interface WeekViewProps {
   date: Date;
@@ -31,6 +31,7 @@ interface WeekViewProps {
     newStartTime: Date,
     newEndTime: Date
   ) => void;
+  pendingSlot?: PendingSlot | null;
 }
 
 const HOUR_HEIGHT = 60;
@@ -69,6 +70,7 @@ export function WeekView({
   appointments,
   onDayClick,
   onAppointmentDrop,
+  pendingSlot,
 }: WeekViewProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [currentTimeTop, setCurrentTimeTop] = useState(0);
@@ -225,6 +227,19 @@ export function WeekView({
                 />
               );
             })}
+
+            {/* Pending slot placeholder (green) */}
+            {offset === 1 && pendingSlot && isSameDay(pendingSlot.date, day) && (
+              <div
+                className="absolute left-1 right-1 bg-emerald-500/80 rounded-lg border-2 border-emerald-400 shadow-lg z-10 flex items-center justify-center animate-pulse"
+                style={{
+                  top: pendingSlot.hour * HOUR_HEIGHT,
+                  height: HOUR_HEIGHT,
+                }}
+              >
+                <span className="text-white text-xs font-medium">Novo</span>
+              </div>
+            )}
           </div>
         );
       })}
