@@ -322,21 +322,19 @@ export function WhatsAppChatDropdown({ phone, countryCode, contactName }: WhatsA
   }
 
   return (
-    <Popover open={isOpen} onOpenChange={setIsOpen}>
-      <PopoverTrigger asChild>
-        <button
-          className="p-3 rounded-full bg-green-500 hover:bg-green-600 text-white shadow-lg transition-all hover:scale-105"
-          title="Abrir WhatsApp"
-        >
-          <WhatsAppIcon className="h-6 w-6" />
-        </button>
-      </PopoverTrigger>
-      <PopoverContent 
-        className="w-[400px] h-[500px] p-0 bg-background border shadow-xl z-50"
-        align="end"
-        side="top"
-        sideOffset={12}
+    <>
+      {/* Small trigger button - placed inline */}
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        className="p-1 rounded-full hover:bg-green-100 transition-colors"
+        title="Abrir WhatsApp"
       >
+        <WhatsAppIcon className="h-4 w-4 text-green-600" />
+      </button>
+
+      {/* Fixed dropdown in bottom right corner */}
+      {isOpen && (
+        <div className="fixed bottom-6 right-6 z-50 w-[400px] h-[500px] bg-background border rounded-lg shadow-xl">
         <div className="flex flex-col h-full">
           {/* Header */}
           <div className="flex items-center gap-3 p-3 border-b bg-muted/30">
@@ -481,7 +479,8 @@ export function WhatsAppChatDropdown({ phone, countryCode, contactName }: WhatsA
             </div>
           </div>
         </div>
-      </PopoverContent>
-    </Popover>
+        </div>
+      )}
+    </>
   );
 }
