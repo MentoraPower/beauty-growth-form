@@ -59,14 +59,13 @@ const OriginOverview = () => {
     return subOrigins.filter(s => s.origin_id === originId).map(s => s.id);
   }, [subOrigins, originId]);
 
-  // Filter leads by sub_origins of this origin and date range
+  // Filter leads by date range only (sub_origin filtering is done in the query)
   const leads = useMemo(() => {
     return allLeads.filter(lead => {
-      if (!lead.sub_origin_id || !subOriginIds.includes(lead.sub_origin_id)) return false;
       const date = new Date(lead.created_at);
       return date >= dateRange.from && date <= dateRange.to;
     });
-  }, [allLeads, subOriginIds, dateRange]);
+  }, [allLeads, dateRange]);
 
   useEffect(() => {
     if (!originId) return;
@@ -74,15 +73,39 @@ const OriginOverview = () => {
     const fetchData = async () => {
       setLoading(true);
       try {
-        const [originRes, subOriginsRes, leadsRes] = await Promise.all([
-          supabase.from("crm_origins").select("*").eq("id", originId).single(),
-          supabase.from("crm_sub_origins").select("*"),
-          supabase.from("leads").select("id, name, email, service_area, created_at, is_mql, sub_origin_id").order("created_at", { ascending: false }),
-        ]);
+        // Fetch origin
+        const originRes = await supabase
+          .from("crm_origins")
+          .select("*")
+          .eq("id", originId)
+          .single();
 
         if (originRes.data) setOrigin(originRes.data);
-        if (subOriginsRes.data) setSubOrigins(subOriginsRes.data);
-        if (leadsRes.data) setAllLeads(leadsRes.data);
+
+        // Fetch sub_origins for this origin only
+        const subOriginsRes = await supabase
+          .from("crm_sub_origins")
+          .select("*")
+          .eq("origin_id", originId);
+
+        if (subOriginsRes.data) {
+          setSubOrigins(subOriginsRes.data);
+          
+          // Fetch leads for these sub_origins only
+          const subOriginIds = subOriginsRes.data.map(s => s.id);
+          
+          if (subOriginIds.length > 0) {
+            const leadsRes = await supabase
+              .from("leads")
+              .select("id, name, email, service_area, created_at, is_mql, sub_origin_id")
+              .in("sub_origin_id", subOriginIds)
+              .order("created_at", { ascending: false });
+
+            if (leadsRes.data) setAllLeads(leadsRes.data);
+          } else {
+            setAllLeads([]);
+          }
+        }
       } catch (error) {
         console.error("Error fetching data:", error);
       } finally {
