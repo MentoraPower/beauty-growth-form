@@ -52,122 +52,43 @@ export function AddAppointmentDropdown({
 
   const isEditing = !!editingAppointment;
 
-  // Handle time input with natural typing flow
-  const handleTimeInputChange = (
-    e: React.ChangeEvent<HTMLInputElement>,
-    setter: React.Dispatch<React.SetStateAction<string>>,
-    isStart: boolean
-  ) => {
-    const input = e.target;
-    const rawValue = e.target.value;
-    const cursorPos = input.selectionStart || 0;
-    
-    // Allow only digits and colon
-    const cleaned = rawValue.replace(/[^\d:]/g, "");
-    
-    // Remove all colons to work with just digits
-    const digits = cleaned.replace(/:/g, "");
-    
-    if (digits.length === 0) {
-      setter("");
-      return;
-    }
-    
-    let formatted = "";
-    let newCursorPos = cursorPos;
-    
-    if (digits.length <= 2) {
-      // Just hours, no colon yet
-      formatted = digits;
-    } else {
-      // Hours and minutes
-      let hours = digits.slice(0, 2);
-      let minutes = digits.slice(2, 4);
-      
-      // Validate and clamp hours
-      const h = parseInt(hours, 10);
-      if (h > 23) hours = "23";
-      
-      // Validate and clamp minutes
-      if (minutes.length > 0) {
-        const m = parseInt(minutes, 10);
-        if (m > 59) minutes = "59";
-      }
-      
-      formatted = `${hours}:${minutes}`;
-      
-      // Adjust cursor position if we just added the colon
-      if (cursorPos === 3 && rawValue.charAt(2) !== ":") {
-        newCursorPos = 3;
-      }
-    }
-    
-    setter(formatted);
-    
-    // Update pending slot only when we have a complete time
-    if (formatted.length === 5) {
-      if (onPendingSlotUpdate) {
-        if (isStart) {
-          onPendingSlotUpdate(formatted, endTime);
-        } else {
-          onPendingSlotUpdate(startTime, formatted);
-        }
-      }
-    }
-    
-    // Restore cursor position after React updates the value
-    requestAnimationFrame(() => {
-      input.setSelectionRange(newCursorPos, newCursorPos);
-    });
-  };
-
-  // Handle blur to auto-complete partial times
+  // Simple time input - just let user type, format on blur
   const handleTimeBlur = (
     value: string,
     setter: React.Dispatch<React.SetStateAction<string>>,
     isStart: boolean
   ) => {
-    if (!value) {
-      setter(isStart ? "09:00" : "10:00");
-      return;
-    }
-    
     const digits = value.replace(/\D/g, "");
     
     if (digits.length === 0) {
-      setter(isStart ? "09:00" : "10:00");
+      const defaultTime = isStart ? "09:00" : "10:00";
+      setter(defaultTime);
+      onPendingSlotUpdate?.(isStart ? defaultTime : startTime, isStart ? endTime : defaultTime);
       return;
     }
     
-    let hours = "00";
-    let minutes = "00";
+    let hours = 0;
+    let minutes = 0;
     
     if (digits.length === 1) {
-      hours = `0${digits}`;
+      hours = parseInt(digits, 10);
     } else if (digits.length === 2) {
-      hours = digits;
+      hours = parseInt(digits, 10);
     } else if (digits.length === 3) {
-      hours = digits.slice(0, 2);
-      minutes = `${digits.slice(2)}0`;
+      hours = parseInt(digits.slice(0, 1), 10);
+      minutes = parseInt(digits.slice(1, 3), 10);
     } else {
-      hours = digits.slice(0, 2);
-      minutes = digits.slice(2, 4);
+      hours = parseInt(digits.slice(0, 2), 10);
+      minutes = parseInt(digits.slice(2, 4), 10);
     }
     
-    // Clamp values
-    const h = Math.min(parseInt(hours, 10) || 0, 23);
-    const m = Math.min(parseInt(minutes, 10) || 0, 59);
+    hours = Math.min(Math.max(hours, 0), 23);
+    minutes = Math.min(Math.max(minutes, 0), 59);
     
-    const formatted = `${h.toString().padStart(2, "0")}:${m.toString().padStart(2, "0")}`;
+    const formatted = `${hours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}`;
     setter(formatted);
     
-    if (onPendingSlotUpdate) {
-      if (isStart) {
-        onPendingSlotUpdate(formatted, endTime);
-      } else {
-        onPendingSlotUpdate(startTime, formatted);
-      }
-    }
+    onPendingSlotUpdate?.(isStart ? formatted : startTime, isStart ? endTime : formatted);
   };
 
   const panelRef = useRef<HTMLDivElement>(null);
@@ -426,7 +347,7 @@ export function AddAppointmentDropdown({
                   type="text"
                   inputMode="numeric"
                   value={startTime}
-                  onChange={(e) => handleTimeInputChange(e, setStartTime, true)}
+                  onChange={(e) => setStartTime(e.target.value)}
                   onBlur={() => handleTimeBlur(startTime, setStartTime, true)}
                   placeholder="00:00"
                   maxLength={5}
@@ -437,7 +358,7 @@ export function AddAppointmentDropdown({
                   type="text"
                   inputMode="numeric"
                   value={endTime}
-                  onChange={(e) => handleTimeInputChange(e, setEndTime, false)}
+                  onChange={(e) => setEndTime(e.target.value)}
                   onBlur={() => handleTimeBlur(endTime, setEndTime, false)}
                   placeholder="00:00"
                   maxLength={5}
