@@ -1996,7 +1996,7 @@ const WhatsApp = () => {
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <button 
-                          className="p-1.5 rounded-full hover:bg-muted/60 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0"
+                          className="p-1.5 rounded-full hover:bg-muted/60 flex-shrink-0"
                           onClick={(e) => e.stopPropagation()}
                         >
                           <MoreVertical className="w-4 h-4 text-muted-foreground" />
