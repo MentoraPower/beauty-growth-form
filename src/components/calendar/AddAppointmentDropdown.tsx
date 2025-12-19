@@ -43,6 +43,35 @@ export function AddAppointmentDropdown({
   const [startTime, setStartTime] = useState("09:00");
   const [endTime, setEndTime] = useState("10:00");
 
+  // Format time input as user types (auto-add colon, limit to valid time)
+  const formatTimeInput = (value: string): string => {
+    // Remove non-digits
+    const digits = value.replace(/\D/g, "");
+    
+    if (digits.length === 0) return "";
+    if (digits.length <= 2) {
+      const h = Math.min(parseInt(digits) || 0, 23);
+      return digits.length === 2 ? h.toString().padStart(2, "0") : digits;
+    }
+    
+    // Format as HH:MM
+    let hours = parseInt(digits.slice(0, 2)) || 0;
+    let minutes = parseInt(digits.slice(2, 4)) || 0;
+    
+    hours = Math.min(hours, 23);
+    minutes = Math.min(minutes, 59);
+    
+    return `${hours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}`;
+  };
+
+  const handleTimeChange = (
+    value: string,
+    setter: React.Dispatch<React.SetStateAction<string>>
+  ) => {
+    const formatted = formatTimeInput(value);
+    setter(formatted);
+  };
+
   const panelRef = useRef<HTMLDivElement>(null);
   const [panelPosition, setPanelPosition] = useState<{ left: number; top: number }>(
     { left: 12, top: 120 }
@@ -241,10 +270,13 @@ export function AddAppointmentDropdown({
                   Início
                 </span>
                 <Input
-                  type="time"
+                  type="text"
+                  inputMode="numeric"
                   value={startTime}
-                  onChange={(e) => setStartTime(e.target.value)}
-                  className="h-9 text-sm font-medium"
+                  onChange={(e) => handleTimeChange(e.target.value, setStartTime)}
+                  placeholder="00:00"
+                  maxLength={5}
+                  className="h-9 text-sm font-medium text-center"
                 />
               </div>
               <div className="space-y-1">
@@ -252,10 +284,13 @@ export function AddAppointmentDropdown({
                   Término
                 </span>
                 <Input
-                  type="time"
+                  type="text"
+                  inputMode="numeric"
                   value={endTime}
-                  onChange={(e) => setEndTime(e.target.value)}
-                  className="h-9 text-sm font-medium"
+                  onChange={(e) => handleTimeChange(e.target.value, setEndTime)}
+                  placeholder="00:00"
+                  maxLength={5}
+                  className="h-9 text-sm font-medium text-center"
                 />
               </div>
             </div>
