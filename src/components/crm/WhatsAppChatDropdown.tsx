@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Search, Smile, Paperclip, Mic, Send, Check, CheckCheck, X, Image, File, Video, RefreshCw } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -36,6 +37,7 @@ interface WhatsAppChatDropdownProps {
 const DEFAULT_AVATAR = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyMTIgMjEyIj48cGF0aCBmaWxsPSIjREZFNUU3IiBkPSJNMCAwaDIxMnYyMTJIMHoiLz48cGF0aCBmaWxsPSIjRkZGIiBkPSJNMTA2IDEwNmMtMjUuNCAwLTQ2LTIwLjYtNDYtNDZzMjAuNi00NiA0Ni00NiA0NiAyMC42IDQ2IDQ2LTIwLjYgNDYtNDYgNDZ6bTAgMTNjMzAuNiAwIDkyIDE1LjQgOTIgNDZ2MjNIMTR2LTIzYzAtMzAuNiA2MS40LTQ2IDkyLTQ2eiIvPjwvc3ZnPg==";
 
 export function WhatsAppChatDropdown({ phone, countryCode, contactName }: WhatsAppChatDropdownProps) {
+  const navigate = useNavigate();
   const { toast } = useToast();
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -363,9 +365,12 @@ export function WhatsAppChatDropdown({ phone, countryCode, contactName }: WhatsA
               <p className="text-xs text-muted-foreground">{countryCode} {phone}</p>
             </div>
             <button 
-              onClick={() => setIsOpen(false)}
+              onClick={() => {
+                setIsOpen(false);
+                navigate("/admin/whatsapp");
+              }}
               className="p-1.5 rounded-full hover:bg-muted transition-colors"
-              title="Fechar"
+              title="Abrir WhatsApp"
             >
               <X className="h-4 w-4 text-muted-foreground" />
             </button>
