@@ -39,6 +39,7 @@ export default function CalendarPage() {
   const [selectedHour, setSelectedHour] = useState<number | null>(null);
   const [anchorPosition, setAnchorPosition] = useState<{ x: number; y: number } | undefined>();
   const [pendingSlot, setPendingSlot] = useState<PendingSlot | null>(null);
+  const [editingAppointment, setEditingAppointment] = useState<Appointment | null>(null);
   const justClosedRef = useRef(false);
 
   // Fetch appointments
@@ -119,6 +120,7 @@ export default function CalendarPage() {
     const h = hour ?? 9;
     setSelectedDate(date);
     setSelectedHour(h);
+    setEditingAppointment(null);
     const startTimeStr = `${h.toString().padStart(2, "0")}:00`;
     const endTimeStr = `${Math.min(h + 1, 23).toString().padStart(2, "0")}:00`;
     setPendingSlot({ date, startTime: startTimeStr, endTime: endTimeStr });
@@ -132,6 +134,24 @@ export default function CalendarPage() {
     setDialogOpen(true);
   };
 
+  const handleAppointmentClick = (appointment: Appointment, event: React.MouseEvent) => {
+    event.stopPropagation();
+    
+    // Prevent reopening immediately after closing
+    if (justClosedRef.current) {
+      justClosedRef.current = false;
+      return;
+    }
+    
+    const startDate = new Date(appointment.start_time);
+    setSelectedDate(startDate);
+    setSelectedHour(startDate.getHours());
+    setEditingAppointment(appointment);
+    setPendingSlot(null); // No pending slot when editing
+    setAnchorPosition({ x: event.clientX, y: event.clientY });
+    setDialogOpen(true);
+  };
+
   const handlePendingSlotUpdate = (startTime: string, endTime: string) => {
     if (pendingSlot) {
       setPendingSlot({ ...pendingSlot, startTime, endTime });
@@ -142,6 +162,7 @@ export default function CalendarPage() {
     setDialogOpen(open);
     if (!open) {
       setPendingSlot(null);
+      setEditingAppointment(null);
       justClosedRef.current = true;
       // Reset after a short delay to allow new clicks
       setTimeout(() => {
@@ -152,6 +173,7 @@ export default function CalendarPage() {
 
   const handleSuccess = () => {
     setPendingSlot(null);
+    setEditingAppointment(null);
     fetchAppointments();
   };
 
@@ -252,6 +274,7 @@ export default function CalendarPage() {
             appointments={appointments}
             onDayClick={handleDayClick}
             onAppointmentDrop={handleAppointmentDrop}
+            onAppointmentClick={handleAppointmentClick}
             pendingSlot={pendingSlot}
           />
         )}
@@ -261,6 +284,7 @@ export default function CalendarPage() {
             appointments={appointments}
             onDayClick={handleDayClick}
             onAppointmentDrop={handleAppointmentDrop}
+            onAppointmentClick={handleAppointmentClick}
             pendingSlot={pendingSlot}
           />
         )}
@@ -270,6 +294,7 @@ export default function CalendarPage() {
             appointments={appointments}
             onDayClick={handleDayClick}
             onAppointmentDrop={handleAppointmentDrop}
+            onAppointmentClick={handleAppointmentClick}
           />
         )}
         {view === "year" && (
@@ -284,7 +309,7 @@ export default function CalendarPage() {
         )}
       </div>
 
-      {/* Add Appointment Dropdown */}
+      {/* Add/Edit Appointment Dropdown */}
       <AddAppointmentDropdown
         open={dialogOpen}
         onOpenChange={handleDialogOpenChange}
@@ -294,6 +319,7 @@ export default function CalendarPage() {
         onCancel={() => setPendingSlot(null)}
         anchorPosition={anchorPosition}
         onPendingSlotUpdate={handlePendingSlotUpdate}
+        editingAppointment={editingAppointment}
       />
     </div>
   );

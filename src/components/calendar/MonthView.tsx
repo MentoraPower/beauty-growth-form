@@ -31,6 +31,7 @@ interface MonthViewProps {
     newStartTime: Date,
     newEndTime: Date
   ) => void;
+  onAppointmentClick?: (appointment: Appointment, event: React.MouseEvent) => void;
 }
 
 const WEEKDAYS = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
@@ -40,11 +41,13 @@ function DayCell({
   currentMonth,
   appointments,
   onClick,
+  onAppointmentClick,
 }: {
   day: Date;
   currentMonth: Date;
   appointments: Appointment[];
   onClick: (e: React.MouseEvent) => void;
+  onAppointmentClick?: (appointment: Appointment, event: React.MouseEvent) => void;
 }) {
   const { setNodeRef, isOver } = useDroppable({
     id: `month-${day.toISOString()}`,
@@ -82,7 +85,11 @@ function DayCell({
           return (
             <div
               key={apt.id}
-              className="flex items-center gap-1 text-[10px] text-foreground truncate"
+              onClick={(e) => {
+                e.stopPropagation();
+                onAppointmentClick?.(apt, e);
+              }}
+              className="flex items-center gap-1 text-[10px] text-foreground truncate cursor-pointer hover:bg-muted/50 rounded px-0.5"
             >
               <span className="text-primary">•</span>
               <span className="text-muted-foreground">{time}</span>
@@ -105,6 +112,7 @@ export function MonthView({
   appointments,
   onDayClick,
   onAppointmentDrop,
+  onAppointmentClick,
 }: MonthViewProps) {
   const monthStart = startOfMonth(date);
   const monthEnd = endOfMonth(date);
@@ -174,6 +182,7 @@ export function MonthView({
               currentMonth={date}
               appointments={appointments}
               onClick={(e) => onDayClick(day, undefined, e)}
+              onAppointmentClick={onAppointmentClick}
             />
           ))}
         </div>

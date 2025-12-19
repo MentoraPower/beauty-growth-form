@@ -7,7 +7,7 @@ import {
 } from "react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { CalendarDays, Clock, FileText, Mail, User, Users, X } from "lucide-react";
+import { Clock, FileText, Mail, Trash2, User, Users } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -15,6 +15,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
+import type { Appointment } from "@/pages/CalendarPage";
 
 interface AddAppointmentDropdownProps {
   open: boolean;
@@ -25,6 +26,7 @@ interface AddAppointmentDropdownProps {
   onCancel?: () => void;
   anchorPosition?: { x: number; y: number };
   onPendingSlotUpdate?: (startTime: string, endTime: string) => void;
+  editingAppointment?: Appointment | null;
 }
 
 export function AddAppointmentDropdown({
@@ -36,8 +38,10 @@ export function AddAppointmentDropdown({
   onCancel,
   anchorPosition,
   onPendingSlotUpdate,
+  editingAppointment,
 }: AddAppointmentDropdownProps) {
   const [loading, setLoading] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [title, setTitle] = useState("");
   const [email, setEmail] = useState("");
   const [description, setDescription] = useState("");
@@ -46,6 +50,8 @@ export function AddAppointmentDropdown({
 
   const [startTime, setStartTime] = useState("09:00");
   const [endTime, setEndTime] = useState("10:00");
+
+  const isEditing = !!editingAppointment;
 
   // Format time input as user types (auto-add colon, limit to valid time)
   const formatTimeInput = (value: string): string => {
@@ -101,8 +107,26 @@ export function AddAppointmentDropdown({
     setEndTime("10:00");
   }, []);
 
+  // Load editing appointment data
   useEffect(() => {
-    if (selectedHour !== null) {
+    if (editingAppointment && open) {
+      setTitle(editingAppointment.title || "");
+      setEmail(editingAppointment.email || "");
+      setDescription(editingAppointment.description || "");
+      setCloserName(editingAppointment.closer_name || "");
+      setSdrName(editingAppointment.sdr_name || "");
+      
+      const start = new Date(editingAppointment.start_time);
+      const end = new Date(editingAppointment.end_time);
+      const startStr = format(start, "HH:mm");
+      const endStr = format(end, "HH:mm");
+      setStartTime(startStr);
+      setEndTime(endStr);
+    }
+  }, [editingAppointment, open]);
+
+  useEffect(() => {
+    if (selectedHour !== null && !editingAppointment) {
       const h = selectedHour.toString().padStart(2, "0");
       const newStartTime = `${h}:00`;
       const endH = Math.min(selectedHour + 1, 23).toString().padStart(2, "0");
@@ -111,7 +135,7 @@ export function AddAppointmentDropdown({
       setEndTime(newEndTime);
       onPendingSlotUpdate?.(newStartTime, newEndTime);
     }
-  }, [selectedHour, onPendingSlotUpdate]);
+  }, [selectedHour, onPendingSlotUpdate, editingAppointment]);
 
   useEffect(() => {
     if (!open) resetForm();
@@ -198,7 +222,7 @@ export function AddAppointmentDropdown({
     const end = new Date(selectedDate);
     end.setHours(endH, endM, 0, 0);
 
-    const { error } = await supabase.from("calendar_appointments").insert({
+    const appointmentData = {
       title: title.trim(),
       email: email.trim() || null,
       description: description.trim() || null,
@@ -206,15 +230,50 @@ export function AddAppointmentDropdown({
       end_time: end.toISOString(),
       closer_name: closerName.trim() || null,
       sdr_name: sdrName.trim() || null,
-    });
+    };
+
+    let error;
+    if (isEditing) {
+      const result = await supabase
+        .from("calendar_appointments")
+        .update(appointmentData)
+        .eq("id", editingAppointment.id);
+      error = result.error;
+    } else {
+      const result = await supabase.from("calendar_appointments").insert(appointmentData);
+      error = result.error;
+    }
 
     setLoading(false);
 
     if (error) {
-      toast.error("Erro ao criar agendamento");
+      toast.error(isEditing ? "Erro ao atualizar agendamento" : "Erro ao criar agendamento");
       return;
     }
 
+    toast.success(isEditing ? "Agendamento atualizado!" : "Agendamento criado!");
+    onSuccess();
+    onOpenChange(false);
+    resetForm();
+  };
+
+  const handleDelete = async () => {
+    if (!editingAppointment) return;
+    
+    setDeleting(true);
+    const { error } = await supabase
+      .from("calendar_appointments")
+      .delete()
+      .eq("id", editingAppointment.id);
+    
+    setDeleting(false);
+    
+    if (error) {
+      toast.error("Erro ao excluir agendamento");
+      return;
+    }
+    
+    toast.success("Agendamento excluído!");
     onSuccess();
     onOpenChange(false);
     resetForm();
@@ -227,7 +286,7 @@ export function AddAppointmentDropdown({
       <div
         ref={panelRef}
         role="dialog"
-        aria-label="Novo agendamento"
+        aria-label={isEditing ? "Editar agendamento" : "Novo agendamento"}
         className="pointer-events-auto fixed w-[480px] max-w-[calc(100vw-24px)] max-h-[85vh] bg-popover text-popover-foreground rounded-2xl border border-border shadow-2xl overflow-hidden animate-in fade-in"
         style={{ left: panelPosition.left, top: panelPosition.top }}
       >
@@ -364,21 +423,35 @@ export function AddAppointmentDropdown({
             </div>
           </div>
 
-          <div className="flex justify-end gap-2 pt-3 border-t border-border">
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={() => {
-                onCancel?.();
-                onOpenChange(false);
-              }}
-            >
-              Cancelar
-            </Button>
-            <Button type="submit" size="sm" disabled={loading || !title.trim()}>
-              {loading ? "Salvando..." : "Criar"}
-            </Button>
+          <div className="flex justify-between items-center gap-2 pt-3 border-t border-border">
+            {isEditing && (
+              <Button
+                type="button"
+                variant="destructive"
+                size="sm"
+                onClick={handleDelete}
+                disabled={deleting}
+              >
+                <Trash2 className="h-4 w-4 mr-1" />
+                {deleting ? "Excluindo..." : "Excluir"}
+              </Button>
+            )}
+            <div className={`flex gap-2 ${isEditing ? '' : 'ml-auto'}`}>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  onCancel?.();
+                  onOpenChange(false);
+                }}
+              >
+                Cancelar
+              </Button>
+              <Button type="submit" size="sm" disabled={loading || !title.trim()}>
+                {loading ? "Salvando..." : isEditing ? "Salvar" : "Criar"}
+              </Button>
+            </div>
           </div>
         </form>
       </div>

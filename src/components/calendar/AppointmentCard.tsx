@@ -7,12 +7,14 @@ interface AppointmentCardProps {
   appointment: Appointment;
   compact?: boolean;
   style?: React.CSSProperties;
+  onClick?: (appointment: Appointment, event: React.MouseEvent) => void;
 }
 
 export function AppointmentCard({
   appointment,
   compact = false,
   style,
+  onClick,
 }: AppointmentCardProps) {
   const { attributes, listeners, setNodeRef, transform, isDragging } =
     useDraggable({
@@ -32,6 +34,11 @@ export function AppointmentCard({
     cursor: "grab",
   };
 
+  const handleClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onClick?.(appointment, e);
+  };
+
   if (compact) {
     return (
       <div
@@ -39,8 +46,9 @@ export function AppointmentCard({
         {...listeners}
         {...attributes}
         style={dragStyle}
+        onClick={handleClick}
         className={cn(
-          "text-xs px-1.5 py-0.5 rounded bg-emerald-700 text-white truncate",
+          "text-xs px-1.5 py-0.5 rounded bg-emerald-700 text-white truncate hover:bg-emerald-600 transition-colors",
           isDragging && "z-50"
         )}
       >
@@ -55,8 +63,9 @@ export function AppointmentCard({
       {...listeners}
       {...attributes}
       style={dragStyle}
+      onClick={handleClick}
       className={cn(
-        "absolute left-1 right-1 px-2 py-1 rounded-md bg-emerald-700 text-white text-xs overflow-hidden",
+        "absolute left-1 right-1 px-2 py-1 rounded-md bg-emerald-700 text-white text-xs overflow-hidden hover:bg-emerald-600 transition-colors",
         isDragging && "z-50 shadow-lg"
       )}
     >
