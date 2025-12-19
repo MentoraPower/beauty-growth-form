@@ -52,9 +52,10 @@ export function AppointmentCard({
 
   const dragStyle: React.CSSProperties = {
     ...style,
-    transform: transform ? `translate3d(0, ${transform.y}px, 0)` : undefined,
+    transform: transform ? `translate3d(${transform.x}px, ${transform.y}px, 0)` : undefined,
     cursor: isDragging ? "grabbing" : "grab",
     zIndex: isDragging ? 100 : undefined,
+    transition: isDragging ? undefined : "none",
   };
 
   const handleClick = (e: React.MouseEvent) => {
@@ -72,8 +73,9 @@ export function AppointmentCard({
         style={dragStyle}
         onClick={handleClick}
         className={cn(
-          "text-xs px-1.5 py-0.5 rounded bg-emerald-700 text-white truncate hover:bg-emerald-600",
-          isDragging && "shadow-lg opacity-90"
+          "text-xs px-1.5 py-0.5 rounded bg-emerald-700 text-white truncate",
+          !isDragging && "hover:bg-emerald-600",
+          isDragging && "shadow-xl opacity-90 z-50"
         )}
       >
         {appointment.title}
@@ -89,8 +91,9 @@ export function AppointmentCard({
       style={dragStyle}
       onClick={handleClick}
       className={cn(
-        "absolute left-1 right-1 px-2 py-1 rounded-md bg-emerald-700 text-white text-xs overflow-hidden hover:bg-emerald-600",
-        isDragging && "shadow-lg opacity-95"
+        "absolute left-1 right-1 px-2 py-1 rounded-md bg-emerald-700 text-white text-xs overflow-hidden",
+        !isDragging && "hover:bg-emerald-600",
+        isDragging && "shadow-xl opacity-90 z-50"
       )}
     >
       <div className="font-medium truncate">{appointment.title}</div>
