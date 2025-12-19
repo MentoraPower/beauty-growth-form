@@ -191,17 +191,23 @@ export default function CalendarPage() {
   };
 
   const handleAppointmentDrop = async (appointmentId: string, newStartTime: Date, newEndTime: Date) => {
-    const { error } = await supabase
+    // Optimistic update - update local state immediately
+    setAppointments((prev) =>
+      prev.map((apt) =>
+        apt.id === appointmentId
+          ? { ...apt, start_time: newStartTime.toISOString(), end_time: newEndTime.toISOString() }
+          : apt
+      )
+    );
+
+    // Then persist to database
+    await supabase
       .from("calendar_appointments")
       .update({
         start_time: newStartTime.toISOString(),
         end_time: newEndTime.toISOString(),
       })
       .eq("id", appointmentId);
-
-    if (!error) {
-      fetchAppointments();
-    }
   };
 
   const viewButtons: { id: ViewType; label: string }[] = [
