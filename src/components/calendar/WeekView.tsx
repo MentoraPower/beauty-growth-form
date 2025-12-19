@@ -229,17 +229,23 @@ export function WeekView({
             })}
 
             {/* Pending slot placeholder (green) */}
-            {offset === 1 && pendingSlot && isSameDay(pendingSlot.date, day) && (
-              <div
-                className="absolute left-1 right-1 bg-emerald-500/80 rounded-lg border-2 border-emerald-400 shadow-lg z-10 flex items-center justify-center animate-pulse"
-                style={{
-                  top: pendingSlot.hour * HOUR_HEIGHT,
-                  height: HOUR_HEIGHT,
-                }}
-              >
-                <span className="text-white text-xs font-medium">Novo</span>
-              </div>
-            )}
+            {offset === 1 && pendingSlot && isSameDay(pendingSlot.date, day) && (() => {
+              const [startH, startM] = pendingSlot.startTime.split(":").map(Number);
+              const [endH, endM] = pendingSlot.endTime.split(":").map(Number);
+              const startMinutes = (startH || 0) * 60 + (startM || 0);
+              const endMinutes = (endH || 0) * 60 + (endM || 0);
+              const top = (startMinutes / 60) * HOUR_HEIGHT;
+              const height = Math.max(((endMinutes - startMinutes) / 60) * HOUR_HEIGHT, 20);
+              
+              return (
+                <div
+                  className="absolute left-1 right-1 bg-emerald-500/80 rounded-lg border-2 border-emerald-400 shadow-lg z-10 flex items-center justify-center"
+                  style={{ top, height }}
+                >
+                  <span className="text-white text-xs font-medium">Novo</span>
+                </div>
+              );
+            })()}
           </div>
         );
       })}
