@@ -47,6 +47,13 @@ interface SubOrigin {
   nome: string;
 }
 
+interface Appointment {
+  id: string;
+  title: string;
+  start_time: string;
+  end_time: string;
+}
+
 const OriginOverview = () => {
   const { isLoading: authLoading } = useAuth("/auth");
   const [searchParams] = useSearchParams();
@@ -55,6 +62,7 @@ const OriginOverview = () => {
   const [origin, setOrigin] = useState<Origin | null>(null);
   const [subOrigins, setSubOrigins] = useState<SubOrigin[]>([]);
   const [allLeads, setAllLeads] = useState<Lead[]>([]);
+  const [allAppointments, setAllAppointments] = useState<Appointment[]>([]);
   const [loading, setLoading] = useState(true);
   const [agendaMode, setAgendaMode] = useState(false);
   
@@ -62,6 +70,14 @@ const OriginOverview = () => {
     from: startOfDay(subDays(new Date(), 29)),
     to: endOfDay(new Date())
   });
+
+  // Filter appointments by date range
+  const appointments = useMemo(() => {
+    return allAppointments.filter(apt => {
+      const date = new Date(apt.start_time);
+      return date >= dateRange.from && date <= dateRange.to;
+    });
+  }, [allAppointments, dateRange]);
 
   // Get sub_origin_ids for this origin
   const subOriginIds = useMemo(() => {
@@ -115,6 +131,14 @@ const OriginOverview = () => {
             setAllLeads([]);
           }
         }
+
+        // Fetch appointments
+        const appointmentsRes = await supabase
+          .from("calendar_appointments")
+          .select("id, title, start_time, end_time")
+          .order("start_time", { ascending: false });
+
+        if (appointmentsRes.data) setAllAppointments(appointmentsRes.data);
       } catch (error) {
         console.error("Error fetching data:", error);
       } finally {
@@ -139,6 +163,23 @@ const OriginOverview = () => {
             setAllLeads((prev) =>
               prev.map((lead) =>
                 lead.id === payload.new.id ? (payload.new as Lead) : lead
+              )
+            );
+          }
+        }
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "calendar_appointments" },
+        (payload) => {
+          if (payload.eventType === "INSERT") {
+            setAllAppointments((prev) => [payload.new as Appointment, ...prev]);
+          } else if (payload.eventType === "DELETE") {
+            setAllAppointments((prev) => prev.filter((apt) => apt.id !== payload.old.id));
+          } else if (payload.eventType === "UPDATE") {
+            setAllAppointments((prev) =>
+              prev.map((apt) =>
+                apt.id === payload.new.id ? (payload.new as Appointment) : apt
               )
             );
           }
@@ -283,7 +324,7 @@ const OriginOverview = () => {
         {agendaMode ? (
           <>
             {/* Agenda Mode - Simplified Stats */}
-            <div className="grid grid-cols-1 gap-4">
+            <div className="grid grid-cols-2 gap-4">
               <Card className="bg-white border border-black/5 shadow-none">
                 <CardContent className="pt-5 pb-4">
                   <div className="flex items-center gap-3 mb-3">
@@ -293,6 +334,18 @@ const OriginOverview = () => {
                     <p className="text-sm text-foreground font-medium">Total Leads</p>
                   </div>
                   <p className="text-3xl font-bold text-foreground">{leads.length}</p>
+                </CardContent>
+              </Card>
+
+              <Card className="bg-white border border-black/5 shadow-none">
+                <CardContent className="pt-5 pb-4">
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="w-10 h-10 rounded-full border border-violet-400 flex items-center justify-center">
+                      <Calendar className="h-5 w-5 text-violet-500" />
+                    </div>
+                    <p className="text-sm text-foreground font-medium">Agendamentos</p>
+                  </div>
+                  <p className="text-3xl font-bold text-foreground">{appointments.length}</p>
                 </CardContent>
               </Card>
             </div>
