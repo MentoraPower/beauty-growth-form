@@ -13,13 +13,6 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -31,22 +24,6 @@ interface AddAppointmentDropdownProps {
   onSuccess: () => void;
   anchorPosition?: { x: number; y: number };
 }
-
-const HOURS = Array.from({ length: 24 }, (_, i) => i.toString().padStart(2, "0"));
-const MINUTES = [
-  "00",
-  "05",
-  "10",
-  "15",
-  "20",
-  "25",
-  "30",
-  "35",
-  "40",
-  "45",
-  "50",
-  "55",
-];
 
 export function AddAppointmentDropdown({
   open,
@@ -63,10 +40,8 @@ export function AddAppointmentDropdown({
   const [closerName, setCloserName] = useState("");
   const [sdrName, setSdrName] = useState("");
 
-  const [startHour, setStartHour] = useState("09");
-  const [startMinute, setStartMinute] = useState("00");
-  const [endHour, setEndHour] = useState("10");
-  const [endMinute, setEndMinute] = useState("00");
+  const [startTime, setStartTime] = useState("09:00");
+  const [endTime, setEndTime] = useState("10:00");
 
   const panelRef = useRef<HTMLDivElement>(null);
   const [panelPosition, setPanelPosition] = useState<{ left: number; top: number }>(
@@ -79,20 +54,16 @@ export function AddAppointmentDropdown({
     setDescription("");
     setCloserName("");
     setSdrName("");
-    setStartHour("09");
-    setStartMinute("00");
-    setEndHour("10");
-    setEndMinute("00");
+    setStartTime("09:00");
+    setEndTime("10:00");
   }, []);
 
   useEffect(() => {
     if (selectedHour !== null) {
       const h = selectedHour.toString().padStart(2, "0");
-      setStartHour(h);
-      setStartMinute("00");
+      setStartTime(`${h}:00`);
       const endH = Math.min(selectedHour + 1, 23).toString().padStart(2, "0");
-      setEndHour(endH);
-      setEndMinute("00");
+      setEndTime(`${endH}:00`);
     }
   }, [selectedHour]);
 
@@ -106,13 +77,12 @@ export function AddAppointmentDropdown({
 
     const rect = panelRef.current?.getBoundingClientRect();
     const width = rect?.width ?? 380;
-    const height = rect?.height ?? 480;
+    const height = rect?.height ?? 420;
     const margin = 12;
 
     let left = x - width / 2;
     left = Math.max(margin, Math.min(left, window.innerWidth - width - margin));
 
-    // prefer below click; fallback to above
     let top = y + 12;
     if (top + height + margin > window.innerHeight) {
       top = y - height - 12;
@@ -124,7 +94,6 @@ export function AddAppointmentDropdown({
 
   useLayoutEffect(() => {
     if (!open) return;
-    // Wait next frame so we can measure the panel
     requestAnimationFrame(() => computePosition());
   }, [open, computePosition]);
 
@@ -147,12 +116,6 @@ export function AddAppointmentDropdown({
       const target = e.target as HTMLElement | null;
       if (!target) return;
 
-      // Keep open when interacting with Radix poppers/portals (Select, etc.).
-      const inRadixPortal = !!target.closest?.(
-        "[data-radix-popper-content-wrapper], [data-radix-portal]"
-      );
-      if (inRadixPortal) return;
-
       if (panelRef.current && !panelRef.current.contains(target)) {
         onOpenChange(false);
       }
@@ -171,20 +134,28 @@ export function AddAppointmentDropdown({
     e.preventDefault();
     if (!selectedDate || !title.trim()) return;
 
+    const [startH, startM] = startTime.split(":").map(Number);
+    const [endH, endM] = endTime.split(":").map(Number);
+
+    if (isNaN(startH) || isNaN(startM) || isNaN(endH) || isNaN(endM)) {
+      toast.error("Horário inválido");
+      return;
+    }
+
     setLoading(true);
 
-    const startTime = new Date(selectedDate);
-    startTime.setHours(parseInt(startHour), parseInt(startMinute), 0, 0);
+    const start = new Date(selectedDate);
+    start.setHours(startH, startM, 0, 0);
 
-    const endTime = new Date(selectedDate);
-    endTime.setHours(parseInt(endHour), parseInt(endMinute), 0, 0);
+    const end = new Date(selectedDate);
+    end.setHours(endH, endM, 0, 0);
 
     const { error } = await supabase.from("calendar_appointments").insert({
       title: title.trim(),
       email: email.trim() || null,
       description: description.trim() || null,
-      start_time: startTime.toISOString(),
-      end_time: endTime.toISOString(),
+      start_time: start.toISOString(),
+      end_time: end.toISOString(),
       closer_name: closerName.trim() || null,
       sdr_name: sdrName.trim() || null,
     });
@@ -209,7 +180,7 @@ export function AddAppointmentDropdown({
         ref={panelRef}
         role="dialog"
         aria-label="Novo agendamento"
-        className="pointer-events-auto fixed w-[380px] max-w-[calc(100vw-24px)] max-h-[85vh] bg-popover text-popover-foreground rounded-xl border border-border shadow-2xl overflow-hidden animate-in fade-in"
+        className="pointer-events-auto fixed w-[340px] max-w-[calc(100vw-24px)] max-h-[85vh] bg-popover text-popover-foreground rounded-xl border border-border shadow-2xl overflow-hidden animate-in fade-in"
         style={{ left: panelPosition.left, top: panelPosition.top }}
       >
         {/* Header */}
@@ -262,71 +233,28 @@ export function AddAppointmentDropdown({
               Horário
             </Label>
 
-            <div className="grid grid-cols-2 gap-2">
-              <div className="bg-muted/40 rounded-lg p-2.5 border border-border">
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1">
                 <span className="text-[10px] text-muted-foreground font-semibold uppercase">
                   Início
                 </span>
-                <div className="flex items-center gap-1 mt-1">
-                  <Select value={startHour} onValueChange={setStartHour}>
-                    <SelectTrigger className="flex-1 h-8 text-sm font-semibold bg-background">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent className="max-h-48 z-[110] bg-popover">
-                      {HOURS.map((h) => (
-                        <SelectItem key={h} value={h} className="text-sm">
-                          {h}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <span className="text-sm font-bold text-muted-foreground">:</span>
-                  <Select value={startMinute} onValueChange={setStartMinute}>
-                    <SelectTrigger className="flex-1 h-8 text-sm font-semibold bg-background">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent className="max-h-48 z-[110] bg-popover">
-                      {MINUTES.map((m) => (
-                        <SelectItem key={m} value={m} className="text-sm">
-                          {m}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+                <Input
+                  type="time"
+                  value={startTime}
+                  onChange={(e) => setStartTime(e.target.value)}
+                  className="h-9 text-sm font-medium"
+                />
               </div>
-
-              <div className="bg-muted/40 rounded-lg p-2.5 border border-border">
+              <div className="space-y-1">
                 <span className="text-[10px] text-muted-foreground font-semibold uppercase">
                   Término
                 </span>
-                <div className="flex items-center gap-1 mt-1">
-                  <Select value={endHour} onValueChange={setEndHour}>
-                    <SelectTrigger className="flex-1 h-8 text-sm font-semibold bg-background">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent className="max-h-48 z-[110] bg-popover">
-                      {HOURS.map((h) => (
-                        <SelectItem key={h} value={h} className="text-sm">
-                          {h}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <span className="text-sm font-bold text-muted-foreground">:</span>
-                  <Select value={endMinute} onValueChange={setEndMinute}>
-                    <SelectTrigger className="flex-1 h-8 text-sm font-semibold bg-background">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent className="max-h-48 z-[110] bg-popover">
-                      {MINUTES.map((m) => (
-                        <SelectItem key={m} value={m} className="text-sm">
-                          {m}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+                <Input
+                  type="time"
+                  value={endTime}
+                  onChange={(e) => setEndTime(e.target.value)}
+                  className="h-9 text-sm font-medium"
+                />
               </div>
             </div>
           </div>
