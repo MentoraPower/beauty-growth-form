@@ -7,7 +7,7 @@ import {
 } from "react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { Clock, FileText, Mail, Trash2, User, Users, X } from "lucide-react";
+import { Clock, DollarSign, FileText, Mail, Trash2, User, Users, X } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -47,6 +47,8 @@ export function AddAppointmentDropdown({
   const [description, setDescription] = useState("");
   const [closerName, setCloserName] = useState("");
   const [sdrName, setSdrName] = useState("");
+  const [isPaid, setIsPaid] = useState(false);
+  const [paymentValue, setPaymentValue] = useState("");
 
   const [startTime, setStartTime] = useState("09:00");
   const [endTime, setEndTime] = useState("10:00");
@@ -124,6 +126,8 @@ export function AddAppointmentDropdown({
     setDescription("");
     setCloserName("");
     setSdrName("");
+    setIsPaid(false);
+    setPaymentValue("");
     setStartTime("09:00");
     setEndTime("10:00");
   }, []);
@@ -136,6 +140,8 @@ export function AddAppointmentDropdown({
       setDescription(editingAppointment.description || "");
       setCloserName(editingAppointment.closer_name || "");
       setSdrName(editingAppointment.sdr_name || "");
+      setIsPaid(editingAppointment.is_paid || false);
+      setPaymentValue(editingAppointment.payment_value?.toString() || "");
       
       const start = new Date(editingAppointment.start_time);
       const end = new Date(editingAppointment.end_time);
@@ -247,6 +253,8 @@ export function AddAppointmentDropdown({
     const end = new Date(selectedDate);
     end.setHours(endH, endM, 0, 0);
 
+    const paymentNum = parseFloat(paymentValue.replace(",", ".")) || 0;
+
     const appointmentData = {
       title: title.trim(),
       email: email.trim() || null,
@@ -255,6 +263,8 @@ export function AddAppointmentDropdown({
       end_time: end.toISOString(),
       closer_name: closerName.trim() || null,
       sdr_name: sdrName.trim() || null,
+      is_paid: isPaid && paymentNum > 0,
+      payment_value: isPaid ? paymentNum : 0,
     };
 
     let error;
@@ -432,6 +442,34 @@ export function AddAppointmentDropdown({
               placeholder="SDR"
               className="flex-1 h-9 text-sm bg-transparent border-0 border-b border-muted focus:border-primary px-0"
             />
+          </div>
+
+          {/* Payment */}
+          <div className="flex items-center gap-3">
+            <DollarSign className="h-5 w-5 text-muted-foreground shrink-0" />
+            <div className="flex-1 flex items-center gap-3">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={isPaid}
+                  onChange={(e) => setIsPaid(e.target.checked)}
+                  className="w-4 h-4 rounded border-muted accent-primary"
+                />
+                <span className="text-sm text-foreground">Pago</span>
+              </label>
+              {isPaid && (
+                <div className="flex items-center gap-1">
+                  <span className="text-sm text-muted-foreground">R$</span>
+                  <Input
+                    type="text"
+                    value={paymentValue}
+                    onChange={(e) => setPaymentValue(e.target.value)}
+                    placeholder="0,00"
+                    className="w-24 h-8 text-sm"
+                  />
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Submit button */}
