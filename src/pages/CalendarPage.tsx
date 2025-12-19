@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { format, addDays, startOfWeek, addMonths, subMonths, addWeeks, subWeeks, addYears, subYears } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { ChevronLeft, ChevronRight } from "lucide-react";
@@ -152,11 +152,12 @@ export default function CalendarPage() {
     setDialogOpen(true);
   };
 
-  const handlePendingSlotUpdate = (startTime: string, endTime: string) => {
-    if (pendingSlot) {
-      setPendingSlot({ ...pendingSlot, startTime, endTime });
-    }
-  };
+  const handlePendingSlotUpdate = useCallback(
+    (startTime: string, endTime: string) => {
+      setPendingSlot((prev) => (prev ? { ...prev, startTime, endTime } : prev));
+    },
+    []
+  );
 
   const handleDialogOpenChange = (open: boolean) => {
     if (!open) {
