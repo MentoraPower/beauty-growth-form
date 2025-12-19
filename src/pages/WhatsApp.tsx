@@ -1158,6 +1158,30 @@ const WhatsApp = () => {
     }
   };
 
+  // Fetch missing profile photos in background
+  const fetchMissingPhotos = useCallback(async () => {
+    try {
+      console.log("[WhatsApp] Fetching missing profile photos...");
+      const { data, error } = await supabase.functions.invoke("wasender-whatsapp", {
+        body: { action: "fetch-missing-photos" },
+      });
+      
+      if (error) {
+        console.error("[WhatsApp] Error fetching photos:", error);
+        return;
+      }
+      
+      console.log("[WhatsApp] Photo fetch result:", data);
+      
+      // If we updated any photos, refresh the chats list
+      if (data?.updated > 0) {
+        await fetchChats(false);
+      }
+    } catch (error) {
+      console.error("[WhatsApp] Error fetching missing photos:", error);
+    }
+  }, [fetchChats]);
+
   // Initial load and cleanup
   useEffect(() => {
     const init = async () => {
@@ -1191,10 +1215,15 @@ const WhatsApp = () => {
       
       // Background sync
       syncAllChats();
+      
+      // Fetch missing profile photos in background (after UI loads)
+      setTimeout(() => {
+        fetchMissingPhotos();
+      }, 2000);
     };
     
     init();
-  }, [fetchChats]);
+  }, [fetchChats, fetchMissingPhotos]);
 
   // Realtime subscription for chats - UPDATE INCREMENTALLY
   useEffect(() => {
