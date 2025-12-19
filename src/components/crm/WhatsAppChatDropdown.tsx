@@ -49,14 +49,15 @@ export function WhatsAppChatDropdown({ phone, countryCode, contactName }: WhatsA
   const emojiPickerRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Format phone for API (remove country code prefix if present)
+  // Normalize phone numbers to match our DB storage format
+  const normalizeDigits = (value: string) => value.replace(/\D/g, "").replace(/^0+/, "");
+
+  // Format phone for API/DB (always digits, prefer with country code)
   const formatPhoneForApi = (phoneNumber: string, code: string) => {
-    const cleanPhone = phoneNumber.replace(/\D/g, "");
-    const cleanCode = code.replace(/\D/g, "");
-    // If phone already starts with country code, return it
-    if (cleanPhone.startsWith(cleanCode)) {
-      return cleanPhone;
-    }
+    const cleanPhone = normalizeDigits(phoneNumber);
+    const cleanCode = normalizeDigits(code);
+    if (!cleanPhone) return "";
+    if (cleanPhone.startsWith(cleanCode)) return cleanPhone;
     return `${cleanCode}${cleanPhone}`;
   };
 
@@ -74,47 +75,59 @@ export function WhatsAppChatDropdown({ phone, countryCode, contactName }: WhatsA
   // Fetch chat and messages when opened
   const fetchChatData = useCallback(async () => {
     if (!formattedPhone) return;
-    
+
+    const cleanCode = normalizeDigits(countryCode);
+    const cleanPhone = normalizeDigits(phone);
+    const withoutCode = cleanCode && formattedPhone.startsWith(cleanCode)
+      ? formattedPhone.slice(cleanCode.length)
+      : cleanPhone;
+
+    const candidates = Array.from(new Set([formattedPhone, cleanPhone, withoutCode].filter(Boolean)));
+
     setIsLoading(true);
     try {
-      // First find or create chat
       const { data: existingChat } = await supabase
         .from("whatsapp_chats")
-        .select("id, photo_url")
-        .eq("phone", formattedPhone)
+        .select("id, photo_url, last_message_time")
+        .in("phone", candidates)
+        .order("last_message_time", { ascending: false })
+        .limit(1)
         .maybeSingle();
 
-      if (existingChat) {
-        setChatData(existingChat);
-        
-        // Fetch messages
-        const { data: messagesData } = await supabase
-          .from("whatsapp_messages")
-          .select("*")
-          .eq("chat_id", existingChat.id)
-          .order("created_at", { ascending: true })
-          .limit(100);
+      if (!existingChat) {
+        setChatData(null);
+        setMessages([]);
+        return;
+      }
 
-        if (messagesData) {
-          setMessages(messagesData.map(m => ({
-            id: m.id,
-            text: m.text || "",
-            time: formatTime(m.created_at),
-            sent: m.from_me || false,
-            status: m.status || "RECEIVED",
-            mediaUrl: m.media_url,
-            mediaType: m.media_type,
-            created_at: m.created_at,
-            message_id: m.message_id,
-          })));
-        }
+      setChatData({ id: existingChat.id, photo_url: existingChat.photo_url });
+
+      const { data: messagesData } = await supabase
+        .from("whatsapp_messages")
+        .select("*")
+        .eq("chat_id", existingChat.id)
+        .order("created_at", { ascending: true })
+        .limit(100);
+
+      if (messagesData) {
+        setMessages(messagesData.map(m => ({
+          id: m.id,
+          text: m.text || "",
+          time: formatTime(m.created_at),
+          sent: m.from_me || false,
+          status: m.status || "RECEIVED",
+          mediaUrl: m.media_url,
+          mediaType: m.media_type,
+          created_at: m.created_at,
+          message_id: m.message_id,
+        })));
       }
     } catch (error) {
       console.error("Error fetching chat:", error);
     } finally {
       setIsLoading(false);
     }
-  }, [formattedPhone]);
+  }, [formattedPhone, phone, countryCode]);
 
   useEffect(() => {
     if (isOpen) {
@@ -415,10 +428,9 @@ export function WhatsAppChatDropdown({ phone, countryCode, contactName }: WhatsA
                       
                       {/* Text */}
                       {msg.text && (
-                        <div 
-                          className="text-sm whitespace-pre-wrap break-words"
-                          dangerouslySetInnerHTML={{ __html: formatWhatsAppText(msg.text) }}
-                        />
+                        <div className="text-sm whitespace-pre-wrap break-words">
+                          {formatWhatsAppText(msg.text)}
+                        </div>
                       )}
                       
                       {/* Time and status */}
