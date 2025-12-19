@@ -2,8 +2,9 @@ import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 
-import { Search, Smile, Paperclip, Mic, Send, Check, CheckCheck, RefreshCw, Phone, Image, File, Trash2, PanelRightOpen, PanelRightClose, X, Video, MoreVertical, Pencil, Reply, Zap, ArrowUp, Plus, FileImage, FileVideo, Sticker } from "lucide-react";
+import { Search, Smile, Paperclip, Mic, Send, Check, CheckCheck, RefreshCw, Phone, Image, File, Trash2, PanelRightOpen, PanelRightClose, X, Video, MoreVertical, Pencil, Reply, Zap, ArrowUp, Plus, FileImage, FileVideo, Sticker, ShieldBan, ShieldCheck } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -106,6 +107,8 @@ const WhatsApp = () => {
   const [recordingStream, setRecordingStream] = useState<MediaStream | null>(null);
   const [replyToMessage, setReplyToMessage] = useState<Message | null>(null);
   const [contactPresence, setContactPresence] = useState<{ phone: string; type: string; timestamp: number } | null>(null);
+  const [blockedContacts, setBlockedContacts] = useState<Set<string>>(new Set());
+  const [blockConfirmDialog, setBlockConfirmDialog] = useState<{ open: boolean; phone: string; chatId: string; name: string } | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -619,6 +622,44 @@ const WhatsApp = () => {
     } catch (error: any) {
       console.error("Error deleting chat:", error);
       toast({ title: "Erro ao apagar contato", variant: "destructive" });
+    }
+  };
+
+  // Block a contact
+  const handleBlockContact = async (phone: string) => {
+    try {
+      const { data, error } = await supabase.functions.invoke("wasender-whatsapp", {
+        body: { action: "block-contact", phone },
+      });
+
+      if (error) throw error;
+
+      setBlockedContacts(prev => new Set([...prev, phone]));
+      toast({ title: "Contato bloqueado com sucesso" });
+    } catch (error: any) {
+      console.error("Error blocking contact:", error);
+      toast({ title: "Erro ao bloquear contato", variant: "destructive" });
+    }
+  };
+
+  // Unblock a contact
+  const handleUnblockContact = async (phone: string) => {
+    try {
+      const { data, error } = await supabase.functions.invoke("wasender-whatsapp", {
+        body: { action: "unblock-contact", phone },
+      });
+
+      if (error) throw error;
+
+      setBlockedContacts(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(phone);
+        return newSet;
+      });
+      toast({ title: "Contato desbloqueado com sucesso" });
+    } catch (error: any) {
+      console.error("Error unblocking contact:", error);
+      toast({ title: "Erro ao desbloquear contato", variant: "destructive" });
     }
   };
 
@@ -2000,6 +2041,29 @@ const WhatsApp = () => {
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end" className="w-48">
                             <DropdownMenuItem 
+                              className="cursor-pointer"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                if (blockedContacts.has(chat.phone)) {
+                                  handleUnblockContact(chat.phone);
+                                } else {
+                                  setBlockConfirmDialog({ open: true, phone: chat.phone, chatId: chat.id, name: chat.name });
+                                }
+                              }}
+                            >
+                              {blockedContacts.has(chat.phone) ? (
+                                <>
+                                  <ShieldCheck className="w-4 h-4 mr-2 text-emerald-500" />
+                                  Desbloquear
+                                </>
+                              ) : (
+                                <>
+                                  <ShieldBan className="w-4 h-4 mr-2" />
+                                  Bloquear
+                                </>
+                              )}
+                            </DropdownMenuItem>
+                            <DropdownMenuItem 
                               className="text-destructive focus:text-destructive cursor-pointer"
                               onClick={(e) => {
                                 e.stopPropagation();
@@ -2619,6 +2683,37 @@ const WhatsApp = () => {
           }
         />
       )}
+
+      {/* Block Contact Confirmation Dialog */}
+      <AlertDialog 
+        open={blockConfirmDialog?.open ?? false} 
+        onOpenChange={(open) => !open && setBlockConfirmDialog(null)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Bloquear contato</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja bloquear {blockConfirmDialog?.name}? 
+              <br /><br />
+              <span className="font-semibold text-amber-600">Isso foi aprovado por um líder/admin?</span>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={() => {
+                if (blockConfirmDialog?.phone) {
+                  handleBlockContact(blockConfirmDialog.phone);
+                }
+                setBlockConfirmDialog(null);
+              }}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Sim, bloquear
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 };

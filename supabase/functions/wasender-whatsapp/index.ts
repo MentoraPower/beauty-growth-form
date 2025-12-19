@@ -810,6 +810,38 @@ async function handler(req: Request): Promise<Response> {
       });
     }
 
+    // =========================
+    // ACTION: block-contact
+    // =========================
+    if (action === "block-contact") {
+      const formattedPhone = formatPhoneForApi(phone);
+      console.log(`[Wasender] Blocking contact: ${formattedPhone}`);
+      
+      const result = await wasenderRequest(`/contacts/${formattedPhone}/block`, {
+        method: "POST",
+      });
+
+      return new Response(JSON.stringify({ success: true, data: result }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // =========================
+    // ACTION: unblock-contact
+    // =========================
+    if (action === "unblock-contact") {
+      const formattedPhone = formatPhoneForApi(phone);
+      console.log(`[Wasender] Unblocking contact: ${formattedPhone}`);
+      
+      const result = await wasenderRequest(`/contacts/${formattedPhone}/unblock`, {
+        method: "POST",
+      });
+
+      return new Response(JSON.stringify({ success: true, data: result }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     return new Response(JSON.stringify({ error: "Unknown action" }), {
       status: 400,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
