@@ -9,8 +9,24 @@ import React from "react";
  * - ```text``` = monospace (code block)
  * - `text` = inline code
  */
-export function formatWhatsAppText(text: string): React.ReactNode {
+export function formatWhatsAppText(text: string | unknown): React.ReactNode {
+  // Handle null, undefined, or non-string values
   if (!text) return null;
+  if (typeof text !== 'string') {
+    // If it's an object, try to get a meaningful string representation
+    if (typeof text === 'object') {
+      // Handle common object shapes that might accidentally be passed
+      const obj = text as Record<string, unknown>;
+      if (obj.text && typeof obj.text === 'string') return formatWhatsAppText(obj.text);
+      if (obj.message && typeof obj.message === 'string') return formatWhatsAppText(obj.message);
+      if (obj.content && typeof obj.content === 'string') return formatWhatsAppText(obj.content);
+      // Last resort - return empty to avoid showing [object Object]
+      console.warn('[formatWhatsAppText] Received non-string value:', text);
+      return null;
+    }
+    // For other non-string primitives, convert to string
+    return String(text);
+  }
 
   // Process in order: code blocks first, then inline formatting
   let keyIndex = 0;
@@ -94,8 +110,17 @@ export function formatWhatsAppText(text: string): React.ReactNode {
  * Strips WhatsApp formatting markers and returns plain text
  * Useful for preview/truncated text contexts
  */
-export function stripWhatsAppFormatting(text: string): string {
+export function stripWhatsAppFormatting(text: string | unknown): string {
   if (!text) return "";
+  if (typeof text !== 'string') {
+    if (typeof text === 'object') {
+      const obj = text as Record<string, unknown>;
+      if (obj.text && typeof obj.text === 'string') return stripWhatsAppFormatting(obj.text);
+      if (obj.message && typeof obj.message === 'string') return stripWhatsAppFormatting(obj.message);
+      return "";
+    }
+    return String(text);
+  }
   
   return text
     .replace(/```([\s\S]*?)```/g, '$1')  // Code blocks
