@@ -491,19 +491,45 @@ async function handler(req: Request): Promise<Response> {
       console.log(`[Wasender] Deleting message ${msgId}`);
       
       if (!msgId) {
+        console.error("[Wasender] delete-message: msgId is required");
         return new Response(JSON.stringify({ error: "msgId is required" }), {
           status: 400,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
       
-      const result = await wasenderRequest(`/messages/${msgId}`, {
-        method: "DELETE",
-      });
-
-      return new Response(JSON.stringify({ success: true, data: result }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      try {
+        const result = await wasenderRequest(`/messages/${msgId}`, {
+          method: "DELETE",
+        });
+        
+        console.log(`[Wasender] Delete success for msgId ${msgId}:`, result);
+        return new Response(JSON.stringify({ success: true, data: result }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      } catch (deleteError: any) {
+        console.error(`[Wasender] Delete failed for msgId ${msgId}:`, deleteError.message);
+        
+        // Check if it's a time expiration error
+        const errorMsg = deleteError.message || "";
+        if (errorMsg.includes("422") || errorMsg.includes("too old") || errorMsg.includes("expired") || errorMsg.includes("cannot be deleted")) {
+          return new Response(JSON.stringify({ 
+            error: "Tempo expirado - mensagem muito antiga para apagar",
+            details: errorMsg 
+          }), {
+            status: 422,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+        
+        return new Response(JSON.stringify({ 
+          error: `Falha ao apagar mensagem: ${errorMsg}`,
+          details: errorMsg 
+        }), {
+          status: 500,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
     }
 
     // =========================
