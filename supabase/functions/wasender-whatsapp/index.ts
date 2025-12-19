@@ -266,13 +266,17 @@ async function handler(req: Request): Promise<Response> {
         body: JSON.stringify(payload),
       });
 
-      // WasenderAPI returns both:
-      // - msgId (integer) - used for replyTo parameter when replying
-      // - key.id (string) - WhatsApp internal message ID for status tracking and quoted message matching
-      const numericMsgId = result?.data?.msgId || result?.msgId;
-      const whatsappKeyId = result?.key?.id || result?.data?.key?.id;
-      // Return numericMsgId for replies (prioritize), fallback to key.id for status
-      const messageId = numericMsgId ? String(numericMsgId) : whatsappKeyId;
+      // WasenderAPI response structure varies - extract IDs from multiple possible locations
+      // Log full result structure for debugging
+      console.log(`[Wasender] Full send result:`, JSON.stringify(result).substring(0, 500));
+      
+      // msgId (integer) - used for replyTo parameter when replying
+      const numericMsgId = result?.data?.msgId || result?.msgId || result?.message?.msgId;
+      // key.id (string) - WhatsApp internal message ID  
+      const whatsappKeyId = result?.key?.id || result?.data?.key?.id || 
+                           result?.message?.key?.id || result?.data?.message?.key?.id ||
+                           result?.sentMsg?.key?.id;
+      const messageId = numericMsgId ? String(numericMsgId) : (whatsappKeyId || `local-${Date.now()}`);
       console.log(`[Wasender] Send result - msgId: ${numericMsgId}, key.id: ${whatsappKeyId}, using: ${messageId}`);
       return new Response(JSON.stringify({ success: true, messageId, whatsappKeyId }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -296,11 +300,14 @@ async function handler(req: Request): Promise<Response> {
         body: JSON.stringify(payload),
       });
 
-      // Return both IDs for proper message tracking
-      const numericMsgId = result?.data?.msgId || result?.msgId;
-      const whatsappKeyId = result?.key?.id || result?.data?.key?.id;
-      const messageId = numericMsgId ? String(numericMsgId) : whatsappKeyId;
-      console.log(`[Wasender] Send image result - msgId: ${numericMsgId}, key.id: ${whatsappKeyId}`);
+      // Extract both IDs from response
+      console.log(`[Wasender] Send image result:`, JSON.stringify(result).substring(0, 500));
+      const numericMsgId = result?.data?.msgId || result?.msgId || result?.message?.msgId;
+      const whatsappKeyId = result?.key?.id || result?.data?.key?.id || 
+                           result?.message?.key?.id || result?.data?.message?.key?.id ||
+                           result?.sentMsg?.key?.id;
+      const messageId = numericMsgId ? String(numericMsgId) : (whatsappKeyId || `local-${Date.now()}`);
+      console.log(`[Wasender] Send image - msgId: ${numericMsgId}, key.id: ${whatsappKeyId}`);
       return new Response(JSON.stringify({ success: true, messageId, whatsappKeyId }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -322,11 +329,14 @@ async function handler(req: Request): Promise<Response> {
         }),
       });
 
-      // Return both IDs for proper message tracking
-      const numericMsgId = result?.data?.msgId || result?.msgId;
-      const whatsappKeyId = result?.key?.id || result?.data?.key?.id;
-      const messageId = numericMsgId ? String(numericMsgId) : whatsappKeyId;
-      console.log(`[Wasender] Send audio result - msgId: ${numericMsgId}, key.id: ${whatsappKeyId}`);
+      // Extract both IDs from response
+      console.log(`[Wasender] Send audio result:`, JSON.stringify(result).substring(0, 500));
+      const numericMsgId = result?.data?.msgId || result?.msgId || result?.message?.msgId;
+      const whatsappKeyId = result?.key?.id || result?.data?.key?.id || 
+                           result?.message?.key?.id || result?.data?.message?.key?.id ||
+                           result?.sentMsg?.key?.id;
+      const messageId = numericMsgId ? String(numericMsgId) : (whatsappKeyId || `local-${Date.now()}`);
+      console.log(`[Wasender] Send audio - msgId: ${numericMsgId}, key.id: ${whatsappKeyId}`);
       return new Response(JSON.stringify({ success: true, messageId, whatsappKeyId }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -417,10 +427,13 @@ async function handler(req: Request): Promise<Response> {
         }),
       });
 
-      // Return both IDs for proper message tracking
-      const numericMsgId = result?.data?.msgId || result?.msgId;
-      const whatsappKeyId = result?.key?.id || result?.data?.key?.id;
-      const messageId = numericMsgId ? String(numericMsgId) : whatsappKeyId;
+      // Extract both IDs from response
+      console.log(`[Wasender] Send file result:`, JSON.stringify(result).substring(0, 500));
+      const numericMsgId = result?.data?.msgId || result?.msgId || result?.message?.msgId;
+      const whatsappKeyId = result?.key?.id || result?.data?.key?.id || 
+                           result?.message?.key?.id || result?.data?.message?.key?.id ||
+                           result?.sentMsg?.key?.id;
+      const messageId = numericMsgId ? String(numericMsgId) : (whatsappKeyId || `local-${Date.now()}`);
       return new Response(JSON.stringify({ success: true, messageId, whatsappKeyId }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -443,10 +456,13 @@ async function handler(req: Request): Promise<Response> {
         body: JSON.stringify(payload),
       });
 
-      // Return both IDs for proper message tracking
-      const numericMsgId = result?.data?.msgId || result?.msgId;
-      const whatsappKeyId = result?.key?.id || result?.data?.key?.id;
-      const messageId = numericMsgId ? String(numericMsgId) : whatsappKeyId;
+      // Extract both IDs from response
+      console.log(`[Wasender] Send video result:`, JSON.stringify(result).substring(0, 500));
+      const numericMsgId = result?.data?.msgId || result?.msgId || result?.message?.msgId;
+      const whatsappKeyId = result?.key?.id || result?.data?.key?.id || 
+                           result?.message?.key?.id || result?.data?.message?.key?.id ||
+                           result?.sentMsg?.key?.id;
+      const messageId = numericMsgId ? String(numericMsgId) : (whatsappKeyId || `local-${Date.now()}`);
       return new Response(JSON.stringify({ success: true, messageId, whatsappKeyId }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
