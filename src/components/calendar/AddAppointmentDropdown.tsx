@@ -211,38 +211,13 @@ export function AddAppointmentDropdown({
         ref={panelRef}
         role="dialog"
         aria-label="Novo agendamento"
-        className="pointer-events-auto fixed w-[340px] max-w-[calc(100vw-24px)] max-h-[85vh] bg-popover text-popover-foreground rounded-xl border border-border shadow-2xl overflow-hidden animate-in fade-in"
+        className="pointer-events-auto fixed w-[420px] max-w-[calc(100vw-24px)] max-h-[85vh] bg-popover text-popover-foreground rounded-xl border border-border shadow-2xl overflow-hidden animate-in fade-in"
         style={{ left: panelPosition.left, top: panelPosition.top }}
       >
-        {/* Header */}
-        <div className="flex items-center justify-between px-4 py-3 border-b border-border bg-gradient-to-r from-primary/10 to-transparent">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
-              <CalendarDays className="h-4 w-4 text-primary-foreground" />
-            </div>
-            <div>
-              <h3 className="text-base font-semibold text-foreground">Novo Agendamento</h3>
-              {selectedDate && (
-                <p className="text-xs text-muted-foreground capitalize">
-                  {format(selectedDate, "EEE, d 'de' MMM", { locale: ptBR })}
-                </p>
-              )}
-            </div>
-          </div>
-          <button
-            type="button"
-            onClick={() => onOpenChange(false)}
-            className="p-1.5 rounded-md hover:bg-muted transition-colors"
-            aria-label="Fechar"
-          >
-            <X className="h-4 w-4 text-muted-foreground" />
-          </button>
-        </div>
 
-        {/* Content */}
         <form
           onSubmit={handleSubmit}
-          className="p-4 space-y-4 overflow-y-auto max-h-[calc(85vh-60px)]"
+          className="p-4 space-y-4 overflow-y-auto max-h-[85vh]"
         >
           <div className="space-y-1.5">
             <Label htmlFor="title" className="text-xs font-medium text-foreground">
