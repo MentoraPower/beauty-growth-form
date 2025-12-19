@@ -1929,7 +1929,7 @@ const WhatsApp = () => {
 
           {/* Chat List - Always visible, no loading spinner */}
           <ScrollArea
-            className="flex-1 overscroll-contain"
+            className="flex-1 overscroll-contain overflow-x-hidden"
             onScrollCapture={markChatListInteracting}
             onWheelCapture={markChatListInteracting}
             onTouchMoveCapture={markChatListInteracting}
@@ -1945,7 +1945,7 @@ const WhatsApp = () => {
                 <div
                     key={chat.id}
                     className={cn(
-                      "flex items-center gap-3 px-3 py-3 cursor-pointer transition-colors border-b border-border/20 overflow-hidden max-w-full",
+                      "flex w-full items-center gap-3 px-3 py-3 cursor-pointer transition-colors border-b border-border/20 overflow-hidden max-w-full",
                       selectedChat?.id === chat.id ? "bg-muted/40" : "hover:bg-muted/20"
                     )}
                     onClick={() => { 
@@ -1962,9 +1962,9 @@ const WhatsApp = () => {
                         className="w-12 h-12 rounded-full object-cover bg-neutral-200" 
                       />
                     </div>
-                    <div className="flex-1 min-w-0 overflow-hidden">
-                      <div className="flex items-center gap-2">
-                        <span className="font-medium text-foreground truncate flex-1">{chat.name}</span>
+                    <div className="flex-1 min-w-0 overflow-hidden w-0">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <span className="font-medium text-foreground truncate flex-1 min-w-0">{chat.name}</span>
                       </div>
                       <div className="flex items-center gap-1 min-w-0 mt-0.5">
                         {chat.lastMessageFromMe && (
@@ -1974,7 +1974,7 @@ const WhatsApp = () => {
                               ? <CheckCheck className="w-4 h-4 text-muted-foreground flex-shrink-0" />
                               : <Check className="w-4 h-4 text-muted-foreground flex-shrink-0" />
                         )}
-                        <p className="text-sm text-muted-foreground truncate">
+                        <p className="text-sm text-muted-foreground truncate flex-1 min-w-0">
                           {chat.lastMessage?.trim() ? stripWhatsAppFormatting(chat.lastMessage) : "Sem mensagens"}
                         </p>
                       </div>
