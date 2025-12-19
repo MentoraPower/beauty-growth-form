@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { format, addDays, startOfWeek, addMonths, subMonths, addWeeks, subWeeks, addYears, subYears } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { ChevronLeft, ChevronRight } from "lucide-react";
@@ -39,6 +39,7 @@ export default function CalendarPage() {
   const [selectedHour, setSelectedHour] = useState<number | null>(null);
   const [anchorPosition, setAnchorPosition] = useState<{ x: number; y: number } | undefined>();
   const [pendingSlot, setPendingSlot] = useState<PendingSlot | null>(null);
+  const justClosedRef = useRef(false);
 
   // Fetch appointments
   const fetchAppointments = async () => {
@@ -109,6 +110,12 @@ export default function CalendarPage() {
   };
 
   const handleDayClick = (date: Date, hour?: number, event?: React.MouseEvent) => {
+    // Prevent reopening immediately after closing
+    if (justClosedRef.current) {
+      justClosedRef.current = false;
+      return;
+    }
+    
     const h = hour ?? 9;
     setSelectedDate(date);
     setSelectedHour(h);
@@ -135,6 +142,11 @@ export default function CalendarPage() {
     setDialogOpen(open);
     if (!open) {
       setPendingSlot(null);
+      justClosedRef.current = true;
+      // Reset after a short delay to allow new clicks
+      setTimeout(() => {
+        justClosedRef.current = false;
+      }, 100);
     }
   };
 
