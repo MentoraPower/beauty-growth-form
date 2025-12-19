@@ -291,6 +291,7 @@ export default function CalendarPage() {
         selectedDate={selectedDate}
         selectedHour={selectedHour}
         onSuccess={handleSuccess}
+        onCancel={() => setPendingSlot(null)}
         anchorPosition={anchorPosition}
         onPendingSlotUpdate={handlePendingSlotUpdate}
       />
