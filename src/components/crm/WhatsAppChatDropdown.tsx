@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Search, Smile, Paperclip, Mic, Send, Check, CheckCheck, X, Image, File, Video, RefreshCw } from "lucide-react";
+import { Search, Smile, Paperclip, Mic, Send, Check, CheckCheck, X, Image, File, Video, RefreshCw, Maximize2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
@@ -477,6 +477,18 @@ export function WhatsAppChatDropdown({ phone, countryCode, contactName }: WhatsA
                     <p className="text-xs text-muted-foreground">{currentChatPhone}</p>
                   </div>
                 </>
+              )}
+              {viewMode === "chat" && (
+                <button 
+                  onClick={() => {
+                    setIsOpen(false);
+                    navigate(`/admin/whatsapp?phone=${currentChatPhone}`);
+                  }}
+                  className="p-1.5 rounded-full hover:bg-muted transition-colors"
+                  title="Expandir conversa"
+                >
+                  <Maximize2 className="h-4 w-4 text-muted-foreground" />
+                </button>
               )}
               <button 
                 onClick={() => {

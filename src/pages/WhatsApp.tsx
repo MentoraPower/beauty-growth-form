@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
+import { useSearchParams } from "react-router-dom";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
@@ -84,6 +85,7 @@ const mergeStatus = (current: WhatsAppMessageStatus, incoming: WhatsAppMessageSt
 };
 
 const WhatsApp = () => {
+  const [searchParams, setSearchParams] = useSearchParams();
   const { toast } = useToast();
   const [selectedChat, setSelectedChat] = useState<Chat | null>(null);
   const [message, setMessage] = useState("");
@@ -1592,6 +1594,21 @@ const WhatsApp = () => {
     
     init();
   }, [fetchChats, fetchMissingPhotos]);
+
+  // Handle phone query param to auto-select a chat
+  useEffect(() => {
+    const phoneParam = searchParams.get("phone");
+    if (!phoneParam || chats.length === 0 || selectedChat) return;
+
+    const matchingChat = chats.find(c => c.phone === phoneParam || c.phone.includes(phoneParam) || phoneParam.includes(c.phone));
+    if (matchingChat) {
+      setSelectedChat(matchingChat);
+      fetchMessages(matchingChat.id);
+      shouldScrollToBottomOnOpenRef.current = true;
+      // Clear the param after selecting
+      setSearchParams({}, { replace: true });
+    }
+  }, [chats, searchParams, selectedChat, setSearchParams]);
 
   // Realtime subscription for chats - UPDATE INCREMENTALLY
   useEffect(() => {
