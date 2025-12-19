@@ -42,6 +42,20 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
   const isWhatsAppActive = location.pathname === "/admin/whatsapp";
   const isSettingsActive = location.pathname === "/admin/settings";
 
+  // Sync activePanel with current route
+  useEffect(() => {
+    if (isWhatsAppActive && activePanel !== 'whatsapp') {
+      setActivePanel('whatsapp');
+      setCrmSubmenuOpen(false);
+    } else if (isSettingsActive && activePanel !== 'settings') {
+      setActivePanel('settings');
+      setCrmSubmenuOpen(false);
+    } else if (isCRMActive && activePanel !== 'crm') {
+      setActivePanel('crm');
+      setCrmSubmenuOpen(true);
+    }
+  }, [location.pathname, isCRMActive, isWhatsAppActive, isSettingsActive]);
+
   // Fetch user permissions for WhatsApp access
   useEffect(() => {
     const fetchPermissions = async () => {
