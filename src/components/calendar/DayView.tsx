@@ -4,13 +4,14 @@ import { toZonedTime } from "date-fns-tz";
 import { DndContext, DragEndEvent, PointerSensor, useSensor, useSensors, useDroppable } from "@dnd-kit/core";
 import { cn } from "@/lib/utils";
 import { AppointmentCard } from "./AppointmentCard";
-import type { Appointment } from "@/pages/CalendarPage";
+import type { Appointment, PendingSlot } from "@/pages/CalendarPage";
 
 interface DayViewProps {
   date: Date;
   appointments: Appointment[];
   onDayClick: (date: Date, hour: number, event?: React.MouseEvent) => void;
   onAppointmentDrop: (appointmentId: string, newStartTime: Date, newEndTime: Date) => void;
+  pendingSlot?: PendingSlot | null;
 }
 
 const HOUR_HEIGHT = 60; // pixels per hour
@@ -49,6 +50,7 @@ export function DayView({
   appointments,
   onDayClick,
   onAppointmentDrop,
+  pendingSlot,
 }: DayViewProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [currentTimeTop, setCurrentTimeTop] = useState(0);
@@ -202,6 +204,19 @@ export function DayView({
             />
           );
         })}
+
+        {/* Pending slot placeholder (green) */}
+        {offset === 1 && pendingSlot && isSameDay(pendingSlot.date, date) && (
+          <div
+            className="absolute left-1 right-1 bg-emerald-500/80 rounded-lg border-2 border-emerald-400 shadow-lg z-10 flex items-center justify-center animate-pulse"
+            style={{
+              top: pendingSlot.hour * HOUR_HEIGHT,
+              height: HOUR_HEIGHT,
+            }}
+          >
+            <span className="text-white text-sm font-medium">Novo agendamento</span>
+          </div>
+        )}
       </div>
     </div>
   );

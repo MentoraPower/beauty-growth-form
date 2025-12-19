@@ -24,6 +24,11 @@ export interface Appointment {
   sdr_name?: string;
 }
 
+export interface PendingSlot {
+  date: Date;
+  hour: number;
+}
+
 export default function CalendarPage() {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [view, setView] = useState<ViewType>("month");
@@ -32,6 +37,7 @@ export default function CalendarPage() {
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [selectedHour, setSelectedHour] = useState<number | null>(null);
   const [anchorPosition, setAnchorPosition] = useState<{ x: number; y: number } | undefined>();
+  const [pendingSlot, setPendingSlot] = useState<PendingSlot | null>(null);
 
   // Fetch appointments
   const fetchAppointments = async () => {
@@ -102,8 +108,10 @@ export default function CalendarPage() {
   };
 
   const handleDayClick = (date: Date, hour?: number, event?: React.MouseEvent) => {
+    const h = hour ?? 9;
     setSelectedDate(date);
-    setSelectedHour(hour ?? 9);
+    setSelectedHour(h);
+    setPendingSlot({ date, hour: h });
     
     if (event) {
       setAnchorPosition({ x: event.clientX, y: event.clientY });
@@ -112,6 +120,18 @@ export default function CalendarPage() {
     }
     
     setDialogOpen(true);
+  };
+
+  const handleDialogOpenChange = (open: boolean) => {
+    setDialogOpen(open);
+    if (!open) {
+      setPendingSlot(null);
+    }
+  };
+
+  const handleSuccess = () => {
+    setPendingSlot(null);
+    fetchAppointments();
   };
 
   const getHeaderTitle = () => {
@@ -213,6 +233,7 @@ export default function CalendarPage() {
             appointments={appointments}
             onDayClick={handleDayClick}
             onAppointmentDrop={handleAppointmentDrop}
+            pendingSlot={pendingSlot}
           />
         )}
         {view === "week" && (
@@ -221,6 +242,7 @@ export default function CalendarPage() {
             appointments={appointments}
             onDayClick={handleDayClick}
             onAppointmentDrop={handleAppointmentDrop}
+            pendingSlot={pendingSlot}
           />
         )}
         {view === "month" && (
@@ -246,10 +268,10 @@ export default function CalendarPage() {
       {/* Add Appointment Dropdown */}
       <AddAppointmentDropdown
         open={dialogOpen}
-        onOpenChange={setDialogOpen}
+        onOpenChange={handleDialogOpenChange}
         selectedDate={selectedDate}
         selectedHour={selectedHour}
-        onSuccess={fetchAppointments}
+        onSuccess={handleSuccess}
         anchorPosition={anchorPosition}
       />
     </div>
