@@ -537,6 +537,93 @@ async function handler(req: Request): Promise<Response> {
     }
 
     // =========================
+    // ACTION: fetch-missing-photos
+    // =========================
+    if (action === "fetch-missing-photos") {
+      console.log("[Wasender] Fetching missing profile photos...");
+      
+      // Get all chats without photos
+      const { data: chatsWithoutPhotos, error: fetchError } = await supabase
+        .from("whatsapp_chats")
+        .select("id, phone, name")
+        .is("photo_url", null);
+      
+      if (fetchError) {
+        console.error("[Wasender] Error fetching chats:", fetchError);
+        throw fetchError;
+      }
+      
+      console.log(`[Wasender] Found ${chatsWithoutPhotos?.length || 0} chats without photos`);
+      
+      let updated = 0;
+      let failed = 0;
+      
+      for (const chat of chatsWithoutPhotos || []) {
+        try {
+          const phone = chat.phone?.replace(/\D/g, "");
+          if (!phone || phone.length < 8) {
+            failed++;
+            continue;
+          }
+          
+          // Fetch contact info (includes photo and name)
+          const contactInfo = await fetchContactInfo(phone);
+          let photoUrl = contactInfo.imgUrl;
+          
+          // Try dedicated photo endpoint if no photo
+          if (!photoUrl) {
+            photoUrl = await fetchContactPicture(phone);
+          }
+          
+          const updateData: any = {};
+          if (photoUrl) updateData.photo_url = photoUrl;
+          
+          // Also update name if we got a better one and current is just a phone number
+          const currentNameIsPhone = !chat.name || /^[\d\s+\-()]+$/.test(chat.name);
+          if (contactInfo.name && currentNameIsPhone) {
+            updateData.name = contactInfo.name;
+          }
+          
+          if (Object.keys(updateData).length > 0) {
+            const { error: updateError } = await supabase
+              .from("whatsapp_chats")
+              .update(updateData)
+              .eq("id", chat.id);
+            
+            if (!updateError) {
+              updated++;
+              console.log(`[Wasender] Updated ${phone}: photo=${photoUrl ? "Yes" : "No"}, name=${updateData.name || "unchanged"}`);
+            } else {
+              console.error(`[Wasender] Error updating ${phone}:`, updateError);
+              failed++;
+            }
+          } else {
+            console.log(`[Wasender] No photo found for ${phone}`);
+            failed++;
+          }
+          
+          // Small delay to avoid rate limiting
+          await new Promise(resolve => setTimeout(resolve, 100));
+          
+        } catch (error) {
+          console.error(`[Wasender] Error processing chat ${chat.phone}:`, error);
+          failed++;
+        }
+      }
+      
+      console.log(`[Wasender] Photo fetch complete. Updated: ${updated}, Failed: ${failed}`);
+      
+      return new Response(JSON.stringify({ 
+        success: true, 
+        updated,
+        failed,
+        total: chatsWithoutPhotos?.length || 0
+      }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // =========================
     // ACTION: sync-all
     // =========================
     if (action === "sync-all") {
