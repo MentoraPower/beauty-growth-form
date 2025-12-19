@@ -325,16 +325,17 @@ export function WhatsAppChatDropdown({ phone, countryCode, contactName }: WhatsA
     <Popover open={isOpen} onOpenChange={setIsOpen}>
       <PopoverTrigger asChild>
         <button
-          className="p-1.5 rounded-full hover:bg-green-100 transition-colors"
+          className="p-3 rounded-full bg-green-500 hover:bg-green-600 text-white shadow-lg transition-all hover:scale-105"
           title="Abrir WhatsApp"
         >
-          <WhatsAppIcon className="h-5 w-5 text-green-600" />
+          <WhatsAppIcon className="h-6 w-6" />
         </button>
       </PopoverTrigger>
       <PopoverContent 
         className="w-[400px] h-[500px] p-0 bg-background border shadow-xl z-50"
-        align="start"
-        sideOffset={8}
+        align="end"
+        side="top"
+        sideOffset={12}
       >
         <div className="flex flex-col h-full">
           {/* Header */}

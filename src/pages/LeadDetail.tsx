@@ -397,16 +397,9 @@ export default function LeadDetail() {
                     </p>
                   )}
                 </div>
-                <div className="flex items-center gap-2">
-                  <h1 className="text-xl font-bold leading-tight">
-                    {lead.name === "Incompleto" ? "incompleto" : lead.name}
-                  </h1>
-                  <WhatsAppChatDropdown 
-                    phone={lead.whatsapp || ""}
-                    countryCode={lead.country_code || "+55"}
-                    contactName={lead.name}
-                  />
-                </div>
+                <h1 className="text-xl font-bold leading-tight">
+                  {lead.name === "Incompleto" ? "incompleto" : lead.name}
+                </h1>
               </div>
             </div>
             
@@ -803,6 +796,17 @@ export default function LeadDetail() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Fixed WhatsApp Chat Button - Bottom Right Corner */}
+      {lead && lead.whatsapp && (
+        <div className="fixed bottom-6 right-6 z-50">
+          <WhatsAppChatDropdown 
+            phone={lead.whatsapp}
+            countryCode={lead.country_code || "+55"}
+            contactName={lead.name}
+          />
+        </div>
+      )}
     </>
   );
 }
