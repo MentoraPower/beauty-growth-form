@@ -1,13 +1,15 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Search, Smile, Paperclip, Mic, Send, Check, CheckCheck, X, Image, File, Video, RefreshCw, Maximize2 } from "lucide-react";
+import { Search, Smile, Paperclip, Mic, Send, Check, CheckCheck, X, Image, File, Video, RefreshCw, Maximize2, Zap, FileImage, FileVideo, Plus, Square } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { EmojiPicker } from "@/components/whatsapp/EmojiPicker";
+import { QuickMessages } from "@/components/whatsapp/QuickMessages";
 import { AudioWaveform } from "@/components/whatsapp/AudioWaveform";
+import { RecordingWaveform } from "@/components/whatsapp/RecordingWaveform";
 import { formatWhatsAppText } from "@/lib/whatsapp-format";
 import {
   Popover,
@@ -58,6 +60,11 @@ export function WhatsAppChatDropdown({ phone, countryCode, contactName }: WhatsA
   const [isLoading, setIsLoading] = useState(false);
   const [isSending, setIsSending] = useState(false);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const [showAttachMenu, setShowAttachMenu] = useState(false);
+  const [showQuickMessages, setShowQuickMessages] = useState(false);
+  const [isRecording, setIsRecording] = useState(false);
+  const [recordingTime, setRecordingTime] = useState(0);
+  const [recordingStream, setRecordingStream] = useState<MediaStream | null>(null);
   const [chatData, setChatData] = useState<{ id: string; photo_url: string | null } | null>(null);
   const [allChats, setAllChats] = useState<ChatItem[]>([]);
   const [selectedChat, setSelectedChat] = useState<{ phone: string; name: string } | null>(null);
@@ -65,7 +72,16 @@ export function WhatsAppChatDropdown({ phone, countryCode, contactName }: WhatsA
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const emojiButtonRef = useRef<HTMLButtonElement>(null);
   const emojiPickerRef = useRef<HTMLDivElement>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const attachButtonRef = useRef<HTMLButtonElement>(null);
+  const attachMenuRef = useRef<HTMLDivElement>(null);
+  const quickMsgButtonRef = useRef<HTMLButtonElement>(null);
+  const quickMsgPickerRef = useRef<HTMLDivElement>(null);
+  const imageInputRef = useRef<HTMLInputElement>(null);
+  const videoInputRef = useRef<HTMLInputElement>(null);
+  const documentInputRef = useRef<HTMLInputElement>(null);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
+  const recordingIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   // Normalize phone numbers to match our DB storage format
   const normalizeDigits = (value: string) => value.replace(/\D/g, "").replace(/^0+/, "");
@@ -416,6 +432,213 @@ export function WhatsAppChatDropdown({ phone, countryCode, contactName }: WhatsA
     }
   };
 
+  // Audio recording functions
+  const startRecording = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      setRecordingStream(stream);
+      const mediaRecorder = new MediaRecorder(stream, { mimeType: "audio/webm" });
+      mediaRecorderRef.current = mediaRecorder;
+      audioChunksRef.current = [];
+
+      mediaRecorder.ondataavailable = (e) => {
+        if (e.data.size > 0) {
+          audioChunksRef.current.push(e.data);
+        }
+      };
+
+      mediaRecorder.start(100);
+      setIsRecording(true);
+      setRecordingTime(0);
+
+      recordingIntervalRef.current = setInterval(() => {
+        setRecordingTime((prev) => prev + 1);
+      }, 1000);
+    } catch (error) {
+      console.error("Error starting recording:", error);
+      toast({ title: "Erro ao acessar microfone", variant: "destructive" });
+    }
+  };
+
+  const stopRecording = () => {
+    if (mediaRecorderRef.current && isRecording) {
+      mediaRecorderRef.current.onstop = async () => {
+        const blob = new Blob(audioChunksRef.current, { type: "audio/webm" });
+        await sendAudioMessage(blob);
+        recordingStream?.getTracks().forEach((t) => t.stop());
+        setRecordingStream(null);
+      };
+      mediaRecorderRef.current.stop();
+      setIsRecording(false);
+      if (recordingIntervalRef.current) {
+        clearInterval(recordingIntervalRef.current);
+      }
+    }
+  };
+
+  const cancelRecording = () => {
+    if (mediaRecorderRef.current && isRecording) {
+      mediaRecorderRef.current.onstop = () => {};
+      mediaRecorderRef.current.stop();
+    }
+    setIsRecording(false);
+    setRecordingTime(0);
+    recordingStream?.getTracks().forEach((t) => t.stop());
+    setRecordingStream(null);
+    if (recordingIntervalRef.current) {
+      clearInterval(recordingIntervalRef.current);
+    }
+  };
+
+  const sendAudioMessage = async (blob: Blob) => {
+    if (isSending) return;
+    setIsSending(true);
+
+    try {
+      // Convert to MP3 using lamejs
+      const arrayBuffer = await blob.arrayBuffer();
+      const audioContext = new AudioContext();
+      const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
+      
+      const samples = audioBuffer.getChannelData(0);
+      const sampleRate = audioBuffer.sampleRate;
+      
+      // @ts-ignore
+      const mp3encoder = new lamejs.Mp3Encoder(1, sampleRate, 128);
+      const samples16 = new Int16Array(samples.length);
+      for (let i = 0; i < samples.length; i++) {
+        samples16[i] = samples[i] < 0 ? samples[i] * 0x8000 : samples[i] * 0x7FFF;
+      }
+      
+      const mp3Data: ArrayBuffer[] = [];
+      const blockSize = 1152;
+      for (let i = 0; i < samples16.length; i += blockSize) {
+        const chunk = samples16.subarray(i, i + blockSize);
+        const mp3buf = mp3encoder.encodeBuffer(chunk);
+        if (mp3buf.length > 0) mp3Data.push(mp3buf.buffer);
+      }
+      const endBuf = mp3encoder.flush();
+      if (endBuf.length > 0) mp3Data.push(endBuf.buffer);
+      
+      const mp3Blob = new Blob(mp3Data, { type: "audio/mpeg" });
+      const reader = new FileReader();
+      reader.onloadend = async () => {
+        const base64 = (reader.result as string).split(",")[1];
+        
+        const { data, error } = await supabase.functions.invoke("wasender-whatsapp", {
+          body: {
+            action: "send-audio",
+            phone: currentChatPhone,
+            audioBase64: base64,
+          },
+        });
+
+        if (error) throw error;
+        toast({ title: "Áudio enviado!" });
+        
+        // Refresh messages
+        if (chatData?.id) {
+          const { data: messagesData } = await supabase
+            .from("whatsapp_messages")
+            .select("*")
+            .eq("chat_id", chatData.id)
+            .order("created_at", { ascending: true })
+            .limit(100);
+
+          if (messagesData) {
+            setMessages(messagesData.map(m => ({
+              id: m.id,
+              text: m.text || "",
+              time: formatTime(m.created_at),
+              sent: m.from_me || false,
+              status: m.status || "RECEIVED",
+              mediaUrl: m.media_url,
+              mediaType: m.media_type,
+              created_at: m.created_at,
+              message_id: m.message_id,
+            })));
+          }
+        }
+      };
+      reader.readAsDataURL(mp3Blob);
+    } catch (error: any) {
+      console.error("Error sending audio:", error);
+      toast({ title: "Erro ao enviar áudio", description: error.message, variant: "destructive" });
+    } finally {
+      setIsSending(false);
+    }
+  };
+
+  const handleMediaUpload = async (file: File, type: "image" | "video" | "document") => {
+    if (!file || isSending) return;
+    setIsSending(true);
+    setShowAttachMenu(false);
+
+    try {
+      const reader = new FileReader();
+      reader.onloadend = async () => {
+        const base64 = (reader.result as string).split(",")[1];
+        
+        const action = type === "image" ? "send-image" : type === "video" ? "send-video" : "send-document";
+        
+        const { data, error } = await supabase.functions.invoke("wasender-whatsapp", {
+          body: {
+            action,
+            phone: currentChatPhone,
+            [`${type}Base64`]: base64,
+            filename: file.name,
+            mimeType: file.type,
+          },
+        });
+
+        if (error) throw error;
+        toast({ title: `${type === "image" ? "Imagem" : type === "video" ? "Vídeo" : "Documento"} enviado!` });
+      };
+      reader.readAsDataURL(file);
+    } catch (error: any) {
+      console.error(`Error sending ${type}:`, error);
+      toast({ title: `Erro ao enviar ${type}`, description: error.message, variant: "destructive" });
+    } finally {
+      setIsSending(false);
+    }
+  };
+
+  const handleQuickMessageSelect = (text: string) => {
+    setMessage(text);
+    setShowQuickMessages(false);
+  };
+
+  const handleQuickAudioSelect = async (audioBase64: string) => {
+    setShowQuickMessages(false);
+    setIsSending(true);
+
+    try {
+      const base64Data = audioBase64.includes(",") ? audioBase64.split(",")[1] : audioBase64;
+      
+      const { data, error } = await supabase.functions.invoke("wasender-whatsapp", {
+        body: {
+          action: "send-audio",
+          phone: currentChatPhone,
+          audioBase64: base64Data,
+        },
+      });
+
+      if (error) throw error;
+      toast({ title: "Áudio enviado!" });
+    } catch (error: any) {
+      console.error("Error sending quick audio:", error);
+      toast({ title: "Erro ao enviar áudio", description: error.message, variant: "destructive" });
+    } finally {
+      setIsSending(false);
+    }
+  };
+
+  const formatRecordingTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, "0")}`;
+  };
+
   const renderStatusIcon = (status: string, sent: boolean) => {
     if (!sent) return null;
     switch (status) {
@@ -661,47 +884,179 @@ export function WhatsAppChatDropdown({ phone, countryCode, contactName }: WhatsA
 
                 {/* Input Area */}
                 <div className="p-2 border-t bg-muted/30">
-                  <div className="flex items-center gap-2">
-                    <div className="relative">
+                  {/* Hidden file inputs */}
+                  <input
+                    ref={imageInputRef}
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) handleMediaUpload(file, "image");
+                      e.target.value = "";
+                    }}
+                  />
+                  <input
+                    ref={videoInputRef}
+                    type="file"
+                    accept="video/*"
+                    className="hidden"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) handleMediaUpload(file, "video");
+                      e.target.value = "";
+                    }}
+                  />
+                  <input
+                    ref={documentInputRef}
+                    type="file"
+                    accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt"
+                    className="hidden"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) handleMediaUpload(file, "document");
+                      e.target.value = "";
+                    }}
+                  />
+
+                  {isRecording ? (
+                    // Recording UI
+                    <div className="flex items-center gap-2 bg-red-50 dark:bg-red-950/30 rounded-lg p-2">
                       <button
-                        ref={emojiButtonRef}
-                        onClick={() => setShowEmojiPicker(!showEmojiPicker)}
-                        className="p-2 rounded-full hover:bg-muted transition-colors"
+                        onClick={cancelRecording}
+                        className="p-2 rounded-full hover:bg-red-100 dark:hover:bg-red-900/50 transition-colors"
                       >
-                        <Smile className="h-5 w-5 text-muted-foreground" />
+                        <X className="h-5 w-5 text-red-500" />
                       </button>
-                      {showEmojiPicker && (
-                        <div ref={emojiPickerRef} className="absolute bottom-12 left-0 z-50">
-                          <EmojiPicker onSelect={(emoji) => {
-                            setMessage(prev => prev + emoji);
+                      <div className="flex-1 flex items-center gap-2">
+                        <div className="w-3 h-3 bg-red-500 rounded-full animate-pulse" />
+                        <RecordingWaveform isRecording={isRecording} stream={recordingStream} />
+                        <span className="text-sm font-medium text-red-600">{formatRecordingTime(recordingTime)}</span>
+                      </div>
+                      <button
+                        onClick={stopRecording}
+                        className="p-2 rounded-full bg-green-500 hover:bg-green-600 text-white transition-colors"
+                      >
+                        <Send className="h-5 w-5" />
+                      </button>
+                    </div>
+                  ) : (
+                    // Normal input UI
+                    <div className="flex items-center gap-1">
+                      {/* Emoji */}
+                      <div className="relative">
+                        <button
+                          ref={emojiButtonRef}
+                          onClick={() => {
+                            setShowEmojiPicker(!showEmojiPicker);
+                            setShowAttachMenu(false);
+                            setShowQuickMessages(false);
+                          }}
+                          className="p-1.5 rounded-full hover:bg-muted transition-colors"
+                        >
+                          <Smile className="h-5 w-5 text-muted-foreground" />
+                        </button>
+                        {showEmojiPicker && (
+                          <div ref={emojiPickerRef} className="absolute bottom-10 left-0 z-50">
+                            <EmojiPicker onSelect={(emoji) => {
+                              setMessage(prev => prev + emoji);
+                              setShowEmojiPicker(false);
+                            }} />
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Attach */}
+                      <div className="relative">
+                        <button
+                          ref={attachButtonRef}
+                          onClick={() => {
+                            setShowAttachMenu(!showAttachMenu);
                             setShowEmojiPicker(false);
-                          }} />
-                        </div>
+                            setShowQuickMessages(false);
+                          }}
+                          className="p-1.5 rounded-full hover:bg-muted transition-colors"
+                        >
+                          <Plus className="h-5 w-5 text-muted-foreground" />
+                        </button>
+                        {showAttachMenu && (
+                          <div ref={attachMenuRef} className="absolute bottom-10 left-0 z-50 bg-card border rounded-lg shadow-lg p-2 min-w-[140px]">
+                            <button
+                              onClick={() => imageInputRef.current?.click()}
+                              className="w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-muted rounded-md transition-colors"
+                            >
+                              <FileImage className="h-4 w-4 text-blue-500" />
+                              Imagem
+                            </button>
+                            <button
+                              onClick={() => videoInputRef.current?.click()}
+                              className="w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-muted rounded-md transition-colors"
+                            >
+                              <FileVideo className="h-4 w-4 text-purple-500" />
+                              Vídeo
+                            </button>
+                            <button
+                              onClick={() => documentInputRef.current?.click()}
+                              className="w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-muted rounded-md transition-colors"
+                            >
+                              <File className="h-4 w-4 text-orange-500" />
+                              Documento
+                            </button>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Quick Messages */}
+                      <div className="relative">
+                        <button
+                          ref={quickMsgButtonRef}
+                          onClick={() => {
+                            setShowQuickMessages(!showQuickMessages);
+                            setShowEmojiPicker(false);
+                            setShowAttachMenu(false);
+                          }}
+                          className="p-1.5 rounded-full hover:bg-muted transition-colors"
+                        >
+                          <Zap className="h-5 w-5 text-amber-500" />
+                        </button>
+                        {showQuickMessages && (
+                          <div ref={quickMsgPickerRef} className="absolute bottom-10 left-0 z-50">
+                            <QuickMessages
+                              onSelect={handleQuickMessageSelect}
+                              onSelectAudio={handleQuickAudioSelect}
+                            />
+                          </div>
+                        )}
+                      </div>
+                      
+                      <Input
+                        value={message}
+                        onChange={(e) => setMessage(e.target.value)}
+                        onKeyPress={handleKeyPress}
+                        placeholder="Digite uma mensagem"
+                        className="flex-1 bg-white dark:bg-zinc-800 border-0 focus-visible:ring-0 text-sm h-9"
+                        disabled={isSending}
+                      />
+                      
+                      {message.trim() ? (
+                        <button
+                          onClick={sendMessage}
+                          disabled={isSending}
+                          className="p-1.5 rounded-full bg-green-500 text-white hover:bg-green-600 transition-colors"
+                        >
+                          <Send className="h-5 w-5" />
+                        </button>
+                      ) : (
+                        <button
+                          onClick={startRecording}
+                          disabled={isSending}
+                          className="p-1.5 rounded-full hover:bg-muted transition-colors"
+                        >
+                          <Mic className="h-5 w-5 text-muted-foreground" />
+                        </button>
                       )}
                     </div>
-                    
-                    <Input
-                      value={message}
-                      onChange={(e) => setMessage(e.target.value)}
-                      onKeyPress={handleKeyPress}
-                      placeholder="Digite uma mensagem"
-                      className="flex-1 bg-white dark:bg-zinc-800 border-0 focus-visible:ring-0 text-sm"
-                      disabled={isSending}
-                    />
-                    
-                    <button
-                      onClick={sendMessage}
-                      disabled={!message.trim() || isSending}
-                      className={cn(
-                        "p-2 rounded-full transition-colors",
-                        message.trim() 
-                          ? "bg-green-500 text-white hover:bg-green-600" 
-                          : "bg-muted text-muted-foreground"
-                      )}
-                    >
-                      <Send className="h-5 w-5" />
-                    </button>
-                  </div>
+                  )}
                 </div>
               </>
             )}
