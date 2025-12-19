@@ -15,7 +15,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
-import { Users, TrendingUp, Calendar, Settings } from "lucide-react";
+import { Users, TrendingUp, Calendar, Settings, User } from "lucide-react";
 import ModernAreaChart from "@/components/dashboard/ModernAreaChart";
 import ModernBarChart from "@/components/dashboard/ModernBarChart";
 import MiniGaugeChart from "@/components/dashboard/MiniGaugeChart";
@@ -52,6 +52,7 @@ interface Appointment {
   title: string;
   start_time: string;
   end_time: string;
+  sdr_name: string | null;
 }
 
 const OriginOverview = () => {
@@ -135,7 +136,7 @@ const OriginOverview = () => {
         // Fetch appointments
         const appointmentsRes = await supabase
           .from("calendar_appointments")
-          .select("id, title, start_time, end_time")
+          .select("id, title, start_time, end_time, sdr_name")
           .order("start_time", { ascending: false });
 
         if (appointmentsRes.data) setAllAppointments(appointmentsRes.data);
@@ -339,6 +340,57 @@ const OriginOverview = () => {
                 </CardContent>
               </Card>
             </div>
+
+            {/* SDR Appointments Chart */}
+            <Card className="bg-white border border-black/5 shadow-none">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-base font-semibold text-foreground">
+                  Agendamentos por SDR
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  {(() => {
+                    const sdrCounts = appointments.reduce((acc, apt) => {
+                      const sdr = apt.sdr_name || "Sem SDR";
+                      acc[sdr] = (acc[sdr] || 0) + 1;
+                      return acc;
+                    }, {} as Record<string, number>);
+
+                    const maxCount = Math.max(...Object.values(sdrCounts), 1);
+                    const sortedSdrs = Object.entries(sdrCounts).sort((a, b) => b[1] - a[1]);
+
+                    if (sortedSdrs.length === 0) {
+                      return (
+                        <p className="text-sm text-muted-foreground text-center py-4">
+                          Nenhum agendamento no período
+                        </p>
+                      );
+                    }
+
+                    return sortedSdrs.map(([sdr, count]) => (
+                      <div key={sdr} className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-full bg-violet-100 flex items-center justify-center flex-shrink-0">
+                          <User className="h-4 w-4 text-violet-600" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center justify-between mb-1">
+                            <span className="text-sm font-medium text-foreground truncate">{sdr}</span>
+                            <span className="text-sm font-bold text-foreground ml-2">{count}</span>
+                          </div>
+                          <div className="h-2 bg-muted rounded-full overflow-hidden">
+                            <div 
+                              className="h-full bg-gradient-to-r from-violet-500 to-violet-400 rounded-full transition-all duration-500"
+                              style={{ width: `${(count / maxCount) * 100}%` }}
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    ));
+                  })()}
+                </div>
+              </CardContent>
+            </Card>
           </>
         ) : (
           <>
