@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useCallback } from "react";
+import { useEffect, useRef, useState } from "react";
 import { format, isSameDay, startOfDay, addMinutes, differenceInMinutes } from "date-fns";
 import { toZonedTime } from "date-fns-tz";
 import { DndContext, DragEndEvent, PointerSensor, useSensor, useSensors, useDroppable } from "@dnd-kit/core";
@@ -54,7 +54,6 @@ export function DayView({
 }: DayViewProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [currentTimeTop, setCurrentTimeTop] = useState(0);
-  const isScrollingRef = useRef(false);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -81,41 +80,17 @@ export function DayView({
     };
 
     updateTime();
-    const interval = setInterval(updateTime, 1000); // Update every second for real-time
+    const interval = setInterval(updateTime, 1000);
     return () => clearInterval(interval);
   }, [date]);
 
-  // Scroll to current time or 8am on mount (in the middle section)
+  // Scroll to current time or 8am on mount
   useEffect(() => {
     if (containerRef.current) {
-      // Start in the middle section (second copy of hours)
-      const middleOffset = TOTAL_HEIGHT;
       const scrollTo = currentTimeTop > 0 
-        ? middleOffset + currentTimeTop - 100 
-        : middleOffset + 8 * HOUR_HEIGHT;
+        ? currentTimeTop - 100 
+        : 8 * HOUR_HEIGHT;
       containerRef.current.scrollTop = scrollTo;
-    }
-  }, []);
-
-  // Infinite scroll handler
-  const handleScroll = useCallback(() => {
-    if (!containerRef.current || isScrollingRef.current) return;
-    
-    const container = containerRef.current;
-    const scrollTop = container.scrollTop;
-    const maxScroll = TOTAL_HEIGHT * 3;
-    
-    // If scrolled to top section, jump to middle
-    if (scrollTop < TOTAL_HEIGHT * 0.5) {
-      isScrollingRef.current = true;
-      container.scrollTop = scrollTop + TOTAL_HEIGHT;
-      setTimeout(() => { isScrollingRef.current = false; }, 50);
-    }
-    // If scrolled to bottom section, jump to middle
-    else if (scrollTop > TOTAL_HEIGHT * 2) {
-      isScrollingRef.current = true;
-      container.scrollTop = scrollTop - TOTAL_HEIGHT;
-      setTimeout(() => { isScrollingRef.current = false; }, 50);
     }
   }, []);
 
@@ -155,78 +130,6 @@ export function DayView({
     onAppointmentDrop(appointment.id, newStart, newEnd);
   };
 
-  // Render a single section of hours (used 3 times for infinite scroll)
-  const renderHoursSection = (offset: number) => (
-    <div key={offset} className="relative flex" style={{ height: TOTAL_HEIGHT }}>
-      {/* Time labels */}
-      <div className="w-16 flex-shrink-0 pt-2">
-        {HOURS.map((hour) => (
-          <div
-            key={`${offset}-label-${hour}`}
-            className="h-[60px] text-xs text-muted-foreground pr-2 text-right flex items-start"
-          >
-            {hour.toString().padStart(2, "0")}:00
-          </div>
-        ))}
-      </div>
-
-      {/* Grid */}
-      <div className="flex-1 relative border-l border-border pt-2">
-        {/* Hour slots */}
-        {HOURS.map((hour) => (
-          <HourSlot
-            key={`${offset}-slot-${hour}`}
-            hour={hour}
-            date={date}
-            onClick={(e) => onDayClick(date, hour, e)}
-          />
-        ))}
-
-        {/* Current time indicator (only in middle section) */}
-        {offset === 1 && currentTimeTop > 0 && (
-          <div
-            className="absolute left-0 right-0 flex items-center z-20 pointer-events-none"
-            style={{ top: currentTimeTop }}
-          >
-            <div className="w-2 h-2 rounded-full bg-red-500" />
-            <div className="flex-1 h-[1px] bg-red-500" />
-          </div>
-        )}
-
-        {/* Appointments (only in middle section) */}
-        {offset === 1 && dayAppointments.map((apt) => {
-          const { top, height } = getAppointmentPosition(apt);
-          return (
-            <AppointmentCard
-              key={apt.id}
-              appointment={apt}
-              style={{ top, height }}
-            />
-          );
-        })}
-
-        {/* Pending slot placeholder (green) */}
-        {offset === 1 && pendingSlot && isSameDay(pendingSlot.date, date) && (() => {
-          const [startH, startM] = pendingSlot.startTime.split(":").map(Number);
-          const [endH, endM] = pendingSlot.endTime.split(":").map(Number);
-          const startMinutes = (startH || 0) * 60 + (startM || 0);
-          const endMinutes = (endH || 0) * 60 + (endM || 0);
-          const top = (startMinutes / 60) * HOUR_HEIGHT;
-          const height = Math.max(((endMinutes - startMinutes) / 60) * HOUR_HEIGHT, 20);
-          
-          return (
-            <div
-              className="absolute left-1 right-1 bg-emerald-500/80 rounded-lg border-2 border-emerald-400 shadow-lg z-10 flex items-center justify-center"
-              style={{ top, height }}
-            >
-              <span className="text-white text-sm font-medium">Novo agendamento</span>
-            </div>
-          );
-        })()}
-      </div>
-    </div>
-  );
-
   return (
     <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
       <div className="h-full flex flex-col">
@@ -241,15 +144,78 @@ export function DayView({
           </div>
         </div>
 
-        {/* Time grid with infinite scroll */}
+        {/* Time grid - simple scroll from 00:00 to 23:00 */}
         <div 
           ref={containerRef} 
           className="flex-1 overflow-y-auto"
-          onScroll={handleScroll}
         >
-          <div className="relative">
-            {/* Three copies of hours for infinite scroll effect */}
-            {[0, 1, 2].map((offset) => renderHoursSection(offset))}
+          <div className="relative flex" style={{ height: TOTAL_HEIGHT }}>
+            {/* Time labels */}
+            <div className="w-16 flex-shrink-0 pt-2">
+              {HOURS.map((hour) => (
+                <div
+                  key={`label-${hour}`}
+                  className="h-[60px] text-xs text-muted-foreground pr-2 text-right flex items-start"
+                >
+                  {hour.toString().padStart(2, "0")}:00
+                </div>
+              ))}
+            </div>
+
+            {/* Grid */}
+            <div className="flex-1 relative border-l border-border pt-2">
+              {/* Hour slots */}
+              {HOURS.map((hour) => (
+                <HourSlot
+                  key={`slot-${hour}`}
+                  hour={hour}
+                  date={date}
+                  onClick={(e) => onDayClick(date, hour, e)}
+                />
+              ))}
+
+              {/* Current time indicator */}
+              {currentTimeTop > 0 && (
+                <div
+                  className="absolute left-0 right-0 flex items-center z-20 pointer-events-none"
+                  style={{ top: currentTimeTop }}
+                >
+                  <div className="w-2 h-2 rounded-full bg-red-500" />
+                  <div className="flex-1 h-[1px] bg-red-500" />
+                </div>
+              )}
+
+              {/* Appointments */}
+              {dayAppointments.map((apt) => {
+                const { top, height } = getAppointmentPosition(apt);
+                return (
+                  <AppointmentCard
+                    key={apt.id}
+                    appointment={apt}
+                    style={{ top, height }}
+                  />
+                );
+              })}
+
+              {/* Pending slot placeholder (green) */}
+              {pendingSlot && isSameDay(pendingSlot.date, date) && (() => {
+                const [startH, startM] = pendingSlot.startTime.split(":").map(Number);
+                const [endH, endM] = pendingSlot.endTime.split(":").map(Number);
+                const startMinutes = (startH || 0) * 60 + (startM || 0);
+                const endMinutes = (endH || 0) * 60 + (endM || 0);
+                const top = (startMinutes / 60) * HOUR_HEIGHT;
+                const height = Math.max(((endMinutes - startMinutes) / 60) * HOUR_HEIGHT, 20);
+                
+                return (
+                  <div
+                    className="absolute left-1 right-1 bg-emerald-500/80 rounded-lg border-2 border-emerald-400 shadow-lg z-10 flex items-center justify-center"
+                    style={{ top, height }}
+                  >
+                    <span className="text-white text-sm font-medium">Novo agendamento</span>
+                  </div>
+                );
+              })()}
+            </div>
           </div>
         </div>
       </div>
