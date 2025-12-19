@@ -13,7 +13,6 @@ import { ptBR } from "date-fns/locale";
 import {
   DndContext,
   DragEndEvent,
-  DragMoveEvent,
   PointerSensor,
   useSensor,
   useSensors,
@@ -53,7 +52,6 @@ export function WeekView({
   const gridRef = useRef<HTMLDivElement>(null);
   const [currentTimeTop, setCurrentTimeTop] = useState(0);
   const [todayInSaoPaulo, setTodayInSaoPaulo] = useState<Date | null>(null);
-  const [dragPreview, setDragPreview] = useState<{ dayIndex: number; top: number; height: number; time: string } | null>(null);
 
   const weekStart = startOfWeek(date, { weekStartsOn: 0 });
   const days = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
@@ -108,61 +106,46 @@ export function WeekView({
     return { top, height };
   };
 
-  const getMinutesAndDayFromPosition = (clientX: number, clientY: number): { minutes: number; dayIndex: number } => {
-    if (!gridRef.current || !containerRef.current) return { minutes: 0, dayIndex: 0 };
+  const getMinutesFromDelta = (deltaY: number, appointment: Appointment): number => {
+    const start = new Date(appointment.start_time);
+    const dayStart = startOfDay(start);
+    const currentMinutes = differenceInMinutes(start, dayStart);
+    
+    // Convert delta pixels to minutes
+    const deltaMinutes = (deltaY / HOUR_HEIGHT) * 60;
+    const newMinutes = currentMinutes + deltaMinutes;
+    
+    // Snap to MINUTE_SNAP intervals
+    const snappedMinutes = Math.round(newMinutes / MINUTE_SNAP) * MINUTE_SNAP;
+    
+    // Clamp between 0 and 23:55
+    return Math.max(0, Math.min(snappedMinutes, 24 * 60 - MINUTE_SNAP));
+  };
+
+  const getDayIndexFromDelta = (deltaX: number, appointment: Appointment): number => {
+    if (!gridRef.current) return 0;
     
     const gridRect = gridRef.current.getBoundingClientRect();
-    const scrollTop = containerRef.current.scrollTop;
-    const relativeY = clientY - gridRect.top + scrollTop;
+    const columnWidth = (gridRect.width - 64) / 7; // subtract time label width
     
-    // Convert Y position to minutes
-    const totalMinutes = (relativeY / HOUR_HEIGHT) * 60;
-    const snappedMinutes = Math.round(totalMinutes / MINUTE_SNAP) * MINUTE_SNAP;
-    const clampedMinutes = Math.max(0, Math.min(snappedMinutes, 24 * 60 - MINUTE_SNAP));
+    // Find current day index of the appointment
+    const aptDate = new Date(appointment.start_time);
+    const currentDayIndex = days.findIndex(d => isSameDay(d, aptDate));
     
-    // Calculate which day column
-    const relativeX = clientX - gridRect.left;
-    const columnWidth = gridRect.width / 7;
-    const dayIndex = Math.max(0, Math.min(Math.floor(relativeX / columnWidth), 6));
+    // Calculate day offset from delta
+    const dayOffset = Math.round(deltaX / columnWidth);
+    const newDayIndex = currentDayIndex + dayOffset;
     
-    return { minutes: clampedMinutes, dayIndex };
-  };
-
-  const formatMinutesToTime = (minutes: number): string => {
-    const h = Math.floor(minutes / 60);
-    const m = minutes % 60;
-    return `${h.toString().padStart(2, "0")}:${m.toString().padStart(2, "0")}`;
-  };
-
-  const handleDragMove = (event: DragMoveEvent) => {
-    const { active } = event;
-    const appointment = active.data.current?.appointment as Appointment;
-    if (!appointment) return;
-
-    const pointerX = (event.activatorEvent as PointerEvent).clientX + (event.delta?.x || 0);
-    const pointerY = (event.activatorEvent as PointerEvent).clientY + (event.delta?.y || 0);
-    const { minutes, dayIndex } = getMinutesAndDayFromPosition(pointerX, pointerY);
-    
-    const oldStart = new Date(appointment.start_time);
-    const oldEnd = new Date(appointment.end_time);
-    const duration = differenceInMinutes(oldEnd, oldStart);
-    
-    const top = (minutes / 60) * HOUR_HEIGHT;
-    const height = Math.max((duration / 60) * HOUR_HEIGHT, 20);
-    
-    setDragPreview({ dayIndex, top, height, time: formatMinutesToTime(minutes) });
+    return Math.max(0, Math.min(newDayIndex, 6));
   };
 
   const handleDragEnd = (event: DragEndEvent) => {
-    setDragPreview(null);
-    
-    const { active } = event;
+    const { active, delta } = event;
     const appointment = active.data.current?.appointment as Appointment;
     if (!appointment) return;
 
-    const pointerX = (event.activatorEvent as PointerEvent).clientX + (event.delta?.x || 0);
-    const pointerY = (event.activatorEvent as PointerEvent).clientY + (event.delta?.y || 0);
-    const { minutes, dayIndex } = getMinutesAndDayFromPosition(pointerX, pointerY);
+    const minutes = getMinutesFromDelta(delta.y, appointment);
+    const dayIndex = getDayIndexFromDelta(delta.x, appointment);
     
     const oldStart = new Date(appointment.start_time);
     const oldEnd = new Date(appointment.end_time);
@@ -179,7 +162,6 @@ export function WeekView({
   return (
     <DndContext 
       sensors={sensors} 
-      onDragMove={handleDragMove}
       onDragEnd={handleDragEnd}
     >
       <div className="h-full flex flex-col">
@@ -226,7 +208,7 @@ export function WeekView({
             </div>
 
             {/* Days columns */}
-            {days.map((day, dayIndex) => {
+            {days.map((day) => {
               const dayAppointments = getAppointmentsForDay(day);
               const showCurrentTime = todayInSaoPaulo && isSameDay(day, todayInSaoPaulo);
 
@@ -249,18 +231,6 @@ export function WeekView({
                     >
                       <div className="w-2 h-2 rounded-full bg-red-500" />
                       <div className="flex-1 h-[1px] bg-red-500" />
-                    </div>
-                  )}
-
-                  {/* Drag preview for this column */}
-                  {dragPreview && dragPreview.dayIndex === dayIndex && (
-                    <div
-                      className="absolute left-1 right-1 bg-primary/30 rounded-md border-2 border-primary border-dashed z-30 flex items-center justify-center pointer-events-none"
-                      style={{ top: dragPreview.top, height: dragPreview.height }}
-                    >
-                      <span className="text-primary text-xs font-medium bg-background/80 px-1 py-0.5 rounded">
-                        {dragPreview.time}
-                      </span>
                     </div>
                   )}
 

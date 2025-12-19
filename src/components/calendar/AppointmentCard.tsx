@@ -1,4 +1,5 @@
 import { useDraggable } from "@dnd-kit/core";
+import { CSS } from "@dnd-kit/utilities";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import type { Appointment } from "@/pages/CalendarPage";
@@ -27,14 +28,14 @@ export function AppointmentCard({
 
   const dragStyle: React.CSSProperties = {
     ...style,
-    transform: transform
-      ? `translate(${transform.x}px, ${transform.y}px)`
-      : undefined,
-    opacity: isDragging ? 0.5 : 1,
-    cursor: "grab",
+    transform: CSS.Translate.toString(transform),
+    transition: isDragging ? undefined : 'transform 150ms ease',
+    cursor: isDragging ? "grabbing" : "grab",
+    zIndex: isDragging ? 100 : undefined,
   };
 
   const handleClick = (e: React.MouseEvent) => {
+    if (isDragging) return;
     e.stopPropagation();
     onClick?.(appointment, e);
   };
@@ -49,7 +50,7 @@ export function AppointmentCard({
         onClick={handleClick}
         className={cn(
           "text-xs px-1.5 py-0.5 rounded bg-emerald-700 text-white truncate hover:bg-emerald-600 transition-colors",
-          isDragging && "z-50"
+          isDragging && "shadow-xl scale-105"
         )}
       >
         {appointment.title}
@@ -65,8 +66,8 @@ export function AppointmentCard({
       style={dragStyle}
       onClick={handleClick}
       className={cn(
-        "absolute left-1 right-1 px-2 py-1 rounded-md bg-emerald-700 text-white text-xs overflow-hidden hover:bg-emerald-600 transition-colors",
-        isDragging && "z-50 shadow-lg"
+        "absolute left-1 right-1 px-2 py-1 rounded-md bg-emerald-700 text-white text-xs overflow-hidden hover:bg-emerald-600",
+        isDragging && "shadow-xl scale-[1.02] ring-2 ring-primary/50"
       )}
     >
       <div className="font-medium truncate">{appointment.title}</div>
