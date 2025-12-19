@@ -1942,10 +1942,10 @@ const WhatsApp = () => {
                 </div>
               ) : filteredChats.length > 0 ? (
                 filteredChats.map((chat) => (
-                  <div
+                <div
                     key={chat.id}
                     className={cn(
-                      "flex items-center gap-3 px-3 py-3 cursor-pointer transition-colors border-b border-border/20",
+                      "flex items-center gap-3 px-3 py-3 cursor-pointer transition-colors border-b border-border/20 overflow-hidden max-w-full",
                       selectedChat?.id === chat.id ? "bg-muted/40" : "hover:bg-muted/20"
                     )}
                     onClick={() => { 
