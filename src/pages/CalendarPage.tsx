@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { format, addDays, startOfWeek, startOfMonth, endOfMonth, addMonths, subMonths, addWeeks, subWeeks, addYears, subYears, startOfYear } from "date-fns";
+import { format, addDays, startOfWeek, addMonths, subMonths, addWeeks, subWeeks, addYears, subYears } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -8,7 +8,7 @@ import { DayView } from "@/components/calendar/DayView";
 import { WeekView } from "@/components/calendar/WeekView";
 import { MonthView } from "@/components/calendar/MonthView";
 import { YearView } from "@/components/calendar/YearView";
-import { AddAppointmentDialog } from "@/components/calendar/AddAppointmentDialog";
+import { AddAppointmentDropdown } from "@/components/calendar/AddAppointmentDropdown";
 import { cn } from "@/lib/utils";
 
 export type ViewType = "day" | "week" | "month" | "year";
@@ -31,6 +31,7 @@ export default function CalendarPage() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [selectedHour, setSelectedHour] = useState<number | null>(null);
+  const [anchorPosition, setAnchorPosition] = useState<{ x: number; y: number } | undefined>();
 
   // Fetch appointments
   const fetchAppointments = async () => {
@@ -100,9 +101,16 @@ export default function CalendarPage() {
     setCurrentDate(new Date());
   };
 
-  const handleDayClick = (date: Date, hour?: number) => {
+  const handleDayClick = (date: Date, hour?: number, event?: React.MouseEvent) => {
     setSelectedDate(date);
     setSelectedHour(hour ?? 9);
+    
+    if (event) {
+      setAnchorPosition({ x: event.clientX, y: event.clientY });
+    } else {
+      setAnchorPosition(undefined);
+    }
+    
     setDialogOpen(true);
   };
 
@@ -235,13 +243,14 @@ export default function CalendarPage() {
         )}
       </div>
 
-      {/* Add Appointment Dialog */}
-      <AddAppointmentDialog
+      {/* Add Appointment Dropdown */}
+      <AddAppointmentDropdown
         open={dialogOpen}
         onOpenChange={setDialogOpen}
         selectedDate={selectedDate}
         selectedHour={selectedHour}
         onSuccess={fetchAppointments}
+        anchorPosition={anchorPosition}
       />
     </div>
   );

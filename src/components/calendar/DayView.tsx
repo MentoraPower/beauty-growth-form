@@ -8,7 +8,7 @@ import type { Appointment } from "@/pages/CalendarPage";
 interface DayViewProps {
   date: Date;
   appointments: Appointment[];
-  onDayClick: (date: Date, hour: number) => void;
+  onDayClick: (date: Date, hour: number, event?: React.MouseEvent) => void;
   onAppointmentDrop: (appointmentId: string, newStartTime: Date, newEndTime: Date) => void;
 }
 
@@ -22,7 +22,7 @@ function HourSlot({
 }: {
   hour: number;
   date: Date;
-  onClick: () => void;
+  onClick: (e: React.MouseEvent) => void;
 }) {
   const { setNodeRef, isOver } = useDroppable({
     id: `hour-${hour}`,
@@ -156,7 +156,7 @@ export function DayView({
                   key={hour}
                   hour={hour}
                   date={date}
-                  onClick={() => onDayClick(date, hour)}
+                  onClick={(e) => onDayClick(date, hour, e)}
                 />
               ))}
 

@@ -25,7 +25,7 @@ import type { Appointment } from "@/pages/CalendarPage";
 interface MonthViewProps {
   date: Date;
   appointments: Appointment[];
-  onDayClick: (date: Date) => void;
+  onDayClick: (date: Date, hour?: number, event?: React.MouseEvent) => void;
   onAppointmentDrop: (
     appointmentId: string,
     newStartTime: Date,
@@ -44,7 +44,7 @@ function DayCell({
   day: Date;
   currentMonth: Date;
   appointments: Appointment[];
-  onClick: () => void;
+  onClick: (e: React.MouseEvent) => void;
 }) {
   const { setNodeRef, isOver } = useDroppable({
     id: `month-${day.toISOString()}`,
@@ -163,7 +163,7 @@ export function MonthView({
               day={day}
               currentMonth={date}
               appointments={appointments}
-              onClick={() => onDayClick(day)}
+              onClick={(e) => onDayClick(day, undefined, e)}
             />
           ))}
         </div>
