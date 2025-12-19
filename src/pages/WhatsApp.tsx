@@ -2287,107 +2287,99 @@ const WhatsApp = () => {
                       onChange={(e) => e.target.files?.[0] && handleFileUpload(e.target.files[0], "video")}
                     />
 
-                    {/* Bottom Toolbar with Icons */}
+                    {/* Bottom Toolbar with Icons - Always Visible */}
                     <div className="flex items-center gap-1 relative">
-                      {/* Toolbar Toggle Button */}
-                      <button 
-                        ref={toolbarButtonRef}
-                        onClick={() => setShowToolbar(!showToolbar)}
-                        className={cn(
-                          "p-2 hover:bg-muted/50 rounded-full transition-colors",
-                          showToolbar && "bg-muted"
-                        )}
-                      >
-                        <Plus className={cn("w-5 h-5 text-muted-foreground transition-transform", showToolbar && "rotate-45")} />
-                      </button>
-
-                      {/* Toolbar Menu */}
-                      {showToolbar && (
-                        <div 
-                          ref={toolbarMenuRef}
-                          className="flex items-center gap-1 bg-muted/60 backdrop-blur-sm rounded-full px-2 py-1 border border-border/30 animate-in slide-in-from-left-4 fade-in duration-300"
+                      {/* Emoji */}
+                      <div className="relative">
+                        <button 
+                          ref={emojiButtonRef}
+                          onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+                          className={cn(
+                            "p-2 hover:bg-muted/50 rounded-full transition-all duration-200",
+                            showEmojiPicker && "bg-emerald-500/10"
+                          )}
+                          title="Emojis"
                         >
-                          {/* Emoji */}
-                          <div className="relative">
-                            <button 
-                              ref={emojiButtonRef}
-                              onClick={() => setShowEmojiPicker(!showEmojiPicker)}
-                              className="p-2 hover:bg-muted/50 rounded-full transition-colors"
-                              title="Emojis"
-                            >
-                              <Smile className={cn("w-5 h-5 text-muted-foreground", showEmojiPicker && "text-emerald-500")} />
-                            </button>
-                            
-                            {showEmojiPicker && (
-                              <div ref={emojiPickerRef} className="absolute bottom-full left-0 mb-2 z-50">
-                                <EmojiPicker 
-                                  onSelect={(emoji) => {
-                                    setMessage(prev => prev + emoji);
-                                    setShowEmojiPicker(false);
-                                  }}
-                                />
-                              </div>
-                            )}
+                          <Smile className={cn("w-5 h-5 transition-colors", showEmojiPicker ? "text-emerald-500" : "text-muted-foreground")} />
+                        </button>
+                        
+                        {showEmojiPicker && (
+                          <div ref={emojiPickerRef} className="absolute bottom-full left-0 mb-2 z-50">
+                            <EmojiPicker 
+                              onSelect={(emoji) => {
+                                setMessage(prev => prev + emoji);
+                                setShowEmojiPicker(false);
+                              }}
+                            />
                           </div>
+                        )}
+                      </div>
 
-                          {/* Images */}
+                      {/* Other icons slide when emoji is open */}
+                      <div className={cn(
+                        "flex items-center gap-1 transition-all duration-300 ease-out overflow-hidden",
+                        showEmojiPicker ? "ml-0 opacity-100" : "ml-0 opacity-100"
+                      )}>
+                        {/* Images */}
+                        <button 
+                          onClick={() => imageInputRef.current?.click()}
+                          className="p-2 hover:bg-muted/50 rounded-full transition-colors"
+                          title="Enviar imagem"
+                        >
+                          <FileImage className="w-5 h-5 text-muted-foreground" />
+                        </button>
+
+                        {/* Video */}
+                        <button 
+                          onClick={() => videoInputRef.current?.click()}
+                          className="p-2 hover:bg-muted/50 rounded-full transition-colors"
+                          title="Enviar vídeo"
+                        >
+                          <FileVideo className="w-5 h-5 text-muted-foreground" />
+                        </button>
+
+                        {/* Files */}
+                        <button 
+                          onClick={() => fileInputRef.current?.click()}
+                          className="p-2 hover:bg-muted/50 rounded-full transition-colors"
+                          title="Enviar documento"
+                        >
+                          <File className="w-5 h-5 text-muted-foreground" />
+                        </button>
+
+                        {/* Quick Messages */}
+                        <div className="relative">
                           <button 
-                            onClick={() => imageInputRef.current?.click()}
-                            className="p-2 hover:bg-muted/50 rounded-full transition-colors"
-                            title="Enviar imagem"
-                          >
-                            <FileImage className="w-5 h-5 text-muted-foreground" />
-                          </button>
-
-                          {/* Video */}
-                          <button 
-                            onClick={() => videoInputRef.current?.click()}
-                            className="p-2 hover:bg-muted/50 rounded-full transition-colors"
-                            title="Enviar vídeo"
-                          >
-                            <FileVideo className="w-5 h-5 text-muted-foreground" />
-                          </button>
-
-                          {/* Files */}
-                          <button 
-                            onClick={() => fileInputRef.current?.click()}
-                            className="p-2 hover:bg-muted/50 rounded-full transition-colors"
-                            title="Enviar documento"
-                          >
-                            <File className="w-5 h-5 text-muted-foreground" />
-                          </button>
-
-                          {/* Quick Messages */}
-                          <div className="relative">
-                            <button 
-                              ref={quickMsgButtonRef}
-                              onClick={() => setShowQuickMessages(!showQuickMessages)}
-                              className="p-2 hover:bg-muted/50 rounded-full transition-colors"
-                              title="Mensagens rápidas"
-                            >
-                              <Zap className={cn("w-5 h-5 text-muted-foreground", showQuickMessages && "text-amber-500")} />
-                            </button>
-                            
-                            {showQuickMessages && (
-                              <div ref={quickMsgPickerRef} className="absolute bottom-full left-0 mb-2 z-50">
-                                <QuickMessages 
-                                  onSelect={(text) => {
-                                    setMessage(text);
-                                    setShowQuickMessages(false);
-                                  }}
-                                  onSelectAudio={async (audioBase64) => {
-                                    setShowQuickMessages(false);
-                                    // Convert base64 data URL to blob
-                                    const response = await fetch(audioBase64);
-                                    const blob = await response.blob();
-                                    await sendAudioMessage(blob, blob.type || "audio/webm");
-                                  }}
-                                />
-                              </div>
+                            ref={quickMsgButtonRef}
+                            onClick={() => setShowQuickMessages(!showQuickMessages)}
+                            className={cn(
+                              "p-2 hover:bg-muted/50 rounded-full transition-all duration-200",
+                              showQuickMessages && "bg-amber-500/10"
                             )}
-                          </div>
+                            title="Mensagens rápidas"
+                          >
+                            <Zap className={cn("w-5 h-5 transition-colors", showQuickMessages ? "text-amber-500" : "text-muted-foreground")} />
+                          </button>
+                          
+                          {showQuickMessages && (
+                            <div ref={quickMsgPickerRef} className="absolute bottom-full left-0 mb-2 z-50">
+                              <QuickMessages 
+                                onSelect={(text) => {
+                                  setMessage(text);
+                                  setShowQuickMessages(false);
+                                }}
+                                onSelectAudio={async (audioBase64) => {
+                                  setShowQuickMessages(false);
+                                  // Convert base64 data URL to blob
+                                  const response = await fetch(audioBase64);
+                                  const blob = await response.blob();
+                                  await sendAudioMessage(blob, blob.type || "audio/webm");
+                                }}
+                              />
+                            </div>
+                          )}
                         </div>
-                      )}
+                      </div>
                     </div>
                   </div>
                 )}
