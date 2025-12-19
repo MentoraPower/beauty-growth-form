@@ -25,7 +25,7 @@ import type { Appointment } from "@/pages/CalendarPage";
 interface WeekViewProps {
   date: Date;
   appointments: Appointment[];
-  onDayClick: (date: Date, hour: number) => void;
+  onDayClick: (date: Date, hour: number, event?: React.MouseEvent) => void;
   onAppointmentDrop: (
     appointmentId: string,
     newStartTime: Date,
@@ -43,7 +43,7 @@ function HourCell({
 }: {
   hour: number;
   day: Date;
-  onClick: () => void;
+  onClick: (e: React.MouseEvent) => void;
 }) {
   const { setNodeRef, isOver } = useDroppable({
     id: `week-${day.toISOString()}-${hour}`,
@@ -198,7 +198,7 @@ export function WeekView({
                       key={hour}
                       hour={hour}
                       day={day}
-                      onClick={() => onDayClick(day, hour)}
+                      onClick={(e) => onDayClick(day, hour, e)}
                     />
                   ))}
 
