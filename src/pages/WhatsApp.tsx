@@ -2547,7 +2547,7 @@ const WhatsApp = () => {
 
                       {/* Other icons slide when emoji is open */}
                       <div className={cn(
-                        "flex items-center gap-1 transition-all duration-300 ease-out overflow-hidden",
+                        "flex items-center gap-1 transition-all duration-300 ease-out",
                         showEmojiPicker ? "ml-0 opacity-100" : "ml-0 opacity-100"
                       )}>
                         {/* Images */}
@@ -2581,7 +2581,10 @@ const WhatsApp = () => {
                         <div className="relative">
                           <button 
                             ref={quickMsgButtonRef}
-                            onClick={() => setShowQuickMessages(!showQuickMessages)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setShowQuickMessages(!showQuickMessages);
+                            }}
                             className={cn(
                               "p-2 hover:bg-muted/50 rounded-full transition-all duration-200",
                               showQuickMessages && "bg-amber-500/10"
@@ -2590,24 +2593,6 @@ const WhatsApp = () => {
                           >
                             <Zap className={cn("w-5 h-5 transition-colors", showQuickMessages ? "text-amber-500" : "text-muted-foreground")} />
                           </button>
-                          
-                          {showQuickMessages && (
-                            <div ref={quickMsgPickerRef} className="absolute bottom-full left-0 mb-2 z-50">
-                              <QuickMessages 
-                                onSelect={(text) => {
-                                  setMessage(text);
-                                  setShowQuickMessages(false);
-                                }}
-                                onSelectAudio={async (audioBase64) => {
-                                  setShowQuickMessages(false);
-                                  // Convert base64 data URL to blob
-                                  const response = await fetch(audioBase64);
-                                  const blob = await response.blob();
-                                  await sendAudioMessage(blob, blob.type || "audio/webm");
-                                }}
-                              />
-                            </div>
-                          )}
                         </div>
                       </div>
                     </div>
@@ -2682,6 +2667,32 @@ const WhatsApp = () => {
             })
           }
         />
+      )}
+
+      {/* Quick Messages Popup - Fixed position to avoid overflow issues */}
+      {showQuickMessages && (
+        <div 
+          ref={quickMsgPickerRef} 
+          className="fixed z-[9999] shadow-2xl"
+          style={{ 
+            bottom: '100px',
+            left: '320px'
+          }}
+        >
+          <QuickMessages 
+            onSelect={(text) => {
+              setMessage(text);
+              setShowQuickMessages(false);
+            }}
+            onSelectAudio={async (audioBase64) => {
+              setShowQuickMessages(false);
+              // Convert base64 data URL to blob
+              const response = await fetch(audioBase64);
+              const blob = await response.blob();
+              await sendAudioMessage(blob, blob.type || "audio/webm");
+            }}
+          />
+        </div>
       )}
 
       {/* Block Contact Confirmation Dialog */}
