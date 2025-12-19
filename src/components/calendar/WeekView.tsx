@@ -194,7 +194,7 @@ export function WeekView({
         const showCurrentTime = todayInSaoPaulo && isSameDay(day, todayInSaoPaulo);
 
         return (
-          <div key={`${offset}-${day.toISOString()}`} className="flex-1 relative border-l border-border/50">
+          <div key={`${offset}-${day.toISOString()}`} className="flex-1 relative border-l border-border/50 pt-2">
             {/* Hour cells */}
             {HOURS.map((hour) => (
               <HourCell

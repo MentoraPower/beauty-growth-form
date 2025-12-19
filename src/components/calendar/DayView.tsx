@@ -171,7 +171,7 @@ export function DayView({
       </div>
 
       {/* Grid */}
-      <div className="flex-1 relative border-l border-border">
+      <div className="flex-1 relative border-l border-border pt-2">
         {/* Hour slots */}
         {HOURS.map((hour) => (
           <HourSlot
