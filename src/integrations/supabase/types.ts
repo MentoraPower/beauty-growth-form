@@ -777,6 +777,39 @@ export type Database = {
         }
         Relationships: []
       }
+      quick_messages: {
+        Row: {
+          audio_data: string | null
+          audio_duration: number | null
+          created_at: string
+          id: string
+          name: string
+          text: string
+          type: string
+          updated_at: string
+        }
+        Insert: {
+          audio_data?: string | null
+          audio_duration?: number | null
+          created_at?: string
+          id?: string
+          name: string
+          text: string
+          type?: string
+          updated_at?: string
+        }
+        Update: {
+          audio_data?: string | null
+          audio_duration?: number | null
+          created_at?: string
+          id?: string
+          name?: string
+          text?: string
+          type?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       sales: {
         Row: {
           amount: number
