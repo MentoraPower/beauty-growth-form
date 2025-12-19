@@ -1,9 +1,11 @@
 import { useState, useEffect, useRef } from "react";
-import { Plus, X, Zap, Trash2, Edit2, Check, Search, Mic, Square, Play, Pause, Type, Volume2 } from "lucide-react";
+import { Plus, X, Zap, Trash2, Edit2, Check, Search, Mic, Square, Play, Pause, Type, Volume2, Loader2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
 interface QuickMessagesProps {
   onSelect: (message: string) => void;
@@ -19,22 +21,10 @@ interface QuickMessage {
   audioDuration?: number; // duration in seconds
 }
 
-const STORAGE_KEY = "whatsapp_quick_messages";
-
 export function QuickMessages({ onSelect, onSelectAudio }: QuickMessagesProps) {
-  const [messages, setMessages] = useState<QuickMessage[]>(() => {
-    try {
-      const stored = localStorage.getItem(STORAGE_KEY);
-      const parsed = stored ? JSON.parse(stored) : [];
-      return parsed.map((m: any) => ({
-        ...m,
-        name: m.name || m.text?.slice(0, 30) || "Mensagem",
-        type: m.type || "text",
-      }));
-    } catch {
-      return [];
-    }
-  });
+  const { toast } = useToast();
+  const [messages, setMessages] = useState<QuickMessage[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [isAdding, setIsAdding] = useState(false);
   const [addingType, setAddingType] = useState<"text" | "audio">("text");
   const [newName, setNewName] = useState("");
@@ -56,11 +46,36 @@ export function QuickMessages({ onSelect, onSelectAudio }: QuickMessagesProps) {
   const recordingIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
+  // Fetch messages from database
   useEffect(() => {
+    fetchMessages();
+  }, []);
+
+  const fetchMessages = async () => {
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(messages));
-    } catch {}
-  }, [messages]);
+      const { data, error } = await supabase
+        .from("quick_messages")
+        .select("*")
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+
+      setMessages(
+        (data || []).map((m: any) => ({
+          id: m.id,
+          name: m.name,
+          text: m.text,
+          type: m.type as "text" | "audio",
+          audioData: m.audio_data,
+          audioDuration: m.audio_duration,
+        }))
+      );
+    } catch (error) {
+      console.error("Error fetching quick messages:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   // Cleanup audio URL on unmount
   useEffect(() => {
@@ -134,36 +149,76 @@ export function QuickMessages({ onSelect, onSelectAudio }: QuickMessagesProps) {
     return `${mins}:${secs.toString().padStart(2, "0")}`;
   };
 
-  const handleAddText = () => {
+  const handleAddText = async () => {
     if (!newMessage.trim()) return;
     
-    const msg: QuickMessage = {
-      id: `qm-${Date.now()}`,
-      name: newName.trim() || newMessage.slice(0, 30),
-      text: newMessage.trim(),
-      type: "text",
-    };
-    
-    setMessages((prev) => [...prev, msg]);
-    resetAddForm();
+    try {
+      const { data, error } = await supabase
+        .from("quick_messages")
+        .insert({
+          name: newName.trim() || newMessage.slice(0, 30),
+          text: newMessage.trim(),
+          type: "text",
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      const msg: QuickMessage = {
+        id: data.id,
+        name: data.name,
+        text: data.text,
+        type: "text",
+      };
+      
+      setMessages((prev) => [msg, ...prev]);
+      toast({ title: "Mensagem salva!" });
+      resetAddForm();
+    } catch (error) {
+      console.error("Error adding quick message:", error);
+      toast({ title: "Erro ao salvar mensagem", variant: "destructive" });
+    }
   };
 
   const handleAddAudio = async () => {
     if (!audioBlob || !newName.trim()) return;
 
     const reader = new FileReader();
-    reader.onloadend = () => {
-      const base64 = reader.result as string;
-      const msg: QuickMessage = {
-        id: `qm-${Date.now()}`,
-        name: newName.trim(),
-        text: "🎵 Áudio",
-        type: "audio",
-        audioData: base64,
-        audioDuration: recordingTime,
-      };
-      setMessages((prev) => [...prev, msg]);
-      resetAddForm();
+    reader.onloadend = async () => {
+      try {
+        const base64 = reader.result as string;
+        
+        const { data, error } = await supabase
+          .from("quick_messages")
+          .insert({
+            name: newName.trim(),
+            text: "🎵 Áudio",
+            type: "audio",
+            audio_data: base64,
+            audio_duration: recordingTime,
+          })
+          .select()
+          .single();
+
+        if (error) throw error;
+
+        const msg: QuickMessage = {
+          id: data.id,
+          name: data.name,
+          text: data.text,
+          type: "audio",
+          audioData: data.audio_data,
+          audioDuration: data.audio_duration,
+        };
+        
+        setMessages((prev) => [msg, ...prev]);
+        toast({ title: "Áudio salvo!" });
+        resetAddForm();
+      } catch (error) {
+        console.error("Error adding audio message:", error);
+        toast({ title: "Erro ao salvar áudio", variant: "destructive" });
+      }
     };
     reader.readAsDataURL(audioBlob);
   };
@@ -181,11 +236,24 @@ export function QuickMessages({ onSelect, onSelectAudio }: QuickMessagesProps) {
     setRecordingTime(0);
   };
 
-  const handleDelete = (id: string) => {
-    setMessages((prev) => prev.filter((m) => m.id !== id));
-    if (playingId === id) {
-      audioRef.current?.pause();
-      setPlayingId(null);
+  const handleDelete = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from("quick_messages")
+        .delete()
+        .eq("id", id);
+
+      if (error) throw error;
+
+      setMessages((prev) => prev.filter((m) => m.id !== id));
+      if (playingId === id) {
+        audioRef.current?.pause();
+        setPlayingId(null);
+      }
+      toast({ title: "Mensagem removida!" });
+    } catch (error) {
+      console.error("Error deleting quick message:", error);
+      toast({ title: "Erro ao remover mensagem", variant: "destructive" });
     }
   };
 
@@ -196,19 +264,35 @@ export function QuickMessages({ onSelect, onSelectAudio }: QuickMessagesProps) {
     setEditText(msg.text);
   };
 
-  const handleSaveEdit = () => {
+  const handleSaveEdit = async () => {
     if (!editText.trim() || !editingId) return;
     
-    setMessages((prev) =>
-      prev.map((m) => (m.id === editingId ? { 
-        ...m, 
-        name: editName.trim() || editText.slice(0, 30),
-        text: editText.trim() 
-      } : m))
-    );
-    setEditingId(null);
-    setEditName("");
-    setEditText("");
+    try {
+      const { error } = await supabase
+        .from("quick_messages")
+        .update({
+          name: editName.trim() || editText.slice(0, 30),
+          text: editText.trim(),
+        })
+        .eq("id", editingId);
+
+      if (error) throw error;
+
+      setMessages((prev) =>
+        prev.map((m) => (m.id === editingId ? { 
+          ...m, 
+          name: editName.trim() || editText.slice(0, 30),
+          text: editText.trim() 
+        } : m))
+      );
+      toast({ title: "Mensagem atualizada!" });
+      setEditingId(null);
+      setEditName("");
+      setEditText("");
+    } catch (error) {
+      console.error("Error updating quick message:", error);
+      toast({ title: "Erro ao atualizar mensagem", variant: "destructive" });
+    }
   };
 
   const handleCancelEdit = () => {
@@ -426,7 +510,12 @@ export function QuickMessages({ onSelect, onSelectAudio }: QuickMessagesProps) {
       {/* Messages list - Two column layout */}
       <ScrollArea className="max-h-80">
         <div className="p-2">
-          {messages.length === 0 ? (
+          {isLoading ? (
+            <div className="py-8 text-center">
+              <Loader2 className="w-6 h-6 text-muted-foreground animate-spin mx-auto mb-2" />
+              <p className="text-xs text-muted-foreground">Carregando...</p>
+            </div>
+          ) : messages.length === 0 ? (
             <div className="py-8 text-center">
               <Zap className="w-8 h-8 text-muted-foreground/40 mx-auto mb-2" />
               <p className="text-xs text-muted-foreground">
