@@ -1,4 +1,5 @@
 import React from "react";
+import { SafeLink } from "@/components/whatsapp/SafeLink";
 
 /**
  * Parses WhatsApp text formatting and returns React elements
@@ -8,7 +9,7 @@ import React from "react";
  * - ~text~ = strikethrough
  * - ```text``` = monospace (code block)
  * - `text` = inline code
- * - URLs = clickable links
+ * - URLs = clickable links with security preview
  */
 export function formatWhatsAppText(text: string | unknown): React.ReactNode {
   // Handle null, undefined, or non-string values
@@ -58,19 +59,12 @@ export function formatWhatsAppText(text: string | unknown): React.ReactNode {
         result.push(input.slice(lastIndex, match.index));
       }
       
-      // Add clickable link
+      // Add clickable link with security preview
       const url = match[1];
       result.push(
-        <a 
-          key={currentKey++} 
-          href={url} 
-          target="_blank" 
-          rel="noopener noreferrer"
-          className="text-blue-600 dark:text-blue-400 hover:underline break-all"
-          onClick={(e) => e.stopPropagation()}
-        >
+        <SafeLink key={currentKey++} url={url}>
           {url}
-        </a>
+        </SafeLink>
       );
       
       lastIndex = match.index + match[0].length;
