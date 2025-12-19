@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
-import { Search, Smile, Paperclip, Mic, Send, Check, CheckCheck, RefreshCw, Phone, Image, File, Trash2, PanelRightOpen, PanelRightClose, X, Video, MoreVertical, Pencil, Reply } from "lucide-react";
+import { Search, Smile, Paperclip, Mic, Send, Check, CheckCheck, RefreshCw, Phone, Image, File, Trash2, PanelRightOpen, PanelRightClose, X, Video, MoreVertical, Pencil, Reply, MessageSquare } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
@@ -10,6 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import CallModal from "@/components/whatsapp/CallModal";
 import LeadInfoPanel from "@/components/whatsapp/LeadInfoPanel";
 import { EmojiPicker } from "@/components/whatsapp/EmojiPicker";
+import { QuickMessages } from "@/components/whatsapp/QuickMessages";
 import { AudioWaveform } from "@/components/whatsapp/AudioWaveform";
 import { RecordingWaveform } from "@/components/whatsapp/RecordingWaveform";
 import ImageLightbox from "@/components/whatsapp/ImageLightbox";
@@ -93,6 +94,7 @@ const WhatsApp = () => {
   const [isCallModalOpen, setIsCallModalOpen] = useState(false);
   const [showAttachMenu, setShowAttachMenu] = useState(false);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const [showQuickMessages, setShowQuickMessages] = useState(false);
   const [showLeadPanel, setShowLeadPanel] = useState(true);
   const [isRecording, setIsRecording] = useState(false);
   const [recordingTime, setRecordingTime] = useState(0);
@@ -115,6 +117,8 @@ const WhatsApp = () => {
   const emojiPickerRef = useRef<HTMLDivElement>(null);
   const attachButtonRef = useRef<HTMLButtonElement>(null);
   const attachMenuRef = useRef<HTMLDivElement>(null);
+  const quickMsgButtonRef = useRef<HTMLButtonElement>(null);
+  const quickMsgPickerRef = useRef<HTMLDivElement>(null);
 
   // Prevent chat list scroll from jumping when realtime updates reorder items
   const chatListInteractingRef = useRef(false);
@@ -170,6 +174,13 @@ const WhatsApp = () => {
         if (!insideAttach) setShowAttachMenu(false);
       }
 
+      if (showQuickMessages) {
+        const insideQuickMsg =
+          (quickMsgPickerRef.current && quickMsgPickerRef.current.contains(targetNode)) ||
+          (quickMsgButtonRef.current && quickMsgButtonRef.current.contains(targetNode));
+        if (!insideQuickMsg) setShowQuickMessages(false);
+      }
+
       if (messageMenuId) {
         const insideMessageMenu = !!targetEl?.closest("[data-message-menu], [data-message-menu-trigger]");
         if (!insideMessageMenu) setMessageMenuId(null);
@@ -178,7 +189,7 @@ const WhatsApp = () => {
 
     document.addEventListener("pointerdown", onPointerDown, true);
     return () => document.removeEventListener("pointerdown", onPointerDown, true);
-  }, [showAttachMenu, showEmojiPicker, messageMenuId]);
+  }, [showAttachMenu, showEmojiPicker, showQuickMessages, messageMenuId]);
 
   const imageInputRef = useRef<HTMLInputElement>(null);
   const chatsRef = useRef<Chat[]>([]);
@@ -2248,6 +2259,29 @@ const WhatsApp = () => {
                             </div>
                             <span className="text-foreground">Documento</span>
                           </button>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Quick Messages Button */}
+                    <div className="relative">
+                      <button 
+                        ref={quickMsgButtonRef}
+                        onClick={() => setShowQuickMessages(!showQuickMessages)}
+                        className="p-2 hover:bg-muted/50 rounded-full transition-colors"
+                        title="Mensagens rápidas"
+                      >
+                        <MessageSquare className={cn("w-6 h-6 text-muted-foreground transition-colors", showQuickMessages && "text-emerald-500")} />
+                      </button>
+                      
+                      {showQuickMessages && (
+                        <div ref={quickMsgPickerRef} className="absolute bottom-full left-0 mb-2 z-50">
+                          <QuickMessages 
+                            onSelect={(text) => {
+                              setMessage(text);
+                              setShowQuickMessages(false);
+                            }}
+                          />
                         </div>
                       )}
                     </div>
