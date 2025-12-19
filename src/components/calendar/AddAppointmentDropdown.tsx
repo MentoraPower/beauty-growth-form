@@ -22,6 +22,7 @@ interface AddAppointmentDropdownProps {
   selectedDate: Date | null;
   selectedHour: number | null;
   onSuccess: () => void;
+  onCancel?: () => void;
   anchorPosition?: { x: number; y: number };
   onPendingSlotUpdate?: (startTime: string, endTime: string) => void;
 }
@@ -32,6 +33,7 @@ export function AddAppointmentDropdown({
   selectedDate,
   selectedHour,
   onSuccess,
+  onCancel,
   anchorPosition,
   onPendingSlotUpdate,
 }: AddAppointmentDropdownProps) {
@@ -367,7 +369,10 @@ export function AddAppointmentDropdown({
               type="button"
               variant="outline"
               size="sm"
-              onClick={() => onOpenChange(false)}
+              onClick={() => {
+                onCancel?.();
+                onOpenChange(false);
+              }}
             >
               Cancelar
             </Button>
