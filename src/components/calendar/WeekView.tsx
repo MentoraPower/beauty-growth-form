@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import {
   format,
   startOfWeek,
@@ -35,6 +35,7 @@ interface WeekViewProps {
 
 const HOUR_HEIGHT = 60;
 const HOURS = Array.from({ length: 24 }, (_, i) => i);
+const TOTAL_HEIGHT = HOUR_HEIGHT * 24;
 
 function HourCell({
   hour,
@@ -70,6 +71,7 @@ export function WeekView({
 }: WeekViewProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [currentTimeTop, setCurrentTimeTop] = useState(0);
+  const isScrollingRef = useRef(false);
 
   const weekStart = startOfWeek(date, { weekStartsOn: 0 });
   const days = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
@@ -95,11 +97,33 @@ export function WeekView({
     return () => clearInterval(interval);
   }, []);
 
-  // Scroll to current time or 8am on mount
+  // Scroll to current time or 8am on mount (in the middle section)
   useEffect(() => {
     if (containerRef.current) {
-      const scrollTo = currentTimeTop > 0 ? currentTimeTop - 100 : 8 * HOUR_HEIGHT;
+      const middleOffset = TOTAL_HEIGHT;
+      const scrollTo = currentTimeTop > 0 
+        ? middleOffset + currentTimeTop - 100 
+        : middleOffset + 8 * HOUR_HEIGHT;
       containerRef.current.scrollTop = scrollTo;
+    }
+  }, []);
+
+  // Infinite scroll handler
+  const handleScroll = useCallback(() => {
+    if (!containerRef.current || isScrollingRef.current) return;
+    
+    const container = containerRef.current;
+    const scrollTop = container.scrollTop;
+    
+    if (scrollTop < TOTAL_HEIGHT * 0.5) {
+      isScrollingRef.current = true;
+      container.scrollTop = scrollTop + TOTAL_HEIGHT;
+      setTimeout(() => { isScrollingRef.current = false; }, 50);
+    }
+    else if (scrollTop > TOTAL_HEIGHT * 2) {
+      isScrollingRef.current = true;
+      container.scrollTop = scrollTop - TOTAL_HEIGHT;
+      setTimeout(() => { isScrollingRef.current = false; }, 50);
     }
   }, []);
 
@@ -143,6 +167,66 @@ export function WeekView({
     onAppointmentDrop(appointment.id, newStart, newEnd);
   };
 
+  // Render hours section for a specific offset (0, 1, 2 for infinite scroll)
+  const renderHoursSection = (offset: number) => (
+    <div key={offset} className="relative flex" style={{ height: TOTAL_HEIGHT }}>
+      {/* Time labels */}
+      <div className="w-16 flex-shrink-0 pt-2">
+        {HOURS.map((hour) => (
+          <div
+            key={`${offset}-label-${hour}`}
+            className="h-[60px] text-xs text-muted-foreground pr-2 text-right flex items-start"
+          >
+            {hour.toString().padStart(2, "0")}:00
+          </div>
+        ))}
+      </div>
+
+      {/* Days columns */}
+      {days.map((day) => {
+        const dayAppointments = getAppointmentsForDay(day);
+        const showCurrentTime = isToday(day);
+
+        return (
+          <div key={`${offset}-${day.toISOString()}`} className="flex-1 relative border-l border-border/50">
+            {/* Hour cells */}
+            {HOURS.map((hour) => (
+              <HourCell
+                key={`${offset}-${hour}`}
+                hour={hour}
+                day={day}
+                onClick={(e) => onDayClick(day, hour, e)}
+              />
+            ))}
+
+            {/* Current time indicator (only in middle section) */}
+            {offset === 1 && showCurrentTime && currentTimeTop > 0 && (
+              <div
+                className="absolute left-0 right-0 flex items-center z-20 pointer-events-none"
+                style={{ top: currentTimeTop }}
+              >
+                <div className="w-2 h-2 rounded-full bg-red-500" />
+                <div className="flex-1 h-[1px] bg-red-500" />
+              </div>
+            )}
+
+            {/* Appointments (only in middle section) */}
+            {offset === 1 && dayAppointments.map((apt) => {
+              const { top, height } = getAppointmentPosition(apt, day);
+              return (
+                <AppointmentCard
+                  key={apt.id}
+                  appointment={apt}
+                  style={{ top, height }}
+                />
+              );
+            })}
+          </div>
+        );
+      })}
+    </div>
+  );
+
   return (
     <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
       <div className="h-full flex flex-col">
@@ -170,63 +254,15 @@ export function WeekView({
           ))}
         </div>
 
-        {/* Time grid */}
-        <div ref={containerRef} className="flex-1 overflow-y-auto">
-          <div className="relative flex">
-            {/* Time labels */}
-            <div className="w-16 flex-shrink-0">
-              {HOURS.map((hour) => (
-                <div
-                  key={hour}
-                  className="h-[60px] text-xs text-muted-foreground pr-2 text-right -mt-2"
-                >
-                  {hour.toString().padStart(2, "0")}:00
-                </div>
-              ))}
-            </div>
-
-            {/* Days columns */}
-            {days.map((day) => {
-              const dayAppointments = getAppointmentsForDay(day);
-              const showCurrentTime = isToday(day);
-
-              return (
-                <div key={day.toISOString()} className="flex-1 relative">
-                  {/* Hour cells */}
-                  {HOURS.map((hour) => (
-                    <HourCell
-                      key={hour}
-                      hour={hour}
-                      day={day}
-                      onClick={(e) => onDayClick(day, hour, e)}
-                    />
-                  ))}
-
-                  {/* Current time indicator */}
-                  {showCurrentTime && currentTimeTop > 0 && (
-                    <div
-                      className="absolute left-0 right-0 flex items-center z-20 pointer-events-none"
-                      style={{ top: currentTimeTop }}
-                    >
-                      <div className="w-2 h-2 rounded-full bg-red-500" />
-                      <div className="flex-1 h-[1px] bg-red-500" />
-                    </div>
-                  )}
-
-                  {/* Appointments */}
-                  {dayAppointments.map((apt) => {
-                    const { top, height } = getAppointmentPosition(apt, day);
-                    return (
-                      <AppointmentCard
-                        key={apt.id}
-                        appointment={apt}
-                        style={{ top, height }}
-                      />
-                    );
-                  })}
-                </div>
-              );
-            })}
+        {/* Time grid with infinite scroll */}
+        <div 
+          ref={containerRef} 
+          className="flex-1 overflow-y-auto"
+          onScroll={handleScroll}
+        >
+          <div className="relative">
+            {/* Three copies of hours for infinite scroll effect */}
+            {[0, 1, 2].map((offset) => renderHoursSection(offset))}
           </div>
         </div>
       </div>
