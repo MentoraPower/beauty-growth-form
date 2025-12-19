@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { ExternalLink, Shield, ShieldAlert, ShieldCheck, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -72,12 +72,42 @@ const getDomainFromUrl = (url: string): string => {
 
 export const SafeLink: React.FC<SafeLinkProps> = ({ url, children, className }) => {
   const [showPreview, setShowPreview] = useState(false);
+  const [position, setPosition] = useState({ top: 0, left: 0 });
+  const linkRef = useRef<HTMLAnchorElement>(null);
+  const popupRef = useRef<HTMLDivElement>(null);
   const safetyLevel = getSafetyLevel(url);
   const domain = getDomainFromUrl(url);
 
   const handleClick = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
+    
+    if (linkRef.current) {
+      const rect = linkRef.current.getBoundingClientRect();
+      const popupWidth = 288; // w-72 = 18rem = 288px
+      const popupHeight = 200; // approximate height
+      
+      let left = rect.left;
+      let top = rect.top - popupHeight - 8;
+      
+      // Adjust if popup would go off-screen to the right
+      if (left + popupWidth > window.innerWidth - 16) {
+        left = window.innerWidth - popupWidth - 16;
+      }
+      
+      // Adjust if popup would go off-screen to the left
+      if (left < 16) {
+        left = 16;
+      }
+      
+      // If popup would go above viewport, show below the link instead
+      if (top < 16) {
+        top = rect.bottom + 8;
+      }
+      
+      setPosition({ top, left });
+    }
+    
     setShowPreview(true);
   };
 
@@ -87,14 +117,29 @@ export const SafeLink: React.FC<SafeLinkProps> = ({ url, children, className }) 
     setShowPreview(false);
   };
 
-  const handleClose = (e: React.MouseEvent) => {
-    e.stopPropagation();
+  const handleClose = (e?: React.MouseEvent) => {
+    e?.stopPropagation();
     setShowPreview(false);
   };
 
+  // Close on escape key
+  useEffect(() => {
+    if (!showPreview) return;
+    
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setShowPreview(false);
+      }
+    };
+    
+    document.addEventListener('keydown', handleEscape);
+    return () => document.removeEventListener('keydown', handleEscape);
+  }, [showPreview]);
+
   return (
-    <span className="relative inline">
+    <>
       <a
+        ref={linkRef}
         href={url}
         onClick={handleClick}
         className={cn(
@@ -110,12 +155,14 @@ export const SafeLink: React.FC<SafeLinkProps> = ({ url, children, className }) 
           {/* Backdrop */}
           <div 
             className="fixed inset-0 z-[9998]" 
-            onClick={handleClose}
+            onClick={() => handleClose()}
           />
           
-          {/* Preview dropdown */}
+          {/* Preview popup - fixed position */}
           <div 
-            className="absolute left-0 bottom-full mb-2 z-[9999] w-72 bg-popover border border-border rounded-lg shadow-xl p-3 animate-in fade-in-0 zoom-in-95 duration-200"
+            ref={popupRef}
+            className="fixed z-[9999] w-72 bg-popover border border-border rounded-lg shadow-xl p-3 animate-in fade-in-0 zoom-in-95 duration-200"
+            style={{ top: position.top, left: position.left }}
             onClick={(e) => e.stopPropagation()}
           >
             {/* Header */}
@@ -191,6 +238,6 @@ export const SafeLink: React.FC<SafeLinkProps> = ({ url, children, className }) 
           </div>
         </>
       )}
-    </span>
+    </>
   );
 };
