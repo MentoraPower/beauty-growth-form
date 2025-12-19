@@ -2375,6 +2375,13 @@ const WhatsApp = () => {
                                     setMessage(text);
                                     setShowQuickMessages(false);
                                   }}
+                                  onSelectAudio={async (audioBase64) => {
+                                    setShowQuickMessages(false);
+                                    // Convert base64 data URL to blob
+                                    const response = await fetch(audioBase64);
+                                    const blob = await response.blob();
+                                    await sendAudioMessage(blob, blob.type || "audio/webm");
+                                  }}
                                 />
                               </div>
                             )}
