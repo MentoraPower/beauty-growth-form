@@ -101,7 +101,7 @@ export function QuickMessages({ onSelect }: QuickMessagesProps) {
   });
 
   return (
-    <div className="w-80 bg-card rounded-xl border border-border overflow-hidden">
+    <div className="w-[420px] bg-card rounded-xl border border-border overflow-hidden">
       {/* Header */}
       <div className="px-3 py-2 border-b border-border flex items-center justify-between bg-muted/30">
         <div className="flex items-center gap-2">
@@ -166,9 +166,9 @@ export function QuickMessages({ onSelect }: QuickMessagesProps) {
         </div>
       )}
 
-      {/* Messages list */}
-      <ScrollArea className="max-h-72">
-        <div className="p-2 space-y-2">
+      {/* Messages list - Two column layout */}
+      <ScrollArea className="max-h-80">
+        <div className="p-2">
           {messages.length === 0 ? (
             <div className="py-8 text-center">
               <MessageSquare className="w-8 h-8 text-muted-foreground/40 mx-auto mb-2" />
@@ -187,81 +187,85 @@ export function QuickMessages({ onSelect }: QuickMessagesProps) {
               </p>
             </div>
           ) : (
-            filteredMessages.map((msg) => (
-              <div key={msg.id} className="group relative">
-                {editingId === msg.id ? (
-                  <div className="space-y-2 p-2 bg-muted/30 rounded-lg">
-                    <Input
-                      placeholder="Nome"
-                      value={editName}
-                      onChange={(e) => setEditName(e.target.value)}
-                      className="h-8 text-sm bg-background"
-                      autoFocus
-                    />
-                    <Textarea
-                      value={editText}
-                      onChange={(e) => setEditText(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === "Escape") handleCancelEdit();
-                      }}
-                      className="text-sm bg-background min-h-[60px] resize-none"
-                    />
-                    <div className="flex gap-2">
-                      <button
-                        onClick={handleSaveEdit}
-                        className="flex-1 py-1.5 bg-emerald-500 hover:bg-emerald-600 text-white rounded-md text-sm transition-colors flex items-center justify-center gap-1"
-                      >
-                        <Check className="w-4 h-4" />
-                        Salvar
-                      </button>
-                      <button
-                        onClick={handleCancelEdit}
-                        className="px-3 py-1.5 bg-muted hover:bg-muted/80 text-muted-foreground rounded-md text-sm transition-colors"
-                      >
-                        Cancelar
-                      </button>
-                    </div>
-                  </div>
-                ) : (
-                  <div
-                    onClick={() => onSelect(msg.text)}
-                    className="relative bg-emerald-100 dark:bg-emerald-900/30 text-foreground rounded-lg rounded-tl-none px-3 py-2 cursor-pointer hover:bg-emerald-200 dark:hover:bg-emerald-900/50 transition-colors group"
-                  >
-                    {/* Message bubble tail */}
-                    <div className="absolute -left-2 top-0 w-0 h-0 border-t-[8px] border-t-emerald-100 dark:border-t-emerald-900/30 border-l-[8px] border-l-transparent group-hover:border-t-emerald-200 dark:group-hover:border-t-emerald-900/50 transition-colors" />
-                    
-                    {/* Name label */}
-                    <p className="text-xs font-semibold text-emerald-700 dark:text-emerald-400 mb-0.5">{msg.name}</p>
-                    
-                    <p className="text-sm pr-12 whitespace-pre-wrap line-clamp-2">{msg.text}</p>
-                    
-                    {/* Action buttons */}
-                    <div className="absolute right-1 top-1 flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleStartEdit(msg);
+            <div className="space-y-1">
+              {filteredMessages.map((msg) => (
+                <div key={msg.id} className="group">
+                  {editingId === msg.id ? (
+                    <div className="space-y-2 p-2 bg-muted/30 rounded-lg">
+                      <Input
+                        placeholder="Nome"
+                        value={editName}
+                        onChange={(e) => setEditName(e.target.value)}
+                        className="h-8 text-sm bg-background"
+                        autoFocus
+                      />
+                      <Textarea
+                        value={editText}
+                        onChange={(e) => setEditText(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Escape") handleCancelEdit();
                         }}
-                        className="p-1 hover:bg-black/10 rounded transition-colors"
-                        title="Editar"
-                      >
-                        <Edit2 className="w-3 h-3 text-muted-foreground" />
-                      </button>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleDelete(msg.id);
-                        }}
-                        className="p-1 hover:bg-destructive/20 rounded transition-colors"
-                        title="Excluir"
-                      >
-                        <Trash2 className="w-3 h-3 text-destructive" />
-                      </button>
+                        className="text-sm bg-background min-h-[60px] resize-none"
+                      />
+                      <div className="flex gap-2">
+                        <button
+                          onClick={handleSaveEdit}
+                          className="flex-1 py-1.5 bg-emerald-500 hover:bg-emerald-600 text-white rounded-md text-sm transition-colors flex items-center justify-center gap-1"
+                        >
+                          <Check className="w-4 h-4" />
+                          Salvar
+                        </button>
+                        <button
+                          onClick={handleCancelEdit}
+                          className="px-3 py-1.5 bg-muted hover:bg-muted/80 text-muted-foreground rounded-md text-sm transition-colors"
+                        >
+                          Cancelar
+                        </button>
+                      </div>
                     </div>
-                  </div>
-                )}
-              </div>
-            ))
+                  ) : (
+                    <div
+                      onClick={() => onSelect(msg.text)}
+                      className="flex items-stretch cursor-pointer hover:bg-muted/40 rounded-lg transition-colors overflow-hidden"
+                    >
+                      {/* Left side - Name */}
+                      <div className="w-28 shrink-0 bg-emerald-500/10 dark:bg-emerald-500/20 px-3 py-2.5 flex items-center border-r border-emerald-500/20">
+                        <p className="text-xs font-semibold text-emerald-700 dark:text-emerald-400 truncate">{msg.name}</p>
+                      </div>
+                      
+                      {/* Right side - Message */}
+                      <div className="flex-1 px-3 py-2 bg-muted/20 relative">
+                        <p className="text-sm text-foreground whitespace-pre-wrap line-clamp-2 pr-14">{msg.text}</p>
+                        
+                        {/* Action buttons */}
+                        <div className="absolute right-2 top-1/2 -translate-y-1/2 flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleStartEdit(msg);
+                            }}
+                            className="p-1.5 hover:bg-muted rounded transition-colors"
+                            title="Editar"
+                          >
+                            <Edit2 className="w-3.5 h-3.5 text-muted-foreground" />
+                          </button>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDelete(msg.id);
+                            }}
+                            className="p-1.5 hover:bg-destructive/20 rounded transition-colors"
+                            title="Excluir"
+                          >
+                            <Trash2 className="w-3.5 h-3.5 text-destructive" />
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
           )}
         </div>
       </ScrollArea>
