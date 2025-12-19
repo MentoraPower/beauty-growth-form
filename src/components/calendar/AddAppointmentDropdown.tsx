@@ -211,7 +211,7 @@ export function AddAppointmentDropdown({
         ref={panelRef}
         role="dialog"
         aria-label="Novo agendamento"
-        className="pointer-events-auto fixed w-[420px] max-w-[calc(100vw-24px)] max-h-[85vh] bg-popover text-popover-foreground rounded-xl border border-border shadow-2xl overflow-hidden animate-in fade-in"
+        className="pointer-events-auto fixed w-[480px] max-w-[calc(100vw-24px)] max-h-[85vh] bg-popover text-popover-foreground rounded-2xl border border-border shadow-2xl overflow-hidden animate-in fade-in"
         style={{ left: panelPosition.left, top: panelPosition.top }}
       >
 
