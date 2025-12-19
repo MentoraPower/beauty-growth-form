@@ -219,7 +219,7 @@ export function WeekView({
                     <div
                       key={hour}
                       onClick={(e) => onDayClick(day, hour, e)}
-                      className="h-[60px] border-t border-l border-border/50 cursor-pointer hover:bg-muted/30 transition-colors"
+                      className="h-[60px] border-t border-l border-border/50 cursor-pointer hover:bg-muted/30"
                     />
                   ))}
 
