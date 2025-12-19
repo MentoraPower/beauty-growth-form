@@ -159,16 +159,16 @@ export default function CalendarPage() {
   };
 
   const handleDialogOpenChange = (open: boolean) => {
-    setDialogOpen(open);
     if (!open) {
+      // Remove pending slot IMMEDIATELY before closing dialog
       setPendingSlot(null);
       setEditingAppointment(null);
       justClosedRef.current = true;
-      // Reset after a short delay to allow new clicks
       setTimeout(() => {
         justClosedRef.current = false;
       }, 100);
     }
+    setDialogOpen(open);
   };
 
   const handleSuccess = () => {
