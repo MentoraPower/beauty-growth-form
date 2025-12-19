@@ -116,6 +116,11 @@ const WhatsApp = () => {
   const attachButtonRef = useRef<HTMLButtonElement>(null);
   const attachMenuRef = useRef<HTMLDivElement>(null);
 
+  // Prevent chat list scroll from jumping when realtime updates reorder items
+  const chatListInteractingRef = useRef(false);
+  const chatListIdleTimeoutRef = useRef<number | null>(null);
+  const pendingChatUpdatesRef = useRef<Map<string, any>>(new Map());
+
   // Scroll to bottom of the messages container (reliable even on long threads)
   const scrollToBottom = useCallback((behavior: ScrollBehavior = "auto") => {
     const el = messagesContainerRef.current;
@@ -324,8 +329,69 @@ const WhatsApp = () => {
     }
   }, [formatChatData]);
 
+  const flushPendingChatUpdates = useCallback(() => {
+    const pending = Array.from(pendingChatUpdatesRef.current.values());
+    if (pending.length === 0) return;
+
+    pendingChatUpdatesRef.current.clear();
+
+    const formattedUpdates = pending
+      .map(formatChatData)
+      .filter((chat): chat is Chat => chat !== null);
+
+    if (formattedUpdates.length === 0) return;
+
+    setChats((prev) => {
+      const byId = new Map(prev.map((c) => [c.id, c] as const));
+      for (const updated of formattedUpdates) {
+        byId.set(updated.id, updated);
+      }
+
+      const next = Array.from(byId.values());
+      next.sort((a, b) => {
+        const timeA = a.lastMessageTime ? new Date(a.lastMessageTime).getTime() : 0;
+        const timeB = b.lastMessageTime ? new Date(b.lastMessageTime).getTime() : 0;
+        return timeB - timeA;
+      });
+
+      chatsRef.current = next;
+      return next;
+    });
+
+    setSelectedChat((prev) => {
+      if (!prev) return prev;
+      const updated = formattedUpdates.find((c) => c.id === prev.id);
+      return updated ?? prev;
+    });
+  }, [formatChatData]);
+
+  const markChatListInteracting = useCallback(() => {
+    chatListInteractingRef.current = true;
+
+    if (chatListIdleTimeoutRef.current) {
+      window.clearTimeout(chatListIdleTimeoutRef.current);
+    }
+
+    chatListIdleTimeoutRef.current = window.setTimeout(() => {
+      chatListInteractingRef.current = false;
+      flushPendingChatUpdates();
+    }, 250);
+  }, [flushPendingChatUpdates]);
+
+  useEffect(() => {
+    return () => {
+      if (chatListIdleTimeoutRef.current) window.clearTimeout(chatListIdleTimeoutRef.current);
+    };
+  }, []);
+
   // Update single chat in state without refetching all
   const updateChatInState = useCallback((updatedChat: any) => {
+    // While the user is scrolling the chat list, defer reorder updates to avoid "jumping".
+    if (chatListInteractingRef.current) {
+      pendingChatUpdatesRef.current.set(updatedChat?.id ?? `${Date.now()}`, updatedChat);
+      return;
+    }
+
     const formatted = formatChatData(updatedChat);
     if (!formatted) return;
 
@@ -360,7 +426,7 @@ const WhatsApp = () => {
       }
       return prev;
     });
-  }, [formatChatData]);
+  }, [formatChatData, flushPendingChatUpdates]);
 
   // Remove chat from state
   const removeChatFromState = useCallback((chatId: string) => {
@@ -1706,7 +1772,13 @@ const WhatsApp = () => {
           </div>
 
           {/* Chat List - Always visible, no loading spinner */}
-          <ScrollArea className="flex-1">
+          <ScrollArea
+            className="flex-1 overscroll-contain"
+            onScrollCapture={markChatListInteracting}
+            onWheelCapture={markChatListInteracting}
+            onTouchMoveCapture={markChatListInteracting}
+            onPointerDownCapture={markChatListInteracting}
+          >
             <div className="flex flex-col">
               {isInitialLoad && chats.length === 0 ? (
                 <div className="flex items-center justify-center h-full py-20">
