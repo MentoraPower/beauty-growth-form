@@ -125,16 +125,20 @@ export function AddAppointmentDropdown({
   }, [editingAppointment, open]);
 
   useEffect(() => {
-    if (selectedHour !== null && !editingAppointment) {
-      const h = selectedHour.toString().padStart(2, "0");
-      const newStartTime = `${h}:00`;
-      const endH = Math.min(selectedHour + 1, 23).toString().padStart(2, "0");
-      const newEndTime = `${endH}:00`;
-      setStartTime(newStartTime);
-      setEndTime(newEndTime);
-      onPendingSlotUpdate?.(newStartTime, newEndTime);
-    }
-  }, [selectedHour, onPendingSlotUpdate, editingAppointment]);
+    // Only sync initial time + pending slot when the dropdown is actually open.
+    // Otherwise, it can re-create the pending card right after you close/cancel.
+    if (!open) return;
+    if (selectedHour === null || editingAppointment) return;
+
+    const h = selectedHour.toString().padStart(2, "0");
+    const newStartTime = `${h}:00`;
+    const endH = Math.min(selectedHour + 1, 23).toString().padStart(2, "0");
+    const newEndTime = `${endH}:00`;
+
+    setStartTime(newStartTime);
+    setEndTime(newEndTime);
+    onPendingSlotUpdate?.(newStartTime, newEndTime);
+  }, [open, selectedHour, onPendingSlotUpdate, editingAppointment]);
 
   useEffect(() => {
     if (!open) resetForm();
