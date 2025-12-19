@@ -335,8 +335,8 @@ async function handler(req: Request): Promise<Response> {
         }
         
         const timestamp = Date.now();
-        const filename = `${to}_${timestamp}.mp3`;
-        const filePath = `audios/${filename}`;
+        const audioFilename = `${to}_${timestamp}.mp3`;
+        const filePath = `audios/${audioFilename}`;
         
         const { error: uploadError } = await supabase.storage
           .from('whatsapp-media')
@@ -381,7 +381,70 @@ async function handler(req: Request): Promise<Response> {
                            result?.sentMsg?.key?.id;
       const messageId = numericMsgId ? String(numericMsgId) : (whatsappKeyId || `local-${Date.now()}`);
       console.log(`[Wasender] Send audio - msgId: ${numericMsgId}, key.id: ${whatsappKeyId}`);
-      return new Response(JSON.stringify({ success: true, messageId, whatsappKeyId }), {
+      
+      // If audioBase64 was used (from dropdown), save to database since frontend doesn't
+      if (body.audioBase64) {
+        // Get or create chat
+        const { data: existingChat } = await supabase
+          .from("whatsapp_chats")
+          .select("id")
+          .eq("phone", to)
+          .single();
+        
+        let chatId = existingChat?.id;
+        
+        if (!chatId) {
+          const { data: newChat } = await supabase
+            .from("whatsapp_chats")
+            .insert({
+              phone: to,
+              last_message: "🎵 Áudio",
+              last_message_time: new Date().toISOString(),
+              last_message_from_me: true,
+              last_message_status: "SENT",
+            })
+            .select("id")
+            .single();
+          chatId = newChat?.id;
+        } else {
+          // Update chat last message
+          await supabase
+            .from("whatsapp_chats")
+            .update({
+              last_message: "🎵 Áudio",
+              last_message_time: new Date().toISOString(),
+              last_message_from_me: true,
+              last_message_status: "SENT",
+            })
+            .eq("id", chatId);
+        }
+        
+        // Insert the message
+        if (chatId) {
+          const { error: insertError } = await supabase
+            .from("whatsapp_messages")
+            .insert({
+              chat_id: chatId,
+              phone: to,
+              text: "",
+              from_me: true,
+              status: "SENT",
+              media_url: audioUrl,
+              media_type: "audio",
+              message_id: messageId,
+              whatsapp_key_id: whatsappKeyId || null,
+              created_at: new Date().toISOString(),
+            });
+          
+          if (insertError) {
+            console.error(`[Wasender] Error inserting audio message:`, insertError);
+          } else {
+            console.log(`[Wasender] Audio message saved to database for chat ${chatId}`);
+          }
+        }
+      }
+      
+      return new Response(JSON.stringify({ success: true, messageId, whatsappKeyId, audioUrl }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
