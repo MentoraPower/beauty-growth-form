@@ -1,8 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { format, isSameDay, startOfDay, addMinutes, differenceInMinutes } from "date-fns";
 import { toZonedTime } from "date-fns-tz";
-import { DndContext, DragEndEvent, DragMoveEvent, PointerSensor, useSensor, useSensors } from "@dnd-kit/core";
-import { cn } from "@/lib/utils";
+import { DndContext, DragEndEvent, PointerSensor, useSensor, useSensors } from "@dnd-kit/core";
 import { AppointmentCard } from "./AppointmentCard";
 import type { Appointment, PendingSlot } from "@/pages/CalendarPage";
 
@@ -32,7 +31,6 @@ export function DayView({
   const containerRef = useRef<HTMLDivElement>(null);
   const gridRef = useRef<HTMLDivElement>(null);
   const [currentTimeTop, setCurrentTimeTop] = useState(0);
-  const [dragPreview, setDragPreview] = useState<{ top: number; height: number; time: string } | null>(null);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -88,58 +86,28 @@ export function DayView({
     return { top, height };
   };
 
-  const getMinutesFromY = (clientY: number): number => {
-    if (!gridRef.current || !containerRef.current) return 0;
+  const getMinutesFromDelta = (deltaY: number, appointment: Appointment): number => {
+    const start = new Date(appointment.start_time);
+    const dayStart = startOfDay(date);
+    const currentMinutes = differenceInMinutes(start, dayStart);
     
-    const gridRect = gridRef.current.getBoundingClientRect();
-    const scrollTop = containerRef.current.scrollTop;
-    const relativeY = clientY - gridRect.top + scrollTop;
-    
-    // Convert Y position to minutes
-    const totalMinutes = (relativeY / HOUR_HEIGHT) * 60;
+    // Convert delta pixels to minutes
+    const deltaMinutes = (deltaY / HOUR_HEIGHT) * 60;
+    const newMinutes = currentMinutes + deltaMinutes;
     
     // Snap to MINUTE_SNAP intervals
-    const snappedMinutes = Math.round(totalMinutes / MINUTE_SNAP) * MINUTE_SNAP;
+    const snappedMinutes = Math.round(newMinutes / MINUTE_SNAP) * MINUTE_SNAP;
     
     // Clamp between 0 and 23:55
     return Math.max(0, Math.min(snappedMinutes, 24 * 60 - MINUTE_SNAP));
   };
 
-  const formatMinutesToTime = (minutes: number): string => {
-    const h = Math.floor(minutes / 60);
-    const m = minutes % 60;
-    return `${h.toString().padStart(2, "0")}:${m.toString().padStart(2, "0")}`;
-  };
-
-  const handleDragMove = (event: DragMoveEvent) => {
-    const { active } = event;
-    const appointment = active.data.current?.appointment as Appointment;
-    if (!appointment) return;
-
-    // Get pointer position from the event
-    const pointerY = (event.activatorEvent as PointerEvent).clientY + (event.delta?.y || 0);
-    const minutes = getMinutesFromY(pointerY);
-    
-    const oldStart = new Date(appointment.start_time);
-    const oldEnd = new Date(appointment.end_time);
-    const duration = differenceInMinutes(oldEnd, oldStart);
-    
-    const top = (minutes / 60) * HOUR_HEIGHT;
-    const height = Math.max((duration / 60) * HOUR_HEIGHT, 20);
-    
-    setDragPreview({ top, height, time: formatMinutesToTime(minutes) });
-  };
-
   const handleDragEnd = (event: DragEndEvent) => {
-    setDragPreview(null);
-    
-    const { active } = event;
+    const { active, delta } = event;
     const appointment = active.data.current?.appointment as Appointment;
     if (!appointment) return;
 
-    // Get final pointer position
-    const pointerY = (event.activatorEvent as PointerEvent).clientY + (event.delta?.y || 0);
-    const minutes = getMinutesFromY(pointerY);
+    const minutes = getMinutesFromDelta(delta.y, appointment);
     
     const oldStart = new Date(appointment.start_time);
     const oldEnd = new Date(appointment.end_time);
@@ -155,7 +123,6 @@ export function DayView({
   return (
     <DndContext 
       sensors={sensors} 
-      onDragMove={handleDragMove}
       onDragEnd={handleDragEnd}
     >
       <div className="h-full flex flex-col">
@@ -207,18 +174,6 @@ export function DayView({
                 >
                   <div className="w-2 h-2 rounded-full bg-red-500" />
                   <div className="flex-1 h-[1px] bg-red-500" />
-                </div>
-              )}
-
-              {/* Drag preview */}
-              {dragPreview && (
-                <div
-                  className="absolute left-1 right-1 bg-primary/30 rounded-md border-2 border-primary border-dashed z-30 flex items-center justify-center pointer-events-none"
-                  style={{ top: dragPreview.top, height: dragPreview.height }}
-                >
-                  <span className="text-primary text-sm font-medium bg-background/80 px-2 py-0.5 rounded">
-                    {dragPreview.time}
-                  </span>
                 </div>
               )}
 
