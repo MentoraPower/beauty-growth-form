@@ -1020,7 +1020,7 @@ export function WhatsAppChatDropdown({ phone, countryCode, contactName }: WhatsA
                           <Zap className="h-5 w-5 text-amber-500" />
                         </button>
                         {showQuickMessages && (
-                          <div ref={quickMsgPickerRef} className="absolute bottom-10 left-0 z-50">
+                          <div ref={quickMsgPickerRef} className="absolute bottom-10 right-0 z-50 max-w-[380px]" style={{ right: '-60px' }}>
                             <QuickMessages
                               onSelect={handleQuickMessageSelect}
                               onSelectAudio={handleQuickAudioSelect}
