@@ -219,18 +219,23 @@ export function AddAppointmentDropdown({
           onSubmit={handleSubmit}
           className="p-4 space-y-4 overflow-y-auto max-h-[85vh]"
         >
-          <div className="space-y-1.5">
-            <Label htmlFor="title" className="text-xs font-medium text-foreground">
-              Nome *
-            </Label>
-            <Input
+          {/* Floating Label Input for Name */}
+          <div className="relative pt-4">
+            <input
               id="title"
+              type="text"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              placeholder="Ex: Reunião com cliente"
-              className="h-9 text-sm"
               required
+              className="peer w-full border-0 border-b-2 border-muted bg-transparent px-0 py-2 text-sm text-foreground placeholder-transparent focus:border-primary focus:outline-none transition-colors"
+              placeholder="Adicione nome"
             />
+            <label
+              htmlFor="title"
+              className="absolute left-0 top-4 text-sm text-muted-foreground transition-all duration-200 peer-placeholder-shown:top-6 peer-placeholder-shown:text-base peer-focus:top-0 peer-focus:text-xs peer-focus:text-primary peer-[:not(:placeholder-shown)]:top-0 peer-[:not(:placeholder-shown)]:text-xs"
+            >
+              Adicione nome
+            </label>
           </div>
 
           <div className="space-y-2">
