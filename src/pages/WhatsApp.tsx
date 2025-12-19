@@ -2,9 +2,10 @@ import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
-import { Search, Smile, Paperclip, Mic, Send, Check, CheckCheck, RefreshCw, Phone, Image, File, Trash2, PanelRightOpen, PanelRightClose, X, Video, MoreVertical, Pencil, Reply, MessageSquare } from "lucide-react";
+import { Search, Smile, Paperclip, Mic, Send, Check, CheckCheck, RefreshCw, Phone, Image, File, Trash2, PanelRightOpen, PanelRightClose, X, Video, MoreVertical, Pencil, Reply, MessageSquare, ArrowUp, Plus, FileImage, FileVideo, Sticker } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import CallModal from "@/components/whatsapp/CallModal";
@@ -95,6 +96,7 @@ const WhatsApp = () => {
   const [showAttachMenu, setShowAttachMenu] = useState(false);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [showQuickMessages, setShowQuickMessages] = useState(false);
+  const [showToolbar, setShowToolbar] = useState(false);
   const [showLeadPanel, setShowLeadPanel] = useState(true);
   const [isRecording, setIsRecording] = useState(false);
   const [recordingTime, setRecordingTime] = useState(0);
@@ -119,6 +121,8 @@ const WhatsApp = () => {
   const attachMenuRef = useRef<HTMLDivElement>(null);
   const quickMsgButtonRef = useRef<HTMLButtonElement>(null);
   const quickMsgPickerRef = useRef<HTMLDivElement>(null);
+  const toolbarButtonRef = useRef<HTMLButtonElement>(null);
+  const toolbarMenuRef = useRef<HTMLDivElement>(null);
 
   // Prevent chat list scroll from jumping when realtime updates reorder items
   const chatListInteractingRef = useRef(false);
@@ -181,6 +185,13 @@ const WhatsApp = () => {
         if (!insideQuickMsg) setShowQuickMessages(false);
       }
 
+      if (showToolbar) {
+        const insideToolbar =
+          (toolbarMenuRef.current && toolbarMenuRef.current.contains(targetNode)) ||
+          (toolbarButtonRef.current && toolbarButtonRef.current.contains(targetNode));
+        if (!insideToolbar) setShowToolbar(false);
+      }
+
       if (messageMenuId) {
         const insideMessageMenu = !!targetEl?.closest("[data-message-menu], [data-message-menu-trigger]");
         if (!insideMessageMenu) setMessageMenuId(null);
@@ -189,7 +200,7 @@ const WhatsApp = () => {
 
     document.addEventListener("pointerdown", onPointerDown, true);
     return () => document.removeEventListener("pointerdown", onPointerDown, true);
-  }, [showAttachMenu, showEmojiPicker, showQuickMessages, messageMenuId]);
+  }, [showAttachMenu, showEmojiPicker, showQuickMessages, showToolbar, messageMenuId]);
 
   const imageInputRef = useRef<HTMLInputElement>(null);
   const chatsRef = useRef<Chat[]>([]);
@@ -2166,10 +2177,10 @@ const WhatsApp = () => {
               )}
 
               {/* Message Input */}
-              <div className="px-4 py-3 flex items-center gap-2 bg-muted/30 border-t border-border/30">
+              <div className="px-4 py-3 bg-muted/30 border-t border-border/30">
                 {isRecording ? (
                   // Recording UI
-                  <>
+                  <div className="flex items-center gap-2">
                     <button 
                       onClick={cancelRecording}
                       className="p-2 hover:bg-muted/50 rounded-full transition-colors"
@@ -2196,96 +2207,64 @@ const WhatsApp = () => {
                         <Send className="w-6 h-6 text-white" />
                       )}
                     </button>
-                  </>
+                  </div>
                 ) : (
                   // Normal input UI
-                  <>
-                    <div className="relative">
-                      <button 
-                        ref={emojiButtonRef}
-                        onClick={() => setShowEmojiPicker(!showEmojiPicker)}
-                        className="p-2 hover:bg-muted/50 rounded-full transition-colors"
-                      >
-                        <Smile className="w-6 h-6 text-muted-foreground" />
-                      </button>
+                  <div className="space-y-2">
+                    {/* Main Input Row */}
+                    <div className="flex items-end gap-2">
+                      <div className="flex-1 relative">
+                        <Textarea
+                          placeholder="Digite uma mensagem"
+                          value={message}
+                          onChange={(e) => {
+                            setMessage(e.target.value);
+                            if (e.target.value.trim()) {
+                              sendPresenceUpdate("composing");
+                            }
+                          }}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter" && !e.shiftKey) {
+                              e.preventDefault();
+                              if (message.trim()) {
+                                sendMessage();
+                              }
+                            }
+                          }}
+                          disabled={isSending}
+                          className="bg-card border-border/50 text-sm rounded-xl min-h-[48px] max-h-[120px] resize-none pr-12 w-full"
+                          rows={1}
+                        />
+                        {/* Send Button inside input */}
+                        <button
+                          onClick={sendMessage}
+                          disabled={isSending || !message.trim()}
+                          className={cn(
+                            "absolute right-2 bottom-2 p-1.5 rounded-full transition-all",
+                            message.trim() 
+                              ? "bg-emerald-500 hover:bg-emerald-600 text-white" 
+                              : "bg-muted text-muted-foreground cursor-not-allowed"
+                          )}
+                        >
+                          {isSending ? (
+                            <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                          ) : (
+                            <ArrowUp className="w-5 h-5" />
+                          )}
+                        </button>
+                      </div>
                       
-                      {showEmojiPicker && (
-                        <div ref={emojiPickerRef} className="absolute bottom-full left-0 mb-2 z-50">
-                          <EmojiPicker 
-                            onSelect={(emoji) => {
-                              setMessage(prev => prev + emoji);
-                              setShowEmojiPicker(false);
-                            }}
-                          />
-                        </div>
-                      )}
-                    </div>
-                    
-                    <div className="relative">
-                      <button 
-                        ref={attachButtonRef}
-                        onClick={() => setShowAttachMenu(!showAttachMenu)}
-                        className="p-2 hover:bg-muted/50 rounded-full transition-colors"
+                      {/* Mic Button */}
+                      <button
+                        onClick={startRecording}
+                        disabled={isSending}
+                        className="p-3 bg-muted hover:bg-muted/80 rounded-full transition-colors disabled:opacity-50 shrink-0"
                       >
-                        <Paperclip className={cn("w-6 h-6 text-muted-foreground transition-transform", showAttachMenu && "rotate-45")} />
+                        <Mic className="w-5 h-5 text-muted-foreground" />
                       </button>
-                      
-                      {showAttachMenu && (
-                        <div ref={attachMenuRef} className="absolute bottom-full left-0 mb-2 bg-card rounded-lg shadow-lg border border-border overflow-hidden z-50">
-                          <button
-                            onClick={() => imageInputRef.current?.click()}
-                            className="flex items-center gap-3 px-4 py-3 hover:bg-muted/50 w-full text-left"
-                          >
-                            <div className="w-10 h-10 rounded-full bg-purple-500 flex items-center justify-center">
-                              <Image className="w-5 h-5 text-white" />
-                            </div>
-                            <span className="text-foreground">Fotos</span>
-                          </button>
-                          <button
-                            onClick={() => videoInputRef.current?.click()}
-                            className="flex items-center gap-3 px-4 py-3 hover:bg-muted/50 w-full text-left"
-                          >
-                            <div className="w-10 h-10 rounded-full bg-pink-500 flex items-center justify-center">
-                              <Video className="w-5 h-5 text-white" />
-                            </div>
-                            <span className="text-foreground">Vídeo</span>
-                          </button>
-                          <button
-                            onClick={() => fileInputRef.current?.click()}
-                            className="flex items-center gap-3 px-4 py-3 hover:bg-muted/50 w-full text-left"
-                          >
-                            <div className="w-10 h-10 rounded-full bg-blue-500 flex items-center justify-center">
-                              <File className="w-5 h-5 text-white" />
-                            </div>
-                            <span className="text-foreground">Documento</span>
-                          </button>
-                        </div>
-                      )}
                     </div>
 
-                    {/* Quick Messages Button */}
-                    <div className="relative">
-                      <button 
-                        ref={quickMsgButtonRef}
-                        onClick={() => setShowQuickMessages(!showQuickMessages)}
-                        className="p-2 hover:bg-muted/50 rounded-full transition-colors"
-                        title="Mensagens rápidas"
-                      >
-                        <MessageSquare className={cn("w-6 h-6 text-muted-foreground transition-colors", showQuickMessages && "text-emerald-500")} />
-                      </button>
-                      
-                      {showQuickMessages && (
-                        <div ref={quickMsgPickerRef} className="absolute bottom-full left-0 mb-2 z-50">
-                          <QuickMessages 
-                            onSelect={(text) => {
-                              setMessage(text);
-                              setShowQuickMessages(false);
-                            }}
-                          />
-                        </div>
-                      )}
-                    </div>
-
+                    {/* Hidden file inputs */}
                     <input
                       type="file"
                       ref={imageInputRef}
@@ -2308,44 +2287,102 @@ const WhatsApp = () => {
                       onChange={(e) => e.target.files?.[0] && handleFileUpload(e.target.files[0], "video")}
                     />
 
-                    <div className="flex-1">
-                      <Input
-                        placeholder="Digite uma mensagem"
-                        value={message}
-                        onChange={(e) => {
-                          setMessage(e.target.value);
-                          if (e.target.value.trim()) {
-                            sendPresenceUpdate("composing");
-                          }
-                        }}
-                        onKeyDown={handleKeyPress}
-                        disabled={isSending}
-                        className="bg-card border-border/50 h-10 text-sm rounded-lg"
-                      />
-                    </div>
-                    
-                    {message.trim() ? (
-                      <button
-                        onClick={sendMessage}
-                        disabled={isSending}
-                        className="p-2 hover:bg-muted/50 rounded-full transition-colors disabled:opacity-50"
-                      >
-                        {isSending ? (
-                          <div className="w-5 h-5 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin" />
-                        ) : (
-                          <Send className="w-6 h-6 text-emerald-500" />
+                    {/* Bottom Toolbar with Icons */}
+                    <div className="flex items-center gap-1 relative">
+                      {/* Toolbar Toggle Button */}
+                      <button 
+                        ref={toolbarButtonRef}
+                        onClick={() => setShowToolbar(!showToolbar)}
+                        className={cn(
+                          "p-2 hover:bg-muted/50 rounded-full transition-colors",
+                          showToolbar && "bg-muted"
                         )}
-                      </button>
-                    ) : (
-                      <button
-                        onClick={startRecording}
-                        disabled={isSending}
-                        className="p-2 hover:bg-muted/50 rounded-full transition-colors disabled:opacity-50"
                       >
-                        <Mic className="w-6 h-6 text-muted-foreground" />
+                        <Plus className={cn("w-5 h-5 text-muted-foreground transition-transform", showToolbar && "rotate-45")} />
                       </button>
-                    )}
-                  </>
+
+                      {/* Toolbar Menu */}
+                      {showToolbar && (
+                        <div 
+                          ref={toolbarMenuRef}
+                          className="flex items-center gap-1 bg-card rounded-full px-2 py-1 shadow-lg border border-border animate-in slide-in-from-left-2 duration-200"
+                        >
+                          {/* Emoji */}
+                          <div className="relative">
+                            <button 
+                              ref={emojiButtonRef}
+                              onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+                              className="p-2 hover:bg-muted/50 rounded-full transition-colors"
+                              title="Emojis"
+                            >
+                              <Smile className={cn("w-5 h-5 text-muted-foreground", showEmojiPicker && "text-emerald-500")} />
+                            </button>
+                            
+                            {showEmojiPicker && (
+                              <div ref={emojiPickerRef} className="absolute bottom-full left-0 mb-2 z-50">
+                                <EmojiPicker 
+                                  onSelect={(emoji) => {
+                                    setMessage(prev => prev + emoji);
+                                    setShowEmojiPicker(false);
+                                  }}
+                                />
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Images */}
+                          <button 
+                            onClick={() => imageInputRef.current?.click()}
+                            className="p-2 hover:bg-muted/50 rounded-full transition-colors"
+                            title="Enviar imagem"
+                          >
+                            <FileImage className="w-5 h-5 text-muted-foreground" />
+                          </button>
+
+                          {/* Video */}
+                          <button 
+                            onClick={() => videoInputRef.current?.click()}
+                            className="p-2 hover:bg-muted/50 rounded-full transition-colors"
+                            title="Enviar vídeo"
+                          >
+                            <FileVideo className="w-5 h-5 text-muted-foreground" />
+                          </button>
+
+                          {/* Files */}
+                          <button 
+                            onClick={() => fileInputRef.current?.click()}
+                            className="p-2 hover:bg-muted/50 rounded-full transition-colors"
+                            title="Enviar documento"
+                          >
+                            <File className="w-5 h-5 text-muted-foreground" />
+                          </button>
+
+                          {/* Quick Messages */}
+                          <div className="relative">
+                            <button 
+                              ref={quickMsgButtonRef}
+                              onClick={() => setShowQuickMessages(!showQuickMessages)}
+                              className="p-2 hover:bg-muted/50 rounded-full transition-colors"
+                              title="Mensagens rápidas"
+                            >
+                              <MessageSquare className={cn("w-5 h-5 text-muted-foreground", showQuickMessages && "text-emerald-500")} />
+                            </button>
+                            
+                            {showQuickMessages && (
+                              <div ref={quickMsgPickerRef} className="absolute bottom-full left-0 mb-2 z-50">
+                                <QuickMessages 
+                                  onSelect={(text) => {
+                                    setMessage(text);
+                                    setShowQuickMessages(false);
+                                  }}
+                                />
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
                 )}
               </div>
             </>
