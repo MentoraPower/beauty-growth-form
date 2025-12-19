@@ -107,55 +107,52 @@ export function AppointmentCard({
     }).format(value);
   };
 
-  const PaymentBadge = () => (
-    <Popover open={paymentOpen} onOpenChange={setPaymentOpen}>
-      <PopoverTrigger asChild>
-        <button
-          onClick={handlePaymentClick}
-          className={cn(
-            "flex items-center gap-0.5 px-1 py-0.5 rounded text-[10px] font-medium transition-colors",
-            appointment.is_paid && appointment.payment_value && appointment.payment_value > 0
-              ? "bg-emerald-400/30 text-emerald-100"
-              : "bg-white/20 text-white/80 hover:bg-white/30"
-          )}
-        >
-          <DollarSign className="h-3 w-3" />
-          {appointment.is_paid && appointment.payment_value && appointment.payment_value > 0 ? (
-            <span>{formatCurrency(appointment.payment_value)}</span>
-          ) : (
-            <span>Pago</span>
-          )}
-        </button>
-      </PopoverTrigger>
-      <PopoverContent 
-        className="w-48 p-3 bg-card border border-border" 
-        onClick={handlePaymentClick}
-        align="start"
-      >
-        <div className="space-y-3">
-          <p className="text-sm font-medium text-foreground">Valor da venda</p>
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-muted-foreground">R$</span>
-            <Input
-              type="text"
-              placeholder="0,00"
-              value={paymentValue}
-              onChange={(e) => setPaymentValue(e.target.value)}
-              className="h-8"
-            />
-          </div>
-          <Button 
-            size="sm" 
-            className="w-full" 
-            onClick={handleSavePayment}
-            disabled={saving}
+  const isPaid = appointment.is_paid && appointment.payment_value && appointment.payment_value > 0;
+
+  const PaymentBadge = () => {
+    if (!isPaid) return null;
+    
+    return (
+      <Popover open={paymentOpen} onOpenChange={setPaymentOpen}>
+        <PopoverTrigger asChild>
+          <button
+            onClick={handlePaymentClick}
+            className="flex items-center gap-0.5 px-1 py-0.5 rounded text-[10px] font-medium transition-colors bg-emerald-400/30 text-emerald-100"
           >
-            {saving ? "Salvando..." : "Salvar"}
-          </Button>
-        </div>
-      </PopoverContent>
-    </Popover>
-  );
+            <DollarSign className="h-3 w-3" />
+            <span>{formatCurrency(appointment.payment_value || 0)}</span>
+          </button>
+        </PopoverTrigger>
+        <PopoverContent 
+          className="w-48 p-3 bg-card border border-border" 
+          onClick={handlePaymentClick}
+          align="start"
+        >
+          <div className="space-y-3">
+            <p className="text-sm font-medium text-foreground">Valor da venda</p>
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-muted-foreground">R$</span>
+              <Input
+                type="text"
+                placeholder="0,00"
+                value={paymentValue}
+                onChange={(e) => setPaymentValue(e.target.value)}
+                className="h-8"
+              />
+            </div>
+            <Button 
+              size="sm" 
+              className="w-full" 
+              onClick={handleSavePayment}
+              disabled={saving}
+            >
+              {saving ? "Salvando..." : "Salvar"}
+            </Button>
+          </div>
+        </PopoverContent>
+      </Popover>
+    );
+  };
 
   if (compact) {
     return (
