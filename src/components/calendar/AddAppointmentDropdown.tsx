@@ -1,11 +1,18 @@
-import { useState, useEffect } from "react";
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from "react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { X, Clock, Mail, FileText, User, Users, CalendarDays } from "lucide-react";
+import { CalendarDays, Clock, FileText, Mail, User, Users, X } from "lucide-react";
+import { toast } from "sonner";
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
@@ -13,8 +20,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
-import { toast } from "sonner";
 
 interface AddAppointmentDropdownProps {
   open: boolean;
@@ -24,6 +31,22 @@ interface AddAppointmentDropdownProps {
   onSuccess: () => void;
   anchorPosition?: { x: number; y: number };
 }
+
+const HOURS = Array.from({ length: 24 }, (_, i) => i.toString().padStart(2, "0"));
+const MINUTES = [
+  "00",
+  "05",
+  "10",
+  "15",
+  "20",
+  "25",
+  "30",
+  "35",
+  "40",
+  "45",
+  "50",
+  "55",
+];
 
 export function AddAppointmentDropdown({
   open,
@@ -39,10 +62,28 @@ export function AddAppointmentDropdown({
   const [description, setDescription] = useState("");
   const [closerName, setCloserName] = useState("");
   const [sdrName, setSdrName] = useState("");
+
   const [startHour, setStartHour] = useState("09");
   const [startMinute, setStartMinute] = useState("00");
   const [endHour, setEndHour] = useState("10");
   const [endMinute, setEndMinute] = useState("00");
+
+  const panelRef = useRef<HTMLDivElement>(null);
+  const [panelPosition, setPanelPosition] = useState<{ left: number; top: number }>(
+    { left: 12, top: 120 }
+  );
+
+  const resetForm = useCallback(() => {
+    setTitle("");
+    setEmail("");
+    setDescription("");
+    setCloserName("");
+    setSdrName("");
+    setStartHour("09");
+    setStartMinute("00");
+    setEndHour("10");
+    setEndMinute("00");
+  }, []);
 
   useEffect(() => {
     if (selectedHour !== null) {
@@ -56,10 +97,75 @@ export function AddAppointmentDropdown({
   }, [selectedHour]);
 
   useEffect(() => {
-    if (!open) {
-      resetForm();
+    if (!open) resetForm();
+  }, [open, resetForm]);
+
+  const computePosition = useCallback(() => {
+    const x = anchorPosition?.x ?? window.innerWidth / 2;
+    const y = anchorPosition?.y ?? 120;
+
+    const rect = panelRef.current?.getBoundingClientRect();
+    const width = rect?.width ?? 560;
+    const height = rect?.height ?? 560;
+    const margin = 12;
+
+    let left = x - width / 2;
+    left = Math.max(margin, Math.min(left, window.innerWidth - width - margin));
+
+    // prefer below click; fallback to above
+    let top = y + 12;
+    if (top + height + margin > window.innerHeight) {
+      top = y - height - 12;
     }
-  }, [open]);
+    top = Math.max(margin, Math.min(top, window.innerHeight - height - margin));
+
+    setPanelPosition({ left, top });
+  }, [anchorPosition?.x, anchorPosition?.y]);
+
+  useLayoutEffect(() => {
+    if (!open) return;
+    // Wait next frame so we can measure the panel
+    requestAnimationFrame(() => computePosition());
+  }, [open, computePosition]);
+
+  useEffect(() => {
+    if (!open) return;
+
+    const onResize = () => computePosition();
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, [open, computePosition]);
+
+  useEffect(() => {
+    if (!open) return;
+
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onOpenChange(false);
+    };
+
+    const onPointerDown = (e: PointerEvent) => {
+      const target = e.target as HTMLElement | null;
+      if (!target) return;
+
+      // Keep open when interacting with Radix poppers/portals (Select, etc.).
+      const inRadixPortal = !!target.closest?.(
+        "[data-radix-popper-content-wrapper], [data-radix-portal]"
+      );
+      if (inRadixPortal) return;
+
+      if (panelRef.current && !panelRef.current.contains(target)) {
+        onOpenChange(false);
+      }
+    };
+
+    document.addEventListener("keydown", onKeyDown);
+    document.addEventListener("pointerdown", onPointerDown);
+
+    return () => {
+      document.removeEventListener("keydown", onKeyDown);
+      document.removeEventListener("pointerdown", onPointerDown);
+    };
+  }, [open, onOpenChange]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -95,47 +201,26 @@ export function AddAppointmentDropdown({
     resetForm();
   };
 
-  const resetForm = () => {
-    setTitle("");
-    setEmail("");
-    setDescription("");
-    setCloserName("");
-    setSdrName("");
-    setStartHour("09");
-    setStartMinute("00");
-    setEndHour("10");
-    setEndMinute("00");
-  };
-
-  const hours = Array.from({ length: 24 }, (_, i) =>
-    i.toString().padStart(2, "0")
-  );
-  const minutes = ["00", "05", "10", "15", "20", "25", "30", "35", "40", "45", "50", "55"];
-
   if (!open) return null;
 
   return (
-    <>
-      {/* Backdrop */}
+    // pointer-events-none: click passa pro calendário, mas o panel recebe pointer events
+    <div className="fixed inset-0 z-[100] pointer-events-none">
       <div
-        className="fixed inset-0 bg-black/30 backdrop-blur-sm z-[100]"
-        onClick={() => onOpenChange(false)}
-      />
-
-      {/* Dropdown */}
-      <div
-        className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[520px] max-h-[90vh] bg-background rounded-2xl border border-border shadow-2xl overflow-hidden z-[101]"
+        ref={panelRef}
+        role="dialog"
+        aria-label="Novo agendamento"
+        className="pointer-events-auto fixed w-[560px] max-w-[calc(100vw-24px)] max-h-[90vh] bg-popover text-popover-foreground rounded-2xl border border-border shadow-2xl overflow-hidden animate-in fade-in"
+        style={{ left: panelPosition.left, top: panelPosition.top }}
       >
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-5 border-b border-border bg-gradient-to-r from-emerald-600/10 to-transparent">
+        <div className="flex items-center justify-between px-6 py-5 border-b border-border bg-gradient-to-r from-primary/10 to-transparent">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-emerald-600 flex items-center justify-center">
-              <CalendarDays className="h-5 w-5 text-white" />
+            <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center">
+              <CalendarDays className="h-5 w-5 text-primary-foreground" />
             </div>
             <div>
-              <h3 className="text-lg font-semibold text-foreground">
-                Novo Agendamento
-              </h3>
+              <h3 className="text-lg font-semibold text-foreground">Novo Agendamento</h3>
               {selectedDate && (
                 <p className="text-sm text-muted-foreground capitalize">
                   {format(selectedDate, "EEEE, d 'de' MMMM", { locale: ptBR })}
@@ -144,16 +229,20 @@ export function AddAppointmentDropdown({
             </div>
           </div>
           <button
+            type="button"
             onClick={() => onOpenChange(false)}
             className="p-2 rounded-lg hover:bg-muted transition-colors"
+            aria-label="Fechar"
           >
             <X className="h-5 w-5 text-muted-foreground" />
           </button>
         </div>
 
         {/* Content */}
-        <form onSubmit={handleSubmit} className="p-6 space-y-6 overflow-y-auto max-h-[calc(90vh-140px)]">
-          {/* Title */}
+        <form
+          onSubmit={handleSubmit}
+          className="p-6 space-y-6 overflow-y-auto max-h-[calc(90vh-140px)]"
+        >
           <div className="space-y-2">
             <Label htmlFor="title" className="text-sm font-medium text-foreground">
               Nome do Agendamento *
@@ -168,15 +257,13 @@ export function AddAppointmentDropdown({
             />
           </div>
 
-          {/* Time Selection - Modern Card Style */}
           <div className="space-y-3">
             <Label className="text-sm font-medium text-foreground flex items-center gap-2">
-              <Clock className="h-4 w-4 text-emerald-600" />
+              <Clock className="h-4 w-4 text-primary" />
               Horário
             </Label>
-            
+
             <div className="grid grid-cols-2 gap-4">
-              {/* Start Time */}
               <div className="bg-muted/40 rounded-xl p-4 border border-border">
                 <span className="text-xs text-muted-foreground font-semibold uppercase tracking-wide">
                   Início
@@ -186,8 +273,8 @@ export function AddAppointmentDropdown({
                     <SelectTrigger className="flex-1 h-11 text-lg font-semibold bg-background">
                       <SelectValue />
                     </SelectTrigger>
-                    <SelectContent className="max-h-60 z-[102]">
-                      {hours.map((h) => (
+                    <SelectContent className="max-h-60 z-[110] bg-popover">
+                      {HOURS.map((h) => (
                         <SelectItem key={h} value={h} className="text-base">
                           {h}
                         </SelectItem>
@@ -199,8 +286,8 @@ export function AddAppointmentDropdown({
                     <SelectTrigger className="flex-1 h-11 text-lg font-semibold bg-background">
                       <SelectValue />
                     </SelectTrigger>
-                    <SelectContent className="max-h-60 z-[102]">
-                      {minutes.map((m) => (
+                    <SelectContent className="max-h-60 z-[110] bg-popover">
+                      {MINUTES.map((m) => (
                         <SelectItem key={m} value={m} className="text-base">
                           {m}
                         </SelectItem>
@@ -210,7 +297,6 @@ export function AddAppointmentDropdown({
                 </div>
               </div>
 
-              {/* End Time */}
               <div className="bg-muted/40 rounded-xl p-4 border border-border">
                 <span className="text-xs text-muted-foreground font-semibold uppercase tracking-wide">
                   Término
@@ -220,8 +306,8 @@ export function AddAppointmentDropdown({
                     <SelectTrigger className="flex-1 h-11 text-lg font-semibold bg-background">
                       <SelectValue />
                     </SelectTrigger>
-                    <SelectContent className="max-h-60 z-[102]">
-                      {hours.map((h) => (
+                    <SelectContent className="max-h-60 z-[110] bg-popover">
+                      {HOURS.map((h) => (
                         <SelectItem key={h} value={h} className="text-base">
                           {h}
                         </SelectItem>
@@ -233,8 +319,8 @@ export function AddAppointmentDropdown({
                     <SelectTrigger className="flex-1 h-11 text-lg font-semibold bg-background">
                       <SelectValue />
                     </SelectTrigger>
-                    <SelectContent className="max-h-60 z-[102]">
-                      {minutes.map((m) => (
+                    <SelectContent className="max-h-60 z-[110] bg-popover">
+                      {MINUTES.map((m) => (
                         <SelectItem key={m} value={m} className="text-base">
                           {m}
                         </SelectItem>
@@ -246,10 +332,12 @@ export function AddAppointmentDropdown({
             </div>
           </div>
 
-          {/* Email */}
           <div className="space-y-2">
-            <Label htmlFor="email" className="text-sm font-medium text-foreground flex items-center gap-2">
-              <Mail className="h-4 w-4 text-emerald-600" />
+            <Label
+              htmlFor="email"
+              className="text-sm font-medium text-foreground flex items-center gap-2"
+            >
+              <Mail className="h-4 w-4 text-primary" />
               Email
             </Label>
             <Input
@@ -262,10 +350,12 @@ export function AddAppointmentDropdown({
             />
           </div>
 
-          {/* Description */}
           <div className="space-y-2">
-            <Label htmlFor="description" className="text-sm font-medium text-foreground flex items-center gap-2">
-              <FileText className="h-4 w-4 text-emerald-600" />
+            <Label
+              htmlFor="description"
+              className="text-sm font-medium text-foreground flex items-center gap-2"
+            >
+              <FileText className="h-4 w-4 text-primary" />
               Descrição
             </Label>
             <Textarea
@@ -278,11 +368,13 @@ export function AddAppointmentDropdown({
             />
           </div>
 
-          {/* Responsible - Grid Layout */}
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="closer" className="text-sm font-medium text-foreground flex items-center gap-2">
-                <User className="h-4 w-4 text-emerald-600" />
+              <Label
+                htmlFor="closer"
+                className="text-sm font-medium text-foreground flex items-center gap-2"
+              >
+                <User className="h-4 w-4 text-primary" />
                 Closer Responsável
               </Label>
               <Input
@@ -294,8 +386,11 @@ export function AddAppointmentDropdown({
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="sdr" className="text-sm font-medium text-foreground flex items-center gap-2">
-                <Users className="h-4 w-4 text-emerald-600" />
+              <Label
+                htmlFor="sdr"
+                className="text-sm font-medium text-foreground flex items-center gap-2"
+              >
+                <Users className="h-4 w-4 text-primary" />
                 SDR Responsável
               </Label>
               <Input
@@ -308,7 +403,6 @@ export function AddAppointmentDropdown({
             </div>
           </div>
 
-          {/* Actions */}
           <div className="flex justify-end gap-3 pt-4 border-t border-border">
             <Button
               type="button"
@@ -318,16 +412,12 @@ export function AddAppointmentDropdown({
             >
               Cancelar
             </Button>
-            <Button
-              type="submit"
-              disabled={loading || !title.trim()}
-              className="h-11 px-6 bg-emerald-600 hover:bg-emerald-700 text-white font-medium"
-            >
+            <Button type="submit" disabled={loading || !title.trim()} className="h-11 px-6">
               {loading ? "Salvando..." : "Criar Agendamento"}
             </Button>
           </div>
         </form>
       </div>
-    </>
+    </div>
   );
 }
