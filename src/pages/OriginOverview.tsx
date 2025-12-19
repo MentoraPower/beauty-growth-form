@@ -53,6 +53,8 @@ interface Appointment {
   start_time: string;
   end_time: string;
   sdr_name: string | null;
+  is_paid: boolean | null;
+  payment_value: number | null;
 }
 
 const OriginOverview = () => {
@@ -136,7 +138,7 @@ const OriginOverview = () => {
         // Fetch appointments
         const appointmentsRes = await supabase
           .from("calendar_appointments")
-          .select("id, title, start_time, end_time, sdr_name")
+          .select("id, title, start_time, end_time, sdr_name, is_paid, payment_value")
           .order("start_time", { ascending: false });
 
         if (appointmentsRes.data) setAllAppointments(appointmentsRes.data);
@@ -325,7 +327,7 @@ const OriginOverview = () => {
         {agendaMode ? (
           <>
             {/* Agenda Mode - Simplified Stats */}
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
               <Card className="bg-white border border-black/5 shadow-none">
                 <CardContent className="pt-5 pb-4">
                   <p className="text-sm text-muted-foreground font-medium mb-2">Total Leads</p>
@@ -337,6 +339,28 @@ const OriginOverview = () => {
                 <CardContent className="pt-5 pb-4">
                   <p className="text-sm text-muted-foreground font-medium mb-2">Agendamentos</p>
                   <p className="text-3xl font-bold text-foreground">{appointments.length}</p>
+                </CardContent>
+              </Card>
+
+              <Card className="bg-white border border-black/5 shadow-none">
+                <CardContent className="pt-5 pb-4">
+                  <p className="text-sm text-muted-foreground font-medium mb-2">Total Vendas</p>
+                  <p className="text-3xl font-bold text-foreground">
+                    {appointments.filter(a => a.is_paid && a.payment_value && a.payment_value > 0).length}
+                  </p>
+                </CardContent>
+              </Card>
+
+              <Card className="bg-white border border-black/5 shadow-none">
+                <CardContent className="pt-5 pb-4">
+                  <p className="text-sm text-muted-foreground font-medium mb-2">Valor em Vendas</p>
+                  <p className="text-3xl font-bold text-emerald-600">
+                    {new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(
+                      appointments
+                        .filter(a => a.is_paid && a.payment_value)
+                        .reduce((sum, a) => sum + (a.payment_value || 0), 0)
+                    )}
+                  </p>
                 </CardContent>
               </Card>
             </div>

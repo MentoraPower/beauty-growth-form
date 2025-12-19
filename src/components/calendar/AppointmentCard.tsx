@@ -1,6 +1,16 @@
+import { useState } from "react";
 import { useDraggable } from "@dnd-kit/core";
 import { format, addMinutes } from "date-fns";
 import { cn } from "@/lib/utils";
+import { DollarSign } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import type { Appointment } from "@/pages/CalendarPage";
 
 const HOUR_HEIGHT = 60;
@@ -19,6 +29,12 @@ export function AppointmentCard({
   style,
   onClick,
 }: AppointmentCardProps) {
+  const [paymentOpen, setPaymentOpen] = useState(false);
+  const [paymentValue, setPaymentValue] = useState(
+    appointment.payment_value?.toString() || ""
+  );
+  const [saving, setSaving] = useState(false);
+
   const { attributes, listeners, setNodeRef, transform, isDragging } =
     useDraggable({
       id: appointment.id,
@@ -64,6 +80,83 @@ export function AppointmentCard({
     onClick?.(appointment, e);
   };
 
+  const handlePaymentClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+  };
+
+  const handleSavePayment = async () => {
+    setSaving(true);
+    const value = parseFloat(paymentValue.replace(",", ".")) || 0;
+    
+    await supabase
+      .from("calendar_appointments")
+      .update({ 
+        is_paid: value > 0, 
+        payment_value: value 
+      })
+      .eq("id", appointment.id);
+    
+    setSaving(false);
+    setPaymentOpen(false);
+  };
+
+  const formatCurrency = (value: number) => {
+    return new Intl.NumberFormat("pt-BR", {
+      style: "currency",
+      currency: "BRL",
+    }).format(value);
+  };
+
+  const PaymentBadge = () => (
+    <Popover open={paymentOpen} onOpenChange={setPaymentOpen}>
+      <PopoverTrigger asChild>
+        <button
+          onClick={handlePaymentClick}
+          className={cn(
+            "flex items-center gap-0.5 px-1 py-0.5 rounded text-[10px] font-medium transition-colors",
+            appointment.is_paid && appointment.payment_value && appointment.payment_value > 0
+              ? "bg-emerald-400/30 text-emerald-100"
+              : "bg-white/20 text-white/80 hover:bg-white/30"
+          )}
+        >
+          <DollarSign className="h-3 w-3" />
+          {appointment.is_paid && appointment.payment_value && appointment.payment_value > 0 ? (
+            <span>{formatCurrency(appointment.payment_value)}</span>
+          ) : (
+            <span>Pago</span>
+          )}
+        </button>
+      </PopoverTrigger>
+      <PopoverContent 
+        className="w-48 p-3 bg-card border border-border" 
+        onClick={handlePaymentClick}
+        align="start"
+      >
+        <div className="space-y-3">
+          <p className="text-sm font-medium text-foreground">Valor da venda</p>
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-muted-foreground">R$</span>
+            <Input
+              type="text"
+              placeholder="0,00"
+              value={paymentValue}
+              onChange={(e) => setPaymentValue(e.target.value)}
+              className="h-8"
+            />
+          </div>
+          <Button 
+            size="sm" 
+            className="w-full" 
+            onClick={handleSavePayment}
+            disabled={saving}
+          >
+            {saving ? "Salvando..." : "Salvar"}
+          </Button>
+        </div>
+      </PopoverContent>
+    </Popover>
+  );
+
   if (compact) {
     return (
       <div
@@ -73,12 +166,13 @@ export function AppointmentCard({
         style={dragStyle}
         onClick={handleClick}
         className={cn(
-          "text-xs px-1.5 py-0.5 rounded bg-emerald-700 text-white truncate",
+          "text-xs px-1.5 py-0.5 rounded bg-emerald-700 text-white truncate flex items-center justify-between gap-1",
           !isDragging && "hover:bg-emerald-600",
           isDragging && "shadow-xl opacity-90 z-50"
         )}
       >
-        {appointment.title}
+        <span className="truncate">{appointment.title}</span>
+        <PaymentBadge />
       </div>
     );
   }
@@ -96,7 +190,10 @@ export function AppointmentCard({
         isDragging && "shadow-xl opacity-90 z-50"
       )}
     >
-      <div className="font-medium truncate">{appointment.title}</div>
+      <div className="flex items-center justify-between gap-1">
+        <div className="font-medium truncate">{appointment.title}</div>
+        <PaymentBadge />
+      </div>
       <div className="opacity-80">{timeStr}</div>
     </div>
   );
