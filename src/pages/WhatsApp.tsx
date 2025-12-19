@@ -2305,7 +2305,7 @@ const WhatsApp = () => {
                       {showToolbar && (
                         <div 
                           ref={toolbarMenuRef}
-                          className="flex items-center gap-1 bg-card rounded-full px-2 py-1 shadow-lg border border-border animate-in slide-in-from-left-2 duration-200"
+                          className="flex items-center gap-1 bg-muted/60 backdrop-blur-sm rounded-full px-2 py-1 border border-border/30 animate-in slide-in-from-left-4 fade-in duration-300"
                         >
                           {/* Emoji */}
                           <div className="relative">
