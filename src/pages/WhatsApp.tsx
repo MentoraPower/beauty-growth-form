@@ -601,15 +601,34 @@ const WhatsApp = () => {
         .select()
         .single();
 
+      const newTimestamp = new Date().toISOString();
+      
       await supabase
         .from("whatsapp_chats")
         .update({
           last_message: messageText,
-          last_message_time: new Date().toISOString(),
+          last_message_time: newTimestamp,
           last_message_status: "SENT",
           last_message_from_me: true,
         })
         .eq("id", selectedChat.id);
+
+      // Immediately update local chat state to move to top
+      setChats(prev => {
+        const updatedChats = prev.map(c => 
+          c.id === selectedChat.id 
+            ? { ...c, lastMessage: messageText, lastMessageTime: newTimestamp, lastMessageStatus: "SENT", lastMessageFromMe: true }
+            : c
+        );
+        // Sort by last message time (most recent first)
+        updatedChats.sort((a, b) => {
+          const timeA = a.lastMessageTime ? new Date(a.lastMessageTime).getTime() : 0;
+          const timeB = b.lastMessageTime ? new Date(b.lastMessageTime).getTime() : 0;
+          return timeB - timeA;
+        });
+        chatsRef.current = updatedChats;
+        return updatedChats;
+      });
 
       // Replace temp message with real one (prevent realtime duplicate)
       if (insertedMsg) {
@@ -860,12 +879,31 @@ const WhatsApp = () => {
       }
 
       // Update chat last message
+      const newTimestamp = new Date().toISOString();
+      const lastMsgText = type === "image" ? "📷 Imagem" : type === "video" ? "🎥 Vídeo" : `📄 ${file.name}`;
+      
       await supabase.from("whatsapp_chats").update({
-        last_message: type === "image" ? "📷 Imagem" : type === "video" ? "🎥 Vídeo" : `📄 ${file.name}`,
-        last_message_time: new Date().toISOString(),
+        last_message: lastMsgText,
+        last_message_time: newTimestamp,
         last_message_status: "SENT",
         last_message_from_me: true,
       }).eq("id", selectedChat.id);
+
+      // Immediately update local chat state to move to top
+      setChats(prev => {
+        const updatedChats = prev.map(c => 
+          c.id === selectedChat.id 
+            ? { ...c, lastMessage: lastMsgText, lastMessageTime: newTimestamp, lastMessageStatus: "SENT", lastMessageFromMe: true }
+            : c
+        );
+        updatedChats.sort((a, b) => {
+          const timeA = a.lastMessageTime ? new Date(a.lastMessageTime).getTime() : 0;
+          const timeB = b.lastMessageTime ? new Date(b.lastMessageTime).getTime() : 0;
+          return timeB - timeA;
+        });
+        chatsRef.current = updatedChats;
+        return updatedChats;
+      });
 
       toast({ title: type === "image" ? "Imagem enviada" : type === "video" ? "Vídeo enviado" : "Arquivo enviado" });
 
@@ -1151,12 +1189,30 @@ const WhatsApp = () => {
       }
 
       // Update chat last message
+      const newTimestamp = new Date().toISOString();
+      
       await supabase.from("whatsapp_chats").update({
-        last_message: "Áudio",
-        last_message_time: new Date().toISOString(),
+        last_message: "🎵 Áudio",
+        last_message_time: newTimestamp,
         last_message_status: "SENT",
         last_message_from_me: true,
       }).eq("id", selectedChat.id);
+
+      // Immediately update local chat state to move to top
+      setChats(prev => {
+        const updatedChats = prev.map(c => 
+          c.id === selectedChat.id 
+            ? { ...c, lastMessage: "🎵 Áudio", lastMessageTime: newTimestamp, lastMessageStatus: "SENT", lastMessageFromMe: true }
+            : c
+        );
+        updatedChats.sort((a, b) => {
+          const timeA = a.lastMessageTime ? new Date(a.lastMessageTime).getTime() : 0;
+          const timeB = b.lastMessageTime ? new Date(b.lastMessageTime).getTime() : 0;
+          return timeB - timeA;
+        });
+        chatsRef.current = updatedChats;
+        return updatedChats;
+      });
 
       toast({ title: "Áudio enviado" });
 
