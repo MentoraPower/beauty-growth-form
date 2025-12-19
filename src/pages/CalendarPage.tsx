@@ -22,6 +22,8 @@ export interface Appointment {
   end_time: string;
   closer_name?: string;
   sdr_name?: string;
+  is_paid?: boolean;
+  payment_value?: number;
 }
 
 export interface PendingSlot {
