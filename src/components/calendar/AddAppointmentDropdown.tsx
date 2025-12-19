@@ -7,12 +7,11 @@ import {
 } from "react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { Clock, FileText, Mail, Trash2, User, Users } from "lucide-react";
+import { Clock, FileText, Mail, Trash2, User, Users, X } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
 import type { Appointment } from "@/pages/CalendarPage";
@@ -146,8 +145,8 @@ export function AddAppointmentDropdown({
     const y = anchorPosition?.y ?? window.innerHeight / 2;
 
     const rect = panelRef.current?.getBoundingClientRect();
-    const width = rect?.width ?? 340;
-    const height = rect?.height ?? 420;
+    const width = rect?.width ?? 380;
+    const height = rect?.height ?? 480;
     const margin = 12;
 
     // Prefer right side of click, fallback to left
@@ -281,50 +280,65 @@ export function AddAppointmentDropdown({
 
   if (!open) return null;
 
+  const formattedDate = selectedDate 
+    ? format(selectedDate, "EEEE, d 'de' MMMM", { locale: ptBR })
+    : "";
+
   return (
     <div className="fixed inset-0 z-[100] pointer-events-none">
       <div
         ref={panelRef}
         role="dialog"
         aria-label={isEditing ? "Editar agendamento" : "Novo agendamento"}
-        className="pointer-events-auto fixed w-[480px] max-w-[calc(100vw-24px)] max-h-[85vh] bg-popover text-popover-foreground rounded-2xl border border-border shadow-2xl overflow-hidden animate-in fade-in"
+        className="pointer-events-auto fixed w-[400px] max-w-[calc(100vw-24px)] bg-popover text-popover-foreground rounded-lg border border-border shadow-2xl overflow-hidden animate-in fade-in zoom-in-95"
         style={{ left: panelPosition.left, top: panelPosition.top }}
       >
+        {/* Header with close button */}
+        <div className="flex items-center justify-end p-2 border-b border-border/50">
+          {isEditing && (
+            <button
+              type="button"
+              onClick={handleDelete}
+              disabled={deleting}
+              className="p-2 rounded-full hover:bg-muted/80 text-muted-foreground transition-colors mr-1"
+              title="Excluir"
+            >
+              <Trash2 className="h-5 w-5" />
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={() => {
+              onCancel?.();
+              onOpenChange(false);
+            }}
+            className="p-2 rounded-full hover:bg-muted/80 text-muted-foreground transition-colors"
+          >
+            <X className="h-5 w-5" />
+          </button>
+        </div>
 
-        <form
-          onSubmit={handleSubmit}
-          className="p-4 space-y-4 overflow-y-auto max-h-[85vh]"
-        >
-          {/* Floating Label Input for Name */}
-          <div className="relative pt-4">
+        <form onSubmit={handleSubmit} className="p-5 space-y-5">
+          {/* Title with colored indicator */}
+          <div className="flex items-start gap-3">
+            <div className="w-4 h-4 rounded bg-primary mt-2 shrink-0" />
             <input
               id="title"
               type="text"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               required
-              className="peer w-full border-0 border-b-2 border-muted bg-transparent px-0 py-2 text-sm text-foreground placeholder-transparent focus:border-primary focus:outline-none transition-colors"
-              placeholder="Adicione nome"
+              className="flex-1 bg-transparent border-0 border-b-2 border-muted focus:border-primary px-0 py-2 text-lg font-medium text-foreground placeholder:text-muted-foreground focus:outline-none transition-colors"
+              placeholder="Adicionar título"
             />
-            <label
-              htmlFor="title"
-              className="absolute left-0 top-4 text-sm text-muted-foreground transition-all duration-200 peer-placeholder-shown:top-6 peer-placeholder-shown:text-base peer-focus:top-0 peer-focus:text-xs peer-focus:text-primary peer-[:not(:placeholder-shown)]:top-0 peer-[:not(:placeholder-shown)]:text-xs"
-            >
-              Adicione nome
-            </label>
           </div>
 
-          <div className="space-y-2">
-            <Label className="text-xs font-medium text-foreground flex items-center gap-1.5">
-              <Clock className="h-3.5 w-3.5 text-primary" />
-              Horário
-            </Label>
-
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1">
-                <span className="text-[10px] text-muted-foreground font-semibold uppercase">
-                  Início
-                </span>
+          {/* Date and Time */}
+          <div className="flex items-center gap-3">
+            <Clock className="h-5 w-5 text-muted-foreground shrink-0" />
+            <div className="flex-1">
+              <p className="text-sm font-medium text-foreground capitalize">{formattedDate}</p>
+              <div className="flex items-center gap-2 mt-1">
                 <Input
                   type="text"
                   inputMode="numeric"
@@ -332,13 +346,9 @@ export function AddAppointmentDropdown({
                   onChange={(e) => handleTimeChange(e.target.value, setStartTime, true)}
                   placeholder="00:00"
                   maxLength={5}
-                  className="h-9 text-sm font-medium text-center"
+                  className="h-8 w-20 text-sm text-center bg-muted/50 border-0"
                 />
-              </div>
-              <div className="space-y-1">
-                <span className="text-[10px] text-muted-foreground font-semibold uppercase">
-                  Término
-                </span>
+                <span className="text-muted-foreground">–</span>
                 <Input
                   type="text"
                   inputMode="numeric"
@@ -346,112 +356,71 @@ export function AddAppointmentDropdown({
                   onChange={(e) => handleTimeChange(e.target.value, setEndTime, false)}
                   placeholder="00:00"
                   maxLength={5}
-                  className="h-9 text-sm font-medium text-center"
+                  className="h-8 w-20 text-sm text-center bg-muted/50 border-0"
                 />
               </div>
             </div>
           </div>
 
-          <div className="space-y-1.5">
-            <Label
-              htmlFor="email"
-              className="text-xs font-medium text-foreground flex items-center gap-1.5"
-            >
-              <Mail className="h-3.5 w-3.5 text-primary" />
-              Email
-            </Label>
+          {/* Email */}
+          <div className="flex items-center gap-3">
+            <Mail className="h-5 w-5 text-muted-foreground shrink-0" />
             <Input
               id="email"
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="email@exemplo.com"
-              className="h-9 text-sm"
+              placeholder="Adicionar email"
+              className="flex-1 h-9 text-sm bg-transparent border-0 border-b border-muted focus:border-primary px-0"
             />
           </div>
 
-          <div className="space-y-1.5">
-            <Label
-              htmlFor="description"
-              className="text-xs font-medium text-foreground flex items-center gap-1.5"
-            >
-              <FileText className="h-3.5 w-3.5 text-primary" />
-              Descrição
-            </Label>
+          {/* Description */}
+          <div className="flex items-start gap-3">
+            <FileText className="h-5 w-5 text-muted-foreground shrink-0 mt-2" />
             <Textarea
               id="description"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              placeholder="Detalhes..."
+              placeholder="Adicionar descrição"
               rows={2}
-              className="resize-none text-sm"
+              className="flex-1 resize-none text-sm bg-transparent border-0 border-b border-muted focus:border-primary px-0"
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-2">
-            <div className="space-y-1.5">
-              <Label
-                htmlFor="closer"
-                className="text-xs font-medium text-foreground flex items-center gap-1.5"
-              >
-                <User className="h-3.5 w-3.5 text-primary" />
-                Closer
-              </Label>
-              <Input
-                id="closer"
-                value={closerName}
-                onChange={(e) => setCloserName(e.target.value)}
-                placeholder="Nome"
-                className="h-9 text-sm"
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label
-                htmlFor="sdr"
-                className="text-xs font-medium text-foreground flex items-center gap-1.5"
-              >
-                <Users className="h-3.5 w-3.5 text-primary" />
-                SDR
-              </Label>
-              <Input
-                id="sdr"
-                value={sdrName}
-                onChange={(e) => setSdrName(e.target.value)}
-                placeholder="Nome"
-                className="h-9 text-sm"
-              />
-            </div>
+          {/* Closer */}
+          <div className="flex items-center gap-3">
+            <User className="h-5 w-5 text-muted-foreground shrink-0" />
+            <Input
+              id="closer"
+              value={closerName}
+              onChange={(e) => setCloserName(e.target.value)}
+              placeholder="Closer"
+              className="flex-1 h-9 text-sm bg-transparent border-0 border-b border-muted focus:border-primary px-0"
+            />
           </div>
 
-          <div className="flex justify-between items-center gap-2 pt-3 border-t border-border">
-            {isEditing && (
-              <Button
-                type="button"
-                variant="destructive"
-                size="sm"
-                onClick={handleDelete}
-                disabled={deleting}
-              >
-                <Trash2 className="h-4 w-4 mr-1" />
-                {deleting ? "Excluindo..." : "Excluir"}
-              </Button>
-            )}
-            <div className={`flex gap-2 ${isEditing ? '' : 'ml-auto'}`}>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() => {
-                  onCancel?.();
-                  onOpenChange(false);
-                }}
-              >
-                Cancelar
-              </Button>
-              <Button type="submit" size="sm" disabled={loading || !title.trim()}>
-                {loading ? "Salvando..." : isEditing ? "Salvar" : "Criar"}
-              </Button>
-            </div>
+          {/* SDR */}
+          <div className="flex items-center gap-3">
+            <Users className="h-5 w-5 text-muted-foreground shrink-0" />
+            <Input
+              id="sdr"
+              value={sdrName}
+              onChange={(e) => setSdrName(e.target.value)}
+              placeholder="SDR"
+              className="flex-1 h-9 text-sm bg-transparent border-0 border-b border-muted focus:border-primary px-0"
+            />
+          </div>
+
+          {/* Submit button */}
+          <div className="flex justify-end pt-2">
+            <Button 
+              type="submit" 
+              disabled={loading || !title.trim()}
+              className="px-6"
+            >
+              {loading ? "Salvando..." : isEditing ? "Salvar" : "Salvar"}
+            </Button>
           </div>
         </form>
       </div>
