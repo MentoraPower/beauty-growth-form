@@ -534,7 +534,7 @@ export function WhatsAppChatDropdown({ phone, countryCode, contactName }: WhatsA
         });
 
         if (error) throw error;
-        toast({ title: "Áudio enviado!" });
+        // Audio sent successfully - no toast needed
         
         // Refresh messages
         if (chatData?.id) {
@@ -624,7 +624,7 @@ export function WhatsAppChatDropdown({ phone, countryCode, contactName }: WhatsA
       });
 
       if (error) throw error;
-      toast({ title: "Áudio enviado!" });
+      // Audio sent successfully - no toast needed
     } catch (error: any) {
       console.error("Error sending quick audio:", error);
       toast({ title: "Erro ao enviar áudio", description: error.message, variant: "destructive" });
