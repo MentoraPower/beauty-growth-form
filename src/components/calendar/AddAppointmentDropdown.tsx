@@ -52,37 +52,116 @@ export function AddAppointmentDropdown({
 
   const isEditing = !!editingAppointment;
 
-  // Format time input as user types (auto-add colon, limit to valid time)
-  const formatTimeInput = (value: string): string => {
-    // Remove non-digits
-    const digits = value.replace(/\D/g, "");
+  // Handle time input with natural typing flow
+  const handleTimeInputChange = (
+    e: React.ChangeEvent<HTMLInputElement>,
+    setter: React.Dispatch<React.SetStateAction<string>>,
+    isStart: boolean
+  ) => {
+    const input = e.target;
+    const rawValue = e.target.value;
+    const cursorPos = input.selectionStart || 0;
     
-    if (digits.length === 0) return "";
-    if (digits.length <= 2) {
-      const h = Math.min(parseInt(digits) || 0, 23);
-      return digits.length === 2 ? h.toString().padStart(2, "0") : digits;
+    // Allow only digits and colon
+    const cleaned = rawValue.replace(/[^\d:]/g, "");
+    
+    // Remove all colons to work with just digits
+    const digits = cleaned.replace(/:/g, "");
+    
+    if (digits.length === 0) {
+      setter("");
+      return;
     }
     
-    // Format as HH:MM
-    let hours = parseInt(digits.slice(0, 2)) || 0;
-    let minutes = parseInt(digits.slice(2, 4)) || 0;
+    let formatted = "";
+    let newCursorPos = cursorPos;
     
-    hours = Math.min(hours, 23);
-    minutes = Math.min(minutes, 59);
+    if (digits.length <= 2) {
+      // Just hours, no colon yet
+      formatted = digits;
+    } else {
+      // Hours and minutes
+      let hours = digits.slice(0, 2);
+      let minutes = digits.slice(2, 4);
+      
+      // Validate and clamp hours
+      const h = parseInt(hours, 10);
+      if (h > 23) hours = "23";
+      
+      // Validate and clamp minutes
+      if (minutes.length > 0) {
+        const m = parseInt(minutes, 10);
+        if (m > 59) minutes = "59";
+      }
+      
+      formatted = `${hours}:${minutes}`;
+      
+      // Adjust cursor position if we just added the colon
+      if (cursorPos === 3 && rawValue.charAt(2) !== ":") {
+        newCursorPos = 3;
+      }
+    }
     
-    return `${hours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}`;
+    setter(formatted);
+    
+    // Update pending slot only when we have a complete time
+    if (formatted.length === 5) {
+      if (onPendingSlotUpdate) {
+        if (isStart) {
+          onPendingSlotUpdate(formatted, endTime);
+        } else {
+          onPendingSlotUpdate(startTime, formatted);
+        }
+      }
+    }
+    
+    // Restore cursor position after React updates the value
+    requestAnimationFrame(() => {
+      input.setSelectionRange(newCursorPos, newCursorPos);
+    });
   };
 
-  const handleTimeChange = (
+  // Handle blur to auto-complete partial times
+  const handleTimeBlur = (
     value: string,
     setter: React.Dispatch<React.SetStateAction<string>>,
     isStart: boolean
   ) => {
-    const formatted = formatTimeInput(value);
+    if (!value) {
+      setter(isStart ? "09:00" : "10:00");
+      return;
+    }
+    
+    const digits = value.replace(/\D/g, "");
+    
+    if (digits.length === 0) {
+      setter(isStart ? "09:00" : "10:00");
+      return;
+    }
+    
+    let hours = "00";
+    let minutes = "00";
+    
+    if (digits.length === 1) {
+      hours = `0${digits}`;
+    } else if (digits.length === 2) {
+      hours = digits;
+    } else if (digits.length === 3) {
+      hours = digits.slice(0, 2);
+      minutes = `${digits.slice(2)}0`;
+    } else {
+      hours = digits.slice(0, 2);
+      minutes = digits.slice(2, 4);
+    }
+    
+    // Clamp values
+    const h = Math.min(parseInt(hours, 10) || 0, 23);
+    const m = Math.min(parseInt(minutes, 10) || 0, 59);
+    
+    const formatted = `${h.toString().padStart(2, "0")}:${m.toString().padStart(2, "0")}`;
     setter(formatted);
     
-    // Update pending slot in real-time
-    if (onPendingSlotUpdate && formatted.length === 5) {
+    if (onPendingSlotUpdate) {
       if (isStart) {
         onPendingSlotUpdate(formatted, endTime);
       } else {
@@ -347,7 +426,8 @@ export function AddAppointmentDropdown({
                   type="text"
                   inputMode="numeric"
                   value={startTime}
-                  onChange={(e) => handleTimeChange(e.target.value, setStartTime, true)}
+                  onChange={(e) => handleTimeInputChange(e, setStartTime, true)}
+                  onBlur={() => handleTimeBlur(startTime, setStartTime, true)}
                   placeholder="00:00"
                   maxLength={5}
                   className="h-8 w-20 text-sm text-center bg-muted/50 border-0"
@@ -357,7 +437,8 @@ export function AddAppointmentDropdown({
                   type="text"
                   inputMode="numeric"
                   value={endTime}
-                  onChange={(e) => handleTimeChange(e.target.value, setEndTime, false)}
+                  onChange={(e) => handleTimeInputChange(e, setEndTime, false)}
+                  onBlur={() => handleTimeBlur(endTime, setEndTime, false)}
                   placeholder="00:00"
                   maxLength={5}
                   className="h-8 w-20 text-sm text-center bg-muted/50 border-0"
