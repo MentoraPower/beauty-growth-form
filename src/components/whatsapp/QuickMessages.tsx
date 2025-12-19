@@ -256,7 +256,7 @@ export function QuickMessages({ onSelect, onSelectAudio }: QuickMessagesProps) {
   });
 
   return (
-    <div className="w-[420px] bg-card rounded-xl border border-border overflow-hidden">
+    <div className="w-[420px] bg-card rounded-xl border border-border overflow-hidden shadow-xl" style={{ backgroundColor: 'hsl(var(--card))' }}>
       {/* Header */}
       <div className="px-3 py-2 border-b border-border flex items-center justify-between bg-muted/30">
         <div className="flex items-center gap-2">
