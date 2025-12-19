@@ -251,13 +251,14 @@ async function handler(req: Request): Promise<Response> {
       // Add quoted message reference if replying
       // WasenderAPI uses "replyTo" parameter with integer msgId
       if (quotedMsgId) {
-        // Convert to integer if it's a number string, otherwise try to parse
-        const replyToId = parseInt(quotedMsgId, 10);
-        if (!isNaN(replyToId)) {
+        // Only use replyTo if the quotedMsgId is purely numeric
+        // WhatsApp key IDs like "3A8A65F005EA5EA71C37" should be skipped
+        if (/^\d+$/.test(quotedMsgId)) {
+          const replyToId = parseInt(quotedMsgId, 10);
           payload.replyTo = replyToId;
           console.log(`[Wasender] Adding replyTo: ${replyToId}`);
         } else {
-          console.log(`[Wasender] quotedMsgId "${quotedMsgId}" is not a valid integer, skipping reply`);
+          console.log(`[Wasender] quotedMsgId "${quotedMsgId}" is not purely numeric (likely WhatsApp key ID), skipping reply`);
         }
       }
       
