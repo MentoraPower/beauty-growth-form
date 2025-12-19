@@ -1945,86 +1945,84 @@ const WhatsApp = () => {
                   <div
                     key={chat.id}
                     className={cn(
-                      "flex items-center gap-3 px-3 py-3 cursor-pointer transition-colors border-b border-border/20 group relative",
+                      "flex items-center gap-3 px-3 py-3 cursor-pointer transition-colors border-b border-border/20",
                       selectedChat?.id === chat.id ? "bg-muted/40" : "hover:bg-muted/20"
                     )}
+                    onClick={() => { 
+                      setSelectedChat(chat); 
+                      setReplyToMessage(null); 
+                      setIsSending(false);
+                      setMessage("");
+                    }}
                   >
-                    <div 
-                      className="flex items-center gap-3 flex-1 min-w-0"
-                      onClick={() => { 
-                        setSelectedChat(chat); 
-                        setReplyToMessage(null); 
-                        setIsSending(false);
-                        setMessage("");
-                      }}
-                    >
-                      <div className="relative flex-shrink-0">
-                        <img 
-                          src={chat.photo_url || DEFAULT_AVATAR} 
-                          alt={chat.name} 
-                          className="w-12 h-12 rounded-full object-cover bg-neutral-200" 
-                        />
+                    <div className="relative flex-shrink-0">
+                      <img 
+                        src={chat.photo_url || DEFAULT_AVATAR} 
+                        alt={chat.name} 
+                        className="w-12 h-12 rounded-full object-cover bg-neutral-200" 
+                      />
+                    </div>
+                    <div className="flex-1 min-w-0 overflow-hidden">
+                      <div className="flex items-center gap-2">
+                        <span className="font-medium text-foreground truncate flex-1">{chat.name}</span>
                       </div>
-                      <div className="flex-1 min-w-0 overflow-hidden">
-                        <div className="flex items-center gap-2">
-                          <span className="font-medium text-foreground truncate flex-1 max-w-[140px]">{chat.name}</span>
-                          <span className={cn("text-xs flex-shrink-0 whitespace-nowrap", chat.unread > 0 ? "text-emerald-500" : "text-muted-foreground")}>
-                            {chat.time}
-                          </span>
-                        </div>
-                        <div className="flex items-center justify-between mt-0.5 gap-2">
-                          <div className="flex items-center gap-1 min-w-0 flex-1 overflow-hidden">
-                            {chat.lastMessageFromMe && (
-                              chat.lastMessageStatus === "READ" || chat.lastMessageStatus === "PLAYED" 
-                                ? <CheckCheck className="w-4 h-4 text-blue-500 flex-shrink-0" /> 
-                                : chat.lastMessageStatus === "DELIVERED"
-                                  ? <CheckCheck className="w-4 h-4 text-muted-foreground flex-shrink-0" />
-                                  : <Check className="w-4 h-4 text-muted-foreground flex-shrink-0" />
-                            )}
-                            <p className="text-sm text-muted-foreground truncate max-w-[160px]">
-                              {chat.lastMessage?.trim() ? stripWhatsAppFormatting(chat.lastMessage) : "Sem mensagens"}
-                            </p>
-                          </div>
-                          {chat.unread > 0 && (
-                            <span className="min-w-[20px] h-5 rounded-full bg-emerald-500 text-white text-xs font-medium flex items-center justify-center px-1.5 flex-shrink-0">
-                              {chat.unread}
-                            </span>
-                          )}
-                        </div>
+                      <div className="flex items-center gap-1 min-w-0 mt-0.5">
+                        {chat.lastMessageFromMe && (
+                          chat.lastMessageStatus === "READ" || chat.lastMessageStatus === "PLAYED" 
+                            ? <CheckCheck className="w-4 h-4 text-blue-500 flex-shrink-0" /> 
+                            : chat.lastMessageStatus === "DELIVERED"
+                              ? <CheckCheck className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                              : <Check className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                        )}
+                        <p className="text-sm text-muted-foreground truncate">
+                          {chat.lastMessage?.trim() ? stripWhatsAppFormatting(chat.lastMessage) : "Sem mensagens"}
+                        </p>
                       </div>
                     </div>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <button 
-                          className="p-1.5 rounded-full hover:bg-muted/60 flex-shrink-0"
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          <MoreVertical className="w-4 h-4 text-muted-foreground" />
-                        </button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" className="w-48">
-                        <DropdownMenuItem 
-                          className="text-destructive focus:text-destructive cursor-pointer"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleDeleteChatMessages(chat.id);
-                          }}
-                        >
-                          <Trash2 className="w-4 h-4 mr-2" />
-                          Apagar mensagens
-                        </DropdownMenuItem>
-                        <DropdownMenuItem 
-                          className="text-destructive focus:text-destructive cursor-pointer"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleDeleteChat(chat.id);
-                          }}
-                        >
-                          <Trash2 className="w-4 h-4 mr-2" />
-                          Apagar contato
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
+                    <div className="flex flex-col items-end gap-1 flex-shrink-0">
+                      <span className={cn("text-xs whitespace-nowrap", chat.unread > 0 ? "text-emerald-500" : "text-muted-foreground")}>
+                        {chat.time}
+                      </span>
+                      <div className="flex items-center gap-1">
+                        {chat.unread > 0 && (
+                          <span className="min-w-[20px] h-5 rounded-full bg-emerald-500 text-white text-xs font-medium flex items-center justify-center px-1.5">
+                            {chat.unread}
+                          </span>
+                        )}
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <button 
+                              className="p-1 rounded-full hover:bg-muted/60"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <MoreVertical className="w-4 h-4 text-muted-foreground" />
+                            </button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end" className="w-48">
+                            <DropdownMenuItem 
+                              className="text-destructive focus:text-destructive cursor-pointer"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDeleteChatMessages(chat.id);
+                              }}
+                            >
+                              <Trash2 className="w-4 h-4 mr-2" />
+                              Apagar mensagens
+                            </DropdownMenuItem>
+                            <DropdownMenuItem 
+                              className="text-destructive focus:text-destructive cursor-pointer"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDeleteChat(chat.id);
+                              }}
+                            >
+                              <Trash2 className="w-4 h-4 mr-2" />
+                              Apagar contato
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
+                    </div>
                   </div>
                 ))
               ) : (
