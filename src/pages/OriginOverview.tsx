@@ -8,6 +8,13 @@ import { useAuth } from "@/hooks/useAuth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Switch } from "@/components/ui/switch";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Button } from "@/components/ui/button";
 import { Users, TrendingUp, Calendar, Settings } from "lucide-react";
 import ModernAreaChart from "@/components/dashboard/ModernAreaChart";
 import ModernBarChart from "@/components/dashboard/ModernBarChart";
@@ -246,15 +253,29 @@ const OriginOverview = () => {
               Visão geral da origem
             </p>
           </div>
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2 px-3 py-2 rounded-lg border border-border bg-card">
-              <Settings className="h-4 w-4 text-muted-foreground" />
-              <span className="text-sm font-medium text-foreground">Agenda</span>
-              <Switch 
-                checked={agendaMode} 
-                onCheckedChange={setAgendaMode}
-              />
-            </div>
+          <div className="flex items-center gap-3">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="icon" className="h-10 w-10">
+                  <Settings className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56 bg-card border border-border">
+                <DropdownMenuItem 
+                  className="flex items-center justify-between cursor-pointer"
+                  onSelect={(e) => e.preventDefault()}
+                >
+                  <div className="flex items-center gap-2">
+                    <Calendar className="h-4 w-4" />
+                    <span>Modo Agenda</span>
+                  </div>
+                  <Switch 
+                    checked={agendaMode} 
+                    onCheckedChange={setAgendaMode}
+                  />
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
             <DateFilter onDateChange={setDateRange} />
           </div>
         </div>
