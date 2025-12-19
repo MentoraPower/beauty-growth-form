@@ -16,6 +16,7 @@ import OriginOverview from "./pages/OriginOverview";
 import AdminShell from "./pages/AdminShell";
 import Settings from "./pages/Settings";
 import OnboardingForm from "./pages/OnboardingForm";
+import CalendarPage from "./pages/CalendarPage";
 
 const queryClient = new QueryClient();
 
@@ -38,6 +39,7 @@ const App = () => (
             <Route path="crm/overview" element={<OriginOverview />} />
             <Route path="crm/:id" element={<LeadDetail />} />
             <Route path="whatsapp" element={<WhatsApp />} />
+            <Route path="agenda" element={<CalendarPage />} />
             <Route path="settings" element={<Settings />} />
           </Route>
 

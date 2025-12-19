@@ -14,6 +14,45 @@ export type Database = {
   }
   public: {
     Tables: {
+      calendar_appointments: {
+        Row: {
+          closer_name: string | null
+          created_at: string
+          description: string | null
+          email: string | null
+          end_time: string
+          id: string
+          sdr_name: string | null
+          start_time: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          closer_name?: string | null
+          created_at?: string
+          description?: string | null
+          email?: string | null
+          end_time: string
+          id?: string
+          sdr_name?: string | null
+          start_time: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          closer_name?: string | null
+          created_at?: string
+          description?: string | null
+          email?: string | null
+          end_time?: string
+          id?: string
+          sdr_name?: string | null
+          start_time?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       crm_origins: {
         Row: {
           created_at: string

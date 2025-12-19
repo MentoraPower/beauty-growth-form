@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect, memo, useRef } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { Menu, X, LogOut, LayoutGrid, Settings } from "lucide-react";
+import { Menu, X, LogOut, LayoutGrid, Settings, CalendarDays } from "lucide-react";
 import { cn } from "@/lib/utils";
 import WhatsAppIcon from "@/components/icons/WhatsApp";
 import scaleLogo from "@/assets/scale-logo-white.png";
@@ -13,7 +13,7 @@ interface DashboardLayoutProps {
   children: React.ReactNode;
 }
 
-type ActivePanel = 'none' | 'crm' | 'whatsapp' | 'settings';
+type ActivePanel = 'none' | 'crm' | 'whatsapp' | 'agenda' | 'settings';
 
 // Load panel state from localStorage
 const getInitialPanelState = (): ActivePanel => {
@@ -40,12 +40,16 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
 
   const isCRMActive = location.pathname.startsWith("/admin/crm") || location.pathname === "/admin";
   const isWhatsAppActive = location.pathname === "/admin/whatsapp";
+  const isAgendaActive = location.pathname === "/admin/agenda";
   const isSettingsActive = location.pathname === "/admin/settings";
 
   // Sync activePanel with current route
   useEffect(() => {
     if (isWhatsAppActive && activePanel !== 'whatsapp') {
       setActivePanel('whatsapp');
+      setCrmSubmenuOpen(false);
+    } else if (isAgendaActive && activePanel !== 'agenda') {
+      setActivePanel('agenda');
       setCrmSubmenuOpen(false);
     } else if (isSettingsActive && activePanel !== 'settings') {
       setActivePanel('settings');
@@ -54,7 +58,7 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
       setActivePanel('crm');
       setCrmSubmenuOpen(true);
     }
-  }, [location.pathname, isCRMActive, isWhatsAppActive, isSettingsActive]);
+  }, [location.pathname, isCRMActive, isWhatsAppActive, isAgendaActive, isSettingsActive]);
 
   // Fetch user permissions for WhatsApp access
   useEffect(() => {
@@ -95,6 +99,12 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
       icon: WhatsAppIcon, 
       label: "WhatsApp",
     }] : []),
+    { 
+      id: 'agenda' as ActivePanel, 
+      href: "/admin/agenda", 
+      icon: CalendarDays, 
+      label: "Agenda",
+    },
     { 
       id: 'settings' as ActivePanel, 
       href: "/admin/settings", 
@@ -139,6 +149,9 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
   useEffect(() => {
     if (activePanel === 'whatsapp' && location.pathname !== '/admin/whatsapp') {
       navigate('/admin/whatsapp');
+    }
+    if (activePanel === 'agenda' && location.pathname !== '/admin/agenda') {
+      navigate('/admin/agenda');
     }
     if (activePanel === 'settings' && location.pathname !== '/admin/settings') {
       navigate('/admin/settings');
@@ -341,7 +354,7 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
                 
                 {/* WhatsApp & Settings - Mobile */}
                 {bottomNavItems.map((item) => {
-                  const isActive = item.id === 'whatsapp' ? isWhatsAppActive : item.id === 'settings' ? isSettingsActive : false;
+                  const isActive = item.id === 'whatsapp' ? isWhatsAppActive : item.id === 'settings' ? isSettingsActive : item.id === 'agenda' ? isAgendaActive : false;
                   return (
                     <Link
                       key={item.href}
