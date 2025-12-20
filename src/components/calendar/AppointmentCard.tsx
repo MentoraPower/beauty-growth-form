@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useDraggable } from "@dnd-kit/core";
 import { format, addMinutes } from "date-fns";
 import { cn } from "@/lib/utils";
-import { DollarSign } from "lucide-react";
+import { DollarSign, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import {
   Popover,
@@ -154,6 +154,16 @@ export function AppointmentCard({
     );
   };
 
+  const NoshowBadge = () => {
+    if (!appointment.is_noshow) return null;
+    
+    return (
+      <span className="flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-medium bg-rose-500/30 text-rose-100">
+        <X className="h-3 w-3" />
+        <span>No Show</span>
+      </span>
+    );
+  };
 
   if (compact) {
     return (
@@ -170,7 +180,10 @@ export function AppointmentCard({
         )}
       >
         <span className="truncate">{appointment.title}</span>
-        {isPaid && <PaymentBadge />}
+        <div className="flex items-center gap-1">
+          <NoshowBadge />
+          <PaymentBadge />
+        </div>
       </div>
     );
   }
@@ -190,7 +203,10 @@ export function AppointmentCard({
     >
       <div className="flex items-center justify-between gap-1">
         <div className="font-medium truncate">{appointment.title}</div>
-        {isPaid && <PaymentBadge />}
+        <div className="flex items-center gap-1">
+          <NoshowBadge />
+          <PaymentBadge />
+        </div>
       </div>
       <div className="opacity-80">{timeStr}</div>
     </div>
