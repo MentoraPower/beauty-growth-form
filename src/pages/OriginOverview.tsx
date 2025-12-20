@@ -572,9 +572,50 @@ const OriginOverview = () => {
             {/* Meetings by Hour Chart */}
             <Card className="bg-white border border-black/5 shadow-none">
               <CardHeader className="pb-4">
-                <CardTitle className="text-base font-semibold text-foreground">
-                  Reuniões e Vendas por Horário
-                </CardTitle>
+                <div className="flex items-start justify-between gap-4">
+                  <CardTitle className="text-base font-semibold text-foreground">
+                    Reuniões e Vendas por Horário
+                  </CardTitle>
+                  {/* Top 3 Champion Hours */}
+                  {(() => {
+                    const hourlyData = Array.from({ length: 17 }, (_, i) => {
+                      const hour = i + 6;
+                      const salesInHour = appointments.filter(apt => {
+                        const aptHour = new Date(apt.start_time).getUTCHours();
+                        return aptHour === hour && apt.is_paid && apt.payment_value && apt.payment_value > 0;
+                      }).length;
+                      return { hour, salesInHour };
+                    });
+                    
+                    const topHours = hourlyData
+                      .filter(h => h.salesInHour > 0)
+                      .sort((a, b) => b.salesInHour - a.salesInHour)
+                      .slice(0, 3);
+                    
+                    if (topHours.length === 0) return null;
+                    
+                    return (
+                      <div className="flex items-center gap-2">
+                        {topHours.map((h, idx) => (
+                          <div 
+                            key={h.hour} 
+                            className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 border border-emerald-200"
+                          >
+                            <span className="text-xs font-bold text-emerald-700">
+                              {idx === 0 ? '🏆' : idx === 1 ? '🥈' : '🥉'}
+                            </span>
+                            <span className="text-xs font-semibold text-emerald-700">
+                              {h.hour.toString().padStart(2, '0')}h
+                            </span>
+                            <span className="text-xs text-emerald-600">
+                              ({h.salesInHour})
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    );
+                  })()}
+                </div>
               </CardHeader>
               <CardContent>
                 {(() => {
