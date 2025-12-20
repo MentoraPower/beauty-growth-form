@@ -71,7 +71,7 @@ interface Appointment {
 }
 
 const OriginOverview = () => {
-  const { isLoading: authLoading } = useAuth("/auth");
+  const { isLoading: authLoading, user } = useAuth("/auth");
   const [searchParams] = useSearchParams();
   const originId = searchParams.get('origin');
   
@@ -81,6 +81,8 @@ const OriginOverview = () => {
   const [allAppointments, setAllAppointments] = useState<Appointment[]>([]);
   const [loading, setLoading] = useState(true);
   const [agendaMode, setAgendaMode] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [savingAgendaMode, setSavingAgendaMode] = useState(false);
   
   const [dateRange, setDateRange] = useState<DateRange>({
     from: startOfDay(subDays(new Date(), 29)),
@@ -108,6 +110,21 @@ const OriginOverview = () => {
     });
   }, [allLeads, dateRange]);
 
+  // Check if user is admin
+  useEffect(() => {
+    const checkAdmin = async () => {
+      if (!user) return;
+      const { data } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", user.id)
+        .eq("role", "admin")
+        .maybeSingle();
+      setIsAdmin(!!data);
+    };
+    checkAdmin();
+  }, [user]);
+
   useEffect(() => {
     if (!originId) return;
     
@@ -122,6 +139,17 @@ const OriginOverview = () => {
           .single();
 
         if (originRes.data) setOrigin(originRes.data);
+
+        // Fetch origin settings (agenda mode)
+        const settingsRes = await supabase
+          .from("origin_settings")
+          .select("agenda_mode")
+          .eq("origin_id", originId)
+          .maybeSingle();
+
+        if (settingsRes.data) {
+          setAgendaMode(settingsRes.data.agenda_mode);
+        }
 
         // Fetch sub_origins for this origin only
         const subOriginsRes = await supabase
@@ -207,6 +235,34 @@ const OriginOverview = () => {
       supabase.removeChannel(channel);
     };
   }, [originId]);
+
+  // Handle agenda mode toggle and save to database
+  const handleAgendaModeChange = async (checked: boolean) => {
+    if (!originId || !isAdmin) return;
+    
+    setAgendaMode(checked);
+    setSavingAgendaMode(true);
+    
+    try {
+      // Upsert the setting
+      const { error } = await supabase
+        .from("origin_settings")
+        .upsert({
+          origin_id: originId,
+          agenda_mode: checked,
+        }, { onConflict: 'origin_id' });
+      
+      if (error) {
+        console.error("Error saving agenda mode:", error);
+        setAgendaMode(!checked); // Revert on error
+      }
+    } catch (error) {
+      console.error("Error saving agenda mode:", error);
+      setAgendaMode(!checked); // Revert on error
+    } finally {
+      setSavingAgendaMode(false);
+    }
+  };
 
   const getLeadsByDayOfWeek = (): DayData[] => {
     const days = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
@@ -311,28 +367,31 @@ const OriginOverview = () => {
             </p>
           </div>
           <div className="flex items-center gap-3">
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="icon" className="h-10 w-10">
-                  <Settings className="h-4 w-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-56 bg-card border border-border">
-                <DropdownMenuItem 
-                  className="flex items-center justify-between cursor-pointer"
-                  onSelect={(e) => e.preventDefault()}
-                >
-                  <div className="flex items-center gap-2">
-                    <Calendar className="h-4 w-4" />
-                    <span>Modo Agenda</span>
-                  </div>
-                  <Switch 
-                    checked={agendaMode} 
-                    onCheckedChange={setAgendaMode}
-                  />
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+            {isAdmin && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="icon" className="h-10 w-10">
+                    <Settings className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56 bg-card border border-border">
+                  <DropdownMenuItem 
+                    className="flex items-center justify-between cursor-pointer"
+                    onSelect={(e) => e.preventDefault()}
+                  >
+                    <div className="flex items-center gap-2">
+                      <Calendar className="h-4 w-4" />
+                      <span>Modo Agenda</span>
+                    </div>
+                    <Switch 
+                      checked={agendaMode} 
+                      onCheckedChange={handleAgendaModeChange}
+                      disabled={savingAgendaMode}
+                    />
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
             <DateFilter onDateChange={setDateRange} />
           </div>
         </div>

@@ -670,6 +670,30 @@ export type Database = {
           },
         ]
       }
+      origin_settings: {
+        Row: {
+          agenda_mode: boolean
+          created_at: string
+          id: string
+          origin_id: string
+          updated_at: string
+        }
+        Insert: {
+          agenda_mode?: boolean
+          created_at?: string
+          id?: string
+          origin_id: string
+          updated_at?: string
+        }
+        Update: {
+          agenda_mode?: boolean
+          created_at?: string
+          id?: string
+          origin_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       page_views: {
         Row: {
           created_at: string
