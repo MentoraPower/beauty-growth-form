@@ -61,7 +61,7 @@ export default function Atendimento() {
       </div>
 
       {/* Tab Content */}
-      <div className="flex-1 overflow-hidden">
+      <div className="flex-1 overflow-hidden p-6">
         {activeTab === 'whatsapp' ? (
           <WhatsApp />
         ) : (
