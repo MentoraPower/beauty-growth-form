@@ -4,7 +4,7 @@ import { Menu, X, LogOut, LayoutGrid, Settings, ChevronDown, User } from "lucide
 import { cn } from "@/lib/utils";
 import WhatsAppIcon from "@/components/icons/WhatsApp";
 import InstagramIcon from "@/components/icons/Instagram";
-import scaleLogo from "@/assets/scale-logo-white.png";
+import scaleLogo from "@/assets/scale-logo-menu.png";
 import { CRMOriginsPanel } from "./CRMOriginsPanel";
 import { PageTransition } from "./PageTransition";
 import { LoadingBar } from "@/components/LoadingBar";
@@ -225,7 +225,14 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
           <div className="flex flex-col h-full relative">
             {/* Logo + Connection Status */}
             <div className="h-14 flex items-center justify-between px-3">
-              <img src={scaleLogo} alt="Scale Beauty" className="w-7 h-auto opacity-50 ml-[6px]" />
+              <img 
+                src={scaleLogo} 
+                alt="Scale Beauty" 
+                className="h-5 w-auto ml-[6px] transition-all duration-300 ease-out origin-left"
+                style={{ 
+                  transform: sidebarExpanded ? 'scale(1.3)' : 'scale(1)',
+                }}
+              />
               <div className={cn(
                 "transition-all duration-200",
                 sidebarExpanded ? "opacity-100" : "opacity-0 w-0 overflow-hidden"
