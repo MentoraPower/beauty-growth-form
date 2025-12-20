@@ -7,6 +7,7 @@ import { countries, Country, getFlagUrl } from "@/data/countries";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
+import { trackLeadEvent } from "@/lib/leadTracking";
 import { cn } from "@/lib/utils";
 
 interface InlineAddContactProps {
@@ -81,7 +82,7 @@ export function InlineAddContact({ pipelineId, subOriginId }: InlineAddContactPr
 
     setIsSubmitting(true);
     try {
-      const { error } = await supabase.from("leads").insert({
+      const { data, error } = await supabase.from("leads").insert({
         name: name.trim(),
         whatsapp: phone.trim(),
         country_code: selectedCountry.dialCode,
@@ -95,9 +96,25 @@ export function InlineAddContact({ pipelineId, subOriginId }: InlineAddContactPr
         pipeline_id: pipelineId,
         sub_origin_id: subOriginId,
         ordem: 0,
-      });
+      }).select("id").single();
 
       if (error) throw error;
+
+      // Track lead creation
+      if (data?.id) {
+        await trackLeadEvent({
+          leadId: data.id,
+          tipo: "cadastro",
+          titulo: "Lead adicionado manualmente",
+          descricao: `Nome: ${name.trim()}`,
+          dados: {
+            name: name.trim(),
+            phone: phone.trim(),
+            email: email.trim() || "sem@email.com",
+            instagram: instagram.trim() || "@",
+          },
+        });
+      }
 
       toast.success("Contato adicionado!");
       resetForm();
