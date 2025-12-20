@@ -416,12 +416,12 @@ const OriginOverview = () => {
                                   width: `${(count / maxCount) * 100}%`,
                                   background: `repeating-linear-gradient(
                                     45deg,
-                                    #3a3a3a,
-                                    #3a3a3a 12px,
-                                    #a0a0a0 12px,
-                                    #a0a0a0 24px,
-                                    #3a3a3a 24px,
-                                    #3a3a3a 36px
+                                    rgba(0, 0, 0, 0.3),
+                                    rgba(0, 0, 0, 0.3) 12px,
+                                    rgba(0, 0, 0, 0.1) 12px,
+                                    rgba(0, 0, 0, 0.1) 24px,
+                                    rgba(0, 0, 0, 0.3) 24px,
+                                    rgba(0, 0, 0, 0.3) 36px
                                   )`
                                 }}
                               />
@@ -478,12 +478,12 @@ const OriginOverview = () => {
                                   width: `${(count / maxCount) * 100}%`,
                                   background: `repeating-linear-gradient(
                                     -45deg,
-                                    #3a3a3a,
-                                    #3a3a3a 12px,
-                                    #a0a0a0 12px,
-                                    #a0a0a0 24px,
-                                    #3a3a3a 24px,
-                                    #3a3a3a 36px
+                                    rgba(0, 0, 0, 0.3),
+                                    rgba(0, 0, 0, 0.3) 12px,
+                                    rgba(0, 0, 0, 0.1) 12px,
+                                    rgba(0, 0, 0, 0.1) 24px,
+                                    rgba(0, 0, 0, 0.3) 24px,
+                                    rgba(0, 0, 0, 0.3) 36px
                                   )`
                                 }}
                               />
