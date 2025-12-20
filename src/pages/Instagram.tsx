@@ -464,7 +464,7 @@ export default function InstagramPage() {
 
   // Connected - Main chat interface
   return (
-    <div className="h-[calc(100vh-1.5rem)] flex bg-card rounded-2xl overflow-hidden -m-6">
+    <div className="h-[calc(100vh-2rem)] flex rounded-2xl overflow-hidden border border-border/50 bg-card -mt-4 relative z-50">
       {/* Chat List Sidebar */}
       <div className="w-72 border-r border-border flex flex-col flex-shrink-0">
         <div className="h-14 pl-2 pr-4 flex items-center border-b border-border">
