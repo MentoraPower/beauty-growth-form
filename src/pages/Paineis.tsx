@@ -10,21 +10,24 @@ const painelOptions = [
     title: 'Marketing',
     description: 'Acompanhe métricas e campanhas de marketing',
     icon: TrendingUp,
-    color: 'from-blue-500 to-blue-600',
+    iconBg: 'bg-blue-500/20',
+    iconColor: 'text-blue-400',
   },
   {
     id: 'lancamento' as PainelType,
     title: 'Lançamento',
     description: 'Gerencie lançamentos e estratégias',
     icon: Rocket,
-    color: 'from-purple-500 to-purple-600',
+    iconBg: 'bg-purple-500/20',
+    iconColor: 'text-purple-400',
   },
   {
     id: 'perpetuo' as PainelType,
     title: 'Perpétuo',
     description: 'Monitore vendas e funis perpétuos',
     icon: RefreshCcw,
-    color: 'from-emerald-500 to-emerald-600',
+    iconBg: 'bg-emerald-500/20',
+    iconColor: 'text-emerald-400',
   },
 ];
 
@@ -38,25 +41,33 @@ export default function Paineis() {
 
   if (!activePainel) {
     return (
-      <div className="h-full flex flex-col items-center justify-center">
-        <div className="text-center mb-6">
-          <h1 className="text-lg font-semibold text-foreground">Painéis</h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            Selecione um painel para visualizar
+      <div className="h-full flex flex-col items-center justify-center px-4">
+        <div className="text-center mb-8">
+          <h1 className="text-xl font-semibold text-foreground mb-2">Escolha um modelo de painel</h1>
+          <p className="text-sm text-muted-foreground">
+            Comece com um modelo de painel para atender às suas necessidades
           </p>
         </div>
 
-        <div className="flex flex-wrap justify-center gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 max-w-3xl w-full">
           {painelOptions.map((painel) => (
             <button
               key={painel.id}
               onClick={() => handlePainelSelect(painel.id)}
-              className="group flex items-center gap-2 bg-card border border-border rounded-lg px-4 py-2.5 text-left transition-all duration-200 hover:border-white/20 hover:bg-white/5"
+              className="group bg-[#1a1a1f] border border-white/5 rounded-xl p-5 text-left transition-all duration-200 hover:border-white/15 hover:bg-[#1f1f24]"
             >
-              <painel.icon className="h-4 w-4 text-muted-foreground" />
-              <span className="text-sm font-medium text-foreground">
+              <div className={cn(
+                "w-11 h-11 rounded-lg flex items-center justify-center mb-4",
+                painel.iconBg
+              )}>
+                <painel.icon className={cn("h-5 w-5", painel.iconColor)} />
+              </div>
+              <h3 className="text-sm font-medium text-foreground mb-1">
                 {painel.title}
-              </span>
+              </h3>
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                {painel.description}
+              </p>
             </button>
           ))}
         </div>
@@ -83,10 +94,10 @@ export default function Paineis() {
       <div className="flex-1 flex items-center justify-center">
         <div className="text-center">
           <div className={cn(
-            "w-16 h-16 rounded-xl bg-gradient-to-br flex items-center justify-center mx-auto mb-4",
-            selectedPainel?.color
+            "w-14 h-14 rounded-xl flex items-center justify-center mx-auto mb-4",
+            selectedPainel?.iconBg
           )}>
-            {selectedPainel && <selectedPainel.icon className="h-8 w-8 text-white" />}
+            {selectedPainel && <selectedPainel.icon className={cn("h-7 w-7", selectedPainel.iconColor)} />}
           </div>
           <p className="text-muted-foreground">
             Painel de {selectedPainel?.title} em desenvolvimento
