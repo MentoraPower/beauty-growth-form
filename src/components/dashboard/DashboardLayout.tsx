@@ -1,9 +1,7 @@
 import { useState, useCallback, useEffect, memo, useRef } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { Menu, X, LogOut, LayoutGrid, Settings, ChevronDown, User } from "lucide-react";
+import { Menu, X, LogOut, LayoutGrid, Settings, ChevronDown, User, Headphones } from "lucide-react";
 import { cn } from "@/lib/utils";
-import WhatsAppIcon from "@/components/icons/WhatsApp";
-import InstagramIcon from "@/components/icons/Instagram";
 import scaleLogo from "@/assets/scale-logo-menu.png";
 import { CRMOriginsPanel } from "./CRMOriginsPanel";
 import { PageTransition } from "./PageTransition";
@@ -15,14 +13,14 @@ interface DashboardLayoutProps {
   children: React.ReactNode;
 }
 
-type ActivePanel = 'none' | 'crm' | 'whatsapp' | 'instagram' | 'settings';
+type ActivePanel = 'none' | 'crm' | 'atendimento' | 'settings';
 
 // Load panel state from localStorage
 const getInitialPanelState = (): ActivePanel => {
   if (typeof window !== 'undefined') {
     const saved = localStorage.getItem('active_panel');
-    if (saved === 'crm' || saved === 'whatsapp') {
-      return saved;
+    if (saved === 'crm' || saved === 'atendimento') {
+      return saved as ActivePanel;
     }
   }
   return 'crm'; // Default to CRM
@@ -44,17 +42,13 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
   const sidebarRef = useRef<HTMLElement>(null);
 
   const isCRMActive = location.pathname.startsWith("/admin/crm") || location.pathname === "/admin";
-  const isWhatsAppActive = location.pathname === "/admin/whatsapp";
-  const isInstagramActive = location.pathname === "/admin/instagram";
+  const isAtendimentoActive = location.pathname.startsWith("/admin/atendimento");
   const isSettingsActive = location.pathname === "/admin/settings";
 
   // Sync activePanel with current route
   useEffect(() => {
-    if (isWhatsAppActive && activePanel !== 'whatsapp') {
-      setActivePanel('whatsapp');
-      setCrmSubmenuOpen(false);
-    } else if (isInstagramActive && activePanel !== 'instagram') {
-      setActivePanel('instagram');
+    if (isAtendimentoActive && activePanel !== 'atendimento') {
+      setActivePanel('atendimento');
       setCrmSubmenuOpen(false);
     } else if (isSettingsActive && activePanel !== 'settings') {
       setActivePanel('settings');
@@ -63,7 +57,7 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
       setActivePanel('crm');
       setCrmSubmenuOpen(true);
     }
-  }, [location.pathname, isCRMActive, isWhatsAppActive, isSettingsActive]);
+  }, [location.pathname, isCRMActive, isAtendimentoActive, isSettingsActive]);
 
   // Fetch user permissions for WhatsApp access and user info
   useEffect(() => {
@@ -108,19 +102,13 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
     fetchPermissions();
   }, []);
 
-  // Build nav items based on permissions (removed settings from here)
-  const bottomNavItems = [
+  // Build nav items based on permissions
+  const navItems = [
     ...(canAccessWhatsapp ? [{ 
-      id: 'whatsapp' as ActivePanel, 
-      href: "/admin/whatsapp", 
-      icon: WhatsAppIcon, 
-      label: "WhatsApp",
-    }] : []),
-    ...(canAccessWhatsapp ? [{ 
-      id: 'instagram' as ActivePanel, 
-      href: "/admin/instagram", 
-      icon: InstagramIcon, 
-      label: "Instagram",
+      id: 'atendimento' as ActivePanel, 
+      href: "/admin/atendimento", 
+      icon: Headphones, 
+      label: "Atendimento",
     }] : []),
   ];
 
@@ -158,11 +146,8 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
 
   // Navigate when panel changes
   useEffect(() => {
-    if (activePanel === 'whatsapp' && location.pathname !== '/admin/whatsapp') {
-      navigate('/admin/whatsapp');
-    }
-    if (activePanel === 'instagram' && location.pathname !== '/admin/instagram') {
-      navigate('/admin/instagram');
+    if (activePanel === 'atendimento' && !location.pathname.startsWith('/admin/atendimento')) {
+      navigate('/admin/atendimento');
     }
     if (activePanel === 'settings' && location.pathname !== '/admin/settings') {
       navigate('/admin/settings');
@@ -261,8 +246,8 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
                   </span>
                 </button>
                 
-                {/* WhatsApp */}
-                {bottomNavItems.map((item) => {
+                {/* Atendimento */}
+                {navItems.map((item) => {
                   const isSelected = activePanel === item.id;
                   return (
                     <button
@@ -436,9 +421,9 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
                   </span>
                 </button>
                 
-                {/* WhatsApp - Mobile */}
-                {bottomNavItems.map((item) => {
-                  const isActive = item.id === 'whatsapp' ? isWhatsAppActive : false;
+                {/* Atendimento - Mobile */}
+                {navItems.map((item) => {
+                  const isActive = activePanel === item.id;
                   return (
                     <Link
                       key={item.href}
