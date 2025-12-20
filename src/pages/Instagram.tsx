@@ -291,7 +291,6 @@ export default function InstagramPage() {
 
           // Instagram API doesn't provide delivery/read receipts.
           // Heuristic:
-          // - Local unsynced messages show SENT (handled in handleSendMessage)
           // - Once the message is present in the API list, show DELIVERED
           // - If the other person sends any message AFTER it, consider it READ
           let status = 'RECEIVED';
@@ -313,7 +312,25 @@ export default function InstagramPage() {
           };
         });
 
-        setMessages(formattedMessages);
+        // Merge with any pending temp messages that haven't synced yet
+        setMessages(prev => {
+          // Get temp messages that are still pending/sent (not yet in API)
+          const tempMessages = prev.filter(m => m.id.startsWith('temp-'));
+          
+          // Check if temp messages are now in the API response (by matching text and approximate time)
+          const remainingTempMessages = tempMessages.filter(tempMsg => {
+            // Check if this temp message exists in the API response
+            const matchFound = formattedMessages.some(apiMsg => 
+              apiMsg.fromMe && 
+              apiMsg.text === tempMsg.text &&
+              Math.abs(new Date(apiMsg.time).getTime() - new Date(tempMsg.time).getTime()) < 60000 // within 1 minute
+            );
+            return !matchFound; // Keep temp message if NOT found in API
+          });
+
+          // Return API messages + any remaining temp messages
+          return [...formattedMessages, ...remainingTempMessages];
+        });
       }
     } catch (error: any) {
       console.error('Error fetching messages:', error);
