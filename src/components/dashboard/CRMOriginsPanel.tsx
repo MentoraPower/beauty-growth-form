@@ -216,12 +216,12 @@ function AddSubOriginDropdown({
                   {selectedTipo === 'tarefas' ? 'Nova Tarefa' : 'Novo Calendário'}
                 </span>
               </div>
-              <Input
+              <input
                 ref={inputRef}
                 value={inputValue}
                 onChange={(e) => setInputValue(e.target.value)}
                 placeholder="Nome da sub-origem"
-                className="h-8 text-[13px]"
+                className="w-full bg-transparent border-0 border-b-2 border-foreground/20 focus:border-foreground/60 outline-none py-2 text-[13px] text-foreground placeholder:text-foreground/30 transition-colors"
                 onKeyDown={(e) => e.key === 'Enter' && handleCreate()}
               />
               <Button 
