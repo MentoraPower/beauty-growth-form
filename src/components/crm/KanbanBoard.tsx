@@ -377,8 +377,8 @@ export function KanbanBoard() {
     enabled: leads.length > 0,
   });
 
-  // Consider loading if queries haven't resolved yet OR if subOriginId just changed
-  const isLoading = isLoadingPipelines || isLoadingLeads || isLoadingSubOrigin || (subOriginId && !currentSubOrigin && pipelines.length === 0);
+  // Consider loading only while queries are still in progress
+  const isLoading = isLoadingPipelines || isLoadingLeads || isLoadingSubOrigin;
 
   // Track previous values to prevent unnecessary updates
   const prevDataUpdatedAtRef = useRef(dataUpdatedAt);
@@ -957,6 +957,18 @@ export function KanbanBoard() {
     });
     return map;
   }, [displayLeads, pipelines]);
+
+  // Check if sub-origin doesn't exist (after loading completes)
+  if (subOriginId && !isLoadingSubOrigin && !currentSubOrigin) {
+    return (
+      <div className="flex flex-col items-center justify-center h-[calc(100vh-2rem)] gap-4">
+        <p className="text-muted-foreground">Sub-origem não encontrada</p>
+        <Button variant="outline" onClick={() => window.history.back()}>
+          Voltar
+        </Button>
+      </div>
+    );
+  }
 
   // Build title based on current sub-origin
   const pageTitle = currentSubOrigin 
