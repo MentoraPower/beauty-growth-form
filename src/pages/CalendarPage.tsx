@@ -27,6 +27,7 @@ export interface Appointment {
   payment_value?: number;
   is_noshow?: boolean;
   sub_origin_id?: string;
+  is_locked?: boolean;
 }
 
 export interface PendingSlot {
@@ -151,6 +152,11 @@ export default function CalendarPage() {
 
   const handleAppointmentClick = (appointment: Appointment, event: React.MouseEvent) => {
     event.stopPropagation();
+    
+    // Prevent editing locked appointments
+    if (appointment.is_locked) {
+      return;
+    }
     
     // Prevent reopening immediately after closing
     if (justClosedRef.current) {
