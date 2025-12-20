@@ -8,6 +8,7 @@ import scaleLogo from "@/assets/scale-logo-white.png";
 import { CRMOriginsPanel } from "./CRMOriginsPanel";
 import { PageTransition } from "./PageTransition";
 import { LoadingBar } from "@/components/LoadingBar";
+import { ConnectionStatus } from "@/components/realtime/ConnectionStatus";
 import { supabase } from "@/integrations/supabase/client";
 
 interface DashboardLayoutProps {
@@ -222,9 +223,15 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
           className="hidden lg:flex flex-col fixed bg-[#0f0f12] overflow-hidden z-40 rounded-2xl"
         >
           <div className="flex flex-col h-full relative">
-            {/* Logo - Fixed at top left corner */}
-            <div className="h-14 flex items-center pl-[18px]">
-              <img src={scaleLogo} alt="Scale Beauty" className="w-7 h-auto opacity-50" />
+            {/* Logo + Connection Status */}
+            <div className="h-14 flex items-center justify-between px-3">
+              <img src={scaleLogo} alt="Scale Beauty" className="w-7 h-auto opacity-50 ml-[6px]" />
+              <div className={cn(
+                "transition-all duration-200",
+                sidebarExpanded ? "opacity-100" : "opacity-0 w-0 overflow-hidden"
+              )}>
+                <ConnectionStatus />
+              </div>
             </div>
 
             <nav className="flex-1 overflow-y-auto overflow-x-hidden px-3 py-2">
