@@ -177,8 +177,15 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
   // Current sidebar width based on expanded state
   const currentSidebarWidth = sidebarExpanded ? sidebarExpandedWidth : sidebarCollapsedWidth;
 
-  // Main content margin - fixed position, doesn't change with menu state
-  const mainContentMargin = sidebarCollapsedWidth + 12;
+  // Main content margin - sidebar is overlay, but CRM origins panel pushes content
+  const getMainContentMargin = () => {
+    if (crmSubmenuOpen) {
+      return sidebarCollapsedWidth + 4 + submenuWidth + 12;
+    }
+    return sidebarCollapsedWidth + 12;
+  };
+
+  const mainContentMargin = getMainContentMargin();
 
   return (
     <div className="min-h-screen bg-card p-3">
@@ -375,23 +382,23 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
           </div>
         </aside>
 
-        {/* CRM Submenu Panel - overlay mode, appears on top of content */}
+        {/* CRM Submenu Panel - pushes content, not overlay */}
         <div
           style={{ 
-            left: currentSidebarWidth + 16,
+            left: sidebarCollapsedWidth + 16,
             width: crmSubmenuOpen ? submenuWidth : 0,
             opacity: crmSubmenuOpen ? 1 : 0,
-            zIndex: 49,
+            zIndex: 39,
             pointerEvents: crmSubmenuOpen ? 'auto' : 'none',
-            transition: "width 400ms cubic-bezier(0.4,0,0.2,1), opacity 200ms ease-out, left 300ms cubic-bezier(0.4,0,0.2,1)",
+            transition: "width 400ms cubic-bezier(0.4,0,0.2,1), opacity 200ms ease-out",
           }}
-          className="hidden lg:block fixed top-[12px] h-[calc(100vh-1.5rem)] rounded-2xl bg-[#ebebed] overflow-hidden shadow-xl"
+          className="hidden lg:block fixed top-[12px] h-[calc(100vh-1.5rem)] rounded-2xl bg-[#ebebed] overflow-hidden"
         >
           <div className="h-full pl-4 pr-2" style={{ width: submenuWidth, minWidth: submenuWidth }}>
             <CRMOriginsPanel 
               isOpen={true} 
               onClose={() => {}}
-              sidebarWidth={currentSidebarWidth}
+              sidebarWidth={sidebarCollapsedWidth}
               embedded={true}
             />
           </div>
@@ -506,13 +513,14 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
           />
         )}
 
-        {/* Main Content - Fixed position, menu opens as overlay */}
+        {/* Main Content - CRM origins panel pushes content */}
         <main 
           style={{ 
             left: `${mainContentMargin}px`,
             top: 12,
             right: 12,
             bottom: 12,
+            transition: 'left 300ms cubic-bezier(0.4,0,0.2,1)'
           }}
           className="hidden lg:block fixed"
         >
