@@ -1,4 +1,3 @@
-import { useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import WhatsAppIcon from "@/components/icons/WhatsApp";
@@ -11,20 +10,10 @@ type TabType = 'whatsapp' | 'instagram';
 export default function Atendimento() {
   const [searchParams, setSearchParams] = useSearchParams();
   const tabParam = searchParams.get('tab');
-  const [activeTab, setActiveTab] = useState<TabType>(
-    tabParam === 'instagram' ? 'instagram' : 'whatsapp'
-  );
-
-  // Sync URL with tab changes
-  useEffect(() => {
-    const currentTab = searchParams.get('tab');
-    if (currentTab !== activeTab) {
-      setSearchParams({ tab: activeTab }, { replace: true });
-    }
-  }, [activeTab, searchParams, setSearchParams]);
+  const activeTab: TabType = tabParam === 'instagram' ? 'instagram' : 'whatsapp';
 
   const handleTabChange = (tab: TabType) => {
-    setActiveTab(tab);
+    setSearchParams({ tab }, { replace: true });
   };
 
   return (
