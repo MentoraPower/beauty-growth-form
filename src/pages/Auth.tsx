@@ -5,8 +5,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { Eye, EyeOff, Lock } from "lucide-react";
+import { Eye, EyeOff } from "lucide-react";
 import { z } from "zod";
+import DotShaderBackground from "@/components/DotShaderBackground";
 const loginSchema = z.object({
   email: z.string().email("Email inválido").max(255, "Email muito longo"),
   password: z.string().min(6, "Senha deve ter no mínimo 6 caracteres").max(128, "Senha muito longa")
@@ -89,11 +90,17 @@ const Auth = () => {
       </div>;
   }
   return (
-    <div className="min-h-screen bg-neutral-950 flex items-center justify-center px-4">
-      <div className="w-full max-w-md">
+    <div className="min-h-screen relative flex items-center justify-center px-4 overflow-hidden">
+      <DotShaderBackground 
+        bgColor="#0a0a0a" 
+        dotColor="#FFFFFF" 
+        gridSize={80} 
+        dotOpacity={0.1}
+      />
+      <div className="w-full max-w-md relative z-10">
         {/* Modern Glass Card Container */}
         <div className="relative">
-          <div className="relative bg-neutral-900/80 backdrop-blur-xl border border-white/10 rounded-2xl p-8">
+          <div className="relative bg-neutral-900/60 backdrop-blur-2xl border border-white/10 rounded-2xl p-8 shadow-2xl">
             {/* Header */}
             <div className="text-center mb-8">
               <h1 className="text-2xl font-semibold text-white tracking-tight">Acesse sua conta para continuar</h1>
