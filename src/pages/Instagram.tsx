@@ -541,9 +541,6 @@ export default function InstagramPage() {
                         </span>
                         <span className="text-[10px] text-muted-foreground flex-shrink-0">{formatTime(chat.lastMessageTime)}</span>
                       </div>
-                      {chat.username && (
-                        <p className="text-[11px] text-muted-foreground truncate max-w-[200px] leading-tight">@{chat.username}</p>
-                      )}
                       <p className="text-xs text-muted-foreground truncate max-w-[200px] leading-tight">{chat.lastMessage}</p>
                     </div>
                   </button>
