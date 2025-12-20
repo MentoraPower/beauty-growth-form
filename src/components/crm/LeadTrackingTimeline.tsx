@@ -199,55 +199,11 @@ export function LeadTrackingTimeline({ leadId, utmData, leadEmail, leadWhatsapp 
   if (utmData.utm_term) utmItems.push({ label: 'utm_term', value: utmData.utm_term });
   if (utmData.utm_content) utmItems.push({ label: 'utm_content', value: utmData.utm_content });
 
+  // Check if there's content below the "other origins" item
+  const hasContentBelow = hasUTMData || events.length > 0;
+
   return (
     <div className="space-y-6">
-      {/* Other Origins Card */}
-      {otherOriginLeads.length > 0 && (
-        <Card className="border-amber-200 bg-amber-50/50 shadow-sm">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-2 mb-3">
-              <div className="h-8 w-8 rounded-lg bg-amber-500 flex items-center justify-center">
-                <Users className="h-4 w-4 text-white" />
-              </div>
-              <div>
-                <p className="text-sm font-semibold text-amber-900">Lead existe em outras origens</p>
-                <p className="text-xs text-amber-700">
-                  Encontrado em {otherOriginLeads.length} {otherOriginLeads.length === 1 ? 'outra origem' : 'outras origens'}
-                </p>
-              </div>
-            </div>
-            
-            <div className="space-y-2">
-              {otherOriginLeads.map((otherLead) => (
-                <button
-                  key={otherLead.id}
-                  onClick={() => navigate(`/admin/crm/${otherLead.id}?origin=${otherLead.sub_origin_id}&tab=rastreamento`)}
-                  className="w-full flex items-center justify-between p-2 rounded-lg bg-white border border-amber-200 hover:bg-amber-100 transition-colors text-left"
-                >
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs font-medium text-amber-900 truncate">
-                        {otherLead.origin_name}
-                      </span>
-                      <ArrowRight className="h-3 w-3 text-amber-500 flex-shrink-0" />
-                      <span className="text-xs font-medium text-amber-900 truncate">
-                        {otherLead.sub_origin_name}
-                      </span>
-                    </div>
-                    {otherLead.pipeline_name && (
-                      <Badge variant="outline" className="mt-1 text-[10px] h-5 bg-amber-100 border-amber-300 text-amber-800">
-                        {otherLead.pipeline_name}
-                      </Badge>
-                    )}
-                  </div>
-                  <ArrowRight className="h-4 w-4 text-amber-600 flex-shrink-0 ml-2" />
-                </button>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
       <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
         Histórico de Rastreamento
       </h3>
@@ -265,7 +221,65 @@ export function LeadTrackingTimeline({ leadId, utmData, leadEmail, leadWhatsapp 
         </div>
       ) : (
         <div className="relative">
-          {/* UTM Parameters Card - First in Timeline */}
+          {/* Other Origins - First in Timeline */}
+          {otherOriginLeads.length > 0 && (
+            <div className="relative flex">
+              {/* Left side - Icon and vertical line */}
+              <div className="flex flex-col items-center mr-4">
+                {/* Icon */}
+                <div className="h-10 w-10 rounded-lg flex items-center justify-center flex-shrink-0 bg-amber-500 text-white shadow-md z-10">
+                  <Users className="h-5 w-5" />
+                </div>
+                
+                {/* Vertical line */}
+                {hasContentBelow && (
+                  <div className="w-0.5 flex-1 bg-gray-200 my-2" />
+                )}
+              </div>
+              
+              {/* Right side - Card content */}
+              <div className="flex-1 pb-6">
+                <Card className="border-amber-200 bg-amber-50/50 shadow-sm">
+                  <CardContent className="p-4">
+                    <p className="text-sm font-semibold text-amber-900">Lead existe em outras origens</p>
+                    <p className="text-xs text-amber-700 mb-3">
+                      Encontrado em {otherOriginLeads.length} {otherOriginLeads.length === 1 ? 'outra origem' : 'outras origens'}
+                    </p>
+                    
+                    <div className="space-y-2">
+                      {otherOriginLeads.map((otherLead) => (
+                        <button
+                          key={otherLead.id}
+                          onClick={() => navigate(`/admin/crm/${otherLead.id}?origin=${otherLead.sub_origin_id}&tab=rastreamento`)}
+                          className="w-full flex items-center justify-between p-2 rounded-lg bg-white border border-amber-200 hover:bg-amber-100 transition-colors text-left"
+                        >
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2">
+                              <span className="text-xs font-medium text-amber-900 truncate">
+                                {otherLead.origin_name}
+                              </span>
+                              <ArrowRight className="h-3 w-3 text-amber-500 flex-shrink-0" />
+                              <span className="text-xs font-medium text-amber-900 truncate">
+                                {otherLead.sub_origin_name}
+                              </span>
+                            </div>
+                            {otherLead.pipeline_name && (
+                              <Badge variant="outline" className="mt-1 text-[10px] h-5 bg-amber-100 border-amber-300 text-amber-800">
+                                {otherLead.pipeline_name}
+                              </Badge>
+                            )}
+                          </div>
+                          <ArrowRight className="h-4 w-4 text-amber-600 flex-shrink-0 ml-2" />
+                        </button>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            </div>
+          )}
+
+          {/* UTM Parameters Card */}
           {hasUTMData && (
             <div className="relative flex">
               {/* Left side - Icon and vertical line */}
