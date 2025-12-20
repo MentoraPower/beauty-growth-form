@@ -460,7 +460,7 @@ function SortableOriginItem({
                     "h-3 w-3 flex-shrink-0",
                     currentOverviewOriginId === origin.id ? "text-white" : "text-foreground/70"
                   )} />
-                  <span className="font-medium">Overview</span>
+                  <span className="font-bold">Overview</span>
                 </button>
               </div>
             </li>
@@ -507,7 +507,7 @@ function SortableOriginItem({
                         "h-3 w-3 flex-shrink-0",
                         isActive ? "text-foreground" : "text-foreground/70"
                       )} />
-                      <span className="font-medium">{subOrigin.nome}</span>
+                      <span className="font-bold">{subOrigin.nome}</span>
                     </button>
                     
                     {/* Sub-origin Actions - only show for admins */}
@@ -584,7 +584,7 @@ function SortableOriginItem({
                         "h-3 w-3 flex-shrink-0",
                         isActive ? "text-foreground" : "text-foreground/70"
                       )} />
-                      <span className="truncate">{subOrigin.nome}</span>
+                      <span className="truncate font-bold">{subOrigin.nome}</span>
                       {leadCount > 0 && (
                         <span className={cn(
                           "ml-auto text-[10px] px-1.5 py-0.5 rounded-full",
