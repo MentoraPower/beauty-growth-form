@@ -3,6 +3,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { RealtimeProvider } from "@/components/realtime/RealtimeProvider";
 import Index from "./pages/Index";
 import TermsOfUse from "./pages/TermsOfUse";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
@@ -23,33 +24,35 @@ const queryClient = new QueryClient();
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Index />} />
-          <Route path="/termos" element={<TermsOfUse />} />
-          <Route path="/privacidade" element={<PrivacyPolicy />} />
-          <Route path="/form/:slug" element={<OnboardingForm />} />
-          <Route path="/auth" element={<Auth />} />
+    <RealtimeProvider>
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
+          <Routes>
+            <Route path="/" element={<Index />} />
+            <Route path="/termos" element={<TermsOfUse />} />
+            <Route path="/privacidade" element={<PrivacyPolicy />} />
+            <Route path="/form/:slug" element={<OnboardingForm />} />
+            <Route path="/auth" element={<Auth />} />
 
-          <Route path="/admin" element={<AdminShell />}>
-            <Route index element={<Dashboard />} />
-            <Route path="crm" element={<CRM />} />
-            <Route path="crm/overview" element={<OriginOverview />} />
-            <Route path="crm/:id" element={<LeadDetail />} />
-            <Route path="whatsapp" element={<WhatsApp />} />
-            <Route path="instagram" element={<InstagramPage />} />
-            <Route path="calendario" element={<CalendarPage />} />
-            <Route path="agenda" element={<CalendarPage />} />
-            <Route path="settings" element={<Settings />} />
-          </Route>
+            <Route path="/admin" element={<AdminShell />}>
+              <Route index element={<Dashboard />} />
+              <Route path="crm" element={<CRM />} />
+              <Route path="crm/overview" element={<OriginOverview />} />
+              <Route path="crm/:id" element={<LeadDetail />} />
+              <Route path="whatsapp" element={<WhatsApp />} />
+              <Route path="instagram" element={<InstagramPage />} />
+              <Route path="calendario" element={<CalendarPage />} />
+              <Route path="agenda" element={<CalendarPage />} />
+              <Route path="settings" element={<Settings />} />
+            </Route>
 
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </BrowserRouter>
-    </TooltipProvider>
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </BrowserRouter>
+      </TooltipProvider>
+    </RealtimeProvider>
   </QueryClientProvider>
 );
 
