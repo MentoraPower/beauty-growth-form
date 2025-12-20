@@ -285,7 +285,7 @@ serve(async (req) => {
       }
 
       case 'get-messages': {
-        const { conversationId, limit = 50 } = params;
+        const { conversationId, limit = 100 } = params;
         
         // Get saved connection
         const { data: connection, error: connError } = await supabase
@@ -303,12 +303,12 @@ serve(async (req) => {
         
         const accessToken = connection.access_token;
         
-        // Get all messages for a specific conversation
+        // Get all messages for a specific conversation with attachments (for reels, images, videos)
         const msgResponse = await fetch(
-          `https://graph.instagram.com/v21.0/${conversationId}?fields=messages.limit(${limit}){message,from,created_time,attachments}&access_token=${accessToken}`
+          `https://graph.instagram.com/v21.0/${conversationId}?fields=messages.limit(${limit}){message,from,created_time,attachments{id,mime_type,name,size,video_data,image_data,file_url},story,shares{link,id,name,description}}&access_token=${accessToken}`
         );
         const msgData = await msgResponse.json();
-        console.log('Messages data for conversation:', conversationId);
+        console.log('Messages data for conversation:', conversationId, JSON.stringify(msgData).substring(0, 1000));
         
         if (msgData.error) {
           return new Response(
@@ -317,8 +317,62 @@ serve(async (req) => {
           );
         }
         
+        // Process messages to extract media from attachments and shares
+        const processedMessages = (msgData.messages?.data || []).map((msg: any) => {
+          let mediaType = null;
+          let mediaUrl = null;
+          let shareLink = null;
+          let shareName = null;
+          
+          // Check for shares (reels, posts shared)
+          if (msg.shares?.data && msg.shares.data.length > 0) {
+            const share = msg.shares.data[0];
+            shareLink = share.link;
+            shareName = share.name || share.description;
+          }
+          
+          // Check for attachments (images, videos, audio)
+          if (msg.attachments?.data && msg.attachments.data.length > 0) {
+            const attachment = msg.attachments.data[0];
+            
+            if (attachment.video_data?.url) {
+              mediaType = 'video';
+              mediaUrl = attachment.video_data.url;
+            } else if (attachment.image_data?.url) {
+              mediaType = 'image';
+              mediaUrl = attachment.image_data.url;
+            } else if (attachment.file_url) {
+              // Generic file - check mime type
+              if (attachment.mime_type?.startsWith('video/')) {
+                mediaType = 'video';
+              } else if (attachment.mime_type?.startsWith('image/')) {
+                mediaType = 'image';
+              } else if (attachment.mime_type?.startsWith('audio/')) {
+                mediaType = 'audio';
+              } else {
+                mediaType = 'file';
+              }
+              mediaUrl = attachment.file_url;
+            }
+          }
+          
+          // Check for story mentions
+          if (msg.story) {
+            mediaType = 'story';
+            mediaUrl = msg.story.url || null;
+          }
+          
+          return {
+            ...msg,
+            mediaType,
+            mediaUrl,
+            shareLink,
+            shareName
+          };
+        });
+        
         return new Response(
-          JSON.stringify({ success: true, messages: msgData.messages?.data || [] }),
+          JSON.stringify({ success: true, messages: processedMessages }),
           { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
