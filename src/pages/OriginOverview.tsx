@@ -579,18 +579,18 @@ const OriginOverview = () => {
                             type="monotone" 
                             dataKey="reunioes" 
                             name="Agendamentos"
-                            stroke="#374151" 
+                            stroke="#4b5563" 
                             strokeWidth={3}
-                            dot={{ fill: '#374151', strokeWidth: 2, r: 4 }}
+                            dot={{ fill: '#4b5563', strokeWidth: 2, r: 4 }}
                             activeDot={{ r: 6, strokeWidth: 2 }}
                           />
                           <Line 
                             type="monotone" 
                             dataKey="vendas" 
                             name="Vendas"
-                            stroke="#10b981" 
+                            stroke="#374151" 
                             strokeWidth={3}
-                            dot={{ fill: '#10b981', strokeWidth: 2, r: 4 }}
+                            dot={{ fill: '#374151', strokeWidth: 2, r: 4 }}
                             activeDot={{ r: 6, strokeWidth: 2 }}
                           />
                         </LineChart>
