@@ -524,6 +524,89 @@ const OriginOverview = () => {
                 </CardContent>
               </Card>
 
+              {/* SDR Sales Conversion Chart */}
+              <Card className="bg-white border border-black/5 shadow-none">
+                <CardHeader className="pb-4">
+                  <CardTitle className="text-base font-semibold text-foreground">
+                    Vendas por SDR (Taxa de Conversão)
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    {(() => {
+                      // Count appointments and sales per SDR
+                      const sdrStats = appointments.reduce((acc, apt) => {
+                        const sdr = apt.sdr_name || "Sem SDR";
+                        if (!acc[sdr]) {
+                          acc[sdr] = { appointments: 0, sales: 0 };
+                        }
+                        acc[sdr].appointments++;
+                        if (apt.is_paid && apt.payment_value && apt.payment_value > 0) {
+                          acc[sdr].sales++;
+                        }
+                        return acc;
+                      }, {} as Record<string, { appointments: number; sales: number }>);
+
+                      const sortedSdrs = Object.entries(sdrStats)
+                        .sort((a, b) => b[1].sales - a[1].sales);
+
+                      if (sortedSdrs.length === 0) {
+                        return (
+                          <p className="text-sm text-muted-foreground text-center py-4">
+                            Nenhum agendamento no período
+                          </p>
+                        );
+                      }
+
+                      const maxSales = Math.max(...sortedSdrs.map(([, stats]) => stats.sales), 1);
+
+                      return sortedSdrs.map(([sdr, stats]) => {
+                        const conversionRate = stats.appointments > 0 
+                          ? ((stats.sales / stats.appointments) * 100).toFixed(0) 
+                          : "0";
+                        
+                        return (
+                          <div key={sdr} className="space-y-1.5">
+                            <div className="flex items-center justify-between">
+                              <span className="text-sm font-medium text-foreground">{sdr}</span>
+                              <span className="text-xs text-muted-foreground">
+                                {stats.sales}/{stats.appointments} ({conversionRate}%)
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-3">
+                              <div className="flex-1 h-10 bg-muted/30 rounded-lg overflow-hidden relative">
+                                <div 
+                                  className="h-full rounded-lg transition-all duration-700 ease-out relative overflow-hidden"
+                                  style={{ 
+                                    width: `${(stats.sales / maxSales) * 100}%`,
+                                    background: `repeating-linear-gradient(
+                                      90deg,
+                                      #10b98120,
+                                      #10b98120 12px,
+                                      #10b98130 12px,
+                                      #10b98130 24px
+                                    )`
+                                  }}
+                                />
+                              </div>
+                              <div className="flex items-center gap-2 flex-shrink-0">
+                                <div className="w-10 h-10 rounded-full bg-emerald-500 flex items-center justify-center">
+                                  <TrendingUp className="h-5 w-5 text-white" />
+                                </div>
+                                <span className="text-lg font-bold text-emerald-600 min-w-[24px]">{stats.sales}</span>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      });
+                    })()}
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Second Row - Closer Charts */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {/* Closer Meetings Chart */}
               <Card className="bg-white border border-black/5 shadow-none">
                 <CardHeader className="pb-4">
@@ -579,6 +662,86 @@ const OriginOverview = () => {
                           </div>
                         </div>
                       ));
+                    })()}
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Closer Sales Conversion Chart */}
+              <Card className="bg-white border border-black/5 shadow-none">
+                <CardHeader className="pb-4">
+                  <CardTitle className="text-base font-semibold text-foreground">
+                    Vendas por Closer (Taxa de Conversão)
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    {(() => {
+                      // Count meetings and sales per Closer
+                      const closerStats = appointments.reduce((acc, apt) => {
+                        const closer = apt.closer_name || "Sem Closer";
+                        if (!acc[closer]) {
+                          acc[closer] = { meetings: 0, sales: 0 };
+                        }
+                        acc[closer].meetings++;
+                        if (apt.is_paid && apt.payment_value && apt.payment_value > 0) {
+                          acc[closer].sales++;
+                        }
+                        return acc;
+                      }, {} as Record<string, { meetings: number; sales: number }>);
+
+                      const sortedClosers = Object.entries(closerStats)
+                        .sort((a, b) => b[1].sales - a[1].sales);
+
+                      if (sortedClosers.length === 0) {
+                        return (
+                          <p className="text-sm text-muted-foreground text-center py-4">
+                            Nenhuma reunião no período
+                          </p>
+                        );
+                      }
+
+                      const maxSales = Math.max(...sortedClosers.map(([, stats]) => stats.sales), 1);
+
+                      return sortedClosers.map(([closer, stats]) => {
+                        const conversionRate = stats.meetings > 0 
+                          ? ((stats.sales / stats.meetings) * 100).toFixed(0) 
+                          : "0";
+                        
+                        return (
+                          <div key={closer} className="space-y-1.5">
+                            <div className="flex items-center justify-between">
+                              <span className="text-sm font-medium text-foreground">{closer}</span>
+                              <span className="text-xs text-muted-foreground">
+                                {stats.sales}/{stats.meetings} ({conversionRate}%)
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-3">
+                              <div className="flex-1 h-10 bg-muted/30 rounded-lg overflow-hidden relative">
+                                <div 
+                                  className="h-full rounded-lg transition-all duration-700 ease-out relative overflow-hidden"
+                                  style={{ 
+                                    width: `${(stats.sales / maxSales) * 100}%`,
+                                    background: `repeating-linear-gradient(
+                                      90deg,
+                                      #10b98120,
+                                      #10b98120 12px,
+                                      #10b98130 12px,
+                                      #10b98130 24px
+                                    )`
+                                  }}
+                                />
+                              </div>
+                              <div className="flex items-center gap-2 flex-shrink-0">
+                                <div className="w-10 h-10 rounded-full bg-emerald-500 flex items-center justify-center">
+                                  <TrendingUp className="h-5 w-5 text-white" />
+                                </div>
+                                <span className="text-lg font-bold text-emerald-600 min-w-[24px]">{stats.sales}</span>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      });
                     })()}
                   </div>
                 </CardContent>
