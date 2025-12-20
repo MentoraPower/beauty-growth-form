@@ -64,8 +64,19 @@ export default function InstagramPage() {
     const urlParams = new URLSearchParams(window.location.search);
     const code = urlParams.get('code');
     
-    if (code) {
+    // Prevent processing the same code twice
+    const processedCode = sessionStorage.getItem('instagram_processed_code');
+    
+    if (code && code !== processedCode) {
+      // Mark code as processed before attempting exchange
+      sessionStorage.setItem('instagram_processed_code', code);
+      // Clear URL immediately to prevent re-processing on refresh
+      window.history.replaceState({}, document.title, window.location.pathname);
       handleOAuthCallback(code);
+    } else if (code) {
+      // Code already processed, just clear URL and check connection
+      window.history.replaceState({}, document.title, window.location.pathname);
+      checkConnection();
     } else {
       checkConnection();
     }
@@ -375,7 +386,7 @@ export default function InstagramPage() {
           </Button>
 
           <p className="text-xs text-muted-foreground text-center">
-            Você será redirecionado para o Facebook para autorizar o acesso à sua conta do Instagram Business.
+            Você será redirecionado para o Instagram para autorizar o acesso à sua conta.
           </p>
         </div>
       </div>
