@@ -88,12 +88,15 @@ export default function InstagramPage() {
     
     try {
       console.log('Processing OAuth callback with code...');
-      
+
+      const redirectUri = sessionStorage.getItem('instagram_oauth_redirect_uri') || REDIRECT_URI;
+      console.log('Using redirectUri for token exchange:', redirectUri);
+
       const { data, error } = await supabase.functions.invoke('instagram-api', {
-        body: { 
-          action: 'exchange-code', 
-          params: { code, redirectUri: REDIRECT_URI } 
-        }
+        body: {
+          action: 'exchange-code',
+          params: { code, redirectUri },
+        },
       });
 
       if (error) throw error;
@@ -128,6 +131,9 @@ export default function InstagramPage() {
       setIsLoading(false);
       // Clear URL params
       window.history.replaceState({}, document.title, window.location.pathname);
+      // Cleanup stored redirectUri/code markers
+      sessionStorage.removeItem('instagram_oauth_redirect_uri');
+      sessionStorage.removeItem('instagram_processed_code');
     }
   };
 
@@ -167,6 +173,10 @@ export default function InstagramPage() {
     setConnectionError(null);
     
     try {
+      // Persist the exact redirectUri used to generate the OAuth URL.
+      // This prevents redirect_uri mismatch when the app enforces canonical domain redirects (www/non-www).
+      sessionStorage.setItem('instagram_oauth_redirect_uri', REDIRECT_URI);
+
       const { data, error } = await supabase.functions.invoke('instagram-api', {
         body: { action: 'get-oauth-url', params: { redirectUri: REDIRECT_URI } }
       });
