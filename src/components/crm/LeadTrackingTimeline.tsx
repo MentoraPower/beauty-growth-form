@@ -227,7 +227,7 @@ export function LeadTrackingTimeline({ leadId, utmData, leadEmail, leadWhatsapp 
               {/* Left side - Icon and vertical line */}
               <div className="flex flex-col items-center mr-4">
                 {/* Icon */}
-                <div className="h-10 w-10 rounded-lg flex items-center justify-center flex-shrink-0 bg-amber-500 text-white shadow-md z-10">
+                <div className="h-10 w-10 rounded-lg flex items-center justify-center flex-shrink-0 bg-orange-500 text-white shadow-md z-10">
                   <Users className="h-5 w-5" />
                 </div>
                 
@@ -239,38 +239,27 @@ export function LeadTrackingTimeline({ leadId, utmData, leadEmail, leadWhatsapp 
               
               {/* Right side - Card content */}
               <div className="flex-1 pb-6">
-                <Card className="border-amber-200 bg-amber-50/50 shadow-sm">
+                <Card className="border-[#00000010] shadow-sm hover:shadow-md transition-shadow">
                   <CardContent className="p-4">
-                    <p className="text-sm font-semibold text-amber-900">Lead existe em outras origens</p>
-                    <p className="text-xs text-amber-700 mb-3">
+                    <p className="text-sm font-semibold text-foreground">Lead existe em outras origens</p>
+                    <p className="text-xs text-muted-foreground mt-1">
                       Encontrado em {otherOriginLeads.length} {otherOriginLeads.length === 1 ? 'outra origem' : 'outras origens'}
                     </p>
                     
-                    <div className="space-y-2">
+                    <div className="mt-3 space-y-1.5">
                       {otherOriginLeads.map((otherLead) => (
-                        <button
+                        <div
                           key={otherLead.id}
-                          onClick={() => navigate(`/admin/crm/${otherLead.id}?origin=${otherLead.sub_origin_id}&tab=rastreamento`)}
-                          className="w-full flex items-center justify-between p-2 rounded-lg bg-white border border-amber-200 hover:bg-amber-100 transition-colors text-left"
+                          className="flex items-center gap-2 text-xs"
                         >
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2">
-                              <span className="text-xs font-medium text-amber-900 truncate">
-                                {otherLead.origin_name}
-                              </span>
-                              <ArrowRight className="h-3 w-3 text-amber-500 flex-shrink-0" />
-                              <span className="text-xs font-medium text-amber-900 truncate">
-                                {otherLead.sub_origin_name}
-                              </span>
-                            </div>
-                            {otherLead.pipeline_name && (
-                              <Badge variant="outline" className="mt-1 text-[10px] h-5 bg-amber-100 border-amber-300 text-amber-800">
-                                {otherLead.pipeline_name}
-                              </Badge>
-                            )}
-                          </div>
-                          <ArrowRight className="h-4 w-4 text-amber-600 flex-shrink-0 ml-2" />
-                        </button>
+                          <span className="text-muted-foreground">•</span>
+                          <span className="font-medium text-foreground">{otherLead.origin_name}</span>
+                          <ArrowRight className="h-3 w-3 text-muted-foreground" />
+                          <span className="font-medium text-foreground">{otherLead.sub_origin_name}</span>
+                          {otherLead.pipeline_name && (
+                            <span className="text-muted-foreground">({otherLead.pipeline_name})</span>
+                          )}
+                        </div>
                       ))}
                     </div>
                   </CardContent>
