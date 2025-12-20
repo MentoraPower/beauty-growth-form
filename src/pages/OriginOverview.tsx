@@ -4,8 +4,7 @@ import { subDays, startOfDay, endOfDay, format, differenceInDays, eachDayOfInter
 import { ptBR } from "date-fns/locale";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { motion, AnimatePresence } from "framer-motion";
-import { 
+import {
   AreaChart,
   Area,
   XAxis, 
@@ -87,18 +86,11 @@ const OriginOverview = () => {
   const [agendaMode, setAgendaMode] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
   const [savingAgendaMode, setSavingAgendaMode] = useState(false);
-  const [filterKey, setFilterKey] = useState(0); // Key to trigger chart animations
   
   const [dateRange, setDateRange] = useState<DateRange>({
     from: startOfDay(subDays(new Date(), 29)),
     to: endOfDay(new Date())
   });
-
-  // Handle date filter change with animation trigger
-  const handleDateChange = (newRange: DateRange) => {
-    setDateRange(newRange);
-    setFilterKey(prev => prev + 1);
-  };
 
   // Filter appointments by date range
   const appointments = useMemo(() => {
@@ -417,7 +409,7 @@ const OriginOverview = () => {
                 </DropdownMenuContent>
               </DropdownMenu>
             )}
-            <DateFilter onDateChange={handleDateChange} />
+            <DateFilter onDateChange={setDateRange} />
           </div>
         </div>
 
@@ -476,13 +468,7 @@ const OriginOverview = () => {
             </div>
 
             {/* Charts Grid - SDR and Closer */}
-            <motion.div 
-              key={`sdr-charts-${filterKey}`}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.4, ease: "easeOut" }}
-              className="grid grid-cols-1 lg:grid-cols-2 gap-6"
-            >
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {/* SDR Appointments Chart */}
               <Card className="bg-white border border-black/5 shadow-none">
                 <CardHeader className="pb-4">
@@ -622,16 +608,10 @@ const OriginOverview = () => {
                   </div>
                 </CardContent>
               </Card>
-            </motion.div>
+            </div>
 
             {/* Second Row - Closer Charts */}
-            <motion.div 
-              key={`closer-charts-${filterKey}`}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.4, delay: 0.1, ease: "easeOut" }}
-              className="grid grid-cols-1 lg:grid-cols-2 gap-6"
-            >
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {/* Closer Meetings Chart */}
               <Card className="bg-white border border-black/5 shadow-none">
                 <CardHeader className="pb-4">
@@ -771,15 +751,9 @@ const OriginOverview = () => {
                   </div>
                 </CardContent>
               </Card>
-            </motion.div>
+            </div>
 
             {/* Meetings by Hour Chart */}
-            <motion.div 
-              key={`hourly-chart-${filterKey}`}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.4, delay: 0.2, ease: "easeOut" }}
-            >
             <Card className="bg-white border border-black/5 shadow-none">
               <CardHeader className="pb-4">
                 <CardTitle className="text-base font-semibold text-foreground">
@@ -948,7 +922,6 @@ const OriginOverview = () => {
                 })()}
               </CardContent>
             </Card>
-            </motion.div>
           </>
         ) : (
           <>
