@@ -283,14 +283,6 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
                 {/* Separator */}
                 <div className="h-px bg-white/10 my-2" />
 
-                {/* Painéis Section Label */}
-                <div className={cn(
-                  "text-xs font-medium text-white/40 uppercase tracking-wider px-1 py-1 transition-all duration-200",
-                  sidebarExpanded ? "opacity-100" : "opacity-0"
-                )}>
-                  Painéis
-                </div>
-
                 {/* Painéis Button */}
                 <button
                   onClick={() => handleNavClick('paineis')}
@@ -485,11 +477,6 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
 
                 {/* Separator - Mobile */}
                 <div className="h-px bg-white/10 my-2" />
-
-                {/* Painéis Section Label - Mobile */}
-                <div className="text-xs font-medium text-white/40 uppercase tracking-wider px-4 py-1">
-                  Painéis
-                </div>
 
                 {/* Painéis - Mobile */}
                 <Link
