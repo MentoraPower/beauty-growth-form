@@ -268,6 +268,7 @@ function SortableOriginItem({
   leadCounts,
   currentSubOriginId,
   currentOverviewOriginId,
+  currentCalendarOriginId,
   userPermissions,
 }: {
   origin: Origin;
@@ -285,6 +286,7 @@ function SortableOriginItem({
   leadCounts: LeadCount[];
   currentSubOriginId: string | null;
   currentOverviewOriginId: string | null;
+  currentCalendarOriginId: string | null;
   userPermissions: {
     isAdmin: boolean;
     canCreateOrigins: boolean;
@@ -470,11 +472,92 @@ function SortableOriginItem({
               </div>
             </li>
 
-            {/* Sub-origins */}
-            {originSubOrigins.map((subOrigin, index) => {
+            {/* Calendar sub-origin (appears right after Overview) */}
+            {originSubOrigins.filter(s => s.tipo === 'calendario').map((subOrigin) => {
+              const isActive = currentCalendarOriginId === subOrigin.id;
+              
+              return (
+                <li 
+                  key={subOrigin.id} 
+                  className="relative pl-6 py-1"
+                >
+                  {/* Curva SVG perfeita */}
+                  <svg 
+                    className="absolute left-[4px] top-1/2 -translate-y-1/2 z-0" 
+                    width="18" 
+                    height="18" 
+                    viewBox="0 0 18 18"
+                    fill="none"
+                  >
+                    <path 
+                      d="M 8 0 L 8 5 Q 8 9 12 9 L 18 9" 
+                      stroke="hsl(var(--muted-foreground))"
+                      strokeWidth="2" 
+                      fill="none"
+                    />
+                  </svg>
+                  
+                  <div className="flex items-center group">
+                    <button
+                      onClick={() => handleSubOriginClick(subOrigin.id, subOrigin.tipo)}
+                      className={cn(
+                        "flex items-center gap-2 w-full py-1.5 px-2.5 rounded-lg transition-all duration-200 ease-out text-xs border",
+                        isActive
+                          ? "bg-white border-black/10 text-foreground shadow-sm"
+                          : "bg-white/50 border-transparent text-foreground/80 hover:bg-white hover:border-black/5 hover:shadow-sm"
+                      )}
+                    >
+                      <div className={cn(
+                        "w-5 h-5 rounded-full flex items-center justify-center",
+                        isActive
+                          ? "bg-black/10"
+                          : "bg-black/5"
+                      )}>
+                        <CalendarDays className={cn(
+                          "h-3 w-3",
+                          isActive ? "text-foreground" : "text-foreground/70"
+                        )} />
+                      </div>
+                      <span className="font-medium">{subOrigin.nome}</span>
+                    </button>
+                    
+                    {/* Sub-origin Actions - only show for admins */}
+                    {userPermissions.isAdmin && (
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <button 
+                            onClick={(e) => e.stopPropagation()}
+                            className="p-1.5 rounded opacity-0 group-hover:opacity-100 transition-all duration-200 ease-out hover:bg-black/5"
+                          >
+                            <MoreVertical className="h-4 w-4 text-foreground/70" />
+                          </button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="w-40 z-[9999] bg-popover">
+                          <DropdownMenuItem onClick={() => openEditSubOriginDialog(subOrigin)}>
+                            <Pencil className="h-4 w-4 mr-2" />
+                            Editar
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem 
+                            className="text-destructive focus:text-destructive"
+                            onClick={() => handleDeleteSubOrigin(subOrigin.id)}
+                          >
+                            <Trash2 className="h-4 w-4 mr-2" />
+                            Excluir
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    )}
+                  </div>
+                </li>
+              );
+            })}
+
+            {/* Task sub-origins */}
+            {originSubOrigins.filter(s => s.tipo === 'tarefas').map((subOrigin, index, filteredArr) => {
               const leadCount = leadCounts.find(lc => lc.sub_origin_id === subOrigin.id)?.count || 0;
               const isActive = currentSubOriginId === subOrigin.id;
-              const isLast = index === originSubOrigins.length - 1;
+              const isLast = index === filteredArr.length - 1 && !originSubOrigins.some(s => s.tipo === 'calendario');
               
               return (
                 <li 
@@ -508,17 +591,10 @@ function SortableOriginItem({
                           : "text-foreground/70 hover:text-foreground hover:bg-black/5"
                       )}
                     >
-                      {subOrigin.tipo === 'calendario' ? (
-                        <CalendarDays className={cn(
-                          "h-3 w-3 flex-shrink-0",
-                          isActive ? "text-foreground" : "text-foreground/70"
-                        )} />
-                      ) : (
-                        <Kanban className={cn(
-                          "h-3 w-3 flex-shrink-0",
-                          isActive ? "text-foreground" : "text-foreground/70"
-                        )} />
-                      )}
+                      <Kanban className={cn(
+                        "h-3 w-3 flex-shrink-0",
+                        isActive ? "text-foreground" : "text-foreground/70"
+                      )} />
                       <span className="truncate">{subOrigin.nome}</span>
                       {leadCount > 0 && (
                         <span className={cn(
@@ -959,6 +1035,9 @@ export function CRMOriginsPanel({ isOpen, onClose, sidebarWidth, embedded = fals
   const currentOverviewOriginId = location.pathname === '/admin/crm/overview' 
     ? new URLSearchParams(location.search).get('origin') 
     : null;
+  const currentCalendarOriginId = location.pathname === '/admin/calendario' 
+    ? new URLSearchParams(location.search).get('origin') 
+    : null;
   // Embedded content for unified submenu
   const content = (
     <>
@@ -1000,6 +1079,7 @@ export function CRMOriginsPanel({ isOpen, onClose, sidebarWidth, embedded = fals
                   leadCounts={leadCounts}
                   currentSubOriginId={currentSubOriginId}
                   currentOverviewOriginId={currentOverviewOriginId}
+                  currentCalendarOriginId={currentCalendarOriginId}
                   userPermissions={userPermissions}
                 />
               );
