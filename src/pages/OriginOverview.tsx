@@ -572,12 +572,7 @@ const OriginOverview = () => {
                         
                         return (
                           <div key={sdr} className="space-y-1.5">
-                            <div className="flex items-center justify-between">
-                              <span className="text-sm font-medium text-foreground">{sdr}</span>
-                              <span className="text-xs text-muted-foreground">
-                                {stats.sales}/{stats.appointments} ({conversionRate}%)
-                              </span>
-                            </div>
+                            <span className="text-sm font-medium text-foreground">{sdr}</span>
                             <div className="flex items-center gap-3">
                               <div className="flex-1 h-10 bg-muted/30 rounded-lg overflow-hidden relative">
                                 <div 
@@ -595,8 +590,8 @@ const OriginOverview = () => {
                                 />
                               </div>
                               <div className="flex items-center gap-2 flex-shrink-0">
-                                <div className="w-10 h-10 rounded-full bg-emerald-500 flex items-center justify-center">
-                                  <TrendingUp className="h-5 w-5 text-white" />
+                                <div className="w-10 h-10 rounded-full bg-emerald-700 flex items-center justify-center">
+                                  <span className="text-xs font-bold text-white">{conversionRate}%</span>
                                 </div>
                                 <span className="text-lg font-bold text-emerald-600 min-w-[24px]">{stats.sales}</span>
                               </div>
@@ -715,12 +710,7 @@ const OriginOverview = () => {
                         
                         return (
                           <div key={closer} className="space-y-1.5">
-                            <div className="flex items-center justify-between">
-                              <span className="text-sm font-medium text-foreground">{closer}</span>
-                              <span className="text-xs text-muted-foreground">
-                                {stats.sales}/{stats.meetings} ({conversionRate}%)
-                              </span>
-                            </div>
+                            <span className="text-sm font-medium text-foreground">{closer}</span>
                             <div className="flex items-center gap-3">
                               <div className="flex-1 h-10 bg-muted/30 rounded-lg overflow-hidden relative">
                                 <div 
@@ -738,8 +728,8 @@ const OriginOverview = () => {
                                 />
                               </div>
                               <div className="flex items-center gap-2 flex-shrink-0">
-                                <div className="w-10 h-10 rounded-full bg-emerald-500 flex items-center justify-center">
-                                  <TrendingUp className="h-5 w-5 text-white" />
+                                <div className="w-10 h-10 rounded-full bg-emerald-700 flex items-center justify-center">
+                                  <span className="text-xs font-bold text-white">{conversionRate}%</span>
                                 </div>
                                 <span className="text-lg font-bold text-emerald-600 min-w-[24px]">{stats.sales}</span>
                               </div>
