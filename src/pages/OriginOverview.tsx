@@ -373,10 +373,10 @@ const OriginOverview = () => {
                 </CardContent>
               </Card>
 
-              <Card className="bg-white border border-black/5 shadow-none flex-1 min-w-[180px]">
-                <CardContent className="px-4 py-3 flex items-center justify-between gap-3">
+              <Card className="bg-white border border-black/5 shadow-none flex-none w-auto">
+                <CardContent className="px-4 py-3 flex items-center gap-3">
                   <p className="text-sm text-muted-foreground font-medium whitespace-nowrap">Valor em Vendas</p>
-                  <p className="text-2xl font-bold text-emerald-600">
+                  <p className="text-2xl font-bold text-emerald-600 whitespace-nowrap">
                     {new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(
                       appointments
                         .filter(a => a.is_paid && a.payment_value)
