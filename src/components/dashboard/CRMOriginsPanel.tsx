@@ -145,33 +145,33 @@ function AddSubOriginDropdown({
           className="w-64 p-3 z-[9999] bg-popover"
         >
           {step === 'type' ? (
-            <div className="space-y-2">
-              <p className="text-xs font-medium text-muted-foreground px-1 mb-3">Selecione o tipo</p>
+            <div className="space-y-1">
+              <p className="text-[11px] font-medium text-muted-foreground/70 uppercase tracking-wider px-1 mb-2">Selecione o tipo</p>
               <button
                 onClick={() => handleSelectType('tarefas')}
-                className="flex items-center gap-3 w-full p-3 rounded-xl border-2 border-transparent hover:border-rose-200 hover:bg-rose-50/50 transition-all group"
+                className="flex items-center gap-3 w-full p-3 rounded-xl border border-transparent hover:border-black/5 hover:bg-black/[0.02] transition-all group"
               >
-                <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-amber-100 to-orange-100 flex items-center justify-center group-hover:from-rose-100 group-hover:to-rose-200 transition-all">
-                  <ListTodo className="h-5 w-5 text-amber-600 group-hover:text-rose-500 transition-colors" />
+                <div className="w-9 h-9 rounded-lg bg-black/[0.04] flex items-center justify-center group-hover:bg-black/[0.06] transition-all">
+                  <ListTodo className="h-4.5 w-4.5 text-foreground/70" />
                 </div>
-                <div className="text-left">
+                <div className="text-left flex-1">
                   <p className="text-sm font-medium text-foreground">Tarefas</p>
-                  <p className="text-xs text-muted-foreground">Kanban com atividades</p>
+                  <p className="text-[11px] text-muted-foreground/70">Kanban com atividades</p>
                 </div>
-                <ChevronRight className="h-4 w-4 text-muted-foreground/50 ml-auto" />
+                <ChevronRight className="h-4 w-4 text-foreground/30 group-hover:text-foreground/50 transition-colors" />
               </button>
               <button
                 onClick={() => handleSelectType('calendario')}
-                className="flex items-center gap-3 w-full p-3 rounded-xl border-2 border-transparent hover:border-rose-200 hover:bg-rose-50/50 transition-all group"
+                className="flex items-center gap-3 w-full p-3 rounded-xl border border-transparent hover:border-black/5 hover:bg-black/[0.02] transition-all group"
               >
-                <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-100 to-indigo-100 flex items-center justify-center group-hover:from-rose-100 group-hover:to-rose-200 transition-all">
-                  <CalendarDays className="h-5 w-5 text-blue-600 group-hover:text-rose-500 transition-colors" />
+                <div className="w-9 h-9 rounded-lg bg-black/[0.04] flex items-center justify-center group-hover:bg-black/[0.06] transition-all">
+                  <CalendarDays className="h-4.5 w-4.5 text-foreground/70" />
                 </div>
-                <div className="text-left">
+                <div className="text-left flex-1">
                   <p className="text-sm font-medium text-foreground">Calendário</p>
-                  <p className="text-xs text-muted-foreground">Agendamentos</p>
+                  <p className="text-[11px] text-muted-foreground/70">Agendamentos</p>
                 </div>
-                <ChevronRight className="h-4 w-4 text-muted-foreground/50 ml-auto" />
+                <ChevronRight className="h-4 w-4 text-foreground/30 group-hover:text-foreground/50 transition-colors" />
               </button>
             </div>
           ) : (
@@ -179,19 +179,14 @@ function AddSubOriginDropdown({
               <div className="flex items-center gap-2">
                 <button 
                   onClick={() => setStep('type')}
-                  className="p-1 rounded hover:bg-muted transition-colors"
+                  className="p-1.5 rounded-lg hover:bg-black/[0.04] transition-colors"
                 >
-                  <ChevronRight className="h-4 w-4 rotate-180 text-muted-foreground" />
+                  <ChevronRight className="h-4 w-4 rotate-180 text-foreground/50" />
                 </button>
-                <div className={cn(
-                  "w-6 h-6 rounded-md flex items-center justify-center",
-                  selectedTipo === 'tarefas' 
-                    ? "bg-gradient-to-br from-amber-100 to-orange-100" 
-                    : "bg-gradient-to-br from-blue-100 to-indigo-100"
-                )}>
+                <div className="w-6 h-6 rounded-md bg-black/[0.04] flex items-center justify-center">
                   {selectedTipo === 'tarefas' 
-                    ? <ListTodo className="h-3.5 w-3.5 text-amber-600" />
-                    : <CalendarDays className="h-3.5 w-3.5 text-blue-600" />
+                    ? <ListTodo className="h-3.5 w-3.5 text-foreground/70" />
+                    : <CalendarDays className="h-3.5 w-3.5 text-foreground/70" />
                   }
                 </div>
                 <span className="text-sm font-medium text-foreground">
@@ -209,7 +204,7 @@ function AddSubOriginDropdown({
               <Button 
                 onClick={handleCreate} 
                 disabled={isLoading || !inputValue.trim()}
-                className="w-full h-9 bg-gradient-to-r from-[#F40000] to-[#A10000] text-white text-sm"
+                className="w-full h-9 bg-foreground hover:bg-foreground/90 text-background text-sm"
               >
                 {isLoading ? 'Criando...' : 'Criar'}
               </Button>
