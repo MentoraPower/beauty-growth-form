@@ -109,6 +109,13 @@ const OriginOverview = () => {
     return subOrigins.some(s => s.tipo === 'calendario');
   }, [subOrigins]);
 
+  // Reset agendaMode when origin has no calendar
+  useEffect(() => {
+    if (!hasCalendar) {
+      setAgendaMode(false);
+    }
+  }, [hasCalendar]);
+
   // Filter leads by date range only (sub_origin filtering is done in the query)
   const leads = useMemo(() => {
     return allLeads.filter(lead => {
