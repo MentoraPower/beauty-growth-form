@@ -82,10 +82,33 @@ function AddSubOriginDropdown({
   const [isLoading, setIsLoading] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const handleSelectType = (tipo: 'tarefas' | 'calendario') => {
-    setSelectedTipo(tipo);
-    setStep('name');
-    setTimeout(() => inputRef.current?.focus(), 100);
+  const handleSelectType = async (tipo: 'tarefas' | 'calendario') => {
+    if (tipo === 'calendario') {
+      // Create calendar directly with default name
+      setIsLoading(true);
+      const { error } = await supabase.from("crm_sub_origins").insert({ 
+        nome: 'Calendário', 
+        origin_id: originId,
+        ordem: subOriginsCount,
+        tipo: 'calendario'
+      });
+      
+      setIsLoading(false);
+      
+      if (error) {
+        toast.error("Erro ao criar calendário");
+        return;
+      }
+      
+      toast.success("Calendário criado");
+      setIsOpen(false);
+      onCreated();
+      window.dispatchEvent(new CustomEvent('crm-data-updated'));
+    } else {
+      setSelectedTipo(tipo);
+      setStep('name');
+      setTimeout(() => inputRef.current?.focus(), 100);
+    }
   };
 
   const handleCreate = async () => {
