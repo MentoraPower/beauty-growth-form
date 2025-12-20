@@ -450,9 +450,9 @@ function SortableOriginItem({
                 <button
                   onClick={() => handleOverviewClick(origin.id)}
                   className={cn(
-                    "flex items-center gap-2 flex-1 py-1.5 px-2 rounded-lg transition-all duration-200 ease-out text-xs",
+                    "flex items-center gap-2 flex-1 py-2 px-3 rounded-md transition-all duration-200 ease-out text-xs",
                     currentOverviewOriginId === origin.id 
-                      ? "bg-black text-white font-medium"
+                      ? "bg-gradient-to-r from-purple-600 to-violet-500 text-white font-medium shadow-sm"
                       : "text-foreground/70 hover:text-foreground hover:bg-black/5"
                   )}
                 >
