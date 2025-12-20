@@ -325,9 +325,10 @@ function SortableOriginItem({
     const lastEl = lastSubOriginRef.current;
     if (!lastEl) return;
 
+    // Calcula até o centro vertical do último item para alinhar com a curva
     const centerY = lastEl.offsetTop + lastEl.offsetHeight / 2;
-    // Para no meio da curva (não no centro do item), subtraindo 4px
-    const next = Math.max(0, Math.round(centerY - LINE_TOP_PX - 4));
+    // Ajuste preciso: a linha vai do topo até o centro da última curva
+    const next = Math.max(0, Math.round(centerY - LINE_TOP_PX));
     setTreeLineHeightPx((prev) => (prev === next ? prev : next));
   }, [isOriginExpanded, originSubOrigins.length]);
 
