@@ -627,24 +627,31 @@ const OriginOverview = () => {
                     <div className="h-[300px] relative">
                       {/* Top Hours Badge - Inside chart */}
                       {topHours.length > 0 && (
-                        <div className="absolute top-2 right-2 z-10 flex items-center gap-1.5">
-                          <span className="text-[10px] text-muted-foreground font-medium">Top vendas:</span>
-                          {topHours.map((h, idx) => (
-                            <div 
-                              key={h.hourNum} 
-                              className="flex items-center gap-1 px-2 py-0.5 rounded bg-black/5 backdrop-blur-sm"
-                            >
-                              <span className="text-[10px] font-bold text-foreground">
-                                {idx + 1}º
-                              </span>
-                              <span className="text-[10px] font-semibold text-foreground">
-                                {h.hour}
-                              </span>
-                              <span className="text-[10px] text-muted-foreground">
-                                ({h.vendas})
-                              </span>
-                            </div>
-                          ))}
+                        <div className="absolute top-0 right-0 z-10 flex items-center gap-2 animate-fade-in">
+                          <div className="flex items-center gap-1 bg-neutral-900/90 backdrop-blur-md rounded-lg px-3 py-2 shadow-lg">
+                            <span className="text-xs text-neutral-400 font-medium mr-1">Top vendas</span>
+                            {topHours.map((h, idx) => (
+                              <div 
+                                key={h.hourNum} 
+                                className="flex items-center gap-1.5 px-2.5 py-1 rounded-md"
+                                style={{
+                                  background: idx === 0 
+                                    ? 'linear-gradient(135deg, rgba(225,29,72,0.2), rgba(225,29,72,0.1))' 
+                                    : 'rgba(255,255,255,0.08)'
+                                }}
+                              >
+                                <span className={`text-xs font-bold ${idx === 0 ? 'text-rose-400' : 'text-neutral-300'}`}>
+                                  {idx + 1}º
+                                </span>
+                                <span className="text-xs font-semibold text-white">
+                                  {h.hour}
+                                </span>
+                                <span className="text-xs text-neutral-400">
+                                  {h.vendas}
+                                </span>
+                              </div>
+                            ))}
+                          </div>
                         </div>
                       )}
                       <ResponsiveContainer width="100%" height="100%">
