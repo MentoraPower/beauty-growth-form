@@ -43,80 +43,7 @@ interface Message {
   shareName?: string | null;
 }
 
-// Colors for avatar fallback based on username
-const AVATAR_COLORS = [
-  '#E91E63', '#9C27B0', '#673AB7', '#3F51B5', '#2196F3',
-  '#00BCD4', '#009688', '#4CAF50', '#FF9800', '#FF5722',
-  '#F44336', '#795548', '#607D8B'
-];
-
-// Get initials from name
-const getInitials = (name: string): string => {
-  if (!name) return '?';
-  const parts = name.trim().split(/\s+/);
-  if (parts.length >= 2) {
-    return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
-  }
-  return name.substring(0, 2).toUpperCase();
-};
-
-// Get consistent color based on username
-const getAvatarColor = (username: string): string => {
-  let hash = 0;
-  for (let i = 0; i < username.length; i++) {
-    hash = username.charCodeAt(i) + ((hash << 5) - hash);
-  }
-  return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length];
-};
-
-// Avatar component with fallback to colored initials
-const AvatarWithFallback = ({ 
-  src, 
-  name, 
-  username, 
-  size = 'md' 
-}: { 
-  src: string | null; 
-  name: string; 
-  username: string; 
-  size?: 'sm' | 'md' | 'lg';
-}) => {
-  const [imgError, setImgError] = useState(false);
-  const sizeClasses = {
-    sm: 'w-10 h-10 text-sm',
-    md: 'w-11 h-11 text-sm',
-    lg: 'w-12 h-12 text-base'
-  };
-  
-  if (!src || imgError) {
-    const initials = getInitials(name || username);
-    const bgColor = getAvatarColor(username || name);
-    
-    return (
-      <div 
-        className={cn(
-          "rounded-full flex items-center justify-center font-semibold text-white border border-border",
-          sizeClasses[size]
-        )}
-        style={{ backgroundColor: bgColor }}
-      >
-        {initials}
-      </div>
-    );
-  }
-  
-  return (
-    <img
-      src={src}
-      alt={name}
-      className={cn(
-        "rounded-full object-cover border border-border",
-        sizeClasses[size]
-      )}
-      onError={() => setImgError(true)}
-    />
-  );
-};
+const DEFAULT_AVATAR = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0MCIgaGVpZ2h0PSI0MCIgdmlld0JveD0iMCAwIDQwIDQwIj48cmVjdCB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIGZpbGw9IiNlMGUwZTAiLz48Y2lyY2xlIGN4PSIyMCIgY3k9IjE1IiByPSI4IiBmaWxsPSIjYjBiMGIwIi8+PHBhdGggZD0iTTggMzVjMC04IDUtMTIgMTItMTJzMTIgNCAxMiAxMiIgZmlsbD0iI2IwYjBiMCIvPjwvc3ZnPg==";
 
 export default function InstagramPage() {
   const [isConnected, setIsConnected] = useState(false);
@@ -657,11 +584,10 @@ export default function InstagramPage() {
                     )}
                   >
                     <div className="relative flex-shrink-0">
-                      <AvatarWithFallback
-                        src={chat.avatar}
-                        name={chat.name}
-                        username={chat.username}
-                        size="md"
+                      <img
+                        src={chat.avatar || DEFAULT_AVATAR}
+                        alt={chat.name}
+                        className="w-11 h-11 rounded-full object-cover border border-border"
                       />
                       {chat.unreadCount > 0 && (
                         <span className="absolute -top-1 -right-1 w-5 h-5 bg-pink-500 rounded-full text-xs text-white flex items-center justify-center">
@@ -691,11 +617,10 @@ export default function InstagramPage() {
           <>
             <div className="h-14 px-4 flex items-center justify-between border-b border-border">
               <div className="flex items-center gap-3">
-                <AvatarWithFallback
-                  src={selectedChat.avatar}
-                  name={selectedChat.name}
-                  username={selectedChat.username}
-                  size="sm"
+                <img
+                  src={selectedChat.avatar || DEFAULT_AVATAR}
+                  alt={selectedChat.name}
+                  className="w-10 h-10 rounded-full object-cover border border-border"
                 />
                 <div>
                   <h3 className="font-semibold text-foreground text-sm">
