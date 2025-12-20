@@ -284,7 +284,7 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
                 >
                   <div className="flex items-center w-full py-2">
                     <div className="w-10 flex items-center justify-center flex-shrink-0">
-                      <div className="w-7 h-7 rounded-full bg-gradient-to-br from-[#F40000] to-[#A10000] flex items-center justify-center">
+                      <div className="w-7 h-7 rounded-full bg-white/20 flex items-center justify-center">
                         <User className="h-4 w-4 text-white" strokeWidth={1.5} />
                       </div>
                     </div>
@@ -441,7 +441,7 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
             {/* Profile Section - Mobile */}
             <div className="border-t border-white/10 p-3">
               <div className="flex items-center gap-3 px-4 py-2 mb-2">
-                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#F40000] to-[#A10000] flex items-center justify-center">
+                <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center">
                   <User className="h-4 w-4 text-white" strokeWidth={1.5} />
                 </div>
                 <div className="flex-1 min-w-0">
