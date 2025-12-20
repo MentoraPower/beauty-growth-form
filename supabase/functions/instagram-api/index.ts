@@ -35,13 +35,14 @@ serve(async (req) => {
 
     switch (action) {
       case 'get-oauth-url': {
-        // Generate Instagram OAuth URL
+        // Generate Instagram Business Login OAuth URL
         const redirectUri = params?.redirectUri;
-        const scope = 'instagram_basic,instagram_manage_messages,pages_messaging,pages_show_list,pages_read_engagement';
+        const scope = 'instagram_business_basic,instagram_business_manage_messages,instagram_business_manage_comments,instagram_business_content_publish';
         
-        const oauthUrl = `https://www.facebook.com/v18.0/dialog/oauth?client_id=${INSTAGRAM_APP_ID}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${scope}&response_type=code`;
+        // Use Instagram OAuth endpoint (not Facebook)
+        const oauthUrl = `https://www.instagram.com/oauth/authorize?enable_fb_login=0&force_authentication=1&client_id=${INSTAGRAM_APP_ID}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${encodeURIComponent(scope)}&response_type=code`;
         
-        console.log('Generated OAuth URL:', oauthUrl);
+        console.log('Generated Instagram OAuth URL:', oauthUrl);
         
         return new Response(
           JSON.stringify({ success: true, oauthUrl, appId: INSTAGRAM_APP_ID }),
@@ -50,7 +51,7 @@ serve(async (req) => {
       }
 
       case 'exchange-code': {
-        // Exchange authorization code for access token
+        // Exchange authorization code for access token using Instagram API
         const { code, redirectUri } = params;
         
         if (!code) {
@@ -60,28 +61,47 @@ serve(async (req) => {
           );
         }
 
-        console.log('Exchanging code for token with redirectUri:', redirectUri);
+        console.log('Exchanging code for Instagram token with redirectUri:', redirectUri);
         
-        // Get short-lived token
-        const tokenUrl = `https://graph.facebook.com/v18.0/oauth/access_token?client_id=${INSTAGRAM_APP_ID}&client_secret=${INSTAGRAM_APP_SECRET}&redirect_uri=${encodeURIComponent(redirectUri)}&code=${code}`;
-        console.log('Token URL:', tokenUrl);
+        // Get short-lived token from Instagram API
+        const tokenFormData = new URLSearchParams();
+        tokenFormData.append('client_id', INSTAGRAM_APP_ID);
+        tokenFormData.append('client_secret', INSTAGRAM_APP_SECRET);
+        tokenFormData.append('grant_type', 'authorization_code');
+        tokenFormData.append('redirect_uri', redirectUri);
+        tokenFormData.append('code', code);
         
-        const tokenResponse = await fetch(tokenUrl, { method: 'GET' });
+        console.log('Token request params:', tokenFormData.toString());
+        
+        const tokenResponse = await fetch('https://api.instagram.com/oauth/access_token', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: tokenFormData,
+        });
+        
         const tokenData = await tokenResponse.json();
-        console.log('Token response:', JSON.stringify(tokenData));
+        console.log('Instagram token response:', JSON.stringify(tokenData));
         
-        if (tokenData.error) {
+        if (tokenData.error_type || tokenData.error_message) {
           return new Response(
-            JSON.stringify({ success: false, error: tokenData.error.message || tokenData.error.type }),
+            JSON.stringify({ success: false, error: tokenData.error_message || tokenData.error_type }),
             { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
           );
         }
 
         const shortLivedToken = tokenData.access_token;
+        const instagramUserId = tokenData.user_id?.toString();
         
-        // Exchange for long-lived token
+        if (!shortLivedToken) {
+          return new Response(
+            JSON.stringify({ success: false, error: 'Não foi possível obter token de acesso' }),
+            { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+        
+        // Exchange for long-lived token using Graph API
         const longLivedResponse = await fetch(
-          `https://graph.facebook.com/v18.0/oauth/access_token?grant_type=fb_exchange_token&client_id=${INSTAGRAM_APP_ID}&client_secret=${INSTAGRAM_APP_SECRET}&fb_exchange_token=${shortLivedToken}`,
+          `https://graph.instagram.com/access_token?grant_type=ig_exchange_token&client_secret=${INSTAGRAM_APP_SECRET}&access_token=${shortLivedToken}`,
           { method: 'GET' }
         );
         
@@ -91,43 +111,15 @@ serve(async (req) => {
         const accessToken = longLivedData.access_token || shortLivedToken;
         const expiresIn = longLivedData.expires_in;
         
-        // Get user info and pages
+        // Get Instagram user info
         const userResponse = await fetch(
-          `https://graph.facebook.com/v18.0/me?fields=id,name&access_token=${accessToken}`
+          `https://graph.instagram.com/v21.0/me?fields=user_id,username&access_token=${accessToken}`
         );
         const userData = await userResponse.json();
-        console.log('User data:', JSON.stringify(userData));
+        console.log('Instagram user data:', JSON.stringify(userData));
         
-        // Get pages with Instagram accounts
-        const pagesResponse = await fetch(
-          `https://graph.facebook.com/v18.0/me/accounts?fields=id,name,access_token,instagram_business_account&access_token=${accessToken}`
-        );
-        const pagesData = await pagesResponse.json();
-        console.log('Pages data:', JSON.stringify(pagesData));
-        
-        let instagramUserId = null;
-        let instagramUsername = null;
-        let pageId = null;
-        let pageAccessToken = null;
-        
-        if (pagesData.data && pagesData.data.length > 0) {
-          for (const page of pagesData.data) {
-            if (page.instagram_business_account) {
-              pageId = page.id;
-              pageAccessToken = page.access_token;
-              instagramUserId = page.instagram_business_account.id;
-              
-              // Get Instagram username
-              const igResponse = await fetch(
-                `https://graph.facebook.com/v18.0/${instagramUserId}?fields=username&access_token=${pageAccessToken}`
-              );
-              const igData = await igResponse.json();
-              console.log('Instagram data:', JSON.stringify(igData));
-              instagramUsername = igData.username;
-              break;
-            }
-          }
-        }
+        const instagramUsername = userData.username;
+        const finalInstagramUserId = userData.user_id || instagramUserId;
         
         // Calculate expiration
         const tokenExpiresAt = expiresIn 
@@ -141,13 +133,15 @@ serve(async (req) => {
           .neq('id', '00000000-0000-0000-0000-000000000000');
         
         const connectionData = {
-          instagram_user_id: instagramUserId || userData.id,
+          instagram_user_id: finalInstagramUserId,
           instagram_username: instagramUsername,
-          access_token: pageAccessToken || accessToken,
+          access_token: accessToken,
           token_expires_at: tokenExpiresAt,
-          page_id: pageId,
-          page_access_token: pageAccessToken,
+          page_id: null,
+          page_access_token: null,
         };
+        
+        console.log('Saving connection data:', JSON.stringify(connectionData));
         
         const { error: insertError } = await supabase
           .from('instagram_connections')
@@ -165,7 +159,7 @@ serve(async (req) => {
           JSON.stringify({ 
             success: true, 
             instagramUsername,
-            instagramUserId,
+            instagramUserId: finalInstagramUserId,
             message: 'Conexão salva com sucesso!'
           }),
           { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -187,13 +181,14 @@ serve(async (req) => {
           );
         }
         
-        // Verify token is still valid
+        // Verify token is still valid using Instagram Graph API
         const testResponse = await fetch(
-          `https://graph.facebook.com/v18.0/me?access_token=${connection.access_token}`
+          `https://graph.instagram.com/v21.0/me?fields=user_id,username&access_token=${connection.access_token}`
         );
         const testData = await testResponse.json();
         
         if (testData.error) {
+          console.log('Token validation error:', JSON.stringify(testData));
           return new Response(
             JSON.stringify({ 
               success: false, 
@@ -209,7 +204,7 @@ serve(async (req) => {
           JSON.stringify({ 
             success: true, 
             connected: true,
-            instagramUsername: connection.instagram_username,
+            instagramUsername: connection.instagram_username || testData.username,
             instagramUserId: connection.instagram_user_id
           }),
           { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -231,12 +226,12 @@ serve(async (req) => {
           );
         }
         
-        const accessToken = connection.page_access_token || connection.access_token;
+        const accessToken = connection.access_token;
         const instagramId = connection.instagram_user_id;
         
-        // Get conversations
+        // Get conversations using Instagram Graph API
         const convResponse = await fetch(
-          `https://graph.facebook.com/v18.0/${instagramId}/conversations?fields=participants,messages{message,from,created_time}&access_token=${accessToken}`
+          `https://graph.instagram.com/v21.0/${instagramId}/conversations?fields=participants,messages{message,from,created_time}&access_token=${accessToken}`
         );
         const convData = await convResponse.json();
         console.log('Conversations data:', JSON.stringify(convData));
@@ -271,11 +266,11 @@ serve(async (req) => {
           );
         }
         
-        const accessToken = connection.page_access_token || connection.access_token;
+        const accessToken = connection.access_token;
         const instagramId = connection.instagram_user_id;
         
         const sendResponse = await fetch(
-          `https://graph.facebook.com/v18.0/${instagramId}/messages`,
+          `https://graph.instagram.com/v21.0/${instagramId}/messages`,
           {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
