@@ -525,7 +525,7 @@ const OriginOverview = () => {
                   // Generate hourly data from 6am to 22pm
                   const hourlyData = Array.from({ length: 17 }, (_, i) => {
                     const hour = i + 6;
-                    const hourStr = `${hour.toString().padStart(2, '0')}:00`;
+                    const hourStr = `${hour.toString().padStart(2, '0')}h`;
                     
                     const meetingsInHour = appointments.filter(apt => {
                       const aptHour = new Date(apt.start_time).getHours();
@@ -544,58 +544,88 @@ const OriginOverview = () => {
                     };
                   });
 
+                  // Se não tiver dados reais, mostrar exemplo
+                  const hasData = hourlyData.some(d => d.reunioes > 0);
+                  
+                  const exampleData = [
+                    { hour: '06h', reunioes: 0, vendas: 0 },
+                    { hour: '07h', reunioes: 2, vendas: 1 },
+                    { hour: '08h', reunioes: 3, vendas: 1 },
+                    { hour: '09h', reunioes: 5, vendas: 2 },
+                    { hour: '10h', reunioes: 4, vendas: 0 },
+                    { hour: '11h', reunioes: 3, vendas: 1 },
+                    { hour: '12h', reunioes: 1, vendas: 0 },
+                    { hour: '13h', reunioes: 4, vendas: 2 },
+                    { hour: '14h', reunioes: 6, vendas: 3 },
+                    { hour: '15h', reunioes: 5, vendas: 2 },
+                    { hour: '16h', reunioes: 4, vendas: 1 },
+                    { hour: '17h', reunioes: 3, vendas: 1 },
+                    { hour: '18h', reunioes: 2, vendas: 0 },
+                    { hour: '19h', reunioes: 1, vendas: 0 },
+                    { hour: '20h', reunioes: 0, vendas: 0 },
+                    { hour: '21h', reunioes: 0, vendas: 0 },
+                    { hour: '22h', reunioes: 0, vendas: 0 },
+                  ];
+
+                  const chartData = hasData ? hourlyData : exampleData;
+
                   return (
-                    <div className="h-[280px]">
-                      <ResponsiveContainer width="100%" height="100%">
-                        <AreaChart data={hourlyData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
-                          <defs>
-                            <linearGradient id="colorReunioes" x1="0" y1="0" x2="0" y2="1">
-                              <stop offset="5%" stopColor="rgba(0, 0, 0, 0.3)" stopOpacity={0.8}/>
-                              <stop offset="95%" stopColor="rgba(0, 0, 0, 0.1)" stopOpacity={0.1}/>
-                            </linearGradient>
-                          </defs>
-                          <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.06)" vertical={false} />
-                          <XAxis 
-                            dataKey="hour" 
-                            axisLine={false} 
-                            tickLine={false}
-                            tick={{ fill: '#888', fontSize: 11 }}
-                          />
-                          <YAxis 
-                            axisLine={false} 
-                            tickLine={false}
-                            tick={{ fill: '#888', fontSize: 11 }}
-                            allowDecimals={false}
-                          />
-                          <Tooltip 
-                            contentStyle={{ 
-                              backgroundColor: 'white', 
-                              border: '1px solid rgba(0,0,0,0.1)',
-                              borderRadius: '8px',
-                              boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
-                            }}
-                            labelStyle={{ fontWeight: 600, marginBottom: 4 }}
-                          />
-                          <Area 
-                            type="monotone" 
-                            dataKey="reunioes" 
-                            name="Reuniões"
-                            stroke="rgba(0, 0, 0, 0.4)" 
-                            strokeWidth={2}
-                            fillOpacity={1} 
-                            fill="url(#colorReunioes)" 
-                          />
-                          <Line 
-                            type="monotone" 
-                            dataKey="vendas" 
-                            name="Vendas"
-                            stroke="#10b981" 
-                            strokeWidth={3}
-                            dot={{ fill: '#10b981', strokeWidth: 2, r: 4 }}
-                            activeDot={{ r: 6, strokeWidth: 2 }}
-                          />
-                        </AreaChart>
-                      </ResponsiveContainer>
+                    <div className="space-y-2">
+                      {!hasData && (
+                        <p className="text-xs text-muted-foreground italic">* Dados de exemplo - adicione agendamentos para ver dados reais</p>
+                      )}
+                      <div className="h-[280px]">
+                        <ResponsiveContainer width="100%" height="100%">
+                          <AreaChart data={chartData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+                            <defs>
+                              <linearGradient id="colorReunioes" x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="5%" stopColor="rgba(0, 0, 0, 0.3)" stopOpacity={0.8}/>
+                                <stop offset="95%" stopColor="rgba(0, 0, 0, 0.1)" stopOpacity={0.1}/>
+                              </linearGradient>
+                            </defs>
+                            <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.06)" vertical={false} />
+                            <XAxis 
+                              dataKey="hour" 
+                              axisLine={false} 
+                              tickLine={false}
+                              tick={{ fill: '#888', fontSize: 11 }}
+                            />
+                            <YAxis 
+                              axisLine={false} 
+                              tickLine={false}
+                              tick={{ fill: '#888', fontSize: 11 }}
+                              allowDecimals={false}
+                            />
+                            <Tooltip 
+                              contentStyle={{ 
+                                backgroundColor: 'white', 
+                                border: '1px solid rgba(0,0,0,0.1)',
+                                borderRadius: '8px',
+                                boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
+                              }}
+                              labelStyle={{ fontWeight: 600, marginBottom: 4 }}
+                            />
+                            <Area 
+                              type="monotone" 
+                              dataKey="reunioes" 
+                              name="Agendamentos"
+                              stroke="rgba(0, 0, 0, 0.4)" 
+                              strokeWidth={2}
+                              fillOpacity={1} 
+                              fill="url(#colorReunioes)" 
+                            />
+                            <Line 
+                              type="monotone" 
+                              dataKey="vendas" 
+                              name="Vendas"
+                              stroke="#10b981" 
+                              strokeWidth={3}
+                              dot={{ fill: '#10b981', strokeWidth: 2, r: 4 }}
+                              activeDot={{ r: 6, strokeWidth: 2 }}
+                            />
+                          </AreaChart>
+                        </ResponsiveContainer>
+                      </div>
                     </div>
                   );
                 })()}
