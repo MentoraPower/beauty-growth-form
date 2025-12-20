@@ -271,7 +271,7 @@ export function LeadTrackingTimeline({ leadId, utmData, leadEmail, leadWhatsapp 
             </div>
           )}
 
-          {/* UTM Parameters Card */}
+          {/* UTM Parameters Card - Modern Layout */}
           {hasUTMData && (
             <div className="relative flex">
               {/* Left side - Icon and vertical line */}
@@ -293,11 +293,11 @@ export function LeadTrackingTimeline({ leadId, utmData, leadEmail, leadWhatsapp 
                   <CardContent className="p-4">
                     <p className="text-sm font-semibold text-foreground mb-3">Parâmetros UTM</p>
                     
-                    <div className="space-y-2">
+                    <div className="flex flex-wrap gap-x-6 gap-y-2">
                       {utmItems.map((item) => (
-                        <div key={item.label} className="flex items-center gap-2">
-                          <span className="text-xs text-muted-foreground w-24">{item.label}</span>
-                          <span className="text-xs font-medium font-mono bg-muted/50 px-2 py-1 rounded">{item.value}</span>
+                        <div key={item.label} className="flex items-center gap-1.5">
+                          <span className="text-xs text-muted-foreground">{item.label}:</span>
+                          <span className="text-xs font-bold text-foreground">{item.value}</span>
                         </div>
                       ))}
                     </div>
