@@ -38,6 +38,8 @@ interface Message {
   status: string;
   mediaType?: string | null;
   mediaUrl?: string | null;
+  shareLink?: string | null;
+  shareName?: string | null;
 }
 
 const DEFAULT_AVATAR = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0MCIgaGVpZ2h0PSI0MCIgdmlld0JveD0iMCAwIDQwIDQwIj48cmVjdCB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIGZpbGw9IiNlMGUwZTAiLz48Y2lyY2xlIGN4PSIyMCIgY3k9IjE1IiByPSI4IiBmaWxsPSIjYjBiMGIwIi8+PHBhdGggZD0iTTggMzVjMC04IDUtMTIgMTItMTJzMTIgNCAxMiAxMiIgZmlsbD0iI2IwYjBiMCIvPjwvc3ZnPg==";
@@ -274,8 +276,10 @@ export default function InstagramPage() {
           time: msg.created_time,
           fromMe: msg.from?.id === accountInfo?.userId,
           status: 'SENT',
-          mediaType: msg.attachments?.data?.[0]?.type || null,
-          mediaUrl: msg.attachments?.data?.[0]?.url || null,
+          mediaType: msg.mediaType || null,
+          mediaUrl: msg.mediaUrl || null,
+          shareLink: msg.shareLink || null,
+          shareName: msg.shareName || null,
         })).reverse(); // Reverse to show oldest first
         
         setMessages(formattedMessages);
@@ -572,16 +576,22 @@ export default function InstagramPage() {
             <ScrollArea className="flex-1 p-4">
               <div className="space-y-3">
                 {messages.map((message) => {
-                  // Detect Instagram reel/video links
+                  // Check for shared reel/post from API
+                  const hasShare = message.shareLink && message.shareLink.includes('instagram.com');
+                  
+                  // Also detect Instagram reel/video links in text as fallback
                   const reelRegex = /https?:\/\/(www\.)?instagram\.com\/(reel|p|tv)\/[\w-]+/gi;
                   const reelMatch = message.text?.match(reelRegex);
-                  const isReelMessage = reelMatch && reelMatch.length > 0;
+                  const isReelInText = reelMatch && reelMatch.length > 0;
                   
-                  // Get the reel URL if present
-                  const reelUrl = isReelMessage ? reelMatch[0] : null;
+                  // Get the reel URL (prefer shareLink from API)
+                  const reelUrl = hasShare ? message.shareLink : (isReelInText ? reelMatch![0] : null);
                   
                   // Remove the reel URL from text if it's only the URL
                   const textWithoutReel = message.text?.replace(reelRegex, '').trim();
+                  
+                  // Check if this is a media-only message (no text, just share or media)
+                  const isMediaOnly = !message.text && (hasShare || message.mediaType);
                   
                   return (
                     <div
@@ -596,20 +606,42 @@ export default function InstagramPage() {
                             : "bg-muted text-foreground"
                         )}
                       >
-                        {/* Show reel/video embed if detected */}
-                        {isReelMessage && reelUrl && (
-                          <div className="relative">
+                        {/* Show shared reel/post embed */}
+                        {reelUrl && (
+                          <div className="relative bg-black/10">
                             <iframe
                               src={`${reelUrl}/embed`}
                               className="w-[280px] h-[400px] border-0"
                               allowFullScreen
                               loading="lazy"
                             />
+                            {message.shareName && (
+                              <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-3">
+                                <p className="text-white text-xs truncate">{message.shareName}</p>
+                              </div>
+                            )}
                           </div>
                         )}
                         
-                        {/* Show media if present */}
-                        {message.mediaType === 'video' && message.mediaUrl && (
+                        {/* Show story mention */}
+                        {message.mediaType === 'story' && (
+                          <div className="bg-gradient-to-br from-purple-500 via-pink-500 to-orange-500 p-4 flex items-center gap-2">
+                            <div className="w-12 h-12 rounded-full bg-white/20 flex items-center justify-center">
+                              <Instagram className="w-6 h-6 text-white" />
+                            </div>
+                            <div>
+                              <p className="text-white text-sm font-medium">Mencionou você em um story</p>
+                              {message.mediaUrl && (
+                                <a href={message.mediaUrl} target="_blank" rel="noopener noreferrer" className="text-white/80 text-xs underline">
+                                  Ver story
+                                </a>
+                              )}
+                            </div>
+                          </div>
+                        )}
+                        
+                        {/* Show video if present */}
+                        {message.mediaType === 'video' && message.mediaUrl && !reelUrl && (
                           <video 
                             src={message.mediaUrl} 
                             controls 
@@ -618,6 +650,7 @@ export default function InstagramPage() {
                           />
                         )}
                         
+                        {/* Show image if present */}
                         {message.mediaType === 'image' && message.mediaUrl && (
                           <img 
                             src={message.mediaUrl} 
@@ -627,12 +660,19 @@ export default function InstagramPage() {
                           />
                         )}
                         
+                        {/* Show audio if present */}
+                        {message.mediaType === 'audio' && message.mediaUrl && (
+                          <div className="p-3">
+                            <audio src={message.mediaUrl} controls className="w-full" />
+                          </div>
+                        )}
+                        
                         {/* Show text (without reel URL if it was only the URL) */}
-                        {(textWithoutReel || (!isReelMessage && message.text)) && (
+                        {(textWithoutReel || (!reelUrl && message.text)) && (
                           <p className="text-sm px-4 py-2">{textWithoutReel || message.text}</p>
                         )}
                         
-                        {/* If there's no text but media/reel, add padding for timestamp */}
+                        {/* Timestamp */}
                         <div className={cn(
                           "flex items-center justify-end gap-1 px-4 py-2",
                           message.fromMe ? "text-white/70" : "text-muted-foreground"
