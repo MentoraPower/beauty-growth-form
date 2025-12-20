@@ -413,12 +413,12 @@ const OriginOverview = () => {
                                 width: `${(count / maxCount) * 100}%`,
                                 background: `repeating-linear-gradient(
                                   45deg,
-                                  #1a1a1a,
-                                  #1a1a1a 12px,
-                                  #4a4a4a 12px,
-                                  #4a4a4a 24px,
-                                  #1a1a1a 24px,
-                                  #1a1a1a 36px
+                                  #3a3a3a,
+                                  #3a3a3a 12px,
+                                  #a0a0a0 12px,
+                                  #a0a0a0 24px,
+                                  #3a3a3a 24px,
+                                  #3a3a3a 36px
                                 )`
                               }}
                             />
