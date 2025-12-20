@@ -339,17 +339,17 @@ const OriginOverview = () => {
 
               <Card className="bg-white border border-black/5 shadow-none">
                 <CardContent className="pt-5 pb-4">
-                  <p className="text-sm text-muted-foreground font-medium mb-2">No Show</p>
-                  <p className="text-3xl font-bold text-rose-500">
-                    {appointments.filter(a => a.is_noshow).length}
-                  </p>
+                  <p className="text-sm text-muted-foreground font-medium mb-2">Agendamentos</p>
+                  <p className="text-3xl font-bold text-foreground">{appointments.length}</p>
                 </CardContent>
               </Card>
 
               <Card className="bg-white border border-black/5 shadow-none">
                 <CardContent className="pt-5 pb-4">
-                  <p className="text-sm text-muted-foreground font-medium mb-2">Agendamentos</p>
-                  <p className="text-3xl font-bold text-foreground">{appointments.length}</p>
+                  <p className="text-sm text-muted-foreground font-medium mb-2">No Show</p>
+                  <p className="text-3xl font-bold text-rose-500">
+                    {appointments.filter(a => a.is_noshow).length}
+                  </p>
                 </CardContent>
               </Card>
 
