@@ -635,10 +635,35 @@ export default function InstagramPage() {
 
             <ScrollArea className="flex-1 p-4">
               {isLoadingMessages ? (
-                <div className="flex-1 flex items-center justify-center py-20">
-                  <div className="text-center">
-                    <Loader2 className="h-8 w-8 mx-auto mb-3 animate-spin text-pink-500" />
-                    <p className="text-sm text-muted-foreground">Carregando mensagens...</p>
+                <div className="space-y-3">
+                  {/* Skeleton mensagens recebidas */}
+                  <div className="flex items-start">
+                    <div className="bg-muted rounded-2xl px-4 py-3 max-w-[60%] animate-pulse">
+                      <div className="h-4 bg-muted-foreground/20 rounded w-32 mb-2" />
+                      <div className="h-4 bg-muted-foreground/20 rounded w-20" />
+                    </div>
+                  </div>
+                  <div className="flex items-start">
+                    <div className="bg-muted rounded-2xl px-4 py-3 max-w-[60%] animate-pulse">
+                      <div className="h-4 bg-muted-foreground/20 rounded w-48" />
+                    </div>
+                  </div>
+                  {/* Skeleton mensagens enviadas */}
+                  <div className="flex items-end justify-end">
+                    <div className="bg-[#3797f0]/50 rounded-2xl px-4 py-3 max-w-[60%] animate-pulse">
+                      <div className="h-4 bg-white/30 rounded w-40 mb-2" />
+                      <div className="h-4 bg-white/30 rounded w-24" />
+                    </div>
+                  </div>
+                  <div className="flex items-start">
+                    <div className="bg-muted rounded-2xl px-4 py-3 max-w-[60%] animate-pulse">
+                      <div className="h-4 bg-muted-foreground/20 rounded w-36" />
+                    </div>
+                  </div>
+                  <div className="flex items-end justify-end">
+                    <div className="bg-[#3797f0]/50 rounded-2xl px-4 py-3 max-w-[60%] animate-pulse">
+                      <div className="h-4 bg-white/30 rounded w-28" />
+                    </div>
                   </div>
                 </div>
               ) : (
