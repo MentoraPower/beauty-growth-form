@@ -526,14 +526,14 @@ export default function InstagramPage() {
                         </span>
                       )}
                     </div>
-                    <div className="flex-1 text-left min-w-0 space-y-0.5">
+                    <div className="flex-1 text-left overflow-hidden space-y-0.5">
                       <div className="flex items-center justify-between gap-2">
-                        <span className="font-medium text-foreground text-sm truncate">
+                        <span className="font-medium text-foreground text-sm truncate max-w-[140px]">
                           {chat.username ? `@${chat.username}` : chat.name}
                         </span>
                         <span className="text-[10px] text-muted-foreground flex-shrink-0">{formatTime(chat.lastMessageTime)}</span>
                       </div>
-                      <p className="text-xs text-muted-foreground truncate leading-tight">{chat.lastMessage}</p>
+                      <p className="text-xs text-muted-foreground truncate max-w-[200px] leading-tight">{chat.lastMessage}</p>
                     </div>
                   </button>
                 ))
