@@ -54,7 +54,7 @@ export default function Paineis() {
             <button
               key={painel.id}
               onClick={() => handlePainelSelect(painel.id)}
-              className="group bg-[#1a1a1f] border border-white/5 rounded-xl p-5 text-left transition-all duration-200 hover:border-white/15 hover:bg-[#1f1f24]"
+              className="group bg-white border border-border rounded-xl p-5 text-left transition-all duration-200 hover:border-primary/20 hover:shadow-md"
             >
               <div className={cn(
                 "w-11 h-11 rounded-lg flex items-center justify-center mb-4",
