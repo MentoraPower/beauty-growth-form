@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect, memo, useRef } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { Menu, X, LogOut, LayoutGrid, Settings, ChevronDown, User, Inbox } from "lucide-react";
+import { Menu, X, LogOut, LayoutGrid, Settings, ChevronDown, User, Inbox, BarChart3 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import scaleLogo from "@/assets/scale-logo-menu.png";
 import { CRMOriginsPanel } from "./CRMOriginsPanel";
@@ -13,7 +13,7 @@ interface DashboardLayoutProps {
   children: React.ReactNode;
 }
 
-type ActivePanel = 'none' | 'crm' | 'atendimento' | 'settings';
+type ActivePanel = 'none' | 'crm' | 'atendimento' | 'paineis' | 'settings';
 
 // Load panel state from localStorage
 const getInitialPanelState = (): ActivePanel => {
@@ -43,12 +43,16 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
 
   const isCRMActive = location.pathname.startsWith("/admin/crm") || location.pathname === "/admin";
   const isAtendimentoActive = location.pathname.startsWith("/admin/atendimento");
+  const isPaineisActive = location.pathname.startsWith("/admin/paineis");
   const isSettingsActive = location.pathname === "/admin/settings";
 
   // Sync activePanel with current route
   useEffect(() => {
     if (isAtendimentoActive && activePanel !== 'atendimento') {
       setActivePanel('atendimento');
+      setCrmSubmenuOpen(false);
+    } else if (isPaineisActive && activePanel !== 'paineis') {
+      setActivePanel('paineis');
       setCrmSubmenuOpen(false);
     } else if (isSettingsActive && activePanel !== 'settings') {
       setActivePanel('settings');
@@ -57,7 +61,7 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
       setActivePanel('crm');
       setCrmSubmenuOpen(true);
     }
-  }, [location.pathname, isCRMActive, isAtendimentoActive, isSettingsActive]);
+  }, [location.pathname, isCRMActive, isAtendimentoActive, isPaineisActive, isSettingsActive]);
 
   // Fetch user permissions for WhatsApp access and user info
   useEffect(() => {
@@ -146,6 +150,9 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
   useEffect(() => {
     if (activePanel === 'atendimento' && !location.pathname.startsWith('/admin/atendimento')) {
       navigate('/admin/atendimento');
+    }
+    if (activePanel === 'paineis' && !location.pathname.startsWith('/admin/paineis')) {
+      navigate('/admin/paineis');
     }
     if (activePanel === 'settings' && location.pathname !== '/admin/settings') {
       navigate('/admin/settings');
@@ -272,6 +279,40 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
                     </button>
                   );
                 })}
+
+                {/* Separator */}
+                <div className="h-px bg-white/10 my-2" />
+
+                {/* Painéis Section Label */}
+                <div className={cn(
+                  "text-xs font-medium text-white/40 uppercase tracking-wider px-1 py-1 transition-all duration-200",
+                  sidebarExpanded ? "opacity-100" : "opacity-0"
+                )}>
+                  Painéis
+                </div>
+
+                {/* Painéis Button */}
+                <button
+                  onClick={() => handleNavClick('paineis')}
+                  className={cn(
+                    "relative flex items-center h-10 rounded-lg transition-all duration-200",
+                    activePanel === 'paineis'
+                      ? "bg-white/10 text-white before:absolute before:-left-3 before:top-1/2 before:-translate-y-1/2 before:h-[70%] before:w-1 before:rounded-r-full before:bg-gradient-to-b before:from-[#F40000] before:to-[#A10000]"
+                      : "text-white/70 hover:bg-white/5 hover:text-white"
+                  )}
+                >
+                  <div className="w-10 flex items-center justify-center flex-shrink-0">
+                    <BarChart3 className="h-5 w-5" strokeWidth={1.5} />
+                  </div>
+                  <span 
+                    className={cn(
+                      "text-sm font-medium whitespace-nowrap transition-all duration-200 overflow-hidden",
+                      sidebarExpanded ? "opacity-100 w-auto" : "opacity-0 w-0"
+                    )}
+                  >
+                    Painéis
+                  </span>
+                </button>
               </div>
             </nav>
 
@@ -441,6 +482,31 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
                     </Link>
                   );
                 })}
+
+                {/* Separator - Mobile */}
+                <div className="h-px bg-white/10 my-2" />
+
+                {/* Painéis Section Label - Mobile */}
+                <div className="text-xs font-medium text-white/40 uppercase tracking-wider px-4 py-1">
+                  Painéis
+                </div>
+
+                {/* Painéis - Mobile */}
+                <Link
+                  to="/admin/paineis"
+                  onClick={() => setSidebarOpen(false)}
+                  className={cn(
+                    "relative flex items-center w-full rounded-xl transition-colors duration-200 px-4 py-3 gap-3",
+                    isPaineisActive
+                      ? "bg-white/10 text-white before:absolute before:left-0 before:top-1/2 before:-translate-y-1/2 before:h-[70%] before:w-1 before:rounded-r-full before:bg-gradient-to-b before:from-[#F40000] before:to-[#A10000]"
+                      : "text-white/60 hover:bg-white/5 hover:text-white"
+                  )}
+                >
+                  <BarChart3 className="h-5 w-5 flex-shrink-0" strokeWidth={1.5} />
+                  <span className="text-sm font-medium whitespace-nowrap">
+                    Painéis
+                  </span>
+                </Link>
               </div>
             </nav>
 
