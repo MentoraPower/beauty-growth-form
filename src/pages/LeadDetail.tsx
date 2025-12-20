@@ -781,6 +781,8 @@ export default function LeadDetail() {
                     utm_term: lead.utm_term,
                     utm_content: lead.utm_content,
                   }}
+                  leadEmail={lead.email}
+                  leadWhatsapp={lead.whatsapp}
                 />
               </motion.div>
             )}

@@ -2,9 +2,11 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Clock, PhoneOff, UserCheck, Webhook, Globe, ChevronDown, ChevronUp, ArrowRight, ListOrdered, MoveRight, UserPlus, FileText } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Clock, PhoneOff, UserCheck, Webhook, Globe, ChevronDown, ChevronUp, ArrowRight, ListOrdered, MoveRight, UserPlus, FileText, Users } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { useNavigate } from "react-router-dom";
 
 interface TrackingEvent {
   id: string;
@@ -25,9 +27,21 @@ interface UTMData {
   utm_content: string | null;
 }
 
+interface OtherOriginLead {
+  id: string;
+  name: string;
+  sub_origin_id: string | null;
+  sub_origin_name: string;
+  origin_name: string;
+  pipeline_name: string | null;
+  created_at: string;
+}
+
 interface LeadTrackingTimelineProps {
   leadId: string;
   utmData: UTMData;
+  leadEmail?: string;
+  leadWhatsapp?: string;
 }
 
 const getIconForType = (tipo: string) => {
@@ -72,13 +86,16 @@ const getIconColors = (tipo: string): { bg: string; text: string } => {
   }
 };
 
-export function LeadTrackingTimeline({ leadId, utmData }: LeadTrackingTimelineProps) {
+export function LeadTrackingTimeline({ leadId, utmData, leadEmail, leadWhatsapp }: LeadTrackingTimelineProps) {
+  const navigate = useNavigate();
   const [events, setEvents] = useState<TrackingEvent[]>([]);
+  const [otherOriginLeads, setOtherOriginLeads] = useState<OtherOriginLead[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [expandedEvent, setExpandedEvent] = useState<string | null>(null);
 
   useEffect(() => {
     fetchEvents();
+    fetchOtherOriginLeads();
 
     // Subscribe to realtime updates
     const channel = supabase
@@ -100,7 +117,7 @@ export function LeadTrackingTimeline({ leadId, utmData }: LeadTrackingTimelinePr
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [leadId]);
+  }, [leadId, leadEmail, leadWhatsapp]);
 
   const fetchEvents = async () => {
     const { data, error } = await supabase
@@ -117,6 +134,61 @@ export function LeadTrackingTimeline({ leadId, utmData }: LeadTrackingTimelinePr
     setIsLoading(false);
   };
 
+  const fetchOtherOriginLeads = async () => {
+    if (!leadEmail && !leadWhatsapp) return;
+
+    // Build query to find leads with same email or whatsapp but different ID
+    let query = supabase
+      .from("leads")
+      .select(`
+        id,
+        name,
+        sub_origin_id,
+        pipeline_id,
+        created_at,
+        crm_sub_origins!inner (
+          id,
+          nome,
+          crm_origins!inner (
+            nome
+          )
+        ),
+        pipelines (
+          nome
+        )
+      `)
+      .neq("id", leadId);
+
+    // Check for email match (excluding temp emails)
+    if (leadEmail && !leadEmail.includes("incompleto_") && !leadEmail.includes("@temp.com")) {
+      query = query.eq("email", leadEmail);
+    } else if (leadWhatsapp) {
+      query = query.eq("whatsapp", leadWhatsapp);
+    } else {
+      return;
+    }
+
+    const { data, error } = await query;
+
+    if (error) {
+      console.error("Error fetching other origin leads:", error);
+      return;
+    }
+
+    if (data && data.length > 0) {
+      const mappedLeads: OtherOriginLead[] = data.map((lead: any) => ({
+        id: lead.id,
+        name: lead.name,
+        sub_origin_id: lead.sub_origin_id,
+        sub_origin_name: lead.crm_sub_origins?.nome || "Desconhecido",
+        origin_name: lead.crm_sub_origins?.crm_origins?.nome || "Desconhecido",
+        pipeline_name: lead.pipelines?.nome || null,
+        created_at: lead.created_at,
+      }));
+      setOtherOriginLeads(mappedLeads);
+    }
+  };
+
   const hasUTMData = utmData.utm_source || utmData.utm_medium || utmData.utm_campaign || utmData.utm_term || utmData.utm_content;
 
   // Prepare UTM items for timeline
@@ -129,6 +201,53 @@ export function LeadTrackingTimeline({ leadId, utmData }: LeadTrackingTimelinePr
 
   return (
     <div className="space-y-6">
+      {/* Other Origins Card */}
+      {otherOriginLeads.length > 0 && (
+        <Card className="border-amber-200 bg-amber-50/50 shadow-sm">
+          <CardContent className="p-4">
+            <div className="flex items-center gap-2 mb-3">
+              <div className="h-8 w-8 rounded-lg bg-amber-500 flex items-center justify-center">
+                <Users className="h-4 w-4 text-white" />
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-amber-900">Lead existe em outras origens</p>
+                <p className="text-xs text-amber-700">
+                  Encontrado em {otherOriginLeads.length} {otherOriginLeads.length === 1 ? 'outra origem' : 'outras origens'}
+                </p>
+              </div>
+            </div>
+            
+            <div className="space-y-2">
+              {otherOriginLeads.map((otherLead) => (
+                <button
+                  key={otherLead.id}
+                  onClick={() => navigate(`/admin/crm/${otherLead.id}?origin=${otherLead.sub_origin_id}&tab=rastreamento`)}
+                  className="w-full flex items-center justify-between p-2 rounded-lg bg-white border border-amber-200 hover:bg-amber-100 transition-colors text-left"
+                >
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-medium text-amber-900 truncate">
+                        {otherLead.origin_name}
+                      </span>
+                      <ArrowRight className="h-3 w-3 text-amber-500 flex-shrink-0" />
+                      <span className="text-xs font-medium text-amber-900 truncate">
+                        {otherLead.sub_origin_name}
+                      </span>
+                    </div>
+                    {otherLead.pipeline_name && (
+                      <Badge variant="outline" className="mt-1 text-[10px] h-5 bg-amber-100 border-amber-300 text-amber-800">
+                        {otherLead.pipeline_name}
+                      </Badge>
+                    )}
+                  </div>
+                  <ArrowRight className="h-4 w-4 text-amber-600 flex-shrink-0 ml-2" />
+                </button>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
         Histórico de Rastreamento
       </h3>
