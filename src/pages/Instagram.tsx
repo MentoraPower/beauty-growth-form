@@ -57,6 +57,8 @@ export default function InstagramPage() {
   const [messageInput, setMessageInput] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [isSending, setIsSending] = useState(false);
+  const [isLoadingMessages, setIsLoadingMessages] = useState(false);
+  const [isLoadingChats, setIsLoadingChats] = useState(false);
   const [openReelUrl, setOpenReelUrl] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -232,8 +234,10 @@ export default function InstagramPage() {
     }
   };
 
-  const fetchConversations = useCallback(async () => {
+  const fetchConversations = useCallback(async (showLoading = false) => {
     if (!myInstagramUserId) return;
+
+    if (showLoading) setIsLoadingChats(true);
 
     try {
       const { data, error } = await supabase.functions.invoke('instagram-api', {
@@ -264,16 +268,20 @@ export default function InstagramPage() {
       }
     } catch (error: any) {
       console.error('Error fetching conversations:', error);
+    } finally {
+      setIsLoadingChats(false);
     }
   }, [myInstagramUserId]);
 
   useEffect(() => {
     if (!isConnected || !myInstagramUserId) return;
-    fetchConversations();
+    fetchConversations(true); // Show loading on initial fetch
   }, [isConnected, myInstagramUserId, fetchConversations]);
 
-  const fetchMessages = useCallback(async (conversationId: string) => {
+  const fetchMessages = useCallback(async (conversationId: string, showLoading = false) => {
     if (!myInstagramUserId) return;
+
+    if (showLoading) setIsLoadingMessages(true);
 
     try {
       const { data, error } = await supabase.functions.invoke('instagram-api', {
@@ -339,13 +347,16 @@ export default function InstagramPage() {
         description: error.message,
         variant: "destructive",
       });
+    } finally {
+      setIsLoadingMessages(false);
     }
   }, [myInstagramUserId]);
 
-  // Fetch messages when a chat is selected
+  // Fetch messages when a chat is selected - clear old messages immediately
   useEffect(() => {
     if (selectedChat && myInstagramUserId) {
-      fetchMessages(selectedChat.id);
+      setMessages([]); // Clear messages immediately when switching chats
+      fetchMessages(selectedChat.id, true); // Show loading
     }
   }, [selectedChat?.id, myInstagramUserId, fetchMessages]);
 
@@ -546,7 +557,12 @@ export default function InstagramPage() {
 
         <ScrollArea className="flex-1">
           <div className="px-1 space-y-1">
-            {chats.length === 0 ? (
+            {isLoadingChats ? (
+              <div className="p-8 text-center">
+                <Loader2 className="h-8 w-8 mx-auto mb-3 animate-spin text-pink-500" />
+                <p className="text-sm text-muted-foreground">Carregando conversas...</p>
+              </div>
+            ) : chats.length === 0 ? (
               <div className="p-8 text-center text-muted-foreground">
                 <Instagram className="h-12 w-12 mx-auto mb-3 opacity-50" />
                 <p className="text-sm">Nenhuma conversa ainda</p>
@@ -618,6 +634,14 @@ export default function InstagramPage() {
             </div>
 
             <ScrollArea className="flex-1 p-4">
+              {isLoadingMessages ? (
+                <div className="flex-1 flex items-center justify-center py-20">
+                  <div className="text-center">
+                    <Loader2 className="h-8 w-8 mx-auto mb-3 animate-spin text-pink-500" />
+                    <p className="text-sm text-muted-foreground">Carregando mensagens...</p>
+                  </div>
+                </div>
+              ) : (
               <div className="space-y-3">
                 {messages.map((message) => {
                   // Check for shared reel/post from API
@@ -737,6 +761,7 @@ export default function InstagramPage() {
                 })}
                 <div ref={messagesEndRef} />
               </div>
+              )}
             </ScrollArea>
 
             <div className="p-4 border-t border-border">
