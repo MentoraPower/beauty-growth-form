@@ -285,6 +285,7 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
 
                 {/* Criar Painel */}
                 <button
+                  onClick={() => navigate('/admin/paineis')}
                   className="relative flex items-center h-10 rounded-lg transition-all duration-200 text-white/70 hover:bg-white/5 hover:text-white"
                 >
                   <div className="w-10 flex items-center justify-center flex-shrink-0">
