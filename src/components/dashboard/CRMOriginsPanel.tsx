@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { Kanban, ChevronRight, Folder, FolderOpen, MoreVertical, Plus, Pencil, Trash2, GripVertical, Home } from "lucide-react";
+import { Kanban, ChevronRight, Folder, FolderOpen, MoreVertical, Plus, Pencil, Trash2, GripVertical, Home, CalendarDays, ListTodo } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import {
@@ -49,6 +49,7 @@ interface SubOrigin {
   origin_id: string;
   nome: string;
   ordem: number;
+  tipo: 'tarefas' | 'calendario';
 }
 
 interface LeadCount {
@@ -423,9 +424,10 @@ export function CRMOriginsPanel({ isOpen, onClose, sidebarWidth, embedded = fals
   const [dialogOpen, setDialogOpen] = useState(false);
   const [dialogType, setDialogType] = useState<'origin' | 'suborigin'>('origin');
   const [dialogMode, setDialogMode] = useState<'create' | 'edit'>('create');
-  const [editingItem, setEditingItem] = useState<{ id: string; nome: string; origin_id?: string } | null>(null);
+  const [editingItem, setEditingItem] = useState<{ id: string; nome: string; origin_id?: string; tipo?: string } | null>(null);
   const [inputValue, setInputValue] = useState("");
   const [selectedOriginId, setSelectedOriginId] = useState<string | null>(null);
+  const [selectedTipo, setSelectedTipo] = useState<'tarefas' | 'calendario'>('tarefas');
 
   // DnD sensors
   const sensors = useSensors(
@@ -493,7 +495,10 @@ export function CRMOriginsPanel({ isOpen, onClose, sidebarWidth, embedded = fals
         setOrigins(originsRes.data);
       }
       if (subOriginsRes.data) {
-        setSubOrigins(subOriginsRes.data);
+        setSubOrigins(subOriginsRes.data.map(s => ({
+          ...s,
+          tipo: (s.tipo === 'calendario' ? 'calendario' : 'tarefas') as 'tarefas' | 'calendario'
+        })));
         
         // Fetch exact counts for each sub-origin using head:true (no 1000 limit)
         const countPromises = subOriginsRes.data.map(async (subOrigin) => {
@@ -642,6 +647,7 @@ export function CRMOriginsPanel({ isOpen, onClose, sidebarWidth, embedded = fals
     setInputValue("");
     setSelectedOriginId(originId);
     setEditingItem(null);
+    setSelectedTipo('tarefas');
     setDialogOpen(true);
   };
 
@@ -692,7 +698,8 @@ export function CRMOriginsPanel({ isOpen, onClose, sidebarWidth, embedded = fals
         const { error } = await supabase.from("crm_sub_origins").insert({ 
           nome: inputValue.trim(), 
           origin_id: originId,
-          ordem: originSubOrigins.length 
+          ordem: originSubOrigins.length,
+          tipo: selectedTipo
         });
         if (error) {
           toast.error("Erro ao criar sub-origem");
@@ -823,13 +830,64 @@ export function CRMOriginsPanel({ isOpen, onClose, sidebarWidth, embedded = fals
               }
             </DialogTitle>
           </DialogHeader>
-          <div className="py-4">
+          <div className="py-4 space-y-4">
             <Input
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
               placeholder={dialogType === 'origin' ? "Nome da origem" : "Nome da sub-origem"}
               onKeyDown={(e) => e.key === 'Enter' && handleSave()}
             />
+            
+            {/* Type selector for sub-origin creation */}
+            {dialogType === 'suborigin' && dialogMode === 'create' && (
+              <div className="space-y-2">
+                <p className="text-sm font-medium text-foreground">Tipo de gestão</p>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setSelectedTipo('tarefas')}
+                    className={cn(
+                      "flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all",
+                      selectedTipo === 'tarefas'
+                        ? "border-rose-500 bg-rose-50"
+                        : "border-border hover:border-muted-foreground/30 hover:bg-muted/30"
+                    )}
+                  >
+                    <ListTodo className={cn(
+                      "h-6 w-6",
+                      selectedTipo === 'tarefas' ? "text-rose-500" : "text-muted-foreground"
+                    )} />
+                    <span className={cn(
+                      "text-sm font-medium",
+                      selectedTipo === 'tarefas' ? "text-rose-600" : "text-muted-foreground"
+                    )}>
+                      Tarefas
+                    </span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setSelectedTipo('calendario')}
+                    className={cn(
+                      "flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all",
+                      selectedTipo === 'calendario'
+                        ? "border-rose-500 bg-rose-50"
+                        : "border-border hover:border-muted-foreground/30 hover:bg-muted/30"
+                    )}
+                  >
+                    <CalendarDays className={cn(
+                      "h-6 w-6",
+                      selectedTipo === 'calendario' ? "text-rose-500" : "text-muted-foreground"
+                    )} />
+                    <span className={cn(
+                      "text-sm font-medium",
+                      selectedTipo === 'calendario' ? "text-rose-600" : "text-muted-foreground"
+                    )}>
+                      Calendário
+                    </span>
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setDialogOpen(false)}>
