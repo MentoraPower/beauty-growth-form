@@ -571,30 +571,79 @@ export default function InstagramPage() {
 
             <ScrollArea className="flex-1 p-4">
               <div className="space-y-3">
-                {messages.map((message) => (
-                  <div
-                    key={message.id}
-                    className={cn("flex", message.fromMe ? "justify-end" : "justify-start")}
-                  >
+                {messages.map((message) => {
+                  // Detect Instagram reel/video links
+                  const reelRegex = /https?:\/\/(www\.)?instagram\.com\/(reel|p|tv)\/[\w-]+/gi;
+                  const reelMatch = message.text?.match(reelRegex);
+                  const isReelMessage = reelMatch && reelMatch.length > 0;
+                  
+                  // Get the reel URL if present
+                  const reelUrl = isReelMessage ? reelMatch[0] : null;
+                  
+                  // Remove the reel URL from text if it's only the URL
+                  const textWithoutReel = message.text?.replace(reelRegex, '').trim();
+                  
+                  return (
                     <div
-                      className={cn(
-                        "max-w-[70%] rounded-2xl px-4 py-2",
-                        message.fromMe
-                          ? "bg-gradient-to-r from-purple-500 to-pink-500 text-white"
-                          : "bg-muted text-foreground"
-                      )}
+                      key={message.id}
+                      className={cn("flex", message.fromMe ? "justify-end" : "justify-start")}
                     >
-                      {message.text && <p className="text-sm">{message.text}</p>}
-                      <div className={cn(
-                        "flex items-center justify-end gap-1 mt-1",
-                        message.fromMe ? "text-white/70" : "text-muted-foreground"
-                      )}>
-                        <span className="text-[10px]">{formatTime(message.time)}</span>
-                        {message.fromMe && renderStatusIcon(message.status)}
+                      <div
+                        className={cn(
+                          "max-w-[70%] rounded-2xl overflow-hidden",
+                          message.fromMe
+                            ? "bg-gradient-to-r from-purple-500 to-pink-500 text-white"
+                            : "bg-muted text-foreground"
+                        )}
+                      >
+                        {/* Show reel/video embed if detected */}
+                        {isReelMessage && reelUrl && (
+                          <div className="relative">
+                            <iframe
+                              src={`${reelUrl}/embed`}
+                              className="w-[280px] h-[400px] border-0"
+                              allowFullScreen
+                              loading="lazy"
+                            />
+                          </div>
+                        )}
+                        
+                        {/* Show media if present */}
+                        {message.mediaType === 'video' && message.mediaUrl && (
+                          <video 
+                            src={message.mediaUrl} 
+                            controls 
+                            className="max-w-[280px] rounded-t-2xl"
+                            preload="metadata"
+                          />
+                        )}
+                        
+                        {message.mediaType === 'image' && message.mediaUrl && (
+                          <img 
+                            src={message.mediaUrl} 
+                            alt="Imagem" 
+                            className="max-w-[280px] rounded-t-2xl"
+                            loading="lazy"
+                          />
+                        )}
+                        
+                        {/* Show text (without reel URL if it was only the URL) */}
+                        {(textWithoutReel || (!isReelMessage && message.text)) && (
+                          <p className="text-sm px-4 py-2">{textWithoutReel || message.text}</p>
+                        )}
+                        
+                        {/* If there's no text but media/reel, add padding for timestamp */}
+                        <div className={cn(
+                          "flex items-center justify-end gap-1 px-4 py-2",
+                          message.fromMe ? "text-white/70" : "text-muted-foreground"
+                        )}>
+                          <span className="text-[10px]">{formatTime(message.time)}</span>
+                          {message.fromMe && renderStatusIcon(message.status)}
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
                 <div ref={messagesEndRef} />
               </div>
             </ScrollArea>
