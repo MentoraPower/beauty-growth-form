@@ -176,6 +176,7 @@ export function AppointmentCard({
         ref={setNodeRef}
         {...listeners}
         {...attributes}
+        data-appointment-card
         style={dragStyle}
         onClick={handleClick}
         className={cn(
@@ -202,6 +203,7 @@ export function AppointmentCard({
       ref={setNodeRef}
       {...listeners}
       {...attributes}
+      data-appointment-card
       style={dragStyle}
       onClick={handleClick}
       className={cn(
