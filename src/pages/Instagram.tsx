@@ -391,13 +391,15 @@ export default function InstagramPage() {
   const renderStatusIcon = (status: string) => {
     switch (status) {
       case "SENT":
-        return <Check className="h-3 w-3 text-muted-foreground" />;
+        return <Check className="h-3 w-3" />;
       case "DELIVERED":
-        return <CheckCheck className="h-3 w-3 text-muted-foreground" />;
+        return <CheckCheck className="h-3 w-3" />;
       case "READ":
+      case "seen":
         return <CheckCheck className="h-3 w-3 text-blue-500" />;
       default:
-        return null;
+        // Default to single check for sent messages
+        return <Check className="h-3 w-3" />;
     }
   };
 
@@ -684,7 +686,11 @@ export default function InstagramPage() {
                       {/* Timestamp outside bubble */}
                       <div className="flex items-center gap-1 mt-1 px-1">
                         <span className="text-[10px] text-muted-foreground">{formatTime(message.time)}</span>
-                        {message.fromMe && <span className="text-muted-foreground">{renderStatusIcon(message.status)}</span>}
+                        {message.fromMe && (
+                          <span className="text-muted-foreground flex items-center">
+                            {renderStatusIcon(message.status)}
+                          </span>
+                        )}
                       </div>
                     </div>
                   );
