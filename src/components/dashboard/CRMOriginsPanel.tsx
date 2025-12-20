@@ -450,23 +450,16 @@ function SortableOriginItem({
                 <button
                   onClick={() => handleOverviewClick(origin.id)}
                   className={cn(
-                    "flex items-center gap-2 w-full py-1.5 px-2.5 rounded-lg transition-all duration-200 ease-out text-xs border",
-                    currentOverviewOriginId === origin.id
-                      ? "bg-white border-black/10 text-foreground shadow-sm"
-                      : "bg-white/50 border-transparent text-foreground/80 hover:bg-white hover:border-black/5 hover:shadow-sm"
+                    "flex items-center gap-2 flex-1 py-1.5 px-2 rounded-lg transition-all duration-200 ease-out text-xs",
+                    currentOverviewOriginId === origin.id 
+                      ? "bg-black text-white font-medium"
+                      : "text-foreground/70 hover:text-foreground hover:bg-black/5"
                   )}
                 >
-                  <div className={cn(
-                    "w-5 h-5 rounded-full flex items-center justify-center",
-                    currentOverviewOriginId === origin.id
-                      ? "bg-black/10"
-                      : "bg-black/5"
-                  )}>
-                    <Home className={cn(
-                      "h-3 w-3",
-                      currentOverviewOriginId === origin.id ? "text-foreground" : "text-foreground/70"
-                    )} />
-                  </div>
+                  <Home className={cn(
+                    "h-3 w-3 flex-shrink-0",
+                    currentOverviewOriginId === origin.id ? "text-white" : "text-foreground/70"
+                  )} />
                   <span className="font-medium">Overview</span>
                 </button>
               </div>
@@ -504,23 +497,16 @@ function SortableOriginItem({
                     <button
                       onClick={() => handleSubOriginClick(subOrigin.id, subOrigin.tipo)}
                       className={cn(
-                        "flex items-center gap-2 w-full py-1.5 px-2.5 rounded-lg transition-all duration-200 ease-out text-xs border",
-                        isActive
-                          ? "bg-white border-black/10 text-foreground shadow-sm"
-                          : "bg-white/50 border-transparent text-foreground/80 hover:bg-white hover:border-black/5 hover:shadow-sm"
+                        "flex items-center gap-2 flex-1 py-1.5 px-2 rounded-lg transition-all duration-200 ease-out text-xs",
+                        isActive 
+                          ? "bg-black/10 text-foreground font-medium"
+                          : "text-foreground/70 hover:text-foreground hover:bg-black/5"
                       )}
                     >
-                      <div className={cn(
-                        "w-5 h-5 rounded-full flex items-center justify-center",
-                        isActive
-                          ? "bg-black/10"
-                          : "bg-black/5"
-                      )}>
-                        <CalendarDays className={cn(
-                          "h-3 w-3",
-                          isActive ? "text-foreground" : "text-foreground/70"
-                        )} />
-                      </div>
+                      <CalendarDays className={cn(
+                        "h-3 w-3 flex-shrink-0",
+                        isActive ? "text-foreground" : "text-foreground/70"
+                      )} />
                       <span className="font-medium">{subOrigin.nome}</span>
                     </button>
                     
