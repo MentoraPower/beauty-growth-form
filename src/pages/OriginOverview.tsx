@@ -624,39 +624,11 @@ const OriginOverview = () => {
                   };
 
                   return (
-                    <div className="h-[300px] relative">
-                      {/* Top Hours Badge - Below title */}
-                      {topHours.length > 0 && (
-                        <div className="absolute -top-2 left-0 z-10 flex items-center gap-2 animate-fade-in">
-                          <div className="flex items-center gap-1.5 bg-white/80 backdrop-blur-sm border border-black/5 rounded-lg px-3 py-2 shadow-sm">
-                            <span className="text-xs text-muted-foreground font-medium mr-1">Top vendas</span>
-                            {topHours.map((h, idx) => (
-                              <div 
-                                key={h.hourNum} 
-                                className="flex items-center gap-1.5 px-2.5 py-1 rounded-md border"
-                                style={{
-                                  background: idx === 0 
-                                    ? 'linear-gradient(135deg, rgba(225,29,72,0.08), rgba(225,29,72,0.03))' 
-                                    : 'rgba(0,0,0,0.02)',
-                                  borderColor: idx === 0 ? 'rgba(225,29,72,0.2)' : 'rgba(0,0,0,0.05)'
-                                }}
-                              >
-                                <span className={`text-xs font-bold ${idx === 0 ? 'text-rose-500' : 'text-muted-foreground'}`}>
-                                  {idx + 1}º
-                                </span>
-                                <span className="text-xs font-semibold text-foreground">
-                                  {h.hour}
-                                </span>
-                                <span className="text-xs text-muted-foreground">
-                                  {h.vendas}
-                                </span>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-                      <ResponsiveContainer width="100%" height="100%">
-                        <AreaChart data={hourlyData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                    <div className="flex gap-4">
+                      {/* Chart */}
+                      <div className="flex-1 h-[300px]">
+                        <ResponsiveContainer width="100%" height="100%">
+                          <AreaChart data={hourlyData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                           <defs>
                             <linearGradient id="gradientAgendamentos" x1="0" y1="0" x2="0" y2="1">
                               <stop offset="0%" stopColor="#6b7280" stopOpacity={0.3} />
@@ -737,6 +709,30 @@ const OriginOverview = () => {
                           />
                         </AreaChart>
                       </ResponsiveContainer>
+                      </div>
+                      
+                      {/* Top Hours Sidebar - Right side */}
+                      {topHours.length > 0 && (
+                        <div className="flex flex-col gap-2 w-[100px] animate-fade-in">
+                          <span className="text-xs text-muted-foreground font-medium mb-1">Top vendas</span>
+                          {topHours.map((h, idx) => (
+                            <div 
+                              key={h.hourNum} 
+                              className="flex flex-col px-3 py-2 rounded-lg bg-muted/30 border border-black/5"
+                            >
+                              <span className="text-[10px] text-muted-foreground uppercase tracking-wide">
+                                {h.hour}
+                              </span>
+                              <div className="flex items-center gap-1.5">
+                                <span className={`w-1.5 h-1.5 rounded-full ${idx === 0 ? 'bg-rose-500' : 'bg-muted-foreground/50'}`} />
+                                <span className="text-lg font-bold text-foreground">
+                                  {h.vendas}
+                                </span>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   );
                 })()}
