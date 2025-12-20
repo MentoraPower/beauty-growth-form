@@ -35,10 +35,13 @@ export function AppointmentCard({
   );
   const [saving, setSaving] = useState(false);
 
+  const isLocked = appointment.is_locked ?? false;
+  
   const { attributes, listeners, setNodeRef, transform, isDragging } =
     useDraggable({
       id: appointment.id,
       data: { appointment },
+      disabled: isLocked,
     });
 
   const startTime = new Date(appointment.start_time);
@@ -69,7 +72,7 @@ export function AppointmentCard({
   const dragStyle: React.CSSProperties = {
     ...style,
     transform: transform ? `translate3d(${transform.x}px, ${transform.y}px, 0)` : undefined,
-    cursor: isDragging ? "grabbing" : "grab",
+    cursor: isLocked ? "default" : (isDragging ? "grabbing" : "grab"),
     zIndex: isDragging ? 100 : undefined,
     transition: isDragging ? undefined : "none",
   };
