@@ -69,10 +69,12 @@ interface CRMOriginsPanelProps {
 function AddSubOriginDropdown({ 
   originId, 
   subOriginsCount,
+  hasCalendar,
   onCreated 
 }: { 
   originId: string; 
   subOriginsCount: number;
+  hasCalendar: boolean;
   onCreated: () => void;
 }) {
   const [isOpen, setIsOpen] = useState(false);
@@ -184,17 +186,27 @@ function AddSubOriginDropdown({
                 <ChevronRight className="h-3.5 w-3.5 text-foreground/20 group-hover:text-foreground/40 transition-colors" />
               </button>
               <button
-                onClick={() => handleSelectType('calendario')}
-                className="flex items-center gap-2.5 w-full py-2 px-2.5 rounded-lg hover:bg-black/[0.03] transition-all group"
+                onClick={() => !hasCalendar && handleSelectType('calendario')}
+                disabled={hasCalendar}
+                className={cn(
+                  "flex items-center gap-2.5 w-full py-2 px-2.5 rounded-lg transition-all group",
+                  hasCalendar 
+                    ? "opacity-40 cursor-not-allowed" 
+                    : "hover:bg-black/[0.03]"
+                )}
               >
                 <div className="w-7 h-7 rounded-md bg-black/[0.04] flex items-center justify-center">
                   <CalendarDays className="h-3.5 w-3.5 text-foreground/60" />
                 </div>
                 <div className="text-left flex-1 min-w-0">
                   <p className="text-[13px] font-medium text-foreground leading-tight">Calendário</p>
-                  <p className="text-[10px] text-muted-foreground/60 leading-tight">Agendamentos</p>
+                  <p className="text-[10px] text-muted-foreground/60 leading-tight">
+                    {hasCalendar ? 'Já existe um calendário' : 'Agendamentos'}
+                  </p>
                 </div>
-                <ChevronRight className="h-3.5 w-3.5 text-foreground/20 group-hover:text-foreground/40 transition-colors" />
+                {!hasCalendar && (
+                  <ChevronRight className="h-3.5 w-3.5 text-foreground/20 group-hover:text-foreground/40 transition-colors" />
+                )}
               </button>
             </div>
           ) : (
@@ -268,7 +280,7 @@ function SortableOriginItem({
   openCreateSubOriginDialog: (originId: string) => void;
   openEditSubOriginDialog: (subOrigin: SubOrigin) => void;
   handleDeleteSubOrigin: (id: string) => void;
-  handleSubOriginClick: (id: string) => void;
+  handleSubOriginClick: (id: string, tipo: 'tarefas' | 'calendario') => void;
   handleOverviewClick: (originId: string) => void;
   leadCounts: LeadCount[];
   currentSubOriginId: string | null;
@@ -488,7 +500,7 @@ function SortableOriginItem({
                   
                   <div className="flex items-center group">
                     <button
-                      onClick={() => handleSubOriginClick(subOrigin.id)}
+                      onClick={() => handleSubOriginClick(subOrigin.id, subOrigin.tipo)}
                       className={cn(
                         "flex items-center gap-2 flex-1 py-1.5 px-2 rounded-lg transition-all duration-200 ease-out text-xs",
                         isActive 
@@ -496,10 +508,17 @@ function SortableOriginItem({
                           : "text-foreground/70 hover:text-foreground hover:bg-black/5"
                       )}
                     >
-                      <Kanban className={cn(
-                        "h-3 w-3 flex-shrink-0",
-                        isActive ? "text-foreground" : "text-foreground/70"
-                      )} />
+                      {subOrigin.tipo === 'calendario' ? (
+                        <CalendarDays className={cn(
+                          "h-3 w-3 flex-shrink-0",
+                          isActive ? "text-foreground" : "text-foreground/70"
+                        )} />
+                      ) : (
+                        <Kanban className={cn(
+                          "h-3 w-3 flex-shrink-0",
+                          isActive ? "text-foreground" : "text-foreground/70"
+                        )} />
+                      )}
                       <span className="truncate">{subOrigin.nome}</span>
                       {leadCount > 0 && (
                         <span className={cn(
@@ -550,6 +569,7 @@ function SortableOriginItem({
               <AddSubOriginDropdown 
                 originId={origin.id}
                 subOriginsCount={originSubOrigins.length}
+                hasCalendar={originSubOrigins.some(s => s.tipo === 'calendario')}
                 onCreated={() => {}}
               />
             )}
@@ -915,7 +935,7 @@ export function CRMOriginsPanel({ isOpen, onClose, sidebarWidth, embedded = fals
     fetchData();
   };
 
-  const handleSubOriginClick = (subOriginId: string) => {
+  const handleSubOriginClick = (subOriginId: string, tipo: 'tarefas' | 'calendario') => {
     const currentOrigin = new URLSearchParams(window.location.search).get('origin');
     
     if (currentOrigin === subOriginId) {
@@ -923,7 +943,12 @@ export function CRMOriginsPanel({ isOpen, onClose, sidebarWidth, embedded = fals
     }
     
     window.dispatchEvent(new CustomEvent('suborigin-change'));
-    navigate(`/admin/crm?origin=${subOriginId}`);
+    
+    if (tipo === 'calendario') {
+      navigate(`/admin/calendario?origin=${subOriginId}`);
+    } else {
+      navigate(`/admin/crm?origin=${subOriginId}`);
+    }
   };
 
   const handleOverviewClick = (originId: string) => {

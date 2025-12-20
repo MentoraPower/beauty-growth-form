@@ -27,6 +27,7 @@ interface AddAppointmentDropdownProps {
   anchorPosition?: { x: number; y: number };
   onPendingSlotUpdate?: (startTime: string, endTime: string) => void;
   editingAppointment?: Appointment | null;
+  subOriginId?: string | null;
 }
 
 export function AddAppointmentDropdown({
@@ -39,6 +40,7 @@ export function AddAppointmentDropdown({
   anchorPosition,
   onPendingSlotUpdate,
   editingAppointment,
+  subOriginId,
 }: AddAppointmentDropdownProps) {
   const [loading, setLoading] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -269,6 +271,7 @@ export function AddAppointmentDropdown({
       is_paid: isPaid && paymentNum > 0,
       payment_value: isPaid ? paymentNum : 0,
       is_noshow: isNoshow,
+      ...(subOriginId && !isEditing ? { sub_origin_id: subOriginId } : {}),
     };
 
     let error;
