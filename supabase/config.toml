@@ -3,6 +3,9 @@ project_id = "ytdfwkchsumgdvcroaqg"
 [functions.analyze-lead-profile]
 verify_jwt = false
 
+[functions.instagram-api]
+verify_jwt = false
+
 [functions.send-email]
 verify_jwt = false
 
