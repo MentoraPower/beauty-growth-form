@@ -541,73 +541,103 @@ const OriginOverview = () => {
                     };
                   });
 
+                  const CustomTooltipHourly = ({ active, payload, label }: any) => {
+                    if (active && payload && payload.length) {
+                      return (
+                        <div className="bg-neutral-900 border border-neutral-700 rounded-xl px-4 py-3 shadow-xl">
+                          <p className="text-neutral-400 text-xs mb-2">{label}</p>
+                          {payload.map((entry: any, index: number) => (
+                            <p key={index} className="text-white font-semibold text-sm">
+                              {entry.name}: <span style={{ color: entry.color }}>{entry.value}</span>
+                            </p>
+                          ))}
+                        </div>
+                      );
+                    }
+                    return null;
+                  };
+
                   return (
-                    <div className="h-[280px]">
+                    <div className="h-[300px]">
                       <ResponsiveContainer width="100%" height="100%">
-                        <AreaChart data={hourlyData} margin={{ top: 20, right: 20, left: 0, bottom: 0 }}>
+                        <AreaChart data={hourlyData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                           <defs>
                             <linearGradient id="gradientAgendamentos" x1="0" y1="0" x2="0" y2="1">
-                              <stop offset="0%" stopColor="#6b7280" stopOpacity={0.4} />
-                              <stop offset="100%" stopColor="#6b7280" stopOpacity={0.05} />
+                              <stop offset="0%" stopColor="#6b7280" stopOpacity={0.3} />
+                              <stop offset="100%" stopColor="#6b7280" stopOpacity={0} />
                             </linearGradient>
                             <linearGradient id="gradientVendas" x1="0" y1="0" x2="0" y2="1">
-                              <stop offset="0%" stopColor="#e11d48" stopOpacity={0.4} />
-                              <stop offset="100%" stopColor="#e11d48" stopOpacity={0.05} />
+                              <stop offset="0%" stopColor="#e11d48" stopOpacity={0.3} />
+                              <stop offset="100%" stopColor="#e11d48" stopOpacity={0} />
+                            </linearGradient>
+                            <linearGradient id="lineGradientAgendamentos" x1="0" y1="0" x2="1" y2="0">
+                              <stop offset="0%" stopColor="#6b7280" />
+                              <stop offset="100%" stopColor="#9ca3af" />
+                            </linearGradient>
+                            <linearGradient id="lineGradientVendas" x1="0" y1="0" x2="1" y2="0">
+                              <stop offset="0%" stopColor="#e11d48" />
+                              <stop offset="100%" stopColor="#FF6B6B" />
                             </linearGradient>
                           </defs>
-                          <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.04)" vertical={false} />
+                          <CartesianGrid
+                            strokeDasharray="3 3"
+                            stroke="hsl(var(--border))"
+                            vertical={true}
+                            horizontal={true}
+                          />
                           <XAxis 
                             dataKey="hour" 
-                            axisLine={false} 
+                            stroke="hsl(var(--muted-foreground))"
+                            fontSize={11}
                             tickLine={false}
-                            tick={{ fill: '#9ca3af', fontSize: 10, fontWeight: 500 }}
+                            axisLine={false}
                             dy={10}
                           />
                           <YAxis 
-                            axisLine={false} 
+                            stroke="hsl(var(--muted-foreground))"
+                            fontSize={11}
                             tickLine={false}
-                            tick={{ fill: '#9ca3af', fontSize: 10, fontWeight: 500 }}
+                            axisLine={false}
+                            dx={-10}
                             allowDecimals={false}
-                            width={30}
                           />
-                          <Tooltip 
-                            contentStyle={{ 
-                              backgroundColor: 'rgba(255,255,255,0.95)', 
-                              border: 'none',
-                              borderRadius: '12px',
-                              boxShadow: '0 8px 32px rgba(0,0,0,0.12)',
-                              padding: '12px 16px'
-                            }}
-                            labelStyle={{ fontWeight: 600, marginBottom: 8, color: '#374151' }}
-                            itemStyle={{ padding: '2px 0' }}
-                            cursor={{ stroke: 'rgba(0,0,0,0.1)', strokeWidth: 1, strokeDasharray: '4 4' }}
-                          />
+                          <Tooltip content={<CustomTooltipHourly />} />
                           <Legend 
                             verticalAlign="top" 
-                            height={40}
+                            height={36}
                             iconType="circle"
-                            wrapperStyle={{ paddingBottom: '10px' }}
-                            formatter={(value) => <span style={{ color: '#6b7280', fontSize: '12px', fontWeight: 500 }}>{value}</span>}
+                            wrapperStyle={{ paddingBottom: '8px' }}
+                            formatter={(value) => <span className="text-muted-foreground text-xs font-medium">{value}</span>}
                           />
                           <Area 
                             type="monotone" 
                             dataKey="reunioes" 
                             name="Agendamentos"
-                            stroke="#6b7280" 
+                            stroke="url(#lineGradientAgendamentos)"
                             strokeWidth={2.5}
                             fill="url(#gradientAgendamentos)"
-                            dot={{ fill: '#fff', stroke: '#6b7280', strokeWidth: 2, r: 4 }}
-                            activeDot={{ r: 6, strokeWidth: 3, fill: '#fff', stroke: '#6b7280' }}
+                            dot={false}
+                            activeDot={{
+                              r: 6,
+                              fill: "#6b7280",
+                              stroke: "white",
+                              strokeWidth: 2,
+                            }}
                           />
                           <Area 
                             type="monotone" 
                             dataKey="vendas" 
                             name="Vendas"
-                            stroke="#e11d48" 
+                            stroke="url(#lineGradientVendas)"
                             strokeWidth={2.5}
                             fill="url(#gradientVendas)"
-                            dot={{ fill: '#fff', stroke: '#e11d48', strokeWidth: 2, r: 4 }}
-                            activeDot={{ r: 6, strokeWidth: 3, fill: '#fff', stroke: '#e11d48' }}
+                            dot={false}
+                            activeDot={{
+                              r: 6,
+                              fill: "#e11d48",
+                              stroke: "white",
+                              strokeWidth: 2,
+                            }}
                           />
                         </AreaChart>
                       </ResponsiveContainer>
