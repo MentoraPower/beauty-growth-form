@@ -37,8 +37,10 @@ export interface PendingSlot {
 }
 
 export default function CalendarPage() {
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const subOriginId = searchParams.get("origin");
+  const prefillName = searchParams.get("prefill_name");
+  const prefillEmail = searchParams.get("prefill_email");
   
   const [currentDate, setCurrentDate] = useState(new Date());
   const [view, setView] = useState<ViewType>("month");
@@ -50,6 +52,34 @@ export default function CalendarPage() {
   const [pendingSlot, setPendingSlot] = useState<PendingSlot | null>(null);
   const [editingAppointment, setEditingAppointment] = useState<Appointment | null>(null);
   const justClosedRef = useRef(false);
+  const prefillProcessedRef = useRef(false);
+
+  // Auto-open dialog with prefill data
+  useEffect(() => {
+    if (prefillName && prefillEmail && !prefillProcessedRef.current) {
+      prefillProcessedRef.current = true;
+      
+      // Set today as the selected date and 9:00 as default hour
+      const today = new Date();
+      setSelectedDate(today);
+      setSelectedHour(9);
+      
+      const startTimeStr = "09:00";
+      const endTimeStr = "10:00";
+      setPendingSlot({ date: today, startTime: startTimeStr, endTime: endTimeStr });
+      
+      // Small delay to ensure component is mounted
+      setTimeout(() => {
+        setDialogOpen(true);
+      }, 100);
+
+      // Clean up URL params after processing
+      const newParams = new URLSearchParams(searchParams);
+      newParams.delete("prefill_name");
+      newParams.delete("prefill_email");
+      setSearchParams(newParams, { replace: true });
+    }
+  }, [prefillName, prefillEmail, searchParams, setSearchParams]);
 
   // Fetch appointments
   const fetchAppointments = useCallback(async () => {
@@ -349,6 +379,8 @@ export default function CalendarPage() {
         onPendingSlotUpdate={handlePendingSlotUpdate}
         editingAppointment={editingAppointment}
         subOriginId={subOriginId}
+        prefillName={prefillName}
+        prefillEmail={prefillEmail}
       />
     </div>
   );

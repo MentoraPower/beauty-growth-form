@@ -28,6 +28,8 @@ interface AddAppointmentDropdownProps {
   onPendingSlotUpdate?: (startTime: string, endTime: string) => void;
   editingAppointment?: Appointment | null;
   subOriginId?: string | null;
+  prefillName?: string | null;
+  prefillEmail?: string | null;
 }
 
 export function AddAppointmentDropdown({
@@ -41,6 +43,8 @@ export function AddAppointmentDropdown({
   onPendingSlotUpdate,
   editingAppointment,
   subOriginId,
+  prefillName,
+  prefillEmail,
 }: AddAppointmentDropdownProps) {
   const [loading, setLoading] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -156,6 +160,14 @@ export function AddAppointmentDropdown({
       setEndTime(endStr);
     }
   }, [editingAppointment, open]);
+
+  // Prefill name and email from lead
+  useEffect(() => {
+    if (open && !editingAppointment && prefillName && prefillEmail) {
+      setTitle(prefillName);
+      setEmail(prefillEmail);
+    }
+  }, [open, editingAppointment, prefillName, prefillEmail]);
 
   useEffect(() => {
     // Only sync initial time + pending slot when the dropdown is actually open.
