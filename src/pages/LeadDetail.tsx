@@ -530,9 +530,6 @@ export default function LeadDetail() {
                 transition={{ duration: 0.15 }}
                 className="space-y-6"
               >
-                {/* Lead Analysis Card */}
-                <LeadAnalysis lead={lead} />
-
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {/* Contact Info */}
               <Card className="border-[#00000010] shadow-none">
