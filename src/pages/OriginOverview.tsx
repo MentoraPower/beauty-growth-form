@@ -53,6 +53,7 @@ interface Appointment {
   start_time: string;
   end_time: string;
   sdr_name: string | null;
+  closer_name: string | null;
   is_paid: boolean | null;
   payment_value: number | null;
   is_noshow: boolean | null;
@@ -139,7 +140,7 @@ const OriginOverview = () => {
         // Fetch appointments
         const appointmentsRes = await supabase
           .from("calendar_appointments")
-          .select("id, title, start_time, end_time, sdr_name, is_paid, payment_value, is_noshow")
+          .select("id, title, start_time, end_time, sdr_name, closer_name, is_paid, payment_value, is_noshow")
           .order("start_time", { ascending: false });
 
         if (appointmentsRes.data) setAllAppointments(appointmentsRes.data);
@@ -375,67 +376,132 @@ const OriginOverview = () => {
               </Card>
             </div>
 
-            {/* SDR Appointments Chart */}
-            <Card className="bg-white border border-black/5 shadow-none">
-              <CardHeader className="pb-4">
-                <CardTitle className="text-base font-semibold text-foreground">
-                  Agendamentos por SDR
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {(() => {
-                    const sdrCounts = appointments.reduce((acc, apt) => {
-                      const sdr = apt.sdr_name || "Sem SDR";
-                      acc[sdr] = (acc[sdr] || 0) + 1;
-                      return acc;
-                    }, {} as Record<string, number>);
+            {/* Charts Grid - SDR and Closer */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* SDR Appointments Chart */}
+              <Card className="bg-white border border-black/5 shadow-none">
+                <CardHeader className="pb-4">
+                  <CardTitle className="text-base font-semibold text-foreground">
+                    Agendamentos por SDR
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    {(() => {
+                      const sdrCounts = appointments.reduce((acc, apt) => {
+                        const sdr = apt.sdr_name || "Sem SDR";
+                        acc[sdr] = (acc[sdr] || 0) + 1;
+                        return acc;
+                      }, {} as Record<string, number>);
 
-                    const maxCount = Math.max(...Object.values(sdrCounts), 1);
-                    const sortedSdrs = Object.entries(sdrCounts).sort((a, b) => b[1] - a[1]);
+                      const maxCount = Math.max(...Object.values(sdrCounts), 1);
+                      const sortedSdrs = Object.entries(sdrCounts).sort((a, b) => b[1] - a[1]);
 
-                    if (sortedSdrs.length === 0) {
-                      return (
-                        <p className="text-sm text-muted-foreground text-center py-4">
-                          Nenhum agendamento no período
-                        </p>
-                      );
-                    }
+                      if (sortedSdrs.length === 0) {
+                        return (
+                          <p className="text-sm text-muted-foreground text-center py-4">
+                            Nenhum agendamento no período
+                          </p>
+                        );
+                      }
 
-                    return sortedSdrs.map(([sdr, count], index) => (
-                      <div key={sdr} className="space-y-1.5">
-                        <span className="text-sm font-medium text-foreground">{sdr}</span>
-                        <div className="flex items-center gap-3">
-                          <div className="flex-1 h-10 bg-muted/30 rounded-lg overflow-hidden relative">
-                            <div 
-                              className="h-full rounded-lg transition-all duration-700 ease-out relative overflow-hidden"
-                              style={{ 
-                                width: `${(count / maxCount) * 100}%`,
-                                background: `repeating-linear-gradient(
-                                  45deg,
-                                  #3a3a3a,
-                                  #3a3a3a 12px,
-                                  #a0a0a0 12px,
-                                  #a0a0a0 24px,
-                                  #3a3a3a 24px,
-                                  #3a3a3a 36px
-                                )`
-                              }}
-                            />
-                          </div>
-                          <div className="flex items-center gap-2 flex-shrink-0">
-                            <div className="w-10 h-10 rounded-full bg-foreground flex items-center justify-center">
-                              <User className="h-5 w-5 text-background" />
+                      return sortedSdrs.map(([sdr, count]) => (
+                        <div key={sdr} className="space-y-1.5">
+                          <span className="text-sm font-medium text-foreground">{sdr}</span>
+                          <div className="flex items-center gap-3">
+                            <div className="flex-1 h-10 bg-muted/30 rounded-lg overflow-hidden relative">
+                              <div 
+                                className="h-full rounded-lg transition-all duration-700 ease-out relative overflow-hidden"
+                                style={{ 
+                                  width: `${(count / maxCount) * 100}%`,
+                                  background: `repeating-linear-gradient(
+                                    45deg,
+                                    #3a3a3a,
+                                    #3a3a3a 12px,
+                                    #a0a0a0 12px,
+                                    #a0a0a0 24px,
+                                    #3a3a3a 24px,
+                                    #3a3a3a 36px
+                                  )`
+                                }}
+                              />
                             </div>
-                            <span className="text-lg font-bold text-foreground min-w-[24px]">{count}</span>
+                            <div className="flex items-center gap-2 flex-shrink-0">
+                              <div className="w-10 h-10 rounded-full bg-foreground flex items-center justify-center">
+                                <User className="h-5 w-5 text-background" />
+                              </div>
+                              <span className="text-lg font-bold text-foreground min-w-[24px]">{count}</span>
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    ));
-                  })()}
-                </div>
-              </CardContent>
-            </Card>
+                      ));
+                    })()}
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Closer Meetings Chart */}
+              <Card className="bg-white border border-black/5 shadow-none">
+                <CardHeader className="pb-4">
+                  <CardTitle className="text-base font-semibold text-foreground">
+                    Reuniões por Closer
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    {(() => {
+                      const closerCounts = appointments.reduce((acc, apt) => {
+                        const closer = apt.closer_name || "Sem Closer";
+                        acc[closer] = (acc[closer] || 0) + 1;
+                        return acc;
+                      }, {} as Record<string, number>);
+
+                      const maxCount = Math.max(...Object.values(closerCounts), 1);
+                      const sortedClosers = Object.entries(closerCounts).sort((a, b) => b[1] - a[1]);
+
+                      if (sortedClosers.length === 0) {
+                        return (
+                          <p className="text-sm text-muted-foreground text-center py-4">
+                            Nenhuma reunião no período
+                          </p>
+                        );
+                      }
+
+                      return sortedClosers.map(([closer, count]) => (
+                        <div key={closer} className="space-y-1.5">
+                          <span className="text-sm font-medium text-foreground">{closer}</span>
+                          <div className="flex items-center gap-3">
+                            <div className="flex-1 h-10 bg-muted/30 rounded-lg overflow-hidden relative">
+                              <div 
+                                className="h-full rounded-lg transition-all duration-700 ease-out relative overflow-hidden"
+                                style={{ 
+                                  width: `${(count / maxCount) * 100}%`,
+                                  background: `repeating-linear-gradient(
+                                    -45deg,
+                                    #3a3a3a,
+                                    #3a3a3a 12px,
+                                    #a0a0a0 12px,
+                                    #a0a0a0 24px,
+                                    #3a3a3a 24px,
+                                    #3a3a3a 36px
+                                  )`
+                                }}
+                              />
+                            </div>
+                            <div className="flex items-center gap-2 flex-shrink-0">
+                              <div className="w-10 h-10 rounded-full bg-foreground flex items-center justify-center">
+                                <User className="h-5 w-5 text-background" />
+                              </div>
+                              <span className="text-lg font-bold text-foreground min-w-[24px]">{count}</span>
+                            </div>
+                          </div>
+                        </div>
+                      ));
+                    })()}
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
           </>
         ) : (
           <>
