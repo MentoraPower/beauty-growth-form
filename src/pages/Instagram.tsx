@@ -274,17 +274,32 @@ export default function InstagramPage() {
       if (error) throw error;
 
       if (data.success && data.messages) {
-        const formattedMessages: Message[] = data.messages.map((msg: any) => ({
-          id: msg.id,
-          text: msg.message || null,
-          time: msg.created_time,
-          fromMe: msg.from?.id === accountInfo?.userId,
-          status: 'SENT',
-          mediaType: msg.mediaType || null,
-          mediaUrl: msg.mediaUrl || null,
-          shareLink: msg.shareLink || null,
-          shareName: msg.shareName || null,
-        })).reverse(); // Reverse to show oldest first
+        const reversedMessages = data.messages.reverse(); // Reverse to show oldest first
+        
+        const formattedMessages: Message[] = reversedMessages.map((msg: any, index: number) => {
+          const isFromMe = msg.from?.id === accountInfo?.userId;
+          
+          // Determine status for sent messages
+          // If it's not the last message from me, assume it was read
+          // If it's the last message from me, show as sent
+          let status = 'SENT';
+          if (isFromMe) {
+            const isLastFromMe = reversedMessages.slice(index + 1).every((m: any) => m.from?.id !== accountInfo?.userId);
+            status = isLastFromMe ? 'SENT' : 'READ';
+          }
+          
+          return {
+            id: msg.id,
+            text: msg.message || null,
+            time: msg.created_time,
+            fromMe: isFromMe,
+            status,
+            mediaType: msg.mediaType || null,
+            mediaUrl: msg.mediaUrl || null,
+            shareLink: msg.shareLink || null,
+            shareName: msg.shareName || null,
+          };
+        });
         
         setMessages(formattedMessages);
       }
@@ -393,15 +408,14 @@ export default function InstagramPage() {
   const renderStatusIcon = (status: string) => {
     switch (status) {
       case "SENT":
-        return <Check className="h-3 w-3" />;
+        return <Check className="h-3 w-3 text-muted-foreground" />;
       case "DELIVERED":
-        return <CheckCheck className="h-3 w-3" />;
+        return <CheckCheck className="h-3 w-3 text-muted-foreground" />;
       case "READ":
       case "seen":
         return <CheckCheck className="h-3 w-3 text-blue-500" />;
       default:
-        // Default to single check for sent messages
-        return <Check className="h-3 w-3" />;
+        return <Check className="h-3 w-3 text-muted-foreground" />;
     }
   };
 
@@ -724,7 +738,7 @@ export default function InstagramPage() {
                       <div className="flex items-center gap-1 mt-1 px-1">
                         <span className="text-[10px] text-muted-foreground">{formatTime(message.time)}</span>
                         {message.fromMe && (
-                          <span className="text-muted-foreground flex items-center">
+                          <span className="flex items-center">
                             {renderStatusIcon(message.status)}
                           </span>
                         )}
