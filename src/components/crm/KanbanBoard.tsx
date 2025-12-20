@@ -20,6 +20,7 @@ import { useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Lead, Pipeline } from "@/types/crm";
 import { triggerWebhook } from "@/lib/webhooks";
+import { trackPipelineMove, trackPositionChange } from "@/lib/leadTracking";
 import { KanbanColumn } from "./KanbanColumn";
 import { KanbanCard } from "./KanbanCard";
 import { Button } from "@/components/ui/button";
@@ -841,6 +842,17 @@ export function KanbanBoard() {
             pipeline_id: newPipelineId,
             previous_pipeline_id: activeLead.pipeline_id,
             sub_origin_id: subOriginId,
+          }).catch(console.error);
+
+          // Track pipeline move
+          const fromPipeline = pipelines.find(p => p.id === activeLead.pipeline_id);
+          const toPipeline = pipelines.find(p => p.id === newPipelineId);
+          trackPipelineMove({
+            leadId: activeId,
+            fromPipelineName: fromPipeline?.nome || "Sem pipeline",
+            toPipelineName: toPipeline?.nome || "Desconhecido",
+            fromPipelineId: activeLead.pipeline_id,
+            toPipelineId: newPipelineId,
           }).catch(console.error);
 
           // Email automations are handled server-side by the trigger-webhook edge function.
