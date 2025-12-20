@@ -68,6 +68,7 @@ interface Appointment {
   is_paid: boolean | null;
   payment_value: number | null;
   is_noshow: boolean | null;
+  sub_origin_id: string | null;
 }
 
 const OriginOverview = () => {
@@ -171,18 +172,20 @@ const OriginOverview = () => {
               .order("created_at", { ascending: false });
 
             if (leadsRes.data) setAllLeads(leadsRes.data);
+
+            // Fetch appointments for these sub_origins only
+            const appointmentsRes = await supabase
+              .from("calendar_appointments")
+              .select("id, title, start_time, end_time, sdr_name, closer_name, is_paid, payment_value, is_noshow, sub_origin_id")
+              .in("sub_origin_id", subOriginIds)
+              .order("start_time", { ascending: false });
+
+            if (appointmentsRes.data) setAllAppointments(appointmentsRes.data);
           } else {
             setAllLeads([]);
+            setAllAppointments([]);
           }
         }
-
-        // Fetch appointments
-        const appointmentsRes = await supabase
-          .from("calendar_appointments")
-          .select("id, title, start_time, end_time, sdr_name, closer_name, is_paid, payment_value, is_noshow")
-          .order("start_time", { ascending: false });
-
-        if (appointmentsRes.data) setAllAppointments(appointmentsRes.data);
       } catch (error) {
         console.error("Error fetching data:", error);
       } finally {
