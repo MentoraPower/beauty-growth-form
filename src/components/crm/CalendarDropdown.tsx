@@ -93,9 +93,17 @@ export function CalendarDropdown({ leadName, leadEmail, subOriginId }: CalendarD
         <button
           onClick={handleClick}
           disabled={isLoading}
-          className="h-6 w-6 rounded-full bg-primary/10 hover:bg-primary/20 flex items-center justify-center transition-colors disabled:opacity-50"
+          className="h-6 w-6 flex items-center justify-center transition-opacity hover:opacity-70 disabled:opacity-50"
         >
-          <Calendar className="h-3.5 w-3.5 text-primary" />
+          <Calendar className="h-4 w-4" style={{ stroke: "url(#calendar-gradient)" }} />
+          <svg width="0" height="0" className="absolute">
+            <defs>
+              <linearGradient id="calendar-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stopColor="#F40000" />
+                <stop offset="100%" stopColor="#A10000" />
+              </linearGradient>
+            </defs>
+          </svg>
         </button>
       </TooltipTrigger>
       <TooltipContent>
