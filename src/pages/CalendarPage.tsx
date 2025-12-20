@@ -24,6 +24,7 @@ export interface Appointment {
   sdr_name?: string;
   is_paid?: boolean;
   payment_value?: number;
+  is_noshow?: boolean;
 }
 
 export interface PendingSlot {

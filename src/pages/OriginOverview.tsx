@@ -55,6 +55,7 @@ interface Appointment {
   sdr_name: string | null;
   is_paid: boolean | null;
   payment_value: number | null;
+  is_noshow: boolean | null;
 }
 
 const OriginOverview = () => {
@@ -138,7 +139,7 @@ const OriginOverview = () => {
         // Fetch appointments
         const appointmentsRes = await supabase
           .from("calendar_appointments")
-          .select("id, title, start_time, end_time, sdr_name, is_paid, payment_value")
+          .select("id, title, start_time, end_time, sdr_name, is_paid, payment_value, is_noshow")
           .order("start_time", { ascending: false });
 
         if (appointmentsRes.data) setAllAppointments(appointmentsRes.data);
@@ -327,11 +328,20 @@ const OriginOverview = () => {
         {agendaMode ? (
           <>
             {/* Agenda Mode - Simplified Stats */}
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
               <Card className="bg-white border border-black/5 shadow-none">
                 <CardContent className="pt-5 pb-4">
                   <p className="text-sm text-muted-foreground font-medium mb-2">Total Leads</p>
                   <p className="text-3xl font-bold text-foreground">{leads.length}</p>
+                </CardContent>
+              </Card>
+
+              <Card className="bg-white border border-black/5 shadow-none">
+                <CardContent className="pt-5 pb-4">
+                  <p className="text-sm text-muted-foreground font-medium mb-2">No Show</p>
+                  <p className="text-3xl font-bold text-rose-500">
+                    {appointments.filter(a => a.is_noshow).length}
+                  </p>
                 </CardContent>
               </Card>
 

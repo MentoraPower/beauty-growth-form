@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useDraggable } from "@dnd-kit/core";
 import { format, addMinutes } from "date-fns";
 import { cn } from "@/lib/utils";
-import { DollarSign } from "lucide-react";
+import { DollarSign, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import {
   Popover,
@@ -154,6 +154,17 @@ export function AppointmentCard({
     );
   };
 
+  const NoshowBadge = () => {
+    if (!appointment.is_noshow) return null;
+    
+    return (
+      <span className="flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-medium bg-rose-500/30 text-rose-100">
+        <X className="h-3 w-3" />
+        <span>No Show</span>
+      </span>
+    );
+  };
+
   if (compact) {
     return (
       <div
@@ -163,13 +174,16 @@ export function AppointmentCard({
         style={dragStyle}
         onClick={handleClick}
         className={cn(
-          "text-xs px-1.5 py-0.5 rounded bg-emerald-700 text-white truncate flex items-center justify-between gap-1",
-          !isDragging && "hover:bg-emerald-600",
+          "text-xs px-1.5 py-0.5 rounded text-white truncate flex items-center justify-between gap-1",
+          appointment.is_noshow ? "bg-rose-700 hover:bg-rose-600" : "bg-emerald-700 hover:bg-emerald-600",
           isDragging && "shadow-xl opacity-90 z-50"
         )}
       >
         <span className="truncate">{appointment.title}</span>
-        <PaymentBadge />
+        <div className="flex items-center gap-1">
+          <NoshowBadge />
+          <PaymentBadge />
+        </div>
       </div>
     );
   }
@@ -182,14 +196,17 @@ export function AppointmentCard({
       style={dragStyle}
       onClick={handleClick}
       className={cn(
-        "absolute left-1 right-1 px-2 py-1 rounded-md bg-emerald-700 text-white text-xs overflow-hidden",
-        !isDragging && "hover:bg-emerald-600",
+        "absolute left-1 right-1 px-2 py-1 rounded-md text-white text-xs overflow-hidden",
+        appointment.is_noshow ? "bg-rose-700 hover:bg-rose-600" : "bg-emerald-700 hover:bg-emerald-600",
         isDragging && "shadow-xl opacity-90 z-50"
       )}
     >
       <div className="flex items-center justify-between gap-1">
         <div className="font-medium truncate">{appointment.title}</div>
-        <PaymentBadge />
+        <div className="flex items-center gap-1">
+          <NoshowBadge />
+          <PaymentBadge />
+        </div>
       </div>
       <div className="opacity-80">{timeStr}</div>
     </div>

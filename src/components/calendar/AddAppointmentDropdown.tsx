@@ -49,6 +49,7 @@ export function AddAppointmentDropdown({
   const [sdrName, setSdrName] = useState("");
   const [isPaid, setIsPaid] = useState(false);
   const [paymentValue, setPaymentValue] = useState("");
+  const [isNoshow, setIsNoshow] = useState(false);
 
   const [startTime, setStartTime] = useState("09:00");
   const [endTime, setEndTime] = useState("10:00");
@@ -128,6 +129,7 @@ export function AddAppointmentDropdown({
     setSdrName("");
     setIsPaid(false);
     setPaymentValue("");
+    setIsNoshow(false);
     setStartTime("09:00");
     setEndTime("10:00");
   }, []);
@@ -142,6 +144,7 @@ export function AddAppointmentDropdown({
       setSdrName(editingAppointment.sdr_name || "");
       setIsPaid(editingAppointment.is_paid || false);
       setPaymentValue(editingAppointment.payment_value?.toString() || "");
+      setIsNoshow(editingAppointment.is_noshow || false);
       
       const start = new Date(editingAppointment.start_time);
       const end = new Date(editingAppointment.end_time);
@@ -253,7 +256,7 @@ export function AddAppointmentDropdown({
     const end = new Date(selectedDate);
     end.setHours(endH, endM, 0, 0);
 
-    const paymentNum = parseFloat(paymentValue.replace(",", ".")) || 0;
+    const paymentNum = parseFloat(paymentValue.replace(/\./g, "").replace(",", ".")) || 0;
 
     const appointmentData = {
       title: title.trim(),
@@ -265,6 +268,7 @@ export function AddAppointmentDropdown({
       sdr_name: sdrName.trim() || null,
       is_paid: isPaid && paymentNum > 0,
       payment_value: isPaid ? paymentNum : 0,
+      is_noshow: isNoshow,
     };
 
     let error;
@@ -485,6 +489,20 @@ export function AddAppointmentDropdown({
                 </div>
               )}
             </div>
+          </div>
+
+          {/* No Show */}
+          <div className="flex items-center gap-3">
+            <X className="h-5 w-5 text-muted-foreground shrink-0" />
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={isNoshow}
+                onChange={(e) => setIsNoshow(e.target.checked)}
+                className="w-4 h-4 rounded border-muted accent-destructive"
+              />
+              <span className="text-sm text-foreground">No Show</span>
+            </label>
           </div>
 
           {/* Submit button */}
