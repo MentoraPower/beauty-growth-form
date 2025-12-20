@@ -65,6 +65,162 @@ interface CRMOriginsPanelProps {
 }
 
 
+// Add Sub-origin Dropdown Component
+function AddSubOriginDropdown({ 
+  originId, 
+  subOriginsCount,
+  onCreated 
+}: { 
+  originId: string; 
+  subOriginsCount: number;
+  onCreated: () => void;
+}) {
+  const [isOpen, setIsOpen] = useState(false);
+  const [step, setStep] = useState<'type' | 'name'>('type');
+  const [selectedTipo, setSelectedTipo] = useState<'tarefas' | 'calendario'>('tarefas');
+  const [inputValue, setInputValue] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  const handleSelectType = (tipo: 'tarefas' | 'calendario') => {
+    setSelectedTipo(tipo);
+    setStep('name');
+    setTimeout(() => inputRef.current?.focus(), 100);
+  };
+
+  const handleCreate = async () => {
+    if (!inputValue.trim()) {
+      toast.error("Digite um nome");
+      return;
+    }
+    
+    setIsLoading(true);
+    const { error } = await supabase.from("crm_sub_origins").insert({ 
+      nome: inputValue.trim(), 
+      origin_id: originId,
+      ordem: subOriginsCount,
+      tipo: selectedTipo
+    });
+    
+    setIsLoading(false);
+    
+    if (error) {
+      toast.error("Erro ao criar sub-origem");
+      return;
+    }
+    
+    toast.success("Sub-origem criada");
+    setIsOpen(false);
+    setStep('type');
+    setInputValue('');
+    setSelectedTipo('tarefas');
+    onCreated();
+    
+    // Trigger a refetch
+    window.dispatchEvent(new CustomEvent('crm-data-updated'));
+  };
+
+  const handleOpenChange = (open: boolean) => {
+    setIsOpen(open);
+    if (!open) {
+      setStep('type');
+      setInputValue('');
+      setSelectedTipo('tarefas');
+    }
+  };
+
+  return (
+    <li className="relative pl-6 py-0.5">
+      <DropdownMenu open={isOpen} onOpenChange={handleOpenChange}>
+        <DropdownMenuTrigger asChild>
+          <button className="flex items-center gap-2 w-full py-1.5 px-2 rounded-lg transition-all duration-200 ease-out text-xs text-foreground/50 hover:text-foreground hover:bg-black/5">
+            <Plus className="h-3 w-3" />
+            <span>Criar sub origem</span>
+          </button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent 
+          align="start" 
+          side="right"
+          sideOffset={8}
+          className="w-64 p-3 z-[9999] bg-popover"
+        >
+          {step === 'type' ? (
+            <div className="space-y-2">
+              <p className="text-xs font-medium text-muted-foreground px-1 mb-3">Selecione o tipo</p>
+              <button
+                onClick={() => handleSelectType('tarefas')}
+                className="flex items-center gap-3 w-full p-3 rounded-xl border-2 border-transparent hover:border-rose-200 hover:bg-rose-50/50 transition-all group"
+              >
+                <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-amber-100 to-orange-100 flex items-center justify-center group-hover:from-rose-100 group-hover:to-rose-200 transition-all">
+                  <ListTodo className="h-5 w-5 text-amber-600 group-hover:text-rose-500 transition-colors" />
+                </div>
+                <div className="text-left">
+                  <p className="text-sm font-medium text-foreground">Tarefas</p>
+                  <p className="text-xs text-muted-foreground">Kanban com atividades</p>
+                </div>
+                <ChevronRight className="h-4 w-4 text-muted-foreground/50 ml-auto" />
+              </button>
+              <button
+                onClick={() => handleSelectType('calendario')}
+                className="flex items-center gap-3 w-full p-3 rounded-xl border-2 border-transparent hover:border-rose-200 hover:bg-rose-50/50 transition-all group"
+              >
+                <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-100 to-indigo-100 flex items-center justify-center group-hover:from-rose-100 group-hover:to-rose-200 transition-all">
+                  <CalendarDays className="h-5 w-5 text-blue-600 group-hover:text-rose-500 transition-colors" />
+                </div>
+                <div className="text-left">
+                  <p className="text-sm font-medium text-foreground">Calendário</p>
+                  <p className="text-xs text-muted-foreground">Agendamentos</p>
+                </div>
+                <ChevronRight className="h-4 w-4 text-muted-foreground/50 ml-auto" />
+              </button>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              <div className="flex items-center gap-2">
+                <button 
+                  onClick={() => setStep('type')}
+                  className="p-1 rounded hover:bg-muted transition-colors"
+                >
+                  <ChevronRight className="h-4 w-4 rotate-180 text-muted-foreground" />
+                </button>
+                <div className={cn(
+                  "w-6 h-6 rounded-md flex items-center justify-center",
+                  selectedTipo === 'tarefas' 
+                    ? "bg-gradient-to-br from-amber-100 to-orange-100" 
+                    : "bg-gradient-to-br from-blue-100 to-indigo-100"
+                )}>
+                  {selectedTipo === 'tarefas' 
+                    ? <ListTodo className="h-3.5 w-3.5 text-amber-600" />
+                    : <CalendarDays className="h-3.5 w-3.5 text-blue-600" />
+                  }
+                </div>
+                <span className="text-sm font-medium text-foreground">
+                  {selectedTipo === 'tarefas' ? 'Nova Tarefa' : 'Novo Calendário'}
+                </span>
+              </div>
+              <Input
+                ref={inputRef}
+                value={inputValue}
+                onChange={(e) => setInputValue(e.target.value)}
+                placeholder="Nome da sub-origem"
+                className="h-9 text-sm"
+                onKeyDown={(e) => e.key === 'Enter' && handleCreate()}
+              />
+              <Button 
+                onClick={handleCreate} 
+                disabled={isLoading || !inputValue.trim()}
+                className="w-full h-9 bg-gradient-to-r from-[#F40000] to-[#A10000] text-white text-sm"
+              >
+                {isLoading ? 'Criando...' : 'Criar'}
+              </Button>
+            </div>
+          )}
+        </DropdownMenuContent>
+      </DropdownMenu>
+    </li>
+  );
+}
+
 // Sortable Origin Item Component
 function SortableOriginItem({ 
   origin, 
@@ -373,15 +529,11 @@ function SortableOriginItem({
 
             {/* Add Sub-origin Button - only show for admins or users with permission */}
             {(userPermissions.isAdmin || userPermissions.canCreateSubOrigins) && (
-              <li className="relative pl-6 py-0.5">
-                <button
-                  onClick={() => openCreateSubOriginDialog(origin.id)}
-                  className="flex items-center gap-2 w-full py-1.5 px-2 rounded-lg transition-all duration-200 ease-out text-xs text-foreground/50 hover:text-foreground hover:bg-black/5"
-                >
-                  <Plus className="h-3 w-3" />
-                  <span>Criar sub origem</span>
-                </button>
-              </li>
+              <AddSubOriginDropdown 
+                originId={origin.id}
+                subOriginsCount={originSubOrigins.length}
+                onCreated={() => {}}
+              />
             )}
           </ul>
         </div>
@@ -588,10 +740,15 @@ export function CRMOriginsPanel({ isOpen, onClose, sidebarWidth, embedded = fals
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'leads' }, updateLeadCounts)
       .subscribe();
 
+    // Listen for custom event from dropdown
+    const handleCustomUpdate = () => fetchData();
+    window.addEventListener('crm-data-updated', handleCustomUpdate);
+
     return () => {
       supabase.removeChannel(originsChannel);
       supabase.removeChannel(subOriginsChannel);
       supabase.removeChannel(leadsChannel);
+      window.removeEventListener('crm-data-updated', handleCustomUpdate);
     };
   }, [fetchData, subOrigins]);
 
