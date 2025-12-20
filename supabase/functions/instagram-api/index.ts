@@ -259,6 +259,20 @@ serve(async (req) => {
                     `https://graph.instagram.com/v21.0/${participant.id}?fields=profile_pic,name,username&access_token=${accessToken}`
                   );
                   const profileData = await profileResponse.json();
+                  
+                  // Check for consent error - log but don't fail
+                  if (profileData.error) {
+                    console.log('Profile API error for', participant.id, ':', profileData.error.message);
+                    // Return participant with username as fallback
+                    return {
+                      ...participant,
+                      profile_pic: null,
+                      name: null,
+                      username: participant.username,
+                      profile_error: profileData.error.message
+                    };
+                  }
+                  
                   console.log('Profile data for', participant.id, JSON.stringify(profileData));
                   
                   return {
@@ -269,7 +283,11 @@ serve(async (req) => {
                   };
                 } catch (e) {
                   console.log('Error fetching profile for', participant.id, e);
-                  return participant;
+                  return {
+                    ...participant,
+                    profile_pic: null,
+                    name: null
+                  };
                 }
               })
             );
@@ -327,17 +345,39 @@ serve(async (req) => {
           let shareLink = null;
           let shareName = null;
           
-          // Check for shares (reels, posts shared)
+          // Debug log for each message to understand structure
+          if (msg.shares || msg.attachments || msg.story) {
+            console.log('Message with media/share:', JSON.stringify({
+              id: msg.id,
+              hasShares: !!msg.shares,
+              sharesData: msg.shares,
+              hasAttachments: !!msg.attachments,
+              attachmentsData: msg.attachments,
+              hasStory: !!msg.story,
+              storyData: msg.story,
+              message: msg.message?.substring(0, 50)
+            }));
+          }
+          
+          // Check for shares (reels, posts shared) - handle both formats
           if (msg.shares?.data && msg.shares.data.length > 0) {
             const share = msg.shares.data[0];
             shareLink = share.link;
             shareName = share.name || share.description;
+            console.log('Found share in shares.data:', JSON.stringify(share));
+          } else if (msg.shares && !msg.shares.data) {
+            // Alternative format: shares might be direct object
+            shareLink = msg.shares.link;
+            shareName = msg.shares.name || msg.shares.description;
+            console.log('Found share as direct object:', JSON.stringify(msg.shares));
           }
           
-          // Check for attachments (images, videos, audio)
+          // Check for attachments (images, videos, audio, reels)
           if (msg.attachments?.data && msg.attachments.data.length > 0) {
             const attachment = msg.attachments.data[0];
+            console.log('Found attachment:', JSON.stringify(attachment));
             
+            // Check for reel/video in attachment
             if (attachment.video_data?.url) {
               mediaType = 'video';
               mediaUrl = attachment.video_data.url;
@@ -357,12 +397,30 @@ serve(async (req) => {
               }
               mediaUrl = attachment.file_url;
             }
+            
+            // Check if attachment contains a share/reel link
+            if (attachment.target?.url && !shareLink) {
+              shareLink = attachment.target.url;
+              shareName = attachment.name || attachment.title;
+              console.log('Found share in attachment.target:', shareLink);
+            }
           }
           
-          // Check for story mentions
+          // Check for story mentions - handle multiple formats
           if (msg.story) {
             mediaType = 'story';
-            mediaUrl = msg.story.url || null;
+            mediaUrl = msg.story.url || msg.story.mention?.link || null;
+            console.log('Found story:', JSON.stringify(msg.story));
+          }
+          
+          // Check if message text contains Instagram URL as fallback
+          if (!shareLink && msg.message) {
+            const igUrlRegex = /https?:\/\/(www\.)?instagram\.com\/(reel|p|tv)\/[\w-]+/gi;
+            const match = msg.message.match(igUrlRegex);
+            if (match) {
+              shareLink = match[0];
+              console.log('Found Instagram URL in message text:', shareLink);
+            }
           }
           
           return {
