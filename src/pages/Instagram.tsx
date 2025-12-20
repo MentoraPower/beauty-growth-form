@@ -11,13 +11,15 @@ import {
   CheckCheck,
   AlertCircle,
   Loader2,
-  RefreshCw
+  RefreshCw,
+  LogOut
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 import Instagram from "@/components/icons/Instagram";
+import { supabase } from "@/integrations/supabase/client";
 
 interface Chat {
   id: string;
@@ -44,9 +46,9 @@ const DEFAULT_AVATAR = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy
 export default function InstagramPage() {
   const [isConnected, setIsConnected] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-  const [isCheckingConnection, setIsCheckingConnection] = useState(false);
+  const [isConnecting, setIsConnecting] = useState(false);
   const [connectionError, setConnectionError] = useState<string | null>(null);
-  const [accountInfo, setAccountInfo] = useState<{ id: string; name: string; username: string } | null>(null);
+  const [accountInfo, setAccountInfo] = useState<{ username?: string; userId?: string } | null>(null);
   const [chats, setChats] = useState<Chat[]>([]);
   const [selectedChat, setSelectedChat] = useState<Chat | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -55,68 +57,184 @@ export default function InstagramPage() {
   const [isSending, setIsSending] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // Check connection on mount
+  const REDIRECT_URI = `${window.location.origin}/admin/instagram`;
+
+  // Check for OAuth callback code in URL on mount
   useEffect(() => {
-    checkConnection();
+    const urlParams = new URLSearchParams(window.location.search);
+    const code = urlParams.get('code');
+    
+    if (code) {
+      handleOAuthCallback(code);
+    } else {
+      checkConnection();
+    }
   }, []);
 
-  const checkConnection = async () => {
-    setIsCheckingConnection(true);
+  const handleOAuthCallback = async (code: string) => {
+    setIsConnecting(true);
     setConnectionError(null);
     
     try {
-      const response = await fetch('https://ytdfwkchsumgdvcroaqg.supabase.co/functions/v1/instagram-api', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'check-connection' })
+      console.log('Processing OAuth callback with code...');
+      
+      const { data, error } = await supabase.functions.invoke('instagram-api', {
+        body: { 
+          action: 'exchange-code', 
+          params: { code, redirectUri: REDIRECT_URI } 
+        }
       });
 
-      const data = await response.json();
-      console.log('Instagram connection check:', data);
+      if (error) throw error;
 
-      if (data.connected) {
+      if (data.success) {
+        toast({
+          title: "Instagram conectado!",
+          description: data.instagramUsername ? `@${data.instagramUsername}` : "Conexão estabelecida com sucesso",
+        });
         setIsConnected(true);
-        setAccountInfo(data.account);
+        setAccountInfo({ 
+          username: data.instagramUsername,
+          userId: data.instagramUserId 
+        });
+        // Clear URL params
+        window.history.replaceState({}, document.title, window.location.pathname);
+        fetchConversations();
+      } else {
+        throw new Error(data.error || 'Erro ao conectar');
+      }
+    } catch (error: any) {
+      console.error('OAuth callback error:', error);
+      setConnectionError(error.message || 'Erro desconhecido');
+      toast({
+        title: "Erro ao conectar",
+        description: error.message || 'Erro desconhecido',
+        variant: "destructive",
+      });
+      setIsConnected(false);
+    } finally {
+      setIsConnecting(false);
+      setIsLoading(false);
+      // Clear URL params
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+  };
+
+  const checkConnection = async () => {
+    setConnectionError(null);
+    
+    try {
+      const { data, error } = await supabase.functions.invoke('instagram-api', {
+        body: { action: 'check-connection', params: {} }
+      });
+
+      if (error) throw error;
+
+      if (data.success && data.connected) {
+        setIsConnected(true);
+        setAccountInfo({ 
+          username: data.instagramUsername,
+          userId: data.instagramUserId 
+        });
         fetchConversations();
       } else {
         setIsConnected(false);
-        if (data.error) {
-          setConnectionError(data.error);
+        if (data.needsReauth) {
+          setConnectionError('Token expirado. Por favor, reconecte sua conta.');
         }
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error checking connection:', error);
-      setConnectionError('Erro ao verificar conexão');
+      setIsConnected(false);
     } finally {
       setIsLoading(false);
-      setIsCheckingConnection(false);
+    }
+  };
+
+  const handleConnect = async () => {
+    setIsConnecting(true);
+    setConnectionError(null);
+    
+    try {
+      const { data, error } = await supabase.functions.invoke('instagram-api', {
+        body: { action: 'get-oauth-url', params: { redirectUri: REDIRECT_URI } }
+      });
+
+      if (error) throw error;
+
+      if (data.success && data.oauthUrl) {
+        // Redirect to Instagram OAuth
+        window.location.href = data.oauthUrl;
+      } else {
+        throw new Error(data.error || 'Erro ao gerar URL de autenticação');
+      }
+    } catch (error: any) {
+      console.error('Error getting OAuth URL:', error);
+      setConnectionError(error.message || 'Erro desconhecido');
+      toast({
+        title: "Erro",
+        description: error.message || 'Erro desconhecido',
+        variant: "destructive",
+      });
+      setIsConnecting(false);
+    }
+  };
+
+  const handleDisconnect = async () => {
+    try {
+      const { data, error } = await supabase.functions.invoke('instagram-api', {
+        body: { action: 'disconnect', params: {} }
+      });
+
+      if (error) throw error;
+
+      if (data.success) {
+        toast({
+          title: "Desconectado",
+          description: "Instagram desconectado com sucesso",
+        });
+        setIsConnected(false);
+        setAccountInfo(null);
+        setChats([]);
+        setSelectedChat(null);
+        setMessages([]);
+      }
+    } catch (error: any) {
+      console.error('Error disconnecting:', error);
+      toast({
+        title: "Erro ao desconectar",
+        description: error.message,
+        variant: "destructive",
+      });
     }
   };
 
   const fetchConversations = async () => {
     try {
-      const response = await fetch('https://ytdfwkchsumgdvcroaqg.supabase.co/functions/v1/instagram-api', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'get-conversations' })
+      const { data, error } = await supabase.functions.invoke('instagram-api', {
+        body: { action: 'get-conversations', params: {} }
       });
 
-      const data = await response.json();
-      console.log('Instagram conversations:', data);
+      if (error) throw error;
 
-      if (data.conversations) {
-        const formattedChats: Chat[] = data.conversations.map((conv: any) => ({
-          id: conv.id,
-          name: conv.participants?.data?.[0]?.name || 'Usuário',
-          lastMessage: conv.messages?.data?.[0]?.message || '',
-          lastMessageTime: conv.updated_time || new Date().toISOString(),
-          unreadCount: 0,
-          avatar: null,
-          username: conv.participants?.data?.[0]?.username || ''
-        }));
+      if (data.success && data.conversations) {
+        const formattedChats: Chat[] = data.conversations.map((conv: any) => {
+          const participant = conv.participants?.data?.find((p: any) => p.id !== accountInfo?.userId);
+          const lastMsg = conv.messages?.data?.[0];
+          
+          return {
+            id: conv.id,
+            name: participant?.name || participant?.username || 'Usuário',
+            lastMessage: lastMsg?.message || '',
+            lastMessageTime: lastMsg?.created_time || new Date().toISOString(),
+            unreadCount: 0,
+            avatar: null,
+            username: participant?.username || '',
+          };
+        });
         setChats(formattedChats);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error fetching conversations:', error);
     }
   };
@@ -152,17 +270,17 @@ export default function InstagramPage() {
     setMessages(prev => [...prev, tempMessage]);
 
     try {
-      const response = await fetch('https://ytdfwkchsumgdvcroaqg.supabase.co/functions/v1/instagram-api', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
+      const { data, error } = await supabase.functions.invoke('instagram-api', {
+        body: { 
           action: 'send-message',
-          recipientId: selectedChat.id,
-          message: text
-        })
+          params: {
+            recipientId: selectedChat.id,
+            message: text
+          }
+        }
       });
 
-      const data = await response.json();
+      if (error) throw error;
       
       if (data.success) {
         setMessages(prev => prev.map(m => 
@@ -197,18 +315,21 @@ export default function InstagramPage() {
     }
   };
 
-  if (isLoading) {
+  // Loading state
+  if (isLoading || isConnecting) {
     return (
       <div className="h-[calc(100vh-1.5rem)] flex items-center justify-center">
         <div className="text-center space-y-4">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto" />
-          <p className="text-muted-foreground">Verificando conexão com Instagram...</p>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-pink-500 mx-auto" />
+          <p className="text-muted-foreground">
+            {isConnecting ? 'Conectando ao Instagram...' : 'Verificando conexão...'}
+          </p>
         </div>
       </div>
     );
   }
 
-  // Not connected screen
+  // Not connected - Login screen
   if (!isConnected) {
     return (
       <div className="h-[calc(100vh-1.5rem)] flex items-center justify-center p-4">
@@ -217,11 +338,9 @@ export default function InstagramPage() {
             <div className="mx-auto w-20 h-20 rounded-full bg-gradient-to-br from-purple-500 via-pink-500 to-orange-500 flex items-center justify-center">
               <Instagram className="w-10 h-10 text-white" />
             </div>
-            <h1 className="text-2xl font-bold text-foreground">Instagram Direct</h1>
+            <h1 className="text-2xl font-bold text-foreground">Conectar Instagram</h1>
             <p className="text-muted-foreground">
-              {connectionError 
-                ? "Não foi possível conectar ao Instagram." 
-                : "Verificando configuração do Instagram..."}
+              Conecte sua conta do Instagram Business para gerenciar mensagens diretas.
             </p>
           </div>
 
@@ -230,40 +349,34 @@ export default function InstagramPage() {
               <div className="flex items-start gap-3">
                 <AlertCircle className="h-5 w-5 text-destructive flex-shrink-0 mt-0.5" />
                 <div>
-                  <p className="font-medium text-destructive">Erro de conexão</p>
+                  <p className="font-medium text-destructive">Erro</p>
                   <p className="text-sm text-destructive/80 mt-1">{connectionError}</p>
                 </div>
               </div>
             </div>
           )}
 
-          <div className="bg-muted/50 rounded-xl p-4 space-y-3">
-            <h3 className="font-medium text-foreground text-sm">Verifique se:</h3>
-            <ul className="text-sm text-muted-foreground space-y-2 list-disc list-inside">
-              <li>O Access Token está válido e não expirado</li>
-              <li>O App ID e App Secret estão corretos</li>
-              <li>O app tem permissões de Instagram Messenger</li>
-              <li>A conta Instagram está conectada a uma página do Facebook</li>
-            </ul>
-          </div>
-
           <Button 
-            className="w-full"
-            onClick={checkConnection}
-            disabled={isCheckingConnection}
+            className="w-full bg-gradient-to-r from-purple-500 via-pink-500 to-orange-500 hover:opacity-90 text-white font-medium py-6"
+            onClick={handleConnect}
+            disabled={isConnecting}
           >
-            {isCheckingConnection ? (
+            {isConnecting ? (
               <>
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                Verificando...
+                <Loader2 className="h-5 w-5 mr-2 animate-spin" />
+                Conectando...
               </>
             ) : (
               <>
-                <RefreshCw className="h-4 w-4 mr-2" />
-                Tentar novamente
+                <Instagram className="h-5 w-5 mr-2" />
+                Conectar com Instagram
               </>
             )}
           </Button>
+
+          <p className="text-xs text-muted-foreground text-center">
+            Você será redirecionado para o Facebook para autorizar o acesso à sua conta do Instagram Business.
+          </p>
         </div>
       </div>
     );
@@ -279,14 +392,24 @@ export default function InstagramPage() {
             <Instagram className="h-5 w-5 text-pink-500" />
             <div>
               <h2 className="font-semibold text-foreground text-sm">Instagram Direct</h2>
-              {accountInfo && (
-                <p className="text-xs text-muted-foreground">@{accountInfo.username || accountInfo.name}</p>
+              {accountInfo?.username && (
+                <p className="text-xs text-muted-foreground">@{accountInfo.username}</p>
               )}
             </div>
           </div>
-          <Button variant="ghost" size="icon" onClick={fetchConversations}>
-            <RefreshCw className="h-4 w-4" />
-          </Button>
+          <div className="flex items-center gap-1">
+            <Button variant="ghost" size="icon" onClick={fetchConversations}>
+              <RefreshCw className="h-4 w-4" />
+            </Button>
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              onClick={handleDisconnect}
+              className="text-muted-foreground hover:text-destructive"
+            >
+              <LogOut className="h-4 w-4" />
+            </Button>
+          </div>
         </div>
 
         <div className="p-3">

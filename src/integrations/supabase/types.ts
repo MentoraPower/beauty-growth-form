@@ -307,6 +307,45 @@ export type Database = {
         }
         Relationships: []
       }
+      instagram_connections: {
+        Row: {
+          access_token: string
+          created_at: string
+          id: string
+          instagram_user_id: string
+          instagram_username: string | null
+          page_access_token: string | null
+          page_id: string | null
+          token_expires_at: string | null
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          access_token: string
+          created_at?: string
+          id?: string
+          instagram_user_id: string
+          instagram_username?: string | null
+          page_access_token?: string | null
+          page_id?: string | null
+          token_expires_at?: string | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          access_token?: string
+          created_at?: string
+          id?: string
+          instagram_user_id?: string
+          instagram_username?: string | null
+          page_access_token?: string | null
+          page_id?: string | null
+          token_expires_at?: string | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       lead_activities: {
         Row: {
           activity_group_id: string | null
