@@ -243,7 +243,7 @@ serve(async (req) => {
           );
         }
 
-        // Fetch profile pictures for each participant
+        // Fetch profile pictures and names for each participant
         const conversationsWithPics = await Promise.all(
           (convData.data || []).map(async (conv: any) => {
             const participantsWithPics = await Promise.all(
@@ -254,18 +254,21 @@ serve(async (req) => {
                 }
                 
                 try {
-                  // Get profile picture using the user's ID
+                  // Get profile picture and name using the user's ID
                   const profileResponse = await fetch(
-                    `https://graph.instagram.com/v21.0/${participant.id}?fields=profile_pic&access_token=${accessToken}`
+                    `https://graph.instagram.com/v21.0/${participant.id}?fields=profile_pic,name,username&access_token=${accessToken}`
                   );
                   const profileData = await profileResponse.json();
+                  console.log('Profile data for', participant.id, JSON.stringify(profileData));
                   
                   return {
                     ...participant,
-                    profile_pic: profileData.profile_pic || null
+                    profile_pic: profileData.profile_pic || null,
+                    name: profileData.name || null,
+                    username: profileData.username || participant.username
                   };
                 } catch (e) {
-                  console.log('Error fetching profile pic for', participant.id, e);
+                  console.log('Error fetching profile for', participant.id, e);
                   return participant;
                 }
               })
