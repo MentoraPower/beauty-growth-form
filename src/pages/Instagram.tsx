@@ -11,7 +11,11 @@ import {
   Loader2,
   RefreshCw,
   Play,
-  X
+  X,
+  Paperclip,
+  Video,
+  StopCircle,
+  Trash2
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -60,7 +64,14 @@ export default function InstagramPage() {
   const [isLoadingMessages, setIsLoadingMessages] = useState(false);
   const [isLoadingChats, setIsLoadingChats] = useState(false);
   const [openReelUrl, setOpenReelUrl] = useState<string | null>(null);
+  const [isRecording, setIsRecording] = useState(false);
+  const [recordingTime, setRecordingTime] = useState(0);
+  const [isUploadingMedia, setIsUploadingMedia] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
+  const recordingIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const REDIRECT_URI = `${window.location.origin}/admin/instagram`;
   const myInstagramUserId = accountInfo?.userId;
@@ -445,6 +456,242 @@ export default function InstagramPage() {
     }
   };
 
+  // Handle media upload (image/video)
+  const handleMediaUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file || !selectedChat) return;
+
+    setIsUploadingMedia(true);
+
+    try {
+      // Validate file type
+      const isImage = file.type.startsWith('image/');
+      const isVideo = file.type.startsWith('video/');
+      
+      if (!isImage && !isVideo) {
+        toast({
+          title: "Formato não suportado",
+          description: "Envie apenas imagens ou vídeos.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Upload to Supabase storage
+      const fileName = `instagram/${Date.now()}_${file.name}`;
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from('whatsapp-media')
+        .upload(fileName, file, { contentType: file.type });
+
+      if (uploadError) {
+        throw new Error('Erro ao fazer upload: ' + uploadError.message);
+      }
+
+      // Get public URL
+      const { data: publicUrlData } = supabase.storage
+        .from('whatsapp-media')
+        .getPublicUrl(fileName);
+
+      const mediaUrl = publicUrlData.publicUrl;
+      const mediaType = isImage ? 'image' : 'video';
+
+      // Add temp message
+      const tempMessage: Message = {
+        id: `temp-${Date.now()}`,
+        text: null,
+        time: new Date().toISOString(),
+        fromMe: true,
+        status: 'sending',
+        mediaType,
+        mediaUrl,
+      };
+      setMessages(prev => [...prev, tempMessage]);
+      scrollToBottom();
+
+      // Send via Instagram API
+      const { data, error } = await supabase.functions.invoke('instagram-api', {
+        body: {
+          action: 'send-media',
+          params: {
+            recipientId: selectedChat.participantId,
+            mediaUrl,
+            mediaType: file.type,
+          },
+        },
+      });
+
+      if (error) throw error;
+
+      if (data.success) {
+        setMessages(prev => prev.map(m => 
+          m.id === tempMessage.id ? { ...m, status: 'SENT' } : m
+        ));
+        toast({
+          title: "Mídia enviada",
+          description: isImage ? "Imagem enviada com sucesso." : "Vídeo enviado com sucesso.",
+        });
+      } else {
+        throw new Error(data.error);
+      }
+    } catch (error: any) {
+      console.error("Error uploading media:", error);
+      toast({
+        title: "Erro ao enviar mídia",
+        description: error.message || "Não foi possível enviar a mídia.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsUploadingMedia(false);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
+  };
+
+  // Start audio recording
+  const startRecording = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mediaRecorder = new MediaRecorder(stream);
+      mediaRecorderRef.current = mediaRecorder;
+      audioChunksRef.current = [];
+
+      mediaRecorder.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          audioChunksRef.current.push(event.data);
+        }
+      };
+
+      mediaRecorder.start();
+      setIsRecording(true);
+      setRecordingTime(0);
+
+      recordingIntervalRef.current = setInterval(() => {
+        setRecordingTime(prev => prev + 1);
+      }, 1000);
+    } catch (error) {
+      console.error('Error starting recording:', error);
+      toast({
+        title: "Erro ao iniciar gravação",
+        description: "Não foi possível acessar o microfone.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  // Cancel recording
+  const cancelRecording = () => {
+    if (mediaRecorderRef.current) {
+      mediaRecorderRef.current.stop();
+      mediaRecorderRef.current.stream.getTracks().forEach(track => track.stop());
+    }
+    if (recordingIntervalRef.current) {
+      clearInterval(recordingIntervalRef.current);
+    }
+    setIsRecording(false);
+    setRecordingTime(0);
+    audioChunksRef.current = [];
+  };
+
+  // Stop and send audio recording
+  const stopAndSendRecording = async () => {
+    if (!mediaRecorderRef.current || !selectedChat) return;
+
+    return new Promise<void>((resolve) => {
+      mediaRecorderRef.current!.onstop = async () => {
+        if (recordingIntervalRef.current) {
+          clearInterval(recordingIntervalRef.current);
+        }
+        
+        mediaRecorderRef.current!.stream.getTracks().forEach(track => track.stop());
+        setIsRecording(false);
+        setRecordingTime(0);
+
+        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+        
+        try {
+          setIsUploadingMedia(true);
+          
+          // Upload to Supabase storage
+          const fileName = `instagram/audio_${Date.now()}.webm`;
+          const { data: uploadData, error: uploadError } = await supabase.storage
+            .from('whatsapp-media')
+            .upload(fileName, audioBlob, { contentType: 'audio/webm' });
+
+          if (uploadError) {
+            throw new Error('Erro ao fazer upload: ' + uploadError.message);
+          }
+
+          // Get public URL
+          const { data: publicUrlData } = supabase.storage
+            .from('whatsapp-media')
+            .getPublicUrl(fileName);
+
+          const mediaUrl = publicUrlData.publicUrl;
+
+          // Add temp message
+          const tempMessage: Message = {
+            id: `temp-${Date.now()}`,
+            text: null,
+            time: new Date().toISOString(),
+            fromMe: true,
+            status: 'sending',
+            mediaType: 'audio',
+            mediaUrl,
+          };
+          setMessages(prev => [...prev, tempMessage]);
+          scrollToBottom();
+
+          // Send via Instagram API
+          const { data, error } = await supabase.functions.invoke('instagram-api', {
+            body: {
+              action: 'send-media',
+              params: {
+                recipientId: selectedChat.participantId,
+                mediaUrl,
+                mediaType: 'audio/webm',
+              },
+            },
+          });
+
+          if (error) throw error;
+
+          if (data.success) {
+            setMessages(prev => prev.map(m => 
+              m.id === tempMessage.id ? { ...m, status: 'SENT' } : m
+            ));
+            toast({
+              title: "Áudio enviado",
+              description: "Mensagem de voz enviada com sucesso.",
+            });
+          } else {
+            throw new Error(data.error);
+          }
+        } catch (error: any) {
+          console.error("Error sending audio:", error);
+          toast({
+            title: "Erro ao enviar áudio",
+            description: error.message || "Não foi possível enviar o áudio.",
+            variant: "destructive",
+          });
+        } finally {
+          setIsUploadingMedia(false);
+          audioChunksRef.current = [];
+        }
+        
+        resolve();
+      };
+
+      mediaRecorderRef.current!.stop();
+    });
+  };
+
+  const formatRecordingTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
+
   const renderStatusIcon = (status: string) => {
     switch (status) {
       case "SENT":
@@ -790,31 +1037,84 @@ export default function InstagramPage() {
             </ScrollArea>
 
             <div className="p-4 border-t border-border">
-              <div className="flex items-center gap-2">
-                <Button variant="ghost" size="icon">
-                  <ImageIcon className="h-5 w-5" />
-                </Button>
-                <Input
-                  placeholder="Mensagem..."
-                  value={messageInput}
-                  onChange={(e) => setMessageInput(e.target.value)}
-                  onKeyPress={(e) => e.key === "Enter" && handleSendMessage()}
-                  className="flex-1"
-                />
-                {messageInput.trim() ? (
+              {/* Hidden file input */}
+              <input
+                type="file"
+                ref={fileInputRef}
+                onChange={handleMediaUpload}
+                accept="image/*,video/*"
+                className="hidden"
+              />
+              
+              {isRecording ? (
+                // Recording UI
+                <div className="flex items-center gap-3 bg-red-50 dark:bg-red-900/20 rounded-xl px-4 py-3">
+                  <div className="flex items-center gap-2 flex-1">
+                    <div className="w-3 h-3 bg-red-500 rounded-full animate-pulse" />
+                    <span className="text-red-600 dark:text-red-400 font-medium">
+                      {formatRecordingTime(recordingTime)}
+                    </span>
+                    <span className="text-muted-foreground text-sm">Gravando...</span>
+                  </div>
                   <Button 
-                    onClick={handleSendMessage} 
-                    disabled={isSending}
+                    variant="ghost" 
+                    size="icon"
+                    onClick={cancelRecording}
+                    className="text-muted-foreground hover:text-destructive"
+                  >
+                    <Trash2 className="h-5 w-5" />
+                  </Button>
+                  <Button 
+                    size="icon"
+                    onClick={stopAndSendRecording}
                     className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600"
                   >
                     <Send className="h-4 w-4" />
                   </Button>
-                ) : (
-                  <Button variant="ghost" size="icon">
-                    <Mic className="h-5 w-5" />
+                </div>
+              ) : (
+                // Normal input UI
+                <div className="flex items-center gap-2">
+                  <Button 
+                    variant="ghost" 
+                    size="icon"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={isUploadingMedia}
+                  >
+                    {isUploadingMedia ? (
+                      <Loader2 className="h-5 w-5 animate-spin" />
+                    ) : (
+                      <ImageIcon className="h-5 w-5" />
+                    )}
                   </Button>
-                )}
-              </div>
+                  <Input
+                    placeholder="Mensagem..."
+                    value={messageInput}
+                    onChange={(e) => setMessageInput(e.target.value)}
+                    onKeyPress={(e) => e.key === "Enter" && handleSendMessage()}
+                    className="flex-1"
+                    disabled={isUploadingMedia}
+                  />
+                  {messageInput.trim() ? (
+                    <Button 
+                      onClick={handleSendMessage} 
+                      disabled={isSending || isUploadingMedia}
+                      className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600"
+                    >
+                      <Send className="h-4 w-4" />
+                    </Button>
+                  ) : (
+                    <Button 
+                      variant="ghost" 
+                      size="icon"
+                      onClick={startRecording}
+                      disabled={isUploadingMedia}
+                    >
+                      <Mic className="h-5 w-5" />
+                    </Button>
+                  )}
+                </div>
+              )}
             </div>
           </>
         ) : (

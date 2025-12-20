@@ -487,6 +487,79 @@ serve(async (req) => {
         );
       }
 
+      case 'send-media': {
+        const { recipientId, mediaUrl, mediaType } = params;
+        
+        console.log('Send media request:', { recipientId, mediaUrl, mediaType });
+        
+        // Get saved connection
+        const { data: connection, error: connError } = await supabase
+          .from('instagram_connections')
+          .select('*')
+          .limit(1)
+          .single();
+        
+        if (connError || !connection) {
+          return new Response(
+            JSON.stringify({ success: false, error: 'Conexão não encontrada' }),
+            { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+        
+        const accessToken = connection.access_token;
+        const instagramId = connection.instagram_user_id;
+        
+        // Map mediaType to Instagram attachment type
+        let attachmentType = 'image';
+        if (mediaType === 'video' || mediaType?.startsWith('video/')) {
+          attachmentType = 'video';
+        } else if (mediaType === 'audio' || mediaType?.startsWith('audio/')) {
+          attachmentType = 'audio';
+        } else if (mediaType === 'image' || mediaType?.startsWith('image/')) {
+          attachmentType = 'image';
+        }
+        
+        console.log('Sending media with type:', attachmentType, 'to recipient:', recipientId);
+        
+        // Send media using Instagram Graph API
+        const sendResponse = await fetch(
+          `https://graph.instagram.com/v21.0/${instagramId}/messages`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              recipient: { id: recipientId },
+              message: {
+                attachment: {
+                  type: attachmentType,
+                  payload: {
+                    url: mediaUrl,
+                    is_reusable: false
+                  }
+                }
+              },
+              access_token: accessToken,
+            }),
+          }
+        );
+        
+        const sendData = await sendResponse.json();
+        console.log('Send media response:', JSON.stringify(sendData));
+        
+        if (sendData.error) {
+          console.error('Instagram API error:', sendData.error);
+          return new Response(
+            JSON.stringify({ success: false, error: sendData.error.message }),
+            { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+        
+        return new Response(
+          JSON.stringify({ success: true, messageId: sendData.message_id }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
       case 'disconnect': {
         // Remove connection from database
         const { error } = await supabase
