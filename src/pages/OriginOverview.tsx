@@ -426,11 +426,11 @@ const OriginOverview = () => {
                                 style={{ 
                                   width: `${(count / maxCount) * 100}%`,
                                   background: `repeating-linear-gradient(
-                                    45deg,
-                                    rgba(75, 85, 99, 0.9),
-                                    rgba(75, 85, 99, 0.9) 12px,
-                                    rgba(75, 85, 99, 0.7) 12px,
-                                    rgba(75, 85, 99, 0.7) 24px
+                                    90deg,
+                                    #00000020,
+                                    #00000020 12px,
+                                    #00000025 12px,
+                                    #00000025 24px
                                   )`
                                 }}
                               />
@@ -486,11 +486,11 @@ const OriginOverview = () => {
                                 style={{ 
                                   width: `${(count / maxCount) * 100}%`,
                                   background: `repeating-linear-gradient(
-                                    -45deg,
-                                    rgba(55, 65, 81, 0.9),
-                                    rgba(55, 65, 81, 0.9) 12px,
-                                    rgba(55, 65, 81, 0.7) 12px,
-                                    rgba(55, 65, 81, 0.7) 24px
+                                    90deg,
+                                    #00000020,
+                                    #00000020 12px,
+                                    #00000025 12px,
+                                    #00000025 24px
                                   )`
                                 }}
                               />
