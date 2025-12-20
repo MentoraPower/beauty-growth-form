@@ -35,10 +35,10 @@ export default function Atendimento() {
           <button
             onClick={() => handleTabChange('whatsapp')}
             className={cn(
-              "flex items-center gap-2 px-4 py-2.5 rounded-t-lg transition-all duration-200 text-sm font-medium",
+              "flex items-center gap-2 px-4 py-2.5 transition-all duration-200 text-sm font-medium border-b-2",
               activeTab === 'whatsapp'
-                ? "bg-[#25D366]/10 text-[#25D366] border-b-2 border-[#25D366]"
-                : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                ? "text-[#25D366] border-[#25D366]"
+                : "text-muted-foreground border-transparent hover:text-foreground"
             )}
           >
             <WhatsAppIcon className="h-4 w-4" />
@@ -48,10 +48,10 @@ export default function Atendimento() {
           <button
             onClick={() => handleTabChange('instagram')}
             className={cn(
-              "flex items-center gap-2 px-4 py-2.5 rounded-t-lg transition-all duration-200 text-sm font-medium",
+              "flex items-center gap-2 px-4 py-2.5 transition-all duration-200 text-sm font-medium border-b-2",
               activeTab === 'instagram'
-                ? "bg-gradient-to-r from-[#833AB4]/10 via-[#FD1D1D]/10 to-[#F77737]/10 text-[#E1306C] border-b-2 border-[#E1306C]"
-                : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                ? "text-[#E1306C] border-[#E1306C]"
+                : "text-muted-foreground border-transparent hover:text-foreground"
             )}
           >
             <InstagramIcon className="h-4 w-4" />
