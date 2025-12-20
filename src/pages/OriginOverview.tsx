@@ -402,15 +402,33 @@ const OriginOverview = () => {
                       );
                     }
 
-                    return sortedSdrs.map(([sdr, count]) => (
+                    return sortedSdrs.map(([sdr, count], index) => (
                       <div key={sdr} className="space-y-1.5">
                         <span className="text-sm font-medium text-foreground">{sdr}</span>
                         <div className="flex items-center gap-3">
-                          <div className="flex-1 h-10 bg-muted/50 rounded-lg overflow-hidden">
+                          <div className="flex-1 h-10 bg-muted/30 rounded-lg overflow-hidden relative">
                             <div 
-                              className="h-full bg-foreground rounded-lg transition-all duration-700 ease-out"
-                              style={{ width: `${(count / maxCount) * 100}%` }}
-                            />
+                              className="h-full rounded-lg transition-all duration-700 ease-out relative overflow-hidden"
+                              style={{ 
+                                width: `${(count / maxCount) * 100}%`,
+                                background: 'linear-gradient(90deg, hsl(var(--foreground)) 50%, hsl(var(--muted-foreground)/0.3) 50%)',
+                                backgroundSize: '20px 100%'
+                              }}
+                            >
+                              {/* Ribbon pattern overlay */}
+                              <div 
+                                className="absolute inset-0"
+                                style={{
+                                  background: `repeating-linear-gradient(
+                                    ${index % 2 === 0 ? '45deg' : '-45deg'},
+                                    transparent,
+                                    transparent 8px,
+                                    hsl(var(--background)/0.15) 8px,
+                                    hsl(var(--background)/0.15) 16px
+                                  )`
+                                }}
+                              />
+                            </div>
                           </div>
                           <div className="flex items-center gap-2 flex-shrink-0">
                             <div className="w-10 h-10 rounded-full bg-foreground flex items-center justify-center">
