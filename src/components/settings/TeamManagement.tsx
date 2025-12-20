@@ -14,7 +14,6 @@ import { Plus, Trash2, Pencil, Users, CheckCircle, XCircle } from "lucide-react"
 import { toast } from "sonner";
 import { AddTeamMemberDialog } from "./AddTeamMemberDialog";
 import { EditPermissionsDialog } from "./EditPermissionsDialog";
-import { cn } from "@/lib/utils";
 
 interface TeamMember {
   id: string;
@@ -39,13 +38,6 @@ const roleLabels: Record<string, string> = {
   sdr: "SDR",
 };
 
-const roleColors: Record<string, string> = {
-  admin: "bg-red-50 text-red-700 border-red-200",
-  suporte: "bg-blue-50 text-blue-700 border-blue-200",
-  gestor_trafego: "bg-purple-50 text-purple-700 border-purple-200",
-  closer: "bg-green-50 text-green-700 border-green-200",
-  sdr: "bg-orange-50 text-orange-700 border-orange-200",
-};
 
 export function TeamManagement() {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
@@ -152,14 +144,7 @@ export function TeamManagement() {
                     {member.email || "—"}
                   </TableCell>
                   <TableCell>
-                    <span
-                      className={cn(
-                        "inline-flex px-2.5 py-1 rounded-full text-xs font-medium border",
-                        member.role
-                          ? roleColors[member.role] || "bg-gray-50 text-gray-700 border-gray-200"
-                          : "bg-gray-50 text-gray-700 border-gray-200"
-                      )}
-                    >
+                    <span className="inline-flex px-2.5 py-1 rounded-full text-xs font-medium border bg-muted/50 text-foreground border-border">
                       {member.role ? roleLabels[member.role] || member.role : "Sem função"}
                     </span>
                   </TableCell>
