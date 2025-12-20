@@ -246,7 +246,7 @@ export default function InstagramPage() {
           
           return {
             id: conv.id,
-            name: participant?.username || participant?.name || 'Usuário',
+            name: participant?.name || participant?.username || 'Usuário',
             lastMessage: lastMsg?.message || '',
             lastMessageTime: lastMsg?.created_time || new Date().toISOString(),
             unreadCount: 0,
@@ -533,10 +533,13 @@ export default function InstagramPage() {
                     <div className="flex-1 text-left overflow-hidden space-y-0.5">
                       <div className="flex items-center justify-between gap-2">
                         <span className="font-medium text-foreground text-sm truncate max-w-[140px]">
-                          {chat.username ? `@${chat.username}` : chat.name}
+                          {chat.name}
                         </span>
                         <span className="text-[10px] text-muted-foreground flex-shrink-0">{formatTime(chat.lastMessageTime)}</span>
                       </div>
+                      {chat.username && (
+                        <p className="text-[11px] text-muted-foreground truncate max-w-[200px] leading-tight">@{chat.username}</p>
+                      )}
                       <p className="text-xs text-muted-foreground truncate max-w-[200px] leading-tight">{chat.lastMessage}</p>
                     </div>
                   </button>
@@ -559,8 +562,11 @@ export default function InstagramPage() {
                 />
                 <div>
                   <h3 className="font-semibold text-foreground text-sm">
-                    {selectedChat.username ? `@${selectedChat.username}` : selectedChat.name}
+                    {selectedChat.name}
                   </h3>
+                  {selectedChat.username && (
+                    <p className="text-xs text-muted-foreground">@{selectedChat.username}</p>
+                  )}
                 </div>
               </div>
               <div className="flex items-center gap-2">
@@ -602,7 +608,7 @@ export default function InstagramPage() {
                         className={cn(
                           "max-w-[70%] rounded-2xl overflow-hidden",
                           message.fromMe
-                            ? "bg-gradient-to-r from-purple-500 to-pink-500 text-white"
+                            ? "bg-[#3797f0] text-white"
                             : "bg-muted text-foreground"
                         )}
                       >
