@@ -28,6 +28,7 @@ interface Chat {
   unreadCount: number;
   avatar: string | null;
   username: string;
+  participantId: string; // Instagram user ID for sending messages
 }
 
 interface Message {
@@ -252,6 +253,7 @@ export default function InstagramPage() {
             unreadCount: 0,
             avatar: participant?.profile_pic || null,
             username: participant?.username || '',
+            participantId: participant?.id || '', // Store the actual Instagram user ID
           };
         });
         setChats(formattedChats);
@@ -358,7 +360,7 @@ export default function InstagramPage() {
         body: { 
           action: 'send-message',
           params: {
-            recipientId: selectedChat.id,
+            recipientId: selectedChat.participantId, // Use the participant's Instagram user ID
             message: text
           }
         }
