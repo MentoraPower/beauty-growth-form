@@ -3,10 +3,10 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Clock, PhoneOff, UserCheck, Webhook, Globe, ChevronDown, ChevronUp, ArrowRight, ListOrdered, MoveRight, UserPlus, FileText, Users } from "lucide-react";
+import { Clock, PhoneOff, UserCheck, Webhook, Globe, ChevronDown, ChevronUp, ArrowRight, ListOrdered, MoveRight, UserPlus, FileText, Users, FolderSync } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { useNavigate } from "react-router-dom";
+
 
 interface TrackingEvent {
   id: string;
@@ -56,6 +56,8 @@ const getIconForType = (tipo: string) => {
       return <MoveRight className="h-5 w-5" />;
     case "mudou_posicao":
       return <ListOrdered className="h-5 w-5" />;
+    case "mudou_origem":
+      return <FolderSync className="h-5 w-5" />;
     case "cadastro":
       return <UserPlus className="h-5 w-5" />;
     case "formulario":
@@ -76,7 +78,9 @@ const getIconColors = (tipo: string): { bg: string; text: string } => {
     case "mudou_pipeline":
       return { bg: "bg-violet-500", text: "text-white" };
     case "mudou_posicao":
-      return { bg: "bg-violet-500", text: "text-white" };
+      return { bg: "bg-slate-500", text: "text-white" };
+    case "mudou_origem":
+      return { bg: "bg-cyan-500", text: "text-white" };
     case "cadastro":
       return { bg: "bg-emerald-500", text: "text-white" };
     case "formulario":
@@ -87,7 +91,6 @@ const getIconColors = (tipo: string): { bg: string; text: string } => {
 };
 
 export function LeadTrackingTimeline({ leadId, utmData, leadEmail, leadWhatsapp }: LeadTrackingTimelineProps) {
-  const navigate = useNavigate();
   const [events, setEvents] = useState<TrackingEvent[]>([]);
   const [otherOriginLeads, setOtherOriginLeads] = useState<OtherOriginLead[]>([]);
   const [isLoading, setIsLoading] = useState(true);

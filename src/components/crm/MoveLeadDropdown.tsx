@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { triggerWebhook } from "@/lib/webhooks";
+import { trackOriginMove } from "@/lib/leadTracking";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -70,7 +71,7 @@ export function MoveLeadDropdown({
     fetchData();
   }, [isOpen]);
 
-  const handleMove = async (subOriginId: string, pipelineId: string, pipelineName: string) => {
+  const handleMove = async (targetSubOriginId: string, pipelineId: string, pipelineName: string) => {
     // Close menu immediately to avoid UI feeling stuck while network calls happen
     setIsOpen(false);
     await new Promise((r) => setTimeout(r, 0));
@@ -90,21 +91,42 @@ export function MoveLeadDropdown({
       }
 
       const previousPipelineId = (currentLead as any)?.pipeline_id ?? null;
+      const previousSubOriginId = (currentLead as any)?.sub_origin_id ?? null;
 
       const { error } = await supabase
         .from("leads")
         .update({
-          sub_origin_id: subOriginId,
+          sub_origin_id: targetSubOriginId,
           pipeline_id: pipelineId,
         })
         .eq("id", leadId);
 
       if (error) throw error;
 
+      // Get origin and sub-origin names for tracking
+      const targetSubOrigin = subOrigins.find(so => so.id === targetSubOriginId);
+      const targetOrigin = origins.find(o => o.id === targetSubOrigin?.origin_id);
+      
+      // Get previous origin/sub-origin names
+      const prevSubOrigin = subOrigins.find(so => so.id === previousSubOriginId);
+      const prevOrigin = origins.find(o => o.id === prevSubOrigin?.origin_id);
+
+      // Track origin move
+      trackOriginMove({
+        leadId,
+        fromOriginName: prevOrigin?.nome,
+        fromSubOriginName: prevSubOrigin?.nome,
+        toOriginName: targetOrigin?.nome || "Desconhecido",
+        toSubOriginName: targetSubOrigin?.nome || "Desconhecido",
+        toPipelineName: pipelineName,
+        toSubOriginId: targetSubOriginId,
+        toPipelineId: pipelineId,
+      }).catch((e) => console.error("Error tracking origin move:", e));
+
       // Trigger webhook/email automation (fire and forget)
       const movedLead = {
         ...(currentLead || { id: leadId, name: leadName }),
-        sub_origin_id: subOriginId,
+        sub_origin_id: targetSubOriginId,
         pipeline_id: pipelineId,
       };
 
@@ -113,7 +135,7 @@ export function MoveLeadDropdown({
         lead: movedLead as any,
         pipeline_id: pipelineId,
         previous_pipeline_id: previousPipelineId,
-        sub_origin_id: subOriginId,
+        sub_origin_id: targetSubOriginId,
       }).catch((e) => console.error("Error triggering lead_moved webhook:", e));
 
       toast.success(`Lead movido para ${pipelineName}`);
