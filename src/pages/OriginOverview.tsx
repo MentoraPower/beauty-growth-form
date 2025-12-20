@@ -572,50 +572,9 @@ const OriginOverview = () => {
             {/* Meetings by Hour Chart */}
             <Card className="bg-white border border-black/5 shadow-none">
               <CardHeader className="pb-4">
-                <div className="flex items-start justify-between gap-4">
-                  <CardTitle className="text-base font-semibold text-foreground">
-                    Reuniões e Vendas por Horário
-                  </CardTitle>
-                  {/* Top 3 Champion Hours */}
-                  {(() => {
-                    const hourlyData = Array.from({ length: 17 }, (_, i) => {
-                      const hour = i + 6;
-                      const salesInHour = appointments.filter(apt => {
-                        const aptHour = new Date(apt.start_time).getUTCHours();
-                        return aptHour === hour && apt.is_paid && apt.payment_value && apt.payment_value > 0;
-                      }).length;
-                      return { hour, salesInHour };
-                    });
-                    
-                    const topHours = hourlyData
-                      .filter(h => h.salesInHour > 0)
-                      .sort((a, b) => b.salesInHour - a.salesInHour)
-                      .slice(0, 3);
-                    
-                    if (topHours.length === 0) return null;
-                    
-                    return (
-                      <div className="flex items-center gap-2">
-                        {topHours.map((h, idx) => (
-                          <div 
-                            key={h.hour} 
-                            className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 border border-emerald-200"
-                          >
-                            <span className="text-xs font-bold text-emerald-700">
-                              {idx === 0 ? '🏆' : idx === 1 ? '🥈' : '🥉'}
-                            </span>
-                            <span className="text-xs font-semibold text-emerald-700">
-                              {h.hour.toString().padStart(2, '0')}h
-                            </span>
-                            <span className="text-xs text-emerald-600">
-                              ({h.salesInHour})
-                            </span>
-                          </div>
-                        ))}
-                      </div>
-                    );
-                  })()}
-                </div>
+                <CardTitle className="text-base font-semibold text-foreground">
+                  Reuniões e Vendas por Horário
+                </CardTitle>
               </CardHeader>
               <CardContent>
                 {(() => {
@@ -636,10 +595,17 @@ const OriginOverview = () => {
                     
                     return {
                       hour: hourStr,
+                      hourNum: hour,
                       reunioes: meetingsInHour,
                       vendas: salesInHour
                     };
                   });
+
+                  // Get top 3 champion hours
+                  const topHours = [...hourlyData]
+                    .filter(h => h.vendas > 0)
+                    .sort((a, b) => b.vendas - a.vendas)
+                    .slice(0, 3);
 
                   const CustomTooltipHourly = ({ active, payload, label }: any) => {
                     if (active && payload && payload.length) {
@@ -658,7 +624,29 @@ const OriginOverview = () => {
                   };
 
                   return (
-                    <div className="h-[300px]">
+                    <div className="h-[300px] relative">
+                      {/* Top Hours Badge - Inside chart */}
+                      {topHours.length > 0 && (
+                        <div className="absolute top-2 right-2 z-10 flex items-center gap-1.5">
+                          <span className="text-[10px] text-muted-foreground font-medium">Top vendas:</span>
+                          {topHours.map((h, idx) => (
+                            <div 
+                              key={h.hourNum} 
+                              className="flex items-center gap-1 px-2 py-0.5 rounded bg-black/5 backdrop-blur-sm"
+                            >
+                              <span className="text-[10px] font-bold text-foreground">
+                                {idx + 1}º
+                              </span>
+                              <span className="text-[10px] font-semibold text-foreground">
+                                {h.hour}
+                              </span>
+                              <span className="text-[10px] text-muted-foreground">
+                                ({h.vendas})
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
                       <ResponsiveContainer width="100%" height="100%">
                         <AreaChart data={hourlyData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                           <defs>
