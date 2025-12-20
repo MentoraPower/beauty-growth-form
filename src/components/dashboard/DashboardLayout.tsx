@@ -127,17 +127,15 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
     
     if (panelId === 'crm') {
       setCrmSubmenuOpen(true);
-      if (!location.pathname.startsWith('/admin/crm')) {
-        // Fetch first origin and navigate to its overview
-        const { data: origins } = await supabase
-          .from('crm_origins')
-          .select('id')
-          .order('ordem')
-          .limit(1);
-        
-        if (origins && origins.length > 0) {
-          navigate(`/admin/crm/overview?origin=${origins[0].id}`);
-        }
+      // Always navigate to first origin overview when CRM is clicked
+      const { data: origins } = await supabase
+        .from('crm_origins')
+        .select('id')
+        .order('ordem')
+        .limit(1);
+      
+      if (origins && origins.length > 0) {
+        navigate(`/admin/crm/overview?origin=${origins[0].id}`);
       }
     } else {
       setCrmSubmenuOpen(false);
