@@ -117,10 +117,10 @@ export function AppointmentCard({
         <PopoverTrigger asChild>
           <button
             onClick={handlePaymentClick}
-            className="flex items-center gap-0.5 px-1 py-0.5 rounded text-[10px] font-medium transition-colors bg-emerald-400/30 text-emerald-100"
+            className="flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-medium transition-colors bg-emerald-400/30 text-emerald-100"
           >
             <DollarSign className="h-3 w-3" />
-            <span>{formatCurrency(appointment.payment_value || 0)}</span>
+            <span>Pago</span>
           </button>
         </PopoverTrigger>
         <PopoverContent 
