@@ -473,13 +473,16 @@ function SortableOriginItem({
             </li>
 
             {/* Calendar sub-origin (appears right after Overview) */}
-            {originSubOrigins.filter(s => s.tipo === 'calendario').map((subOrigin) => {
+            {originSubOrigins.filter(s => s.tipo === 'calendario').map((subOrigin, index, filteredCalendars) => {
               const isActive = currentCalendarOriginId === subOrigin.id;
+              const taskSubOrigins = originSubOrigins.filter(s => s.tipo === 'tarefas');
+              const isLastOfAll = index === filteredCalendars.length - 1 && taskSubOrigins.length === 0;
               
               return (
                 <li 
                   key={subOrigin.id} 
                   className="relative pl-6 py-1"
+                  ref={isLastOfAll ? (el) => { lastSubOriginRef.current = el; } : undefined}
                 >
                   {/* Curva SVG perfeita */}
                   <svg 
@@ -557,13 +560,13 @@ function SortableOriginItem({
             {originSubOrigins.filter(s => s.tipo === 'tarefas').map((subOrigin, index, filteredArr) => {
               const leadCount = leadCounts.find(lc => lc.sub_origin_id === subOrigin.id)?.count || 0;
               const isActive = currentSubOriginId === subOrigin.id;
-              const isLast = index === filteredArr.length - 1 && !originSubOrigins.some(s => s.tipo === 'calendario');
+              const isLastTask = index === filteredArr.length - 1;
               
               return (
                 <li 
                   key={subOrigin.id} 
                   className="relative pl-6 py-1"
-                  ref={isLast ? (el) => { lastSubOriginRef.current = el; } : undefined}
+                  ref={isLastTask ? (el) => { lastSubOriginRef.current = el; } : undefined}
                 >
                   {/* Curva SVG perfeita */}
                   <svg 
