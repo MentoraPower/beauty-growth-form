@@ -250,15 +250,15 @@ const Index = () => {
       const ticketValue = parseCurrency(formData.averageTicket);
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 5000);
-      const response = await fetch('https://ytdfwkchsumgdvcroaqg.supabase.co/functions/v1/analyze-lead', {
+      const response = await fetch('https://ytdfwkchsumgdvcroaqg.supabase.co/functions/v1/analyze-lead-profile', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          revenue: formData.revenue,
-          weeklyAppointments: formData.weeklyAppointments,
-          averageTicket: ticketValue.toFixed(2)
+          monthly_billing: formData.revenue,
+          weekly_attendance: formData.weeklyAppointments,
+          average_ticket: ticketValue
         }),
         signal: controller.signal
       });

@@ -1,8 +1,5 @@
 project_id = "ytdfwkchsumgdvcroaqg"
 
-[functions.analyze-lead]
-verify_jwt = false
-
 [functions.analyze-lead-profile]
 verify_jwt = false
 
