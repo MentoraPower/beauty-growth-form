@@ -411,24 +411,17 @@ const OriginOverview = () => {
                               className="h-full rounded-lg transition-all duration-700 ease-out relative overflow-hidden"
                               style={{ 
                                 width: `${(count / maxCount) * 100}%`,
-                                background: 'linear-gradient(90deg, hsl(var(--foreground)) 50%, hsl(var(--muted-foreground)/0.3) 50%)',
-                                backgroundSize: '20px 100%'
+                                background: `repeating-linear-gradient(
+                                  45deg,
+                                  #1a1a1a,
+                                  #1a1a1a 12px,
+                                  #4a4a4a 12px,
+                                  #4a4a4a 24px,
+                                  #1a1a1a 24px,
+                                  #1a1a1a 36px
+                                )`
                               }}
-                            >
-                              {/* Ribbon pattern overlay */}
-                              <div 
-                                className="absolute inset-0"
-                                style={{
-                                  background: `repeating-linear-gradient(
-                                    ${index % 2 === 0 ? '45deg' : '-45deg'},
-                                    transparent,
-                                    transparent 8px,
-                                    hsl(var(--background)/0.15) 8px,
-                                    hsl(var(--background)/0.15) 16px
-                                  )`
-                                }}
-                              />
-                            </div>
+                            />
                           </div>
                           <div className="flex items-center gap-2 flex-shrink-0">
                             <div className="w-10 h-10 rounded-full bg-foreground flex items-center justify-center">
