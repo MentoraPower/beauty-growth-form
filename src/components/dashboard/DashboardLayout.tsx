@@ -223,12 +223,12 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
           className="hidden lg:flex flex-col fixed bg-[#0f0f12] overflow-hidden z-40 rounded-2xl"
         >
           <div className="flex flex-col h-full relative">
-            {/* Logo + Connection Status */}
-            <div className="h-14 flex items-center justify-center px-3">
+            {/* Logo */}
+            <div className="h-14 flex items-center px-3">
               <img 
                 src={scaleLogo} 
                 alt="Scale Beauty" 
-                className="object-contain transition-all duration-300 ease-out"
+                className="object-contain transition-all duration-300 ease-out origin-left"
                 style={{ 
                   height: sidebarExpanded ? 28 : 16,
                   maxWidth: sidebarExpanded ? 140 : 40,
