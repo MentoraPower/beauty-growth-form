@@ -177,15 +177,8 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
   // Current sidebar width based on expanded state
   const currentSidebarWidth = sidebarExpanded ? sidebarExpandedWidth : sidebarCollapsedWidth;
 
-  // Calculate main content margin
-  const getMainContentMargin = () => {
-    if (crmSubmenuOpen) {
-      return currentSidebarWidth + 4 + submenuWidth + 12;
-    }
-    return currentSidebarWidth + 12;
-  };
-
-  const mainContentMargin = getMainContentMargin();
+  // Main content margin - fixed, independent of submenu state
+  const mainContentMargin = currentSidebarWidth + 12;
 
   return (
     <div className="min-h-screen bg-card p-3">
@@ -382,17 +375,18 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
           </div>
         </aside>
 
-        {/* CRM Submenu Panel - appears below fixed menu */}
+        {/* CRM Submenu Panel - overlay on top of content */}
         <div
           style={{ 
-            left: currentSidebarWidth + 4,
-            width: crmSubmenuOpen ? submenuWidth : 0,
+            left: currentSidebarWidth + 16,
+            width: submenuWidth,
             opacity: crmSubmenuOpen ? 1 : 0,
-            zIndex: 39,
+            transform: crmSubmenuOpen ? 'translateX(0)' : 'translateX(-20px)',
+            zIndex: 50,
             pointerEvents: crmSubmenuOpen ? 'auto' : 'none',
-            transition: "width 400ms cubic-bezier(0.4,0,0.2,1), opacity 200ms ease-out, left 300ms cubic-bezier(0.4,0,0.2,1)",
+            transition: "opacity 200ms ease-out, transform 300ms cubic-bezier(0.4,0,0.2,1)",
           }}
-          className="hidden lg:block fixed top-[18px] h-[calc(100vh-1.5rem-6px)] rounded-r-2xl bg-[#ebebed] overflow-hidden"
+          className="hidden lg:block fixed top-[18px] h-[calc(100vh-1.5rem-6px)] rounded-2xl bg-[#ebebed] shadow-xl overflow-hidden"
         >
           <div className="h-full pl-4 pr-2" style={{ width: submenuWidth, minWidth: submenuWidth }}>
             <CRMOriginsPanel 
