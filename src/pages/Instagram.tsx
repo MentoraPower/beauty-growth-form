@@ -5,8 +5,6 @@ import {
   Mic, 
   Image as ImageIcon,
   Search,
-  MoreVertical,
-  Phone,
   Check,
   CheckCheck,
   AlertCircle,
@@ -19,7 +17,6 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 import Instagram from "@/components/icons/Instagram";
 import { supabase } from "@/integrations/supabase/client";
-import CallModal from "@/components/whatsapp/CallModal";
 
 interface Chat {
   id: string;
@@ -58,7 +55,6 @@ export default function InstagramPage() {
   const [messageInput, setMessageInput] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [isSending, setIsSending] = useState(false);
-  const [isCallModalOpen, setIsCallModalOpen] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const REDIRECT_URI = `${window.location.origin}/admin/instagram`;
@@ -419,39 +415,6 @@ export default function InstagramPage() {
     }
   };
 
-  // Handle call initiation
-  const handleInitiateCall = async () => {
-    if (!selectedChat) return;
-    
-    // Try to find lead by name to get phone number
-    const { data: leads } = await supabase
-      .from('leads')
-      .select('whatsapp, country_code')
-      .ilike('name', `%${selectedChat.name}%`)
-      .limit(1);
-    
-    let phoneNumber = leads?.[0]?.whatsapp;
-    
-    if (!phoneNumber) {
-      throw new Error("Número de telefone não encontrado para este contato. O contato precisa estar cadastrado como lead.");
-    }
-    
-    // Format phone with country code
-    const countryCode = leads?.[0]?.country_code || '55';
-    if (!phoneNumber.startsWith('+')) {
-      phoneNumber = `+${countryCode}${phoneNumber.replace(/\D/g, '')}`;
-    }
-    
-    const { data, error } = await supabase.functions.invoke('infobip-call', {
-      body: { to: phoneNumber }
-    });
-    
-    if (error) throw error;
-    if (data?.error) throw new Error(data.error);
-    
-    return data;
-  };
-
   // Loading state
   if (isLoading || isConnecting) {
     return (
@@ -619,19 +582,6 @@ export default function InstagramPage() {
                   )}
                 </div>
               </div>
-              <div className="flex items-center gap-2">
-                <Button 
-                  variant="ghost" 
-                  size="icon"
-                  onClick={() => setIsCallModalOpen(true)}
-                  title="Ligar"
-                >
-                  <Phone className="h-5 w-5" />
-                </Button>
-                <Button variant="ghost" size="icon">
-                  <MoreVertical className="h-5 w-5" />
-                </Button>
-              </div>
             </div>
 
             <ScrollArea className="flex-1 p-4">
@@ -790,18 +740,6 @@ export default function InstagramPage() {
           </div>
         )}
       </div>
-
-      {/* Call Modal */}
-      {selectedChat && (
-        <CallModal
-          isOpen={isCallModalOpen}
-          onClose={() => setIsCallModalOpen(false)}
-          contactName={selectedChat.name}
-          contactPhone={selectedChat.username || selectedChat.participantId}
-          contactAvatar={selectedChat.avatar}
-          onInitiateCall={handleInitiateCall}
-        />
-      )}
     </div>
   );
 }
