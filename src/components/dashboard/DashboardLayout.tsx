@@ -181,7 +181,7 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
     if (crmSubmenuOpen) {
       return currentSidebarWidth + 4 + submenuWidth + 12;
     }
-    return currentSidebarWidth + 24;
+    return currentSidebarWidth + 12;
   };
 
   const mainContentMargin = getMainContentMargin();
