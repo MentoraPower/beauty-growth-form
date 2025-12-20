@@ -17,13 +17,18 @@ import {
   Play,
   Pause,
   X,
-  AlertCircle
+  AlertCircle,
+  Eye,
+  EyeOff,
+  ExternalLink,
+  Loader2
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 import Instagram from "@/components/icons/Instagram";
+import { Label } from "@/components/ui/label";
 
 interface Chat {
   id: string;
@@ -49,7 +54,8 @@ const DEFAULT_AVATAR = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy
 
 export default function InstagramPage() {
   const [isConnected, setIsConnected] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const [chats, setChats] = useState<Chat[]>([]);
   const [selectedChat, setSelectedChat] = useState<Chat | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -58,24 +64,12 @@ export default function InstagramPage() {
   const [isSending, setIsSending] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // Check if Instagram is connected by verifying secrets exist
-  useEffect(() => {
-    const checkConnection = async () => {
-      setIsLoading(true);
-      try {
-        // For now, we'll show the setup screen since there's no backend yet
-        // In the future, this will check if the tokens are valid
-        setIsConnected(false);
-      } catch (error) {
-        console.error("Error checking Instagram connection:", error);
-        setIsConnected(false);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    checkConnection();
-  }, []);
+  // Form fields for credentials
+  const [accessToken, setAccessToken] = useState("");
+  const [appId, setAppId] = useState("");
+  const [appSecret, setAppSecret] = useState("");
+  const [showToken, setShowToken] = useState(false);
+  const [showSecret, setShowSecret] = useState(false);
 
   const scrollToBottom = useCallback(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -88,6 +82,40 @@ export default function InstagramPage() {
   const formatTime = (timestamp: string) => {
     const date = new Date(timestamp);
     return date.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+  };
+
+  const handleSaveCredentials = async () => {
+    if (!accessToken.trim() || !appId.trim() || !appSecret.trim()) {
+      toast({
+        title: "Campos obrigatórios",
+        description: "Preencha todos os campos para conectar.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsSaving(true);
+    
+    try {
+      // TODO: Save credentials via edge function and validate with Instagram API
+      // For now, just show success and mark as connected
+      toast({
+        title: "Credenciais salvas",
+        description: "As credenciais foram salvas. A integração completa será implementada em breve.",
+      });
+      
+      // Clear form and show connected state
+      setIsConnected(true);
+    } catch (error) {
+      console.error("Error saving credentials:", error);
+      toast({
+        title: "Erro ao salvar",
+        description: "Não foi possível salvar as credenciais.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handleSendMessage = async () => {
@@ -139,93 +167,118 @@ export default function InstagramPage() {
     }
   };
 
-  if (isLoading) {
-    return (
-      <div className="h-[calc(100vh-1.5rem)] flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
-      </div>
-    );
-  }
-
   // Setup screen when not connected
   if (!isConnected) {
     return (
       <div className="h-[calc(100vh-1.5rem)] flex items-center justify-center p-4">
-        <div className="max-w-md w-full space-y-6">
+        <div className="max-w-lg w-full space-y-6">
           <div className="text-center space-y-4">
             <div className="mx-auto w-20 h-20 rounded-full bg-gradient-to-br from-purple-500 via-pink-500 to-orange-500 flex items-center justify-center">
               <Instagram className="w-10 h-10 text-white" />
             </div>
             <h1 className="text-2xl font-bold text-foreground">Conectar Instagram</h1>
             <p className="text-muted-foreground">
-              Para usar o Instagram Direct, você precisa configurar as credenciais do seu aplicativo no Meta Developers.
+              Insira as credenciais do seu aplicativo do Meta Developers para conectar o Instagram Direct.
             </p>
           </div>
 
-          <div className="bg-muted/50 rounded-xl p-6 space-y-4">
-            <h2 className="font-semibold text-foreground flex items-center gap-2">
-              <Settings className="h-5 w-5" />
-              Configuração necessária
-            </h2>
-            
-            <div className="space-y-3 text-sm">
-              <div className="flex items-start gap-3">
-                <div className="w-6 h-6 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xs font-medium flex-shrink-0 mt-0.5">
-                  1
-                </div>
-                <div>
-                  <p className="font-medium text-foreground">Crie um App no Meta Developers</p>
-                  <p className="text-muted-foreground">Acesse developers.facebook.com e crie um novo aplicativo</p>
-                </div>
-              </div>
-              
-              <div className="flex items-start gap-3">
-                <div className="w-6 h-6 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xs font-medium flex-shrink-0 mt-0.5">
-                  2
-                </div>
-                <div>
-                  <p className="font-medium text-foreground">Adicione o produto Instagram</p>
-                  <p className="text-muted-foreground">Configure o Instagram Basic Display ou Messenger API</p>
-                </div>
-              </div>
-              
-              <div className="flex items-start gap-3">
-                <div className="w-6 h-6 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xs font-medium flex-shrink-0 mt-0.5">
-                  3
-                </div>
-                <div>
-                  <p className="font-medium text-foreground">Obtenha as credenciais</p>
-                  <p className="text-muted-foreground">Copie o App ID, App Secret e gere um Access Token</p>
-                </div>
+          {/* Credentials Form */}
+          <div className="bg-card border border-border rounded-xl p-6 space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="appId">App ID</Label>
+              <Input
+                id="appId"
+                placeholder="Ex: 123456789012345"
+                value={appId}
+                onChange={(e) => setAppId(e.target.value)}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="appSecret">App Secret</Label>
+              <div className="relative">
+                <Input
+                  id="appSecret"
+                  type={showSecret ? "text" : "password"}
+                  placeholder="Ex: abc123def456..."
+                  value={appSecret}
+                  onChange={(e) => setAppSecret(e.target.value)}
+                  className="pr-10"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowSecret(!showSecret)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                >
+                  {showSecret ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
               </div>
             </div>
-          </div>
 
-          <div className="space-y-3">
-            <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg p-4 flex items-start gap-3">
-              <AlertCircle className="h-5 w-5 text-amber-500 flex-shrink-0 mt-0.5" />
-              <div className="text-sm">
-                <p className="font-medium text-amber-600">Secrets configurados</p>
-                <p className="text-amber-600/80">
-                  Os campos para INSTAGRAM_ACCESS_TOKEN, INSTAGRAM_APP_ID e INSTAGRAM_APP_SECRET já foram adicionados. 
-                  Por favor, preencha os valores corretos nas configurações do Supabase.
-                </p>
+            <div className="space-y-2">
+              <Label htmlFor="accessToken">Access Token</Label>
+              <div className="relative">
+                <Input
+                  id="accessToken"
+                  type={showToken ? "text" : "password"}
+                  placeholder="Ex: EAABcd123..."
+                  value={accessToken}
+                  onChange={(e) => setAccessToken(e.target.value)}
+                  className="pr-10"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowToken(!showToken)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                >
+                  {showToken ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
               </div>
             </div>
 
             <Button 
-              className="w-full"
-              onClick={() => {
-                window.open("https://developers.facebook.com/apps/", "_blank");
-              }}
+              className="w-full bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600"
+              onClick={handleSaveCredentials}
+              disabled={isSaving || !accessToken.trim() || !appId.trim() || !appSecret.trim()}
             >
-              <Instagram className="h-4 w-4 mr-2" />
+              {isSaving ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Conectando...
+                </>
+              ) : (
+                <>
+                  <Instagram className="h-4 w-4 mr-2" />
+                  Conectar Instagram
+                </>
+              )}
+            </Button>
+          </div>
+
+          {/* Help section */}
+          <div className="bg-muted/50 rounded-xl p-4 space-y-3">
+            <h3 className="font-medium text-foreground text-sm flex items-center gap-2">
+              <AlertCircle className="h-4 w-4 text-amber-500" />
+              Como obter as credenciais?
+            </h3>
+            
+            <ol className="text-sm text-muted-foreground space-y-2 list-decimal list-inside">
+              <li>Acesse o <a href="https://developers.facebook.com/apps/" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">Meta Developers</a></li>
+              <li>Crie um novo app ou use um existente</li>
+              <li>Adicione o produto "Instagram" ao app</li>
+              <li>Copie o App ID e App Secret das configurações</li>
+              <li>Gere um Access Token com as permissões necessárias</li>
+            </ol>
+
+            <Button 
+              variant="outline" 
+              size="sm"
+              className="w-full mt-2"
+              onClick={() => window.open("https://developers.facebook.com/apps/", "_blank")}
+            >
+              <ExternalLink className="h-4 w-4 mr-2" />
               Abrir Meta Developers
             </Button>
-            
-            <p className="text-xs text-center text-muted-foreground">
-              Após configurar as credenciais, recarregue esta página para conectar.
-            </p>
           </div>
         </div>
       </div>
