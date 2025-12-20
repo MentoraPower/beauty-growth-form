@@ -5,14 +5,14 @@ import { ptBR } from "date-fns/locale";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { 
-  AreaChart, 
-  Area, 
+  LineChart,
   XAxis, 
   YAxis, 
   CartesianGrid, 
   Tooltip, 
   ResponsiveContainer,
-  Line 
+  Line,
+  Legend
 } from "recharts";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -576,13 +576,7 @@ const OriginOverview = () => {
                       )}
                       <div className="h-[280px]">
                         <ResponsiveContainer width="100%" height="100%">
-                          <AreaChart data={chartData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
-                            <defs>
-                              <linearGradient id="colorReunioes" x1="0" y1="0" x2="0" y2="1">
-                                <stop offset="5%" stopColor="rgba(0, 0, 0, 0.3)" stopOpacity={0.8}/>
-                                <stop offset="95%" stopColor="rgba(0, 0, 0, 0.1)" stopOpacity={0.1}/>
-                              </linearGradient>
-                            </defs>
+                          <LineChart data={chartData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
                             <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.06)" vertical={false} />
                             <XAxis 
                               dataKey="hour" 
@@ -605,14 +599,19 @@ const OriginOverview = () => {
                               }}
                               labelStyle={{ fontWeight: 600, marginBottom: 4 }}
                             />
-                            <Area 
+                            <Legend 
+                              verticalAlign="top" 
+                              height={36}
+                              iconType="line"
+                            />
+                            <Line 
                               type="monotone" 
                               dataKey="reunioes" 
                               name="Agendamentos"
-                              stroke="rgba(0, 0, 0, 0.4)" 
-                              strokeWidth={2}
-                              fillOpacity={1} 
-                              fill="url(#colorReunioes)" 
+                              stroke="#374151" 
+                              strokeWidth={3}
+                              dot={{ fill: '#374151', strokeWidth: 2, r: 4 }}
+                              activeDot={{ r: 6, strokeWidth: 2 }}
                             />
                             <Line 
                               type="monotone" 
@@ -623,7 +622,7 @@ const OriginOverview = () => {
                               dot={{ fill: '#10b981', strokeWidth: 2, r: 4 }}
                               activeDot={{ r: 6, strokeWidth: 2 }}
                             />
-                          </AreaChart>
+                          </LineChart>
                         </ResponsiveContainer>
                       </div>
                     </div>
