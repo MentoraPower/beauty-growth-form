@@ -464,10 +464,10 @@ export default function InstagramPage() {
 
   // Connected - Main chat interface
   return (
-    <div className="h-[calc(100vh-1.5rem)] flex bg-card rounded-2xl overflow-hidden">
+    <div className="h-[calc(100vh-1.5rem)] flex bg-card rounded-2xl overflow-hidden -m-6">
       {/* Chat List Sidebar */}
       <div className="w-72 border-r border-border flex flex-col flex-shrink-0">
-        <div className="h-14 px-4 flex items-center border-b border-border">
+        <div className="h-14 pl-2 pr-4 flex items-center border-b border-border">
           <div className="flex items-center gap-2">
             <Instagram className="h-5 w-5 text-pink-500" />
             <div>
@@ -479,7 +479,7 @@ export default function InstagramPage() {
           </div>
         </div>
 
-        <div className="p-3">
+        <div className="px-2 py-3">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
@@ -492,7 +492,7 @@ export default function InstagramPage() {
         </div>
 
         <ScrollArea className="flex-1">
-          <div className="p-2 space-y-1">
+          <div className="px-1 space-y-1">
             {chats.length === 0 ? (
               <div className="p-8 text-center text-muted-foreground">
                 <Instagram className="h-12 w-12 mx-auto mb-3 opacity-50" />
