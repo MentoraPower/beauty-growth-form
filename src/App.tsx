@@ -2,7 +2,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { RealtimeProvider } from "@/components/realtime/RealtimeProvider";
 import Index from "./pages/Index";
 import TermsOfUse from "./pages/TermsOfUse";
@@ -12,8 +12,7 @@ import Dashboard from "./pages/Dashboard";
 import CRM from "./pages/CRM";
 import LeadDetail from "./pages/LeadDetail";
 import Auth from "./pages/Auth";
-import WhatsApp from "./pages/WhatsApp";
-import InstagramPage from "./pages/Instagram";
+import Atendimento from "./pages/Atendimento";
 import OriginOverview from "./pages/OriginOverview";
 import AdminShell from "./pages/AdminShell";
 import Settings from "./pages/Settings";
@@ -41,8 +40,9 @@ const App = () => (
               <Route path="crm" element={<CRM />} />
               <Route path="crm/overview" element={<OriginOverview />} />
               <Route path="crm/:id" element={<LeadDetail />} />
-              <Route path="whatsapp" element={<WhatsApp />} />
-              <Route path="instagram" element={<InstagramPage />} />
+              <Route path="atendimento" element={<Atendimento />} />
+              <Route path="whatsapp" element={<Navigate to="/admin/atendimento?tab=whatsapp" replace />} />
+              <Route path="instagram" element={<Navigate to="/admin/atendimento?tab=instagram" replace />} />
               <Route path="calendario" element={<CalendarPage />} />
               <Route path="agenda" element={<CalendarPage />} />
               <Route path="settings" element={<Settings />} />
