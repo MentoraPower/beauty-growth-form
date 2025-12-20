@@ -229,9 +229,9 @@ serve(async (req) => {
         const accessToken = connection.access_token;
         const instagramId = connection.instagram_user_id;
         
-        // Get conversations using Instagram Graph API with profile picture
+        // Get conversations using Instagram Graph API
         const convResponse = await fetch(
-          `https://graph.instagram.com/v21.0/${instagramId}/conversations?fields=participants{id,username,profile_pic},messages.limit(1){message,from,created_time}&access_token=${accessToken}`
+          `https://graph.instagram.com/v21.0/${instagramId}/conversations?fields=participants{id,username},messages.limit(1){message,from,created_time}&access_token=${accessToken}`
         );
         const convData = await convResponse.json();
         console.log('Conversations data:', JSON.stringify(convData));
@@ -242,9 +242,44 @@ serve(async (req) => {
             { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
           );
         }
+
+        // Fetch profile pictures for each participant
+        const conversationsWithPics = await Promise.all(
+          (convData.data || []).map(async (conv: any) => {
+            const participantsWithPics = await Promise.all(
+              (conv.participants?.data || []).map(async (participant: any) => {
+                // Skip if it's the connected account
+                if (participant.id === instagramId) {
+                  return participant;
+                }
+                
+                try {
+                  // Get profile picture using the user's ID
+                  const profileResponse = await fetch(
+                    `https://graph.instagram.com/v21.0/${participant.id}?fields=profile_pic&access_token=${accessToken}`
+                  );
+                  const profileData = await profileResponse.json();
+                  
+                  return {
+                    ...participant,
+                    profile_pic: profileData.profile_pic || null
+                  };
+                } catch (e) {
+                  console.log('Error fetching profile pic for', participant.id, e);
+                  return participant;
+                }
+              })
+            );
+            
+            return {
+              ...conv,
+              participants: { data: participantsWithPics }
+            };
+          })
+        );
         
         return new Response(
-          JSON.stringify({ success: true, conversations: convData.data || [] }),
+          JSON.stringify({ success: true, conversations: conversationsWithPics }),
           { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
