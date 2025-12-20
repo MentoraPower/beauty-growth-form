@@ -39,6 +39,7 @@ const App = () => (
             <Route path="crm/overview" element={<OriginOverview />} />
             <Route path="crm/:id" element={<LeadDetail />} />
             <Route path="whatsapp" element={<WhatsApp />} />
+            <Route path="calendario" element={<CalendarPage />} />
             <Route path="agenda" element={<CalendarPage />} />
             <Route path="settings" element={<Settings />} />
           </Route>

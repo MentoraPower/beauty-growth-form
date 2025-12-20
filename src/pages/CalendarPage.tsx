@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
+import { useSearchParams } from "react-router-dom";
 import { format, addDays, startOfWeek, addMonths, subMonths, addWeeks, subWeeks, addYears, subYears } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { ChevronLeft, ChevronRight } from "lucide-react";
@@ -25,6 +26,7 @@ export interface Appointment {
   is_paid?: boolean;
   payment_value?: number;
   is_noshow?: boolean;
+  sub_origin_id?: string;
 }
 
 export interface PendingSlot {
@@ -34,6 +36,9 @@ export interface PendingSlot {
 }
 
 export default function CalendarPage() {
+  const [searchParams] = useSearchParams();
+  const subOriginId = searchParams.get("origin");
+  
   const [currentDate, setCurrentDate] = useState(new Date());
   const [view, setView] = useState<ViewType>("month");
   const [appointments, setAppointments] = useState<Appointment[]>([]);
@@ -46,16 +51,23 @@ export default function CalendarPage() {
   const justClosedRef = useRef(false);
 
   // Fetch appointments
-  const fetchAppointments = async () => {
-    const { data, error } = await supabase
+  const fetchAppointments = useCallback(async () => {
+    let query = supabase
       .from("calendar_appointments")
       .select("*")
       .order("start_time", { ascending: true });
 
+    // Filter by sub_origin_id if present
+    if (subOriginId) {
+      query = query.eq("sub_origin_id", subOriginId);
+    }
+
+    const { data, error } = await query;
+
     if (!error && data) {
       setAppointments(data);
     }
-  };
+  }, [subOriginId]);
 
   useEffect(() => {
     fetchAppointments();
@@ -73,7 +85,7 @@ export default function CalendarPage() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, []);
+  }, [fetchAppointments]);
 
   const handlePrev = () => {
     switch (view) {
@@ -330,6 +342,7 @@ export default function CalendarPage() {
         anchorPosition={anchorPosition}
         onPendingSlotUpdate={handlePendingSlotUpdate}
         editingAppointment={editingAppointment}
+        subOriginId={subOriginId}
       />
     </div>
   );
