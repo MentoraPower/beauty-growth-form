@@ -463,9 +463,24 @@ export function AddAppointmentDropdown({
                   <Input
                     type="text"
                     value={paymentValue}
-                    onChange={(e) => setPaymentValue(e.target.value)}
+                    onChange={(e) => {
+                      // Remove non-digits
+                      const digits = e.target.value.replace(/\D/g, "");
+                      if (digits === "") {
+                        setPaymentValue("");
+                        return;
+                      }
+                      // Convert to number (cents)
+                      const cents = parseInt(digits, 10);
+                      // Format as Brazilian currency
+                      const formatted = (cents / 100).toLocaleString("pt-BR", {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2,
+                      });
+                      setPaymentValue(formatted);
+                    }}
                     placeholder="0,00"
-                    className="w-24 h-8 text-sm"
+                    className="w-28 h-8 text-sm"
                   />
                 </div>
               )}
