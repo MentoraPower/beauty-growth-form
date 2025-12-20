@@ -604,7 +604,7 @@ export default function InstagramPage() {
                   return (
                     <div
                       key={message.id}
-                      className={cn("flex", message.fromMe ? "justify-end" : "justify-start")}
+                      className={cn("flex flex-col", message.fromMe ? "items-end" : "items-start")}
                     >
                       <div
                         className={cn(
@@ -679,15 +679,12 @@ export default function InstagramPage() {
                         {(textWithoutReel || (!reelUrl && message.text)) && (
                           <p className="text-sm px-4 py-2">{textWithoutReel || message.text}</p>
                         )}
-                        
-                        {/* Timestamp */}
-                        <div className={cn(
-                          "flex items-center justify-end gap-1 px-4 py-2",
-                          message.fromMe ? "text-white/70" : "text-muted-foreground"
-                        )}>
-                          <span className="text-[10px]">{formatTime(message.time)}</span>
-                          {message.fromMe && renderStatusIcon(message.status)}
-                        </div>
+                      </div>
+                      
+                      {/* Timestamp outside bubble */}
+                      <div className="flex items-center gap-1 mt-1 px-1">
+                        <span className="text-[10px] text-muted-foreground">{formatTime(message.time)}</span>
+                        {message.fromMe && <span className="text-muted-foreground">{renderStatusIcon(message.status)}</span>}
                       </div>
                     </div>
                   );
