@@ -35,27 +35,33 @@ export default function Atendimento() {
           <button
             onClick={() => handleTabChange('whatsapp')}
             className={cn(
-              "flex items-center gap-2 px-4 py-2.5 transition-all duration-200 text-sm font-medium border-b-2",
+              "relative flex items-center gap-2 px-4 py-2.5 transition-all duration-200 text-sm font-medium",
               activeTab === 'whatsapp'
-                ? "text-[#25D366] border-[#25D366]"
-                : "text-muted-foreground border-transparent hover:text-foreground"
+                ? "text-foreground"
+                : "text-muted-foreground hover:text-foreground"
             )}
           >
             <WhatsAppIcon className="h-4 w-4" />
             <span>WhatsApp</span>
+            {activeTab === 'whatsapp' && (
+              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-[#F40000] to-[#A10000]" />
+            )}
           </button>
           
           <button
             onClick={() => handleTabChange('instagram')}
             className={cn(
-              "flex items-center gap-2 px-4 py-2.5 transition-all duration-200 text-sm font-medium border-b-2",
+              "relative flex items-center gap-2 px-4 py-2.5 transition-all duration-200 text-sm font-medium",
               activeTab === 'instagram'
-                ? "text-[#E1306C] border-[#E1306C]"
-                : "text-muted-foreground border-transparent hover:text-foreground"
+                ? "text-foreground"
+                : "text-muted-foreground hover:text-foreground"
             )}
           >
             <InstagramIcon className="h-4 w-4" />
             <span>Instagram</span>
+            {activeTab === 'instagram' && (
+              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-[#F40000] to-[#A10000]" />
+            )}
           </button>
         </div>
       </div>
