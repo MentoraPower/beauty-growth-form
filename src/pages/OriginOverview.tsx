@@ -525,12 +525,12 @@ const OriginOverview = () => {
                     const hourStr = `${hour.toString().padStart(2, '0')}h`;
                     
                     const meetingsInHour = appointments.filter(apt => {
-                      const aptHour = new Date(apt.start_time).getHours();
+                      const aptHour = new Date(apt.start_time).getUTCHours();
                       return aptHour === hour;
                     }).length;
                     
                     const salesInHour = appointments.filter(apt => {
-                      const aptHour = new Date(apt.start_time).getHours();
+                      const aptHour = new Date(apt.start_time).getUTCHours();
                       return aptHour === hour && apt.is_paid && apt.payment_value && apt.payment_value > 0;
                     }).length;
                     
