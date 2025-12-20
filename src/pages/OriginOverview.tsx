@@ -5,14 +5,15 @@ import { ptBR } from "date-fns/locale";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { 
-  LineChart,
+  AreaChart,
+  Area,
   XAxis, 
   YAxis, 
   CartesianGrid, 
   Tooltip, 
   ResponsiveContainer,
-  Line,
-  Legend
+  Legend,
+  Dot
 } from "recharts";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -543,53 +544,72 @@ const OriginOverview = () => {
                   return (
                     <div className="h-[280px]">
                       <ResponsiveContainer width="100%" height="100%">
-                        <LineChart data={hourlyData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
-                          <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.06)" vertical={false} />
+                        <AreaChart data={hourlyData} margin={{ top: 20, right: 20, left: 0, bottom: 0 }}>
+                          <defs>
+                            <linearGradient id="gradientAgendamentos" x1="0" y1="0" x2="0" y2="1">
+                              <stop offset="0%" stopColor="#6b7280" stopOpacity={0.4} />
+                              <stop offset="100%" stopColor="#6b7280" stopOpacity={0.05} />
+                            </linearGradient>
+                            <linearGradient id="gradientVendas" x1="0" y1="0" x2="0" y2="1">
+                              <stop offset="0%" stopColor="#e11d48" stopOpacity={0.4} />
+                              <stop offset="100%" stopColor="#e11d48" stopOpacity={0.05} />
+                            </linearGradient>
+                          </defs>
+                          <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.04)" vertical={false} />
                           <XAxis 
                             dataKey="hour" 
                             axisLine={false} 
                             tickLine={false}
-                            tick={{ fill: '#888', fontSize: 11 }}
+                            tick={{ fill: '#9ca3af', fontSize: 10, fontWeight: 500 }}
+                            dy={10}
                           />
                           <YAxis 
                             axisLine={false} 
                             tickLine={false}
-                            tick={{ fill: '#888', fontSize: 11 }}
+                            tick={{ fill: '#9ca3af', fontSize: 10, fontWeight: 500 }}
                             allowDecimals={false}
+                            width={30}
                           />
                           <Tooltip 
                             contentStyle={{ 
-                              backgroundColor: 'white', 
-                              border: '1px solid rgba(0,0,0,0.1)',
-                              borderRadius: '8px',
-                              boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
+                              backgroundColor: 'rgba(255,255,255,0.95)', 
+                              border: 'none',
+                              borderRadius: '12px',
+                              boxShadow: '0 8px 32px rgba(0,0,0,0.12)',
+                              padding: '12px 16px'
                             }}
-                            labelStyle={{ fontWeight: 600, marginBottom: 4 }}
+                            labelStyle={{ fontWeight: 600, marginBottom: 8, color: '#374151' }}
+                            itemStyle={{ padding: '2px 0' }}
+                            cursor={{ stroke: 'rgba(0,0,0,0.1)', strokeWidth: 1, strokeDasharray: '4 4' }}
                           />
                           <Legend 
                             verticalAlign="top" 
-                            height={36}
-                            iconType="line"
+                            height={40}
+                            iconType="circle"
+                            wrapperStyle={{ paddingBottom: '10px' }}
+                            formatter={(value) => <span style={{ color: '#6b7280', fontSize: '12px', fontWeight: 500 }}>{value}</span>}
                           />
-                          <Line 
+                          <Area 
                             type="monotone" 
                             dataKey="reunioes" 
                             name="Agendamentos"
                             stroke="#6b7280" 
-                            strokeWidth={3}
-                            dot={{ fill: '#6b7280', strokeWidth: 2, r: 4 }}
-                            activeDot={{ r: 6, strokeWidth: 2 }}
+                            strokeWidth={2.5}
+                            fill="url(#gradientAgendamentos)"
+                            dot={{ fill: '#fff', stroke: '#6b7280', strokeWidth: 2, r: 4 }}
+                            activeDot={{ r: 6, strokeWidth: 3, fill: '#fff', stroke: '#6b7280' }}
                           />
-                          <Line 
+                          <Area 
                             type="monotone" 
                             dataKey="vendas" 
                             name="Vendas"
                             stroke="#e11d48" 
-                            strokeWidth={3}
-                            dot={{ fill: '#e11d48', strokeWidth: 2, r: 4 }}
-                            activeDot={{ r: 6, strokeWidth: 2 }}
+                            strokeWidth={2.5}
+                            fill="url(#gradientVendas)"
+                            dot={{ fill: '#fff', stroke: '#e11d48', strokeWidth: 2, r: 4 }}
+                            activeDot={{ r: 6, strokeWidth: 3, fill: '#fff', stroke: '#e11d48' }}
                           />
-                        </LineChart>
+                        </AreaChart>
                       </ResponsiveContainer>
                     </div>
                   );
