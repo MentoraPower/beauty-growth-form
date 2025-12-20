@@ -227,8 +227,8 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
                   className={cn(
                     "relative flex items-center h-10 rounded-lg transition-all duration-200",
                     activePanel === 'crm'
-                      ? "bg-white text-[#0f0f12] before:absolute before:-left-3 before:top-1/2 before:-translate-y-1/2 before:h-[70%] before:w-1 before:rounded-r-full before:bg-gradient-to-b before:from-[#F40000] before:to-[#A10000]"
-                      : "bg-white/10 text-white/70 hover:bg-white/20 hover:text-white"
+                      ? "bg-white/10 text-white before:absolute before:-left-3 before:top-1/2 before:-translate-y-1/2 before:h-[70%] before:w-1 before:rounded-r-full before:bg-gradient-to-b before:from-[#F40000] before:to-[#A10000]"
+                      : "text-white/70 hover:bg-white/5 hover:text-white"
                   )}
                 >
                   <div className="w-10 flex items-center justify-center flex-shrink-0">
@@ -254,8 +254,8 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
                       className={cn(
                         "relative flex items-center h-10 rounded-lg transition-all duration-200",
                         isSelected
-                          ? "bg-white text-[#0f0f12] before:absolute before:-left-3 before:top-1/2 before:-translate-y-1/2 before:h-[70%] before:w-1 before:rounded-r-full before:bg-gradient-to-b before:from-[#F40000] before:to-[#A10000]"
-                          : "bg-white/10 text-white/70 hover:bg-white/20 hover:text-white"
+                          ? "bg-white/10 text-white before:absolute before:-left-3 before:top-1/2 before:-translate-y-1/2 before:h-[70%] before:w-1 before:rounded-r-full before:bg-gradient-to-b before:from-[#F40000] before:to-[#A10000]"
+                          : "text-white/70 hover:bg-white/5 hover:text-white"
                       )}
                     >
                       <div className="w-10 flex items-center justify-center flex-shrink-0">
