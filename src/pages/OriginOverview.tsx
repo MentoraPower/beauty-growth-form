@@ -4,6 +4,7 @@ import { subDays, startOfDay, endOfDay, format, differenceInDays, eachDayOfInter
 import { ptBR } from "date-fns/locale";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { motion, AnimatePresence } from "framer-motion";
 import { 
   AreaChart,
   Area,
@@ -31,6 +32,7 @@ import ModernAreaChart from "@/components/dashboard/ModernAreaChart";
 import ModernBarChart from "@/components/dashboard/ModernBarChart";
 import MiniGaugeChart from "@/components/dashboard/MiniGaugeChart";
 import DateFilter, { DateRange } from "@/components/dashboard/DateFilter";
+import { AnimatedNumber, AnimatedCurrency } from "@/components/dashboard/AnimatedNumber";
 
 interface Lead {
   id: string;
@@ -85,11 +87,18 @@ const OriginOverview = () => {
   const [agendaMode, setAgendaMode] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
   const [savingAgendaMode, setSavingAgendaMode] = useState(false);
+  const [filterKey, setFilterKey] = useState(0); // Key to trigger chart animations
   
   const [dateRange, setDateRange] = useState<DateRange>({
     from: startOfDay(subDays(new Date(), 29)),
     to: endOfDay(new Date())
   });
+
+  // Handle date filter change with animation trigger
+  const handleDateChange = (newRange: DateRange) => {
+    setDateRange(newRange);
+    setFilterKey(prev => prev + 1);
+  };
 
   // Filter appointments by date range
   const appointments = useMemo(() => {
@@ -408,7 +417,7 @@ const OriginOverview = () => {
                 </DropdownMenuContent>
               </DropdownMenu>
             )}
-            <DateFilter onDateChange={setDateRange} />
+            <DateFilter onDateChange={handleDateChange} />
           </div>
         </div>
 
@@ -419,14 +428,18 @@ const OriginOverview = () => {
               <Card className="bg-white border border-black/5 shadow-none flex-1 min-w-[140px]">
                 <CardContent className="px-4 py-3 flex items-center justify-between gap-3">
                   <p className="text-sm text-muted-foreground font-medium whitespace-nowrap">Total Leads</p>
-                  <p className="text-2xl font-bold text-foreground">{leads.length}</p>
+                  <p className="text-2xl font-bold text-foreground">
+                    <AnimatedNumber value={leads.length} />
+                  </p>
                 </CardContent>
               </Card>
 
               <Card className="bg-white border border-black/5 shadow-none flex-1 min-w-[140px]">
                 <CardContent className="px-4 py-3 flex items-center justify-between gap-3">
                   <p className="text-sm text-muted-foreground font-medium whitespace-nowrap">Agendamentos</p>
-                  <p className="text-2xl font-bold text-foreground">{appointments.length}</p>
+                  <p className="text-2xl font-bold text-foreground">
+                    <AnimatedNumber value={appointments.length} />
+                  </p>
                 </CardContent>
               </Card>
 
@@ -434,7 +447,7 @@ const OriginOverview = () => {
                 <CardContent className="px-4 py-3 flex items-center justify-between gap-3">
                   <p className="text-sm text-muted-foreground font-medium whitespace-nowrap">No Show</p>
                   <p className="text-2xl font-bold text-rose-500">
-                    {appointments.filter(a => a.is_noshow).length}
+                    <AnimatedNumber value={appointments.filter(a => a.is_noshow).length} />
                   </p>
                 </CardContent>
               </Card>
@@ -443,7 +456,7 @@ const OriginOverview = () => {
                 <CardContent className="px-4 py-3 flex items-center justify-between gap-3">
                   <p className="text-sm text-muted-foreground font-medium whitespace-nowrap">Total Vendas</p>
                   <p className="text-2xl font-bold text-foreground">
-                    {appointments.filter(a => a.is_paid && a.payment_value && a.payment_value > 0).length}
+                    <AnimatedNumber value={appointments.filter(a => a.is_paid && a.payment_value && a.payment_value > 0).length} />
                   </p>
                 </CardContent>
               </Card>
@@ -452,18 +465,24 @@ const OriginOverview = () => {
                 <CardContent className="px-4 py-3 flex items-center gap-3">
                   <p className="text-sm text-muted-foreground font-medium whitespace-nowrap">Valor em Vendas</p>
                   <p className="text-2xl font-bold text-emerald-600 whitespace-nowrap">
-                    {new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(
-                      appointments
+                    <AnimatedCurrency 
+                      value={appointments
                         .filter(a => a.is_paid && a.payment_value)
-                        .reduce((sum, a) => sum + (a.payment_value || 0), 0)
-                    )}
+                        .reduce((sum, a) => sum + (a.payment_value || 0), 0)} 
+                    />
                   </p>
                 </CardContent>
               </Card>
             </div>
 
             {/* Charts Grid - SDR and Closer */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <motion.div 
+              key={`sdr-charts-${filterKey}`}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.4, ease: "easeOut" }}
+              className="grid grid-cols-1 lg:grid-cols-2 gap-6"
+            >
               {/* SDR Appointments Chart */}
               <Card className="bg-white border border-black/5 shadow-none">
                 <CardHeader className="pb-4">
@@ -603,10 +622,16 @@ const OriginOverview = () => {
                   </div>
                 </CardContent>
               </Card>
-            </div>
+            </motion.div>
 
             {/* Second Row - Closer Charts */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <motion.div 
+              key={`closer-charts-${filterKey}`}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.4, delay: 0.1, ease: "easeOut" }}
+              className="grid grid-cols-1 lg:grid-cols-2 gap-6"
+            >
               {/* Closer Meetings Chart */}
               <Card className="bg-white border border-black/5 shadow-none">
                 <CardHeader className="pb-4">
@@ -746,9 +771,15 @@ const OriginOverview = () => {
                   </div>
                 </CardContent>
               </Card>
-            </div>
+            </motion.div>
 
             {/* Meetings by Hour Chart */}
+            <motion.div 
+              key={`hourly-chart-${filterKey}`}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.4, delay: 0.2, ease: "easeOut" }}
+            >
             <Card className="bg-white border border-black/5 shadow-none">
               <CardHeader className="pb-4">
                 <CardTitle className="text-base font-semibold text-foreground">
@@ -917,6 +948,7 @@ const OriginOverview = () => {
                 })()}
               </CardContent>
             </Card>
+            </motion.div>
           </>
         ) : (
           <>
