@@ -244,6 +244,9 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
                   </span>
                 </button>
                 
+                {/* Separator between CRM and Atendimento */}
+                <div className="my-2 border-t border-white/10" />
+                
                 {/* Atendimento */}
                 {navItems.map((item) => {
                   const isSelected = activePanel === item.id;
