@@ -20,6 +20,7 @@ import { MoveLeadDropdown } from "@/components/crm/MoveLeadDropdown";
 import { EditableField } from "@/components/crm/EditableField";
 import { OnboardingSection, OnboardingBuilderData } from "@/components/onboarding/OnboardingSection";
 import { OnboardingFormBuilder } from "@/components/onboarding/OnboardingFormBuilder";
+import { CalendarDropdown } from "@/components/crm/CalendarDropdown";
 import { WhatsAppChatDropdown } from "@/components/crm/WhatsAppChatDropdown";
 import {
   DropdownMenu,
@@ -401,11 +402,16 @@ export default function LeadDetail() {
                   <h1 className="text-xl font-bold leading-tight">
                     {lead.name === "Incompleto" ? "incompleto" : lead.name}
                   </h1>
-                  <WhatsAppChatDropdown 
-                    phone={lead.whatsapp || ""}
-                    countryCode={lead.country_code || "+55"}
-                    contactName={lead.name}
-                  />
+                                <WhatsAppChatDropdown 
+                                    phone={lead.whatsapp || ""}
+                                    countryCode={lead.country_code || "+55"}
+                                    contactName={lead.name}
+                                  />
+                                  <CalendarDropdown
+                                    leadName={lead.name}
+                                    leadEmail={lead.email}
+                                    subOriginId={lead.sub_origin_id}
+                                  />
                 </div>
               </div>
             </div>
