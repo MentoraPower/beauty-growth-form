@@ -118,7 +118,7 @@ const Auth = () => {
                 value={email} 
                 onChange={e => setEmail(e.target.value)} 
                 placeholder="contato@email.com.br" 
-                className="bg-neutral-900 border-0 text-white placeholder:text-neutral-400 focus:ring-2 focus:ring-neutral-700 h-14 rounded-xl transition-all duration-200" 
+                className="bg-transparent border-0 border-b border-neutral-300 rounded-none text-neutral-900 placeholder:text-neutral-400 focus:ring-0 focus:border-neutral-900 h-12 px-0 transition-all duration-200" 
                 disabled={isLoading} 
                 autoComplete="email" 
               />
@@ -133,14 +133,14 @@ const Auth = () => {
                   value={password} 
                   onChange={e => setPassword(e.target.value)} 
                   placeholder="••••••••••••" 
-                  className="bg-neutral-900 border-0 text-white placeholder:text-neutral-400 focus:ring-2 focus:ring-neutral-700 h-14 rounded-xl pr-12 transition-all duration-200" 
+                  className="bg-transparent border-0 border-b border-neutral-300 rounded-none text-neutral-900 placeholder:text-neutral-400 focus:ring-0 focus:border-neutral-900 h-12 px-0 pr-10 transition-all duration-200" 
                   disabled={isLoading} 
                   autoComplete="current-password" 
                 />
                 <button 
                   type="button" 
                   onClick={() => setShowPassword(!showPassword)} 
-                  className="absolute right-4 top-1/2 -translate-y-1/2 text-neutral-500 hover:text-neutral-300 transition-colors"
+                  className="absolute right-0 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600 transition-colors"
                 >
                   {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                 </button>
@@ -150,7 +150,7 @@ const Auth = () => {
             <Button 
               type="submit" 
               disabled={isLoading} 
-              className="w-full bg-white hover:bg-neutral-100 text-neutral-900 font-medium h-14 rounded-xl border border-neutral-200 shadow-sm transition-all duration-200 hover:shadow-md mt-4"
+              className="w-full bg-neutral-900 hover:bg-neutral-800 text-white font-medium h-14 rounded-xl transition-all duration-200 hover:shadow-lg mt-4"
             >
               {isLoading ? "Entrando..." : "Acessar sua conta"}
             </Button>
