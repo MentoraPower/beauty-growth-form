@@ -244,7 +244,7 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
                   </span>
                 </button>
                 
-                <div className="h-1" />
+                <div className="h-px" />
                 
                 {/* Atendimento */}
                 {navItems.map((item) => {
