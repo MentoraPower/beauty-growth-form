@@ -396,15 +396,15 @@ const OriginOverview = () => {
                       <div key={sdr} className="space-y-1.5">
                         <span className="text-sm font-medium text-foreground">{sdr}</span>
                         <div className="flex items-center gap-3">
-                          <div className="flex-1 h-8 bg-muted/50 rounded-lg overflow-hidden">
+                          <div className="flex-1 h-10 bg-muted/50 rounded-lg overflow-hidden">
                             <div 
                               className="h-full bg-foreground rounded-lg transition-all duration-700 ease-out"
                               style={{ width: `${(count / maxCount) * 100}%` }}
                             />
                           </div>
                           <div className="flex items-center gap-2 flex-shrink-0">
-                            <div className="w-8 h-8 rounded-full bg-foreground flex items-center justify-center">
-                              <User className="h-4 w-4 text-background" />
+                            <div className="w-10 h-10 rounded-full bg-foreground flex items-center justify-center">
+                              <User className="h-5 w-5 text-background" />
                             </div>
                             <span className="text-lg font-bold text-foreground min-w-[24px]">{count}</span>
                           </div>
