@@ -9,7 +9,9 @@ import {
   CheckCheck,
   AlertCircle,
   Loader2,
-  RefreshCw
+  RefreshCw,
+  Play,
+  X
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -55,6 +57,7 @@ export default function InstagramPage() {
   const [messageInput, setMessageInput] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [isSending, setIsSending] = useState(false);
+  const [openReelUrl, setOpenReelUrl] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const REDIRECT_URI = `${window.location.origin}/admin/instagram`;
@@ -617,21 +620,27 @@ export default function InstagramPage() {
                             : "bg-muted text-foreground"
                         )}
                       >
-                        {/* Show shared reel/post embed */}
+                        {/* Show shared reel/post as clickable card */}
                         {reelUrl && (
-                          <div className="relative bg-black/10">
-                            <iframe
-                              src={`${reelUrl}/embed`}
-                              className="w-[280px] h-[400px] border-0"
-                              allowFullScreen
-                              loading="lazy"
-                            />
+                          <button
+                            onClick={() => setOpenReelUrl(reelUrl)}
+                            className="relative bg-black/90 w-[220px] h-[300px] flex flex-col items-center justify-center hover:bg-black/80 transition-colors group"
+                          >
+                            <div className="absolute inset-0 flex items-center justify-center">
+                              <div className="w-16 h-16 rounded-full bg-white/20 flex items-center justify-center group-hover:bg-white/30 transition-colors">
+                                <Play className="w-8 h-8 text-white ml-1" fill="white" />
+                              </div>
+                            </div>
+                            <div className="absolute top-3 left-3 flex items-center gap-2">
+                              <Instagram className="w-5 h-5 text-white" />
+                              <span className="text-white text-xs font-medium">Reel</span>
+                            </div>
                             {message.shareName && (
-                              <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-3">
+                              <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black to-transparent p-3">
                                 <p className="text-white text-xs truncate">{message.shareName}</p>
                               </div>
                             )}
-                          </div>
+                          </button>
                         )}
                         
                         {/* Show story mention */}
@@ -740,6 +749,31 @@ export default function InstagramPage() {
           </div>
         )}
       </div>
+
+      {/* Reel Modal */}
+      {openReelUrl && (
+        <div 
+          className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center"
+          onClick={() => setOpenReelUrl(null)}
+        >
+          <button
+            onClick={() => setOpenReelUrl(null)}
+            className="absolute top-4 right-4 p-2 rounded-full bg-white/10 hover:bg-white/20 transition-colors"
+          >
+            <X className="w-6 h-6 text-white" />
+          </button>
+          <div 
+            className="w-full max-w-[400px] h-[90vh] max-h-[700px]"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <iframe
+              src={`${openReelUrl}/embed`}
+              className="w-full h-full border-0 rounded-lg"
+              allowFullScreen
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 }
