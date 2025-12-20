@@ -5,7 +5,6 @@
 
 import { create } from 'zustand';
 import { subscribeWithSelector, devtools } from 'zustand/middleware';
-import { immer } from 'zustand/middleware/immer';
 import type {
   RealtimeStore,
   RealtimeStoreState,
