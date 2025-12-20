@@ -61,6 +61,7 @@ export default function InstagramPage() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const REDIRECT_URI = `${window.location.origin}/admin/instagram`;
+  const myInstagramUserId = accountInfo?.userId;
 
   // Check for OAuth callback code in URL on mount
   useEffect(() => {
@@ -116,8 +117,7 @@ export default function InstagramPage() {
         });
         // Clear URL params
         window.history.replaceState({}, document.title, window.location.pathname);
-        fetchConversations();
-      } else {
+        // Conversations are fetched via effect once accountInfo is available
         throw new Error(data.error || 'Erro ao conectar');
       }
     } catch (error: any) {
@@ -156,7 +156,6 @@ export default function InstagramPage() {
           username: data.instagramUsername,
           userId: data.instagramUserId 
         });
-        fetchConversations();
       } else {
         setIsConnected(false);
         if (data.needsReauth) {
@@ -233,7 +232,9 @@ export default function InstagramPage() {
     }
   };
 
-  const fetchConversations = async () => {
+  const fetchConversations = useCallback(async () => {
+    if (!myInstagramUserId) return;
+
     try {
       const { data, error } = await supabase.functions.invoke('instagram-api', {
         body: { action: 'get-conversations', params: {} }
@@ -243,9 +244,11 @@ export default function InstagramPage() {
 
       if (data.success && data.conversations) {
         const formattedChats: Chat[] = data.conversations.map((conv: any) => {
-          const participant = conv.participants?.data?.find((p: any) => p.id !== accountInfo?.userId);
+          const participant =
+            conv.participants?.data?.find((p: any) => p.id !== myInstagramUserId) ??
+            conv.participants?.data?.[0];
           const lastMsg = conv.messages?.data?.[0];
-          
+
           return {
             id: conv.id,
             name: participant?.name || participant?.username || 'Usuário',
@@ -254,7 +257,7 @@ export default function InstagramPage() {
             unreadCount: 0,
             avatar: participant?.profile_pic || null,
             username: participant?.username || '',
-            participantId: participant?.id || '', // Store the actual Instagram user ID
+            participantId: participant?.id || '',
           };
         });
         setChats(formattedChats);
@@ -262,9 +265,16 @@ export default function InstagramPage() {
     } catch (error: any) {
       console.error('Error fetching conversations:', error);
     }
-  };
+  }, [myInstagramUserId]);
 
-  const fetchMessages = async (conversationId: string) => {
+  useEffect(() => {
+    if (!isConnected || !myInstagramUserId) return;
+    fetchConversations();
+  }, [isConnected, myInstagramUserId, fetchConversations]);
+
+  const fetchMessages = useCallback(async (conversationId: string) => {
+    if (!myInstagramUserId) return;
+
     try {
       const { data, error } = await supabase.functions.invoke('instagram-api', {
         body: { action: 'get-messages', params: { conversationId, limit: 100 } }
@@ -273,20 +283,23 @@ export default function InstagramPage() {
       if (error) throw error;
 
       if (data.success && data.messages) {
-        const reversedMessages = data.messages.reverse(); // Reverse to show oldest first
-        
-        const formattedMessages: Message[] = reversedMessages.map((msg: any, index: number) => {
-          const isFromMe = msg.from?.id === accountInfo?.userId;
-          
-          // Determine status for sent messages
-          // If it's not the last message from me, assume it was read
-          // If it's the last message from me, show as sent
-          let status = 'SENT';
+        // API returns newest first; reverse to show oldest first
+        const ordered = [...data.messages].reverse();
+
+        const formattedMessages: Message[] = ordered.map((msg: any, index: number) => {
+          const isFromMe = msg.from?.id === myInstagramUserId;
+
+          // Instagram API doesn't provide delivery/read receipts.
+          // Heuristic:
+          // - Local unsynced messages show SENT (handled in handleSendMessage)
+          // - Once the message is present in the API list, show DELIVERED
+          // - If the other person sends any message AFTER it, consider it READ
+          let status = 'RECEIVED';
           if (isFromMe) {
-            const isLastFromMe = reversedMessages.slice(index + 1).every((m: any) => m.from?.id !== accountInfo?.userId);
-            status = isLastFromMe ? 'SENT' : 'READ';
+            const hasLaterOther = ordered.slice(index + 1).some((m: any) => m.from?.id !== myInstagramUserId);
+            status = hasLaterOther ? 'READ' : 'DELIVERED';
           }
-          
+
           return {
             id: msg.id,
             text: msg.message || null,
@@ -299,7 +312,7 @@ export default function InstagramPage() {
             shareName: msg.shareName || null,
           };
         });
-        
+
         setMessages(formattedMessages);
       }
     } catch (error: any) {
@@ -310,36 +323,36 @@ export default function InstagramPage() {
         variant: "destructive",
       });
     }
-  };
+  }, [myInstagramUserId]);
 
   // Fetch messages when a chat is selected
   useEffect(() => {
-    if (selectedChat) {
+    if (selectedChat && myInstagramUserId) {
       fetchMessages(selectedChat.id);
     }
-  }, [selectedChat?.id]);
+  }, [selectedChat?.id, myInstagramUserId, fetchMessages]);
 
   // Real-time polling for conversations (every 10 seconds)
   useEffect(() => {
-    if (!isConnected) return;
-    
+    if (!isConnected || !myInstagramUserId) return;
+
     const interval = setInterval(() => {
       fetchConversations();
     }, 10000);
 
     return () => clearInterval(interval);
-  }, [isConnected]);
+  }, [isConnected, myInstagramUserId, fetchConversations]);
 
   // Real-time polling for messages when chat is selected (every 5 seconds)
   useEffect(() => {
-    if (!selectedChat) return;
-    
+    if (!selectedChat || !myInstagramUserId) return;
+
     const interval = setInterval(() => {
       fetchMessages(selectedChat.id);
     }, 5000);
 
     return () => clearInterval(interval);
-  }, [selectedChat?.id]);
+  }, [selectedChat?.id, myInstagramUserId, fetchMessages]);
 
   const scrollToBottom = useCallback(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
