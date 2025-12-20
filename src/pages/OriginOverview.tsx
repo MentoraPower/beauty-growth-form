@@ -502,7 +502,7 @@ const OriginOverview = () => {
                           <div className="flex items-center gap-3">
                             <div className="flex-1 h-10 bg-muted/30 rounded-lg overflow-hidden relative">
                               <div 
-                                className="h-full rounded-lg transition-all duration-700 ease-out relative overflow-hidden"
+                                className="h-full rounded-lg relative overflow-hidden animate-bar-fill"
                                 style={{ 
                                   width: `${(count / maxCount) * 100}%`,
                                   background: `repeating-linear-gradient(
@@ -575,8 +575,8 @@ const OriginOverview = () => {
                             <span className="text-sm font-medium text-foreground">{sdr}</span>
                             <div className="flex items-center gap-3">
                               <div className="flex-1 h-10 bg-muted/30 rounded-lg overflow-hidden relative">
-                                <div 
-                                  className="h-full rounded-lg transition-all duration-700 ease-out relative overflow-hidden"
+                              <div 
+                                className="h-full rounded-lg relative overflow-hidden animate-bar-fill"
                                   style={{ 
                                     width: `${(stats.sales / maxSales) * 100}%`,
                                     background: `repeating-linear-gradient(
@@ -640,7 +640,7 @@ const OriginOverview = () => {
                           <div className="flex items-center gap-3">
                             <div className="flex-1 h-10 bg-muted/30 rounded-lg overflow-hidden relative">
                               <div 
-                                className="h-full rounded-lg transition-all duration-700 ease-out relative overflow-hidden"
+                                className="h-full rounded-lg relative overflow-hidden animate-bar-fill"
                                 style={{ 
                                   width: `${(count / maxCount) * 100}%`,
                                   background: `repeating-linear-gradient(
@@ -713,8 +713,8 @@ const OriginOverview = () => {
                             <span className="text-sm font-medium text-foreground">{closer}</span>
                             <div className="flex items-center gap-3">
                               <div className="flex-1 h-10 bg-muted/30 rounded-lg overflow-hidden relative">
-                                <div 
-                                  className="h-full rounded-lg transition-all duration-700 ease-out relative overflow-hidden"
+                              <div 
+                                className="h-full rounded-lg relative overflow-hidden animate-bar-fill"
                                   style={{ 
                                     width: `${(stats.sales / maxSales) * 100}%`,
                                     background: `repeating-linear-gradient(
