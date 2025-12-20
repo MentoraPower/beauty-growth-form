@@ -244,8 +244,7 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
                   </span>
                 </button>
                 
-                {/* Separator between CRM and Atendimento */}
-                <div className="my-2 border-t border-white/10" />
+                <div className="h-3" />
                 
                 {/* Atendimento */}
                 {navItems.map((item) => {
