@@ -177,8 +177,15 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
   // Current sidebar width based on expanded state
   const currentSidebarWidth = sidebarExpanded ? sidebarExpandedWidth : sidebarCollapsedWidth;
 
-  // Main content margin - always fixed regardless of submenu
-  const mainContentMargin = currentSidebarWidth + 12;
+  // Calculate main content margin
+  const getMainContentMargin = () => {
+    if (crmSubmenuOpen) {
+      return currentSidebarWidth + 4 + submenuWidth + 12;
+    }
+    return currentSidebarWidth + 12;
+  };
+
+  const mainContentMargin = getMainContentMargin();
 
   return (
     <div className="min-h-screen bg-card p-3">
@@ -375,17 +382,17 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
           </div>
         </aside>
 
-        {/* CRM Submenu Panel - overlay on top of content */}
+        {/* CRM Submenu Panel - appears below fixed menu */}
         <div
           style={{ 
             left: currentSidebarWidth + 4,
             width: crmSubmenuOpen ? submenuWidth : 0,
             opacity: crmSubmenuOpen ? 1 : 0,
-            zIndex: 50,
+            zIndex: 39,
             pointerEvents: crmSubmenuOpen ? 'auto' : 'none',
             transition: "width 400ms cubic-bezier(0.4,0,0.2,1), opacity 200ms ease-out, left 300ms cubic-bezier(0.4,0,0.2,1)",
           }}
-          className="hidden lg:block fixed top-[18px] h-[calc(100vh-1.5rem-6px)] rounded-r-2xl bg-[#ebebed] overflow-hidden shadow-xl"
+          className="hidden lg:block fixed top-[18px] h-[calc(100vh-1.5rem-6px)] rounded-r-2xl bg-[#ebebed] overflow-hidden"
         >
           <div className="h-full pl-4 pr-2" style={{ width: submenuWidth, minWidth: submenuWidth }}>
             <CRMOriginsPanel 
@@ -397,30 +404,16 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
           </div>
         </div>
 
-        {/* Mobile Overlay */}
-        {sidebarOpen && (
-          <div
-            className="fixed inset-0 bg-black/50 z-[60] lg:hidden"
-            onClick={() => setSidebarOpen(false)}
-          />
-        )}
-
-        {/* Mobile Sidebar - overlay on top of everything */}
+        {/* Mobile Sidebar */}
         <aside
           className={cn(
-            "lg:hidden fixed top-0 left-0 bottom-0 w-64 bg-[#0f0f12] border-r border-white/10 z-[70] transform transition-transform duration-300 ease-in-out",
+            "lg:hidden fixed top-14 left-0 bottom-0 w-64 bg-[#0f0f12] border-r border-white/10 z-40 transform transition-transform duration-300 ease-in-out",
             sidebarOpen ? "translate-x-0" : "-translate-x-full"
           )}
         >
           <div className="flex flex-col h-full py-4">
-            <div className="flex items-center justify-between px-4 py-4 mb-4">
+            <div className="flex items-center px-4 py-4 mb-4">
               <img src={scaleLogo} alt="Scale" className="w-20" />
-              <button
-                onClick={() => setSidebarOpen(false)}
-                className="p-2 hover:bg-white/10 rounded-lg transition-colors"
-              >
-                <X className="h-5 w-5 text-white" />
-              </button>
             </div>
 
             <nav className="flex-1 px-2 overflow-y-auto">
@@ -429,7 +422,6 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
                 <button
                   onClick={() => {
                     handleNavClick('crm');
-                    setSidebarOpen(false);
                   }}
                   className={cn(
                     "relative flex items-center w-full rounded-xl transition-colors duration-200 px-4 py-3 gap-3",
@@ -446,7 +438,7 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
                 
                 {/* WhatsApp - Mobile */}
                 {bottomNavItems.map((item) => {
-                  const isActive = item.id === 'whatsapp' ? isWhatsAppActive : item.id === 'instagram' ? isInstagramActive : false;
+                  const isActive = item.id === 'whatsapp' ? isWhatsAppActive : false;
                   return (
                     <Link
                       key={item.href}
@@ -512,6 +504,14 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
             </div>
           </div>
         </aside>
+
+        {/* Mobile Overlay */}
+        {sidebarOpen && (
+          <div
+            className="fixed inset-0 bg-black/50 z-30 lg:hidden"
+            onClick={() => setSidebarOpen(false)}
+          />
+        )}
 
         {/* Main Content */}
         <main 
