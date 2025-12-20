@@ -142,54 +142,54 @@ function AddSubOriginDropdown({
           align="start" 
           side="right"
           sideOffset={8}
-          className="w-64 p-3 z-[9999] bg-popover"
+          className="w-72 p-2 z-[9999] bg-popover"
         >
           {step === 'type' ? (
-            <div className="space-y-1">
-              <p className="text-[11px] font-medium text-muted-foreground/70 uppercase tracking-wider px-1 mb-2">Selecione o tipo</p>
+            <div className="space-y-0.5">
+              <p className="text-[10px] font-medium text-muted-foreground/60 uppercase tracking-wider px-2 py-1">Tipo</p>
               <button
                 onClick={() => handleSelectType('tarefas')}
-                className="flex items-center gap-3 w-full p-3 rounded-xl border border-transparent hover:border-black/5 hover:bg-black/[0.02] transition-all group"
+                className="flex items-center gap-2.5 w-full py-2 px-2.5 rounded-lg hover:bg-black/[0.03] transition-all group"
               >
-                <div className="w-9 h-9 rounded-lg bg-black/[0.04] flex items-center justify-center group-hover:bg-black/[0.06] transition-all">
-                  <ListTodo className="h-4.5 w-4.5 text-foreground/70" />
+                <div className="w-7 h-7 rounded-md bg-black/[0.04] flex items-center justify-center">
+                  <ListTodo className="h-3.5 w-3.5 text-foreground/60" />
                 </div>
-                <div className="text-left flex-1">
-                  <p className="text-sm font-medium text-foreground">Tarefas</p>
-                  <p className="text-[11px] text-muted-foreground/70">Kanban com atividades</p>
+                <div className="text-left flex-1 min-w-0">
+                  <p className="text-[13px] font-medium text-foreground leading-tight">Tarefas</p>
+                  <p className="text-[10px] text-muted-foreground/60 leading-tight">Kanban com atividades</p>
                 </div>
-                <ChevronRight className="h-4 w-4 text-foreground/30 group-hover:text-foreground/50 transition-colors" />
+                <ChevronRight className="h-3.5 w-3.5 text-foreground/20 group-hover:text-foreground/40 transition-colors" />
               </button>
               <button
                 onClick={() => handleSelectType('calendario')}
-                className="flex items-center gap-3 w-full p-3 rounded-xl border border-transparent hover:border-black/5 hover:bg-black/[0.02] transition-all group"
+                className="flex items-center gap-2.5 w-full py-2 px-2.5 rounded-lg hover:bg-black/[0.03] transition-all group"
               >
-                <div className="w-9 h-9 rounded-lg bg-black/[0.04] flex items-center justify-center group-hover:bg-black/[0.06] transition-all">
-                  <CalendarDays className="h-4.5 w-4.5 text-foreground/70" />
+                <div className="w-7 h-7 rounded-md bg-black/[0.04] flex items-center justify-center">
+                  <CalendarDays className="h-3.5 w-3.5 text-foreground/60" />
                 </div>
-                <div className="text-left flex-1">
-                  <p className="text-sm font-medium text-foreground">Calendário</p>
-                  <p className="text-[11px] text-muted-foreground/70">Agendamentos</p>
+                <div className="text-left flex-1 min-w-0">
+                  <p className="text-[13px] font-medium text-foreground leading-tight">Calendário</p>
+                  <p className="text-[10px] text-muted-foreground/60 leading-tight">Agendamentos</p>
                 </div>
-                <ChevronRight className="h-4 w-4 text-foreground/30 group-hover:text-foreground/50 transition-colors" />
+                <ChevronRight className="h-3.5 w-3.5 text-foreground/20 group-hover:text-foreground/40 transition-colors" />
               </button>
             </div>
           ) : (
-            <div className="space-y-3">
+            <div className="space-y-2 p-0.5">
               <div className="flex items-center gap-2">
                 <button 
                   onClick={() => setStep('type')}
-                  className="p-1.5 rounded-lg hover:bg-black/[0.04] transition-colors"
+                  className="p-1 rounded-md hover:bg-black/[0.04] transition-colors"
                 >
-                  <ChevronRight className="h-4 w-4 rotate-180 text-foreground/50" />
+                  <ChevronRight className="h-3.5 w-3.5 rotate-180 text-foreground/40" />
                 </button>
-                <div className="w-6 h-6 rounded-md bg-black/[0.04] flex items-center justify-center">
+                <div className="w-5 h-5 rounded bg-black/[0.04] flex items-center justify-center">
                   {selectedTipo === 'tarefas' 
-                    ? <ListTodo className="h-3.5 w-3.5 text-foreground/70" />
-                    : <CalendarDays className="h-3.5 w-3.5 text-foreground/70" />
+                    ? <ListTodo className="h-3 w-3 text-foreground/60" />
+                    : <CalendarDays className="h-3 w-3 text-foreground/60" />
                   }
                 </div>
-                <span className="text-sm font-medium text-foreground">
+                <span className="text-[13px] font-medium text-foreground">
                   {selectedTipo === 'tarefas' ? 'Nova Tarefa' : 'Novo Calendário'}
                 </span>
               </div>
@@ -198,13 +198,13 @@ function AddSubOriginDropdown({
                 value={inputValue}
                 onChange={(e) => setInputValue(e.target.value)}
                 placeholder="Nome da sub-origem"
-                className="h-9 text-sm"
+                className="h-8 text-[13px]"
                 onKeyDown={(e) => e.key === 'Enter' && handleCreate()}
               />
               <Button 
                 onClick={handleCreate} 
                 disabled={isLoading || !inputValue.trim()}
-                className="w-full h-9 bg-foreground hover:bg-foreground/90 text-background text-sm"
+                className="w-full h-8 bg-foreground hover:bg-foreground/90 text-background text-[13px]"
               >
                 {isLoading ? 'Criando...' : 'Criar'}
               </Button>
