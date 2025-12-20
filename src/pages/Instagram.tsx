@@ -11,8 +11,7 @@ import {
   CheckCheck,
   AlertCircle,
   Loader2,
-  RefreshCw,
-  LogOut
+  RefreshCw
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -298,6 +297,28 @@ export default function InstagramPage() {
     }
   }, [selectedChat?.id]);
 
+  // Real-time polling for conversations (every 10 seconds)
+  useEffect(() => {
+    if (!isConnected) return;
+    
+    const interval = setInterval(() => {
+      fetchConversations();
+    }, 10000);
+
+    return () => clearInterval(interval);
+  }, [isConnected]);
+
+  // Real-time polling for messages when chat is selected (every 5 seconds)
+  useEffect(() => {
+    if (!selectedChat) return;
+    
+    const interval = setInterval(() => {
+      fetchMessages(selectedChat.id);
+    }, 5000);
+
+    return () => clearInterval(interval);
+  }, [selectedChat?.id]);
+
   const scrollToBottom = useCallback(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, []);
@@ -446,7 +467,7 @@ export default function InstagramPage() {
     <div className="h-[calc(100vh-1.5rem)] flex bg-card rounded-2xl overflow-hidden">
       {/* Chat List Sidebar */}
       <div className="w-80 border-r border-border flex flex-col">
-        <div className="h-14 px-4 flex items-center justify-between border-b border-border">
+        <div className="h-14 px-4 flex items-center border-b border-border">
           <div className="flex items-center gap-2">
             <Instagram className="h-5 w-5 text-pink-500" />
             <div>
@@ -455,19 +476,6 @@ export default function InstagramPage() {
                 <p className="text-xs text-muted-foreground">@{accountInfo.username}</p>
               )}
             </div>
-          </div>
-          <div className="flex items-center gap-1">
-            <Button variant="ghost" size="icon" onClick={fetchConversations}>
-              <RefreshCw className="h-4 w-4" />
-            </Button>
-            <Button 
-              variant="ghost" 
-              size="icon" 
-              onClick={handleDisconnect}
-              className="text-muted-foreground hover:text-destructive"
-            >
-              <LogOut className="h-4 w-4" />
-            </Button>
           </div>
         </div>
 
