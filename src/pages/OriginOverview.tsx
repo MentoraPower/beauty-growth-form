@@ -340,43 +340,43 @@ const OriginOverview = () => {
         {agendaMode ? (
           <>
             {/* Agenda Mode - Simplified Stats */}
-            <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
-              <Card className="bg-white border border-black/5 shadow-none">
-                <CardContent className="pt-5 pb-4">
-                  <p className="text-sm text-muted-foreground font-medium mb-2">Total Leads</p>
-                  <p className="text-3xl font-bold text-foreground">{leads.length}</p>
+            <div className="flex flex-wrap gap-3">
+              <Card className="bg-white border border-black/5 shadow-none flex-1 min-w-[140px]">
+                <CardContent className="px-4 py-3 flex items-center justify-between gap-3">
+                  <p className="text-sm text-muted-foreground font-medium whitespace-nowrap">Total Leads</p>
+                  <p className="text-2xl font-bold text-foreground">{leads.length}</p>
                 </CardContent>
               </Card>
 
-              <Card className="bg-white border border-black/5 shadow-none">
-                <CardContent className="pt-5 pb-4">
-                  <p className="text-sm text-muted-foreground font-medium mb-2">Agendamentos</p>
-                  <p className="text-3xl font-bold text-foreground">{appointments.length}</p>
+              <Card className="bg-white border border-black/5 shadow-none flex-1 min-w-[140px]">
+                <CardContent className="px-4 py-3 flex items-center justify-between gap-3">
+                  <p className="text-sm text-muted-foreground font-medium whitespace-nowrap">Agendamentos</p>
+                  <p className="text-2xl font-bold text-foreground">{appointments.length}</p>
                 </CardContent>
               </Card>
 
-              <Card className="bg-white border border-black/5 shadow-none">
-                <CardContent className="pt-5 pb-4">
-                  <p className="text-sm text-muted-foreground font-medium mb-2">No Show</p>
-                  <p className="text-3xl font-bold text-rose-500">
+              <Card className="bg-white border border-black/5 shadow-none flex-1 min-w-[120px]">
+                <CardContent className="px-4 py-3 flex items-center justify-between gap-3">
+                  <p className="text-sm text-muted-foreground font-medium whitespace-nowrap">No Show</p>
+                  <p className="text-2xl font-bold text-rose-500">
                     {appointments.filter(a => a.is_noshow).length}
                   </p>
                 </CardContent>
               </Card>
 
-              <Card className="bg-white border border-black/5 shadow-none">
-                <CardContent className="pt-5 pb-4">
-                  <p className="text-sm text-muted-foreground font-medium mb-2">Total Vendas</p>
-                  <p className="text-3xl font-bold text-foreground">
+              <Card className="bg-white border border-black/5 shadow-none flex-1 min-w-[140px]">
+                <CardContent className="px-4 py-3 flex items-center justify-between gap-3">
+                  <p className="text-sm text-muted-foreground font-medium whitespace-nowrap">Total Vendas</p>
+                  <p className="text-2xl font-bold text-foreground">
                     {appointments.filter(a => a.is_paid && a.payment_value && a.payment_value > 0).length}
                   </p>
                 </CardContent>
               </Card>
 
-              <Card className="bg-white border border-black/5 shadow-none">
-                <CardContent className="pt-5 pb-4">
-                  <p className="text-sm text-muted-foreground font-medium mb-2">Valor em Vendas</p>
-                  <p className="text-3xl font-bold text-emerald-600">
+              <Card className="bg-white border border-black/5 shadow-none flex-1 min-w-[180px]">
+                <CardContent className="px-4 py-3 flex items-center justify-between gap-3">
+                  <p className="text-sm text-muted-foreground font-medium whitespace-nowrap">Valor em Vendas</p>
+                  <p className="text-2xl font-bold text-emerald-600">
                     {new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(
                       appointments
                         .filter(a => a.is_paid && a.payment_value)
