@@ -127,7 +127,7 @@ export function LeadTrackingTimeline({ leadId, utmData, leadEmail, leadWhatsapp 
       .from("lead_tracking")
       .select("*")
       .eq("lead_id", leadId)
-      .order("created_at", { ascending: false });
+      .order("created_at", { ascending: true });
 
     if (error) {
       console.error("Error fetching tracking events:", error);
