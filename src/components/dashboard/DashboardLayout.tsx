@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect, memo, useRef } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { Menu, X, LogOut, LayoutGrid, Settings, ChevronDown, User, Headphones } from "lucide-react";
+import { Menu, X, LogOut, LayoutGrid, Settings, ChevronDown, User, MessageCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import scaleLogo from "@/assets/scale-logo-menu.png";
 import { CRMOriginsPanel } from "./CRMOriginsPanel";
@@ -107,7 +107,7 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
     ...(canAccessWhatsapp ? [{ 
       id: 'atendimento' as ActivePanel, 
       href: "/admin/atendimento", 
-      icon: Headphones, 
+      icon: MessageCircle, 
       label: "Atendimento",
     }] : []),
   ];
