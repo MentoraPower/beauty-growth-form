@@ -229,9 +229,9 @@ serve(async (req) => {
         const accessToken = connection.access_token;
         const instagramId = connection.instagram_user_id;
         
-        // Get conversations using Instagram Graph API
+        // Get conversations using Instagram Graph API with profile picture
         const convResponse = await fetch(
-          `https://graph.instagram.com/v21.0/${instagramId}/conversations?fields=participants,messages{message,from,created_time}&access_token=${accessToken}`
+          `https://graph.instagram.com/v21.0/${instagramId}/conversations?fields=participants{id,username,profile_pic},messages.limit(1){message,from,created_time}&access_token=${accessToken}`
         );
         const convData = await convResponse.json();
         console.log('Conversations data:', JSON.stringify(convData));
@@ -245,6 +245,45 @@ serve(async (req) => {
         
         return new Response(
           JSON.stringify({ success: true, conversations: convData.data || [] }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      case 'get-messages': {
+        const { conversationId, limit = 50 } = params;
+        
+        // Get saved connection
+        const { data: connection, error: connError } = await supabase
+          .from('instagram_connections')
+          .select('*')
+          .limit(1)
+          .single();
+        
+        if (connError || !connection) {
+          return new Response(
+            JSON.stringify({ success: false, error: 'Conexão não encontrada' }),
+            { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+        
+        const accessToken = connection.access_token;
+        
+        // Get all messages for a specific conversation
+        const msgResponse = await fetch(
+          `https://graph.instagram.com/v21.0/${conversationId}?fields=messages.limit(${limit}){message,from,created_time,attachments}&access_token=${accessToken}`
+        );
+        const msgData = await msgResponse.json();
+        console.log('Messages data for conversation:', conversationId);
+        
+        if (msgData.error) {
+          return new Response(
+            JSON.stringify({ success: false, error: msgData.error.message }),
+            { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+        
+        return new Response(
+          JSON.stringify({ success: true, messages: msgData.messages?.data || [] }),
           { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }

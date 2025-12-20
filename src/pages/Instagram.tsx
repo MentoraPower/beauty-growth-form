@@ -245,11 +245,11 @@ export default function InstagramPage() {
           
           return {
             id: conv.id,
-            name: participant?.name || participant?.username || 'Usuário',
+            name: participant?.username || participant?.name || 'Usuário',
             lastMessage: lastMsg?.message || '',
             lastMessageTime: lastMsg?.created_time || new Date().toISOString(),
             unreadCount: 0,
-            avatar: null,
+            avatar: participant?.profile_pic || null,
             username: participant?.username || '',
           };
         });
@@ -259,6 +259,44 @@ export default function InstagramPage() {
       console.error('Error fetching conversations:', error);
     }
   };
+
+  const fetchMessages = async (conversationId: string) => {
+    try {
+      const { data, error } = await supabase.functions.invoke('instagram-api', {
+        body: { action: 'get-messages', params: { conversationId, limit: 100 } }
+      });
+
+      if (error) throw error;
+
+      if (data.success && data.messages) {
+        const formattedMessages: Message[] = data.messages.map((msg: any) => ({
+          id: msg.id,
+          text: msg.message || null,
+          time: msg.created_time,
+          fromMe: msg.from?.id === accountInfo?.userId,
+          status: 'SENT',
+          mediaType: msg.attachments?.data?.[0]?.type || null,
+          mediaUrl: msg.attachments?.data?.[0]?.url || null,
+        })).reverse(); // Reverse to show oldest first
+        
+        setMessages(formattedMessages);
+      }
+    } catch (error: any) {
+      console.error('Error fetching messages:', error);
+      toast({
+        title: "Erro ao carregar mensagens",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
+
+  // Fetch messages when a chat is selected
+  useEffect(() => {
+    if (selectedChat) {
+      fetchMessages(selectedChat.id);
+    }
+  }, [selectedChat?.id]);
 
   const scrollToBottom = useCallback(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -468,11 +506,11 @@ export default function InstagramPage() {
                       selectedChat?.id === chat.id ? "bg-primary/10" : "hover:bg-muted"
                     )}
                   >
-                    <div className="relative">
+                    <div className="relative flex-shrink-0">
                       <img
                         src={chat.avatar || DEFAULT_AVATAR}
                         alt={chat.name}
-                        className="w-12 h-12 rounded-full object-cover"
+                        className="w-11 h-11 rounded-full object-cover border border-border"
                       />
                       {chat.unreadCount > 0 && (
                         <span className="absolute -top-1 -right-1 w-5 h-5 bg-pink-500 rounded-full text-xs text-white flex items-center justify-center">
@@ -480,15 +518,14 @@ export default function InstagramPage() {
                         </span>
                       )}
                     </div>
-                    <div className="flex-1 text-left min-w-0">
-                      <div className="flex items-center justify-between">
-                        <span className="font-medium text-foreground truncate">{chat.name}</span>
-                        <span className="text-xs text-muted-foreground">{formatTime(chat.lastMessageTime)}</span>
+                    <div className="flex-1 text-left min-w-0 space-y-0.5">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="font-medium text-foreground text-sm truncate">
+                          {chat.username ? `@${chat.username}` : chat.name}
+                        </span>
+                        <span className="text-[10px] text-muted-foreground flex-shrink-0">{formatTime(chat.lastMessageTime)}</span>
                       </div>
-                      {chat.username && (
-                        <p className="text-xs text-muted-foreground">@{chat.username}</p>
-                      )}
-                      <p className="text-sm text-muted-foreground truncate">{chat.lastMessage}</p>
+                      <p className="text-xs text-muted-foreground truncate leading-tight">{chat.lastMessage}</p>
                     </div>
                   </button>
                 ))
@@ -506,13 +543,12 @@ export default function InstagramPage() {
                 <img
                   src={selectedChat.avatar || DEFAULT_AVATAR}
                   alt={selectedChat.name}
-                  className="w-10 h-10 rounded-full object-cover"
+                  className="w-10 h-10 rounded-full object-cover border border-border"
                 />
                 <div>
-                  <h3 className="font-semibold text-foreground">{selectedChat.name}</h3>
-                  {selectedChat.username && (
-                    <p className="text-xs text-muted-foreground">@{selectedChat.username}</p>
-                  )}
+                  <h3 className="font-semibold text-foreground text-sm">
+                    {selectedChat.username ? `@${selectedChat.username}` : selectedChat.name}
+                  </h3>
                 </div>
               </div>
               <div className="flex items-center gap-2">
