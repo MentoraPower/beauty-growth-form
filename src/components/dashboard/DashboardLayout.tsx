@@ -243,9 +243,7 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
                     Espaços
                   </span>
                 </button>
-                
-                <div className="h-px" />
-                
+
                 {/* Atendimento */}
                 {navItems.map((item) => {
                   const isSelected = activePanel === item.id;
