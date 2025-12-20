@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect, memo, useRef } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { Menu, X, LogOut, LayoutGrid, Settings, ChevronDown, User, Inbox } from "lucide-react";
+import { Menu, X, LogOut, LayoutGrid, Settings, ChevronDown, User, Inbox, PlusCircle, BarChart3, Rocket, RefreshCcw } from "lucide-react";
 import { cn } from "@/lib/utils";
 import scaleLogo from "@/assets/scale-logo-menu.png";
 import { CRMOriginsPanel } from "./CRMOriginsPanel";
@@ -272,6 +272,84 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
                     </button>
                   );
                 })}
+
+                {/* Separador e seção Painéis */}
+                <div className="my-3 border-t border-white/10" />
+                
+                <div className={cn(
+                  "text-[10px] uppercase tracking-wider text-white/40 mb-2 transition-all duration-200",
+                  sidebarExpanded ? "px-3 opacity-100" : "px-0 opacity-0"
+                )}>
+                  Painéis
+                </div>
+
+                {/* Criar Painel */}
+                <button
+                  className="relative flex items-center h-10 rounded-lg transition-all duration-200 text-white/70 hover:bg-white/5 hover:text-white"
+                >
+                  <div className="w-10 flex items-center justify-center flex-shrink-0">
+                    <PlusCircle className="h-5 w-5" strokeWidth={1.5} />
+                  </div>
+                  <span 
+                    className={cn(
+                      "text-sm font-medium whitespace-nowrap transition-all duration-200 overflow-hidden",
+                      sidebarExpanded ? "opacity-100 w-auto" : "opacity-0 w-0"
+                    )}
+                  >
+                    Criar Painel
+                  </span>
+                </button>
+
+                {/* Marketing */}
+                <button
+                  className="relative flex items-center h-10 rounded-lg transition-all duration-200 text-white/70 hover:bg-white/5 hover:text-white"
+                >
+                  <div className="w-10 flex items-center justify-center flex-shrink-0">
+                    <BarChart3 className="h-5 w-5" strokeWidth={1.5} />
+                  </div>
+                  <span 
+                    className={cn(
+                      "text-sm font-medium whitespace-nowrap transition-all duration-200 overflow-hidden",
+                      sidebarExpanded ? "opacity-100 w-auto" : "opacity-0 w-0"
+                    )}
+                  >
+                    Marketing
+                  </span>
+                </button>
+
+                {/* Lançamento */}
+                <button
+                  className="relative flex items-center h-10 rounded-lg transition-all duration-200 text-white/70 hover:bg-white/5 hover:text-white"
+                >
+                  <div className="w-10 flex items-center justify-center flex-shrink-0">
+                    <Rocket className="h-5 w-5" strokeWidth={1.5} />
+                  </div>
+                  <span 
+                    className={cn(
+                      "text-sm font-medium whitespace-nowrap transition-all duration-200 overflow-hidden",
+                      sidebarExpanded ? "opacity-100 w-auto" : "opacity-0 w-0"
+                    )}
+                  >
+                    Lançamento
+                  </span>
+                </button>
+
+                {/* Perpétuo */}
+                <button
+                  className="relative flex items-center h-10 rounded-lg transition-all duration-200 text-white/70 hover:bg-white/5 hover:text-white"
+                >
+                  <div className="w-10 flex items-center justify-center flex-shrink-0">
+                    <RefreshCcw className="h-5 w-5" strokeWidth={1.5} />
+                  </div>
+                  <span 
+                    className={cn(
+                      "text-sm font-medium whitespace-nowrap transition-all duration-200 overflow-hidden",
+                      sidebarExpanded ? "opacity-100 w-auto" : "opacity-0 w-0"
+                    )}
+                  >
+                    Perpétuo
+                  </span>
+                </button>
               </div>
             </nav>
 
