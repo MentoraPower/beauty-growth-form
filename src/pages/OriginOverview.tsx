@@ -511,15 +511,30 @@ const OriginOverview = () => {
             </div>
 
             {/* Meetings by Hour Chart */}
-            <Card className="bg-white border border-black/5 shadow-none">
-              <CardHeader className="pb-4">
-                <CardTitle className="text-base font-semibold text-foreground">
-                  Reuniões e Vendas por Horário
-                </CardTitle>
+            <Card className="bg-gradient-to-br from-white via-white to-gray-50/50 border border-black/5 shadow-none overflow-hidden relative">
+              <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-rose-50/40 via-transparent to-transparent pointer-events-none" />
+              <CardHeader className="pb-2 relative z-10">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle className="text-base font-semibold text-foreground">
+                      Reuniões e Vendas por Horário
+                    </CardTitle>
+                    <p className="text-xs text-muted-foreground mt-1">Distribuição ao longo do dia</p>
+                  </div>
+                  <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-2">
+                      <div className="w-3 h-3 rounded-full bg-gradient-to-r from-slate-400 to-slate-600" />
+                      <span className="text-xs text-muted-foreground font-medium">Agendamentos</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="w-3 h-3 rounded-full bg-gradient-to-r from-rose-400 to-rose-600" />
+                      <span className="text-xs text-muted-foreground font-medium">Vendas</span>
+                    </div>
+                  </div>
+                </div>
               </CardHeader>
-              <CardContent>
+              <CardContent className="relative z-10">
                 {(() => {
-                  // Generate hourly data from 6am to 22pm - DADOS REAIS da agenda
                   const hourlyData = Array.from({ length: 17 }, (_, i) => {
                     const hour = i + 6;
                     const hourStr = `${hour.toString().padStart(2, '0')}h`;
@@ -541,76 +556,115 @@ const OriginOverview = () => {
                     };
                   });
 
+                  const totalMeetings = hourlyData.reduce((sum, d) => sum + d.reunioes, 0);
+                  const totalSales = hourlyData.reduce((sum, d) => sum + d.vendas, 0);
+
                   return (
-                    <div className="h-[280px]">
-                      <ResponsiveContainer width="100%" height="100%">
-                        <AreaChart data={hourlyData} margin={{ top: 20, right: 20, left: 0, bottom: 0 }}>
-                          <defs>
-                            <linearGradient id="gradientAgendamentos" x1="0" y1="0" x2="0" y2="1">
-                              <stop offset="0%" stopColor="#6b7280" stopOpacity={0.4} />
-                              <stop offset="100%" stopColor="#6b7280" stopOpacity={0.05} />
-                            </linearGradient>
-                            <linearGradient id="gradientVendas" x1="0" y1="0" x2="0" y2="1">
-                              <stop offset="0%" stopColor="#e11d48" stopOpacity={0.4} />
-                              <stop offset="100%" stopColor="#e11d48" stopOpacity={0.05} />
-                            </linearGradient>
-                          </defs>
-                          <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.04)" vertical={false} />
-                          <XAxis 
-                            dataKey="hour" 
-                            axisLine={false} 
-                            tickLine={false}
-                            tick={{ fill: '#9ca3af', fontSize: 10, fontWeight: 500 }}
-                            dy={10}
-                          />
-                          <YAxis 
-                            axisLine={false} 
-                            tickLine={false}
-                            tick={{ fill: '#9ca3af', fontSize: 10, fontWeight: 500 }}
-                            allowDecimals={false}
-                            width={30}
-                          />
-                          <Tooltip 
-                            contentStyle={{ 
-                              backgroundColor: 'rgba(255,255,255,0.95)', 
-                              border: 'none',
-                              borderRadius: '12px',
-                              boxShadow: '0 8px 32px rgba(0,0,0,0.12)',
-                              padding: '12px 16px'
-                            }}
-                            labelStyle={{ fontWeight: 600, marginBottom: 8, color: '#374151' }}
-                            itemStyle={{ padding: '2px 0' }}
-                            cursor={{ stroke: 'rgba(0,0,0,0.1)', strokeWidth: 1, strokeDasharray: '4 4' }}
-                          />
-                          <Legend 
-                            verticalAlign="top" 
-                            height={40}
-                            iconType="circle"
-                            wrapperStyle={{ paddingBottom: '10px' }}
-                            formatter={(value) => <span style={{ color: '#6b7280', fontSize: '12px', fontWeight: 500 }}>{value}</span>}
-                          />
-                          <Area 
-                            type="monotone" 
-                            dataKey="reunioes" 
-                            name="Agendamentos"
-                            stroke="#6b7280" 
-                            strokeWidth={2.5}
-                            fill="url(#gradientAgendamentos)"
-                            dot={{ fill: '#fff', stroke: '#6b7280', strokeWidth: 2, r: 4 }}
-                            activeDot={{ r: 6, strokeWidth: 3, fill: '#fff', stroke: '#6b7280' }}
-                          />
-                          <Area 
-                            type="monotone" 
-                            dataKey="vendas" 
-                            name="Vendas"
-                            stroke="#e11d48" 
-                            strokeWidth={2.5}
-                            fill="url(#gradientVendas)"
-                            dot={{ fill: '#fff', stroke: '#e11d48', strokeWidth: 2, r: 4 }}
-                            activeDot={{ r: 6, strokeWidth: 3, fill: '#fff', stroke: '#e11d48' }}
-                          />
-                        </AreaChart>
-                      </ResponsiveContainer>
+                    <div className="space-y-4">
+                      {/* Stats Pills */}
+                      <div className="flex items-center gap-3">
+                        <div className="px-4 py-2 rounded-full bg-slate-100/80 backdrop-blur-sm border border-slate-200/50">
+                          <span className="text-sm font-semibold text-slate-700">{totalMeetings}</span>
+                          <span className="text-xs text-slate-500 ml-1.5">agendamentos</span>
+                        </div>
+                        <div className="px-4 py-2 rounded-full bg-rose-50/80 backdrop-blur-sm border border-rose-200/50">
+                          <span className="text-sm font-semibold text-rose-600">{totalSales}</span>
+                          <span className="text-xs text-rose-400 ml-1.5">vendas</span>
+                        </div>
+                      </div>
+
+                      {/* Chart */}
+                      <div className="h-[260px]">
+                        <ResponsiveContainer width="100%" height="100%">
+                          <AreaChart data={hourlyData} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
+                            <defs>
+                              <linearGradient id="gradientAgendamentosModern" x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="0%" stopColor="#475569" stopOpacity={0.3} />
+                                <stop offset="50%" stopColor="#64748b" stopOpacity={0.15} />
+                                <stop offset="100%" stopColor="#94a3b8" stopOpacity={0} />
+                              </linearGradient>
+                              <linearGradient id="gradientVendasModern" x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="0%" stopColor="#e11d48" stopOpacity={0.35} />
+                                <stop offset="50%" stopColor="#fb7185" stopOpacity={0.15} />
+                                <stop offset="100%" stopColor="#fda4af" stopOpacity={0} />
+                              </linearGradient>
+                              <filter id="glow">
+                                <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
+                                <feMerge>
+                                  <feMergeNode in="coloredBlur"/>
+                                  <feMergeNode in="SourceGraphic"/>
+                                </feMerge>
+                              </filter>
+                            </defs>
+                            <CartesianGrid 
+                              strokeDasharray="0" 
+                              stroke="rgba(0,0,0,0.03)" 
+                              vertical={false} 
+                              horizontalPoints={[0, 50, 100, 150, 200]}
+                            />
+                            <XAxis 
+                              dataKey="hour" 
+                              axisLine={false} 
+                              tickLine={false}
+                              tick={{ fill: '#94a3b8', fontSize: 9, fontWeight: 500 }}
+                              dy={8}
+                              interval={1}
+                            />
+                            <YAxis 
+                              axisLine={false} 
+                              tickLine={false}
+                              tick={{ fill: '#94a3b8', fontSize: 9, fontWeight: 500 }}
+                              allowDecimals={false}
+                              width={25}
+                            />
+                            <Tooltip 
+                              contentStyle={{ 
+                                backgroundColor: 'rgba(255,255,255,0.98)', 
+                                border: 'none',
+                                borderRadius: '16px',
+                                boxShadow: '0 20px 50px -12px rgba(0,0,0,0.15)',
+                                padding: '14px 18px',
+                                backdropFilter: 'blur(10px)'
+                              }}
+                              labelStyle={{ fontWeight: 700, marginBottom: 10, color: '#1f2937', fontSize: 13 }}
+                              itemStyle={{ padding: '3px 0', fontSize: 12 }}
+                              cursor={{ stroke: 'rgba(0,0,0,0.05)', strokeWidth: 40 }}
+                            />
+                            <Area 
+                              type="natural" 
+                              dataKey="reunioes" 
+                              name="Agendamentos"
+                              stroke="#475569" 
+                              strokeWidth={2.5}
+                              fill="url(#gradientAgendamentosModern)"
+                              dot={false}
+                              activeDot={{ 
+                                r: 6, 
+                                strokeWidth: 3, 
+                                fill: '#fff', 
+                                stroke: '#475569',
+                                filter: 'url(#glow)'
+                              }}
+                            />
+                            <Area 
+                              type="natural" 
+                              dataKey="vendas" 
+                              name="Vendas"
+                              stroke="#e11d48" 
+                              strokeWidth={2.5}
+                              fill="url(#gradientVendasModern)"
+                              dot={false}
+                              activeDot={{ 
+                                r: 6, 
+                                strokeWidth: 3, 
+                                fill: '#fff', 
+                                stroke: '#e11d48',
+                                filter: 'url(#glow)'
+                              }}
+                            />
+                          </AreaChart>
+                        </ResponsiveContainer>
+                      </div>
                     </div>
                   );
                 })()}
