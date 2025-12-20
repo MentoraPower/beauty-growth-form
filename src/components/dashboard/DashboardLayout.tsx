@@ -224,24 +224,16 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
         >
           <div className="flex flex-col h-full relative">
             {/* Logo + Connection Status */}
-            <div className="h-14 flex items-center px-3 overflow-hidden">
-              <div className="w-10 flex items-center justify-center flex-shrink-0">
-                <img 
-                  src={scaleLogo} 
-                  alt="Scale Beauty" 
-                  className="transition-all duration-300 ease-out"
-                  style={{ 
-                    height: sidebarExpanded ? 24 : 18,
-                    width: 'auto',
-                  }}
-                />
-              </div>
-              <div className={cn(
-                "flex-1 flex justify-end transition-all duration-200",
-                sidebarExpanded ? "opacity-100" : "opacity-0 w-0 overflow-hidden"
-              )}>
-                <ConnectionStatus />
-              </div>
+            <div className="h-14 flex items-center justify-center px-3">
+              <img 
+                src={scaleLogo} 
+                alt="Scale Beauty" 
+                className="object-contain transition-all duration-300 ease-out"
+                style={{ 
+                  height: sidebarExpanded ? 28 : 16,
+                  maxWidth: sidebarExpanded ? 140 : 40,
+                }}
+              />
             </div>
 
             <nav className="flex-1 overflow-y-auto overflow-x-hidden px-3 py-2">
