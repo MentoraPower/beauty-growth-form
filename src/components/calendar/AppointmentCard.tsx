@@ -108,6 +108,8 @@ export function AppointmentCard({
   };
 
   const isPaid = appointment.is_paid && appointment.payment_value && appointment.payment_value > 0;
+  const isNoshow = appointment.is_noshow;
+  const isNeutral = !isPaid && !isNoshow;
 
   const PaymentBadge = () => {
     if (!isPaid) return null;
@@ -175,7 +177,11 @@ export function AppointmentCard({
         onClick={handleClick}
         className={cn(
           "text-xs px-1.5 py-0.5 rounded text-white truncate flex items-center justify-between gap-1",
-          appointment.is_noshow ? "bg-rose-700 hover:bg-rose-600" : "bg-emerald-700 hover:bg-emerald-600",
+          isNoshow 
+            ? "bg-rose-700 hover:bg-rose-600" 
+            : isPaid 
+              ? "bg-emerald-700 hover:bg-emerald-600"
+              : "bg-amber-600 hover:bg-amber-500",
           isDragging && "shadow-xl opacity-90 z-50"
         )}
       >
@@ -197,7 +203,11 @@ export function AppointmentCard({
       onClick={handleClick}
       className={cn(
         "absolute left-1 right-1 px-2 py-1 rounded-md text-white text-xs overflow-hidden",
-        appointment.is_noshow ? "bg-rose-700 hover:bg-rose-600" : "bg-emerald-700 hover:bg-emerald-600",
+        isNoshow 
+          ? "bg-rose-700 hover:bg-rose-600" 
+          : isPaid 
+            ? "bg-emerald-700 hover:bg-emerald-600"
+            : "bg-amber-600 hover:bg-amber-500",
         isDragging && "shadow-xl opacity-90 z-50"
       )}
     >
