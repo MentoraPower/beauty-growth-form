@@ -8,19 +8,33 @@ import InstagramPage from "./Instagram";
 
 type TabType = 'whatsapp' | 'instagram';
 
+const STORAGE_KEY = 'atendimento-active-tab';
+
+function getInitialTab(tabParam: string | null): TabType {
+  // URL param takes priority
+  if (tabParam === 'instagram' || tabParam === 'whatsapp') {
+    return tabParam;
+  }
+  // Then check localStorage
+  const stored = localStorage.getItem(STORAGE_KEY);
+  if (stored === 'instagram' || stored === 'whatsapp') {
+    return stored;
+  }
+  return 'whatsapp';
+}
+
 export default function Atendimento() {
   const [searchParams, setSearchParams] = useSearchParams();
   const tabParam = searchParams.get('tab');
-  const [activeTab, setActiveTab] = useState<TabType>(
-    tabParam === 'instagram' ? 'instagram' : 'whatsapp'
-  );
+  const [activeTab, setActiveTab] = useState<TabType>(() => getInitialTab(tabParam));
 
-  // Sync URL with tab changes
+  // Sync URL and localStorage with tab changes
   useEffect(() => {
     const currentTab = searchParams.get('tab');
     if (currentTab !== activeTab) {
       setSearchParams({ tab: activeTab }, { replace: true });
     }
+    localStorage.setItem(STORAGE_KEY, activeTab);
   }, [activeTab, searchParams, setSearchParams]);
 
   const handleTabChange = (tab: TabType) => {
