@@ -56,6 +56,7 @@ interface SubOrigin {
   id: string;
   origin_id: string;
   nome: string;
+  tipo?: string;
 }
 
 interface Appointment {
@@ -102,6 +103,11 @@ const OriginOverview = () => {
   const subOriginIds = useMemo(() => {
     return subOrigins.filter(s => s.origin_id === originId).map(s => s.id);
   }, [subOrigins, originId]);
+
+  // Check if origin has a calendar
+  const hasCalendar = useMemo(() => {
+    return subOrigins.some(s => s.tipo === 'calendario');
+  }, [subOrigins]);
 
   // Filter leads by date range only (sub_origin filtering is done in the query)
   const leads = useMemo(() => {
@@ -155,7 +161,7 @@ const OriginOverview = () => {
         // Fetch sub_origins for this origin only
         const subOriginsRes = await supabase
           .from("crm_sub_origins")
-          .select("*")
+          .select("*, tipo")
           .eq("origin_id", originId);
 
         if (subOriginsRes.data) {
@@ -370,7 +376,7 @@ const OriginOverview = () => {
             </p>
           </div>
           <div className="flex items-center gap-3">
-            {isAdmin && (
+            {isAdmin && hasCalendar && (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="outline" size="icon" className="h-10 w-10">
