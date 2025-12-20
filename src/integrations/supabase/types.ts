@@ -27,6 +27,7 @@ export type Database = {
           payment_value: number | null
           sdr_name: string | null
           start_time: string
+          sub_origin_id: string | null
           title: string
           updated_at: string
         }
@@ -42,6 +43,7 @@ export type Database = {
           payment_value?: number | null
           sdr_name?: string | null
           start_time: string
+          sub_origin_id?: string | null
           title: string
           updated_at?: string
         }
@@ -57,10 +59,19 @@ export type Database = {
           payment_value?: number | null
           sdr_name?: string | null
           start_time?: string
+          sub_origin_id?: string | null
           title?: string
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "calendar_appointments_sub_origin_id_fkey"
+            columns: ["sub_origin_id"]
+            isOneToOne: false
+            referencedRelation: "crm_sub_origins"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       crm_origins: {
         Row: {
