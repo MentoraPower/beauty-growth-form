@@ -98,62 +98,63 @@ const Auth = () => {
         dotOpacity={0.1}
       />
       <div className="w-full max-w-md relative z-10">
-        {/* Modern Glass Card Container */}
-        <div className="relative">
-          <div className="relative bg-neutral-900/60 backdrop-blur-2xl border border-white/10 rounded-2xl p-8 shadow-2xl">
-            {/* Header */}
-            <div className="text-center mb-8">
-              <h1 className="text-2xl font-semibold text-white tracking-tight">Acesse sua conta para continuar</h1>
+        {/* White Card Container */}
+        <div className="bg-[#f5f5f5] rounded-3xl p-10 shadow-2xl">
+          {/* Header */}
+          <div className="mb-8">
+            <h1 className="text-2xl font-bold text-neutral-900 tracking-tight mb-2">Acesse sua conta</h1>
+            <p className="text-neutral-500 text-sm leading-relaxed">
+              Se você já possui uma conta, preencha seus dados de acesso à plataforma.
+            </p>
+          </div>
+
+          {/* Login Form */}
+          <form onSubmit={handleLogin} className="space-y-5">
+            <div className="space-y-2">
+              <Label htmlFor="email" className="text-neutral-700 text-sm font-medium">E-mail</Label>
+              <Input 
+                id="email" 
+                type="email" 
+                value={email} 
+                onChange={e => setEmail(e.target.value)} 
+                placeholder="contato@email.com.br" 
+                className="bg-neutral-900 border-0 text-white placeholder:text-neutral-400 focus:ring-2 focus:ring-neutral-700 h-14 rounded-xl transition-all duration-200" 
+                disabled={isLoading} 
+                autoComplete="email" 
+              />
             </div>
 
-            {/* Login Form */}
-            <form onSubmit={handleLogin} className="space-y-5">
-              <div className="space-y-2">
-                <Label htmlFor="email" className="text-neutral-300 text-sm font-medium">Email</Label>
+            <div className="space-y-2">
+              <Label htmlFor="password" className="text-neutral-700 text-sm font-medium">Senha</Label>
+              <div className="relative">
                 <Input 
-                  id="email" 
-                  type="email" 
-                  value={email} 
-                  onChange={e => setEmail(e.target.value)} 
-                  placeholder="seu@email.com" 
-                  className="bg-neutral-800/50 border-neutral-700/50 text-white placeholder:text-neutral-500 focus:border-[#F40000]/50 focus:ring-[#F40000]/20 h-12 rounded-xl transition-all duration-200" 
+                  id="password" 
+                  type={showPassword ? "text" : "password"} 
+                  value={password} 
+                  onChange={e => setPassword(e.target.value)} 
+                  placeholder="••••••••••••" 
+                  className="bg-neutral-900 border-0 text-white placeholder:text-neutral-400 focus:ring-2 focus:ring-neutral-700 h-14 rounded-xl pr-12 transition-all duration-200" 
                   disabled={isLoading} 
-                  autoComplete="email" 
+                  autoComplete="current-password" 
                 />
+                <button 
+                  type="button" 
+                  onClick={() => setShowPassword(!showPassword)} 
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-neutral-500 hover:text-neutral-300 transition-colors"
+                >
+                  {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                </button>
               </div>
+            </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="password" className="text-neutral-300 text-sm font-medium">Senha</Label>
-                <div className="relative">
-                  <Input 
-                    id="password" 
-                    type={showPassword ? "text" : "password"} 
-                    value={password} 
-                    onChange={e => setPassword(e.target.value)} 
-                    placeholder="••••••••" 
-                    className="bg-neutral-800/50 border-neutral-700/50 text-white placeholder:text-neutral-500 focus:border-[#F40000]/50 focus:ring-[#F40000]/20 h-12 rounded-xl pr-12 transition-all duration-200" 
-                    disabled={isLoading} 
-                    autoComplete="current-password" 
-                  />
-                  <button 
-                    type="button" 
-                    onClick={() => setShowPassword(!showPassword)} 
-                    className="absolute right-4 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-white transition-colors"
-                  >
-                    {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                  </button>
-                </div>
-              </div>
-
-              <Button 
-                type="submit" 
-                disabled={isLoading} 
-                className="w-full bg-gradient-to-r from-[#F40000] to-[#A10000] hover:from-[#D60000] hover:to-[#8A0000] text-white font-medium h-12 rounded-xl shadow-lg shadow-[#F40000]/20 transition-all duration-200 hover:shadow-xl hover:shadow-[#F40000]/30 mt-2"
-              >
-                {isLoading ? "Entrando..." : "Entrar"}
-              </Button>
-            </form>
-          </div>
+            <Button 
+              type="submit" 
+              disabled={isLoading} 
+              className="w-full bg-white hover:bg-neutral-100 text-neutral-900 font-medium h-14 rounded-xl border border-neutral-200 shadow-sm transition-all duration-200 hover:shadow-md mt-4"
+            >
+              {isLoading ? "Entrando..." : "Acessar sua conta"}
+            </Button>
+          </form>
         </div>
       </div>
     </div>
