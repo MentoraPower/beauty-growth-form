@@ -85,6 +85,7 @@ function DayCell({
           return (
             <div
               key={apt.id}
+              data-appointment-card
               onClick={(e) => {
                 e.stopPropagation();
                 onAppointmentClick?.(apt, e);

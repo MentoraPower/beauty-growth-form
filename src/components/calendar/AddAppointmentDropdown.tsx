@@ -224,17 +224,29 @@ export function AddAppointmentDropdown({
       const target = e.target as HTMLElement | null;
       if (!target) return;
 
-      if (panelRef.current && !panelRef.current.contains(target)) {
-        onOpenChange(false);
+      // Check if click is inside the panel
+      if (panelRef.current && panelRef.current.contains(target)) {
+        return;
       }
+      
+      // Check if click is on an appointment card (allow clicking other appointments)
+      const isAppointmentCard = target.closest('[data-appointment-card]');
+      if (isAppointmentCard) {
+        // Close this dropdown but allow the click to propagate to open the new one
+        onOpenChange(false);
+        return;
+      }
+
+      onOpenChange(false);
     };
 
     document.addEventListener("keydown", onKeyDown);
-    document.addEventListener("pointerdown", onPointerDown);
+    // Use mousedown instead of pointerdown to allow click events to process first
+    document.addEventListener("mousedown", onPointerDown);
 
     return () => {
       document.removeEventListener("keydown", onKeyDown);
-      document.removeEventListener("pointerdown", onPointerDown);
+      document.removeEventListener("mousedown", onPointerDown);
     };
   }, [open, onOpenChange]);
 
