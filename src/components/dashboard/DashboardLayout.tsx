@@ -177,15 +177,8 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
   // Current sidebar width based on expanded state
   const currentSidebarWidth = sidebarExpanded ? sidebarExpandedWidth : sidebarCollapsedWidth;
 
-  // Calculate main content margin
-  const getMainContentMargin = () => {
-    if (crmSubmenuOpen) {
-      return currentSidebarWidth + 4 + submenuWidth + 12;
-    }
-    return currentSidebarWidth + 12;
-  };
-
-  const mainContentMargin = getMainContentMargin();
+  // Main content margin - fixed position, doesn't change with menu state
+  const mainContentMargin = sidebarCollapsedWidth + 12;
 
   return (
     <div className="min-h-screen bg-card p-3">
@@ -208,7 +201,7 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
           <div className="w-9" />
         </header>
 
-        {/* Desktop Sidebar - Black background, collapsible on hover */}
+        {/* Desktop Sidebar - Black background, collapsible on hover, overlay mode */}
         <aside
           ref={sidebarRef}
           onMouseEnter={() => setSidebarExpanded(true)}
@@ -220,7 +213,7 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
             height: 'calc(100vh - 1.5rem)',
             transition: 'width 300ms cubic-bezier(0.4,0,0.2,1)'
           }}
-          className="hidden lg:flex flex-col fixed bg-[#0f0f12] overflow-hidden z-40 rounded-2xl"
+          className="hidden lg:flex flex-col fixed bg-[#0f0f12] overflow-hidden z-50 rounded-2xl"
         >
           <div className="flex flex-col h-full relative">
             {/* Logo */}
@@ -382,17 +375,17 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
           </div>
         </aside>
 
-        {/* CRM Submenu Panel - appears below fixed menu */}
+        {/* CRM Submenu Panel - overlay mode, appears on top of content */}
         <div
           style={{ 
-            left: currentSidebarWidth + 4,
+            left: currentSidebarWidth + 16,
             width: crmSubmenuOpen ? submenuWidth : 0,
             opacity: crmSubmenuOpen ? 1 : 0,
-            zIndex: 39,
+            zIndex: 49,
             pointerEvents: crmSubmenuOpen ? 'auto' : 'none',
             transition: "width 400ms cubic-bezier(0.4,0,0.2,1), opacity 200ms ease-out, left 300ms cubic-bezier(0.4,0,0.2,1)",
           }}
-          className="hidden lg:block fixed top-[18px] h-[calc(100vh-1.5rem-6px)] rounded-r-2xl bg-[#ebebed] overflow-hidden"
+          className="hidden lg:block fixed top-[12px] h-[calc(100vh-1.5rem)] rounded-2xl bg-[#ebebed] overflow-hidden shadow-xl"
         >
           <div className="h-full pl-4 pr-2" style={{ width: submenuWidth, minWidth: submenuWidth }}>
             <CRMOriginsPanel 
@@ -513,14 +506,13 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
           />
         )}
 
-        {/* Main Content */}
+        {/* Main Content - Fixed position, menu opens as overlay */}
         <main 
           style={{ 
             left: `${mainContentMargin}px`,
             top: 12,
             right: 12,
             bottom: 12,
-            transition: 'left 300ms cubic-bezier(0.4,0,0.2,1)'
           }}
           className="hidden lg:block fixed"
         >
