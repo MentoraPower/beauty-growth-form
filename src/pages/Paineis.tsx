@@ -38,33 +38,25 @@ export default function Paineis() {
 
   if (!activePainel) {
     return (
-      <div className="h-full flex flex-col">
-        <div className="mb-6">
-          <h1 className="text-xl font-semibold text-foreground">Painéis</h1>
+      <div className="h-full flex flex-col items-center justify-center">
+        <div className="text-center mb-6">
+          <h1 className="text-lg font-semibold text-foreground">Painéis</h1>
           <p className="text-sm text-muted-foreground mt-1">
             Selecione um painel para visualizar
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="flex flex-wrap justify-center gap-3">
           {painelOptions.map((painel) => (
             <button
               key={painel.id}
               onClick={() => handlePainelSelect(painel.id)}
-              className="group relative bg-card border border-border rounded-xl p-5 text-left transition-all duration-200 hover:border-white/20 hover:bg-white/5"
+              className="group flex items-center gap-2 bg-card border border-border rounded-lg px-4 py-2.5 text-left transition-all duration-200 hover:border-white/20 hover:bg-white/5"
             >
-              <div className={cn(
-                "w-10 h-10 rounded-lg bg-gradient-to-br flex items-center justify-center mb-4",
-                painel.color
-              )}>
-                <painel.icon className="h-5 w-5 text-white" />
-              </div>
-              <h3 className="text-base font-medium text-foreground mb-1">
+              <painel.icon className="h-4 w-4 text-muted-foreground" />
+              <span className="text-sm font-medium text-foreground">
                 {painel.title}
-              </h3>
-              <p className="text-sm text-muted-foreground">
-                {painel.description}
-              </p>
+              </span>
             </button>
           ))}
         </div>
