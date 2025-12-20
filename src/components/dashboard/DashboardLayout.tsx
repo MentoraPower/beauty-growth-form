@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Menu, X, LogOut, LayoutGrid, Settings, ChevronDown, User } from "lucide-react";
 import { cn } from "@/lib/utils";
 import WhatsAppIcon from "@/components/icons/WhatsApp";
+import InstagramIcon from "@/components/icons/Instagram";
 import scaleLogo from "@/assets/scale-logo-white.png";
 import { CRMOriginsPanel } from "./CRMOriginsPanel";
 import { PageTransition } from "./PageTransition";
@@ -13,7 +14,7 @@ interface DashboardLayoutProps {
   children: React.ReactNode;
 }
 
-type ActivePanel = 'none' | 'crm' | 'whatsapp' | 'settings';
+type ActivePanel = 'none' | 'crm' | 'whatsapp' | 'instagram' | 'settings';
 
 // Load panel state from localStorage
 const getInitialPanelState = (): ActivePanel => {
@@ -43,12 +44,16 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
 
   const isCRMActive = location.pathname.startsWith("/admin/crm") || location.pathname === "/admin";
   const isWhatsAppActive = location.pathname === "/admin/whatsapp";
+  const isInstagramActive = location.pathname === "/admin/instagram";
   const isSettingsActive = location.pathname === "/admin/settings";
 
   // Sync activePanel with current route
   useEffect(() => {
     if (isWhatsAppActive && activePanel !== 'whatsapp') {
       setActivePanel('whatsapp');
+      setCrmSubmenuOpen(false);
+    } else if (isInstagramActive && activePanel !== 'instagram') {
+      setActivePanel('instagram');
       setCrmSubmenuOpen(false);
     } else if (isSettingsActive && activePanel !== 'settings') {
       setActivePanel('settings');
@@ -110,6 +115,12 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
       icon: WhatsAppIcon, 
       label: "WhatsApp",
     }] : []),
+    ...(canAccessWhatsapp ? [{ 
+      id: 'instagram' as ActivePanel, 
+      href: "/admin/instagram", 
+      icon: InstagramIcon, 
+      label: "Instagram",
+    }] : []),
   ];
 
   // Sync with global state and localStorage
@@ -148,6 +159,9 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
   useEffect(() => {
     if (activePanel === 'whatsapp' && location.pathname !== '/admin/whatsapp') {
       navigate('/admin/whatsapp');
+    }
+    if (activePanel === 'instagram' && location.pathname !== '/admin/instagram') {
+      navigate('/admin/instagram');
     }
     if (activePanel === 'settings' && location.pathname !== '/admin/settings') {
       navigate('/admin/settings');
