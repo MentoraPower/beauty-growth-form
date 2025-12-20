@@ -22,6 +22,7 @@ export type Database = {
           email: string | null
           end_time: string
           id: string
+          is_noshow: boolean | null
           is_paid: boolean | null
           payment_value: number | null
           sdr_name: string | null
@@ -36,6 +37,7 @@ export type Database = {
           email?: string | null
           end_time: string
           id?: string
+          is_noshow?: boolean | null
           is_paid?: boolean | null
           payment_value?: number | null
           sdr_name?: string | null
@@ -50,6 +52,7 @@ export type Database = {
           email?: string | null
           end_time?: string
           id?: string
+          is_noshow?: boolean | null
           is_paid?: boolean | null
           payment_value?: number | null
           sdr_name?: string | null
