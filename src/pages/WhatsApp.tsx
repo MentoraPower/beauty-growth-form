@@ -2576,7 +2576,7 @@ const WhatsApp = () => {
 
   return (
     <>
-      <div className="h-full min-h-0 flex overflow-hidden bg-background relative">
+      <div className="h-full min-h-0 flex overflow-hidden bg-background relative p-4 gap-4">
         {/* App Initialization Loading Overlay */}
         {isInitializingApp && (
           <div className="absolute inset-0 bg-background z-50 flex items-center justify-center">
