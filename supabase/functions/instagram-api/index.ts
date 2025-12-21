@@ -475,8 +475,15 @@ serve(async (req) => {
         console.log('Send message response:', JSON.stringify(sendData));
         
         if (sendData.error) {
+          // Check for 24h window error
+          let errorMessage = sendData.error.message;
+          if (sendData.error.code === 10 || 
+              errorMessage.includes('outside of allowed window') || 
+              errorMessage.includes('24 hours')) {
+            errorMessage = 'Janela de 24h expirada. O Instagram só permite responder mensagens nas primeiras 24 horas após o último contato do cliente.';
+          }
           return new Response(
-            JSON.stringify({ success: false, error: sendData.error.message }),
+            JSON.stringify({ success: false, error: errorMessage }),
             { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
           );
         }
