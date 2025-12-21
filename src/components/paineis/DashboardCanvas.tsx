@@ -105,10 +105,12 @@ function SortableWidget({ widget, onResize, onDelete, onConnect, containerWidth 
     transition,
     zIndex: isDragging ? 50 : 1,
     opacity: isDragging ? 0.4 : 1,
-    width: widgetWidth,
+    flexBasis: widgetWidth,
+    flexGrow: 0,
+    flexShrink: 1,
     minWidth: minWidth,
+    maxWidth: containerWidth > 0 ? containerWidth : '100%',
     height: widgetHeight,
-    flexShrink: 0,
   };
 
   const handleResize = (deltaX: number, deltaY: number, direction: string) => {
@@ -688,104 +690,19 @@ export function DashboardCanvas({ painelName, dashboardId, onBack }: DashboardCa
   };
 
   const handleWidgetResize = useCallback((widgetId: string, newWidth: number, newHeight: number) => {
-    const gap = 16;
     const minWidthLimit = 260;
-    const effectiveContainerWidth = containerWidth > 0 ? containerWidth : 1200;
-    
-    setWidgets(prev => {
-      const widgetIndex = prev.findIndex(w => w.id === widgetId);
-      if (widgetIndex === -1) return prev;
-      
-      const currentWidget = prev[widgetIndex];
-      const oldWidth = currentWidget.width || 340;
-      const widthDelta = newWidth - oldWidth;
-      
-      // If only height changed, just update
-      if (widthDelta === 0) {
-        return prev.map(w => 
-          w.id === widgetId ? { ...w, height: newHeight } : w
-        );
-      }
+    const maxWidth = containerWidth > 0 ? containerWidth : 2000;
 
-      // Find all widgets and calculate rows BEFORE the resize
-      const calculateRows = (widgetsList: typeof prev) => {
-        const rows: number[][] = [];
-        let currentRowWidth = 0;
-        let currentRowIndex = 0;
-        
-        widgetsList.forEach((w, i) => {
-          const wWidth = w.width || 340;
-          const neededWidth = currentRowWidth > 0 ? wWidth + gap : wWidth;
-          
-          if (currentRowWidth + neededWidth > effectiveContainerWidth && currentRowWidth > 0) {
-            currentRowIndex++;
-            currentRowWidth = wWidth;
-          } else {
-            currentRowWidth += neededWidth;
-          }
-          
-          if (!rows[currentRowIndex]) rows[currentRowIndex] = [];
-          rows[currentRowIndex].push(i);
-        });
-        
-        return rows;
-      };
-      
-      const rows = calculateRows(prev);
-      const widgetRow = rows.find(row => row.includes(widgetIndex));
-      
-      // Only widget in its row - resize freely
-      if (!widgetRow || widgetRow.length <= 1) {
-        const clampedWidth = Math.min(effectiveContainerWidth, Math.max(minWidthLimit, newWidth));
-        return prev.map(w => 
-          w.id === widgetId ? { ...w, width: clampedWidth, height: newHeight } : w
-        );
-      }
-      
-      // Multiple widgets in row - distribute space
-      const siblingIndices = widgetRow.filter(i => i !== widgetIndex);
-      const totalGaps = (widgetRow.length - 1) * gap;
-      
-      // Calculate how much space is available for siblings
-      const clampedNewWidth = Math.max(minWidthLimit, newWidth);
-      const availableForSiblings = effectiveContainerWidth - clampedNewWidth - totalGaps;
-      const minTotalSiblingWidth = siblingIndices.length * minWidthLimit;
-      
-      // If siblings would be too small, cap the resize
-      if (availableForSiblings < minTotalSiblingWidth) {
-        const maxAllowedWidth = effectiveContainerWidth - minTotalSiblingWidth - totalGaps;
-        const finalWidth = Math.max(minWidthLimit, maxAllowedWidth);
-        
-        return prev.map((w, i) => {
-          if (w.id === widgetId) {
-            return { ...w, width: finalWidth, height: newHeight };
-          }
-          if (siblingIndices.includes(i)) {
-            return { ...w, width: minWidthLimit };
-          }
-          return w;
-        });
-      }
-      
-      // Distribute remaining space proportionally among siblings
-      const siblingWidths = siblingIndices.map(i => prev[i].width || 340);
-      const totalSiblingWidth = siblingWidths.reduce((a, b) => a + b, 0);
-      
-      return prev.map((w, i) => {
-        if (w.id === widgetId) {
-          return { ...w, width: clampedNewWidth, height: newHeight };
-        }
-        
-        if (siblingIndices.includes(i)) {
-          const idx = siblingIndices.indexOf(i);
-          const proportion = siblingWidths[idx] / totalSiblingWidth;
-          const newSiblingWidth = Math.max(minWidthLimit, Math.round(availableForSiblings * proportion));
-          return { ...w, width: newSiblingWidth };
-        }
-        
-        return w;
-      });
-    });
+    setWidgets(prev =>
+      prev.map(w => {
+        if (w.id !== widgetId) return w;
+        return {
+          ...w,
+          width: Math.min(maxWidth, Math.max(minWidthLimit, newWidth)),
+          height: Math.min(1200, Math.max(220, newHeight)),
+        };
+      })
+    );
   }, [containerWidth]);
 
   const sensors = useSensors(
