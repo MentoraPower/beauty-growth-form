@@ -1072,24 +1072,13 @@ export default function InstagramPage() {
                     className="flex-1"
                     disabled={isUploadingMedia}
                   />
-                  {messageInput.trim() ? (
-                    <Button 
-                      onClick={handleSendMessage} 
-                      disabled={isSending || isUploadingMedia}
-                      className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600"
-                    >
-                      <Send className="h-4 w-4" />
-                    </Button>
-                  ) : (
-                    <Button 
-                      variant="ghost" 
-                      size="icon"
-                      onClick={startRecording}
-                      disabled={isUploadingMedia}
-                    >
-                      <Mic className="h-5 w-5" />
-                    </Button>
-                  )}
+                  <Button 
+                    onClick={handleSendMessage} 
+                    disabled={isSending || isUploadingMedia || !messageInput.trim()}
+                    className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 disabled:opacity-50"
+                  >
+                    <Send className="h-4 w-4" />
+                  </Button>
                 </div>
               )}
             </div>
