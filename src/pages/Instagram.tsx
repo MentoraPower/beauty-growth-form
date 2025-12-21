@@ -26,8 +26,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useInstagramCache } from "@/hooks/useInstagramCache";
 
 interface Chat {
-  id: string;
-  conversation_id?: string;
+  id: string; // This is the conversation_id from Instagram
+  conversation_id: string;
   name: string;
   lastMessage: string;
   lastMessageTime: string;
@@ -39,7 +39,7 @@ interface Chat {
 
 interface Message {
   id: string;
-  message_id?: string;
+  message_id: string;
   text: string | null;
   time: string;
   fromMe: boolean;
@@ -83,6 +83,7 @@ export default function InstagramPage() {
     addTempMessage,
     updateTempMessageStatus,
     removeTempMessage,
+    saveSentMessageToCache,
   } = useInstagramCache();
 
   const REDIRECT_URI = `${window.location.origin}/admin/instagram`;
@@ -300,35 +301,36 @@ export default function InstagramPage() {
     fetchChats(myInstagramUserId);
   }, [isConnected, myInstagramUserId, fetchChats]);
 
-  // Fetch messages when a chat is selected
+  // Fetch messages when a chat is selected - use conversation_id
   useEffect(() => {
     if (selectedChat && myInstagramUserId) {
       clearMessages();
-      fetchMessages(selectedChat.id, myInstagramUserId);
+      // Use conversation_id (which equals id in our unified structure)
+      fetchMessages(selectedChat.conversation_id, myInstagramUserId);
     }
-  }, [selectedChat?.id, myInstagramUserId, fetchMessages, clearMessages]);
+  }, [selectedChat?.conversation_id, myInstagramUserId, fetchMessages, clearMessages]);
 
-  // Background polling for conversations (every 60 seconds since we have cache)
+  // Background polling for conversations (every 30 seconds)
   useEffect(() => {
     if (!isConnected || !myInstagramUserId) return;
 
     const interval = setInterval(() => {
       fetchChats(myInstagramUserId);
-    }, 60000);
+    }, 30000);
 
     return () => clearInterval(interval);
   }, [isConnected, myInstagramUserId, fetchChats]);
 
-  // Background polling for messages when chat is selected (every 15 seconds)
+  // Background polling for messages when chat is selected (every 5 seconds for faster updates)
   useEffect(() => {
     if (!selectedChat || !myInstagramUserId) return;
 
     const interval = setInterval(() => {
-      fetchMessages(selectedChat.id, myInstagramUserId);
-    }, 15000);
+      fetchMessages(selectedChat.conversation_id, myInstagramUserId);
+    }, 5000);
 
     return () => clearInterval(interval);
-  }, [selectedChat?.id, myInstagramUserId, fetchMessages]);
+  }, [selectedChat?.conversation_id, myInstagramUserId, fetchMessages]);
 
   const scrollToBottom = useCallback(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -350,9 +352,10 @@ export default function InstagramPage() {
     const text = messageInput.trim();
     setMessageInput("");
 
-    const tempMessage = {
-      id: `temp-${Date.now()}`,
-      message_id: `temp-${Date.now()}`,
+    const tempId = `temp-${Date.now()}`;
+    const tempMessage: Message = {
+      id: tempId,
+      message_id: tempId,
       text,
       time: new Date().toISOString(),
       fromMe: true,
@@ -360,6 +363,7 @@ export default function InstagramPage() {
     };
 
     addTempMessage(tempMessage);
+    scrollToBottom();
 
     try {
       const { data, error } = await supabase.functions.invoke('instagram-api', {
@@ -375,18 +379,39 @@ export default function InstagramPage() {
       if (error) throw error;
       
       if (data.success) {
-        updateTempMessageStatus(tempMessage.id, { status: 'SENT' });
+        // Update temp message to sent status
+        const sentMessage: Message = {
+          ...tempMessage,
+          id: data.messageId || tempId,
+          message_id: data.messageId || tempId,
+          status: 'SENT',
+        };
+        updateTempMessageStatus(tempId, { 
+          status: 'SENT',
+          id: sentMessage.id,
+          message_id: sentMessage.message_id 
+        });
+        
+        // Save to cache for persistence
+        saveSentMessageToCache(selectedChat.conversation_id, sentMessage);
+        
+        // Refresh messages after short delay to get server confirmation
+        setTimeout(() => {
+          if (myInstagramUserId) {
+            fetchMessages(selectedChat.conversation_id, myInstagramUserId);
+          }
+        }, 1500);
       } else {
-        throw new Error(data.error);
+        throw new Error(data.error || 'Erro ao enviar mensagem');
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error sending message:", error);
       toast({
         title: "Erro ao enviar mensagem",
-        description: "Não foi possível enviar a mensagem.",
+        description: error.message || "Não foi possível enviar a mensagem.",
         variant: "destructive",
       });
-      removeTempMessage(tempMessage.id);
+      removeTempMessage(tempId);
     } finally {
       setIsSending(false);
     }
@@ -398,6 +423,7 @@ export default function InstagramPage() {
     if (!file || !selectedChat) return;
 
     setIsUploadingMedia(true);
+    const tempId = `temp-${Date.now()}`;
 
     try {
       // Validate file type
@@ -410,6 +436,7 @@ export default function InstagramPage() {
           description: "Envie apenas imagens ou vídeos.",
           variant: "destructive",
         });
+        setIsUploadingMedia(false);
         return;
       }
 
@@ -432,13 +459,13 @@ export default function InstagramPage() {
       const mediaType = isImage ? 'image' : 'video';
 
       // Add temp message
-      const tempMessage = {
-        id: `temp-${Date.now()}`,
-        message_id: `temp-${Date.now()}`,
+      const tempMessage: Message = {
+        id: tempId,
+        message_id: tempId,
         text: null,
         time: new Date().toISOString(),
         fromMe: true,
-        status: 'sending',
+        status: 'PENDING',
         mediaType,
         mediaUrl,
       };
@@ -460,13 +487,34 @@ export default function InstagramPage() {
       if (error) throw error;
 
       if (data.success) {
-        updateTempMessageStatus(tempMessage.id, { status: 'SENT' });
+        const sentMessage: Message = {
+          ...tempMessage,
+          id: data.messageId || tempId,
+          message_id: data.messageId || tempId,
+          status: 'SENT',
+        };
+        updateTempMessageStatus(tempId, { 
+          status: 'SENT',
+          id: sentMessage.id,
+          message_id: sentMessage.message_id 
+        });
+        
+        // Save to cache
+        saveSentMessageToCache(selectedChat.conversation_id, sentMessage);
+        
         toast({
           title: "Mídia enviada",
           description: isImage ? "Imagem enviada com sucesso." : "Vídeo enviado com sucesso.",
         });
+        
+        // Refresh messages
+        setTimeout(() => {
+          if (myInstagramUserId) {
+            fetchMessages(selectedChat.conversation_id, myInstagramUserId);
+          }
+        }, 1500);
       } else {
-        throw new Error(data.error);
+        throw new Error(data.error || 'Erro ao enviar mídia');
       }
     } catch (error: any) {
       console.error("Error uploading media:", error);
@@ -475,6 +523,7 @@ export default function InstagramPage() {
         description: error.message || "Não foi possível enviar a mídia.",
         variant: "destructive",
       });
+      removeTempMessage(tempId);
     } finally {
       setIsUploadingMedia(false);
       if (fileInputRef.current) {
@@ -532,6 +581,9 @@ export default function InstagramPage() {
   const stopAndSendRecording = async () => {
     if (!mediaRecorderRef.current || !selectedChat) return;
 
+    const currentChat = selectedChat;
+    const tempId = `temp-${Date.now()}`;
+
     return new Promise<void>((resolve) => {
       mediaRecorderRef.current!.onstop = async () => {
         if (recordingIntervalRef.current) {
@@ -565,13 +617,13 @@ export default function InstagramPage() {
           const mediaUrl = publicUrlData.publicUrl;
 
           // Add temp message
-          const tempMessage = {
-            id: `temp-${Date.now()}`,
-            message_id: `temp-${Date.now()}`,
+          const tempMessage: Message = {
+            id: tempId,
+            message_id: tempId,
             text: null,
             time: new Date().toISOString(),
             fromMe: true,
-            status: 'sending',
+            status: 'PENDING',
             mediaType: 'audio',
             mediaUrl,
           };
@@ -583,7 +635,7 @@ export default function InstagramPage() {
             body: {
               action: 'send-media',
               params: {
-                recipientId: selectedChat.participantId,
+                recipientId: currentChat.participantId,
                 mediaUrl,
                 mediaType: 'audio/webm',
               },
@@ -593,13 +645,34 @@ export default function InstagramPage() {
           if (error) throw error;
 
           if (data.success) {
-            updateTempMessageStatus(tempMessage.id, { status: 'SENT' });
+            const sentMessage: Message = {
+              ...tempMessage,
+              id: data.messageId || tempId,
+              message_id: data.messageId || tempId,
+              status: 'SENT',
+            };
+            updateTempMessageStatus(tempId, { 
+              status: 'SENT',
+              id: sentMessage.id,
+              message_id: sentMessage.message_id 
+            });
+            
+            // Save to cache
+            saveSentMessageToCache(currentChat.conversation_id, sentMessage);
+            
             toast({
               title: "Áudio enviado",
               description: "Mensagem de voz enviada com sucesso.",
             });
+            
+            // Refresh messages
+            setTimeout(() => {
+              if (myInstagramUserId) {
+                fetchMessages(currentChat.conversation_id, myInstagramUserId);
+              }
+            }, 1500);
           } else {
-            throw new Error(data.error);
+            throw new Error(data.error || 'Erro ao enviar áudio');
           }
         } catch (error: any) {
           console.error("Error sending audio:", error);
@@ -608,6 +681,7 @@ export default function InstagramPage() {
             description: error.message || "Não foi possível enviar o áudio.",
             variant: "destructive",
           });
+          removeTempMessage(tempId);
         } finally {
           setIsUploadingMedia(false);
           audioChunksRef.current = [];
