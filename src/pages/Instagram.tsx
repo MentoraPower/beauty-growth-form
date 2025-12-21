@@ -786,14 +786,14 @@ export default function InstagramPage() {
       {/* Chat List Sidebar */}
       <div className="w-[300px] border-r border-border flex flex-col flex-shrink-0 bg-background">
 
-        <div className="px-2 py-3">
+        <div className="px-3 py-3">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
               placeholder="Buscar conversas..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-9"
+              className="pl-9 bg-muted/30 border-0 h-9 text-sm placeholder:text-muted-foreground/60"
             />
           </div>
         </div>
