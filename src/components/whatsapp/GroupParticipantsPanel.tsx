@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
-import { Users, RefreshCw, X } from "lucide-react";
+import { Users, Loader2, X, Image } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 interface Participant {
@@ -25,8 +26,9 @@ interface GroupParticipantsPanelProps {
 const DEFAULT_AVATAR =
   "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyMTIgMjEyIj48cGF0aCBmaWxsPSIjREZFNUU3IiBkPSJNMCAwaDIxMnYyMTJIMHoiLz48cGF0aCBmaWxsPSIjRkZGIiBkPSJNMTA2IDEwNmMtMjUuNCAwLTQ2LTIwLjYtNDYtNDZzMjAuNi00NiA0Ni00NiA0NiAyMC42IDQ2IDQ2LTIwLjYgNDYtNDYgNDZ6bTAgMTNjMzAuNiAwIDkyIDE1LjQgOTIgNDZ2MjNIMTR2LTIzYzAtMzAuNiA2MS40LTQ2IDkyLTQ2eiIvPjwvc3ZnPg==";
 
-const RATE_LIMIT_DELAY_MS = 350; // Delay between API calls to respect rate limits
-const BATCH_SIZE = 10; // Process in batches
+// Wasender default: 10 req/minute -> 1 request each ~6s
+const RATE_LIMIT_DELAY_MS = 6500;
+const BATCH_SIZE = 1;
 
 const getInitials = (name: string): string => {
   if (!name) return "?";
@@ -62,9 +64,17 @@ export const GroupParticipantsPanel = ({
   const [isLoadingAllPhotos, setIsLoadingAllPhotos] = useState(false);
   const [photoLoadProgress, setPhotoLoadProgress] = useState({ current: 0, total: 0 });
   const abortControllerRef = useRef<AbortController | null>(null);
+  const lastMetadataFetchRef = useRef<{ key: string; at: number }>({ key: "", at: 0 });
 
   const fetchParticipants = async () => {
     if (!apiKey || !groupJid) return;
+
+    const fetchKey = `${apiKey}|${groupJid}`;
+    const now = Date.now();
+    if (lastMetadataFetchRef.current.key === fetchKey && now - lastMetadataFetchRef.current.at < 10_000) {
+      return;
+    }
+    lastMetadataFetchRef.current = { key: fetchKey, at: now };
 
     setIsLoading(true);
     setError(null);
@@ -87,7 +97,15 @@ export const GroupParticipantsPanel = ({
       );
 
       if (response.status === 429) {
-        setError("Limite da WaSender atingido. Tente novamente em alguns segundos.");
+        let retryAfter = 30;
+        try {
+          const body = await response.json();
+          retryAfter = Number(body?.retry_after) || retryAfter;
+        } catch {
+          // ignore
+        }
+
+        setError(`Limite da WaSender atingido. Tente novamente em ${retryAfter}s.`);
         return;
       }
 
@@ -116,8 +134,6 @@ export const GroupParticipantsPanel = ({
         }));
 
         setParticipants(participantsList);
-        // Auto-start loading all profile pictures
-        autoLoadAllPhotos(participantsList);
       } else {
         setParticipants([]);
         setError("Participantes não disponíveis para este grupo.");
@@ -130,8 +146,8 @@ export const GroupParticipantsPanel = ({
     }
   };
 
-  const autoLoadAllPhotos = async (participantsList: Participant[]) => {
-    const toFetch = participantsList.filter((p) => p.jid);
+  const loadAllPhotos = async (participantsList: Participant[]) => {
+    const toFetch = participantsList.filter((p) => p.jid && !p.photoUrl);
     if (toFetch.length === 0) return;
 
     // Abort any previous operation
@@ -262,37 +278,25 @@ export const GroupParticipantsPanel = ({
       {/* Participants List Header */}
       <div className="flex items-center justify-between px-4 py-2 border-b border-border/50">
         <span className="text-sm font-medium text-foreground">Participantes</span>
-        <div className="flex items-center gap-1">
-          {/* Progress indicator during photo loading */}
-          {isLoadingAllPhotos && (
-            <button
-              onClick={cancelPhotoLoading}
-              className="flex items-center gap-1.5 px-2 py-1 text-xs bg-muted rounded-md hover:bg-muted/80 transition-colors"
-              title="Clique para cancelar"
-            >
-              <RefreshCw className="w-3 h-3 text-primary animate-spin" />
-              <span className="text-muted-foreground">
-                {photoLoadProgress.current}/{photoLoadProgress.total}
-              </span>
-            </button>
-          )}
-          
-          {/* Refresh button */}
+        {/* Progress indicator during photo loading (click to cancel) */}
+        {isLoadingAllPhotos && (
           <button
-            onClick={fetchParticipants}
-            disabled={isLoading || isLoadingAllPhotos}
-            className="p-1.5 hover:bg-muted rounded-md transition-colors disabled:opacity-50"
-            title="Atualizar participantes"
+            onClick={cancelPhotoLoading}
+            className="flex items-center gap-1.5 px-2 py-1 text-xs bg-muted rounded-md hover:bg-muted/80 transition-colors"
+            title="Clique para cancelar"
           >
-            <RefreshCw className={cn("w-4 h-4 text-muted-foreground", isLoading && "animate-spin")} />
+            <Loader2 className="w-3 h-3 text-primary animate-spin" />
+            <span className="text-muted-foreground">
+              {photoLoadProgress.current}/{photoLoadProgress.total}
+            </span>
           </button>
-        </div>
+        )}
       </div>
 
       <ScrollArea className="flex-1">
         {isLoading && participants.length === 0 ? (
           <div className="flex items-center justify-center py-8">
-            <RefreshCw className="w-5 h-5 text-muted-foreground animate-spin" />
+            <Loader2 className="w-5 h-5 text-muted-foreground animate-spin" />
           </div>
         ) : error ? (
           <div className="text-center py-8 px-4">

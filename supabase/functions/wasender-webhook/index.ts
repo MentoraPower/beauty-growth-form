@@ -599,35 +599,56 @@ async function handler(req: Request): Promise<Response> {
       }
 
       // Search for lead in CRM by phone number
-      // Create variations to match different formats stored in the database
+      // Create variations to match different formats stored in the database (with/without country code and with/without the extra 9)
       const cleanPhone = phone.replace(/\D/g, "");
-      const phonesVariations: string[] = [];
-      
-      // Add base phone
-      phonesVariations.push(cleanPhone);
-      
-      // If starts with country code 55, also search without it
-      if (cleanPhone.startsWith("55") && cleanPhone.length > 10) {
-        phonesVariations.push(cleanPhone.substring(2)); // Without country code
+
+      const variations = new Set<string>();
+      const addVar = (v: string) => {
+        const vv = (v || "").replace(/\D/g, "");
+        if (vv) variations.add(vv);
+      };
+
+      addVar(cleanPhone);
+
+      // With/without Brazil country code (55)
+      if (cleanPhone.startsWith("55") && cleanPhone.length >= 12) {
+        const withoutCC = cleanPhone.substring(2);
+        addVar(withoutCC);
+
+        // If WA sends DDD+8 digits (10) try inserting 9 after DDD
+        if (withoutCC.length === 10) {
+          addVar(withoutCC.substring(0, 2) + "9" + withoutCC.substring(2));
+        }
+
+        // Also try inserting 9 after 55+DDD when missing
+        if (cleanPhone.length === 12) {
+          addVar(cleanPhone.substring(0, 4) + "9" + cleanPhone.substring(4));
+        }
       } else {
-        // If doesn't start with 55, also search with it
-        phonesVariations.push("55" + cleanPhone);
+        addVar("55" + cleanPhone);
+
+        // If DDD+8 digits (10) try inserting 9
+        if (cleanPhone.length === 10) {
+          addVar(cleanPhone.substring(0, 2) + "9" + cleanPhone.substring(2));
+          addVar("55" + cleanPhone.substring(0, 2) + "9" + cleanPhone.substring(2));
+        }
       }
-      
-      // Also try removing the 9 prefix for mobile (Brazilian format)
-      for (const p of [...phonesVariations]) {
-        // If phone has 11 digits (with 9), try without the 9 after area code
+
+      // Also try removing the extra 9 (some CRMs store the old 8-digit format)
+      for (const p of Array.from(variations)) {
+        // DDD + 9 + 8 digits
         if (p.length === 11 && p[2] === "9") {
-          phonesVariations.push(p.substring(0, 2) + p.substring(3));
+          addVar(p.substring(0, 2) + p.substring(3));
         }
-        // If phone has 13 digits (55 + 11 with 9), try without the 9
+        // 55 + DDD + 9 + 8 digits
         if (p.length === 13 && p.startsWith("55") && p[4] === "9") {
-          phonesVariations.push(p.substring(0, 4) + p.substring(5));
+          addVar(p.substring(0, 4) + p.substring(5));
         }
       }
-      
+
+      const phonesVariations = Array.from(variations);
+
       console.log(`[Wasender Webhook] Searching leads with phone variations: ${phonesVariations.join(", ")}`);
-      
       const { data: leads, error: leadError } = await supabase
         .from("leads")
         .select("id, name, whatsapp, sub_origin_id")
