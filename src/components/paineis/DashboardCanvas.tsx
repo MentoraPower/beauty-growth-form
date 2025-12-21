@@ -211,12 +211,9 @@ export function DashboardCanvas({ painelName, onBack }: DashboardCanvasProps) {
 
                   {/* Header */}
                   <div className="flex items-center justify-between mb-3 shrink-0">
-                    <div className="flex items-center gap-2 min-w-0">
-                      <widget.chartType.icon className="h-4 w-4 text-muted-foreground shrink-0" />
-                      <h3 className="text-sm font-medium text-foreground truncate">
-                        {widget.source?.sourceName || widget.chartType.name}
-                      </h3>
-                    </div>
+                    <h3 className="text-sm font-medium text-foreground truncate">
+                      {widget.source?.sourceName || widget.chartType.name}
+                    </h3>
                     <div className="flex items-center gap-1 shrink-0">
                       {widget.isConnected && (
                         <button
