@@ -826,7 +826,7 @@ export default function InstagramPage() {
                     key={chat.id}
                     onClick={() => setSelectedChat(chat)}
                     className={cn(
-                      "w-full flex items-center gap-3 p-3 rounded-lg",
+                      "w-full flex items-center gap-3 p-3 border-b border-black/[0.06]",
                       selectedChat?.id === chat.id ? "bg-muted" : "hover:bg-muted/50"
                     )}
                   >
