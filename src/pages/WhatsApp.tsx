@@ -5,7 +5,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 
-import { Search, Smile, Paperclip, Mic, Send, Check, CheckCheck, RefreshCw, Phone, Image, File, Trash2, PanelRightOpen, PanelRightClose, X, Video, MoreVertical, Pencil, Reply, Zap, ArrowUp, Plus, FileImage, FileVideo, Sticker, ShieldBan, ShieldCheck, Smartphone, ChevronDown } from "lucide-react";
+import { Search, Smile, Paperclip, Mic, Send, Check, CheckCheck, RefreshCw, Phone, Image, File, Trash2, PanelRightOpen, PanelRightClose, X, Video, MoreVertical, Pencil, Reply, Zap, ArrowUp, Plus, FileImage, FileVideo, Sticker, ShieldBan, ShieldCheck, Smartphone, ChevronDown, MessageSquare, Users } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -124,6 +124,7 @@ const WhatsApp = () => {
   const [accountToConnect, setAccountToConnect] = useState<{ id: string; name: string; phone_number?: string; status: string; api_key?: string } | null>(null);
   const [whatsappGroups, setWhatsappGroups] = useState<WhatsAppGroup[]>([]);
   const [isLoadingGroups, setIsLoadingGroups] = useState(false);
+  const [sidebarTab, setSidebarTab] = useState<"conversas" | "grupos">("conversas");
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -2455,7 +2456,7 @@ const WhatsApp = () => {
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
               <Input
-                placeholder="Pesquisar ou começar nova conversa"
+                placeholder={sidebarTab === "conversas" ? "Pesquisar conversas..." : "Pesquisar grupos..."}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-10 bg-muted/30 border-0 h-9 text-sm placeholder:text-muted-foreground/60"
@@ -2463,144 +2464,226 @@ const WhatsApp = () => {
             </div>
           </div>
 
-          {/* Chat List - Always visible, no loading spinner */}
-          <ScrollArea
-            className="flex-1 overscroll-contain overflow-x-hidden"
-            onScrollCapture={markChatListInteracting}
-            onWheelCapture={markChatListInteracting}
-            onTouchMoveCapture={markChatListInteracting}
-            onPointerDownCapture={markChatListInteracting}
-          >
-            <div className="flex flex-col">
-              {isInitialLoad && chats.length === 0 ? (
-                <div className="flex items-center justify-center h-full py-20">
+          {/* Tabs */}
+          <div className="flex border-b border-border/30">
+            <button
+              onClick={() => setSidebarTab("conversas")}
+              className={cn(
+                "flex-1 flex items-center justify-center gap-2 py-2.5 text-sm font-medium transition-colors",
+                sidebarTab === "conversas" 
+                  ? "text-emerald-500 border-b-2 border-emerald-500 bg-emerald-500/5" 
+                  : "text-muted-foreground hover:text-foreground hover:bg-muted/30"
+              )}
+            >
+              <MessageSquare className="w-4 h-4" />
+              <span>Conversas</span>
+              {chats.length > 0 && (
+                <span className="text-xs bg-muted px-1.5 py-0.5 rounded-full">{chats.length}</span>
+              )}
+            </button>
+            <button
+              onClick={() => { 
+                setSidebarTab("grupos");
+                if (whatsappGroups.length === 0 && !isLoadingGroups) {
+                  fetchWhatsAppGroups();
+                }
+              }}
+              className={cn(
+                "flex-1 flex items-center justify-center gap-2 py-2.5 text-sm font-medium transition-colors",
+                sidebarTab === "grupos" 
+                  ? "text-emerald-500 border-b-2 border-emerald-500 bg-emerald-500/5" 
+                  : "text-muted-foreground hover:text-foreground hover:bg-muted/30"
+              )}
+            >
+              <Users className="w-4 h-4" />
+              <span>Grupos</span>
+              {whatsappGroups.length > 0 && (
+                <span className="text-xs bg-muted px-1.5 py-0.5 rounded-full">{whatsappGroups.length}</span>
+              )}
+            </button>
+          </div>
+
+          {/* Conversas Tab Content */}
+          {sidebarTab === "conversas" && (
+            <ScrollArea
+              className="flex-1 overscroll-contain overflow-x-hidden"
+              onScrollCapture={markChatListInteracting}
+              onWheelCapture={markChatListInteracting}
+              onTouchMoveCapture={markChatListInteracting}
+              onPointerDownCapture={markChatListInteracting}
+            >
+              <div className="flex flex-col">
+                {isInitialLoad && chats.length === 0 ? (
+                  <div className="flex items-center justify-center h-full py-20">
+                    <RefreshCw className="w-6 h-6 text-muted-foreground animate-spin" />
+                  </div>
+                ) : filteredChats.length > 0 ? (
+                  filteredChats.map((chat) => (
+                  <div
+                      key={chat.id}
+                      className={cn(
+                        "flex w-full items-center gap-3 px-3 py-3 cursor-pointer transition-colors border-b border-border/20 overflow-hidden max-w-full",
+                        selectedChat?.id === chat.id ? "bg-muted/40" : "hover:bg-muted/20"
+                      )}
+                      onClick={() => { 
+                        setSelectedChat(chat); 
+                        setReplyToMessage(null); 
+                        setIsSending(false);
+                        setMessage("");
+                      }}
+                    >
+                      <div className="relative flex-shrink-0">
+                        <img 
+                          src={chat.photo_url || DEFAULT_AVATAR} 
+                          alt={chat.name} 
+                          className="w-12 h-12 rounded-full object-cover bg-neutral-200" 
+                        />
+                      </div>
+                      <div className="flex-1 min-w-0 overflow-hidden w-0">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <span className="font-medium text-foreground truncate flex-1 min-w-0">{chat.name}</span>
+                        </div>
+                        <div className="flex items-center gap-1 min-w-0 mt-0.5">
+                          {chat.lastMessageFromMe && (
+                            chat.lastMessageStatus === "READ" || chat.lastMessageStatus === "PLAYED" 
+                              ? <CheckCheck className="w-4 h-4 text-blue-500 flex-shrink-0" /> 
+                              : chat.lastMessageStatus === "DELIVERED"
+                                ? <CheckCheck className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                                : <Check className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                          )}
+                          <p className="text-sm text-muted-foreground truncate flex-1 min-w-0">
+                            {chat.lastMessage?.trim() ? stripWhatsAppFormatting(chat.lastMessage) : "Sem mensagens"}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex flex-col items-end gap-1 flex-shrink-0">
+                        <span className={cn("text-xs whitespace-nowrap", chat.unread > 0 ? "text-emerald-500" : "text-muted-foreground")}>
+                          {chat.time}
+                        </span>
+                        <div className="flex items-center gap-1">
+                          {chat.unread > 0 && (
+                            <span className="min-w-[20px] h-5 rounded-full bg-emerald-500 text-white text-xs font-medium flex items-center justify-center px-1.5">
+                              {chat.unread}
+                            </span>
+                          )}
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <button 
+                                className="p-1 rounded-full hover:bg-muted/60"
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                <MoreVertical className="w-4 h-4 text-muted-foreground" />
+                              </button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="w-48">
+                              <DropdownMenuItem 
+                                className="cursor-pointer"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  if (blockedContacts.has(chat.phone)) {
+                                    handleUnblockContact(chat.phone);
+                                  } else {
+                                    setBlockConfirmDialog({ open: true, phone: chat.phone, chatId: chat.id, name: chat.name });
+                                  }
+                                }}
+                              >
+                                {blockedContacts.has(chat.phone) ? (
+                                  <>
+                                    <ShieldCheck className="w-4 h-4 mr-2 text-emerald-500" />
+                                    Desbloquear
+                                  </>
+                                ) : (
+                                  <>
+                                    <ShieldBan className="w-4 h-4 mr-2" />
+                                    Bloquear
+                                  </>
+                                )}
+                              </DropdownMenuItem>
+                              <DropdownMenuItem 
+                                className="text-destructive focus:text-destructive cursor-pointer"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleDeleteChatMessages(chat.id);
+                                }}
+                              >
+                                <Trash2 className="w-4 h-4 mr-2" />
+                                Apagar mensagens
+                              </DropdownMenuItem>
+                              <DropdownMenuItem 
+                                className="text-destructive focus:text-destructive cursor-pointer"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleDeleteChat(chat.id);
+                                }}
+                              >
+                                <Trash2 className="w-4 h-4 mr-2" />
+                                Apagar contato
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <div className="flex-1 flex flex-col items-center justify-center h-full py-20 gap-3">
+                    <p className="text-sm text-muted-foreground">
+                      {isSyncing ? "Sincronizando conversas..." : "Nenhuma conversa encontrada"}
+                    </p>
+                    {isSyncing && <RefreshCw className="w-5 h-5 text-muted-foreground animate-spin" />}
+                  </div>
+                )}
+              </div>
+            </ScrollArea>
+          )}
+          
+          {/* Grupos Tab Content */}
+          {sidebarTab === "grupos" && (
+            <ScrollArea className="flex-1 overscroll-contain overflow-x-hidden">
+              {isLoadingGroups ? (
+                <div className="flex items-center justify-center py-20">
                   <RefreshCw className="w-6 h-6 text-muted-foreground animate-spin" />
                 </div>
-              ) : filteredChats.length > 0 ? (
-                filteredChats.map((chat) => (
-                <div
-                    key={chat.id}
-                    className={cn(
-                      "flex w-full items-center gap-3 px-3 py-3 cursor-pointer transition-colors border-b border-border/20 overflow-hidden max-w-full",
-                      selectedChat?.id === chat.id ? "bg-muted/40" : "hover:bg-muted/20"
-                    )}
-                    onClick={() => { 
-                      setSelectedChat(chat); 
-                      setReplyToMessage(null); 
-                      setIsSending(false);
-                      setMessage("");
-                    }}
-                  >
-                    <div className="relative flex-shrink-0">
-                      <img 
-                        src={chat.photo_url || DEFAULT_AVATAR} 
-                        alt={chat.name} 
-                        className="w-12 h-12 rounded-full object-cover bg-neutral-200" 
-                      />
-                    </div>
-                    <div className="flex-1 min-w-0 overflow-hidden w-0">
-                      <div className="flex items-center gap-2 min-w-0">
-                        <span className="font-medium text-foreground truncate flex-1 min-w-0">{chat.name}</span>
+              ) : whatsappGroups.length > 0 ? (
+                <div className="flex flex-col">
+                  {whatsappGroups
+                    .filter(group => 
+                      !searchQuery || 
+                      group.name.toLowerCase().includes(searchQuery.toLowerCase())
+                    )
+                    .map((group) => (
+                      <div
+                        key={group.id}
+                        className="flex items-center gap-3 px-3 py-3 border-b border-border/20 hover:bg-muted/20 transition-colors"
+                      >
+                        <div className="w-12 h-12 rounded-full bg-emerald-600 flex items-center justify-center text-white font-medium flex-shrink-0">
+                          {group.name.substring(0, 2).toUpperCase()}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <span className="font-medium text-foreground truncate block">{group.name}</span>
+                          <div className="flex items-center gap-1 text-xs text-muted-foreground mt-0.5">
+                            <Users className="w-3 h-3" />
+                            <span>{group.participantCount} participantes</span>
+                          </div>
+                        </div>
                       </div>
-                      <div className="flex items-center gap-1 min-w-0 mt-0.5">
-                        {chat.lastMessageFromMe && (
-                          chat.lastMessageStatus === "READ" || chat.lastMessageStatus === "PLAYED" 
-                            ? <CheckCheck className="w-4 h-4 text-blue-500 flex-shrink-0" /> 
-                            : chat.lastMessageStatus === "DELIVERED"
-                              ? <CheckCheck className="w-4 h-4 text-muted-foreground flex-shrink-0" />
-                              : <Check className="w-4 h-4 text-muted-foreground flex-shrink-0" />
-                        )}
-                        <p className="text-sm text-muted-foreground truncate flex-1 min-w-0">
-                          {chat.lastMessage?.trim() ? stripWhatsAppFormatting(chat.lastMessage) : "Sem mensagens"}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="flex flex-col items-end gap-1 flex-shrink-0">
-                      <span className={cn("text-xs whitespace-nowrap", chat.unread > 0 ? "text-emerald-500" : "text-muted-foreground")}>
-                        {chat.time}
-                      </span>
-                      <div className="flex items-center gap-1">
-                        {chat.unread > 0 && (
-                          <span className="min-w-[20px] h-5 rounded-full bg-emerald-500 text-white text-xs font-medium flex items-center justify-center px-1.5">
-                            {chat.unread}
-                          </span>
-                        )}
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <button 
-                              className="p-1 rounded-full hover:bg-muted/60"
-                              onClick={(e) => e.stopPropagation()}
-                            >
-                              <MoreVertical className="w-4 h-4 text-muted-foreground" />
-                            </button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end" className="w-48">
-                            <DropdownMenuItem 
-                              className="cursor-pointer"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                if (blockedContacts.has(chat.phone)) {
-                                  handleUnblockContact(chat.phone);
-                                } else {
-                                  setBlockConfirmDialog({ open: true, phone: chat.phone, chatId: chat.id, name: chat.name });
-                                }
-                              }}
-                            >
-                              {blockedContacts.has(chat.phone) ? (
-                                <>
-                                  <ShieldCheck className="w-4 h-4 mr-2 text-emerald-500" />
-                                  Desbloquear
-                                </>
-                              ) : (
-                                <>
-                                  <ShieldBan className="w-4 h-4 mr-2" />
-                                  Bloquear
-                                </>
-                              )}
-                            </DropdownMenuItem>
-                            <DropdownMenuItem 
-                              className="text-destructive focus:text-destructive cursor-pointer"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleDeleteChatMessages(chat.id);
-                              }}
-                            >
-                              <Trash2 className="w-4 h-4 mr-2" />
-                              Apagar mensagens
-                            </DropdownMenuItem>
-                            <DropdownMenuItem 
-                              className="text-destructive focus:text-destructive cursor-pointer"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleDeleteChat(chat.id);
-                              }}
-                            >
-                              <Trash2 className="w-4 h-4 mr-2" />
-                              Apagar contato
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </div>
-                    </div>
-                  </div>
-                ))
+                    ))}
+                </div>
               ) : (
-                <div className="flex-1 flex flex-col items-center justify-center h-full py-20 gap-3">
-                  <p className="text-sm text-muted-foreground">
-                    {isSyncing ? "Sincronizando conversas..." : "Nenhuma conversa encontrada"}
-                  </p>
-                  {isSyncing && <RefreshCw className="w-5 h-5 text-muted-foreground animate-spin" />}
+                <div className="flex flex-col items-center justify-center py-20 gap-3">
+                  <Users className="w-10 h-10 text-muted-foreground/50" />
+                  <p className="text-sm text-muted-foreground">Nenhum grupo encontrado</p>
+                  <button 
+                    onClick={fetchWhatsAppGroups}
+                    className="text-sm text-emerald-500 hover:underline flex items-center gap-1"
+                  >
+                    <RefreshCw className="w-4 h-4" />
+                    Atualizar grupos
+                  </button>
                 </div>
               )}
-            </div>
-          </ScrollArea>
-          
-          {/* Groups List */}
-          <GroupsList 
-            groups={whatsappGroups}
-            isLoading={isLoadingGroups}
-            onRefresh={fetchWhatsAppGroups}
-          />
+            </ScrollArea>
+          )}
         </div>
 
         {/* Right Panel - Chat Area */}
