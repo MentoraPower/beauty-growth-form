@@ -65,13 +65,10 @@ export function useInstagramCache() {
             setChats(prev => {
               const existingIndex = prev.findIndex(c => c.conversation_id === formattedChat.conversation_id);
               if (existingIndex >= 0) {
-                // Update existing chat
+                // Update existing chat in place (no re-sorting to avoid flickering)
                 const updated = [...prev];
                 updated[existingIndex] = formattedChat;
-                // Re-sort by last message time
-                return updated.sort((a, b) => 
-                  new Date(b.lastMessageTime).getTime() - new Date(a.lastMessageTime).getTime()
-                );
+                return updated;
               } else {
                 // Add new chat at the top
                 return [formattedChat, ...prev];
@@ -91,10 +88,13 @@ export function useInstagramCache() {
   }, []);
 
   // Real-time subscription for messages (filtered by current conversation)
+  // Using a separate state to track conversation to avoid stale closures
+  const [activeConversationId, setActiveConversationId] = useState<string | null>(null);
+  
   useEffect(() => {
-    if (!currentConversationIdRef.current) return;
+    if (!activeConversationId) return;
 
-    const conversationId = currentConversationIdRef.current;
+    const conversationId = activeConversationId;
     
     const channel = supabase
       .channel(`instagram-messages-${conversationId}`)
@@ -110,10 +110,35 @@ export function useInstagramCache() {
           console.log('[InstagramRealtime] New message received:', payload.new);
           const newMsg = payload.new as any;
           
-          // Check if message already exists (avoid duplicates)
+          // Check if message already exists (avoid duplicates) - check both message_id and temp messages
           setMessages(prev => {
-            const exists = prev.some(m => m.message_id === newMsg.message_id || m.id === newMsg.message_id);
-            if (exists) return prev;
+            const exists = prev.some(m => 
+              m.message_id === newMsg.message_id || 
+              m.id === newMsg.message_id ||
+              // Also check if there's a temp message with matching text/time (sent by us)
+              (m.id.startsWith('temp-') && m.fromMe && newMsg.from_me && m.text === newMsg.text)
+            );
+            if (exists) {
+              // If it's a temp message match, replace it with the real one
+              const tempMatch = prev.find(m => 
+                m.id.startsWith('temp-') && m.fromMe && newMsg.from_me && m.text === newMsg.text
+              );
+              if (tempMatch) {
+                return prev.map(m => m.id === tempMatch.id ? {
+                  id: newMsg.message_id,
+                  message_id: newMsg.message_id,
+                  text: newMsg.text,
+                  time: newMsg.created_at,
+                  fromMe: newMsg.from_me || false,
+                  status: newMsg.status || 'DELIVERED',
+                  mediaType: newMsg.media_type,
+                  mediaUrl: newMsg.media_url,
+                  shareLink: newMsg.share_link,
+                  shareName: newMsg.share_name,
+                } : m);
+              }
+              return prev;
+            }
             
             const formattedMessage: InstagramMessage = {
               id: newMsg.message_id,
@@ -161,7 +186,7 @@ export function useInstagramCache() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [currentConversationIdRef.current]);
+  }, [activeConversationId]);
 
   // Load chats from database cache (instant)
   const loadChatsFromCache = useCallback(async (): Promise<InstagramChat[]> => {
@@ -358,6 +383,7 @@ export function useInstagramCache() {
   const fetchMessages = useCallback(async (conversationId: string, myInstagramUserId: string, forceRefresh = false) => {
     // Track current conversation to avoid race conditions
     currentConversationIdRef.current = conversationId;
+    setActiveConversationId(conversationId);
 
     // Step 1: Load from cache instantly
     if (!forceRefresh) {
@@ -407,7 +433,15 @@ export function useInstagramCache() {
           };
         });
 
-        setMessages(formattedMessages);
+        // Merge with existing temp messages (don't lose pending messages)
+        setMessages(prev => {
+          const tempMessages = prev.filter(m => m.id.startsWith('temp-'));
+          // Only keep temp messages that aren't already in the API response
+          const uniqueTempMessages = tempMessages.filter(temp => 
+            !formattedMessages.some(fm => fm.text === temp.text && fm.fromMe === temp.fromMe)
+          );
+          return [...formattedMessages, ...uniqueTempMessages];
+        });
         // Save to cache in background
         saveMessagesToCache(conversationId, formattedMessages);
       }
