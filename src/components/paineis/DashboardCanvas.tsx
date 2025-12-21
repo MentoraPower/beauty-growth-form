@@ -83,7 +83,7 @@ function SortableWidget({ widget, onResize, onDelete, onConnect, containerWidth 
     isDragging,
   } = useSortable({ id: widget.id });
 
-  const widgetWidth = widget.width || 340;
+  const widgetWidth = widget.width || containerWidth;
   const widgetHeight = widget.height || 280;
   const minWidth = 260;
 
