@@ -17,7 +17,7 @@ export default function Atendimento() {
   };
 
   return (
-    <div className="h-[calc(100vh-4rem)] flex flex-col -mr-6 -mb-6">
+    <div className="h-[calc(100vh-4rem)] flex flex-col -mr-6 -mb-6 border-l border-border">
       {/* Tabs Header */}
       <div className="flex-shrink-0 border-b border-border px-4 pt-2 pb-0 bg-background">
         <div className="flex gap-1">
