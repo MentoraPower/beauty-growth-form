@@ -390,13 +390,13 @@ const WhatsApp = () => {
         .order("last_message_time", { ascending: false });
       
       // Filter by session_id if we have a selected account
-      // The session_id in DB should match the api_key from WaSender sessions
+      // STRICT FILTERING: Only show chats that belong to this session
+      // No fallback to NULL - each account only sees its own chats
       if (sessionApiKey) {
-        // Include chats that match this session OR have no session_id (legacy/migrated chats)
-        query = query.or(`session_id.eq.${sessionApiKey},session_id.is.null`);
-        console.log(`[WhatsApp] Filtering by session_id = ${sessionApiKey} OR null`);
+        query = query.eq("session_id", sessionApiKey);
+        console.log(`[WhatsApp] Filtering STRICTLY by session_id = ${sessionApiKey}`);
       } else {
-        console.log(`[WhatsApp] No api_key found, fetching all chats`);
+        console.log(`[WhatsApp] No api_key found, fetching all chats (no account selected)`);
       }
       
       const { data, error } = await query;
@@ -766,6 +766,10 @@ const WhatsApp = () => {
       const messageId = data?.messageId || `local-${Date.now()}`;
       const whatsappKeyId = data?.whatsappKeyId || null;
 
+      // Get session_id for account isolation
+      const selectedAccount = whatsappAccounts.find(acc => acc.id === selectedAccountId);
+      const sessionId = selectedAccount?.api_key || null;
+
       const { data: insertedMsg } = await supabase
         .from("whatsapp_messages")
         .insert({
@@ -779,6 +783,7 @@ const WhatsApp = () => {
           quoted_message_id: quotedMsg?.message_id?.toString() || null,
           quoted_text: quotedMsg?.text || null,
           quoted_from_me: quotedMsg?.sent || null,
+          session_id: sessionId,
         })
         .select()
         .single();
@@ -961,20 +966,31 @@ const WhatsApp = () => {
   const syncAllChats = useCallback(async () => {
     setIsSyncing(true);
     try {
-      console.log("[WhatsApp] Syncing Wasender...");
+      // Get the selected account's api_key to pass as session_id
+      const selectedAccount = whatsappAccounts.find(acc => acc.id === selectedAccountId);
+      const sessionId = selectedAccount?.api_key || null;
+      
+      console.log(`[WhatsApp] Syncing Wasender... sessionId: ${sessionId || "none"}`);
 
       const { data, error } = await supabase.functions.invoke("wasender-whatsapp", {
-        body: { action: "sync-all" },
+        body: { 
+          action: "sync-all",
+          sessionId: sessionId,
+        },
       });
 
       console.log("[WhatsApp] Sync response:", data, error);
-      // Chats will update via realtime subscription
+      
+      // Refetch chats after sync to get the new data filtered by session
+      if (!error) {
+        await fetchChats();
+      }
     } catch (error: any) {
       console.error("[WhatsApp] Error syncing:", error);
     } finally {
       setIsSyncing(false);
     }
-  }, []);
+  }, [whatsappAccounts, selectedAccountId, fetchChats]);
 
   const clearAndSync = async () => {
     await clearAllData();
@@ -1041,7 +1057,11 @@ const WhatsApp = () => {
 
       if (error) throw error;
 
-      // Insert into database with both message IDs
+      // Get session_id for account isolation
+      const selectedAccount = whatsappAccounts.find(acc => acc.id === selectedAccountId);
+      const sessionId = selectedAccount?.api_key || null;
+
+      // Insert into database with both message IDs and session_id
       const { data: insertedMsg } = await supabase.from("whatsapp_messages").insert({
         chat_id: selectedChat.id,
         phone: selectedChat.phone,
@@ -1053,6 +1073,7 @@ const WhatsApp = () => {
         message_id: data?.messageId,
         whatsapp_key_id: data?.whatsappKeyId || null,
         created_at: new Date().toISOString(),
+        session_id: sessionId,
       }).select().single();
 
       if (insertedMsg) {
@@ -1351,7 +1372,11 @@ const WhatsApp = () => {
 
       console.log("[WhatsApp] Audio sent via WasenderAPI:", data);
 
-      // Insert into database with both message IDs
+      // Get session_id for account isolation
+      const selectedAccount = whatsappAccounts.find(acc => acc.id === selectedAccountId);
+      const sessionId = selectedAccount?.api_key || null;
+
+      // Insert into database with both message IDs and session_id
       const { data: insertedMsg } = await supabase.from("whatsapp_messages").insert({
         chat_id: selectedChat.id,
         phone: selectedChat.phone,
@@ -1363,6 +1388,7 @@ const WhatsApp = () => {
         message_id: data?.messageId,
         whatsapp_key_id: data?.whatsappKeyId || null,
         created_at: new Date().toISOString(),
+        session_id: sessionId,
       }).select().single();
 
       if (insertedMsg) {
@@ -2252,6 +2278,45 @@ const WhatsApp = () => {
                       );
                     })}
                     <DropdownMenuSeparator />
+                    {/* Migration button - only show if there are accounts and one is selected */}
+                    {selectedAccountId && (
+                      <DropdownMenuItem 
+                        className="cursor-pointer text-amber-600"
+                        onClick={async () => {
+                          const selectedAccount = whatsappAccounts.find(a => a.id === selectedAccountId);
+                          if (!selectedAccount?.api_key) {
+                            toast({ title: "Selecione uma conta conectada", variant: "destructive" });
+                            return;
+                          }
+                          
+                          try {
+                            toast({ title: "Migrando chats antigos..." });
+                            const { data, error } = await supabase.functions.invoke("wasender-whatsapp", {
+                              body: { 
+                                action: "migrate-chats",
+                                sessionId: selectedAccount.api_key,
+                              },
+                            });
+                            
+                            if (error) throw error;
+                            
+                            toast({ 
+                              title: "Migração concluída",
+                              description: `${data?.migratedChats || 0} chats e ${data?.migratedMessages || 0} mensagens migradas para ${selectedAccount.name}`,
+                            });
+                            
+                            // Refetch chats to show the updated data
+                            await fetchChats();
+                          } catch (err: any) {
+                            console.error("Migration error:", err);
+                            toast({ title: "Erro na migração", description: err.message, variant: "destructive" });
+                          }
+                        }}
+                      >
+                        <ArrowUp className="w-4 h-4 mr-2" />
+                        Migrar chats antigos para esta conta
+                      </DropdownMenuItem>
+                    )}
                   </>
                 ) : (
                   <div className="px-2 py-3 text-sm text-muted-foreground text-center">

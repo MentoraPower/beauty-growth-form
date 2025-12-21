@@ -788,7 +788,9 @@ async function handler(req: Request): Promise<Response> {
     // ACTION: sync-all
     // =========================
     if (action === "sync-all") {
-      console.log("[Wasender] Starting full sync...");
+      // Get session_id from request body (this is the api_key of the selected WhatsApp account)
+      const sessionId = body.sessionId || body.session_id || null;
+      console.log(`[Wasender] Starting full sync... sessionId: ${sessionId || "none"}`);
       
       // 1. Fetch all contacts first for name/photo lookup
       const contactsMap = await fetchAllContacts();
@@ -858,17 +860,24 @@ async function handler(req: Request): Promise<Response> {
 
           console.log(`[Wasender] Chat: ${phone}, Name: ${name}, Photo: ${photoUrl ? "Yes" : "No"}`);
 
-          // Upsert chat
+          // Upsert chat with session_id for account isolation
+          const chatUpsertData: any = {
+            phone,
+            name,
+            photo_url: photoUrl,
+            last_message: lastMessage.substring(0, 500),
+            last_message_time: lastMessageTime,
+            updated_at: new Date().toISOString(),
+          };
+          
+          // Add session_id for account isolation if provided
+          if (sessionId) {
+            chatUpsertData.session_id = sessionId;
+          }
+          
           const { data: chatData, error: chatError } = await supabase
             .from("whatsapp_chats")
-            .upsert({
-              phone,
-              name,
-              photo_url: photoUrl,
-              last_message: lastMessage.substring(0, 500),
-              last_message_time: lastMessageTime,
-              updated_at: new Date().toISOString(),
-            }, { onConflict: "phone" })
+            .upsert(chatUpsertData, { onConflict: "phone" })
             .select()
             .single();
 
@@ -922,20 +931,27 @@ async function handler(req: Request): Promise<Response> {
               // Skip empty messages
               if (!text && !mediaType) continue;
 
-              // Upsert message
+              // Upsert message with session_id for account isolation
+              const messageUpsertData: any = {
+                chat_id: chatData.id,
+                message_id: messageId,
+                phone,
+                text: text.substring(0, 2000),
+                from_me: fromMe,
+                status: fromMe ? "SENT" : "RECEIVED",
+                media_type: mediaType,
+                media_url: mediaUrl,
+                created_at: timestamp,
+              };
+              
+              // Add session_id for account isolation if provided
+              if (sessionId) {
+                messageUpsertData.session_id = sessionId;
+              }
+              
               const { error: msgError } = await supabase
                 .from("whatsapp_messages")
-                .upsert({
-                  chat_id: chatData.id,
-                  message_id: messageId,
-                  phone,
-                  text: text.substring(0, 2000),
-                  from_me: fromMe,
-                  status: fromMe ? "SENT" : "RECEIVED",
-                  media_type: mediaType,
-                  media_url: mediaUrl,
-                  created_at: timestamp,
-                }, { onConflict: "message_id" });
+                .upsert(messageUpsertData, { onConflict: "message_id" });
 
               if (!msgError) syncedMessages++;
 
@@ -1100,6 +1116,72 @@ async function handler(req: Request): Promise<Response> {
       }, true); // Use personal token
 
       return new Response(JSON.stringify({ success: true, data: result?.data || result }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // =========================
+    // ACTION: migrate-chats (Migrate legacy chats with NULL session_id to a specific session)
+    // =========================
+    if (action === "migrate-chats") {
+      const { sessionId, targetSessionId } = body;
+      const session_id_to_use = sessionId || targetSessionId;
+      
+      if (!session_id_to_use) {
+        return new Response(JSON.stringify({ 
+          error: "sessionId is required for migration" 
+        }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      
+      console.log(`[Wasender] Migrating legacy chats to session: ${session_id_to_use}`);
+      
+      // Update all chats with NULL session_id to the target session
+      const { data: updatedChats, error: chatError } = await supabase
+        .from("whatsapp_chats")
+        .update({ session_id: session_id_to_use })
+        .is("session_id", null)
+        .select("id");
+      
+      if (chatError) {
+        console.error("[Wasender] Error migrating chats:", chatError);
+        return new Response(JSON.stringify({ error: chatError.message }), {
+          status: 500,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      
+      const migratedChatsCount = updatedChats?.length || 0;
+      console.log(`[Wasender] Migrated ${migratedChatsCount} chats`);
+      
+      // Update all messages with NULL session_id to the target session
+      const { data: updatedMessages, error: messageError } = await supabase
+        .from("whatsapp_messages")
+        .update({ session_id: session_id_to_use })
+        .is("session_id", null)
+        .select("id");
+      
+      if (messageError) {
+        console.error("[Wasender] Error migrating messages:", messageError);
+        return new Response(JSON.stringify({ 
+          error: messageError.message,
+          migratedChats: migratedChatsCount,
+        }), {
+          status: 500,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      
+      const migratedMessagesCount = updatedMessages?.length || 0;
+      console.log(`[Wasender] Migrated ${migratedMessagesCount} messages`);
+      
+      return new Response(JSON.stringify({ 
+        success: true, 
+        migratedChats: migratedChatsCount,
+        migratedMessages: migratedMessagesCount,
+      }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
