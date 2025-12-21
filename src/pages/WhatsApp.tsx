@@ -21,6 +21,7 @@ import ImageLightbox from "@/components/whatsapp/ImageLightbox";
 import { formatWhatsAppText, stripWhatsAppFormatting } from "@/lib/whatsapp-format";
 import { AddWhatsAppAccountDialog } from "@/components/whatsapp/AddWhatsAppAccountDialog";
 import { GroupsList, WhatsAppGroup } from "@/components/whatsapp/GroupsList";
+import { GroupParticipantsPanel } from "@/components/whatsapp/GroupParticipantsPanel";
 
 interface Chat {
   id: string;
@@ -35,6 +36,7 @@ interface Chat {
   lastMessageStatus: string | null;
   lastMessageFromMe: boolean;
   isGroup?: boolean; // Flag for group chats
+  participantCount?: number; // For group chats
 }
 
 interface Message {
@@ -432,6 +434,17 @@ const WhatsApp = () => {
         // WaSender has a strict RPM limit (10). The initial /api/groups call already uses 1.
         let remainingRequests = 9;
 
+        // Create a map of existing groups from DB to preserve values when API doesn't provide them
+        const dbGroupsMap = new Map<string, { participant_count: number; photo_url: string | null }>();
+        if (dbGroups) {
+          for (const dbg of dbGroups) {
+            dbGroupsMap.set(dbg.group_jid, {
+              participant_count: dbg.participant_count || 0,
+              photo_url: dbg.photo_url,
+            });
+          }
+        }
+
         const groups: WhatsAppGroup[] = [];
         const groupsToUpsert: Array<{
           group_jid: string;
@@ -450,8 +463,11 @@ const WhatsApp = () => {
           let photoUrl: string | null = g.profilePicture || g.pictureUrl || g.imgUrl || null;
           let description: string | null = null;
 
+          // Get existing values from DB as fallback
+          const existingDbGroup = dbGroupsMap.get(groupId);
+
           if (groupId) {
-            // 1) Profile picture
+            // 1) Profile picture - use DB value as fallback
             if (!photoUrl && remainingRequests > 0) {
               remainingRequests -= 1;
               try {
@@ -468,13 +484,20 @@ const WhatsApp = () => {
 
                 if (picResponse.status === 429) {
                   remainingRequests = 0;
+                  // Fallback to DB value on rate limit
+                  photoUrl = existingDbGroup?.photo_url || null;
                 } else if (picResponse.ok) {
                   const picResult = await picResponse.json();
-                  photoUrl = picResult?.data?.imgUrl || photoUrl;
+                  photoUrl = picResult?.data?.imgUrl || existingDbGroup?.photo_url || null;
                 }
               } catch (e) {
                 console.error("[WhatsApp] Error fetching group picture:", e);
+                photoUrl = existingDbGroup?.photo_url || null;
               }
+            }
+            // If still no photo but we have one in DB, use it
+            if (!photoUrl && existingDbGroup?.photo_url) {
+              photoUrl = existingDbGroup.photo_url;
             }
 
             // 2) Participant count (best-effort)
@@ -494,6 +517,8 @@ const WhatsApp = () => {
 
                 if (metaResponse.status === 429) {
                   remainingRequests = 0;
+                  // Fallback to DB value on rate limit
+                  participantCount = existingDbGroup?.participant_count || 0;
                 } else if (metaResponse.ok) {
                   const metaResult = await metaResponse.json();
                   if (metaResult?.success && metaResult?.data) {
@@ -506,15 +531,23 @@ const WhatsApp = () => {
                 }
               } catch (e) {
                 console.error("[WhatsApp] Error fetching group metadata:", e);
+                participantCount = existingDbGroup?.participant_count || 0;
               }
             }
+            // If still unknown (-1) and we have a value in DB, use it
+            if (participantCount < 0 && existingDbGroup?.participant_count) {
+              participantCount = existingDbGroup.participant_count;
+            }
           }
+
+          // Final fallback to 0 only if we have no data at all
+          const finalParticipantCount = participantCount >= 0 ? participantCount : (existingDbGroup?.participant_count || 0);
 
           const groupData: WhatsAppGroup = {
             id: groupId, // Use JID as id for now (will be replaced after upsert)
             groupJid: groupId,
             name: g.subject || g.name || "Grupo",
-            participantCount: participantCount >= 0 ? participantCount : 0,
+            participantCount: finalParticipantCount,
             photoUrl,
           };
           groups.push(groupData);
@@ -569,6 +602,7 @@ const WhatsApp = () => {
       lastMessageStatus: null,
       lastMessageFromMe: false,
       isGroup: true,
+      participantCount: group.participantCount,
     };
     setSelectedChat(groupChat);
     setReplyToMessage(null);
@@ -3503,14 +3537,50 @@ const WhatsApp = () => {
           )}
           </div>
 
-          {/* Lead Info Panel */}
+          {/* Lead Info Panel or Group Participants Panel */}
           {selectedChat && showLeadPanel && (
-            <LeadInfoPanel 
-              phone={selectedChat.phone} 
-              photoUrl={selectedChat.photo_url}
-              contactName={selectedChat.name}
-              onNameUpdate={(newName) => updateChatName(selectedChat.id, newName)}
-            />
+            selectedChat.isGroup ? (
+              <GroupParticipantsPanel
+                groupJid={selectedChat.phone}
+                groupName={selectedChat.name}
+                groupPhoto={selectedChat.photo_url}
+                participantCount={selectedChat.participantCount || 0}
+                apiKey={whatsappAccounts.find(acc => acc.id === selectedAccountId)?.api_key || ""}
+                onSelectParticipant={(phone, name) => {
+                  // Open chat with this participant
+                  const cleanPhone = phone.replace(/@s\.whatsapp\.net$/, "");
+                  const existingChat = chats.find(c => c.phone.replace(/\D/g, "") === cleanPhone.replace(/\D/g, ""));
+                  if (existingChat) {
+                    setSelectedChat(existingChat);
+                    setSidebarTab("conversas");
+                  } else {
+                    // Create temporary chat
+                    const tempChat: Chat = {
+                      id: `temp-${cleanPhone}`,
+                      name: name || cleanPhone,
+                      lastMessage: "",
+                      time: "",
+                      lastMessageTime: null,
+                      unread: 0,
+                      avatar: name ? name.substring(0, 2).toUpperCase() : "?",
+                      phone: cleanPhone,
+                      photo_url: null,
+                      lastMessageStatus: null,
+                      lastMessageFromMe: false,
+                    };
+                    setSelectedChat(tempChat);
+                    setSidebarTab("conversas");
+                  }
+                }}
+              />
+            ) : (
+              <LeadInfoPanel 
+                phone={selectedChat.phone} 
+                photoUrl={selectedChat.photo_url}
+                contactName={selectedChat.name}
+                onNameUpdate={(newName) => updateChatName(selectedChat.id, newName)}
+              />
+            )
           )}
         </div>
       </div>

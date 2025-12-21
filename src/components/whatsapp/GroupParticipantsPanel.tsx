@@ -1,0 +1,216 @@
+import { useState, useEffect } from "react";
+import { Users, RefreshCw, Phone, MessageSquare } from "lucide-react";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { cn } from "@/lib/utils";
+
+interface Participant {
+  id: string;
+  phone: string;
+  name?: string;
+  isAdmin?: boolean;
+  isSuperAdmin?: boolean;
+}
+
+interface GroupParticipantsPanelProps {
+  groupJid: string;
+  groupName: string;
+  groupPhoto?: string | null;
+  participantCount: number;
+  apiKey: string;
+  onSelectParticipant?: (phone: string, name?: string) => void;
+}
+
+const DEFAULT_AVATAR = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyMTIgMjEyIj48cGF0aCBmaWxsPSIjREZFNUU3IiBkPSJNMCAwaDIxMnYyMTJIMHoiLz48cGF0aCBmaWxsPSIjRkZGIiBkPSJNMTA2IDEwNmMtMjUuNCAwLTQ2LTIwLjYtNDYtNDZzMjAuNi00NiA0Ni00NiA0NiAyMC42IDQ2IDQ2LTIwLjYgNDYtNDYgNDZ6bTAgMTNjMzAuNiAwIDkyIDE1LjQgOTIgNDZ2MjNIMTR2LTIzYzAtMzAuNiA2MS40LTQ2IDkyLTQ2eiIvPjwvc3ZnPg==";
+
+const getInitials = (name: string): string => {
+  if (!name) return "?";
+  const parts = name.trim().split(" ");
+  if (parts.length >= 2) {
+    return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+  }
+  return name.substring(0, 2).toUpperCase();
+};
+
+const formatPhone = (phone: string): string => {
+  // Remove @s.whatsapp.net suffix if present
+  const clean = phone.replace(/@s\.whatsapp\.net$/, "").replace(/\D/g, "");
+  if (clean.length === 13 && clean.startsWith("55")) {
+    // Brazilian number with country code
+    return `+${clean.slice(0, 2)} (${clean.slice(2, 4)}) ${clean.slice(4, 9)}-${clean.slice(9)}`;
+  }
+  if (clean.length === 12 && clean.startsWith("55")) {
+    return `+${clean.slice(0, 2)} (${clean.slice(2, 4)}) ${clean.slice(4, 8)}-${clean.slice(8)}`;
+  }
+  return phone.replace(/@s\.whatsapp\.net$/, "");
+};
+
+export const GroupParticipantsPanel = ({
+  groupJid,
+  groupName,
+  groupPhoto,
+  participantCount,
+  apiKey,
+  onSelectParticipant,
+}: GroupParticipantsPanelProps) => {
+  const [participants, setParticipants] = useState<Participant[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchParticipants = async () => {
+    if (!apiKey || !groupJid) return;
+    
+    setIsLoading(true);
+    setError(null);
+    
+    try {
+      const response = await fetch(
+        `https://www.wasenderapi.com/api/groups/${encodeURIComponent(groupJid)}/metadata`,
+        {
+          method: "GET",
+          headers: {
+            Authorization: `Bearer ${apiKey}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error(`Failed to fetch: ${response.status}`);
+      }
+
+      const result = await response.json();
+      console.log("[GroupParticipantsPanel] Metadata:", result);
+
+      if (result.success && result.data?.participants) {
+        const participantsList: Participant[] = result.data.participants.map((p: any) => ({
+          id: p.id || p.jid || "",
+          phone: p.id || p.jid || "",
+          name: p.name || p.notify || undefined,
+          isAdmin: p.isAdmin || p.admin === "admin",
+          isSuperAdmin: p.isSuperAdmin || p.admin === "superadmin",
+        }));
+        setParticipants(participantsList);
+      }
+    } catch (err: any) {
+      console.error("[GroupParticipantsPanel] Error:", err);
+      setError("Erro ao carregar participantes");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchParticipants();
+  }, [groupJid, apiKey]);
+
+  return (
+    <div className="w-[340px] border-l border-border bg-background flex flex-col overflow-hidden">
+      {/* Header */}
+      <div className="bg-muted/50 dark:bg-muted/30 px-4 py-4">
+        <div className="flex items-center gap-3">
+          {groupPhoto ? (
+            <img
+              src={groupPhoto}
+              alt={groupName}
+              className="w-12 h-12 rounded-full object-cover bg-muted"
+              onError={(e) => {
+                e.currentTarget.src = DEFAULT_AVATAR;
+              }}
+            />
+          ) : (
+            <div className="w-12 h-12 rounded-full bg-emerald-600 flex items-center justify-center text-white font-medium">
+              {getInitials(groupName)}
+            </div>
+          )}
+          <div className="flex-1 min-w-0">
+            <h3 className="font-medium text-foreground truncate">{groupName}</h3>
+            <p className="text-xs text-muted-foreground flex items-center gap-1">
+              <Users className="w-3 h-3" />
+              {participantCount > 0 ? `${participantCount} participantes` : `${participants.length || "—"} participantes`}
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Participants List */}
+      <div className="flex items-center justify-between px-4 py-2 border-b border-border/50">
+        <span className="text-sm font-medium text-foreground">Participantes</span>
+        <button
+          onClick={fetchParticipants}
+          disabled={isLoading}
+          className="p-1.5 hover:bg-muted rounded-md transition-colors disabled:opacity-50"
+          title="Atualizar participantes"
+        >
+          <RefreshCw className={cn("w-4 h-4 text-muted-foreground", isLoading && "animate-spin")} />
+        </button>
+      </div>
+
+      <ScrollArea className="flex-1">
+        {isLoading && participants.length === 0 ? (
+          <div className="flex items-center justify-center py-8">
+            <RefreshCw className="w-5 h-5 text-muted-foreground animate-spin" />
+          </div>
+        ) : error ? (
+          <div className="text-center py-8 px-4">
+            <p className="text-sm text-muted-foreground">{error}</p>
+            <button
+              onClick={fetchParticipants}
+              className="mt-2 text-xs text-primary hover:underline"
+            >
+              Tentar novamente
+            </button>
+          </div>
+        ) : participants.length === 0 ? (
+          <div className="text-center py-8 text-sm text-muted-foreground">
+            Nenhum participante encontrado
+          </div>
+        ) : (
+          <div className="divide-y divide-border/30">
+            {participants.map((participant) => (
+              <div
+                key={participant.id}
+                className="flex items-center gap-3 px-4 py-3 hover:bg-muted/30 transition-colors cursor-pointer"
+                onClick={() => onSelectParticipant?.(participant.phone, participant.name)}
+              >
+                <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center text-sm font-medium text-muted-foreground flex-shrink-0">
+                  {participant.name ? getInitials(participant.name) : "?"}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-medium text-foreground truncate">
+                      {participant.name || formatPhone(participant.phone)}
+                    </span>
+                    {(participant.isAdmin || participant.isSuperAdmin) && (
+                      <span className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 font-medium">
+                        {participant.isSuperAdmin ? "Dono" : "Admin"}
+                      </span>
+                    )}
+                  </div>
+                  {participant.name && (
+                    <span className="text-xs text-muted-foreground truncate block">
+                      {formatPhone(participant.phone)}
+                    </span>
+                  )}
+                </div>
+                <div className="flex items-center gap-1">
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onSelectParticipant?.(participant.phone, participant.name);
+                    }}
+                    className="p-1.5 hover:bg-muted rounded-md transition-colors"
+                    title="Enviar mensagem"
+                  >
+                    <MessageSquare className="w-4 h-4 text-muted-foreground" />
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </ScrollArea>
+    </div>
+  );
+};
+
+export default GroupParticipantsPanel;
