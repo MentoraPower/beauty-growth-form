@@ -89,7 +89,19 @@ const mergeStatus = (current: WhatsAppMessageStatus, incoming: WhatsAppMessageSt
   return getStatusRank(incoming) >= getStatusRank(current) ? incoming : current;
 };
 
-const WhatsApp = () => {
+interface WhatsAppProps {
+  selectedAccountId?: string | null;
+  setSelectedAccountId?: React.Dispatch<React.SetStateAction<string | null>>;
+  whatsappAccounts?: Array<{ id: string; name: string; phone_number?: string; status: string; api_key?: string }>;
+  setWhatsappAccounts?: React.Dispatch<React.SetStateAction<Array<{ id: string; name: string; phone_number?: string; status: string; api_key?: string }>>>;
+  showAddAccountDialog?: boolean;
+  setShowAddAccountDialog?: React.Dispatch<React.SetStateAction<boolean>>;
+  accountToConnect?: { id: string; name: string; phone_number?: string; status: string; api_key?: string } | null;
+  setAccountToConnect?: React.Dispatch<React.SetStateAction<{ id: string; name: string; phone_number?: string; status: string; api_key?: string } | null>>;
+  fetchWhatsAppAccounts?: () => Promise<void>;
+}
+
+const WhatsApp = (props: WhatsAppProps) => {
   const [searchParams, setSearchParams] = useSearchParams();
   const { toast } = useToast();
   const [selectedChat, setSelectedChat] = useState<Chat | null>(null);
@@ -118,17 +130,29 @@ const WhatsApp = () => {
   const [blockConfirmDialog, setBlockConfirmDialog] = useState<{ open: boolean; phone: string; chatId: string; name: string } | null>(null);
   const [editingMessage, setEditingMessage] = useState<Message | null>(null);
   const [editText, setEditText] = useState("");
-  const [showAddAccountDialog, setShowAddAccountDialog] = useState(false);
-  const [whatsappAccounts, setWhatsappAccounts] = useState<Array<{ id: string; name: string; phone_number?: string; status: string; api_key?: string }>>([]);
-  const [selectedAccountId, setSelectedAccountId] = useState<string | null>(() => {
-    // Restore from localStorage on mount
+  
+  // Use props if provided, otherwise use local state
+  const [localShowAddAccountDialog, setLocalShowAddAccountDialog] = useState(false);
+  const [localWhatsappAccounts, setLocalWhatsappAccounts] = useState<Array<{ id: string; name: string; phone_number?: string; status: string; api_key?: string }>>([]);
+  const [localSelectedAccountId, setLocalSelectedAccountId] = useState<string | null>(() => {
     const saved = localStorage.getItem('whatsapp_selected_account_id');
     return saved ? saved : null;
   });
+  const [localAccountToConnect, setLocalAccountToConnect] = useState<{ id: string; name: string; phone_number?: string; status: string; api_key?: string } | null>(null);
+  
+  // Use props or fallback to local state
+  const showAddAccountDialog = props.showAddAccountDialog ?? localShowAddAccountDialog;
+  const setShowAddAccountDialog = props.setShowAddAccountDialog ?? setLocalShowAddAccountDialog;
+  const whatsappAccounts = props.whatsappAccounts ?? localWhatsappAccounts;
+  const setWhatsappAccounts = props.setWhatsappAccounts ?? setLocalWhatsappAccounts;
+  const selectedAccountId = props.selectedAccountId ?? localSelectedAccountId;
+  const setSelectedAccountId = props.setSelectedAccountId ?? setLocalSelectedAccountId;
+  const accountToConnect = props.accountToConnect ?? localAccountToConnect;
+  const setAccountToConnect = props.setAccountToConnect ?? setLocalAccountToConnect;
+  
   const [isLoadingAccounts, setIsLoadingAccounts] = useState(false);
   const [isAccountChanging, setIsAccountChanging] = useState(false);
   const [isInitializingApp, setIsInitializingApp] = useState(true);
-  const [accountToConnect, setAccountToConnect] = useState<{ id: string; name: string; phone_number?: string; status: string; api_key?: string } | null>(null);
   const [whatsappGroups, setWhatsappGroups] = useState<WhatsAppGroup[]>([]);
   const [isLoadingGroups, setIsLoadingGroups] = useState(false);
   const [sidebarTab, setSidebarTab] = useState<"conversas" | "grupos">("conversas");
@@ -2603,94 +2627,6 @@ const WhatsApp = () => {
         
         {/* Left Sidebar - Chat List */}
         <div className="w-[340px] flex flex-col border-r border-border bg-background">
-          {/* Header */}
-          <div className="h-14 px-4 flex items-center justify-between bg-muted/30 border-b border-border/30">
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <button className="flex items-center gap-2 font-semibold text-foreground hover:bg-muted/50 px-2 py-1.5 rounded-md transition-colors">
-                  <Smartphone className="w-4 h-4 text-emerald-500" />
-                  <span className="truncate max-w-[180px]">
-                    {selectedAccountId 
-                      ? whatsappAccounts.find(a => a.id === selectedAccountId)?.name || "Conta WhatsApp"
-                      : "Selecionar conta"}
-                  </span>
-                  <ChevronDown className="w-3.5 h-3.5 text-muted-foreground" />
-                </button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="start" className="w-64">
-                {isLoadingAccounts ? (
-                  <div className="flex items-center justify-center py-4">
-                    <RefreshCw className="w-4 h-4 animate-spin text-muted-foreground" />
-                  </div>
-                ) : whatsappAccounts.length > 0 ? (
-                  <>
-                    {whatsappAccounts.map((account) => {
-                      const isConnected = account.status?.toLowerCase() === "connected";
-                      return (
-                        <DropdownMenuItem
-                          key={account.id}
-                          className={cn(
-                            "cursor-pointer flex items-center gap-2",
-                            selectedAccountId === account.id && "bg-muted"
-                          )}
-                          onClick={() => {
-                            if (isConnected) {
-                              if (selectedAccountId !== account.id) {
-                                // Clear current state and switch account
-                                setSelectedChat(null);
-                                setMessages([]);
-                                setChats([]);
-                                chatsRef.current = [];
-                                setSelectedAccountId(account.id);
-                                // Persist to localStorage
-                                localStorage.setItem('whatsapp_selected_account_id', String(account.id));
-                              }
-                            } else {
-                              // Open dialog with QR code for not connected accounts
-                              setAccountToConnect(account);
-                              setShowAddAccountDialog(true);
-                            }
-                          }}
-                        >
-                          <div className={cn(
-                            "w-2 h-2 rounded-full",
-                            isConnected ? "bg-emerald-500" : "bg-amber-500"
-                          )} />
-                          <div className="flex-1 min-w-0">
-                            <p className="font-medium truncate">{account.name}</p>
-                            {account.phone_number && (
-                              <p className="text-xs text-muted-foreground truncate">{account.phone_number}</p>
-                            )}
-                          </div>
-                          {isConnected && selectedAccountId === account.id && (
-                            <Check className="w-4 h-4 text-emerald-500" />
-                          )}
-                          {!isConnected && (
-                            <span className="text-xs text-amber-600">Conectar</span>
-                          )}
-                        </DropdownMenuItem>
-                      );
-                    })}
-                    <DropdownMenuSeparator />
-                  </>
-                ) : (
-                  <div className="px-2 py-3 text-sm text-muted-foreground text-center">
-                    Nenhuma conta conectada
-                  </div>
-                )}
-                <DropdownMenuItem 
-                  className="cursor-pointer"
-                  onClick={() => {
-                    setAccountToConnect(null);
-                    setShowAddAccountDialog(true);
-                  }}
-                >
-                  <Plus className="w-4 h-4 mr-2" />
-                  Adicionar conta WhatsApp
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
 
           {/* Search */}
           <div className="p-2 border-b border-border/30">
