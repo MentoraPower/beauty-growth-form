@@ -912,6 +912,7 @@ export type Database = {
           created_at: string
           id: string
           name: string
+          session_id: string | null
           text: string
           type: string
           updated_at: string
@@ -922,6 +923,7 @@ export type Database = {
           created_at?: string
           id?: string
           name: string
+          session_id?: string | null
           text: string
           type?: string
           updated_at?: string
@@ -932,6 +934,7 @@ export type Database = {
           created_at?: string
           id?: string
           name?: string
+          session_id?: string | null
           text?: string
           type?: string
           updated_at?: string
