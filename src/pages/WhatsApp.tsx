@@ -2560,7 +2560,7 @@ const WhatsApp = () => {
 
   return (
     <>
-      <div className="h-full min-h-0 flex rounded-2xl overflow-hidden border border-border/50 bg-card -mt-4 relative z-50">
+      <div className="h-full min-h-0 flex overflow-hidden bg-background relative">
         {/* App Initialization Loading Overlay */}
         {isInitializingApp && (
           <div className="absolute inset-0 bg-background z-50 flex items-center justify-center">
@@ -2586,7 +2586,7 @@ const WhatsApp = () => {
         )}
         
         {/* Left Sidebar - Chat List */}
-        <div className="w-[380px] flex flex-col border-r border-border/50 bg-card">
+        <div className="w-[340px] flex flex-col border-r border-border bg-background">
           {/* Header */}
           <div className="h-14 px-4 flex items-center justify-between bg-muted/30 border-b border-border/30">
             <DropdownMenu>
@@ -2688,19 +2688,22 @@ const WhatsApp = () => {
           </div>
 
           {/* Tabs */}
-          <div className="flex border-b border-border/30">
+          <div className="flex border-b border-border">
             <button
               onClick={() => setSidebarTab("conversas")}
               className={cn(
-                "flex-1 flex items-center justify-center gap-2 py-2.5 text-sm font-medium transition-colors",
+                "relative flex-1 flex items-center justify-center gap-2 py-2.5 text-sm font-medium transition-colors",
                 sidebarTab === "conversas" 
-                  ? "text-emerald-500 border-b-2 border-emerald-500 bg-emerald-500/5" 
-                  : "text-muted-foreground hover:text-foreground hover:bg-muted/30"
+                  ? "text-foreground" 
+                  : "text-muted-foreground hover:text-foreground"
               )}
             >
               <span>Conversas</span>
               {chats.length > 0 && (
-                <span className="text-xs bg-muted px-1.5 py-0.5 rounded-full">{chats.length}</span>
+                <span className="text-xs text-muted-foreground">{chats.length}</span>
+              )}
+              {sidebarTab === "conversas" && (
+                <div className="absolute bottom-0 left-2 right-2 h-0.5 bg-[#25D366]" />
               )}
             </button>
             <button
@@ -2711,15 +2714,18 @@ const WhatsApp = () => {
                 }
               }}
               className={cn(
-                "flex-1 flex items-center justify-center gap-2 py-2.5 text-sm font-medium transition-colors",
+                "relative flex-1 flex items-center justify-center gap-2 py-2.5 text-sm font-medium transition-colors",
                 sidebarTab === "grupos" 
-                  ? "text-emerald-500 border-b-2 border-emerald-500 bg-emerald-500/5" 
-                  : "text-muted-foreground hover:text-foreground hover:bg-muted/30"
+                  ? "text-foreground" 
+                  : "text-muted-foreground hover:text-foreground"
               )}
             >
               <span>Grupos</span>
               {whatsappGroups.length > 0 && (
-                <span className="text-xs bg-muted px-1.5 py-0.5 rounded-full">{whatsappGroups.length}</span>
+                <span className="text-xs text-muted-foreground">{whatsappGroups.length}</span>
+              )}
+              {sidebarTab === "grupos" && (
+                <div className="absolute bottom-0 left-2 right-2 h-0.5 bg-[#25D366]" />
               )}
             </button>
           </div>

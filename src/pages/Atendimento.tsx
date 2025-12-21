@@ -17,14 +17,14 @@ export default function Atendimento() {
   };
 
   return (
-    <div className="h-full min-h-0 flex flex-col -m-6">
+    <div className="h-full min-h-0 flex flex-col -m-6 -mb-6">
       {/* Tabs Header */}
-      <div className="flex-shrink-0 bg-card border-b border-border px-6 pt-4">
+      <div className="flex-shrink-0 border-b border-border px-4 pt-3 pb-0 bg-background">
         <div className="flex gap-1">
           <button
             onClick={() => handleTabChange('whatsapp')}
             className={cn(
-              "relative flex items-center gap-2 px-4 py-2.5 transition-all duration-200 text-sm font-medium",
+              "relative flex items-center gap-2 px-4 py-2 transition-all duration-200 text-sm font-medium rounded-t-lg",
               activeTab === 'whatsapp'
                 ? "text-foreground"
                 : "text-muted-foreground hover:text-foreground"
@@ -33,14 +33,14 @@ export default function Atendimento() {
             <WhatsAppIcon className="h-4 w-4" />
             <span>WhatsApp</span>
             {activeTab === 'whatsapp' && (
-              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-[#F40000] to-[#A10000]" />
+              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#25D366]" />
             )}
           </button>
           
           <button
             onClick={() => handleTabChange('instagram')}
             className={cn(
-              "relative flex items-center gap-2 px-4 py-2.5 transition-all duration-200 text-sm font-medium",
+              "relative flex items-center gap-2 px-4 py-2 transition-all duration-200 text-sm font-medium rounded-t-lg",
               activeTab === 'instagram'
                 ? "text-foreground"
                 : "text-muted-foreground hover:text-foreground"
@@ -49,14 +49,14 @@ export default function Atendimento() {
             <InstagramIcon className="h-4 w-4" />
             <span>Instagram</span>
             {activeTab === 'instagram' && (
-              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-[#F40000] to-[#A10000]" />
+              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-[#E1306C] to-[#F77737]" />
             )}
           </button>
         </div>
       </div>
 
-      {/* Tab Content */}
-      <div className="flex-1 min-h-0 overflow-hidden p-6">
+      {/* Tab Content - Full height and width */}
+      <div className="flex-1 min-h-0 overflow-hidden">
         {activeTab === 'whatsapp' ? (
           <WhatsApp />
         ) : (
