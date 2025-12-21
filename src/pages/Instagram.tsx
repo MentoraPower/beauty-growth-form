@@ -713,15 +713,18 @@ export default function InstagramPage() {
     }
   };
 
-  // Initial loading state (only while checking cache, very fast)
-  if (isConnected === null || isConnecting) {
+  // Not connected - Login screen (skip loading state for smoother transition)
+  if (isConnected === null) {
+    // Return empty div while checking - instant transition
+    return <div className="h-full bg-background" />;
+  }
+  
+  if (isConnecting) {
     return (
       <div className="h-full flex items-center justify-center">
         <div className="text-center space-y-4">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-pink-500 mx-auto" />
-          <p className="text-muted-foreground">
-            {isConnecting ? 'Conectando ao Instagram...' : 'Carregando...'}
-          </p>
+          <p className="text-muted-foreground">Conectando ao Instagram...</p>
         </div>
       </div>
     );
