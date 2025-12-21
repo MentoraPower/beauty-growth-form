@@ -684,43 +684,61 @@ const handler = async (req: Request): Promise<Response> => {
         leadData.biggest_difficulty = String(payload.biggest_difficulty);
       }
 
-      // Single DB roundtrip when possible
+      // Check for existing lead in the same sub-origin by email OR whatsapp
       let savedLeadId: string | null = null;
-      const { data: upserted, error: upsertError } = await supabase
-        .from("leads")
-        // Requires a unique constraint on email. If not present, we fall back below.
-        .upsert(leadData, { onConflict: "email" })
-        .select("id")
-        .maybeSingle();
+      let existingLead: { id: string } | null = null;
 
-      if (!upsertError && upserted?.id) {
-        savedLeadId = upserted.id;
-      } else {
-        // Fallback (slightly slower) for projects without unique(email)
-        const { data: existingLead } = await supabase
+      // First, check by email within the same sub-origin
+      if (leadData.email && leadData.email.trim() !== "") {
+        const { data: leadByEmail } = await supabase
           .from("leads")
           .select("id")
+          .eq("sub_origin_id", targetSubOriginId)
           .eq("email", leadData.email)
           .maybeSingle();
-
-        if (existingLead?.id) {
-          const { data, error } = await supabase
-            .from("leads")
-            .update(leadData)
-            .eq("id", existingLead.id)
-            .select("id")
-            .single();
-          if (error) throw error;
-          savedLeadId = data.id;
-        } else {
-          const { data, error } = await supabase
-            .from("leads")
-            .insert(leadData)
-            .select("id")
-            .single();
-          if (error) throw error;
-          savedLeadId = data.id;
+        
+        if (leadByEmail) {
+          existingLead = leadByEmail;
+          console.log(`[Webhook] Found existing lead by email in sub-origin: ${leadByEmail.id}`);
         }
+      }
+
+      // If not found by email, check by whatsapp within the same sub-origin
+      if (!existingLead && leadData.whatsapp && leadData.whatsapp.trim() !== "") {
+        const { data: leadByPhone } = await supabase
+          .from("leads")
+          .select("id")
+          .eq("sub_origin_id", targetSubOriginId)
+          .eq("whatsapp", leadData.whatsapp)
+          .maybeSingle();
+        
+        if (leadByPhone) {
+          existingLead = leadByPhone;
+          console.log(`[Webhook] Found existing lead by whatsapp in sub-origin: ${leadByPhone.id}`);
+        }
+      }
+
+      if (existingLead?.id) {
+        // Update existing lead
+        const { data, error } = await supabase
+          .from("leads")
+          .update(leadData)
+          .eq("id", existingLead.id)
+          .select("id")
+          .single();
+        if (error) throw error;
+        savedLeadId = data.id;
+        console.log(`[Webhook] Lead updated: ${savedLeadId}`);
+      } else {
+        // Create new lead
+        const { data, error } = await supabase
+          .from("leads")
+          .insert(leadData)
+          .select("id")
+          .single();
+        if (error) throw error;
+        savedLeadId = data.id;
+        console.log(`[Webhook] Lead created: ${savedLeadId}`);
       }
 
       // Save custom field responses if any exist
@@ -901,12 +919,38 @@ const handler = async (req: Request): Promise<Response> => {
 
     console.log("Creating lead with data:", JSON.stringify(leadData).substring(0, 500));
 
-    // Check if lead already exists by email
-    const { data: existingLead } = await supabase
-      .from("leads")
-      .select("id")
-      .eq("email", payload.email)
-      .maybeSingle();
+    // Check for existing lead in the same sub-origin by email OR whatsapp
+    let existingLead: { id: string } | null = null;
+
+    // First, check by email within the same sub-origin
+    if (leadData.email && leadData.email.trim() !== "") {
+      const { data: leadByEmail } = await supabase
+        .from("leads")
+        .select("id")
+        .eq("sub_origin_id", targetSubOriginId)
+        .eq("email", leadData.email)
+        .maybeSingle();
+      
+      if (leadByEmail) {
+        existingLead = leadByEmail;
+        console.log(`[Webhook] Found existing lead by email in sub-origin: ${leadByEmail.id}`);
+      }
+    }
+
+    // If not found by email, check by whatsapp within the same sub-origin
+    if (!existingLead && leadData.whatsapp && leadData.whatsapp.trim() !== "") {
+      const { data: leadByPhone } = await supabase
+        .from("leads")
+        .select("id")
+        .eq("sub_origin_id", targetSubOriginId)
+        .eq("whatsapp", leadData.whatsapp)
+        .maybeSingle();
+      
+      if (leadByPhone) {
+        existingLead = leadByPhone;
+        console.log(`[Webhook] Found existing lead by whatsapp in sub-origin: ${leadByPhone.id}`);
+      }
+    }
 
     let savedLead;
     if (existingLead) {
