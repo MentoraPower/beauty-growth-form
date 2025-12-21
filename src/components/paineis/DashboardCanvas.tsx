@@ -8,14 +8,18 @@ import { supabase } from "@/integrations/supabase/client";
 import {
   DndContext,
   DragEndEvent,
+  DragOverEvent,
+  DragStartEvent,
   PointerSensor,
   useSensor,
   useSensors,
   closestCenter,
+  DragOverlay,
 } from "@dnd-kit/core";
 import {
   SortableContext,
   useSortable,
+  arrayMove,
   rectSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
@@ -64,12 +68,15 @@ function SortableWidget({ widget, onResize, onDelete, onConnect }: SortableWidge
     listeners,
     setNodeRef,
     transform,
+    transition,
     isDragging,
   } = useSortable({ id: widget.id });
 
-  const style = {
+  const style: React.CSSProperties = {
     transform: CSS.Transform.toString(transform),
-    opacity: isDragging ? 0.5 : 1,
+    transition,
+    zIndex: isDragging ? 50 : 1,
+    opacity: isDragging ? 0.4 : 1,
   };
 
   return (
@@ -82,7 +89,7 @@ function SortableWidget({ widget, onResize, onDelete, onConnect }: SortableWidge
         maxWidth={3000}
         maxHeight={1200}
         onResize={(w, h) => onResize(widget.id, w, h)}
-        className="bg-white border border-border rounded-xl shadow-sm hover:shadow-md"
+        className={`bg-white border border-border rounded-xl shadow-sm ${isDragging ? 'shadow-lg ring-2 ring-primary/20' : 'hover:shadow-md'}`}
       >
         <div className="relative h-full p-4 flex flex-col">
           {/* Drag Handle */}
@@ -400,12 +407,7 @@ export function DashboardCanvas({ painelName, onBack }: DashboardCanvasProps) {
       setWidgets(prev => {
         const oldIndex = prev.findIndex(w => w.id === active.id);
         const newIndex = prev.findIndex(w => w.id === over.id);
-        
-        const newWidgets = [...prev];
-        const [removed] = newWidgets.splice(oldIndex, 1);
-        newWidgets.splice(newIndex, 0, removed);
-        
-        return newWidgets;
+        return arrayMove(prev, oldIndex, newIndex);
       });
     }
   };
