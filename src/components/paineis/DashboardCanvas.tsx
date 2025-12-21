@@ -1,5 +1,5 @@
-import { useState, useCallback } from "react";
-import { Plus, Link2, X, RefreshCw, Trash2 } from "lucide-react";
+import { useState, useCallback, useEffect, useRef } from "react";
+import { Plus, Link2, X, Trash2 } from "lucide-react";
 import { ChartSelectorDialog, ChartType } from "./ChartSelectorDialog";
 import { ConnectSourceDialog, WidgetSource } from "./ConnectSourceDialog";
 import { ResizableWidget } from "./ResizableWidget";
@@ -43,6 +43,12 @@ export function DashboardCanvas({ painelName, onBack }: DashboardCanvasProps) {
   const [isConnectSourceOpen, setIsConnectSourceOpen] = useState(false);
   const [selectedChart, setSelectedChart] = useState<ChartType | null>(null);
   const [pendingWidgetId, setPendingWidgetId] = useState<string | null>(null);
+  const widgetsRef = useRef<DashboardWidget[]>([]);
+
+  // Keep ref in sync with state
+  useEffect(() => {
+    widgetsRef.current = widgets;
+  }, [widgets]);
 
   const fetchWidgetData = useCallback(async (widget: DashboardWidget): Promise<WidgetData | null> => {
     if (!widget.source || !widget.source.sourceId) return null;
@@ -165,19 +171,41 @@ export function DashboardCanvas({ painelName, onBack }: DashboardCanvasProps) {
     }
   }, []);
 
-  const refreshWidgetData = useCallback(async (widgetId: string) => {
-    setWidgets(prev => prev.map(w => 
-      w.id === widgetId ? { ...w, isLoading: true } : w
-    ));
-
-    const widget = widgets.find(w => w.id === widgetId);
-    if (widget) {
+  // Refresh all connected widgets
+  const refreshAllWidgets = useCallback(async () => {
+    const currentWidgets = widgetsRef.current;
+    const connectedWidgets = currentWidgets.filter(w => w.isConnected && w.source);
+    
+    for (const widget of connectedWidgets) {
       const data = await fetchWidgetData(widget);
       setWidgets(prev => prev.map(w => 
-        w.id === widgetId ? { ...w, data: data || undefined, isLoading: false } : w
+        w.id === widget.id ? { ...w, data: data || undefined } : w
       ));
     }
-  }, [widgets, fetchWidgetData]);
+  }, [fetchWidgetData]);
+
+  // Real-time subscription for leads changes
+  useEffect(() => {
+    const channel = supabase
+      .channel('dashboard-leads-realtime')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'leads'
+        },
+        () => {
+          // Refresh all widgets when leads change
+          refreshAllWidgets();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [refreshAllWidgets]);
 
   const handleSelectChart = (chart: ChartType) => {
     setSelectedChart(chart);
@@ -322,15 +350,6 @@ export function DashboardCanvas({ painelName, onBack }: DashboardCanvasProps) {
                       {widget.source?.sourceName || widget.chartType.name}
                     </h3>
                     <div className="flex items-center gap-1 shrink-0">
-                      {widget.isConnected && (
-                        <button
-                          onClick={() => refreshWidgetData(widget.id)}
-                          className="p-1.5 rounded-lg hover:bg-muted transition-colors"
-                          title="Atualizar dados"
-                        >
-                          <RefreshCw className={`h-3.5 w-3.5 text-muted-foreground ${widget.isLoading ? 'animate-spin' : ''}`} />
-                        </button>
-                      )}
                       <button
                         onClick={() => handleDeleteWidget(widget.id)}
                         className="p-1.5 rounded-lg hover:bg-red-50 transition-colors group"
