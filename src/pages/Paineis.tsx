@@ -1,5 +1,4 @@
 import { useSearchParams } from "react-router-dom";
-import { cn } from "@/lib/utils";
 import { TrendingUp, Rocket, RefreshCcw } from "lucide-react";
 
 type PainelType = 'marketing' | 'lancamento' | 'perpetuo';
@@ -10,24 +9,18 @@ const painelOptions = [
     title: 'Marketing',
     description: 'Acompanhe métricas e campanhas de marketing',
     icon: TrendingUp,
-    iconBg: 'bg-blue-500/20',
-    iconColor: 'text-blue-400',
   },
   {
     id: 'lancamento' as PainelType,
     title: 'Lançamento',
     description: 'Gerencie lançamentos e estratégias',
     icon: Rocket,
-    iconBg: 'bg-purple-500/20',
-    iconColor: 'text-purple-400',
   },
   {
     id: 'perpetuo' as PainelType,
     title: 'Perpétuo',
     description: 'Monitore vendas e funis perpétuos',
     icon: RefreshCcw,
-    iconBg: 'bg-emerald-500/20',
-    iconColor: 'text-emerald-400',
   },
 ];
 
@@ -54,13 +47,10 @@ export default function Paineis() {
             <button
               key={painel.id}
               onClick={() => handlePainelSelect(painel.id)}
-              className="group bg-white border border-border rounded-xl p-5 text-left transition-all duration-200 hover:border-primary/20 hover:shadow-md"
+              className="group bg-white border border-border rounded-xl p-5 text-left transition-all duration-200 hover:shadow-md focus:outline-none"
             >
-              <div className={cn(
-                "w-11 h-11 rounded-lg flex items-center justify-center mb-4",
-                painel.iconBg
-              )}>
-                <painel.icon className={cn("h-5 w-5", painel.iconColor)} />
+              <div className="w-11 h-11 rounded-lg flex items-center justify-center mb-4 bg-muted">
+                <painel.icon className="h-5 w-5 text-muted-foreground" />
               </div>
               <h3 className="text-sm font-medium text-foreground mb-1">
                 {painel.title}
@@ -93,11 +83,8 @@ export default function Paineis() {
 
       <div className="flex-1 flex items-center justify-center">
         <div className="text-center">
-          <div className={cn(
-            "w-14 h-14 rounded-xl flex items-center justify-center mx-auto mb-4",
-            selectedPainel?.iconBg
-          )}>
-            {selectedPainel && <selectedPainel.icon className={cn("h-7 w-7", selectedPainel.iconColor)} />}
+          <div className="w-14 h-14 rounded-xl flex items-center justify-center mx-auto mb-4 bg-muted">
+            {selectedPainel && <selectedPainel.icon className="h-7 w-7 text-muted-foreground" />}
           </div>
           <p className="text-muted-foreground">
             Painel de {selectedPainel?.title} em desenvolvimento
