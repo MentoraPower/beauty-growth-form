@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { Phone, PhoneOff, Mic, MicOff, X } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { getInitials } from "@/lib/whatsapp-utils";
 
 type CallStatus = "idle" | "calling" | "ringing" | "connected" | "ended" | "error";
 
@@ -31,15 +32,6 @@ const CallModal = ({
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
     return `${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
-  };
-
-  const getInitials = (name: string): string => {
-    if (!name) return "?";
-    const parts = name.trim().split(" ");
-    if (parts.length >= 2) {
-      return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
-    }
-    return name.substring(0, 2).toUpperCase();
   };
 
   const startCall = async () => {

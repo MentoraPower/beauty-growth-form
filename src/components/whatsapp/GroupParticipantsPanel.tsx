@@ -3,6 +3,7 @@ import { Users, Loader2 } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
+import { DEFAULT_AVATAR, getInitials, formatPhoneFromJid } from "@/lib/whatsapp-utils";
 
 interface Participant {
   id: string;
@@ -23,31 +24,8 @@ interface GroupParticipantsPanelProps {
   onSelectParticipant?: (phone: string, name?: string) => void;
 }
 
-const DEFAULT_AVATAR =
-  "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyMTIgMjEyIj48cGF0aCBmaWxsPSIjREZFNUU3IiBkPSJNMCAwaDIxMnYyMTJIMHoiLz48cGF0aCBmaWxsPSIjRkZGIiBkPSJNMTA2IDEwNmMtMjUuNCAwLTQ2LTIwLjYtNDYtNDZzMjAuNi00NiA0Ni00NiA0NiAyMC42IDQ2IDQ2LTIwLjYgNDYtNDYgNDZ6bTAgMTNjMzAuNiAwIDkyIDE1LjQgOTIgNDZ2MjNIMTR2LTIzYzAtMzAuNiA2MS40LTQ2IDkyLTQ2eiIvPjwvc3ZnPg==";
-
 const RATE_LIMIT_DELAY_MS = 500;
 const BATCH_SIZE = 5;
-
-const getInitials = (name: string): string => {
-  if (!name) return "?";
-  const parts = name.trim().split(" ");
-  if (parts.length >= 2) {
-    return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
-  }
-  return name.substring(0, 2).toUpperCase();
-};
-
-const formatPhone = (phone: string): string => {
-  const clean = phone.replace(/@s\.whatsapp\.net$/, "").replace(/\D/g, "");
-  if (clean.length === 13 && clean.startsWith("55")) {
-    return `+${clean.slice(0, 2)} (${clean.slice(2, 4)}) ${clean.slice(4, 9)}-${clean.slice(9)}`;
-  }
-  if (clean.length === 12 && clean.startsWith("55")) {
-    return `+${clean.slice(0, 2)} (${clean.slice(2, 4)}) ${clean.slice(4, 8)}-${clean.slice(8)}`;
-  }
-  return phone.replace(/@s\.whatsapp\.net$/, "");
-};
 
 export const GroupParticipantsPanel = ({
   groupJid,
@@ -474,7 +452,7 @@ export const GroupParticipantsPanel = ({
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
                     <span className="text-sm font-medium text-foreground truncate">
-                      {participant.name || formatPhone(participant.phone)}
+                      {participant.name || formatPhoneFromJid(participant.phone)}
                     </span>
                     {(participant.isAdmin || participant.isSuperAdmin) && (
                       <span className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 font-medium">
@@ -482,7 +460,7 @@ export const GroupParticipantsPanel = ({
                       </span>
                     )}
                   </div>
-                  <span className="text-xs text-muted-foreground truncate block">{formatPhone(participant.phone)}</span>
+                  <span className="text-xs text-muted-foreground truncate block">{formatPhoneFromJid(participant.phone)}</span>
                 </div>
               </div>
             ))}

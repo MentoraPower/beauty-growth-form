@@ -144,6 +144,7 @@ export default function InstagramPage() {
         // Clear URL params
         window.history.replaceState({}, document.title, window.location.pathname);
         // Conversations are fetched via effect once accountInfo is available
+      } else {
         throw new Error(data.error || 'Erro ao conectar');
       }
     } catch (error: any) {

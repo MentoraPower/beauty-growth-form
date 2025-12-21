@@ -10,6 +10,7 @@ import { cn } from '@/lib/utils';
 import { Check, CheckCheck, Search } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { VirtualItem } from '@tanstack/react-virtual';
+import { DEFAULT_AVATAR, getInitials, formatChatTime } from '@/lib/whatsapp-utils';
 
 interface ChatListProps {
   selectedChatId: string | null;
@@ -30,36 +31,6 @@ interface ChatItemData {
   lastMessageStatus: string | null;
   lastMessageFromMe: boolean;
 }
-
-const DEFAULT_AVATAR = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyMTIgMjEyIj48cGF0aCBmaWxsPSIjREZFNUU3IiBkPSJNMCAwaDIxMnYyMTJIMHoiLz48cGF0aCBmaWxsPSIjRkZGIiBkPSJNMTA2IDEwNmMtMjUuNCAwLTQ2LTIwLjYtNDYtNDZzMjAuNi00NiA0Ni00NiA0NiAyMC42IDQ2IDQ2LTIwLjYgNDYtNDYgNDZ6bTAgMTNjMzAuNiAwIDkyIDE1LjQgOTIgNDZ2MjNIMTR2LTIzYzAtMzAuNiA2MS40LTQ2IDkyLTQ2eiIvPjwvc3ZnPg==";
-
-const getInitials = (name: string): string => {
-  if (!name) return "?";
-  const parts = name.trim().split(" ");
-  if (parts.length >= 2) {
-    return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
-  }
-  return name.substring(0, 2).toUpperCase();
-};
-
-const formatTime = (dateString: string): string => {
-  const date = new Date(dateString);
-  const now = new Date();
-  
-  const spOptions = { timeZone: "America/Sao_Paulo" };
-  const dateInSP = new Date(date.toLocaleString("en-US", spOptions));
-  const nowInSP = new Date(now.toLocaleString("en-US", spOptions));
-  
-  const diffDays = Math.floor((nowInSP.getTime() - dateInSP.getTime()) / (1000 * 60 * 60 * 24));
-  
-  if (diffDays === 0) {
-    return date.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit", timeZone: "America/Sao_Paulo" });
-  } else if (diffDays === 1) {
-    return "Ontem";
-  } else {
-    return date.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", timeZone: "America/Sao_Paulo" });
-  }
-};
 
 const isViewedStatus = (status: string | null) => status === "READ" || status === "PLAYED";
 
@@ -174,7 +145,7 @@ export const ChatList = memo(function ChatList({
       id: conv.id,
       name: conv.name || conv.phone,
       lastMessage: conv.last_message || '',
-      time: conv.last_message_time ? formatTime(conv.last_message_time) : '',
+      time: conv.last_message_time ? formatChatTime(conv.last_message_time) : '',
       unreadCount: conv.unread_count || 0,
       photoUrl: conv.photo_url,
       phone: conv.phone,

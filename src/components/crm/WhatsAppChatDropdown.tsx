@@ -17,6 +17,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import WhatsAppIcon from "@/components/icons/WhatsApp";
+import { DEFAULT_AVATAR, formatMessageTime } from "@/lib/whatsapp-utils";
 
 interface Message {
   id: string;
@@ -46,8 +47,6 @@ interface WhatsAppChatDropdownProps {
   contactName: string;
   sessionId?: string; // WhatsApp account session ID for multi-account isolation
 }
-
-const DEFAULT_AVATAR = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyMTIgMjEyIj48cGF0aCBmaWxsPSIjREZFNUU3IiBkPSJNMCAwaDIxMnYyMTJIMHoiLz48cGF0aCBmaWxsPSIjRkZGIiBkPSJNMTA2IDEwNmMtMjUuNCAwLTQ2LTIwLjYtNDYtNDZzMjAuNi00NiA0Ni00NiA0NiAyMC42IDQ2IDQ2LTIwLjYgNDYtNDYgNDZ6bTAgMTNjMzAuNiAwIDkyIDE1LjQgOTIgNDZ2MjNIMTR2LTIzYzAtMzAuNiA2MS40LTQ2IDkyLTQ2eiIvPjwvc3ZnPg==";
 
 type ViewMode = "chat" | "list";
 
@@ -98,10 +97,6 @@ export function WhatsAppChatDropdown({ phone, countryCode, contactName, sessionI
 
   const formattedPhone = formatPhoneForApi(phone, countryCode);
 
-  const formatTime = (dateString: string): string => {
-    const date = new Date(dateString);
-    return date.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit", timeZone: "America/Sao_Paulo" });
-  };
 
   const scrollToBottom = useCallback(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "auto" });
@@ -156,7 +151,7 @@ export function WhatsAppChatDropdown({ phone, countryCode, contactName, sessionI
         setMessages(messagesData.map(m => ({
           id: m.id,
           text: m.text || "",
-          time: formatTime(m.created_at),
+          time: formatMessageTime(m.created_at),
           sent: m.from_me || false,
           status: m.status || "RECEIVED",
           mediaUrl: m.media_url,
@@ -195,7 +190,7 @@ export function WhatsAppChatDropdown({ phone, countryCode, contactName, sessionI
           name: chat.name || chat.phone,
           phone: chat.phone,
           lastMessage: chat.last_message || "",
-          time: chat.last_message_time ? formatTime(chat.last_message_time) : "",
+          time: chat.last_message_time ? formatMessageTime(chat.last_message_time) : "",
           unread: chat.unread_count || 0,
           photo_url: chat.photo_url,
         })));
@@ -240,7 +235,7 @@ export function WhatsAppChatDropdown({ phone, countryCode, contactName, sessionI
           setMessages(messagesData.map(m => ({
             id: m.id,
             text: m.text || "",
-            time: formatTime(m.created_at),
+            time: formatMessageTime(m.created_at),
             sent: m.from_me || false,
             status: m.status || "RECEIVED",
             mediaUrl: m.media_url,
@@ -304,7 +299,7 @@ export function WhatsAppChatDropdown({ phone, countryCode, contactName, sessionI
             return [...prev, {
               id: newMsg.id,
               text: newMsg.text || "",
-              time: formatTime(newMsg.created_at),
+              time: formatMessageTime(newMsg.created_at),
               sent: newMsg.from_me || false,
               status: newMsg.status || "RECEIVED",
               mediaUrl: newMsg.media_url,
@@ -581,7 +576,7 @@ export function WhatsAppChatDropdown({ phone, countryCode, contactName, sessionI
             setMessages(messagesData.map(m => ({
               id: m.id,
               text: m.text || "",
-              time: formatTime(m.created_at),
+              time: formatMessageTime(m.created_at),
               sent: m.from_me || false,
               status: m.status || "RECEIVED",
               mediaUrl: m.media_url,
