@@ -1,16 +1,26 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
-import { TrendingUp, Rocket, RefreshCcw, Plus } from "lucide-react";
+import { TrendingUp, Rocket, RefreshCcw, Plus, MoreHorizontal, Pencil, Trash2, LayoutDashboard } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { DashboardCanvas } from "@/components/paineis/DashboardCanvas";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
 
 type PainelType = 'marketing' | 'lancamento' | 'perpetuo' | 'scratch';
 
-interface CreatedPainel {
+interface Dashboard {
+  id: string;
   name: string;
-  type: PainelType;
+  type: string;
+  widgets: unknown;
+  created_at: string;
+  updated_at: string;
 }
 
 const painelOptions = [
@@ -45,36 +55,124 @@ export default function Paineis() {
   const activePainel = searchParams.get('tipo') as PainelType | null;
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [painelName, setPainelName] = useState("");
-  const [createdPainel, setCreatedPainel] = useState<CreatedPainel | null>(null);
+  const [activeDashboard, setActiveDashboard] = useState<Dashboard | null>(null);
+  const [dashboards, setDashboards] = useState<Dashboard[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [editingDashboard, setEditingDashboard] = useState<Dashboard | null>(null);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [editName, setEditName] = useState("");
+
+  // Fetch dashboards from database
+  const fetchDashboards = async () => {
+    const { data, error } = await supabase
+      .from("dashboards")
+      .select("*")
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      console.error("Error fetching dashboards:", error);
+      toast.error("Erro ao carregar painéis");
+      return;
+    }
+
+    setDashboards(data || []);
+    setIsLoading(false);
+  };
+
+  useEffect(() => {
+    fetchDashboards();
+  }, []);
 
   const handlePainelSelect = (tipo: PainelType) => {
     if (tipo === 'scratch') {
       setIsDialogOpen(true);
       setPainelName("");
+    } else {
+      toast.info("Este modelo estará disponível em breve");
     }
-    // TODO: implementar navegação para outros tipos futuramente
   };
 
-  const handleCreatePainel = () => {
-    if (painelName.trim()) {
-      setCreatedPainel({
+  const handleCreatePainel = async () => {
+    if (!painelName.trim()) return;
+
+    const { data, error } = await supabase
+      .from("dashboards")
+      .insert({
         name: painelName.trim(),
         type: 'scratch',
-      });
-      setIsDialogOpen(false);
-      setPainelName("");
+        widgets: [],
+      })
+      .select()
+      .single();
+
+    if (error) {
+      toast.error("Erro ao criar painel");
+      console.error(error);
+      return;
     }
+
+    toast.success("Painel criado com sucesso!");
+    setIsDialogOpen(false);
+    setPainelName("");
+    setActiveDashboard(data);
+    fetchDashboards();
+  };
+
+  const handleOpenDashboard = (dashboard: Dashboard) => {
+    setActiveDashboard(dashboard);
   };
 
   const handleBackToPaineis = () => {
-    setCreatedPainel(null);
+    setActiveDashboard(null);
+    fetchDashboards(); // Refresh list after editing
   };
 
-  // Show the dashboard canvas if a panel was created
-  if (createdPainel) {
+  const handleEditDashboard = (dashboard: Dashboard) => {
+    setEditingDashboard(dashboard);
+    setEditName(dashboard.name);
+    setIsEditDialogOpen(true);
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editingDashboard || !editName.trim()) return;
+
+    const { error } = await supabase
+      .from("dashboards")
+      .update({ name: editName.trim() })
+      .eq("id", editingDashboard.id);
+
+    if (error) {
+      toast.error("Erro ao renomear painel");
+      return;
+    }
+
+    toast.success("Painel renomeado!");
+    setIsEditDialogOpen(false);
+    setEditingDashboard(null);
+    fetchDashboards();
+  };
+
+  const handleDeleteDashboard = async (dashboard: Dashboard) => {
+    const { error } = await supabase
+      .from("dashboards")
+      .delete()
+      .eq("id", dashboard.id);
+
+    if (error) {
+      toast.error("Erro ao excluir painel");
+      return;
+    }
+
+    toast.success("Painel excluído!");
+    fetchDashboards();
+  };
+
+  // Show the dashboard canvas if a panel is active
+  if (activeDashboard) {
     return (
       <DashboardCanvas
-        painelName={createdPainel.name}
+        painelName={activeDashboard.name}
+        dashboardId={activeDashboard.id}
         onBack={handleBackToPaineis}
       />
     );
@@ -82,36 +180,124 @@ export default function Paineis() {
 
   if (!activePainel) {
     return (
-      <>
-        <div className="h-full flex flex-col items-center justify-start pt-16 px-4">
-          <div className="text-center mb-8">
-            <h1 className="text-xl font-semibold text-foreground mb-2">Escolha um modelo de painel</h1>
-            <p className="text-sm text-muted-foreground">
-              Comece com um modelo de painel para atender às suas necessidades
+      <div className="h-[calc(100vh-1.5rem)] flex flex-col -mt-6 -mr-6 -mb-6 -ml-6 rounded-2xl overflow-hidden bg-background">
+        <div className="flex-1 overflow-y-auto p-6">
+          {/* Header */}
+          <div className="mb-6">
+            <h1 className="text-xl font-semibold text-foreground">Painéis</h1>
+            <p className="text-sm text-muted-foreground mt-1">
+              Crie e gerencie seus painéis personalizados
             </p>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 max-w-4xl w-full">
-            {painelOptions.map((painel) => (
-              <button
-                key={painel.id}
-                onClick={() => handlePainelSelect(painel.id)}
-                className="group bg-white border border-border rounded-xl p-5 text-left transition-all duration-200 hover:shadow-md focus:outline-none"
-              >
-                <div className="w-11 h-11 rounded-lg flex items-center justify-center mb-4 bg-muted">
-                  <painel.icon className="h-5 w-5 text-muted-foreground" />
-                </div>
-                <h3 className="text-sm font-medium text-foreground mb-1">
-                  {painel.title}
-                </h3>
-                <p className="text-xs text-muted-foreground leading-relaxed">
-                  {painel.description}
+          {/* Panel Templates */}
+          <div className="mb-8">
+            <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wider mb-4">
+              Escolha um modelo de painel
+            </h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              {painelOptions.map((painel) => (
+                <button
+                  key={painel.id}
+                  onClick={() => handlePainelSelect(painel.id)}
+                  className="group bg-card border border-border rounded-xl p-5 text-left transition-all duration-200 hover:shadow-md hover:border-primary/30 focus:outline-none"
+                >
+                  <div className="w-11 h-11 rounded-lg flex items-center justify-center mb-4 bg-muted group-hover:bg-primary/10 transition-colors">
+                    <painel.icon className="h-5 w-5 text-muted-foreground group-hover:text-primary transition-colors" />
+                  </div>
+                  <h3 className="text-sm font-medium text-foreground mb-1">
+                    {painel.title}
+                  </h3>
+                  <p className="text-xs text-muted-foreground leading-relaxed">
+                    {painel.description}
+                  </p>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Saved Dashboards Table */}
+          <div>
+            <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wider mb-4">
+              Meus Painéis
+            </h2>
+            
+            {isLoading ? (
+              <div className="bg-card border border-border rounded-xl p-8 text-center">
+                <p className="text-sm text-muted-foreground">Carregando...</p>
+              </div>
+            ) : dashboards.length === 0 ? (
+              <div className="bg-card border border-border rounded-xl p-8 text-center">
+                <LayoutDashboard className="h-10 w-10 text-muted-foreground/50 mx-auto mb-3" />
+                <p className="text-sm text-muted-foreground">
+                  Nenhum painel criado ainda. Escolha um modelo acima para começar.
                 </p>
-              </button>
-            ))}
+              </div>
+            ) : (
+              <div className="bg-card border border-border rounded-xl overflow-hidden">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="hover:bg-transparent">
+                      <TableHead className="font-medium">Nome</TableHead>
+                      <TableHead className="font-medium">Tipo</TableHead>
+                      <TableHead className="font-medium">Criado em</TableHead>
+                      <TableHead className="w-[50px]"></TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {dashboards.map((dashboard) => (
+                      <TableRow
+                        key={dashboard.id}
+                        className="cursor-pointer hover:bg-muted/50"
+                        onClick={() => handleOpenDashboard(dashboard)}
+                      >
+                        <TableCell className="font-medium">{dashboard.name}</TableCell>
+                        <TableCell className="capitalize text-muted-foreground">
+                          {dashboard.type === 'scratch' ? 'Personalizado' : dashboard.type}
+                        </TableCell>
+                        <TableCell className="text-muted-foreground">
+                          {format(new Date(dashboard.created_at), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
+                        </TableCell>
+                        <TableCell>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+                              <Button variant="ghost" size="icon" className="h-8 w-8">
+                                <MoreHorizontal className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem 
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleEditDashboard(dashboard);
+                                }}
+                              >
+                                <Pencil className="h-4 w-4 mr-2" />
+                                Renomear
+                              </DropdownMenuItem>
+                              <DropdownMenuItem 
+                                className="text-destructive focus:text-destructive"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleDeleteDashboard(dashboard);
+                                }}
+                              >
+                                <Trash2 className="h-4 w-4 mr-2" />
+                                Excluir
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            )}
           </div>
         </div>
 
+        {/* Create Dialog */}
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogContent className="sm:max-w-md border-0 shadow-2xl">
             <DialogHeader>
@@ -156,7 +342,53 @@ export default function Paineis() {
             </div>
           </DialogContent>
         </Dialog>
-      </>
+
+        {/* Edit Dialog */}
+        <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+          <DialogContent className="sm:max-w-md border-0 shadow-2xl">
+            <DialogHeader>
+              <DialogTitle className="text-xl font-semibold text-center">
+                Renomear Painel
+              </DialogTitle>
+            </DialogHeader>
+            <div className="space-y-6 py-4">
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-muted-foreground">
+                  Nome do painel
+                </label>
+                <Input
+                  value={editName}
+                  onChange={(e) => setEditName(e.target.value)}
+                  placeholder="Nome do painel"
+                  className="h-12 text-base border-border/50 focus:border-foreground/50 transition-colors"
+                  autoFocus
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && editName.trim()) {
+                      handleSaveEdit();
+                    }
+                  }}
+                />
+              </div>
+              <div className="flex gap-3">
+                <Button
+                  variant="outline"
+                  onClick={() => setIsEditDialogOpen(false)}
+                  className="flex-1 h-11"
+                >
+                  Cancelar
+                </Button>
+                <Button
+                  onClick={handleSaveEdit}
+                  disabled={!editName.trim()}
+                  className="flex-1 h-11 bg-foreground hover:bg-foreground/90 text-background"
+                >
+                  Salvar
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+      </div>
     );
   }
 
