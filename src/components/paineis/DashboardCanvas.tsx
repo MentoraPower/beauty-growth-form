@@ -305,8 +305,10 @@ export function DashboardCanvas({ painelName, dashboardId, onBack }: DashboardCa
   const [selectedChart, setSelectedChart] = useState<ChartType | null>(null);
   const [pendingWidgetId, setPendingWidgetId] = useState<string | null>(null);
   const [containerWidth, setContainerWidth] = useState(0);
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
   const widgetsRef = useRef<DashboardWidget[]>([]);
   const containerRef = useRef<HTMLDivElement>(null);
+  const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Measure container width
   useEffect(() => {
@@ -325,6 +327,80 @@ export function DashboardCanvas({ painelName, dashboardId, onBack }: DashboardCa
   useEffect(() => {
     widgetsRef.current = widgets;
   }, [widgets]);
+
+  // Load widgets from database on mount
+  useEffect(() => {
+    const loadWidgets = async () => {
+      if (!dashboardId) {
+        setIsInitialLoad(false);
+        return;
+      }
+
+      const { data } = await supabase
+        .from("dashboards")
+        .select("widgets")
+        .eq("id", dashboardId)
+        .single();
+
+      if (data?.widgets && Array.isArray(data.widgets)) {
+        // Restore widgets without data (will be fetched separately)
+        const loadedWidgets = (data.widgets as unknown as DashboardWidget[]).map(w => ({
+          ...w,
+          data: undefined,
+          isLoading: w.isConnected,
+        }));
+        setWidgets(loadedWidgets);
+      }
+      setIsInitialLoad(false);
+    };
+
+    loadWidgets();
+  }, [dashboardId]);
+
+  // Fetch data for loaded widgets that are connected
+  useEffect(() => {
+    if (isInitialLoad) return;
+    
+    const fetchDataForLoadedWidgets = async () => {
+      const connectedWidgets = widgets.filter(w => w.isConnected && w.isLoading);
+      
+      for (const widget of connectedWidgets) {
+        const data = await fetchWidgetData(widget);
+        setWidgets(prev => prev.map(w => 
+          w.id === widget.id ? { ...w, data: data || undefined, isLoading: false } : w
+        ));
+      }
+    };
+
+    fetchDataForLoadedWidgets();
+  }, [isInitialLoad]); // Only run once after initial load
+
+  // Auto-save widgets to database (debounced, silent)
+  useEffect(() => {
+    if (isInitialLoad || !dashboardId) return;
+
+    // Clear previous timeout
+    if (saveTimeoutRef.current) {
+      clearTimeout(saveTimeoutRef.current);
+    }
+
+    // Debounce save by 500ms
+    saveTimeoutRef.current = setTimeout(async () => {
+      // Save widgets without runtime data - cast to Json type
+      const widgetsToSave = widgets.map(({ data, isLoading, ...rest }) => rest) as unknown;
+      
+      await supabase
+        .from("dashboards")
+        .update({ widgets: widgetsToSave as null })
+        .eq("id", dashboardId);
+    }, 500);
+
+    return () => {
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current);
+      }
+    };
+  }, [widgets, dashboardId, isInitialLoad]);
 
   const fetchWidgetData = useCallback(async (widget: DashboardWidget): Promise<WidgetData | null> => {
     if (!widget.source || !widget.source.sourceId) return null;
