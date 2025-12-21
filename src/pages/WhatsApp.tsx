@@ -459,7 +459,7 @@ const WhatsApp = () => {
           const groupId = g.id || g.jid || "";
 
           // -1 = unknown (avoids showing misleading "0 participantes")
-          let participantCount: number = g.participants?.length || g.size || -1;
+          let participantCount: number = g.participants?.length ?? g.size ?? -1;
           let photoUrl: string | null = g.profilePicture || g.pictureUrl || g.imgUrl || null;
           let description: string | null = null;
 
@@ -500,8 +500,9 @@ const WhatsApp = () => {
               photoUrl = existingDbGroup.photo_url;
             }
 
-            // 2) Participant count (best-effort)
-            if (participantCount < 0 && remainingRequests > 0) {
+            // 2) Participant count - fetch metadata if unknown OR zero
+            const needsParticipantCount = participantCount <= 0;
+            if (needsParticipantCount && remainingRequests > 0) {
               remainingRequests -= 1;
               try {
                 const metaResponse = await fetch(
@@ -521,11 +522,12 @@ const WhatsApp = () => {
                   participantCount = existingDbGroup?.participant_count || 0;
                 } else if (metaResponse.ok) {
                   const metaResult = await metaResponse.json();
+                  console.log(`[WhatsApp] Group ${groupId} metadata:`, metaResult);
                   if (metaResult?.success && metaResult?.data) {
                     participantCount =
                       metaResult.data.size ??
                       metaResult.data.participants?.length ??
-                      participantCount;
+                      (participantCount >= 0 ? participantCount : 0);
                     description = metaResult.data.desc || metaResult.data.description || null;
                   }
                 }
