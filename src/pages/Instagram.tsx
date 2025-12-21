@@ -771,14 +771,14 @@ export default function InstagramPage() {
         </div>
 
         <ScrollArea className="flex-1">
-          <div className="px-1 space-y-1">
-            {isLoadingChats ? (
-              <div className="p-8 text-center">
+          <div className="px-1">
+            {isLoadingChats && chats.length === 0 ? (
+              <div className="p-8 text-center animate-fade-in">
                 <Loader2 className="h-8 w-8 mx-auto mb-3 animate-spin text-pink-500" />
                 <p className="text-sm text-muted-foreground">Carregando conversas...</p>
               </div>
             ) : chats.length === 0 ? (
-              <div className="p-8 text-center text-muted-foreground">
+              <div className="p-8 text-center text-muted-foreground animate-fade-in">
                 <p className="text-sm">Nenhuma conversa ainda</p>
                 <p className="text-xs mt-1">As conversas do Instagram Direct aparecerão aqui</p>
               </div>
@@ -789,14 +789,15 @@ export default function InstagramPage() {
                   chat.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
                   chat.username.toLowerCase().includes(searchQuery.toLowerCase())
                 )
-                .map((chat) => (
+                .map((chat, index) => (
                   <button
                     key={chat.id}
                     onClick={() => setSelectedChat(chat)}
                     className={cn(
-                      "w-full flex items-center gap-3 p-3 border-b border-black/[0.06]",
+                      "w-full flex items-center gap-3 p-3 border-b border-black/[0.06] animate-fade-in",
                       selectedChat?.id === chat.id ? "bg-muted" : "hover:bg-muted/50"
                     )}
+                    style={{ animationDelay: `${index * 30}ms` }}
                   >
                     <div className="relative flex-shrink-0">
                       <img
