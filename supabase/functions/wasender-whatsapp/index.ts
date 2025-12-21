@@ -14,7 +14,12 @@ const WASENDER_PERSONAL_TOKEN = Deno.env.get("WASENDER_PERSONAL_TOKEN")!;
 const WASENDER_BASE_URL = "https://www.wasenderapi.com/api";
 
 // Helper: Format phone for WasenderAPI (E.164 without @c.us)
+// For groups (@g.us), preserve the JID as-is
 function formatPhoneForApi(phone: string): string {
+  // If it's a group JID, return as-is
+  if (phone.includes("@g.us")) {
+    return phone;
+  }
   return phone.replace(/\D/g, "");
 }
 

@@ -34,6 +34,7 @@ interface Chat {
   photo_url: string | null;
   lastMessageStatus: string | null;
   lastMessageFromMe: boolean;
+  isGroup?: boolean; // Flag for group chats
 }
 
 interface Message {
@@ -378,7 +379,7 @@ const WhatsApp = () => {
     }
   }, [selectedAccountId]);
 
-  // Fetch WhatsApp groups from WaSender API
+  // Fetch WhatsApp groups from WaSender API and save to database
   const fetchWhatsAppGroups = useCallback(async () => {
     const selectedAccount = whatsappAccounts.find(acc => acc.id === selectedAccountId);
     const sessionApiKey = selectedAccount?.api_key;
@@ -393,6 +394,24 @@ const WhatsApp = () => {
     try {
       console.log(`[WhatsApp] Fetching groups for session: ${sessionApiKey.substring(0, 10)}...`);
       
+      // First, try to load from database
+      const { data: dbGroups } = await supabase
+        .from("whatsapp_groups")
+        .select("*")
+        .eq("session_id", sessionApiKey)
+        .order("name", { ascending: true });
+
+      if (dbGroups && dbGroups.length > 0) {
+        console.log(`[WhatsApp] Loaded ${dbGroups.length} groups from database`);
+        setWhatsappGroups(dbGroups.map(g => ({
+          id: g.group_jid,
+          name: g.name,
+          participantCount: g.participant_count || 0,
+          photoUrl: g.photo_url,
+        })));
+      }
+      
+      // Fetch fresh data from API
       const response = await fetch("https://www.wasenderapi.com/api/groups", {
         method: "GET",
         headers: {
@@ -410,10 +429,17 @@ const WhatsApp = () => {
 
       if (result.success && Array.isArray(result.data)) {
         // WaSender has a strict RPM limit (10). The initial /api/groups call already uses 1.
-        // Prioritize group pictures first, then fetch participant counts while we still have budget.
         let remainingRequests = 9;
 
         const groups: WhatsAppGroup[] = [];
+        const groupsToUpsert: Array<{
+          group_jid: string;
+          name: string;
+          photo_url: string | null;
+          participant_count: number;
+          description: string | null;
+          session_id: string;
+        }> = [];
 
         for (const g of result.data) {
           const groupId = g.id || g.jid || "";
@@ -421,77 +447,133 @@ const WhatsApp = () => {
           // -1 = unknown (avoids showing misleading "0 participantes")
           let participantCount: number = g.participants?.length || g.size || -1;
           let photoUrl: string | null = g.profilePicture || g.pictureUrl || g.imgUrl || null;
+          let description: string | null = null;
 
           if (groupId) {
             // 1) Profile picture
             if (!photoUrl && remainingRequests > 0) {
               remainingRequests -= 1;
-              const picResponse = await fetch(
-                `https://www.wasenderapi.com/api/groups/${encodeURIComponent(groupId)}/picture`,
-                {
-                  method: "GET",
-                  headers: {
-                    Authorization: `Bearer ${sessionApiKey}`,
-                    "Content-Type": "application/json",
-                  },
-                }
-              );
+              try {
+                const picResponse = await fetch(
+                  `https://www.wasenderapi.com/api/groups/${encodeURIComponent(groupId)}/picture`,
+                  {
+                    method: "GET",
+                    headers: {
+                      Authorization: `Bearer ${sessionApiKey}`,
+                      "Content-Type": "application/json",
+                    },
+                  }
+                );
 
-              if (picResponse.status === 429) {
-                remainingRequests = 0;
-              } else if (picResponse.ok) {
-                const picResult = await picResponse.json();
-                photoUrl = picResult?.data?.imgUrl || photoUrl;
+                if (picResponse.status === 429) {
+                  remainingRequests = 0;
+                } else if (picResponse.ok) {
+                  const picResult = await picResponse.json();
+                  photoUrl = picResult?.data?.imgUrl || photoUrl;
+                }
+              } catch (e) {
+                console.error("[WhatsApp] Error fetching group picture:", e);
               }
             }
 
             // 2) Participant count (best-effort)
             if (participantCount < 0 && remainingRequests > 0) {
               remainingRequests -= 1;
-              const metaResponse = await fetch(
-                `https://www.wasenderapi.com/api/groups/${encodeURIComponent(groupId)}/metadata`,
-                {
-                  method: "GET",
-                  headers: {
-                    Authorization: `Bearer ${sessionApiKey}`,
-                    "Content-Type": "application/json",
-                  },
-                }
-              );
+              try {
+                const metaResponse = await fetch(
+                  `https://www.wasenderapi.com/api/groups/${encodeURIComponent(groupId)}/metadata`,
+                  {
+                    method: "GET",
+                    headers: {
+                      Authorization: `Bearer ${sessionApiKey}`,
+                      "Content-Type": "application/json",
+                    },
+                  }
+                );
 
-              if (metaResponse.status === 429) {
-                remainingRequests = 0;
-              } else if (metaResponse.ok) {
-                const metaResult = await metaResponse.json();
-                if (metaResult?.success && metaResult?.data) {
-                  participantCount =
-                    metaResult.data.size ??
-                    metaResult.data.participants?.length ??
-                    participantCount;
+                if (metaResponse.status === 429) {
+                  remainingRequests = 0;
+                } else if (metaResponse.ok) {
+                  const metaResult = await metaResponse.json();
+                  if (metaResult?.success && metaResult?.data) {
+                    participantCount =
+                      metaResult.data.size ??
+                      metaResult.data.participants?.length ??
+                      participantCount;
+                    description = metaResult.data.desc || metaResult.data.description || null;
+                  }
                 }
+              } catch (e) {
+                console.error("[WhatsApp] Error fetching group metadata:", e);
               }
             }
           }
 
-          groups.push({
+          const groupData = {
             id: groupId,
             name: g.subject || g.name || "Grupo",
-            participantCount,
+            participantCount: participantCount >= 0 ? participantCount : 0,
             photoUrl,
+          };
+          groups.push(groupData);
+
+          groupsToUpsert.push({
+            group_jid: groupId,
+            name: groupData.name,
+            photo_url: photoUrl,
+            participant_count: groupData.participantCount,
+            description,
+            session_id: sessionApiKey,
           });
         }
 
         setWhatsappGroups(groups);
+
+        // Upsert groups to database
+        if (groupsToUpsert.length > 0) {
+          const { error: upsertError } = await supabase
+            .from("whatsapp_groups")
+            .upsert(groupsToUpsert, { onConflict: "group_jid,session_id" });
+
+          if (upsertError) {
+            console.error("[WhatsApp] Error upserting groups:", upsertError);
+          } else {
+            console.log(`[WhatsApp] Upserted ${groupsToUpsert.length} groups to database`);
+          }
+        }
       } else {
         setWhatsappGroups([]);
       }
     } catch (error: any) {
       console.error("[WhatsApp] Error fetching groups:", error);
-      setWhatsappGroups([]);
+      // Keep cached data if available
     } finally {
       setIsLoadingGroups(false);
     }
   }, [selectedAccountId, whatsappAccounts]);
+
+  // Handle selecting a group to open as chat
+  const handleSelectGroup = useCallback((group: WhatsAppGroup) => {
+    const groupChat: Chat = {
+      id: `group-${group.id}`,
+      name: group.name,
+      lastMessage: "",
+      time: "",
+      lastMessageTime: null,
+      unread: 0,
+      avatar: group.name.substring(0, 2).toUpperCase(),
+      phone: group.id, // The group JID (e.g., 120363393176329236@g.us)
+      photo_url: group.photoUrl || null,
+      lastMessageStatus: null,
+      lastMessageFromMe: false,
+      isGroup: true,
+    };
+    setSelectedChat(groupChat);
+    setReplyToMessage(null);
+    setIsSending(false);
+    setMessage("");
+    setSidebarTab("conversas"); // Switch to conversations tab to see the chat
+  }, []);
 
   // Initial load - fetch chats once, optionally filtered by selected account's api_key
   const fetchChats = useCallback(async (showLoading = false) => {
@@ -701,14 +783,28 @@ const WhatsApp = () => {
     }
   }, []);
 
-  const fetchMessages = async (chatId: string) => {
+  const fetchMessages = async (chatId: string, isGroup: boolean = false) => {
     setIsLoadingMessages(true);
     try {
-      const { data, error } = await supabase
-        .from("whatsapp_messages")
-        .select("*")
-        .eq("chat_id", chatId)
-        .order("created_at", { ascending: true });
+      // For groups, we need to query by phone (group JID) since we don't have a real chat_id in the DB
+      let query;
+      if (isGroup || chatId.startsWith("group-")) {
+        // Extract the actual group JID
+        const groupJid = chatId.startsWith("group-") ? chatId.replace("group-", "") : chatId;
+        query = supabase
+          .from("whatsapp_messages")
+          .select("*")
+          .eq("phone", groupJid)
+          .order("created_at", { ascending: true });
+      } else {
+        query = supabase
+          .from("whatsapp_messages")
+          .select("*")
+          .eq("chat_id", chatId)
+          .order("created_at", { ascending: true });
+      }
+
+      const { data, error } = await query;
 
       if (error) throw error;
 
@@ -735,14 +831,16 @@ const WhatsApp = () => {
       setMessages(formattedMessages);
       lastFetchedChatIdRef.current = chatId;
 
-      // Mark as read
-      await supabase
-        .from("whatsapp_chats")
-        .update({ unread_count: 0 })
-        .eq("id", chatId);
-        
-      // Update local state
-      setChats(prev => prev.map(c => c.id === chatId ? { ...c, unread: 0 } : c));
+      // Mark as read (only for regular chats, not groups yet)
+      if (!isGroup && !chatId.startsWith("group-")) {
+        await supabase
+          .from("whatsapp_chats")
+          .update({ unread_count: 0 })
+          .eq("id", chatId);
+          
+        // Update local state
+        setChats(prev => prev.map(c => c.id === chatId ? { ...c, unread: 0 } : c));
+      }
     } catch (error: any) {
       console.error("Error fetching messages:", error);
     } finally {
@@ -1887,7 +1985,7 @@ const WhatsApp = () => {
     const matchingChat = chats.find(c => c.phone === phoneParam || c.phone.includes(phoneParam) || phoneParam.includes(c.phone));
     if (matchingChat) {
       setSelectedChat(matchingChat);
-      fetchMessages(matchingChat.id);
+      fetchMessages(matchingChat.id, matchingChat.isGroup);
       shouldScrollToBottomOnOpenRef.current = true;
       // Clear the param after selecting
       setSearchParams({}, { replace: true });
@@ -2118,7 +2216,7 @@ const WhatsApp = () => {
       shouldScrollToBottomOnOpenRef.current = true;
       lastFetchedChatIdRef.current = null;
       setMessages([]);
-      fetchMessages(selectedChat.id);
+      fetchMessages(selectedChat.id, selectedChat.isGroup);
     }
   }, [selectedChat?.id]);
 
@@ -2716,16 +2814,38 @@ const WhatsApp = () => {
                     .map((group) => (
                       <div
                         key={group.id}
-                        className="flex items-center gap-3 px-3 py-3 border-b border-border/20 hover:bg-muted/20 transition-colors"
+                        className="flex items-center gap-3 px-3 py-3 border-b border-border/20 hover:bg-muted/20 transition-colors cursor-pointer"
+                        onClick={() => handleSelectGroup(group)}
                       >
-                        <div className="w-12 h-12 rounded-full bg-emerald-600 flex items-center justify-center text-white font-medium flex-shrink-0">
-                          {group.name.substring(0, 2).toUpperCase()}
+                        {/* Group avatar with photo support */}
+                        <div className="relative flex-shrink-0">
+                          {group.photoUrl ? (
+                            <img
+                              src={group.photoUrl}
+                              alt={group.name}
+                              className="w-12 h-12 rounded-full object-cover"
+                              onError={(e) => {
+                                e.currentTarget.style.display = 'none';
+                                e.currentTarget.nextElementSibling?.classList.remove('hidden');
+                              }}
+                            />
+                          ) : null}
+                          <div className={cn(
+                            "w-12 h-12 rounded-full bg-emerald-600 flex items-center justify-center text-white font-medium",
+                            group.photoUrl && "hidden"
+                          )}>
+                            {group.name.substring(0, 2).toUpperCase()}
+                          </div>
                         </div>
                         <div className="flex-1 min-w-0">
                           <span className="font-medium text-foreground truncate block">{group.name}</span>
                           <div className="flex items-center gap-1 text-xs text-muted-foreground mt-0.5">
                             <Users className="w-3 h-3" />
-                            <span>{group.participantCount} participantes</span>
+                            <span>
+                              {group.participantCount >= 0
+                                ? `${group.participantCount} participantes`
+                                : "— participantes"}
+                            </span>
                           </div>
                         </div>
                       </div>
@@ -2756,15 +2876,39 @@ const WhatsApp = () => {
               {/* Chat Header */}
               <div className="h-14 px-4 flex items-center gap-3 bg-muted/30 border-b border-border/30">
                 <div className="relative flex-shrink-0">
-                  <img 
-                    src={selectedChat.photo_url || DEFAULT_AVATAR} 
-                    alt={selectedChat.name} 
-                    className="w-10 h-10 rounded-full object-cover bg-neutral-200" 
-                  />
+                  {selectedChat.photo_url ? (
+                    <img 
+                      src={selectedChat.photo_url} 
+                      alt={selectedChat.name} 
+                      className="w-10 h-10 rounded-full object-cover bg-neutral-200" 
+                      onError={(e) => {
+                        e.currentTarget.style.display = 'none';
+                        e.currentTarget.nextElementSibling?.classList.remove('hidden');
+                      }}
+                    />
+                  ) : null}
+                  <div className={cn(
+                    "w-10 h-10 rounded-full flex items-center justify-center text-sm font-medium",
+                    selectedChat.isGroup 
+                      ? "bg-emerald-600 text-white" 
+                      : "bg-muted text-muted-foreground",
+                    selectedChat.photo_url && "hidden"
+                  )}>
+                    {selectedChat.isGroup ? (
+                      <Users className="w-5 h-5" />
+                    ) : (
+                      getInitials(selectedChat.name)
+                    )}
+                  </div>
                 </div>
                 <div className="flex-1">
                   <h3 className="font-medium text-foreground">{selectedChat.name}</h3>
-                  {contactPresence && contactPresence.phone === selectedChat.phone.replace(/\D/g, "") ? (
+                  {selectedChat.isGroup ? (
+                    <p className="text-xs text-muted-foreground flex items-center gap-1">
+                      <Users className="w-3 h-3" />
+                      Grupo
+                    </p>
+                  ) : contactPresence && contactPresence.phone === selectedChat.phone.replace(/\D/g, "") ? (
                     <p className="text-xs text-emerald-500 animate-pulse">
                       {contactPresence.type === "composing" ? "digitando..." : "gravando áudio..."}
                     </p>
@@ -2772,13 +2916,16 @@ const WhatsApp = () => {
                     <p className="text-xs text-muted-foreground">{formatPhoneDisplay(selectedChat.phone)}</p>
                   )}
                 </div>
-                <button
-                  onClick={() => setIsCallModalOpen(true)}
-                  className="p-2 hover:bg-muted/50 rounded-full transition-colors"
-                  title="Fazer ligação"
-                >
-                  <Phone className="w-5 h-5 text-emerald-500" />
-                </button>
+                {/* Hide call button for groups */}
+                {!selectedChat.isGroup && (
+                  <button
+                    onClick={() => setIsCallModalOpen(true)}
+                    className="p-2 hover:bg-muted/50 rounded-full transition-colors"
+                    title="Fazer ligação"
+                  >
+                    <Phone className="w-5 h-5 text-emerald-500" />
+                  </button>
+                )}
                 <button
                   onClick={() => setShowLeadPanel(!showLeadPanel)}
                   className="p-2 hover:bg-muted/50 rounded-full transition-colors"
