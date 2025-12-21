@@ -785,19 +785,6 @@ export default function InstagramPage() {
     <div className="h-full min-h-0 flex overflow-hidden bg-background relative">
       {/* Chat List Sidebar */}
       <div className="w-[300px] border-r border-border flex flex-col flex-shrink-0 bg-background">
-        <div className="h-14 px-4 flex items-center border-b border-border">
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-500 via-pink-500 to-orange-500 flex items-center justify-center">
-              <Instagram className="h-4 w-4 text-white" />
-            </div>
-            <div>
-              <h2 className="font-semibold text-foreground text-sm">Instagram Direct</h2>
-              {accountInfo?.username && (
-                <p className="text-xs text-muted-foreground">@{accountInfo.username}</p>
-              )}
-            </div>
-          </div>
-        </div>
 
         <div className="px-2 py-3">
           <div className="relative">
