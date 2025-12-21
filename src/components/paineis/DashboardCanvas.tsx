@@ -83,28 +83,20 @@ function SortableWidget({ widget, onResize, onDelete, onConnect, containerWidth 
     isDragging,
   } = useSortable({ id: widget.id });
 
-  // Store width as percentage of container for responsiveness
-  const storedWidth = widget.width || containerWidth;
+  const widgetWidth = typeof widget.width === "number" ? widget.width : (containerWidth || 340);
   const widgetHeight = widget.height || 280;
   const minWidth = 260;
-  
-  // Calculate percentage-based width
-  const widthPercentage = containerWidth > 0 ? (storedWidth / containerWidth) * 100 : 100;
-  // Clamp percentage between min and 100%
-  const clampedPercentage = Math.min(100, Math.max((minWidth / containerWidth) * 100, widthPercentage));
-  // Calculate actual pixel width from percentage
-  const responsiveWidth = containerWidth > 0 ? (clampedPercentage / 100) * containerWidth : storedWidth;
 
   // Observe actual rendered width
   useEffect(() => {
     if (!widgetRef.current) return;
-    
+
     const observer = new ResizeObserver((entries) => {
       for (const entry of entries) {
         setActualWidth(entry.contentRect.width);
       }
     });
-    
+
     observer.observe(widgetRef.current);
     return () => observer.disconnect();
   }, []);
@@ -114,23 +106,26 @@ function SortableWidget({ widget, onResize, onDelete, onConnect, containerWidth 
     transition,
     zIndex: isDragging ? 50 : 1,
     opacity: isDragging ? 0.4 : 1,
-    width: `${clampedPercentage}%`,
+    flexBasis: widgetWidth,
+    flexGrow: 0,
+    flexShrink: 0,
+    width: widgetWidth,
     minWidth: minWidth,
     height: widgetHeight,
   };
 
   const handleResize = (deltaX: number, deltaY: number, direction: string) => {
-    let newWidth = storedWidth;
+    let newWidth = widgetWidth;
     let newHeight = widgetHeight;
 
     // Use containerWidth as max, fallback to a large value
     const maxWidth = containerWidth > 0 ? containerWidth : 3000;
 
     if (direction.includes('e')) {
-      newWidth = Math.min(maxWidth, Math.max(minWidth, storedWidth + deltaX));
+      newWidth = Math.min(maxWidth, Math.max(minWidth, widgetWidth + deltaX));
     }
     if (direction.includes('w')) {
-      newWidth = Math.min(maxWidth, Math.max(minWidth, storedWidth - deltaX));
+      newWidth = Math.min(maxWidth, Math.max(minWidth, widgetWidth - deltaX));
     }
     if (direction.includes('s')) {
       newHeight = Math.min(1200, Math.max(220, widgetHeight + deltaY));
@@ -208,7 +203,7 @@ function SortableWidget({ widget, onResize, onDelete, onConnect, containerWidth 
       {/* Resize Handles */}
       <ResizeHandle 
         direction="w" 
-        widgetWidth={storedWidth} 
+        widgetWidth={widgetWidth} 
         widgetHeight={widgetHeight}
         containerWidth={containerWidth}
         minWidth={minWidth}
@@ -216,7 +211,7 @@ function SortableWidget({ widget, onResize, onDelete, onConnect, containerWidth 
       />
       <ResizeHandle 
         direction="e" 
-        widgetWidth={storedWidth} 
+        widgetWidth={widgetWidth} 
         widgetHeight={widgetHeight}
         containerWidth={containerWidth}
         minWidth={minWidth}
@@ -224,7 +219,7 @@ function SortableWidget({ widget, onResize, onDelete, onConnect, containerWidth 
       />
       <ResizeHandle 
         direction="s" 
-        widgetWidth={storedWidth} 
+        widgetWidth={widgetWidth} 
         widgetHeight={widgetHeight}
         containerWidth={containerWidth}
         minWidth={minWidth}
@@ -232,7 +227,7 @@ function SortableWidget({ widget, onResize, onDelete, onConnect, containerWidth 
       />
       <ResizeHandle 
         direction="se" 
-        widgetWidth={storedWidth} 
+        widgetWidth={widgetWidth} 
         widgetHeight={widgetHeight}
         containerWidth={containerWidth}
         minWidth={minWidth}
