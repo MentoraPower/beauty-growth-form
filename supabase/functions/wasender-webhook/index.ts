@@ -257,6 +257,10 @@ async function handler(req: Request): Promise<Response> {
     if (payload.data?.key?.id) console.log(`[Wasender Webhook] Payload key.id: ${payload.data.key?.id}`);
 
     const event = payload.event;
+    // WaSender sends sessionId in webhook payload - this is the session's API key
+    const sessionId = payload.sessionId || payload.session_id || null;
+    console.log(`[Wasender Webhook] Session ID: ${sessionId || "N/A"}`);
+    
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
     
     // Handle message status updates (read receipts, delivery status) AND edited messages
@@ -853,19 +857,26 @@ async function handler(req: Request): Promise<Response> {
       ? new Date(messageData.messageTimestamp * 1000).toISOString()
       : new Date().toISOString();
 
-    // Upsert chat
+    // Upsert chat - include session_id if available
+    const chatUpsertData: Record<string, any> = {
+      phone,
+      name: displayName,
+      last_message: text.substring(0, 500),
+      last_message_time: timestamp,
+      last_message_status: "RECEIVED",
+      last_message_from_me: false,
+      unread_count: 1,
+      updated_at: new Date().toISOString(),
+    };
+    
+    // Only set session_id if we have one (don't overwrite with null)
+    if (sessionId) {
+      chatUpsertData.session_id = sessionId;
+    }
+    
     const { data: chatData, error: chatError } = await supabase
       .from("whatsapp_chats")
-      .upsert({
-        phone,
-        name: displayName,
-        last_message: text.substring(0, 500),
-        last_message_time: timestamp,
-        last_message_status: "RECEIVED",
-        last_message_from_me: false,
-        unread_count: 1, // Increment will be handled by trigger or separate logic
-        updated_at: new Date().toISOString(),
-      }, { onConflict: "phone" })
+      .upsert(chatUpsertData, { onConflict: "phone" })
       .select()
       .single();
 
@@ -881,23 +892,30 @@ async function handler(req: Request): Promise<Response> {
 
     // Upsert message (prevent duplicates)
     // Store both message_id (numeric for replyTo) and whatsapp_key_id (for quoted message matching)
+    const messageUpsertData: Record<string, any> = {
+      chat_id: chatData.id,
+      message_id: messageId,
+      whatsapp_key_id: whatsappKeyId,
+      phone,
+      text: text.substring(0, 2000),
+      from_me: fromMe,
+      status: "RECEIVED",
+      media_type: mediaType,
+      media_url: mediaUrl,
+      created_at: timestamp,
+      quoted_message_id: quotedMessageId,
+      quoted_text: quotedText,
+      quoted_from_me: quotedFromMe,
+    };
+    
+    // Only set session_id if we have one
+    if (sessionId) {
+      messageUpsertData.session_id = sessionId;
+    }
+    
     const { error: msgError } = await supabase
       .from("whatsapp_messages")
-      .upsert({
-        chat_id: chatData.id,
-        message_id: messageId,
-        whatsapp_key_id: whatsappKeyId,
-        phone,
-        text: text.substring(0, 2000),
-        from_me: fromMe,
-        status: "RECEIVED",
-        media_type: mediaType,
-        media_url: mediaUrl,
-        created_at: timestamp,
-        quoted_message_id: quotedMessageId,
-        quoted_text: quotedText,
-        quoted_from_me: quotedFromMe,
-      }, { onConflict: "message_id" });
+      .upsert(messageUpsertData, { onConflict: "message_id" });
 
     if (msgError) {
       console.error("[Wasender Webhook] Error upserting message:", msgError);

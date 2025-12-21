@@ -1080,6 +1080,7 @@ export type Database = {
           name: string | null
           phone: string
           photo_url: string | null
+          session_id: string | null
           unread_count: number | null
           updated_at: string
         }
@@ -1093,6 +1094,7 @@ export type Database = {
           name?: string | null
           phone: string
           photo_url?: string | null
+          session_id?: string | null
           unread_count?: number | null
           updated_at?: string
         }
@@ -1106,6 +1108,7 @@ export type Database = {
           name?: string | null
           phone?: string
           photo_url?: string | null
+          session_id?: string | null
           unread_count?: number | null
           updated_at?: string
         }
@@ -1125,6 +1128,7 @@ export type Database = {
           quoted_message_id: string | null
           quoted_text: string | null
           reaction: string | null
+          session_id: string | null
           status: string | null
           text: string | null
           whatsapp_key_id: string | null
@@ -1142,6 +1146,7 @@ export type Database = {
           quoted_message_id?: string | null
           quoted_text?: string | null
           reaction?: string | null
+          session_id?: string | null
           status?: string | null
           text?: string | null
           whatsapp_key_id?: string | null
@@ -1159,6 +1164,7 @@ export type Database = {
           quoted_message_id?: string | null
           quoted_text?: string | null
           reaction?: string | null
+          session_id?: string | null
           status?: string | null
           text?: string | null
           whatsapp_key_id?: string | null
