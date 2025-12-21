@@ -1631,7 +1631,28 @@ const WhatsApp = () => {
     init();
   }, [fetchChats, fetchMissingPhotos, fetchWhatsAppAccounts]);
 
-  // Handle phone query param to auto-select a chat
+  // Reload chats when switching WhatsApp accounts
+  useEffect(() => {
+    // Skip on initial mount (handled by init above)
+    if (selectedAccountId === null) return;
+    
+    const reloadChatsForAccount = async () => {
+      setIsInitialLoad(true);
+      setSelectedChat(null);
+      setMessages([]);
+      
+      // Fetch chats for the selected account
+      await fetchChats(true);
+      
+      // Sync and fetch photos in background
+      syncAllChats();
+      setTimeout(() => {
+        fetchMissingPhotos();
+      }, 1000);
+    };
+    
+    reloadChatsForAccount();
+  }, [selectedAccountId]);
   useEffect(() => {
     const phoneParam = searchParams.get("phone");
     if (!phoneParam || chats.length === 0 || selectedChat) return;
@@ -2142,7 +2163,14 @@ const WhatsApp = () => {
                           )}
                           onClick={() => {
                             if (isConnected) {
-                              setSelectedAccountId(account.id);
+                              if (selectedAccountId !== account.id) {
+                                // Clear current state and switch account
+                                setSelectedChat(null);
+                                setMessages([]);
+                                setChats([]);
+                                chatsRef.current = [];
+                                setSelectedAccountId(account.id);
+                              }
                             } else {
                               // Open dialog with QR code for not connected accounts
                               setAccountToConnect(account);
