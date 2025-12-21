@@ -770,12 +770,17 @@ const WhatsApp = () => {
     scrollToBottom("auto");
 
     try {
+      // Get session_id for account isolation BEFORE calling edge function
+      const selectedAccount = whatsappAccounts.find(acc => acc.id === selectedAccountId);
+      const sessionId = selectedAccount?.api_key || null;
+
       const { data, error } = await supabase.functions.invoke("wasender-whatsapp", {
         body: {
           action: "send-text",
           phone: selectedChat.phone,
           text: messageText,
           quotedMsgId: quotedMsg?.message_id?.toString(),
+          sessionId, // Pass sessionId to use correct WhatsApp account
         },
       });
 
@@ -784,9 +789,7 @@ const WhatsApp = () => {
       const messageId = data?.messageId || `local-${Date.now()}`;
       const whatsappKeyId = data?.whatsappKeyId || null;
 
-      // Get session_id for account isolation
-      const selectedAccount = whatsappAccounts.find(acc => acc.id === selectedAccountId);
-      const sessionId = selectedAccount?.api_key || null;
+      // sessionId already obtained above for account isolation
 
       const { data: insertedMsg } = await supabase
         .from("whatsapp_messages")
@@ -1062,7 +1065,11 @@ const WhatsApp = () => {
       setMessages(prev => [...prev, tempMsg]);
       scrollToBottom("smooth");
 
-      // Send via WAHA
+      // Get session_id for account isolation BEFORE calling edge function
+      const selectedAccount = whatsappAccounts.find(acc => acc.id === selectedAccountId);
+      const sessionId = selectedAccount?.api_key || null;
+
+      // Send via Wasender with sessionId for correct account
       const { data, error } = await supabase.functions.invoke("wasender-whatsapp", {
         body: { 
           action,
@@ -1070,14 +1077,11 @@ const WhatsApp = () => {
           mediaUrl: publicUrl,
           filename: file.name,
           caption: "",
+          sessionId, // Pass sessionId to use correct WhatsApp account
         },
       });
 
       if (error) throw error;
-
-      // Get session_id for account isolation
-      const selectedAccount = whatsappAccounts.find(acc => acc.id === selectedAccountId);
-      const sessionId = selectedAccount?.api_key || null;
 
       // Insert into database with both message IDs and session_id
       const { data: insertedMsg } = await supabase.from("whatsapp_messages").insert({
@@ -1377,22 +1381,23 @@ const WhatsApp = () => {
       setMessages(prev => [...prev, tempMsg]);
       scrollToBottom("smooth");
 
-      // Send via WasenderAPI
+      // Get session_id for account isolation BEFORE calling edge function
+      const selectedAccount = whatsappAccounts.find(acc => acc.id === selectedAccountId);
+      const sessionId = selectedAccount?.api_key || null;
+
+      // Send via WasenderAPI with sessionId for correct account
       const { data, error } = await supabase.functions.invoke("wasender-whatsapp", {
         body: { 
           action: "send-audio",
           phone: selectedChat.phone, 
           mediaUrl: publicUrl,
+          sessionId, // Pass sessionId to use correct WhatsApp account
         },
       });
 
       if (error) throw error;
 
       console.log("[WhatsApp] Audio sent via WasenderAPI:", data);
-
-      // Get session_id for account isolation
-      const selectedAccount = whatsappAccounts.find(acc => acc.id === selectedAccountId);
-      const sessionId = selectedAccount?.api_key || null;
 
       // Insert into database with both message IDs and session_id
       const { data: insertedMsg } = await supabase.from("whatsapp_messages").insert({
