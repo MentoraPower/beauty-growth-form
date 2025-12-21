@@ -7,18 +7,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Plus, Trash2, Copy, Check, Settings2 } from "lucide-react";
+import { Plus, Trash2, Copy, Check, Settings2, X } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import * as LucideIcons from "lucide-react";
 
@@ -49,7 +44,7 @@ export function LeadCustomFields({ leadId, subOriginId }: LeadCustomFieldsProps)
   const [fields, setFields] = useState<CustomField[]>([]);
   const [responses, setResponses] = useState<Record<string, string>>({});
   const [isLoading, setIsLoading] = useState(true);
-  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [isManagerOpen, setIsManagerOpen] = useState(false);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   
   // New field form state
@@ -66,7 +61,6 @@ export function LeadCustomFields({ leadId, subOriginId }: LeadCustomFieldsProps)
       return;
     }
 
-    // Fetch custom fields for this sub-origin
     const { data: fieldsData, error: fieldsError } = await supabase
       .from("sub_origin_custom_fields")
       .select("*")
@@ -82,7 +76,6 @@ export function LeadCustomFields({ leadId, subOriginId }: LeadCustomFieldsProps)
     setFields(fieldsData || []);
 
     if (fieldsData && fieldsData.length > 0) {
-      // Fetch responses for this lead
       const { data: responsesData, error: responsesError } = await supabase
         .from("lead_custom_field_responses")
         .select("*")
@@ -107,7 +100,6 @@ export function LeadCustomFields({ leadId, subOriginId }: LeadCustomFieldsProps)
   }, [leadId, subOriginId]);
 
   const handleUpdateField = async (fieldId: string, value: string) => {
-    // Check if response already exists
     const { data: existing } = await supabase
       .from("lead_custom_field_responses")
       .select("id")
@@ -244,7 +236,6 @@ export function LeadCustomFields({ leadId, subOriginId }: LeadCustomFieldsProps)
     return <span className="text-sm font-medium">{value}</span>;
   };
 
-  // Get a generic icon based on field type
   const getFieldIcon = (field: CustomField) => {
     switch (field.field_type) {
       case "number":
@@ -282,80 +273,119 @@ export function LeadCustomFields({ leadId, subOriginId }: LeadCustomFieldsProps)
       <div className="flex items-center justify-between">
         <h3 className="text-base font-semibold text-foreground">Informações do Negócio</h3>
         
-        <DropdownMenu open={isDropdownOpen} onOpenChange={setIsDropdownOpen}>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="sm" className="gap-1.5 text-muted-foreground hover:text-foreground">
+        <Button 
+          variant="ghost" 
+          size="sm" 
+          className="gap-1.5 text-muted-foreground hover:text-foreground"
+          onClick={() => setIsManagerOpen(!isManagerOpen)}
+        >
+          {isManagerOpen ? (
+            <>
+              <X className="h-4 w-4" />
+              Fechar
+            </>
+          ) : (
+            <>
               <Settings2 className="h-4 w-4" />
               Gerenciar Campos
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent 
-            align="end" 
-            className="w-80 p-0 bg-popover border border-border shadow-lg z-50"
-            sideOffset={5}
-          >
-            <div className="p-3 border-b border-border">
+            </>
+          )}
+        </Button>
+      </div>
+
+      <div className={`flex gap-4 transition-all duration-300 ${isManagerOpen ? '' : ''}`}>
+        {/* Fields display */}
+        <div className={`transition-all duration-300 ${isManagerOpen ? 'flex-1' : 'w-full'}`}>
+          {fields.length === 0 ? (
+            <div className="text-sm text-muted-foreground italic py-4 text-center border border-dashed border-border rounded-lg">
+              Nenhum campo personalizado. Clique em "Gerenciar Campos" para adicionar.
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 gap-4">
+              {fields.map((field, index) => {
+                const value = responses[field.id] || "";
+                
+                return (
+                  <div 
+                    key={field.id} 
+                    className="p-3 bg-muted/30 border border-[#00000010] rounded-lg animate-fade-in"
+                    style={{ animationDelay: `${index * 50}ms` }}
+                  >
+                    <div className="flex items-center gap-2 mb-1">
+                      {getFieldIcon(field)}
+                      <p className="text-xs text-muted-foreground">
+                        {field.field_label}
+                        {field.is_required && <span className="text-destructive ml-1">*</span>}
+                      </p>
+                    </div>
+                    <EditableField
+                      value={value}
+                      onSave={(newValue) => handleUpdateField(field.id, newValue)}
+                      placeholder={`Digite ${field.field_label.toLowerCase()}`}
+                      displayValue={formatDisplayValue(field, value)}
+                    />
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+        {/* Manager panel - slides in from right */}
+        {isManagerOpen && (
+          <div className="w-72 flex-shrink-0 bg-muted/20 border border-border rounded-lg p-4 space-y-4 animate-fade-in">
+            <div>
               <h4 className="font-medium text-sm">Campos Personalizados</h4>
               <p className="text-xs text-muted-foreground mt-0.5">
                 Use o ID do campo no webhook
               </p>
             </div>
 
-            <div className="max-h-64 overflow-y-auto">
+            {/* Existing fields list */}
+            <div className="max-h-48 overflow-y-auto space-y-1">
               {fields.length === 0 ? (
-                <div className="p-3 text-sm text-muted-foreground italic">
+                <div className="text-xs text-muted-foreground italic py-2">
                   Nenhum campo criado
                 </div>
               ) : (
-                <div className="p-2 space-y-1">
-                  {fields.map((field) => (
-                    <div
-                      key={field.id}
-                      className="flex items-center gap-2 p-2 bg-muted/30 rounded-md text-sm"
-                    >
-                      <div className="flex-1 min-w-0">
-                        <div className="font-medium truncate">{field.field_label}</div>
-                        <div className="text-xs text-muted-foreground truncate">
-                          ID: {field.id.slice(0, 8)}...
-                        </div>
+                fields.map((field) => (
+                  <div
+                    key={field.id}
+                    className="flex items-center gap-2 p-2 bg-background rounded-md text-sm border border-border"
+                  >
+                    <div className="flex-1 min-w-0">
+                      <div className="font-medium truncate text-xs">{field.field_label}</div>
+                      <div className="text-[10px] text-muted-foreground truncate">
+                        ID: {field.id.slice(0, 8)}...
                       </div>
-                      <span className="text-xs text-muted-foreground px-1.5 py-0.5 bg-muted rounded">
-                        {getFieldTypeLabel(field.field_type)}
-                      </span>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-6 w-6 flex-shrink-0"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          copyFieldId(field.id);
-                        }}
-                      >
-                        {copiedId === field.id ? (
-                          <Check className="h-3 w-3 text-green-500" />
-                        ) : (
-                          <Copy className="h-3 w-3" />
-                        )}
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-6 w-6 flex-shrink-0 text-destructive hover:text-destructive"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleDeleteField(field.id);
-                        }}
-                      >
-                        <Trash2 className="h-3 w-3" />
-                      </Button>
                     </div>
-                  ))}
-                </div>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-5 w-5 flex-shrink-0"
+                      onClick={() => copyFieldId(field.id)}
+                    >
+                      {copiedId === field.id ? (
+                        <Check className="h-3 w-3 text-green-500" />
+                      ) : (
+                        <Copy className="h-3 w-3" />
+                      )}
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-5 w-5 flex-shrink-0 text-destructive hover:text-destructive"
+                      onClick={() => handleDeleteField(field.id)}
+                    >
+                      <Trash2 className="h-3 w-3" />
+                    </Button>
+                  </div>
+                ))
               )}
             </div>
 
             {/* Add new field form */}
-            <div className="p-3 border-t border-border space-y-3">
+            <div className="pt-3 border-t border-border space-y-3">
               <div className="space-y-1.5">
                 <Label className="text-xs">Nome do campo</Label>
                 <Input
@@ -366,43 +396,37 @@ export function LeadCustomFields({ leadId, subOriginId }: LeadCustomFieldsProps)
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-2">
-                <div className="space-y-1.5">
-                  <Label className="text-xs">Tipo</Label>
-                  <Select
-                    value={newField.field_type}
-                    onValueChange={(value) => setNewField({ ...newField, field_type: value })}
-                  >
-                    <SelectTrigger className="h-8 text-sm">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="text">Texto</SelectItem>
-                      <SelectItem value="number">Número</SelectItem>
-                      <SelectItem value="select">Seleção</SelectItem>
-                      <SelectItem value="boolean">Sim/Não</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-1.5">
-                  <Label className="text-xs">Obrigatório</Label>
-                  <div className="flex items-center gap-2 h-8">
-                    <Switch
-                      checked={newField.is_required}
-                      onCheckedChange={(checked) => setNewField({ ...newField, is_required: checked })}
-                    />
-                    <span className="text-xs text-muted-foreground">
-                      {newField.is_required ? "Sim" : "Não"}
-                    </span>
-                  </div>
-                </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs">Tipo</Label>
+                <Select
+                  value={newField.field_type}
+                  onValueChange={(value) => setNewField({ ...newField, field_type: value })}
+                >
+                  <SelectTrigger className="h-8 text-sm">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="text">Texto</SelectItem>
+                    <SelectItem value="number">Número</SelectItem>
+                    <SelectItem value="select">Seleção</SelectItem>
+                    <SelectItem value="boolean">Sim/Não</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="flex items-center justify-between">
+                <Label className="text-xs">Obrigatório</Label>
+                <Switch
+                  checked={newField.is_required}
+                  onCheckedChange={(checked) => setNewField({ ...newField, is_required: checked })}
+                />
               </div>
 
               {newField.field_type === "select" && (
                 <div className="space-y-1.5">
-                  <Label className="text-xs">Opções (separadas por vírgula)</Label>
+                  <Label className="text-xs">Opções (vírgula)</Label>
                   <Input
-                    placeholder="Ex: Opção 1, Opção 2"
+                    placeholder="Opção 1, Opção 2"
                     value={newField.options}
                     onChange={(e) => setNewField({ ...newField, options: e.target.value })}
                     className="h-8 text-sm"
@@ -416,58 +440,22 @@ export function LeadCustomFields({ leadId, subOriginId }: LeadCustomFieldsProps)
               </Button>
             </div>
 
-            {/* Webhook info */}
+            {/* Webhook example */}
             {fields.length > 0 && (
-              <div className="p-3 border-t border-border bg-muted/30">
-                <p className="text-xs text-muted-foreground mb-2">
-                  Exemplo de payload webhook:
+              <div className="pt-3 border-t border-border">
+                <p className="text-[10px] text-muted-foreground mb-1">
+                  Exemplo webhook:
                 </p>
-                <pre className="text-[10px] bg-background p-2 rounded border overflow-x-auto">
-{`{
-  "custom_fields": {
-${fields.map(f => `    "${f.id}": "valor"`).join(",\n")}
-  }
+                <pre className="text-[9px] bg-background p-2 rounded border overflow-x-auto">
+{`"custom_fields": {
+${fields.slice(0, 2).map(f => `  "${f.id.slice(0, 8)}...": "valor"`).join(",\n")}${fields.length > 2 ? '\n  ...' : ''}
 }`}
                 </pre>
               </div>
             )}
-          </DropdownMenuContent>
-        </DropdownMenu>
+          </div>
+        )}
       </div>
-
-      {fields.length === 0 ? (
-        <div className="text-sm text-muted-foreground italic py-4 text-center border border-dashed border-border rounded-lg">
-          Nenhum campo personalizado. Clique em "Gerenciar Campos" para adicionar.
-        </div>
-      ) : (
-        <div className="grid grid-cols-2 gap-4">
-          {fields.map((field, index) => {
-            const value = responses[field.id] || "";
-            
-            return (
-              <div 
-                key={field.id} 
-                className="p-3 bg-muted/30 border border-[#00000010] rounded-lg animate-fade-in"
-                style={{ animationDelay: `${index * 50}ms` }}
-              >
-                <div className="flex items-center gap-2 mb-1">
-                  {getFieldIcon(field)}
-                  <p className="text-xs text-muted-foreground">
-                    {field.field_label}
-                    {field.is_required && <span className="text-destructive ml-1">*</span>}
-                  </p>
-                </div>
-                <EditableField
-                  value={value}
-                  onSave={(newValue) => handleUpdateField(field.id, newValue)}
-                  placeholder={`Digite ${field.field_label.toLowerCase()}`}
-                  displayValue={formatDisplayValue(field, value)}
-                />
-              </div>
-            );
-          })}
-        </div>
-      )}
     </div>
   );
 }
