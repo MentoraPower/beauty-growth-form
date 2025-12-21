@@ -41,7 +41,7 @@ export default function Paineis() {
 
   if (!activePainel) {
     return (
-      <div className="h-full flex flex-col items-center justify-center px-4">
+      <div className="h-full flex flex-col items-center justify-start pt-16 px-4">
         <div className="text-center mb-8">
           <h1 className="text-xl font-semibold text-foreground mb-2">Escolha um modelo de painel</h1>
           <p className="text-sm text-muted-foreground">
