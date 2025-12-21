@@ -1,5 +1,11 @@
 import { useState, useCallback, useEffect, useRef } from "react";
-import { Plus, Link2, X, Trash2, GripVertical } from "lucide-react";
+import { Plus, Link2, X, Trash2, GripVertical, CalendarIcon } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import { cn } from "@/lib/utils";
+import { format, subDays, startOfDay, endOfDay } from "date-fns";
+import { ptBR } from "date-fns/locale";
 import { ChartSelectorDialog, ChartType } from "./ChartSelectorDialog";
 import { ConnectSourceDialog, WidgetSource } from "./ConnectSourceDialog";
 import { ChartRenderer } from "./ChartRenderer";
@@ -301,6 +307,8 @@ function ResizeHandle({ direction, widgetWidth, widgetHeight, containerWidth, mi
   );
 }
 
+type DatePreset = 'today' | 'yesterday' | '7days' | '30days' | 'custom';
+
 export function DashboardCanvas({ painelName, dashboardId, onBack }: DashboardCanvasProps) {
   const [widgets, setWidgets] = useState<DashboardWidget[]>([]);
   const [isChartSelectorOpen, setIsChartSelectorOpen] = useState(false);
@@ -309,9 +317,36 @@ export function DashboardCanvas({ painelName, dashboardId, onBack }: DashboardCa
   const [pendingWidgetId, setPendingWidgetId] = useState<string | null>(null);
   const [containerWidth, setContainerWidth] = useState(0);
   const [isInitialLoad, setIsInitialLoad] = useState(true);
+  const [datePreset, setDatePreset] = useState<DatePreset>('30days');
+  const [startDate, setStartDate] = useState<Date>(subDays(new Date(), 30));
+  const [endDate, setEndDate] = useState<Date>(new Date());
   const widgetsRef = useRef<DashboardWidget[]>([]);
   const containerRef = useRef<HTMLDivElement>(null);
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  const handlePresetChange = (preset: DatePreset) => {
+    setDatePreset(preset);
+    const today = new Date();
+    switch (preset) {
+      case 'today':
+        setStartDate(startOfDay(today));
+        setEndDate(endOfDay(today));
+        break;
+      case 'yesterday':
+        const yesterday = subDays(today, 1);
+        setStartDate(startOfDay(yesterday));
+        setEndDate(endOfDay(yesterday));
+        break;
+      case '7days':
+        setStartDate(subDays(today, 7));
+        setEndDate(today);
+        break;
+      case '30days':
+        setStartDate(subDays(today, 30));
+        setEndDate(today);
+        break;
+    }
+  };
 
   // Measure container width
   useEffect(() => {
@@ -724,16 +759,104 @@ export function DashboardCanvas({ painelName, dashboardId, onBack }: DashboardCa
   return (
     <div className="h-full flex flex-col">
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center justify-between mb-4">
         <h1 className="text-xl font-semibold text-foreground">
           {painelName}
         </h1>
-        <button
-          onClick={onBack}
-          className="p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
-        >
-          <X className="h-5 w-5" />
-        </button>
+        <div className="flex items-center gap-2">
+          {/* Date Presets */}
+          <div className="flex items-center gap-1 bg-muted rounded-lg p-1">
+            {[
+              { id: 'today' as DatePreset, label: 'Hoje' },
+              { id: 'yesterday' as DatePreset, label: 'Ontem' },
+              { id: '7days' as DatePreset, label: '7 dias' },
+              { id: '30days' as DatePreset, label: '30 dias' },
+            ].map((preset) => (
+              <button
+                key={preset.id}
+                onClick={() => handlePresetChange(preset.id)}
+                className={cn(
+                  "px-3 py-1.5 text-xs font-medium rounded-md transition-colors",
+                  datePreset === preset.id
+                    ? "bg-background text-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground"
+                )}
+              >
+                {preset.label}
+              </button>
+            ))}
+          </div>
+
+          {/* Date Range Pickers */}
+          <div className="flex items-center gap-2">
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="outline" size="sm" className="h-8 gap-2 text-xs">
+                  <CalendarIcon className="h-3.5 w-3.5" />
+                  {format(startDate, "dd/MM/yy", { locale: ptBR })}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="end">
+                <Calendar
+                  mode="single"
+                  selected={startDate}
+                  onSelect={(date) => {
+                    if (date) {
+                      setStartDate(date);
+                      setDatePreset('custom');
+                    }
+                  }}
+                  initialFocus
+                  className="pointer-events-auto"
+                />
+              </PopoverContent>
+            </Popover>
+            <span className="text-xs text-muted-foreground">até</span>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="outline" size="sm" className="h-8 gap-2 text-xs">
+                  <CalendarIcon className="h-3.5 w-3.5" />
+                  {format(endDate, "dd/MM/yy", { locale: ptBR })}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="end">
+                <Calendar
+                  mode="single"
+                  selected={endDate}
+                  onSelect={(date) => {
+                    if (date) {
+                      setEndDate(date);
+                      setDatePreset('custom');
+                    }
+                  }}
+                  initialFocus
+                  className="pointer-events-auto"
+                />
+              </PopoverContent>
+            </Popover>
+          </div>
+
+          {/* Add Chart Button */}
+          {widgets.length > 0 && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setIsChartSelectorOpen(true)}
+              className="h-8 gap-2"
+            >
+              <Plus className="h-4 w-4" />
+              Adicionar
+            </Button>
+          )}
+
+          {/* Close Button */}
+          <button
+            onClick={onBack}
+            className="p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+          >
+            <X className="h-5 w-5" />
+          </button>
+        </div>
       </div>
 
       {/* Dashboard Content */}
@@ -772,17 +895,6 @@ export function DashboardCanvas({ painelName, dashboardId, onBack }: DashboardCa
                     containerWidth={containerWidth}
                   />
                 ))}
-
-                {/* Add More Button */}
-                <button
-                  onClick={() => setIsChartSelectorOpen(true)}
-                  className="flex flex-col items-center justify-center w-[260px] h-[220px] border-2 border-dashed border-border rounded-xl hover:border-foreground/30 hover:bg-muted/30 focus:outline-none shrink-0"
-                >
-                  <Plus className="h-6 w-6 text-muted-foreground mb-2" />
-                  <span className="text-sm text-muted-foreground">
-                    Adicionar gráfico
-                  </span>
-                </button>
               </div>
             </SortableContext>
           </DndContext>
