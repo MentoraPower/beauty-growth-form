@@ -666,8 +666,25 @@ async function handler(req: Request): Promise<Response> {
       
       console.log(`[Wasender Webhook] Found ${leads.length} lead(s) for phone ${phone}`);
       
-      // Create tracking entry for each matching lead
+      // Create tracking entry for each matching lead (with deduplication)
       for (const lead of leads) {
+        const tipoEvento = action === "add" ? "grupo_entrada" : "grupo_saida";
+        
+        // Check for duplicate event in the last 60 seconds
+        const oneMinuteAgo = new Date(Date.now() - 60_000).toISOString();
+        const { data: existingTracking } = await supabase
+          .from("lead_tracking")
+          .select("id")
+          .eq("lead_id", lead.id)
+          .eq("tipo", tipoEvento)
+          .gte("created_at", oneMinuteAgo)
+          .limit(1);
+        
+        if (existingTracking && existingTracking.length > 0) {
+          console.log(`[Wasender Webhook] Skipping duplicate tracking for lead ${lead.id} (${tipoEvento} within last 60s)`);
+          continue;
+        }
+        
         const now = new Date();
         const formattedDate = now.toLocaleDateString("pt-BR", { 
           day: "2-digit", 
@@ -683,7 +700,7 @@ async function handler(req: Request): Promise<Response> {
         
         const trackingData = {
           lead_id: lead.id,
-          tipo: action === "add" ? "grupo_entrada" : "grupo_saida",
+          tipo: tipoEvento,
           titulo: action === "add" 
             ? `Entrou no grupo "${groupName}"` 
             : `Saiu do grupo "${groupName}"`,
