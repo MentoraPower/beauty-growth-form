@@ -175,9 +175,9 @@ function SortableWidget({ widget, onResize, onDelete, onConnect, containerWidth 
           </button>
         )}
 
-        {/* Header - Title at top */}
+        {/* Header - Title at top left */}
         <div className="mb-2 shrink-0">
-          <h3 className="text-sm font-medium text-foreground truncate text-center">
+          <h3 className="text-sm font-medium text-foreground truncate">
             {widget.source?.sourceName || widget.chartType.name}
           </h3>
         </div>
