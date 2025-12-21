@@ -45,7 +45,7 @@ import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { AutomationsDropdown } from "./AutomationsDropdown";
 import { EmailFlowBuilder } from "./EmailFlowBuilder";
-import { CustomFieldsManager } from "./CustomFieldsManager";
+
 
 // Lazy load heavy dialog
 const ManagePipelinesDialog = lazy(() => 
@@ -1278,9 +1278,6 @@ export function KanbanBoard() {
 
         {/* Right side - settings */}
         <div className="flex items-center gap-2 flex-shrink-0">
-          {subOriginId && (
-            <CustomFieldsManager subOriginId={subOriginId} />
-          )}
           <Button
             variant="outline"
             size="sm"
