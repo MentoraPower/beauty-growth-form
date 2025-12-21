@@ -51,24 +51,44 @@ export function ChartRenderer({ chartType, data, width, height, isLoading }: Cha
         );
       }
 
-      const pieSize = Math.min(chartHeight * 0.85, width * 0.45);
+      // Responsive layout: vertical for narrow, horizontal for wide
+      const isWide = width > height * 1.3;
+      const isVerySmall = height < 200 || width < 280;
+      
+      // Calculate pie size based on available space
+      const availablePieHeight = isWide ? height - 20 : height * 0.55;
+      const availablePieWidth = isWide ? width * 0.45 : width - 40;
+      const pieSize = Math.min(availablePieHeight, availablePieWidth);
+      
+      // Dynamic font sizes
+      const totalFontSize = pieSize > 120 ? 'text-3xl' : pieSize > 80 ? 'text-2xl' : 'text-xl';
+      const labelFontSize = pieSize > 100 ? 'text-[11px]' : 'text-[9px]';
+      
+      // Calculate how many legend items to show
+      const maxLegendItems = isVerySmall ? 3 : height > 350 ? 7 : 5;
       
       return (
-        <div className="w-full h-full flex items-center gap-4 px-2">
+        <div className={`w-full h-full flex ${isWide ? 'flex-row items-center' : 'flex-col items-center justify-center'} gap-3 p-2`}>
           {/* Donut Chart */}
-          <div className="relative" style={{ width: pieSize, height: pieSize, flexShrink: 0 }}>
+          <div 
+            className="relative shrink-0 flex items-center justify-center"
+            style={{ 
+              width: pieSize, 
+              height: pieSize,
+            }}
+          >
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie
                   data={distribution}
                   cx="50%"
                   cy="50%"
-                  innerRadius="55%"
-                  outerRadius="90%"
-                  paddingAngle={2}
+                  innerRadius="52%"
+                  outerRadius="88%"
+                  paddingAngle={distribution.length > 1 ? 3 : 0}
                   dataKey="value"
                   stroke="none"
-                  animationDuration={500}
+                  animationDuration={400}
                 >
                   {distribution.map((entry, index) => (
                     <Cell 
@@ -93,26 +113,38 @@ export function ChartRenderer({ chartType, data, width, height, isLoading }: Cha
             {/* Center total */}
             <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
               <div className="text-center">
-                <p className="text-2xl font-bold text-foreground">{total}</p>
-                <p className="text-[10px] text-muted-foreground">total</p>
+                <p className={`${totalFontSize} font-bold text-foreground leading-none`}>{total}</p>
+                <p className={`${labelFontSize} text-muted-foreground mt-0.5`}>total</p>
               </div>
             </div>
           </div>
 
           {/* Legend */}
-          <div className="flex-1 min-w-0 flex flex-col gap-2 overflow-hidden">
-            {distribution.slice(0, 5).map((entry, index) => (
-              <div key={entry.name} className="flex items-center gap-2">
-                <div 
-                  className="w-3 h-3 rounded-sm shrink-0" 
-                  style={{ backgroundColor: entry.color || DEFAULT_COLORS[index % DEFAULT_COLORS.length] }}
-                />
-                <span className="text-xs text-muted-foreground truncate flex-1">{entry.name}</span>
-                <span className="text-xs font-medium text-foreground shrink-0">{entry.value}</span>
-              </div>
-            ))}
-            {distribution.length > 5 && (
-              <p className="text-[10px] text-muted-foreground">+{distribution.length - 5} mais</p>
+          <div className={`flex flex-col gap-1.5 ${isWide ? 'flex-1 min-w-0' : 'w-full max-w-[200px]'}`}>
+            {distribution.slice(0, maxLegendItems).map((entry, index) => {
+              const percentage = total > 0 ? Math.round((entry.value / total) * 100) : 0;
+              return (
+                <div key={entry.name} className="flex items-center gap-2 min-w-0">
+                  <div 
+                    className="w-2.5 h-2.5 rounded-sm shrink-0" 
+                    style={{ backgroundColor: entry.color || DEFAULT_COLORS[index % DEFAULT_COLORS.length] }}
+                  />
+                  <span className="text-xs text-muted-foreground truncate flex-1 min-w-0">
+                    {entry.name}
+                  </span>
+                  <span className="text-xs font-medium text-foreground shrink-0 tabular-nums">
+                    {entry.value}
+                  </span>
+                  <span className="text-[10px] text-muted-foreground shrink-0 w-8 text-right tabular-nums">
+                    {percentage}%
+                  </span>
+                </div>
+              );
+            })}
+            {distribution.length > maxLegendItems && (
+              <p className="text-[10px] text-muted-foreground pl-4">
+                +{distribution.length - maxLegendItems} mais
+              </p>
             )}
           </div>
         </div>
