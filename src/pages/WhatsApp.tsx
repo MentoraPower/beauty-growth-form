@@ -404,7 +404,8 @@ const WhatsApp = () => {
       if (dbGroups && dbGroups.length > 0) {
         console.log(`[WhatsApp] Loaded ${dbGroups.length} groups from database`);
         setWhatsappGroups(dbGroups.map(g => ({
-          id: g.group_jid,
+          id: g.id,
+          groupJid: g.group_jid,
           name: g.name,
           participantCount: g.participant_count || 0,
           photoUrl: g.photo_url,
@@ -509,8 +510,9 @@ const WhatsApp = () => {
             }
           }
 
-          const groupData = {
-            id: groupId,
+          const groupData: WhatsAppGroup = {
+            id: groupId, // Use JID as id for now (will be replaced after upsert)
+            groupJid: groupId,
             name: g.subject || g.name || "Grupo",
             participantCount: participantCount >= 0 ? participantCount : 0,
             photoUrl,
@@ -562,7 +564,7 @@ const WhatsApp = () => {
       lastMessageTime: null,
       unread: 0,
       avatar: group.name.substring(0, 2).toUpperCase(),
-      phone: group.id, // The group JID (e.g., 120363393176329236@g.us)
+      phone: group.groupJid, // The group JID (e.g., 120363393176329236@g.us)
       photo_url: group.photoUrl || null,
       lastMessageStatus: null,
       lastMessageFromMe: false,
@@ -572,7 +574,7 @@ const WhatsApp = () => {
     setReplyToMessage(null);
     setIsSending(false);
     setMessage("");
-    setSidebarTab("conversas"); // Switch to conversations tab to see the chat
+    // Stay on grupos tab - don't switch to conversas
   }, []);
 
   // Initial load - fetch chats once, optionally filtered by selected account's api_key

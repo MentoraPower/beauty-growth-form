@@ -5,6 +5,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 
 export interface WhatsAppGroup {
   id: string;
+  groupJid: string;
   name: string;
   participantCount: number;
   photoUrl?: string | null;
