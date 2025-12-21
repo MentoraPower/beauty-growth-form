@@ -1,8 +1,9 @@
-import { useState, useEffect, useCallback } from "react";
-import { Plus, Link2, X, RefreshCw } from "lucide-react";
+import { useState, useCallback } from "react";
+import { Plus, Link2, X, RefreshCw, Trash2 } from "lucide-react";
 import { ChartSelectorDialog, ChartType } from "./ChartSelectorDialog";
 import { ConnectSourceDialog, WidgetSource } from "./ConnectSourceDialog";
 import { ResizableWidget } from "./ResizableWidget";
+import { ChartRenderer } from "./ChartRenderer";
 import { supabase } from "@/integrations/supabase/client";
 
 export interface DashboardWidget {
@@ -90,8 +91,8 @@ export function DashboardCanvas({ painelName, onBack }: DashboardCanvasProps) {
       chartType: chart,
       source: null,
       isConnected: false,
-      width: 280,
-      height: 200,
+      width: 340,
+      height: 280,
     };
     setWidgets(prev => [...prev, newWidget]);
     
@@ -132,122 +133,14 @@ export function DashboardCanvas({ painelName, onBack }: DashboardCanvasProps) {
     }
   };
 
+  const handleDeleteWidget = (widgetId: string) => {
+    setWidgets(prev => prev.filter(w => w.id !== widgetId));
+  };
+
   const handleWidgetResize = (widgetId: string, width: number, height: number) => {
     setWidgets(prev => prev.map(w => 
       w.id === widgetId ? { ...w, width, height } : w
     ));
-  };
-
-  const renderChartWithData = (widget: DashboardWidget) => {
-    const value = widget.data?.value || 0;
-    const chartHeight = (widget.height || 200) - 80; // Account for header and footer
-    
-    if (widget.isLoading) {
-      return (
-        <div className="w-full flex items-center justify-center" style={{ height: chartHeight }}>
-          <RefreshCw className="h-6 w-6 text-muted-foreground animate-spin" />
-        </div>
-      );
-    }
-
-    switch (widget.chartType.id) {
-      case 'kpi':
-        return (
-          <div className="flex flex-col items-center justify-center" style={{ height: chartHeight }}>
-            <span className="text-4xl font-bold text-foreground">{value.toLocaleString()}</span>
-            <span className="text-sm text-muted-foreground mt-1">{widget.data?.label || "Leads"}</span>
-          </div>
-        );
-
-      case 'pie':
-        const pieSize = Math.min(chartHeight - 10, (widget.width || 280) - 60);
-        return (
-          <div className="w-full flex items-center justify-center" style={{ height: chartHeight }}>
-            <svg viewBox="0 0 100 100" style={{ width: pieSize, height: pieSize }}>
-              <circle cx="50" cy="50" r="40" fill="none" stroke="hsl(var(--muted))" strokeWidth="16" />
-              <circle 
-                cx="50" cy="50" r="40" fill="none" 
-                stroke="hsl(var(--foreground))" strokeWidth="16"
-                strokeDasharray={`${Math.min(value * 2.51, 251.2)} 251.2`}
-                transform="rotate(-90 50 50)"
-              />
-              <text x="50" y="55" textAnchor="middle" fontSize="18" fontWeight="bold" fill="hsl(var(--foreground))">
-                {value}
-              </text>
-            </svg>
-          </div>
-        );
-
-      case 'bar':
-        const maxBar = Math.max(value, 100);
-        const barHeight = Math.round((value / maxBar) * (chartHeight - 20));
-        return (
-          <div className="w-full flex items-end justify-center gap-3 px-4" style={{ height: chartHeight }}>
-            <div className="flex flex-col items-center">
-              <div 
-                className="w-16 bg-foreground rounded-t-md transition-all duration-500" 
-                style={{ height: `${barHeight}px` }}
-              />
-              <span className="text-sm text-muted-foreground mt-2 font-medium">{value}</span>
-            </div>
-          </div>
-        );
-
-      case 'line':
-        return (
-          <div className="w-full flex items-center justify-center" style={{ height: chartHeight }}>
-            <div className="text-center">
-              <span className="text-3xl font-bold text-foreground">{value.toLocaleString()}</span>
-              <p className="text-sm text-muted-foreground mt-1">leads</p>
-            </div>
-          </div>
-        );
-
-      case 'area':
-        return (
-          <div className="w-full flex items-center justify-center" style={{ height: chartHeight }}>
-            <div className="text-center">
-              <span className="text-3xl font-bold text-foreground">{value.toLocaleString()}</span>
-              <p className="text-sm text-muted-foreground mt-1">leads</p>
-            </div>
-          </div>
-        );
-
-      case 'gauge':
-        const percentage = Math.min(Math.round((value / Math.max(value, 100)) * 100), 100);
-        const gaugeSize = Math.min(chartHeight, (widget.width || 280) - 40);
-        return (
-          <div className="w-full flex items-center justify-center" style={{ height: chartHeight }}>
-            <svg viewBox="0 0 100 60" style={{ width: gaugeSize * 1.2, height: gaugeSize * 0.7 }}>
-              <path 
-                d="M10,55 A40,40 0 0,1 90,55" 
-                fill="none" 
-                stroke="hsl(var(--muted))" 
-                strokeWidth="8"
-                strokeLinecap="round"
-              />
-              <path 
-                d="M10,55 A40,40 0 0,1 90,55" 
-                fill="none" 
-                stroke="hsl(var(--foreground))" 
-                strokeWidth="8"
-                strokeLinecap="round"
-                strokeDasharray={`${percentage * 1.26} 126`}
-              />
-              <text x="50" y="48" textAnchor="middle" fontSize="14" fontWeight="bold" fill="hsl(var(--foreground))">
-                {value}
-              </text>
-            </svg>
-          </div>
-        );
-
-      default:
-        return (
-          <div className="w-full flex items-center justify-center" style={{ height: chartHeight }}>
-            {widget.chartType.preview}
-          </div>
-        );
-    }
   };
 
   return (
@@ -288,67 +181,72 @@ export function DashboardCanvas({ painelName, onBack }: DashboardCanvasProps) {
             {widgets.map((widget) => (
               <ResizableWidget
                 key={widget.id}
-                initialWidth={widget.width || 280}
-                initialHeight={widget.height || 200}
-                minWidth={200}
-                minHeight={160}
-                maxWidth={600}
-                maxHeight={500}
+                initialWidth={widget.width || 340}
+                initialHeight={widget.height || 280}
+                minWidth={260}
+                minHeight={220}
+                maxWidth={700}
+                maxHeight={550}
                 onResize={(w, h) => handleWidgetResize(widget.id, w, h)}
                 className="bg-white border border-border rounded-xl shadow-sm hover:shadow-md transition-shadow"
               >
-                <div className="relative h-full p-4">
+                <div className="relative h-full p-4 flex flex-col">
                   {/* Connect Overlay */}
                   {!widget.isConnected && (
                     <button
                       onClick={() => handleConnectWidget(widget.id)}
-                      className="absolute inset-0 flex flex-col items-center justify-center bg-white/90 rounded-xl transition-all hover:bg-white/95 focus:outline-none z-10"
+                      className="absolute inset-0 flex flex-col items-center justify-center bg-white/95 rounded-xl transition-all hover:bg-white focus:outline-none z-10"
                     >
-                      <div className="w-10 h-10 rounded-full flex items-center justify-center mb-2 bg-muted">
-                        <Link2 className="h-5 w-5 text-foreground" />
+                      <div className="w-12 h-12 rounded-full flex items-center justify-center mb-3 bg-muted">
+                        <Link2 className="h-6 w-6 text-foreground" />
                       </div>
                       <span className="text-sm font-medium text-foreground">
-                        Conectar fonte
+                        Conectar fonte de dados
+                      </span>
+                      <span className="text-xs text-muted-foreground mt-1">
+                        Clique para vincular uma origem
                       </span>
                     </button>
                   )}
 
-                  {/* Widget Content */}
-                  <div className={`h-full flex flex-col ${!widget.isConnected ? "opacity-40" : ""}`}>
-                    {/* Header */}
-                    <div className="flex items-center justify-between mb-2 shrink-0">
-                      <div className="flex items-center gap-2">
-                        <widget.chartType.icon className="h-4 w-4 text-muted-foreground" />
-                        <h3 className="text-sm font-medium text-foreground truncate">
-                          {widget.chartType.name}
-                        </h3>
-                      </div>
+                  {/* Header */}
+                  <div className="flex items-center justify-between mb-3 shrink-0">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <widget.chartType.icon className="h-4 w-4 text-muted-foreground shrink-0" />
+                      <h3 className="text-sm font-medium text-foreground truncate">
+                        {widget.source?.sourceName || widget.chartType.name}
+                      </h3>
+                    </div>
+                    <div className="flex items-center gap-1 shrink-0">
                       {widget.isConnected && (
                         <button
                           onClick={() => refreshWidgetData(widget.id)}
-                          className="p-1 rounded hover:bg-muted transition-colors"
+                          className="p-1.5 rounded-lg hover:bg-muted transition-colors"
                           title="Atualizar dados"
                         >
                           <RefreshCw className={`h-3.5 w-3.5 text-muted-foreground ${widget.isLoading ? 'animate-spin' : ''}`} />
                         </button>
                       )}
+                      <button
+                        onClick={() => handleDeleteWidget(widget.id)}
+                        className="p-1.5 rounded-lg hover:bg-red-50 transition-colors group"
+                        title="Remover widget"
+                      >
+                        <Trash2 className="h-3.5 w-3.5 text-muted-foreground group-hover:text-red-500" />
+                      </button>
                     </div>
-                    
-                    {/* Chart */}
-                    <div className="flex-1 min-h-0">
-                      {widget.isConnected ? renderChartWithData(widget) : (
-                        <div className="w-full h-full flex items-center justify-center p-2">
-                          {widget.chartType.preview}
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Footer */}
-                    {widget.source && (
-                      <p className="text-xs text-muted-foreground text-center truncate shrink-0 pt-1">
-                        {widget.source.sourceName}
-                      </p>
-                    )}
+                  </div>
+                  
+                  {/* Chart */}
+                  <div className={`flex-1 min-h-0 relative ${!widget.isConnected ? "opacity-30" : ""}`}>
+                    <ChartRenderer
+                      chartType={widget.chartType.id}
+                      value={widget.data?.value || 0}
+                      label={widget.data?.label || "Leads"}
+                      width={widget.width || 340}
+                      height={(widget.height || 280) - 60}
+                      isLoading={widget.isLoading}
+                    />
                   </div>
                 </div>
               </ResizableWidget>
@@ -357,11 +255,11 @@ export function DashboardCanvas({ painelName, onBack }: DashboardCanvasProps) {
             {/* Add More Button */}
             <button
               onClick={() => setIsChartSelectorOpen(true)}
-              className="flex flex-col items-center justify-center w-[200px] h-[160px] border-2 border-dashed border-border rounded-xl transition-all duration-200 hover:border-foreground/30 hover:bg-muted/30 focus:outline-none"
+              className="flex flex-col items-center justify-center w-[260px] h-[220px] border-2 border-dashed border-border rounded-xl transition-all duration-200 hover:border-foreground/30 hover:bg-muted/30 focus:outline-none"
             >
-              <Plus className="h-5 w-5 text-muted-foreground mb-1" />
-              <span className="text-xs text-muted-foreground">
-                Adicionar
+              <Plus className="h-6 w-6 text-muted-foreground mb-2" />
+              <span className="text-sm text-muted-foreground">
+                Adicionar gráfico
               </span>
             </button>
           </div>
