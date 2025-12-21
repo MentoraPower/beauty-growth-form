@@ -49,6 +49,7 @@ export interface DashboardWidget {
 
 interface DashboardCanvasProps {
   painelName: string;
+  dashboardId?: string;
   onBack: () => void;
 }
 
@@ -297,7 +298,7 @@ function ResizeHandle({ direction, widgetWidth, widgetHeight, containerWidth, mi
   );
 }
 
-export function DashboardCanvas({ painelName, onBack }: DashboardCanvasProps) {
+export function DashboardCanvas({ painelName, dashboardId, onBack }: DashboardCanvasProps) {
   const [widgets, setWidgets] = useState<DashboardWidget[]>([]);
   const [isChartSelectorOpen, setIsChartSelectorOpen] = useState(false);
   const [isConnectSourceOpen, setIsConnectSourceOpen] = useState(false);

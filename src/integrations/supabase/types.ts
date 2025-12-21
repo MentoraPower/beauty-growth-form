@@ -199,6 +199,33 @@ export type Database = {
           },
         ]
       }
+      dashboards: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          type: string
+          updated_at: string
+          widgets: Json | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          type?: string
+          updated_at?: string
+          widgets?: Json | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          type?: string
+          updated_at?: string
+          widgets?: Json | null
+        }
+        Relationships: []
+      }
       email_automations: {
         Row: {
           body_html: string
