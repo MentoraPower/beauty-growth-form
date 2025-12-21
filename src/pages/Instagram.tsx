@@ -793,7 +793,7 @@ export default function InstagramPage() {
               placeholder="Buscar conversas..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-9 bg-muted/30 border-0 h-9 text-sm placeholder:text-muted-foreground/60"
+              className="pl-9 bg-muted/30 border border-black/[0.08] h-9 text-sm placeholder:text-muted-foreground/60"
             />
           </div>
         </div>
