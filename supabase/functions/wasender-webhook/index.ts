@@ -798,25 +798,32 @@ async function handler(req: Request): Promise<Response> {
     // Check if this is a group message
     const isGroupMessage = remoteJid.includes("@g.us");
 
-    // Get phone number - prefer cleanedSenderPn for private chats
-    // For groups, use the group JID as the "phone" identifier
-    let phone = key.cleanedSenderPn || key.cleanedParticipantPn || "";
-    
-    // If no cleaned phone, try to extract from remoteJid
-    if (!phone && remoteJid) {
-      if (isGroupMessage) {
-        // For groups, use the full group JID as identifier
-        phone = remoteJid;
-      } else {
-        phone = remoteJid.replace("@c.us", "").replace("@s.whatsapp.net", "").replace("@lid", "").replace(/\D/g, "");
+    // Identifier:
+    // - Private chats: use cleaned sender phone when possible
+    // - Groups: always use the group JID (@g.us) so messages land in the group thread
+    let phone = "";
+
+    if (isGroupMessage) {
+      phone = remoteJid;
+    } else {
+      phone = key.cleanedSenderPn || key.cleanedParticipantPn || "";
+
+      // If no cleaned phone, try to extract from remoteJid
+      if (!phone && remoteJid) {
+        phone = remoteJid
+          .replace("@c.us", "")
+          .replace("@s.whatsapp.net", "")
+          .replace("@lid", "")
+          .replace(/\D/g, "");
       }
     }
 
-    // Skip if from ourselves (sent messages we already have)
-    if (fromMe) {
-      console.log("[Wasender Webhook] Skipping own message");
-      return new Response(JSON.stringify({ ok: true }), { 
-        headers: { ...corsHeaders, "Content-Type": "application/json" } 
+    // For private chats, ignore our own messages (they're inserted when sending via API).
+    // For groups, we DO store our own messages so messages sent from the phone show in-app.
+    if (fromMe && !isGroupMessage) {
+      console.log("[Wasender Webhook] Skipping own message (private chat)");
+      return new Response(JSON.stringify({ ok: true }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
@@ -983,9 +990,29 @@ async function handler(req: Request): Promise<Response> {
       });
     }
 
-    // Get or extract contact name
+    // Get display name
     const pushName = messageData.pushName || key.participant?.split("@")[0] || null;
-    const displayName = pushName || formatPhoneDisplay(phone);
+
+    let displayName = pushName || formatPhoneDisplay(phone);
+
+    // For groups, use the group name (not the sender name)
+    if (isGroupMessage) {
+      try {
+        const groupQuery = supabase
+          .from("whatsapp_groups")
+          .select("name")
+          .eq("group_jid", phone);
+
+        const { data: groupRow } = sessionId
+          ? await groupQuery.eq("session_id", sessionId).maybeSingle()
+          : await groupQuery.maybeSingle();
+
+        displayName = groupRow?.name || "Grupo";
+      } catch (e) {
+        console.error("[Wasender Webhook] Error fetching group name:", e);
+        displayName = "Grupo";
+      }
+    }
 
     // Timestamp
     const timestamp = messageData.messageTimestamp 
@@ -998,9 +1025,9 @@ async function handler(req: Request): Promise<Response> {
       name: displayName,
       last_message: text.substring(0, 500),
       last_message_time: timestamp,
-      last_message_status: "RECEIVED",
-      last_message_from_me: false,
-      unread_count: 1,
+      last_message_status: fromMe ? "SENT" : "RECEIVED",
+      last_message_from_me: fromMe,
+      unread_count: fromMe ? 0 : 1,
       updated_at: new Date().toISOString(),
     };
     
@@ -1035,7 +1062,7 @@ async function handler(req: Request): Promise<Response> {
       phone,
       text: text.substring(0, 2000),
       from_me: fromMe,
-      status: "RECEIVED",
+      status: fromMe ? "SENT" : "RECEIVED",
       media_type: mediaType,
       media_url: mediaUrl,
       created_at: timestamp,
