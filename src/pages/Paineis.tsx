@@ -189,23 +189,23 @@ export default function Paineis() {
 
           {/* Panel Templates */}
           <div className="mb-8 flex flex-col items-center">
-            <h2 className="text-sm font-medium text-muted-foreground mb-1">
+            <h2 className="text-base font-medium text-foreground mb-1">
               Escolha um modelo de painel
             </h2>
-            <p className="text-xs text-muted-foreground mb-6">
+            <p className="text-sm text-muted-foreground mb-6">
               Comece com um modelo para atender às suas necessidades
             </p>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 max-w-2xl">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 max-w-3xl">
               {painelOptions.map((painel) => (
                 <button
                   key={painel.id}
                   onClick={() => handlePainelSelect(painel.id)}
-                  className="group bg-card border border-border rounded-lg p-4 text-center transition-all duration-200 hover:bg-muted/50 focus:outline-none"
+                  className="group bg-card border border-border rounded-xl p-5 text-center transition-all duration-200 hover:bg-muted/50 focus:outline-none"
                 >
-                  <div className="w-9 h-9 rounded-lg flex items-center justify-center mx-auto mb-2 bg-muted">
-                    <painel.icon className="h-4 w-4 text-muted-foreground" />
+                  <div className="w-11 h-11 rounded-lg flex items-center justify-center mx-auto mb-3 bg-muted">
+                    <painel.icon className="h-5 w-5 text-muted-foreground" />
                   </div>
-                  <h3 className="text-xs font-medium text-foreground">
+                  <h3 className="text-sm font-medium text-foreground">
                     {painel.title}
                   </h3>
                 </button>
