@@ -588,28 +588,86 @@ const WhatsApp = () => {
   }, [selectedAccountId, whatsappAccounts]);
 
   // Handle selecting a group to open as chat
-  const handleSelectGroup = useCallback((group: WhatsAppGroup) => {
-    const groupChat: Chat = {
-      id: `group-${group.id}`,
-      name: group.name,
-      lastMessage: "",
-      time: "",
-      lastMessageTime: null,
-      unread: 0,
-      avatar: group.name.substring(0, 2).toUpperCase(),
-      phone: group.groupJid, // The group JID (e.g., 120363393176329236@g.us)
-      photo_url: group.photoUrl || null,
-      lastMessageStatus: null,
-      lastMessageFromMe: false,
-      isGroup: true,
-      participantCount: group.participantCount,
-    };
-    setSelectedChat(groupChat);
-    setReplyToMessage(null);
-    setIsSending(false);
-    setMessage("");
-    // Stay on grupos tab - don't switch to conversas
-  }, []);
+  const handleSelectGroup = useCallback(async (group: WhatsAppGroup) => {
+    const selectedAccount = whatsappAccounts.find((acc) => acc.id === selectedAccountId);
+    const sessionApiKey = selectedAccount?.api_key;
+
+    if (!sessionApiKey) {
+      toast({
+        title: "Selecione uma conta WhatsApp conectada",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      // Ensure there is a whatsapp_chats row for this group so we can use chat_id filters + realtime
+      const { data: existingChat, error: existingError } = await supabase
+        .from("whatsapp_chats")
+        .select("*")
+        .eq("phone", group.groupJid)
+        .eq("session_id", sessionApiKey)
+        .maybeSingle();
+
+      if (existingError) throw existingError;
+
+      let chatRow = existingChat;
+
+      if (!chatRow) {
+        const { data: createdChat, error: createError } = await supabase
+          .from("whatsapp_chats")
+          .upsert(
+            {
+              phone: group.groupJid,
+              name: group.name,
+              photo_url: group.photoUrl || null,
+              session_id: sessionApiKey,
+              last_message: null,
+              last_message_time: null,
+              last_message_status: null,
+              last_message_from_me: false,
+              unread_count: 0,
+              updated_at: new Date().toISOString(),
+            },
+            { onConflict: "phone,session_id" }
+          )
+          .select("*")
+          .single();
+
+        if (createError) throw createError;
+        chatRow = createdChat;
+      }
+
+      const groupChat: Chat = {
+        id: chatRow.id,
+        name: group.name,
+        lastMessage: chatRow.last_message || "",
+        time: chatRow.last_message_time ? formatTime(chatRow.last_message_time) : "",
+        lastMessageTime: chatRow.last_message_time || null,
+        unread: chatRow.unread_count || 0,
+        avatar: group.name.substring(0, 2).toUpperCase(),
+        phone: group.groupJid,
+        photo_url: group.photoUrl || chatRow.photo_url || null,
+        lastMessageStatus: chatRow.last_message_status || null,
+        lastMessageFromMe: chatRow.last_message_from_me || false,
+        isGroup: true,
+        participantCount: group.participantCount,
+      };
+
+      setSelectedChat(groupChat);
+      setReplyToMessage(null);
+      setIsSending(false);
+      setMessage("");
+      // Stay on grupos tab - don't switch to conversas
+    } catch (error: any) {
+      console.error("[WhatsApp] Error opening group chat:", error);
+      toast({
+        title: "Erro ao abrir grupo",
+        description: error?.message || "Tente novamente.",
+        variant: "destructive",
+      });
+    }
+  }, [selectedAccountId, whatsappAccounts, toast]);
 
   // Initial load - fetch chats once, optionally filtered by selected account's api_key
   const fetchChats = useCallback(async (showLoading = false) => {
@@ -822,36 +880,24 @@ const WhatsApp = () => {
   const fetchMessages = async (chatId: string, isGroup: boolean = false) => {
     setIsLoadingMessages(true);
     try {
-      // For groups, we need to query by phone (group JID) since we don't have a real chat_id in the DB
-      let query;
-      if (isGroup || chatId.startsWith("group-")) {
-        // Extract the actual group JID
-        const groupJid = chatId.startsWith("group-") ? chatId.replace("group-", "") : chatId;
-        query = supabase
-          .from("whatsapp_messages")
-          .select("*")
-          .eq("phone", groupJid)
-          .order("created_at", { ascending: true });
-      } else {
-        query = supabase
-          .from("whatsapp_messages")
-          .select("*")
-          .eq("chat_id", chatId)
-          .order("created_at", { ascending: true });
-      }
-
-      const { data, error } = await query;
+      const { data, error } = await supabase
+        .from("whatsapp_messages")
+        .select("*")
+        .eq("chat_id", chatId)
+        .order("created_at", { ascending: true });
 
       if (error) throw error;
 
       const formattedMessages: Message[] = (data || []).map((msg: any) => ({
         id: msg.id,
         text: msg.text || "",
-        time: msg.created_at ? new Date(msg.created_at).toLocaleTimeString("pt-BR", { 
-          hour: "2-digit", 
-          minute: "2-digit",
-          timeZone: "America/Sao_Paulo"
-        }) : "",
+        time: msg.created_at
+          ? new Date(msg.created_at).toLocaleTimeString("pt-BR", {
+              hour: "2-digit",
+              minute: "2-digit",
+              timeZone: "America/Sao_Paulo",
+            })
+          : "",
         sent: Boolean(msg.from_me) || isOutgoingStatus(msg.status),
         read: isViewedStatus(msg.status),
         status: msg.status,
@@ -868,14 +914,11 @@ const WhatsApp = () => {
       lastFetchedChatIdRef.current = chatId;
 
       // Mark as read (only for regular chats, not groups yet)
-      if (!isGroup && !chatId.startsWith("group-")) {
-        await supabase
-          .from("whatsapp_chats")
-          .update({ unread_count: 0 })
-          .eq("id", chatId);
-          
+      if (!isGroup) {
+        await supabase.from("whatsapp_chats").update({ unread_count: 0 }).eq("id", chatId);
+
         // Update local state
-        setChats(prev => prev.map(c => c.id === chatId ? { ...c, unread: 0 } : c));
+        setChats((prev) => prev.map((c) => (c.id === chatId ? { ...c, unread: 0 } : c)));
       }
     } catch (error: any) {
       console.error("Error fetching messages:", error);
