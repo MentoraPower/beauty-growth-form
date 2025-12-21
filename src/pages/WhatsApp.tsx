@@ -640,6 +640,46 @@ const WhatsApp = () => {
         chatRow = createdChat;
       }
 
+      // Best-effort: fetch participant count for this group (avoids showing 0)
+      let resolvedParticipantCount = group.participantCount;
+      if (!resolvedParticipantCount || resolvedParticipantCount <= 0) {
+        try {
+          const metaResponse = await fetch(
+            `https://www.wasenderapi.com/api/groups/${encodeURIComponent(group.groupJid)}/metadata`,
+            {
+              method: "GET",
+              headers: {
+                Authorization: `Bearer ${sessionApiKey}`,
+                "Content-Type": "application/json",
+              },
+            }
+          );
+
+          if (metaResponse.status !== 429 && metaResponse.ok) {
+            const metaResult = await metaResponse.json();
+            const size = metaResult?.data?.size ?? metaResult?.data?.participants?.length;
+
+            if (typeof size === "number" && size > 0) {
+              resolvedParticipantCount = size;
+
+              // Update local groups list
+              setWhatsappGroups((prev) =>
+                prev.map((g) => (g.groupJid === group.groupJid ? { ...g, participantCount: size } : g))
+              );
+
+              // Persist to DB (best-effort)
+              await supabase
+                .from("whatsapp_groups")
+                .update({ participant_count: size })
+                .eq("group_jid", group.groupJid)
+                .eq("session_id", sessionApiKey);
+            }
+          }
+        } catch (e) {
+          console.error("[WhatsApp] Error fetching group metadata:", e);
+        }
+      }
+
       const groupChat: Chat = {
         id: chatRow.id,
         name: group.name,
@@ -653,7 +693,7 @@ const WhatsApp = () => {
         lastMessageStatus: chatRow.last_message_status || null,
         lastMessageFromMe: chatRow.last_message_from_me || false,
         isGroup: true,
-        participantCount: group.participantCount,
+        participantCount: resolvedParticipantCount,
       };
 
       setSelectedChat(groupChat);
@@ -2987,7 +3027,9 @@ const WhatsApp = () => {
                   {selectedChat.isGroup ? (
                     <p className="text-xs text-muted-foreground flex items-center gap-1">
                       <Users className="w-3 h-3" />
-                      Grupo
+                      {selectedChat.participantCount && selectedChat.participantCount > 0
+                        ? `${selectedChat.participantCount} participantes`
+                        : "Grupo"}
                     </p>
                   ) : contactPresence && contactPresence.phone === selectedChat.phone.replace(/\D/g, "") ? (
                     <p className="text-xs text-emerald-500 animate-pulse">
