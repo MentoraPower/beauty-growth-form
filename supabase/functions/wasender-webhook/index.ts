@@ -599,15 +599,39 @@ async function handler(req: Request): Promise<Response> {
       }
 
       // Search for lead in CRM by phone number
-      const phonesVariations = [
-        phone,
-        phone.startsWith("55") ? phone.substring(2) : `55${phone}`,
-      ];
+      // Create variations to match different formats stored in the database
+      const cleanPhone = phone.replace(/\D/g, "");
+      const phonesVariations: string[] = [];
+      
+      // Add base phone
+      phonesVariations.push(cleanPhone);
+      
+      // If starts with country code 55, also search without it
+      if (cleanPhone.startsWith("55") && cleanPhone.length > 10) {
+        phonesVariations.push(cleanPhone.substring(2)); // Without country code
+      } else {
+        // If doesn't start with 55, also search with it
+        phonesVariations.push("55" + cleanPhone);
+      }
+      
+      // Also try removing the 9 prefix for mobile (Brazilian format)
+      for (const p of [...phonesVariations]) {
+        // If phone has 11 digits (with 9), try without the 9 after area code
+        if (p.length === 11 && p[2] === "9") {
+          phonesVariations.push(p.substring(0, 2) + p.substring(3));
+        }
+        // If phone has 13 digits (55 + 11 with 9), try without the 9
+        if (p.length === 13 && p.startsWith("55") && p[4] === "9") {
+          phonesVariations.push(p.substring(0, 4) + p.substring(5));
+        }
+      }
+      
+      console.log(`[Wasender Webhook] Searching leads with phone variations: ${phonesVariations.join(", ")}`);
       
       const { data: leads, error: leadError } = await supabase
         .from("leads")
         .select("id, name, whatsapp, sub_origin_id")
-        .or(phonesVariations.map((p: string) => `whatsapp.ilike.%${p}`).join(","));
+        .or(phonesVariations.map((p: string) => `whatsapp.ilike.%${p}%`).join(","));
       
       if (leadError) {
         console.error(`[Wasender Webhook] Error searching leads:`, leadError);
@@ -615,7 +639,7 @@ async function handler(req: Request): Promise<Response> {
       }
       
       if (!leads || leads.length === 0) {
-        console.log(`[Wasender Webhook] No lead found for phone: ${phone}`);
+        console.log(`[Wasender Webhook] No lead found for phone variations: ${phonesVariations.join(", ")}`);
         return;
       }
       
@@ -696,7 +720,7 @@ async function handler(req: Request): Promise<Response> {
     // ========== Handle group participants update (join/leave/promote/demote) ==========
     if (event === "group-participants.update") {
       const groupData = payload.data;
-      const groupJid = groupData?.jid || "";
+      const groupJid = groupData?.jid || groupData?.groupId || "";
       const participants = groupData?.participants || [];
       const action = groupData?.action || ""; // "add", "remove", "promote", "demote"
       
@@ -704,10 +728,22 @@ async function handler(req: Request): Promise<Response> {
       
       // Only track add (join) and remove (leave) actions
       if ((action === "add" || action === "remove") && participants.length > 0) {
-        for (const participantJid of participants) {
-          // Extract phone from participant JID
-          const phone = participantJid.replace("@s.whatsapp.net", "").replace("@c.us", "").replace(/\D/g, "");
-          await trackLeadGroupAction(supabase, phone, groupJid, action, sessionId);
+        for (const participant of participants) {
+          let phone = "";
+          
+          // Handle different participant formats
+          if (typeof participant === "string") {
+            // Old format: "554491233661@s.whatsapp.net"
+            phone = participant.replace("@s.whatsapp.net", "").replace("@c.us", "").replace(/\D/g, "");
+          } else if (typeof participant === "object" && participant !== null) {
+            // New format: { id: "...", phoneNumber: "554491233661@s.whatsapp.net" }
+            const phoneNumber = participant.phoneNumber || participant.pn || participant.phone || "";
+            phone = phoneNumber.replace("@s.whatsapp.net", "").replace("@c.us", "").replace(/\D/g, "");
+          }
+          
+          if (phone && phone.length >= 8) {
+            await trackLeadGroupAction(supabase, phone, groupJid, action, sessionId);
+          }
         }
       }
       
@@ -736,27 +772,60 @@ async function handler(req: Request): Promise<Response> {
         const groupJid = remoteJid;
         
         // Try to get participant phone from different sources
-        // messageStubParameters usually contains the participant JIDs
         const stubParams = msgData?.messageStubParameters || [];
-        const participantJid = msgData?.participant || 
-                              msgData?.key?.participant || 
-                              msgData?.key?.participantPn ||
-                              (stubParams.length > 0 ? stubParams[0] : null);
         
-        console.log(`[Wasender Webhook] messageStubType ${messageStubType} - participantJid: ${participantJid}, stubParams: ${JSON.stringify(stubParams)}`);
+        // Helper to extract phone from various formats
+        const extractPhone = (param: any): string => {
+          if (!param) return "";
+          
+          // If it's a string that looks like JSON, try to parse it
+          if (typeof param === "string") {
+            // Try to parse as JSON first
+            try {
+              const parsed = JSON.parse(param);
+              if (parsed.phoneNumber) {
+                return parsed.phoneNumber.replace("@s.whatsapp.net", "").replace("@c.us", "").replace(/\D/g, "");
+              }
+              if (parsed.pn) {
+                return parsed.pn.replace(/\D/g, "");
+              }
+            } catch {
+              // Not JSON, treat as JID
+              if (param.includes("@")) {
+                return param.replace("@s.whatsapp.net", "").replace("@c.us", "").replace("@lid", "").replace(/\D/g, "");
+              }
+            }
+          }
+          
+          // If it's an object
+          if (typeof param === "object" && param !== null) {
+            const phoneNumber = param.phoneNumber || param.pn || param.phone || "";
+            if (phoneNumber) {
+              return phoneNumber.replace("@s.whatsapp.net", "").replace("@c.us", "").replace(/\D/g, "");
+            }
+          }
+          
+          return "";
+        };
         
-        if (participantJid) {
-          const phone = participantJid.replace("@s.whatsapp.net", "").replace("@c.us", "").replace(/\D/g, "");
-          await trackLeadGroupAction(supabase, phone, groupJid, action, sessionId);
+        // Get participant from key
+        const participantFromKey = msgData?.key?.participantPn || "";
+        if (participantFromKey) {
+          const phone = participantFromKey.replace("@s.whatsapp.net", "").replace("@c.us", "").replace(/\D/g, "");
+          if (phone && phone.length >= 8 && phone.length <= 15) {
+            console.log(`[Wasender Webhook] Extracted phone from participantPn: ${phone}`);
+            await trackLeadGroupAction(supabase, phone, groupJid, action, sessionId);
+          }
         }
         
-        // Also process all participants from stubParams
+        // Process all participants from stubParams
+        const processedPhones = new Set<string>();
         for (const param of stubParams) {
-          if (param && param.includes("@")) {
-            const phone = param.replace("@s.whatsapp.net", "").replace("@c.us", "").replace(/\D/g, "");
-            if (phone !== participantJid?.replace(/\D/g, "")) {
-              await trackLeadGroupAction(supabase, phone, groupJid, action, sessionId);
-            }
+          const phone = extractPhone(param);
+          if (phone && phone.length >= 8 && phone.length <= 15 && !processedPhones.has(phone)) {
+            processedPhones.add(phone);
+            console.log(`[Wasender Webhook] Extracted phone from stubParam: ${phone}`);
+            await trackLeadGroupAction(supabase, phone, groupJid, action, sessionId);
           }
         }
       }
