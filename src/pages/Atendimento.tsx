@@ -129,7 +129,7 @@ export default function Atendimento() {
             <WhatsAppIcon className="h-4 w-4" />
             <span>WhatsApp</span>
             {activeTab === 'whatsapp' && (
-              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-primary to-primary-dark" />
+              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-primary/60 to-primary-dark/60" />
             )}
           </button>
           
@@ -145,7 +145,7 @@ export default function Atendimento() {
             <InstagramIcon className="h-4 w-4" />
             <span>Instagram</span>
             {activeTab === 'instagram' && (
-              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-primary to-primary-dark" />
+              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-primary/60 to-primary-dark/60" />
             )}
           </button>
         </div>

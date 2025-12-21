@@ -2631,30 +2631,6 @@ const WhatsApp = (props: WhatsAppProps) => {
   return (
     <>
       <div className="h-full min-h-0 flex overflow-hidden bg-background relative">
-        {/* App Initialization Loading Overlay */}
-        {isInitializingApp && (
-          <div className="absolute inset-0 bg-background z-50 flex items-center justify-center">
-            <div className="text-center">
-              <div className="w-10 h-10 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin mx-auto mb-3" />
-              <p className="text-sm text-foreground font-medium">Carregando WhatsApp...</p>
-              <p className="text-xs text-muted-foreground mt-1">Preparando suas conversas</p>
-            </div>
-          </div>
-        )}
-        
-        {/* Account Change Loading Overlay */}
-        {!isInitializingApp && isAccountChanging && (
-          <div className="absolute inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center">
-            <div className="text-center">
-              <div className="w-8 h-8 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin mx-auto mb-3" />
-              <p className="text-sm text-muted-foreground font-medium">Carregando conta...</p>
-              <p className="text-xs text-muted-foreground/60 mt-1">
-                {whatsappAccounts.find(a => a.id === selectedAccountId)?.name || ""}
-              </p>
-            </div>
-          </div>
-        )}
-        
         {/* Left Sidebar - Chat List */}
         <div className="w-[340px] flex flex-col border-r border-border bg-background">
 
