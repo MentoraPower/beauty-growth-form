@@ -2659,7 +2659,7 @@ const WhatsApp = (props: WhatsAppProps) => {
         <div className="w-[340px] flex flex-col border-r border-border bg-background">
 
           {/* Search */}
-          <div className="p-2 border-b border-border/30">
+          <div className="px-3 py-3 border-b border-border/30">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
               <Input
@@ -2687,7 +2687,7 @@ const WhatsApp = (props: WhatsAppProps) => {
                 <span className="text-xs text-muted-foreground">{chats.length}</span>
               )}
               {sidebarTab === "conversas" && (
-                <div className="absolute bottom-0 left-2 right-2 h-0.5 bg-[#25D366]" />
+                <div className="absolute bottom-0 left-2 right-2 h-0.5 bg-gradient-to-r from-primary to-primary-glow" />
               )}
             </button>
             <button
@@ -2709,7 +2709,7 @@ const WhatsApp = (props: WhatsAppProps) => {
                 <span className="text-xs text-muted-foreground">{whatsappGroups.length}</span>
               )}
               {sidebarTab === "grupos" && (
-                <div className="absolute bottom-0 left-2 right-2 h-0.5 bg-[#25D366]" />
+                <div className="absolute bottom-0 left-2 right-2 h-0.5 bg-gradient-to-r from-primary to-primary-glow" />
               )}
             </button>
           </div>
