@@ -128,7 +128,7 @@ export default function Paineis() {
                   value={painelName}
                   onChange={(e) => setPainelName(e.target.value)}
                   placeholder="Ex: Meu Painel de Vendas"
-                  className="h-12 text-base border-border/50 focus:border-primary transition-colors"
+                  className="h-12 text-base border-border/50 focus:border-foreground/50 transition-colors"
                   autoFocus
                   onKeyDown={(e) => {
                     if (e.key === 'Enter' && painelName.trim()) {
@@ -148,7 +148,7 @@ export default function Paineis() {
                 <Button
                   onClick={handleCreatePainel}
                   disabled={!painelName.trim()}
-                  className="flex-1 h-11 bg-primary hover:bg-primary/90"
+                  className="flex-1 h-11 bg-foreground hover:bg-foreground/90 text-background"
                 >
                   Criar painel
                 </Button>

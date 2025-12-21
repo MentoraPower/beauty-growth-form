@@ -42,10 +42,10 @@ export function DashboardCanvas({ painelName, onBack }: DashboardCanvasProps) {
           <div className="flex justify-center pt-16">
             <button
               onClick={() => setIsAddDialogOpen(true)}
-              className="group flex flex-col items-center justify-center w-80 h-48 border-2 border-dashed border-border rounded-2xl transition-all duration-200 hover:border-primary/50 hover:bg-muted/30 focus:outline-none"
+              className="group flex flex-col items-center justify-center w-80 h-48 border-2 border-dashed border-border rounded-2xl transition-all duration-200 hover:border-foreground/30 hover:bg-muted/30 focus:outline-none"
             >
-              <div className="w-16 h-16 rounded-full flex items-center justify-center mb-4 bg-muted group-hover:bg-primary/10 transition-colors">
-                <Plus className="h-8 w-8 text-muted-foreground group-hover:text-primary transition-colors" />
+              <div className="w-16 h-16 rounded-full flex items-center justify-center mb-4 bg-muted group-hover:bg-muted/80 transition-colors">
+                <Plus className="h-8 w-8 text-muted-foreground group-hover:text-foreground transition-colors" />
               </div>
               <span className="text-base font-medium text-muted-foreground group-hover:text-foreground transition-colors">
                 Criar dashboard
@@ -66,10 +66,10 @@ export function DashboardCanvas({ painelName, onBack }: DashboardCanvasProps) {
                     onClick={() => handleConnectWidget(widget.id)}
                     className="absolute inset-0 flex flex-col items-center justify-center bg-white/90 rounded-xl transition-all hover:bg-white/95 focus:outline-none z-10"
                   >
-                    <div className="w-10 h-10 rounded-full flex items-center justify-center mb-2 bg-primary/10">
-                      <Link2 className="h-5 w-5 text-primary" />
+                    <div className="w-10 h-10 rounded-full flex items-center justify-center mb-2 bg-muted">
+                      <Link2 className="h-5 w-5 text-foreground" />
                     </div>
-                    <span className="text-sm font-medium text-primary">
+                    <span className="text-sm font-medium text-foreground">
                       Conectar
                     </span>
                   </button>
@@ -90,7 +90,7 @@ export function DashboardCanvas({ painelName, onBack }: DashboardCanvasProps) {
             {/* Add More Button */}
             <button
               onClick={() => setIsAddDialogOpen(true)}
-              className="flex flex-col items-center justify-center min-h-[140px] border-2 border-dashed border-border rounded-xl transition-all duration-200 hover:border-primary/50 hover:bg-muted/30 focus:outline-none"
+              className="flex flex-col items-center justify-center min-h-[140px] border-2 border-dashed border-border rounded-xl transition-all duration-200 hover:border-foreground/30 hover:bg-muted/30 focus:outline-none"
             >
               <Plus className="h-5 w-5 text-muted-foreground mb-1" />
               <span className="text-xs text-muted-foreground">
