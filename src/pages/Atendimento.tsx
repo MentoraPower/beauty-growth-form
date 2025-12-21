@@ -225,21 +225,26 @@ export default function Atendimento() {
 
       {/* Tab Content - Full height and width */}
       <div className="flex-1 min-h-0 overflow-hidden">
-        {activeTab === 'whatsapp' ? (
-          <WhatsApp 
-            selectedAccountId={selectedAccountId}
-            setSelectedAccountId={setSelectedAccountId}
-            whatsappAccounts={whatsappAccounts}
-            setWhatsappAccounts={setWhatsappAccounts}
-            showAddAccountDialog={showAddAccountDialog}
-            setShowAddAccountDialog={setShowAddAccountDialog}
-            accountToConnect={accountToConnect}
-            setAccountToConnect={setAccountToConnect}
-            fetchWhatsAppAccounts={fetchWhatsAppAccounts}
-          />
-        ) : (
-          <InstagramPage />
-        )}
+        <div 
+          key={activeTab}
+          className="h-full animate-in fade-in duration-200"
+        >
+          {activeTab === 'whatsapp' ? (
+            <WhatsApp 
+              selectedAccountId={selectedAccountId}
+              setSelectedAccountId={setSelectedAccountId}
+              whatsappAccounts={whatsappAccounts}
+              setWhatsappAccounts={setWhatsappAccounts}
+              showAddAccountDialog={showAddAccountDialog}
+              setShowAddAccountDialog={setShowAddAccountDialog}
+              accountToConnect={accountToConnect}
+              setAccountToConnect={setAccountToConnect}
+              fetchWhatsAppAccounts={fetchWhatsAppAccounts}
+            />
+          ) : (
+            <InstagramPage />
+          )}
+        </div>
       </div>
     </div>
   );
