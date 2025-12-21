@@ -116,35 +116,33 @@ export function useInstagramCache() {
           console.log('[InstagramRealtime] New message received:', payload.new);
           const newMsg = payload.new as any;
           
-          // Check if message already exists (avoid duplicates) - check both message_id and temp messages
           setMessages(prev => {
-            const exists = prev.some(m => 
-              m.message_id === newMsg.message_id || 
-              m.id === newMsg.message_id ||
-              // Also check if there's a temp message with matching text/time (sent by us)
-              (m.id.startsWith('temp-') && m.fromMe && newMsg.from_me && m.text === newMsg.text)
+            // Check if message already exists by message_id
+            const existsByMessageId = prev.some(m => 
+              m.message_id === newMsg.message_id && !m.id.startsWith('temp-')
             );
-            if (exists) {
-              // If it's a temp message match, replace it with the real one
-              const tempMatch = prev.find(m => 
-                m.id.startsWith('temp-') && m.fromMe && newMsg.from_me && m.text === newMsg.text
-              );
-              if (tempMatch) {
-                return prev.map(m => m.id === tempMatch.id ? {
-                  id: newMsg.message_id,
-                  message_id: newMsg.message_id,
-                  text: newMsg.text,
-                  time: newMsg.created_at,
-                  fromMe: newMsg.from_me || false,
-                  status: newMsg.status || 'DELIVERED',
-                  mediaType: newMsg.media_type,
-                  mediaUrl: newMsg.media_url,
-                  shareLink: newMsg.share_link,
-                  shareName: newMsg.share_name,
-                } : m);
-              }
+            if (existsByMessageId) {
+              console.log('[InstagramRealtime] Message already exists, skipping:', newMsg.message_id);
               return prev;
             }
+            
+            // Find matching temp message (same text, fromMe, within time window)
+            const newMsgTime = new Date(newMsg.created_at).getTime();
+            const tempMatch = prev.find(m => {
+              if (!m.id.startsWith('temp-')) return false;
+              if (m.fromMe !== newMsg.from_me) return false;
+              // For text messages, match by text
+              if (newMsg.text && m.text === newMsg.text) {
+                const tempTime = new Date(m.time).getTime();
+                return Math.abs(newMsgTime - tempTime) < 120000; // 2 min window
+              }
+              // For media messages, match by media type
+              if (newMsg.media_type && m.mediaType === newMsg.media_type) {
+                const tempTime = new Date(m.time).getTime();
+                return Math.abs(newMsgTime - tempTime) < 120000;
+              }
+              return false;
+            });
             
             const formattedMessage: InstagramMessage = {
               id: newMsg.message_id,
@@ -159,6 +157,13 @@ export function useInstagramCache() {
               shareName: newMsg.share_name,
             };
             
+            if (tempMatch) {
+              // Replace temp message with real one
+              console.log('[InstagramRealtime] Replacing temp message:', tempMatch.id, 'with:', newMsg.message_id);
+              return prev.map(m => m.id === tempMatch.id ? formattedMessage : m);
+            }
+            
+            // Add new message
             return [...prev, formattedMessage];
           });
         }
@@ -304,9 +309,15 @@ export function useInstagramCache() {
     }
   }, []);
 
-  // Save a single sent message to cache
+  // Save a single sent message to cache - skip temp messages
   const saveSentMessageToCache = useCallback(async (conversationId: string, message: InstagramMessage) => {
     try {
+      // Don't save temp messages to cache - they will be replaced by real messages from API
+      if (message.id.startsWith('temp-') || message.message_id.startsWith('temp-')) {
+        console.log('[InstagramCache] Skipping temp message save:', message.id);
+        return;
+      }
+      
       const { error } = await supabase
         .from('instagram_messages')
         .upsert({
@@ -439,14 +450,29 @@ export function useInstagramCache() {
           };
         });
 
-        // Merge with existing temp messages (don't lose pending messages)
+        // Replace temp messages with real ones, deduplicate by text+fromMe
         setMessages(prev => {
+          // Get all temp messages
           const tempMessages = prev.filter(m => m.id.startsWith('temp-'));
-          // Only keep temp messages that aren't already in the API response
-          const uniqueTempMessages = tempMessages.filter(temp => 
-            !formattedMessages.some(fm => fm.text === temp.text && fm.fromMe === temp.fromMe)
-          );
-          return [...formattedMessages, ...uniqueTempMessages];
+          
+          // For each formatted message, check if there's a matching temp
+          const finalMessages = formattedMessages.map(fm => fm);
+          
+          // Find temp messages that have no corresponding real message yet
+          // (match by text and fromMe flag within a small time window)
+          const unmatchedTemps = tempMessages.filter(temp => {
+            const tempTime = new Date(temp.time).getTime();
+            const hasMatch = formattedMessages.some(fm => {
+              const fmTime = new Date(fm.time).getTime();
+              const timeDiff = Math.abs(fmTime - tempTime);
+              // Match if same text, same sender, within 2 minutes
+              return fm.text === temp.text && fm.fromMe === temp.fromMe && timeDiff < 120000;
+            });
+            return !hasMatch;
+          });
+          
+          // Return formatted messages + any unmatched temp messages (still pending)
+          return [...finalMessages, ...unmatchedTemps];
         });
         // Save to cache in background
         saveMessagesToCache(conversationId, formattedMessages);
