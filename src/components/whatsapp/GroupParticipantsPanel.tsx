@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import { Users, RefreshCw } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
+import { Users, RefreshCw, ImageIcon } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 
@@ -25,6 +25,9 @@ interface GroupParticipantsPanelProps {
 const DEFAULT_AVATAR =
   "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyMTIgMjEyIj48cGF0aCBmaWxsPSIjREZFNUU3IiBkPSJNMCAwaDIxMnYyMTJIMHoiLz48cGF0aCBmaWxsPSIjRkZGIiBkPSJNMTA2IDEwNmMtMjUuNCAwLTQ2LTIwLjYtNDYtNDZzMjAuNi00NiA0Ni00NiA0NiAyMC42IDQ2IDQ2LTIwLjYgNDYtNDYgNDZ6bTAgMTNjMzAuNiAwIDkyIDE1LjQgOTIgNDZ2MjNIMTR2LTIzYzAtMzAuNiA2MS40LTQ2IDkyLTQ2eiIvPjwvc3ZnPg==";
 
+const RATE_LIMIT_DELAY_MS = 350; // Delay between API calls to respect rate limits
+const BATCH_SIZE = 10; // Process in batches
+
 const getInitials = (name: string): string => {
   if (!name) return "?";
   const parts = name.trim().split(" ");
@@ -35,10 +38,8 @@ const getInitials = (name: string): string => {
 };
 
 const formatPhone = (phone: string): string => {
-  // Remove @s.whatsapp.net suffix if present
   const clean = phone.replace(/@s\.whatsapp\.net$/, "").replace(/\D/g, "");
   if (clean.length === 13 && clean.startsWith("55")) {
-    // Brazilian number with country code
     return `+${clean.slice(0, 2)} (${clean.slice(2, 4)}) ${clean.slice(4, 9)}-${clean.slice(9)}`;
   }
   if (clean.length === 12 && clean.startsWith("55")) {
@@ -58,6 +59,9 @@ export const GroupParticipantsPanel = ({
   const [participants, setParticipants] = useState<Participant[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isLoadingAllPhotos, setIsLoadingAllPhotos] = useState(false);
+  const [photoLoadProgress, setPhotoLoadProgress] = useState({ current: 0, total: 0 });
+  const abortControllerRef = useRef<AbortController | null>(null);
 
   const fetchParticipants = async () => {
     if (!apiKey || !groupJid) return;
@@ -113,8 +117,8 @@ export const GroupParticipantsPanel = ({
 
         setParticipants(participantsList);
 
-        // Fetch profile pictures in background (limited to avoid rate limits)
-        fetchProfilePictures(participantsList);
+        // Fetch profile pictures for first 5 in background
+        fetchProfilePictures(participantsList.slice(0, 5));
       } else {
         setParticipants([]);
         setError("Participantes não disponíveis para este grupo.");
@@ -128,10 +132,7 @@ export const GroupParticipantsPanel = ({
   };
 
   const fetchProfilePictures = async (participantsList: Participant[]) => {
-    // Limit to first 5 participants to avoid rate limits
-    const toFetch = participantsList.slice(0, 5);
-
-    for (const participant of toFetch) {
+    for (const participant of participantsList) {
       if (!participant.jid) continue;
 
       try {
@@ -165,14 +166,126 @@ export const GroupParticipantsPanel = ({
         console.error("[GroupParticipantsPanel] Error fetching picture:", e);
       }
 
-      // Small delay to avoid rate limits
       await new Promise((resolve) => setTimeout(resolve, 200));
     }
   };
 
+  const fetchAllProfilePhotos = async () => {
+    // Get participants without photos
+    const participantsWithoutPhotos = participants.filter((p) => !p.photoUrl && p.jid);
+    
+    if (participantsWithoutPhotos.length === 0) {
+      return;
+    }
+
+    // Abort any previous operation
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+    abortControllerRef.current = new AbortController();
+    const signal = abortControllerRef.current.signal;
+
+    setIsLoadingAllPhotos(true);
+    setPhotoLoadProgress({ current: 0, total: participantsWithoutPhotos.length });
+
+    let processed = 0;
+    let rateLimitHits = 0;
+
+    for (let i = 0; i < participantsWithoutPhotos.length; i += BATCH_SIZE) {
+      if (signal.aborted) break;
+
+      const batch = participantsWithoutPhotos.slice(i, i + BATCH_SIZE);
+
+      for (const participant of batch) {
+        if (signal.aborted) break;
+        if (!participant.jid) {
+          processed++;
+          setPhotoLoadProgress({ current: processed, total: participantsWithoutPhotos.length });
+          continue;
+        }
+
+        try {
+          const picResponse = await fetch(
+            `https://www.wasenderapi.com/api/contacts/${encodeURIComponent(participant.jid)}/picture`,
+            {
+              method: "GET",
+              headers: {
+                Authorization: `Bearer ${apiKey}`,
+                "Content-Type": "application/json",
+              },
+              signal,
+            }
+          );
+
+          if (picResponse.status === 429) {
+            rateLimitHits++;
+            console.log("[GroupParticipantsPanel] Rate limited, waiting longer...");
+            // Wait longer when rate limited
+            await new Promise((resolve) => setTimeout(resolve, 2000));
+            
+            if (rateLimitHits >= 3) {
+              console.log("[GroupParticipantsPanel] Too many rate limits, stopping");
+              break;
+            }
+            continue;
+          }
+
+          rateLimitHits = 0; // Reset on success
+
+          if (picResponse.ok) {
+            const picResult = await picResponse.json();
+            const imgUrl = picResult?.data?.imgUrl || picResult?.imgUrl || null;
+
+            if (imgUrl) {
+              setParticipants((prev) =>
+                prev.map((p) => (p.id === participant.id ? { ...p, photoUrl: imgUrl } : p))
+              );
+            }
+          }
+        } catch (e: any) {
+          if (e.name === "AbortError") {
+            console.log("[GroupParticipantsPanel] Photo fetch aborted");
+            break;
+          }
+          console.error("[GroupParticipantsPanel] Error fetching picture:", e);
+        }
+
+        processed++;
+        setPhotoLoadProgress({ current: processed, total: participantsWithoutPhotos.length });
+
+        // Delay between requests to respect rate limits
+        await new Promise((resolve) => setTimeout(resolve, RATE_LIMIT_DELAY_MS));
+      }
+
+      // Extra delay between batches
+      if (!signal.aborted && i + BATCH_SIZE < participantsWithoutPhotos.length) {
+        await new Promise((resolve) => setTimeout(resolve, 500));
+      }
+    }
+
+    setIsLoadingAllPhotos(false);
+    setPhotoLoadProgress({ current: 0, total: 0 });
+  };
+
+  const cancelPhotoLoading = () => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+      abortControllerRef.current = null;
+    }
+    setIsLoadingAllPhotos(false);
+    setPhotoLoadProgress({ current: 0, total: 0 });
+  };
+
   useEffect(() => {
     fetchParticipants();
+    return () => {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+    };
   }, [groupJid, apiKey]);
+
+  const participantsWithoutPhotos = participants.filter((p) => !p.photoUrl).length;
 
   return (
     <div className="w-[340px] border-l border-border bg-background flex flex-col overflow-hidden">
@@ -205,17 +318,46 @@ export const GroupParticipantsPanel = ({
         </div>
       </div>
 
-      {/* Participants List */}
+      {/* Participants List Header */}
       <div className="flex items-center justify-between px-4 py-2 border-b border-border/50">
         <span className="text-sm font-medium text-foreground">Participantes</span>
-        <button
-          onClick={fetchParticipants}
-          disabled={isLoading}
-          className="p-1.5 hover:bg-muted rounded-md transition-colors disabled:opacity-50"
-          title="Atualizar participantes"
-        >
-          <RefreshCw className={cn("w-4 h-4 text-muted-foreground", isLoading && "animate-spin")} />
-        </button>
+        <div className="flex items-center gap-1">
+          {/* Load all photos button */}
+          {participantsWithoutPhotos > 0 && !isLoadingAllPhotos && (
+            <button
+              onClick={fetchAllProfilePhotos}
+              disabled={isLoading || participants.length === 0}
+              className="p-1.5 hover:bg-muted rounded-md transition-colors disabled:opacity-50 group"
+              title={`Carregar ${participantsWithoutPhotos} fotos restantes`}
+            >
+              <ImageIcon className="w-4 h-4 text-muted-foreground group-hover:text-foreground" />
+            </button>
+          )}
+          
+          {/* Progress indicator during photo loading */}
+          {isLoadingAllPhotos && (
+            <button
+              onClick={cancelPhotoLoading}
+              className="flex items-center gap-1.5 px-2 py-1 text-xs bg-muted rounded-md hover:bg-muted/80 transition-colors"
+              title="Clique para cancelar"
+            >
+              <RefreshCw className="w-3 h-3 text-primary animate-spin" />
+              <span className="text-muted-foreground">
+                {photoLoadProgress.current}/{photoLoadProgress.total}
+              </span>
+            </button>
+          )}
+          
+          {/* Refresh button */}
+          <button
+            onClick={fetchParticipants}
+            disabled={isLoading || isLoadingAllPhotos}
+            className="p-1.5 hover:bg-muted rounded-md transition-colors disabled:opacity-50"
+            title="Atualizar participantes"
+          >
+            <RefreshCw className={cn("w-4 h-4 text-muted-foreground", isLoading && "animate-spin")} />
+          </button>
+        </div>
       </div>
 
       <ScrollArea className="flex-1">
