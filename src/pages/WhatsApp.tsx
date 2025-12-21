@@ -417,9 +417,10 @@ const WhatsApp = () => {
             
             let photoUrl = g.profilePicture || g.pictureUrl || g.imgUrl || null;
             
-            // Fetch metadata to get participant count and photo
+            // Fetch metadata and profile picture
             if (groupId) {
               try {
+                // Fetch metadata for participant count
                 const metaResponse = await fetch(
                   `https://www.wasenderapi.com/api/groups/${encodeURIComponent(groupId)}/metadata`,
                   {
@@ -433,14 +434,31 @@ const WhatsApp = () => {
                 
                 if (metaResponse.ok) {
                   const metaResult = await metaResponse.json();
-                  console.log(`[WhatsApp] Group ${groupId} metadata:`, metaResult);
                   if (metaResult.success && metaResult.data) {
                     participantCount = metaResult.data.participants?.length || participantCount;
-                    photoUrl = metaResult.data.profilePicture || metaResult.data.pictureUrl || metaResult.data.imgUrl || photoUrl;
+                  }
+                }
+                
+                // Fetch profile picture separately
+                const picResponse = await fetch(
+                  `https://www.wasenderapi.com/api/groups/${encodeURIComponent(groupId)}/profile-picture`,
+                  {
+                    method: "GET",
+                    headers: {
+                      "Authorization": `Bearer ${sessionApiKey}`,
+                      "Content-Type": "application/json",
+                    },
+                  }
+                );
+                
+                if (picResponse.ok) {
+                  const picResult = await picResponse.json();
+                  if (picResult.success && picResult.data?.url) {
+                    photoUrl = picResult.data.url;
                   }
                 }
               } catch (e) {
-                console.log(`[WhatsApp] Failed to fetch metadata for group ${groupId}`);
+                console.log(`[WhatsApp] Failed to fetch data for group ${groupId}`);
               }
             }
             
@@ -448,7 +466,7 @@ const WhatsApp = () => {
               id: groupId,
               name: g.subject || g.name || "Grupo",
               participantCount,
-              photoUrl: g.profilePicture || g.pictureUrl || g.imgUrl || null,
+              photoUrl,
             };
           })
         );
