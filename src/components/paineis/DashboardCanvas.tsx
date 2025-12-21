@@ -180,8 +180,8 @@ function SortableWidget({ widget, onResize, onDelete, onConnect, containerWidth 
           </button>
         )}
 
-        {/* Header - Title at top left */}
-        <div className="mb-2 shrink-0">
+        {/* Header - Title at top left with smooth padding transition */}
+        <div className="mb-2 shrink-0 pl-0 group-hover/widget:pl-8 transition-all duration-300 ease-out">
           <h3 className="text-sm font-medium text-foreground truncate">
             {widget.source?.sourceName || widget.chartType.name}
           </h3>
