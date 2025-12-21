@@ -191,26 +191,26 @@ export default function Paineis() {
           </div>
 
           {/* Panel Templates */}
-          <div className="mb-8">
-            <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wider mb-4">
+          <div className="mb-8 flex flex-col items-center">
+            <h2 className="text-sm font-medium text-muted-foreground mb-1">
               Escolha um modelo de painel
             </h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <p className="text-xs text-muted-foreground mb-6">
+              Comece com um modelo para atender às suas necessidades
+            </p>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 max-w-2xl">
               {painelOptions.map((painel) => (
                 <button
                   key={painel.id}
                   onClick={() => handlePainelSelect(painel.id)}
-                  className="group bg-card border border-border rounded-xl p-5 text-left transition-all duration-200 hover:shadow-md hover:border-primary/30 focus:outline-none"
+                  className="group bg-card border border-border rounded-lg p-4 text-center transition-all duration-200 hover:bg-muted/50 focus:outline-none"
                 >
-                  <div className="w-11 h-11 rounded-lg flex items-center justify-center mb-4 bg-muted group-hover:bg-primary/10 transition-colors">
-                    <painel.icon className="h-5 w-5 text-muted-foreground group-hover:text-primary transition-colors" />
+                  <div className="w-9 h-9 rounded-lg flex items-center justify-center mx-auto mb-2 bg-muted">
+                    <painel.icon className="h-4 w-4 text-muted-foreground" />
                   </div>
-                  <h3 className="text-sm font-medium text-foreground mb-1">
+                  <h3 className="text-xs font-medium text-foreground">
                     {painel.title}
                   </h3>
-                  <p className="text-xs text-muted-foreground leading-relaxed">
-                    {painel.description}
-                  </p>
                 </button>
               ))}
             </div>
