@@ -64,15 +64,21 @@ export function useInstagramCache() {
             
             setChats(prev => {
               const existingIndex = prev.findIndex(c => c.conversation_id === formattedChat.conversation_id);
+              let updated: InstagramChat[];
               if (existingIndex >= 0) {
-                // Update existing chat in place (no re-sorting to avoid flickering)
-                const updated = [...prev];
+                // Update existing chat
+                updated = [...prev];
                 updated[existingIndex] = formattedChat;
-                return updated;
               } else {
-                // Add new chat at the top
-                return [formattedChat, ...prev];
+                // Add new chat
+                updated = [formattedChat, ...prev];
               }
+              // Always sort by last message time (most recent first)
+              return updated.sort((a, b) => {
+                const timeA = new Date(a.lastMessageTime).getTime();
+                const timeB = new Date(b.lastMessageTime).getTime();
+                return timeB - timeA;
+              });
             });
           } else if (payload.eventType === 'DELETE') {
             const oldChat = payload.old as any;

@@ -815,7 +815,8 @@ export default function InstagramPage() {
                 <p className="text-xs mt-1">As conversas do Instagram Direct aparecerão aqui</p>
               </div>
             ) : (
-              chats
+              [...chats]
+                .sort((a, b) => new Date(b.lastMessageTime).getTime() - new Date(a.lastMessageTime).getTime())
                 .filter(chat => 
                   chat.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
                   chat.username.toLowerCase().includes(searchQuery.toLowerCase())
