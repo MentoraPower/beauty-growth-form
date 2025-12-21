@@ -101,9 +101,10 @@ function SortableWidget({ widget, onResize, onDelete, onConnect, containerWidth 
     opacity: isDragging ? 0.4 : 1,
     flexBasis: widgetWidth,
     flexGrow: 0,
-    flexShrink: 1,
+    flexShrink: 0,
     minWidth: minWidth,
     maxWidth: containerWidth > 0 ? containerWidth : '100%',
+    width: widgetWidth,
     height: widgetHeight,
   };
 
@@ -112,7 +113,8 @@ function SortableWidget({ widget, onResize, onDelete, onConnect, containerWidth 
     let newHeight = widgetHeight;
 
     if (direction.includes('e')) {
-      newWidth = Math.min(containerWidth, Math.max(minWidth, widgetWidth + deltaX));
+      const maxWidth = containerWidth > 0 ? containerWidth : 2000;
+      newWidth = Math.min(maxWidth, Math.max(minWidth, widgetWidth + deltaX));
     }
     if (direction.includes('s')) {
       newHeight = Math.min(1200, Math.max(220, widgetHeight + deltaY));
@@ -243,7 +245,8 @@ function ResizeHandle({ direction, widgetWidth, widgetHeight, containerWidth, mi
       let newHeight = startSize.current.height;
 
       if (direction.includes('e')) {
-        newWidth = Math.min(containerWidth, Math.max(minWidth, startSize.current.width + deltaX));
+        const maxWidth = containerWidth > 0 ? containerWidth : 2000;
+        newWidth = Math.min(maxWidth, Math.max(minWidth, startSize.current.width + deltaX));
       }
       if (direction.includes('s')) {
         newHeight = Math.min(1200, Math.max(220, startSize.current.height + deltaY));
