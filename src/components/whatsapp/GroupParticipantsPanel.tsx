@@ -245,6 +245,16 @@ export const GroupParticipantsPanel = ({
     };
   }, [groupJid, apiKey]);
 
+  // Automatically load photos when participants are loaded
+  useEffect(() => {
+    if (participants.length > 0 && !isLoadingAllPhotos) {
+      const hasNoPhotos = participants.every((p) => !p.photoUrl);
+      if (hasNoPhotos) {
+        loadAllPhotos(participants);
+      }
+    }
+  }, [participants.length]);
+
   return (
     <div className="w-[340px] border-l border-border bg-background flex flex-col overflow-hidden">
       {/* Header */}
