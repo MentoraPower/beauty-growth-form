@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { Users, RefreshCw, ImageIcon } from "lucide-react";
+import { Users, RefreshCw, X } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 
@@ -116,9 +116,8 @@ export const GroupParticipantsPanel = ({
         }));
 
         setParticipants(participantsList);
-
-        // Fetch profile pictures for first 5 in background
-        fetchProfilePictures(participantsList.slice(0, 5));
+        // Auto-start loading all profile pictures
+        autoLoadAllPhotos(participantsList);
       } else {
         setParticipants([]);
         setError("Participantes não disponíveis para este grupo.");
@@ -131,52 +130,9 @@ export const GroupParticipantsPanel = ({
     }
   };
 
-  const fetchProfilePictures = async (participantsList: Participant[]) => {
-    for (const participant of participantsList) {
-      if (!participant.jid) continue;
-
-      try {
-        const picResponse = await fetch(
-          `https://www.wasenderapi.com/api/contacts/${encodeURIComponent(participant.jid)}/picture`,
-          {
-            method: "GET",
-            headers: {
-              Authorization: `Bearer ${apiKey}`,
-              "Content-Type": "application/json",
-            },
-          }
-        );
-
-        if (picResponse.status === 429) {
-          console.log("[GroupParticipantsPanel] Rate limited, stopping picture fetch");
-          break;
-        }
-
-        if (picResponse.ok) {
-          const picResult = await picResponse.json();
-          const imgUrl = picResult?.data?.imgUrl || picResult?.imgUrl || null;
-
-          if (imgUrl) {
-            setParticipants((prev) =>
-              prev.map((p) => (p.id === participant.id ? { ...p, photoUrl: imgUrl } : p))
-            );
-          }
-        }
-      } catch (e) {
-        console.error("[GroupParticipantsPanel] Error fetching picture:", e);
-      }
-
-      await new Promise((resolve) => setTimeout(resolve, 200));
-    }
-  };
-
-  const fetchAllProfilePhotos = async () => {
-    // Get participants without photos
-    const participantsWithoutPhotos = participants.filter((p) => !p.photoUrl && p.jid);
-    
-    if (participantsWithoutPhotos.length === 0) {
-      return;
-    }
+  const autoLoadAllPhotos = async (participantsList: Participant[]) => {
+    const toFetch = participantsList.filter((p) => p.jid);
+    if (toFetch.length === 0) return;
 
     // Abort any previous operation
     if (abortControllerRef.current) {
@@ -186,23 +142,18 @@ export const GroupParticipantsPanel = ({
     const signal = abortControllerRef.current.signal;
 
     setIsLoadingAllPhotos(true);
-    setPhotoLoadProgress({ current: 0, total: participantsWithoutPhotos.length });
+    setPhotoLoadProgress({ current: 0, total: toFetch.length });
 
     let processed = 0;
     let rateLimitHits = 0;
 
-    for (let i = 0; i < participantsWithoutPhotos.length; i += BATCH_SIZE) {
+    for (let i = 0; i < toFetch.length; i += BATCH_SIZE) {
       if (signal.aborted) break;
 
-      const batch = participantsWithoutPhotos.slice(i, i + BATCH_SIZE);
+      const batch = toFetch.slice(i, i + BATCH_SIZE);
 
       for (const participant of batch) {
         if (signal.aborted) break;
-        if (!participant.jid) {
-          processed++;
-          setPhotoLoadProgress({ current: processed, total: participantsWithoutPhotos.length });
-          continue;
-        }
 
         try {
           const picResponse = await fetch(
@@ -220,9 +171,7 @@ export const GroupParticipantsPanel = ({
           if (picResponse.status === 429) {
             rateLimitHits++;
             console.log("[GroupParticipantsPanel] Rate limited, waiting longer...");
-            // Wait longer when rate limited
             await new Promise((resolve) => setTimeout(resolve, 2000));
-            
             if (rateLimitHits >= 3) {
               console.log("[GroupParticipantsPanel] Too many rate limits, stopping");
               break;
@@ -230,7 +179,7 @@ export const GroupParticipantsPanel = ({
             continue;
           }
 
-          rateLimitHits = 0; // Reset on success
+          rateLimitHits = 0;
 
           if (picResponse.ok) {
             const picResult = await picResponse.json();
@@ -243,22 +192,16 @@ export const GroupParticipantsPanel = ({
             }
           }
         } catch (e: any) {
-          if (e.name === "AbortError") {
-            console.log("[GroupParticipantsPanel] Photo fetch aborted");
-            break;
-          }
+          if (e.name === "AbortError") break;
           console.error("[GroupParticipantsPanel] Error fetching picture:", e);
         }
 
         processed++;
-        setPhotoLoadProgress({ current: processed, total: participantsWithoutPhotos.length });
-
-        // Delay between requests to respect rate limits
+        setPhotoLoadProgress({ current: processed, total: toFetch.length });
         await new Promise((resolve) => setTimeout(resolve, RATE_LIMIT_DELAY_MS));
       }
 
-      // Extra delay between batches
-      if (!signal.aborted && i + BATCH_SIZE < participantsWithoutPhotos.length) {
+      if (!signal.aborted && i + BATCH_SIZE < toFetch.length) {
         await new Promise((resolve) => setTimeout(resolve, 500));
       }
     }
@@ -284,8 +227,6 @@ export const GroupParticipantsPanel = ({
       }
     };
   }, [groupJid, apiKey]);
-
-  const participantsWithoutPhotos = participants.filter((p) => !p.photoUrl).length;
 
   return (
     <div className="w-[340px] border-l border-border bg-background flex flex-col overflow-hidden">
@@ -322,18 +263,6 @@ export const GroupParticipantsPanel = ({
       <div className="flex items-center justify-between px-4 py-2 border-b border-border/50">
         <span className="text-sm font-medium text-foreground">Participantes</span>
         <div className="flex items-center gap-1">
-          {/* Load all photos button */}
-          {participantsWithoutPhotos > 0 && !isLoadingAllPhotos && (
-            <button
-              onClick={fetchAllProfilePhotos}
-              disabled={isLoading || participants.length === 0}
-              className="p-1.5 hover:bg-muted rounded-md transition-colors disabled:opacity-50 group"
-              title={`Carregar ${participantsWithoutPhotos} fotos restantes`}
-            >
-              <ImageIcon className="w-4 h-4 text-muted-foreground group-hover:text-foreground" />
-            </button>
-          )}
-          
           {/* Progress indicator during photo loading */}
           {isLoadingAllPhotos && (
             <button
