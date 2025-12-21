@@ -2687,7 +2687,7 @@ const WhatsApp = (props: WhatsAppProps) => {
                 <span className="text-xs text-muted-foreground">{chats.length}</span>
               )}
               {sidebarTab === "conversas" && (
-                <div className="absolute bottom-0 left-2 right-2 h-0.5 bg-gradient-to-r from-primary to-primary-glow" />
+                <div className="absolute bottom-0 left-2 right-2 h-0.5 bg-foreground" />
               )}
             </button>
             <button
@@ -2709,7 +2709,7 @@ const WhatsApp = (props: WhatsAppProps) => {
                 <span className="text-xs text-muted-foreground">{whatsappGroups.length}</span>
               )}
               {sidebarTab === "grupos" && (
-                <div className="absolute bottom-0 left-2 right-2 h-0.5 bg-gradient-to-r from-primary to-primary-glow" />
+                <div className="absolute bottom-0 left-2 right-2 h-0.5 bg-foreground" />
               )}
             </button>
           </div>
