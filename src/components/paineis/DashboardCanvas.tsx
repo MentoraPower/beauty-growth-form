@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Plus, Link2 } from "lucide-react";
+import { Plus, Link2, X } from "lucide-react";
 import { AddWidgetDialog, DashboardWidget } from "./AddWidgetDialog";
 
 interface DashboardCanvasProps {
@@ -23,16 +23,16 @@ export function DashboardCanvas({ painelName, onBack }: DashboardCanvasProps) {
   return (
     <div className="h-full flex flex-col">
       {/* Header */}
-      <div className="mb-6">
-        <button
-          onClick={onBack}
-          className="text-sm text-muted-foreground hover:text-foreground transition-colors mb-2"
-        >
-          ← Voltar para painéis
-        </button>
+      <div className="flex items-center justify-between mb-6">
         <h1 className="text-xl font-semibold text-foreground">
           {painelName}
         </h1>
+        <button
+          onClick={onBack}
+          className="p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+        >
+          <X className="h-5 w-5" />
+        </button>
       </div>
 
       {/* Dashboard Content */}
