@@ -560,12 +560,40 @@ async function handler(req: Request): Promise<Response> {
       const participants = groupData?.participants || [];
       const action = groupData?.action || ""; // "add", "remove", "promote", "demote"
       
-      console.log(`[Wasender Webhook] Group participants update - group: ${groupJid}, action: ${action}, participants: ${JSON.stringify(participants)}`);
+      console.log(`[Wasender Webhook] Group participants update - group: ${groupJid}, action: ${action}, participants: ${JSON.stringify(participants)}, sessionId: ${sessionId}`);
       
       // Only track add (join) and remove (leave) actions
       if ((action === "add" || action === "remove") && participants.length > 0) {
-        // Extract group name from jid (or we could fetch it via API)
-        const groupName = groupJid.replace("@g.us", "").replace(/-/g, " ");
+        // Try to fetch real group name via API
+        let groupName = groupJid.replace("@g.us", "").replace(/-/g, " ");
+        let groupDescription = "";
+        
+        // Fetch group metadata to get real name
+        if (sessionId) {
+          try {
+            const groupMetadataResponse = await fetch(
+              `https://www.wasenderapi.com/api/groups/${encodeURIComponent(groupJid)}/metadata`,
+              {
+                method: "GET",
+                headers: {
+                  Authorization: `Bearer ${sessionId}`,
+                  "Content-Type": "application/json",
+                },
+              }
+            );
+            
+            if (groupMetadataResponse.ok) {
+              const groupMetadata = await groupMetadataResponse.json();
+              if (groupMetadata.success && groupMetadata.data) {
+                groupName = groupMetadata.data.subject || groupMetadata.data.name || groupName;
+                groupDescription = groupMetadata.data.desc || groupMetadata.data.description || "";
+                console.log(`[Wasender Webhook] Got group metadata - name: ${groupName}`);
+              }
+            }
+          } catch (metaError) {
+            console.error(`[Wasender Webhook] Error fetching group metadata:`, metaError);
+          }
+        }
         
         for (const participantJid of participants) {
           // Extract phone from participant JID
@@ -603,22 +631,40 @@ async function handler(req: Request): Promise<Response> {
           
           // Create tracking entry for each matching lead
           for (const lead of leads) {
+            const now = new Date();
+            const formattedDate = now.toLocaleDateString("pt-BR", { 
+              day: "2-digit", 
+              month: "2-digit", 
+              year: "numeric",
+              timeZone: "America/Sao_Paulo"
+            });
+            const formattedTime = now.toLocaleTimeString("pt-BR", { 
+              hour: "2-digit", 
+              minute: "2-digit",
+              timeZone: "America/Sao_Paulo"
+            });
+            
             const trackingData = {
               lead_id: lead.id,
               tipo: action === "add" ? "grupo_entrada" : "grupo_saida",
               titulo: action === "add" 
-                ? `Entrou no grupo de WhatsApp` 
-                : `Saiu do grupo de WhatsApp`,
+                ? `Entrou no grupo "${groupName}"` 
+                : `Saiu do grupo "${groupName}"`,
               descricao: action === "add"
-                ? `O lead entrou no grupo "${groupName}"`
-                : `O lead saiu do grupo "${groupName}"`,
+                ? `O lead entrou no grupo de WhatsApp "${groupName}" em ${formattedDate} às ${formattedTime}`
+                : `O lead saiu do grupo de WhatsApp "${groupName}" em ${formattedDate} às ${formattedTime}`,
               origem: "whatsapp",
               dados: {
                 group_jid: groupJid,
                 group_name: groupName,
+                group_description: groupDescription,
                 action: action,
                 phone: phone,
-                timestamp: new Date().toISOString(),
+                phone_formatted: formatPhoneDisplay(phone),
+                session_id: sessionId,
+                timestamp: now.toISOString(),
+                date: formattedDate,
+                time: formattedTime,
               },
             };
             
@@ -629,7 +675,7 @@ async function handler(req: Request): Promise<Response> {
             if (trackingError) {
               console.error(`[Wasender Webhook] Error creating tracking for lead ${lead.id}:`, trackingError);
             } else {
-              console.log(`[Wasender Webhook] Created tracking entry for lead ${lead.id}: ${action} group`);
+              console.log(`[Wasender Webhook] Created tracking entry for lead ${lead.id}: ${action} group "${groupName}" (session: ${sessionId})`);
             }
           }
         }
