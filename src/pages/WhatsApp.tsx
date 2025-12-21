@@ -2479,7 +2479,7 @@ const WhatsApp = () => {
         </div>
 
         {/* Right Panel - Chat Area */}
-        <div className="flex-1 flex">
+        <div className="flex-1 flex min-h-0">
           <div className="flex-1 flex flex-col bg-muted/10 min-h-0 overflow-hidden">
           {selectedChat ? (
             <>
