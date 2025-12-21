@@ -1,10 +1,24 @@
 import { useState, useCallback, useEffect, useRef } from "react";
-import { Plus, Link2, X, Trash2 } from "lucide-react";
+import { Plus, Link2, X, Trash2, GripVertical } from "lucide-react";
 import { ChartSelectorDialog, ChartType } from "./ChartSelectorDialog";
 import { ConnectSourceDialog, WidgetSource } from "./ConnectSourceDialog";
 import { ResizableWidget } from "./ResizableWidget";
 import { ChartRenderer } from "./ChartRenderer";
 import { supabase } from "@/integrations/supabase/client";
+import {
+  DndContext,
+  DragEndEvent,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  closestCenter,
+} from "@dnd-kit/core";
+import {
+  SortableContext,
+  useSortable,
+  rectSortingStrategy,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 
 export interface ChartDataPoint {
   name: string;
@@ -36,6 +50,99 @@ interface DashboardCanvasProps {
 }
 
 const PIPELINE_COLORS = ["#171717", "#404040", "#737373", "#a3a3a3", "#d4d4d4"];
+
+interface SortableWidgetProps {
+  widget: DashboardWidget;
+  onResize: (id: string, width: number, height: number) => void;
+  onDelete: (id: string) => void;
+  onConnect: (id: string) => void;
+}
+
+function SortableWidget({ widget, onResize, onDelete, onConnect }: SortableWidgetProps) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    isDragging,
+  } = useSortable({ id: widget.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    opacity: isDragging ? 0.5 : 1,
+  };
+
+  return (
+    <div ref={setNodeRef} style={style}>
+      <ResizableWidget
+        initialWidth={widget.width || 340}
+        initialHeight={widget.height || 280}
+        minWidth={260}
+        minHeight={220}
+        maxWidth={3000}
+        maxHeight={1200}
+        onResize={(w, h) => onResize(widget.id, w, h)}
+        className="bg-white border border-border rounded-xl shadow-sm hover:shadow-md"
+      >
+        <div className="relative h-full p-4 flex flex-col">
+          {/* Drag Handle */}
+          <div
+            {...attributes}
+            {...listeners}
+            className="absolute top-2 left-2 p-1.5 rounded-lg cursor-grab active:cursor-grabbing hover:bg-muted z-20"
+          >
+            <GripVertical className="h-4 w-4 text-muted-foreground" />
+          </div>
+
+          {/* Connect Overlay */}
+          {!widget.isConnected && (
+            <button
+              onClick={() => onConnect(widget.id)}
+              className="absolute inset-0 flex flex-col items-center justify-center bg-white/95 rounded-xl hover:bg-white focus:outline-none z-10"
+            >
+              <div className="w-12 h-12 rounded-full flex items-center justify-center mb-3 bg-muted">
+                <Link2 className="h-6 w-6 text-foreground" />
+              </div>
+              <span className="text-sm font-medium text-foreground">
+                Conectar fonte de dados
+              </span>
+              <span className="text-xs text-muted-foreground mt-1">
+                Clique para vincular uma origem
+              </span>
+            </button>
+          )}
+
+          {/* Header */}
+          <div className="flex items-center justify-between mb-3 shrink-0 pl-8">
+            <h3 className="text-sm font-medium text-foreground truncate">
+              {widget.source?.sourceName || widget.chartType.name}
+            </h3>
+            <div className="flex items-center gap-1 shrink-0">
+              <button
+                onClick={() => onDelete(widget.id)}
+                className="p-1.5 rounded-lg hover:bg-red-50 group"
+                title="Remover widget"
+              >
+                <Trash2 className="h-3.5 w-3.5 text-muted-foreground group-hover:text-red-500" />
+              </button>
+            </div>
+          </div>
+          
+          {/* Chart */}
+          <div className={`flex-1 min-h-0 relative ${!widget.isConnected ? "opacity-30" : ""}`}>
+            <ChartRenderer
+              chartType={widget.chartType.id}
+              data={widget.data}
+              width={widget.width || 340}
+              height={(widget.height || 280) - 60}
+              isLoading={widget.isLoading}
+            />
+          </div>
+        </div>
+      </ResizableWidget>
+    </div>
+  );
+}
 
 export function DashboardCanvas({ painelName, onBack }: DashboardCanvasProps) {
   const [widgets, setWidgets] = useState<DashboardWidget[]>([]);
@@ -278,6 +385,31 @@ export function DashboardCanvas({ painelName, onBack }: DashboardCanvasProps) {
     ));
   };
 
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8,
+      },
+    })
+  );
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    
+    if (over && active.id !== over.id) {
+      setWidgets(prev => {
+        const oldIndex = prev.findIndex(w => w.id === active.id);
+        const newIndex = prev.findIndex(w => w.id === over.id);
+        
+        const newWidgets = [...prev];
+        const [removed] = newWidgets.splice(oldIndex, 1);
+        newWidgets.splice(newIndex, 0, removed);
+        
+        return newWidgets;
+      });
+    }
+  };
+
   return (
     <div className="h-full flex flex-col">
       {/* Header */}
@@ -300,91 +432,48 @@ export function DashboardCanvas({ painelName, onBack }: DashboardCanvasProps) {
           <div className="flex justify-center pt-16">
             <button
               onClick={() => setIsChartSelectorOpen(true)}
-              className="group flex flex-col items-center justify-center w-80 h-48 border-2 border-dashed border-border rounded-2xl transition-all duration-200 hover:border-foreground/30 hover:bg-muted/30 focus:outline-none"
+              className="group flex flex-col items-center justify-center w-80 h-48 border-2 border-dashed border-border rounded-2xl hover:border-foreground/30 hover:bg-muted/30 focus:outline-none"
             >
-              <div className="w-16 h-16 rounded-full flex items-center justify-center mb-4 bg-muted group-hover:bg-muted/80 transition-colors">
-                <Plus className="h-8 w-8 text-muted-foreground group-hover:text-foreground transition-colors" />
+              <div className="w-16 h-16 rounded-full flex items-center justify-center mb-4 bg-muted group-hover:bg-muted/80">
+                <Plus className="h-8 w-8 text-muted-foreground group-hover:text-foreground" />
               </div>
-              <span className="text-base font-medium text-muted-foreground group-hover:text-foreground transition-colors">
+              <span className="text-base font-medium text-muted-foreground group-hover:text-foreground">
                 Criar dashboard
               </span>
             </button>
           </div>
         ) : (
-          /* Dashboard with Resizable Widgets */
-          <div className="flex flex-wrap gap-4 p-1">
-            {widgets.map((widget) => (
-              <ResizableWidget
-                key={widget.id}
-                initialWidth={widget.width || 340}
-                initialHeight={widget.height || 280}
-                minWidth={260}
-                minHeight={220}
-                maxWidth={3000}
-                maxHeight={1200}
-                onResize={(w, h) => handleWidgetResize(widget.id, w, h)}
-                className="bg-white border border-border rounded-xl shadow-sm hover:shadow-md transition-shadow"
-              >
-                <div className="relative h-full p-4 flex flex-col">
-                  {/* Connect Overlay */}
-                  {!widget.isConnected && (
-                    <button
-                      onClick={() => handleConnectWidget(widget.id)}
-                      className="absolute inset-0 flex flex-col items-center justify-center bg-white/95 rounded-xl transition-all hover:bg-white focus:outline-none z-10"
-                    >
-                      <div className="w-12 h-12 rounded-full flex items-center justify-center mb-3 bg-muted">
-                        <Link2 className="h-6 w-6 text-foreground" />
-                      </div>
-                      <span className="text-sm font-medium text-foreground">
-                        Conectar fonte de dados
-                      </span>
-                      <span className="text-xs text-muted-foreground mt-1">
-                        Clique para vincular uma origem
-                      </span>
-                    </button>
-                  )}
+          /* Dashboard with Draggable Widgets */
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragEnd={handleDragEnd}
+          >
+            <SortableContext items={widgets.map(w => w.id)} strategy={rectSortingStrategy}>
+              <div className="flex flex-wrap gap-4 p-1">
+                {widgets.map((widget) => (
+                  <SortableWidget
+                    key={widget.id}
+                    widget={widget}
+                    onResize={handleWidgetResize}
+                    onDelete={handleDeleteWidget}
+                    onConnect={handleConnectWidget}
+                  />
+                ))}
 
-                  {/* Header */}
-                  <div className="flex items-center justify-between mb-3 shrink-0">
-                    <h3 className="text-sm font-medium text-foreground truncate">
-                      {widget.source?.sourceName || widget.chartType.name}
-                    </h3>
-                    <div className="flex items-center gap-1 shrink-0">
-                      <button
-                        onClick={() => handleDeleteWidget(widget.id)}
-                        className="p-1.5 rounded-lg hover:bg-red-50 transition-colors group"
-                        title="Remover widget"
-                      >
-                        <Trash2 className="h-3.5 w-3.5 text-muted-foreground group-hover:text-red-500" />
-                      </button>
-                    </div>
-                  </div>
-                  
-                  {/* Chart */}
-                  <div className={`flex-1 min-h-0 relative ${!widget.isConnected ? "opacity-30" : ""}`}>
-                    <ChartRenderer
-                      chartType={widget.chartType.id}
-                      data={widget.data}
-                      width={widget.width || 340}
-                      height={(widget.height || 280) - 60}
-                      isLoading={widget.isLoading}
-                    />
-                  </div>
-                </div>
-              </ResizableWidget>
-            ))}
-
-            {/* Add More Button */}
-            <button
-              onClick={() => setIsChartSelectorOpen(true)}
-              className="flex flex-col items-center justify-center w-[260px] h-[220px] border-2 border-dashed border-border rounded-xl transition-all duration-200 hover:border-foreground/30 hover:bg-muted/30 focus:outline-none"
-            >
-              <Plus className="h-6 w-6 text-muted-foreground mb-2" />
-              <span className="text-sm text-muted-foreground">
-                Adicionar gráfico
-              </span>
-            </button>
-          </div>
+                {/* Add More Button */}
+                <button
+                  onClick={() => setIsChartSelectorOpen(true)}
+                  className="flex flex-col items-center justify-center w-[260px] h-[220px] border-2 border-dashed border-border rounded-xl hover:border-foreground/30 hover:bg-muted/30 focus:outline-none"
+                >
+                  <Plus className="h-6 w-6 text-muted-foreground mb-2" />
+                  <span className="text-sm text-muted-foreground">
+                    Adicionar gráfico
+                  </span>
+                </button>
+              </div>
+            </SortableContext>
+          </DndContext>
         )}
       </div>
 
