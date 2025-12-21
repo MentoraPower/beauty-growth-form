@@ -716,7 +716,7 @@ export default function InstagramPage() {
   // Initial loading state (only while checking cache, very fast)
   if (isConnected === null || isConnecting) {
     return (
-      <div className="h-[calc(100vh-1.5rem)] flex items-center justify-center">
+      <div className="h-full flex items-center justify-center">
         <div className="text-center space-y-4">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-pink-500 mx-auto" />
           <p className="text-muted-foreground">
@@ -730,7 +730,7 @@ export default function InstagramPage() {
   // Not connected - Login screen
   if (!isConnected) {
     return (
-      <div className="h-[calc(100vh-1.5rem)] flex items-center justify-center p-4">
+      <div className="h-full flex items-center justify-center p-4">
         <div className="max-w-md w-full space-y-6">
           <div className="text-center space-y-4">
             <div className="mx-auto w-20 h-20 rounded-full bg-gradient-to-br from-purple-500 via-pink-500 to-orange-500 flex items-center justify-center">
@@ -782,12 +782,14 @@ export default function InstagramPage() {
 
   // Connected - Main chat interface
   return (
-    <div className="h-[calc(100vh-2rem)] flex rounded-2xl overflow-hidden border border-border/50 bg-card -mt-4 relative z-50">
+    <div className="h-full min-h-0 flex overflow-hidden bg-background relative">
       {/* Chat List Sidebar */}
-      <div className="w-72 border-r border-border flex flex-col flex-shrink-0">
-        <div className="h-14 pl-2 pr-4 flex items-center border-b border-border">
-          <div className="flex items-center gap-2">
-            <Instagram className="h-5 w-5 text-pink-500" />
+      <div className="w-[300px] border-r border-border flex flex-col flex-shrink-0 bg-background">
+        <div className="h-14 px-4 flex items-center border-b border-border">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-500 via-pink-500 to-orange-500 flex items-center justify-center">
+              <Instagram className="h-4 w-4 text-white" />
+            </div>
             <div>
               <h2 className="font-semibold text-foreground text-sm">Instagram Direct</h2>
               {accountInfo?.username && (
@@ -904,9 +906,9 @@ export default function InstagramPage() {
                   </div>
                   {/* Skeleton mensagens enviadas */}
                   <div className="flex items-end justify-end">
-                    <div className="bg-[#3797f0]/50 rounded-2xl px-4 py-3 max-w-[60%] animate-pulse">
-                      <div className="h-4 bg-white/30 rounded w-40 mb-2" />
-                      <div className="h-4 bg-white/30 rounded w-24" />
+                    <div className="bg-muted/80 rounded-2xl px-4 py-3 max-w-[60%] animate-pulse">
+                      <div className="h-4 bg-muted-foreground/20 rounded w-40 mb-2" />
+                      <div className="h-4 bg-muted-foreground/20 rounded w-24" />
                     </div>
                   </div>
                   <div className="flex items-start">
@@ -915,8 +917,8 @@ export default function InstagramPage() {
                     </div>
                   </div>
                   <div className="flex items-end justify-end">
-                    <div className="bg-[#3797f0]/50 rounded-2xl px-4 py-3 max-w-[60%] animate-pulse">
-                      <div className="h-4 bg-white/30 rounded w-28" />
+                    <div className="bg-muted/80 rounded-2xl px-4 py-3 max-w-[60%] animate-pulse">
+                      <div className="h-4 bg-muted-foreground/20 rounded w-28" />
                     </div>
                   </div>
                 </div>
@@ -949,7 +951,7 @@ export default function InstagramPage() {
                         className={cn(
                           "max-w-[70%] rounded-2xl overflow-hidden",
                           message.fromMe
-                            ? "bg-[#3797f0] text-white"
+                            ? "bg-muted/80 text-foreground"
                             : "bg-muted text-foreground"
                         )}
                       >
