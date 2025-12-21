@@ -17,7 +17,7 @@ export default function Atendimento() {
   };
 
   return (
-    <div className="h-full flex flex-col -m-6">
+    <div className="h-full min-h-0 flex flex-col -m-6">
       {/* Tabs Header */}
       <div className="flex-shrink-0 bg-card border-b border-border px-6 pt-4">
         <div className="flex gap-1">
@@ -56,7 +56,7 @@ export default function Atendimento() {
       </div>
 
       {/* Tab Content */}
-      <div className="flex-1 overflow-hidden p-6">
+      <div className="flex-1 min-h-0 overflow-hidden p-6">
         {activeTab === 'whatsapp' ? (
           <WhatsApp />
         ) : (

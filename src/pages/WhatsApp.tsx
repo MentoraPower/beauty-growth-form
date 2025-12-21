@@ -2242,7 +2242,7 @@ const WhatsApp = () => {
 
   return (
     <>
-      <div className="h-[calc(100vh-2rem)] flex rounded-2xl overflow-hidden border border-border/50 bg-card -mt-4 relative z-50">
+      <div className="h-full min-h-0 flex rounded-2xl overflow-hidden border border-border/50 bg-card -mt-4 relative z-50">
         {/* Left Sidebar - Chat List */}
         <div className="w-[380px] flex flex-col border-r border-border/50 bg-card">
           {/* Header */}
