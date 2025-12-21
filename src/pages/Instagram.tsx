@@ -1114,14 +1114,8 @@ export default function InstagramPage() {
             </div>
           </>
         ) : (
-          <div className="flex-1 flex items-center justify-center">
-            <div className="text-center text-muted-foreground">
-              <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-gradient-to-br from-purple-500 via-pink-500 to-orange-500 flex items-center justify-center">
-                <Instagram className="w-10 h-10 text-white" />
-              </div>
-              <h3 className="text-lg font-medium text-foreground mb-1">Instagram Direct</h3>
-              <p>Selecione uma conversa para começar</p>
-            </div>
+          <div className="flex-1 flex items-center justify-center bg-muted/5">
+            <p className="text-sm text-muted-foreground">Abra uma conversa</p>
           </div>
         )}
       </div>
