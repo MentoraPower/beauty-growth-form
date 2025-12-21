@@ -2,7 +2,6 @@ import { useState, useCallback, useEffect, useRef } from "react";
 import { Plus, Link2, X, Trash2, GripVertical } from "lucide-react";
 import { ChartSelectorDialog, ChartType } from "./ChartSelectorDialog";
 import { ConnectSourceDialog, WidgetSource } from "./ConnectSourceDialog";
-import { ResizableWidget } from "./ResizableWidget";
 import { ChartRenderer } from "./ChartRenderer";
 import { supabase } from "@/integrations/supabase/client";
 import {
@@ -64,6 +63,9 @@ interface SortableWidgetProps {
 }
 
 function SortableWidget({ widget, onResize, onDelete, onConnect, containerWidth }: SortableWidgetProps) {
+  const widgetRef = useRef<HTMLDivElement>(null);
+  const [actualWidth, setActualWidth] = useState(widget.width || 340);
+  
   const {
     attributes,
     listeners,
@@ -75,6 +77,21 @@ function SortableWidget({ widget, onResize, onDelete, onConnect, containerWidth 
 
   const widgetWidth = widget.width || 340;
   const widgetHeight = widget.height || 280;
+  const minWidth = 260;
+
+  // Observe actual rendered width
+  useEffect(() => {
+    if (!widgetRef.current) return;
+    
+    const observer = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        setActualWidth(entry.contentRect.width);
+      }
+    });
+    
+    observer.observe(widgetRef.current);
+    return () => observer.disconnect();
+  }, []);
 
   const style: React.CSSProperties = {
     transform: CSS.Transform.toString(transform),
@@ -84,78 +101,198 @@ function SortableWidget({ widget, onResize, onDelete, onConnect, containerWidth 
     flexBasis: widgetWidth,
     flexGrow: 0,
     flexShrink: 1,
-    minWidth: 260,
-    maxWidth: containerWidth > 0 ? containerWidth : 3000,
+    minWidth: minWidth,
+    maxWidth: containerWidth > 0 ? containerWidth : '100%',
+    height: widgetHeight,
+  };
+
+  const handleResize = (deltaX: number, deltaY: number, direction: string) => {
+    let newWidth = widgetWidth;
+    let newHeight = widgetHeight;
+
+    if (direction.includes('e')) {
+      newWidth = Math.min(containerWidth, Math.max(minWidth, widgetWidth + deltaX));
+    }
+    if (direction.includes('s')) {
+      newHeight = Math.min(1200, Math.max(220, widgetHeight + deltaY));
+    }
+
+    onResize(widget.id, newWidth, newHeight);
   };
 
   return (
-    <div ref={setNodeRef} style={style}>
-      <ResizableWidget
-        initialWidth={widgetWidth}
-        initialHeight={widgetHeight}
-        minWidth={260}
-        minHeight={220}
-        maxWidth={containerWidth > 0 ? containerWidth : 3000}
-        maxHeight={1200}
-        onResize={(w, h) => onResize(widget.id, w, h)}
-        className={`bg-white border border-border rounded-xl shadow-sm ${isDragging ? 'shadow-lg ring-2 ring-primary/20' : 'hover:shadow-md'}`}
-      >
-        <div className="relative h-full p-4 flex flex-col">
-          {/* Drag Handle */}
-          <div
-            {...attributes}
-            {...listeners}
-            className="absolute top-2 left-2 p-1.5 rounded-lg cursor-grab active:cursor-grabbing hover:bg-muted z-20"
+    <div 
+      ref={(node) => {
+        setNodeRef(node);
+        if (node) (widgetRef as React.MutableRefObject<HTMLDivElement | null>).current = node;
+      }} 
+      style={style}
+      className={`relative bg-white border border-border rounded-xl shadow-sm ${isDragging ? 'shadow-lg ring-2 ring-primary/20' : 'hover:shadow-md'}`}
+    >
+      <div className="relative h-full p-4 flex flex-col">
+        {/* Drag Handle */}
+        <div
+          {...attributes}
+          {...listeners}
+          className="absolute top-2 left-2 p-1.5 rounded-lg cursor-grab active:cursor-grabbing hover:bg-muted z-20"
+        >
+          <GripVertical className="h-4 w-4 text-muted-foreground" />
+        </div>
+
+        {/* Connect Overlay */}
+        {!widget.isConnected && (
+          <button
+            onClick={() => onConnect(widget.id)}
+            className="absolute inset-0 flex flex-col items-center justify-center bg-white/95 rounded-xl hover:bg-white focus:outline-none z-10"
           >
-            <GripVertical className="h-4 w-4 text-muted-foreground" />
-          </div>
-
-          {/* Connect Overlay */}
-          {!widget.isConnected && (
-            <button
-              onClick={() => onConnect(widget.id)}
-              className="absolute inset-0 flex flex-col items-center justify-center bg-white/95 rounded-xl hover:bg-white focus:outline-none z-10"
-            >
-              <div className="w-12 h-12 rounded-full flex items-center justify-center mb-3 bg-muted">
-                <Link2 className="h-6 w-6 text-foreground" />
-              </div>
-              <span className="text-sm font-medium text-foreground">
-                Conectar fonte de dados
-              </span>
-              <span className="text-xs text-muted-foreground mt-1">
-                Clique para vincular uma origem
-              </span>
-            </button>
-          )}
-
-          {/* Header */}
-          <div className="flex items-center justify-between mb-3 shrink-0 pl-8">
-            <h3 className="text-sm font-medium text-foreground truncate">
-              {widget.source?.sourceName || widget.chartType.name}
-            </h3>
-            <div className="flex items-center gap-1 shrink-0">
-              <button
-                onClick={() => onDelete(widget.id)}
-                className="p-1.5 rounded-lg hover:bg-red-50 group"
-                title="Remover widget"
-              >
-                <Trash2 className="h-3.5 w-3.5 text-muted-foreground group-hover:text-red-500" />
-              </button>
+            <div className="w-12 h-12 rounded-full flex items-center justify-center mb-3 bg-muted">
+              <Link2 className="h-6 w-6 text-foreground" />
             </div>
-          </div>
-          
-          {/* Chart */}
-          <div className={`flex-1 min-h-0 relative ${!widget.isConnected ? "opacity-30" : ""}`}>
-            <ChartRenderer
-              chartType={widget.chartType.id}
-              data={widget.data}
-              width={widgetWidth}
-              height={widgetHeight - 60}
-              isLoading={widget.isLoading}
-            />
+            <span className="text-sm font-medium text-foreground">
+              Conectar fonte de dados
+            </span>
+            <span className="text-xs text-muted-foreground mt-1">
+              Clique para vincular uma origem
+            </span>
+          </button>
+        )}
+
+        {/* Header */}
+        <div className="flex items-center justify-between mb-3 shrink-0 pl-8">
+          <h3 className="text-sm font-medium text-foreground truncate">
+            {widget.source?.sourceName || widget.chartType.name}
+          </h3>
+          <div className="flex items-center gap-1 shrink-0">
+            <button
+              onClick={() => onDelete(widget.id)}
+              className="p-1.5 rounded-lg hover:bg-red-50 group"
+              title="Remover widget"
+            >
+              <Trash2 className="h-3.5 w-3.5 text-muted-foreground group-hover:text-red-500" />
+            </button>
           </div>
         </div>
-      </ResizableWidget>
+        
+        {/* Chart */}
+        <div className={`flex-1 min-h-0 relative ${!widget.isConnected ? "opacity-30" : ""}`}>
+          <ChartRenderer
+            chartType={widget.chartType.id}
+            data={widget.data}
+            width={actualWidth - 32}
+            height={widgetHeight - 92}
+            isLoading={widget.isLoading}
+          />
+        </div>
+      </div>
+
+      {/* Resize Handles */}
+      <ResizeHandle 
+        direction="e" 
+        widgetWidth={widgetWidth} 
+        widgetHeight={widgetHeight}
+        containerWidth={containerWidth}
+        minWidth={minWidth}
+        onResize={(w, h) => onResize(widget.id, w, h)}
+      />
+      <ResizeHandle 
+        direction="s" 
+        widgetWidth={widgetWidth} 
+        widgetHeight={widgetHeight}
+        containerWidth={containerWidth}
+        minWidth={minWidth}
+        onResize={(w, h) => onResize(widget.id, w, h)}
+      />
+      <ResizeHandle 
+        direction="se" 
+        widgetWidth={widgetWidth} 
+        widgetHeight={widgetHeight}
+        containerWidth={containerWidth}
+        minWidth={minWidth}
+        onResize={(w, h) => onResize(widget.id, w, h)}
+      />
+    </div>
+  );
+}
+
+interface ResizeHandleProps {
+  direction: 'e' | 's' | 'se';
+  widgetWidth: number;
+  widgetHeight: number;
+  containerWidth: number;
+  minWidth: number;
+  onResize: (width: number, height: number) => void;
+}
+
+function ResizeHandle({ direction, widgetWidth, widgetHeight, containerWidth, minWidth, onResize }: ResizeHandleProps) {
+  const startPos = useRef({ x: 0, y: 0 });
+  const startSize = useRef({ width: 0, height: 0 });
+
+  const handleMouseDown = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    startPos.current = { x: e.clientX, y: e.clientY };
+    startSize.current = { width: widgetWidth, height: widgetHeight };
+
+    const handleMouseMove = (moveEvent: MouseEvent) => {
+      const deltaX = moveEvent.clientX - startPos.current.x;
+      const deltaY = moveEvent.clientY - startPos.current.y;
+
+      let newWidth = startSize.current.width;
+      let newHeight = startSize.current.height;
+
+      if (direction.includes('e')) {
+        newWidth = Math.min(containerWidth, Math.max(minWidth, startSize.current.width + deltaX));
+      }
+      if (direction.includes('s')) {
+        newHeight = Math.min(1200, Math.max(220, startSize.current.height + deltaY));
+      }
+
+      onResize(newWidth, newHeight);
+    };
+
+    const handleMouseUp = () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+    };
+
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
+  };
+
+  if (direction === 'e') {
+    return (
+      <div
+        className="absolute top-2 bottom-2 right-0 w-2 cursor-e-resize group z-20"
+        onMouseDown={handleMouseDown}
+      >
+        <div className="absolute top-1/2 right-0.5 -translate-y-1/2 w-1 h-8 rounded-full bg-border opacity-0 group-hover:opacity-100 transition-opacity" />
+      </div>
+    );
+  }
+
+  if (direction === 's') {
+    return (
+      <div
+        className="absolute left-2 right-2 bottom-0 h-2 cursor-s-resize group z-20"
+        onMouseDown={handleMouseDown}
+      >
+        <div className="absolute bottom-0.5 left-1/2 -translate-x-1/2 h-1 w-8 rounded-full bg-border opacity-0 group-hover:opacity-100 transition-opacity" />
+      </div>
+    );
+  }
+
+  return (
+    <div
+      className="absolute bottom-0 right-0 w-4 h-4 cursor-se-resize group z-30"
+      onMouseDown={handleMouseDown}
+    >
+      <svg 
+        className="absolute bottom-1 right-1 w-2.5 h-2.5 text-border opacity-0 group-hover:opacity-100 transition-opacity"
+        viewBox="0 0 10 10"
+      >
+        <path d="M9 1L1 9M9 5L5 9M9 9L9 9" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+      </svg>
     </div>
   );
 }
