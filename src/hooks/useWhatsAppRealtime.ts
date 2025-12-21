@@ -14,59 +14,12 @@ import {
 } from '@/hooks/useRealtimeSelectors';
 import type { WhatsAppChat, WhatsAppMessage } from '@/lib/realtime/types';
 import { supabase } from '@/integrations/supabase/client';
-
-// Format time for display
-const formatTime = (dateString: string): string => {
-  const date = new Date(dateString);
-  const now = new Date();
-  
-  const spOptions = { timeZone: "America/Sao_Paulo" } as const;
-  const dateInSP = new Date(date.toLocaleString("en-US", spOptions));
-  const nowInSP = new Date(now.toLocaleString("en-US", spOptions));
-  
-  const diffDays = Math.floor((nowInSP.getTime() - dateInSP.getTime()) / (1000 * 60 * 60 * 24));
-  
-  if (diffDays === 0) {
-    return date.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit", timeZone: "America/Sao_Paulo" });
-  } else if (diffDays === 1) {
-    return "Ontem";
-  } else {
-    return date.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", timeZone: "America/Sao_Paulo" });
-  }
-};
-
-// Format phone for display
-const formatPhoneDisplay = (phone: string): string => {
-  if (!phone) return "";
-  const cleaned = phone.replace(/\D/g, "");
-  if (cleaned.length === 13) {
-    return `+${cleaned.slice(0, 2)} ${cleaned.slice(2, 4)} ${cleaned.slice(4, 9)}-${cleaned.slice(9)}`;
-  } else if (cleaned.length === 12) {
-    return `+${cleaned.slice(0, 2)} ${cleaned.slice(2, 4)} ${cleaned.slice(4, 8)}-${cleaned.slice(8)}`;
-  } else if (cleaned.length >= 10) {
-    return `+${cleaned.slice(0, 2)} ${cleaned.slice(2)}`;
-  }
-  return phone;
-};
-
-// Check if phone is internal WhatsApp ID
-const isWhatsAppInternalId = (phone: string): boolean => {
-  if (!phone) return false;
-  const cleaned = phone.replace(/\D/g, "");
-  if (cleaned.length > 14) return true;
-  if (/^(120|146|180|203|234|447)\d{10,}$/.test(cleaned)) return true;
-  return false;
-};
-
-// Get initials from name
-const getInitials = (name: string): string => {
-  if (!name) return "?";
-  const parts = name.trim().split(" ");
-  if (parts.length >= 2) {
-    return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
-  }
-  return name.substring(0, 2).toUpperCase();
-};
+import { 
+  formatChatTime, 
+  formatPhoneDisplay, 
+  isWhatsAppInternalId, 
+  getInitials 
+} from '@/lib/whatsapp-utils';
 
 // Legacy Chat interface for backward compatibility
 export interface LegacyChat {
@@ -119,7 +72,7 @@ const tolegacyChat = (chat: WhatsAppChat): LegacyChat | null => {
     id: chat.id,
     name: displayName,
     lastMessage: chat.last_message || "",
-    time: chat.last_message_time ? formatTime(chat.last_message_time) : "",
+    time: chat.last_message_time ? formatChatTime(chat.last_message_time) : "",
     lastMessageTime: chat.last_message_time || null,
     unread: chat.unread_count || 0,
     avatar: getInitials(displayName || chat.phone),

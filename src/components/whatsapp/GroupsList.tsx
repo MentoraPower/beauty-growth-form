@@ -2,6 +2,7 @@ import { memo } from 'react';
 import { cn } from '@/lib/utils';
 import { Users, RefreshCw } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { getInitials } from '@/lib/whatsapp-utils';
 
 export interface WhatsAppGroup {
   id: string;
@@ -17,15 +18,6 @@ interface GroupsListProps {
   onRefresh: () => void;
   className?: string;
 }
-
-const getInitials = (name: string): string => {
-  if (!name) return "G";
-  const parts = name.trim().split(" ");
-  if (parts.length >= 2) {
-    return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
-  }
-  return name.substring(0, 2).toUpperCase();
-};
 
 const GroupItem = memo(function GroupItem({
   group,
