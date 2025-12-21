@@ -149,11 +149,15 @@ export function CustomFieldsPanel({ subOriginId, isOpen, onClose, onFieldsChange
     }
   };
 
-  if (!isOpen) return null;
-
   return (
-    <div className="w-80 flex-shrink-0 bg-background border-l border-border h-full overflow-y-auto animate-slide-in-right">
-      <div className="sticky top-0 bg-background z-10 p-4 border-b border-border">
+    <div 
+      className={`w-80 flex-shrink-0 bg-background border-l border-border h-full overflow-y-auto rounded-t-xl rounded-b-xl transition-all duration-300 ease-out ${
+        isOpen 
+          ? 'translate-x-0 opacity-100' 
+          : 'translate-x-full opacity-0 pointer-events-none'
+      }`}
+    >
+      <div className="sticky top-0 bg-background z-10 p-4 border-b border-border rounded-t-xl">
         <div className="flex items-center justify-between">
           <div>
             <h3 className="font-semibold text-sm">Campos Personalizados</h3>
@@ -280,22 +284,6 @@ export function CustomFieldsPanel({ subOriginId, isOpen, onClose, onFieldsChange
             Adicionar Campo
           </Button>
         </div>
-
-        {/* Webhook example */}
-        {fields.length > 0 && (
-          <div className="pt-4 border-t border-border">
-            <h4 className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2">
-              Exemplo de webhook
-            </h4>
-            <pre className="text-[10px] bg-muted/50 p-3 rounded-lg border overflow-x-auto">
-{`{
-  "custom_fields": {
-${fields.map(f => `    "${f.id}": "valor"`).join(",\n")}
-  }
-}`}
-            </pre>
-          </div>
-        )}
       </div>
     </div>
   );
