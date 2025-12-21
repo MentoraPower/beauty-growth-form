@@ -1,9 +1,15 @@
 import { useSearchParams } from "react-router-dom";
-import { TrendingUp, Rocket, RefreshCcw } from "lucide-react";
+import { TrendingUp, Rocket, RefreshCcw, Plus } from "lucide-react";
 
-type PainelType = 'marketing' | 'lancamento' | 'perpetuo';
+type PainelType = 'marketing' | 'lancamento' | 'perpetuo' | 'scratch';
 
 const painelOptions = [
+  {
+    id: 'scratch' as PainelType,
+    title: 'Começar do zero',
+    description: 'Crie um painel personalizado do zero',
+    icon: Plus,
+  },
   {
     id: 'marketing' as PainelType,
     title: 'Marketing',
