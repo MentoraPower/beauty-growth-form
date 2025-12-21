@@ -12,7 +12,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Plus, Trash2, Copy, Check, X } from "lucide-react";
-import { Switch } from "@/components/ui/switch";
+
 
 interface CustomField {
   id: string;
@@ -40,7 +40,6 @@ export function CustomFieldsPanel({ subOriginId, isOpen, onClose, onFieldsChange
   const [newField, setNewField] = useState({
     field_label: "",
     field_type: "text",
-    is_required: false,
     options: "",
   });
 
@@ -93,7 +92,7 @@ export function CustomFieldsPanel({ subOriginId, isOpen, onClose, onFieldsChange
         field_key: fieldKey,
         field_label: newField.field_label,
         field_type: newField.field_type,
-        is_required: newField.is_required,
+        is_required: false,
         options,
         ordem: fields.length,
       })
@@ -109,7 +108,6 @@ export function CustomFieldsPanel({ subOriginId, isOpen, onClose, onFieldsChange
     setNewField({
       field_label: "",
       field_type: "text",
-      is_required: false,
       options: "",
     });
     toast.success("Campo criado!");
@@ -259,13 +257,6 @@ export function CustomFieldsPanel({ subOriginId, isOpen, onClose, onFieldsChange
             </Select>
           </div>
 
-          <div className="flex items-center justify-between py-1">
-            <Label className="text-xs">Campo obrigatório</Label>
-            <Switch
-              checked={newField.is_required}
-              onCheckedChange={(checked) => setNewField({ ...newField, is_required: checked })}
-            />
-          </div>
 
           {newField.field_type === "select" && (
             <div className="space-y-2">
