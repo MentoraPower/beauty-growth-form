@@ -341,7 +341,7 @@ const WhatsApp = () => {
   }, []);
 
   // Fetch WhatsApp accounts from WaSender
-  const fetchWhatsAppAccounts = useCallback(async () => {
+  const fetchWhatsAppAccounts = useCallback(async (): Promise<any[]> => {
     setIsLoadingAccounts(true);
     try {
       const { data, error } = await supabase.functions.invoke("wasender-whatsapp", {
@@ -351,17 +351,22 @@ const WhatsApp = () => {
       if (error) throw error;
 
       if (data?.success && Array.isArray(data.data)) {
+        console.log(`[WhatsApp] Fetched ${data.data.length} accounts:`, data.data.map((a: any) => ({ id: a.id, api_key: a.api_key?.substring(0, 10) + "...", name: a.name, status: a.status })));
         setWhatsappAccounts(data.data);
         // Auto-select first connected account if none selected
         if (!selectedAccountId && data.data.length > 0) {
           const connectedAccount = data.data.find((acc: any) => acc.status?.toLowerCase() === "connected");
           if (connectedAccount) {
+            console.log(`[WhatsApp] Auto-selecting account: ${connectedAccount.id}`);
             setSelectedAccountId(connectedAccount.id);
           }
         }
+        return data.data;
       }
+      return [];
     } catch (error: any) {
       console.error("Error fetching WhatsApp accounts:", error);
+      return [];
     } finally {
       setIsLoadingAccounts(false);
     }
@@ -372,24 +377,33 @@ const WhatsApp = () => {
     if (showLoading) setIsInitialLoad(true);
     
     try {
-      // Get the api_key (session_id) for the selected account
+      // Get the selected account info for filtering
       const selectedAccount = whatsappAccounts.find(acc => acc.id === selectedAccountId);
+      // WaSender webhook sends sessionId which is the session's api_key
       const sessionApiKey = selectedAccount?.api_key;
+      
+      console.log(`[WhatsApp] fetchChats - selectedAccountId: ${selectedAccountId}, api_key: ${sessionApiKey || "none"}`);
       
       let query = supabase
         .from("whatsapp_chats")
         .select("*")
         .order("last_message_time", { ascending: false });
       
-      // Filter by session_id if we have a selected account with api_key
-      // Include chats that either match the session_id OR have no session_id (legacy chats)
+      // Filter by session_id if we have a selected account
+      // The session_id in DB should match the api_key from WaSender sessions
       if (sessionApiKey) {
+        // Include chats that match this session OR have no session_id (legacy/migrated chats)
         query = query.or(`session_id.eq.${sessionApiKey},session_id.is.null`);
+        console.log(`[WhatsApp] Filtering by session_id = ${sessionApiKey} OR null`);
+      } else {
+        console.log(`[WhatsApp] No api_key found, fetching all chats`);
       }
       
       const { data, error } = await query;
 
       if (error) throw error;
+      
+      console.log(`[WhatsApp] fetchChats - got ${data?.length || 0} chats`);
 
       const formattedChats = (data || [])
         .map(formatChatData)
@@ -1624,11 +1638,19 @@ const WhatsApp = () => {
         console.error("Cleanup error:", error);
       }
 
-      // Fetch WhatsApp accounts
-      await fetchWhatsAppAccounts();
-
-      // Fetch chats
-      await fetchChats(true);
+      // Fetch WhatsApp accounts FIRST and wait for state to update
+      const accounts = await fetchWhatsAppAccounts();
+      console.log(`[WhatsApp] Init - accounts loaded: ${accounts.length}`);
+      
+      // Give React time to update state, then fetch chats
+      // The useEffect for selectedAccountId change will handle fetching chats
+      // after the account is selected
+      
+      // If no accounts, fetch chats immediately (legacy mode)
+      if (accounts.length === 0) {
+        console.log(`[WhatsApp] No accounts, fetching all chats`);
+        await fetchChats(true);
+      }
 
       // Background sync
       syncAllChats();
@@ -1643,35 +1665,48 @@ const WhatsApp = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Reload chats when switching WhatsApp accounts
-  const initialMountRef = useRef(true);
+  // Reload chats when switching WhatsApp accounts (or on first account selection)
+  const accountChangeCountRef = useRef(0);
   useEffect(() => {
-    // Skip on initial mount (handled by init above)
-    if (initialMountRef.current) {
-      initialMountRef.current = false;
+    // Skip if no account selected yet (waiting for accounts to load)
+    if (selectedAccountId === null) {
+      console.log(`[WhatsApp] No account selected yet, skipping fetchChats`);
       return;
     }
     
-    // Skip if no account selected yet
-    if (selectedAccountId === null) return;
+    // Skip if whatsappAccounts is empty (still loading)
+    if (whatsappAccounts.length === 0) {
+      console.log(`[WhatsApp] Accounts not loaded yet, skipping fetchChats`);
+      return;
+    }
+    
+    accountChangeCountRef.current++;
+    const isFirstLoad = accountChangeCountRef.current === 1;
+    
+    const selectedAccount = whatsappAccounts.find(acc => acc.id === selectedAccountId);
+    console.log(`[WhatsApp] Account ${isFirstLoad ? "selected" : "changed"} - id: ${selectedAccountId}, api_key: ${selectedAccount?.api_key?.substring(0, 15) || "none"}..., name: ${selectedAccount?.name || "unknown"}`);
     
     const reloadChatsForAccount = async () => {
       setIsInitialLoad(true);
-      setSelectedChat(null);
-      setMessages([]);
+      if (!isFirstLoad) {
+        setSelectedChat(null);
+        setMessages([]);
+      }
       
       // Fetch chats for the selected account
       await fetchChats(true);
       
-      // Sync and fetch photos in background
-      syncAllChats();
-      setTimeout(() => {
-        fetchMissingPhotos();
-      }, 1000);
+      // Sync and fetch photos in background (only on subsequent changes)
+      if (!isFirstLoad) {
+        syncAllChats();
+        setTimeout(() => {
+          fetchMissingPhotos();
+        }, 1000);
+      }
     };
     
     reloadChatsForAccount();
-  }, [selectedAccountId, fetchChats, syncAllChats, fetchMissingPhotos]);
+  }, [selectedAccountId, whatsappAccounts, fetchChats, syncAllChats, fetchMissingPhotos]);
   useEffect(() => {
     const phoneParam = searchParams.get("phone");
     if (!phoneParam || chats.length === 0 || selectedChat) return;
