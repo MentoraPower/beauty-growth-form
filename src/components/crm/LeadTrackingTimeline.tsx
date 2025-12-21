@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Clock, PhoneOff, UserCheck, Webhook, Globe, ChevronDown, ChevronUp, ArrowRight, ListOrdered, MoveRight, UserPlus, FileText, Users, FolderSync } from "lucide-react";
+import { Clock, PhoneOff, UserCheck, Webhook, Globe, ChevronDown, ChevronUp, ArrowRight, ListOrdered, MoveRight, UserPlus, FileText, Users, FolderSync, UserPlus2, UserMinus2 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
@@ -62,6 +62,10 @@ const getIconForType = (tipo: string) => {
       return <UserPlus className="h-5 w-5" />;
     case "formulario":
       return <FileText className="h-5 w-5" />;
+    case "grupo_entrada":
+      return <UserPlus2 className="h-5 w-5" />;
+    case "grupo_saida":
+      return <UserMinus2 className="h-5 w-5" />;
     default:
       return <ListOrdered className="h-5 w-5" />;
   }
@@ -85,6 +89,10 @@ const getIconColors = (tipo: string): { bg: string; text: string } => {
       return { bg: "bg-emerald-500", text: "text-white" };
     case "formulario":
       return { bg: "bg-blue-500", text: "text-white" };
+    case "grupo_entrada":
+      return { bg: "bg-green-500", text: "text-white" };
+    case "grupo_saida":
+      return { bg: "bg-orange-500", text: "text-white" };
     default:
       return { bg: "bg-violet-500", text: "text-white" };
   }
