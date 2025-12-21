@@ -6,15 +6,25 @@ import { ResizableWidget } from "./ResizableWidget";
 import { ChartRenderer } from "./ChartRenderer";
 import { supabase } from "@/integrations/supabase/client";
 
+export interface ChartDataPoint {
+  name: string;
+  value: number;
+  color?: string;
+}
+
+export interface WidgetData {
+  total: number;
+  label: string;
+  distribution?: ChartDataPoint[];
+  trend?: ChartDataPoint[];
+}
+
 export interface DashboardWidget {
   id: string;
   chartType: ChartType;
   source: WidgetSource | null;
   isConnected: boolean;
-  data?: {
-    value: number;
-    label: string;
-  };
+  data?: WidgetData;
   isLoading?: boolean;
   width?: number;
   height?: number;
@@ -25,6 +35,8 @@ interface DashboardCanvasProps {
   onBack: () => void;
 }
 
+const PIPELINE_COLORS = ["#171717", "#404040", "#737373", "#a3a3a3", "#d4d4d4"];
+
 export function DashboardCanvas({ painelName, onBack }: DashboardCanvasProps) {
   const [widgets, setWidgets] = useState<DashboardWidget[]>([]);
   const [isChartSelectorOpen, setIsChartSelectorOpen] = useState(false);
@@ -32,14 +44,14 @@ export function DashboardCanvas({ painelName, onBack }: DashboardCanvasProps) {
   const [selectedChart, setSelectedChart] = useState<ChartType | null>(null);
   const [pendingWidgetId, setPendingWidgetId] = useState<string | null>(null);
 
-  const fetchWidgetData = useCallback(async (widget: DashboardWidget) => {
+  const fetchWidgetData = useCallback(async (widget: DashboardWidget): Promise<WidgetData | null> => {
     if (!widget.source || !widget.source.sourceId) return null;
 
     try {
-      let query = supabase.from("leads").select("id", { count: "exact", head: true });
+      let subOriginIds: string[] = [];
 
       if (widget.source.type === 'sub_origin') {
-        query = query.eq("sub_origin_id", widget.source.sourceId);
+        subOriginIds = [widget.source.sourceId];
       } else if (widget.source.type === 'origin') {
         const { data: subOrigins } = await supabase
           .from("crm_sub_origins")
@@ -47,24 +59,91 @@ export function DashboardCanvas({ painelName, onBack }: DashboardCanvasProps) {
           .eq("origin_id", widget.source.sourceId);
         
         if (subOrigins && subOrigins.length > 0) {
-          const subOriginIds = subOrigins.map(so => so.id);
-          query = query.in("sub_origin_id", subOriginIds);
+          subOriginIds = subOrigins.map(so => so.id);
         } else {
-          return { value: 0, label: "Leads" };
+          return { total: 0, label: "Leads" };
         }
       }
 
-      const { count, error } = await query;
+      // Fetch leads with pipeline info
+      const { data: leads, error } = await supabase
+        .from("leads")
+        .select("id, pipeline_id, created_at")
+        .in("sub_origin_id", subOriginIds);
 
       if (error) {
         console.error("Error fetching leads:", error);
-        return { value: 0, label: "Leads" };
+        return { total: 0, label: "Leads" };
       }
 
-      return { value: count || 0, label: "Leads" };
+      const total = leads?.length || 0;
+
+      // Fetch pipelines for distribution
+      const { data: pipelines } = await supabase
+        .from("pipelines")
+        .select("id, nome, cor")
+        .in("sub_origin_id", subOriginIds)
+        .order("ordem");
+
+      // Calculate distribution by pipeline
+      const distribution: ChartDataPoint[] = [];
+      
+      if (pipelines && pipelines.length > 0) {
+        pipelines.forEach((pipeline, index) => {
+          const count = leads?.filter(l => l.pipeline_id === pipeline.id).length || 0;
+          if (count > 0) {
+            distribution.push({
+              name: pipeline.nome,
+              value: count,
+              color: PIPELINE_COLORS[index % PIPELINE_COLORS.length],
+            });
+          }
+        });
+
+        // Add "Sem pipeline" if there are leads without pipeline
+        const withoutPipeline = leads?.filter(l => !l.pipeline_id).length || 0;
+        if (withoutPipeline > 0) {
+          distribution.push({
+            name: "Sem etapa",
+            value: withoutPipeline,
+            color: "#e5e5e5",
+          });
+        }
+      } else {
+        // If no pipelines, just show total
+        distribution.push({
+          name: "Leads",
+          value: total,
+          color: "#171717",
+        });
+      }
+
+      // Calculate trend by day (last 7 days)
+      const trend: ChartDataPoint[] = [];
+      const days = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
+      const today = new Date();
+      
+      for (let i = 6; i >= 0; i--) {
+        const date = new Date(today);
+        date.setDate(date.getDate() - i);
+        const dayStart = new Date(date.setHours(0, 0, 0, 0));
+        const dayEnd = new Date(date.setHours(23, 59, 59, 999));
+        
+        const count = leads?.filter(l => {
+          const createdAt = new Date(l.created_at);
+          return createdAt >= dayStart && createdAt <= dayEnd;
+        }).length || 0;
+
+        trend.push({
+          name: days[dayStart.getDay()],
+          value: count,
+        });
+      }
+
+      return { total, label: "Leads", distribution, trend };
     } catch (error) {
       console.error("Error fetching widget data:", error);
-      return { value: 0, label: "Leads" };
+      return { total: 0, label: "Leads" };
     }
   }, []);
 
@@ -238,8 +317,7 @@ export function DashboardCanvas({ painelName, onBack }: DashboardCanvasProps) {
                   <div className={`flex-1 min-h-0 relative ${!widget.isConnected ? "opacity-30" : ""}`}>
                     <ChartRenderer
                       chartType={widget.chartType.id}
-                      value={widget.data?.value || 0}
-                      label={widget.data?.label || "Leads"}
+                      data={widget.data}
                       width={widget.width || 340}
                       height={(widget.height || 280) - 60}
                       isLoading={widget.isLoading}
