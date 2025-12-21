@@ -182,11 +182,6 @@ export default function Paineis() {
     return (
       <div className="h-[calc(100vh-1.5rem)] flex flex-col -mt-6 -mr-6 -mb-6 -ml-6 rounded-2xl overflow-hidden bg-background">
         <div className="flex-1 overflow-y-auto p-6">
-          {/* Header */}
-          <div className="mb-6">
-            <h1 className="text-xl font-semibold text-foreground">Painéis</h1>
-          </div>
-
           {/* Panel Templates */}
           <div className="mb-8 flex flex-col items-center">
             <h2 className="text-base font-medium text-foreground mb-1">
