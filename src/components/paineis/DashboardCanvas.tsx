@@ -181,23 +181,33 @@ export function DashboardCanvas({ painelName, onBack }: DashboardCanvasProps) {
 
   const handleConnectSource = async (source: WidgetSource) => {
     if (pendingWidgetId) {
+      const widgetToUpdate = widgets.find(w => w.id === pendingWidgetId);
+      if (!widgetToUpdate) {
+        setPendingWidgetId(null);
+        return;
+      }
+
+      // First set loading state
       setWidgets(prev => prev.map(widget => 
         widget.id === pendingWidgetId 
           ? { ...widget, source, isConnected: true, isLoading: true }
           : widget
       ));
 
-      const widgetToUpdate = widgets.find(w => w.id === pendingWidgetId);
-      if (widgetToUpdate) {
-        const tempWidget = { ...widgetToUpdate, source, isConnected: true };
-        const data = await fetchWidgetData(tempWidget);
-        
-        setWidgets(prev => prev.map(widget => 
-          widget.id === pendingWidgetId 
-            ? { ...widget, source, isConnected: true, data: data || undefined, isLoading: false }
-            : widget
-        ));
-      }
+      // Create temp widget with source to fetch data
+      const tempWidget: DashboardWidget = { 
+        ...widgetToUpdate, 
+        source, 
+        isConnected: true 
+      };
+      const data = await fetchWidgetData(tempWidget);
+      
+      // Update with fetched data
+      setWidgets(prev => prev.map(widget => 
+        widget.id === pendingWidgetId 
+          ? { ...widget, source, isConnected: true, data: data || undefined, isLoading: false }
+          : widget
+      ));
 
       setPendingWidgetId(null);
     }
