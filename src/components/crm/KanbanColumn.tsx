@@ -1,10 +1,10 @@
-import { memo, useMemo, useState } from "react";
+import { memo, useMemo } from "react";
 import { useDroppable } from "@dnd-kit/core";
 import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { Lead, Pipeline } from "@/types/crm";
 import { KanbanCard } from "./KanbanCard";
 import { InlineAddContact } from "./InlineAddContact";
-import { CustomFieldsManager } from "./CustomFieldsManager";
+
 interface DropIndicator {
   pipelineId: string;
   position: "top" | "bottom";
@@ -14,12 +14,12 @@ interface DropIndicator {
 interface KanbanColumnProps {
   pipeline: Pipeline;
   leads: Lead[];
-  leadCount?: number; // Exact count from database (bypasses 1000 limit)
+  leadCount?: number;
   isOver?: boolean;
   subOriginId?: string | null;
   activeId?: string | null;
   dropIndicator?: DropIndicator | null;
-  activePipelineId?: string | null; // Pipeline do card sendo arrastado
+  activePipelineId?: string | null;
 }
 
 export const KanbanColumn = memo(function KanbanColumn({ 
@@ -32,8 +32,6 @@ export const KanbanColumn = memo(function KanbanColumn({
   dropIndicator,
   activePipelineId,
 }: KanbanColumnProps) {
-  const [showCustomFields, setShowCustomFields] = useState(false);
-  
   // Use exact count if provided, fallback to leads array length
   const displayCount = leadCount !== undefined ? leadCount : leads.length;
   const { setNodeRef } = useDroppable({
@@ -66,22 +64,13 @@ export const KanbanColumn = memo(function KanbanColumn({
         <div className="px-4 pt-4 pb-2 border-b border-black/5">
           <div className="flex items-center justify-between mb-2">
             <h2 className="font-semibold text-sm">{pipeline.nome}</h2>
-            <div className="flex items-center gap-1.5">
-              {subOriginId && (
-                <CustomFieldsManager 
-                  subOriginId={subOriginId} 
-                  open={showCustomFields}
-                  onOpenChange={setShowCustomFields}
-                />
-              )}
-              <span className={`text-xs px-2 py-0.5 rounded-full transition-colors ${
-                isTargeted 
-                  ? "bg-black/5 text-foreground" 
-                  : "text-muted-foreground bg-muted"
-              }`}>
-                {displayCount.toLocaleString('pt-BR')}
-              </span>
-            </div>
+            <span className={`text-xs px-2 py-0.5 rounded-full transition-colors ${
+              isTargeted 
+                ? "bg-black/5 text-foreground" 
+                : "text-muted-foreground bg-muted"
+            }`}>
+              {displayCount.toLocaleString('pt-BR')}
+            </span>
           </div>
           <InlineAddContact pipelineId={pipeline.id} subOriginId={subOriginId || null} />
         </div>
