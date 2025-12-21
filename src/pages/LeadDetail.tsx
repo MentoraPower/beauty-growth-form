@@ -19,6 +19,7 @@ import { LeadAnalysis } from "@/components/crm/LeadAnalysis";
 import { MoveLeadDropdown } from "@/components/crm/MoveLeadDropdown";
 import { EditableField } from "@/components/crm/EditableField";
 import { LeadCustomFields } from "@/components/crm/LeadCustomFields";
+import { CustomFieldsPanel } from "@/components/crm/CustomFieldsPanel";
 import { OnboardingSection, OnboardingBuilderData } from "@/components/onboarding/OnboardingSection";
 import { OnboardingFormBuilder } from "@/components/onboarding/OnboardingFormBuilder";
 import { CalendarDropdown } from "@/components/crm/CalendarDropdown";
@@ -103,6 +104,8 @@ export default function LeadDetail() {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [onboardingBuilderData, setOnboardingBuilderData] = useState<OnboardingBuilderData | null>(null);
+  const [isCustomFieldsPanelOpen, setIsCustomFieldsPanelOpen] = useState(false);
+  const [customFieldsRefresh, setCustomFieldsRefresh] = useState(0);
 
   // Build CRM URL preserving search params
   const buildCrmUrl = () => {
@@ -353,12 +356,14 @@ export default function LeadDetail() {
 
   return (
     <>
-      <motion.div 
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 0.25, ease: "easeOut" }}
-        className="space-y-3"
-      >
+      <div className="flex h-full">
+        {/* Main content - shrinks when panel is open */}
+        <motion.div 
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.25, ease: "easeOut" }}
+          className={`space-y-3 flex-1 min-w-0 transition-all duration-300 ${isCustomFieldsPanelOpen ? 'pr-4' : ''}`}
+        >
         {/* Breadcrumb Navigation */}
         <div className="flex items-center gap-2 text-sm">
           <button
@@ -628,15 +633,14 @@ export default function LeadDetail() {
 
               {/* Business Info - Custom Fields */}
               <Card className="border-[#00000010] shadow-none">
-                <CardContent className="p-6 space-y-4">
-                  <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-4">
-                    Informações do Negócio
-                  </h3>
+                <CardContent className="p-6">
                   
                   {/* Custom Fields for this sub-origin */}
                   <LeadCustomFields 
                     leadId={lead.id} 
-                    subOriginId={lead.sub_origin_id} 
+                    subOriginId={lead.sub_origin_id}
+                    onOpenManager={() => setIsCustomFieldsPanelOpen(true)}
+                    refreshTrigger={customFieldsRefresh}
                   />
                 </CardContent>
               </Card>
@@ -669,6 +673,17 @@ export default function LeadDetail() {
           </AnimatePresence>
         </div>
       </motion.div>
+      
+      {/* Custom Fields Panel */}
+      {lead.sub_origin_id && (
+        <CustomFieldsPanel
+          subOriginId={lead.sub_origin_id}
+          isOpen={isCustomFieldsPanelOpen}
+          onClose={() => setIsCustomFieldsPanelOpen(false)}
+          onFieldsChange={() => setCustomFieldsRefresh(prev => prev + 1)}
+        />
+      )}
+    </div>
 
       {/* Delete Confirmation Dialog */}
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
