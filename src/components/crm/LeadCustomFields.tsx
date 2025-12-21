@@ -154,7 +154,7 @@ export function LeadCustomFields({ leadId, subOriginId, onOpenManager, refreshTr
     return (
       <div className="space-y-4">
         <div className="flex items-center justify-between">
-          <h3 className="text-base font-semibold text-foreground">Informações do Negócio</h3>
+          <h3 className="text-base font-semibold text-foreground">Campos Personalizados</h3>
         </div>
         <div className="grid grid-cols-2 gap-4">
           {[1, 2, 3, 4].map(i => (
@@ -172,7 +172,7 @@ export function LeadCustomFields({ leadId, subOriginId, onOpenManager, refreshTr
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h3 className="text-base font-semibold text-foreground">Informações do Negócio</h3>
+        <h3 className="text-base font-semibold text-foreground">Campos Personalizados</h3>
         
         {onOpenManager && (
           <Button 
