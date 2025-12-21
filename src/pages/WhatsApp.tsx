@@ -115,6 +115,9 @@ const WhatsApp = () => {
   const [editingMessage, setEditingMessage] = useState<Message | null>(null);
   const [editText, setEditText] = useState("");
   const [showAddAccountDialog, setShowAddAccountDialog] = useState(false);
+  const [whatsappAccounts, setWhatsappAccounts] = useState<Array<{ id: string; name: string; phone_number?: string; status: string }>>([]);
+  const [selectedAccountId, setSelectedAccountId] = useState<string | null>(null);
+  const [isLoadingAccounts, setIsLoadingAccounts] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -335,6 +338,33 @@ const WhatsApp = () => {
       lastMessageFromMe: chat.last_message_from_me || false,
     };
   }, []);
+
+  // Fetch WhatsApp accounts from WaSender
+  const fetchWhatsAppAccounts = useCallback(async () => {
+    setIsLoadingAccounts(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("wasender-whatsapp", {
+        body: { action: "list-sessions" },
+      });
+
+      if (error) throw error;
+
+      if (data?.success && Array.isArray(data.data)) {
+        setWhatsappAccounts(data.data);
+        // Auto-select first connected account if none selected
+        if (!selectedAccountId && data.data.length > 0) {
+          const connectedAccount = data.data.find((acc: any) => acc.status?.toLowerCase() === "connected");
+          if (connectedAccount) {
+            setSelectedAccountId(connectedAccount.id);
+          }
+        }
+      }
+    } catch (error: any) {
+      console.error("Error fetching WhatsApp accounts:", error);
+    } finally {
+      setIsLoadingAccounts(false);
+    }
+  }, [selectedAccountId]);
 
   // Initial load - fetch chats once
   const fetchChats = useCallback(async (showLoading = false) => {
@@ -1582,6 +1612,9 @@ const WhatsApp = () => {
         console.error("Cleanup error:", error);
       }
       
+      // Fetch WhatsApp accounts
+      await fetchWhatsAppAccounts();
+      
       // Fetch chats
       await fetchChats(true);
       
@@ -1595,7 +1628,7 @@ const WhatsApp = () => {
     };
     
     init();
-  }, [fetchChats, fetchMissingPhotos]);
+  }, [fetchChats, fetchMissingPhotos, fetchWhatsAppAccounts]);
 
   // Handle phone query param to auto-select a chat
   useEffect(() => {
@@ -2078,20 +2111,61 @@ const WhatsApp = () => {
         <div className="w-[380px] flex flex-col border-r border-border/50 bg-card">
           {/* Header */}
           <div className="h-14 px-4 flex items-center justify-between bg-muted/30 border-b border-border/30">
-            <h2 className="font-semibold text-foreground">Conversas</h2>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <button className="flex items-center gap-1.5 px-2 py-1.5 text-sm text-muted-foreground hover:text-foreground hover:bg-muted/50 rounded-md transition-colors">
-                  <Plus className="w-4 h-4" />
-                  <ChevronDown className="w-3 h-3" />
+                <button className="flex items-center gap-2 font-semibold text-foreground hover:bg-muted/50 px-2 py-1.5 rounded-md transition-colors">
+                  <Smartphone className="w-4 h-4 text-emerald-500" />
+                  <span className="truncate max-w-[180px]">
+                    {selectedAccountId 
+                      ? whatsappAccounts.find(a => a.id === selectedAccountId)?.name || "Conta WhatsApp"
+                      : "Selecionar conta"}
+                  </span>
+                  <ChevronDown className="w-3.5 h-3.5 text-muted-foreground" />
                 </button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-56">
+              <DropdownMenuContent align="start" className="w-64">
+                {isLoadingAccounts ? (
+                  <div className="flex items-center justify-center py-4">
+                    <RefreshCw className="w-4 h-4 animate-spin text-muted-foreground" />
+                  </div>
+                ) : whatsappAccounts.length > 0 ? (
+                  <>
+                    {whatsappAccounts.map((account) => (
+                      <DropdownMenuItem
+                        key={account.id}
+                        className={cn(
+                          "cursor-pointer flex items-center gap-2",
+                          selectedAccountId === account.id && "bg-muted"
+                        )}
+                        onClick={() => setSelectedAccountId(account.id)}
+                      >
+                        <div className={cn(
+                          "w-2 h-2 rounded-full",
+                          account.status?.toLowerCase() === "connected" ? "bg-emerald-500" : "bg-amber-500"
+                        )} />
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium truncate">{account.name}</p>
+                          {account.phone_number && (
+                            <p className="text-xs text-muted-foreground truncate">{account.phone_number}</p>
+                          )}
+                        </div>
+                        {selectedAccountId === account.id && (
+                          <Check className="w-4 h-4 text-emerald-500" />
+                        )}
+                      </DropdownMenuItem>
+                    ))}
+                    <DropdownMenuSeparator />
+                  </>
+                ) : (
+                  <div className="px-2 py-3 text-sm text-muted-foreground text-center">
+                    Nenhuma conta conectada
+                  </div>
+                )}
                 <DropdownMenuItem 
                   className="cursor-pointer"
                   onClick={() => setShowAddAccountDialog(true)}
                 >
-                  <Smartphone className="w-4 h-4 mr-2" />
+                  <Plus className="w-4 h-4 mr-2" />
                   Adicionar conta WhatsApp
                 </DropdownMenuItem>
               </DropdownMenuContent>
@@ -2935,6 +3009,8 @@ const WhatsApp = () => {
             title: "Conta conectada",
             description: "Nova conta WhatsApp adicionada com sucesso",
           });
+          // Refresh accounts list
+          fetchWhatsAppAccounts();
         }}
       />
     </>
