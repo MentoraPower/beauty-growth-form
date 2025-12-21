@@ -944,24 +944,23 @@ const WhatsApp = () => {
     }
   };
 
-  const syncAllChats = async () => {
+  const syncAllChats = useCallback(async () => {
     setIsSyncing(true);
     try {
       console.log("[WhatsApp] Syncing Wasender...");
-      
+
       const { data, error } = await supabase.functions.invoke("wasender-whatsapp", {
         body: { action: "sync-all" },
       });
 
       console.log("[WhatsApp] Sync response:", data, error);
       // Chats will update via realtime subscription
-      
     } catch (error: any) {
       console.error("[WhatsApp] Error syncing:", error);
     } finally {
       setIsSyncing(false);
     }
-  };
+  }, []);
 
   const clearAndSync = async () => {
     await clearAllData();
@@ -1597,7 +1596,7 @@ const WhatsApp = () => {
     }
   }, [fetchChats]);
 
-  // Initial load and cleanup
+  // Initial load and cleanup (run once)
   useEffect(() => {
     const init = async () => {
       // Cleanup invalid chats
@@ -1611,7 +1610,7 @@ const WhatsApp = () => {
             .filter((chat: any) => {
               const phone = chat.phone || "";
               return phone.includes("@newsletter") || phone.includes("@g.us") ||
-                     phone.includes("status@broadcast") || phone === "0" || 
+                     phone.includes("status@broadcast") || phone === "0" ||
                      phone === "" || isWhatsAppInternalId(phone);
             })
             .map((chat: any) => chat.id);
@@ -1624,24 +1623,25 @@ const WhatsApp = () => {
       } catch (error) {
         console.error("Cleanup error:", error);
       }
-      
+
       // Fetch WhatsApp accounts
       await fetchWhatsAppAccounts();
-      
+
       // Fetch chats
       await fetchChats(true);
-      
+
       // Background sync
       syncAllChats();
-      
+
       // Fetch missing profile photos in background (after UI loads)
       setTimeout(() => {
         fetchMissingPhotos();
       }, 2000);
     };
-    
+
     init();
-  }, [fetchChats, fetchMissingPhotos, fetchWhatsAppAccounts]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Reload chats when switching WhatsApp accounts
   const initialMountRef = useRef(true);
