@@ -53,8 +53,7 @@ interface Message {
 const DEFAULT_AVATAR = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0MCIgaGVpZ2h0PSI0MCIgdmlld0JveD0iMCAwIDQwIDQwIj48cmVjdCB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIGZpbGw9IiNlMGUwZTAiLz48Y2lyY2xlIGN4PSIyMCIgY3k9IjE1IiByPSI4IiBmaWxsPSIjYjBiMGIwIi8+PHBhdGggZD0iTTggMzVjMC04IDUtMTIgMTItMTJzMTIgNCAxMiAxMiIgZmlsbD0iI2IwYjBiMCIvPjwvc3ZnPg==";
 
 export default function InstagramPage() {
-  const [isConnected, setIsConnected] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isConnected, setIsConnected] = useState<boolean | null>(null); // null = checking from cache
   const [isConnecting, setIsConnecting] = useState(false);
   const [connectionError, setConnectionError] = useState<string | null>(null);
   const [accountInfo, setAccountInfo] = useState<{ username?: string; userId?: string } | null>(null);
@@ -89,28 +88,67 @@ export default function InstagramPage() {
   const REDIRECT_URI = `${window.location.origin}/admin/instagram`;
   const myInstagramUserId = accountInfo?.userId;
 
-  // Check for OAuth callback code in URL on mount
+  // Check for cached connection FIRST (instant load)
   useEffect(() => {
-    const urlParams = new URLSearchParams(window.location.search);
-    const code = urlParams.get('code');
-    
-    // Prevent processing the same code twice
-    const processedCode = sessionStorage.getItem('instagram_processed_code');
-    
-    if (code && code !== processedCode) {
-      // Mark code as processed before attempting exchange
-      sessionStorage.setItem('instagram_processed_code', code);
-      // Clear URL immediately to prevent re-processing on refresh
-      window.history.replaceState({}, document.title, window.location.pathname);
-      handleOAuthCallback(code);
-    } else if (code) {
-      // Code already processed, just clear URL and check connection
-      window.history.replaceState({}, document.title, window.location.pathname);
-      checkConnection();
-    } else {
-      checkConnection();
-    }
+    const checkCachedConnection = async () => {
+      // First check if we have cached connection info in the database
+      const { data: connection } = await supabase
+        .from('instagram_connections')
+        .select('instagram_user_id, instagram_username')
+        .limit(1)
+        .maybeSingle();
+
+      if (connection) {
+        // Instant connection from cache
+        setIsConnected(true);
+        setAccountInfo({
+          username: connection.instagram_username || undefined,
+          userId: connection.instagram_user_id
+        });
+        // Background API check to validate token
+        checkConnectionInBackground();
+      } else {
+        // No cached connection, check URL for OAuth callback
+        const urlParams = new URLSearchParams(window.location.search);
+        const code = urlParams.get('code');
+        const processedCode = sessionStorage.getItem('instagram_processed_code');
+
+        if (code && code !== processedCode) {
+          sessionStorage.setItem('instagram_processed_code', code);
+          window.history.replaceState({}, document.title, window.location.pathname);
+          handleOAuthCallback(code);
+        } else if (code) {
+          window.history.replaceState({}, document.title, window.location.pathname);
+          setIsConnected(false);
+        } else {
+          setIsConnected(false);
+        }
+      }
+    };
+
+    checkCachedConnection();
   }, []);
+
+  // Background check to validate token (doesn't block UI)
+  const checkConnectionInBackground = async () => {
+    try {
+      const { data, error } = await supabase.functions.invoke('instagram-api', {
+        body: { action: 'check-connection', params: {} }
+      });
+
+      if (error || !data.success || !data.connected) {
+        // Token expired or invalid
+        if (data?.needsReauth) {
+          setConnectionError('Token expirado. Por favor, reconecte sua conta.');
+        }
+        setIsConnected(false);
+        setAccountInfo(null);
+      }
+    } catch (error) {
+      console.error('Background connection check error:', error);
+      // Keep the cached state, don't disrupt UX
+    }
+  };
 
   const handleOAuthCallback = async (code: string) => {
     setIsConnecting(true);
@@ -158,7 +196,6 @@ export default function InstagramPage() {
       setIsConnected(false);
     } finally {
       setIsConnecting(false);
-      setIsLoading(false);
       // Clear URL params
       window.history.replaceState({}, document.title, window.location.pathname);
       // Cleanup stored redirectUri/code markers
@@ -167,6 +204,7 @@ export default function InstagramPage() {
     }
   };
 
+  // Legacy checkConnection - now only used as fallback
   const checkConnection = async () => {
     setConnectionError(null);
     
@@ -192,8 +230,6 @@ export default function InstagramPage() {
     } catch (error: any) {
       console.error('Error checking connection:', error);
       setIsConnected(false);
-    } finally {
-      setIsLoading(false);
     }
   };
 
@@ -604,14 +640,14 @@ export default function InstagramPage() {
     }
   };
 
-  // Loading state
-  if (isLoading || isConnecting) {
+  // Initial loading state (only while checking cache, very fast)
+  if (isConnected === null || isConnecting) {
     return (
       <div className="h-[calc(100vh-1.5rem)] flex items-center justify-center">
         <div className="text-center space-y-4">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-pink-500 mx-auto" />
           <p className="text-muted-foreground">
-            {isConnecting ? 'Conectando ao Instagram...' : 'Verificando conexão...'}
+            {isConnecting ? 'Conectando ao Instagram...' : 'Carregando...'}
           </p>
         </div>
       </div>
