@@ -818,14 +818,9 @@ async function handler(req: Request): Promise<Response> {
       }
     }
 
-    // For private chats, ignore our own messages (they're inserted when sending via API).
-    // For groups, we DO store our own messages so messages sent from the phone show in-app.
-    if (fromMe && !isGroupMessage) {
-      console.log("[Wasender Webhook] Skipping own message (private chat)");
-      return new Response(JSON.stringify({ ok: true }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
+    // We now store ALL messages including fromMe (sent from phone) so they appear in-app
+    // Both for private chats and groups
+    console.log(`[Wasender Webhook] fromMe: ${fromMe}, isGroupMessage: ${isGroupMessage}`);
 
     // Skip newsletters and broadcasts (but NOT groups)
     if (remoteJid.includes("@newsletter") || remoteJid.includes("status@broadcast")) {
