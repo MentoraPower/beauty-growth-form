@@ -144,13 +144,21 @@ function SortableWidget({ widget, onResize, onDelete, onConnect, containerWidth 
       className={`group/widget relative bg-white border border-border rounded-xl shadow-sm ${isDragging ? 'shadow-lg ring-2 ring-primary/20' : 'hover:shadow-md'}`}
     >
       <div className="relative h-full p-3 pt-2 flex flex-col">
-        {/* Drag Handle - only visible on hover */}
-        <div
-          {...attributes}
-          {...listeners}
-          className="absolute top-2 left-2 p-1.5 rounded-lg cursor-grab active:cursor-grabbing hover:bg-muted z-20 opacity-0 group-hover/widget:opacity-100 transition-opacity"
-        >
-          <GripVertical className="h-4 w-4 text-muted-foreground" />
+        {/* Header Row - Drag handle + Title aligned */}
+        <div className="flex items-center gap-0 mb-2 shrink-0">
+          {/* Drag Handle - only visible on hover, expands width */}
+          <div
+            {...attributes}
+            {...listeners}
+            className="shrink-0 rounded-lg cursor-grab active:cursor-grabbing hover:bg-muted z-20 opacity-0 group-hover/widget:opacity-100 w-0 group-hover/widget:w-7 h-7 flex items-center justify-center overflow-hidden transition-all duration-300 ease-out"
+          >
+            <GripVertical className="h-4 w-4 text-muted-foreground shrink-0" />
+          </div>
+          
+          {/* Title */}
+          <h3 className="text-sm font-medium text-foreground truncate flex-1">
+            {widget.source?.sourceName || widget.chartType.name}
+          </h3>
         </div>
 
         {/* Delete Button - only visible on hover */}
@@ -179,13 +187,6 @@ function SortableWidget({ widget, onResize, onDelete, onConnect, containerWidth 
             </span>
           </button>
         )}
-
-        {/* Header - Title at top left with smooth padding transition */}
-        <div className="mb-2 shrink-0 pl-0 group-hover/widget:pl-8 transition-all duration-300 ease-out">
-          <h3 className="text-sm font-medium text-foreground truncate">
-            {widget.source?.sourceName || widget.chartType.name}
-          </h3>
-        </div>
         
         {/* Chart */}
         <div className={`flex-1 min-h-0 relative ${!widget.isConnected ? "opacity-30" : ""}`}>
