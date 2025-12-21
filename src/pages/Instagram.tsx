@@ -531,35 +531,13 @@ export default function InstagramPage() {
     }
   };
 
-  // Start audio recording
+  // Start audio recording - Instagram API doesn't support audio attachments
   const startRecording = async () => {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const mediaRecorder = new MediaRecorder(stream);
-      mediaRecorderRef.current = mediaRecorder;
-      audioChunksRef.current = [];
-
-      mediaRecorder.ondataavailable = (event) => {
-        if (event.data.size > 0) {
-          audioChunksRef.current.push(event.data);
-        }
-      };
-
-      mediaRecorder.start();
-      setIsRecording(true);
-      setRecordingTime(0);
-
-      recordingIntervalRef.current = setInterval(() => {
-        setRecordingTime(prev => prev + 1);
-      }, 1000);
-    } catch (error) {
-      console.error('Error starting recording:', error);
-      toast({
-        title: "Erro ao iniciar gravação",
-        description: "Não foi possível acessar o microfone.",
-        variant: "destructive",
-      });
-    }
+    toast({
+      title: "Áudio não suportado",
+      description: "A API do Instagram não permite envio de mensagens de voz. Use texto, imagem ou vídeo.",
+      variant: "destructive",
+    });
   };
 
   // Cancel recording
