@@ -2,10 +2,10 @@ import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useSearchParams } from "react-router-dom";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 
-import { Search, Smile, Paperclip, Mic, Send, Check, CheckCheck, RefreshCw, Phone, Image, File, Trash2, PanelRightOpen, PanelRightClose, X, Video, MoreVertical, Pencil, Reply, Zap, ArrowUp, Plus, FileImage, FileVideo, Sticker, ShieldBan, ShieldCheck } from "lucide-react";
+import { Search, Smile, Paperclip, Mic, Send, Check, CheckCheck, RefreshCw, Phone, Image, File, Trash2, PanelRightOpen, PanelRightClose, X, Video, MoreVertical, Pencil, Reply, Zap, ArrowUp, Plus, FileImage, FileVideo, Sticker, ShieldBan, ShieldCheck, Smartphone, ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -19,6 +19,7 @@ import { AudioWaveform } from "@/components/whatsapp/AudioWaveform";
 import { RecordingWaveform } from "@/components/whatsapp/RecordingWaveform";
 import ImageLightbox from "@/components/whatsapp/ImageLightbox";
 import { formatWhatsAppText, stripWhatsAppFormatting } from "@/lib/whatsapp-format";
+import { AddWhatsAppAccountDialog } from "@/components/whatsapp/AddWhatsAppAccountDialog";
 
 interface Chat {
   id: string;
@@ -113,6 +114,7 @@ const WhatsApp = () => {
   const [blockConfirmDialog, setBlockConfirmDialog] = useState<{ open: boolean; phone: string; chatId: string; name: string } | null>(null);
   const [editingMessage, setEditingMessage] = useState<Message | null>(null);
   const [editText, setEditText] = useState("");
+  const [showAddAccountDialog, setShowAddAccountDialog] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -2075,8 +2077,25 @@ const WhatsApp = () => {
         {/* Left Sidebar - Chat List */}
         <div className="w-[380px] flex flex-col border-r border-border/50 bg-card">
           {/* Header */}
-          <div className="h-14 px-4 flex items-center bg-muted/30 border-b border-border/30">
+          <div className="h-14 px-4 flex items-center justify-between bg-muted/30 border-b border-border/30">
             <h2 className="font-semibold text-foreground">Conversas</h2>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button className="flex items-center gap-1.5 px-2 py-1.5 text-sm text-muted-foreground hover:text-foreground hover:bg-muted/50 rounded-md transition-colors">
+                  <Plus className="w-4 h-4" />
+                  <ChevronDown className="w-3 h-3" />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56">
+                <DropdownMenuItem 
+                  className="cursor-pointer"
+                  onClick={() => setShowAddAccountDialog(true)}
+                >
+                  <Smartphone className="w-4 h-4 mr-2" />
+                  Adicionar conta WhatsApp
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
 
           {/* Search */}
@@ -2906,6 +2925,18 @@ const WhatsApp = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Add WhatsApp Account Dialog */}
+      <AddWhatsAppAccountDialog 
+        open={showAddAccountDialog} 
+        onOpenChange={setShowAddAccountDialog}
+        onSuccess={() => {
+          toast({
+            title: "Conta conectada",
+            description: "Nova conta WhatsApp adicionada com sucesso",
+          });
+        }}
+      />
     </>
   );
 };
