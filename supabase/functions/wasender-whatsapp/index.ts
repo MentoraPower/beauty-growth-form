@@ -53,10 +53,18 @@ function normalizeName(value: any, phoneDigits: string): string | null {
 }
 
 // WasenderAPI request helper (uses session API key by default)
-async function wasenderRequest(endpoint: string, options: RequestInit = {}, usePersonalToken = false): Promise<any> {
+// sessionApiKey: if provided, uses this specific API key for the request (for multi-account support)
+async function wasenderRequest(
+  endpoint: string, 
+  options: RequestInit = {}, 
+  usePersonalToken = false,
+  sessionApiKey?: string
+): Promise<any> {
   const url = `${WASENDER_BASE_URL}${endpoint}`;
-  const token = usePersonalToken ? WASENDER_PERSONAL_TOKEN : WASENDER_API_KEY;
-  console.log(`[Wasender] Request: ${options.method || "GET"} ${url} (token: ${usePersonalToken ? 'personal' : 'session'})`);
+  // Priority: sessionApiKey > usePersonalToken > default WASENDER_API_KEY
+  const token = sessionApiKey || (usePersonalToken ? WASENDER_PERSONAL_TOKEN : WASENDER_API_KEY);
+  const tokenType = sessionApiKey ? 'session-specific' : (usePersonalToken ? 'personal' : 'default');
+  console.log(`[Wasender] Request: ${options.method || "GET"} ${url} (token: ${tokenType})`);
   
   const response = await fetch(url, {
     ...options,
@@ -264,10 +272,11 @@ async function handler(req: Request): Promise<Response> {
         }
       }
       
+      // Pass sessionId to use the correct account's API key
       const result = await wasenderRequest("/send-message", {
         method: "POST",
         body: JSON.stringify(payload),
-      });
+      }, false, sessionId);
 
       // WasenderAPI response structure varies - extract IDs from multiple possible locations
       // Log full result structure for debugging
@@ -298,10 +307,11 @@ async function handler(req: Request): Promise<Response> {
         payload.text = caption;
       }
       
+      // Pass sessionId to use the correct account's API key
       const result = await wasenderRequest("/send-message", {
         method: "POST",
         body: JSON.stringify(payload),
-      });
+      }, false, sessionId);
 
       // Extract both IDs from response
       console.log(`[Wasender] Send image result:`, JSON.stringify(result).substring(0, 500));
@@ -367,14 +377,14 @@ async function handler(req: Request): Promise<Response> {
         throw new Error("No audio URL or base64 data provided");
       }
       
-      // Use /send-message with audioUrl parameter
+      // Use /send-message with audioUrl parameter - pass sessionId for correct account
       const result = await wasenderRequest("/send-message", {
         method: "POST",
         body: JSON.stringify({ 
           to, 
           audioUrl: audioUrl,
         }),
-      });
+      }, false, sessionId);
 
       // Extract both IDs from response
       console.log(`[Wasender] Send audio result:`, JSON.stringify(result).substring(0, 500));
