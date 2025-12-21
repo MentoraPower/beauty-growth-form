@@ -23,20 +23,23 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 import Instagram from "@/components/icons/Instagram";
 import { supabase } from "@/integrations/supabase/client";
+import { useInstagramCache } from "@/hooks/useInstagramCache";
 
 interface Chat {
   id: string;
+  conversation_id?: string;
   name: string;
   lastMessage: string;
   lastMessageTime: string;
   unreadCount: number;
   avatar: string | null;
   username: string;
-  participantId: string; // Instagram user ID for sending messages
+  participantId: string;
 }
 
 interface Message {
   id: string;
+  message_id?: string;
   text: string | null;
   time: string;
   fromMe: boolean;
@@ -55,14 +58,10 @@ export default function InstagramPage() {
   const [isConnecting, setIsConnecting] = useState(false);
   const [connectionError, setConnectionError] = useState<string | null>(null);
   const [accountInfo, setAccountInfo] = useState<{ username?: string; userId?: string } | null>(null);
-  const [chats, setChats] = useState<Chat[]>([]);
   const [selectedChat, setSelectedChat] = useState<Chat | null>(null);
-  const [messages, setMessages] = useState<Message[]>([]);
   const [messageInput, setMessageInput] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [isSending, setIsSending] = useState(false);
-  const [isLoadingMessages, setIsLoadingMessages] = useState(false);
-  const [isLoadingChats, setIsLoadingChats] = useState(false);
   const [openReelUrl, setOpenReelUrl] = useState<string | null>(null);
   const [isRecording, setIsRecording] = useState(false);
   const [recordingTime, setRecordingTime] = useState(0);
@@ -72,6 +71,20 @@ export default function InstagramPage() {
   const audioChunksRef = useRef<Blob[]>([]);
   const recordingIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Use the cache hook for instant loading
+  const {
+    chats,
+    messages,
+    isLoadingChats,
+    isLoadingMessages,
+    fetchChats,
+    fetchMessages,
+    clearMessages,
+    addTempMessage,
+    updateTempMessageStatus,
+    removeTempMessage,
+  } = useInstagramCache();
 
   const REDIRECT_URI = `${window.location.origin}/admin/instagram`;
   const myInstagramUserId = accountInfo?.userId;
@@ -231,9 +244,8 @@ export default function InstagramPage() {
         });
         setIsConnected(false);
         setAccountInfo(null);
-        setChats([]);
         setSelectedChat(null);
-        setMessages([]);
+        clearMessages();
       }
     } catch (error: any) {
       console.error('Error disconnecting:', error);
@@ -245,150 +257,38 @@ export default function InstagramPage() {
     }
   };
 
-  const fetchConversations = useCallback(async (showLoading = false) => {
-    if (!myInstagramUserId) return;
-
-    if (showLoading) setIsLoadingChats(true);
-
-    try {
-      const { data, error } = await supabase.functions.invoke('instagram-api', {
-        body: { action: 'get-conversations', params: {} }
-      });
-
-      if (error) throw error;
-
-      if (data.success && data.conversations) {
-        const formattedChats: Chat[] = data.conversations.map((conv: any) => {
-          const participant =
-            conv.participants?.data?.find((p: any) => p.id !== myInstagramUserId) ??
-            conv.participants?.data?.[0];
-          const lastMsg = conv.messages?.data?.[0];
-
-          return {
-            id: conv.id,
-            name: participant?.name || participant?.username || 'Usuário',
-            lastMessage: lastMsg?.message || '',
-            lastMessageTime: lastMsg?.created_time || new Date().toISOString(),
-            unreadCount: 0,
-            avatar: participant?.profile_pic || null,
-            username: participant?.username || '',
-            participantId: participant?.id || '',
-          };
-        });
-        setChats(formattedChats);
-      }
-    } catch (error: any) {
-      console.error('Error fetching conversations:', error);
-    } finally {
-      setIsLoadingChats(false);
-    }
-  }, [myInstagramUserId]);
-
+  // Fetch chats when connected
   useEffect(() => {
     if (!isConnected || !myInstagramUserId) return;
-    fetchConversations(true); // Show loading on initial fetch
-  }, [isConnected, myInstagramUserId, fetchConversations]);
+    fetchChats(myInstagramUserId);
+  }, [isConnected, myInstagramUserId, fetchChats]);
 
-  const fetchMessages = useCallback(async (conversationId: string, showLoading = false) => {
-    if (!myInstagramUserId) return;
-
-    if (showLoading) setIsLoadingMessages(true);
-
-    try {
-      const { data, error } = await supabase.functions.invoke('instagram-api', {
-        body: { action: 'get-messages', params: { conversationId, limit: 100 } }
-      });
-
-      if (error) throw error;
-
-      if (data.success && data.messages) {
-        // API returns newest first; reverse to show oldest first
-        const ordered = [...data.messages].reverse();
-
-        const formattedMessages: Message[] = ordered.map((msg: any, index: number) => {
-          const isFromMe = msg.from?.id === myInstagramUserId;
-
-          // Instagram API doesn't provide delivery/read receipts.
-          // Heuristic:
-          // - Once the message is present in the API list, show DELIVERED
-          // - If the other person sends any message AFTER it, consider it READ
-          let status = 'RECEIVED';
-          if (isFromMe) {
-            const hasLaterOther = ordered.slice(index + 1).some((m: any) => m.from?.id !== myInstagramUserId);
-            status = hasLaterOther ? 'READ' : 'DELIVERED';
-          }
-
-          return {
-            id: msg.id,
-            text: msg.message || null,
-            time: msg.created_time,
-            fromMe: isFromMe,
-            status,
-            mediaType: msg.mediaType || null,
-            mediaUrl: msg.mediaUrl || null,
-            shareLink: msg.shareLink || null,
-            shareName: msg.shareName || null,
-          };
-        });
-
-        // Merge with any pending temp messages that haven't synced yet
-        setMessages(prev => {
-          // Get temp messages that are still pending/sent (not yet in API)
-          const tempMessages = prev.filter(m => m.id.startsWith('temp-'));
-          
-          // Check if temp messages are now in the API response (by matching text and approximate time)
-          const remainingTempMessages = tempMessages.filter(tempMsg => {
-            // Check if this temp message exists in the API response
-            const matchFound = formattedMessages.some(apiMsg => 
-              apiMsg.fromMe && 
-              apiMsg.text === tempMsg.text &&
-              Math.abs(new Date(apiMsg.time).getTime() - new Date(tempMsg.time).getTime()) < 60000 // within 1 minute
-            );
-            return !matchFound; // Keep temp message if NOT found in API
-          });
-
-          // Return API messages + any remaining temp messages
-          return [...formattedMessages, ...remainingTempMessages];
-        });
-      }
-    } catch (error: any) {
-      console.error('Error fetching messages:', error);
-      toast({
-        title: "Erro ao carregar mensagens",
-        description: error.message,
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoadingMessages(false);
-    }
-  }, [myInstagramUserId]);
-
-  // Fetch messages when a chat is selected - clear old messages immediately
+  // Fetch messages when a chat is selected
   useEffect(() => {
     if (selectedChat && myInstagramUserId) {
-      setMessages([]); // Clear messages immediately when switching chats
-      fetchMessages(selectedChat.id, true); // Show loading
+      clearMessages();
+      fetchMessages(selectedChat.id, myInstagramUserId);
     }
-  }, [selectedChat?.id, myInstagramUserId, fetchMessages]);
+  }, [selectedChat?.id, myInstagramUserId, fetchMessages, clearMessages]);
 
-  // Real-time polling for conversations (every 30 seconds - reduced frequency)
+  // Background polling for conversations (every 60 seconds since we have cache)
   useEffect(() => {
     if (!isConnected || !myInstagramUserId) return;
 
     const interval = setInterval(() => {
-      fetchConversations();
-    }, 30000); // 30s instead of 10s
+      fetchChats(myInstagramUserId);
+    }, 60000);
 
     return () => clearInterval(interval);
-  }, [isConnected, myInstagramUserId, fetchConversations]);
+  }, [isConnected, myInstagramUserId, fetchChats]);
 
-  // Real-time polling for messages when chat is selected (every 10 seconds)
+  // Background polling for messages when chat is selected (every 15 seconds)
   useEffect(() => {
     if (!selectedChat || !myInstagramUserId) return;
 
     const interval = setInterval(() => {
-      fetchMessages(selectedChat.id);
-    }, 10000); // 10s instead of 5s
+      fetchMessages(selectedChat.id, myInstagramUserId);
+    }, 15000);
 
     return () => clearInterval(interval);
   }, [selectedChat?.id, myInstagramUserId, fetchMessages]);
@@ -413,22 +313,23 @@ export default function InstagramPage() {
     const text = messageInput.trim();
     setMessageInput("");
 
-    const tempMessage: Message = {
+    const tempMessage = {
       id: `temp-${Date.now()}`,
+      message_id: `temp-${Date.now()}`,
       text,
       time: new Date().toISOString(),
       fromMe: true,
       status: "PENDING",
     };
 
-    setMessages(prev => [...prev, tempMessage]);
+    addTempMessage(tempMessage);
 
     try {
       const { data, error } = await supabase.functions.invoke('instagram-api', {
         body: { 
           action: 'send-message',
           params: {
-            recipientId: selectedChat.participantId, // Use the participant's Instagram user ID
+            recipientId: selectedChat.participantId,
             message: text
           }
         }
@@ -437,9 +338,7 @@ export default function InstagramPage() {
       if (error) throw error;
       
       if (data.success) {
-        setMessages(prev => prev.map(m => 
-          m.id === tempMessage.id ? { ...m, status: 'SENT' } : m
-        ));
+        updateTempMessageStatus(tempMessage.id, { status: 'SENT' });
       } else {
         throw new Error(data.error);
       }
@@ -450,7 +349,7 @@ export default function InstagramPage() {
         description: "Não foi possível enviar a mensagem.",
         variant: "destructive",
       });
-      setMessages(prev => prev.filter(m => m.id !== tempMessage.id));
+      removeTempMessage(tempMessage.id);
     } finally {
       setIsSending(false);
     }
@@ -496,8 +395,9 @@ export default function InstagramPage() {
       const mediaType = isImage ? 'image' : 'video';
 
       // Add temp message
-      const tempMessage: Message = {
+      const tempMessage = {
         id: `temp-${Date.now()}`,
+        message_id: `temp-${Date.now()}`,
         text: null,
         time: new Date().toISOString(),
         fromMe: true,
@@ -505,7 +405,7 @@ export default function InstagramPage() {
         mediaType,
         mediaUrl,
       };
-      setMessages(prev => [...prev, tempMessage]);
+      addTempMessage(tempMessage);
       scrollToBottom();
 
       // Send via Instagram API
@@ -523,9 +423,7 @@ export default function InstagramPage() {
       if (error) throw error;
 
       if (data.success) {
-        setMessages(prev => prev.map(m => 
-          m.id === tempMessage.id ? { ...m, status: 'SENT' } : m
-        ));
+        updateTempMessageStatus(tempMessage.id, { status: 'SENT' });
         toast({
           title: "Mídia enviada",
           description: isImage ? "Imagem enviada com sucesso." : "Vídeo enviado com sucesso.",
@@ -630,8 +528,9 @@ export default function InstagramPage() {
           const mediaUrl = publicUrlData.publicUrl;
 
           // Add temp message
-          const tempMessage: Message = {
+          const tempMessage = {
             id: `temp-${Date.now()}`,
+            message_id: `temp-${Date.now()}`,
             text: null,
             time: new Date().toISOString(),
             fromMe: true,
@@ -639,7 +538,7 @@ export default function InstagramPage() {
             mediaType: 'audio',
             mediaUrl,
           };
-          setMessages(prev => [...prev, tempMessage]);
+          addTempMessage(tempMessage);
           scrollToBottom();
 
           // Send via Instagram API
@@ -657,9 +556,7 @@ export default function InstagramPage() {
           if (error) throw error;
 
           if (data.success) {
-            setMessages(prev => prev.map(m => 
-              m.id === tempMessage.id ? { ...m, status: 'SENT' } : m
-            ));
+            updateTempMessageStatus(tempMessage.id, { status: 'SENT' });
             toast({
               title: "Áudio enviado",
               description: "Mensagem de voz enviada com sucesso.",

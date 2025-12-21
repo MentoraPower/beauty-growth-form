@@ -307,6 +307,48 @@ export type Database = {
         }
         Relationships: []
       }
+      instagram_chats: {
+        Row: {
+          conversation_id: string
+          created_at: string
+          id: string
+          last_message: string | null
+          last_message_time: string | null
+          participant_avatar: string | null
+          participant_id: string
+          participant_name: string | null
+          participant_username: string | null
+          unread_count: number | null
+          updated_at: string
+        }
+        Insert: {
+          conversation_id: string
+          created_at?: string
+          id?: string
+          last_message?: string | null
+          last_message_time?: string | null
+          participant_avatar?: string | null
+          participant_id: string
+          participant_name?: string | null
+          participant_username?: string | null
+          unread_count?: number | null
+          updated_at?: string
+        }
+        Update: {
+          conversation_id?: string
+          created_at?: string
+          id?: string
+          last_message?: string | null
+          last_message_time?: string | null
+          participant_avatar?: string | null
+          participant_id?: string
+          participant_name?: string | null
+          participant_username?: string | null
+          unread_count?: number | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       instagram_connections: {
         Row: {
           access_token: string
@@ -343,6 +385,48 @@ export type Database = {
           token_expires_at?: string | null
           updated_at?: string
           user_id?: string | null
+        }
+        Relationships: []
+      }
+      instagram_messages: {
+        Row: {
+          conversation_id: string
+          created_at: string
+          from_me: boolean | null
+          id: string
+          media_type: string | null
+          media_url: string | null
+          message_id: string
+          share_link: string | null
+          share_name: string | null
+          status: string | null
+          text: string | null
+        }
+        Insert: {
+          conversation_id: string
+          created_at?: string
+          from_me?: boolean | null
+          id?: string
+          media_type?: string | null
+          media_url?: string | null
+          message_id: string
+          share_link?: string | null
+          share_name?: string | null
+          status?: string | null
+          text?: string | null
+        }
+        Update: {
+          conversation_id?: string
+          created_at?: string
+          from_me?: boolean | null
+          id?: string
+          media_type?: string | null
+          media_url?: string | null
+          message_id?: string
+          share_link?: string | null
+          share_name?: string | null
+          status?: string | null
+          text?: string | null
         }
         Relationships: []
       }
