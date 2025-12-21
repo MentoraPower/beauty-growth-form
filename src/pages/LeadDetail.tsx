@@ -7,7 +7,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Mail, Calendar, Building2, Clock, DollarSign, Users, Briefcase, MoreVertical, Trash2, User, MessageSquare, ArrowRightLeft, ClipboardList } from "lucide-react";
+import { Mail, Calendar, MoreVertical, Trash2, User, ArrowRightLeft } from "lucide-react";
 import Instagram from "@/components/icons/Instagram";
 import WhatsApp from "@/components/icons/WhatsApp";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -18,6 +18,7 @@ import { LeadTrackingTimeline } from "@/components/crm/LeadTrackingTimeline";
 import { LeadAnalysis } from "@/components/crm/LeadAnalysis";
 import { MoveLeadDropdown } from "@/components/crm/MoveLeadDropdown";
 import { EditableField } from "@/components/crm/EditableField";
+import { LeadCustomFields } from "@/components/crm/LeadCustomFields";
 import { OnboardingSection, OnboardingBuilderData } from "@/components/onboarding/OnboardingSection";
 import { OnboardingFormBuilder } from "@/components/onboarding/OnboardingFormBuilder";
 import { CalendarDropdown } from "@/components/crm/CalendarDropdown";
@@ -625,107 +626,18 @@ export default function LeadDetail() {
                 </CardContent>
               </Card>
 
-              {/* Business Info */}
+              {/* Business Info - Custom Fields */}
               <Card className="border-[#00000010] shadow-none">
                 <CardContent className="p-6 space-y-4">
                   <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-4">
                     Informações do Negócio
                   </h3>
                   
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="p-3 bg-muted/30 border border-[#00000010] rounded-lg">
-                      <div className="flex items-center gap-2 mb-1">
-                        <Briefcase className="h-4 w-4 text-muted-foreground" />
-                        <p className="text-xs text-muted-foreground">Área de Atuação</p>
-                      </div>
-                      <p className={`text-sm font-medium ${!lead.service_area ? "text-muted-foreground italic" : ""}`}>
-                        {displayValue(lead.service_area)}
-                      </p>
-                    </div>
-
-                    <div className="p-3 bg-muted/30 border border-[#00000010] rounded-lg">
-                      <div className="flex items-center gap-2 mb-1">
-                        <DollarSign className="h-4 w-4 text-muted-foreground" />
-                        <p className="text-xs text-muted-foreground">Faturamento Mensal</p>
-                      </div>
-                      <p className={`text-sm font-medium ${!lead.monthly_billing ? "text-muted-foreground italic" : ""}`}>
-                        {displayValue(lead.monthly_billing)}
-                      </p>
-                    </div>
-
-                    <div className="p-3 bg-muted/30 border border-[#00000010] rounded-lg">
-                      <div className="flex items-center gap-2 mb-1">
-                        <Users className="h-4 w-4 text-muted-foreground" />
-                        <p className="text-xs text-muted-foreground">Atendimentos/Semana</p>
-                      </div>
-                      <p className={`text-sm font-medium ${!lead.weekly_attendance ? "text-muted-foreground italic" : ""}`}>
-                        {displayValue(lead.weekly_attendance)}
-                      </p>
-                    </div>
-
-                    <div className="p-3 bg-muted/30 border border-[#00000010] rounded-lg">
-                      <div className="flex items-center gap-2 mb-1">
-                        <DollarSign className="h-4 w-4 text-muted-foreground" />
-                        <p className="text-xs text-muted-foreground">Ticket Médio</p>
-                      </div>
-                      <p className={`text-sm font-medium ${lead.average_ticket === null ? "text-muted-foreground italic" : ""}`}>
-                        {formatCurrency(lead.average_ticket)}
-                      </p>
-                    </div>
-
-                    <div className="p-3 bg-muted/30 border border-[#00000010] rounded-lg">
-                      <div className="flex items-center gap-2 mb-1">
-                        <Building2 className="h-4 w-4 text-muted-foreground" />
-                        <p className="text-xs text-muted-foreground">Tipo de Espaço</p>
-                      </div>
-                      <p className={`text-sm font-medium ${!lead.workspace_type ? "text-muted-foreground italic" : ""}`}>
-                        {getWorkspaceLabel(lead.workspace_type)}
-                      </p>
-                    </div>
-
-                    <div className="p-3 bg-muted/30 border border-[#00000010] rounded-lg">
-                      <div className="flex items-center gap-2 mb-1">
-                        <Briefcase className="h-4 w-4 text-muted-foreground" />
-                        <p className="text-xs text-muted-foreground">Anos de Experiência</p>
-                      </div>
-                      <p className={`text-sm font-medium ${!lead.years_experience ? "text-muted-foreground italic" : ""}`}>
-                        {lead.years_experience ? `${lead.years_experience} anos` : "incompleto"}
-                      </p>
-                    </div>
-
-                    <div className="p-3 bg-muted/30 border border-[#00000010] rounded-lg">
-                      <div className="flex items-center gap-2 mb-1">
-                        <Clock className="h-4 w-4 text-muted-foreground" />
-                        <p className="text-xs text-muted-foreground">Receita Estimada</p>
-                      </div>
-                      <p className={`text-sm font-medium ${getEstimatedRevenue() === null ? "text-muted-foreground italic" : ""}`}>
-                        {getEstimatedRevenue() !== null 
-                          ? `${formatCurrency(getEstimatedRevenue())}/mês` 
-                          : "incompleto"}
-                      </p>
-                    </div>
-
-                    <div className="p-3 bg-muted/30 border border-[#00000010] rounded-lg">
-                      <div className="flex items-center gap-2 mb-1">
-                        <DollarSign className="h-4 w-4 text-muted-foreground" />
-                        <p className="text-xs text-muted-foreground">Quer mais informações?</p>
-                      </div>
-                      <p className={`text-sm font-medium ${lead.wants_more_info === null ? "text-muted-foreground italic" : ""}`}>
-                        {lead.wants_more_info === true ? "Sim" : lead.wants_more_info === false ? "Não" : "incompleto"}
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* Biggest Difficulty - Full width */}
-                  <div className="col-span-2 p-3 bg-muted/30 border border-[#00000010] rounded-lg">
-                    <div className="flex items-center gap-2 mb-1">
-                      <MessageSquare className="h-4 w-4 text-muted-foreground" />
-                      <p className="text-xs text-muted-foreground">Maior Dificuldade</p>
-                    </div>
-                    <p className={`text-sm font-medium whitespace-pre-wrap ${!lead.biggest_difficulty ? "text-muted-foreground italic" : ""}`}>
-                      {lead.biggest_difficulty || "incompleto"}
-                    </p>
-                  </div>
+                  {/* Custom Fields for this sub-origin */}
+                  <LeadCustomFields 
+                    leadId={lead.id} 
+                    subOriginId={lead.sub_origin_id} 
+                  />
 
                   {/* Investment Summary Card */}
                   <div className="p-4 bg-muted/20 border border-[#00000010] rounded-lg mt-4">

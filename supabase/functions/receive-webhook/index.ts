@@ -723,6 +723,48 @@ const handler = async (req: Request): Promise<Response> => {
         }
       }
 
+      // Save custom field responses if any exist
+      if (savedLeadId && targetSubOriginId) {
+        try {
+          // Fetch custom fields for this sub-origin
+          const { data: customFields } = await supabase
+            .from("sub_origin_custom_fields")
+            .select("id, field_key")
+            .eq("sub_origin_id", targetSubOriginId);
+
+          if (customFields && customFields.length > 0) {
+            const customResponses: { lead_id: string; field_id: string; response_value: string }[] = [];
+            
+            for (const field of customFields) {
+              // Check if payload has value for this field key
+              const value = payload[field.field_key];
+              if (value !== undefined && value !== null && String(value).trim() !== "") {
+                customResponses.push({
+                  lead_id: savedLeadId,
+                  field_id: field.id,
+                  response_value: String(value),
+                });
+              }
+            }
+
+            if (customResponses.length > 0) {
+              // Upsert custom field responses
+              const { error: customError } = await supabase
+                .from("lead_custom_field_responses")
+                .upsert(customResponses, { onConflict: "lead_id,field_id" });
+              
+              if (customError) {
+                console.log("[Webhook] Custom field responses upsert error:", customError.message);
+              } else {
+                console.log(`[Webhook] Saved ${customResponses.length} custom field responses`);
+              }
+            }
+          }
+        } catch (customError) {
+          console.log("[Webhook] Error saving custom fields:", customError);
+        }
+      }
+
       // Trigger email automation (fire and forget)
       if (savedLeadId) {
         triggerEmailAutomation(supabase, { ...leadData, id: savedLeadId }, targetPipelineId, targetSubOriginId)
