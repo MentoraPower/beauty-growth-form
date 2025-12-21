@@ -240,7 +240,6 @@ export default function Paineis() {
                     <TableRow className="hover:bg-transparent">
                       <TableHead className="font-medium">Nome</TableHead>
                       <TableHead className="font-medium">Tipo</TableHead>
-                      <TableHead className="font-medium">Criado em</TableHead>
                       <TableHead className="w-[50px]"></TableHead>
                     </TableRow>
                   </TableHeader>
@@ -254,9 +253,6 @@ export default function Paineis() {
                         <TableCell className="font-medium">{dashboard.name}</TableCell>
                         <TableCell className="capitalize text-muted-foreground">
                           {dashboard.type === 'scratch' ? 'Personalizado' : dashboard.type}
-                        </TableCell>
-                        <TableCell className="text-muted-foreground">
-                          {format(new Date(dashboard.created_at), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
                         </TableCell>
                         <TableCell>
                           <DropdownMenu>
