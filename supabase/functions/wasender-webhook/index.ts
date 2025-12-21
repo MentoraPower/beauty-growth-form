@@ -553,129 +553,209 @@ async function handler(req: Request): Promise<Response> {
       });
     }
 
-    // Handle group participants update (join/leave/promote/demote)
+    // ========== HELPER FUNCTION: Track lead group entry/exit ==========
+    async function trackLeadGroupAction(
+      supabase: any,
+      phone: string,
+      groupJid: string,
+      action: "add" | "remove",
+      sessionId: string | null
+    ): Promise<void> {
+      if (!phone || phone.length < 8) {
+        console.log(`[Wasender Webhook] Invalid phone for group tracking: ${phone}`);
+        return;
+      }
+
+      console.log(`[Wasender Webhook] trackLeadGroupAction - phone: ${phone}, group: ${groupJid}, action: ${action}`);
+
+      // Try to fetch real group name via API
+      let groupName = groupJid.replace("@g.us", "").replace(/-/g, " ");
+      let groupDescription = "";
+      
+      if (sessionId) {
+        try {
+          const groupMetadataResponse = await fetch(
+            `https://www.wasenderapi.com/api/groups/${encodeURIComponent(groupJid)}/metadata`,
+            {
+              method: "GET",
+              headers: {
+                Authorization: `Bearer ${sessionId}`,
+                "Content-Type": "application/json",
+              },
+            }
+          );
+          
+          if (groupMetadataResponse.ok) {
+            const groupMetadata = await groupMetadataResponse.json();
+            if (groupMetadata.success && groupMetadata.data) {
+              groupName = groupMetadata.data.subject || groupMetadata.data.name || groupName;
+              groupDescription = groupMetadata.data.desc || groupMetadata.data.description || "";
+              console.log(`[Wasender Webhook] Got group metadata - name: ${groupName}`);
+            }
+          }
+        } catch (metaError) {
+          console.error(`[Wasender Webhook] Error fetching group metadata:`, metaError);
+        }
+      }
+
+      // Search for lead in CRM by phone number
+      const phonesVariations = [
+        phone,
+        phone.startsWith("55") ? phone.substring(2) : `55${phone}`,
+      ];
+      
+      const { data: leads, error: leadError } = await supabase
+        .from("leads")
+        .select("id, name, whatsapp, sub_origin_id")
+        .or(phonesVariations.map((p: string) => `whatsapp.ilike.%${p}`).join(","));
+      
+      if (leadError) {
+        console.error(`[Wasender Webhook] Error searching leads:`, leadError);
+        return;
+      }
+      
+      if (!leads || leads.length === 0) {
+        console.log(`[Wasender Webhook] No lead found for phone: ${phone}`);
+        return;
+      }
+      
+      console.log(`[Wasender Webhook] Found ${leads.length} lead(s) for phone ${phone}`);
+      
+      // Create tracking entry for each matching lead
+      for (const lead of leads) {
+        const now = new Date();
+        const formattedDate = now.toLocaleDateString("pt-BR", { 
+          day: "2-digit", 
+          month: "2-digit", 
+          year: "numeric",
+          timeZone: "America/Sao_Paulo"
+        });
+        const formattedTime = now.toLocaleTimeString("pt-BR", { 
+          hour: "2-digit", 
+          minute: "2-digit",
+          timeZone: "America/Sao_Paulo"
+        });
+        
+        const trackingData = {
+          lead_id: lead.id,
+          tipo: action === "add" ? "grupo_entrada" : "grupo_saida",
+          titulo: action === "add" 
+            ? `Entrou no grupo "${groupName}"` 
+            : `Saiu do grupo "${groupName}"`,
+          descricao: action === "add"
+            ? `O lead entrou no grupo de WhatsApp "${groupName}" em ${formattedDate} às ${formattedTime}`
+            : `O lead saiu do grupo de WhatsApp "${groupName}" em ${formattedDate} às ${formattedTime}`,
+          origem: "whatsapp",
+          dados: {
+            group_jid: groupJid,
+            group_name: groupName,
+            group_description: groupDescription,
+            action: action,
+            phone: phone,
+            phone_formatted: formatPhoneDisplay(phone),
+            session_id: sessionId,
+            timestamp: now.toISOString(),
+            date: formattedDate,
+            time: formattedTime,
+          },
+        };
+        
+        const { error: trackingError } = await supabase
+          .from("lead_tracking")
+          .insert(trackingData);
+        
+        if (trackingError) {
+          console.error(`[Wasender Webhook] Error creating tracking for lead ${lead.id}:`, trackingError);
+        } else {
+          console.log(`[Wasender Webhook] ✅ Created tracking entry for lead ${lead.id}: ${action} group "${groupName}"`);
+        }
+      }
+    }
+
+    // ========== Handle groups.upsert event ==========
+    if (event === "groups.upsert") {
+      console.log(`[Wasender Webhook] 📋 groups.upsert event received`);
+      console.log(`[Wasender Webhook] Full groups.upsert payload:`, JSON.stringify(payload.data, null, 2));
+      
+      // Currently just logging - groups table can be added later if needed
+      const groups = payload.data?.groups || payload.data || [];
+      const groupsArray = Array.isArray(groups) ? groups : [groups];
+      
+      for (const group of groupsArray) {
+        const groupId = group.id || group.jid || "";
+        const groupName = group.subject || group.name || "";
+        const participantCount = group.participants?.length || 0;
+        console.log(`[Wasender Webhook] Group info - JID: ${groupId}, Name: ${groupName}, Participants: ${participantCount}`);
+      }
+      
+      return new Response(JSON.stringify({ ok: true }), { 
+        headers: { ...corsHeaders, "Content-Type": "application/json" } 
+      });
+    }
+
+    // ========== Handle group participants update (join/leave/promote/demote) ==========
     if (event === "group-participants.update") {
       const groupData = payload.data;
       const groupJid = groupData?.jid || "";
       const participants = groupData?.participants || [];
       const action = groupData?.action || ""; // "add", "remove", "promote", "demote"
       
-      console.log(`[Wasender Webhook] Group participants update - group: ${groupJid}, action: ${action}, participants: ${JSON.stringify(participants)}, sessionId: ${sessionId}`);
+      console.log(`[Wasender Webhook] 👥 group-participants.update - group: ${groupJid}, action: ${action}, participants: ${JSON.stringify(participants)}, sessionId: ${sessionId}`);
       
       // Only track add (join) and remove (leave) actions
       if ((action === "add" || action === "remove") && participants.length > 0) {
-        // Try to fetch real group name via API
-        let groupName = groupJid.replace("@g.us", "").replace(/-/g, " ");
-        let groupDescription = "";
-        
-        // Fetch group metadata to get real name
-        if (sessionId) {
-          try {
-            const groupMetadataResponse = await fetch(
-              `https://www.wasenderapi.com/api/groups/${encodeURIComponent(groupJid)}/metadata`,
-              {
-                method: "GET",
-                headers: {
-                  Authorization: `Bearer ${sessionId}`,
-                  "Content-Type": "application/json",
-                },
-              }
-            );
-            
-            if (groupMetadataResponse.ok) {
-              const groupMetadata = await groupMetadataResponse.json();
-              if (groupMetadata.success && groupMetadata.data) {
-                groupName = groupMetadata.data.subject || groupMetadata.data.name || groupName;
-                groupDescription = groupMetadata.data.desc || groupMetadata.data.description || "";
-                console.log(`[Wasender Webhook] Got group metadata - name: ${groupName}`);
-              }
-            }
-          } catch (metaError) {
-            console.error(`[Wasender Webhook] Error fetching group metadata:`, metaError);
-          }
-        }
-        
         for (const participantJid of participants) {
           // Extract phone from participant JID
           const phone = participantJid.replace("@s.whatsapp.net", "").replace("@c.us", "").replace(/\D/g, "");
-          
-          if (!phone || phone.length < 8) {
-            console.log(`[Wasender Webhook] Invalid phone for participant: ${participantJid}`);
-            continue;
-          }
-          
-          console.log(`[Wasender Webhook] Looking for lead with phone: ${phone}`);
-          
-          // Search for lead in CRM by phone number (check both with and without country code)
-          const phonesVariations = [
-            phone,
-            phone.startsWith("55") ? phone.substring(2) : `55${phone}`,
-          ];
-          
-          const { data: leads, error: leadError } = await supabase
-            .from("leads")
-            .select("id, name, whatsapp, sub_origin_id")
-            .or(phonesVariations.map(p => `whatsapp.ilike.%${p}`).join(","));
-          
-          if (leadError) {
-            console.error(`[Wasender Webhook] Error searching leads:`, leadError);
-            continue;
-          }
-          
-          if (!leads || leads.length === 0) {
-            console.log(`[Wasender Webhook] No lead found for phone: ${phone}`);
-            continue;
-          }
-          
-          console.log(`[Wasender Webhook] Found ${leads.length} lead(s) for phone ${phone}`);
-          
-          // Create tracking entry for each matching lead
-          for (const lead of leads) {
-            const now = new Date();
-            const formattedDate = now.toLocaleDateString("pt-BR", { 
-              day: "2-digit", 
-              month: "2-digit", 
-              year: "numeric",
-              timeZone: "America/Sao_Paulo"
-            });
-            const formattedTime = now.toLocaleTimeString("pt-BR", { 
-              hour: "2-digit", 
-              minute: "2-digit",
-              timeZone: "America/Sao_Paulo"
-            });
-            
-            const trackingData = {
-              lead_id: lead.id,
-              tipo: action === "add" ? "grupo_entrada" : "grupo_saida",
-              titulo: action === "add" 
-                ? `Entrou no grupo "${groupName}"` 
-                : `Saiu do grupo "${groupName}"`,
-              descricao: action === "add"
-                ? `O lead entrou no grupo de WhatsApp "${groupName}" em ${formattedDate} às ${formattedTime}`
-                : `O lead saiu do grupo de WhatsApp "${groupName}" em ${formattedDate} às ${formattedTime}`,
-              origem: "whatsapp",
-              dados: {
-                group_jid: groupJid,
-                group_name: groupName,
-                group_description: groupDescription,
-                action: action,
-                phone: phone,
-                phone_formatted: formatPhoneDisplay(phone),
-                session_id: sessionId,
-                timestamp: now.toISOString(),
-                date: formattedDate,
-                time: formattedTime,
-              },
-            };
-            
-            const { error: trackingError } = await supabase
-              .from("lead_tracking")
-              .insert(trackingData);
-            
-            if (trackingError) {
-              console.error(`[Wasender Webhook] Error creating tracking for lead ${lead.id}:`, trackingError);
-            } else {
-              console.log(`[Wasender Webhook] Created tracking entry for lead ${lead.id}: ${action} group "${groupName}" (session: ${sessionId})`);
+          await trackLeadGroupAction(supabase, phone, groupJid, action, sessionId);
+        }
+      }
+      
+      return new Response(JSON.stringify({ ok: true }), { 
+        headers: { ...corsHeaders, "Content-Type": "application/json" } 
+      });
+    }
+    
+    // ========== Handle messages-group.received for messageStubType (participant join/leave) ==========
+    if (event === "messages-group.received") {
+      const msgData = payload.data?.messages || payload.data;
+      const messageStubType = msgData?.messageStubType;
+      const remoteJid = msgData?.key?.remoteJid || msgData?.remoteJid || "";
+      
+      console.log(`[Wasender Webhook] 📨 messages-group.received - remoteJid: ${remoteJid}, messageStubType: ${messageStubType}`);
+      console.log(`[Wasender Webhook] Full messages-group payload:`, JSON.stringify(payload.data, null, 2).substring(0, 2000));
+      
+      // messageStubType values for group events:
+      // 20 = participant added/joined (GROUP_PARTICIPANT_ADD)
+      // 21 = participant removed/left (GROUP_PARTICIPANT_REMOVE)
+      // 27 = participant joined via invite link (GROUP_PARTICIPANT_INVITE)
+      // 28 = participant joined via link (GROUP_PARTICIPANT_LINK_JOIN)
+      // 32 = group created
+      if (messageStubType === 20 || messageStubType === 21 || messageStubType === 27 || messageStubType === 28) {
+        const action = (messageStubType === 21) ? "remove" : "add";
+        const groupJid = remoteJid;
+        
+        // Try to get participant phone from different sources
+        // messageStubParameters usually contains the participant JIDs
+        const stubParams = msgData?.messageStubParameters || [];
+        const participantJid = msgData?.participant || 
+                              msgData?.key?.participant || 
+                              msgData?.key?.participantPn ||
+                              (stubParams.length > 0 ? stubParams[0] : null);
+        
+        console.log(`[Wasender Webhook] messageStubType ${messageStubType} - participantJid: ${participantJid}, stubParams: ${JSON.stringify(stubParams)}`);
+        
+        if (participantJid) {
+          const phone = participantJid.replace("@s.whatsapp.net", "").replace("@c.us", "").replace(/\D/g, "");
+          await trackLeadGroupAction(supabase, phone, groupJid, action, sessionId);
+        }
+        
+        // Also process all participants from stubParams
+        for (const param of stubParams) {
+          if (param && param.includes("@")) {
+            const phone = param.replace("@s.whatsapp.net", "").replace("@c.us", "").replace(/\D/g, "");
+            if (phone !== participantJid?.replace(/\D/g, "")) {
+              await trackLeadGroupAction(supabase, phone, groupJid, action, sessionId);
             }
           }
         }
@@ -686,7 +766,7 @@ async function handler(req: Request): Promise<Response> {
       });
     }
     
-    // Only process message events
+    // Only process message events (private chats)
     if (event !== "messages.received" && event !== "messages.upsert") {
       console.log(`[Wasender Webhook] Ignoring event: ${event}`);
       return new Response(JSON.stringify({ ok: true }), { 
