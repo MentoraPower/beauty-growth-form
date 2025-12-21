@@ -788,7 +788,6 @@ export default function InstagramPage() {
               </div>
             ) : chats.length === 0 ? (
               <div className="p-8 text-center text-muted-foreground">
-                <Instagram className="h-12 w-12 mx-auto mb-3 opacity-50" />
                 <p className="text-sm">Nenhuma conversa ainda</p>
                 <p className="text-xs mt-1">As conversas do Instagram Direct aparecerão aqui</p>
               </div>
