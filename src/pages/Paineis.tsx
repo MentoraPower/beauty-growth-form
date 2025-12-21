@@ -1,11 +1,17 @@
 import { useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import { TrendingUp, Rocket, RefreshCcw, Plus, X } from "lucide-react";
+import { TrendingUp, Rocket, RefreshCcw, Plus } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { DashboardCanvas } from "@/components/paineis/DashboardCanvas";
 
 type PainelType = 'marketing' | 'lancamento' | 'perpetuo' | 'scratch';
+
+interface CreatedPainel {
+  name: string;
+  type: PainelType;
+}
 
 const painelOptions = [
   {
@@ -39,6 +45,7 @@ export default function Paineis() {
   const activePainel = searchParams.get('tipo') as PainelType | null;
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [painelName, setPainelName] = useState("");
+  const [createdPainel, setCreatedPainel] = useState<CreatedPainel | null>(null);
 
   const handlePainelSelect = (tipo: PainelType) => {
     if (tipo === 'scratch') {
@@ -50,12 +57,28 @@ export default function Paineis() {
 
   const handleCreatePainel = () => {
     if (painelName.trim()) {
-      // TODO: criar o painel com o nome
-      console.log("Criar painel:", painelName);
+      setCreatedPainel({
+        name: painelName.trim(),
+        type: 'scratch',
+      });
       setIsDialogOpen(false);
       setPainelName("");
     }
   };
+
+  const handleBackToPaineis = () => {
+    setCreatedPainel(null);
+  };
+
+  // Show the dashboard canvas if a panel was created
+  if (createdPainel) {
+    return (
+      <DashboardCanvas
+        painelName={createdPainel.name}
+        onBack={handleBackToPaineis}
+      />
+    );
+  }
 
   if (!activePainel) {
     return (
