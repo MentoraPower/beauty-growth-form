@@ -415,8 +415,10 @@ const WhatsApp = () => {
             const groupId = g.id || g.jid || "";
             let participantCount = g.participants?.length || g.size || 0;
             
-            // Fetch metadata if no participant count
-            if (participantCount === 0 && groupId) {
+            let photoUrl = g.profilePicture || g.pictureUrl || g.imgUrl || null;
+            
+            // Fetch metadata to get participant count and photo
+            if (groupId) {
               try {
                 const metaResponse = await fetch(
                   `https://www.wasenderapi.com/api/groups/${encodeURIComponent(groupId)}/metadata`,
@@ -431,8 +433,10 @@ const WhatsApp = () => {
                 
                 if (metaResponse.ok) {
                   const metaResult = await metaResponse.json();
+                  console.log(`[WhatsApp] Group ${groupId} metadata:`, metaResult);
                   if (metaResult.success && metaResult.data) {
-                    participantCount = metaResult.data.participants?.length || 0;
+                    participantCount = metaResult.data.participants?.length || participantCount;
+                    photoUrl = metaResult.data.profilePicture || metaResult.data.pictureUrl || metaResult.data.imgUrl || photoUrl;
                   }
                 }
               } catch (e) {
