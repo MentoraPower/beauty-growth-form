@@ -15,7 +15,8 @@ import {
   Paperclip,
   Video,
   StopCircle,
-  Trash2
+  Trash2,
+  ArrowUp
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -1065,9 +1066,11 @@ export default function InstagramPage() {
                   <Button 
                     onClick={handleSendMessage} 
                     disabled={isSending || isUploadingMedia || !messageInput.trim()}
-                    className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 disabled:opacity-50"
+                    variant="ghost"
+                    size="icon"
+                    className="disabled:opacity-50"
                   >
-                    <Send className="h-4 w-4" />
+                    <ArrowUp className="h-5 w-5" />
                   </Button>
                 </div>
               )}
