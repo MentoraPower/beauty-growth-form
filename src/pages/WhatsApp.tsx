@@ -1918,16 +1918,34 @@ const WhatsApp = () => {
   // Initial load and cleanup (run once)
   useEffect(() => {
     const init = async () => {
-      setIsInitializingApp(true);
-      
-      // FIRST: Clear all state to ensure clean slate on page load/refresh
-      setChats([]);
-      chatsRef.current = [];
-      setSelectedChat(null);
-      setMessages([]);
-      pendingChatUpdatesRef.current.clear();
-      
-      // Cleanup invalid chats
+      // STEP 1: Load from database IMMEDIATELY (instant display)
+      // Don't clear state, load cached data first for instant display
+      try {
+        const { data: cachedChats } = await supabase
+          .from("whatsapp_chats")
+          .select("*")
+          .order("last_message_time", { ascending: false })
+          .limit(100);
+
+        if (cachedChats && cachedChats.length > 0) {
+          // Filter and format chats instantly
+          const validChats = cachedChats
+            .map(formatChatData)
+            .filter((chat): chat is Chat => chat !== null);
+          
+          if (validChats.length > 0) {
+            setChats(validChats);
+            chatsRef.current = validChats;
+            setIsInitialLoad(false); // Hide loading immediately since we have cached data
+            setIsInitializingApp(false);
+            console.log(`[WhatsApp] Instant load: ${validChats.length} chats from cache`);
+          }
+        }
+      } catch (error) {
+        console.error("[WhatsApp] Cache load error:", error);
+      }
+
+      // STEP 2: Background cleanup of invalid chats
       try {
         const { data: allChats } = await supabase
           .from("whatsapp_chats")
@@ -1952,17 +1970,16 @@ const WhatsApp = () => {
         console.error("Cleanup error:", error);
       }
 
-      // Fetch WhatsApp accounts - the useEffect for selectedAccountId will handle the rest
+      // STEP 3: Fetch WhatsApp accounts in background
       const accounts = await fetchWhatsAppAccounts();
       console.log(`[WhatsApp] Init - accounts loaded: ${accounts.length}`);
       
-      // If no accounts, fetch chats immediately (legacy mode) and finish init
-      if (accounts.length === 0) {
-        console.log(`[WhatsApp] No accounts, fetching all chats`);
+      // If no accounts and no cached data, do a full fetch
+      if (accounts.length === 0 && chats.length === 0) {
+        console.log(`[WhatsApp] No accounts and no cache, fetching all chats`);
         await fetchChats(true);
         setIsInitializingApp(false);
       }
-      // Note: isInitializingApp will be set to false by the account change useEffect
     };
 
     init();
@@ -1970,6 +1987,8 @@ const WhatsApp = () => {
   }, []);
 
   // Reload chats when switching WhatsApp accounts (or on first account selection)
+  const prevAccountIdRef = useRef<string | null>(null);
+  
   useEffect(() => {
     // Skip if no account selected yet (waiting for accounts to load)
     if (selectedAccountId === null) {
@@ -1984,32 +2003,37 @@ const WhatsApp = () => {
     }
     
     const selectedAccount = whatsappAccounts.find(acc => acc.id === selectedAccountId);
-    console.log(`[WhatsApp] Account selected/changed - id: ${selectedAccountId}, api_key: ${selectedAccount?.api_key?.substring(0, 15) || "none"}..., name: ${selectedAccount?.name || "unknown"}`);
+    const isAccountChange = prevAccountIdRef.current !== null && prevAccountIdRef.current !== selectedAccountId;
+    prevAccountIdRef.current = selectedAccountId;
     
-    // ALWAYS CLEAR: Prevent showing old chats from previous account (even on first load)
-    setIsAccountChanging(true);
-    setChats([]);           // Clear immediately
-    chatsRef.current = [];
-    setSelectedChat(null);
-    setMessages([]);
-    pendingChatUpdatesRef.current.clear();
+    console.log(`[WhatsApp] Account selected/changed - id: ${selectedAccountId}, isChange: ${isAccountChange}, api_key: ${selectedAccount?.api_key?.substring(0, 15) || "none"}..., name: ${selectedAccount?.name || "unknown"}`);
+    
+    // Only clear state if actually switching accounts (not on first load)
+    if (isAccountChange) {
+      setIsAccountChanging(true);
+      setChats([]);
+      chatsRef.current = [];
+      setSelectedChat(null);
+      setMessages([]);
+      pendingChatUpdatesRef.current.clear();
+    }
     
     const reloadChatsForAccount = async () => {
       try {
-        // Fetch chats for the selected account
-        await fetchChats(true);
+        // Fetch chats for the selected account (don't show loading if we already have cached data)
+        await fetchChats(chats.length === 0);
         
         // Fetch groups for the account
         fetchWhatsAppGroups();
         
-        // Sync and fetch photos in background
+        // Sync and fetch photos in background (don't block)
         syncAllChats();
         setTimeout(() => {
           fetchMissingPhotos();
         }, 1000);
       } finally {
         setIsAccountChanging(false);
-        setIsInitializingApp(false); // Finish app initialization after first account load
+        setIsInitializingApp(false);
       }
     };
     
