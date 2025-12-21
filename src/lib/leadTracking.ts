@@ -8,7 +8,9 @@ export type TrackingEventType =
   | "chamada_recusada"
   | "webhook"
   | "formulario"
-  | "atualizacao";
+  | "atualizacao"
+  | "grupo_entrada"
+  | "grupo_saida";
 
 interface TrackingEventData {
   leadId: string;
