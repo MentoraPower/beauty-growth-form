@@ -409,15 +409,48 @@ const WhatsApp = () => {
       console.log(`[WhatsApp] Groups API response:`, result);
 
       if (result.success && Array.isArray(result.data)) {
-        const groups: WhatsAppGroup[] = result.data.map((g: any) => ({
-          id: g.id || g.jid || "",
-          name: g.subject || g.name || "Grupo",
-          participantCount: g.participants?.length || g.size || 0,
-          photoUrl: g.profilePicture || g.pictureUrl || null,
-        }));
+        // Fetch metadata for each group to get participant count
+        const groupsWithMetadata: WhatsAppGroup[] = await Promise.all(
+          result.data.map(async (g: any) => {
+            const groupId = g.id || g.jid || "";
+            let participantCount = g.participants?.length || g.size || 0;
+            
+            // Fetch metadata if no participant count
+            if (participantCount === 0 && groupId) {
+              try {
+                const metaResponse = await fetch(
+                  `https://www.wasenderapi.com/api/groups/${encodeURIComponent(groupId)}/metadata`,
+                  {
+                    method: "GET",
+                    headers: {
+                      "Authorization": `Bearer ${sessionApiKey}`,
+                      "Content-Type": "application/json",
+                    },
+                  }
+                );
+                
+                if (metaResponse.ok) {
+                  const metaResult = await metaResponse.json();
+                  if (metaResult.success && metaResult.data) {
+                    participantCount = metaResult.data.participants?.length || 0;
+                  }
+                }
+              } catch (e) {
+                console.log(`[WhatsApp] Failed to fetch metadata for group ${groupId}`);
+              }
+            }
+            
+            return {
+              id: groupId,
+              name: g.subject || g.name || "Grupo",
+              participantCount,
+              photoUrl: g.profilePicture || g.pictureUrl || g.imgUrl || null,
+            };
+          })
+        );
         
-        console.log(`[WhatsApp] Loaded ${groups.length} groups`);
-        setWhatsappGroups(groups);
+        console.log(`[WhatsApp] Loaded ${groupsWithMetadata.length} groups with metadata`);
+        setWhatsappGroups(groupsWithMetadata);
       } else {
         setWhatsappGroups([]);
       }
@@ -2475,7 +2508,6 @@ const WhatsApp = () => {
                   : "text-muted-foreground hover:text-foreground hover:bg-muted/30"
               )}
             >
-              <MessageSquare className="w-4 h-4" />
               <span>Conversas</span>
               {chats.length > 0 && (
                 <span className="text-xs bg-muted px-1.5 py-0.5 rounded-full">{chats.length}</span>
@@ -2495,7 +2527,6 @@ const WhatsApp = () => {
                   : "text-muted-foreground hover:text-foreground hover:bg-muted/30"
               )}
             >
-              <Users className="w-4 h-4" />
               <span>Grupos</span>
               {whatsappGroups.length > 0 && (
                 <span className="text-xs bg-muted px-1.5 py-0.5 rounded-full">{whatsappGroups.length}</span>
