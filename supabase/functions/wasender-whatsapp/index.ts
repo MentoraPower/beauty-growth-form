@@ -10,6 +10,7 @@ const corsHeaders = {
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const WASENDER_API_KEY = Deno.env.get("WASENDER_API_KEY")!;
+const WASENDER_PERSONAL_TOKEN = Deno.env.get("WASENDER_PERSONAL_TOKEN")!;
 const WASENDER_BASE_URL = "https://www.wasenderapi.com/api";
 
 // Helper: Format phone for WasenderAPI (E.164 without @c.us)
@@ -51,15 +52,16 @@ function normalizeName(value: any, phoneDigits: string): string | null {
   return str;
 }
 
-// WasenderAPI request helper
-async function wasenderRequest(endpoint: string, options: RequestInit = {}): Promise<any> {
+// WasenderAPI request helper (uses session API key by default)
+async function wasenderRequest(endpoint: string, options: RequestInit = {}, usePersonalToken = false): Promise<any> {
   const url = `${WASENDER_BASE_URL}${endpoint}`;
-  console.log(`[Wasender] Request: ${options.method || "GET"} ${url}`);
+  const token = usePersonalToken ? WASENDER_PERSONAL_TOKEN : WASENDER_API_KEY;
+  console.log(`[Wasender] Request: ${options.method || "GET"} ${url} (token: ${usePersonalToken ? 'personal' : 'session'})`);
   
   const response = await fetch(url, {
     ...options,
     headers: {
-      "Authorization": `Bearer ${WASENDER_API_KEY}`,
+      "Authorization": `Bearer ${token}`,
       "Content-Type": "application/json",
       ...options.headers,
     },
@@ -1016,7 +1018,7 @@ async function handler(req: Request): Promise<Response> {
       const result = await wasenderRequest("/whatsapp-sessions", {
         method: "POST",
         body: JSON.stringify(payload),
-      });
+      }, true); // Use personal token for session management
 
       return new Response(JSON.stringify({ success: true, data: result?.data || result }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -1032,7 +1034,7 @@ async function handler(req: Request): Promise<Response> {
       
       const result = await wasenderRequest(`/whatsapp-sessions/${session_id}/connect`, {
         method: "POST",
-      });
+      }, true); // Use personal token
 
       return new Response(JSON.stringify({ success: true, data: result?.data || result }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -1048,7 +1050,7 @@ async function handler(req: Request): Promise<Response> {
       
       const result = await wasenderRequest(`/whatsapp-sessions/${session_id}/qr-code`, {
         method: "GET",
-      });
+      }, true); // Use personal token
 
       return new Response(JSON.stringify({ success: true, data: result?.data || result }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -1064,7 +1066,7 @@ async function handler(req: Request): Promise<Response> {
       
       const result = await wasenderRequest(`/whatsapp-sessions/${session_id}`, {
         method: "GET",
-      });
+      }, true); // Use personal token
 
       return new Response(JSON.stringify({ success: true, data: result?.data || result }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -1079,7 +1081,7 @@ async function handler(req: Request): Promise<Response> {
       
       const result = await wasenderRequest("/whatsapp-sessions", {
         method: "GET",
-      });
+      }, true); // Use personal token
 
       return new Response(JSON.stringify({ success: true, data: result?.data || result }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -1095,7 +1097,7 @@ async function handler(req: Request): Promise<Response> {
       
       const result = await wasenderRequest(`/whatsapp-sessions/${session_id}`, {
         method: "DELETE",
-      });
+      }, true); // Use personal token
 
       return new Response(JSON.stringify({ success: true, data: result?.data || result }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
