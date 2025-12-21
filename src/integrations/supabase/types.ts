@@ -490,6 +490,48 @@ export type Database = {
           },
         ]
       }
+      lead_custom_field_responses: {
+        Row: {
+          created_at: string
+          field_id: string
+          id: string
+          lead_id: string
+          response_value: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          field_id: string
+          id?: string
+          lead_id: string
+          response_value?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          field_id?: string
+          id?: string
+          lead_id?: string
+          response_value?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lead_custom_field_responses_field_id_fkey"
+            columns: ["field_id"]
+            isOneToOne: false
+            referencedRelation: "sub_origin_custom_fields"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lead_custom_field_responses_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       lead_onboarding_fields: {
         Row: {
           created_at: string
@@ -1095,6 +1137,53 @@ export type Database = {
             columns: ["lead_id"]
             isOneToOne: false
             referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sub_origin_custom_fields: {
+        Row: {
+          created_at: string
+          field_key: string
+          field_label: string
+          field_type: string
+          id: string
+          is_required: boolean
+          options: Json | null
+          ordem: number
+          sub_origin_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          field_key: string
+          field_label: string
+          field_type?: string
+          id?: string
+          is_required?: boolean
+          options?: Json | null
+          ordem?: number
+          sub_origin_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          field_key?: string
+          field_label?: string
+          field_type?: string
+          id?: string
+          is_required?: boolean
+          options?: Json | null
+          ordem?: number
+          sub_origin_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sub_origin_custom_fields_sub_origin_id_fkey"
+            columns: ["sub_origin_id"]
+            isOneToOne: false
+            referencedRelation: "crm_sub_origins"
             referencedColumns: ["id"]
           },
         ]
