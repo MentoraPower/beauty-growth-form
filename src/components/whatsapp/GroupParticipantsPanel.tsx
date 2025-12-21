@@ -1,8 +1,8 @@
 import { useState, useEffect, useRef } from "react";
-import { Users, Loader2, X, Image } from "lucide-react";
+import { Users, Loader2 } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { supabase } from "@/integrations/supabase/client";
 
 interface Participant {
   id: string;
@@ -26,9 +26,8 @@ interface GroupParticipantsPanelProps {
 const DEFAULT_AVATAR =
   "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyMTIgMjEyIj48cGF0aCBmaWxsPSIjREZFNUU3IiBkPSJNMCAwaDIxMnYyMTJIMHoiLz48cGF0aCBmaWxsPSIjRkZGIiBkPSJNMTA2IDEwNmMtMjUuNCAwLTQ2LTIwLjYtNDYtNDZzMjAuNi00NiA0Ni00NiA0NiAyMC42IDQ2IDQ2LTIwLjYgNDYtNDYgNDZ6bTAgMTNjMzAuNiAwIDkyIDE1LjQgOTIgNDZ2MjNIMTR2LTIzYzAtMzAuNiA2MS40LTQ2IDkyLTQ2eiIvPjwvc3ZnPg==";
 
-// Wasender rate limits - optimized for better UX while respecting limits
-const RATE_LIMIT_DELAY_MS = 500; // 500ms between photo requests (reasonable)
-const BATCH_SIZE = 5; // Process 5 at a time
+const RATE_LIMIT_DELAY_MS = 500;
+const BATCH_SIZE = 5;
 
 const getInitials = (name: string): string => {
   if (!name) return "?";
@@ -61,30 +60,164 @@ export const GroupParticipantsPanel = ({
   const [participants, setParticipants] = useState<Participant[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [isLoadingAllPhotos, setIsLoadingAllPhotos] = useState(false);
+  const [isLoadingPhotos, setIsLoadingPhotos] = useState(false);
   const [photoLoadProgress, setPhotoLoadProgress] = useState({ current: 0, total: 0 });
   const abortControllerRef = useRef<AbortController | null>(null);
-  const lastMetadataFetchRef = useRef<{ key: string; at: number }>({ key: "", at: 0 });
+  const lastFetchRef = useRef<{ key: string; at: number }>({ key: "", at: 0 });
+
+  // Load cached participants from database
+  const loadCachedParticipants = async (): Promise<Participant[]> => {
+    try {
+      const { data, error } = await supabase
+        .from("whatsapp_group_participants")
+        .select("*")
+        .eq("group_jid", groupJid)
+        .eq("session_id", apiKey);
+
+      if (error) {
+        console.error("[GroupParticipantsPanel] Cache load error:", error);
+        return [];
+      }
+
+      if (data && data.length > 0) {
+        console.log("[GroupParticipantsPanel] Loaded from cache:", data.length);
+        return data.map((p) => ({
+          id: p.participant_jid,
+          jid: p.participant_jid,
+          phone: p.phone,
+          name: p.name || undefined,
+          isAdmin: p.is_admin || false,
+          isSuperAdmin: p.is_super_admin || false,
+          photoUrl: p.photo_url,
+        }));
+      }
+      return [];
+    } catch (err) {
+      console.error("[GroupParticipantsPanel] Cache error:", err);
+      return [];
+    }
+  };
+
+  // Save participants to database cache
+  const saveToCache = async (participantsList: Participant[]) => {
+    if (participantsList.length === 0) return;
+
+    try {
+      const records = participantsList.map((p) => ({
+        group_jid: groupJid,
+        session_id: apiKey,
+        participant_jid: p.jid,
+        phone: p.phone,
+        name: p.name || null,
+        photo_url: p.photoUrl || null,
+        is_admin: p.isAdmin || false,
+        is_super_admin: p.isSuperAdmin || false,
+      }));
+
+      const { error } = await supabase
+        .from("whatsapp_group_participants")
+        .upsert(records, { onConflict: "group_jid,session_id,participant_jid" });
+
+      if (error) {
+        console.error("[GroupParticipantsPanel] Cache save error:", error);
+      } else {
+        console.log("[GroupParticipantsPanel] Saved to cache:", records.length);
+      }
+    } catch (err) {
+      console.error("[GroupParticipantsPanel] Cache save error:", err);
+    }
+  };
+
+  // Update single participant photo in cache
+  const updatePhotoInCache = async (participantJid: string, photoUrl: string) => {
+    try {
+      await supabase
+        .from("whatsapp_group_participants")
+        .update({ photo_url: photoUrl })
+        .eq("group_jid", groupJid)
+        .eq("session_id", apiKey)
+        .eq("participant_jid", participantJid);
+    } catch (err) {
+      console.error("[GroupParticipantsPanel] Photo cache update error:", err);
+    }
+  };
 
   const fetchParticipants = async () => {
     if (!apiKey || !groupJid) return;
 
-    // Skip if we already fetched this group in the last 3 seconds
     const fetchKey = `${apiKey}|${groupJid}`;
     const now = Date.now();
-    if (lastMetadataFetchRef.current.key === fetchKey && now - lastMetadataFetchRef.current.at < 3_000) {
+    if (lastFetchRef.current.key === fetchKey && now - lastFetchRef.current.at < 3_000) {
       return;
     }
-    lastMetadataFetchRef.current = { key: fetchKey, at: now };
+    lastFetchRef.current = { key: fetchKey, at: now };
 
     setIsLoading(true);
     setError(null);
 
+    // First, try to load from cache for instant display
+    const cached = await loadCachedParticipants();
+    if (cached.length > 0) {
+      setParticipants(cached);
+      setIsLoading(false);
+      // Still fetch fresh data in background
+      fetchFromApiInBackground();
+      return;
+    }
+
+    // No cache, fetch from API
+    await fetchFromApi();
+  };
+
+  const fetchFromApiInBackground = async () => {
     try {
-      console.log("[GroupParticipantsPanel] Fetching participants", {
-        groupJid,
-        apiKey: apiKey ? `${apiKey.substring(0, 10)}...` : "",
-      });
+      const response = await fetch(
+        `https://www.wasenderapi.com/api/groups/${encodeURIComponent(groupJid)}/metadata`,
+        {
+          method: "GET",
+          headers: {
+            Authorization: `Bearer ${apiKey}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      if (!response.ok) return;
+
+      const result = await response.json();
+      const rawParticipants = result?.data?.participants;
+
+      if (result?.success && Array.isArray(rawParticipants)) {
+        const participantsList: Participant[] = rawParticipants.map((p: any) => ({
+          id: p.id || p.jid || "",
+          jid: p.jid || p.id || "",
+          phone: p.pn || p.jid?.replace(/@s\.whatsapp\.net$/, "") || "",
+          name: p.name || p.notify || undefined,
+          isAdmin: p.isAdmin || p.admin === "admin",
+          isSuperAdmin: p.isSuperAdmin || p.admin === "superadmin",
+          photoUrl: null,
+        }));
+
+        // Merge with existing photos from cache
+        setParticipants((prev) => {
+          const photoMap = new Map(prev.filter((p) => p.photoUrl).map((p) => [p.jid, p.photoUrl]));
+          return participantsList.map((p) => ({
+            ...p,
+            photoUrl: photoMap.get(p.jid) || null,
+          }));
+        });
+
+        // Save new participants to cache (without photos yet)
+        await saveToCache(participantsList);
+      }
+    } catch (err) {
+      console.error("[GroupParticipantsPanel] Background fetch error:", err);
+    }
+  };
+
+  const fetchFromApi = async () => {
+    try {
+      console.log("[GroupParticipantsPanel] Fetching from API", { groupJid });
 
       const response = await fetch(
         `https://www.wasenderapi.com/api/groups/${encodeURIComponent(groupJid)}/metadata`,
@@ -102,10 +235,7 @@ export const GroupParticipantsPanel = ({
         try {
           const body = await response.json();
           retryAfter = Number(body?.retry_after) || retryAfter;
-        } catch {
-          // ignore
-        }
-
+        } catch {}
         setError(`Limite da WaSender atingido. Tente novamente em ${retryAfter}s.`);
         return;
       }
@@ -120,9 +250,8 @@ export const GroupParticipantsPanel = ({
       }
 
       const result = await response.json();
-      console.log("[GroupParticipantsPanel] Metadata:", result);
-
       const rawParticipants = result?.data?.participants;
+
       if (result?.success && Array.isArray(rawParticipants)) {
         const participantsList: Participant[] = rawParticipants.map((p: any) => ({
           id: p.id || p.jid || "",
@@ -135,6 +264,7 @@ export const GroupParticipantsPanel = ({
         }));
 
         setParticipants(participantsList);
+        await saveToCache(participantsList);
       } else {
         setParticipants([]);
         setError("Participantes não disponíveis para este grupo.");
@@ -147,18 +277,17 @@ export const GroupParticipantsPanel = ({
     }
   };
 
-  const loadAllPhotos = async (participantsList: Participant[]) => {
+  const loadPhotos = async (participantsList: Participant[]) => {
     const toFetch = participantsList.filter((p) => p.jid && !p.photoUrl);
     if (toFetch.length === 0) return;
 
-    // Abort any previous operation
     if (abortControllerRef.current) {
       abortControllerRef.current.abort();
     }
     abortControllerRef.current = new AbortController();
     const signal = abortControllerRef.current.signal;
 
-    setIsLoadingAllPhotos(true);
+    setIsLoadingPhotos(true);
     setPhotoLoadProgress({ current: 0, total: toFetch.length });
 
     let processed = 0;
@@ -187,12 +316,8 @@ export const GroupParticipantsPanel = ({
 
           if (picResponse.status === 429) {
             rateLimitHits++;
-            console.log("[GroupParticipantsPanel] Rate limited, waiting...");
-            await new Promise((resolve) => setTimeout(resolve, 3000)); // Wait 3s on rate limit
-            if (rateLimitHits >= 5) {
-              console.log("[GroupParticipantsPanel] Too many rate limits, stopping");
-              break;
-            }
+            await new Promise((resolve) => setTimeout(resolve, 3000));
+            if (rateLimitHits >= 5) break;
             continue;
           }
 
@@ -206,6 +331,8 @@ export const GroupParticipantsPanel = ({
               setParticipants((prev) =>
                 prev.map((p) => (p.id === participant.id ? { ...p, photoUrl: imgUrl } : p))
               );
+              // Save photo to cache
+              await updatePhotoInCache(participant.jid, imgUrl);
             }
           }
         } catch (e: any) {
@@ -223,7 +350,7 @@ export const GroupParticipantsPanel = ({
       }
     }
 
-    setIsLoadingAllPhotos(false);
+    setIsLoadingPhotos(false);
     setPhotoLoadProgress({ current: 0, total: 0 });
   };
 
@@ -232,7 +359,7 @@ export const GroupParticipantsPanel = ({
       abortControllerRef.current.abort();
       abortControllerRef.current = null;
     }
-    setIsLoadingAllPhotos(false);
+    setIsLoadingPhotos(false);
     setPhotoLoadProgress({ current: 0, total: 0 });
   };
 
@@ -245,12 +372,12 @@ export const GroupParticipantsPanel = ({
     };
   }, [groupJid, apiKey]);
 
-  // Automatically load photos when participants are loaded
+  // Load photos for participants without photos
   useEffect(() => {
-    if (participants.length > 0 && !isLoadingAllPhotos) {
-      const hasNoPhotos = participants.every((p) => !p.photoUrl);
-      if (hasNoPhotos) {
-        loadAllPhotos(participants);
+    if (participants.length > 0 && !isLoadingPhotos) {
+      const missingPhotos = participants.filter((p) => !p.photoUrl);
+      if (missingPhotos.length > 0) {
+        loadPhotos(participants);
       }
     }
   }, [participants.length]);
@@ -289,8 +416,7 @@ export const GroupParticipantsPanel = ({
       {/* Participants List Header */}
       <div className="flex items-center justify-between px-4 py-2 border-b border-border/50">
         <span className="text-sm font-medium text-foreground">Participantes</span>
-        {/* Progress indicator during photo loading (click to cancel) */}
-        {isLoadingAllPhotos && (
+        {isLoadingPhotos && (
           <button
             onClick={cancelPhotoLoading}
             className="flex items-center gap-1.5 px-2 py-1 text-xs bg-muted rounded-md hover:bg-muted/80 transition-colors"
@@ -326,7 +452,6 @@ export const GroupParticipantsPanel = ({
                 className="flex items-center gap-3 px-4 py-3 hover:bg-muted/30 transition-colors cursor-pointer"
                 onClick={() => onSelectParticipant?.(participant.phone, participant.name)}
               >
-                {/* Avatar with photo support */}
                 {participant.photoUrl ? (
                   <img
                     src={participant.photoUrl}
@@ -369,4 +494,3 @@ export const GroupParticipantsPanel = ({
 };
 
 export default GroupParticipantsPanel;
-

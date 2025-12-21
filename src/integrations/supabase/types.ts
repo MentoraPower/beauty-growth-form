@@ -1117,6 +1117,48 @@ export type Database = {
         }
         Relationships: []
       }
+      whatsapp_group_participants: {
+        Row: {
+          created_at: string
+          group_jid: string
+          id: string
+          is_admin: boolean | null
+          is_super_admin: boolean | null
+          name: string | null
+          participant_jid: string
+          phone: string
+          photo_url: string | null
+          session_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          group_jid: string
+          id?: string
+          is_admin?: boolean | null
+          is_super_admin?: boolean | null
+          name?: string | null
+          participant_jid: string
+          phone: string
+          photo_url?: string | null
+          session_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          group_jid?: string
+          id?: string
+          is_admin?: boolean | null
+          is_super_admin?: boolean | null
+          name?: string | null
+          participant_jid?: string
+          phone?: string
+          photo_url?: string | null
+          session_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       whatsapp_groups: {
         Row: {
           created_at: string
