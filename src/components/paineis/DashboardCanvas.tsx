@@ -118,9 +118,14 @@ function SortableWidget({ widget, onResize, onDelete, onConnect, containerWidth 
     let newWidth = widgetWidth;
     let newHeight = widgetHeight;
 
+    // Use containerWidth as max, fallback to a large value
+    const maxWidth = containerWidth > 0 ? containerWidth : 3000;
+
     if (direction.includes('e')) {
-      const maxWidth = containerWidth > 0 ? containerWidth : 2000;
       newWidth = Math.min(maxWidth, Math.max(minWidth, widgetWidth + deltaX));
+    }
+    if (direction.includes('w')) {
+      newWidth = Math.min(maxWidth, Math.max(minWidth, widgetWidth - deltaX));
     }
     if (direction.includes('s')) {
       newHeight = Math.min(1200, Math.max(220, widgetHeight + deltaY));
@@ -375,13 +380,25 @@ export function DashboardCanvas({ painelName, dashboardId, onBack }: DashboardCa
   useEffect(() => {
     const updateWidth = () => {
       if (containerRef.current) {
-        setContainerWidth(containerRef.current.clientWidth);
+        // Subtract padding (p-1 = 4px each side = 8px total)
+        const availableWidth = containerRef.current.clientWidth - 8;
+        setContainerWidth(availableWidth);
       }
     };
     
     updateWidth();
     window.addEventListener('resize', updateWidth);
-    return () => window.removeEventListener('resize', updateWidth);
+    
+    // Also observe container size changes
+    const observer = new ResizeObserver(updateWidth);
+    if (containerRef.current) {
+      observer.observe(containerRef.current);
+    }
+    
+    return () => {
+      window.removeEventListener('resize', updateWidth);
+      observer.disconnect();
+    };
   }, []);
 
   // Keep ref in sync with state
