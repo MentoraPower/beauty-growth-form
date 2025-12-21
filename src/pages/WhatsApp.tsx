@@ -120,7 +120,11 @@ const WhatsApp = () => {
   const [editText, setEditText] = useState("");
   const [showAddAccountDialog, setShowAddAccountDialog] = useState(false);
   const [whatsappAccounts, setWhatsappAccounts] = useState<Array<{ id: string; name: string; phone_number?: string; status: string; api_key?: string }>>([]);
-  const [selectedAccountId, setSelectedAccountId] = useState<string | null>(null);
+  const [selectedAccountId, setSelectedAccountId] = useState<string | null>(() => {
+    // Restore from localStorage on mount
+    const saved = localStorage.getItem('whatsapp_selected_account_id');
+    return saved ? saved : null;
+  });
   const [isLoadingAccounts, setIsLoadingAccounts] = useState(false);
   const [isAccountChanging, setIsAccountChanging] = useState(false);
   const [isInitializingApp, setIsInitializingApp] = useState(true);
@@ -362,12 +366,24 @@ const WhatsApp = () => {
       if (data?.success && Array.isArray(data.data)) {
         console.log(`[WhatsApp] Fetched ${data.data.length} accounts:`, data.data.map((a: any) => ({ id: a.id, api_key: a.api_key?.substring(0, 10) + "...", name: a.name, status: a.status })));
         setWhatsappAccounts(data.data);
-        // Auto-select first connected account if none selected
-        if (!selectedAccountId && data.data.length > 0) {
+        
+        // Check if saved account still exists and is connected
+        const savedAccountId = localStorage.getItem('whatsapp_selected_account_id');
+        const savedAccount = savedAccountId ? data.data.find((acc: any) => String(acc.id) === savedAccountId) : null;
+        
+        if (savedAccount && savedAccount.status?.toLowerCase() === "connected") {
+          // Restore saved account
+          if (selectedAccountId !== savedAccount.id) {
+            console.log(`[WhatsApp] Restoring saved account: ${savedAccount.id}`);
+            setSelectedAccountId(savedAccount.id);
+          }
+        } else if (!selectedAccountId && data.data.length > 0) {
+          // Auto-select first connected account if none selected
           const connectedAccount = data.data.find((acc: any) => acc.status?.toLowerCase() === "connected");
           if (connectedAccount) {
             console.log(`[WhatsApp] Auto-selecting account: ${connectedAccount.id}`);
             setSelectedAccountId(connectedAccount.id);
+            localStorage.setItem('whatsapp_selected_account_id', String(connectedAccount.id));
           }
         }
         return data.data;
@@ -2626,6 +2642,8 @@ const WhatsApp = () => {
                                 setChats([]);
                                 chatsRef.current = [];
                                 setSelectedAccountId(account.id);
+                                // Persist to localStorage
+                                localStorage.setItem('whatsapp_selected_account_id', String(account.id));
                               }
                             } else {
                               // Open dialog with QR code for not connected accounts
