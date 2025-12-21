@@ -348,6 +348,7 @@ export default function InstagramPage() {
   const handleSendMessage = async () => {
     if (!messageInput.trim() || !selectedChat || isSending) return;
 
+    const currentChat = selectedChat; // Capture reference
     setIsSending(true);
     const text = messageInput.trim();
     setMessageInput("");
@@ -366,46 +367,44 @@ export default function InstagramPage() {
     scrollToBottom();
 
     try {
+      console.log('[Instagram] Sending message to:', currentChat.participantId);
+      
       const { data, error } = await supabase.functions.invoke('instagram-api', {
         body: { 
           action: 'send-message',
           params: {
-            recipientId: selectedChat.participantId,
+            recipientId: currentChat.participantId,
             message: text
           }
         }
       });
 
+      console.log('[Instagram] Send response:', data, error);
+
       if (error) throw error;
       
-      if (data.success) {
+      if (data?.success) {
         // Update temp message to sent status
-        const sentMessage: Message = {
-          ...tempMessage,
-          id: data.messageId || tempId,
-          message_id: data.messageId || tempId,
-          status: 'SENT',
-        };
-        updateTempMessageStatus(tempId, { 
-          status: 'SENT',
-          id: sentMessage.id,
-          message_id: sentMessage.message_id 
-        });
+        updateTempMessageStatus(tempId, { status: 'SENT' });
         
         // Save to cache for persistence
-        saveSentMessageToCache(selectedChat.conversation_id, sentMessage);
+        const sentMessage: Message = {
+          ...tempMessage,
+          status: 'SENT',
+        };
+        saveSentMessageToCache(currentChat.conversation_id, sentMessage);
         
         // Refresh messages after short delay to get server confirmation
         setTimeout(() => {
           if (myInstagramUserId) {
-            fetchMessages(selectedChat.conversation_id, myInstagramUserId);
+            fetchMessages(currentChat.conversation_id, myInstagramUserId);
           }
         }, 1500);
       } else {
-        throw new Error(data.error || 'Erro ao enviar mensagem');
+        throw new Error(data?.error || 'Erro ao enviar mensagem');
       }
     } catch (error: any) {
-      console.error("Error sending message:", error);
+      console.error("[Instagram] Error sending message:", error);
       toast({
         title: "Erro ao enviar mensagem",
         description: error.message || "Não foi possível enviar a mensagem.",
