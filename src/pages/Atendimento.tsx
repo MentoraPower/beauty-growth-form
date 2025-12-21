@@ -8,6 +8,7 @@ import InstagramIcon from "@/components/icons/Instagram";
 import WhatsApp from "./WhatsApp";
 import InstagramPage from "./Instagram";
 import { supabase } from "@/integrations/supabase/client";
+import { motion, AnimatePresence } from "framer-motion";
 
 type TabType = 'whatsapp' | 'instagram';
 
@@ -224,27 +225,33 @@ export default function Atendimento() {
       </div>
 
       {/* Tab Content - Full height and width */}
-      <div className="flex-1 min-h-0 overflow-hidden">
-        <div 
-          key={activeTab}
-          className="h-full animate-in fade-in duration-200"
-        >
-          {activeTab === 'whatsapp' ? (
-            <WhatsApp 
-              selectedAccountId={selectedAccountId}
-              setSelectedAccountId={setSelectedAccountId}
-              whatsappAccounts={whatsappAccounts}
-              setWhatsappAccounts={setWhatsappAccounts}
-              showAddAccountDialog={showAddAccountDialog}
-              setShowAddAccountDialog={setShowAddAccountDialog}
-              accountToConnect={accountToConnect}
-              setAccountToConnect={setAccountToConnect}
-              fetchWhatsAppAccounts={fetchWhatsAppAccounts}
-            />
-          ) : (
-            <InstagramPage />
-          )}
-        </div>
+      <div className="flex-1 min-h-0 overflow-hidden relative">
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={activeTab}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.15, ease: "easeInOut" }}
+            className="h-full absolute inset-0"
+          >
+            {activeTab === 'whatsapp' ? (
+              <WhatsApp 
+                selectedAccountId={selectedAccountId}
+                setSelectedAccountId={setSelectedAccountId}
+                whatsappAccounts={whatsappAccounts}
+                setWhatsappAccounts={setWhatsappAccounts}
+                showAddAccountDialog={showAddAccountDialog}
+                setShowAddAccountDialog={setShowAddAccountDialog}
+                accountToConnect={accountToConnect}
+                setAccountToConnect={setAccountToConnect}
+                fetchWhatsAppAccounts={fetchWhatsAppAccounts}
+              />
+            ) : (
+              <InstagramPage />
+            )}
+          </motion.div>
+        </AnimatePresence>
       </div>
     </div>
   );
