@@ -320,8 +320,8 @@ export function DashboardCanvas({ painelName, onBack }: DashboardCanvasProps) {
                 initialHeight={widget.height || 280}
                 minWidth={260}
                 minHeight={220}
-                maxWidth={700}
-                maxHeight={550}
+                maxWidth={3000}
+                maxHeight={1200}
                 onResize={(w, h) => handleWidgetResize(widget.id, w, h)}
                 className="bg-white border border-border rounded-xl shadow-sm hover:shadow-md transition-shadow"
               >
