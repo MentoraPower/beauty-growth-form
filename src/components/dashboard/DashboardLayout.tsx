@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect, memo, useRef } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { Menu, X, LogOut, LayoutGrid, Settings, ChevronDown, User, Inbox, Folder } from "lucide-react";
+import { Menu, X, LogOut, LayoutGrid, Settings, ChevronDown, User, Inbox, FolderOpen } from "lucide-react";
 import { cn } from "@/lib/utils";
 import scaleLogo from "@/assets/scale-logo-menu.png";
 import { CRMOriginsPanel } from "./CRMOriginsPanel";
@@ -294,7 +294,7 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
                   )}
                 >
                   <div className="w-10 flex items-center justify-center flex-shrink-0">
-                    <Folder className="h-5 w-5" strokeWidth={1.5} />
+                    <FolderOpen className="h-5 w-5" strokeWidth={1.5} />
                   </div>
                   <span 
                     className={cn(
@@ -489,7 +489,7 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
                       : "text-white/60 hover:bg-white/5 hover:text-white"
                   )}
                 >
-                  <Folder className="h-5 w-5 flex-shrink-0" strokeWidth={1.5} />
+                  <FolderOpen className="h-5 w-5 flex-shrink-0" strokeWidth={1.5} />
                   <span className="text-sm font-medium whitespace-nowrap">
                     Painéis
                   </span>
