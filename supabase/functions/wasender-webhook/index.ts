@@ -548,6 +548,93 @@ async function handler(req: Request): Promise<Response> {
         headers: { ...corsHeaders, "Content-Type": "application/json" } 
       });
     }
+
+    // Handle group participants update (join/leave/promote/demote)
+    if (event === "group-participants.update") {
+      const groupData = payload.data;
+      const groupJid = groupData?.jid || "";
+      const participants = groupData?.participants || [];
+      const action = groupData?.action || ""; // "add", "remove", "promote", "demote"
+      
+      console.log(`[Wasender Webhook] Group participants update - group: ${groupJid}, action: ${action}, participants: ${JSON.stringify(participants)}`);
+      
+      // Only track add (join) and remove (leave) actions
+      if ((action === "add" || action === "remove") && participants.length > 0) {
+        // Extract group name from jid (or we could fetch it via API)
+        const groupName = groupJid.replace("@g.us", "").replace(/-/g, " ");
+        
+        for (const participantJid of participants) {
+          // Extract phone from participant JID
+          const phone = participantJid.replace("@s.whatsapp.net", "").replace("@c.us", "").replace(/\D/g, "");
+          
+          if (!phone || phone.length < 8) {
+            console.log(`[Wasender Webhook] Invalid phone for participant: ${participantJid}`);
+            continue;
+          }
+          
+          console.log(`[Wasender Webhook] Looking for lead with phone: ${phone}`);
+          
+          // Search for lead in CRM by phone number (check both with and without country code)
+          const phonesVariations = [
+            phone,
+            phone.startsWith("55") ? phone.substring(2) : `55${phone}`,
+          ];
+          
+          const { data: leads, error: leadError } = await supabase
+            .from("leads")
+            .select("id, name, whatsapp, sub_origin_id")
+            .or(phonesVariations.map(p => `whatsapp.ilike.%${p}`).join(","));
+          
+          if (leadError) {
+            console.error(`[Wasender Webhook] Error searching leads:`, leadError);
+            continue;
+          }
+          
+          if (!leads || leads.length === 0) {
+            console.log(`[Wasender Webhook] No lead found for phone: ${phone}`);
+            continue;
+          }
+          
+          console.log(`[Wasender Webhook] Found ${leads.length} lead(s) for phone ${phone}`);
+          
+          // Create tracking entry for each matching lead
+          for (const lead of leads) {
+            const trackingData = {
+              lead_id: lead.id,
+              tipo: action === "add" ? "grupo_entrada" : "grupo_saida",
+              titulo: action === "add" 
+                ? `Entrou no grupo de WhatsApp` 
+                : `Saiu do grupo de WhatsApp`,
+              descricao: action === "add"
+                ? `O lead entrou no grupo "${groupName}"`
+                : `O lead saiu do grupo "${groupName}"`,
+              origem: "whatsapp",
+              dados: {
+                group_jid: groupJid,
+                group_name: groupName,
+                action: action,
+                phone: phone,
+                timestamp: new Date().toISOString(),
+              },
+            };
+            
+            const { error: trackingError } = await supabase
+              .from("lead_tracking")
+              .insert(trackingData);
+            
+            if (trackingError) {
+              console.error(`[Wasender Webhook] Error creating tracking for lead ${lead.id}:`, trackingError);
+            } else {
+              console.log(`[Wasender Webhook] Created tracking entry for lead ${lead.id}: ${action} group`);
+            }
+          }
+        }
+      }
+      
+      return new Response(JSON.stringify({ ok: true }), { 
+        headers: { ...corsHeaders, "Content-Type": "application/json" } 
+      });
+    }
     
     // Only process message events
     if (event !== "messages.received" && event !== "messages.upsert") {
