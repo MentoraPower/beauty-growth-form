@@ -992,6 +992,116 @@ async function handler(req: Request): Promise<Response> {
       });
     }
 
+    // =========================
+    // ACTION: create-session (Create new WhatsApp session)
+    // =========================
+    if (action === "create-session") {
+      const { name, phone_number, webhook_url } = body;
+      console.log(`[Wasender] Creating new session: ${name}`);
+      
+      const payload: any = {
+        name: name || "New Session",
+        account_protection: true,
+        log_messages: true,
+        read_incoming_messages: true,
+      };
+      
+      if (phone_number) payload.phone_number = phone_number;
+      if (webhook_url) {
+        payload.webhook_url = webhook_url;
+        payload.webhook_enabled = true;
+        payload.webhook_events = ["messages.received", "session.status", "messages.update"];
+      }
+      
+      const result = await wasenderRequest("/whatsapp-sessions", {
+        method: "POST",
+        body: JSON.stringify(payload),
+      });
+
+      return new Response(JSON.stringify({ success: true, data: result?.data || result }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // =========================
+    // ACTION: connect-session (Connect session and get QR code)
+    // =========================
+    if (action === "connect-session") {
+      const { session_id } = body;
+      console.log(`[Wasender] Connecting session: ${session_id}`);
+      
+      const result = await wasenderRequest(`/whatsapp-sessions/${session_id}/connect`, {
+        method: "POST",
+      });
+
+      return new Response(JSON.stringify({ success: true, data: result?.data || result }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // =========================
+    // ACTION: get-qr-code (Get QR code for session)
+    // =========================
+    if (action === "get-qr-code") {
+      const { session_id } = body;
+      console.log(`[Wasender] Getting QR code for session: ${session_id}`);
+      
+      const result = await wasenderRequest(`/whatsapp-sessions/${session_id}/qr-code`, {
+        method: "GET",
+      });
+
+      return new Response(JSON.stringify({ success: true, data: result?.data || result }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // =========================
+    // ACTION: get-session-status (Get session connection status)
+    // =========================
+    if (action === "get-session-status") {
+      const { session_id } = body;
+      console.log(`[Wasender] Getting session status: ${session_id}`);
+      
+      const result = await wasenderRequest(`/whatsapp-sessions/${session_id}`, {
+        method: "GET",
+      });
+
+      return new Response(JSON.stringify({ success: true, data: result?.data || result }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // =========================
+    // ACTION: list-sessions (List all WhatsApp sessions)
+    // =========================
+    if (action === "list-sessions") {
+      console.log(`[Wasender] Listing all sessions`);
+      
+      const result = await wasenderRequest("/whatsapp-sessions", {
+        method: "GET",
+      });
+
+      return new Response(JSON.stringify({ success: true, data: result?.data || result }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // =========================
+    // ACTION: delete-session (Delete a WhatsApp session)
+    // =========================
+    if (action === "delete-session") {
+      const { session_id } = body;
+      console.log(`[Wasender] Deleting session: ${session_id}`);
+      
+      const result = await wasenderRequest(`/whatsapp-sessions/${session_id}`, {
+        method: "DELETE",
+      });
+
+      return new Response(JSON.stringify({ success: true, data: result?.data || result }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     return new Response(JSON.stringify({ error: "Unknown action" }), {
       status: 400,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
