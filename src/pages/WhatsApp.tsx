@@ -3533,23 +3533,7 @@ const WhatsApp = (props: WhatsAppProps) => {
             </>
           ) : (
             <div className="flex-1 flex items-center justify-center bg-muted/5">
-              <div className="text-center space-y-4">
-                <div className="w-48 h-48 mx-auto opacity-20">
-                  <svg viewBox="0 0 303 172" className="w-full h-full text-muted-foreground">
-                    <path fill="currentColor" d="M229.565 160.229c32.647-25.618 50.26-65.927 45.433-107.678C269.995 11.857 234.312-8.196 194.32 3.078c-39.99 11.273-71.282 44.109-80.022 82.752-7.266 32.13 2.066 58.476 22.937 74.907-3.027 12.476-7.045 27.15-7.045 27.15s23.628-6.457 37.757-11.883c24.527 4.616 47.617.526 61.618-15.775z"/>
-                  </svg>
-                </div>
-                <h2 className="text-xl font-light text-foreground">WhatsApp Web</h2>
-                <p className="text-sm text-muted-foreground max-w-md">
-                  Envie e receba mensagens diretamente do seu CRM
-                </p>
-                {chats.length === 0 && isSyncing && (
-                  <div className="flex items-center gap-2 justify-center text-sm text-muted-foreground">
-                    <RefreshCw className="w-4 h-4 animate-spin" />
-                    Sincronizando conversas...
-                  </div>
-                )}
-              </div>
+              <p className="text-sm text-muted-foreground">Abra uma conversa</p>
             </div>
           )}
           </div>
