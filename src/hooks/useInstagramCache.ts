@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
 interface InstagramChat {
@@ -33,6 +33,135 @@ export function useInstagramCache() {
   const [isLoadingMessages, setIsLoadingMessages] = useState(false);
   const isFetchingFromApiRef = useRef(false);
   const currentConversationIdRef = useRef<string | null>(null);
+
+  // Real-time subscription for chats
+  useEffect(() => {
+    const channel = supabase
+      .channel('instagram-chats-realtime')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'instagram_chats'
+        },
+        (payload) => {
+          console.log('[InstagramRealtime] Chat change:', payload.eventType);
+          
+          if (payload.eventType === 'INSERT' || payload.eventType === 'UPDATE') {
+            const newChat = payload.new as any;
+            const formattedChat: InstagramChat = {
+              id: newChat.conversation_id,
+              conversation_id: newChat.conversation_id,
+              name: newChat.participant_name || newChat.participant_username || 'Usuário',
+              lastMessage: newChat.last_message || '',
+              lastMessageTime: newChat.last_message_time || new Date().toISOString(),
+              unreadCount: newChat.unread_count || 0,
+              avatar: newChat.participant_avatar,
+              username: newChat.participant_username || '',
+              participantId: newChat.participant_id,
+            };
+            
+            setChats(prev => {
+              const existingIndex = prev.findIndex(c => c.conversation_id === formattedChat.conversation_id);
+              if (existingIndex >= 0) {
+                // Update existing chat
+                const updated = [...prev];
+                updated[existingIndex] = formattedChat;
+                // Re-sort by last message time
+                return updated.sort((a, b) => 
+                  new Date(b.lastMessageTime).getTime() - new Date(a.lastMessageTime).getTime()
+                );
+              } else {
+                // Add new chat at the top
+                return [formattedChat, ...prev];
+              }
+            });
+          } else if (payload.eventType === 'DELETE') {
+            const oldChat = payload.old as any;
+            setChats(prev => prev.filter(c => c.conversation_id !== oldChat.conversation_id));
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
+
+  // Real-time subscription for messages (filtered by current conversation)
+  useEffect(() => {
+    if (!currentConversationIdRef.current) return;
+
+    const conversationId = currentConversationIdRef.current;
+    
+    const channel = supabase
+      .channel(`instagram-messages-${conversationId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'instagram_messages',
+          filter: `conversation_id=eq.${conversationId}`
+        },
+        (payload) => {
+          console.log('[InstagramRealtime] New message received:', payload.new);
+          const newMsg = payload.new as any;
+          
+          // Check if message already exists (avoid duplicates)
+          setMessages(prev => {
+            const exists = prev.some(m => m.message_id === newMsg.message_id || m.id === newMsg.message_id);
+            if (exists) return prev;
+            
+            const formattedMessage: InstagramMessage = {
+              id: newMsg.message_id,
+              message_id: newMsg.message_id,
+              text: newMsg.text,
+              time: newMsg.created_at,
+              fromMe: newMsg.from_me || false,
+              status: newMsg.status || 'RECEIVED',
+              mediaType: newMsg.media_type,
+              mediaUrl: newMsg.media_url,
+              shareLink: newMsg.share_link,
+              shareName: newMsg.share_name,
+            };
+            
+            return [...prev, formattedMessage];
+          });
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'instagram_messages',
+          filter: `conversation_id=eq.${conversationId}`
+        },
+        (payload) => {
+          console.log('[InstagramRealtime] Message updated:', payload.new);
+          const updatedMsg = payload.new as any;
+          
+          setMessages(prev => prev.map(m => {
+            if (m.message_id === updatedMsg.message_id) {
+              return {
+                ...m,
+                status: updatedMsg.status || m.status,
+                text: updatedMsg.text ?? m.text,
+              };
+            }
+            return m;
+          }));
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [currentConversationIdRef.current]);
 
   // Load chats from database cache (instant)
   const loadChatsFromCache = useCallback(async (): Promise<InstagramChat[]> => {
