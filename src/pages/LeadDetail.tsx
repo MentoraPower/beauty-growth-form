@@ -638,35 +638,6 @@ export default function LeadDetail() {
                     leadId={lead.id} 
                     subOriginId={lead.sub_origin_id} 
                   />
-
-                  {/* Investment Summary Card */}
-                  <div className="p-4 bg-muted/20 border border-[#00000010] rounded-lg mt-4">
-                    <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">
-                      Resumo de Investimento
-                    </h4>
-                    <div className="space-y-2">
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm text-muted-foreground">Pergunta: "Você consegue investir R$1.800/mês?"</span>
-                        <Badge 
-                          variant={lead.can_afford === "yes" ? "default" : lead.can_afford === "no" ? "secondary" : "outline"}
-                          className={lead.can_afford === "yes" ? "bg-green-500" : lead.can_afford === "no" ? "bg-orange-500" : ""}
-                        >
-                          {lead.can_afford === "yes" ? "Clicou: SIM" : lead.can_afford === "no" ? "Clicou: NÃO" : "Não respondeu"}
-                        </Badge>
-                      </div>
-                      {lead.can_afford === "no" && (
-                        <div className="flex items-center justify-between">
-                          <span className="text-sm text-muted-foreground">Pergunta: "Quer saber mais?"</span>
-                          <Badge 
-                            variant={lead.wants_more_info ? "default" : "secondary"}
-                            className={lead.wants_more_info ? "bg-blue-500" : ""}
-                          >
-                            {lead.wants_more_info ? "Clicou: SIM" : "Clicou: NÃO"}
-                          </Badge>
-                        </div>
-                      )}
-                    </div>
-                  </div>
                 </CardContent>
               </Card>
                 </div>
