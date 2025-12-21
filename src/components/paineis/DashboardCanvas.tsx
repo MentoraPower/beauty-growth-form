@@ -93,17 +93,19 @@ function SortableWidget({ widget, onResize, onDelete, onConnect, containerWidth 
     return () => observer.disconnect();
   }, []);
 
+  // Calculate rendered width - use the stored width directly
+  const renderedWidth = Math.min(widgetWidth, containerWidth > 0 ? containerWidth : widgetWidth);
+
   const style: React.CSSProperties = {
     transform: CSS.Transform.toString(transform),
     transition,
     zIndex: isDragging ? 50 : 1,
     opacity: isDragging ? 0.4 : 1,
-    flexBasis: widgetWidth,
-    flexGrow: 0,
-    flexShrink: 1,
+    width: renderedWidth,
     minWidth: minWidth,
     maxWidth: containerWidth > 0 ? containerWidth : '100%',
     height: widgetHeight,
+    flexShrink: 0,
   };
 
   const handleResize = (deltaX: number, deltaY: number, direction: string) => {
@@ -547,11 +549,81 @@ export function DashboardCanvas({ painelName, onBack }: DashboardCanvasProps) {
     setWidgets(prev => prev.filter(w => w.id !== widgetId));
   };
 
-  const handleWidgetResize = (widgetId: string, width: number, height: number) => {
-    setWidgets(prev => prev.map(w => 
-      w.id === widgetId ? { ...w, width, height } : w
-    ));
-  };
+  const handleWidgetResize = useCallback((widgetId: string, newWidth: number, newHeight: number) => {
+    const gap = 16; // gap-4 = 16px
+    const minWidth = 260;
+    
+    setWidgets(prev => {
+      const widgetIndex = prev.findIndex(w => w.id === widgetId);
+      if (widgetIndex === -1) return prev;
+      
+      const currentWidget = prev[widgetIndex];
+      const oldWidth = currentWidget.width || 340;
+      const widthDelta = newWidth - oldWidth;
+      
+      if (widthDelta === 0 && newHeight === (currentWidget.height || 280)) {
+        return prev;
+      }
+      
+      // Calculate which widgets are on the same row
+      let rowStart = 0;
+      let accumulatedWidth = 0;
+      const widgetPositions: { index: number; rowStart: number; isInSameRow: boolean }[] = [];
+      
+      for (let i = 0; i < prev.length; i++) {
+        const w = prev[i];
+        const wWidth = w.width || 340;
+        
+        if (accumulatedWidth + wWidth + (accumulatedWidth > 0 ? gap : 0) > containerWidth && accumulatedWidth > 0) {
+          // New row
+          rowStart = i;
+          accumulatedWidth = wWidth;
+        } else {
+          accumulatedWidth += wWidth + (accumulatedWidth > 0 ? gap : 0);
+        }
+        
+        widgetPositions.push({ index: i, rowStart, isInSameRow: false });
+      }
+      
+      // Find which row the resized widget is in
+      const resizedWidgetRow = widgetPositions[widgetIndex].rowStart;
+      
+      // Mark widgets in the same row
+      widgetPositions.forEach(pos => {
+        pos.isInSameRow = pos.rowStart === resizedWidgetRow;
+      });
+      
+      // Get siblings in the same row (excluding the resized widget)
+      const siblingsInRow = widgetPositions
+        .filter(pos => pos.isInSameRow && pos.index !== widgetIndex)
+        .map(pos => prev[pos.index]);
+      
+      // If width is increasing and there are siblings, shrink them
+      if (widthDelta > 0 && siblingsInRow.length > 0) {
+        const shrinkPerWidget = widthDelta / siblingsInRow.length;
+        
+        return prev.map((w, i) => {
+          if (w.id === widgetId) {
+            return { ...w, width: newWidth, height: newHeight };
+          }
+          
+          const pos = widgetPositions[i];
+          if (pos.isInSameRow) {
+            const currentW = w.width || 340;
+            const shrunkWidth = Math.max(minWidth, currentW - shrinkPerWidget);
+            return { ...w, width: shrunkWidth };
+          }
+          
+          return w;
+        });
+      }
+      
+      // Just update the widget being resized
+      return prev.map(w => 
+        w.id === widgetId ? { ...w, width: newWidth, height: newHeight } : w
+      );
+    });
+  }, [containerWidth]);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
