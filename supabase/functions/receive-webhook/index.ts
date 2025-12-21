@@ -735,20 +735,30 @@ const handler = async (req: Request): Promise<Response> => {
           if (customFields && customFields.length > 0) {
             const customResponses: { lead_id: string; field_id: string; response_value: string }[] = [];
             
-            // Check for custom_fields object in payload (new format with field IDs)
-            const customFieldsPayload = payload.custom_fields || payload.customFields;
+            // Check for custom_fields object in payload (format: { custom_fields: { field_id: value } })
+            const customFieldsPayload = rawPayload.custom_fields || rawPayload.customFields || payload.custom_fields || payload.customFields;
             
             for (const field of customFields) {
               let value: unknown = undefined;
               
-              // First, check new format: custom_fields: { field_id: value }
+              // Priority 1: Check custom_fields object with field ID as key
               if (customFieldsPayload && typeof customFieldsPayload === 'object') {
                 value = customFieldsPayload[field.id];
               }
               
-              // Fallback to old format: field_key directly in payload
+              // Priority 2: Check root level with field ID as key (for n8n "Using Fields Below")
+              if (value === undefined || value === null) {
+                value = rawPayload[field.id];
+              }
+              
+              // Priority 3: Fallback to field_key in normalized payload
               if (value === undefined || value === null) {
                 value = payload[field.field_key];
+              }
+              
+              // Priority 4: Check root level with field_key
+              if (value === undefined || value === null) {
+                value = rawPayload[field.field_key];
               }
               
               if (value !== undefined && value !== null && String(value).trim() !== "") {
