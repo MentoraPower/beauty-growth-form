@@ -185,9 +185,6 @@ export default function Paineis() {
           {/* Header */}
           <div className="mb-6">
             <h1 className="text-xl font-semibold text-foreground">Painéis</h1>
-            <p className="text-sm text-muted-foreground mt-1">
-              Crie e gerencie seus painéis personalizados
-            </p>
           </div>
 
           {/* Panel Templates */}
