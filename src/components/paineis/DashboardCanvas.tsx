@@ -60,9 +60,10 @@ interface SortableWidgetProps {
   onResize: (id: string, width: number, height: number) => void;
   onDelete: (id: string) => void;
   onConnect: (id: string) => void;
+  containerWidth: number;
 }
 
-function SortableWidget({ widget, onResize, onDelete, onConnect }: SortableWidgetProps) {
+function SortableWidget({ widget, onResize, onDelete, onConnect, containerWidth }: SortableWidgetProps) {
   const {
     attributes,
     listeners,
@@ -72,21 +73,29 @@ function SortableWidget({ widget, onResize, onDelete, onConnect }: SortableWidge
     isDragging,
   } = useSortable({ id: widget.id });
 
+  const widgetWidth = widget.width || 340;
+  const widgetHeight = widget.height || 280;
+
   const style: React.CSSProperties = {
     transform: CSS.Transform.toString(transform),
     transition,
     zIndex: isDragging ? 50 : 1,
     opacity: isDragging ? 0.4 : 1,
+    flexBasis: widgetWidth,
+    flexGrow: 0,
+    flexShrink: 1,
+    minWidth: 260,
+    maxWidth: containerWidth > 0 ? containerWidth : 3000,
   };
 
   return (
     <div ref={setNodeRef} style={style}>
       <ResizableWidget
-        initialWidth={widget.width || 340}
-        initialHeight={widget.height || 280}
+        initialWidth={widgetWidth}
+        initialHeight={widgetHeight}
         minWidth={260}
         minHeight={220}
-        maxWidth={3000}
+        maxWidth={containerWidth > 0 ? containerWidth : 3000}
         maxHeight={1200}
         onResize={(w, h) => onResize(widget.id, w, h)}
         className={`bg-white border border-border rounded-xl shadow-sm ${isDragging ? 'shadow-lg ring-2 ring-primary/20' : 'hover:shadow-md'}`}
@@ -140,8 +149,8 @@ function SortableWidget({ widget, onResize, onDelete, onConnect }: SortableWidge
             <ChartRenderer
               chartType={widget.chartType.id}
               data={widget.data}
-              width={widget.width || 340}
-              height={(widget.height || 280) - 60}
+              width={widgetWidth}
+              height={widgetHeight - 60}
               isLoading={widget.isLoading}
             />
           </div>
@@ -157,7 +166,22 @@ export function DashboardCanvas({ painelName, onBack }: DashboardCanvasProps) {
   const [isConnectSourceOpen, setIsConnectSourceOpen] = useState(false);
   const [selectedChart, setSelectedChart] = useState<ChartType | null>(null);
   const [pendingWidgetId, setPendingWidgetId] = useState<string | null>(null);
+  const [containerWidth, setContainerWidth] = useState(0);
   const widgetsRef = useRef<DashboardWidget[]>([]);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  // Measure container width
+  useEffect(() => {
+    const updateWidth = () => {
+      if (containerRef.current) {
+        setContainerWidth(containerRef.current.offsetWidth - 20); // Account for padding
+      }
+    };
+    
+    updateWidth();
+    window.addEventListener('resize', updateWidth);
+    return () => window.removeEventListener('resize', updateWidth);
+  }, []);
 
   // Keep ref in sync with state
   useEffect(() => {
@@ -452,7 +476,7 @@ export function DashboardCanvas({ painelName, onBack }: DashboardCanvasProps) {
             onDragEnd={handleDragEnd}
           >
             <SortableContext items={widgets.map(w => w.id)} strategy={rectSortingStrategy}>
-              <div className="flex flex-wrap gap-4 p-1">
+              <div ref={containerRef} className="flex flex-wrap gap-4 p-1">
                 {widgets.map((widget) => (
                   <SortableWidget
                     key={widget.id}
@@ -460,13 +484,14 @@ export function DashboardCanvas({ painelName, onBack }: DashboardCanvasProps) {
                     onResize={handleWidgetResize}
                     onDelete={handleDeleteWidget}
                     onConnect={handleConnectWidget}
+                    containerWidth={containerWidth}
                   />
                 ))}
 
                 {/* Add More Button */}
                 <button
                   onClick={() => setIsChartSelectorOpen(true)}
-                  className="flex flex-col items-center justify-center w-[260px] h-[220px] border-2 border-dashed border-border rounded-xl hover:border-foreground/30 hover:bg-muted/30 focus:outline-none"
+                  className="flex flex-col items-center justify-center w-[260px] h-[220px] border-2 border-dashed border-border rounded-xl hover:border-foreground/30 hover:bg-muted/30 focus:outline-none shrink-0"
                 >
                   <Plus className="h-6 w-6 text-muted-foreground mb-2" />
                   <span className="text-sm text-muted-foreground">

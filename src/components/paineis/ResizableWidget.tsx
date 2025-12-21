@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 
 interface ResizableWidgetProps {
   children: React.ReactNode;
@@ -9,7 +9,9 @@ interface ResizableWidgetProps {
   maxWidth?: number;
   maxHeight?: number;
   onResize?: (width: number, height: number) => void;
+  onResizing?: (isResizing: boolean) => void;
   className?: string;
+  style?: React.CSSProperties;
 }
 
 export function ResizableWidget({
@@ -21,7 +23,9 @@ export function ResizableWidget({
   maxWidth = 600,
   maxHeight = 500,
   onResize,
+  onResizing,
   className = "",
+  style = {},
 }: ResizableWidgetProps) {
   const [size, setSize] = useState({ width: initialWidth, height: initialHeight });
   const [isResizing, setIsResizing] = useState(false);
@@ -29,11 +33,17 @@ export function ResizableWidget({
   const startPos = useRef({ x: 0, y: 0 });
   const startSize = useRef({ width: 0, height: 0 });
 
+  // Sync with external width changes
+  useEffect(() => {
+    setSize(prev => ({ ...prev, width: initialWidth, height: initialHeight }));
+  }, [initialWidth, initialHeight]);
+
   const handleMouseDown = useCallback((e: React.MouseEvent, direction: string) => {
     e.preventDefault();
     e.stopPropagation();
     
     setIsResizing(true);
+    onResizing?.(true);
     startPos.current = { x: e.clientX, y: e.clientY };
     startSize.current = { width: size.width, height: size.height };
 
@@ -63,22 +73,24 @@ export function ResizableWidget({
 
     const handleMouseUp = () => {
       setIsResizing(false);
+      onResizing?.(false);
       document.removeEventListener('mousemove', handleMouseMove);
       document.removeEventListener('mouseup', handleMouseUp);
     };
 
     document.addEventListener('mousemove', handleMouseMove);
     document.addEventListener('mouseup', handleMouseUp);
-  }, [size, minWidth, minHeight, maxWidth, maxHeight, onResize]);
+  }, [size, minWidth, minHeight, maxWidth, maxHeight, onResize, onResizing]);
 
   return (
     <div
       ref={containerRef}
       className={`relative ${className} ${isResizing ? 'select-none' : ''}`}
       style={{ 
+        ...style,
         width: size.width, 
         height: size.height,
-        transition: isResizing ? 'none' : 'box-shadow 0.2s ease'
+        flexShrink: 0,
       }}
     >
       {children}
