@@ -136,17 +136,26 @@ function SortableWidget({ widget, onResize, onDelete, onConnect, containerWidth 
         if (node) (widgetRef as React.MutableRefObject<HTMLDivElement | null>).current = node;
       }} 
       style={style}
-      className={`relative bg-white border border-border rounded-xl shadow-sm ${isDragging ? 'shadow-lg ring-2 ring-primary/20' : 'hover:shadow-md'}`}
+      className={`group/widget relative bg-white border border-border rounded-xl shadow-sm ${isDragging ? 'shadow-lg ring-2 ring-primary/20' : 'hover:shadow-md'}`}
     >
-      <div className="relative h-full p-4 flex flex-col">
-        {/* Drag Handle */}
+      <div className="relative h-full p-3 pt-2 flex flex-col">
+        {/* Drag Handle - only visible on hover */}
         <div
           {...attributes}
           {...listeners}
-          className="absolute top-2 left-2 p-1.5 rounded-lg cursor-grab active:cursor-grabbing hover:bg-muted z-20"
+          className="absolute top-2 left-2 p-1.5 rounded-lg cursor-grab active:cursor-grabbing hover:bg-muted z-20 opacity-0 group-hover/widget:opacity-100 transition-opacity"
         >
           <GripVertical className="h-4 w-4 text-muted-foreground" />
         </div>
+
+        {/* Delete Button - only visible on hover */}
+        <button
+          onClick={() => onDelete(widget.id)}
+          className="absolute top-2 right-2 p-1.5 rounded-lg hover:bg-red-50 z-20 opacity-0 group-hover/widget:opacity-100 transition-opacity"
+          title="Remover widget"
+        >
+          <Trash2 className="h-3.5 w-3.5 text-muted-foreground hover:text-red-500" />
+        </button>
 
         {/* Connect Overlay */}
         {!widget.isConnected && (
@@ -166,20 +175,11 @@ function SortableWidget({ widget, onResize, onDelete, onConnect, containerWidth 
           </button>
         )}
 
-        {/* Header */}
-        <div className="flex items-center justify-between mb-3 shrink-0 pl-8">
-          <h3 className="text-sm font-medium text-foreground truncate">
+        {/* Header - Title at top */}
+        <div className="mb-2 shrink-0">
+          <h3 className="text-sm font-medium text-foreground truncate text-center">
             {widget.source?.sourceName || widget.chartType.name}
           </h3>
-          <div className="flex items-center gap-1 shrink-0">
-            <button
-              onClick={() => onDelete(widget.id)}
-              className="p-1.5 rounded-lg hover:bg-red-50 group"
-              title="Remover widget"
-            >
-              <Trash2 className="h-3.5 w-3.5 text-muted-foreground group-hover:text-red-500" />
-            </button>
-          </div>
         </div>
         
         {/* Chart */}
