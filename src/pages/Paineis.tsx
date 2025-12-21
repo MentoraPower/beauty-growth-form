@@ -226,60 +226,54 @@ export default function Paineis() {
                 </p>
               </div>
             ) : (
-              <div className="bg-card border border-border rounded-xl overflow-hidden">
-                <Table>
-                  <TableHeader>
-                    <TableRow className="hover:bg-transparent">
-                      <TableHead className="font-medium">Nome</TableHead>
-                      <TableHead className="font-medium">Tipo</TableHead>
-                      <TableHead className="w-[50px]"></TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {dashboards.map((dashboard) => (
-                      <TableRow
-                        key={dashboard.id}
-                        className="cursor-pointer hover:bg-muted/50"
-                        onClick={() => handleOpenDashboard(dashboard)}
-                      >
-                        <TableCell className="font-medium">{dashboard.name}</TableCell>
-                        <TableCell className="capitalize text-muted-foreground">
-                          {dashboard.type === 'scratch' ? 'Personalizado' : dashboard.type}
-                        </TableCell>
-                        <TableCell>
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-                              <Button variant="ghost" size="icon" className="h-8 w-8">
-                                <MoreHorizontal className="h-4 w-4" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuItem 
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleEditDashboard(dashboard);
-                                }}
-                              >
-                                <Pencil className="h-4 w-4 mr-2" />
-                                Renomear
-                              </DropdownMenuItem>
-                              <DropdownMenuItem 
-                                className="text-destructive focus:text-destructive"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleDeleteDashboard(dashboard);
-                                }}
-                              >
-                                <Trash2 className="h-4 w-4 mr-2" />
-                                Excluir
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+              <div className="space-y-2">
+                {dashboards.map((dashboard) => (
+                  <div
+                    key={dashboard.id}
+                    onClick={() => handleOpenDashboard(dashboard)}
+                    className="group flex items-center justify-between bg-card border border-border rounded-xl px-4 py-3 cursor-pointer transition-all duration-200 hover:bg-muted/50 hover:border-border/80"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-9 h-9 rounded-lg bg-muted flex items-center justify-center">
+                        <LayoutDashboard className="h-4 w-4 text-muted-foreground" />
+                      </div>
+                      <span className="font-medium text-foreground">{dashboard.name}</span>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <span className="text-xs text-muted-foreground bg-muted px-2 py-1 rounded-md">
+                        {dashboard.type === 'scratch' ? 'Personalizado' : dashboard.type}
+                      </span>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+                          <Button variant="ghost" size="icon" className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <MoreHorizontal className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem 
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleEditDashboard(dashboard);
+                            }}
+                          >
+                            <Pencil className="h-4 w-4 mr-2" />
+                            Renomear
+                          </DropdownMenuItem>
+                          <DropdownMenuItem 
+                            className="text-destructive focus:text-destructive"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDeleteDashboard(dashboard);
+                            }}
+                          >
+                            <Trash2 className="h-4 w-4 mr-2" />
+                            Excluir
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
+                  </div>
+                ))}
               </div>
             )}
           </div>
