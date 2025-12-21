@@ -5,14 +5,6 @@ import { Lead, Pipeline } from "@/types/crm";
 import { KanbanCard } from "./KanbanCard";
 import { InlineAddContact } from "./InlineAddContact";
 import { CustomFieldsManager } from "./CustomFieldsManager";
-import { Settings2 } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
 interface DropIndicator {
   pipelineId: string;
   position: "top" | "bottom";
@@ -76,23 +68,11 @@ export const KanbanColumn = memo(function KanbanColumn({
             <h2 className="font-semibold text-sm">{pipeline.nome}</h2>
             <div className="flex items-center gap-1.5">
               {subOriginId && (
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-6 w-6"
-                        onClick={() => setShowCustomFields(true)}
-                      >
-                        <Settings2 className="h-3.5 w-3.5 text-muted-foreground" />
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>Campos personalizados</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
+                <CustomFieldsManager 
+                  subOriginId={subOriginId} 
+                  open={showCustomFields}
+                  onOpenChange={setShowCustomFields}
+                />
               )}
               <span className={`text-xs px-2 py-0.5 rounded-full transition-colors ${
                 isTargeted 
@@ -105,15 +85,6 @@ export const KanbanColumn = memo(function KanbanColumn({
           </div>
           <InlineAddContact pipelineId={pipeline.id} subOriginId={subOriginId || null} />
         </div>
-
-        {/* Custom Fields Manager Dialog */}
-        {subOriginId && (
-          <CustomFieldsManager 
-            subOriginId={subOriginId} 
-            open={showCustomFields}
-            onOpenChange={setShowCustomFields}
-          />
-        )}
 
         {/* Cards container */}
         <div className="p-3 flex-1 overflow-y-auto">
