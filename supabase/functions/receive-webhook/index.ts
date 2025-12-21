@@ -735,9 +735,22 @@ const handler = async (req: Request): Promise<Response> => {
           if (customFields && customFields.length > 0) {
             const customResponses: { lead_id: string; field_id: string; response_value: string }[] = [];
             
+            // Check for custom_fields object in payload (new format with field IDs)
+            const customFieldsPayload = payload.custom_fields || payload.customFields;
+            
             for (const field of customFields) {
-              // Check if payload has value for this field key
-              const value = payload[field.field_key];
+              let value: unknown = undefined;
+              
+              // First, check new format: custom_fields: { field_id: value }
+              if (customFieldsPayload && typeof customFieldsPayload === 'object') {
+                value = customFieldsPayload[field.id];
+              }
+              
+              // Fallback to old format: field_key directly in payload
+              if (value === undefined || value === null) {
+                value = payload[field.field_key];
+              }
+              
               if (value !== undefined && value !== null && String(value).trim() !== "") {
                 customResponses.push({
                   lead_id: savedLeadId,
