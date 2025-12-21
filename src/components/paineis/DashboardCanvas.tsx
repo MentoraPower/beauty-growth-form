@@ -1,5 +1,6 @@
-import { useState, useCallback, useEffect, useRef } from "react";
+import { Fragment, useCallback, useEffect, useRef, useState } from "react";
 import { Plus, Link2, X, Trash2, GripVertical, CalendarIcon } from "lucide-react";
+import type { Json } from "@/integrations/supabase/types";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
@@ -51,6 +52,8 @@ export interface DashboardWidget {
   isLoading?: boolean;
   width?: number;
   height?: number;
+  /** Forces the widget to start on a new row in the flex-wrap layout */
+  breakBefore?: boolean;
 }
 
 interface DashboardCanvasProps {
@@ -107,9 +110,9 @@ function SortableWidget({ widget, onResize, onDelete, onConnect, containerWidth 
     opacity: isDragging ? 0.4 : 1,
     flexBasis: widgetWidth,
     flexGrow: 0,
-    flexShrink: 1,
+    flexShrink: 0,
+    width: widgetWidth,
     minWidth: minWidth,
-    maxWidth: containerWidth > 0 ? containerWidth : '100%',
     height: widgetHeight,
   };
 
@@ -351,7 +354,7 @@ export function DashboardCanvas({ painelName, dashboardId, onBack }: DashboardCa
   useEffect(() => {
     const updateWidth = () => {
       if (containerRef.current) {
-        setContainerWidth(containerRef.current.offsetWidth - 20); // Account for padding
+        setContainerWidth(containerRef.current.clientWidth);
       }
     };
     
@@ -365,7 +368,36 @@ export function DashboardCanvas({ painelName, dashboardId, onBack }: DashboardCa
     widgetsRef.current = widgets;
   }, [widgets]);
 
-  // Load widgets from database on mount
+  // Ensure row breaks are explicit (so resize logic matches the actual layout)
+  useEffect(() => {
+    if (containerWidth <= 0) return;
+
+    const gap = 16;
+    const DEFAULT_WIDTH = 340;
+
+    setWidgets((prev) => {
+      let rowWidth = 0;
+      let changed = false;
+
+      const next = prev.map((w, index) => {
+        const width = w.width || DEFAULT_WIDTH;
+        const needed = rowWidth > 0 ? width + gap : width;
+
+        let breakBefore = false;
+        if (index !== 0 && rowWidth + needed > containerWidth && rowWidth > 0) {
+          breakBefore = true;
+          rowWidth = width;
+        } else {
+          rowWidth += needed;
+        }
+
+        if (Boolean(w.breakBefore) !== breakBefore) changed = true;
+        return { ...w, breakBefore };
+      });
+
+      return changed ? next : prev;
+    });
+  }, [containerWidth, widgets.length]);
   useEffect(() => {
     const loadWidgets = async () => {
       if (!dashboardId) {
@@ -423,12 +455,12 @@ export function DashboardCanvas({ painelName, dashboardId, onBack }: DashboardCa
 
     // Debounce save by 500ms
     saveTimeoutRef.current = setTimeout(async () => {
-      // Save widgets without runtime data - cast to Json type
+      // Save widgets without runtime data
       const widgetsToSave = widgets.map(({ data, isLoading, ...rest }) => rest) as unknown;
       
       await supabase
         .from("dashboards")
-        .update({ widgets: widgetsToSave as null })
+        .update({ widgets: widgetsToSave as Json })
         .eq("id", dashboardId);
     }, 500);
 
@@ -689,20 +721,103 @@ export function DashboardCanvas({ painelName, dashboardId, onBack }: DashboardCa
     setWidgets(prev => prev.filter(w => w.id !== widgetId));
   };
 
-  const handleWidgetResize = useCallback((widgetId: string, newWidth: number, newHeight: number) => {
-    const minWidthLimit = 260;
-    const maxWidth = containerWidth > 0 ? containerWidth : 2000;
+  const handleWidgetResize = useCallback((widgetId: string, nextWidth: number, nextHeight: number) => {
+    const gap = 16;
+    const MIN_WIDTH = 260;
+    const DEFAULT_WIDTH = 340;
+    const cw = containerWidth > 0 ? containerWidth : 1200;
 
-    setWidgets(prev =>
-      prev.map(w => {
-        if (w.id !== widgetId) return w;
-        return {
-          ...w,
-          width: Math.min(maxWidth, Math.max(minWidthLimit, newWidth)),
-          height: Math.min(1200, Math.max(220, newHeight)),
-        };
-      })
-    );
+    const clampHeight = (h: number) => Math.min(1200, Math.max(220, h));
+
+    setWidgets(prev => {
+      const idx = prev.findIndex(w => w.id === widgetId);
+      if (idx === -1) return prev;
+
+      const next = prev.map(w => ({ ...w }));
+
+      const isBreak = (i: number) => Boolean(next[i]?.breakBefore);
+      const findRowStart = (i: number) => {
+        let s = i;
+        while (s > 0 && !isBreak(s)) s--;
+        return s;
+      };
+      const findRowEnd = (i: number) => {
+        let e = i;
+        while (e + 1 < next.length && !isBreak(e + 1)) e++;
+        return e;
+      };
+
+      // If this widget is alone and the next widget was pushed to a new row, pull it back when shrinking.
+      let rowStart = findRowStart(idx);
+      let rowEnd = findRowEnd(idx);
+      const nextIndex = rowEnd + 1;
+      if (rowStart === rowEnd && nextIndex < next.length && isBreak(nextIndex)) {
+        const desiredFirst = Math.min(cw, Math.max(MIN_WIDTH, nextWidth));
+        const canFitSecond = desiredFirst + gap + MIN_WIDTH <= cw;
+        if (canFitSecond) {
+          next[nextIndex].breakBefore = false;
+          rowEnd = findRowEnd(idx);
+        }
+      }
+
+      rowStart = findRowStart(idx);
+      rowEnd = findRowEnd(idx);
+
+      let rowIndices = Array.from({ length: rowEnd - rowStart + 1 }, (_, k) => rowStart + k);
+
+      // If something went out of sync, fallback to simple resize.
+      if (!rowIndices.includes(idx)) {
+        next[idx].width = Math.min(cw, Math.max(MIN_WIDTH, nextWidth));
+        next[idx].height = clampHeight(nextHeight);
+        return next;
+      }
+
+      // Push last siblings down until current row can fit (siblings shrink down to MIN_WIDTH first).
+      while (true) {
+        const rowCount = rowIndices.length;
+        const gaps = gap * (rowCount - 1);
+        const available = cw - gaps;
+        const siblings = rowIndices.filter(i => i !== idx);
+
+        const desired = Math.min(available, Math.max(MIN_WIDTH, nextWidth));
+        const maxAllowedToKeepSiblings = available - siblings.length * MIN_WIDTH;
+
+        if (siblings.length === 0 || desired <= maxAllowedToKeepSiblings) break;
+
+        const lastSibling = [...rowIndices].reverse().find(i => i !== idx);
+        if (lastSibling == null) break;
+
+        next[lastSibling].breakBefore = true;
+        next[lastSibling].width = DEFAULT_WIDTH;
+
+        rowIndices = rowIndices.filter(i => i < lastSibling);
+        if (rowIndices.length <= 1) break;
+      }
+
+      const rowCount = rowIndices.length;
+      const gaps = gap * (rowCount - 1);
+      const available = cw - gaps;
+      const siblings = rowIndices.filter(i => i !== idx);
+
+      const finalWidth = Math.min(available, Math.max(MIN_WIDTH, nextWidth));
+      next[idx].width = finalWidth;
+      next[idx].height = clampHeight(nextHeight);
+
+      const remaining = Math.max(0, available - finalWidth);
+
+      if (siblings.length === 1) {
+        const s = siblings[0];
+        next[s].width = Math.max(MIN_WIDTH, remaining);
+      } else if (siblings.length > 1) {
+        const each = Math.floor(remaining / siblings.length);
+        siblings.forEach((s, j) => {
+          const w = j === siblings.length - 1 ? remaining - each * (siblings.length - 1) : each;
+          next[s].width = Math.max(MIN_WIDTH, w);
+        });
+      }
+
+      return next;
+    });
   }, [containerWidth]);
 
   const sensors = useSensors(
@@ -855,14 +970,16 @@ export function DashboardCanvas({ painelName, dashboardId, onBack }: DashboardCa
             <SortableContext items={widgets.map(w => w.id)} strategy={rectSortingStrategy}>
               <div ref={containerRef} className="flex flex-wrap gap-4 p-1">
                 {widgets.map((widget) => (
-                  <SortableWidget
-                    key={widget.id}
-                    widget={widget}
-                    onResize={handleWidgetResize}
-                    onDelete={handleDeleteWidget}
-                    onConnect={handleConnectWidget}
-                    containerWidth={containerWidth}
-                  />
+                  <Fragment key={widget.id}>
+                    {widget.breakBefore && <div className="basis-full w-full h-0" />}
+                    <SortableWidget
+                      widget={widget}
+                      onResize={handleWidgetResize}
+                      onDelete={handleDeleteWidget}
+                      onConnect={handleConnectWidget}
+                      containerWidth={containerWidth}
+                    />
+                  </Fragment>
                 ))}
               </div>
             </SortableContext>
