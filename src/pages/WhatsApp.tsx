@@ -2278,45 +2278,6 @@ const WhatsApp = () => {
                       );
                     })}
                     <DropdownMenuSeparator />
-                    {/* Migration button - only show if there are accounts and one is selected */}
-                    {selectedAccountId && (
-                      <DropdownMenuItem 
-                        className="cursor-pointer text-amber-600"
-                        onClick={async () => {
-                          const selectedAccount = whatsappAccounts.find(a => a.id === selectedAccountId);
-                          if (!selectedAccount?.api_key) {
-                            toast({ title: "Selecione uma conta conectada", variant: "destructive" });
-                            return;
-                          }
-                          
-                          try {
-                            toast({ title: "Migrando chats antigos..." });
-                            const { data, error } = await supabase.functions.invoke("wasender-whatsapp", {
-                              body: { 
-                                action: "migrate-chats",
-                                sessionId: selectedAccount.api_key,
-                              },
-                            });
-                            
-                            if (error) throw error;
-                            
-                            toast({ 
-                              title: "Migração concluída",
-                              description: `${data?.migratedChats || 0} chats e ${data?.migratedMessages || 0} mensagens migradas para ${selectedAccount.name}`,
-                            });
-                            
-                            // Refetch chats to show the updated data
-                            await fetchChats();
-                          } catch (err: any) {
-                            console.error("Migration error:", err);
-                            toast({ title: "Erro na migração", description: err.message, variant: "destructive" });
-                          }
-                        }}
-                      >
-                        <ArrowUp className="w-4 h-4 mr-2" />
-                        Migrar chats antigos para esta conta
-                      </DropdownMenuItem>
-                    )}
                   </>
                 ) : (
                   <div className="px-2 py-3 text-sm text-muted-foreground text-center">
