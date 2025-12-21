@@ -96,11 +96,17 @@ export function useInstagramCache() {
   // Real-time subscription for messages (filtered by current conversation)
   // Using a separate state to track conversation to avoid stale closures
   const [activeConversationId, setActiveConversationId] = useState<string | null>(null);
+  const isRealtimeEnabledRef = useRef(false);
   
   useEffect(() => {
     if (!activeConversationId) return;
 
     const conversationId = activeConversationId;
+    
+    // Small delay to allow initial fetch to complete first
+    const enableTimer = setTimeout(() => {
+      isRealtimeEnabledRef.current = true;
+    }, 500);
     
     const channel = supabase
       .channel(`instagram-messages-${conversationId}`)
@@ -113,6 +119,12 @@ export function useInstagramCache() {
           filter: `conversation_id=eq.${conversationId}`
         },
         (payload) => {
+          // Skip realtime updates during initial fetch to avoid flicker
+          if (!isRealtimeEnabledRef.current) {
+            console.log('[InstagramRealtime] Skipping update during initial fetch');
+            return;
+          }
+          
           console.log('[InstagramRealtime] New message received:', payload.new);
           const newMsg = payload.new as any;
           
@@ -195,6 +207,8 @@ export function useInstagramCache() {
       .subscribe();
 
     return () => {
+      clearTimeout(enableTimer);
+      isRealtimeEnabledRef.current = false;
       supabase.removeChannel(channel);
     };
   }, [activeConversationId]);
@@ -397,16 +411,28 @@ export function useInstagramCache() {
   }, [loadChatsFromCache, saveChatsToCache]);
 
   // Fetch messages: load from cache first, then update from API
+  const isFetchingMessagesRef = useRef(false);
+  
   const fetchMessages = useCallback(async (conversationId: string, myInstagramUserId: string, forceRefresh = false) => {
+    // Prevent concurrent fetches
+    if (isFetchingMessagesRef.current) {
+      console.log('[InstagramCache] Already fetching messages, skipping');
+      return;
+    }
+    
+    isFetchingMessagesRef.current = true;
+    
     // Track current conversation to avoid race conditions
     currentConversationIdRef.current = conversationId;
-    setActiveConversationId(conversationId);
 
-    // Step 1: Load from cache instantly
+    // Step 1: Load from cache instantly (before activating realtime)
     if (!forceRefresh) {
       const cachedMessages = await loadMessagesFromCache(conversationId);
       // Check if we're still on the same conversation
-      if (currentConversationIdRef.current !== conversationId) return;
+      if (currentConversationIdRef.current !== conversationId) {
+        isFetchingMessagesRef.current = false;
+        return;
+      }
       
       if (cachedMessages.length > 0) {
         setMessages(cachedMessages);
@@ -416,6 +442,9 @@ export function useInstagramCache() {
     } else {
       setIsLoadingMessages(true);
     }
+    
+    // Activate realtime after initial cache load
+    setActiveConversationId(conversationId);
 
     // Step 2: Fetch from API
     try {
@@ -424,7 +453,10 @@ export function useInstagramCache() {
       });
 
       // Check if we're still on the same conversation
-      if (currentConversationIdRef.current !== conversationId) return;
+      if (currentConversationIdRef.current !== conversationId) {
+        isFetchingMessagesRef.current = false;
+        return;
+      }
 
       if (error) throw error;
 
@@ -450,30 +482,25 @@ export function useInstagramCache() {
           };
         });
 
-        // Replace temp messages with real ones, deduplicate by text+fromMe
+        // Replace messages atomically - no merge to avoid flicker
+        // Only keep temp messages that are truly pending (not yet in API response)
         setMessages(prev => {
-          // Get all temp messages
           const tempMessages = prev.filter(m => m.id.startsWith('temp-'));
           
-          // For each formatted message, check if there's a matching temp
-          const finalMessages = formattedMessages.map(fm => fm);
-          
-          // Find temp messages that have no corresponding real message yet
-          // (match by text and fromMe flag within a small time window)
+          // Find unmatched temp messages
           const unmatchedTemps = tempMessages.filter(temp => {
             const tempTime = new Date(temp.time).getTime();
             const hasMatch = formattedMessages.some(fm => {
               const fmTime = new Date(fm.time).getTime();
               const timeDiff = Math.abs(fmTime - tempTime);
-              // Match if same text, same sender, within 2 minutes
               return fm.text === temp.text && fm.fromMe === temp.fromMe && timeDiff < 120000;
             });
             return !hasMatch;
           });
           
-          // Return formatted messages + any unmatched temp messages (still pending)
-          return [...finalMessages, ...unmatchedTemps];
+          return [...formattedMessages, ...unmatchedTemps];
         });
+        
         // Save to cache in background
         saveMessagesToCache(conversationId, formattedMessages);
       }
@@ -481,6 +508,7 @@ export function useInstagramCache() {
       console.error('[InstagramCache] Error fetching messages from API:', error);
     } finally {
       setIsLoadingMessages(false);
+      isFetchingMessagesRef.current = false;
     }
   }, [loadMessagesFromCache, saveMessagesToCache]);
 
