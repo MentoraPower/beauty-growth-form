@@ -1,5 +1,5 @@
 import { useSearchParams } from "react-router-dom";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { cn } from "@/lib/utils";
 import { Smartphone, ChevronDown, Check, RefreshCw, Plus } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
@@ -19,23 +19,43 @@ interface WhatsAppAccount {
   api_key?: string;
 }
 
+// Persistent state outside component to survive tab switches
+let cachedWhatsappAccounts: WhatsAppAccount[] = [];
+let cachedSelectedAccountId: string | null = localStorage.getItem('whatsapp_selected_account_id');
+let hasLoadedAccounts = false;
+
 export default function Atendimento() {
   const [searchParams, setSearchParams] = useSearchParams();
   const tabParam = searchParams.get('tab');
   const activeTab: TabType = tabParam === 'instagram' ? 'instagram' : 'whatsapp';
 
-  // WhatsApp account state - lifted from WhatsApp component
-  const [whatsappAccounts, setWhatsappAccounts] = useState<WhatsAppAccount[]>([]);
-  const [selectedAccountId, setSelectedAccountId] = useState<string | null>(() => {
-    const saved = localStorage.getItem('whatsapp_selected_account_id');
-    return saved ? saved : null;
-  });
+  // WhatsApp account state - use cached values as initial state
+  const [whatsappAccounts, setWhatsappAccounts] = useState<WhatsAppAccount[]>(cachedWhatsappAccounts);
+  const [selectedAccountId, setSelectedAccountId] = useState<string | null>(cachedSelectedAccountId);
   const [isLoadingAccounts, setIsLoadingAccounts] = useState(false);
   const [showAddAccountDialog, setShowAddAccountDialog] = useState(false);
   const [accountToConnect, setAccountToConnect] = useState<WhatsAppAccount | null>(null);
 
-  // Fetch WhatsApp accounts
+  // Sync state with cache
+  useEffect(() => {
+    cachedWhatsappAccounts = whatsappAccounts;
+  }, [whatsappAccounts]);
+
+  useEffect(() => {
+    cachedSelectedAccountId = selectedAccountId;
+    if (selectedAccountId) {
+      localStorage.setItem('whatsapp_selected_account_id', selectedAccountId);
+    }
+  }, [selectedAccountId]);
+
+  // Fetch WhatsApp accounts - only if not already loaded
   const fetchWhatsAppAccounts = useCallback(async () => {
+    // Skip if already loaded and have accounts
+    if (hasLoadedAccounts && cachedWhatsappAccounts.length > 0) {
+      console.log(`[Atendimento] Using cached accounts: ${cachedWhatsappAccounts.length}`);
+      return;
+    }
+    
     setIsLoadingAccounts(true);
     try {
       const { data, error } = await supabase.functions.invoke("wasender-whatsapp", {
@@ -45,7 +65,9 @@ export default function Atendimento() {
       if (error) throw error;
 
       if (data?.success && Array.isArray(data.data)) {
+        console.log(`[Atendimento] Fetched ${data.data.length} accounts`);
         setWhatsappAccounts(data.data);
+        hasLoadedAccounts = true;
         
         const savedAccountId = localStorage.getItem('whatsapp_selected_account_id');
         const savedAccount = savedAccountId ? data.data.find((acc: WhatsAppAccount) => String(acc.id) === savedAccountId) : null;
