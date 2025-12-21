@@ -39,15 +39,15 @@ export function DashboardCanvas({ painelName, onBack }: DashboardCanvasProps) {
       <div className="flex-1">
         {widgets.length === 0 ? (
           /* Empty State - Add Widget Button */
-          <div className="h-full flex items-center justify-center">
+          <div className="flex justify-center pt-16">
             <button
               onClick={() => setIsAddDialogOpen(true)}
-              className="group flex flex-col items-center justify-center p-8 border-2 border-dashed border-border rounded-xl transition-all duration-200 hover:border-primary/50 hover:bg-muted/30 focus:outline-none"
+              className="group flex flex-col items-center justify-center w-80 h-48 border-2 border-dashed border-border rounded-2xl transition-all duration-200 hover:border-primary/50 hover:bg-muted/30 focus:outline-none"
             >
-              <div className="w-12 h-12 rounded-full flex items-center justify-center mb-3 bg-muted group-hover:bg-primary/10 transition-colors">
-                <Plus className="h-6 w-6 text-muted-foreground group-hover:text-primary transition-colors" />
+              <div className="w-16 h-16 rounded-full flex items-center justify-center mb-4 bg-muted group-hover:bg-primary/10 transition-colors">
+                <Plus className="h-8 w-8 text-muted-foreground group-hover:text-primary transition-colors" />
               </div>
-              <span className="text-sm font-medium text-muted-foreground group-hover:text-foreground transition-colors">
+              <span className="text-base font-medium text-muted-foreground group-hover:text-foreground transition-colors">
                 Criar dashboard
               </span>
             </button>
