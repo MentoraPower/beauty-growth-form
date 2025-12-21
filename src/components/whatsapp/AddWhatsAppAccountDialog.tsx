@@ -1,4 +1,4 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,15 +8,23 @@ import { QRCodeSVG } from "qrcode.react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
+interface ExistingAccount {
+  id: string;
+  name: string;
+  phone_number?: string;
+  status: string;
+}
+
 interface AddWhatsAppAccountDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSuccess?: () => void;
+  existingAccount?: ExistingAccount | null;
 }
 
 type ConnectionStatus = "idle" | "creating" | "waiting_scan" | "connected" | "error";
 
-export function AddWhatsAppAccountDialog({ open, onOpenChange, onSuccess }: AddWhatsAppAccountDialogProps) {
+export function AddWhatsAppAccountDialog({ open, onOpenChange, onSuccess, existingAccount }: AddWhatsAppAccountDialogProps) {
   const { toast } = useToast();
   const [sessionName, setSessionName] = useState("");
   const [phoneNumber, setPhoneNumber] = useState("");
@@ -24,6 +32,35 @@ export function AddWhatsAppAccountDialog({ open, onOpenChange, onSuccess }: AddW
   const [qrCode, setQrCode] = useState<string | null>(null);
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [hasInitialized, setHasInitialized] = useState(false);
+
+  // Auto-connect existing account when dialog opens
+  React.useEffect(() => {
+    if (open && existingAccount && !hasInitialized) {
+      setHasInitialized(true);
+      setSessionId(existingAccount.id);
+      setSessionName(existingAccount.name);
+      setPhoneNumber(existingAccount.phone_number || "");
+      // Automatically try to connect and get QR code
+      connectExistingSession(existingAccount.id);
+    }
+    
+    if (!open) {
+      setHasInitialized(false);
+    }
+  }, [open, existingAccount, hasInitialized]);
+
+  const connectExistingSession = async (id: string) => {
+    setStatus("creating");
+    setErrorMessage(null);
+    try {
+      await connectSession(id);
+    } catch (error: any) {
+      console.error("Error connecting existing session:", error);
+      setStatus("error");
+      setErrorMessage(error.message || "Erro ao conectar sessão");
+    }
+  };
 
   const resetState = () => {
     setSessionName("");
@@ -32,6 +69,7 @@ export function AddWhatsAppAccountDialog({ open, onOpenChange, onSuccess }: AddW
     setQrCode(null);
     setSessionId(null);
     setErrorMessage(null);
+    setHasInitialized(false);
   };
 
   const handleClose = () => {

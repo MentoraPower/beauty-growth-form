@@ -118,6 +118,7 @@ const WhatsApp = () => {
   const [whatsappAccounts, setWhatsappAccounts] = useState<Array<{ id: string; name: string; phone_number?: string; status: string }>>([]);
   const [selectedAccountId, setSelectedAccountId] = useState<string | null>(null);
   const [isLoadingAccounts, setIsLoadingAccounts] = useState(false);
+  const [accountToConnect, setAccountToConnect] = useState<{ id: string; name: string; phone_number?: string; status: string } | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -2130,30 +2131,44 @@ const WhatsApp = () => {
                   </div>
                 ) : whatsappAccounts.length > 0 ? (
                   <>
-                    {whatsappAccounts.map((account) => (
-                      <DropdownMenuItem
-                        key={account.id}
-                        className={cn(
-                          "cursor-pointer flex items-center gap-2",
-                          selectedAccountId === account.id && "bg-muted"
-                        )}
-                        onClick={() => setSelectedAccountId(account.id)}
-                      >
-                        <div className={cn(
-                          "w-2 h-2 rounded-full",
-                          account.status?.toLowerCase() === "connected" ? "bg-emerald-500" : "bg-amber-500"
-                        )} />
-                        <div className="flex-1 min-w-0">
-                          <p className="font-medium truncate">{account.name}</p>
-                          {account.phone_number && (
-                            <p className="text-xs text-muted-foreground truncate">{account.phone_number}</p>
+                    {whatsappAccounts.map((account) => {
+                      const isConnected = account.status?.toLowerCase() === "connected";
+                      return (
+                        <DropdownMenuItem
+                          key={account.id}
+                          className={cn(
+                            "cursor-pointer flex items-center gap-2",
+                            selectedAccountId === account.id && "bg-muted"
                           )}
-                        </div>
-                        {selectedAccountId === account.id && (
-                          <Check className="w-4 h-4 text-emerald-500" />
-                        )}
-                      </DropdownMenuItem>
-                    ))}
+                          onClick={() => {
+                            if (isConnected) {
+                              setSelectedAccountId(account.id);
+                            } else {
+                              // Open dialog with QR code for not connected accounts
+                              setAccountToConnect(account);
+                              setShowAddAccountDialog(true);
+                            }
+                          }}
+                        >
+                          <div className={cn(
+                            "w-2 h-2 rounded-full",
+                            isConnected ? "bg-emerald-500" : "bg-amber-500"
+                          )} />
+                          <div className="flex-1 min-w-0">
+                            <p className="font-medium truncate">{account.name}</p>
+                            {account.phone_number && (
+                              <p className="text-xs text-muted-foreground truncate">{account.phone_number}</p>
+                            )}
+                          </div>
+                          {isConnected && selectedAccountId === account.id && (
+                            <Check className="w-4 h-4 text-emerald-500" />
+                          )}
+                          {!isConnected && (
+                            <span className="text-xs text-amber-600">Conectar</span>
+                          )}
+                        </DropdownMenuItem>
+                      );
+                    })}
                     <DropdownMenuSeparator />
                   </>
                 ) : (
@@ -2163,7 +2178,10 @@ const WhatsApp = () => {
                 )}
                 <DropdownMenuItem 
                   className="cursor-pointer"
-                  onClick={() => setShowAddAccountDialog(true)}
+                  onClick={() => {
+                    setAccountToConnect(null);
+                    setShowAddAccountDialog(true);
+                  }}
                 >
                   <Plus className="w-4 h-4 mr-2" />
                   Adicionar conta WhatsApp
@@ -3003,14 +3021,21 @@ const WhatsApp = () => {
       {/* Add WhatsApp Account Dialog */}
       <AddWhatsAppAccountDialog 
         open={showAddAccountDialog} 
-        onOpenChange={setShowAddAccountDialog}
+        onOpenChange={(open) => {
+          setShowAddAccountDialog(open);
+          if (!open) {
+            setAccountToConnect(null);
+          }
+        }}
+        existingAccount={accountToConnect}
         onSuccess={() => {
           toast({
             title: "Conta conectada",
-            description: "Nova conta WhatsApp adicionada com sucesso",
+            description: accountToConnect ? "Conta WhatsApp reconectada com sucesso" : "Nova conta WhatsApp adicionada com sucesso",
           });
           // Refresh accounts list
           fetchWhatsAppAccounts();
+          setAccountToConnect(null);
         }}
       />
     </>
