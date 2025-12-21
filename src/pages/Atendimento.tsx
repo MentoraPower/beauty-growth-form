@@ -17,9 +17,9 @@ export default function Atendimento() {
   };
 
   return (
-    <div className="h-[calc(100vh-4rem)] flex flex-col -mr-6 -mb-6 border-l border-border">
+    <div className="h-[calc(100vh-4.5rem)] flex flex-col -m-6 rounded-2xl overflow-hidden border border-border bg-background">
       {/* Tabs Header */}
-      <div className="flex-shrink-0 border-b border-border px-4 pt-2 pb-0 bg-background">
+      <div className="flex-shrink-0 border-b border-border px-4 pt-2 pb-0">
         <div className="flex gap-1">
           <button
             onClick={() => handleTabChange('whatsapp')}
