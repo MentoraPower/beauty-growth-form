@@ -1956,16 +1956,32 @@ const WhatsApp = (props: WhatsAppProps) => {
   }, [fetchChats]);
 
   // Initial load and cleanup (run once)
+  // Skip if accounts are provided from parent (already loaded)
+  const hasParentAccounts = props.whatsappAccounts && props.whatsappAccounts.length > 0;
+  const hasParentSelectedAccount = props.selectedAccountId !== undefined && props.selectedAccountId !== null;
+  
   useEffect(() => {
+    // If parent already has accounts and selected account, skip init
+    if (hasParentAccounts && hasParentSelectedAccount) {
+      console.log(`[WhatsApp] Using parent state - accounts: ${props.whatsappAccounts?.length}, selectedId: ${props.selectedAccountId}`);
+      setIsInitializingApp(false);
+      setIsInitialLoad(false);
+      return;
+    }
+    
     const init = async () => {
       // STEP 1: Load from database IMMEDIATELY (instant display)
-      // Don't clear state, load cached data first for instant display
+      // Get the session_id to filter by
+      const savedAccountId = localStorage.getItem('whatsapp_selected_account_id');
+      
       try {
-        const { data: cachedChats } = await supabase
+        let query = supabase
           .from("whatsapp_chats")
           .select("*")
           .order("last_message_time", { ascending: false })
           .limit(100);
+        
+        const { data: cachedChats } = await query;
 
         if (cachedChats && cachedChats.length > 0) {
           // Filter and format chats instantly
@@ -1976,7 +1992,7 @@ const WhatsApp = (props: WhatsAppProps) => {
           if (validChats.length > 0) {
             setChats(validChats);
             chatsRef.current = validChats;
-            setIsInitialLoad(false); // Hide loading immediately since we have cached data
+            setIsInitialLoad(false);
             setIsInitializingApp(false);
             console.log(`[WhatsApp] Instant load: ${validChats.length} chats from cache`);
           }
@@ -2010,24 +2026,28 @@ const WhatsApp = (props: WhatsAppProps) => {
         console.error("Cleanup error:", error);
       }
 
-      // STEP 3: Fetch WhatsApp accounts in background
-      const accounts = await fetchWhatsAppAccounts();
-      console.log(`[WhatsApp] Init - accounts loaded: ${accounts.length}`);
-      
-      // If no accounts and no cached data, do a full fetch
-      if (accounts.length === 0 && chats.length === 0) {
-        console.log(`[WhatsApp] No accounts and no cache, fetching all chats`);
-        await fetchChats(true);
-        setIsInitializingApp(false);
+      // STEP 3: Fetch WhatsApp accounts in background (only if not provided by parent)
+      if (!hasParentAccounts) {
+        const accounts = await fetchWhatsAppAccounts();
+        console.log(`[WhatsApp] Init - accounts loaded: ${accounts.length}`);
+        
+        // If no accounts and no cached data, do a full fetch
+        if (accounts.length === 0 && chats.length === 0) {
+          console.log(`[WhatsApp] No accounts and no cache, fetching all chats`);
+          await fetchChats(true);
+          setIsInitializingApp(false);
+        }
       }
     };
 
     init();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [hasParentAccounts, hasParentSelectedAccount]);
 
   // Reload chats when switching WhatsApp accounts (or on first account selection)
-  const prevAccountIdRef = useRef<string | null>(null);
+  // Initialize with parent's value to avoid unnecessary reload on mount
+  const prevAccountIdRef = useRef<string | null>(hasParentSelectedAccount ? selectedAccountId : null);
+  const hasLoadedOnceRef = useRef(false);
   
   useEffect(() => {
     // Skip if no account selected yet (waiting for accounts to load)
@@ -2044,11 +2064,12 @@ const WhatsApp = (props: WhatsAppProps) => {
     
     const selectedAccount = whatsappAccounts.find(acc => acc.id === selectedAccountId);
     const isAccountChange = prevAccountIdRef.current !== null && prevAccountIdRef.current !== selectedAccountId;
+    const isFirstLoad = !hasLoadedOnceRef.current;
     prevAccountIdRef.current = selectedAccountId;
     
-    console.log(`[WhatsApp] Account selected/changed - id: ${selectedAccountId}, isChange: ${isAccountChange}, api_key: ${selectedAccount?.api_key?.substring(0, 15) || "none"}..., name: ${selectedAccount?.name || "unknown"}`);
+    console.log(`[WhatsApp] Account selected/changed - id: ${selectedAccountId}, isChange: ${isAccountChange}, isFirstLoad: ${isFirstLoad}, api_key: ${selectedAccount?.api_key?.substring(0, 15) || "none"}..., name: ${selectedAccount?.name || "unknown"}`);
     
-    // Only clear state if actually switching accounts (not on first load)
+    // Only clear state if actually switching accounts (not on first load or tab switch)
     if (isAccountChange) {
       setIsAccountChanging(true);
       setChats([]);
@@ -2057,6 +2078,15 @@ const WhatsApp = (props: WhatsAppProps) => {
       setMessages([]);
       pendingChatUpdatesRef.current.clear();
     }
+    
+    // Skip reload if we already have chats for this account (tab switch case)
+    if (!isFirstLoad && !isAccountChange && chats.length > 0) {
+      console.log(`[WhatsApp] Already have ${chats.length} chats, skipping reload (tab switch)`);
+      setIsInitializingApp(false);
+      return;
+    }
+    
+    hasLoadedOnceRef.current = true;
     
     const reloadChatsForAccount = async () => {
       try {
@@ -2078,7 +2108,7 @@ const WhatsApp = (props: WhatsAppProps) => {
     };
     
     reloadChatsForAccount();
-  }, [selectedAccountId, whatsappAccounts, fetchChats, syncAllChats, fetchMissingPhotos, fetchWhatsAppGroups]);
+  }, [selectedAccountId, whatsappAccounts, fetchChats, syncAllChats, fetchMissingPhotos, fetchWhatsAppGroups, chats.length]);
   useEffect(() => {
     const phoneParam = searchParams.get("phone");
     if (!phoneParam || chats.length === 0 || selectedChat) return;
