@@ -11,7 +11,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Plus, Trash2, Copy, Check, X } from "lucide-react";
+import { Plus, Trash2, Copy, Check, X, Code } from "lucide-react";
 
 
 interface CustomField {
@@ -36,12 +36,42 @@ export function CustomFieldsPanel({ subOriginId, isOpen, onClose, onFieldsChange
   const [fields, setFields] = useState<CustomField[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [copiedWebhook, setCopiedWebhook] = useState(false);
   
   const [newField, setNewField] = useState({
     field_label: "",
     field_type: "text",
     options: "",
   });
+
+  const generateWebhookModel = () => {
+    const model: Record<string, string> = {};
+    fields.forEach(field => {
+      switch (field.field_type) {
+        case "number":
+          model[field.id] = "123";
+          break;
+        case "boolean":
+          model[field.id] = "true";
+          break;
+        case "select":
+          const options = field.options as string[] | null;
+          model[field.id] = options?.[0] || "opcao";
+          break;
+        default:
+          model[field.id] = "valor";
+      }
+    });
+    return JSON.stringify({ custom_fields: model }, null, 2);
+  };
+
+  const copyWebhookModel = () => {
+    const model = generateWebhookModel();
+    navigator.clipboard.writeText(model);
+    setCopiedWebhook(true);
+    setTimeout(() => setCopiedWebhook(false), 2000);
+    toast.success("Modelo copiado!");
+  };
 
   const fetchFields = async () => {
     const { data, error } = await supabase
@@ -156,7 +186,7 @@ export function CustomFieldsPanel({ subOriginId, isOpen, onClose, onFieldsChange
       }`}
     >
       <div className="w-80 h-full overflow-y-auto">
-      <div className="sticky top-0 bg-background z-10 p-4 border-b border-border rounded-t-xl">
+      <div className="sticky top-0 bg-background z-10 p-4 border-b border-border rounded-t-xl space-y-3">
         <div className="flex items-center justify-between">
           <div>
             <h3 className="font-semibold text-sm">Campos Personalizados</h3>
@@ -168,6 +198,27 @@ export function CustomFieldsPanel({ subOriginId, isOpen, onClose, onFieldsChange
             <X className="h-4 w-4" />
           </Button>
         </div>
+        
+        {fields.length > 0 && (
+          <Button 
+            variant="outline" 
+            size="sm" 
+            className="w-full gap-2 text-xs"
+            onClick={copyWebhookModel}
+          >
+            {copiedWebhook ? (
+              <>
+                <Check className="h-3.5 w-3.5 text-green-500" />
+                Copiado!
+              </>
+            ) : (
+              <>
+                <Code className="h-3.5 w-3.5" />
+                Copiar modelo webhook
+              </>
+            )}
+          </Button>
+        )}
       </div>
 
       <div className="p-4 space-y-4">
