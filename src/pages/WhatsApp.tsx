@@ -118,6 +118,7 @@ const WhatsApp = () => {
   const [whatsappAccounts, setWhatsappAccounts] = useState<Array<{ id: string; name: string; phone_number?: string; status: string; api_key?: string }>>([]);
   const [selectedAccountId, setSelectedAccountId] = useState<string | null>(null);
   const [isLoadingAccounts, setIsLoadingAccounts] = useState(false);
+  const [isAccountChanging, setIsAccountChanging] = useState(false);
   const [accountToConnect, setAccountToConnect] = useState<{ id: string; name: string; phone_number?: string; status: string; api_key?: string } | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
@@ -1735,22 +1736,30 @@ const WhatsApp = () => {
     const selectedAccount = whatsappAccounts.find(acc => acc.id === selectedAccountId);
     console.log(`[WhatsApp] Account ${isFirstLoad ? "selected" : "changed"} - id: ${selectedAccountId}, api_key: ${selectedAccount?.api_key?.substring(0, 15) || "none"}..., name: ${selectedAccount?.name || "unknown"}`);
     
+    // IMMEDIATE CLEAR: Prevent showing old chats during account change
+    if (!isFirstLoad) {
+      setIsAccountChanging(true);
+      setChats([]);           // Clear immediately
+      chatsRef.current = [];
+      setSelectedChat(null);
+      setMessages([]);
+      pendingChatUpdatesRef.current.clear();
+    }
+    
     const reloadChatsForAccount = async () => {
-      setIsInitialLoad(true);
-      if (!isFirstLoad) {
-        setSelectedChat(null);
-        setMessages([]);
-      }
-      
-      // Fetch chats for the selected account
-      await fetchChats(true);
-      
-      // Sync and fetch photos in background (only on subsequent changes)
-      if (!isFirstLoad) {
-        syncAllChats();
-        setTimeout(() => {
-          fetchMissingPhotos();
-        }, 1000);
+      try {
+        // Fetch chats for the selected account
+        await fetchChats(true);
+        
+        // Sync and fetch photos in background (only on subsequent changes)
+        if (!isFirstLoad) {
+          syncAllChats();
+          setTimeout(() => {
+            fetchMissingPhotos();
+          }, 1000);
+        }
+      } finally {
+        setIsAccountChanging(false);
       }
     };
     
@@ -1770,22 +1779,41 @@ const WhatsApp = () => {
     }
   }, [chats, searchParams, selectedChat, setSearchParams]);
 
-  // Realtime subscription for chats - UPDATE INCREMENTALLY
+  // Realtime subscription for chats - UPDATE INCREMENTALLY with SESSION ISOLATION
   useEffect(() => {
+    const selectedAccount = whatsappAccounts.find(acc => acc.id === selectedAccountId);
+    const currentSessionId = selectedAccount?.api_key;
+    
+    // Don't create channel if no session selected
+    if (!currentSessionId) {
+      console.log(`[WhatsApp Realtime] No session selected, skipping chat channel`);
+      return;
+    }
+    
+    // Create unique channel per session to ensure proper cleanup/recreation
+    const channelName = `whatsapp-chats-${currentSessionId.substring(0, 12)}`;
+    console.log(`[WhatsApp Realtime] Creating chat channel: ${channelName}`);
+    
     const channel = supabase
-      .channel("whatsapp-chats-realtime")
+      .channel(channelName)
       .on(
         "postgres_changes",
         { event: "INSERT", schema: "public", table: "whatsapp_chats" },
         (payload) => {
-          updateChatInState(payload.new);
+          const chat = payload.new as any;
+          // STRICT FILTER: Only process if session_id matches
+          if (chat?.session_id !== currentSessionId) return;
+          updateChatInState(chat);
         }
       )
       .on(
         "postgres_changes",
         { event: "UPDATE", schema: "public", table: "whatsapp_chats" },
         (payload) => {
-          updateChatInState(payload.new);
+          const chat = payload.new as any;
+          // STRICT FILTER: Only process if session_id matches
+          if (chat?.session_id !== currentSessionId) return;
+          updateChatInState(chat);
         }
       )
       .on(
@@ -1794,7 +1822,6 @@ const WhatsApp = () => {
         (payload) => {
           const deletedChat = payload.old as any;
           // ISOLATION: Only remove if this chat was in our current session
-          // We check if the chat exists in our current state (which is already filtered by session)
           const existsInState = chatsRef.current.some(c => c.id === deletedChat?.id);
           if (existsInState) {
             removeChatFromState(deletedChat.id);
@@ -1804,28 +1831,38 @@ const WhatsApp = () => {
       .subscribe();
 
     return () => {
+      console.log(`[WhatsApp Realtime] Removing chat channel: ${channelName}`);
       supabase.removeChannel(channel);
     };
-  }, [updateChatInState, removeChatFromState]);
+  }, [updateChatInState, removeChatFromState, selectedAccountId, whatsappAccounts]);
 
-  // Global realtime subscription for ALL messages - updates chat list sidebar
+  // Global realtime subscription for ALL messages - updates chat list sidebar with SESSION ISOLATION
   useEffect(() => {
     // Get current session_id for filtering
     const selectedAccount = whatsappAccounts.find(acc => acc.id === selectedAccountId);
     const currentSessionId = selectedAccount?.api_key;
     
+    // Don't create channel if no session selected
+    if (!currentSessionId) {
+      console.log(`[WhatsApp Realtime] No session selected, skipping message channel`);
+      return;
+    }
+    
+    // Create unique channel per session
+    const channelName = `whatsapp-messages-global-${currentSessionId.substring(0, 12)}`;
+    console.log(`[WhatsApp Realtime] Creating message channel: ${channelName}`);
+    
     const channel = supabase
-      .channel("whatsapp-messages-global")
+      .channel(channelName)
       .on(
         "postgres_changes",
         { event: "INSERT", schema: "public", table: "whatsapp_messages" },
         async (payload) => {
           const msg = payload.new as any;
           
-          // ISOLATION: Only process messages from the current session
-          if (currentSessionId && msg.session_id !== currentSessionId) {
-            console.log(`[WhatsApp] Ignoring message from different session: ${msg.session_id?.substring(0, 10) || 'null'}`);
-            return;
+          // STRICT FILTER: Only process messages from the current session
+          if (msg.session_id !== currentSessionId) {
+            return; // Silently ignore - no log spam
           }
           
           // If this is for a different chat than selected, refresh that chat's data
@@ -1836,7 +1873,8 @@ const WhatsApp = () => {
               .eq("id", msg.chat_id)
               .single();
             
-            if (updatedChat) {
+            // Double-check session matches before updating
+            if (updatedChat && updatedChat.session_id === currentSessionId) {
               updateChatInState(updatedChat);
             }
           }
@@ -1845,6 +1883,7 @@ const WhatsApp = () => {
       .subscribe();
 
     return () => {
+      console.log(`[WhatsApp Realtime] Removing message channel: ${channelName}`);
       supabase.removeChannel(channel);
     };
   }, [selectedChat?.id, updateChatInState, selectedAccountId, whatsappAccounts]);
@@ -2248,6 +2287,19 @@ const WhatsApp = () => {
   return (
     <>
       <div className="h-full min-h-0 flex rounded-2xl overflow-hidden border border-border/50 bg-card -mt-4 relative z-50">
+        {/* Account Change Loading Overlay */}
+        {isAccountChanging && (
+          <div className="absolute inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center">
+            <div className="text-center">
+              <div className="w-8 h-8 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin mx-auto mb-3" />
+              <p className="text-sm text-muted-foreground font-medium">Carregando conta...</p>
+              <p className="text-xs text-muted-foreground/60 mt-1">
+                {whatsappAccounts.find(a => a.id === selectedAccountId)?.name || ""}
+              </p>
+            </div>
+          </div>
+        )}
+        
         {/* Left Sidebar - Chat List */}
         <div className="w-[380px] flex flex-col border-r border-border/50 bg-card">
           {/* Header */}
