@@ -44,13 +44,14 @@ interface WhatsAppChatDropdownProps {
   phone: string;
   countryCode: string;
   contactName: string;
+  sessionId?: string; // WhatsApp account session ID for multi-account isolation
 }
 
 const DEFAULT_AVATAR = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyMTIgMjEyIj48cGF0aCBmaWxsPSIjREZFNUU3IiBkPSJNMCAwaDIxMnYyMTJIMHoiLz48cGF0aCBmaWxsPSIjRkZGIiBkPSJNMTA2IDEwNmMtMjUuNCAwLTQ2LTIwLjYtNDYtNDZzMjAuNi00NiA0Ni00NiA0NiAyMC42IDQ2IDQ2LTIwLjYgNDYtNDYgNDZ6bTAgMTNjMzAuNiAwIDkyIDE1LjQgOTIgNDZ2MjNIMTR2LTIzYzAtMzAuNiA2MS40LTQ2IDkyLTQ2eiIvPjwvc3ZnPg==";
 
 type ViewMode = "chat" | "list";
 
-export function WhatsAppChatDropdown({ phone, countryCode, contactName }: WhatsAppChatDropdownProps) {
+export function WhatsAppChatDropdown({ phone, countryCode, contactName, sessionId }: WhatsAppChatDropdownProps) {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [isOpen, setIsOpen] = useState(false);
@@ -120,10 +121,18 @@ export function WhatsAppChatDropdown({ phone, countryCode, contactName }: WhatsA
 
     setIsLoading(true);
     try {
-      const { data: existingChat } = await supabase
+      // Build query with session_id filter for account isolation
+      let query = supabase
         .from("whatsapp_chats")
-        .select("id, photo_url, last_message_time")
-        .in("phone", candidates)
+        .select("id, photo_url, last_message_time, session_id")
+        .in("phone", candidates);
+      
+      // Filter by session_id if provided for account isolation
+      if (sessionId) {
+        query = query.eq("session_id", sessionId);
+      }
+      
+      const { data: existingChat } = await query
         .order("last_message_time", { ascending: false })
         .limit(1)
         .maybeSingle();
@@ -161,15 +170,22 @@ export function WhatsAppChatDropdown({ phone, countryCode, contactName }: WhatsA
     } finally {
       setIsLoading(false);
     }
-  }, [formattedPhone, phone, countryCode]);
+  }, [formattedPhone, phone, countryCode, sessionId]);
 
-  // Fetch all chats for list view
+  // Fetch all chats for list view - filtered by session_id for account isolation
   const fetchAllChats = useCallback(async () => {
     setIsLoading(true);
     try {
-      const { data } = await supabase
+      let query = supabase
         .from("whatsapp_chats")
-        .select("*")
+        .select("*");
+      
+      // Filter by session_id if provided for account isolation
+      if (sessionId) {
+        query = query.eq("session_id", sessionId);
+      }
+      
+      const { data } = await query
         .order("last_message_time", { ascending: false })
         .limit(50);
 
@@ -189,20 +205,26 @@ export function WhatsAppChatDropdown({ phone, countryCode, contactName }: WhatsA
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [sessionId]);
 
-  // Select a chat from list view
+  // Select a chat from list view - with session_id filter for account isolation
   const selectChatFromList = async (chatPhone: string, chatName: string) => {
     setSelectedChat({ phone: chatPhone, name: chatName });
     setViewMode("chat");
     setIsLoading(true);
 
     try {
-      const { data: existingChat } = await supabase
+      let query = supabase
         .from("whatsapp_chats")
         .select("id, photo_url")
-        .eq("phone", chatPhone)
-        .maybeSingle();
+        .eq("phone", chatPhone);
+      
+      // Filter by session_id if provided for account isolation
+      if (sessionId) {
+        query = query.eq("session_id", sessionId);
+      }
+      
+      const { data: existingChat } = await query.maybeSingle();
 
       if (existingChat) {
         setChatData(existingChat);
@@ -348,6 +370,7 @@ export function WhatsAppChatDropdown({ phone, countryCode, contactName }: WhatsA
           action: "send-text",
           phone: formattedPhone,
           text: messageText,
+          sessionId, // Pass sessionId for account isolation
         },
       });
 
@@ -356,19 +379,27 @@ export function WhatsAppChatDropdown({ phone, countryCode, contactName }: WhatsA
       const messageId = data?.messageId || `local-${Date.now()}`;
       const whatsappKeyId = data?.whatsappKeyId || null;
 
-      // Get or create chat
+      // Get or create chat - with session_id for account isolation
       let chatId = chatData?.id;
       if (!chatId) {
+        // Build chat data with session_id
+        const chatUpsertData: any = {
+          phone: formattedPhone,
+          name: contactName,
+          last_message: messageText,
+          last_message_time: new Date().toISOString(),
+          last_message_status: "SENT",
+          last_message_from_me: true,
+        };
+        
+        // Add session_id for account isolation
+        if (sessionId) {
+          chatUpsertData.session_id = sessionId;
+        }
+        
         const { data: newChat } = await supabase
           .from("whatsapp_chats")
-          .upsert({
-            phone: formattedPhone,
-            name: contactName,
-            last_message: messageText,
-            last_message_time: new Date().toISOString(),
-            last_message_status: "SENT",
-            last_message_from_me: true,
-          }, { onConflict: "phone" })
+          .upsert(chatUpsertData, { onConflict: "phone,session_id" })
           .select()
           .single();
         
@@ -530,6 +561,7 @@ export function WhatsAppChatDropdown({ phone, countryCode, contactName }: WhatsA
             action: "send-audio",
             phone: currentChatPhone,
             audioBase64: base64,
+            sessionId, // Pass sessionId for account isolation
           },
         });
 
@@ -588,6 +620,7 @@ export function WhatsAppChatDropdown({ phone, countryCode, contactName }: WhatsA
             [`${type}Base64`]: base64,
             filename: file.name,
             mimeType: file.type,
+            sessionId, // Pass sessionId for account isolation
           },
         });
 
@@ -620,6 +653,7 @@ export function WhatsAppChatDropdown({ phone, countryCode, contactName }: WhatsA
           action: "send-audio",
           phone: currentChatPhone,
           audioBase64: base64Data,
+          sessionId, // Pass sessionId for account isolation
         },
       });
 
