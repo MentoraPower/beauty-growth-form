@@ -942,7 +942,7 @@ export default function InstagramPage() {
                   
                   return (
                     <div
-                      key={message.id}
+                      key={message.message_id || message.id}
                       className={cn("flex flex-col", message.fromMe ? "items-end" : "items-start")}
                     >
                       <div
