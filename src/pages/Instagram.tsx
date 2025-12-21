@@ -387,19 +387,13 @@ export default function InstagramPage() {
         // Update temp message to sent status
         updateTempMessageStatus(tempId, { status: 'SENT' });
         
-        // Save to cache for persistence
-        const sentMessage: Message = {
-          ...tempMessage,
-          status: 'SENT',
-        };
-        saveSentMessageToCache(currentChat.conversation_id, sentMessage);
-        
-        // Refresh messages after short delay to get server confirmation
+        // Refresh messages after short delay to get real message from API
+        // This will replace the temp message with the real one
         setTimeout(() => {
           if (myInstagramUserId) {
             fetchMessages(currentChat.conversation_id, myInstagramUserId);
           }
-        }, 1500);
+        }, 2000);
       } else {
         throw new Error(data?.error || 'Erro ao enviar mensagem');
       }
@@ -486,32 +480,28 @@ export default function InstagramPage() {
       if (error) throw error;
 
       if (data.success) {
-        const sentMessage: Message = {
-          ...tempMessage,
-          id: data.messageId || tempId,
-          message_id: data.messageId || tempId,
-          status: 'SENT',
-        };
-        updateTempMessageStatus(tempId, { 
-          status: 'SENT',
-          id: sentMessage.id,
-          message_id: sentMessage.message_id 
-        });
-        
-        // Save to cache
-        saveSentMessageToCache(selectedChat.conversation_id, sentMessage);
+        // Update temp message with real ID if available
+        if (data.messageId) {
+          updateTempMessageStatus(tempId, { 
+            status: 'SENT',
+            id: data.messageId,
+            message_id: data.messageId 
+          });
+        } else {
+          updateTempMessageStatus(tempId, { status: 'SENT' });
+        }
         
         toast({
           title: "Mídia enviada",
           description: isImage ? "Imagem enviada com sucesso." : "Vídeo enviado com sucesso.",
         });
         
-        // Refresh messages
+        // Refresh messages to get real message from API
         setTimeout(() => {
           if (myInstagramUserId) {
             fetchMessages(selectedChat.conversation_id, myInstagramUserId);
           }
-        }, 1500);
+        }, 2000);
       } else {
         throw new Error(data.error || 'Erro ao enviar mídia');
       }
