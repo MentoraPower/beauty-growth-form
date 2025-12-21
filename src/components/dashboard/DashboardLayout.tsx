@@ -560,7 +560,7 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
           }}
           className="hidden lg:block fixed"
         >
-          <div className="h-full overflow-auto relative bg-card rounded-2xl p-6 border border-black/5">
+          <div className="h-full overflow-auto relative bg-card rounded-2xl p-6 border-t border-r border-b border-black/5">
             <PageTransition>
               {children}
             </PageTransition>
