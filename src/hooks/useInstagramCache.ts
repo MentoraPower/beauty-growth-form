@@ -32,6 +32,7 @@ export function useInstagramCache() {
   const [isLoadingChats, setIsLoadingChats] = useState(false);
   const [isLoadingMessages, setIsLoadingMessages] = useState(false);
   const isFetchingFromApiRef = useRef(false);
+  const currentConversationIdRef = useRef<string | null>(null);
 
   // Load chats from database cache (instant)
   const loadChatsFromCache = useCallback(async (): Promise<InstagramChat[]> => {
@@ -44,7 +45,7 @@ export function useInstagramCache() {
       if (error) throw error;
 
       return (data || []).map(chat => ({
-        id: chat.id,
+        id: chat.conversation_id, // Use conversation_id as the main id
         conversation_id: chat.conversation_id,
         name: chat.participant_name || chat.participant_username || 'Usuário',
         lastMessage: chat.last_message || '',
@@ -96,7 +97,7 @@ export function useInstagramCache() {
       if (error) throw error;
 
       return (data || []).map(msg => ({
-        id: msg.id,
+        id: msg.message_id, // Use message_id as the main id
         message_id: msg.message_id,
         text: msg.text,
         time: msg.created_at,
@@ -116,7 +117,11 @@ export function useInstagramCache() {
   // Save messages to database cache
   const saveMessagesToCache = useCallback(async (conversationId: string, messagesToSave: InstagramMessage[]) => {
     try {
-      const records = messagesToSave.map(msg => ({
+      // Filter out temp messages
+      const validMessages = messagesToSave.filter(msg => !msg.id.startsWith('temp-'));
+      if (validMessages.length === 0) return;
+
+      const records = validMessages.map(msg => ({
         message_id: msg.message_id || msg.id,
         conversation_id: conversationId,
         text: msg.text,
@@ -136,6 +141,30 @@ export function useInstagramCache() {
       if (error) throw error;
     } catch (error) {
       console.error('[InstagramCache] Error saving messages to cache:', error);
+    }
+  }, []);
+
+  // Save a single sent message to cache
+  const saveSentMessageToCache = useCallback(async (conversationId: string, message: InstagramMessage) => {
+    try {
+      const { error } = await supabase
+        .from('instagram_messages')
+        .upsert({
+          message_id: message.message_id || message.id,
+          conversation_id: conversationId,
+          text: message.text,
+          from_me: message.fromMe,
+          status: message.status,
+          media_type: message.mediaType,
+          media_url: message.mediaUrl,
+          share_link: message.shareLink,
+          share_name: message.shareName,
+          created_at: message.time,
+        }, { onConflict: 'message_id' });
+
+      if (error) throw error;
+    } catch (error) {
+      console.error('[InstagramCache] Error saving sent message to cache:', error);
     }
   }, []);
 
@@ -198,9 +227,15 @@ export function useInstagramCache() {
 
   // Fetch messages: load from cache first, then update from API
   const fetchMessages = useCallback(async (conversationId: string, myInstagramUserId: string, forceRefresh = false) => {
+    // Track current conversation to avoid race conditions
+    currentConversationIdRef.current = conversationId;
+
     // Step 1: Load from cache instantly
     if (!forceRefresh) {
       const cachedMessages = await loadMessagesFromCache(conversationId);
+      // Check if we're still on the same conversation
+      if (currentConversationIdRef.current !== conversationId) return;
+      
       if (cachedMessages.length > 0) {
         setMessages(cachedMessages);
       } else {
@@ -215,6 +250,9 @@ export function useInstagramCache() {
       const { data, error } = await supabase.functions.invoke('instagram-api', {
         body: { action: 'get-messages', params: { conversationId, limit: 100 } }
       });
+
+      // Check if we're still on the same conversation
+      if (currentConversationIdRef.current !== conversationId) return;
 
       if (error) throw error;
 
@@ -286,6 +324,7 @@ export function useInstagramCache() {
     clearMessages,
     setChats,
     setMessages,
+    saveSentMessageToCache,
     // Expose a wrapper for temp messages
     addTempMessage: (message: InstagramMessage) => {
       setMessages(prev => [...prev, message]);
