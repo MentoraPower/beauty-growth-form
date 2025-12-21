@@ -73,40 +73,62 @@ export function ChartRenderer({ chartType, value, label, width, height, isLoadin
 
   switch (chartType) {
     case 'pie':
+      const pieRadius = Math.min(chartHeight * 0.38, (width - 120) * 0.35);
       return (
-        <div className="w-full" style={{ height: chartHeight }}>
-          <ResponsiveContainer width="100%" height="100%">
-            <PieChart>
-              <Pie
-                data={pieData}
-                cx="50%"
-                cy="50%"
-                innerRadius={chartHeight * 0.25}
-                outerRadius={chartHeight * 0.4}
-                paddingAngle={2}
-                dataKey="value"
-                stroke="none"
-              >
-                {pieData.map((_, index) => (
-                  <Cell key={`cell-${index}`} fill={PIE_COLORS[index % PIE_COLORS.length]} />
-                ))}
-              </Pie>
-              <Tooltip
-                contentStyle={{
-                  backgroundColor: "white",
-                  border: "1px solid #e5e5e5",
-                  borderRadius: "8px",
-                  boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1)",
-                }}
-                formatter={(val: number) => [`${val} leads`, ""]}
-              />
-            </PieChart>
-          </ResponsiveContainer>
-          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-            <div className="text-center">
-              <p className="text-2xl font-bold text-foreground">{value}</p>
-              <p className="text-xs text-muted-foreground">Total</p>
+        <div className="w-full flex items-center" style={{ height: chartHeight }}>
+          {/* Chart */}
+          <div className="flex-1 relative" style={{ height: chartHeight }}>
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie
+                  data={pieData}
+                  cx="50%"
+                  cy="50%"
+                  innerRadius={pieRadius * 0.6}
+                  outerRadius={pieRadius}
+                  paddingAngle={3}
+                  dataKey="value"
+                  stroke="none"
+                >
+                  {pieData.map((_, index) => (
+                    <Cell key={`cell-${index}`} fill={PIE_COLORS[index % PIE_COLORS.length]} />
+                  ))}
+                </Pie>
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: "white",
+                    border: "1px solid #e5e5e5",
+                    borderRadius: "8px",
+                    boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1)",
+                    padding: "8px 12px",
+                  }}
+                  formatter={(val: number, name: string) => [`${val}`, name]}
+                />
+              </PieChart>
+            </ResponsiveContainer>
+            {/* Center text */}
+            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+              <div className="text-center">
+                <p className="text-2xl font-bold text-foreground">{value}</p>
+                <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Total</p>
+              </div>
             </div>
+          </div>
+          
+          {/* Legend */}
+          <div className="w-24 shrink-0 flex flex-col gap-1.5 pr-2">
+            {pieData.map((entry, index) => (
+              <div key={entry.name} className="flex items-center gap-2">
+                <div 
+                  className="w-2.5 h-2.5 rounded-full shrink-0" 
+                  style={{ backgroundColor: PIE_COLORS[index % PIE_COLORS.length] }}
+                />
+                <div className="min-w-0 flex-1">
+                  <p className="text-[10px] text-muted-foreground truncate leading-tight">{entry.name}</p>
+                  <p className="text-xs font-medium text-foreground leading-tight">{entry.value}</p>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       );
