@@ -20,6 +20,7 @@ import { RecordingWaveform } from "@/components/whatsapp/RecordingWaveform";
 import ImageLightbox from "@/components/whatsapp/ImageLightbox";
 import { formatWhatsAppText, stripWhatsAppFormatting } from "@/lib/whatsapp-format";
 import { AddWhatsAppAccountDialog } from "@/components/whatsapp/AddWhatsAppAccountDialog";
+import { GroupsList, WhatsAppGroup } from "@/components/whatsapp/GroupsList";
 
 interface Chat {
   id: string;
@@ -121,6 +122,8 @@ const WhatsApp = () => {
   const [isAccountChanging, setIsAccountChanging] = useState(false);
   const [isInitializingApp, setIsInitializingApp] = useState(true);
   const [accountToConnect, setAccountToConnect] = useState<{ id: string; name: string; phone_number?: string; status: string; api_key?: string } | null>(null);
+  const [whatsappGroups, setWhatsappGroups] = useState<WhatsAppGroup[]>([]);
+  const [isLoadingGroups, setIsLoadingGroups] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -373,6 +376,57 @@ const WhatsApp = () => {
       setIsLoadingAccounts(false);
     }
   }, [selectedAccountId]);
+
+  // Fetch WhatsApp groups from WaSender API
+  const fetchWhatsAppGroups = useCallback(async () => {
+    const selectedAccount = whatsappAccounts.find(acc => acc.id === selectedAccountId);
+    const sessionApiKey = selectedAccount?.api_key;
+    
+    if (!sessionApiKey) {
+      console.log("[WhatsApp] No api_key, skipping group fetch");
+      setWhatsappGroups([]);
+      return;
+    }
+
+    setIsLoadingGroups(true);
+    try {
+      console.log(`[WhatsApp] Fetching groups for session: ${sessionApiKey.substring(0, 10)}...`);
+      
+      const response = await fetch("https://www.wasenderapi.com/api/groups", {
+        method: "GET",
+        headers: {
+          "Authorization": `Bearer ${sessionApiKey}`,
+          "Content-Type": "application/json",
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to fetch groups: ${response.status}`);
+      }
+
+      const result = await response.json();
+      console.log(`[WhatsApp] Groups API response:`, result);
+
+      if (result.success && Array.isArray(result.data)) {
+        const groups: WhatsAppGroup[] = result.data.map((g: any) => ({
+          id: g.id || g.jid || "",
+          name: g.subject || g.name || "Grupo",
+          participantCount: g.participants?.length || g.size || 0,
+          photoUrl: g.profilePicture || g.pictureUrl || null,
+        }));
+        
+        console.log(`[WhatsApp] Loaded ${groups.length} groups`);
+        setWhatsappGroups(groups);
+      } else {
+        setWhatsappGroups([]);
+      }
+    } catch (error: any) {
+      console.error("[WhatsApp] Error fetching groups:", error);
+      setWhatsappGroups([]);
+    } finally {
+      setIsLoadingGroups(false);
+    }
+  }, [selectedAccountId, whatsappAccounts]);
 
   // Initial load - fetch chats once, optionally filtered by selected account's api_key
   const fetchChats = useCallback(async (showLoading = false) => {
@@ -1745,6 +1799,9 @@ const WhatsApp = () => {
         // Fetch chats for the selected account
         await fetchChats(true);
         
+        // Fetch groups for the account
+        fetchWhatsAppGroups();
+        
         // Sync and fetch photos in background
         syncAllChats();
         setTimeout(() => {
@@ -1757,7 +1814,7 @@ const WhatsApp = () => {
     };
     
     reloadChatsForAccount();
-  }, [selectedAccountId, whatsappAccounts, fetchChats, syncAllChats, fetchMissingPhotos]);
+  }, [selectedAccountId, whatsappAccounts, fetchChats, syncAllChats, fetchMissingPhotos, fetchWhatsAppGroups]);
   useEffect(() => {
     const phoneParam = searchParams.get("phone");
     if (!phoneParam || chats.length === 0 || selectedChat) return;
@@ -2537,6 +2594,13 @@ const WhatsApp = () => {
               )}
             </div>
           </ScrollArea>
+          
+          {/* Groups List */}
+          <GroupsList 
+            groups={whatsappGroups}
+            isLoading={isLoadingGroups}
+            onRefresh={fetchWhatsAppGroups}
+          />
         </div>
 
         {/* Right Panel - Chat Area */}
