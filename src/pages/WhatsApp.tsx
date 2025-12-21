@@ -396,7 +396,7 @@ const WhatsApp = () => {
     try {
       console.log(`[WhatsApp] Fetching groups for session: ${sessionApiKey.substring(0, 10)}...`);
       
-      // First, try to load from database
+      // STEP 1: Load from database FIRST (instant display)
       const { data: dbGroups } = await supabase
         .from("whatsapp_groups")
         .select("*")
@@ -404,7 +404,7 @@ const WhatsApp = () => {
         .order("name", { ascending: true });
 
       if (dbGroups && dbGroups.length > 0) {
-        console.log(`[WhatsApp] Loaded ${dbGroups.length} groups from database`);
+        console.log(`[WhatsApp] Loaded ${dbGroups.length} groups from database (instant)`);
         setWhatsappGroups(dbGroups.map(g => ({
           id: g.id,
           groupJid: g.group_jid,
@@ -412,9 +412,11 @@ const WhatsApp = () => {
           participantCount: g.participant_count || 0,
           photoUrl: g.photo_url,
         })));
+        // Stop loading indicator - we have cached data
+        setIsLoadingGroups(false);
       }
       
-      // Fetch fresh data from API
+      // STEP 2: Fetch fresh data from API in background (no blocking)
       const response = await fetch("https://www.wasenderapi.com/api/groups", {
         method: "GET",
         headers: {
@@ -431,10 +433,7 @@ const WhatsApp = () => {
       console.log(`[WhatsApp] Groups API response:`, result);
 
       if (result.success && Array.isArray(result.data)) {
-        // WaSender has a strict RPM limit (10). The initial /api/groups call already uses 1.
-        let remainingRequests = 9;
-
-        // Create a map of existing groups from DB to preserve values when API doesn't provide them
+        // Create a map of existing groups from DB to preserve values
         const dbGroupsMap = new Map<string, { participant_count: number; photo_url: string | null }>();
         if (dbGroups) {
           for (const dbg of dbGroups) {
@@ -455,101 +454,20 @@ const WhatsApp = () => {
           session_id: string;
         }> = [];
 
+        // Process groups WITHOUT making additional API calls (use cached data)
         for (const g of result.data) {
           const groupId = g.id || g.jid || "";
-
-          // -1 = unknown (avoids showing misleading "0 participantes")
-          let participantCount: number = g.participants?.length ?? g.size ?? -1;
-          let photoUrl: string | null = g.profilePicture || g.pictureUrl || g.imgUrl || null;
-          let description: string | null = null;
-
-          // Get existing values from DB as fallback
           const existingDbGroup = dbGroupsMap.get(groupId);
 
-          if (groupId) {
-            // 1) Profile picture - use DB value as fallback
-            if (!photoUrl && remainingRequests > 0) {
-              remainingRequests -= 1;
-              try {
-                const picResponse = await fetch(
-                  `https://www.wasenderapi.com/api/groups/${encodeURIComponent(groupId)}/picture`,
-                  {
-                    method: "GET",
-                    headers: {
-                      Authorization: `Bearer ${sessionApiKey}`,
-                      "Content-Type": "application/json",
-                    },
-                  }
-                );
-
-                if (picResponse.status === 429) {
-                  remainingRequests = 0;
-                  // Fallback to DB value on rate limit
-                  photoUrl = existingDbGroup?.photo_url || null;
-                } else if (picResponse.ok) {
-                  const picResult = await picResponse.json();
-                  photoUrl = picResult?.data?.imgUrl || existingDbGroup?.photo_url || null;
-                }
-              } catch (e) {
-                console.error("[WhatsApp] Error fetching group picture:", e);
-                photoUrl = existingDbGroup?.photo_url || null;
-              }
-            }
-            // If still no photo but we have one in DB, use it
-            if (!photoUrl && existingDbGroup?.photo_url) {
-              photoUrl = existingDbGroup.photo_url;
-            }
-
-            // 2) Participant count - fetch metadata if unknown OR zero
-            const needsParticipantCount = participantCount <= 0;
-            if (needsParticipantCount && remainingRequests > 0) {
-              remainingRequests -= 1;
-              try {
-                const metaResponse = await fetch(
-                  `https://www.wasenderapi.com/api/groups/${encodeURIComponent(groupId)}/metadata`,
-                  {
-                    method: "GET",
-                    headers: {
-                      Authorization: `Bearer ${sessionApiKey}`,
-                      "Content-Type": "application/json",
-                    },
-                  }
-                );
-
-                if (metaResponse.status === 429) {
-                  remainingRequests = 0;
-                  // Fallback to DB value on rate limit
-                  participantCount = existingDbGroup?.participant_count || 0;
-                } else if (metaResponse.ok) {
-                  const metaResult = await metaResponse.json();
-                  console.log(`[WhatsApp] Group ${groupId} metadata:`, metaResult);
-                  if (metaResult?.success && metaResult?.data) {
-                    participantCount =
-                      metaResult.data.size ??
-                      metaResult.data.participants?.length ??
-                      (participantCount >= 0 ? participantCount : 0);
-                    description = metaResult.data.desc || metaResult.data.description || null;
-                  }
-                }
-              } catch (e) {
-                console.error("[WhatsApp] Error fetching group metadata:", e);
-                participantCount = existingDbGroup?.participant_count || 0;
-              }
-            }
-            // If still unknown (-1) and we have a value in DB, use it
-            if (participantCount < 0 && existingDbGroup?.participant_count) {
-              participantCount = existingDbGroup.participant_count;
-            }
-          }
-
-          // Final fallback to 0 only if we have no data at all
-          const finalParticipantCount = participantCount >= 0 ? participantCount : (existingDbGroup?.participant_count || 0);
+          // Use data from API response first, then fallback to DB cache
+          let participantCount: number = g.participants?.length ?? g.size ?? existingDbGroup?.participant_count ?? 0;
+          let photoUrl: string | null = g.profilePicture || g.pictureUrl || g.imgUrl || existingDbGroup?.photo_url || null;
 
           const groupData: WhatsAppGroup = {
-            id: groupId, // Use JID as id for now (will be replaced after upsert)
+            id: groupId,
             groupJid: groupId,
             name: g.subject || g.name || "Grupo",
-            participantCount: finalParticipantCount,
+            participantCount,
             photoUrl,
           };
           groups.push(groupData);
@@ -558,15 +476,15 @@ const WhatsApp = () => {
             group_jid: groupId,
             name: groupData.name,
             photo_url: photoUrl,
-            participant_count: groupData.participantCount,
-            description,
+            participant_count: participantCount,
+            description: null,
             session_id: sessionApiKey,
           });
         }
 
         setWhatsappGroups(groups);
 
-        // Upsert groups to database
+        // Upsert groups to database (background)
         if (groupsToUpsert.length > 0) {
           const { error: upsertError } = await supabase
             .from("whatsapp_groups")
@@ -578,8 +496,6 @@ const WhatsApp = () => {
             console.log(`[WhatsApp] Upserted ${groupsToUpsert.length} groups to database`);
           }
         }
-      } else {
-        setWhatsappGroups([]);
       }
     } catch (error: any) {
       console.error("[WhatsApp] Error fetching groups:", error);

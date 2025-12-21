@@ -371,24 +371,24 @@ export default function InstagramPage() {
     }
   }, [selectedChat?.id, myInstagramUserId, fetchMessages]);
 
-  // Real-time polling for conversations (every 10 seconds)
+  // Real-time polling for conversations (every 30 seconds - reduced frequency)
   useEffect(() => {
     if (!isConnected || !myInstagramUserId) return;
 
     const interval = setInterval(() => {
       fetchConversations();
-    }, 10000);
+    }, 30000); // 30s instead of 10s
 
     return () => clearInterval(interval);
   }, [isConnected, myInstagramUserId, fetchConversations]);
 
-  // Real-time polling for messages when chat is selected (every 5 seconds)
+  // Real-time polling for messages when chat is selected (every 10 seconds)
   useEffect(() => {
     if (!selectedChat || !myInstagramUserId) return;
 
     const interval = setInterval(() => {
       fetchMessages(selectedChat.id);
-    }, 5000);
+    }, 10000); // 10s instead of 5s
 
     return () => clearInterval(interval);
   }, [selectedChat?.id, myInstagramUserId, fetchMessages]);
