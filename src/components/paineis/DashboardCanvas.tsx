@@ -65,16 +65,34 @@ export function DashboardCanvas({ painelName, onBack }: DashboardCanvasProps) {
         }
       }
 
-      // Fetch leads with pipeline info
-      const { data: leads, error } = await supabase
-        .from("leads")
-        .select("id, pipeline_id, created_at")
-        .in("sub_origin_id", subOriginIds);
+      // Fetch leads with pipeline info - remove default 1000 limit
+      let allLeads: { id: string; pipeline_id: string | null; created_at: string }[] = [];
+      let from = 0;
+      const pageSize = 1000;
+      let hasMore = true;
 
-      if (error) {
-        console.error("Error fetching leads:", error);
-        return { total: 0, label: "Leads" };
+      while (hasMore) {
+        const { data: leads, error } = await supabase
+          .from("leads")
+          .select("id, pipeline_id, created_at")
+          .in("sub_origin_id", subOriginIds)
+          .range(from, from + pageSize - 1);
+
+        if (error) {
+          console.error("Error fetching leads:", error);
+          return { total: 0, label: "Leads" };
+        }
+
+        if (leads && leads.length > 0) {
+          allLeads = [...allLeads, ...leads];
+          from += pageSize;
+          hasMore = leads.length === pageSize;
+        } else {
+          hasMore = false;
+        }
       }
+
+      const leads = allLeads;
 
       const total = leads?.length || 0;
 
