@@ -6,9 +6,11 @@ import { cn } from "@/lib/utils";
 interface Participant {
   id: string;
   phone: string;
+  jid: string;
   name?: string;
   isAdmin?: boolean;
   isSuperAdmin?: boolean;
+  photoUrl?: string | null;
 }
 
 interface GroupParticipantsPanelProps {
@@ -84,18 +86,68 @@ export const GroupParticipantsPanel = ({
       if (result.success && result.data?.participants) {
         const participantsList: Participant[] = result.data.participants.map((p: any) => ({
           id: p.id || p.jid || "",
-          phone: p.id || p.jid || "",
+          jid: p.jid || p.id || "",
+          phone: p.pn || p.jid?.replace(/@s\.whatsapp\.net$/, "") || "",
           name: p.name || p.notify || undefined,
           isAdmin: p.isAdmin || p.admin === "admin",
           isSuperAdmin: p.isSuperAdmin || p.admin === "superadmin",
+          photoUrl: null,
         }));
         setParticipants(participantsList);
+
+        // Fetch profile pictures in background (limited to avoid rate limits)
+        fetchProfilePictures(participantsList);
       }
     } catch (err: any) {
       console.error("[GroupParticipantsPanel] Error:", err);
       setError("Erro ao carregar participantes");
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const fetchProfilePictures = async (participantsList: Participant[]) => {
+    // Limit to first 5 participants to avoid rate limits
+    const toFetch = participantsList.slice(0, 5);
+    
+    for (const participant of toFetch) {
+      if (!participant.jid) continue;
+      
+      try {
+        const picResponse = await fetch(
+          `https://www.wasenderapi.com/api/contacts/${encodeURIComponent(participant.jid)}/picture`,
+          {
+            method: "GET",
+            headers: {
+              Authorization: `Bearer ${apiKey}`,
+              "Content-Type": "application/json",
+            },
+          }
+        );
+
+        if (picResponse.status === 429) {
+          console.log("[GroupParticipantsPanel] Rate limited, stopping picture fetch");
+          break;
+        }
+
+        if (picResponse.ok) {
+          const picResult = await picResponse.json();
+          const imgUrl = picResult?.data?.imgUrl || picResult?.imgUrl || null;
+          
+          if (imgUrl) {
+            setParticipants(prev => 
+              prev.map(p => 
+                p.id === participant.id ? { ...p, photoUrl: imgUrl } : p
+              )
+            );
+          }
+        }
+      } catch (e) {
+        console.error("[GroupParticipantsPanel] Error fetching picture:", e);
+      }
+      
+      // Small delay to avoid rate limits
+      await new Promise(resolve => setTimeout(resolve, 200));
     }
   };
 
@@ -172,7 +224,22 @@ export const GroupParticipantsPanel = ({
                 className="flex items-center gap-3 px-4 py-3 hover:bg-muted/30 transition-colors cursor-pointer"
                 onClick={() => onSelectParticipant?.(participant.phone, participant.name)}
               >
-                <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center text-sm font-medium text-muted-foreground flex-shrink-0">
+                {/* Avatar with photo support */}
+                {participant.photoUrl ? (
+                  <img
+                    src={participant.photoUrl}
+                    alt={participant.name || participant.phone}
+                    className="w-10 h-10 rounded-full object-cover bg-muted flex-shrink-0"
+                    onError={(e) => {
+                      e.currentTarget.style.display = 'none';
+                      e.currentTarget.nextElementSibling?.classList.remove('hidden');
+                    }}
+                  />
+                ) : null}
+                <div className={cn(
+                  "w-10 h-10 rounded-full bg-muted flex items-center justify-center text-sm font-medium text-muted-foreground flex-shrink-0",
+                  participant.photoUrl && "hidden"
+                )}>
                   {participant.name ? getInitials(participant.name) : "?"}
                 </div>
                 <div className="flex-1 min-w-0">
@@ -186,11 +253,9 @@ export const GroupParticipantsPanel = ({
                       </span>
                     )}
                   </div>
-                  {participant.name && (
-                    <span className="text-xs text-muted-foreground truncate block">
-                      {formatPhone(participant.phone)}
-                    </span>
-                  )}
+                  <span className="text-xs text-muted-foreground truncate block">
+                    {formatPhone(participant.phone)}
+                  </span>
                 </div>
                 <div className="flex items-center gap-1">
                   <button
