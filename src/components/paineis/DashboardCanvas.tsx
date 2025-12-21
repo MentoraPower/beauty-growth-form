@@ -1,13 +1,19 @@
-import { useState } from "react";
-import { Plus, Link2, X } from "lucide-react";
+import { useState, useEffect, useCallback } from "react";
+import { Plus, Link2, X, RefreshCw } from "lucide-react";
 import { ChartSelectorDialog, ChartType } from "./ChartSelectorDialog";
 import { ConnectSourceDialog, WidgetSource } from "./ConnectSourceDialog";
+import { supabase } from "@/integrations/supabase/client";
 
 export interface DashboardWidget {
   id: string;
   chartType: ChartType;
   source: WidgetSource | null;
   isConnected: boolean;
+  data?: {
+    value: number;
+    label: string;
+  };
+  isLoading?: boolean;
 }
 
 interface DashboardCanvasProps {
@@ -21,6 +27,57 @@ export function DashboardCanvas({ painelName, onBack }: DashboardCanvasProps) {
   const [isConnectSourceOpen, setIsConnectSourceOpen] = useState(false);
   const [selectedChart, setSelectedChart] = useState<ChartType | null>(null);
   const [pendingWidgetId, setPendingWidgetId] = useState<string | null>(null);
+
+  const fetchWidgetData = useCallback(async (widget: DashboardWidget) => {
+    if (!widget.source || !widget.source.sourceId) return null;
+
+    try {
+      let query = supabase.from("leads").select("id", { count: "exact", head: true });
+
+      if (widget.source.type === 'sub_origin') {
+        query = query.eq("sub_origin_id", widget.source.sourceId);
+      } else if (widget.source.type === 'origin') {
+        // Get all sub_origins for this origin first
+        const { data: subOrigins } = await supabase
+          .from("crm_sub_origins")
+          .select("id")
+          .eq("origin_id", widget.source.sourceId);
+        
+        if (subOrigins && subOrigins.length > 0) {
+          const subOriginIds = subOrigins.map(so => so.id);
+          query = query.in("sub_origin_id", subOriginIds);
+        } else {
+          return { value: 0, label: "Leads" };
+        }
+      }
+
+      const { count, error } = await query;
+
+      if (error) {
+        console.error("Error fetching leads:", error);
+        return { value: 0, label: "Leads" };
+      }
+
+      return { value: count || 0, label: "Leads" };
+    } catch (error) {
+      console.error("Error fetching widget data:", error);
+      return { value: 0, label: "Leads" };
+    }
+  }, []);
+
+  const refreshWidgetData = useCallback(async (widgetId: string) => {
+    setWidgets(prev => prev.map(w => 
+      w.id === widgetId ? { ...w, isLoading: true } : w
+    ));
+
+    const widget = widgets.find(w => w.id === widgetId);
+    if (widget) {
+      const data = await fetchWidgetData(widget);
+      setWidgets(prev => prev.map(w => 
+        w.id === widgetId ? { ...w, data: data || undefined, isLoading: false } : w
+      ));
+    }
+  }, [widgets, fetchWidgetData]);
 
   const handleSelectChart = (chart: ChartType) => {
     setSelectedChart(chart);
@@ -40,13 +97,28 @@ export function DashboardCanvas({ painelName, onBack }: DashboardCanvasProps) {
     setIsConnectSourceOpen(true);
   };
 
-  const handleConnectSource = (source: WidgetSource) => {
+  const handleConnectSource = async (source: WidgetSource) => {
     if (pendingWidgetId) {
+      // Set loading state
       setWidgets(prev => prev.map(widget => 
         widget.id === pendingWidgetId 
-          ? { ...widget, source, isConnected: true }
+          ? { ...widget, source, isConnected: true, isLoading: true }
           : widget
       ));
+
+      // Fetch data for the widget
+      const widgetToUpdate = widgets.find(w => w.id === pendingWidgetId);
+      if (widgetToUpdate) {
+        const tempWidget = { ...widgetToUpdate, source, isConnected: true };
+        const data = await fetchWidgetData(tempWidget);
+        
+        setWidgets(prev => prev.map(widget => 
+          widget.id === pendingWidgetId 
+            ? { ...widget, source, isConnected: true, data: data || undefined, isLoading: false }
+            : widget
+        ));
+      }
+
       setPendingWidgetId(null);
     }
   };
@@ -57,6 +129,115 @@ export function DashboardCanvas({ painelName, onBack }: DashboardCanvasProps) {
       setSelectedChart(widget.chartType);
       setPendingWidgetId(widgetId);
       setIsConnectSourceOpen(true);
+    }
+  };
+
+  const renderChartWithData = (widget: DashboardWidget) => {
+    const value = widget.data?.value || 0;
+    
+    if (widget.isLoading) {
+      return (
+        <div className="w-full h-24 flex items-center justify-center">
+          <RefreshCw className="h-6 w-6 text-muted-foreground animate-spin" />
+        </div>
+      );
+    }
+
+    switch (widget.chartType.id) {
+      case 'kpi':
+        return (
+          <div className="flex flex-col items-center justify-center h-24">
+            <span className="text-3xl font-bold text-foreground">{value.toLocaleString()}</span>
+            <span className="text-xs text-muted-foreground mt-1">{widget.data?.label || "Leads"}</span>
+          </div>
+        );
+
+      case 'pie':
+        return (
+          <div className="w-full h-24 flex items-center justify-center gap-4">
+            <svg viewBox="0 0 100 100" className="w-20 h-20">
+              <circle cx="50" cy="50" r="40" fill="none" stroke="hsl(var(--muted))" strokeWidth="20" />
+              <circle 
+                cx="50" cy="50" r="40" fill="none" 
+                stroke="hsl(var(--foreground))" strokeWidth="20"
+                strokeDasharray={`${Math.min(value * 2.51, 251.2)} 251.2`}
+                transform="rotate(-90 50 50)"
+              />
+              <text x="50" y="55" textAnchor="middle" fontSize="16" fontWeight="bold" fill="hsl(var(--foreground))">
+                {value}
+              </text>
+            </svg>
+          </div>
+        );
+
+      case 'bar':
+        const maxBar = Math.max(value, 100);
+        const barHeight = Math.round((value / maxBar) * 60);
+        return (
+          <div className="w-full h-24 flex items-end justify-center gap-3 px-4">
+            <div className="flex flex-col items-center">
+              <div 
+                className="w-12 bg-foreground rounded-t-md transition-all duration-500" 
+                style={{ height: `${barHeight}px` }}
+              />
+              <span className="text-xs text-muted-foreground mt-1">{value}</span>
+            </div>
+          </div>
+        );
+
+      case 'line':
+        return (
+          <div className="w-full h-24 flex items-center justify-center">
+            <div className="text-center">
+              <span className="text-2xl font-bold text-foreground">{value.toLocaleString()}</span>
+              <p className="text-xs text-muted-foreground">leads</p>
+            </div>
+          </div>
+        );
+
+      case 'area':
+        return (
+          <div className="w-full h-24 flex items-center justify-center">
+            <div className="text-center">
+              <span className="text-2xl font-bold text-foreground">{value.toLocaleString()}</span>
+              <p className="text-xs text-muted-foreground">leads</p>
+            </div>
+          </div>
+        );
+
+      case 'gauge':
+        const percentage = Math.min(Math.round((value / Math.max(value, 100)) * 100), 100);
+        return (
+          <div className="w-full h-24 flex items-center justify-center">
+            <svg viewBox="0 0 100 60" className="w-24 h-16">
+              <path 
+                d="M10,55 A40,40 0 0,1 90,55" 
+                fill="none" 
+                stroke="hsl(var(--muted))" 
+                strokeWidth="8"
+                strokeLinecap="round"
+              />
+              <path 
+                d="M10,55 A40,40 0 0,1 90,55" 
+                fill="none" 
+                stroke="hsl(var(--foreground))" 
+                strokeWidth="8"
+                strokeLinecap="round"
+                strokeDasharray={`${percentage * 1.26} 126`}
+              />
+              <text x="50" y="48" textAnchor="middle" fontSize="12" fontWeight="bold" fill="hsl(var(--foreground))">
+                {value}
+              </text>
+            </svg>
+          </div>
+        );
+
+      default:
+        return (
+          <div className="w-full h-24 flex items-center justify-center">
+            {widget.chartType.preview}
+          </div>
+        );
     }
   };
 
@@ -117,17 +298,30 @@ export function DashboardCanvas({ painelName, onBack }: DashboardCanvasProps) {
 
                 {/* Widget Content */}
                 <div className={!widget.isConnected ? "opacity-40" : ""}>
-                  <div className="flex items-center gap-2 mb-3">
-                    <widget.chartType.icon className="h-4 w-4 text-muted-foreground" />
-                    <h3 className="text-sm font-medium text-foreground">
-                      {widget.chartType.name}
-                    </h3>
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-2">
+                      <widget.chartType.icon className="h-4 w-4 text-muted-foreground" />
+                      <h3 className="text-sm font-medium text-foreground">
+                        {widget.chartType.name}
+                      </h3>
+                    </div>
+                    {widget.isConnected && (
+                      <button
+                        onClick={() => refreshWidgetData(widget.id)}
+                        className="p-1 rounded hover:bg-muted transition-colors"
+                        title="Atualizar dados"
+                      >
+                        <RefreshCw className={`h-3.5 w-3.5 text-muted-foreground ${widget.isLoading ? 'animate-spin' : ''}`} />
+                      </button>
+                    )}
                   </div>
                   
-                  {/* Chart Preview */}
-                  <div className="w-full h-24 flex items-center justify-center">
-                    {widget.chartType.preview}
-                  </div>
+                  {/* Chart with Data */}
+                  {widget.isConnected ? renderChartWithData(widget) : (
+                    <div className="w-full h-24 flex items-center justify-center">
+                      {widget.chartType.preview}
+                    </div>
+                  )}
 
                   {widget.source && (
                     <p className="text-xs text-muted-foreground mt-2 text-center">
