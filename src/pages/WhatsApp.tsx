@@ -382,8 +382,9 @@ const WhatsApp = () => {
         .order("last_message_time", { ascending: false });
       
       // Filter by session_id if we have a selected account with api_key
+      // Include chats that either match the session_id OR have no session_id (legacy chats)
       if (sessionApiKey) {
-        query = query.eq("session_id", sessionApiKey);
+        query = query.or(`session_id.eq.${sessionApiKey},session_id.is.null`);
       }
       
       const { data, error } = await query;
