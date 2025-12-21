@@ -548,10 +548,78 @@ export function DashboardCanvas({ painelName, onBack }: DashboardCanvasProps) {
   };
 
   const handleWidgetResize = useCallback((widgetId: string, newWidth: number, newHeight: number) => {
-    setWidgets(prev => prev.map(w => 
-      w.id === widgetId ? { ...w, width: newWidth, height: newHeight } : w
-    ));
-  }, []);
+    const gap = 16; // gap-4 = 16px
+    const minWidthLimit = 260;
+    
+    setWidgets(prev => {
+      const widgetIndex = prev.findIndex(w => w.id === widgetId);
+      if (widgetIndex === -1) return prev;
+      
+      const currentWidget = prev[widgetIndex];
+      const oldWidth = currentWidget.width || 340;
+      const widthDelta = newWidth - oldWidth;
+      
+      // If only height changed or no change, just update
+      if (widthDelta === 0) {
+        return prev.map(w => 
+          w.id === widgetId ? { ...w, height: newHeight } : w
+        );
+      }
+      
+      // Find widgets in the same visual row
+      // Calculate row assignments based on current widths
+      const rows: number[][] = [];
+      let currentRowWidth = 0;
+      let currentRowIndex = 0;
+      
+      prev.forEach((w, i) => {
+        const wWidth = w.width || 340;
+        const neededWidth = currentRowWidth > 0 ? wWidth + gap : wWidth;
+        
+        if (currentRowWidth + neededWidth > containerWidth && currentRowWidth > 0) {
+          // Start new row
+          currentRowIndex++;
+          currentRowWidth = wWidth;
+        } else {
+          currentRowWidth += neededWidth;
+        }
+        
+        if (!rows[currentRowIndex]) {
+          rows[currentRowIndex] = [];
+        }
+        rows[currentRowIndex].push(i);
+      });
+      
+      // Find which row the resized widget is in
+      const widgetRow = rows.find(row => row.includes(widgetIndex));
+      if (!widgetRow || widgetRow.length <= 1) {
+        // Only widget in row, just resize it
+        return prev.map(w => 
+          w.id === widgetId ? { ...w, width: newWidth, height: newHeight } : w
+        );
+      }
+      
+      // Get sibling indices in the same row
+      const siblingIndices = widgetRow.filter(i => i !== widgetIndex);
+      
+      // Calculate how much to shrink/grow siblings
+      const shrinkPerSibling = widthDelta / siblingIndices.length;
+      
+      return prev.map((w, i) => {
+        if (w.id === widgetId) {
+          return { ...w, width: newWidth, height: newHeight };
+        }
+        
+        if (siblingIndices.includes(i)) {
+          const currentW = w.width || 340;
+          const newW = Math.max(minWidthLimit, currentW - shrinkPerSibling);
+          return { ...w, width: newW };
+        }
+        
+        return w;
+      });
+    });
+  }, [containerWidth]);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
