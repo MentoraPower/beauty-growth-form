@@ -681,8 +681,7 @@ export function DashboardCanvas({ painelName, dashboardId, onBack }: DashboardCa
         );
       }
       
-      // Find widgets in the same visual row
-      // Calculate row assignments based on current widths
+      // Calculate which widgets are in the same visual row
       const rows: number[][] = [];
       let currentRowWidth = 0;
       let currentRowIndex = 0;
@@ -692,7 +691,6 @@ export function DashboardCanvas({ painelName, dashboardId, onBack }: DashboardCa
         const neededWidth = currentRowWidth > 0 ? wWidth + gap : wWidth;
         
         if (currentRowWidth + neededWidth > containerWidth && currentRowWidth > 0) {
-          // Start new row
           currentRowIndex++;
           currentRowWidth = wWidth;
         } else {
@@ -707,8 +705,9 @@ export function DashboardCanvas({ painelName, dashboardId, onBack }: DashboardCa
       
       // Find which row the resized widget is in
       const widgetRow = rows.find(row => row.includes(widgetIndex));
+      
       if (!widgetRow || widgetRow.length <= 1) {
-        // Only widget in row, just resize it
+        // Only widget in row, just resize it freely
         return prev.map(w => 
           w.id === widgetId ? { ...w, width: newWidth, height: newHeight } : w
         );
@@ -717,8 +716,32 @@ export function DashboardCanvas({ painelName, dashboardId, onBack }: DashboardCa
       // Get sibling indices in the same row
       const siblingIndices = widgetRow.filter(i => i !== widgetIndex);
       
-      // Calculate how much to shrink/grow siblings
-      const shrinkPerSibling = widthDelta / siblingIndices.length;
+      // Calculate total available width for siblings after resize
+      const totalRowGaps = (widgetRow.length - 1) * gap;
+      const availableForSiblings = containerWidth - newWidth - totalRowGaps;
+      
+      // Calculate minimum width needed for all siblings
+      const minTotalSiblingWidth = siblingIndices.length * minWidthLimit;
+      
+      // If siblings can't fit at minimum width, limit the resize
+      if (availableForSiblings < minTotalSiblingWidth) {
+        const maxAllowedWidth = containerWidth - minTotalSiblingWidth - totalRowGaps;
+        
+        // Distribute minimum width to siblings
+        return prev.map((w, i) => {
+          if (w.id === widgetId) {
+            return { ...w, width: Math.max(minWidthLimit, maxAllowedWidth), height: newHeight };
+          }
+          if (siblingIndices.includes(i)) {
+            return { ...w, width: minWidthLimit };
+          }
+          return w;
+        });
+      }
+      
+      // Distribute available width proportionally among siblings
+      const currentSiblingWidths = siblingIndices.map(i => prev[i].width || 340);
+      const totalCurrentSiblingWidth = currentSiblingWidths.reduce((a, b) => a + b, 0);
       
       return prev.map((w, i) => {
         if (w.id === widgetId) {
@@ -726,9 +749,11 @@ export function DashboardCanvas({ painelName, dashboardId, onBack }: DashboardCa
         }
         
         if (siblingIndices.includes(i)) {
-          const currentW = w.width || 340;
-          const newW = Math.max(minWidthLimit, currentW - shrinkPerSibling);
-          return { ...w, width: newW };
+          const siblingIdx = siblingIndices.indexOf(i);
+          const currentSiblingWidth = currentSiblingWidths[siblingIdx];
+          const proportion = currentSiblingWidth / totalCurrentSiblingWidth;
+          const newSiblingWidth = Math.max(minWidthLimit, Math.floor(availableForSiblings * proportion));
+          return { ...w, width: newSiblingWidth };
         }
         
         return w;
