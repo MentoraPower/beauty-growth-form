@@ -110,17 +110,52 @@ export function LeadTrackingTimeline({ leadId, utmData, leadEmail, leadWhatsapp 
 
     // Subscribe to realtime updates
     const channel = supabase
-      .channel('lead-tracking-changes')
+      .channel(`lead-tracking-${leadId}`)
       .on(
         'postgres_changes',
         {
-          event: '*',
+          event: 'INSERT',
           schema: 'public',
           table: 'lead_tracking',
           filter: `lead_id=eq.${leadId}`
         },
-        () => {
-          fetchEvents();
+        (payload) => {
+          console.log('[LeadTracking] New event received:', payload.new);
+          const newEvent = payload.new as TrackingEvent;
+          // Add new event at the beginning (most recent first)
+          setEvents(prev => {
+            // Check if already exists
+            if (prev.some(e => e.id === newEvent.id)) return prev;
+            return [newEvent, ...prev];
+          });
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'lead_tracking',
+          filter: `lead_id=eq.${leadId}`
+        },
+        (payload) => {
+          const updatedEvent = payload.new as TrackingEvent;
+          setEvents(prev => prev.map(e => 
+            e.id === updatedEvent.id ? updatedEvent : e
+          ));
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'DELETE',
+          schema: 'public',
+          table: 'lead_tracking',
+          filter: `lead_id=eq.${leadId}`
+        },
+        (payload) => {
+          const deletedEvent = payload.old as TrackingEvent;
+          setEvents(prev => prev.filter(e => e.id !== deletedEvent.id));
         }
       )
       .subscribe();
@@ -328,7 +363,7 @@ export function LeadTrackingTimeline({ leadId, utmData, leadEmail, leadWhatsapp 
             const isLast = index === events.length - 1;
             
             return (
-              <div key={event.id} className="relative flex">
+              <div key={event.id} className="relative flex animate-fade-in" style={{ animationDelay: `${index * 50}ms` }}>
                 {/* Left side - Icon and vertical line */}
                 <div className="flex flex-col items-center mr-4">
                   {/* Icon */}
