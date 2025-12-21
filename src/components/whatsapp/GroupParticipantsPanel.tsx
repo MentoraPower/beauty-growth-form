@@ -26,9 +26,9 @@ interface GroupParticipantsPanelProps {
 const DEFAULT_AVATAR =
   "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyMTIgMjEyIj48cGF0aCBmaWxsPSIjREZFNUU3IiBkPSJNMCAwaDIxMnYyMTJIMHoiLz48cGF0aCBmaWxsPSIjRkZGIiBkPSJNMTA2IDEwNmMtMjUuNCAwLTQ2LTIwLjYtNDYtNDZzMjAuNi00NiA0Ni00NiA0NiAyMC42IDQ2IDQ2LTIwLjYgNDYtNDYgNDZ6bTAgMTNjMzAuNiAwIDkyIDE1LjQgOTIgNDZ2MjNIMTR2LTIzYzAtMzAuNiA2MS40LTQ2IDkyLTQ2eiIvPjwvc3ZnPg==";
 
-// Wasender default: 10 req/minute -> 1 request each ~6s
-const RATE_LIMIT_DELAY_MS = 6500;
-const BATCH_SIZE = 1;
+// Wasender rate limits - optimized for better UX while respecting limits
+const RATE_LIMIT_DELAY_MS = 500; // 500ms between photo requests (reasonable)
+const BATCH_SIZE = 5; // Process 5 at a time
 
 const getInitials = (name: string): string => {
   if (!name) return "?";
@@ -69,9 +69,10 @@ export const GroupParticipantsPanel = ({
   const fetchParticipants = async () => {
     if (!apiKey || !groupJid) return;
 
+    // Skip if we already fetched this group in the last 3 seconds
     const fetchKey = `${apiKey}|${groupJid}`;
     const now = Date.now();
-    if (lastMetadataFetchRef.current.key === fetchKey && now - lastMetadataFetchRef.current.at < 10_000) {
+    if (lastMetadataFetchRef.current.key === fetchKey && now - lastMetadataFetchRef.current.at < 3_000) {
       return;
     }
     lastMetadataFetchRef.current = { key: fetchKey, at: now };
@@ -186,9 +187,9 @@ export const GroupParticipantsPanel = ({
 
           if (picResponse.status === 429) {
             rateLimitHits++;
-            console.log("[GroupParticipantsPanel] Rate limited, waiting longer...");
-            await new Promise((resolve) => setTimeout(resolve, 2000));
-            if (rateLimitHits >= 3) {
+            console.log("[GroupParticipantsPanel] Rate limited, waiting...");
+            await new Promise((resolve) => setTimeout(resolve, 3000)); // Wait 3s on rate limit
+            if (rateLimitHits >= 5) {
               console.log("[GroupParticipantsPanel] Too many rate limits, stopping");
               break;
             }
