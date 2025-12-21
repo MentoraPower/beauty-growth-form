@@ -766,7 +766,7 @@ async function handler(req: Request): Promise<Response> {
       });
     }
     
-    // Only process message events (private chats)
+    // Only process message events (private chats and groups)
     if (event !== "messages.received" && event !== "messages.upsert") {
       console.log(`[Wasender Webhook] Ignoring event: ${event}`);
       return new Response(JSON.stringify({ ok: true }), { 
@@ -795,12 +795,21 @@ async function handler(req: Request): Promise<Response> {
     const fromMe = key.fromMe || false;
     const remoteJid = key.remoteJid || "";
 
+    // Check if this is a group message
+    const isGroupMessage = remoteJid.includes("@g.us");
+
     // Get phone number - prefer cleanedSenderPn for private chats
+    // For groups, use the group JID as the "phone" identifier
     let phone = key.cleanedSenderPn || key.cleanedParticipantPn || "";
     
     // If no cleaned phone, try to extract from remoteJid
     if (!phone && remoteJid) {
-      phone = remoteJid.replace("@c.us", "").replace("@s.whatsapp.net", "").replace("@lid", "").replace(/\D/g, "");
+      if (isGroupMessage) {
+        // For groups, use the full group JID as identifier
+        phone = remoteJid;
+      } else {
+        phone = remoteJid.replace("@c.us", "").replace("@s.whatsapp.net", "").replace("@lid", "").replace(/\D/g, "");
+      }
     }
 
     // Skip if from ourselves (sent messages we already have)
@@ -811,31 +820,31 @@ async function handler(req: Request): Promise<Response> {
       });
     }
 
-    // Skip groups and broadcasts
-    if (remoteJid.includes("@g.us") || remoteJid.includes("@newsletter") || remoteJid.includes("status@broadcast")) {
-      console.log("[Wasender Webhook] Skipping group/broadcast");
+    // Skip newsletters and broadcasts (but NOT groups)
+    if (remoteJid.includes("@newsletter") || remoteJid.includes("status@broadcast")) {
+      console.log("[Wasender Webhook] Skipping newsletter/broadcast");
       return new Response(JSON.stringify({ ok: true }), { 
         headers: { ...corsHeaders, "Content-Type": "application/json" } 
       });
     }
 
-    // Skip LIDs we can't resolve
-    if (isWhatsAppLID(phone)) {
+    // Skip LIDs we can't resolve (only for private chats)
+    if (!isGroupMessage && isWhatsAppLID(phone)) {
       console.log(`[Wasender Webhook] Skipping LID: ${phone}`);
       return new Response(JSON.stringify({ ok: true }), { 
         headers: { ...corsHeaders, "Content-Type": "application/json" } 
       });
     }
 
-    // Validate phone
-    if (!phone || phone.length < 8 || phone === "0") {
+    // Validate phone (for private chats) or group JID
+    if (!phone || (phone.length < 8 && !isGroupMessage) || phone === "0") {
       console.log(`[Wasender Webhook] Invalid phone: ${phone}`);
       return new Response(JSON.stringify({ ok: true }), { 
         headers: { ...corsHeaders, "Content-Type": "application/json" } 
       });
     }
 
-    console.log(`[Wasender Webhook] Processing message from ${phone}`);
+    console.log(`[Wasender Webhook] Processing message from ${phone}${isGroupMessage ? " (GROUP)" : ""}`);
 
     // Extract message content
     const messageBody = messageData.messageBody || "";
