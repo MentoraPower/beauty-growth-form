@@ -105,13 +105,10 @@ function SortableWidget({ widget, onResize, onDelete, onConnect, containerWidth 
     transition,
     zIndex: isDragging ? 50 : 1,
     opacity: isDragging ? 0.4 : 1,
-    flexBasis: widgetWidth,
-    flexGrow: 0,
-    flexShrink: 0,
-    minWidth: minWidth,
-    maxWidth: containerWidth > 0 ? containerWidth : '100%',
     width: widgetWidth,
+    minWidth: minWidth,
     height: widgetHeight,
+    flexShrink: 0,
   };
 
   const handleResize = (deltaX: number, deltaY: number, direction: string) => {
@@ -601,12 +598,40 @@ export function DashboardCanvas({ painelName, dashboardId, onBack }: DashboardCa
     setSelectedChart(chart);
     setIsChartSelectorOpen(false);
     
+    const gap = 16;
+    const minWidth = 260;
+    const defaultWidth = 340;
+    const effectiveContainer = containerWidth > 0 ? containerWidth : 800;
+    
+    // Calculate initial width - try to fit in existing row if possible
+    let initialWidth = defaultWidth;
+    
+    if (widgets.length > 0) {
+      // Calculate current last row width
+      let lastRowWidth = 0;
+      widgets.forEach(w => {
+        const wWidth = w.width || defaultWidth;
+        const neededWidth = lastRowWidth > 0 ? wWidth + gap : wWidth;
+        if (lastRowWidth + neededWidth > effectiveContainer && lastRowWidth > 0) {
+          lastRowWidth = wWidth;
+        } else {
+          lastRowWidth += neededWidth;
+        }
+      });
+      
+      // Space available in last row
+      const availableInRow = effectiveContainer - lastRowWidth - gap;
+      if (availableInRow >= minWidth) {
+        initialWidth = Math.max(minWidth, Math.min(defaultWidth, availableInRow));
+      }
+    }
+    
     const newWidget: DashboardWidget = {
       id: `widget-${Date.now()}`,
       chartType: chart,
       source: null,
       isConnected: false,
-      width: 340,
+      width: initialWidth,
       height: 280,
     };
     setWidgets(prev => [...prev, newWidget]);
@@ -663,8 +688,9 @@ export function DashboardCanvas({ painelName, dashboardId, onBack }: DashboardCa
   };
 
   const handleWidgetResize = useCallback((widgetId: string, newWidth: number, newHeight: number) => {
-    const gap = 16; // gap-4 = 16px
+    const gap = 16;
     const minWidthLimit = 260;
+    const effectiveContainerWidth = containerWidth > 0 ? containerWidth : 1200;
     
     setWidgets(prev => {
       const widgetIndex = prev.findIndex(w => w.id === widgetId);
@@ -674,63 +700,65 @@ export function DashboardCanvas({ painelName, dashboardId, onBack }: DashboardCa
       const oldWidth = currentWidget.width || 340;
       const widthDelta = newWidth - oldWidth;
       
-      // If only height changed or no change, just update
+      // If only height changed, just update
       if (widthDelta === 0) {
         return prev.map(w => 
           w.id === widgetId ? { ...w, height: newHeight } : w
         );
       }
-      
-      // Calculate which widgets are in the same visual row
-      const rows: number[][] = [];
-      let currentRowWidth = 0;
-      let currentRowIndex = 0;
-      
-      prev.forEach((w, i) => {
-        const wWidth = w.width || 340;
-        const neededWidth = currentRowWidth > 0 ? wWidth + gap : wWidth;
+
+      // Find all widgets and calculate rows BEFORE the resize
+      const calculateRows = (widgetsList: typeof prev) => {
+        const rows: number[][] = [];
+        let currentRowWidth = 0;
+        let currentRowIndex = 0;
         
-        if (currentRowWidth + neededWidth > containerWidth && currentRowWidth > 0) {
-          currentRowIndex++;
-          currentRowWidth = wWidth;
-        } else {
-          currentRowWidth += neededWidth;
-        }
+        widgetsList.forEach((w, i) => {
+          const wWidth = w.width || 340;
+          const neededWidth = currentRowWidth > 0 ? wWidth + gap : wWidth;
+          
+          if (currentRowWidth + neededWidth > effectiveContainerWidth && currentRowWidth > 0) {
+            currentRowIndex++;
+            currentRowWidth = wWidth;
+          } else {
+            currentRowWidth += neededWidth;
+          }
+          
+          if (!rows[currentRowIndex]) rows[currentRowIndex] = [];
+          rows[currentRowIndex].push(i);
+        });
         
-        if (!rows[currentRowIndex]) {
-          rows[currentRowIndex] = [];
-        }
-        rows[currentRowIndex].push(i);
-      });
+        return rows;
+      };
       
-      // Find which row the resized widget is in
+      const rows = calculateRows(prev);
       const widgetRow = rows.find(row => row.includes(widgetIndex));
       
+      // Only widget in its row - resize freely
       if (!widgetRow || widgetRow.length <= 1) {
-        // Only widget in row, just resize it freely
+        const clampedWidth = Math.min(effectiveContainerWidth, Math.max(minWidthLimit, newWidth));
         return prev.map(w => 
-          w.id === widgetId ? { ...w, width: newWidth, height: newHeight } : w
+          w.id === widgetId ? { ...w, width: clampedWidth, height: newHeight } : w
         );
       }
       
-      // Get sibling indices in the same row
+      // Multiple widgets in row - distribute space
       const siblingIndices = widgetRow.filter(i => i !== widgetIndex);
+      const totalGaps = (widgetRow.length - 1) * gap;
       
-      // Calculate total available width for siblings after resize
-      const totalRowGaps = (widgetRow.length - 1) * gap;
-      const availableForSiblings = containerWidth - newWidth - totalRowGaps;
-      
-      // Calculate minimum width needed for all siblings
+      // Calculate how much space is available for siblings
+      const clampedNewWidth = Math.max(minWidthLimit, newWidth);
+      const availableForSiblings = effectiveContainerWidth - clampedNewWidth - totalGaps;
       const minTotalSiblingWidth = siblingIndices.length * minWidthLimit;
       
-      // If siblings can't fit at minimum width, limit the resize
+      // If siblings would be too small, cap the resize
       if (availableForSiblings < minTotalSiblingWidth) {
-        const maxAllowedWidth = containerWidth - minTotalSiblingWidth - totalRowGaps;
+        const maxAllowedWidth = effectiveContainerWidth - minTotalSiblingWidth - totalGaps;
+        const finalWidth = Math.max(minWidthLimit, maxAllowedWidth);
         
-        // Distribute minimum width to siblings
         return prev.map((w, i) => {
           if (w.id === widgetId) {
-            return { ...w, width: Math.max(minWidthLimit, maxAllowedWidth), height: newHeight };
+            return { ...w, width: finalWidth, height: newHeight };
           }
           if (siblingIndices.includes(i)) {
             return { ...w, width: minWidthLimit };
@@ -739,20 +767,19 @@ export function DashboardCanvas({ painelName, dashboardId, onBack }: DashboardCa
         });
       }
       
-      // Distribute available width proportionally among siblings
-      const currentSiblingWidths = siblingIndices.map(i => prev[i].width || 340);
-      const totalCurrentSiblingWidth = currentSiblingWidths.reduce((a, b) => a + b, 0);
+      // Distribute remaining space proportionally among siblings
+      const siblingWidths = siblingIndices.map(i => prev[i].width || 340);
+      const totalSiblingWidth = siblingWidths.reduce((a, b) => a + b, 0);
       
       return prev.map((w, i) => {
         if (w.id === widgetId) {
-          return { ...w, width: newWidth, height: newHeight };
+          return { ...w, width: clampedNewWidth, height: newHeight };
         }
         
         if (siblingIndices.includes(i)) {
-          const siblingIdx = siblingIndices.indexOf(i);
-          const currentSiblingWidth = currentSiblingWidths[siblingIdx];
-          const proportion = currentSiblingWidth / totalCurrentSiblingWidth;
-          const newSiblingWidth = Math.max(minWidthLimit, Math.floor(availableForSiblings * proportion));
+          const idx = siblingIndices.indexOf(i);
+          const proportion = siblingWidths[idx] / totalSiblingWidth;
+          const newSiblingWidth = Math.max(minWidthLimit, Math.round(availableForSiblings * proportion));
           return { ...w, width: newSiblingWidth };
         }
         
