@@ -61,7 +61,11 @@ const GroupItem = memo(function GroupItem({
         </span>
         <div className="flex items-center gap-1 text-xs text-muted-foreground mt-0.5">
           <Users className="w-3 h-3" />
-          <span>{group.participantCount} participantes</span>
+          <span>
+            {group.participantCount >= 0
+              ? `${group.participantCount} participantes`
+              : "— participantes"}
+          </span>
         </div>
       </div>
     </div>

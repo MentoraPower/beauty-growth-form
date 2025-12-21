@@ -409,70 +409,79 @@ const WhatsApp = () => {
       console.log(`[WhatsApp] Groups API response:`, result);
 
       if (result.success && Array.isArray(result.data)) {
-        // Fetch metadata for each group to get participant count
-        const groupsWithMetadata: WhatsAppGroup[] = await Promise.all(
-          result.data.map(async (g: any) => {
-            const groupId = g.id || g.jid || "";
-            let participantCount = g.participants?.length || g.size || 0;
-            
-            let photoUrl = g.profilePicture || g.pictureUrl || g.imgUrl || null;
-            
-            // Fetch metadata and profile picture
-            if (groupId) {
-              try {
-                // Fetch metadata for participant count
-                const metaResponse = await fetch(
-                  `https://www.wasenderapi.com/api/groups/${encodeURIComponent(groupId)}/metadata`,
-                  {
-                    method: "GET",
-                    headers: {
-                      "Authorization": `Bearer ${sessionApiKey}`,
-                      "Content-Type": "application/json",
-                    },
-                  }
-                );
-                
-                if (metaResponse.ok) {
-                  const metaResult = await metaResponse.json();
-                  if (metaResult.success && metaResult.data) {
-                    participantCount = metaResult.data.participants?.length || participantCount;
-                  }
+        // WaSender has a strict RPM limit (10). The initial /api/groups call already uses 1.
+        // Prioritize group pictures first, then fetch participant counts while we still have budget.
+        let remainingRequests = 9;
+
+        const groups: WhatsAppGroup[] = [];
+
+        for (const g of result.data) {
+          const groupId = g.id || g.jid || "";
+
+          // -1 = unknown (avoids showing misleading "0 participantes")
+          let participantCount: number = g.participants?.length || g.size || -1;
+          let photoUrl: string | null = g.profilePicture || g.pictureUrl || g.imgUrl || null;
+
+          if (groupId) {
+            // 1) Profile picture
+            if (!photoUrl && remainingRequests > 0) {
+              remainingRequests -= 1;
+              const picResponse = await fetch(
+                `https://www.wasenderapi.com/api/groups/${encodeURIComponent(groupId)}/picture`,
+                {
+                  method: "GET",
+                  headers: {
+                    Authorization: `Bearer ${sessionApiKey}`,
+                    "Content-Type": "application/json",
+                  },
                 }
-                
-                // Fetch profile picture separately
-                const picResponse = await fetch(
-                  `https://www.wasenderapi.com/api/groups/${encodeURIComponent(groupId)}/profile-picture`,
-                  {
-                    method: "GET",
-                    headers: {
-                      "Authorization": `Bearer ${sessionApiKey}`,
-                      "Content-Type": "application/json",
-                    },
-                  }
-                );
-                
-                if (picResponse.ok) {
-                  const picResult = await picResponse.json();
-                  if (picResult.success && picResult.data?.url) {
-                    photoUrl = picResult.data.url;
-                  }
-                }
-              } catch (e) {
-                console.log(`[WhatsApp] Failed to fetch data for group ${groupId}`);
+              );
+
+              if (picResponse.status === 429) {
+                remainingRequests = 0;
+              } else if (picResponse.ok) {
+                const picResult = await picResponse.json();
+                photoUrl = picResult?.data?.imgUrl || photoUrl;
               }
             }
-            
-            return {
-              id: groupId,
-              name: g.subject || g.name || "Grupo",
-              participantCount,
-              photoUrl,
-            };
-          })
-        );
-        
-        console.log(`[WhatsApp] Loaded ${groupsWithMetadata.length} groups with metadata`);
-        setWhatsappGroups(groupsWithMetadata);
+
+            // 2) Participant count (best-effort)
+            if (participantCount < 0 && remainingRequests > 0) {
+              remainingRequests -= 1;
+              const metaResponse = await fetch(
+                `https://www.wasenderapi.com/api/groups/${encodeURIComponent(groupId)}/metadata`,
+                {
+                  method: "GET",
+                  headers: {
+                    Authorization: `Bearer ${sessionApiKey}`,
+                    "Content-Type": "application/json",
+                  },
+                }
+              );
+
+              if (metaResponse.status === 429) {
+                remainingRequests = 0;
+              } else if (metaResponse.ok) {
+                const metaResult = await metaResponse.json();
+                if (metaResult?.success && metaResult?.data) {
+                  participantCount =
+                    metaResult.data.size ??
+                    metaResult.data.participants?.length ??
+                    participantCount;
+                }
+              }
+            }
+          }
+
+          groups.push({
+            id: groupId,
+            name: g.subject || g.name || "Grupo",
+            participantCount,
+            photoUrl,
+          });
+        }
+
+        setWhatsappGroups(groups);
       } else {
         setWhatsappGroups([]);
       }
