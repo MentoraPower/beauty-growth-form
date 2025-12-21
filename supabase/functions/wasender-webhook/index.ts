@@ -874,9 +874,10 @@ async function handler(req: Request): Promise<Response> {
       chatUpsertData.session_id = sessionId;
     }
     
+    // IMPORTANT: Use phone,session_id for account isolation - same phone can have different chats per account
     const { data: chatData, error: chatError } = await supabase
       .from("whatsapp_chats")
-      .upsert(chatUpsertData, { onConflict: "phone" })
+      .upsert(chatUpsertData, { onConflict: "phone,session_id" })
       .select()
       .single();
 

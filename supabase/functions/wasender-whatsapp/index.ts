@@ -203,8 +203,8 @@ async function handler(req: Request): Promise<Response> {
 
   try {
     const body = await req.json();
-    const { action, phone, text, mediaUrl, filename, caption, presenceType, delayMs, msgId, newText, base64, mimetype } = body;
-    console.log(`[Wasender] Action: ${action}`);
+    const { action, phone, text, mediaUrl, filename, caption, presenceType, delayMs, msgId, newText, base64, mimetype, sessionId } = body;
+    console.log(`[Wasender] Action: ${action}, sessionId: ${sessionId || 'N/A'}`);
 
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
@@ -387,25 +387,39 @@ async function handler(req: Request): Promise<Response> {
       
       // If audioBase64 was used (from dropdown), save to database since frontend doesn't
       if (body.audioBase64) {
-        // Get or create chat
-        const { data: existingChat } = await supabase
+        // Get or create chat - IMPORTANT: filter by session_id for account isolation
+        const chatQuery = supabase
           .from("whatsapp_chats")
           .select("id")
-          .eq("phone", to)
-          .single();
+          .eq("phone", to);
+        
+        // Add session_id filter if provided
+        if (sessionId) {
+          chatQuery.eq("session_id", sessionId);
+        }
+        
+        const { data: existingChat } = await chatQuery.single();
         
         let chatId = existingChat?.id;
         
         if (!chatId) {
+          // Create new chat with session_id for account isolation
+          const chatInsertData: any = {
+            phone: to,
+            last_message: "🎵 Áudio",
+            last_message_time: new Date().toISOString(),
+            last_message_from_me: true,
+            last_message_status: "SENT",
+          };
+          
+          // Add session_id if provided
+          if (sessionId) {
+            chatInsertData.session_id = sessionId;
+          }
+          
           const { data: newChat } = await supabase
             .from("whatsapp_chats")
-            .insert({
-              phone: to,
-              last_message: "🎵 Áudio",
-              last_message_time: new Date().toISOString(),
-              last_message_from_me: true,
-              last_message_status: "SENT",
-            })
+            .insert(chatInsertData)
             .select("id")
             .single();
           chatId = newChat?.id;
@@ -875,9 +889,10 @@ async function handler(req: Request): Promise<Response> {
             chatUpsertData.session_id = sessionId;
           }
           
+          // IMPORTANT: Use phone,session_id for account isolation - same phone can have different chats per account
           const { data: chatData, error: chatError } = await supabase
             .from("whatsapp_chats")
-            .upsert(chatUpsertData, { onConflict: "phone" })
+            .upsert(chatUpsertData, { onConflict: "phone,session_id" })
             .select()
             .single();
 
