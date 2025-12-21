@@ -226,54 +226,67 @@ export default function Paineis() {
                 </p>
               </div>
             ) : (
-              <div className="space-y-2">
-                {dashboards.map((dashboard) => (
-                  <div
-                    key={dashboard.id}
-                    onClick={() => handleOpenDashboard(dashboard)}
-                    className="group flex items-center justify-between bg-card border border-border rounded-xl px-4 py-3 cursor-pointer transition-all duration-200 hover:bg-muted/50 hover:border-border/80"
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="w-9 h-9 rounded-lg bg-muted flex items-center justify-center">
-                        <LayoutDashboard className="h-4 w-4 text-muted-foreground" />
+              <div className="bg-card border border-border rounded-xl overflow-hidden">
+                {/* Table Header */}
+                <div className="grid grid-cols-[1fr_120px_60px] gap-4 px-4 py-3 border-b border-border bg-muted/30">
+                  <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Nome</span>
+                  <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Modelo</span>
+                  <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider text-center">Ações</span>
+                </div>
+                {/* Table Rows */}
+                <div className="divide-y divide-border">
+                  {dashboards.map((dashboard) => (
+                    <div
+                      key={dashboard.id}
+                      onClick={() => handleOpenDashboard(dashboard)}
+                      className="grid grid-cols-[1fr_120px_60px] gap-4 items-center px-4 py-3 cursor-pointer transition-colors hover:bg-muted/50"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center shrink-0">
+                          <LayoutDashboard className="h-4 w-4 text-muted-foreground" />
+                        </div>
+                        <span className="font-medium text-foreground truncate">{dashboard.name}</span>
                       </div>
-                      <span className="font-medium text-foreground">{dashboard.name}</span>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <span className="text-xs text-muted-foreground bg-muted px-2 py-1 rounded-md">
+                      <span className="text-sm text-muted-foreground">
                         {dashboard.type === 'scratch' ? 'Personalizado' : dashboard.type}
                       </span>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-                          <Button variant="ghost" size="icon" className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity">
-                            <MoreHorizontal className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem 
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleEditDashboard(dashboard);
-                            }}
-                          >
-                            <Pencil className="h-4 w-4 mr-2" />
-                            Renomear
-                          </DropdownMenuItem>
-                          <DropdownMenuItem 
-                            className="text-destructive focus:text-destructive"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleDeleteDashboard(dashboard);
-                            }}
-                          >
-                            <Trash2 className="h-4 w-4 mr-2" />
-                            Excluir
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
+                      <div className="flex justify-center">
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+                            <Button 
+                              variant="outline" 
+                              size="icon" 
+                              className="h-8 w-8 rounded-lg border-border"
+                            >
+                              <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem 
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleEditDashboard(dashboard);
+                              }}
+                            >
+                              <Pencil className="h-4 w-4 mr-2" />
+                              Renomear
+                            </DropdownMenuItem>
+                            <DropdownMenuItem 
+                              className="text-destructive focus:text-destructive"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDeleteDashboard(dashboard);
+                              }}
+                            >
+                              <Trash2 className="h-4 w-4 mr-2" />
+                              Excluir
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
             )}
           </div>
