@@ -35,8 +35,8 @@ export default function Paineis() {
   const [searchParams, setSearchParams] = useSearchParams();
   const activePainel = searchParams.get('tipo') as PainelType | null;
 
-  const handlePainelSelect = (tipo: PainelType) => {
-    setSearchParams({ tipo }, { replace: true });
+  const handlePainelSelect = (_tipo: PainelType) => {
+    // TODO: implementar navegação futuramente
   };
 
   if (!activePainel) {
