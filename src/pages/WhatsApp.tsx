@@ -119,6 +119,7 @@ const WhatsApp = () => {
   const [selectedAccountId, setSelectedAccountId] = useState<string | null>(null);
   const [isLoadingAccounts, setIsLoadingAccounts] = useState(false);
   const [isAccountChanging, setIsAccountChanging] = useState(false);
+  const [isInitializingApp, setIsInitializingApp] = useState(true);
   const [accountToConnect, setAccountToConnect] = useState<{ id: string; name: string; phone_number?: string; status: string; api_key?: string } | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
@@ -1663,6 +1664,15 @@ const WhatsApp = () => {
   // Initial load and cleanup (run once)
   useEffect(() => {
     const init = async () => {
+      setIsInitializingApp(true);
+      
+      // FIRST: Clear all state to ensure clean slate on page load/refresh
+      setChats([]);
+      chatsRef.current = [];
+      setSelectedChat(null);
+      setMessages([]);
+      pendingChatUpdatesRef.current.clear();
+      
       // Cleanup invalid chats
       try {
         const { data: allChats } = await supabase
@@ -1688,27 +1698,17 @@ const WhatsApp = () => {
         console.error("Cleanup error:", error);
       }
 
-      // Fetch WhatsApp accounts FIRST and wait for state to update
+      // Fetch WhatsApp accounts - the useEffect for selectedAccountId will handle the rest
       const accounts = await fetchWhatsAppAccounts();
       console.log(`[WhatsApp] Init - accounts loaded: ${accounts.length}`);
       
-      // Give React time to update state, then fetch chats
-      // The useEffect for selectedAccountId change will handle fetching chats
-      // after the account is selected
-      
-      // If no accounts, fetch chats immediately (legacy mode)
+      // If no accounts, fetch chats immediately (legacy mode) and finish init
       if (accounts.length === 0) {
         console.log(`[WhatsApp] No accounts, fetching all chats`);
         await fetchChats(true);
+        setIsInitializingApp(false);
       }
-
-      // Background sync
-      syncAllChats();
-
-      // Fetch missing profile photos in background (after UI loads)
-      setTimeout(() => {
-        fetchMissingPhotos();
-      }, 2000);
+      // Note: isInitializingApp will be set to false by the account change useEffect
     };
 
     init();
@@ -1716,7 +1716,6 @@ const WhatsApp = () => {
   }, []);
 
   // Reload chats when switching WhatsApp accounts (or on first account selection)
-  const accountChangeCountRef = useRef(0);
   useEffect(() => {
     // Skip if no account selected yet (waiting for accounts to load)
     if (selectedAccountId === null) {
@@ -1730,36 +1729,30 @@ const WhatsApp = () => {
       return;
     }
     
-    accountChangeCountRef.current++;
-    const isFirstLoad = accountChangeCountRef.current === 1;
-    
     const selectedAccount = whatsappAccounts.find(acc => acc.id === selectedAccountId);
-    console.log(`[WhatsApp] Account ${isFirstLoad ? "selected" : "changed"} - id: ${selectedAccountId}, api_key: ${selectedAccount?.api_key?.substring(0, 15) || "none"}..., name: ${selectedAccount?.name || "unknown"}`);
+    console.log(`[WhatsApp] Account selected/changed - id: ${selectedAccountId}, api_key: ${selectedAccount?.api_key?.substring(0, 15) || "none"}..., name: ${selectedAccount?.name || "unknown"}`);
     
-    // IMMEDIATE CLEAR: Prevent showing old chats during account change
-    if (!isFirstLoad) {
-      setIsAccountChanging(true);
-      setChats([]);           // Clear immediately
-      chatsRef.current = [];
-      setSelectedChat(null);
-      setMessages([]);
-      pendingChatUpdatesRef.current.clear();
-    }
+    // ALWAYS CLEAR: Prevent showing old chats from previous account (even on first load)
+    setIsAccountChanging(true);
+    setChats([]);           // Clear immediately
+    chatsRef.current = [];
+    setSelectedChat(null);
+    setMessages([]);
+    pendingChatUpdatesRef.current.clear();
     
     const reloadChatsForAccount = async () => {
       try {
         // Fetch chats for the selected account
         await fetchChats(true);
         
-        // Sync and fetch photos in background (only on subsequent changes)
-        if (!isFirstLoad) {
-          syncAllChats();
-          setTimeout(() => {
-            fetchMissingPhotos();
-          }, 1000);
-        }
+        // Sync and fetch photos in background
+        syncAllChats();
+        setTimeout(() => {
+          fetchMissingPhotos();
+        }, 1000);
       } finally {
         setIsAccountChanging(false);
+        setIsInitializingApp(false); // Finish app initialization after first account load
       }
     };
     
@@ -2287,8 +2280,19 @@ const WhatsApp = () => {
   return (
     <>
       <div className="h-full min-h-0 flex rounded-2xl overflow-hidden border border-border/50 bg-card -mt-4 relative z-50">
+        {/* App Initialization Loading Overlay */}
+        {isInitializingApp && (
+          <div className="absolute inset-0 bg-background z-50 flex items-center justify-center">
+            <div className="text-center">
+              <div className="w-10 h-10 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin mx-auto mb-3" />
+              <p className="text-sm text-foreground font-medium">Carregando WhatsApp...</p>
+              <p className="text-xs text-muted-foreground mt-1">Preparando suas conversas</p>
+            </div>
+          </div>
+        )}
+        
         {/* Account Change Loading Overlay */}
-        {isAccountChanging && (
+        {!isInitializingApp && isAccountChanging && (
           <div className="absolute inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center">
             <div className="text-center">
               <div className="w-8 h-8 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin mx-auto mb-3" />
