@@ -424,7 +424,15 @@ const WhatsApp = () => {
 
     pendingChatUpdatesRef.current.clear();
 
-    const formattedUpdates = pending
+    // ISOLATION: Filter pending updates by current session_id
+    const selectedAccount = whatsappAccounts.find(acc => acc.id === selectedAccountId);
+    const currentSessionId = selectedAccount?.api_key;
+    
+    const filteredPending = currentSessionId 
+      ? pending.filter((chat: any) => chat?.session_id === currentSessionId)
+      : pending;
+
+    const formattedUpdates = filteredPending
       .map(formatChatData)
       .filter((chat): chat is Chat => chat !== null);
 
@@ -452,7 +460,7 @@ const WhatsApp = () => {
       const updated = formattedUpdates.find((c) => c.id === prev.id);
       return updated ?? prev;
     });
-  }, [formatChatData]);
+  }, [formatChatData, selectedAccountId, whatsappAccounts]);
 
   const markChatListInteracting = useCallback(() => {
     chatListInteractingRef.current = true;
@@ -475,6 +483,16 @@ const WhatsApp = () => {
 
   // Update single chat in state without refetching all
   const updateChatInState = useCallback((updatedChat: any) => {
+    // ISOLATION: Check if this chat belongs to the currently selected account
+    const selectedAccount = whatsappAccounts.find(acc => acc.id === selectedAccountId);
+    const currentSessionId = selectedAccount?.api_key;
+    
+    // If we have a selected account, only accept chats with matching session_id
+    if (currentSessionId && updatedChat?.session_id !== currentSessionId) {
+      console.log(`[WhatsApp] Ignoring chat from different session: ${updatedChat?.session_id?.substring(0, 10) || 'null'} vs ${currentSessionId?.substring(0, 10)}`);
+      return;
+    }
+    
     // While the user is scrolling the chat list, defer reorder updates to avoid "jumping".
     if (chatListInteractingRef.current) {
       pendingChatUpdatesRef.current.set(updatedChat?.id ?? `${Date.now()}`, updatedChat);
@@ -515,7 +533,7 @@ const WhatsApp = () => {
       }
       return prev;
     });
-  }, [formatChatData, flushPendingChatUpdates]);
+  }, [formatChatData, flushPendingChatUpdates, selectedAccountId, whatsappAccounts]);
 
   // Remove chat from state
   const removeChatFromState = useCallback((chatId: string) => {
@@ -1769,7 +1787,13 @@ const WhatsApp = () => {
         "postgres_changes",
         { event: "DELETE", schema: "public", table: "whatsapp_chats" },
         (payload) => {
-          removeChatFromState((payload.old as any).id);
+          const deletedChat = payload.old as any;
+          // ISOLATION: Only remove if this chat was in our current session
+          // We check if the chat exists in our current state (which is already filtered by session)
+          const existsInState = chatsRef.current.some(c => c.id === deletedChat?.id);
+          if (existsInState) {
+            removeChatFromState(deletedChat.id);
+          }
         }
       )
       .subscribe();
@@ -1781,6 +1805,10 @@ const WhatsApp = () => {
 
   // Global realtime subscription for ALL messages - updates chat list sidebar
   useEffect(() => {
+    // Get current session_id for filtering
+    const selectedAccount = whatsappAccounts.find(acc => acc.id === selectedAccountId);
+    const currentSessionId = selectedAccount?.api_key;
+    
     const channel = supabase
       .channel("whatsapp-messages-global")
       .on(
@@ -1788,6 +1816,12 @@ const WhatsApp = () => {
         { event: "INSERT", schema: "public", table: "whatsapp_messages" },
         async (payload) => {
           const msg = payload.new as any;
+          
+          // ISOLATION: Only process messages from the current session
+          if (currentSessionId && msg.session_id !== currentSessionId) {
+            console.log(`[WhatsApp] Ignoring message from different session: ${msg.session_id?.substring(0, 10) || 'null'}`);
+            return;
+          }
           
           // If this is for a different chat than selected, refresh that chat's data
           if (msg.chat_id && msg.chat_id !== selectedChat?.id) {
@@ -1808,7 +1842,7 @@ const WhatsApp = () => {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [selectedChat?.id, updateChatInState]);
+  }, [selectedChat?.id, updateChatInState, selectedAccountId, whatsappAccounts]);
 
   // Realtime subscription for messages
   useEffect(() => {
