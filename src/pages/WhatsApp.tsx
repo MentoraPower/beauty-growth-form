@@ -115,10 +115,10 @@ const WhatsApp = () => {
   const [editingMessage, setEditingMessage] = useState<Message | null>(null);
   const [editText, setEditText] = useState("");
   const [showAddAccountDialog, setShowAddAccountDialog] = useState(false);
-  const [whatsappAccounts, setWhatsappAccounts] = useState<Array<{ id: string; name: string; phone_number?: string; status: string }>>([]);
+  const [whatsappAccounts, setWhatsappAccounts] = useState<Array<{ id: string; name: string; phone_number?: string; status: string; api_key?: string }>>([]);
   const [selectedAccountId, setSelectedAccountId] = useState<string | null>(null);
   const [isLoadingAccounts, setIsLoadingAccounts] = useState(false);
-  const [accountToConnect, setAccountToConnect] = useState<{ id: string; name: string; phone_number?: string; status: string } | null>(null);
+  const [accountToConnect, setAccountToConnect] = useState<{ id: string; name: string; phone_number?: string; status: string; api_key?: string } | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -367,15 +367,26 @@ const WhatsApp = () => {
     }
   }, [selectedAccountId]);
 
-  // Initial load - fetch chats once
+  // Initial load - fetch chats once, optionally filtered by selected account's api_key
   const fetchChats = useCallback(async (showLoading = false) => {
     if (showLoading) setIsInitialLoad(true);
     
     try {
-      const { data, error } = await supabase
+      // Get the api_key (session_id) for the selected account
+      const selectedAccount = whatsappAccounts.find(acc => acc.id === selectedAccountId);
+      const sessionApiKey = selectedAccount?.api_key;
+      
+      let query = supabase
         .from("whatsapp_chats")
         .select("*")
         .order("last_message_time", { ascending: false });
+      
+      // Filter by session_id if we have a selected account with api_key
+      if (sessionApiKey) {
+        query = query.eq("session_id", sessionApiKey);
+      }
+      
+      const { data, error } = await query;
 
       if (error) throw error;
 
@@ -390,7 +401,7 @@ const WhatsApp = () => {
     } finally {
       setIsInitialLoad(false);
     }
-  }, [formatChatData]);
+  }, [formatChatData, selectedAccountId, whatsappAccounts]);
 
   const flushPendingChatUpdates = useCallback(() => {
     const pending = Array.from(pendingChatUpdatesRef.current.values());
@@ -1632,8 +1643,15 @@ const WhatsApp = () => {
   }, [fetchChats, fetchMissingPhotos, fetchWhatsAppAccounts]);
 
   // Reload chats when switching WhatsApp accounts
+  const initialMountRef = useRef(true);
   useEffect(() => {
     // Skip on initial mount (handled by init above)
+    if (initialMountRef.current) {
+      initialMountRef.current = false;
+      return;
+    }
+    
+    // Skip if no account selected yet
     if (selectedAccountId === null) return;
     
     const reloadChatsForAccount = async () => {
@@ -1652,7 +1670,7 @@ const WhatsApp = () => {
     };
     
     reloadChatsForAccount();
-  }, [selectedAccountId]);
+  }, [selectedAccountId, fetchChats, syncAllChats, fetchMissingPhotos]);
   useEffect(() => {
     const phoneParam = searchParams.get("phone");
     if (!phoneParam || chats.length === 0 || selectedChat) return;
