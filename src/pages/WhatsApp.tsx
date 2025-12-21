@@ -3055,6 +3055,7 @@ const WhatsApp = () => {
                                   const blob = await response.blob();
                                   await sendAudioMessage(blob, blob.type || "audio/webm");
                                 }}
+                                sessionId={whatsappAccounts.find(acc => acc.id === selectedAccountId)?.api_key}
                               />
                             </div>
                           )}

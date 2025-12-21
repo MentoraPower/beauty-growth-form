@@ -10,6 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 interface QuickMessagesProps {
   onSelect: (message: string) => void;
   onSelectAudio?: (audioBase64: string) => void;
+  sessionId?: string | null;
 }
 
 interface QuickMessage {
@@ -21,7 +22,7 @@ interface QuickMessage {
   audioDuration?: number; // duration in seconds
 }
 
-export function QuickMessages({ onSelect, onSelectAudio }: QuickMessagesProps) {
+export function QuickMessages({ onSelect, onSelectAudio, sessionId }: QuickMessagesProps) {
   const { toast } = useToast();
   const [messages, setMessages] = useState<QuickMessage[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -46,17 +47,24 @@ export function QuickMessages({ onSelect, onSelectAudio }: QuickMessagesProps) {
   const recordingIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
-  // Fetch messages from database
+  // Fetch messages from database - filtered by sessionId
   useEffect(() => {
     fetchMessages();
-  }, []);
+  }, [sessionId]);
 
   const fetchMessages = async () => {
     try {
-      const { data, error } = await supabase
+      let query = supabase
         .from("quick_messages")
         .select("*")
         .order("created_at", { ascending: false });
+
+      // Filter by session_id if provided
+      if (sessionId) {
+        query = query.eq("session_id", sessionId);
+      }
+
+      const { data, error } = await query;
 
       if (error) throw error;
 
@@ -159,6 +167,7 @@ export function QuickMessages({ onSelect, onSelectAudio }: QuickMessagesProps) {
           name: newName.trim() || newMessage.slice(0, 30),
           text: newMessage.trim(),
           type: "text",
+          session_id: sessionId || null,
         })
         .select()
         .single();
@@ -197,6 +206,7 @@ export function QuickMessages({ onSelect, onSelectAudio }: QuickMessagesProps) {
             type: "audio",
             audio_data: base64,
             audio_duration: recordingTime,
+            session_id: sessionId || null,
           })
           .select()
           .single();
