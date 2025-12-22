@@ -46,7 +46,9 @@ export function FacebookAdsIntegration({ open, onOpenChange }: FacebookAdsIntegr
   const [step, setStep] = useState<Step>("connect");
   const [isConnecting, setIsConnecting] = useState(false);
   const [isLoadingCampaigns, setIsLoadingCampaigns] = useState(false);
+  const [isCheckingToken, setIsCheckingToken] = useState(false);
   const [accessToken, setAccessToken] = useState<string>("");
+  const [hasStoredToken, setHasStoredToken] = useState(false);
   const [adAccounts, setAdAccounts] = useState<AdAccount[]>([]);
   const [selectedAdAccount, setSelectedAdAccount] = useState<string>("");
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
@@ -54,6 +56,34 @@ export function FacebookAdsIntegration({ open, onOpenChange }: FacebookAdsIntegr
     spend: true,
     cpm: true,
     cpc: true,
+  });
+
+  // Check for stored token on open
+  const checkStoredToken = async () => {
+    setIsCheckingToken(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('facebook-ads', {
+        body: { action: 'get-stored-token' }
+      });
+
+      if (!error && data?.hasToken && data?.isValid) {
+        setHasStoredToken(true);
+        setAccessToken(data.accessToken);
+        // Auto-fetch ad accounts
+        await fetchAdAccounts(data.accessToken);
+      }
+    } catch (err) {
+      console.error('Error checking stored token:', err);
+    } finally {
+      setIsCheckingToken(false);
+    }
+  };
+
+  // Auto-check on open
+  useState(() => {
+    if (open) {
+      checkStoredToken();
+    }
   });
 
   const handleConnectWithToken = async () => {
@@ -64,11 +94,50 @@ export function FacebookAdsIntegration({ open, onOpenChange }: FacebookAdsIntegr
 
     setIsConnecting(true);
     try {
-      await fetchAdAccounts(accessToken.trim());
-      toast.success("Token válido!");
+      // First extend the token to long-lived
+      const { data: extendData, error: extendError } = await supabase.functions.invoke('facebook-ads', {
+        body: { 
+          action: 'extend-token',
+          accessToken: accessToken.trim()
+        }
+      });
+
+      let tokenToUse = accessToken.trim();
+      
+      if (!extendError && extendData?.accessToken) {
+        tokenToUse = extendData.accessToken;
+        setAccessToken(tokenToUse);
+        const expiresIn = extendData.expiresIn ? Math.floor(extendData.expiresIn / 86400) : 60;
+        toast.success(`Token estendido para ${expiresIn} dias!`);
+      }
+
+      await fetchAdAccounts(tokenToUse);
     } catch (error) {
       console.error('Token error:', error);
       toast.error("Token inválido ou expirado");
+    } finally {
+      setIsConnecting(false);
+    }
+  };
+
+  const handleUseStoredToken = async () => {
+    setIsConnecting(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('facebook-ads', {
+        body: { action: 'get-stored-token' }
+      });
+
+      if (error || !data?.isValid) {
+        toast.error("Token armazenado inválido ou expirado");
+        return;
+      }
+
+      setAccessToken(data.accessToken);
+      await fetchAdAccounts(data.accessToken);
+      toast.success("Conectado com token armazenado!");
+    } catch (error) {
+      console.error('Stored token error:', error);
+      toast.error("Erro ao usar token armazenado");
     } finally {
       setIsConnecting(false);
     }
@@ -264,53 +333,88 @@ export function FacebookAdsIntegration({ open, onOpenChange }: FacebookAdsIntegr
           {/* Step: Connect */}
           {step === "connect" && (
             <div className="space-y-6">
-              <div className="bg-muted/50 rounded-2xl p-6">
-                <div className="w-16 h-16 rounded-2xl bg-[#1877F2] flex items-center justify-center mx-auto mb-4">
-                  <Facebook className="h-9 w-9 text-white" />
+              {isCheckingToken ? (
+                <div className="flex items-center justify-center py-12">
+                  <Loader2 className="h-8 w-8 animate-spin text-[#1877F2]" />
                 </div>
-                <h3 className="font-semibold text-lg mb-2 text-center">Conectar com Facebook Ads</h3>
-                <p className="text-sm text-muted-foreground mb-4 text-center">
-                  Cole o token de acesso gerado no Graph API Explorer com as permissões <code className="bg-muted px-1 rounded">ads_read</code> e <code className="bg-muted px-1 rounded">ads_management</code>.
-                </p>
+              ) : (
+                <>
+                  <div className="bg-muted/50 rounded-2xl p-6">
+                    <div className="w-16 h-16 rounded-2xl bg-[#1877F2] flex items-center justify-center mx-auto mb-4">
+                      <Facebook className="h-9 w-9 text-white" />
+                    </div>
+                    <h3 className="font-semibold text-lg mb-2 text-center">Conectar com Facebook Ads</h3>
+                    
+                    {/* Use Stored Token Button */}
+                    <Button
+                      onClick={handleUseStoredToken}
+                      disabled={isConnecting}
+                      className="w-full h-12 bg-[#1877F2] hover:bg-[#1565C0] text-white mb-4"
+                    >
+                      {isConnecting ? (
+                        <>
+                          <Loader2 className="h-5 w-5 mr-2 animate-spin" />
+                          Conectando...
+                        </>
+                      ) : (
+                        <>
+                          <Facebook className="h-5 w-5 mr-2" />
+                          Usar Token Armazenado
+                        </>
+                      )}
+                    </Button>
 
-                <div className="space-y-3">
-                  <Input
-                    placeholder="Cole o Access Token aqui"
-                    value={accessToken}
-                    onChange={(e) => setAccessToken(e.target.value)}
-                    className="h-11 font-mono text-xs"
-                  />
+                    <div className="relative my-4">
+                      <div className="absolute inset-0 flex items-center">
+                        <span className="w-full border-t border-border" />
+                      </div>
+                      <div className="relative flex justify-center text-xs uppercase">
+                        <span className="bg-muted/50 px-2 text-muted-foreground">ou cole manualmente</span>
+                      </div>
+                    </div>
 
-                  <Button
-                    onClick={handleConnectWithToken}
-                    disabled={isConnecting || !accessToken.trim()}
-                    className="w-full h-12 bg-[#1877F2] hover:bg-[#1565C0] text-white"
-                  >
-                    {isConnecting ? (
-                      <>
-                        <Loader2 className="h-5 w-5 mr-2 animate-spin" />
-                        Validando token...
-                      </>
-                    ) : (
-                      <>
-                        <Facebook className="h-5 w-5 mr-2" />
-                        Conectar
-                      </>
-                    )}
-                  </Button>
-                </div>
-              </div>
+                    <p className="text-sm text-muted-foreground mb-4 text-center">
+                      Cole o token de acesso gerado no Graph API Explorer com as permissões <code className="bg-muted px-1 rounded">ads_read</code> e <code className="bg-muted px-1 rounded">ads_management</code>.
+                    </p>
 
-              <div className="text-xs text-muted-foreground text-center">
-                <a 
-                  href="https://developers.facebook.com/tools/explorer/" 
-                  target="_blank" 
-                  rel="noopener noreferrer"
-                  className="text-[#1877F2] hover:underline"
-                >
-                  Abrir Graph API Explorer →
-                </a>
-              </div>
+                    <div className="space-y-3">
+                      <Input
+                        placeholder="Cole o Access Token aqui"
+                        value={accessToken}
+                        onChange={(e) => setAccessToken(e.target.value)}
+                        className="h-11 font-mono text-xs"
+                      />
+
+                      <Button
+                        onClick={handleConnectWithToken}
+                        disabled={isConnecting || !accessToken.trim()}
+                        variant="outline"
+                        className="w-full h-11"
+                      >
+                        {isConnecting ? (
+                          <>
+                            <Loader2 className="h-5 w-5 mr-2 animate-spin" />
+                            Validando e estendendo token...
+                          </>
+                        ) : (
+                          "Conectar com Token Manual"
+                        )}
+                      </Button>
+                    </div>
+                  </div>
+
+                  <div className="text-xs text-muted-foreground text-center">
+                    <a 
+                      href="https://developers.facebook.com/tools/explorer/" 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="text-[#1877F2] hover:underline"
+                    >
+                      Abrir Graph API Explorer →
+                    </a>
+                  </div>
+                </>
+              )}
             </div>
           )}
 
