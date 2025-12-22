@@ -1168,7 +1168,7 @@ export function CRMOriginsPanel({ isOpen, onClose, sidebarWidth, embedded = fals
             <Button variant="outline" onClick={() => setDialogOpen(false)}>
               Cancelar
             </Button>
-            <Button onClick={handleSave} className="bg-gradient-to-r from-[#F40000] to-[#A10000] text-white">
+            <Button onClick={handleSave} className="bg-gradient-to-r from-orange-600 to-amber-500 text-white">
               {dialogMode === 'create' ? 'Criar' : 'Salvar'}
             </Button>
           </DialogFooter>
