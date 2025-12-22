@@ -381,10 +381,10 @@ function ResizeHandle({ direction, widgetWidth, widgetHeight, containerWidth, mi
   if (direction === 'e') {
     return (
       <div
-        className="absolute top-2 bottom-2 right-0 w-3 cursor-e-resize group z-20"
+        className="absolute top-2 bottom-2 -right-3 w-8 cursor-e-resize group z-30"
         onMouseDown={handleMouseDown}
       >
-        <div className="absolute top-1/2 right-0.5 -translate-y-1/2 w-1 h-10 rounded-full bg-muted-foreground/30 opacity-0 group-hover:opacity-100 transition-opacity" />
+        <div className="absolute top-1/2 left-3 -translate-y-1/2 w-1.5 h-12 rounded-full bg-muted-foreground/40 opacity-0 group-hover:opacity-100 transition-opacity" />
       </div>
     );
   }
@@ -392,21 +392,21 @@ function ResizeHandle({ direction, widgetWidth, widgetHeight, containerWidth, mi
   if (direction === 's') {
     return (
       <div
-        className="absolute left-2 right-2 bottom-0 h-3 cursor-s-resize group z-20"
+        className="absolute left-2 right-2 -bottom-2 h-6 cursor-s-resize group z-30"
         onMouseDown={handleMouseDown}
       >
-        <div className="absolute bottom-0.5 left-1/2 -translate-x-1/2 h-1 w-10 rounded-full bg-muted-foreground/30 opacity-0 group-hover:opacity-100 transition-opacity" />
+        <div className="absolute top-2 left-1/2 -translate-x-1/2 h-1.5 w-12 rounded-full bg-muted-foreground/40 opacity-0 group-hover:opacity-100 transition-opacity" />
       </div>
     );
   }
 
   return (
     <div
-      className="absolute bottom-0 right-0 w-5 h-5 cursor-se-resize group z-30"
+      className="absolute -bottom-2 -right-2 w-8 h-8 cursor-se-resize group z-40"
       onMouseDown={handleMouseDown}
     >
       <svg 
-        className="absolute bottom-1 right-1 w-3 h-3 text-muted-foreground/50 opacity-0 group-hover:opacity-100 transition-opacity"
+        className="absolute bottom-2 right-2 w-4 h-4 text-muted-foreground/50 opacity-0 group-hover:opacity-100 transition-opacity"
         viewBox="0 0 10 10"
       >
         <path d="M9 1L1 9M9 5L5 9M9 9L9 9" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
