@@ -918,9 +918,19 @@ export function DashboardCanvas({ painelName, dashboardId, onBack }: DashboardCa
           let organic = 0;
           let paid = 0;
           
+          // Paid traffic indicators in utm_medium or utm_source
+          const paidMediumIndicators = ['cpc', 'ppc', 'paid', 'ads', 'cpm', 'cpv', 'display', 'banner', 'remarketing', 'retargeting', 'paidsocial', 'paid_social', 'paid-social'];
+          const paidSourceIndicators = ['facebook_ads', 'fb_ads', 'google_ads', 'googleads', 'meta_ads', 'tiktok_ads', 'instagram_ads', 'ads'];
+          
           utmEntries.forEach(entry => {
-            const isPaid = entry.utm_source || entry.utm_medium || entry.utm_campaign;
-            if (isPaid) {
+            const medium = (entry.utm_medium || '').toLowerCase().trim();
+            const source = (entry.utm_source || '').toLowerCase().trim();
+            
+            // Check if medium or source indicates paid traffic
+            const isPaidMedium = paidMediumIndicators.some(indicator => medium.includes(indicator));
+            const isPaidSource = paidSourceIndicators.some(indicator => source.includes(indicator) || source === indicator);
+            
+            if (isPaidMedium || isPaidSource) {
               paid++;
             } else {
               organic++;
