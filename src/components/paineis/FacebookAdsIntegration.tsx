@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Facebook, Check, Loader2, ChevronRight, BarChart3, DollarSign, MousePointer } from "lucide-react";
+import { Facebook, Check, Loader2, ChevronRight, BarChart3, DollarSign, MousePointer, Pencil, Plus, Trash2, RefreshCw } from "lucide-react";
 import {
   Sheet,
   SheetContent,
@@ -40,15 +40,25 @@ interface AdAccount {
   account_status: number;
 }
 
-type Step = "connect" | "select-account" | "select-campaigns" | "select-metrics";
+interface ExistingConnection {
+  id: string;
+  ad_account_id: string;
+  ad_account_name: string | null;
+  access_token: string;
+  selected_campaigns: { id: string; name: string }[];
+  selected_metrics: { spend: boolean; cpm: boolean; cpc: boolean };
+  is_active: boolean;
+}
+
+type Step = "list" | "connect" | "select-account" | "select-campaigns" | "select-metrics";
 
 export function FacebookAdsIntegration({ open, onOpenChange }: FacebookAdsIntegrationProps) {
-  const [step, setStep] = useState<Step>("connect");
+  const [step, setStep] = useState<Step>("list");
   const [isConnecting, setIsConnecting] = useState(false);
   const [isLoadingCampaigns, setIsLoadingCampaigns] = useState(false);
-  const [isCheckingToken, setIsCheckingToken] = useState(false);
+  const [isLoadingConnections, setIsLoadingConnections] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const [accessToken, setAccessToken] = useState<string>("");
-  const [hasStoredToken, setHasStoredToken] = useState(false);
   const [adAccounts, setAdAccounts] = useState<AdAccount[]>([]);
   const [selectedAdAccount, setSelectedAdAccount] = useState<string>("");
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
@@ -57,35 +67,153 @@ export function FacebookAdsIntegration({ open, onOpenChange }: FacebookAdsIntegr
     cpm: true,
     cpc: true,
   });
+  
+  // Existing connections
+  const [existingConnections, setExistingConnections] = useState<ExistingConnection[]>([]);
+  const [editingConnection, setEditingConnection] = useState<ExistingConnection | null>(null);
 
-  // Check for stored token on open
-  const checkStoredToken = async () => {
-    setIsCheckingToken(true);
+  // Load existing connections on open
+  const loadExistingConnections = async () => {
+    setIsLoadingConnections(true);
     try {
+      const { data, error } = await supabase
+        .from('facebook_ads_connections')
+        .select('*')
+        .eq('is_active', true)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      
+      const connections = (data || []).map(conn => ({
+        id: conn.id,
+        ad_account_id: conn.ad_account_id,
+        ad_account_name: conn.ad_account_name,
+        access_token: conn.access_token,
+        selected_campaigns: (conn.selected_campaigns as { id: string; name: string }[]) || [],
+        selected_metrics: (conn.selected_metrics as { spend: boolean; cpm: boolean; cpc: boolean }) || { spend: true, cpm: true, cpc: true },
+        is_active: conn.is_active
+      }));
+      
+      setExistingConnections(connections);
+    } catch (error) {
+      console.error('Error loading connections:', error);
+    } finally {
+      setIsLoadingConnections(false);
+    }
+  };
+
+  useEffect(() => {
+    if (open) {
+      setStep("list");
+      loadExistingConnections();
+    }
+  }, [open]);
+
+  const handleStartNewConnection = async () => {
+    setEditingConnection(null);
+    setIsConnecting(true);
+    
+    try {
+      // Check for stored token first
       const { data, error } = await supabase.functions.invoke('facebook-ads', {
         body: { action: 'get-stored-token' }
       });
 
       if (!error && data?.hasToken && data?.isValid) {
-        setHasStoredToken(true);
         setAccessToken(data.accessToken);
-        // Auto-fetch ad accounts
         await fetchAdAccounts(data.accessToken);
+      } else {
+        setStep("connect");
       }
     } catch (err) {
       console.error('Error checking stored token:', err);
+      setStep("connect");
     } finally {
-      setIsCheckingToken(false);
+      setIsConnecting(false);
     }
   };
 
-  // Auto-check on open
-  useEffect(() => {
-    if (open) {
-      checkStoredToken();
+  const handleEditConnection = async (connection: ExistingConnection) => {
+    setEditingConnection(connection);
+    setAccessToken(connection.access_token);
+    setSelectedAdAccount(connection.ad_account_id);
+    setSelectedMetrics(connection.selected_metrics);
+    
+    // Load campaigns for this connection
+    setIsLoadingCampaigns(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('facebook-ads', {
+        body: { 
+          action: 'get-campaigns',
+          accessToken: connection.access_token,
+          adAccountId: connection.ad_account_id
+        }
+      });
+
+      if (error) throw error;
+      
+      if (data.campaigns) {
+        const formattedCampaigns: Campaign[] = data.campaigns.map((c: any) => ({
+          id: c.id,
+          name: c.name,
+          status: c.status as "ACTIVE" | "PAUSED",
+          selected: connection.selected_campaigns.some(sc => sc.id === c.id)
+        }));
+        setCampaigns(formattedCampaigns);
+        setStep("select-campaigns");
+      }
+    } catch (error) {
+      console.error('Error fetching campaigns:', error);
+      toast.error("Erro ao buscar campanhas. O token pode ter expirado.");
+    } finally {
+      setIsLoadingCampaigns(false);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open]);
+  };
+
+  const handleDeleteConnection = async (connectionId: string) => {
+    try {
+      // Delete insights first
+      await supabase
+        .from('facebook_ads_insights')
+        .delete()
+        .eq('connection_id', connectionId);
+      
+      // Delete connection
+      const { error } = await supabase
+        .from('facebook_ads_connections')
+        .delete()
+        .eq('id', connectionId);
+
+      if (error) throw error;
+
+      toast.success("Conexão removida!");
+      loadExistingConnections();
+    } catch (error) {
+      console.error('Error deleting connection:', error);
+      toast.error("Erro ao remover conexão");
+    }
+  };
+
+  const handleRefreshInsights = async (connection: ExistingConnection) => {
+    setIsRefreshing(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('facebook-ads', {
+        body: { 
+          action: 'cache-insights',
+          connectionId: connection.id
+        }
+      });
+
+      if (error) throw error;
+
+      toast.success(`${data.cached} insights atualizados!`);
+    } catch (error) {
+      console.error('Error refreshing insights:', error);
+      toast.error("Erro ao atualizar insights");
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
 
   const handleConnectWithToken = async () => {
     if (!accessToken.trim()) {
@@ -95,7 +223,6 @@ export function FacebookAdsIntegration({ open, onOpenChange }: FacebookAdsIntegr
 
     setIsConnecting(true);
     try {
-      // First extend the token to long-lived
       const { data: extendData, error: extendError } = await supabase.functions.invoke('facebook-ads', {
         body: { 
           action: 'extend-token',
@@ -229,24 +356,24 @@ export function FacebookAdsIntegration({ open, onOpenChange }: FacebookAdsIntegr
     const selected = campaigns.filter(c => c.selected);
     
     try {
-      // Save connection to database
-      const { data: connection, error } = await supabase.from('facebook_ads_connections').insert({
-        access_token: accessToken,
-        ad_account_id: selectedAdAccount,
-        ad_account_name: adAccounts.find(a => a.id === selectedAdAccount)?.name || null,
-        selected_campaigns: selected.map(c => ({ id: c.id, name: c.name })),
-        selected_metrics: selectedMetrics,
-        is_active: true
-      }).select().single();
+      if (editingConnection) {
+        // Update existing connection
+        const { error } = await supabase
+          .from('facebook_ads_connections')
+          .update({
+            selected_campaigns: selected.map(c => ({ id: c.id, name: c.name })),
+            selected_metrics: selectedMetrics,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', editingConnection.id);
 
-      if (error) throw error;
+        if (error) throw error;
 
-      // Cache insights in background
-      if (connection) {
+        // Refresh insights
         supabase.functions.invoke('facebook-ads', {
           body: { 
             action: 'cache-insights',
-            connectionId: connection.id
+            connectionId: editingConnection.id
           }
         }).then(({ data, error }) => {
           if (error) {
@@ -255,18 +382,70 @@ export function FacebookAdsIntegration({ open, onOpenChange }: FacebookAdsIntegr
             console.log('Insights cached:', data);
           }
         });
+
+        toast.success(`Conexão atualizada com ${selected.length} campanhas!`);
+      } else {
+        // Create new connection with upsert to avoid duplicates
+        const { data: existingConn } = await supabase
+          .from('facebook_ads_connections')
+          .select('id')
+          .eq('ad_account_id', selectedAdAccount)
+          .single();
+
+        if (existingConn) {
+          // Update existing
+          const { error } = await supabase
+            .from('facebook_ads_connections')
+            .update({
+              access_token: accessToken,
+              ad_account_name: adAccounts.find(a => a.id === selectedAdAccount)?.name || null,
+              selected_campaigns: selected.map(c => ({ id: c.id, name: c.name })),
+              selected_metrics: selectedMetrics,
+              is_active: true,
+              updated_at: new Date().toISOString()
+            })
+            .eq('id', existingConn.id);
+
+          if (error) throw error;
+
+          supabase.functions.invoke('facebook-ads', {
+            body: { action: 'cache-insights', connectionId: existingConn.id }
+          });
+
+          toast.success(`Conexão atualizada com ${selected.length} campanhas!`);
+        } else {
+          // Create new
+          const { data: connection, error } = await supabase.from('facebook_ads_connections').insert({
+            access_token: accessToken,
+            ad_account_id: selectedAdAccount,
+            ad_account_name: adAccounts.find(a => a.id === selectedAdAccount)?.name || null,
+            selected_campaigns: selected.map(c => ({ id: c.id, name: c.name })),
+            selected_metrics: selectedMetrics,
+            is_active: true
+          }).select().single();
+
+          if (error) throw error;
+
+          if (connection) {
+            supabase.functions.invoke('facebook-ads', {
+              body: { action: 'cache-insights', connectionId: connection.id }
+            });
+          }
+
+          toast.success(`${selected.length} campanhas configuradas!`);
+        }
       }
 
-      toast.success(`${selected.length} campanhas configuradas!`);
       onOpenChange(false);
       
       // Reset state
       setTimeout(() => {
-        setStep("connect");
+        setStep("list");
         setAccessToken("");
         setAdAccounts([]);
         setSelectedAdAccount("");
         setCampaigns([]);
+        setEditingConnection(null);
       }, 300);
     } catch (error) {
       console.error('Error saving connection:', error);
@@ -278,11 +457,20 @@ export function FacebookAdsIntegration({ open, onOpenChange }: FacebookAdsIntegr
 
   const getStepNumber = () => {
     switch(step) {
+      case "list": return 0;
       case "connect": return 1;
       case "select-account": return 2;
       case "select-campaigns": return 3;
       case "select-metrics": return 4;
     }
+  };
+
+  const getActiveMetricsText = (metrics: { spend: boolean; cpm: boolean; cpc: boolean }) => {
+    const active = [];
+    if (metrics.spend) active.push('Spend');
+    if (metrics.cpm) active.push('CPM');
+    if (metrics.cpc) active.push('CPC');
+    return active.join(', ') || 'Nenhuma';
   };
 
   return (
@@ -296,6 +484,7 @@ export function FacebookAdsIntegration({ open, onOpenChange }: FacebookAdsIntegr
             Facebook Ads
           </SheetTitle>
           <SheetDescription>
+            {step === "list" && "Gerencie suas conexões do Facebook Ads"}
             {step === "connect" && "Conecte sua conta para importar dados de campanhas"}
             {step === "select-account" && "Selecione a conta de anúncios"}
             {step === "select-campaigns" && "Selecione as campanhas que deseja monitorar"}
@@ -304,118 +493,226 @@ export function FacebookAdsIntegration({ open, onOpenChange }: FacebookAdsIntegr
         </SheetHeader>
 
         <div className="mt-6">
-          {/* Step Indicator */}
-          <div className="flex items-center gap-2 mb-6">
-            <div className={`flex items-center justify-center w-7 h-7 rounded-full text-xs font-medium ${
-              getStepNumber() >= 1 ? (getStepNumber() > 1 ? "bg-green-500 text-white" : "bg-[#1877F2] text-white") : "bg-muted text-muted-foreground"
-            }`}>
-              {getStepNumber() > 1 ? <Check className="h-4 w-4" /> : "1"}
+          {/* Step Indicator (only show when not on list) */}
+          {step !== "list" && (
+            <div className="flex items-center gap-2 mb-6">
+              <div className={`flex items-center justify-center w-7 h-7 rounded-full text-xs font-medium ${
+                getStepNumber() >= 1 ? (getStepNumber() > 1 ? "bg-green-500 text-white" : "bg-[#1877F2] text-white") : "bg-muted text-muted-foreground"
+              }`}>
+                {getStepNumber() > 1 ? <Check className="h-4 w-4" /> : "1"}
+              </div>
+              <div className={`flex-1 h-0.5 ${getStepNumber() > 1 ? "bg-green-500" : "bg-border"}`} />
+              <div className={`flex items-center justify-center w-7 h-7 rounded-full text-xs font-medium ${
+                getStepNumber() >= 2 ? (getStepNumber() > 2 ? "bg-green-500 text-white" : "bg-[#1877F2] text-white") : "bg-muted text-muted-foreground"
+              }`}>
+                {getStepNumber() > 2 ? <Check className="h-4 w-4" /> : "2"}
+              </div>
+              <div className={`flex-1 h-0.5 ${getStepNumber() > 2 ? "bg-green-500" : "bg-border"}`} />
+              <div className={`flex items-center justify-center w-7 h-7 rounded-full text-xs font-medium ${
+                getStepNumber() >= 3 ? (getStepNumber() > 3 ? "bg-green-500 text-white" : "bg-[#1877F2] text-white") : "bg-muted text-muted-foreground"
+              }`}>
+                {getStepNumber() > 3 ? <Check className="h-4 w-4" /> : "3"}
+              </div>
+              <div className={`flex-1 h-0.5 ${getStepNumber() > 3 ? "bg-green-500" : "bg-border"}`} />
+              <div className={`flex items-center justify-center w-7 h-7 rounded-full text-xs font-medium ${
+                getStepNumber() === 4 ? "bg-[#1877F2] text-white" : "bg-muted text-muted-foreground"
+              }`}>
+                4
+              </div>
             </div>
-            <div className={`flex-1 h-0.5 ${getStepNumber() > 1 ? "bg-green-500" : "bg-border"}`} />
-            <div className={`flex items-center justify-center w-7 h-7 rounded-full text-xs font-medium ${
-              getStepNumber() >= 2 ? (getStepNumber() > 2 ? "bg-green-500 text-white" : "bg-[#1877F2] text-white") : "bg-muted text-muted-foreground"
-            }`}>
-              {getStepNumber() > 2 ? <Check className="h-4 w-4" /> : "2"}
-            </div>
-            <div className={`flex-1 h-0.5 ${getStepNumber() > 2 ? "bg-green-500" : "bg-border"}`} />
-            <div className={`flex items-center justify-center w-7 h-7 rounded-full text-xs font-medium ${
-              getStepNumber() >= 3 ? (getStepNumber() > 3 ? "bg-green-500 text-white" : "bg-[#1877F2] text-white") : "bg-muted text-muted-foreground"
-            }`}>
-              {getStepNumber() > 3 ? <Check className="h-4 w-4" /> : "3"}
-            </div>
-            <div className={`flex-1 h-0.5 ${getStepNumber() > 3 ? "bg-green-500" : "bg-border"}`} />
-            <div className={`flex items-center justify-center w-7 h-7 rounded-full text-xs font-medium ${
-              getStepNumber() === 4 ? "bg-[#1877F2] text-white" : "bg-muted text-muted-foreground"
-            }`}>
-              4
-            </div>
-          </div>
+          )}
 
-          {/* Step: Connect */}
-          {step === "connect" && (
-            <div className="space-y-6">
-              {isCheckingToken ? (
+          {/* Step: List Existing Connections */}
+          {step === "list" && (
+            <div className="space-y-4">
+              {isLoadingConnections ? (
                 <div className="flex items-center justify-center py-12">
                   <Loader2 className="h-8 w-8 animate-spin text-[#1877F2]" />
                 </div>
               ) : (
                 <>
-                  <div className="bg-muted/50 rounded-2xl p-6">
-                    <div className="w-16 h-16 rounded-2xl bg-[#1877F2] flex items-center justify-center mx-auto mb-4">
-                      <Facebook className="h-9 w-9 text-white" />
-                    </div>
-                    <h3 className="font-semibold text-lg mb-2 text-center">Conectar com Facebook Ads</h3>
-                    
-                    {/* Use Stored Token Button */}
-                    <Button
-                      onClick={handleUseStoredToken}
-                      disabled={isConnecting}
-                      className="w-full h-12 bg-[#1877F2] hover:bg-[#1565C0] text-white mb-4"
-                    >
-                      {isConnecting ? (
-                        <>
-                          <Loader2 className="h-5 w-5 mr-2 animate-spin" />
-                          Conectando...
-                        </>
-                      ) : (
-                        <>
-                          <Facebook className="h-5 w-5 mr-2" />
-                          Usar Token Armazenado
-                        </>
-                      )}
-                    </Button>
+                  {existingConnections.length > 0 ? (
+                    <ScrollArea className="h-[320px] pr-2">
+                      <div className="space-y-3">
+                        {existingConnections.map((conn) => (
+                          <div
+                            key={conn.id}
+                            className="p-4 rounded-xl border border-border bg-card hover:bg-muted/30 transition-colors"
+                          >
+                            <div className="flex items-start justify-between gap-3">
+                              <div className="flex-1 min-w-0">
+                                <p className="font-medium truncate">
+                                  {conn.ad_account_name || conn.ad_account_id}
+                                </p>
+                                <p className="text-xs text-muted-foreground mt-1">
+                                  {conn.selected_campaigns.length} campanha(s) selecionada(s)
+                                </p>
+                                <p className="text-xs text-muted-foreground">
+                                  Métricas: {getActiveMetricsText(conn.selected_metrics)}
+                                </p>
+                              </div>
+                              <div className="flex items-center gap-1">
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-8 w-8"
+                                  onClick={() => handleRefreshInsights(conn)}
+                                  disabled={isRefreshing}
+                                >
+                                  <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-8 w-8"
+                                  onClick={() => handleEditConnection(conn)}
+                                  disabled={isLoadingCampaigns}
+                                >
+                                  <Pencil className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-8 w-8 text-destructive hover:text-destructive"
+                                  onClick={() => handleDeleteConnection(conn.id)}
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            </div>
 
-                    <div className="relative my-4">
-                      <div className="absolute inset-0 flex items-center">
-                        <span className="w-full border-t border-border" />
+                            {/* Show campaigns */}
+                            <div className="mt-3 flex flex-wrap gap-1">
+                              {conn.selected_campaigns.slice(0, 3).map((camp) => (
+                                <span
+                                  key={camp.id}
+                                  className="text-xs px-2 py-0.5 rounded-full bg-[#1877F2]/10 text-[#1877F2]"
+                                >
+                                  {camp.name}
+                                </span>
+                              ))}
+                              {conn.selected_campaigns.length > 3 && (
+                                <span className="text-xs px-2 py-0.5 rounded-full bg-muted text-muted-foreground">
+                                  +{conn.selected_campaigns.length - 3}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        ))}
                       </div>
-                      <div className="relative flex justify-center text-xs uppercase">
-                        <span className="bg-muted/50 px-2 text-muted-foreground">ou cole manualmente</span>
+                    </ScrollArea>
+                  ) : (
+                    <div className="text-center py-12">
+                      <div className="w-16 h-16 rounded-2xl bg-[#1877F2]/10 flex items-center justify-center mx-auto mb-4">
+                        <Facebook className="h-9 w-9 text-[#1877F2]" />
                       </div>
+                      <p className="text-muted-foreground mb-4">
+                        Nenhuma conexão configurada
+                      </p>
                     </div>
+                  )}
 
-                    <p className="text-sm text-muted-foreground mb-4 text-center">
-                      Cole o token de acesso gerado no Graph API Explorer com as permissões <code className="bg-muted px-1 rounded">ads_read</code> e <code className="bg-muted px-1 rounded">ads_management</code>.
-                    </p>
-
-                    <div className="space-y-3">
-                      <Input
-                        placeholder="Cole o Access Token aqui"
-                        value={accessToken}
-                        onChange={(e) => setAccessToken(e.target.value)}
-                        className="h-11 font-mono text-xs"
-                      />
-
-                      <Button
-                        onClick={handleConnectWithToken}
-                        disabled={isConnecting || !accessToken.trim()}
-                        variant="outline"
-                        className="w-full h-11"
-                      >
-                        {isConnecting ? (
-                          <>
-                            <Loader2 className="h-5 w-5 mr-2 animate-spin" />
-                            Validando e estendendo token...
-                          </>
-                        ) : (
-                          "Conectar com Token Manual"
-                        )}
-                      </Button>
-                    </div>
-                  </div>
-
-                  <div className="text-xs text-muted-foreground text-center">
-                    <a 
-                      href="https://developers.facebook.com/tools/explorer/" 
-                      target="_blank" 
-                      rel="noopener noreferrer"
-                      className="text-[#1877F2] hover:underline"
-                    >
-                      Abrir Graph API Explorer →
-                    </a>
-                  </div>
+                  <Button
+                    onClick={handleStartNewConnection}
+                    disabled={isConnecting}
+                    className="w-full h-11 bg-[#1877F2] hover:bg-[#1565C0] text-white"
+                  >
+                    {isConnecting ? (
+                      <>
+                        <Loader2 className="h-5 w-5 mr-2 animate-spin" />
+                        Verificando...
+                      </>
+                    ) : (
+                      <>
+                        <Plus className="h-5 w-5 mr-2" />
+                        Nova conexão
+                      </>
+                    )}
+                  </Button>
                 </>
               )}
+            </div>
+          )}
+
+          {/* Step: Connect */}
+          {step === "connect" && (
+            <div className="space-y-6">
+              <div className="bg-muted/50 rounded-2xl p-6">
+                <div className="w-16 h-16 rounded-2xl bg-[#1877F2] flex items-center justify-center mx-auto mb-4">
+                  <Facebook className="h-9 w-9 text-white" />
+                </div>
+                <h3 className="font-semibold text-lg mb-2 text-center">Conectar com Facebook Ads</h3>
+                
+                <Button
+                  onClick={handleUseStoredToken}
+                  disabled={isConnecting}
+                  className="w-full h-12 bg-[#1877F2] hover:bg-[#1565C0] text-white mb-4"
+                >
+                  {isConnecting ? (
+                    <>
+                      <Loader2 className="h-5 w-5 mr-2 animate-spin" />
+                      Conectando...
+                    </>
+                  ) : (
+                    <>
+                      <Facebook className="h-5 w-5 mr-2" />
+                      Usar Token Armazenado
+                    </>
+                  )}
+                </Button>
+
+                <div className="relative my-4">
+                  <div className="absolute inset-0 flex items-center">
+                    <span className="w-full border-t border-border" />
+                  </div>
+                  <div className="relative flex justify-center text-xs uppercase">
+                    <span className="bg-muted/50 px-2 text-muted-foreground">ou cole manualmente</span>
+                  </div>
+                </div>
+
+                <p className="text-sm text-muted-foreground mb-4 text-center">
+                  Cole o token de acesso gerado no Graph API Explorer com as permissões <code className="bg-muted px-1 rounded">ads_read</code> e <code className="bg-muted px-1 rounded">ads_management</code>.
+                </p>
+
+                <div className="space-y-3">
+                  <Input
+                    placeholder="Cole o Access Token aqui"
+                    value={accessToken}
+                    onChange={(e) => setAccessToken(e.target.value)}
+                    className="h-11 font-mono text-xs"
+                  />
+
+                  <Button
+                    onClick={handleConnectWithToken}
+                    disabled={isConnecting || !accessToken.trim()}
+                    variant="outline"
+                    className="w-full h-11"
+                  >
+                    {isConnecting ? (
+                      <>
+                        <Loader2 className="h-5 w-5 mr-2 animate-spin" />
+                        Validando e estendendo token...
+                      </>
+                    ) : (
+                      "Conectar com Token Manual"
+                    )}
+                  </Button>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between text-xs text-muted-foreground">
+                <Button variant="ghost" size="sm" onClick={() => setStep("list")}>
+                  ← Voltar
+                </Button>
+                <a 
+                  href="https://developers.facebook.com/tools/explorer/" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="text-[#1877F2] hover:underline"
+                >
+                  Abrir Graph API Explorer →
+                </a>
+              </div>
             </div>
           )}
 
@@ -454,6 +751,10 @@ export function FacebookAdsIntegration({ open, onOpenChange }: FacebookAdsIntegr
                     <ChevronRight className="h-4 w-4 ml-2" />
                   </>
                 )}
+              </Button>
+
+              <Button variant="ghost" size="sm" onClick={() => setStep("list")} className="w-full">
+                ← Voltar
               </Button>
             </div>
           )}
@@ -518,6 +819,10 @@ export function FacebookAdsIntegration({ open, onOpenChange }: FacebookAdsIntegr
               >
                 Continuar
                 <ChevronRight className="h-4 w-4 ml-2" />
+              </Button>
+
+              <Button variant="ghost" size="sm" onClick={() => setStep("list")} className="w-full">
+                ← Voltar
               </Button>
             </div>
           )}
@@ -603,7 +908,7 @@ export function FacebookAdsIntegration({ open, onOpenChange }: FacebookAdsIntegr
                   disabled={!selectedMetrics.spend && !selectedMetrics.cpm && !selectedMetrics.cpc}
                   className="w-full h-11 bg-gradient-to-r from-orange-500 to-orange-400 hover:from-orange-600 hover:to-orange-500 text-white"
                 >
-                  Concluir configuração
+                  {editingConnection ? "Salvar alterações" : "Concluir configuração"}
                 </Button>
                 <Button
                   variant="ghost"
