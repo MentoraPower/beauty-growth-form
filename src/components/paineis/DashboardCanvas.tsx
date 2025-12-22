@@ -938,8 +938,8 @@ export function DashboardCanvas({ painelName, dashboardId, onBack }: DashboardCa
           });
           
           distribution = [
-            { name: 'Orgânico', value: organic, color: '#10b981' },
-            { name: 'Pago', value: paid, color: '#8b5cf6' },
+            { name: 'Orgânico', value: organic },
+            { name: 'Pago', value: paid },
           ];
         }
 
