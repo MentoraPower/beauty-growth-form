@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Facebook, Check, Loader2, ChevronRight, BarChart3, DollarSign, MousePointer } from "lucide-react";
+import { Facebook, Check, Loader2, ChevronRight, BarChart3, DollarSign, MousePointer, Eye, EyeOff } from "lucide-react";
 import {
   Sheet,
   SheetContent,
@@ -10,8 +10,9 @@ import {
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-
 interface FacebookAdsIntegrationProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -46,11 +47,20 @@ export function FacebookAdsIntegration({ open, onOpenChange }: FacebookAdsIntegr
     cpm: true,
     cpc: true,
   });
+  const [appId, setAppId] = useState("");
+  const [appSecret, setAppSecret] = useState("");
+  const [showSecret, setShowSecret] = useState(false);
 
   const handleFacebookLogin = async () => {
+    if (!appId.trim() || !appSecret.trim()) {
+      toast.error("Preencha o App ID e App Secret");
+      return;
+    }
+
     setIsConnecting(true);
     
-    // Simulate Facebook OAuth
+    // TODO: Implement real Facebook OAuth with Graph API
+    // For now, simulate the connection
     await new Promise(resolve => setTimeout(resolve, 2000));
     
     setIsConnecting(false);
@@ -139,18 +149,53 @@ export function FacebookAdsIntegration({ open, onOpenChange }: FacebookAdsIntegr
           {/* Step: Connect */}
           {step === "connect" && (
             <div className="space-y-6">
-              <div className="bg-muted/50 rounded-2xl p-6 text-center">
+              <div className="bg-muted/50 rounded-2xl p-6">
                 <div className="w-16 h-16 rounded-2xl bg-[#1877F2] flex items-center justify-center mx-auto mb-4">
                   <Facebook className="h-9 w-9 text-white" />
                 </div>
-                <h3 className="font-semibold text-lg mb-2">Conectar com Facebook</h3>
-                <p className="text-sm text-muted-foreground mb-6">
-                  Faça login com sua conta do Facebook para acessar os dados das suas campanhas de anúncios.
+                <h3 className="font-semibold text-lg mb-2 text-center">Conectar com Facebook</h3>
+                <p className="text-sm text-muted-foreground mb-6 text-center">
+                  Insira as credenciais do seu app do Meta Developers para conectar.
                 </p>
+
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="appId">App ID</Label>
+                    <Input
+                      id="appId"
+                      placeholder="Digite o App ID"
+                      value={appId}
+                      onChange={(e) => setAppId(e.target.value)}
+                      className="h-11"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="appSecret">App Secret</Label>
+                    <div className="relative">
+                      <Input
+                        id="appSecret"
+                        type={showSecret ? "text" : "password"}
+                        placeholder="Digite o App Secret"
+                        value={appSecret}
+                        onChange={(e) => setAppSecret(e.target.value)}
+                        className="h-11 pr-10"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowSecret(!showSecret)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                      >
+                        {showSecret ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
                 <Button
                   onClick={handleFacebookLogin}
-                  disabled={isConnecting}
-                  className="w-full h-12 bg-[#1877F2] hover:bg-[#1565C0] text-white"
+                  disabled={isConnecting || !appId.trim() || !appSecret.trim()}
+                  className="w-full h-12 bg-[#1877F2] hover:bg-[#1565C0] text-white mt-6"
                 >
                   {isConnecting ? (
                     <>
@@ -160,14 +205,14 @@ export function FacebookAdsIntegration({ open, onOpenChange }: FacebookAdsIntegr
                   ) : (
                     <>
                       <Facebook className="h-5 w-5 mr-2" />
-                      Entrar com Facebook
+                      Conectar ao Facebook Ads
                     </>
                   )}
                 </Button>
               </div>
 
               <div className="text-xs text-muted-foreground text-center">
-                Ao conectar, você autoriza o acesso aos dados das suas campanhas de anúncios.
+                Acesse <a href="https://developers.facebook.com" target="_blank" rel="noopener noreferrer" className="text-[#1877F2] hover:underline">developers.facebook.com</a> para criar seu app e obter as credenciais.
               </div>
             </div>
           )}
