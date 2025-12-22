@@ -29,7 +29,7 @@ import {
   SortableContext,
   useSortable,
   arrayMove,
-  rectSortingStrategy,
+  horizontalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 
@@ -1370,8 +1370,8 @@ export function DashboardCanvas({ painelName, dashboardId, onBack }: DashboardCa
             onDragStart={handleDragStart}
             onDragEnd={handleDragEnd}
           >
-            <SortableContext items={widgets.map(w => w.id)} strategy={rectSortingStrategy}>
-              <div ref={containerRef} className="flex flex-wrap gap-3 p-1 content-start min-h-[200px]">
+            <SortableContext items={widgets.map(w => w.id)} strategy={horizontalListSortingStrategy}>
+              <div ref={containerRef} className="flex flex-nowrap gap-3 p-1 overflow-x-auto min-h-[200px] scrollbar-thin scrollbar-thumb-border scrollbar-track-transparent">
                 {widgets.map((widget) => (
                   <SortableWidget
                     key={widget.id}
