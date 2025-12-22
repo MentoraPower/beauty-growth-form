@@ -46,6 +46,8 @@ export function FacebookAdsIntegration({ open, onOpenChange }: FacebookAdsIntegr
   const [isConnecting, setIsConnecting] = useState(false);
   const [isLoadingCampaigns, setIsLoadingCampaigns] = useState(false);
   const [accessToken, setAccessToken] = useState<string | null>(null);
+  const [oauthAppId, setOauthAppId] = useState<string | null>(null);
+  const [lastRedirectUri, setLastRedirectUri] = useState<string | null>(null);
   const [adAccounts, setAdAccounts] = useState<AdAccount[]>([]);
   const [selectedAdAccount, setSelectedAdAccount] = useState<string>("");
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
@@ -61,25 +63,45 @@ export function FacebookAdsIntegration({ open, onOpenChange }: FacebookAdsIntegr
       const urlParams = new URLSearchParams(window.location.search);
       const code = urlParams.get('code');
       const state = urlParams.get('state');
-      
+      const errorCode = urlParams.get('error_code');
+      const errorMessage = urlParams.get('error_message');
+
+      const storedAppId = localStorage.getItem('fb_ads_oauth_app_id');
+      const storedRedirectUri = localStorage.getItem('fb_ads_oauth_redirect_uri');
+      if (storedAppId) setOauthAppId(storedAppId);
+      if (storedRedirectUri) setLastRedirectUri(storedRedirectUri);
+
+      if (errorCode) {
+        // Clean URL
+        window.history.replaceState({}, document.title, window.location.pathname);
+
+        const parsedMessage = errorMessage
+          ? decodeURIComponent(errorMessage.replace(/\+/g, ' '))
+          : 'Erro ao autenticar no Facebook';
+
+        const appIdText = storedAppId ? ` (App ID: ${storedAppId})` : '';
+        toast.error(`${parsedMessage}${appIdText}`);
+        return;
+      }
+
       if (code && state === 'facebook_ads_oauth') {
         // Clean URL
         window.history.replaceState({}, document.title, window.location.pathname);
-        
+
         setIsConnecting(true);
         try {
           const redirectUri = `${window.location.origin}${window.location.pathname}`;
-          
+
           const { data, error } = await supabase.functions.invoke('facebook-ads', {
-            body: { 
+            body: {
               action: 'exchange-token',
               code,
-              redirectUri
-            }
+              redirectUri,
+            },
           });
 
           if (error) throw error;
-          
+
           if (data.accessToken) {
             setAccessToken(data.accessToken);
             await fetchAdAccounts(data.accessToken);
@@ -99,20 +121,29 @@ export function FacebookAdsIntegration({ open, onOpenChange }: FacebookAdsIntegr
 
   const handleFacebookLogin = async () => {
     setIsConnecting(true);
-    
+
     try {
       const redirectUri = `${window.location.origin}${window.location.pathname}`;
-      
+
       const { data, error } = await supabase.functions.invoke('facebook-ads', {
-        body: { 
+        body: {
           action: 'get-oauth-url',
-          redirectUri
-        }
+          redirectUri,
+        },
       });
 
       if (error) throw error;
-      
-      if (data.oauthUrl) {
+
+      if (data?.appId) {
+        setOauthAppId(data.appId);
+        localStorage.setItem('fb_ads_oauth_app_id', data.appId);
+      }
+
+      const effectiveRedirectUri: string = data?.redirectUri || redirectUri;
+      setLastRedirectUri(effectiveRedirectUri);
+      localStorage.setItem('fb_ads_oauth_redirect_uri', effectiveRedirectUri);
+
+      if (data?.oauthUrl) {
         // Add state parameter for security
         const oauthUrlWithState = `${data.oauthUrl}&state=facebook_ads_oauth`;
         window.location.href = oauthUrlWithState;
@@ -319,9 +350,24 @@ export function FacebookAdsIntegration({ open, onOpenChange }: FacebookAdsIntegr
                   <Facebook className="h-9 w-9 text-white" />
                 </div>
                 <h3 className="font-semibold text-lg mb-2 text-center">Conectar com Facebook Ads</h3>
-                <p className="text-sm text-muted-foreground mb-6 text-center">
+                <p className="text-sm text-muted-foreground mb-2 text-center">
                   Clique no botão abaixo para fazer login com sua conta do Facebook e autorizar o acesso aos dados de anúncios.
                 </p>
+
+                {(oauthAppId || lastRedirectUri) && (
+                  <div className="mb-4 text-xs text-muted-foreground text-center space-y-1">
+                    {oauthAppId && (
+                      <div>
+                        App ID em uso: <span className="font-mono">{oauthAppId}</span>
+                      </div>
+                    )}
+                    {lastRedirectUri && (
+                      <div className="truncate">
+                        Redirect: <span className="font-mono">{lastRedirectUri}</span>
+                      </div>
+                    )}
+                  </div>
+                )}
 
                 <Button
                   onClick={handleFacebookLogin}
