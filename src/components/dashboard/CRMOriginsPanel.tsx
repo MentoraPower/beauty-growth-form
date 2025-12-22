@@ -502,15 +502,18 @@ function SortableOriginItem({
                       className={cn(
                         "flex items-center gap-2 flex-1 py-1.5 px-2 rounded-lg transition-all duration-200 ease-out text-xs",
                         isActive 
-                          ? "bg-black/10 text-foreground font-medium"
+                          ? "bg-orange-100/50 font-medium"
                           : "text-foreground/70 hover:text-foreground hover:bg-black/5"
                       )}
                     >
                       <CalendarDays className={cn(
                         "h-3 w-3 flex-shrink-0",
-                        isActive ? "text-foreground" : "text-foreground/70"
+                        isActive ? "text-orange-600" : "text-foreground/70"
                       )} />
-                      <span className="font-bold">{subOrigin.nome}</span>
+                      <span className={cn(
+                        "font-bold",
+                        isActive && "bg-gradient-to-r from-orange-600 to-amber-500 bg-clip-text text-transparent"
+                      )}>{subOrigin.nome}</span>
                     </button>
                     
                     {/* Sub-origin Actions - only show for admins */}
@@ -579,15 +582,18 @@ function SortableOriginItem({
                       className={cn(
                         "flex items-center gap-2 flex-1 py-1.5 px-2 rounded-lg transition-all duration-200 ease-out text-xs",
                         isActive 
-                          ? "bg-black/10 text-foreground font-medium"
+                          ? "bg-orange-100/50 font-medium"
                           : "text-foreground/70 hover:text-foreground hover:bg-black/5"
                       )}
                     >
                       <Kanban className={cn(
                         "h-3 w-3 flex-shrink-0",
-                        isActive ? "text-foreground" : "text-foreground/70"
+                        isActive ? "text-orange-600" : "text-foreground/70"
                       )} />
-                      <span className="truncate font-bold">{subOrigin.nome}</span>
+                      <span className={cn(
+                        "truncate font-bold",
+                        isActive && "bg-gradient-to-r from-orange-600 to-amber-500 bg-clip-text text-transparent"
+                      )}>{subOrigin.nome}</span>
                       {leadCount > 0 && (
                         <span className={cn(
                           "ml-auto text-[10px] px-1.5 py-0.5 rounded-full",
