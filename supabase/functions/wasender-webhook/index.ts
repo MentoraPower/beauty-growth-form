@@ -731,6 +731,70 @@ async function handler(req: Request): Promise<Response> {
           console.error(`[Wasender Webhook] Error creating tracking for lead ${lead.id}:`, trackingError);
         } else {
           console.log(`[Wasender Webhook] ✅ Created tracking entry for lead ${lead.id}: ${action} group "${groupName}"`);
+          
+          // ========== EXECUTE AUTOMATIONS ==========
+          // Find automations triggered by grupo_entrada or grupo_saida for this lead's sub_origin
+          if (lead.sub_origin_id) {
+            const { data: automations, error: autoError } = await supabase
+              .from("pipeline_automations")
+              .select("*")
+              .eq("trigger_type", tipoEvento)
+              .eq("sub_origin_id", lead.sub_origin_id)
+              .eq("is_active", true);
+            
+            if (autoError) {
+              console.error(`[Wasender Webhook] Error fetching automations:`, autoError);
+            } else if (automations && automations.length > 0) {
+              console.log(`[Wasender Webhook] Found ${automations.length} automation(s) for ${tipoEvento}`);
+              
+              for (const automation of automations) {
+                // Execute the automation based on target_type
+                if (automation.target_type === "sub_origin" && automation.target_pipeline_id) {
+                  // Move lead to target pipeline (optionally in target sub_origin)
+                  const updateData: Record<string, any> = {
+                    pipeline_id: automation.target_pipeline_id,
+                  };
+                  
+                  // If target_sub_origin_id is different, also move to that sub_origin
+                  if (automation.target_sub_origin_id && automation.target_sub_origin_id !== lead.sub_origin_id) {
+                    updateData.sub_origin_id = automation.target_sub_origin_id;
+                    console.log(`[Wasender Webhook] Moving lead to sub_origin ${automation.target_sub_origin_id}`);
+                  }
+                  
+                  const { error: updateError } = await supabase
+                    .from("leads")
+                    .update(updateData)
+                    .eq("id", lead.id);
+                  
+                  if (updateError) {
+                    console.error(`[Wasender Webhook] Error executing automation for lead ${lead.id}:`, updateError);
+                  } else {
+                    console.log(`[Wasender Webhook] ✅ Automation executed: moved lead ${lead.id} to pipeline ${automation.target_pipeline_id}`);
+                    
+                    // Create tracking entry for the automation
+                    const automationTracking = {
+                      lead_id: lead.id,
+                      tipo: "automacao",
+                      titulo: `Automação executada: ${tipoEvento}`,
+                      descricao: `Lead movido automaticamente para pipeline após ${action === "add" ? "entrar" : "sair"} do grupo "${groupName}"`,
+                      origem: "sistema",
+                      dados: {
+                        automation_id: automation.id,
+                        trigger_type: tipoEvento,
+                        target_pipeline_id: automation.target_pipeline_id,
+                        target_sub_origin_id: automation.target_sub_origin_id,
+                        group_name: groupName,
+                      },
+                    };
+                    
+                    await supabase.from("lead_tracking").insert(automationTracking);
+                  }
+                }
+              }
+            } else {
+              console.log(`[Wasender Webhook] No active automations found for ${tipoEvento} in sub_origin ${lead.sub_origin_id}`);
+            }
+          }
         }
       }
     }
