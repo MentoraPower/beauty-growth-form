@@ -69,6 +69,8 @@ const PIPELINE_COLORS = ["#171717", "#404040", "#737373", "#a3a3a3", "#d4d4d4"];
 const MIN_WIDTH = 260;
 const DEFAULT_WIDTH = 340;
 const GAP = 16;
+const REFERENCE_WIDTH = 1200; // Reference container width for percentage calculations
+const DEFAULT_PERCENT = 28; // Default percentage (~340px at 1200px container)
 
 interface SortableWidgetProps {
   widget: DashboardWidget;
@@ -381,6 +383,29 @@ function ResizeHandle({ direction, widgetWidth, widgetHeight, containerWidth, on
 
 type DatePreset = 'today' | 'yesterday' | '7days' | '30days' | 'custom';
 
+// Convert percentage to pixels based on container width
+function percentToPixels(percent: number, containerWidth: number): number {
+  return Math.max(MIN_WIDTH, Math.floor((percent / 100) * containerWidth));
+}
+
+// Convert pixels to percentage based on container width
+function pixelsToPercent(pixels: number, containerWidth: number): number {
+  if (containerWidth <= 0) return DEFAULT_PERCENT;
+  return Math.max(1, Math.min(100, (pixels / containerWidth) * 100));
+}
+
+// Get widget width in pixels (from percent or fallback to stored width)
+function getWidgetPixelWidth(widget: DashboardWidget, containerWidth: number): number {
+  if (widget.widthPercent !== undefined && widget.widthPercent > 0) {
+    return percentToPixels(widget.widthPercent, containerWidth);
+  }
+  // Fallback for legacy widgets with pixel width
+  if (widget.width !== undefined) {
+    return widget.width;
+  }
+  return DEFAULT_WIDTH;
+}
+
 // Helper to compute rows of widgets based on their widths
 function computeWidgetRows(widgets: DashboardWidget[], containerWidth: number): number[][] {
   if (containerWidth <= 0) return [widgets.map((_, i) => i)];
@@ -390,7 +415,7 @@ function computeWidgetRows(widgets: DashboardWidget[], containerWidth: number): 
   let rowWidth = 0;
 
   widgets.forEach((widget, idx) => {
-    const w = widget.width ?? DEFAULT_WIDTH;
+    const w = getWidgetPixelWidth(widget, containerWidth);
     const neededWidth = currentRow.length > 0 ? w + GAP : w;
 
     if (currentRow.length > 0 && rowWidth + neededWidth > containerWidth) {
@@ -407,9 +432,9 @@ function computeWidgetRows(widgets: DashboardWidget[], containerWidth: number): 
   return rows;
 }
 
-// Calculate the actual widths to display, adjusting for row overflow
+// Calculate the actual widths to display, scaling proportionally to fill container
 function calculateDisplayWidths(widgets: DashboardWidget[], containerWidth: number): number[] {
-  if (containerWidth <= 0) return widgets.map(w => w.width ?? DEFAULT_WIDTH);
+  if (containerWidth <= 0) return widgets.map(w => getWidgetPixelWidth(w, REFERENCE_WIDTH));
   
   const rows = computeWidgetRows(widgets, containerWidth);
   const displayWidths = new Array(widgets.length).fill(0);
@@ -417,30 +442,42 @@ function calculateDisplayWidths(widgets: DashboardWidget[], containerWidth: numb
   rows.forEach(rowIndices => {
     const totalGaps = (rowIndices.length - 1) * GAP;
     const availableWidth = containerWidth - totalGaps;
-    const totalRequestedWidth = rowIndices.reduce((sum, i) => sum + (widgets[i].width ?? DEFAULT_WIDTH), 0);
+    
+    // Calculate total percentage for this row
+    const totalPercent = rowIndices.reduce((sum, i) => {
+      const widget = widgets[i];
+      if (widget.widthPercent !== undefined && widget.widthPercent > 0) {
+        return sum + widget.widthPercent;
+      }
+      // Convert legacy pixel width to percent for calculation
+      const pixelWidth = widget.width ?? DEFAULT_WIDTH;
+      return sum + pixelsToPercent(pixelWidth, REFERENCE_WIDTH);
+    }, 0);
 
-    if (totalRequestedWidth <= availableWidth) {
-      // Fits - use actual widths
-      rowIndices.forEach(i => {
-        displayWidths[i] = widgets[i].width ?? DEFAULT_WIDTH;
-      });
-    } else {
-      // Overflow - distribute proportionally, respecting MIN_WIDTH
-      const scale = availableWidth / totalRequestedWidth;
-      let remaining = availableWidth;
+    // Distribute available width proportionally based on percentages
+    let remaining = availableWidth;
+    
+    rowIndices.forEach((i, idx) => {
+      const widget = widgets[i];
+      let widgetPercent: number;
       
-      rowIndices.forEach((i, idx) => {
-        const requestedWidth = widgets[i].width ?? DEFAULT_WIDTH;
-        if (idx === rowIndices.length - 1) {
-          // Last widget gets remaining space
-          displayWidths[i] = Math.max(MIN_WIDTH, remaining);
-        } else {
-          const scaledWidth = Math.max(MIN_WIDTH, Math.floor(requestedWidth * scale));
-          displayWidths[i] = scaledWidth;
-          remaining -= scaledWidth;
-        }
-      });
-    }
+      if (widget.widthPercent !== undefined && widget.widthPercent > 0) {
+        widgetPercent = widget.widthPercent;
+      } else {
+        const pixelWidth = widget.width ?? DEFAULT_WIDTH;
+        widgetPercent = pixelsToPercent(pixelWidth, REFERENCE_WIDTH);
+      }
+      
+      if (idx === rowIndices.length - 1) {
+        // Last widget gets remaining space
+        displayWidths[i] = Math.max(MIN_WIDTH, remaining);
+      } else {
+        // Scale proportionally
+        const scaledWidth = Math.max(MIN_WIDTH, Math.floor((widgetPercent / totalPercent) * availableWidth));
+        displayWidths[i] = scaledWidth;
+        remaining -= scaledWidth;
+      }
+    });
   });
 
   return displayWidths;
@@ -1065,19 +1102,22 @@ export function DashboardCanvas({ painelName, dashboardId, onBack }: DashboardCa
     setSelectedChart(chart);
     setIsChartSelectorOpen(false);
     
-    const effectiveContainer = containerWidth > 0 ? containerWidth : 800;
+    const effectiveContainer = containerWidth > 0 ? containerWidth : REFERENCE_WIDTH;
     
     // Calculate how much space is in the last row
     const rows = computeWidgetRows(widgets, effectiveContainer);
-    let initialWidth = DEFAULT_WIDTH;
+    let initialPercent = DEFAULT_PERCENT;
     
     if (rows.length > 0) {
       const lastRow = rows[rows.length - 1];
-      const lastRowWidth = lastRow.reduce((sum, i) => sum + (widgets[i].width ?? DEFAULT_WIDTH) + (sum > 0 ? GAP : 0), 0);
-      const availableInRow = effectiveContainer - lastRowWidth - GAP;
+      const lastRowPercent = lastRow.reduce((sum, i) => {
+        const w = widgets[i];
+        return sum + (w.widthPercent ?? pixelsToPercent(w.width ?? DEFAULT_WIDTH, effectiveContainer));
+      }, 0);
+      const availablePercent = 100 - lastRowPercent - 2; // 2% for gap
       
-      if (availableInRow >= MIN_WIDTH) {
-        initialWidth = Math.max(MIN_WIDTH, Math.min(DEFAULT_WIDTH, availableInRow));
+      if (availablePercent >= pixelsToPercent(MIN_WIDTH, effectiveContainer)) {
+        initialPercent = Math.max(pixelsToPercent(MIN_WIDTH, effectiveContainer), Math.min(DEFAULT_PERCENT, availablePercent));
       }
     }
     
@@ -1086,7 +1126,7 @@ export function DashboardCanvas({ painelName, dashboardId, onBack }: DashboardCa
       chartType: chart,
       source: null,
       isConnected: false,
-      width: initialWidth,
+      widthPercent: initialPercent,
       height: 280,
     };
     setWidgets(prev => [...prev, newWidget]);
@@ -1145,9 +1185,9 @@ export function DashboardCanvas({ painelName, dashboardId, onBack }: DashboardCa
     ));
   };
 
-  // Improved resize handler: shrinks siblings proportionally when needed
+  // Improved resize handler: saves as percentage for responsive scaling
   const handleWidgetResize = useCallback((widgetId: string, nextWidth: number, nextHeight: number) => {
-    const cw = containerWidth > 0 ? containerWidth : 1200;
+    const cw = containerWidth > 0 ? containerWidth : REFERENCE_WIDTH;
 
     const clampWidth = (w: number) => Math.min(cw, Math.max(MIN_WIDTH, w));
     const clampHeight = (h: number) => Math.min(1200, Math.max(220, h));
@@ -1166,11 +1206,12 @@ export function DashboardCanvas({ painelName, dashboardId, onBack }: DashboardCa
       const siblings = rowIndices.filter(i => i !== idx);
 
       // Calculate delta
-      const oldWidth = next[idx].width ?? DEFAULT_WIDTH;
+      const oldWidth = getWidgetPixelWidth(next[idx], cw);
       const delta = clampedWidth - oldWidth;
 
-      // Apply new size
-      next[idx].width = clampedWidth;
+      // Apply new size as PERCENTAGE for responsive scaling
+      next[idx].widthPercent = pixelsToPercent(clampedWidth, cw);
+      next[idx].width = clampedWidth; // Keep pixel for backwards compat
       next[idx].height = clampedHeight;
 
       if (siblings.length === 0 || delta === 0) {
@@ -1180,7 +1221,7 @@ export function DashboardCanvas({ painelName, dashboardId, onBack }: DashboardCa
       // Calculate available space in row
       const totalGaps = (rowIndices.length - 1) * GAP;
       const availableWidth = cw - totalGaps;
-      const currentRowWidth = rowIndices.reduce((sum, i) => sum + (next[i].width ?? DEFAULT_WIDTH), 0);
+      const currentRowWidth = rowIndices.reduce((sum, i) => sum + getWidgetPixelWidth(next[i], cw), 0);
 
       // If expanding and exceeding available width, shrink siblings
       if (delta > 0 && currentRowWidth > availableWidth) {
@@ -1193,12 +1234,14 @@ export function DashboardCanvas({ painelName, dashboardId, onBack }: DashboardCa
         for (const i of shrinkOrder) {
           if (remainingOverflow <= 0) break;
           
-          const currentSiblingWidth = next[i].width ?? DEFAULT_WIDTH;
+          const currentSiblingWidth = getWidgetPixelWidth(next[i], cw);
           const shrinkable = currentSiblingWidth - MIN_WIDTH;
           
           if (shrinkable > 0) {
             const shrinkBy = Math.min(shrinkable, remainingOverflow);
-            next[i].width = currentSiblingWidth - shrinkBy;
+            const newSiblingWidth = currentSiblingWidth - shrinkBy;
+            next[i].widthPercent = pixelsToPercent(newSiblingWidth, cw);
+            next[i].width = newSiblingWidth;
             remainingOverflow -= shrinkBy;
           }
         }
