@@ -274,7 +274,17 @@ const OriginOverview = () => {
         </Card>
 
         {/* SDR Sales Chart */}
-        <Card className="bg-white border border-black/5 shadow-none">
+        <Card className="bg-white border-0 shadow-none animated-dashed-border rounded-xl">
+          <svg className="rounded-xl">
+            <defs>
+              <linearGradient id="orangeGradientSDR" x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%" stopColor="#ea580c" />
+                <stop offset="50%" stopColor="#f59e0b" />
+                <stop offset="100%" stopColor="#ea580c" />
+              </linearGradient>
+            </defs>
+            <rect x="1" y="1" rx="11" ry="11" style={{ width: 'calc(100% - 2px)', height: 'calc(100% - 2px)', stroke: 'url(#orangeGradientSDR)' }} />
+          </svg>
           <CardHeader className="pb-4">
             <CardTitle className="text-base font-semibold text-foreground">
               Reuniões e Vendas por SDR
@@ -385,7 +395,17 @@ const OriginOverview = () => {
         </Card>
 
         {/* Closer Sales Chart */}
-        <Card className="bg-white border border-black/5 shadow-none">
+        <Card className="bg-white border-0 shadow-none animated-dashed-border rounded-xl">
+          <svg className="rounded-xl">
+            <defs>
+              <linearGradient id="orangeGradientCloser" x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%" stopColor="#ea580c" />
+                <stop offset="50%" stopColor="#f59e0b" />
+                <stop offset="100%" stopColor="#ea580c" />
+              </linearGradient>
+            </defs>
+            <rect x="1" y="1" rx="11" ry="11" style={{ width: 'calc(100% - 2px)', height: 'calc(100% - 2px)', stroke: 'url(#orangeGradientCloser)' }} />
+          </svg>
           <CardHeader className="pb-4">
             <CardTitle className="text-base font-semibold text-foreground">
               Reuniões e Vendas por Closer
