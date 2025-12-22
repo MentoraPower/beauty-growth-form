@@ -603,9 +603,14 @@ export function DashboardCanvas({ painelName, dashboardId, onBack }: DashboardCa
       for (const widget of connectedWidgets) {
         const data = await fetchWidgetData(widget);
 
-        // Keep widget dimensions as user-defined.
+        // For horizontal bar charts, adjust height based on number of bars
+        let newHeight = widget.height;
+        if (widget.chartType.id === 'bar_horizontal' && data?.distribution) {
+          newHeight = calculateOptimalBarHeight(data.distribution.length);
+        }
+
         setWidgets(prev => prev.map(w => 
-          w.id === widget.id ? { ...w, data: data || undefined, isLoading: false } : w
+          w.id === widget.id ? { ...w, data: data || undefined, isLoading: false, height: newHeight } : w
         ));
       }
     };
@@ -1171,8 +1176,15 @@ export function DashboardCanvas({ painelName, dashboardId, onBack }: DashboardCa
     
     for (const widget of connectedWidgets) {
       const data = await fetchWidgetData(widget);
+      
+      // For horizontal bar charts, adjust height based on number of bars
+      let newHeight = widget.height;
+      if (widget.chartType.id === 'bar_horizontal' && data?.distribution) {
+        newHeight = calculateOptimalBarHeight(data.distribution.length);
+      }
+      
       setWidgets(prev => prev.map(w => 
-        w.id === widget.id ? { ...w, data: data || undefined } : w
+        w.id === widget.id ? { ...w, data: data || undefined, height: newHeight } : w
       ));
     }
   }, [fetchWidgetData]);
