@@ -26,6 +26,7 @@ interface ChartRendererProps {
 }
 
 const DEFAULT_COLORS = ["#171717", "#404040", "#737373", "#a3a3a3", "#d4d4d4"];
+const HORIZONTAL_BAR_COLORS = ["#f97316", "#fb923c", "#fdba74", "#fed7aa", "#ffedd5"];
 
 export function ChartRenderer({ chartType, data, width, height, isLoading }: ChartRendererProps) {
   const chartHeight = height;
@@ -199,6 +200,54 @@ export function ChartRenderer({ chartType, data, width, height, isLoading }: Cha
         </div>
       );
 
+    case 'bar_horizontal':
+      if (distribution.length === 0) {
+        return (
+          <div className="w-full h-full flex items-center justify-center">
+            <p className="text-muted-foreground text-sm">Sem dados</p>
+          </div>
+        );
+      }
+
+      // Sort by value descending and take top items
+      const sortedData = [...distribution].sort((a, b) => b.value - a.value).slice(0, 8);
+      const maxValue = Math.max(...sortedData.map(d => d.value));
+
+      return (
+        <div className="w-full h-full flex flex-col gap-2 py-2 overflow-hidden">
+          {sortedData.map((item, index) => {
+            const percentage = maxValue > 0 ? (item.value / maxValue) * 100 : 0;
+            const barColor = item.color || HORIZONTAL_BAR_COLORS[index % HORIZONTAL_BAR_COLORS.length];
+            
+            return (
+              <div key={item.name} className="flex items-center gap-2 min-w-0">
+                <span className="text-[11px] text-muted-foreground truncate w-24 shrink-0 text-right" title={item.name}>
+                  {item.name}
+                </span>
+                <div className="flex-1 h-5 bg-muted/30 rounded overflow-hidden relative">
+                  <div 
+                    className="h-full rounded transition-all duration-500"
+                    style={{ 
+                      width: `${percentage}%`, 
+                      backgroundColor: barColor,
+                      minWidth: item.value > 0 ? '8px' : '0'
+                    }}
+                  />
+                </div>
+                <span className="text-xs font-medium text-foreground w-10 shrink-0 tabular-nums text-right">
+                  {item.value}
+                </span>
+              </div>
+            );
+          })}
+          {distribution.length > 8 && (
+            <p className="text-[10px] text-muted-foreground text-center">
+              +{distribution.length - 8} mais
+            </p>
+          )}
+        </div>
+      );
+
     case 'line':
       if (trend.length === 0) {
         return (
@@ -305,8 +354,8 @@ export function ChartRenderer({ chartType, data, width, height, isLoading }: Cha
       );
 
     case 'gauge':
-      const maxValue = Math.max(total * 1.3, 100);
-      const percentage = Math.round((total / maxValue) * 100);
+      const gaugeMaxValue = Math.max(total * 1.3, 100);
+      const gaugePercentage = Math.round((total / gaugeMaxValue) * 100);
       const gaugeWidth = Math.min(chartHeight * 1.2, width - 40);
       const gaugeHeight = gaugeWidth * 0.55;
       
@@ -332,7 +381,7 @@ export function ChartRenderer({ chartType, data, width, height, isLoading }: Cha
               stroke="#171717"
               strokeWidth="16"
               strokeLinecap="round"
-              strokeDasharray={`${(percentage / 100) * 251.2} 251.2`}
+              strokeDasharray={`${(gaugePercentage / 100) * 251.2} 251.2`}
               style={{ transition: "stroke-dasharray 0.6s ease" }}
             />
           </svg>
