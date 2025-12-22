@@ -454,15 +454,20 @@ function SortableOriginItem({
                     className={cn(
                       "flex items-center gap-2 flex-1 py-2 px-3 rounded-md transition-all duration-200 ease-out text-xs",
                       currentOverviewOriginId === origin.id 
-                        ? "bg-gradient-to-r from-orange-600 to-amber-500 text-white font-medium shadow-lg shadow-orange-600/30"
-                        : "text-foreground/70 hover:text-foreground hover:bg-black/5"
+                        ? "bg-white text-black font-medium shadow-lg"
+                        : "hover:bg-black/5"
                     )}
                   >
                     <Home className={cn(
                       "h-3 w-3 flex-shrink-0",
-                      currentOverviewOriginId === origin.id ? "text-white" : "text-foreground/70"
+                      currentOverviewOriginId === origin.id ? "text-black" : "text-orange-500"
                     )} />
-                    <span className="font-bold">Overview</span>
+                    <span className={cn(
+                      "font-bold",
+                      currentOverviewOriginId === origin.id 
+                        ? "text-black" 
+                        : "bg-gradient-to-r from-orange-600 to-amber-500 bg-clip-text text-transparent"
+                    )}>Overview</span>
                   </button>
                 </div>
               </li>
