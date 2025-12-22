@@ -334,6 +334,98 @@ export type Database = {
         }
         Relationships: []
       }
+      facebook_ads_connections: {
+        Row: {
+          access_token: string
+          access_token_expires_at: string | null
+          ad_account_id: string
+          ad_account_name: string | null
+          created_at: string
+          id: string
+          is_active: boolean
+          selected_campaigns: Json | null
+          selected_metrics: Json | null
+          updated_at: string
+        }
+        Insert: {
+          access_token: string
+          access_token_expires_at?: string | null
+          ad_account_id: string
+          ad_account_name?: string | null
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          selected_campaigns?: Json | null
+          selected_metrics?: Json | null
+          updated_at?: string
+        }
+        Update: {
+          access_token?: string
+          access_token_expires_at?: string | null
+          ad_account_id?: string
+          ad_account_name?: string | null
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          selected_campaigns?: Json | null
+          selected_metrics?: Json | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      facebook_ads_insights: {
+        Row: {
+          campaign_id: string
+          campaign_name: string | null
+          clicks: number | null
+          connection_id: string
+          cpc: number | null
+          cpm: number | null
+          created_at: string
+          date_preset: string | null
+          fetched_at: string
+          id: string
+          impressions: number | null
+          spend: number | null
+        }
+        Insert: {
+          campaign_id: string
+          campaign_name?: string | null
+          clicks?: number | null
+          connection_id: string
+          cpc?: number | null
+          cpm?: number | null
+          created_at?: string
+          date_preset?: string | null
+          fetched_at?: string
+          id?: string
+          impressions?: number | null
+          spend?: number | null
+        }
+        Update: {
+          campaign_id?: string
+          campaign_name?: string | null
+          clicks?: number | null
+          connection_id?: string
+          cpc?: number | null
+          cpm?: number | null
+          created_at?: string
+          date_preset?: string | null
+          fetched_at?: string
+          id?: string
+          impressions?: number | null
+          spend?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "facebook_ads_insights_connection_id_fkey"
+            columns: ["connection_id"]
+            isOneToOne: false
+            referencedRelation: "facebook_ads_connections"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       instagram_chats: {
         Row: {
           conversation_id: string
