@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Facebook, Check, Loader2, ChevronRight, BarChart3, DollarSign, MousePointer } from "lucide-react";
 import {
   Sheet,
@@ -80,11 +80,12 @@ export function FacebookAdsIntegration({ open, onOpenChange }: FacebookAdsIntegr
   };
 
   // Auto-check on open
-  useState(() => {
+  useEffect(() => {
     if (open) {
       checkStoredToken();
     }
-  });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
 
   const handleConnectWithToken = async () => {
     if (!accessToken.trim()) {

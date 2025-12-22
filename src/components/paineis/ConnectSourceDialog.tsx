@@ -63,10 +63,12 @@ export function ConnectSourceDialog({
   const [selectedTrackingType, setSelectedTrackingType] = useState<'grupo_entrada' | 'grupo_saida' | null>(null);
   const [selectedUtmType, setSelectedUtmType] = useState<'utm_source' | 'utm_medium' | 'utm_campaign' | 'utm_all' | null>(null);
   
-  // Facebook form state
-  const [fbAppId, setFbAppId] = useState("");
-  const [fbAppSecret, setFbAppSecret] = useState("");
-  const [fbAccessToken, setFbAccessToken] = useState("");
+  // Facebook Ads connections state
+  const [fbConnections, setFbConnections] = useState<
+    { id: string; ad_account_name: string | null; ad_account_id: string; selected_campaigns: any }[]
+  >([]);
+  const [selectedFbConnectionId, setSelectedFbConnectionId] = useState<string>("");
+  const [isFbConnectionsLoading, setIsFbConnectionsLoading] = useState(false);
 
   useEffect(() => {
     if (!open) {
@@ -76,9 +78,8 @@ export function ConnectSourceDialog({
       setSelectedTrackingType(null);
       setSelectedUtmType(null);
       setCustomFields([]);
-      setFbAppId("");
-      setFbAppSecret("");
-      setFbAccessToken("");
+      setFbConnections([]);
+      setSelectedFbConnectionId("");
       return;
     }
 
@@ -90,6 +91,20 @@ export function ConnectSourceDialog({
 
       if (originsRes.data) setOrigins(originsRes.data);
       if (subOriginsRes.data) setSubOrigins(subOriginsRes.data);
+
+      // Load existing Facebook Ads connections (created in Integrações)
+      setIsFbConnectionsLoading(true);
+      try {
+        const { data: connections } = await supabase
+          .from('facebook_ads_connections')
+          .select('id, ad_account_name, ad_account_id, selected_campaigns')
+          .eq('is_active', true)
+          .order('created_at', { ascending: false });
+
+        setFbConnections((connections || []) as any);
+      } finally {
+        setIsFbConnectionsLoading(false);
+      }
     };
 
     fetchData();
@@ -163,18 +178,17 @@ export function ConnectSourceDialog({
   };
 
   const handleConnectFacebook = () => {
-    if (fbAppId && fbAppSecret && fbAccessToken) {
-      onConnect({
-        type: 'facebook_ads',
-        sourceName: 'Facebook Ads',
-        credentials: {
-          appId: fbAppId,
-          appSecret: fbAppSecret,
-          accessToken: fbAccessToken,
-        },
-      });
-      onOpenChange(false);
-    }
+    if (!selectedFbConnectionId) return;
+
+    const connection = fbConnections.find((c) => c.id === selectedFbConnectionId);
+    if (!connection) return;
+
+    onConnect({
+      type: 'facebook_ads',
+      sourceId: connection.id,
+      sourceName: `Facebook Ads - ${connection.ad_account_name || connection.ad_account_id}`,
+    });
+    onOpenChange(false);
   };
 
   const handleSelectTracking = (trackingType: 'grupo_entrada' | 'grupo_saida') => {
@@ -378,53 +392,55 @@ export function ConnectSourceDialog({
               <Facebook className="h-8 w-8 text-[#1877F2]" />
               <div>
                 <h3 className="text-sm font-medium text-foreground">Facebook Ads</h3>
-                <p className="text-xs text-muted-foreground">Insira as credenciais da sua conta</p>
+                <p className="text-xs text-muted-foreground">
+                  Selecione uma integração já conectada em <strong>Integrações</strong>
+                </p>
               </div>
             </div>
 
-            <div className="space-y-3">
-              <div className="space-y-1.5">
-                <label className="text-xs font-medium text-muted-foreground">App ID</label>
-                <Input
-                  value={fbAppId}
-                  onChange={(e) => setFbAppId(e.target.value)}
-                  placeholder="Seu App ID do Facebook"
-                  className="h-11"
-                />
+            {isFbConnectionsLoading ? (
+              <p className="text-sm text-muted-foreground text-center py-6">Carregando conexões...</p>
+            ) : fbConnections.length === 0 ? (
+              <p className="text-sm text-muted-foreground text-center py-6">
+                Nenhuma conexão encontrada. Abra <strong>Integrações</strong> e conecte o Facebook Ads primeiro.
+              </p>
+            ) : (
+              <div className="space-y-2">
+                {fbConnections.map((c) => {
+                  const isSelected = selectedFbConnectionId === c.id;
+                  const campaignsCount = Array.isArray(c.selected_campaigns) ? c.selected_campaigns.length : 0;
+                  return (
+                    <button
+                      key={c.id}
+                      onClick={() => setSelectedFbConnectionId(c.id)}
+                      className={`w-full flex items-center justify-between gap-3 p-3 border rounded-lg text-left transition-all duration-200 ${
+                        isSelected
+                          ? 'border-[#1877F2] bg-[#1877F2]/5'
+                          : 'bg-white border-border hover:bg-muted/30 hover:border-foreground/20'
+                      }`}
+                    >
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium text-foreground truncate">
+                          {c.ad_account_name || c.ad_account_id}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {campaignsCount} campanha(s) selecionada(s)
+                        </p>
+                      </div>
+                      <div className={`h-3 w-3 rounded-full ${isSelected ? 'bg-[#1877F2]' : 'bg-muted'}`} />
+                    </button>
+                  );
+                })}
               </div>
-              <div className="space-y-1.5">
-                <label className="text-xs font-medium text-muted-foreground">App Secret</label>
-                <Input
-                  type="password"
-                  value={fbAppSecret}
-                  onChange={(e) => setFbAppSecret(e.target.value)}
-                  placeholder="Seu App Secret"
-                  className="h-11"
-                />
-              </div>
-              <div className="space-y-1.5">
-                <label className="text-xs font-medium text-muted-foreground">Access Token</label>
-                <Input
-                  type="password"
-                  value={fbAccessToken}
-                  onChange={(e) => setFbAccessToken(e.target.value)}
-                  placeholder="Seu Access Token"
-                  className="h-11"
-                />
-              </div>
-            </div>
+            )}
 
             <Button
               onClick={handleConnectFacebook}
-              disabled={!fbAppId || !fbAppSecret || !fbAccessToken}
+              disabled={!selectedFbConnectionId}
               className="w-full h-11 bg-[#1877F2] hover:bg-[#1877F2]/90 text-white"
             >
               Conectar Facebook Ads
             </Button>
-
-            <p className="text-xs text-muted-foreground text-center">
-              Acesse o <a href="https://developers.facebook.com" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">Facebook Developers</a> para obter suas credenciais
-            </p>
           </div>
         );
 
