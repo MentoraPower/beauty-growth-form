@@ -588,8 +588,54 @@ export function DashboardCanvas({ painelName, dashboardId, onBack }: DashboardCa
       )
       .subscribe();
 
+    // Realtime channel for Facebook Ads insights updates
+    const fbInsightsChannel = supabase
+      .channel('facebook-ads-insights-realtime')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'facebook_ads_insights',
+        },
+        () => {
+          // When Facebook Ads insights change, refetch data for Facebook Ads widgets
+          setWidgets(prev => prev.map(w => {
+            if (w.source?.type === 'facebook_ads' || w.source?.type === 'cost_per_lead') {
+              return { ...w, isLoading: true };
+            }
+            return w;
+          }));
+        }
+      )
+      .subscribe();
+
+    // Realtime channel for leads updates (for CPL calculations)
+    const leadsChannel = supabase
+      .channel('leads-realtime-for-cpl')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'leads',
+        },
+        () => {
+          // When leads change, refetch CPL widgets
+          setWidgets(prev => prev.map(w => {
+            if (w.source?.type === 'cost_per_lead') {
+              return { ...w, isLoading: true };
+            }
+            return w;
+          }));
+        }
+      )
+      .subscribe();
+
     return () => {
       supabase.removeChannel(channel);
+      supabase.removeChannel(fbInsightsChannel);
+      supabase.removeChannel(leadsChannel);
     };
   }, [dashboardId]);
 
