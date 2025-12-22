@@ -1115,7 +1115,7 @@ export function DashboardCanvas({ painelName, dashboardId, onBack }: DashboardCa
             onDragEnd={handleDragEnd}
           >
             <SortableContext items={widgets.map(w => w.id)} strategy={rectSortingStrategy}>
-              <div ref={containerRef} className="flex flex-wrap gap-4 p-1">
+              <div ref={containerRef} className="flex flex-wrap gap-3 p-1 content-start">
                 {widgets.map((widget) => (
                   <SortableWidget
                     key={widget.id}
