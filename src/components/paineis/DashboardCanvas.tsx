@@ -257,14 +257,6 @@ function SortableWidget({ widget, onResize, onDelete, onConnect, onRename, conta
 
       {/* Resize Handles */}
       <ResizeHandle 
-        direction="w" 
-        widgetWidth={widgetWidth} 
-        widgetHeight={widgetHeight}
-        containerWidth={containerWidth}
-        minWidth={minWidth}
-        onResize={(w, h) => onResize(widget.id, w, h)}
-      />
-      <ResizeHandle 
         direction="e" 
         widgetWidth={widgetWidth} 
         widgetHeight={widgetHeight}
@@ -293,7 +285,7 @@ function SortableWidget({ widget, onResize, onDelete, onConnect, onRename, conta
 }
 
 interface ResizeHandleProps {
-  direction: 'w' | 'e' | 's' | 'se';
+  direction: 'e' | 's' | 'se';
   widgetWidth: number;
   widgetHeight: number;
   containerWidth: number;
@@ -323,10 +315,6 @@ function ResizeHandle({ direction, widgetWidth, widgetHeight, containerWidth, mi
         const maxWidth = containerWidth > 0 ? containerWidth : 2000;
         newWidth = Math.min(maxWidth, Math.max(minWidth, startSize.current.width + deltaX));
       }
-      if (direction.includes('w')) {
-        const maxWidth = containerWidth > 0 ? containerWidth : 2000;
-        newWidth = Math.min(maxWidth, Math.max(minWidth, startSize.current.width - deltaX));
-      }
       if (direction.includes('s')) {
         newHeight = Math.min(1200, Math.max(220, startSize.current.height + deltaY));
       }
@@ -343,24 +331,13 @@ function ResizeHandle({ direction, widgetWidth, widgetHeight, containerWidth, mi
     document.addEventListener('mouseup', handleMouseUp);
   };
 
-  if (direction === 'w') {
-    return (
-      <div
-        className="absolute top-2 bottom-2 left-0 w-2 cursor-w-resize group z-20"
-        onMouseDown={handleMouseDown}
-      >
-        <div className="absolute top-1/2 left-0.5 -translate-y-1/2 w-1 h-8 rounded-full bg-border opacity-0 group-hover:opacity-100 transition-opacity" />
-      </div>
-    );
-  }
-
   if (direction === 'e') {
     return (
       <div
-        className="absolute top-2 bottom-2 right-0 w-2 cursor-e-resize group z-20"
+        className="absolute top-2 bottom-2 right-0 w-3 cursor-e-resize group z-20"
         onMouseDown={handleMouseDown}
       >
-        <div className="absolute top-1/2 right-0.5 -translate-y-1/2 w-1 h-8 rounded-full bg-border opacity-0 group-hover:opacity-100 transition-opacity" />
+        <div className="absolute top-1/2 right-0.5 -translate-y-1/2 w-1 h-10 rounded-full bg-muted-foreground/30 opacity-0 group-hover:opacity-100 transition-opacity" />
       </div>
     );
   }
@@ -368,21 +345,21 @@ function ResizeHandle({ direction, widgetWidth, widgetHeight, containerWidth, mi
   if (direction === 's') {
     return (
       <div
-        className="absolute left-2 right-2 bottom-0 h-2 cursor-s-resize group z-20"
+        className="absolute left-2 right-2 bottom-0 h-3 cursor-s-resize group z-20"
         onMouseDown={handleMouseDown}
       >
-        <div className="absolute bottom-0.5 left-1/2 -translate-x-1/2 h-1 w-8 rounded-full bg-border opacity-0 group-hover:opacity-100 transition-opacity" />
+        <div className="absolute bottom-0.5 left-1/2 -translate-x-1/2 h-1 w-10 rounded-full bg-muted-foreground/30 opacity-0 group-hover:opacity-100 transition-opacity" />
       </div>
     );
   }
 
   return (
     <div
-      className="absolute bottom-0 right-0 w-4 h-4 cursor-se-resize group z-30"
+      className="absolute bottom-0 right-0 w-5 h-5 cursor-se-resize group z-30"
       onMouseDown={handleMouseDown}
     >
       <svg 
-        className="absolute bottom-1 right-1 w-2.5 h-2.5 text-border opacity-0 group-hover:opacity-100 transition-opacity"
+        className="absolute bottom-1 right-1 w-3 h-3 text-muted-foreground/50 opacity-0 group-hover:opacity-100 transition-opacity"
         viewBox="0 0 10 10"
       >
         <path d="M9 1L1 9M9 5L5 9M9 9L9 9" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
