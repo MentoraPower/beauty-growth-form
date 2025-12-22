@@ -731,7 +731,44 @@ async function handler(req: Request): Promise<Response> {
           console.error(`[Wasender Webhook] Error creating tracking for lead ${lead.id}:`, trackingError);
         } else {
           console.log(`[Wasender Webhook] ✅ Created tracking entry for lead ${lead.id}: ${action} group "${groupName}"`);
-          
+
+          // ========== CANCEL SCHEDULED EMAILS IF LEAD ENTERED GROUP ==========
+          if (action === "add") {
+            try {
+              const { data: cancelledEmails, error: cancelError } = await supabase
+                .from("scheduled_emails")
+                .update({ 
+                  status: "cancelled", 
+                  cancelled_at: new Date().toISOString(),
+                  cancel_reason: `Lead entrou no grupo "${groupName}"`
+                })
+                .eq("lead_id", lead.id)
+                .eq("status", "pending")
+                .select("id, lead_email, subject");
+
+              if (cancelError) {
+                console.error(`[Wasender Webhook] Error cancelling scheduled emails:`, cancelError);
+              } else if (cancelledEmails && cancelledEmails.length > 0) {
+                console.log(`[Wasender Webhook] ✅ Cancelled ${cancelledEmails.length} scheduled email(s) for lead ${lead.id}`);
+                
+                // Create tracking entry for cancelled emails
+                await supabase.from("lead_tracking").insert({
+                  lead_id: lead.id,
+                  tipo: "email_cancelado",
+                  titulo: `Email cancelado - entrou no grupo`,
+                  descricao: `${cancelledEmails.length} email(s) agendado(s) foi(ram) cancelado(s) porque o lead entrou no grupo "${groupName}"`,
+                  origem: "sistema",
+                  dados: {
+                    cancelled_emails: cancelledEmails.map((e: any) => ({ id: e.id, subject: e.subject })),
+                    group_name: groupName,
+                    group_jid: groupJid,
+                  },
+                });
+              }
+            } catch (cancelErr) {
+              console.error(`[Wasender Webhook] Error in cancel email flow:`, cancelErr);
+            }
+          }
           // ========== EXECUTE AUTOMATIONS ==========
           // Find automations triggered by grupo_entrada or grupo_saida for this lead's sub_origin
           if (lead.sub_origin_id) {

@@ -1,0 +1,149 @@
+import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { Resend } from "https://esm.sh/resend@2.0.0";
+
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+};
+
+const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+const resendApiKey = Deno.env.get("RESEND_API_KEY")!;
+
+const handler = async (req: Request): Promise<Response> => {
+  console.log("[ProcessScheduledEmails] Starting scheduled email processing...");
+
+  if (req.method === "OPTIONS") {
+    return new Response(null, { headers: corsHeaders });
+  }
+
+  try {
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+    const resend = new Resend(resendApiKey);
+
+    // Get email settings
+    const { data: settings } = await supabase
+      .from("email_settings")
+      .select("*")
+      .limit(1)
+      .single();
+
+    const fromName = settings?.from_name || "Scale Beauty";
+    const fromEmail = settings?.from_email || "contato@scalebeauty.com.br";
+
+    // Fetch all pending scheduled emails that are due
+    const now = new Date().toISOString();
+    const { data: scheduledEmails, error: fetchError } = await supabase
+      .from("scheduled_emails")
+      .select("*")
+      .eq("status", "pending")
+      .lte("scheduled_for", now)
+      .limit(50);
+
+    if (fetchError) {
+      console.error("[ProcessScheduledEmails] Error fetching scheduled emails:", fetchError);
+      throw fetchError;
+    }
+
+    if (!scheduledEmails || scheduledEmails.length === 0) {
+      console.log("[ProcessScheduledEmails] No scheduled emails due for sending");
+      return new Response(
+        JSON.stringify({ success: true, processed: 0, message: "No emails to process" }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    console.log(`[ProcessScheduledEmails] Found ${scheduledEmails.length} email(s) to process`);
+
+    let sentCount = 0;
+    let failedCount = 0;
+
+    for (const email of scheduledEmails) {
+      try {
+        console.log(`[ProcessScheduledEmails] Sending email to ${email.lead_email} (scheduled for ${email.scheduled_for})`);
+
+        // Send email via Resend
+        const emailResponse = await resend.emails.send({
+          from: `${fromName} <${fromEmail}>`,
+          to: [email.lead_email],
+          subject: email.subject,
+          html: email.body_html,
+        });
+
+        const resendError = (emailResponse as any)?.error;
+        if (resendError) {
+          throw new Error(
+            typeof resendError === "string"
+              ? resendError
+              : resendError?.message || "Erro desconhecido ao enviar e-mail"
+          );
+        }
+
+        const resendId = (emailResponse as any)?.data?.id ?? null;
+
+        // Update scheduled email status to sent
+        await supabase
+          .from("scheduled_emails")
+          .update({ status: "sent", sent_at: new Date().toISOString() })
+          .eq("id", email.id);
+
+        // Record in sent_emails
+        await supabase.from("sent_emails").insert({
+          lead_id: email.lead_id,
+          lead_name: email.lead_name,
+          lead_email: email.lead_email,
+          subject: email.subject,
+          body_html: email.body_html,
+          status: "sent",
+          resend_id: resendId,
+          sent_at: new Date().toISOString(),
+        });
+
+        console.log(`[ProcessScheduledEmails] ✅ Email sent successfully to ${email.lead_email}`);
+        sentCount++;
+      } catch (emailError: any) {
+        console.error(`[ProcessScheduledEmails] ❌ Failed to send email to ${email.lead_email}:`, emailError);
+
+        // Update scheduled email status to failed
+        await supabase
+          .from("scheduled_emails")
+          .update({ status: "failed" })
+          .eq("id", email.id);
+
+        // Record failed attempt
+        await supabase.from("sent_emails").insert({
+          lead_id: email.lead_id,
+          lead_name: email.lead_name,
+          lead_email: email.lead_email,
+          subject: email.subject,
+          body_html: email.body_html,
+          status: "failed",
+          error_message: emailError?.message,
+        });
+
+        failedCount++;
+      }
+    }
+
+    console.log(`[ProcessScheduledEmails] Processing complete. Sent: ${sentCount}, Failed: ${failedCount}`);
+
+    return new Response(
+      JSON.stringify({
+        success: true,
+        processed: scheduledEmails.length,
+        sent: sentCount,
+        failed: failedCount,
+      }),
+      { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    );
+  } catch (error: any) {
+    console.error("[ProcessScheduledEmails] Error:", error);
+    return new Response(
+      JSON.stringify({ error: error.message }),
+      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    );
+  }
+};
+
+serve(handler);
