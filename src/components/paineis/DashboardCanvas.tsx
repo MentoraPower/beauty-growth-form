@@ -312,7 +312,8 @@ function ResizeHandle({ direction, widgetWidth, widgetHeight, containerWidth, mi
       let newHeight = startSize.current.height;
 
       if (direction.includes('e')) {
-        const maxWidth = containerWidth > 0 ? containerWidth : 2000;
+        // Limit to container width minus gap (16px)
+        const maxWidth = containerWidth > 0 ? containerWidth - 16 : 2000;
         newWidth = Math.min(maxWidth, Math.max(minWidth, startSize.current.width + deltaX));
       }
       if (direction.includes('s')) {
