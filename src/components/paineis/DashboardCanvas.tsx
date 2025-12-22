@@ -72,6 +72,16 @@ const DEFAULT_WIDTH = 340;
 const GAP = 16;
 const REFERENCE_WIDTH = 1200; // Reference container width for percentage calculations
 const DEFAULT_PERCENT = 28; // Default percentage (~340px at 1200px container)
+const BAR_ITEM_HEIGHT = 32; // Height per bar in horizontal bar chart
+const BAR_MIN_HEIGHT = 100; // Minimum height for bar chart
+const BAR_HEADER_PADDING = 60; // Padding for header and spacing
+
+// Calculate optimal height for horizontal bar chart based on data items
+const calculateOptimalBarHeight = (distributionCount: number): number => {
+  if (distributionCount <= 0) return BAR_MIN_HEIGHT;
+  const calculatedHeight = (distributionCount * BAR_ITEM_HEIGHT) + BAR_HEADER_PADDING;
+  return Math.max(BAR_MIN_HEIGHT, Math.min(calculatedHeight, 500));
+};
 
 interface SortableWidgetProps {
   widget: DashboardWidget;
@@ -1311,9 +1321,12 @@ export function DashboardCanvas({ painelName, dashboardId, onBack }: DashboardCa
       };
       const data = await fetchWidgetData(tempWidget);
       
-            // Keep existing height - don't recalculate automatically
-            // Height should only change when user manually resizes
-            const appropriateHeight = widgetToUpdate.height || 280;
+      // For horizontal bar charts, calculate height based on number of bars
+      // For other charts, keep existing height or use default
+      let appropriateHeight = widgetToUpdate.height || 280;
+      if (widgetToUpdate.chartType.id === 'bar_horizontal' && data?.distribution) {
+        appropriateHeight = calculateOptimalBarHeight(data.distribution.length);
+      }
       
       setWidgets(prev => prev.map(widget => 
         widget.id === pendingWidgetId 
