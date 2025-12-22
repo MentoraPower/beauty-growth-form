@@ -1325,9 +1325,17 @@ export function DashboardCanvas({ painelName, dashboardId, onBack }: DashboardCa
         return;
       }
 
+      // Calculate appropriate height based on source type
+      let appropriateHeight = widgetToUpdate.height || 280;
+      
+      // For utm_all (Orgânico vs Pago) with only 2 items, use smaller height
+      if (source.type === 'utm_all') {
+        appropriateHeight = 140; // Just enough for 2 bars + padding
+      }
+
       setWidgets(prev => prev.map(widget => 
         widget.id === pendingWidgetId 
-          ? { ...widget, source, isConnected: true, isLoading: true }
+          ? { ...widget, source, isConnected: true, isLoading: true, height: appropriateHeight }
           : widget
       ));
 
@@ -1340,7 +1348,7 @@ export function DashboardCanvas({ painelName, dashboardId, onBack }: DashboardCa
       
       setWidgets(prev => prev.map(widget => 
         widget.id === pendingWidgetId 
-          ? { ...widget, source, isConnected: true, data: data || undefined, isLoading: false }
+          ? { ...widget, source, isConnected: true, data: data || undefined, isLoading: false, height: appropriateHeight }
           : widget
       ));
 
@@ -1372,7 +1380,7 @@ export function DashboardCanvas({ painelName, dashboardId, onBack }: DashboardCa
     const cw = containerWidth > 0 ? containerWidth : REFERENCE_WIDTH;
 
     const clampWidth = (w: number) => Math.min(cw, Math.max(MIN_WIDTH, w));
-    const clampHeight = (h: number) => Math.min(1200, Math.max(220, h));
+    const clampHeight = (h: number) => Math.min(1200, Math.max(120, h));
 
     setWidgets((prev) => {
       const idx = prev.findIndex(w => w.id === widgetId);
