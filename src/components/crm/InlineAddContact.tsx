@@ -268,7 +268,7 @@ export function InlineAddContact({ pipelineId, subOriginId }: InlineAddContactPr
       <Button
         onClick={handleSubmit}
         disabled={isSubmitting || !name.trim()}
-        className="w-full h-8 text-xs bg-gradient-to-r from-[#F40000] to-[#A10000] hover:opacity-90"
+        className="w-full h-8 text-xs bg-gradient-to-r from-orange-600 to-amber-500 hover:from-orange-700 hover:to-amber-600 border-0"
       >
         {isSubmitting ? "Salvando..." : "Adicionar"}
       </Button>
