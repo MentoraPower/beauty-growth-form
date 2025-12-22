@@ -159,10 +159,10 @@ function SortableWidget({
       }} 
       style={style}
       className={cn(
-        "group/widget relative bg-white border rounded-xl overflow-hidden",
+        "group/widget relative bg-muted/40 border rounded-3xl overflow-hidden",
         isDragging 
           ? "border-border shadow-2xl ring-2 ring-border/50 scale-[1.02] z-50" 
-          : "border-border shadow-sm hover:shadow-md hover:border-border/80"
+          : "border-border/50 shadow-sm hover:shadow-md hover:border-border/80"
       )}
     >
       <div className="relative h-full p-3 pt-2 flex flex-col">
@@ -232,7 +232,7 @@ function SortableWidget({
         {!widget.isConnected && (
           <button
             onClick={() => onConnect(widget.id)}
-            className="absolute inset-0 flex flex-col items-center justify-center bg-white/95 rounded-xl hover:bg-white focus:outline-none z-10"
+            className="absolute inset-0 flex flex-col items-center justify-center bg-muted/95 rounded-3xl hover:bg-muted focus:outline-none z-10"
           >
             <div className="w-12 h-12 rounded-full flex items-center justify-center mb-3 bg-muted">
               <Link2 className="h-6 w-6 text-foreground" />
