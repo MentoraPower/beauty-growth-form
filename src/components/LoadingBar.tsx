@@ -18,7 +18,7 @@ export const LoadingBar = () => {
       <div 
         className="h-full w-full animate-loading-bar"
         style={{
-          background: "linear-gradient(90deg, transparent, #DD2A7B, transparent)"
+          background: "linear-gradient(90deg, transparent, #ea580c, #f59e0b, #ea580c, transparent)"
         }}
       />
     </div>
