@@ -109,9 +109,9 @@ function SortableWidget({ widget, onResize, onDelete, onConnect, onRename, conta
   const widgetHeight = widget.height || 280;
   const minWidth = 260;
   
-  // Determine if this widget should grow to fill space
-  // Widgets with >= 45% should use flex-grow to fill remaining space in row
-  const shouldGrow = hasValidPercent && widget.widthPercent! >= 45;
+  // ALL widgets with a saved percentage should grow proportionally
+  // This ensures that if widget A is 30%, B is 50%, C is 20% - they maintain ratio on any screen size
+  const shouldGrow = hasValidPercent;
 
   // While sorting/dragging, lock flex sizing so other widgets don't "achatar" (shrink) and redraw constantly
   const lockDuringSort = !isMobile && isSorting;
@@ -142,8 +142,9 @@ function SortableWidget({ widget, onResize, onDelete, onConnect, onRename, conta
     zIndex: isDragging ? 50 : 1,
     opacity: isDragging ? 0.5 : 1,
     flexBasis: responsiveWidth,
-    // Use flex-grow for widgets >= 45% to fill available space proportionally (but not while sorting)
-    flexGrow: isMobile ? 1 : (lockDuringSort ? 0 : (shouldGrow ? widget.widthPercent! / 100 : 0)),
+    // Use flex-grow proportionally based on widthPercent so all widgets scale together
+    // Example: 30%, 50%, 20% -> flexGrow: 30, 50, 20 -> they maintain ratio
+    flexGrow: isMobile ? 1 : (lockDuringSort ? 0 : (shouldGrow ? widget.widthPercent! : 0)),
     // Prevent siblings from shrinking weirdly while sorting
     flexShrink: isMobile ? 1 : (lockDuringSort ? 0 : 1),
     width: responsiveWidth,
