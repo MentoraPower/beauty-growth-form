@@ -262,7 +262,7 @@ export function FacebookAdsIntegration({ open, onOpenChange }: FacebookAdsIntegr
       // Reset state
       setTimeout(() => {
         setStep("connect");
-        setAccessToken(null);
+        setAccessToken("");
         setAdAccounts([]);
         setSelectedAdAccount("");
         setCampaigns([]);
