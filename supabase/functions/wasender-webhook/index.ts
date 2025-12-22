@@ -745,7 +745,9 @@ async function handler(req: Request): Promise<Response> {
       for (const group of groupsArray) {
         const groupJid = group.id || group.jid || "";
         const groupName = group.subject || group.name || "";
-        const groupPhoto = group.profilePicture || group.ppUrl || group.imgUrl || null;
+        const rawGroupPhoto = group.profilePicture || group.ppUrl || group.imgUrl || null;
+        // Filter out invalid photo URLs like "changed" or "removed"
+        const groupPhoto = rawGroupPhoto && rawGroupPhoto !== "changed" && rawGroupPhoto !== "removed" && rawGroupPhoto.startsWith("http") ? rawGroupPhoto : null;
         const participantCount = group.participants?.length || group.size || null;
         const description = group.desc || group.description || null;
         
@@ -804,10 +806,12 @@ async function handler(req: Request): Promise<Response> {
       for (const group of groupsArray) {
         const groupJid = group.id || group.jid || "";
         const groupName = group.subject || group.name || null;
-        const groupPhoto = group.profilePicture || group.ppUrl || group.imgUrl || null;
+        const rawGroupPhoto = group.profilePicture || group.ppUrl || group.imgUrl || null;
+        // Filter out invalid photo URLs like "changed" or "removed"
+        const groupPhoto = rawGroupPhoto && rawGroupPhoto !== "changed" && rawGroupPhoto !== "removed" && rawGroupPhoto.startsWith("http") ? rawGroupPhoto : null;
         const description = group.desc || group.description || null;
         
-        console.log(`[Wasender Webhook] Group update - JID: ${groupJid}, Name: ${groupName}, Photo: ${groupPhoto ? 'changed' : 'unchanged'}`);
+        console.log(`[Wasender Webhook] Group update - JID: ${groupJid}, Name: ${groupName}, Photo: ${groupPhoto ? 'valid' : 'invalid/unchanged'}`);
         
         if (groupJid) {
           // Build update object only with changed fields
@@ -1002,11 +1006,13 @@ async function handler(req: Request): Promise<Response> {
               
               if (groupMetadata.success && groupMetadata.data) {
                 const actualName = groupMetadata.data.subject || groupMetadata.data.name || null;
-                const actualPhoto = groupMetadata.data.profilePicture || groupMetadata.data.ppUrl || groupMetadata.data.imgUrl || null;
+                const rawActualPhoto = groupMetadata.data.profilePicture || groupMetadata.data.ppUrl || groupMetadata.data.imgUrl || null;
+                // Filter out invalid photo URLs
+                const actualPhoto = rawActualPhoto && rawActualPhoto !== "changed" && rawActualPhoto !== "removed" && rawActualPhoto.startsWith("http") ? rawActualPhoto : null;
                 const description = groupMetadata.data.desc || groupMetadata.data.description || null;
                 const participantCount = groupMetadata.data.participants?.length || groupMetadata.data.size || null;
                 
-                console.log(`[Wasender Webhook] Actual group data - name: ${actualName}, photo: ${actualPhoto ? 'yes' : 'no'}`);
+                console.log(`[Wasender Webhook] Actual group data - name: ${actualName}, photo: ${actualPhoto ? 'valid' : 'invalid/none'}`);
                 
                 // Build update object
                 const updateData: Record<string, any> = {};

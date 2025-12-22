@@ -501,7 +501,15 @@ const WhatsApp = (props: WhatsAppProps) => {
 
           // Use data from API response first, then fallback to DB cache
           let participantCount: number = g.participants?.length ?? g.size ?? existingDbGroup?.participant_count ?? 0;
-          let photoUrl: string | null = g.profilePicture || g.pictureUrl || g.imgUrl || existingDbGroup?.photo_url || null;
+          // Filter out invalid photo_url values like "changed" or "removed"
+          const isValidPhotoUrl = (url: string | null | undefined): boolean => {
+            if (!url) return false;
+            if (url === "changed" || url === "removed") return false;
+            return url.startsWith("http://") || url.startsWith("https://");
+          };
+          const apiPhotoUrl = g.profilePicture || g.pictureUrl || g.imgUrl || null;
+          const dbPhotoUrl = existingDbGroup?.photo_url || null;
+          let photoUrl: string | null = isValidPhotoUrl(apiPhotoUrl) ? apiPhotoUrl : (isValidPhotoUrl(dbPhotoUrl) ? dbPhotoUrl : null);
 
           const groupData: WhatsAppGroup = {
             id: groupId,
