@@ -344,6 +344,53 @@ const OriginOverview = () => {
           </CardContent>
         </Card>
 
+        {/* Closer Appointments Chart */}
+        <Card className="bg-white border border-black/5 shadow-none">
+          <CardHeader className="pb-4">
+            <CardTitle className="text-base font-semibold text-foreground">
+              Reuniões realizadas por Closer
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {(() => {
+                const closerCounts = appointments.reduce((acc, apt) => {
+                  const closer = apt.closer_name || "Sem Closer";
+                  acc[closer] = (acc[closer] || 0) + 1;
+                  return acc;
+                }, {} as Record<string, number>);
+
+                const maxCount = Math.max(...Object.values(closerCounts), 1);
+
+                if (Object.keys(closerCounts).length === 0) {
+                  return (
+                    <p className="text-sm text-muted-foreground text-center py-8">
+                      Nenhum agendamento no período
+                    </p>
+                  );
+                }
+
+                return Object.entries(closerCounts)
+                  .sort((a, b) => b[1] - a[1])
+                  .map(([closer, count]) => (
+                    <div key={closer} className="space-y-1.5">
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm font-medium text-foreground">{closer}</span>
+                        <span className="text-sm font-bold text-foreground">{count}</span>
+                      </div>
+                      <div className="h-2 bg-muted/50 rounded-full overflow-hidden">
+                        <div 
+                          className="h-full bg-gradient-to-r from-neutral-600 to-neutral-400 rounded-full transition-all duration-500"
+                          style={{ width: `${(count / maxCount) * 100}%` }}
+                        />
+                      </div>
+                    </div>
+                  ));
+              })()}
+            </div>
+          </CardContent>
+        </Card>
+
         {/* Closer Sales Chart */}
         <Card className="bg-white border border-black/5 shadow-none">
           <CardHeader className="pb-4">
