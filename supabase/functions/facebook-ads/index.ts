@@ -18,8 +18,86 @@ serve(async (req) => {
     
     const FACEBOOK_APP_ID = Deno.env.get('FACEBOOK_APP_ID');
     const FACEBOOK_APP_SECRET = Deno.env.get('FACEBOOK_APP_SECRET');
+    const FACEBOOK_ACCESS_TOKEN = Deno.env.get('FACEBOOK_ACCESS_TOKEN');
     const SUPABASE_URL = Deno.env.get('SUPABASE_URL');
     const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+
+    // Action: Extend short-lived token to long-lived token
+    if (action === 'extend-token') {
+      const tokenToExtend = accessToken || FACEBOOK_ACCESS_TOKEN;
+      
+      if (!tokenToExtend) {
+        return new Response(
+          JSON.stringify({ error: 'No token provided or configured' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      if (!FACEBOOK_APP_ID || !FACEBOOK_APP_SECRET) {
+        return new Response(
+          JSON.stringify({ error: 'Facebook App credentials not configured (FACEBOOK_APP_ID, FACEBOOK_APP_SECRET)' }),
+          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      console.log('Extending token to long-lived token...');
+      const longLivedUrl = `https://graph.facebook.com/v18.0/oauth/access_token?grant_type=fb_exchange_token&client_id=${FACEBOOK_APP_ID}&client_secret=${FACEBOOK_APP_SECRET}&fb_exchange_token=${tokenToExtend}`;
+      const response = await fetch(longLivedUrl);
+      const data = await response.json();
+
+      if (data.error) {
+        console.error('Token extension error:', data.error);
+        return new Response(
+          JSON.stringify({ error: data.error.message }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      // Calculate expiration date (usually 60 days for long-lived tokens)
+      const expiresAt = data.expires_in 
+        ? new Date(Date.now() + data.expires_in * 1000).toISOString()
+        : null;
+
+      console.log('Token extended successfully, expires in:', data.expires_in, 'seconds');
+      return new Response(
+        JSON.stringify({ 
+          accessToken: data.access_token,
+          expiresIn: data.expires_in,
+          expiresAt
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Action: Get token from secret and validate
+    if (action === 'get-stored-token') {
+      if (!FACEBOOK_ACCESS_TOKEN) {
+        return new Response(
+          JSON.stringify({ error: 'FACEBOOK_ACCESS_TOKEN not configured', hasToken: false }),
+          { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      // Validate token by making a simple API call
+      console.log('Validating stored token...');
+      const url = `https://graph.facebook.com/v18.0/me?access_token=${FACEBOOK_ACCESS_TOKEN}`;
+      const response = await fetch(url);
+      const data = await response.json();
+
+      if (data.error) {
+        console.error('Stored token invalid:', data.error);
+        return new Response(
+          JSON.stringify({ error: data.error.message, hasToken: true, isValid: false }),
+          { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      console.log('Stored token is valid');
+      return new Response(
+        JSON.stringify({ hasToken: true, isValid: true, accessToken: FACEBOOK_ACCESS_TOKEN }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
 
     if (!FACEBOOK_APP_ID || !FACEBOOK_APP_SECRET) {
       console.error('Missing Facebook credentials');
@@ -79,7 +157,10 @@ serve(async (req) => {
 
     // Action: Get ad accounts
     if (action === 'get-ad-accounts') {
-      if (!accessToken) {
+      // Use provided token or fall back to stored token
+      const tokenToUse = accessToken || FACEBOOK_ACCESS_TOKEN;
+      
+      if (!tokenToUse) {
         return new Response(
           JSON.stringify({ error: 'Access token required' }),
           { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -87,7 +168,7 @@ serve(async (req) => {
       }
 
       console.log('Fetching ad accounts');
-      const url = `https://graph.facebook.com/v18.0/me/adaccounts?fields=id,name,account_status&access_token=${accessToken}`;
+      const url = `https://graph.facebook.com/v18.0/me/adaccounts?fields=id,name,account_status&access_token=${tokenToUse}`;
       const response = await fetch(url);
       const data = await response.json();
 
