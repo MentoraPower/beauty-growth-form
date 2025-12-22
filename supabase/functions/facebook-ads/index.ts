@@ -32,11 +32,16 @@ serve(async (req) => {
     // Action: Get OAuth URL for login
     if (action === 'get-oauth-url') {
       const scopes = 'ads_read,ads_management,business_management';
-      const oauthUrl = `https://www.facebook.com/v18.0/dialog/oauth?client_id=${FACEBOOK_APP_ID}&redirect_uri=${encodeURIComponent(redirectUri || '')}&scope=${scopes}&response_type=code`;
-      
-      console.log('Generated OAuth URL');
+      const effectiveRedirectUri = redirectUri || '';
+      const oauthUrl = `https://www.facebook.com/v18.0/dialog/oauth?client_id=${FACEBOOK_APP_ID}&redirect_uri=${encodeURIComponent(effectiveRedirectUri)}&scope=${scopes}&response_type=code`;
+
+      console.log('Generated OAuth URL', {
+        appId: FACEBOOK_APP_ID,
+        redirectUri: effectiveRedirectUri,
+      });
+
       return new Response(
-        JSON.stringify({ oauthUrl }),
+        JSON.stringify({ oauthUrl, appId: FACEBOOK_APP_ID, redirectUri: effectiveRedirectUri }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
