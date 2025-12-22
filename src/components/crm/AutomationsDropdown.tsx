@@ -679,6 +679,11 @@ export function AutomationsDropdown({
 
   const updateEmailAutomation = async () => {
     if (!editingEmailId) return;
+    
+    if (!emailTriggerPipeline) {
+      toast.error("Selecione a pipeline de gatilho");
+      return;
+    }
 
     try {
       const { error } = await (supabase as any)
@@ -818,6 +823,12 @@ export function AutomationsDropdown({
       const triggerStep = steps.find(s => s.type === "trigger");
       const extractedTriggerPipelineId = triggerStep?.data?.triggerPipelineId || triggerPipelineId;
 
+      // Validate trigger pipeline is selected
+      if (!extractedTriggerPipelineId) {
+        toast.error("Selecione uma pipeline de gatilho no nó de trigger");
+        return;
+      }
+
       // For now, use the first email step's data
       const firstEmail = emailSteps[0];
       const finalSubject = firstEmail.data.subject || subject;
@@ -905,6 +916,12 @@ export function AutomationsDropdown({
 
     const triggerStep = steps.find(s => s.type === "trigger");
     const triggerPipelineId = triggerStep?.data?.triggerPipelineId || emailTriggerPipeline;
+
+    // Validate trigger pipeline is selected
+    if (!triggerPipelineId) {
+      toast.error("Selecione uma pipeline de gatilho no nó de trigger");
+      return;
+    }
 
     const firstEmail = emailSteps[0];
     const subject = firstEmail.data.subject || emailSubject;
