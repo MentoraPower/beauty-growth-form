@@ -12,7 +12,7 @@ import { ChartSelectorDialog, ChartType } from "./ChartSelectorDialog";
 import { ConnectSourceDialog, WidgetSource } from "./ConnectSourceDialog";
 import { ChartRenderer } from "./ChartRenderer";
 import { supabase } from "@/integrations/supabase/client";
-import widgetDecoration from "@/assets/widget-decoration.png";
+import widgetDecoration from "@/assets/chart-bg.png";
 import { useIsMobile } from "@/hooks/use-mobile";
 import {
   DndContext,
