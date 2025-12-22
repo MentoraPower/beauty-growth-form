@@ -751,6 +751,39 @@ export function DashboardCanvas({ painelName, dashboardId, onBack }: DashboardCa
         return { total, label, distribution, trend };
       }
 
+      // Handle Facebook Ads type
+      if (widget.source.type === 'facebook_ads') {
+        if (!widget.source.sourceId) {
+          return { total: 0, label: 'Facebook Ads', distribution: [], trend: [] };
+        }
+
+        const { data: insights, error } = await supabase
+          .from('facebook_ads_insights')
+          .select('campaign_id, campaign_name, spend')
+          .eq('connection_id', widget.source.sourceId)
+          .order('spend', { ascending: false })
+          .limit(200);
+
+        if (error) {
+          console.error('Error fetching Facebook Ads insights:', error);
+          return { total: 0, label: 'Facebook Ads', distribution: [], trend: [] };
+        }
+
+        const points: ChartDataPoint[] = (insights || []).map((i) => ({
+          name: i.campaign_name || i.campaign_id,
+          value: Number(i.spend || 0),
+        }));
+
+        const total = points.reduce((sum, p) => sum + p.value, 0);
+
+        return {
+          total: Math.round(total * 100) / 100,
+          label: 'Facebook Ads (Spend)',
+          distribution: points,
+          trend: points,
+        };
+      }
+
       // Handle UTM types
       if (widget.source.type === 'utm_source' || widget.source.type === 'utm_medium' || widget.source.type === 'utm_campaign' || widget.source.type === 'utm_all') {
         if (!widget.source.sourceId) {
