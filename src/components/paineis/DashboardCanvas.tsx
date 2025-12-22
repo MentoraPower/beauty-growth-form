@@ -16,14 +16,12 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import {
   DndContext,
   DragEndEvent,
-  DragOverEvent,
   DragStartEvent,
   PointerSensor,
   useSensor,
   useSensors,
   closestCenter,
   DragOverlay,
-  rectIntersection,
   MouseSensor,
   TouchSensor,
 } from "@dnd-kit/core";
@@ -57,7 +55,7 @@ export interface DashboardWidget {
   isLoading?: boolean;
   width?: number;
   height?: number;
-  widthPercent?: number; // 0-100: percentage of container width
+  widthPercent?: number;
   customName?: string;
 }
 
@@ -68,21 +66,35 @@ interface DashboardCanvasProps {
 }
 
 const PIPELINE_COLORS = ["#171717", "#404040", "#737373", "#a3a3a3", "#d4d4d4"];
+const MIN_WIDTH = 260;
+const DEFAULT_WIDTH = 340;
+const GAP = 16;
 
 interface SortableWidgetProps {
   widget: DashboardWidget;
+  widgetWidth: number;
   onResize: (id: string, width: number, height: number) => void;
   onDelete: (id: string) => void;
   onConnect: (id: string) => void;
   onRename: (id: string, name: string) => void;
   containerWidth: number;
-  isSorting: boolean;
+  isDragging: boolean;
   isMobile: boolean;
 }
 
-function SortableWidget({ widget, onResize, onDelete, onConnect, onRename, containerWidth, isSorting, isMobile }: SortableWidgetProps) {
+function SortableWidget({ 
+  widget, 
+  widgetWidth,
+  onResize, 
+  onDelete, 
+  onConnect, 
+  onRename, 
+  containerWidth, 
+  isDragging: externalIsDragging,
+  isMobile 
+}: SortableWidgetProps) {
   const widgetRef = useRef<HTMLDivElement>(null);
-  const [actualWidth, setActualWidth] = useState(widget.width || 340);
+  const [actualWidth, setActualWidth] = useState(widgetWidth);
   const [isEditing, setIsEditing] = useState(false);
   const [editName, setEditName] = useState(widget.customName || widget.source?.sourceName || widget.chartType.name);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -97,26 +109,8 @@ function SortableWidget({ widget, onResize, onDelete, onConnect, onRename, conta
     isDragging,
   } = useSortable({ id: widget.id });
 
-  // ALWAYS prioritize widthPercent if available and container is measured
-  // This ensures widgets scale proportionally with screen size
-  const hasValidPercent = widget.widthPercent !== undefined && widget.widthPercent > 0;
-  const hasValidContainer = containerWidth > 0;
-  
-  const calculatedWidth = hasValidPercent && hasValidContainer
-    ? (widget.widthPercent! / 100) * containerWidth
-    : (typeof widget.width === "number" ? widget.width : 340);
-  
-  const widgetWidth = Math.max(260, Math.min(calculatedWidth, containerWidth || 2000));
   const widgetHeight = widget.height || 280;
-  const minWidth = 260;
   
-  // ALL widgets with a saved percentage should grow proportionally
-  // This ensures that if widget A is 30%, B is 50%, C is 20% - they maintain ratio on any screen size
-  const shouldGrow = hasValidPercent;
-
-  // While sorting/dragging, lock flex sizing so other widgets don't "achatar" (shrink) and redraw constantly
-  const lockDuringSort = !isMobile && isSorting;
-
   // Observe actual rendered width
   useEffect(() => {
     if (!widgetRef.current) return;
@@ -131,27 +125,18 @@ function SortableWidget({ widget, onResize, onDelete, onConnect, onRename, conta
     return () => observer.disconnect();
   }, []);
 
-  const responsiveWidth = isMobile ? '100%' : widgetWidth;
-  const responsiveMinWidth = isMobile ? '100%' : minWidth;
-  // Ensure widget never exceeds container on any screen
-  const maxWidthValue = containerWidth > 0 ? containerWidth : '100%';
-
+  // Style: NO transitions, fixed pixel widths
   const style: React.CSSProperties = {
     transform: CSS.Transform.toString(transform),
-    // Disable transition during resize/sort for immediate feedback and to avoid flex reflow glitches
-    transition: isDragging || isResizing || lockDuringSort ? 'none' : 'width 0.3s ease-out, flex-basis 0.3s ease-out, height 0.2s ease-out',
+    transition: 'none', // NEVER use transitions - immediate feedback
     zIndex: isDragging ? 50 : 1,
-    opacity: isDragging ? 0.5 : 1,
-    flexBasis: responsiveWidth,
-    // Use flex-grow proportionally based on widthPercent so all widgets scale together
-    // Example: 30%, 50%, 20% -> flexGrow: 30, 50, 20 -> they maintain ratio
-    flexGrow: isMobile ? 1 : (lockDuringSort ? 0 : (shouldGrow ? widget.widthPercent! : 0)),
-    // Prevent siblings from shrinking weirdly while sorting
-    flexShrink: isMobile ? 1 : (lockDuringSort ? 0 : 1),
-    width: responsiveWidth,
-    minWidth: responsiveMinWidth,
-    maxWidth: maxWidthValue, // Prevent overflow
+    opacity: isDragging ? 0.4 : 1,
+    width: isMobile ? '100%' : widgetWidth,
+    minWidth: isMobile ? '100%' : MIN_WIDTH,
+    maxWidth: containerWidth > 0 ? containerWidth : '100%',
     height: widgetHeight,
+    flexShrink: 0,
+    flexGrow: 0,
     cursor: isDragging ? 'grabbing' : undefined,
   };
 
@@ -163,26 +148,6 @@ function SortableWidget({ widget, onResize, onDelete, onConnect, onRename, conta
     setIsResizing(false);
   };
 
-  const handleResize = (deltaX: number, deltaY: number, direction: string) => {
-    let newWidth = widgetWidth;
-    let newHeight = widgetHeight;
-
-    // Use containerWidth as max, fallback to a large value
-    const maxWidth = containerWidth > 0 ? containerWidth : 3000;
-
-    if (direction.includes('e')) {
-      newWidth = Math.min(maxWidth, Math.max(minWidth, widgetWidth + deltaX));
-    }
-    if (direction.includes('w')) {
-      newWidth = Math.min(maxWidth, Math.max(minWidth, widgetWidth - deltaX));
-    }
-    if (direction.includes('s')) {
-      newHeight = Math.min(1200, Math.max(220, widgetHeight + deltaY));
-    }
-
-    onResize(widget.id, newWidth, newHeight);
-  };
-
   return (
     <div 
       ref={(node) => {
@@ -191,7 +156,7 @@ function SortableWidget({ widget, onResize, onDelete, onConnect, onRename, conta
       }} 
       style={style}
       className={cn(
-        "group/widget relative bg-white border rounded-xl transition-all duration-200",
+        "group/widget relative bg-white border rounded-xl",
         isDragging 
           ? "border-border shadow-2xl ring-2 ring-border/50 scale-[1.02] z-50" 
           : "border-border shadow-sm hover:shadow-md hover:border-border/80"
@@ -200,7 +165,7 @@ function SortableWidget({ widget, onResize, onDelete, onConnect, onRename, conta
       <div className="relative h-full p-3 pt-2 flex flex-col">
         {/* Header Row - Drag handle + Title aligned */}
         <div className="flex items-center gap-0 mb-2 shrink-0">
-          {/* Drag Handle - only visible on hover, expands width */}
+          {/* Drag Handle */}
           <div
             {...attributes}
             {...listeners}
@@ -251,7 +216,7 @@ function SortableWidget({ widget, onResize, onDelete, onConnect, onRename, conta
           )}
         </div>
 
-        {/* Delete Button - only visible on hover */}
+        {/* Delete Button */}
         <button
           onClick={() => onDelete(widget.id)}
           className="absolute top-2 right-2 p-1.5 rounded-lg hover:bg-muted z-20 opacity-0 group-hover/widget:opacity-100 transition-opacity"
@@ -290,37 +255,38 @@ function SortableWidget({ widget, onResize, onDelete, onConnect, onRename, conta
         </div>
       </div>
 
-      {/* Resize Handles */}
-      <ResizeHandle 
-        direction="e" 
-        widgetWidth={widgetWidth} 
-        widgetHeight={widgetHeight}
-        containerWidth={containerWidth}
-        minWidth={minWidth}
-        onResize={(w, h) => onResize(widget.id, w, h)}
-        onResizeStart={handleResizeStart}
-        onResizeEnd={handleResizeEnd}
-      />
-      <ResizeHandle 
-        direction="s" 
-        widgetWidth={widgetWidth} 
-        widgetHeight={widgetHeight}
-        containerWidth={containerWidth}
-        minWidth={minWidth}
-        onResize={(w, h) => onResize(widget.id, w, h)}
-        onResizeStart={handleResizeStart}
-        onResizeEnd={handleResizeEnd}
-      />
-      <ResizeHandle 
-        direction="se" 
-        widgetWidth={widgetWidth} 
-        widgetHeight={widgetHeight}
-        containerWidth={containerWidth}
-        minWidth={minWidth}
-        onResize={(w, h) => onResize(widget.id, w, h)}
-        onResizeStart={handleResizeStart}
-        onResizeEnd={handleResizeEnd}
-      />
+      {/* Resize Handles - only when not dragging */}
+      {!isDragging && !externalIsDragging && (
+        <>
+          <ResizeHandle 
+            direction="e" 
+            widgetWidth={widgetWidth} 
+            widgetHeight={widgetHeight}
+            containerWidth={containerWidth}
+            onResize={(w, h) => onResize(widget.id, w, h)}
+            onResizeStart={handleResizeStart}
+            onResizeEnd={handleResizeEnd}
+          />
+          <ResizeHandle 
+            direction="s" 
+            widgetWidth={widgetWidth} 
+            widgetHeight={widgetHeight}
+            containerWidth={containerWidth}
+            onResize={(w, h) => onResize(widget.id, w, h)}
+            onResizeStart={handleResizeStart}
+            onResizeEnd={handleResizeEnd}
+          />
+          <ResizeHandle 
+            direction="se" 
+            widgetWidth={widgetWidth} 
+            widgetHeight={widgetHeight}
+            containerWidth={containerWidth}
+            onResize={(w, h) => onResize(widget.id, w, h)}
+            onResizeStart={handleResizeStart}
+            onResizeEnd={handleResizeEnd}
+          />
+        </>
+      )}
     </div>
   );
 }
@@ -330,13 +296,12 @@ interface ResizeHandleProps {
   widgetWidth: number;
   widgetHeight: number;
   containerWidth: number;
-  minWidth: number;
   onResize: (width: number, height: number) => void;
   onResizeStart?: () => void;
   onResizeEnd?: () => void;
 }
 
-function ResizeHandle({ direction, widgetWidth, widgetHeight, containerWidth, minWidth, onResize, onResizeStart, onResizeEnd }: ResizeHandleProps) {
+function ResizeHandle({ direction, widgetWidth, widgetHeight, containerWidth, onResize, onResizeStart, onResizeEnd }: ResizeHandleProps) {
   const startPos = useRef({ x: 0, y: 0 });
   const startSize = useRef({ width: 0, height: 0 });
 
@@ -357,9 +322,8 @@ function ResizeHandle({ direction, widgetWidth, widgetHeight, containerWidth, mi
       let newHeight = startSize.current.height;
 
       if (direction.includes('e')) {
-        // Limit to container width minus gap (16px)
-        const maxWidth = containerWidth > 0 ? containerWidth - 16 : 2000;
-        newWidth = Math.min(maxWidth, Math.max(minWidth, startSize.current.width + deltaX));
+        const maxWidth = containerWidth > 0 ? containerWidth : 2000;
+        newWidth = Math.min(maxWidth, Math.max(MIN_WIDTH, startSize.current.width + deltaX));
       }
       if (direction.includes('s')) {
         newHeight = Math.min(1200, Math.max(220, startSize.current.height + deltaY));
@@ -417,6 +381,71 @@ function ResizeHandle({ direction, widgetWidth, widgetHeight, containerWidth, mi
 
 type DatePreset = 'today' | 'yesterday' | '7days' | '30days' | 'custom';
 
+// Helper to compute rows of widgets based on their widths
+function computeWidgetRows(widgets: DashboardWidget[], containerWidth: number): number[][] {
+  if (containerWidth <= 0) return [widgets.map((_, i) => i)];
+  
+  const rows: number[][] = [];
+  let currentRow: number[] = [];
+  let rowWidth = 0;
+
+  widgets.forEach((widget, idx) => {
+    const w = widget.width ?? DEFAULT_WIDTH;
+    const neededWidth = currentRow.length > 0 ? w + GAP : w;
+
+    if (currentRow.length > 0 && rowWidth + neededWidth > containerWidth) {
+      rows.push(currentRow);
+      currentRow = [idx];
+      rowWidth = w;
+    } else {
+      currentRow.push(idx);
+      rowWidth += neededWidth;
+    }
+  });
+
+  if (currentRow.length > 0) rows.push(currentRow);
+  return rows;
+}
+
+// Calculate the actual widths to display, adjusting for row overflow
+function calculateDisplayWidths(widgets: DashboardWidget[], containerWidth: number): number[] {
+  if (containerWidth <= 0) return widgets.map(w => w.width ?? DEFAULT_WIDTH);
+  
+  const rows = computeWidgetRows(widgets, containerWidth);
+  const displayWidths = new Array(widgets.length).fill(0);
+
+  rows.forEach(rowIndices => {
+    const totalGaps = (rowIndices.length - 1) * GAP;
+    const availableWidth = containerWidth - totalGaps;
+    const totalRequestedWidth = rowIndices.reduce((sum, i) => sum + (widgets[i].width ?? DEFAULT_WIDTH), 0);
+
+    if (totalRequestedWidth <= availableWidth) {
+      // Fits - use actual widths
+      rowIndices.forEach(i => {
+        displayWidths[i] = widgets[i].width ?? DEFAULT_WIDTH;
+      });
+    } else {
+      // Overflow - distribute proportionally, respecting MIN_WIDTH
+      const scale = availableWidth / totalRequestedWidth;
+      let remaining = availableWidth;
+      
+      rowIndices.forEach((i, idx) => {
+        const requestedWidth = widgets[i].width ?? DEFAULT_WIDTH;
+        if (idx === rowIndices.length - 1) {
+          // Last widget gets remaining space
+          displayWidths[i] = Math.max(MIN_WIDTH, remaining);
+        } else {
+          const scaledWidth = Math.max(MIN_WIDTH, Math.floor(requestedWidth * scale));
+          displayWidths[i] = scaledWidth;
+          remaining -= scaledWidth;
+        }
+      });
+    }
+  });
+
+  return displayWidths;
+}
+
 export function DashboardCanvas({ painelName, dashboardId, onBack }: DashboardCanvasProps) {
   const isMobile = useIsMobile();
   const [widgets, setWidgets] = useState<DashboardWidget[]>([]);
@@ -431,14 +460,13 @@ export function DashboardCanvas({ painelName, dashboardId, onBack }: DashboardCa
   const [endDate, setEndDate] = useState<Date>(new Date());
   const widgetsRef = useRef<DashboardWidget[]>([]);
 
-  // NOTE: this container is rendered conditionally; using a callback-ref ensures
-  // we measure its width as soon as it mounts (otherwise containerWidth can stay 0).
   const [containerEl, setContainerEl] = useState<HTMLDivElement | null>(null);
   const setContainerNode = useCallback((node: HTMLDivElement | null) => {
     setContainerEl(node);
   }, []);
 
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  
   const handlePresetChange = (preset: DatePreset) => {
     setDatePreset(preset);
     const today = new Date();
@@ -468,7 +496,6 @@ export function DashboardCanvas({ painelName, dashboardId, onBack }: DashboardCa
     if (!containerEl) return;
 
     const updateWidth = () => {
-      // Subtract padding (p-1 = 4px each side = 8px total)
       const availableWidth = containerEl.clientWidth - 8;
       setContainerWidth(availableWidth);
     };
@@ -484,6 +511,7 @@ export function DashboardCanvas({ painelName, dashboardId, onBack }: DashboardCa
       observer.disconnect();
     };
   }, [containerEl]);
+
   // Keep ref in sync with state
   useEffect(() => {
     widgetsRef.current = widgets;
@@ -504,7 +532,6 @@ export function DashboardCanvas({ painelName, dashboardId, onBack }: DashboardCa
         .single();
 
       if (data?.widgets && Array.isArray(data.widgets)) {
-        // Restore widgets without data (will be fetched separately)
         const loadedWidgets = (data.widgets as unknown as DashboardWidget[]).map((w) => ({
           ...w,
           data: undefined,
@@ -517,7 +544,6 @@ export function DashboardCanvas({ painelName, dashboardId, onBack }: DashboardCa
 
     loadWidgets();
 
-    // Real-time subscription for dashboard updates
     const channel = supabase
       .channel(`dashboard-realtime-${dashboardId}`)
       .on(
@@ -529,10 +555,8 @@ export function DashboardCanvas({ painelName, dashboardId, onBack }: DashboardCa
           filter: `id=eq.${dashboardId}`,
         },
         (payload) => {
-          console.log('[DashboardCanvas] Real-time update received:', payload);
           const newWidgets = payload.new?.widgets;
           if (newWidgets && Array.isArray(newWidgets)) {
-            // Update widgets with real-time data, preserve local data state
             setWidgets(prev => {
               const prevDataMap = new Map(prev.map(w => [w.id, w.data]));
               return (newWidgets as unknown as DashboardWidget[]).map((w) => ({
@@ -567,20 +591,17 @@ export function DashboardCanvas({ painelName, dashboardId, onBack }: DashboardCa
     };
 
     fetchDataForLoadedWidgets();
-  }, [isInitialLoad]); // Only run once after initial load
+  }, [isInitialLoad]);
 
-  // Auto-save widgets to database (debounced, silent)
+  // Auto-save widgets to database (debounced)
   useEffect(() => {
     if (isInitialLoad || !dashboardId) return;
 
-    // Clear previous timeout
     if (saveTimeoutRef.current) {
       clearTimeout(saveTimeoutRef.current);
     }
 
-    // Debounce save by 500ms
     saveTimeoutRef.current = setTimeout(async () => {
-      // Save widgets without runtime data
       const widgetsToSave = widgets.map(({ data, isLoading, ...rest }) => rest) as unknown;
       
       await supabase
@@ -599,12 +620,11 @@ export function DashboardCanvas({ painelName, dashboardId, onBack }: DashboardCa
   const fetchWidgetData = useCallback(async (widget: DashboardWidget): Promise<WidgetData | null> => {
     if (!widget.source) return null;
 
-    // Use the date range for filtering
     const filterStartDate = startDate.toISOString();
     const filterEndDate = endDate.toISOString();
 
     try {
-      // Handle tracking types - now requires sourceId for sub_origin filtering
+      // Handle tracking types
       if (widget.source.type === 'tracking_grupo_entrada' || widget.source.type === 'tracking_grupo_saida') {
         const trackingType = widget.source.type === 'tracking_grupo_entrada' ? 'grupo_entrada' : 'grupo_saida';
         const label = widget.source.type === 'tracking_grupo_entrada' ? 'Entradas' : 'Saídas';
@@ -613,7 +633,6 @@ export function DashboardCanvas({ painelName, dashboardId, onBack }: DashboardCa
           return { total: 0, label };
         }
 
-        // First, get all leads from the selected sub_origin
         let allLeadIds: string[] = [];
         let from = 0;
         const pageSize = 1000;
@@ -626,10 +645,7 @@ export function DashboardCanvas({ painelName, dashboardId, onBack }: DashboardCa
             .eq("sub_origin_id", widget.source.sourceId)
             .range(from, from + pageSize - 1);
 
-          if (error) {
-            console.error("Error fetching leads:", error);
-            break;
-          }
+          if (error) break;
 
           if (leads && leads.length > 0) {
             allLeadIds = [...allLeadIds, ...leads.map(l => l.id)];
@@ -644,7 +660,6 @@ export function DashboardCanvas({ painelName, dashboardId, onBack }: DashboardCa
           return { total: 0, label, distribution: [], trend: [] };
         }
 
-        // Fetch tracking events for these leads filtered by date
         let allEvents: { id: string; created_at: string; lead_id: string }[] = [];
         from = 0;
         hasMore = true;
@@ -660,7 +675,6 @@ export function DashboardCanvas({ painelName, dashboardId, onBack }: DashboardCa
             .range(from, from + pageSize - 1);
 
           if (error) {
-            console.error("Error fetching tracking events:", error);
             return { total: 0, label };
           }
 
@@ -673,15 +687,12 @@ export function DashboardCanvas({ painelName, dashboardId, onBack }: DashboardCa
           }
         }
 
-        // Count unique leads (not events)
         const uniqueLeadIds = new Set(allEvents.map(e => e.lead_id));
         const total = uniqueLeadIds.size;
 
-        // Calculate trend by day within selected range
         const trend: ChartDataPoint[] = [];
         const days = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
         
-        // Calculate days between start and end
         const daysDiff = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) + 1;
         const daysToShow = Math.min(daysDiff, 7);
         
@@ -706,7 +717,6 @@ export function DashboardCanvas({ painelName, dashboardId, onBack }: DashboardCa
           });
         }
 
-        // Distribution: show total unique leads
         const distribution: ChartDataPoint[] = [{
           name: label,
           value: total,
@@ -716,13 +726,12 @@ export function DashboardCanvas({ painelName, dashboardId, onBack }: DashboardCa
         return { total, label, distribution, trend };
       }
 
-      // Handle UTM types - fetch from lead_tracking history
+      // Handle UTM types
       if (widget.source.type === 'utm_source' || widget.source.type === 'utm_medium' || widget.source.type === 'utm_campaign' || widget.source.type === 'utm_all') {
         if (!widget.source.sourceId) {
           return { total: 0, label: 'UTMs' };
         }
 
-        // First get lead IDs from the sub_origin
         const { data: subOriginLeads } = await supabase
           .from("leads")
           .select("id")
@@ -734,7 +743,6 @@ export function DashboardCanvas({ painelName, dashboardId, onBack }: DashboardCa
           return { total: 0, label: 'UTMs', distribution: [], trend: [] };
         }
 
-        // Fetch tracking events with UTM data (webhook, formulario, cadastro types often have UTM data)
         let allTrackingEvents: { lead_id: string; dados: any; created_at: string; tipo: string }[] = [];
         let from = 0;
         const pageSize = 1000;
@@ -750,10 +758,7 @@ export function DashboardCanvas({ painelName, dashboardId, onBack }: DashboardCa
             .lte("created_at", filterEndDate)
             .range(from, from + pageSize - 1);
 
-          if (error) {
-            console.error("Error fetching tracking for UTM:", error);
-            break;
-          }
+          if (error) break;
 
           if (events && events.length > 0) {
             allTrackingEvents = [...allTrackingEvents, ...events];
@@ -764,7 +769,6 @@ export function DashboardCanvas({ painelName, dashboardId, onBack }: DashboardCa
           }
         }
 
-        // Extract UTM data from tracking events (dados field)
         interface UtmData {
           lead_id: string;
           utm_source?: string;
@@ -780,14 +784,12 @@ export function DashboardCanvas({ painelName, dashboardId, onBack }: DashboardCa
         allTrackingEvents.forEach(event => {
           if (event.dados && typeof event.dados === 'object') {
             const dados = event.dados as Record<string, any>;
-            // Check for UTM data in various possible locations
             const utmSource = dados.utm_source || dados.utmSource || dados.UTM_SOURCE;
             const utmMedium = dados.utm_medium || dados.utmMedium || dados.UTM_MEDIUM;
             const utmCampaign = dados.utm_campaign || dados.utmCampaign || dados.UTM_CAMPAIGN;
             const utmTerm = dados.utm_term || dados.utmTerm || dados.UTM_TERM;
             const utmContent = dados.utm_content || dados.utmContent || dados.UTM_CONTENT;
             
-            // Only add if has any UTM data, or if no entry exists yet
             if (!utmDataByLead.has(event.lead_id) || utmSource || utmMedium || utmCampaign) {
               utmDataByLead.set(event.lead_id, {
                 lead_id: event.lead_id,
@@ -802,7 +804,6 @@ export function DashboardCanvas({ painelName, dashboardId, onBack }: DashboardCa
           }
         });
 
-        // If no tracking data found, fallback to leads table
         if (utmDataByLead.size === 0) {
           const { data: leadsWithUtm } = await supabase
             .from("leads")
@@ -881,7 +882,6 @@ export function DashboardCanvas({ painelName, dashboardId, onBack }: DashboardCa
           let paid = 0;
           
           utmEntries.forEach(entry => {
-            // If has utm_source or utm_medium that indicates paid traffic
             const isPaid = entry.utm_source || entry.utm_medium || entry.utm_campaign;
             if (isPaid) {
               paid++;
@@ -896,7 +896,6 @@ export function DashboardCanvas({ painelName, dashboardId, onBack }: DashboardCa
           ];
         }
 
-        // Calculate trend by day
         const trend: ChartDataPoint[] = [];
         const days = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
         const daysDiff = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) + 1;
@@ -922,7 +921,7 @@ export function DashboardCanvas({ painelName, dashboardId, onBack }: DashboardCa
         return { total, label, distribution, trend };
       }
 
-      // For origin/sub_origin types, require sourceId
+      // For origin/sub_origin types
       if (!widget.source.sourceId) return null;
 
       let subOriginIds: string[] = [];
@@ -942,7 +941,6 @@ export function DashboardCanvas({ painelName, dashboardId, onBack }: DashboardCa
         }
       }
 
-      // Fetch leads with pipeline info filtered by date
       let allLeads: { id: string; pipeline_id: string | null; created_at: string }[] = [];
       let from = 0;
       const pageSize = 1000;
@@ -958,7 +956,6 @@ export function DashboardCanvas({ painelName, dashboardId, onBack }: DashboardCa
           .range(from, from + pageSize - 1);
 
         if (error) {
-          console.error("Error fetching leads:", error);
           return { total: 0, label: "Leads" };
         }
 
@@ -972,21 +969,24 @@ export function DashboardCanvas({ painelName, dashboardId, onBack }: DashboardCa
       }
 
       const leads = allLeads;
-
       const total = leads?.length || 0;
 
-      // Fetch pipelines for distribution
-      const { data: pipelines } = await supabase
-        .from("pipelines")
-        .select("id, nome, cor")
-        .in("sub_origin_id", subOriginIds)
-        .order("ordem");
-
-      // Calculate distribution by pipeline
-      const distribution: ChartDataPoint[] = [];
+      const pipelineIds = [...new Set(leads?.filter(l => l.pipeline_id).map(l => l.pipeline_id) || [])];
       
-      if (pipelines && pipelines.length > 0) {
-        pipelines.forEach((pipeline, index) => {
+      let pipelinesData: { id: string; nome: string; ordem: number }[] = [];
+      if (pipelineIds.length > 0) {
+        const { data } = await supabase
+          .from("pipelines")
+          .select("id, nome, ordem")
+          .in("id", pipelineIds)
+          .order("ordem");
+        pipelinesData = data || [];
+      }
+
+      const distribution: ChartDataPoint[] = [];
+
+      if (pipelinesData.length > 0) {
+        pipelinesData.forEach((pipeline, index) => {
           const count = leads?.filter(l => l.pipeline_id === pipeline.id).length || 0;
           if (count > 0) {
             distribution.push({
@@ -997,7 +997,6 @@ export function DashboardCanvas({ painelName, dashboardId, onBack }: DashboardCa
           }
         });
 
-        // Add "Sem pipeline" if there are leads without pipeline
         const withoutPipeline = leads?.filter(l => !l.pipeline_id).length || 0;
         if (withoutPipeline > 0) {
           distribution.push({
@@ -1007,7 +1006,6 @@ export function DashboardCanvas({ painelName, dashboardId, onBack }: DashboardCa
           });
         }
       } else {
-        // If no pipelines, just show total
         distribution.push({
           name: "Leads",
           value: total,
@@ -1015,11 +1013,9 @@ export function DashboardCanvas({ painelName, dashboardId, onBack }: DashboardCa
         });
       }
 
-      // Calculate trend by day within selected range
       const trend: ChartDataPoint[] = [];
       const days = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
       
-      // Calculate days between start and end
       const daysDiff = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) + 1;
       const daysToShow = Math.min(daysDiff, 7);
       
@@ -1047,7 +1043,6 @@ export function DashboardCanvas({ painelName, dashboardId, onBack }: DashboardCa
     }
   }, [startDate, endDate]);
 
-  // Refresh all connected widgets
   const refreshAllWidgets = useCallback(async () => {
     const currentWidgets = widgetsRef.current;
     const connectedWidgets = currentWidgets.filter(w => w.isConnected && w.source);
@@ -1064,42 +1059,27 @@ export function DashboardCanvas({ painelName, dashboardId, onBack }: DashboardCa
   useEffect(() => {
     if (isInitialLoad) return;
     refreshAllWidgets();
-  }, [startDate, endDate, isInitialLoad]); // Removed refreshAllWidgets from deps to prevent loops
+  }, [startDate, endDate, isInitialLoad]);
 
   const handleSelectChart = (chart: ChartType) => {
     setSelectedChart(chart);
     setIsChartSelectorOpen(false);
     
-    const gap = 16;
-    const minWidth = 260;
-    const defaultWidth = 340;
     const effectiveContainer = containerWidth > 0 ? containerWidth : 800;
     
-    // Calculate initial width - try to fit in existing row if possible
-    let initialWidth = defaultWidth;
+    // Calculate how much space is in the last row
+    const rows = computeWidgetRows(widgets, effectiveContainer);
+    let initialWidth = DEFAULT_WIDTH;
     
-    if (widgets.length > 0) {
-      // Calculate current last row width
-      let lastRowWidth = 0;
-      widgets.forEach(w => {
-        const wWidth = w.width || defaultWidth;
-        const neededWidth = lastRowWidth > 0 ? wWidth + gap : wWidth;
-        if (lastRowWidth + neededWidth > effectiveContainer && lastRowWidth > 0) {
-          lastRowWidth = wWidth;
-        } else {
-          lastRowWidth += neededWidth;
-        }
-      });
+    if (rows.length > 0) {
+      const lastRow = rows[rows.length - 1];
+      const lastRowWidth = lastRow.reduce((sum, i) => sum + (widgets[i].width ?? DEFAULT_WIDTH) + (sum > 0 ? GAP : 0), 0);
+      const availableInRow = effectiveContainer - lastRowWidth - GAP;
       
-      // Space available in last row
-      const availableInRow = effectiveContainer - lastRowWidth - gap;
-      if (availableInRow >= minWidth) {
-        initialWidth = Math.max(minWidth, Math.min(defaultWidth, availableInRow));
+      if (availableInRow >= MIN_WIDTH) {
+        initialWidth = Math.max(MIN_WIDTH, Math.min(DEFAULT_WIDTH, availableInRow));
       }
     }
-    
-    // Calculate initial percentage
-    const initialWidthPercent = (initialWidth / effectiveContainer) * 100;
     
     const newWidget: DashboardWidget = {
       id: `widget-${Date.now()}`,
@@ -1107,7 +1087,6 @@ export function DashboardCanvas({ painelName, dashboardId, onBack }: DashboardCa
       source: null,
       isConnected: false,
       width: initialWidth,
-      widthPercent: initialWidthPercent,
       height: 280,
     };
     setWidgets(prev => [...prev, newWidget]);
@@ -1124,14 +1103,12 @@ export function DashboardCanvas({ painelName, dashboardId, onBack }: DashboardCa
         return;
       }
 
-      // First set loading state
       setWidgets(prev => prev.map(widget => 
         widget.id === pendingWidgetId 
           ? { ...widget, source, isConnected: true, isLoading: true }
           : widget
       ));
 
-      // Create temp widget with source to fetch data
       const tempWidget: DashboardWidget = { 
         ...widgetToUpdate, 
         source, 
@@ -1139,7 +1116,6 @@ export function DashboardCanvas({ painelName, dashboardId, onBack }: DashboardCa
       };
       const data = await fetchWidgetData(tempWidget);
       
-      // Update with fetched data
       setWidgets(prev => prev.map(widget => 
         widget.id === pendingWidgetId 
           ? { ...widget, source, isConnected: true, data: data || undefined, isLoading: false }
@@ -1169,111 +1145,70 @@ export function DashboardCanvas({ painelName, dashboardId, onBack }: DashboardCa
     ));
   };
 
+  // Improved resize handler: shrinks siblings proportionally when needed
   const handleWidgetResize = useCallback((widgetId: string, nextWidth: number, nextHeight: number) => {
-    const gap = 16;
-    const MIN_WIDTH = 260;
-    const DEFAULT_WIDTH = 340; // "padrão"
     const cw = containerWidth > 0 ? containerWidth : 1200;
 
     const clampWidth = (w: number) => Math.min(cw, Math.max(MIN_WIDTH, w));
     const clampHeight = (h: number) => Math.min(1200, Math.max(220, h));
-
-    // Helper to get effective width from widget (using percent if available)
-    const getEffectiveWidth = (widget: DashboardWidget) => {
-      if (widget.widthPercent !== undefined) {
-        return (widget.widthPercent / 100) * cw;
-      }
-      return widget.width ?? DEFAULT_WIDTH;
-    };
-
-    const computeRows = (list: DashboardWidget[]) => {
-      const rows: number[][] = [];
-      let row: number[] = [];
-      let used = 0;
-
-      for (let i = 0; i < list.length; i++) {
-        const w = getEffectiveWidth(list[i]);
-        const needed = row.length > 0 ? w + gap : w;
-
-        if (row.length > 0 && used + needed > cw) {
-          rows.push(row);
-          row = [i];
-          used = w;
-        } else {
-          row.push(i);
-          used += needed;
-        }
-      }
-
-      if (row.length) rows.push(row);
-      return rows;
-    };
 
     setWidgets((prev) => {
       const idx = prev.findIndex(w => w.id === widgetId);
       if (idx === -1) return prev;
 
       const next = prev.map(w => ({ ...w }));
+      const clampedWidth = clampWidth(nextWidth);
+      const clampedHeight = clampHeight(nextHeight);
 
-      // Determine current row (before applying the new width)
-      const rows = computeRows(next);
+      // Find current row
+      const rows = computeWidgetRows(next, cw);
       const rowIndices = rows.find(r => r.includes(idx)) ?? [idx];
       const siblings = rowIndices.filter(i => i !== idx);
 
-      // Apply requested size
-      const clampedWidth = clampWidth(nextWidth);
+      // Calculate delta
+      const oldWidth = next[idx].width ?? DEFAULT_WIDTH;
+      const delta = clampedWidth - oldWidth;
+
+      // Apply new size
       next[idx].width = clampedWidth;
-      next[idx].height = clampHeight(nextHeight);
+      next[idx].height = clampedHeight;
+
+      if (siblings.length === 0 || delta === 0) {
+        return next;
+      }
+
+      // Calculate available space in row
+      const totalGaps = (rowIndices.length - 1) * GAP;
+      const availableWidth = cw - totalGaps;
+      const currentRowWidth = rowIndices.reduce((sum, i) => sum + (next[i].width ?? DEFAULT_WIDTH), 0);
+
+      // If expanding and exceeding available width, shrink siblings
+      if (delta > 0 && currentRowWidth > availableWidth) {
+        const overflow = currentRowWidth - availableWidth;
+        let remainingOverflow = overflow;
+
+        // First, shrink from the right (feels natural)
+        const shrinkOrder = [...siblings].sort((a, b) => b - a);
+
+        for (const i of shrinkOrder) {
+          if (remainingOverflow <= 0) break;
+          
+          const currentSiblingWidth = next[i].width ?? DEFAULT_WIDTH;
+          const shrinkable = currentSiblingWidth - MIN_WIDTH;
+          
+          if (shrinkable > 0) {
+            const shrinkBy = Math.min(shrinkable, remainingOverflow);
+            next[i].width = currentSiblingWidth - shrinkBy;
+            remainingOverflow -= shrinkBy;
+          }
+        }
+
+        // If still overflow, it means widgets are at MIN_WIDTH
+        // The natural flex-wrap will handle it by wrapping to next line
+      }
+
+      // If shrinking, allow siblings to potentially expand (optional - keep simple for now)
       
-      // Calculate and save the percentage
-      const widthPercent = (clampedWidth / cw) * 100;
-      // Snap to 100% if very close (>= 98%)
-      next[idx].widthPercent = widthPercent >= 98 ? 100 : widthPercent;
-
-      if (siblings.length === 0) {
-        // Also update siblings percentages for consistency
-        return next;
-      }
-
-      const available = cw - gap * (rowIndices.length - 1);
-      const rowSum = rowIndices.reduce((sum, i) => sum + (next[i].width ?? DEFAULT_WIDTH), 0);
-
-      if (rowSum <= available) {
-        // Update all widgets in row with their percentages
-        rowIndices.forEach(i => {
-          const w = next[i].width ?? DEFAULT_WIDTH;
-          const pct = (w / cw) * 100;
-          next[i].widthPercent = pct >= 98 ? 100 : pct;
-        });
-        return next;
-      }
-
-      // Need to shrink siblings that are wider than DEFAULT_WIDTH first
-      let overflow = rowSum - available;
-
-      // Rightmost siblings shrink first (feels more natural visually)
-      const shrinkOrder = [...siblings].sort((a, b) => b - a);
-
-      for (const i of shrinkOrder) {
-        if (overflow <= 0) break;
-        const current = next[i].width ?? DEFAULT_WIDTH;
-        const extra = Math.max(0, current - DEFAULT_WIDTH);
-        if (extra <= 0) continue;
-
-        const reduceBy = Math.min(extra, overflow);
-        next[i].width = current - reduceBy;
-        overflow -= reduceBy;
-      }
-
-      // Update all widgets in row with their percentages
-      rowIndices.forEach(i => {
-        const w = next[i].width ?? DEFAULT_WIDTH;
-        const pct = (w / cw) * 100;
-        next[i].widthPercent = pct >= 98 ? 100 : pct;
-      });
-
-      // If still overflowing, it means siblings are already at DEFAULT_WIDTH;
-      // then flex-wrap will naturally move items to the next line.
       return next;
     });
   }, [containerWidth]);
@@ -1317,6 +1252,9 @@ export function DashboardCanvas({ painelName, dashboardId, onBack }: DashboardCa
   };
 
   const activeWidget = activeId ? widgets.find(w => w.id === activeId) : null;
+
+  // Calculate display widths for all widgets (handles row overflow)
+  const displayWidths = calculateDisplayWidths(widgets, containerWidth);
 
   return (
     <div className="h-full flex flex-col overflow-x-hidden">
@@ -1465,50 +1403,45 @@ export function DashboardCanvas({ painelName, dashboardId, onBack }: DashboardCa
           /* Dashboard with Draggable Widgets */
           <DndContext
             sensors={sensors}
-            collisionDetection={rectIntersection}
+            collisionDetection={closestCenter}
             onDragStart={handleDragStart}
             onDragEnd={handleDragEnd}
           >
             <SortableContext items={widgets.map(w => w.id)} strategy={rectSortingStrategy}>
               <div ref={setContainerNode} className={cn(
-                "flex gap-3 p-1 min-h-[200px] overflow-x-hidden",
+                "flex gap-4 p-1 min-h-[200px] overflow-x-hidden",
                 isMobile 
                   ? "flex-col" 
-                  : "flex-wrap content-start"
+                  : "flex-wrap content-start items-start"
               )}>
-                {widgets.map((widget) => (
+                {widgets.map((widget, index) => (
                   <SortableWidget
                     key={widget.id}
                     widget={widget}
+                    widgetWidth={displayWidths[index]}
                     onResize={handleWidgetResize}
                     onDelete={handleDeleteWidget}
                     onConnect={handleConnectWidget}
                     onRename={handleRenameWidget}
                     containerWidth={containerWidth}
-                    isSorting={activeId !== null}
+                    isDragging={activeId !== null}
                     isMobile={isMobile}
                   />
                 ))}
               </div>
             </SortableContext>
             
-            {/* Drag Overlay - shows a preview of the dragged widget */}
-            <DragOverlay adjustScale={false} dropAnimation={{
-              duration: 200,
-              easing: 'cubic-bezier(0.18, 0.67, 0.6, 1.22)',
-            }}>
+            {/* Drag Overlay - NO animation */}
+            <DragOverlay dropAnimation={null}>
               {activeWidget && (() => {
-                // Calculate overlay width using the same logic as SortableWidget
-                const hasValidPercent = activeWidget.widthPercent !== undefined && activeWidget.widthPercent > 0;
-                const overlayWidth = hasValidPercent && containerWidth > 0
-                  ? (activeWidget.widthPercent! / 100) * containerWidth
-                  : (activeWidget.width || 340);
+                const activeIndex = widgets.findIndex(w => w.id === activeWidget.id);
+                const overlayWidth = activeIndex >= 0 ? displayWidths[activeIndex] : (activeWidget.width || 340);
                 
                 return (
                   <div 
-                    className="bg-white border-2 border-border rounded-xl shadow-2xl opacity-90"
+                    className="bg-white border-2 border-border rounded-xl shadow-2xl"
                     style={{
-                      width: Math.max(260, Math.min(overlayWidth, containerWidth || 2000)),
+                      width: Math.max(MIN_WIDTH, Math.min(overlayWidth, containerWidth || 2000)),
                       height: activeWidget.height || 280,
                     }}
                   >
