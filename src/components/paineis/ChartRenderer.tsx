@@ -249,18 +249,22 @@ export function ChartRenderer({ chartType, data, width, height, isLoading }: Cha
         );
       }
 
-      // Calculate how many bars fit in the available height
-      const itemHeight = 24; // height per bar item including gap
-      const availableHeight = height - 8; // minimal padding
+      // Height per bar item including gap - adapts to available height
+      const itemHeight = 28;
+      const availableHeight = height - 8;
       const maxItemsToShow = Math.max(1, Math.floor(availableHeight / itemHeight));
       const sortedData = [...distribution].sort((a, b) => b.value - a.value).slice(0, maxItemsToShow);
       const maxValue = Math.max(...sortedData.map(d => d.value), 1);
       const totalResponses = distribution.reduce((sum, d) => sum + d.value, 0);
       const hiddenCount = distribution.length - maxItemsToShow;
+      
+      // Calculate actual row height based on how many items we're showing
+      const actualItemHeight = sortedData.length > 0 ? Math.floor((availableHeight - (hiddenCount > 0 ? 20 : 0)) / sortedData.length) : itemHeight;
+      const clampedItemHeight = Math.max(24, Math.min(actualItemHeight, 36));
 
       return (
         <div className="w-full h-full flex flex-col px-3 py-1 overflow-hidden">
-          <div className="flex flex-col justify-start gap-1 flex-1 overflow-hidden">
+          <div className="flex flex-col justify-start flex-1 overflow-hidden" style={{ gap: Math.max(4, clampedItemHeight - 24) }}>
             {sortedData.map((item, index) => {
               const percentage = maxValue > 0 ? (item.value / maxValue) * 100 : 0;
               const responsePercent = totalResponses > 0 ? Math.round((item.value / totalResponses) * 100) : 0;
