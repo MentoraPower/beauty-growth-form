@@ -166,7 +166,7 @@ const OriginOverview = () => {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 bg-neutral-100 -m-6 p-6 min-h-[calc(100vh-4rem)] rounded-2xl">
       <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-foreground">
@@ -183,7 +183,7 @@ const OriginOverview = () => {
 
       {/* Stats Cards */}
       <div className="flex flex-wrap gap-3">
-        <Card className="bg-white border border-black/5 shadow-none flex-1 min-w-[140px]">
+        <Card className="bg-white border border-black/5 shadow-none flex-1 min-w-[140px] rounded-2xl">
           <CardContent className="px-4 py-3 flex items-center justify-between gap-3">
             <p className="text-sm text-muted-foreground font-medium whitespace-nowrap">Agendamentos</p>
             <p className="text-2xl font-bold text-foreground">
@@ -192,7 +192,7 @@ const OriginOverview = () => {
           </CardContent>
         </Card>
 
-        <Card className="bg-white border border-black/5 shadow-none flex-1 min-w-[120px]">
+        <Card className="bg-white border border-black/5 shadow-none flex-1 min-w-[120px] rounded-2xl">
           <CardContent className="px-4 py-3 flex items-center justify-between gap-3">
             <p className="text-sm text-muted-foreground font-medium whitespace-nowrap">No Show</p>
             <p className="text-2xl font-bold text-rose-500">
@@ -201,7 +201,7 @@ const OriginOverview = () => {
           </CardContent>
         </Card>
 
-        <Card className="bg-white border border-black/5 shadow-none flex-1 min-w-[140px]">
+        <Card className="bg-white border border-black/5 shadow-none flex-1 min-w-[140px] rounded-2xl">
           <CardContent className="px-4 py-3 flex items-center justify-between gap-3">
             <p className="text-sm text-muted-foreground font-medium whitespace-nowrap">Total Vendas</p>
             <p className="text-2xl font-bold text-foreground">
@@ -210,7 +210,7 @@ const OriginOverview = () => {
           </CardContent>
         </Card>
 
-        <Card className="bg-white border border-black/5 shadow-none flex-none w-auto">
+        <Card className="bg-white border border-black/5 shadow-none flex-none w-auto rounded-2xl">
           <CardContent className="px-4 py-3 flex items-center gap-3">
             <p className="text-sm text-muted-foreground font-medium whitespace-nowrap">Valor em Vendas</p>
             <p className="text-2xl font-bold text-emerald-600 whitespace-nowrap">
@@ -227,7 +227,7 @@ const OriginOverview = () => {
       {/* Charts Grid - SDR and Closer */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* SDR Appointments Chart */}
-        <Card className="bg-white border border-black/5 shadow-none">
+        <Card className="bg-white border border-black/5 shadow-none rounded-2xl">
           <CardHeader className="pb-4">
             <CardTitle className="text-base font-semibold text-foreground">
               Agendamentos por SDR
@@ -274,7 +274,7 @@ const OriginOverview = () => {
         </Card>
 
         {/* SDR Sales Chart */}
-        <Card className="bg-white border border-black/5 shadow-none">
+        <Card className="bg-white border border-black/5 shadow-none rounded-2xl">
           <CardHeader className="pb-4">
             <CardTitle className="text-base font-semibold text-foreground">
               Reuniões e Vendas por SDR
@@ -352,7 +352,7 @@ const OriginOverview = () => {
         </Card>
 
         {/* Closer Appointments Chart */}
-        <Card className="bg-white border border-black/5 shadow-none">
+        <Card className="bg-white border border-black/5 shadow-none rounded-2xl">
           <CardHeader className="pb-4">
             <CardTitle className="text-base font-semibold text-foreground">
               Reuniões realizadas por Closer
@@ -399,7 +399,7 @@ const OriginOverview = () => {
         </Card>
 
         {/* Closer Sales Chart */}
-        <Card className="bg-white border border-black/5 shadow-none">
+        <Card className="bg-white border border-black/5 shadow-none rounded-2xl">
           <CardHeader className="pb-4">
             <CardTitle className="text-base font-semibold text-foreground">
               Reuniões e Vendas por Closer
@@ -478,7 +478,7 @@ const OriginOverview = () => {
       </div>
 
       {/* Meetings by Hour Chart */}
-      <Card className="bg-white border border-black/5 shadow-none">
+      <Card className="bg-white border border-black/5 shadow-none rounded-2xl">
         <CardHeader className="pb-4">
           <CardTitle className="text-base font-semibold text-foreground">
             Reuniões e Vendas por Horário
