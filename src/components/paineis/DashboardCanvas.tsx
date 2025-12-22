@@ -30,7 +30,7 @@ import {
   SortableContext,
   useSortable,
   arrayMove,
-  horizontalListSortingStrategy,
+  rectSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 
@@ -219,10 +219,10 @@ function SortableWidget({ widget, onResize, onDelete, onConnect, onRename, conta
         {/* Delete Button - only visible on hover */}
         <button
           onClick={() => onDelete(widget.id)}
-          className="absolute top-2 right-2 p-1.5 rounded-lg hover:bg-red-50 z-20 opacity-0 group-hover/widget:opacity-100 transition-opacity"
+          className="absolute top-2 right-2 p-1.5 rounded-lg hover:bg-muted z-20 opacity-0 group-hover/widget:opacity-100 transition-opacity"
           title="Remover widget"
         >
-          <Trash2 className="h-3.5 w-3.5 text-muted-foreground hover:text-red-500" />
+          <Trash2 className="h-3.5 w-3.5 text-muted-foreground hover:text-foreground" />
         </button>
 
         {/* Connect Overlay */}
@@ -1376,12 +1376,12 @@ export function DashboardCanvas({ painelName, dashboardId, onBack }: DashboardCa
             onDragStart={handleDragStart}
             onDragEnd={handleDragEnd}
           >
-            <SortableContext items={widgets.map(w => w.id)} strategy={horizontalListSortingStrategy}>
+            <SortableContext items={widgets.map(w => w.id)} strategy={rectSortingStrategy}>
               <div ref={containerRef} className={cn(
                 "flex gap-3 p-1 min-h-[200px]",
                 isMobile 
                   ? "flex-col" 
-                  : "flex-nowrap overflow-x-auto scrollbar-thin scrollbar-thumb-border scrollbar-track-transparent"
+                  : "flex-wrap content-start"
               )}>
                 {widgets.map((widget) => (
                   <SortableWidget
