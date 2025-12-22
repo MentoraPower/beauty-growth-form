@@ -489,14 +489,14 @@ export function DashboardCanvas({ painelName, dashboardId, onBack }: DashboardCa
     widgetsRef.current = widgets;
   }, [widgets]);
 
-  // Load widgets from database on mount
+  // Load widgets from database on mount + real-time subscription
   useEffect(() => {
-    const loadWidgets = async () => {
-      if (!dashboardId) {
-        setIsInitialLoad(false);
-        return;
-      }
+    if (!dashboardId) {
+      setIsInitialLoad(false);
+      return;
+    }
 
+    const loadWidgets = async () => {
       const { data } = await supabase
         .from("dashboards")
         .select("widgets")
@@ -516,6 +516,39 @@ export function DashboardCanvas({ painelName, dashboardId, onBack }: DashboardCa
     };
 
     loadWidgets();
+
+    // Real-time subscription for dashboard updates
+    const channel = supabase
+      .channel(`dashboard-realtime-${dashboardId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'dashboards',
+          filter: `id=eq.${dashboardId}`,
+        },
+        (payload) => {
+          console.log('[DashboardCanvas] Real-time update received:', payload);
+          const newWidgets = payload.new?.widgets;
+          if (newWidgets && Array.isArray(newWidgets)) {
+            // Update widgets with real-time data, preserve local data state
+            setWidgets(prev => {
+              const prevDataMap = new Map(prev.map(w => [w.id, w.data]));
+              return (newWidgets as unknown as DashboardWidget[]).map((w) => ({
+                ...w,
+                data: prevDataMap.get(w.id) || undefined,
+                isLoading: w.isConnected && !prevDataMap.has(w.id),
+              }));
+            });
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [dashboardId]);
 
   // Fetch data for loaded widgets that are connected
