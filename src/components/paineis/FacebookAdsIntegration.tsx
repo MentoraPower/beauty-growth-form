@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import { Facebook, Check, Loader2, ChevronRight, BarChart3, DollarSign, MousePointer, ExternalLink } from "lucide-react";
+import { useState } from "react";
+import { Facebook, Check, Loader2, ChevronRight, BarChart3, DollarSign, MousePointer } from "lucide-react";
 import {
   Sheet,
   SheetContent,
@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
@@ -45,9 +46,7 @@ export function FacebookAdsIntegration({ open, onOpenChange }: FacebookAdsIntegr
   const [step, setStep] = useState<Step>("connect");
   const [isConnecting, setIsConnecting] = useState(false);
   const [isLoadingCampaigns, setIsLoadingCampaigns] = useState(false);
-  const [accessToken, setAccessToken] = useState<string | null>(null);
-  const [oauthAppId, setOauthAppId] = useState<string | null>(null);
-  const [lastRedirectUri, setLastRedirectUri] = useState<string | null>(null);
+  const [accessToken, setAccessToken] = useState<string>("");
   const [adAccounts, setAdAccounts] = useState<AdAccount[]>([]);
   const [selectedAdAccount, setSelectedAdAccount] = useState<string>("");
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
@@ -57,100 +56,20 @@ export function FacebookAdsIntegration({ open, onOpenChange }: FacebookAdsIntegr
     cpc: true,
   });
 
-  // Listen for OAuth callback
-  useEffect(() => {
-    const handleOAuthCallback = async () => {
-      const urlParams = new URLSearchParams(window.location.search);
-      const code = urlParams.get('code');
-      const state = urlParams.get('state');
-      const errorCode = urlParams.get('error_code');
-      const errorMessage = urlParams.get('error_message');
+  const handleConnectWithToken = async () => {
+    if (!accessToken.trim()) {
+      toast.error("Cole o token de acesso");
+      return;
+    }
 
-      const storedAppId = localStorage.getItem('fb_ads_oauth_app_id');
-      const storedRedirectUri = localStorage.getItem('fb_ads_oauth_redirect_uri');
-      if (storedAppId) setOauthAppId(storedAppId);
-      if (storedRedirectUri) setLastRedirectUri(storedRedirectUri);
-
-      if (errorCode) {
-        // Clean URL
-        window.history.replaceState({}, document.title, window.location.pathname);
-
-        const parsedMessage = errorMessage
-          ? decodeURIComponent(errorMessage.replace(/\+/g, ' '))
-          : 'Erro ao autenticar no Facebook';
-
-        const appIdText = storedAppId ? ` (App ID: ${storedAppId})` : '';
-        toast.error(`${parsedMessage}${appIdText}`);
-        return;
-      }
-
-      if (code && state === 'facebook_ads_oauth') {
-        // Clean URL
-        window.history.replaceState({}, document.title, window.location.pathname);
-
-        setIsConnecting(true);
-        try {
-          const redirectUri = `${window.location.origin}${window.location.pathname}`;
-
-          const { data, error } = await supabase.functions.invoke('facebook-ads', {
-            body: {
-              action: 'exchange-token',
-              code,
-              redirectUri,
-            },
-          });
-
-          if (error) throw error;
-
-          if (data.accessToken) {
-            setAccessToken(data.accessToken);
-            await fetchAdAccounts(data.accessToken);
-            toast.success("Conectado ao Facebook Ads!");
-          }
-        } catch (error) {
-          console.error('OAuth error:', error);
-          toast.error("Erro ao conectar com Facebook");
-        } finally {
-          setIsConnecting(false);
-        }
-      }
-    };
-
-    handleOAuthCallback();
-  }, []);
-
-  const handleFacebookLogin = async () => {
     setIsConnecting(true);
-
     try {
-      const redirectUri = `${window.location.origin}${window.location.pathname}`;
-
-      const { data, error } = await supabase.functions.invoke('facebook-ads', {
-        body: {
-          action: 'get-oauth-url',
-          redirectUri,
-        },
-      });
-
-      if (error) throw error;
-
-      if (data?.appId) {
-        setOauthAppId(data.appId);
-        localStorage.setItem('fb_ads_oauth_app_id', data.appId);
-      }
-
-      const effectiveRedirectUri: string = data?.redirectUri || redirectUri;
-      setLastRedirectUri(effectiveRedirectUri);
-      localStorage.setItem('fb_ads_oauth_redirect_uri', effectiveRedirectUri);
-
-      if (data?.oauthUrl) {
-        // Add state parameter for security
-        const oauthUrlWithState = `${data.oauthUrl}&state=facebook_ads_oauth`;
-        window.location.href = oauthUrlWithState;
-      }
+      await fetchAdAccounts(accessToken.trim());
+      toast.success("Token válido!");
     } catch (error) {
-      console.error('Login error:', error);
-      toast.error("Erro ao iniciar login do Facebook");
+      console.error('Token error:', error);
+      toast.error("Token inválido ou expirado");
+    } finally {
       setIsConnecting(false);
     }
   };
@@ -350,47 +269,47 @@ export function FacebookAdsIntegration({ open, onOpenChange }: FacebookAdsIntegr
                   <Facebook className="h-9 w-9 text-white" />
                 </div>
                 <h3 className="font-semibold text-lg mb-2 text-center">Conectar com Facebook Ads</h3>
-                <p className="text-sm text-muted-foreground mb-2 text-center">
-                  Clique no botão abaixo para fazer login com sua conta do Facebook e autorizar o acesso aos dados de anúncios.
+                <p className="text-sm text-muted-foreground mb-4 text-center">
+                  Cole o token de acesso gerado no Graph API Explorer com as permissões <code className="bg-muted px-1 rounded">ads_read</code> e <code className="bg-muted px-1 rounded">ads_management</code>.
                 </p>
 
-                {(oauthAppId || lastRedirectUri) && (
-                  <div className="mb-4 text-xs text-muted-foreground text-center space-y-1">
-                    {oauthAppId && (
-                      <div>
-                        App ID em uso: <span className="font-mono">{oauthAppId}</span>
-                      </div>
-                    )}
-                    {lastRedirectUri && (
-                      <div className="truncate">
-                        Redirect: <span className="font-mono">{lastRedirectUri}</span>
-                      </div>
-                    )}
-                  </div>
-                )}
+                <div className="space-y-3">
+                  <Input
+                    placeholder="Cole o Access Token aqui"
+                    value={accessToken}
+                    onChange={(e) => setAccessToken(e.target.value)}
+                    className="h-11 font-mono text-xs"
+                  />
 
-                <Button
-                  onClick={handleFacebookLogin}
-                  disabled={isConnecting}
-                  className="w-full h-12 bg-[#1877F2] hover:bg-[#1565C0] text-white"
-                >
-                  {isConnecting ? (
-                    <>
-                      <Loader2 className="h-5 w-5 mr-2 animate-spin" />
-                      Conectando...
-                    </>
-                  ) : (
-                    <>
-                      <Facebook className="h-5 w-5 mr-2" />
-                      Entrar com Facebook
-                      <ExternalLink className="h-4 w-4 ml-2" />
-                    </>
-                  )}
-                </Button>
+                  <Button
+                    onClick={handleConnectWithToken}
+                    disabled={isConnecting || !accessToken.trim()}
+                    className="w-full h-12 bg-[#1877F2] hover:bg-[#1565C0] text-white"
+                  >
+                    {isConnecting ? (
+                      <>
+                        <Loader2 className="h-5 w-5 mr-2 animate-spin" />
+                        Validando token...
+                      </>
+                    ) : (
+                      <>
+                        <Facebook className="h-5 w-5 mr-2" />
+                        Conectar
+                      </>
+                    )}
+                  </Button>
+                </div>
               </div>
 
               <div className="text-xs text-muted-foreground text-center">
-                Ao conectar, você autoriza o acesso aos dados das suas campanhas de anúncios.
+                <a 
+                  href="https://developers.facebook.com/tools/explorer/" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="text-[#1877F2] hover:underline"
+                >
+                  Abrir Graph API Explorer →
+                </a>
               </div>
             </div>
           )}
