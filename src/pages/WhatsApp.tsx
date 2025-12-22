@@ -606,7 +606,9 @@ const WhatsApp = (props: WhatsAppProps) => {
 
       // Best-effort: fetch participant count for this group (avoids showing 0)
       let resolvedParticipantCount = group.participantCount;
-      if (!resolvedParticipantCount || resolvedParticipantCount <= 0) {
+      let resolvedPhotoUrl = group.photoUrl || chatRow?.photo_url;
+      
+      if (!resolvedParticipantCount || resolvedParticipantCount <= 0 || !resolvedPhotoUrl) {
         try {
           const metaResponse = await fetch(
             `https://www.wasenderapi.com/api/groups/${encodeURIComponent(group.groupJid)}/metadata`,
@@ -643,6 +645,28 @@ const WhatsApp = (props: WhatsAppProps) => {
           console.error("[WhatsApp] Error fetching group metadata:", e);
         }
       }
+      
+      // Fetch group photo if missing
+      if (!resolvedPhotoUrl) {
+        try {
+          const { data: photoResult } = await supabase.functions.invoke("wasender-whatsapp", {
+            body: { action: "fetch-group-photo", groupJid: group.groupJid, sessionId: sessionApiKey },
+          });
+          
+          if (photoResult?.success && photoResult?.photoUrl) {
+            resolvedPhotoUrl = photoResult.photoUrl;
+            
+            // Update local groups list with new photo
+            setWhatsappGroups((prev) =>
+              prev.map((g) => (g.groupJid === group.groupJid ? { ...g, photoUrl: resolvedPhotoUrl } : g))
+            );
+            
+            console.log("[WhatsApp] Fetched group photo:", resolvedPhotoUrl);
+          }
+        } catch (e) {
+          console.error("[WhatsApp] Error fetching group photo:", e);
+        }
+      }
 
       const groupChat: Chat = {
         id: chatRow.id,
@@ -653,7 +677,7 @@ const WhatsApp = (props: WhatsAppProps) => {
         unread: chatRow.unread_count || 0,
         avatar: group.name.substring(0, 2).toUpperCase(),
         phone: group.groupJid,
-        photo_url: group.photoUrl || chatRow.photo_url || null,
+        photo_url: resolvedPhotoUrl || null,
         lastMessageStatus: chatRow.last_message_status || null,
         lastMessageFromMe: chatRow.last_message_from_me || false,
         isGroup: true,
