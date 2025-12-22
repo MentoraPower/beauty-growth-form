@@ -254,7 +254,7 @@ export default function Paineis() {
               </Button>
             </div>
           ) : (
-            <div className="bg-card border border-border rounded-xl overflow-hidden">
+            <div className="bg-muted/40 border border-border/50 rounded-3xl overflow-hidden">
               {/* Table Header */}
               <div className="grid grid-cols-[1fr_120px_60px] gap-4 px-4 py-3 border-b border-border bg-muted/30">
                 <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Nome</span>
