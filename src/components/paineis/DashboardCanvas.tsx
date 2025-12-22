@@ -56,6 +56,7 @@ export interface DashboardWidget {
   isLoading?: boolean;
   width?: number;
   height?: number;
+  widthPercent?: number; // 0-100: percentage of container width
   customName?: string;
 }
 
@@ -83,6 +84,7 @@ function SortableWidget({ widget, onResize, onDelete, onConnect, onRename, conta
   const [isEditing, setIsEditing] = useState(false);
   const [editName, setEditName] = useState(widget.customName || widget.source?.sourceName || widget.chartType.name);
   const inputRef = useRef<HTMLInputElement>(null);
+  const [isResizing, setIsResizing] = useState(false);
   
   const {
     attributes,
@@ -93,7 +95,12 @@ function SortableWidget({ widget, onResize, onDelete, onConnect, onRename, conta
     isDragging,
   } = useSortable({ id: widget.id });
 
-  const widgetWidth = typeof widget.width === "number" ? widget.width : (containerWidth || 340);
+  // Calculate width based on percentage if available, otherwise use pixels
+  const calculatedWidth = widget.widthPercent !== undefined && containerWidth > 0
+    ? (widget.widthPercent / 100) * containerWidth
+    : (typeof widget.width === "number" ? widget.width : 340);
+  
+  const widgetWidth = Math.max(260, Math.min(calculatedWidth, containerWidth || 2000));
   const widgetHeight = widget.height || 280;
   const minWidth = 260;
 
@@ -116,7 +123,8 @@ function SortableWidget({ widget, onResize, onDelete, onConnect, onRename, conta
 
   const style: React.CSSProperties = {
     transform: CSS.Transform.toString(transform),
-    transition: isDragging ? 'none' : transition,
+    // Disable transition during resize for immediate feedback, otherwise animate smoothly
+    transition: isDragging || isResizing ? 'none' : 'width 0.3s ease-out, flex-basis 0.3s ease-out, height 0.2s ease-out',
     zIndex: isDragging ? 50 : 1,
     opacity: isDragging ? 0.5 : 1,
     flexBasis: responsiveWidth,
@@ -126,6 +134,14 @@ function SortableWidget({ widget, onResize, onDelete, onConnect, onRename, conta
     minWidth: responsiveMinWidth,
     height: widgetHeight,
     cursor: isDragging ? 'grabbing' : undefined,
+  };
+
+  const handleResizeStart = () => {
+    setIsResizing(true);
+  };
+
+  const handleResizeEnd = () => {
+    setIsResizing(false);
   };
 
   const handleResize = (deltaX: number, deltaY: number, direction: string) => {
@@ -263,6 +279,8 @@ function SortableWidget({ widget, onResize, onDelete, onConnect, onRename, conta
         containerWidth={containerWidth}
         minWidth={minWidth}
         onResize={(w, h) => onResize(widget.id, w, h)}
+        onResizeStart={handleResizeStart}
+        onResizeEnd={handleResizeEnd}
       />
       <ResizeHandle 
         direction="s" 
@@ -271,6 +289,8 @@ function SortableWidget({ widget, onResize, onDelete, onConnect, onRename, conta
         containerWidth={containerWidth}
         minWidth={minWidth}
         onResize={(w, h) => onResize(widget.id, w, h)}
+        onResizeStart={handleResizeStart}
+        onResizeEnd={handleResizeEnd}
       />
       <ResizeHandle 
         direction="se" 
@@ -279,6 +299,8 @@ function SortableWidget({ widget, onResize, onDelete, onConnect, onRename, conta
         containerWidth={containerWidth}
         minWidth={minWidth}
         onResize={(w, h) => onResize(widget.id, w, h)}
+        onResizeStart={handleResizeStart}
+        onResizeEnd={handleResizeEnd}
       />
     </div>
   );
@@ -291,9 +313,11 @@ interface ResizeHandleProps {
   containerWidth: number;
   minWidth: number;
   onResize: (width: number, height: number) => void;
+  onResizeStart?: () => void;
+  onResizeEnd?: () => void;
 }
 
-function ResizeHandle({ direction, widgetWidth, widgetHeight, containerWidth, minWidth, onResize }: ResizeHandleProps) {
+function ResizeHandle({ direction, widgetWidth, widgetHeight, containerWidth, minWidth, onResize, onResizeStart, onResizeEnd }: ResizeHandleProps) {
   const startPos = useRef({ x: 0, y: 0 });
   const startSize = useRef({ width: 0, height: 0 });
 
@@ -303,6 +327,8 @@ function ResizeHandle({ direction, widgetWidth, widgetHeight, containerWidth, mi
     
     startPos.current = { x: e.clientX, y: e.clientY };
     startSize.current = { width: widgetWidth, height: widgetHeight };
+    
+    onResizeStart?.();
 
     const handleMouseMove = (moveEvent: MouseEvent) => {
       const deltaX = moveEvent.clientX - startPos.current.x;
@@ -326,6 +352,7 @@ function ResizeHandle({ direction, widgetWidth, widgetHeight, containerWidth, mi
     const handleMouseUp = () => {
       document.removeEventListener('mousemove', handleMouseMove);
       document.removeEventListener('mouseup', handleMouseUp);
+      onResizeEnd?.();
     };
 
     document.addEventListener('mousemove', handleMouseMove);
@@ -1040,12 +1067,16 @@ export function DashboardCanvas({ painelName, dashboardId, onBack }: DashboardCa
       }
     }
     
+    // Calculate initial percentage
+    const initialWidthPercent = (initialWidth / effectiveContainer) * 100;
+    
     const newWidget: DashboardWidget = {
       id: `widget-${Date.now()}`,
       chartType: chart,
       source: null,
       isConnected: false,
       width: initialWidth,
+      widthPercent: initialWidthPercent,
       height: 280,
     };
     setWidgets(prev => [...prev, newWidget]);
@@ -1116,13 +1147,21 @@ export function DashboardCanvas({ painelName, dashboardId, onBack }: DashboardCa
     const clampWidth = (w: number) => Math.min(cw, Math.max(MIN_WIDTH, w));
     const clampHeight = (h: number) => Math.min(1200, Math.max(220, h));
 
+    // Helper to get effective width from widget (using percent if available)
+    const getEffectiveWidth = (widget: DashboardWidget) => {
+      if (widget.widthPercent !== undefined) {
+        return (widget.widthPercent / 100) * cw;
+      }
+      return widget.width ?? DEFAULT_WIDTH;
+    };
+
     const computeRows = (list: DashboardWidget[]) => {
       const rows: number[][] = [];
       let row: number[] = [];
       let used = 0;
 
       for (let i = 0; i < list.length; i++) {
-        const w = list[i].width ?? DEFAULT_WIDTH;
+        const w = getEffectiveWidth(list[i]);
         const needed = row.length > 0 ? w + gap : w;
 
         if (row.length > 0 && used + needed > cw) {
@@ -1151,15 +1190,30 @@ export function DashboardCanvas({ painelName, dashboardId, onBack }: DashboardCa
       const siblings = rowIndices.filter(i => i !== idx);
 
       // Apply requested size
-      next[idx].width = clampWidth(nextWidth);
+      const clampedWidth = clampWidth(nextWidth);
+      next[idx].width = clampedWidth;
       next[idx].height = clampHeight(nextHeight);
+      
+      // Calculate and save the percentage
+      const widthPercent = (clampedWidth / cw) * 100;
+      // Snap to 100% if very close (>= 98%)
+      next[idx].widthPercent = widthPercent >= 98 ? 100 : widthPercent;
 
-      if (siblings.length === 0) return next;
+      if (siblings.length === 0) {
+        // Also update siblings percentages for consistency
+        return next;
+      }
 
       const available = cw - gap * (rowIndices.length - 1);
       const rowSum = rowIndices.reduce((sum, i) => sum + (next[i].width ?? DEFAULT_WIDTH), 0);
 
       if (rowSum <= available) {
+        // Update all widgets in row with their percentages
+        rowIndices.forEach(i => {
+          const w = next[i].width ?? DEFAULT_WIDTH;
+          const pct = (w / cw) * 100;
+          next[i].widthPercent = pct >= 98 ? 100 : pct;
+        });
         return next;
       }
 
@@ -1179,6 +1233,13 @@ export function DashboardCanvas({ painelName, dashboardId, onBack }: DashboardCa
         next[i].width = current - reduceBy;
         overflow -= reduceBy;
       }
+
+      // Update all widgets in row with their percentages
+      rowIndices.forEach(i => {
+        const w = next[i].width ?? DEFAULT_WIDTH;
+        const pct = (w / cw) * 100;
+        next[i].widthPercent = pct >= 98 ? 100 : pct;
+      });
 
       // If still overflowing, it means siblings are already at DEFAULT_WIDTH;
       // then flex-wrap will naturally move items to the next line.
