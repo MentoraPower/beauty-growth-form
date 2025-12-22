@@ -1422,10 +1422,13 @@ async function handler(req: Request): Promise<Response> {
       ? new Date(messageData.messageTimestamp * 1000).toISOString()
       : new Date().toISOString();
 
+    // For outgoing messages (fromMe), don't update the chat name
+    // This prevents overwriting the client's name with the business account name
+    const shouldUpdateName = !fromMe && pushName && !isGroupMessage;
+
     // Upsert chat - include session_id if available
     const chatUpsertData: Record<string, any> = {
       phone,
-      name: displayName,
       last_message: text.substring(0, 500),
       last_message_time: timestamp,
       last_message_status: fromMe ? "SENT" : "RECEIVED",
@@ -1434,9 +1437,30 @@ async function handler(req: Request): Promise<Response> {
       updated_at: new Date().toISOString(),
     };
     
+    // Only update name if it's an incoming message with a pushName (not fromMe)
+    // Or if it's a group message
+    if (shouldUpdateName || isGroupMessage) {
+      chatUpsertData.name = displayName;
+    }
+    
     // Only set session_id if we have one (don't overwrite with null)
     if (sessionId) {
       chatUpsertData.session_id = sessionId;
+    }
+    
+    // Check if chat exists first to handle name properly
+    const existingChatQuery = supabase
+      .from("whatsapp_chats")
+      .select("id, name")
+      .eq("phone", phone);
+    
+    const { data: existingChat } = sessionId 
+      ? await existingChatQuery.eq("session_id", sessionId).maybeSingle()
+      : await existingChatQuery.maybeSingle();
+    
+    // If chat doesn't exist, include name (even for fromMe messages as fallback)
+    if (!existingChat) {
+      chatUpsertData.name = displayName;
     }
     
     // IMPORTANT: Use phone,session_id for account isolation - same phone can have different chats per account
@@ -1454,7 +1478,7 @@ async function handler(req: Request): Promise<Response> {
       });
     }
 
-    console.log(`[Wasender Webhook] Chat upserted: ${chatData.id}`);
+    console.log(`[Wasender Webhook] Chat upserted: ${chatData.id}, name updated: ${shouldUpdateName || !existingChat}`);
 
     // Upsert message (prevent duplicates)
     // Store both message_id (numeric for replyTo) and whatsapp_key_id (for quoted message matching)
