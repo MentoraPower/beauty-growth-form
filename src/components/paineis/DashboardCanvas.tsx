@@ -95,14 +95,22 @@ function SortableWidget({ widget, onResize, onDelete, onConnect, onRename, conta
     isDragging,
   } = useSortable({ id: widget.id });
 
-  // Calculate width based on percentage if available, otherwise use pixels
-  const calculatedWidth = widget.widthPercent !== undefined && containerWidth > 0
-    ? (widget.widthPercent / 100) * containerWidth
+  // ALWAYS prioritize widthPercent if available and container is measured
+  // This ensures widgets scale proportionally with screen size
+  const hasValidPercent = widget.widthPercent !== undefined && widget.widthPercent > 0;
+  const hasValidContainer = containerWidth > 0;
+  
+  const calculatedWidth = hasValidPercent && hasValidContainer
+    ? (widget.widthPercent! / 100) * containerWidth
     : (typeof widget.width === "number" ? widget.width : 340);
   
   const widgetWidth = Math.max(260, Math.min(calculatedWidth, containerWidth || 2000));
   const widgetHeight = widget.height || 280;
   const minWidth = 260;
+  
+  // Determine if this widget should grow to fill space
+  // Widgets with >= 45% should use flex-grow to fill remaining space in row
+  const shouldGrow = hasValidPercent && widget.widthPercent! >= 45;
 
   // Observe actual rendered width
   useEffect(() => {
@@ -128,7 +136,8 @@ function SortableWidget({ widget, onResize, onDelete, onConnect, onRename, conta
     zIndex: isDragging ? 50 : 1,
     opacity: isDragging ? 0.5 : 1,
     flexBasis: responsiveWidth,
-    flexGrow: isMobile ? 1 : 0,
+    // Use flex-grow for widgets >= 45% to fill available space proportionally
+    flexGrow: isMobile ? 1 : (shouldGrow ? widget.widthPercent! / 100 : 0),
     flexShrink: isMobile ? 1 : 0,
     width: responsiveWidth,
     minWidth: responsiveMinWidth,
@@ -1442,14 +1451,21 @@ export function DashboardCanvas({ painelName, dashboardId, onBack }: DashboardCa
               duration: 200,
               easing: 'cubic-bezier(0.18, 0.67, 0.6, 1.22)',
             }}>
-              {activeWidget && (
-                <div 
-                  className="bg-white border-2 border-primary rounded-xl shadow-2xl opacity-90"
-                  style={{
-                    width: activeWidget.width || 340,
-                    height: activeWidget.height || 280,
-                  }}
-                >
+              {activeWidget && (() => {
+                // Calculate overlay width using the same logic as SortableWidget
+                const hasValidPercent = activeWidget.widthPercent !== undefined && activeWidget.widthPercent > 0;
+                const overlayWidth = hasValidPercent && containerWidth > 0
+                  ? (activeWidget.widthPercent! / 100) * containerWidth
+                  : (activeWidget.width || 340);
+                
+                return (
+                  <div 
+                    className="bg-white border-2 border-primary rounded-xl shadow-2xl opacity-90"
+                    style={{
+                      width: Math.max(260, Math.min(overlayWidth, containerWidth || 2000)),
+                      height: activeWidget.height || 280,
+                    }}
+                  >
                   <div className="p-3 pt-2 h-full flex flex-col">
                     <div className="flex items-center gap-2 mb-2">
                       <GripVertical className="h-4 w-4 text-primary" />
@@ -1461,8 +1477,9 @@ export function DashboardCanvas({ painelName, dashboardId, onBack }: DashboardCa
                       Solte para reposicionar
                     </div>
                   </div>
-                </div>
-              )}
+                  </div>
+                );
+              })()}
             </DragOverlay>
           </DndContext>
         )}
