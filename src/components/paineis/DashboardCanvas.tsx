@@ -75,10 +75,11 @@ interface SortableWidgetProps {
   onConnect: (id: string) => void;
   onRename: (id: string, name: string) => void;
   containerWidth: number;
+  isSorting: boolean;
   isMobile: boolean;
 }
 
-function SortableWidget({ widget, onResize, onDelete, onConnect, onRename, containerWidth, isMobile }: SortableWidgetProps) {
+function SortableWidget({ widget, onResize, onDelete, onConnect, onRename, containerWidth, isSorting, isMobile }: SortableWidgetProps) {
   const widgetRef = useRef<HTMLDivElement>(null);
   const [actualWidth, setActualWidth] = useState(widget.width || 340);
   const [isEditing, setIsEditing] = useState(false);
@@ -112,6 +113,9 @@ function SortableWidget({ widget, onResize, onDelete, onConnect, onRename, conta
   // Widgets with >= 45% should use flex-grow to fill remaining space in row
   const shouldGrow = hasValidPercent && widget.widthPercent! >= 45;
 
+  // While sorting/dragging, lock flex sizing so other widgets don't "achatar" (shrink) and redraw constantly
+  const lockDuringSort = !isMobile && isSorting;
+
   // Observe actual rendered width
   useEffect(() => {
     if (!widgetRef.current) return;
@@ -133,14 +137,15 @@ function SortableWidget({ widget, onResize, onDelete, onConnect, onRename, conta
 
   const style: React.CSSProperties = {
     transform: CSS.Transform.toString(transform),
-    // Disable transition during resize for immediate feedback, otherwise animate smoothly
-    transition: isDragging || isResizing ? 'none' : 'width 0.3s ease-out, flex-basis 0.3s ease-out, height 0.2s ease-out',
+    // Disable transition during resize/sort for immediate feedback and to avoid flex reflow glitches
+    transition: isDragging || isResizing || lockDuringSort ? 'none' : 'width 0.3s ease-out, flex-basis 0.3s ease-out, height 0.2s ease-out',
     zIndex: isDragging ? 50 : 1,
     opacity: isDragging ? 0.5 : 1,
     flexBasis: responsiveWidth,
-    // Use flex-grow for widgets >= 45% to fill available space proportionally
-    flexGrow: isMobile ? 1 : (shouldGrow ? widget.widthPercent! / 100 : 0),
-    flexShrink: isMobile ? 1 : 1, // Allow shrinking to prevent overflow
+    // Use flex-grow for widgets >= 45% to fill available space proportionally (but not while sorting)
+    flexGrow: isMobile ? 1 : (lockDuringSort ? 0 : (shouldGrow ? widget.widthPercent! / 100 : 0)),
+    // Prevent siblings from shrinking weirdly while sorting
+    flexShrink: isMobile ? 1 : (lockDuringSort ? 0 : 1),
     width: responsiveWidth,
     minWidth: responsiveMinWidth,
     maxWidth: maxWidthValue, // Prevent overflow
@@ -186,7 +191,7 @@ function SortableWidget({ widget, onResize, onDelete, onConnect, onRename, conta
       className={cn(
         "group/widget relative bg-white border rounded-xl transition-all duration-200",
         isDragging 
-          ? "border-primary/50 shadow-2xl ring-2 ring-primary/30 scale-[1.02] z-50" 
+          ? "border-border shadow-2xl ring-2 ring-border/50 scale-[1.02] z-50" 
           : "border-border shadow-sm hover:shadow-md hover:border-border/80"
       )}
     >
@@ -227,7 +232,7 @@ function SortableWidget({ widget, onResize, onDelete, onConnect, onRename, conta
                   setIsEditing(false);
                 }
               }}
-              className="text-sm font-medium text-foreground bg-transparent border-b border-primary outline-none flex-1 min-w-0"
+              className="text-sm font-medium text-foreground bg-transparent border-b border-border focus:border-foreground outline-none flex-1 min-w-0"
               autoFocus
             />
           ) : (
@@ -236,7 +241,7 @@ function SortableWidget({ widget, onResize, onDelete, onConnect, onRename, conta
                 setIsEditing(true);
                 setTimeout(() => inputRef.current?.select(), 0);
               }}
-              className="text-sm font-medium text-foreground truncate flex-1 cursor-text hover:text-primary transition-colors"
+              className="text-sm font-medium text-foreground truncate flex-1 cursor-text transition-colors"
               title="Clique para editar"
             >
               {widget.customName || widget.source?.sourceName || widget.chartType.name}
@@ -1300,7 +1305,7 @@ export function DashboardCanvas({ painelName, dashboardId, onBack }: DashboardCa
   const activeWidget = activeId ? widgets.find(w => w.id === activeId) : null;
 
   return (
-    <div className="h-full flex flex-col">
+    <div className="h-full flex flex-col overflow-x-hidden">
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
         <h1 className="text-xl font-semibold text-foreground">
@@ -1443,6 +1448,7 @@ export function DashboardCanvas({ painelName, dashboardId, onBack }: DashboardCa
                     onConnect={handleConnectWidget}
                     onRename={handleRenameWidget}
                     containerWidth={containerWidth}
+                    isSorting={activeId !== null}
                     isMobile={isMobile}
                   />
                 ))}
@@ -1463,7 +1469,7 @@ export function DashboardCanvas({ painelName, dashboardId, onBack }: DashboardCa
                 
                 return (
                   <div 
-                    className="bg-white border-2 border-primary rounded-xl shadow-2xl opacity-90"
+                    className="bg-white border-2 border-border rounded-xl shadow-2xl opacity-90"
                     style={{
                       width: Math.max(260, Math.min(overlayWidth, containerWidth || 2000)),
                       height: activeWidget.height || 280,
@@ -1471,7 +1477,7 @@ export function DashboardCanvas({ painelName, dashboardId, onBack }: DashboardCa
                   >
                   <div className="p-3 pt-2 h-full flex flex-col">
                     <div className="flex items-center gap-2 mb-2">
-                      <GripVertical className="h-4 w-4 text-primary" />
+                      <GripVertical className="h-4 w-4 text-muted-foreground" />
                       <h3 className="text-sm font-medium text-foreground truncate">
                         {activeWidget.customName || activeWidget.source?.sourceName || activeWidget.chartType.name}
                       </h3>
