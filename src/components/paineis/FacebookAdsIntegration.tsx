@@ -153,7 +153,7 @@ export function FacebookAdsIntegration({ open, onOpenChange }: FacebookAdsIntegr
                 <div className="w-16 h-16 rounded-2xl bg-[#1877F2] flex items-center justify-center mx-auto mb-4">
                   <Facebook className="h-9 w-9 text-white" />
                 </div>
-                <h3 className="font-semibold text-lg mb-2 text-center">Conectar com Facebook</h3>
+                <h3 className="font-semibold text-lg mb-2 text-center">Conectar com Facebook Ads</h3>
                 <p className="text-sm text-muted-foreground mb-6 text-center">
                   Insira as credenciais do seu app do Meta Developers para conectar.
                 </p>
