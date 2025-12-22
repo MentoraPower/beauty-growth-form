@@ -642,50 +642,122 @@ export function DashboardCanvas({ painelName, dashboardId, onBack }: DashboardCa
         return { total, label, distribution, trend };
       }
 
-      // Handle UTM types
+      // Handle UTM types - fetch from lead_tracking history
       if (widget.source.type === 'utm_source' || widget.source.type === 'utm_medium' || widget.source.type === 'utm_campaign' || widget.source.type === 'utm_all') {
         if (!widget.source.sourceId) {
           return { total: 0, label: 'UTMs' };
         }
 
-        // Fetch leads with UTM data filtered by date
-        let allLeads: { id: string; utm_source: string | null; utm_medium: string | null; utm_campaign: string | null; created_at: string }[] = [];
+        // First get lead IDs from the sub_origin
+        const { data: subOriginLeads } = await supabase
+          .from("leads")
+          .select("id")
+          .eq("sub_origin_id", widget.source.sourceId);
+
+        const leadIds = subOriginLeads?.map(l => l.id) || [];
+        
+        if (leadIds.length === 0) {
+          return { total: 0, label: 'UTMs', distribution: [], trend: [] };
+        }
+
+        // Fetch tracking events with UTM data (webhook, formulario, cadastro types often have UTM data)
+        let allTrackingEvents: { lead_id: string; dados: any; created_at: string; tipo: string }[] = [];
         let from = 0;
         const pageSize = 1000;
         let hasMore = true;
 
         while (hasMore) {
-          const { data: leads, error } = await supabase
-            .from("leads")
-            .select("id, utm_source, utm_medium, utm_campaign, created_at")
-            .eq("sub_origin_id", widget.source.sourceId)
+          const { data: events, error } = await supabase
+            .from("lead_tracking")
+            .select("lead_id, dados, created_at, tipo")
+            .in("lead_id", leadIds)
+            .in("tipo", ["webhook", "formulario", "cadastro"])
             .gte("created_at", filterStartDate)
             .lte("created_at", filterEndDate)
             .range(from, from + pageSize - 1);
 
           if (error) {
-            console.error("Error fetching leads for UTM:", error);
-            return { total: 0, label: 'UTMs' };
+            console.error("Error fetching tracking for UTM:", error);
+            break;
           }
 
-          if (leads && leads.length > 0) {
-            allLeads = [...allLeads, ...leads];
+          if (events && events.length > 0) {
+            allTrackingEvents = [...allTrackingEvents, ...events];
             from += pageSize;
-            hasMore = leads.length === pageSize;
+            hasMore = events.length === pageSize;
           } else {
             hasMore = false;
           }
         }
 
-        const total = allLeads.length;
+        // Extract UTM data from tracking events (dados field)
+        interface UtmData {
+          lead_id: string;
+          utm_source?: string;
+          utm_medium?: string;
+          utm_campaign?: string;
+          utm_term?: string;
+          utm_content?: string;
+          created_at: string;
+        }
+
+        const utmDataByLead = new Map<string, UtmData>();
+        
+        allTrackingEvents.forEach(event => {
+          if (event.dados && typeof event.dados === 'object') {
+            const dados = event.dados as Record<string, any>;
+            // Check for UTM data in various possible locations
+            const utmSource = dados.utm_source || dados.utmSource || dados.UTM_SOURCE;
+            const utmMedium = dados.utm_medium || dados.utmMedium || dados.UTM_MEDIUM;
+            const utmCampaign = dados.utm_campaign || dados.utmCampaign || dados.UTM_CAMPAIGN;
+            const utmTerm = dados.utm_term || dados.utmTerm || dados.UTM_TERM;
+            const utmContent = dados.utm_content || dados.utmContent || dados.UTM_CONTENT;
+            
+            // Only add if has any UTM data, or if no entry exists yet
+            if (!utmDataByLead.has(event.lead_id) || utmSource || utmMedium || utmCampaign) {
+              utmDataByLead.set(event.lead_id, {
+                lead_id: event.lead_id,
+                utm_source: utmSource,
+                utm_medium: utmMedium,
+                utm_campaign: utmCampaign,
+                utm_term: utmTerm,
+                utm_content: utmContent,
+                created_at: event.created_at,
+              });
+            }
+          }
+        });
+
+        // If no tracking data found, fallback to leads table
+        if (utmDataByLead.size === 0) {
+          const { data: leadsWithUtm } = await supabase
+            .from("leads")
+            .select("id, utm_source, utm_medium, utm_campaign, created_at")
+            .eq("sub_origin_id", widget.source.sourceId)
+            .gte("created_at", filterStartDate)
+            .lte("created_at", filterEndDate);
+
+          leadsWithUtm?.forEach(lead => {
+            utmDataByLead.set(lead.id, {
+              lead_id: lead.id,
+              utm_source: lead.utm_source || undefined,
+              utm_medium: lead.utm_medium || undefined,
+              utm_campaign: lead.utm_campaign || undefined,
+              created_at: lead.created_at,
+            });
+          });
+        }
+
+        const utmEntries = Array.from(utmDataByLead.values());
+        const total = utmEntries.length;
         let distribution: ChartDataPoint[] = [];
         let label = 'UTMs';
 
         if (widget.source.type === 'utm_source') {
           label = 'Por Fonte';
           const sourceMap = new Map<string, number>();
-          allLeads.forEach(lead => {
-            const source = lead.utm_source || 'Orgânico';
+          utmEntries.forEach(entry => {
+            const source = entry.utm_source || 'Orgânico';
             sourceMap.set(source, (sourceMap.get(source) || 0) + 1);
           });
           
@@ -700,8 +772,8 @@ export function DashboardCanvas({ painelName, dashboardId, onBack }: DashboardCa
         } else if (widget.source.type === 'utm_medium') {
           label = 'Por Mídia';
           const mediumMap = new Map<string, number>();
-          allLeads.forEach(lead => {
-            const medium = lead.utm_medium || 'Direto';
+          utmEntries.forEach(entry => {
+            const medium = entry.utm_medium || 'Direto';
             mediumMap.set(medium, (mediumMap.get(medium) || 0) + 1);
           });
           
@@ -716,8 +788,8 @@ export function DashboardCanvas({ painelName, dashboardId, onBack }: DashboardCa
         } else if (widget.source.type === 'utm_campaign') {
           label = 'Por Campanha';
           const campaignMap = new Map<string, number>();
-          allLeads.forEach(lead => {
-            const campaign = lead.utm_campaign || 'Sem campanha';
+          utmEntries.forEach(entry => {
+            const campaign = entry.utm_campaign || 'Sem campanha';
             campaignMap.set(campaign, (campaignMap.get(campaign) || 0) + 1);
           });
           
@@ -734,9 +806,9 @@ export function DashboardCanvas({ painelName, dashboardId, onBack }: DashboardCa
           let organic = 0;
           let paid = 0;
           
-          allLeads.forEach(lead => {
+          utmEntries.forEach(entry => {
             // If has utm_source or utm_medium that indicates paid traffic
-            const isPaid = lead.utm_source || lead.utm_medium || lead.utm_campaign;
+            const isPaid = entry.utm_source || entry.utm_medium || entry.utm_campaign;
             if (isPaid) {
               paid++;
             } else {
@@ -762,8 +834,8 @@ export function DashboardCanvas({ painelName, dashboardId, onBack }: DashboardCa
           const dayStart = new Date(date.setHours(0, 0, 0, 0));
           const dayEnd = new Date(date.setHours(23, 59, 59, 999));
           
-          const count = allLeads.filter(l => {
-            const createdAt = new Date(l.created_at);
+          const count = utmEntries.filter(entry => {
+            const createdAt = new Date(entry.created_at);
             return createdAt >= dayStart && createdAt <= dayEnd;
           }).length;
 
