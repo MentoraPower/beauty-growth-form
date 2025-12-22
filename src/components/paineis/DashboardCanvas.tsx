@@ -1834,7 +1834,14 @@ export function DashboardCanvas({ painelName, dashboardId, onBack }: DashboardCa
         open={isConnectSourceOpen}
         onOpenChange={(open) => {
           setIsConnectSourceOpen(open);
-          if (!open) setPendingWidgetId(null);
+          if (!open && pendingWidgetId) {
+            // Remove widget if closed without connecting a source
+            const widget = widgets.find(w => w.id === pendingWidgetId);
+            if (widget && !widget.isConnected) {
+              setWidgets(prev => prev.filter(w => w.id !== pendingWidgetId));
+            }
+            setPendingWidgetId(null);
+          }
         }}
         selectedChart={selectedChart}
         onConnect={handleConnectSource}
