@@ -511,14 +511,12 @@ export function ChartRenderer({ chartType, data, width, height, isLoading }: Cha
             {total.toLocaleString()}
           </p>
           <div className="flex items-center gap-2 mt-4 relative z-10">
-            <div className={`flex items-center gap-1 text-sm font-semibold px-3 py-1.5 rounded-full ${
-              isPositive 
-                ? 'text-emerald-700 bg-emerald-50' 
-                : 'text-red-600 bg-red-50'
+            <span className={`text-sm font-semibold ${
+              isPositive ? 'text-emerald-600' : 'text-red-600'
             }`}>
-              {isPositive ? <TrendingUp className="w-4 h-4" /> : <TrendingDown className="w-4 h-4" />}
-              <span>{isPositive ? '+' : ''}{changePercent}%</span>
-            </div>
+              {isPositive ? <TrendingUp className="w-4 h-4 inline mr-1" /> : <TrendingDown className="w-4 h-4 inline mr-1" />}
+              {isPositive ? '+' : ''}{changePercent}%
+            </span>
             <span className="text-xs text-muted-foreground font-medium">vs. período anterior</span>
           </div>
           <p className="text-sm text-muted-foreground mt-3 font-medium relative z-10">{data?.label || "Leads"}</p>
