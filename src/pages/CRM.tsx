@@ -5,7 +5,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 
 function KanbanLoading() {
   return (
-    <div className="flex flex-col h-[calc(100vh-2rem)] overflow-hidden">
+    <div className="flex flex-col h-full overflow-hidden">
       <div className="flex items-center gap-4 mb-4">
         <Skeleton className="h-8 w-48" />
         <div className="flex-1 flex items-center justify-center">
