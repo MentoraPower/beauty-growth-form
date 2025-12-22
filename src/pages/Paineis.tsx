@@ -202,7 +202,7 @@ export default function Paineis() {
                 setPainelName("");
               }}
               size="sm"
-              className="bg-foreground text-background hover:bg-foreground/90"
+              className="bg-gradient-to-r from-orange-500 to-orange-400 text-white hover:from-orange-600 hover:to-orange-500 shadow-md hover:shadow-lg transition-all"
             >
               <Plus className="h-4 w-4 mr-2" />
               Novo Painel
@@ -247,7 +247,7 @@ export default function Paineis() {
                   setIsDialogOpen(true);
                   setPainelName("");
                 }}
-                className="bg-foreground text-background hover:bg-foreground/90"
+                className="bg-gradient-to-r from-orange-500 to-orange-400 text-white hover:from-orange-600 hover:to-orange-500 shadow-md hover:shadow-lg transition-all"
               >
                 <Plus className="h-4 w-4 mr-2" />
                 Criar primeiro painel
