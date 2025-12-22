@@ -265,8 +265,8 @@ export function ChartRenderer({ chartType, data, width, height, isLoading }: Cha
               const gradient = GRADIENT_PAIRS[index % GRADIENT_PAIRS.length];
               
               return (
-                <div key={item.name} className="flex items-center gap-3 min-w-0">
-                  <div className="w-12 shrink-0 flex items-center justify-start">
+                <div key={item.name} className="flex items-center gap-2 min-w-0">
+                  <div className="w-10 shrink-0 flex items-center justify-start">
                     <span className={`text-sm font-bold tabular-nums ${item.value === 0 ? 'text-muted-foreground' : 'text-foreground'}`}>
                       {item.value}
                     </span>
@@ -287,9 +287,9 @@ export function ChartRenderer({ chartType, data, width, height, isLoading }: Cha
                     )}
                   </div>
                   
-                  <div className="w-[100px] shrink-0 flex items-center justify-between gap-1">
+                  <div className="w-[70px] shrink-0 flex items-center justify-between gap-1">
                     <span 
-                      className={`text-xs truncate leading-tight font-medium ${item.value === 0 ? 'text-muted-foreground' : 'text-foreground/70'}`}
+                      className={`text-[11px] truncate leading-tight font-medium ${item.value === 0 ? 'text-muted-foreground' : 'text-foreground/70'}`}
                       title={item.name}
                     >
                       {item.name}
