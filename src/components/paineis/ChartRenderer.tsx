@@ -209,41 +209,81 @@ export function ChartRenderer({ chartType, data, width, height, isLoading }: Cha
         );
       }
 
-      // Sort by value descending and take top items
-      const sortedData = [...distribution].sort((a, b) => b.value - a.value).slice(0, 8);
-      const maxValue = Math.max(...sortedData.map(d => d.value));
+      // Sort by value descending and calculate how many items fit
+      const availableHeight = height - 32; // Account for padding
+      const itemHeight = 28; // Height per bar row
+      const maxItemsToShow = Math.max(3, Math.floor(availableHeight / itemHeight));
+      const sortedData = [...distribution].sort((a, b) => b.value - a.value).slice(0, maxItemsToShow);
+      const maxValue = Math.max(...sortedData.map(d => d.value), 1);
+      const totalResponses = distribution.reduce((sum, d) => sum + d.value, 0);
 
       return (
-        <div className="w-full h-full flex flex-col gap-2 py-2 overflow-hidden">
-          {sortedData.map((item, index) => {
-            const percentage = maxValue > 0 ? (item.value / maxValue) * 100 : 0;
-            const barColor = item.color || HORIZONTAL_BAR_COLORS[index % HORIZONTAL_BAR_COLORS.length];
-            
-            return (
-              <div key={item.name} className="flex items-center gap-2 min-w-0">
-                <span className="text-[11px] text-muted-foreground truncate w-24 shrink-0 text-right" title={item.name}>
-                  {item.name}
-                </span>
-                <div className="flex-1 h-5 bg-muted/30 rounded overflow-hidden relative">
-                  <div 
-                    className="h-full rounded transition-all duration-500"
-                    style={{ 
-                      width: `${percentage}%`, 
-                      backgroundColor: barColor,
-                      minWidth: item.value > 0 ? '8px' : '0'
-                    }}
-                  />
+        <div className="w-full h-full flex flex-col p-3 overflow-hidden">
+          {/* Header with total */}
+          <div className="flex items-center justify-between mb-3 shrink-0">
+            <span className="text-xs text-muted-foreground">Respostas por opção</span>
+            <span className="text-xs font-medium text-foreground">{totalResponses} total</span>
+          </div>
+          
+          {/* Bars container */}
+          <div className="flex-1 flex flex-col justify-start gap-2 overflow-hidden">
+            {sortedData.map((item, index) => {
+              const percentage = maxValue > 0 ? (item.value / maxValue) * 100 : 0;
+              const responsePercent = totalResponses > 0 ? Math.round((item.value / totalResponses) * 100) : 0;
+              const barColor = item.color || HORIZONTAL_BAR_COLORS[index % HORIZONTAL_BAR_COLORS.length];
+              
+              return (
+                <div key={item.name} className="flex items-center gap-3 min-w-0">
+                  {/* Label */}
+                  <div className="w-[100px] shrink-0 flex items-center justify-end">
+                    <span 
+                      className="text-xs text-muted-foreground truncate text-right leading-tight" 
+                      title={item.name}
+                    >
+                      {item.name}
+                    </span>
+                  </div>
+                  
+                  {/* Bar */}
+                  <div className="flex-1 h-6 bg-muted/20 rounded-md overflow-hidden">
+                    <div 
+                      className="h-full rounded-md transition-all duration-500 ease-out flex items-center justify-end pr-2"
+                      style={{ 
+                        width: `${Math.max(percentage, 4)}%`, 
+                        backgroundColor: barColor,
+                      }}
+                    >
+                      {percentage > 20 && (
+                        <span className="text-[10px] font-medium text-white/90">
+                          {responsePercent}%
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  
+                  {/* Value */}
+                  <div className="w-12 shrink-0 flex items-center gap-1 justify-end">
+                    <span className="text-xs font-semibold text-foreground tabular-nums">
+                      {item.value}
+                    </span>
+                    {percentage <= 20 && (
+                      <span className="text-[10px] text-muted-foreground tabular-nums">
+                        ({responsePercent}%)
+                      </span>
+                    )}
+                  </div>
                 </div>
-                <span className="text-xs font-medium text-foreground w-10 shrink-0 tabular-nums text-right">
-                  {item.value}
-                </span>
-              </div>
-            );
-          })}
-          {distribution.length > 8 && (
-            <p className="text-[10px] text-muted-foreground text-center">
-              +{distribution.length - 8} mais
-            </p>
+              );
+            })}
+          </div>
+          
+          {/* Footer with more items indicator */}
+          {distribution.length > maxItemsToShow && (
+            <div className="mt-2 pt-2 border-t border-border/50 shrink-0">
+              <p className="text-[10px] text-muted-foreground text-center">
+                +{distribution.length - maxItemsToShow} opções não exibidas
+              </p>
+            </div>
           )}
         </div>
       );
