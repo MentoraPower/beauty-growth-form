@@ -249,10 +249,10 @@ export function ChartRenderer({ chartType, data, width, height, isLoading }: Cha
         );
       }
 
-      // Use less overhead for height calculation - just padding
-      const availableHeight = height - 16;
-      const itemHeight = 34; // height per bar item (including gap)
-      const maxItemsToShow = Math.max(2, Math.floor(availableHeight / itemHeight));
+    // Minimal overhead - bars should only hide when border is very close
+    const availableHeight = height - 4;
+    const itemHeight = 26; // compact height per bar item
+    const maxItemsToShow = Math.max(2, Math.floor(availableHeight / itemHeight));
       const sortedData = [...distribution].sort((a, b) => b.value - a.value).slice(0, maxItemsToShow);
       const maxValue = Math.max(...sortedData.map(d => d.value), 1);
       const totalResponses = distribution.reduce((sum, d) => sum + d.value, 0);
