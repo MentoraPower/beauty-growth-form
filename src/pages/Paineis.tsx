@@ -53,14 +53,19 @@ const painelOptions = [
 export default function Paineis() {
   const [searchParams, setSearchParams] = useSearchParams();
   const activePainel = searchParams.get('tipo') as PainelType | null;
+  const activeDashboardId = searchParams.get('painel'); // URL persistence
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [painelName, setPainelName] = useState("");
-  const [activeDashboard, setActiveDashboard] = useState<Dashboard | null>(null);
   const [dashboards, setDashboards] = useState<Dashboard[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [editingDashboard, setEditingDashboard] = useState<Dashboard | null>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [editName, setEditName] = useState("");
+
+  // Get active dashboard from URL
+  const activeDashboard = activeDashboardId 
+    ? dashboards.find(d => d.id === activeDashboardId) || null
+    : null;
 
   // Fetch dashboards from database
   const fetchDashboards = async () => {
@@ -114,16 +119,19 @@ export default function Paineis() {
     toast.success("Painel criado com sucesso!");
     setIsDialogOpen(false);
     setPainelName("");
-    setActiveDashboard(data);
+    // Navigate to the new dashboard via URL
+    setSearchParams({ painel: data.id }, { replace: true });
     fetchDashboards();
   };
 
   const handleOpenDashboard = (dashboard: Dashboard) => {
-    setActiveDashboard(dashboard);
+    // Persist selection in URL
+    setSearchParams({ painel: dashboard.id }, { replace: true });
   };
 
   const handleBackToPaineis = () => {
-    setActiveDashboard(null);
+    // Clear URL param to go back
+    setSearchParams({}, { replace: true });
     fetchDashboards(); // Refresh list after editing
   };
 
