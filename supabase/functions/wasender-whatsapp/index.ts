@@ -161,6 +161,33 @@ async function fetchContactPicture(phone: string): Promise<string | null> {
   }
 }
 
+// Fetch group profile picture using WasenderAPI
+async function fetchGroupPicture(groupJid: string, sessionApiKey?: string): Promise<string | null> {
+  try {
+    console.log(`[Wasender] Fetching group picture for: ${groupJid}`);
+    
+    // Try the picture endpoint for groups
+    const result = await wasenderRequest(`/groups/${encodeURIComponent(groupJid)}/picture`, {
+      method: "GET",
+    }, false, sessionApiKey);
+    
+    console.log(`[Wasender] Group picture result:`, JSON.stringify(result));
+    
+    // WasenderAPI returns { success: true, data: { imgUrl: "..." } }
+    const imgUrl = result?.data?.imgUrl || result?.imgUrl || null;
+    
+    // Validate the imgUrl is a real URL
+    if (imgUrl && typeof imgUrl === 'string' && imgUrl.startsWith('http')) {
+      return imgUrl;
+    }
+    
+    return null;
+  } catch (error) {
+    console.error(`[Wasender] Failed to fetch group picture for ${groupJid}:`, error);
+    return null;
+  }
+}
+
 // Get all contacts with photos
 async function fetchAllContacts(): Promise<Map<string, { name: string; imgUrl: string | null }>> {
   const contactsMap = new Map<string, { name: string; imgUrl: string | null }>();
@@ -715,6 +742,65 @@ async function handler(req: Request): Promise<Response> {
       return new Response(JSON.stringify({ success: true, data: result }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
+    }
+
+    // =========================
+    // ACTION: fetch-group-photo (Fetch photo for a specific group)
+    // =========================
+    if (action === "fetch-group-photo") {
+      const { groupJid } = body;
+      
+      if (!groupJid) {
+        return new Response(JSON.stringify({ error: "groupJid is required" }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      
+      console.log(`[Wasender] Fetching photo for group: ${groupJid}`);
+      
+      // Use sessionId if provided for the correct account
+      const photoUrl = await fetchGroupPicture(groupJid, sessionId);
+      
+      if (photoUrl) {
+        // Update whatsapp_groups table
+        const { error: groupUpdateError } = await supabase
+          .from("whatsapp_groups")
+          .update({ photo_url: photoUrl, updated_at: new Date().toISOString() })
+          .eq("group_jid", groupJid);
+        
+        if (groupUpdateError) {
+          console.error(`[Wasender] Error updating group photo:`, groupUpdateError);
+        } else {
+          console.log(`[Wasender] Updated group ${groupJid} photo`);
+        }
+        
+        // Also update whatsapp_chats if this group has a chat entry
+        const { error: chatUpdateError } = await supabase
+          .from("whatsapp_chats")
+          .update({ photo_url: photoUrl, updated_at: new Date().toISOString() })
+          .eq("phone", groupJid);
+        
+        if (!chatUpdateError) {
+          console.log(`[Wasender] Updated chat for group ${groupJid}`);
+        }
+        
+        return new Response(JSON.stringify({ 
+          success: true, 
+          photoUrl,
+          message: "Group photo updated" 
+        }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      } else {
+        return new Response(JSON.stringify({ 
+          success: false, 
+          photoUrl: null,
+          message: "No photo available for this group" 
+        }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
     }
 
     // =========================
