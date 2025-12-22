@@ -845,6 +845,108 @@ export function DashboardCanvas({ painelName, dashboardId, onBack }: DashboardCa
         };
       }
 
+      // Handle Cost per Lead (CPL) type
+      if (widget.source.type === 'cost_per_lead') {
+        const { fbConnectionId, fbCampaignId, fbCampaignName, subOriginIdForLeads } = widget.source;
+        
+        if (!fbConnectionId || !fbCampaignId || !subOriginIdForLeads) {
+          return { total: 0, label: 'CPL' };
+        }
+
+        // 1. Get Facebook spend for the campaign
+        const { data: connection, error: connError } = await supabase
+          .from('facebook_ads_connections')
+          .select('access_token')
+          .eq('id', fbConnectionId)
+          .single();
+
+        if (connError || !connection) {
+          console.error('Error fetching Facebook connection for CPL:', connError);
+          return { total: 0, label: 'CPL' };
+        }
+
+        const sinceDate = format(startDate, 'yyyy-MM-dd');
+        const untilDate = format(endDate, 'yyyy-MM-dd');
+
+        const { data: insightsData, error: insightsError } = await supabase.functions.invoke('facebook-ads', {
+          body: { 
+            action: 'get-insights-daterange',
+            accessToken: connection.access_token,
+            campaignIds: [fbCampaignId],
+            since: sinceDate,
+            until: untilDate
+          }
+        });
+
+        let totalSpend = 0;
+        if (!insightsError && insightsData?.insights) {
+          totalSpend = insightsData.insights.reduce((sum: number, i: any) => sum + Number(i.spend || 0), 0);
+        }
+
+        // 2. Count paid leads from the sub-origin (leads with utm_source containing 'facebook' or utm_medium = 'cpc' or 'paid')
+        const { data: paidLeads } = await supabase
+          .from("leads")
+          .select("id, utm_source, utm_medium, created_at")
+          .eq("sub_origin_id", subOriginIdForLeads)
+          .gte("created_at", filterStartDate)
+          .lte("created_at", filterEndDate);
+
+        // Filter for paid leads
+        const paidLeadsList = (paidLeads || []).filter(lead => {
+          const utmSource = (lead.utm_source || '').toLowerCase();
+          const utmMedium = (lead.utm_medium || '').toLowerCase();
+          
+          // Consider as paid if:
+          // - utm_source contains 'facebook', 'fb', 'meta', 'instagram', 'ig'
+          // - OR utm_medium is 'cpc', 'cpm', 'paid', 'pago'
+          const isPaidSource = utmSource.includes('facebook') || utmSource.includes('fb') || 
+                               utmSource.includes('meta') || utmSource.includes('instagram') || 
+                               utmSource.includes('ig') || utmSource === 'facebook_ads';
+          const isPaidMedium = utmMedium === 'cpc' || utmMedium === 'cpm' || 
+                               utmMedium === 'paid' || utmMedium === 'pago';
+          
+          return isPaidSource || isPaidMedium;
+        });
+
+        const paidLeadsCount = paidLeadsList.length;
+        const cpl = paidLeadsCount > 0 ? totalSpend / paidLeadsCount : 0;
+
+        // Trend by day
+        const trend: ChartDataPoint[] = [];
+        const days = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
+        const daysDiff = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+        const daysToShow = Math.min(daysDiff, 7);
+        
+        for (let i = daysToShow - 1; i >= 0; i--) {
+          const date = new Date(endDate);
+          date.setDate(date.getDate() - i);
+          const dayStart = new Date(date.setHours(0, 0, 0, 0));
+          const dayEnd = new Date(date.setHours(23, 59, 59, 999));
+          
+          const leadsInDay = paidLeadsList.filter(l => {
+            const createdAt = new Date(l.created_at);
+            return createdAt >= dayStart && createdAt <= dayEnd;
+          }).length;
+
+          trend.push({
+            name: days[dayStart.getDay()],
+            value: leadsInDay,
+          });
+        }
+
+        const label = `CPL - ${fbCampaignName || 'Campanha'}`;
+        
+        return {
+          total: Math.round(cpl * 100) / 100,
+          label,
+          distribution: [
+            { name: 'Valor Gasto', value: Math.round(totalSpend * 100) / 100, color: '#f97316' },
+            { name: 'Leads Pagos', value: paidLeadsCount, color: '#10b981' },
+          ],
+          trend,
+        };
+      }
+
       // Handle UTM types
       if (widget.source.type === 'utm_source' || widget.source.type === 'utm_medium' || widget.source.type === 'utm_campaign' || widget.source.type === 'utm_all') {
         if (!widget.source.sourceId) {
