@@ -757,12 +757,25 @@ export function DashboardCanvas({ painelName, dashboardId, onBack }: DashboardCa
           return { total: 0, label: 'Facebook Ads', distribution: [], trend: [] };
         }
 
-        const { data: insights, error } = await supabase
+        // Determine which metric to use
+        const metric = widget.source.fbMetric || 'spend';
+        const metricLabels: Record<string, string> = {
+          spend: 'Valor Gasto',
+          cpm: 'CPM',
+          cpc: 'CPC'
+        };
+
+        let query = supabase
           .from('facebook_ads_insights')
-          .select('campaign_id, campaign_name, spend')
-          .eq('connection_id', widget.source.sourceId)
-          .order('spend', { ascending: false })
-          .limit(200);
+          .select('campaign_id, campaign_name, spend, cpm, cpc')
+          .eq('connection_id', widget.source.sourceId);
+
+        // If a specific campaign was selected, filter by it
+        if (widget.source.fbCampaignId) {
+          query = query.eq('campaign_id', widget.source.fbCampaignId);
+        }
+
+        const { data: insights, error } = await query.limit(200);
 
         if (error) {
           console.error('Error fetching Facebook Ads insights:', error);
@@ -771,14 +784,18 @@ export function DashboardCanvas({ painelName, dashboardId, onBack }: DashboardCa
 
         const points: ChartDataPoint[] = (insights || []).map((i) => ({
           name: i.campaign_name || i.campaign_id,
-          value: Number(i.spend || 0),
+          value: Number(i[metric] || 0),
         }));
 
         const total = points.reduce((sum, p) => sum + p.value, 0);
+        const campaignName = widget.source.fbCampaignName || 'Todas';
+        const label = widget.source.fbCampaignId 
+          ? `${metricLabels[metric]} - ${campaignName}` 
+          : `${metricLabels[metric]} (Total)`;
 
         return {
           total: Math.round(total * 100) / 100,
-          label: 'Facebook Ads (Spend)',
+          label,
           distribution: points,
           trend: points,
         };

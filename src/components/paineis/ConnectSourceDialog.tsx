@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Folder, FolderOpen, Facebook, ChevronRight, ArrowLeft, Users, UserPlus, UserMinus, TrendingUp, Globe, Target, Megaphone, FormInput } from "lucide-react";
+import { Folder, FolderOpen, Facebook, ChevronRight, ArrowLeft, Users, UserPlus, UserMinus, TrendingUp, Globe, Target, Megaphone, FormInput, DollarSign, BarChart3, MousePointer } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { ChartType } from "./ChartSelectorDialog";
 
@@ -26,12 +26,28 @@ interface CustomField {
   options?: any;
 }
 
+interface FbCampaign {
+  id: string;
+  name: string;
+}
+
+interface FbConnection {
+  id: string;
+  ad_account_name: string | null;
+  ad_account_id: string;
+  selected_campaigns: FbCampaign[];
+  selected_metrics: { spend: boolean; cpm: boolean; cpc: boolean };
+}
+
 export interface WidgetSource {
   type: 'origin' | 'sub_origin' | 'facebook_ads' | 'tracking_grupo_entrada' | 'tracking_grupo_saida' | 'utm_source' | 'utm_medium' | 'utm_campaign' | 'utm_all' | 'custom_field';
   sourceId?: string;
   sourceName?: string;
   customFieldId?: string;
   customFieldLabel?: string;
+  fbCampaignId?: string;
+  fbCampaignName?: string;
+  fbMetric?: 'spend' | 'cpm' | 'cpc';
   credentials?: {
     appId?: string;
     appSecret?: string;
@@ -46,7 +62,7 @@ interface ConnectSourceDialogProps {
   onConnect: (source: WidgetSource) => void;
 }
 
-type Step = 'sources' | 'origins' | 'sub_origins' | 'facebook_form' | 'tracking' | 'tracking_origins' | 'tracking_sub_origins' | 'utm_options' | 'utm_origins' | 'utm_sub_origins' | 'custom_fields_origins' | 'custom_fields_sub_origins' | 'custom_fields_select';
+type Step = 'sources' | 'origins' | 'sub_origins' | 'facebook_form' | 'facebook_campaigns' | 'facebook_metrics' | 'tracking' | 'tracking_origins' | 'tracking_sub_origins' | 'utm_options' | 'utm_origins' | 'utm_sub_origins' | 'custom_fields_origins' | 'custom_fields_sub_origins' | 'custom_fields_select';
 
 export function ConnectSourceDialog({ 
   open, 
@@ -64,10 +80,10 @@ export function ConnectSourceDialog({
   const [selectedUtmType, setSelectedUtmType] = useState<'utm_source' | 'utm_medium' | 'utm_campaign' | 'utm_all' | null>(null);
   
   // Facebook Ads connections state
-  const [fbConnections, setFbConnections] = useState<
-    { id: string; ad_account_name: string | null; ad_account_id: string; selected_campaigns: any }[]
-  >([]);
+  const [fbConnections, setFbConnections] = useState<FbConnection[]>([]);
   const [selectedFbConnectionId, setSelectedFbConnectionId] = useState<string>("");
+  const [selectedFbCampaign, setSelectedFbCampaign] = useState<FbCampaign | null>(null);
+  const [selectedFbMetric, setSelectedFbMetric] = useState<'spend' | 'cpm' | 'cpc' | null>(null);
   const [isFbConnectionsLoading, setIsFbConnectionsLoading] = useState(false);
 
   useEffect(() => {
@@ -80,6 +96,8 @@ export function ConnectSourceDialog({
       setCustomFields([]);
       setFbConnections([]);
       setSelectedFbConnectionId("");
+      setSelectedFbCampaign(null);
+      setSelectedFbMetric(null);
       return;
     }
 
@@ -97,11 +115,18 @@ export function ConnectSourceDialog({
       try {
         const { data: connections } = await supabase
           .from('facebook_ads_connections')
-          .select('id, ad_account_name, ad_account_id, selected_campaigns')
+          .select('id, ad_account_name, ad_account_id, selected_campaigns, selected_metrics')
           .eq('is_active', true)
           .order('created_at', { ascending: false });
 
-        setFbConnections((connections || []) as any);
+        const formatted: FbConnection[] = (connections || []).map((c: any) => ({
+          id: c.id,
+          ad_account_name: c.ad_account_name,
+          ad_account_id: c.ad_account_id,
+          selected_campaigns: (c.selected_campaigns as FbCampaign[]) || [],
+          selected_metrics: (c.selected_metrics as { spend: boolean; cpm: boolean; cpc: boolean }) || { spend: true, cpm: true, cpc: true }
+        }));
+        setFbConnections(formatted);
       } finally {
         setIsFbConnectionsLoading(false);
       }
@@ -132,6 +157,12 @@ export function ConnectSourceDialog({
     } else if (step === 'sub_origins') {
       setStep('origins');
       setSelectedOrigin(null);
+    } else if (step === 'facebook_campaigns') {
+      setStep('facebook_form');
+      setSelectedFbCampaign(null);
+    } else if (step === 'facebook_metrics') {
+      setStep('facebook_campaigns');
+      setSelectedFbMetric(null);
     } else if (step === 'tracking_origins') {
       setStep('tracking');
     } else if (step === 'tracking_sub_origins') {
@@ -177,16 +208,29 @@ export function ConnectSourceDialog({
     onOpenChange(false);
   };
 
-  const handleConnectFacebook = () => {
+  const handleSelectFbConnection = () => {
     if (!selectedFbConnectionId) return;
+    setStep('facebook_campaigns');
+  };
 
+  const handleSelectFbCampaign = (campaign: FbCampaign) => {
+    setSelectedFbCampaign(campaign);
+    setStep('facebook_metrics');
+  };
+
+  const handleSelectFbMetric = (metric: 'spend' | 'cpm' | 'cpc') => {
     const connection = fbConnections.find((c) => c.id === selectedFbConnectionId);
-    if (!connection) return;
+    if (!connection || !selectedFbCampaign) return;
+
+    const metricLabels = { spend: 'Valor Gasto', cpm: 'CPM', cpc: 'CPC' };
 
     onConnect({
       type: 'facebook_ads',
       sourceId: connection.id,
-      sourceName: `Facebook Ads - ${connection.ad_account_name || connection.ad_account_id}`,
+      sourceName: `${metricLabels[metric]} - ${selectedFbCampaign.name}`,
+      fbCampaignId: selectedFbCampaign.id,
+      fbCampaignName: selectedFbCampaign.name,
+      fbMetric: metric,
     });
     onOpenChange(false);
   };
@@ -393,7 +437,7 @@ export function ConnectSourceDialog({
               <div>
                 <h3 className="text-sm font-medium text-foreground">Facebook Ads</h3>
                 <p className="text-xs text-muted-foreground">
-                  Selecione uma integração já conectada em <strong>Integrações</strong>
+                  Selecione uma conta conectada
                 </p>
               </div>
             </div>
@@ -408,7 +452,7 @@ export function ConnectSourceDialog({
               <div className="space-y-2">
                 {fbConnections.map((c) => {
                   const isSelected = selectedFbConnectionId === c.id;
-                  const campaignsCount = Array.isArray(c.selected_campaigns) ? c.selected_campaigns.length : 0;
+                  const campaignsCount = c.selected_campaigns.length;
                   return (
                     <button
                       key={c.id}
@@ -424,7 +468,7 @@ export function ConnectSourceDialog({
                           {c.ad_account_name || c.ad_account_id}
                         </p>
                         <p className="text-xs text-muted-foreground">
-                          {campaignsCount} campanha(s) selecionada(s)
+                          {campaignsCount} campanha(s) disponível(is)
                         </p>
                       </div>
                       <div className={`h-3 w-3 rounded-full ${isSelected ? 'bg-[#1877F2]' : 'bg-muted'}`} />
@@ -435,12 +479,108 @@ export function ConnectSourceDialog({
             )}
 
             <Button
-              onClick={handleConnectFacebook}
+              onClick={handleSelectFbConnection}
               disabled={!selectedFbConnectionId}
               className="w-full h-11 bg-[#1877F2] hover:bg-[#1877F2]/90 text-white"
             >
-              Conectar Facebook Ads
+              Continuar
+              <ChevronRight className="h-4 w-4 ml-2" />
             </Button>
+          </div>
+        );
+
+      case 'facebook_campaigns':
+        const selectedConnection = fbConnections.find(c => c.id === selectedFbConnectionId);
+        const campaigns = selectedConnection?.selected_campaigns || [];
+        return (
+          <div className="space-y-4 py-4">
+            <div className="flex items-center gap-2 p-3 rounded-lg bg-[#1877F2]/10">
+              <Facebook className="h-4 w-4 text-[#1877F2]" />
+              <span className="text-sm font-medium">
+                {selectedConnection?.ad_account_name || selectedConnection?.ad_account_id}
+              </span>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Selecione a campanha que deseja monitorar
+            </p>
+            
+            <div className="space-y-2 max-h-[300px] overflow-y-auto">
+              {campaigns.length === 0 ? (
+                <p className="text-sm text-muted-foreground text-center py-6">
+                  Nenhuma campanha configurada nesta conexão.
+                </p>
+              ) : (
+                campaigns.map((campaign) => (
+                  <button
+                    key={campaign.id}
+                    onClick={() => handleSelectFbCampaign(campaign)}
+                    className="w-full flex items-center justify-between gap-3 p-3 bg-white border border-border rounded-lg text-left transition-all duration-200 hover:bg-muted/30 hover:border-[#1877F2]/30"
+                  >
+                    <span className="text-sm font-medium text-foreground truncate">{campaign.name}</span>
+                    <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                  </button>
+                ))
+              )}
+            </div>
+          </div>
+        );
+
+      case 'facebook_metrics':
+        return (
+          <div className="space-y-4 py-4">
+            <div className="flex items-center gap-2 p-3 rounded-lg bg-[#1877F2]/10">
+              <Facebook className="h-4 w-4 text-[#1877F2]" />
+              <span className="text-sm font-medium truncate">
+                {selectedFbCampaign?.name}
+              </span>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Selecione a métrica que deseja visualizar
+            </p>
+            
+            <div className="space-y-2">
+              <button
+                onClick={() => handleSelectFbMetric('spend')}
+                className="w-full flex items-center gap-4 p-4 bg-white border border-border rounded-xl text-left transition-all duration-200 hover:bg-muted/30 hover:border-green-500/30"
+              >
+                <div className="w-10 h-10 rounded-lg bg-green-500/10 flex items-center justify-center">
+                  <DollarSign className="h-5 w-5 text-green-500" />
+                </div>
+                <div className="flex-1">
+                  <p className="font-medium">Valor Gasto</p>
+                  <p className="text-xs text-muted-foreground">Total investido na campanha</p>
+                </div>
+                <ChevronRight className="h-4 w-4 text-muted-foreground" />
+              </button>
+
+              <button
+                onClick={() => handleSelectFbMetric('cpm')}
+                className="w-full flex items-center gap-4 p-4 bg-white border border-border rounded-xl text-left transition-all duration-200 hover:bg-muted/30 hover:border-blue-500/30"
+              >
+                <div className="w-10 h-10 rounded-lg bg-blue-500/10 flex items-center justify-center">
+                  <BarChart3 className="h-5 w-5 text-blue-500" />
+                </div>
+                <div className="flex-1">
+                  <p className="font-medium">CPM</p>
+                  <p className="text-xs text-muted-foreground">Custo por mil impressões</p>
+                </div>
+                <ChevronRight className="h-4 w-4 text-muted-foreground" />
+              </button>
+
+              <button
+                onClick={() => handleSelectFbMetric('cpc')}
+                className="w-full flex items-center gap-4 p-4 bg-white border border-border rounded-xl text-left transition-all duration-200 hover:bg-muted/30 hover:border-purple-500/30"
+              >
+                <div className="w-10 h-10 rounded-lg bg-purple-500/10 flex items-center justify-center">
+                  <MousePointer className="h-5 w-5 text-purple-500" />
+                </div>
+                <div className="flex-1">
+                  <p className="font-medium">CPC</p>
+                  <p className="text-xs text-muted-foreground">Custo por clique</p>
+                </div>
+                <ChevronRight className="h-4 w-4 text-muted-foreground" />
+              </button>
+            </div>
           </div>
         );
 
