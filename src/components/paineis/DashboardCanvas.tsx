@@ -1436,20 +1436,13 @@ export function DashboardCanvas({ painelName, dashboardId, onBack }: DashboardCa
   };
 
   const handleConnectSource = async (source: WidgetSource) => {
-    console.log('[DashboardCanvas] handleConnectSource called with source:', source);
-    console.log('[DashboardCanvas] pendingWidgetId:', pendingWidgetId);
-    
     if (pendingWidgetId) {
       const widgetToUpdate = widgets.find(w => w.id === pendingWidgetId);
-      console.log('[DashboardCanvas] widgetToUpdate:', widgetToUpdate);
-      
       if (!widgetToUpdate) {
-        console.error('[DashboardCanvas] Widget not found!');
         setPendingWidgetId(null);
         return;
       }
 
-      console.log('[DashboardCanvas] Setting widget as connected with loading...');
       setWidgets(prev => prev.map(widget => 
         widget.id === pendingWidgetId 
           ? { ...widget, source, isConnected: true, isLoading: true }
@@ -1461,9 +1454,7 @@ export function DashboardCanvas({ painelName, dashboardId, onBack }: DashboardCa
         source, 
         isConnected: true 
       };
-      console.log('[DashboardCanvas] Fetching widget data...');
       const data = await fetchWidgetData(tempWidget);
-      console.log('[DashboardCanvas] Data fetched:', data);
       
       // For horizontal bar charts, calculate height based on number of bars
       // For other charts, keep existing height or use default
@@ -1472,7 +1463,6 @@ export function DashboardCanvas({ painelName, dashboardId, onBack }: DashboardCa
         appropriateHeight = calculateOptimalBarHeight(data.distribution.length);
       }
       
-      console.log('[DashboardCanvas] Updating widget with final data...');
       setWidgets(prev => prev.map(widget => 
         widget.id === pendingWidgetId 
           ? { ...widget, source, isConnected: true, data: data || undefined, isLoading: false, height: appropriateHeight }
@@ -1480,9 +1470,6 @@ export function DashboardCanvas({ painelName, dashboardId, onBack }: DashboardCa
       ));
 
       setPendingWidgetId(null);
-      console.log('[DashboardCanvas] Widget connected successfully!');
-    } else {
-      console.error('[DashboardCanvas] No pendingWidgetId!');
     }
   };
 
@@ -1848,11 +1835,13 @@ export function DashboardCanvas({ painelName, dashboardId, onBack }: DashboardCa
         onOpenChange={(open) => {
           setIsConnectSourceOpen(open);
           if (!open && pendingWidgetId) {
-            // Remove widget if closed without connecting a source
-            const widget = widgets.find(w => w.id === pendingWidgetId);
-            if (widget && !widget.isConnected) {
-              setWidgets(prev => prev.filter(w => w.id !== pendingWidgetId));
-            }
+            const idToCheck = pendingWidgetId;
+            // Remove widget only if it is STILL not connected (avoid race with async connect)
+            setWidgets((prev) => {
+              const w = prev.find((x) => x.id === idToCheck);
+              if (w && !w.isConnected) return prev.filter((x) => x.id !== idToCheck);
+              return prev;
+            });
             setPendingWidgetId(null);
           }
         }}
