@@ -430,9 +430,15 @@ export function DashboardCanvas({ painelName, dashboardId, onBack }: DashboardCa
   const [startDate, setStartDate] = useState<Date>(subDays(new Date(), 30));
   const [endDate, setEndDate] = useState<Date>(new Date());
   const widgetsRef = useRef<DashboardWidget[]>([]);
-  const containerRef = useRef<HTMLDivElement>(null);
-  const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
+  // NOTE: this container is rendered conditionally; using a callback-ref ensures
+  // we measure its width as soon as it mounts (otherwise containerWidth can stay 0).
+  const [containerEl, setContainerEl] = useState<HTMLDivElement | null>(null);
+  const setContainerNode = useCallback((node: HTMLDivElement | null) => {
+    setContainerEl(node);
+  }, []);
+
+  const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const handlePresetChange = (preset: DatePreset) => {
     setDatePreset(preset);
     const today = new Date();
@@ -459,29 +465,25 @@ export function DashboardCanvas({ painelName, dashboardId, onBack }: DashboardCa
 
   // Measure container width
   useEffect(() => {
+    if (!containerEl) return;
+
     const updateWidth = () => {
-      if (containerRef.current) {
-        // Subtract padding (p-1 = 4px each side = 8px total)
-        const availableWidth = containerRef.current.clientWidth - 8;
-        setContainerWidth(availableWidth);
-      }
+      // Subtract padding (p-1 = 4px each side = 8px total)
+      const availableWidth = containerEl.clientWidth - 8;
+      setContainerWidth(availableWidth);
     };
-    
+
     updateWidth();
     window.addEventListener('resize', updateWidth);
-    
-    // Also observe container size changes
+
     const observer = new ResizeObserver(updateWidth);
-    if (containerRef.current) {
-      observer.observe(containerRef.current);
-    }
-    
+    observer.observe(containerEl);
+
     return () => {
       window.removeEventListener('resize', updateWidth);
       observer.disconnect();
     };
-  }, []);
-
+  }, [containerEl]);
   // Keep ref in sync with state
   useEffect(() => {
     widgetsRef.current = widgets;
@@ -1435,7 +1437,7 @@ export function DashboardCanvas({ painelName, dashboardId, onBack }: DashboardCa
             onDragEnd={handleDragEnd}
           >
             <SortableContext items={widgets.map(w => w.id)} strategy={rectSortingStrategy}>
-              <div ref={containerRef} className={cn(
+              <div ref={setContainerNode} className={cn(
                 "flex gap-3 p-1 min-h-[200px] overflow-x-hidden",
                 isMobile 
                   ? "flex-col" 
