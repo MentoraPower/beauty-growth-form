@@ -267,33 +267,35 @@ export function ChartRenderer({ chartType, data, width, height, isLoading }: Cha
               return (
                 <div key={item.name} className="flex items-center gap-3 min-w-0">
                   <div className="w-12 shrink-0 flex items-center justify-start">
-                    <span className="text-sm font-bold text-foreground tabular-nums">
+                    <span className={`text-sm font-bold tabular-nums ${item.value === 0 ? 'text-muted-foreground' : 'text-foreground'}`}>
                       {item.value}
                     </span>
                   </div>
                   
                   <div className="flex-1 h-6 bg-gray-100 rounded-full overflow-hidden">
-                    <div 
-                      className="h-full rounded-full transition-all duration-700 ease-out relative overflow-hidden"
-                      style={{ 
-                        width: `${Math.max(percentage, 4)}%`, 
-                        background: item.color || `linear-gradient(90deg, ${gradient.start}, ${gradient.end})`,
-                      }}
-                    >
-                      {/* Shine effect */}
-                      <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent -skew-x-12" />
-                    </div>
+                    {item.value > 0 && (
+                      <div 
+                        className="h-full rounded-full transition-all duration-700 ease-out relative overflow-hidden"
+                        style={{ 
+                          width: `${Math.max(percentage, 4)}%`, 
+                          background: item.color || `linear-gradient(90deg, ${gradient.start}, ${gradient.end})`,
+                        }}
+                      >
+                        {/* Shine effect */}
+                        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent -skew-x-12" />
+                      </div>
+                    )}
                   </div>
                   
                   <div className="w-[100px] shrink-0 flex items-center justify-between gap-1">
                     <span 
-                      className="text-xs text-foreground/70 truncate leading-tight font-medium" 
+                      className={`text-xs truncate leading-tight font-medium ${item.value === 0 ? 'text-muted-foreground' : 'text-foreground/70'}`}
                       title={item.name}
                     >
                       {item.name}
                     </span>
                     <span className="text-[10px] font-medium text-muted-foreground">
-                      {responsePercent}%
+                      {item.value === 0 ? '-' : `${responsePercent}%`}
                     </span>
                   </div>
                 </div>
