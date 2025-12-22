@@ -1325,17 +1325,9 @@ export function DashboardCanvas({ painelName, dashboardId, onBack }: DashboardCa
         return;
       }
 
-      // Calculate appropriate height based on source type
-      let appropriateHeight = widgetToUpdate.height || 280;
-      
-      // For utm_all (Orgânico vs Pago) with only 2 items, use smaller height
-      if (source.type === 'utm_all') {
-        appropriateHeight = 140; // Just enough for 2 bars + padding
-      }
-
       setWidgets(prev => prev.map(widget => 
         widget.id === pendingWidgetId 
-          ? { ...widget, source, isConnected: true, isLoading: true, height: appropriateHeight }
+          ? { ...widget, source, isConnected: true, isLoading: true }
           : widget
       ));
 
@@ -1345,6 +1337,14 @@ export function DashboardCanvas({ painelName, dashboardId, onBack }: DashboardCa
         isConnected: true 
       };
       const data = await fetchWidgetData(tempWidget);
+      
+      // Calculate appropriate height based on distribution items for bar_horizontal
+      let appropriateHeight = widgetToUpdate.height || 280;
+      if (widgetToUpdate.chartType.id === 'bar_horizontal' && data?.distribution) {
+        const itemCount = data.distribution.length;
+        // 40px per item + 24px padding
+        appropriateHeight = Math.max(120, Math.min(280, itemCount * 40 + 24));
+      }
       
       setWidgets(prev => prev.map(widget => 
         widget.id === pendingWidgetId 
