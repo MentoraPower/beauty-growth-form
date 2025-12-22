@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Facebook, Check, Loader2, ChevronRight, BarChart3, DollarSign, MousePointer, Eye, EyeOff } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Facebook, Check, Loader2, ChevronRight, BarChart3, DollarSign, MousePointer, ExternalLink } from "lucide-react";
 import {
   Sheet,
   SheetContent,
@@ -10,9 +10,17 @@ import {
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
+
 interface FacebookAdsIntegrationProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -25,48 +33,154 @@ interface Campaign {
   selected: boolean;
 }
 
-// Mock campaigns for demo
-const mockCampaigns: Campaign[] = [
-  { id: "1", name: "Campanha Black Friday 2024", status: "ACTIVE", selected: false },
-  { id: "2", name: "Remarketing - Carrinho Abandonado", status: "ACTIVE", selected: false },
-  { id: "3", name: "Lookalike - Compradores VIP", status: "ACTIVE", selected: false },
-  { id: "4", name: "Conversão - Landing Page Principal", status: "PAUSED", selected: false },
-  { id: "5", name: "Tráfego - Blog Posts", status: "ACTIVE", selected: false },
-  { id: "6", name: "Engajamento - Stories", status: "PAUSED", selected: false },
-];
+interface AdAccount {
+  id: string;
+  name: string;
+  account_status: number;
+}
 
-type Step = "connect" | "select-campaigns" | "select-metrics";
+type Step = "connect" | "select-account" | "select-campaigns" | "select-metrics";
 
 export function FacebookAdsIntegration({ open, onOpenChange }: FacebookAdsIntegrationProps) {
   const [step, setStep] = useState<Step>("connect");
   const [isConnecting, setIsConnecting] = useState(false);
-  const [isConnected, setIsConnected] = useState(false);
-  const [campaigns, setCampaigns] = useState<Campaign[]>(mockCampaigns);
+  const [isLoadingCampaigns, setIsLoadingCampaigns] = useState(false);
+  const [accessToken, setAccessToken] = useState<string | null>(null);
+  const [adAccounts, setAdAccounts] = useState<AdAccount[]>([]);
+  const [selectedAdAccount, setSelectedAdAccount] = useState<string>("");
+  const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [selectedMetrics, setSelectedMetrics] = useState({
     spend: true,
     cpm: true,
     cpc: true,
   });
-  const [appId, setAppId] = useState("");
-  const [appSecret, setAppSecret] = useState("");
-  const [showSecret, setShowSecret] = useState(false);
+
+  // Listen for OAuth callback
+  useEffect(() => {
+    const handleOAuthCallback = async () => {
+      const urlParams = new URLSearchParams(window.location.search);
+      const code = urlParams.get('code');
+      const state = urlParams.get('state');
+      
+      if (code && state === 'facebook_ads_oauth') {
+        // Clean URL
+        window.history.replaceState({}, document.title, window.location.pathname);
+        
+        setIsConnecting(true);
+        try {
+          const redirectUri = `${window.location.origin}${window.location.pathname}`;
+          
+          const { data, error } = await supabase.functions.invoke('facebook-ads', {
+            body: { 
+              action: 'exchange-token',
+              code,
+              redirectUri
+            }
+          });
+
+          if (error) throw error;
+          
+          if (data.accessToken) {
+            setAccessToken(data.accessToken);
+            await fetchAdAccounts(data.accessToken);
+            toast.success("Conectado ao Facebook Ads!");
+          }
+        } catch (error) {
+          console.error('OAuth error:', error);
+          toast.error("Erro ao conectar com Facebook");
+        } finally {
+          setIsConnecting(false);
+        }
+      }
+    };
+
+    handleOAuthCallback();
+  }, []);
 
   const handleFacebookLogin = async () => {
-    if (!appId.trim() || !appSecret.trim()) {
-      toast.error("Preencha o App ID e App Secret");
+    setIsConnecting(true);
+    
+    try {
+      const redirectUri = `${window.location.origin}${window.location.pathname}`;
+      
+      const { data, error } = await supabase.functions.invoke('facebook-ads', {
+        body: { 
+          action: 'get-oauth-url',
+          redirectUri
+        }
+      });
+
+      if (error) throw error;
+      
+      if (data.oauthUrl) {
+        // Add state parameter for security
+        const oauthUrlWithState = `${data.oauthUrl}&state=facebook_ads_oauth`;
+        window.location.href = oauthUrlWithState;
+      }
+    } catch (error) {
+      console.error('Login error:', error);
+      toast.error("Erro ao iniciar login do Facebook");
+      setIsConnecting(false);
+    }
+  };
+
+  const fetchAdAccounts = async (token: string) => {
+    try {
+      const { data, error } = await supabase.functions.invoke('facebook-ads', {
+        body: { 
+          action: 'get-ad-accounts',
+          accessToken: token
+        }
+      });
+
+      if (error) throw error;
+      
+      if (data.adAccounts && data.adAccounts.length > 0) {
+        setAdAccounts(data.adAccounts);
+        setStep("select-account");
+      } else {
+        toast.error("Nenhuma conta de anúncios encontrada");
+      }
+    } catch (error) {
+      console.error('Error fetching ad accounts:', error);
+      toast.error("Erro ao buscar contas de anúncios");
+    }
+  };
+
+  const handleSelectAdAccount = async () => {
+    if (!selectedAdAccount || !accessToken) {
+      toast.error("Selecione uma conta de anúncios");
       return;
     }
 
-    setIsConnecting(true);
-    
-    // TODO: Implement real Facebook OAuth with Graph API
-    // For now, simulate the connection
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    
-    setIsConnecting(false);
-    setIsConnected(true);
-    setStep("select-campaigns");
-    toast.success("Conectado ao Facebook Ads!");
+    setIsLoadingCampaigns(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('facebook-ads', {
+        body: { 
+          action: 'get-campaigns',
+          accessToken,
+          adAccountId: selectedAdAccount
+        }
+      });
+
+      if (error) throw error;
+      
+      if (data.campaigns) {
+        const formattedCampaigns: Campaign[] = data.campaigns.map((c: any) => ({
+          id: c.id,
+          name: c.name,
+          status: c.status as "ACTIVE" | "PAUSED",
+          selected: false
+        }));
+        setCampaigns(formattedCampaigns);
+        setStep("select-campaigns");
+      }
+    } catch (error) {
+      console.error('Error fetching campaigns:', error);
+      toast.error("Erro ao buscar campanhas");
+    } finally {
+      setIsLoadingCampaigns(false);
+    }
   };
 
   const toggleCampaign = (campaignId: string) => {
@@ -91,20 +205,33 @@ export function FacebookAdsIntegration({ open, onOpenChange }: FacebookAdsIntegr
     setStep("select-metrics");
   };
 
-  const handleFinish = () => {
+  const handleFinish = async () => {
     const selected = campaigns.filter(c => c.selected);
+    
+    // TODO: Save configuration to database and fetch insights
     toast.success(`${selected.length} campanhas configuradas!`);
     onOpenChange(false);
     
     // Reset state
     setTimeout(() => {
       setStep("connect");
-      setIsConnected(false);
-      setCampaigns(mockCampaigns);
+      setAccessToken(null);
+      setAdAccounts([]);
+      setSelectedAdAccount("");
+      setCampaigns([]);
     }, 300);
   };
 
   const selectedCount = campaigns.filter(c => c.selected).length;
+
+  const getStepNumber = () => {
+    switch(step) {
+      case "connect": return 1;
+      case "select-account": return 2;
+      case "select-campaigns": return 3;
+      case "select-metrics": return 4;
+    }
+  };
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -118,6 +245,7 @@ export function FacebookAdsIntegration({ open, onOpenChange }: FacebookAdsIntegr
           </SheetTitle>
           <SheetDescription>
             {step === "connect" && "Conecte sua conta para importar dados de campanhas"}
+            {step === "select-account" && "Selecione a conta de anúncios"}
             {step === "select-campaigns" && "Selecione as campanhas que deseja monitorar"}
             {step === "select-metrics" && "Escolha as métricas para exibir nos gráficos"}
           </SheetDescription>
@@ -127,22 +255,27 @@ export function FacebookAdsIntegration({ open, onOpenChange }: FacebookAdsIntegr
           {/* Step Indicator */}
           <div className="flex items-center gap-2 mb-6">
             <div className={`flex items-center justify-center w-7 h-7 rounded-full text-xs font-medium ${
-              step === "connect" ? "bg-[#1877F2] text-white" : "bg-green-500 text-white"
+              getStepNumber() >= 1 ? (getStepNumber() > 1 ? "bg-green-500 text-white" : "bg-[#1877F2] text-white") : "bg-muted text-muted-foreground"
             }`}>
-              {step !== "connect" ? <Check className="h-4 w-4" /> : "1"}
+              {getStepNumber() > 1 ? <Check className="h-4 w-4" /> : "1"}
             </div>
-            <div className={`flex-1 h-0.5 ${step !== "connect" ? "bg-green-500" : "bg-border"}`} />
+            <div className={`flex-1 h-0.5 ${getStepNumber() > 1 ? "bg-green-500" : "bg-border"}`} />
             <div className={`flex items-center justify-center w-7 h-7 rounded-full text-xs font-medium ${
-              step === "select-campaigns" ? "bg-[#1877F2] text-white" : 
-              step === "select-metrics" ? "bg-green-500 text-white" : "bg-muted text-muted-foreground"
+              getStepNumber() >= 2 ? (getStepNumber() > 2 ? "bg-green-500 text-white" : "bg-[#1877F2] text-white") : "bg-muted text-muted-foreground"
             }`}>
-              {step === "select-metrics" ? <Check className="h-4 w-4" /> : "2"}
+              {getStepNumber() > 2 ? <Check className="h-4 w-4" /> : "2"}
             </div>
-            <div className={`flex-1 h-0.5 ${step === "select-metrics" ? "bg-green-500" : "bg-border"}`} />
+            <div className={`flex-1 h-0.5 ${getStepNumber() > 2 ? "bg-green-500" : "bg-border"}`} />
             <div className={`flex items-center justify-center w-7 h-7 rounded-full text-xs font-medium ${
-              step === "select-metrics" ? "bg-[#1877F2] text-white" : "bg-muted text-muted-foreground"
+              getStepNumber() >= 3 ? (getStepNumber() > 3 ? "bg-green-500 text-white" : "bg-[#1877F2] text-white") : "bg-muted text-muted-foreground"
             }`}>
-              3
+              {getStepNumber() > 3 ? <Check className="h-4 w-4" /> : "3"}
+            </div>
+            <div className={`flex-1 h-0.5 ${getStepNumber() > 3 ? "bg-green-500" : "bg-border"}`} />
+            <div className={`flex items-center justify-center w-7 h-7 rounded-full text-xs font-medium ${
+              getStepNumber() === 4 ? "bg-[#1877F2] text-white" : "bg-muted text-muted-foreground"
+            }`}>
+              4
             </div>
           </div>
 
@@ -155,47 +288,13 @@ export function FacebookAdsIntegration({ open, onOpenChange }: FacebookAdsIntegr
                 </div>
                 <h3 className="font-semibold text-lg mb-2 text-center">Conectar com Facebook Ads</h3>
                 <p className="text-sm text-muted-foreground mb-6 text-center">
-                  Insira as credenciais do seu app do Meta Developers para conectar.
+                  Clique no botão abaixo para fazer login com sua conta do Facebook e autorizar o acesso aos dados de anúncios.
                 </p>
-
-                <div className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="appId">App ID</Label>
-                    <Input
-                      id="appId"
-                      placeholder="Digite o App ID"
-                      value={appId}
-                      onChange={(e) => setAppId(e.target.value)}
-                      className="h-11"
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="appSecret">App Secret</Label>
-                    <div className="relative">
-                      <Input
-                        id="appSecret"
-                        type={showSecret ? "text" : "password"}
-                        placeholder="Digite o App Secret"
-                        value={appSecret}
-                        onChange={(e) => setAppSecret(e.target.value)}
-                        className="h-11 pr-10"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowSecret(!showSecret)}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-                      >
-                        {showSecret ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                      </button>
-                    </div>
-                  </div>
-                </div>
 
                 <Button
                   onClick={handleFacebookLogin}
-                  disabled={isConnecting || !appId.trim() || !appSecret.trim()}
-                  className="w-full h-12 bg-[#1877F2] hover:bg-[#1565C0] text-white mt-6"
+                  disabled={isConnecting}
+                  className="w-full h-12 bg-[#1877F2] hover:bg-[#1565C0] text-white"
                 >
                   {isConnecting ? (
                     <>
@@ -205,15 +304,55 @@ export function FacebookAdsIntegration({ open, onOpenChange }: FacebookAdsIntegr
                   ) : (
                     <>
                       <Facebook className="h-5 w-5 mr-2" />
-                      Conectar ao Facebook Ads
+                      Entrar com Facebook
+                      <ExternalLink className="h-4 w-4 ml-2" />
                     </>
                   )}
                 </Button>
               </div>
 
               <div className="text-xs text-muted-foreground text-center">
-                Acesse <a href="https://developers.facebook.com" target="_blank" rel="noopener noreferrer" className="text-[#1877F2] hover:underline">developers.facebook.com</a> para criar seu app e obter as credenciais.
+                Ao conectar, você autoriza o acesso aos dados das suas campanhas de anúncios.
               </div>
+            </div>
+          )}
+
+          {/* Step: Select Ad Account */}
+          {step === "select-account" && (
+            <div className="space-y-6">
+              <div className="space-y-2">
+                <Label>Conta de Anúncios</Label>
+                <Select value={selectedAdAccount} onValueChange={setSelectedAdAccount}>
+                  <SelectTrigger className="h-11">
+                    <SelectValue placeholder="Selecione uma conta" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {adAccounts.map((account) => (
+                      <SelectItem key={account.id} value={account.id}>
+                        {account.name || account.id}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <Button
+                onClick={handleSelectAdAccount}
+                disabled={!selectedAdAccount || isLoadingCampaigns}
+                className="w-full h-11 bg-[#1877F2] hover:bg-[#1565C0] text-white"
+              >
+                {isLoadingCampaigns ? (
+                  <>
+                    <Loader2 className="h-5 w-5 mr-2 animate-spin" />
+                    Carregando campanhas...
+                  </>
+                ) : (
+                  <>
+                    Continuar
+                    <ChevronRight className="h-4 w-4 ml-2" />
+                  </>
+                )}
+              </Button>
             </div>
           )}
 
@@ -236,31 +375,37 @@ export function FacebookAdsIntegration({ open, onOpenChange }: FacebookAdsIntegr
 
               <ScrollArea className="h-[320px] pr-4">
                 <div className="space-y-2">
-                  {campaigns.map((campaign) => (
-                    <div
-                      key={campaign.id}
-                      onClick={() => toggleCampaign(campaign.id)}
-                      className={`flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-all ${
-                        campaign.selected 
-                          ? "border-[#1877F2] bg-[#1877F2]/5" 
-                          : "border-border hover:border-border/80 hover:bg-muted/30"
-                      }`}
-                    >
-                      <Checkbox
-                        checked={campaign.selected}
-                        onCheckedChange={() => toggleCampaign(campaign.id)}
-                        className="data-[state=checked]:bg-[#1877F2] data-[state=checked]:border-[#1877F2]"
-                      />
-                      <div className="flex-1 min-w-0">
-                        <p className="font-medium text-sm truncate">{campaign.name}</p>
-                        <span className={`text-xs ${
-                          campaign.status === "ACTIVE" ? "text-green-500" : "text-muted-foreground"
-                        }`}>
-                          {campaign.status === "ACTIVE" ? "Ativa" : "Pausada"}
-                        </span>
-                      </div>
+                  {campaigns.length === 0 ? (
+                    <div className="text-center py-8 text-muted-foreground">
+                      Nenhuma campanha encontrada
                     </div>
-                  ))}
+                  ) : (
+                    campaigns.map((campaign) => (
+                      <div
+                        key={campaign.id}
+                        onClick={() => toggleCampaign(campaign.id)}
+                        className={`flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-all ${
+                          campaign.selected 
+                            ? "border-[#1877F2] bg-[#1877F2]/5" 
+                            : "border-border hover:border-border/80 hover:bg-muted/30"
+                        }`}
+                      >
+                        <Checkbox
+                          checked={campaign.selected}
+                          onCheckedChange={() => toggleCampaign(campaign.id)}
+                          className="data-[state=checked]:bg-[#1877F2] data-[state=checked]:border-[#1877F2]"
+                        />
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium text-sm truncate">{campaign.name}</p>
+                          <span className={`text-xs ${
+                            campaign.status === "ACTIVE" ? "text-green-500" : "text-muted-foreground"
+                          }`}>
+                            {campaign.status === "ACTIVE" ? "Ativa" : "Pausada"}
+                          </span>
+                        </div>
+                      </div>
+                    ))
+                  )}
                 </div>
               </ScrollArea>
 
