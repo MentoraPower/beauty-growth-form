@@ -25,6 +25,23 @@ interface ChartRendererProps {
   isLoading?: boolean;
 }
 
+// Format value as Brazilian Real currency
+const formatCurrency = (value: number): string => {
+  return new Intl.NumberFormat('pt-BR', {
+    style: 'currency',
+    currency: 'BRL',
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(value);
+};
+
+// Check if the label indicates a currency metric (spend)
+const isCurrencyMetric = (label?: string): boolean => {
+  if (!label) return false;
+  const lowerLabel = label.toLowerCase();
+  return lowerLabel.includes('valor gasto') || lowerLabel.includes('spend');
+};
+
 // Orange gradient palette
 const PRIMARY_ORANGE = "#f97316";
 const PRIMARY_ORANGE_LIGHT = "#fb923c";
@@ -492,8 +509,8 @@ export function ChartRenderer({ chartType, data, width, height, isLoading }: Cha
             />
           </svg>
           <div className="text-center -mt-6 relative z-10">
-            <p className="text-4xl font-bold text-foreground">
-              {total.toLocaleString()}
+          <p className="text-4xl font-bold text-foreground">
+              {isCurrencyMetric(data?.label) ? formatCurrency(total) : total.toLocaleString()}
             </p>
             <p className="text-xs text-muted-foreground font-medium mt-1">{data?.label || "Leads"}</p>
           </div>
@@ -514,7 +531,7 @@ export function ChartRenderer({ chartType, data, width, height, isLoading }: Cha
       return (
         <div className="w-full h-full flex flex-col items-center justify-center relative">
           <p className="text-5xl font-bold text-foreground tracking-tight relative z-10">
-            {total.toLocaleString()}
+            {isCurrencyMetric(data?.label) ? formatCurrency(total) : total.toLocaleString()}
           </p>
           <div className="flex items-center gap-2 mt-4 relative z-10">
             <span className={`text-sm font-semibold ${
