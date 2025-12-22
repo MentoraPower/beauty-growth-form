@@ -95,18 +95,7 @@ export function CalendarDropdown({ leadName, leadEmail, subOriginId }: CalendarD
           disabled={isLoading}
           className="h-6 w-6 flex items-center justify-center transition-opacity hover:opacity-70 disabled:opacity-50"
         >
-          <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none">
-            <defs>
-              <linearGradient id="calendar-gradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                <stop offset="0%" stopColor="#ea580c" />
-                <stop offset="100%" stopColor="#f59e0b" />
-              </linearGradient>
-            </defs>
-            <rect x="3" y="4" width="18" height="18" rx="2" ry="2" stroke="url(#calendar-gradient)" strokeWidth="2" fill="none" />
-            <line x1="16" y1="2" x2="16" y2="6" stroke="url(#calendar-gradient)" strokeWidth="2" strokeLinecap="round" />
-            <line x1="8" y1="2" x2="8" y2="6" stroke="url(#calendar-gradient)" strokeWidth="2" strokeLinecap="round" />
-            <line x1="3" y1="10" x2="21" y2="10" stroke="url(#calendar-gradient)" strokeWidth="2" />
-          </svg>
+          <Calendar className="h-4 w-4 text-orange-500" />
         </button>
       </TooltipTrigger>
       <TooltipContent>
