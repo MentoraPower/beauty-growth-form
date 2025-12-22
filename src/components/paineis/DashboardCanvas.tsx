@@ -929,27 +929,25 @@ export function DashboardCanvas({ painelName, dashboardId, onBack }: DashboardCa
           totalSpend = insightsData.insights.reduce((sum: number, i: any) => sum + Number(i.spend || 0), 0);
         }
 
-        // 2. Count paid leads from the sub-origin (leads with utm_source containing 'facebook' or utm_medium = 'cpc' or 'paid')
-        const { data: paidLeads } = await supabase
+        // 2. Count paid leads from the sub-origin using the same logic as "Orgânico vs Pago"
+        const { data: allLeads } = await supabase
           .from("leads")
           .select("id, utm_source, utm_medium, created_at")
           .eq("sub_origin_id", subOriginIdForLeads)
           .gte("created_at", filterStartDate)
           .lte("created_at", filterEndDate);
 
-        // Filter for paid leads
-        const paidLeadsList = (paidLeads || []).filter(lead => {
-          const utmSource = (lead.utm_source || '').toLowerCase();
-          const utmMedium = (lead.utm_medium || '').toLowerCase();
+        // Use the same paid traffic indicators as "Orgânico vs Pago" widget
+        const paidMediumIndicators = ['cpc', 'ppc', 'paid', 'ads', 'cpm', 'cpv', 'display', 'banner', 'remarketing', 'retargeting', 'paidsocial', 'paid_social', 'paid-social'];
+        const paidSourceIndicators = ['facebook_ads', 'fb_ads', 'google_ads', 'googleads', 'meta_ads', 'tiktok_ads', 'instagram_ads', 'ads'];
+
+        // Filter for paid leads using the same logic
+        const paidLeadsList = (allLeads || []).filter(lead => {
+          const utmMedium = (lead.utm_medium || '').toLowerCase().trim();
+          const utmSource = (lead.utm_source || '').toLowerCase().trim();
           
-          // Consider as paid if:
-          // - utm_source contains 'facebook', 'fb', 'meta', 'instagram', 'ig'
-          // - OR utm_medium is 'cpc', 'cpm', 'paid', 'pago'
-          const isPaidSource = utmSource.includes('facebook') || utmSource.includes('fb') || 
-                               utmSource.includes('meta') || utmSource.includes('instagram') || 
-                               utmSource.includes('ig') || utmSource === 'facebook_ads';
-          const isPaidMedium = utmMedium === 'cpc' || utmMedium === 'cpm' || 
-                               utmMedium === 'paid' || utmMedium === 'pago';
+          const isPaidMedium = paidMediumIndicators.some(indicator => utmMedium.includes(indicator));
+          const isPaidSource = paidSourceIndicators.some(indicator => utmSource.includes(indicator) || utmSource === indicator);
           
           return isPaidSource || isPaidMedium;
         });
