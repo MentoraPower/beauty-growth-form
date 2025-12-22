@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useMemo } from "react";
-import { Zap, Plus, Trash2, ArrowRight, Webhook, FolderSync, Copy, Check, Send, X, Settings, Mail, Loader2, Workflow, ClipboardCheck } from "lucide-react";
+import { Zap, Plus, Trash2, ArrowRight, Webhook, FolderSync, Copy, Check, Send, X, Settings, Mail, Loader2, Workflow, ClipboardCheck, UserPlus, UserMinus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -1167,6 +1167,18 @@ export function AutomationsDropdown({
                                   Onboarding preenchido
                                 </div>
                               </SelectItem>
+                              <SelectItem value="grupo_entrada">
+                                <div className="flex items-center gap-2">
+                                  <UserPlus className="h-4 w-4" />
+                                  Entrou no grupo
+                                </div>
+                              </SelectItem>
+                              <SelectItem value="grupo_saida">
+                                <div className="flex items-center gap-2">
+                                  <UserMinus className="h-4 w-4" />
+                                  Saiu do grupo
+                                </div>
+                              </SelectItem>
                             </SelectContent>
                           </Select>
 
@@ -1271,9 +1283,13 @@ export function AutomationsDropdown({
                       <span className="px-1.5 py-0.5 bg-muted rounded text-foreground text-xs">
                         {selectedTriggerType === "onboarding_completed" 
                           ? "Onboarding preenchido"
-                          : selectedTriggerPipeline 
-                            ? `Movido para ${getPipelineName(selectedTriggerPipeline)}`
-                            : "..."}
+                          : selectedTriggerType === "grupo_entrada"
+                            ? "Entrou no grupo"
+                            : selectedTriggerType === "grupo_saida"
+                              ? "Saiu do grupo"
+                              : selectedTriggerPipeline 
+                                ? `Movido para ${getPipelineName(selectedTriggerPipeline)}`
+                                : "..."}
                       </span>
                       <ArrowRight className="w-3 h-3" />
                       <span className="px-1.5 py-0.5 bg-muted rounded text-foreground text-xs">
@@ -1347,7 +1363,11 @@ export function AutomationsDropdown({
                               <span className="font-medium">
                                 {automation.trigger_type === "onboarding_completed" 
                                   ? "Onboarding preenchido"
-                                  : getPipelineName(automation.pipeline_id)}
+                                  : automation.trigger_type === "grupo_entrada"
+                                    ? "Entrou no grupo"
+                                    : automation.trigger_type === "grupo_saida"
+                                      ? "Saiu do grupo"
+                                      : getPipelineName(automation.pipeline_id)}
                               </span>
                               <ArrowRight className="w-4 h-4 text-muted-foreground" />
                               <span className="text-muted-foreground">
