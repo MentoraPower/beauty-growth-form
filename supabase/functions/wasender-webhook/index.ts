@@ -669,19 +669,22 @@ async function handler(req: Request): Promise<Response> {
       // Create tracking entry for each matching lead (with deduplication)
       for (const lead of leads) {
         const tipoEvento = action === "add" ? "grupo_entrada" : "grupo_saida";
+        const tituloEvento = action === "add" 
+          ? `Entrou no grupo "${groupName}"` 
+          : `Saiu do grupo "${groupName}"`;
         
-        // Check for duplicate event in the last 60 seconds
-        const oneMinuteAgo = new Date(Date.now() - 60_000).toISOString();
+        // Check for duplicate event with same lead_id, tipo, and titulo (same group)
+        // This prevents duplicates even if webhook fires multiple times simultaneously
         const { data: existingTracking } = await supabase
           .from("lead_tracking")
           .select("id")
           .eq("lead_id", lead.id)
           .eq("tipo", tipoEvento)
-          .gte("created_at", oneMinuteAgo)
+          .eq("titulo", tituloEvento)
           .limit(1);
         
         if (existingTracking && existingTracking.length > 0) {
-          console.log(`[Wasender Webhook] Skipping duplicate tracking for lead ${lead.id} (${tipoEvento} within last 60s)`);
+          console.log(`[Wasender Webhook] Skipping duplicate tracking for lead ${lead.id} (already has ${tipoEvento} for this group)`);
           continue;
         }
         
@@ -701,9 +704,7 @@ async function handler(req: Request): Promise<Response> {
         const trackingData = {
           lead_id: lead.id,
           tipo: tipoEvento,
-          titulo: action === "add" 
-            ? `Entrou no grupo "${groupName}"` 
-            : `Saiu do grupo "${groupName}"`,
+          titulo: tituloEvento,
           descricao: action === "add"
             ? `O lead entrou no grupo de WhatsApp "${groupName}" em ${formattedDate} às ${formattedTime}`
             : `O lead saiu do grupo de WhatsApp "${groupName}" em ${formattedDate} às ${formattedTime}`,
