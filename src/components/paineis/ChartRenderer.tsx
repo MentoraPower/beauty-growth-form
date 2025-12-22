@@ -249,28 +249,32 @@ export function ChartRenderer({ chartType, data, width, height, isLoading }: Cha
         );
       }
 
-      // Render ALL bars - no slicing. Container is scrollable.
-      const sortedData = [...distribution].sort((a, b) => b.value - a.value);
+      // Calculate how many bars fit in the available height
+      const itemHeight = 24; // height per bar item including gap
+      const availableHeight = height - 8; // minimal padding
+      const maxItemsToShow = Math.max(1, Math.floor(availableHeight / itemHeight));
+      const sortedData = [...distribution].sort((a, b) => b.value - a.value).slice(0, maxItemsToShow);
       const maxValue = Math.max(...sortedData.map(d => d.value), 1);
       const totalResponses = distribution.reduce((sum, d) => sum + d.value, 0);
+      const hiddenCount = distribution.length - maxItemsToShow;
 
       return (
         <div className="w-full h-full flex flex-col px-3 py-1 overflow-hidden">
-          <div className="flex flex-col justify-start gap-1.5 overflow-y-auto flex-1 pr-1">
+          <div className="flex flex-col justify-start gap-1 flex-1 overflow-hidden">
             {sortedData.map((item, index) => {
               const percentage = maxValue > 0 ? (item.value / maxValue) * 100 : 0;
               const responsePercent = totalResponses > 0 ? Math.round((item.value / totalResponses) * 100) : 0;
               const gradient = GRADIENT_PAIRS[index % GRADIENT_PAIRS.length];
               
               return (
-                <div key={`${item.name}-${index}`} className="flex items-center gap-2 min-w-0 shrink-0">
+                <div key={`${item.name}-${index}`} className="flex items-center gap-2 min-w-0">
                   <div className="w-9 shrink-0 flex items-center justify-start">
                     <span className={`text-xs font-bold tabular-nums ${item.value === 0 ? 'text-muted-foreground' : 'text-foreground'}`}>
                       {item.value}
                     </span>
                   </div>
                   
-                  <div className="flex-1 h-5 bg-gray-100 rounded-full overflow-hidden">
+                  <div className="flex-1 h-5 bg-muted rounded-full overflow-hidden">
                     {item.value > 0 && (
                       <div 
                         className="h-full rounded-full relative overflow-hidden"
@@ -279,7 +283,6 @@ export function ChartRenderer({ chartType, data, width, height, isLoading }: Cha
                           background: item.color || `linear-gradient(90deg, ${gradient.start}, ${gradient.end})`,
                         }}
                       >
-                        {/* Shine effect */}
                         <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent -skew-x-12" />
                       </div>
                     )}
@@ -300,6 +303,13 @@ export function ChartRenderer({ chartType, data, width, height, isLoading }: Cha
               );
             })}
           </div>
+          {hiddenCount > 0 && (
+            <div className="pt-1 shrink-0">
+              <p className="text-[10px] text-muted-foreground text-center font-medium">
+                +{hiddenCount} mais
+              </p>
+            </div>
+          )}
         </div>
       );
 
