@@ -7,6 +7,7 @@ interface Lead {
   name: string;
   email: string;
   whatsapp: string;
+  country_code?: string;
   instagram: string;
   service_area: string;
   monthly_billing: string;
@@ -20,6 +21,15 @@ interface Lead {
   estimated_revenue?: number | null;
   is_mql?: boolean | null;
   created_at: string;
+  // UTM fields
+  utm_source?: string | null;
+  utm_medium?: string | null;
+  utm_campaign?: string | null;
+  utm_term?: string | null;
+  utm_content?: string | null;
+  // Additional tracking
+  biggest_difficulty?: string | null;
+  can_afford?: string | null;
 }
 
 interface TriggerWebhookParams {

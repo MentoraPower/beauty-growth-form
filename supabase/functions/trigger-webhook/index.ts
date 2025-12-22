@@ -31,6 +31,15 @@ interface WebhookPayload {
     estimated_revenue?: number | null;
     is_mql?: boolean | null;
     created_at: string;
+    // UTM fields
+    utm_source?: string | null;
+    utm_medium?: string | null;
+    utm_campaign?: string | null;
+    utm_term?: string | null;
+    utm_content?: string | null;
+    // Additional tracking
+    biggest_difficulty?: string | null;
+    can_afford?: string | null;
   };
   pipeline_id?: string | null;
   previous_pipeline_id?: string | null;
@@ -141,7 +150,16 @@ const handler = async (req: Request): Promise<Response> => {
                 anos_experiencia: lead.years_experience,
                 receita_estimada: lead.estimated_revenue || null,
                 e_mql: lead.is_mql || null,
+                maior_dificuldade: lead.biggest_difficulty || null,
+                pode_investir: lead.can_afford || null,
                 data_cadastro: lead.created_at,
+              },
+              utm: {
+                source: lead.utm_source || null,
+                medium: lead.utm_medium || null,
+                campaign: lead.utm_campaign || null,
+                term: lead.utm_term || null,
+                content: lead.utm_content || null,
               },
               pipeline: {
                 atual: payload.pipeline_id,
