@@ -485,22 +485,57 @@ export function DashboardCanvas({ painelName, dashboardId, onBack }: DashboardCa
     if (!widget.source) return null;
 
     try {
-      // Handle tracking types (don't require sourceId)
+      // Handle tracking types - now requires sourceId for sub_origin filtering
       if (widget.source.type === 'tracking_grupo_entrada' || widget.source.type === 'tracking_grupo_saida') {
         const trackingType = widget.source.type === 'tracking_grupo_entrada' ? 'grupo_entrada' : 'grupo_saida';
         const label = widget.source.type === 'tracking_grupo_entrada' ? 'Entradas' : 'Saídas';
         
-        // Fetch all tracking events of this type with pagination
-        let allEvents: { id: string; created_at: string; lead_id: string }[] = [];
+        if (!widget.source.sourceId) {
+          return { total: 0, label };
+        }
+
+        // First, get all leads from the selected sub_origin
+        let allLeadIds: string[] = [];
         let from = 0;
         const pageSize = 1000;
         let hasMore = true;
+
+        while (hasMore) {
+          const { data: leads, error } = await supabase
+            .from("leads")
+            .select("id")
+            .eq("sub_origin_id", widget.source.sourceId)
+            .range(from, from + pageSize - 1);
+
+          if (error) {
+            console.error("Error fetching leads:", error);
+            break;
+          }
+
+          if (leads && leads.length > 0) {
+            allLeadIds = [...allLeadIds, ...leads.map(l => l.id)];
+            from += pageSize;
+            hasMore = leads.length === pageSize;
+          } else {
+            hasMore = false;
+          }
+        }
+
+        if (allLeadIds.length === 0) {
+          return { total: 0, label, distribution: [], trend: [] };
+        }
+
+        // Fetch tracking events for these leads
+        let allEvents: { id: string; created_at: string; lead_id: string }[] = [];
+        from = 0;
+        hasMore = true;
 
         while (hasMore) {
           const { data: events, error } = await supabase
             .from("lead_tracking")
             .select("id, created_at, lead_id")
             .eq("tipo", trackingType)
+            .in("lead_id", allLeadIds)
             .range(from, from + pageSize - 1);
 
           if (error) {

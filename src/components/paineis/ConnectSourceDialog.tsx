@@ -35,7 +35,7 @@ interface ConnectSourceDialogProps {
   onConnect: (source: WidgetSource) => void;
 }
 
-type Step = 'sources' | 'origins' | 'sub_origins' | 'facebook_form' | 'tracking';
+type Step = 'sources' | 'origins' | 'sub_origins' | 'facebook_form' | 'tracking' | 'tracking_sub_origins';
 
 export function ConnectSourceDialog({ 
   open, 
@@ -47,6 +47,7 @@ export function ConnectSourceDialog({
   const [origins, setOrigins] = useState<Origin[]>([]);
   const [subOrigins, setSubOrigins] = useState<SubOrigin[]>([]);
   const [selectedOrigin, setSelectedOrigin] = useState<Origin | null>(null);
+  const [selectedTrackingType, setSelectedTrackingType] = useState<'grupo_entrada' | 'grupo_saida' | null>(null);
   
   // Facebook form state
   const [fbAppId, setFbAppId] = useState("");
@@ -57,6 +58,7 @@ export function ConnectSourceDialog({
     if (!open) {
       setStep('sources');
       setSelectedOrigin(null);
+      setSelectedTrackingType(null);
       setFbAppId("");
       setFbAppSecret("");
       setFbAccessToken("");
@@ -86,6 +88,9 @@ export function ConnectSourceDialog({
     } else if (step === 'sub_origins') {
       setStep('origins');
       setSelectedOrigin(null);
+    } else if (step === 'tracking_sub_origins') {
+      setStep('tracking');
+      setSelectedTrackingType(null);
     }
   };
 
@@ -130,9 +135,17 @@ export function ConnectSourceDialog({
   };
 
   const handleSelectTracking = (trackingType: 'grupo_entrada' | 'grupo_saida') => {
-    const sourceName = trackingType === 'grupo_entrada' ? 'Entradas em Grupo' : 'Saídas de Grupo';
+    setSelectedTrackingType(trackingType);
+    setStep('tracking_sub_origins');
+  };
+
+  const handleSelectTrackingSubOrigin = (subOrigin: SubOrigin) => {
+    const sourceName = selectedTrackingType === 'grupo_entrada' 
+      ? `Entradas - ${subOrigin.nome}` 
+      : `Saídas - ${subOrigin.nome}`;
     onConnect({
-      type: trackingType === 'grupo_entrada' ? 'tracking_grupo_entrada' : 'tracking_grupo_saida',
+      type: selectedTrackingType === 'grupo_entrada' ? 'tracking_grupo_entrada' : 'tracking_grupo_saida',
+      sourceId: subOrigin.id,
       sourceName,
     });
     onOpenChange(false);
@@ -324,6 +337,7 @@ export function ConnectSourceDialog({
                 <span className="text-sm font-medium text-foreground">Entradas em Grupo</span>
                 <p className="text-xs text-muted-foreground">Quantidade de leads que entraram em grupos</p>
               </div>
+              <ChevronRight className="h-4 w-4 text-muted-foreground" />
             </button>
 
             {/* Saídas de Grupo */}
@@ -338,7 +352,47 @@ export function ConnectSourceDialog({
                 <span className="text-sm font-medium text-foreground">Saídas de Grupo</span>
                 <p className="text-xs text-muted-foreground">Quantidade de leads que saíram de grupos</p>
               </div>
+              <ChevronRight className="h-4 w-4 text-muted-foreground" />
             </button>
+          </div>
+        );
+
+      case 'tracking_sub_origins':
+        return (
+          <div className="space-y-2 py-4">
+            <div className={`flex items-center gap-2 p-3 rounded-lg mb-3 ${
+              selectedTrackingType === 'grupo_entrada' ? 'bg-emerald-500/10' : 'bg-red-500/10'
+            }`}>
+              {selectedTrackingType === 'grupo_entrada' ? (
+                <UserPlus className="h-4 w-4 text-emerald-600" />
+              ) : (
+                <UserMinus className="h-4 w-4 text-red-600" />
+              )}
+              <span className="text-sm font-medium">
+                {selectedTrackingType === 'grupo_entrada' ? 'Entradas em Grupo' : 'Saídas de Grupo'}
+              </span>
+            </div>
+            <p className="text-xs text-muted-foreground mb-3">
+              Selecione a sub-origem para filtrar os dados
+            </p>
+            {subOrigins.length === 0 ? (
+              <p className="text-sm text-muted-foreground text-center py-8">
+                Nenhuma sub-origem encontrada.
+              </p>
+            ) : (
+              subOrigins.map((subOrigin) => (
+                <button
+                  key={subOrigin.id}
+                  onClick={() => handleSelectTrackingSubOrigin(subOrigin)}
+                  className="w-full flex items-center gap-3 p-3 bg-white border border-border rounded-lg text-left transition-all duration-200 hover:bg-muted/30 hover:border-foreground/20"
+                >
+                  <div className="w-9 h-9 rounded-lg bg-muted flex items-center justify-center">
+                    <FolderOpen className="h-4 w-4 text-muted-foreground" />
+                  </div>
+                  <span className="flex-1 text-sm font-medium text-foreground">{subOrigin.nome}</span>
+                </button>
+              ))
+            )}
           </div>
         );
     }
@@ -356,6 +410,8 @@ export function ConnectSourceDialog({
         return 'Conectar Facebook Ads';
       case 'tracking':
         return 'Rastreamento de Grupos';
+      case 'tracking_sub_origins':
+        return 'Selecione a sub-origem';
     }
   };
 
