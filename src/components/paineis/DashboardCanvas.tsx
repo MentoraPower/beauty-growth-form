@@ -128,6 +128,8 @@ function SortableWidget({ widget, onResize, onDelete, onConnect, onRename, conta
 
   const responsiveWidth = isMobile ? '100%' : widgetWidth;
   const responsiveMinWidth = isMobile ? '100%' : minWidth;
+  // Ensure widget never exceeds container on any screen
+  const maxWidthValue = containerWidth > 0 ? containerWidth : '100%';
 
   const style: React.CSSProperties = {
     transform: CSS.Transform.toString(transform),
@@ -138,9 +140,10 @@ function SortableWidget({ widget, onResize, onDelete, onConnect, onRename, conta
     flexBasis: responsiveWidth,
     // Use flex-grow for widgets >= 45% to fill available space proportionally
     flexGrow: isMobile ? 1 : (shouldGrow ? widget.widthPercent! / 100 : 0),
-    flexShrink: isMobile ? 1 : 0,
+    flexShrink: isMobile ? 1 : 1, // Allow shrinking to prevent overflow
     width: responsiveWidth,
     minWidth: responsiveMinWidth,
+    maxWidth: maxWidthValue, // Prevent overflow
     height: widgetHeight,
     cursor: isDragging ? 'grabbing' : undefined,
   };
@@ -1400,7 +1403,7 @@ export function DashboardCanvas({ painelName, dashboardId, onBack }: DashboardCa
       </div>
 
       {/* Dashboard Content */}
-      <div className="flex-1 overflow-auto">
+      <div className="flex-1 overflow-y-auto overflow-x-hidden">
         {widgets.length === 0 ? (
           /* Empty State */
           <div className="flex justify-center pt-16">
@@ -1426,7 +1429,7 @@ export function DashboardCanvas({ painelName, dashboardId, onBack }: DashboardCa
           >
             <SortableContext items={widgets.map(w => w.id)} strategy={rectSortingStrategy}>
               <div ref={containerRef} className={cn(
-                "flex gap-3 p-1 min-h-[200px]",
+                "flex gap-3 p-1 min-h-[200px] overflow-x-hidden",
                 isMobile 
                   ? "flex-col" 
                   : "flex-wrap content-start"
