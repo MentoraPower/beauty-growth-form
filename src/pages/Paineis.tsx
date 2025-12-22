@@ -269,10 +269,7 @@ export default function Paineis() {
                     onClick={() => handleOpenDashboard(dashboard)}
                     className="grid grid-cols-[1fr_120px_60px] gap-4 items-center px-4 py-3 cursor-pointer transition-colors hover:bg-muted/50"
                   >
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center shrink-0">
-                        <LayoutDashboard className="h-4 w-4 text-muted-foreground" />
-                      </div>
+                    <div className="flex items-center">
                       <span className="font-medium text-foreground truncate">{dashboard.name}</span>
                     </div>
                     <span className="text-sm text-muted-foreground">
