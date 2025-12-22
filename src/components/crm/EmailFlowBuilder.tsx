@@ -1195,11 +1195,14 @@ export function EmailFlowBuilder({
   const handleSave = () => {
     // Get trigger data from the trigger node
     const triggerNode = nodes.find(n => n.type === "trigger");
-    const currentTriggerType = triggerNode?.data?.triggerType as string || triggerType;
-    const currentTriggerPipelineId = triggerNode?.data?.triggerPipelineId as string || triggerPipelineId;
-
-    if (!currentTriggerType) {
-      // Could show a toast here, but for now just warn
+    
+    // Check for triggers array (new format) or legacy triggerType
+    const triggers = triggerNode?.data?.triggers as TriggerItem[] | undefined;
+    const hasTriggers = triggers && triggers.length > 0;
+    const legacyTriggerType = triggerNode?.data?.triggerType as string || triggerType;
+    
+    // Validate: must have at least one trigger configured
+    if (!hasTriggers && !legacyTriggerType) {
       console.warn("No trigger type selected");
     }
 
