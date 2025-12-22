@@ -4,6 +4,7 @@ import type { Json } from "@/integrations/supabase/types";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
+import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { format, subDays, startOfDay, endOfDay } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -1387,7 +1388,30 @@ export function DashboardCanvas({ painelName, dashboardId, onBack }: DashboardCa
 
       {/* Dashboard Content */}
       <div className="flex-1 overflow-y-auto overflow-x-hidden">
-        {widgets.length === 0 ? (
+        {isInitialLoad ? (
+          /* Loading Skeleton */
+          <div className="flex flex-wrap gap-3 p-1">
+            {[1, 2, 3].map((i) => (
+              <div
+                key={i}
+                className="bg-card border border-border rounded-xl p-3"
+                style={{ width: 340, height: 280 }}
+              >
+                <div className="flex items-center gap-2 mb-4">
+                  <Skeleton className="w-4 h-4" />
+                  <Skeleton className="h-4 w-32" />
+                </div>
+                <div className="flex items-center justify-center h-[180px]">
+                  <Skeleton className="w-32 h-32 rounded-full" />
+                </div>
+                <div className="flex justify-between mt-4">
+                  <Skeleton className="h-3 w-16" />
+                  <Skeleton className="h-3 w-12" />
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : widgets.length === 0 ? (
           /* Empty State */
           <div className="flex justify-center pt-16">
             <button
