@@ -492,7 +492,7 @@ export default function LeadDetail() {
                   {activeTab === tab.id && (
                     <motion.div
                       layoutId="activeTabIndicator"
-                      className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-[#F40000] to-[#A10000]"
+                      className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-orange-600 to-amber-500"
                       transition={{ type: "spring", stiffness: 400, damping: 30 }}
                     />
                   )}
