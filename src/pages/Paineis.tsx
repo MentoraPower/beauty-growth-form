@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
-import { TrendingUp, Rocket, RefreshCcw, Plus, MoreHorizontal, Pencil, Trash2, LayoutDashboard } from "lucide-react";
+import { TrendingUp, Rocket, RefreshCcw, Plus, MoreHorizontal, Pencil, Trash2, LayoutDashboard, Plug } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -8,6 +8,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Skeleton } from "@/components/ui/skeleton";
 import { DashboardCanvas } from "@/components/paineis/DashboardCanvas";
+import { FacebookAdsIntegration } from "@/components/paineis/FacebookAdsIntegration";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { format } from "date-fns";
@@ -62,6 +63,7 @@ export default function Paineis() {
   const [editingDashboard, setEditingDashboard] = useState<Dashboard | null>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [editName, setEditName] = useState("");
+  const [isIntegrationOpen, setIsIntegrationOpen] = useState(false);
 
   // Get active dashboard from URL
   const activeDashboard = activeDashboardId 
@@ -196,17 +198,28 @@ export default function Paineis() {
             <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
               Meus Painéis
             </h2>
-            <Button
-              onClick={() => {
-                setIsDialogOpen(true);
-                setPainelName("");
-              }}
-              size="sm"
-              className="bg-gradient-to-r from-orange-500 to-orange-400 text-white hover:from-orange-600 hover:to-orange-500 shadow-md hover:shadow-lg transition-all"
-            >
-              <Plus className="h-4 w-4 mr-2" />
-              Novo Painel
-            </Button>
+            <div className="flex items-center gap-3">
+              <Button
+                onClick={() => setIsIntegrationOpen(true)}
+                size="sm"
+                variant="outline"
+                className="bg-orange-500/10 border-orange-500/30 text-orange-600 hover:bg-orange-500/20 hover:border-orange-500/50"
+              >
+                <Plug className="h-4 w-4 mr-2" />
+                Integrações
+              </Button>
+              <Button
+                onClick={() => {
+                  setIsDialogOpen(true);
+                  setPainelName("");
+                }}
+                size="sm"
+                className="bg-gradient-to-r from-orange-500 to-orange-400 text-white hover:from-orange-600 hover:to-orange-500 shadow-md hover:shadow-lg transition-all"
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Novo Painel
+              </Button>
+            </div>
           </div>
           
           {isLoading ? (
@@ -407,6 +420,12 @@ export default function Paineis() {
             </div>
           </DialogContent>
         </Dialog>
+
+        {/* Facebook Ads Integration Sheet */}
+        <FacebookAdsIntegration 
+          open={isIntegrationOpen} 
+          onOpenChange={setIsIntegrationOpen} 
+        />
       </div>
     );
   }
