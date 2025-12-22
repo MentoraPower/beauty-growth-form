@@ -288,14 +288,14 @@ export function ChartRenderer({ chartType, data, width, height, isLoading }: Cha
                     )}
                   </div>
                   
-                  <div className="w-[65px] shrink-0 flex items-center justify-between gap-1">
+                  <div className="w-[90px] shrink-0 flex items-center justify-between gap-1">
                     <span 
                       className={`text-[10px] truncate leading-tight font-medium ${item.value === 0 ? 'text-muted-foreground' : 'text-foreground/70'}`}
                       title={item.name}
                     >
                       {item.name}
                     </span>
-                    <span className="text-[9px] font-medium text-muted-foreground">
+                    <span className="text-[9px] font-medium text-muted-foreground shrink-0">
                       {item.value === 0 ? '-' : `${responsePercent}%`}
                     </span>
                   </div>
