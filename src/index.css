@@ -641,3 +641,64 @@
 .animate-bar-fill {
   animation: bar-fill 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
 }
+
+/* Animated border with dashed lines */
+@keyframes border-dance {
+  0% {
+    stroke-dashoffset: 0;
+  }
+  100% {
+    stroke-dashoffset: -24;
+  }
+}
+
+.animated-border-card {
+  position: relative;
+  overflow: visible;
+}
+
+.animated-border-card::before {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  border-radius: 14px;
+  padding: 2px;
+  background: linear-gradient(90deg, #ea580c, #f59e0b, #ea580c);
+  background-size: 200% 100%;
+  animation: gradient-shift 3s ease infinite;
+  -webkit-mask: 
+    linear-gradient(#fff 0 0) content-box, 
+    linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  opacity: 0.6;
+}
+
+@keyframes gradient-shift {
+  0%, 100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+}
+
+.animated-dashed-border {
+  position: relative;
+}
+
+.animated-dashed-border svg {
+  position: absolute;
+  inset: -1px;
+  width: calc(100% + 2px);
+  height: calc(100% + 2px);
+  pointer-events: none;
+}
+
+.animated-dashed-border svg rect {
+  fill: none;
+  stroke: url(#orangeGradient);
+  stroke-width: 2;
+  stroke-dasharray: 8 6;
+  animation: border-dance 1s linear infinite;
+}
