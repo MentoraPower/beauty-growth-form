@@ -199,14 +199,15 @@ function SortableWidget({ widget, onResize, onDelete, onConnect, onRename, conta
     >
       <div className="relative h-full p-3 pt-2 flex flex-col">
         {/* Header Row - Drag handle + Title aligned */}
-        <div className="flex items-center gap-0 mb-2 shrink-0">
-          {/* Drag Handle - only visible on hover, expands width */}
+        <div className="flex items-center gap-1 mb-2 shrink-0">
+          {/* Drag Handle - always visible for better usability */}
           <div
             {...attributes}
             {...listeners}
-            className="shrink-0 rounded-lg cursor-grab active:cursor-grabbing hover:bg-muted z-20 opacity-0 group-hover/widget:opacity-100 w-0 group-hover/widget:w-7 h-7 flex items-center justify-center overflow-hidden transition-all duration-300 ease-out"
+            className="shrink-0 rounded-lg cursor-grab active:cursor-grabbing hover:bg-muted z-20 w-6 h-6 flex items-center justify-center transition-colors"
+            title="Arraste para reordenar"
           >
-            <GripVertical className="h-4 w-4 text-muted-foreground shrink-0" />
+            <GripVertical className="h-4 w-4 text-muted-foreground/50 group-hover/widget:text-muted-foreground shrink-0 transition-colors" />
           </div>
           
           {/* Title - Inline Editable */}
@@ -381,10 +382,10 @@ function ResizeHandle({ direction, widgetWidth, widgetHeight, containerWidth, mi
   if (direction === 'e') {
     return (
       <div
-        className="absolute top-2 bottom-2 right-0 w-3 cursor-e-resize group z-20"
+        className="absolute top-2 bottom-2 right-0 w-4 cursor-e-resize group z-20 flex items-center justify-end"
         onMouseDown={handleMouseDown}
       >
-        <div className="absolute top-1/2 right-0.5 -translate-y-1/2 w-1 h-10 rounded-full bg-muted-foreground/30 opacity-0 group-hover:opacity-100 transition-opacity" />
+        <div className="w-1.5 h-12 rounded-full bg-muted-foreground/20 group-hover:bg-muted-foreground/50 transition-colors mr-0.5" />
       </div>
     );
   }
@@ -392,21 +393,21 @@ function ResizeHandle({ direction, widgetWidth, widgetHeight, containerWidth, mi
   if (direction === 's') {
     return (
       <div
-        className="absolute left-2 right-2 bottom-0 h-3 cursor-s-resize group z-20"
+        className="absolute left-2 right-2 bottom-0 h-4 cursor-s-resize group z-20 flex items-end justify-center"
         onMouseDown={handleMouseDown}
       >
-        <div className="absolute bottom-0.5 left-1/2 -translate-x-1/2 h-1 w-10 rounded-full bg-muted-foreground/30 opacity-0 group-hover:opacity-100 transition-opacity" />
+        <div className="h-1.5 w-12 rounded-full bg-muted-foreground/20 group-hover:bg-muted-foreground/50 transition-colors mb-0.5" />
       </div>
     );
   }
 
   return (
     <div
-      className="absolute bottom-0 right-0 w-5 h-5 cursor-se-resize group z-30"
+      className="absolute bottom-0 right-0 w-6 h-6 cursor-se-resize group z-30 flex items-end justify-end"
       onMouseDown={handleMouseDown}
     >
       <svg 
-        className="absolute bottom-1 right-1 w-3 h-3 text-muted-foreground/50 opacity-0 group-hover:opacity-100 transition-opacity"
+        className="w-4 h-4 text-muted-foreground/30 group-hover:text-muted-foreground/60 transition-colors mr-0.5 mb-0.5"
         viewBox="0 0 10 10"
       >
         <path d="M9 1L1 9M9 5L5 9M9 9L9 9" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
