@@ -252,7 +252,7 @@ function SortableWidget({
             chartType={widget.chartType.id}
             data={widget.data}
             width={actualWidth - 32}
-            height={widgetHeight - 92}
+            height={widgetHeight - 50}
             isLoading={widget.isLoading}
           />
         </div>
@@ -1348,13 +1348,9 @@ export function DashboardCanvas({ painelName, dashboardId, onBack }: DashboardCa
       };
       const data = await fetchWidgetData(tempWidget);
       
-      // Calculate appropriate height based on distribution items for bar_horizontal
-      let appropriateHeight = widgetToUpdate.height || 280;
-      if (widgetToUpdate.chartType.id === 'bar_horizontal' && data?.distribution) {
-        const itemCount = data.distribution.length;
-        // 40px per item + 24px padding
-        appropriateHeight = Math.max(120, Math.min(280, itemCount * 40 + 24));
-      }
+            // Keep existing height - don't recalculate automatically
+            // Height should only change when user manually resizes
+            const appropriateHeight = widgetToUpdate.height || 280;
       
       setWidgets(prev => prev.map(widget => 
         widget.id === pendingWidgetId 
