@@ -502,7 +502,7 @@ function SortableOriginItem({
                       className={cn(
                         "flex items-center gap-2 flex-1 py-1.5 px-2 rounded-lg transition-all duration-200 ease-out text-xs",
                         isActive 
-                          ? "bg-orange-100/50 font-medium"
+                          ? "bg-black/10 font-medium"
                           : "text-foreground/70 hover:text-foreground hover:bg-black/5"
                       )}
                     >
@@ -582,7 +582,7 @@ function SortableOriginItem({
                       className={cn(
                         "flex items-center gap-2 flex-1 py-1.5 px-2 rounded-lg transition-all duration-200 ease-out text-xs",
                         isActive 
-                          ? "bg-orange-100/50 font-medium"
+                          ? "bg-black/10 font-medium"
                           : "text-foreground/70 hover:text-foreground hover:bg-black/5"
                       )}
                     >
