@@ -544,6 +544,52 @@ const WhatsApp = (props: WhatsAppProps) => {
             console.log(`[WhatsApp] Upserted ${groupsToUpsert.length} groups to database`);
           }
         }
+        
+        // STEP 3: Fetch missing photos for groups without photo_url (background, async)
+        const groupsWithoutPhoto = groups.filter(g => !g.photoUrl);
+        if (groupsWithoutPhoto.length > 0) {
+          console.log(`[WhatsApp] Fetching photos for ${groupsWithoutPhoto.length} groups without photo...`);
+          
+          // Process in batches of 3 to avoid rate limiting (with delay between batches)
+          const batchSize = 3;
+          for (let i = 0; i < groupsWithoutPhoto.length; i += batchSize) {
+            const batch = groupsWithoutPhoto.slice(i, i + batchSize);
+            
+            // Fetch photos for this batch in parallel
+            const photoPromises = batch.map(async (group) => {
+              try {
+                const { data: photoResult } = await supabase.functions.invoke("wasender-whatsapp", {
+                  body: { action: "fetch-group-photo", groupJid: group.groupJid, sessionId: sessionApiKey },
+                });
+                
+                if (photoResult?.success && photoResult?.photoUrl) {
+                  console.log(`[WhatsApp] Got photo for group ${group.name}:`, photoResult.photoUrl);
+                  return { groupJid: group.groupJid, photoUrl: photoResult.photoUrl };
+                }
+                return null;
+              } catch (e) {
+                console.error(`[WhatsApp] Error fetching photo for ${group.name}:`, e);
+                return null;
+              }
+            });
+            
+            const results = await Promise.all(photoPromises);
+            
+            // Update local state with fetched photos
+            const fetchedPhotos = results.filter(Boolean) as Array<{ groupJid: string; photoUrl: string }>;
+            if (fetchedPhotos.length > 0) {
+              setWhatsappGroups(prev => prev.map(g => {
+                const found = fetchedPhotos.find(p => p.groupJid === g.groupJid);
+                return found ? { ...g, photoUrl: found.photoUrl } : g;
+              }));
+            }
+            
+            // Add delay between batches to respect rate limits (1 second)
+            if (i + batchSize < groupsWithoutPhoto.length) {
+              await new Promise(resolve => setTimeout(resolve, 1500));
+            }
+          }
+        }
       }
     } catch (error: any) {
       console.error("[WhatsApp] Error fetching groups:", error);
