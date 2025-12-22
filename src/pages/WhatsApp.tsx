@@ -2833,6 +2833,20 @@ const WhatsApp = (props: WhatsAppProps) => {
                 </div>
               ) : whatsappGroups.length > 0 ? (
                 <div className="flex flex-col">
+                  {/* Header with refresh button */}
+                  <div className="flex items-center justify-between px-3 py-2 border-b border-border/20 bg-muted/10">
+                    <span className="text-xs text-muted-foreground font-medium">
+                      {whatsappGroups.length} grupos
+                    </span>
+                    <button
+                      onClick={fetchWhatsAppGroups}
+                      disabled={isLoadingGroups}
+                      className="flex items-center gap-1 text-xs text-emerald-500 hover:text-emerald-400 transition-colors disabled:opacity-50"
+                    >
+                      <RefreshCw className={cn("w-3.5 h-3.5", isLoadingGroups && "animate-spin")} />
+                      Atualizar
+                    </button>
+                  </div>
                   {whatsappGroups
                     .filter(group => 
                       !searchQuery || 
