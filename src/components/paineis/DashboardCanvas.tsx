@@ -12,6 +12,7 @@ import { ChartSelectorDialog, ChartType } from "./ChartSelectorDialog";
 import { ConnectSourceDialog, WidgetSource } from "./ConnectSourceDialog";
 import { ChartRenderer } from "./ChartRenderer";
 import { supabase } from "@/integrations/supabase/client";
+import widgetDecoration from "@/assets/widget-decoration.png";
 import { useIsMobile } from "@/hooks/use-mobile";
 import {
   DndContext,
@@ -158,13 +159,22 @@ function SortableWidget({
       }} 
       style={style}
       className={cn(
-        "group/widget relative bg-white border rounded-xl",
+        "group/widget relative bg-white border rounded-xl overflow-hidden",
         isDragging 
           ? "border-border shadow-2xl ring-2 ring-border/50 scale-[1.02] z-50" 
           : "border-border shadow-sm hover:shadow-md hover:border-border/80"
       )}
     >
-      <div className="relative h-full p-3 pt-2 flex flex-col">
+      {/* Decorative top banner */}
+      <div className="w-full h-6 overflow-hidden">
+        <img 
+          src={widgetDecoration} 
+          alt="" 
+          className="w-full h-full object-cover"
+          style={{ pointerEvents: 'auto' }}
+        />
+      </div>
+      <div className="relative h-[calc(100%-24px)] p-3 pt-2 flex flex-col">
         {/* Header Row - Drag handle + Title aligned */}
         <div className="flex items-center gap-0 mb-2 shrink-0">
           {/* Drag Handle */}
