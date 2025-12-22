@@ -542,6 +542,26 @@ const WhatsApp = (props: WhatsAppProps) => {
             console.error("[WhatsApp] Error upserting groups:", upsertError);
           } else {
             console.log(`[WhatsApp] Upserted ${groupsToUpsert.length} groups to database`);
+            
+            // STEP 2.5: Remove groups from DB that no longer exist in API (deleted from WhatsApp)
+            const apiGroupJids = new Set(result.data.map((g: any) => g.id || g.jid || ""));
+            const dbGroupJids = dbGroups?.map(g => g.group_jid) || [];
+            const groupsToDelete = dbGroupJids.filter(jid => !apiGroupJids.has(jid));
+            
+            if (groupsToDelete.length > 0) {
+              console.log(`[WhatsApp] Removing ${groupsToDelete.length} deleted groups from database:`, groupsToDelete);
+              const { error: deleteError } = await supabase
+                .from("whatsapp_groups")
+                .delete()
+                .in("group_jid", groupsToDelete)
+                .eq("session_id", sessionApiKey);
+              
+              if (deleteError) {
+                console.error("[WhatsApp] Error deleting removed groups:", deleteError);
+              } else {
+                console.log(`[WhatsApp] Successfully removed ${groupsToDelete.length} deleted groups`);
+              }
+            }
           }
         }
         
