@@ -334,7 +334,7 @@ export function ManagePipelinesDialog({
             />
             <Button 
               onClick={addPipeline} 
-              className="h-11 px-6 bg-gradient-to-r from-[#F40000] to-[#A10000] text-white shrink-0"
+              className="h-11 px-6 bg-gradient-to-r from-orange-600 to-amber-500 text-white shrink-0"
             >
               <Plus className="w-5 h-5 mr-2" />
               Adicionar
