@@ -20,7 +20,7 @@ import {
   useReactFlow,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
-import { Play, Clock, CheckCircle2, Trash2, Copy, ArrowLeft, Plus, Mail, Zap, ChevronDown, Users, UserMinus, UserX } from "lucide-react";
+import { Play, Clock, CheckCircle2, Trash2, Copy, ArrowLeft, Plus, Mail, Zap, ChevronDown, Users, UserMinus, UserX, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -429,6 +429,7 @@ const WaitNode = ({ data, id, selected }: NodeProps) => {
   
   const waitTime = (data.waitTime as number) || 1;
   const waitUnit = (data.waitUnit as string) || "hours";
+  const pendingCount = (data.pendingCount as number) || 0;
   
   const unitLabels: Record<string, string> = {
     seconds: "segundos",
@@ -506,6 +507,14 @@ const WaitNode = ({ data, id, selected }: NodeProps) => {
             </div>
             <span className="text-sm font-semibold text-black uppercase tracking-wide">Espera</span>
           </div>
+          
+          {/* Pending count badge */}
+          {pendingCount > 0 && (
+            <div className="flex items-center gap-1 bg-black/20 rounded-full px-2 py-0.5">
+              <User className="w-3 h-3 text-black" />
+              <span className="text-xs font-bold text-black">{pendingCount}</span>
+            </div>
+          )}
         </div>
         
         {/* Time display */}
@@ -907,6 +916,8 @@ interface EmailFlowBuilderProps {
   triggerPipelineName?: string;
   pipelines?: Pipeline[];
   subOriginId?: string | null;
+  automationId?: string;
+  pendingEmailsCount?: number;
 }
 
 export function EmailFlowBuilder({
@@ -917,6 +928,8 @@ export function EmailFlowBuilder({
   triggerPipelineName,
   pipelines = [],
   subOriginId,
+  automationId,
+  pendingEmailsCount = 0,
 }: EmailFlowBuilderProps) {
   const [selectedNode, setSelectedNode] = useState<Node | null>(null);
   const [triggerType, setTriggerType] = useState<string>("");
@@ -1124,6 +1137,24 @@ export function EmailFlowBuilder({
       }));
     }
   }, [filteredPipelines, handleTriggersChange, setNodes]);
+
+  // Inject pendingEmailsCount into wait nodes
+  useEffect(() => {
+    if (pendingEmailsCount > 0) {
+      setNodes((nds) => nds.map((n) => {
+        if (n.type === "wait") {
+          return {
+            ...n,
+            data: {
+              ...n.data,
+              pendingCount: pendingEmailsCount,
+            },
+          };
+        }
+        return n;
+      }));
+    }
+  }, [pendingEmailsCount, setNodes]);
 
   const onConnect = useCallback(
     (params: Connection) => {

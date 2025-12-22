@@ -99,6 +99,8 @@ interface EmailBuilderProps {
   editingContext?: EmailEditingContext;
   pipelines?: Pipeline[];
   subOriginId?: string | null;
+  automationId?: string;
+  pendingEmailsCount?: number;
 }
 
 type ActiveTab = "automations" | "webhooks";
@@ -273,6 +275,31 @@ export function AutomationsDropdown({
       return filtered as EmailAutomation[];
     },
     enabled: open,
+  });
+
+  // Fetch pending scheduled emails count per automation
+  const { data: pendingEmailsCounts = {} } = useQuery({
+    queryKey: ["scheduled-emails-counts", subOriginId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("scheduled_emails")
+        .select("automation_id")
+        .eq("status", "pending");
+      
+      if (error) {
+        console.error("Error fetching scheduled emails counts:", error);
+        return {};
+      }
+      
+      // Count by automation_id
+      const counts: Record<string, number> = {};
+      (data || []).forEach((row: any) => {
+        counts[row.automation_id] = (counts[row.automation_id] || 0) + 1;
+      });
+      return counts;
+    },
+    enabled: open,
+    refetchInterval: 30000, // Refresh every 30 seconds
   });
 
   const activeEmailAutomationsCount = emailAutomations.filter(e => e.is_active).length;
@@ -905,6 +932,10 @@ export function AutomationsDropdown({
     if (onShowEmailBuilder) {
       openingEmailBuilderRef.current = true;
       setOpen(false); // Close the dropdown
+      
+      // Get pending count for this automation
+      const pendingCount = editId ? (pendingEmailsCounts[editId] || 0) : 0;
+      
       onShowEmailBuilder(true, {
         automationName: name,
         triggerPipelineName: "",
@@ -923,6 +954,8 @@ export function AutomationsDropdown({
         },
         pipelines: allPipelines,
         subOriginId,
+        automationId: editId || undefined,
+        pendingEmailsCount: pendingCount,
       });
     } else {
       setShowEmailFlowBuilder(true);
@@ -1068,6 +1101,8 @@ export function AutomationsDropdown({
             initialSteps={getFallbackInitialSteps()}
             pipelines={allPipelines}
             subOriginId={subOriginId}
+            automationId={editingEmailId || undefined}
+            pendingEmailsCount={editingEmailId ? (pendingEmailsCounts[editingEmailId] || 0) : 0}
           />
         </DialogContent>
       </Dialog>

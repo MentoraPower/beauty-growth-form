@@ -72,6 +72,8 @@ interface EmailBuilderState {
     editingContext?: EmailEditingContext;
     pipelines?: Pipeline[];
     subOriginId?: string | null;
+    automationId?: string;
+    pendingEmailsCount?: number;
   };
 }
 
@@ -1007,6 +1009,8 @@ export function KanbanBoard() {
           initialSteps={emailBuilderProps.initialSteps}
           pipelines={emailBuilderProps.pipelines || pipelines}
           subOriginId={emailBuilderProps.subOriginId || subOriginId}
+          automationId={emailBuilderProps.automationId}
+          pendingEmailsCount={emailBuilderProps.pendingEmailsCount || 0}
         />
       </div>
     );
