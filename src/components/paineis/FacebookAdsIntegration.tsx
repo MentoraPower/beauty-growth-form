@@ -208,18 +208,34 @@ export function FacebookAdsIntegration({ open, onOpenChange }: FacebookAdsIntegr
   const handleFinish = async () => {
     const selected = campaigns.filter(c => c.selected);
     
-    // TODO: Save configuration to database and fetch insights
-    toast.success(`${selected.length} campanhas configuradas!`);
-    onOpenChange(false);
-    
-    // Reset state
-    setTimeout(() => {
-      setStep("connect");
-      setAccessToken(null);
-      setAdAccounts([]);
-      setSelectedAdAccount("");
-      setCampaigns([]);
-    }, 300);
+    try {
+      // Save connection to database
+      const { error } = await supabase.from('facebook_ads_connections').insert({
+        access_token: accessToken,
+        ad_account_id: selectedAdAccount,
+        ad_account_name: adAccounts.find(a => a.id === selectedAdAccount)?.name || null,
+        selected_campaigns: selected.map(c => ({ id: c.id, name: c.name })),
+        selected_metrics: selectedMetrics,
+        is_active: true
+      });
+
+      if (error) throw error;
+
+      toast.success(`${selected.length} campanhas configuradas!`);
+      onOpenChange(false);
+      
+      // Reset state
+      setTimeout(() => {
+        setStep("connect");
+        setAccessToken(null);
+        setAdAccounts([]);
+        setSelectedAdAccount("");
+        setCampaigns([]);
+      }, 300);
+    } catch (error) {
+      console.error('Error saving connection:', error);
+      toast.error("Erro ao salvar configuração");
+    }
   };
 
   const selectedCount = campaigns.filter(c => c.selected).length;
