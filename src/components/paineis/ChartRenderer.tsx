@@ -514,7 +514,6 @@ export function ChartRenderer({ chartType, data, width, height, isLoading }: Cha
             <span className={`text-sm font-semibold ${
               isPositive ? 'text-emerald-600' : 'text-red-600'
             }`}>
-              {isPositive ? <TrendingUp className="w-4 h-4 inline mr-1" /> : <TrendingDown className="w-4 h-4 inline mr-1" />}
               {isPositive ? '+' : ''}{changePercent}%
             </span>
             <span className="text-xs text-muted-foreground font-medium">vs. período anterior</span>
