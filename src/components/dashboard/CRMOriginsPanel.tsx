@@ -1124,17 +1124,17 @@ export function CRMOriginsPanel({ isOpen, onClose, sidebarWidth, embedded = fals
                     className={cn(
                       "flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all",
                       selectedTipo === 'tarefas'
-                        ? "border-rose-500 bg-rose-50"
+                        ? "border-orange-500 bg-orange-50"
                         : "border-border hover:border-muted-foreground/30 hover:bg-muted/30"
                     )}
                   >
                     <ListTodo className={cn(
                       "h-6 w-6",
-                      selectedTipo === 'tarefas' ? "text-rose-500" : "text-muted-foreground"
+                      selectedTipo === 'tarefas' ? "text-orange-500" : "text-muted-foreground"
                     )} />
                     <span className={cn(
                       "text-sm font-medium",
-                      selectedTipo === 'tarefas' ? "text-rose-600" : "text-muted-foreground"
+                      selectedTipo === 'tarefas' ? "text-orange-600" : "text-muted-foreground"
                     )}>
                       Tarefas
                     </span>
@@ -1145,17 +1145,17 @@ export function CRMOriginsPanel({ isOpen, onClose, sidebarWidth, embedded = fals
                     className={cn(
                       "flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all",
                       selectedTipo === 'calendario'
-                        ? "border-rose-500 bg-rose-50"
+                        ? "border-orange-500 bg-orange-50"
                         : "border-border hover:border-muted-foreground/30 hover:bg-muted/30"
                     )}
                   >
                     <CalendarDays className={cn(
                       "h-6 w-6",
-                      selectedTipo === 'calendario' ? "text-rose-500" : "text-muted-foreground"
+                      selectedTipo === 'calendario' ? "text-orange-500" : "text-muted-foreground"
                     )} />
                     <span className={cn(
                       "text-sm font-medium",
-                      selectedTipo === 'calendario' ? "text-rose-600" : "text-muted-foreground"
+                      selectedTipo === 'calendario' ? "text-orange-600" : "text-muted-foreground"
                     )}>
                       Calendário
                     </span>
