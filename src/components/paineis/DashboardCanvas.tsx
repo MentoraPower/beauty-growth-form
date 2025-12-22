@@ -159,18 +159,12 @@ function SortableWidget({
       }} 
       style={style}
       className={cn(
-        "group/widget relative border rounded-xl overflow-hidden",
+        "group/widget relative bg-white border rounded-xl overflow-hidden",
         isDragging 
           ? "border-border shadow-2xl ring-2 ring-border/50 scale-[1.02] z-50" 
           : "border-border shadow-sm hover:shadow-md hover:border-border/80"
       )}
     >
-      {/* Background image */}
-      <div 
-        className="absolute inset-0 bg-cover bg-center opacity-90"
-        style={{ backgroundImage: `url('/assets/chart-bg.png')` }}
-      />
-      <div className="absolute inset-0 bg-white/85" />
       <div className="relative h-full p-3 pt-2 flex flex-col">
         {/* Header Row - Drag handle + Title aligned */}
         <div className="flex items-center gap-0 mb-2 shrink-0">
