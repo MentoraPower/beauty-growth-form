@@ -40,7 +40,7 @@ interface FbConnection {
 }
 
 export interface WidgetSource {
-  type: 'origin' | 'sub_origin' | 'facebook_ads' | 'tracking_grupo_entrada' | 'tracking_grupo_saida' | 'utm_source' | 'utm_medium' | 'utm_campaign' | 'utm_all' | 'custom_field';
+  type: 'origin' | 'sub_origin' | 'facebook_ads' | 'tracking_grupo_entrada' | 'tracking_grupo_saida' | 'utm_source' | 'utm_medium' | 'utm_campaign' | 'utm_all' | 'custom_field' | 'cost_per_lead';
   sourceId?: string;
   sourceName?: string;
   customFieldId?: string;
@@ -48,6 +48,10 @@ export interface WidgetSource {
   fbCampaignId?: string;
   fbCampaignName?: string;
   fbMetric?: 'spend' | 'cpm' | 'cpc';
+  // For cost_per_lead
+  fbConnectionId?: string;
+  subOriginIdForLeads?: string;
+  subOriginNameForLeads?: string;
   credentials?: {
     appId?: string;
     appSecret?: string;
@@ -62,7 +66,7 @@ interface ConnectSourceDialogProps {
   onConnect: (source: WidgetSource) => void;
 }
 
-type Step = 'sources' | 'origins' | 'sub_origins' | 'facebook_form' | 'facebook_campaigns' | 'facebook_metrics' | 'tracking' | 'tracking_origins' | 'tracking_sub_origins' | 'utm_options' | 'utm_origins' | 'utm_sub_origins' | 'custom_fields_origins' | 'custom_fields_sub_origins' | 'custom_fields_select';
+type Step = 'sources' | 'origins' | 'sub_origins' | 'facebook_form' | 'facebook_campaigns' | 'facebook_metrics' | 'tracking' | 'tracking_origins' | 'tracking_sub_origins' | 'utm_options' | 'utm_origins' | 'utm_sub_origins' | 'custom_fields_origins' | 'custom_fields_sub_origins' | 'custom_fields_select' | 'cpl_fb_connection' | 'cpl_fb_campaign' | 'cpl_select_sub_origin';
 
 export function ConnectSourceDialog({ 
   open, 
@@ -152,7 +156,7 @@ export function ConnectSourceDialog({
   };
 
   const handleBack = () => {
-    if (step === 'origins' || step === 'facebook_form' || step === 'tracking' || step === 'utm_options' || step === 'custom_fields_origins') {
+    if (step === 'origins' || step === 'facebook_form' || step === 'tracking' || step === 'utm_options' || step === 'custom_fields_origins' || step === 'cpl_fb_connection') {
       setStep('sources');
     } else if (step === 'sub_origins') {
       setStep('origins');
@@ -180,6 +184,12 @@ export function ConnectSourceDialog({
       setStep('custom_fields_sub_origins');
       setSelectedSubOrigin(null);
       setCustomFields([]);
+    } else if (step === 'cpl_fb_campaign') {
+      setStep('cpl_fb_connection');
+      setSelectedFbCampaign(null);
+    } else if (step === 'cpl_select_sub_origin') {
+      setStep('cpl_fb_campaign');
+      setSelectedOrigin(null);
     }
   };
 
@@ -376,6 +386,21 @@ export function ConnectSourceDialog({
               <div className="flex-1">
                 <h3 className="text-sm font-medium text-foreground">Conectar com Facebook Ads</h3>
                 <p className="text-xs text-muted-foreground">Puxe métricas de campanhas em tempo real</p>
+              </div>
+              <ChevronRight className="h-5 w-5 text-muted-foreground" />
+            </button>
+
+            {/* Custo por Lead option */}
+            <button
+              onClick={() => setStep('cpl_fb_connection')}
+              className="w-full flex items-center gap-4 p-4 bg-white border border-border rounded-xl text-left transition-all duration-200 hover:shadow-md hover:border-foreground/20"
+            >
+              <div className="w-12 h-12 rounded-xl bg-amber-500/10 flex items-center justify-center">
+                <DollarSign className="h-6 w-6 text-amber-600" />
+              </div>
+              <div className="flex-1">
+                <h3 className="text-sm font-medium text-foreground">Custo por Lead (CPL)</h3>
+                <p className="text-xs text-muted-foreground">Valor gasto ÷ Leads pagos da origem</p>
               </div>
               <ChevronRight className="h-5 w-5 text-muted-foreground" />
             </button>
@@ -952,6 +977,161 @@ export function ConnectSourceDialog({
             )}
           </div>
         );
+
+      case 'cpl_fb_connection':
+        return (
+          <div className="space-y-4 py-4">
+            <div className="flex items-center gap-3 p-4 bg-amber-500/5 border border-amber-500/20 rounded-xl">
+              <DollarSign className="h-8 w-8 text-amber-600" />
+              <div>
+                <h3 className="text-sm font-medium text-foreground">Custo por Lead</h3>
+                <p className="text-xs text-muted-foreground">
+                  Valor Gasto (Facebook) ÷ Leads Pagos
+                </p>
+              </div>
+            </div>
+
+            <p className="text-xs text-muted-foreground">
+              1. Selecione a conta do Facebook Ads
+            </p>
+
+            {isFbConnectionsLoading ? (
+              <p className="text-sm text-muted-foreground text-center py-6">Carregando conexões...</p>
+            ) : fbConnections.length === 0 ? (
+              <p className="text-sm text-muted-foreground text-center py-6">
+                Nenhuma conexão encontrada. Abra <strong>Integrações</strong> e conecte o Facebook Ads primeiro.
+              </p>
+            ) : (
+              <div className="space-y-2">
+                {fbConnections.map((c) => {
+                  const isSelected = selectedFbConnectionId === c.id;
+                  return (
+                    <button
+                      key={c.id}
+                      onClick={() => setSelectedFbConnectionId(c.id)}
+                      className={`w-full flex items-center justify-between gap-3 p-3 border rounded-lg text-left transition-all duration-200 ${
+                        isSelected
+                          ? 'border-amber-500 bg-amber-50'
+                          : 'bg-white border-border hover:bg-muted/30 hover:border-foreground/20'
+                      }`}
+                    >
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium text-foreground truncate">
+                          {c.ad_account_name || c.ad_account_id}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {c.selected_campaigns.length} campanha(s) disponível(is)
+                        </p>
+                      </div>
+                      <div className={`h-3 w-3 rounded-full ${isSelected ? 'bg-amber-500' : 'bg-muted'}`} />
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+
+            <Button
+              onClick={() => {
+                if (selectedFbConnectionId) setStep('cpl_fb_campaign');
+              }}
+              disabled={!selectedFbConnectionId}
+              className="w-full h-11 bg-amber-500 hover:bg-amber-600 text-white"
+            >
+              Continuar
+              <ChevronRight className="h-4 w-4 ml-2" />
+            </Button>
+          </div>
+        );
+
+      case 'cpl_fb_campaign':
+        const cplConnection = fbConnections.find(c => c.id === selectedFbConnectionId);
+        const cplCampaigns = cplConnection?.selected_campaigns || [];
+        return (
+          <div className="space-y-4 py-4">
+            <div className="flex items-center gap-2 p-3 rounded-lg bg-amber-500/10 min-w-0">
+              <Facebook className="h-4 w-4 text-[#1877F2]" />
+              <span className="text-sm font-medium truncate">
+                {cplConnection?.ad_account_name || cplConnection?.ad_account_id}
+              </span>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              2. Selecione a campanha para calcular o gasto
+            </p>
+            
+            <div className="space-y-2 max-h-[300px] overflow-y-auto overflow-x-hidden pr-1">
+              {cplCampaigns.length === 0 ? (
+                <p className="text-sm text-muted-foreground text-center py-6">
+                  Nenhuma campanha configurada nesta conexão.
+                </p>
+              ) : (
+                cplCampaigns.map((campaign) => (
+                  <button
+                    key={campaign.id}
+                    onClick={() => {
+                      setSelectedFbCampaign(campaign);
+                      setStep('cpl_select_sub_origin');
+                    }}
+                    className="w-full flex items-center justify-between gap-3 p-3 bg-white border border-border rounded-lg text-left transition-all duration-200 hover:bg-muted/30 hover:border-amber-500/30 overflow-hidden"
+                  >
+                    <span className="text-sm font-medium text-foreground truncate flex-1 min-w-0">{campaign.name}</span>
+                    <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
+                  </button>
+                ))
+              )}
+            </div>
+          </div>
+        );
+
+      case 'cpl_select_sub_origin':
+        return (
+          <div className="space-y-4 py-4">
+            <div className="flex items-center gap-2 p-3 rounded-lg bg-amber-500/10 min-w-0">
+              <DollarSign className="h-4 w-4 text-amber-600" />
+              <span className="text-sm font-medium truncate">
+                {selectedFbCampaign?.name}
+              </span>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              3. Selecione a sub-origem para contar os <strong>leads pagos</strong> (utm_source=facebook_ads ou utm_medium=cpc)
+            </p>
+            
+            <div className="space-y-2 max-h-[300px] overflow-y-auto pr-1">
+              {origins.map((origin) => {
+                const subs = getSubOriginsForOrigin(origin.id);
+                if (subs.length === 0) return null;
+                return (
+                  <div key={origin.id} className="space-y-1">
+                    <p className="text-xs font-medium text-muted-foreground px-1">{origin.nome}</p>
+                    {subs.map((sub) => (
+                      <button
+                        key={sub.id}
+                        onClick={() => {
+                          onConnect({
+                            type: 'cost_per_lead',
+                            sourceId: selectedFbConnectionId,
+                            sourceName: `CPL - ${selectedFbCampaign?.name}`,
+                            fbConnectionId: selectedFbConnectionId,
+                            fbCampaignId: selectedFbCampaign?.id,
+                            fbCampaignName: selectedFbCampaign?.name,
+                            subOriginIdForLeads: sub.id,
+                            subOriginNameForLeads: sub.nome,
+                          });
+                          onOpenChange(false);
+                        }}
+                        className="w-full flex items-center gap-3 p-3 bg-white border border-border rounded-lg text-left transition-all duration-200 hover:bg-muted/30 hover:border-amber-500/30"
+                      >
+                        <div className="w-9 h-9 rounded-lg bg-muted flex items-center justify-center">
+                          <FolderOpen className="h-4 w-4 text-muted-foreground" />
+                        </div>
+                        <span className="flex-1 text-sm font-medium text-foreground">{sub.nome}</span>
+                      </button>
+                    ))}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        );
     }
   };
 
@@ -965,6 +1145,10 @@ export function ConnectSourceDialog({
         return 'Selecione uma sub-origem';
       case 'facebook_form':
         return 'Conectar Facebook Ads';
+      case 'facebook_campaigns':
+        return 'Selecione a campanha';
+      case 'facebook_metrics':
+        return 'Selecione a métrica';
       case 'tracking':
         return 'Rastreamento de Grupos';
       case 'tracking_origins':
@@ -983,6 +1167,14 @@ export function ConnectSourceDialog({
         return 'Selecione a sub-origem';
       case 'custom_fields_select':
         return 'Selecione o campo';
+      case 'cpl_fb_connection':
+        return 'Custo por Lead';
+      case 'cpl_fb_campaign':
+        return 'Selecione a campanha';
+      case 'cpl_select_sub_origin':
+        return 'Origem dos Leads Pagos';
+      default:
+        return 'Conectar fonte';
     }
   };
 
