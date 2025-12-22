@@ -21,6 +21,9 @@ import {
   useSensors,
   closestCenter,
   DragOverlay,
+  rectIntersection,
+  MouseSensor,
+  TouchSensor,
 } from "@dnd-kit/core";
 import {
   SortableContext,
@@ -108,15 +111,16 @@ function SortableWidget({ widget, onResize, onDelete, onConnect, onRename, conta
 
   const style: React.CSSProperties = {
     transform: CSS.Transform.toString(transform),
-    transition,
+    transition: isDragging ? 'none' : transition,
     zIndex: isDragging ? 50 : 1,
-    opacity: isDragging ? 0.4 : 1,
+    opacity: isDragging ? 0.5 : 1,
     flexBasis: widgetWidth,
     flexGrow: 0,
     flexShrink: 0,
     width: widgetWidth,
     minWidth: minWidth,
     height: widgetHeight,
+    cursor: isDragging ? 'grabbing' : undefined,
   };
 
   const handleResize = (deltaX: number, deltaY: number, direction: string) => {
@@ -146,7 +150,12 @@ function SortableWidget({ widget, onResize, onDelete, onConnect, onRename, conta
         if (node) (widgetRef as React.MutableRefObject<HTMLDivElement | null>).current = node;
       }} 
       style={style}
-      className={`group/widget relative bg-white border border-border rounded-xl shadow-sm ${isDragging ? 'shadow-lg ring-2 ring-primary/20' : 'hover:shadow-md'}`}
+      className={cn(
+        "group/widget relative bg-white border rounded-xl transition-all duration-200",
+        isDragging 
+          ? "border-primary/50 shadow-2xl ring-2 ring-primary/30 scale-[1.02] z-50" 
+          : "border-border shadow-sm hover:shadow-md hover:border-border/80"
+      )}
     >
       <div className="relative h-full p-3 pt-2 flex flex-col">
         {/* Header Row - Drag handle + Title aligned */}
@@ -1193,16 +1202,34 @@ export function DashboardCanvas({ painelName, dashboardId, onBack }: DashboardCa
     });
   }, [containerWidth]);
 
+  const [activeId, setActiveId] = useState<string | null>(null);
+  
   const sensors = useSensors(
+    useSensor(MouseSensor, {
+      activationConstraint: {
+        distance: 5,
+      },
+    }),
+    useSensor(TouchSensor, {
+      activationConstraint: {
+        delay: 150,
+        tolerance: 5,
+      },
+    }),
     useSensor(PointerSensor, {
       activationConstraint: {
-        distance: 8,
+        distance: 5,
       },
     })
   );
 
+  const handleDragStart = (event: DragStartEvent) => {
+    setActiveId(event.active.id as string);
+  };
+
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
+    setActiveId(null);
     
     if (over && active.id !== over.id) {
       setWidgets(prev => {
@@ -1212,6 +1239,8 @@ export function DashboardCanvas({ painelName, dashboardId, onBack }: DashboardCa
       });
     }
   };
+
+  const activeWidget = activeId ? widgets.find(w => w.id === activeId) : null;
 
   return (
     <div className="h-full flex flex-col">
@@ -1337,11 +1366,12 @@ export function DashboardCanvas({ painelName, dashboardId, onBack }: DashboardCa
           /* Dashboard with Draggable Widgets */
           <DndContext
             sensors={sensors}
-            collisionDetection={closestCenter}
+            collisionDetection={rectIntersection}
+            onDragStart={handleDragStart}
             onDragEnd={handleDragEnd}
           >
             <SortableContext items={widgets.map(w => w.id)} strategy={rectSortingStrategy}>
-              <div ref={containerRef} className="flex flex-wrap gap-3 p-1 content-start">
+              <div ref={containerRef} className="flex flex-wrap gap-3 p-1 content-start min-h-[200px]">
                 {widgets.map((widget) => (
                   <SortableWidget
                     key={widget.id}
@@ -1355,6 +1385,34 @@ export function DashboardCanvas({ painelName, dashboardId, onBack }: DashboardCa
                 ))}
               </div>
             </SortableContext>
+            
+            {/* Drag Overlay - shows a preview of the dragged widget */}
+            <DragOverlay adjustScale={false} dropAnimation={{
+              duration: 200,
+              easing: 'cubic-bezier(0.18, 0.67, 0.6, 1.22)',
+            }}>
+              {activeWidget && (
+                <div 
+                  className="bg-white border-2 border-primary rounded-xl shadow-2xl opacity-90"
+                  style={{
+                    width: activeWidget.width || 340,
+                    height: activeWidget.height || 280,
+                  }}
+                >
+                  <div className="p-3 pt-2 h-full flex flex-col">
+                    <div className="flex items-center gap-2 mb-2">
+                      <GripVertical className="h-4 w-4 text-primary" />
+                      <h3 className="text-sm font-medium text-foreground truncate">
+                        {activeWidget.customName || activeWidget.source?.sourceName || activeWidget.chartType.name}
+                      </h3>
+                    </div>
+                    <div className="flex-1 flex items-center justify-center text-muted-foreground text-sm">
+                      Solte para reposicionar
+                    </div>
+                  </div>
+                </div>
+              )}
+            </DragOverlay>
           </DndContext>
         )}
       </div>
