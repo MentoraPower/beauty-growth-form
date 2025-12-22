@@ -236,7 +236,7 @@ export type Database = {
           name: string
           sub_origin_id: string | null
           subject: string
-          trigger_pipeline_id: string
+          trigger_pipeline_id: string | null
         }
         Insert: {
           body_html: string
@@ -247,7 +247,7 @@ export type Database = {
           name: string
           sub_origin_id?: string | null
           subject: string
-          trigger_pipeline_id: string
+          trigger_pipeline_id?: string | null
         }
         Update: {
           body_html?: string
@@ -258,7 +258,7 @@ export type Database = {
           name?: string
           sub_origin_id?: string | null
           subject?: string
-          trigger_pipeline_id?: string
+          trigger_pipeline_id?: string | null
         }
         Relationships: [
           {
