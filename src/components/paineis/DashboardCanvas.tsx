@@ -621,8 +621,17 @@ export function DashboardCanvas({ painelName, dashboardId, onBack }: DashboardCa
       
       for (const widget of connectedWidgets) {
         const data = await fetchWidgetData(widget);
+        
+        // Auto-adjust height for bar_horizontal based on item count
+        let newHeight = widget.height;
+        if (widget.chartType.id === 'bar_horizontal' && data?.distribution) {
+          const itemCount = data.distribution.length;
+          // 40px per item + 24px padding, min 100px
+          newHeight = Math.max(100, itemCount * 40 + 24);
+        }
+        
         setWidgets(prev => prev.map(w => 
-          w.id === widget.id ? { ...w, data: data || undefined, isLoading: false } : w
+          w.id === widget.id ? { ...w, data: data || undefined, isLoading: false, height: newHeight } : w
         ));
       }
     };
