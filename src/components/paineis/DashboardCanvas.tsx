@@ -1369,6 +1369,35 @@ export function DashboardCanvas({ painelName, dashboardId, onBack }: DashboardCa
     };
   }, [isInitialLoad, dashboardId, refreshAllWidgets]);
 
+  // Real-time polling for Facebook Ads widgets (every 30 seconds)
+  useEffect(() => {
+    if (isInitialLoad || !dashboardId) return;
+
+    const hasFacebookAdsWidgets = widgetsRef.current.some(
+      w => w.isConnected && w.source?.type === 'facebook_ads'
+    );
+
+    if (!hasFacebookAdsWidgets) return;
+
+    console.log('[Paineis] Starting Facebook Ads real-time polling (30s interval)');
+
+    const intervalId = setInterval(() => {
+      const fbWidgets = widgetsRef.current.filter(
+        w => w.isConnected && w.source?.type === 'facebook_ads'
+      );
+      
+      if (fbWidgets.length > 0) {
+        console.log('[Paineis] Refreshing Facebook Ads widgets...');
+        refreshAllWidgets();
+      }
+    }, 30000); // 30 seconds
+
+    return () => {
+      console.log('[Paineis] Stopping Facebook Ads polling');
+      clearInterval(intervalId);
+    };
+  }, [isInitialLoad, dashboardId, refreshAllWidgets, widgets]);
+
   const handleSelectChart = (chart: ChartType) => {
     setSelectedChart(chart);
     setIsChartSelectorOpen(false);
