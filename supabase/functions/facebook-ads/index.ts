@@ -13,9 +13,18 @@ serve(async (req) => {
   }
 
   try {
-    const body = await req.json();
-    const { action, accessToken, adAccountId, campaignIds, connectionId, redirectUri, code } = body;
-    
+    const body = await req.json().catch(() => ({} as any));
+
+    const rawAction = (body as any)?.action;
+    const action = typeof rawAction === 'string' ? rawAction.trim() : rawAction;
+
+    const { accessToken, adAccountId, campaignIds, connectionId, redirectUri, code } = body as any;
+
+    console.log('facebook-ads request', {
+      action,
+      rawAction,
+      method: req.method,
+    });
     const FACEBOOK_APP_ID = Deno.env.get('FACEBOOK_APP_ID');
     const FACEBOOK_APP_SECRET = Deno.env.get('FACEBOOK_APP_SECRET');
     const FACEBOOK_ACCESS_TOKEN = Deno.env.get('FACEBOOK_ACCESS_TOKEN');
@@ -498,7 +507,22 @@ serve(async (req) => {
     }
 
     return new Response(
-      JSON.stringify({ error: 'Invalid action' }),
+      JSON.stringify({
+        error: 'Invalid action',
+        receivedAction: action,
+        availableActions: [
+          'extend-token',
+          'get-stored-token',
+          'get-oauth-url',
+          'exchange-token',
+          'get-ad-accounts',
+          'get-campaigns',
+          'get-insights',
+          'get-insights-daterange',
+          'cache-insights',
+          'refresh-all',
+        ],
+      }),
       { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 
