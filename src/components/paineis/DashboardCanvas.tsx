@@ -102,9 +102,6 @@ function SortableWidget({ widget, onResize, onDelete, onConnect, onRename, conta
   const hasValidPercent = widget.widthPercent !== undefined && widget.widthPercent > 0;
   const hasValidContainer = containerWidth > 0;
   
-  // Check if widget should be full width (100%)
-  const isFullWidth = hasValidPercent && widget.widthPercent! >= 98;
-  
   const calculatedWidth = hasValidPercent && hasValidContainer
     ? (widget.widthPercent! / 100) * containerWidth
     : (typeof widget.width === "number" ? widget.width : 340);
@@ -112,6 +109,10 @@ function SortableWidget({ widget, onResize, onDelete, onConnect, onRename, conta
   const widgetWidth = Math.max(260, Math.min(calculatedWidth, containerWidth || 2000));
   const widgetHeight = widget.height || 280;
   const minWidth = 260;
+  
+  // ALL widgets with a saved percentage should grow proportionally
+  // This ensures that if widget A is 30%, B is 50%, C is 20% - they maintain ratio on any screen size
+  const shouldGrow = hasValidPercent;
 
   // While sorting/dragging, lock flex sizing so other widgets don't "achatar" (shrink) and redraw constantly
   const lockDuringSort = !isMobile && isSorting;
@@ -130,26 +131,28 @@ function SortableWidget({ widget, onResize, onDelete, onConnect, onRename, conta
     return () => observer.disconnect();
   }, []);
 
-  // For full-width widgets, force 100% width; otherwise use calculated width
-  const responsiveWidth = isMobile ? '100%' : (isFullWidth ? containerWidth : widgetWidth);
+  const responsiveWidth = isMobile ? '100%' : widgetWidth;
   const responsiveMinWidth = isMobile ? '100%' : minWidth;
+  // Ensure widget never exceeds container on any screen
+  const maxWidthValue = containerWidth > 0 ? containerWidth : '100%';
 
   const style: React.CSSProperties = {
     transform: CSS.Transform.toString(transform),
     // Disable transition during resize/sort for immediate feedback and to avoid flex reflow glitches
-    transition: isDragging || isResizing || lockDuringSort ? 'none' : 'width 0.3s ease-out, height 0.2s ease-out',
+    transition: isDragging || isResizing || lockDuringSort ? 'none' : 'width 0.3s ease-out, flex-basis 0.3s ease-out, height 0.2s ease-out',
     zIndex: isDragging ? 50 : 1,
     opacity: isDragging ? 0.5 : 1,
-    // For full-width, use fixed 100%; otherwise use percentage-based flex
-    width: isMobile ? '100%' : (isFullWidth ? '100%' : widgetWidth),
+    flexBasis: responsiveWidth,
+    // Use flex-grow proportionally based on widthPercent so all widgets scale together
+    // Example: 30%, 50%, 20% -> flexGrow: 30, 50, 20 -> they maintain ratio
+    flexGrow: isMobile ? 1 : (lockDuringSort ? 0 : (shouldGrow ? widget.widthPercent! : 0)),
+    // Prevent siblings from shrinking weirdly while sorting
+    flexShrink: isMobile ? 1 : (lockDuringSort ? 0 : 1),
+    width: responsiveWidth,
     minWidth: responsiveMinWidth,
-    maxWidth: hasValidContainer ? containerWidth : '100%',
+    maxWidth: maxWidthValue, // Prevent overflow
     height: widgetHeight,
     cursor: isDragging ? 'grabbing' : undefined,
-    // Full-width widgets should not flex-grow/shrink - they take the whole row
-    flexGrow: isMobile ? 1 : (isFullWidth ? 0 : (lockDuringSort ? 0 : 0)),
-    flexShrink: isMobile ? 1 : (lockDuringSort ? 0 : 0),
-    flexBasis: isMobile ? '100%' : (isFullWidth ? '100%' : 'auto'),
   };
 
   const handleResizeStart = () => {
@@ -196,15 +199,14 @@ function SortableWidget({ widget, onResize, onDelete, onConnect, onRename, conta
     >
       <div className="relative h-full p-3 pt-2 flex flex-col">
         {/* Header Row - Drag handle + Title aligned */}
-        <div className="flex items-center gap-1 mb-2 shrink-0">
-          {/* Drag Handle - always visible for better usability */}
+        <div className="flex items-center gap-0 mb-2 shrink-0">
+          {/* Drag Handle - only visible on hover, expands width */}
           <div
             {...attributes}
             {...listeners}
-            className="shrink-0 rounded-lg cursor-grab active:cursor-grabbing hover:bg-muted z-20 w-6 h-6 flex items-center justify-center transition-colors"
-            title="Arraste para reordenar"
+            className="shrink-0 rounded-lg cursor-grab active:cursor-grabbing hover:bg-muted z-20 opacity-0 group-hover/widget:opacity-100 w-0 group-hover/widget:w-7 h-7 flex items-center justify-center overflow-hidden transition-all duration-300 ease-out"
           >
-            <GripVertical className="h-4 w-4 text-muted-foreground/50 group-hover/widget:text-muted-foreground shrink-0 transition-colors" />
+            <GripVertical className="h-4 w-4 text-muted-foreground shrink-0" />
           </div>
           
           {/* Title - Inline Editable */}
@@ -355,8 +357,8 @@ function ResizeHandle({ direction, widgetWidth, widgetHeight, containerWidth, mi
       let newHeight = startSize.current.height;
 
       if (direction.includes('e')) {
-        // Allow resizing up to full container width
-        const maxWidth = containerWidth > 0 ? containerWidth : 3000;
+        // Limit to container width minus gap (16px)
+        const maxWidth = containerWidth > 0 ? containerWidth - 16 : 2000;
         newWidth = Math.min(maxWidth, Math.max(minWidth, startSize.current.width + deltaX));
       }
       if (direction.includes('s')) {
@@ -379,10 +381,10 @@ function ResizeHandle({ direction, widgetWidth, widgetHeight, containerWidth, mi
   if (direction === 'e') {
     return (
       <div
-        className="absolute top-2 bottom-2 right-0 w-4 cursor-e-resize group z-20 flex items-center justify-end"
+        className="absolute top-2 bottom-2 right-0 w-3 cursor-e-resize group z-20"
         onMouseDown={handleMouseDown}
       >
-        <div className="w-1.5 h-12 rounded-full bg-muted-foreground/20 group-hover:bg-muted-foreground/50 transition-colors mr-0.5" />
+        <div className="absolute top-1/2 right-0.5 -translate-y-1/2 w-1 h-10 rounded-full bg-muted-foreground/30 opacity-0 group-hover:opacity-100 transition-opacity" />
       </div>
     );
   }
@@ -390,21 +392,21 @@ function ResizeHandle({ direction, widgetWidth, widgetHeight, containerWidth, mi
   if (direction === 's') {
     return (
       <div
-        className="absolute left-2 right-2 bottom-0 h-4 cursor-s-resize group z-20 flex items-end justify-center"
+        className="absolute left-2 right-2 bottom-0 h-3 cursor-s-resize group z-20"
         onMouseDown={handleMouseDown}
       >
-        <div className="h-1.5 w-12 rounded-full bg-muted-foreground/20 group-hover:bg-muted-foreground/50 transition-colors mb-0.5" />
+        <div className="absolute bottom-0.5 left-1/2 -translate-x-1/2 h-1 w-10 rounded-full bg-muted-foreground/30 opacity-0 group-hover:opacity-100 transition-opacity" />
       </div>
     );
   }
 
   return (
     <div
-      className="absolute bottom-0 right-0 w-6 h-6 cursor-se-resize group z-30 flex items-end justify-end"
+      className="absolute bottom-0 right-0 w-5 h-5 cursor-se-resize group z-30"
       onMouseDown={handleMouseDown}
     >
       <svg 
-        className="w-4 h-4 text-muted-foreground/30 group-hover:text-muted-foreground/60 transition-colors mr-0.5 mb-0.5"
+        className="absolute bottom-1 right-1 w-3 h-3 text-muted-foreground/50 opacity-0 group-hover:opacity-100 transition-opacity"
         viewBox="0 0 10 10"
       >
         <path d="M9 1L1 9M9 5L5 9M9 9L9 9" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
@@ -1156,17 +1158,6 @@ export function DashboardCanvas({ painelName, dashboardId, onBack }: DashboardCa
 
       for (let i = 0; i < list.length; i++) {
         const w = getEffectiveWidth(list[i]);
-        // Full-width widgets (>=98%) always get their own row
-        if (list[i].widthPercent && list[i].widthPercent! >= 98) {
-          if (row.length > 0) {
-            rows.push(row);
-          }
-          rows.push([i]);
-          row = [];
-          used = 0;
-          continue;
-        }
-        
         const needed = row.length > 0 ? w + gap : w;
 
         if (row.length > 0 && used + needed > cw) {
@@ -1189,6 +1180,11 @@ export function DashboardCanvas({ painelName, dashboardId, onBack }: DashboardCa
 
       const next = prev.map(w => ({ ...w }));
 
+      // Determine current row (before applying the new width)
+      const rows = computeRows(next);
+      const rowIndices = rows.find(r => r.includes(idx)) ?? [idx];
+      const siblings = rowIndices.filter(i => i !== idx);
+
       // Apply requested size
       const clampedWidth = clampWidth(nextWidth);
       next[idx].width = clampedWidth;
@@ -1196,20 +1192,11 @@ export function DashboardCanvas({ painelName, dashboardId, onBack }: DashboardCa
       
       // Calculate and save the percentage
       const widthPercent = (clampedWidth / cw) * 100;
-      // Snap to 100% if >= 95% (easier to hit full width)
-      next[idx].widthPercent = widthPercent >= 95 ? 100 : widthPercent;
-
-      // If widget is now full width (100%), it takes its own row - no need to adjust siblings
-      if (next[idx].widthPercent >= 98) {
-        return next;
-      }
-
-      // Determine current row (after applying the new width)
-      const rows = computeRows(next);
-      const rowIndices = rows.find(r => r.includes(idx)) ?? [idx];
-      const siblings = rowIndices.filter(i => i !== idx);
+      // Snap to 100% if very close (>= 98%)
+      next[idx].widthPercent = widthPercent >= 98 ? 100 : widthPercent;
 
       if (siblings.length === 0) {
+        // Also update siblings percentages for consistency
         return next;
       }
 
@@ -1221,7 +1208,7 @@ export function DashboardCanvas({ painelName, dashboardId, onBack }: DashboardCa
         rowIndices.forEach(i => {
           const w = next[i].width ?? DEFAULT_WIDTH;
           const pct = (w / cw) * 100;
-          next[i].widthPercent = pct >= 95 ? 100 : pct;
+          next[i].widthPercent = pct >= 98 ? 100 : pct;
         });
         return next;
       }
@@ -1247,7 +1234,7 @@ export function DashboardCanvas({ painelName, dashboardId, onBack }: DashboardCa
       rowIndices.forEach(i => {
         const w = next[i].width ?? DEFAULT_WIDTH;
         const pct = (w / cw) * 100;
-        next[i].widthPercent = pct >= 95 ? 100 : pct;
+        next[i].widthPercent = pct >= 98 ? 100 : pct;
       });
 
       // If still overflowing, it means siblings are already at DEFAULT_WIDTH;
