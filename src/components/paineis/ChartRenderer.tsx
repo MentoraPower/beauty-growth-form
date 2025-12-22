@@ -518,7 +518,6 @@ export function ChartRenderer({ chartType, data, width, height, isLoading }: Cha
             </span>
             <span className="text-xs text-muted-foreground font-medium">vs. período anterior</span>
           </div>
-          <p className="text-sm text-muted-foreground mt-3 font-medium relative z-10">{data?.label || "Leads"}</p>
         </div>
       );
 
