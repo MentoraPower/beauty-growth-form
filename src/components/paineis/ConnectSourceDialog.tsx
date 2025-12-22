@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Folder, FolderOpen, Facebook, ChevronRight, ArrowLeft } from "lucide-react";
+import { Folder, FolderOpen, Facebook, ChevronRight, ArrowLeft, Users, UserPlus, UserMinus } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { ChartType } from "./ChartSelectorDialog";
 
@@ -18,7 +18,7 @@ interface Origin {
 }
 
 export interface WidgetSource {
-  type: 'origin' | 'sub_origin' | 'facebook_ads';
+  type: 'origin' | 'sub_origin' | 'facebook_ads' | 'tracking_grupo_entrada' | 'tracking_grupo_saida';
   sourceId?: string;
   sourceName?: string;
   credentials?: {
@@ -35,7 +35,7 @@ interface ConnectSourceDialogProps {
   onConnect: (source: WidgetSource) => void;
 }
 
-type Step = 'sources' | 'origins' | 'sub_origins' | 'facebook_form';
+type Step = 'sources' | 'origins' | 'sub_origins' | 'facebook_form' | 'tracking';
 
 export function ConnectSourceDialog({ 
   open, 
@@ -81,7 +81,7 @@ export function ConnectSourceDialog({
   };
 
   const handleBack = () => {
-    if (step === 'origins' || step === 'facebook_form') {
+    if (step === 'origins' || step === 'facebook_form' || step === 'tracking') {
       setStep('sources');
     } else if (step === 'sub_origins') {
       setStep('origins');
@@ -129,6 +129,15 @@ export function ConnectSourceDialog({
     }
   };
 
+  const handleSelectTracking = (trackingType: 'grupo_entrada' | 'grupo_saida') => {
+    const sourceName = trackingType === 'grupo_entrada' ? 'Entradas em Grupo' : 'Saídas de Grupo';
+    onConnect({
+      type: trackingType === 'grupo_entrada' ? 'tracking_grupo_entrada' : 'tracking_grupo_saida',
+      sourceName,
+    });
+    onOpenChange(false);
+  };
+
   const renderContent = () => {
     switch (step) {
       case 'sources':
@@ -145,6 +154,21 @@ export function ConnectSourceDialog({
               <div className="flex-1">
                 <h3 className="text-sm font-medium text-foreground">Origens do CRM</h3>
                 <p className="text-xs text-muted-foreground">Conecte leads e agendamentos das suas origens</p>
+              </div>
+              <ChevronRight className="h-5 w-5 text-muted-foreground" />
+            </button>
+
+            {/* Tracking option */}
+            <button
+              onClick={() => setStep('tracking')}
+              className="w-full flex items-center gap-4 p-4 bg-white border border-border rounded-xl text-left transition-all duration-200 hover:shadow-md hover:border-foreground/20"
+            >
+              <div className="w-12 h-12 rounded-xl bg-emerald-500/10 flex items-center justify-center">
+                <Users className="h-6 w-6 text-emerald-600" />
+              </div>
+              <div className="flex-1">
+                <h3 className="text-sm font-medium text-foreground">Rastreamento de Grupos</h3>
+                <p className="text-xs text-muted-foreground">Entradas e saídas de leads em grupos</p>
               </div>
               <ChevronRight className="h-5 w-5 text-muted-foreground" />
             </button>
@@ -280,6 +304,43 @@ export function ConnectSourceDialog({
             </p>
           </div>
         );
+
+      case 'tracking':
+        return (
+          <div className="space-y-3 py-4">
+            <p className="text-xs text-muted-foreground mb-3">
+              Selecione o tipo de rastreamento
+            </p>
+            
+            {/* Entradas em Grupo */}
+            <button
+              onClick={() => handleSelectTracking('grupo_entrada')}
+              className="w-full flex items-center gap-3 p-4 bg-white border border-border rounded-lg text-left transition-all duration-200 hover:bg-muted/30 hover:border-emerald-500/30"
+            >
+              <div className="w-10 h-10 rounded-lg bg-emerald-500/10 flex items-center justify-center">
+                <UserPlus className="h-5 w-5 text-emerald-600" />
+              </div>
+              <div className="flex-1">
+                <span className="text-sm font-medium text-foreground">Entradas em Grupo</span>
+                <p className="text-xs text-muted-foreground">Quantidade de leads que entraram em grupos</p>
+              </div>
+            </button>
+
+            {/* Saídas de Grupo */}
+            <button
+              onClick={() => handleSelectTracking('grupo_saida')}
+              className="w-full flex items-center gap-3 p-4 bg-white border border-border rounded-lg text-left transition-all duration-200 hover:bg-muted/30 hover:border-red-500/30"
+            >
+              <div className="w-10 h-10 rounded-lg bg-red-500/10 flex items-center justify-center">
+                <UserMinus className="h-5 w-5 text-red-600" />
+              </div>
+              <div className="flex-1">
+                <span className="text-sm font-medium text-foreground">Saídas de Grupo</span>
+                <p className="text-xs text-muted-foreground">Quantidade de leads que saíram de grupos</p>
+              </div>
+            </button>
+          </div>
+        );
     }
   };
 
@@ -293,6 +354,8 @@ export function ConnectSourceDialog({
         return 'Selecione uma sub-origem';
       case 'facebook_form':
         return 'Conectar Facebook Ads';
+      case 'tracking':
+        return 'Rastreamento de Grupos';
     }
   };
 

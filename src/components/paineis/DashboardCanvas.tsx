@@ -482,9 +482,78 @@ export function DashboardCanvas({ painelName, dashboardId, onBack }: DashboardCa
   }, [widgets, dashboardId, isInitialLoad]);
 
   const fetchWidgetData = useCallback(async (widget: DashboardWidget): Promise<WidgetData | null> => {
-    if (!widget.source || !widget.source.sourceId) return null;
+    if (!widget.source) return null;
 
     try {
+      // Handle tracking types (don't require sourceId)
+      if (widget.source.type === 'tracking_grupo_entrada' || widget.source.type === 'tracking_grupo_saida') {
+        const trackingType = widget.source.type === 'tracking_grupo_entrada' ? 'grupo_entrada' : 'grupo_saida';
+        const label = widget.source.type === 'tracking_grupo_entrada' ? 'Entradas' : 'Saídas';
+        
+        // Fetch all tracking events of this type with pagination
+        let allEvents: { id: string; created_at: string; lead_id: string }[] = [];
+        let from = 0;
+        const pageSize = 1000;
+        let hasMore = true;
+
+        while (hasMore) {
+          const { data: events, error } = await supabase
+            .from("lead_tracking")
+            .select("id, created_at, lead_id")
+            .eq("tipo", trackingType)
+            .range(from, from + pageSize - 1);
+
+          if (error) {
+            console.error("Error fetching tracking events:", error);
+            return { total: 0, label };
+          }
+
+          if (events && events.length > 0) {
+            allEvents = [...allEvents, ...events];
+            from += pageSize;
+            hasMore = events.length === pageSize;
+          } else {
+            hasMore = false;
+          }
+        }
+
+        const total = allEvents.length;
+
+        // Calculate trend by day (last 7 days)
+        const trend: ChartDataPoint[] = [];
+        const days = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
+        const today = new Date();
+        
+        for (let i = 6; i >= 0; i--) {
+          const date = new Date(today);
+          date.setDate(date.getDate() - i);
+          const dayStart = new Date(date.setHours(0, 0, 0, 0));
+          const dayEnd = new Date(date.setHours(23, 59, 59, 999));
+          
+          const count = allEvents.filter(e => {
+            const createdAt = new Date(e.created_at);
+            return createdAt >= dayStart && createdAt <= dayEnd;
+          }).length;
+
+          trend.push({
+            name: days[dayStart.getDay()],
+            value: count,
+          });
+        }
+
+        // Distribution: just show total for now
+        const distribution: ChartDataPoint[] = [{
+          name: label,
+          value: total,
+          color: widget.source.type === 'tracking_grupo_entrada' ? '#10b981' : '#ef4444',
+        }];
+
+        return { total, label, distribution, trend };
+      }
+
+      // For origin/sub_origin types, require sourceId
+      if (!widget.source.sourceId) return null;
+
       let subOriginIds: string[] = [];
 
       if (widget.source.type === 'sub_origin') {
