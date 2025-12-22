@@ -1190,6 +1190,86 @@ export function DashboardCanvas({ painelName, dashboardId, onBack }: DashboardCa
     refreshAllWidgets();
   }, [startDate, endDate, isInitialLoad]);
 
+  // Real-time subscriptions for automatic data refresh
+  useEffect(() => {
+    if (isInitialLoad || !dashboardId) return;
+
+    const connectedWidgets = widgetsRef.current.filter(w => w.isConnected && w.source);
+    if (connectedWidgets.length === 0) return;
+
+    // Collect unique sub_origin_ids from all widgets
+    const subOriginIds = new Set<string>();
+    connectedWidgets.forEach(w => {
+      if (w.source?.sourceId) {
+        subOriginIds.add(w.source.sourceId);
+      }
+    });
+
+    // Subscribe to leads table changes
+    const leadsChannel = supabase
+      .channel(`paineis-leads-${dashboardId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'leads',
+        },
+        (payload) => {
+          console.log('[Paineis] Lead change detected:', payload.eventType);
+          // Check if lead belongs to any monitored sub_origin
+          const newData = payload.new as { sub_origin_id?: string } | null;
+          const oldData = payload.old as { sub_origin_id?: string } | null;
+          const subOriginId = newData?.sub_origin_id || oldData?.sub_origin_id;
+          
+          if (subOriginId && subOriginIds.has(subOriginId)) {
+            refreshAllWidgets();
+          }
+        }
+      )
+      .subscribe();
+
+    // Subscribe to lead_tracking table changes
+    const trackingChannel = supabase
+      .channel(`paineis-tracking-${dashboardId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'lead_tracking',
+        },
+        (payload) => {
+          console.log('[Paineis] Tracking change detected:', payload.eventType);
+          refreshAllWidgets();
+        }
+      )
+      .subscribe();
+
+    // Subscribe to lead_custom_field_responses table changes
+    const customFieldsChannel = supabase
+      .channel(`paineis-custom-fields-${dashboardId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'lead_custom_field_responses',
+        },
+        (payload) => {
+          console.log('[Paineis] Custom field response change detected:', payload.eventType);
+          refreshAllWidgets();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(leadsChannel);
+      supabase.removeChannel(trackingChannel);
+      supabase.removeChannel(customFieldsChannel);
+    };
+  }, [isInitialLoad, dashboardId, refreshAllWidgets]);
+
   const handleSelectChart = (chart: ChartType) => {
     setSelectedChart(chart);
     setIsChartSelectorOpen(false);
