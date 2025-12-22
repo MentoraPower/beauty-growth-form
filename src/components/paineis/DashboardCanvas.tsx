@@ -11,6 +11,7 @@ import { ChartSelectorDialog, ChartType } from "./ChartSelectorDialog";
 import { ConnectSourceDialog, WidgetSource } from "./ConnectSourceDialog";
 import { ChartRenderer } from "./ChartRenderer";
 import { supabase } from "@/integrations/supabase/client";
+import { useIsMobile } from "@/hooks/use-mobile";
 import {
   DndContext,
   DragEndEvent,
@@ -73,9 +74,10 @@ interface SortableWidgetProps {
   onConnect: (id: string) => void;
   onRename: (id: string, name: string) => void;
   containerWidth: number;
+  isMobile: boolean;
 }
 
-function SortableWidget({ widget, onResize, onDelete, onConnect, onRename, containerWidth }: SortableWidgetProps) {
+function SortableWidget({ widget, onResize, onDelete, onConnect, onRename, containerWidth, isMobile }: SortableWidgetProps) {
   const widgetRef = useRef<HTMLDivElement>(null);
   const [actualWidth, setActualWidth] = useState(widget.width || 340);
   const [isEditing, setIsEditing] = useState(false);
@@ -109,16 +111,19 @@ function SortableWidget({ widget, onResize, onDelete, onConnect, onRename, conta
     return () => observer.disconnect();
   }, []);
 
+  const responsiveWidth = isMobile ? '100%' : widgetWidth;
+  const responsiveMinWidth = isMobile ? '100%' : minWidth;
+
   const style: React.CSSProperties = {
     transform: CSS.Transform.toString(transform),
     transition: isDragging ? 'none' : transition,
     zIndex: isDragging ? 50 : 1,
     opacity: isDragging ? 0.5 : 1,
-    flexBasis: widgetWidth,
-    flexGrow: 0,
-    flexShrink: 0,
-    width: widgetWidth,
-    minWidth: minWidth,
+    flexBasis: responsiveWidth,
+    flexGrow: isMobile ? 1 : 0,
+    flexShrink: isMobile ? 1 : 0,
+    width: responsiveWidth,
+    minWidth: responsiveMinWidth,
     height: widgetHeight,
     cursor: isDragging ? 'grabbing' : undefined,
   };
@@ -389,6 +394,7 @@ function ResizeHandle({ direction, widgetWidth, widgetHeight, containerWidth, mi
 type DatePreset = 'today' | 'yesterday' | '7days' | '30days' | 'custom';
 
 export function DashboardCanvas({ painelName, dashboardId, onBack }: DashboardCanvasProps) {
+  const isMobile = useIsMobile();
   const [widgets, setWidgets] = useState<DashboardWidget[]>([]);
   const [isChartSelectorOpen, setIsChartSelectorOpen] = useState(false);
   const [isConnectSourceOpen, setIsConnectSourceOpen] = useState(false);
@@ -1371,7 +1377,12 @@ export function DashboardCanvas({ painelName, dashboardId, onBack }: DashboardCa
             onDragEnd={handleDragEnd}
           >
             <SortableContext items={widgets.map(w => w.id)} strategy={horizontalListSortingStrategy}>
-              <div ref={containerRef} className="flex flex-nowrap gap-3 p-1 overflow-x-auto min-h-[200px] scrollbar-thin scrollbar-thumb-border scrollbar-track-transparent">
+              <div ref={containerRef} className={cn(
+                "flex gap-3 p-1 min-h-[200px]",
+                isMobile 
+                  ? "flex-col" 
+                  : "flex-nowrap overflow-x-auto scrollbar-thin scrollbar-thumb-border scrollbar-track-transparent"
+              )}>
                 {widgets.map((widget) => (
                   <SortableWidget
                     key={widget.id}
@@ -1381,6 +1392,7 @@ export function DashboardCanvas({ painelName, dashboardId, onBack }: DashboardCa
                     onConnect={handleConnectWidget}
                     onRename={handleRenameWidget}
                     containerWidth={containerWidth}
+                    isMobile={isMobile}
                   />
                 ))}
               </div>
