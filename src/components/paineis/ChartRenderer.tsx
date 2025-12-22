@@ -249,16 +249,17 @@ export function ChartRenderer({ chartType, data, width, height, isLoading }: Cha
         );
       }
 
-      const availableHeight = height - 32;
-      const itemHeight = 32;
-      const maxItemsToShow = Math.max(3, Math.floor(availableHeight / itemHeight));
+      // Use less overhead for height calculation - just padding
+      const availableHeight = height - 16;
+      const itemHeight = 34; // height per bar item (including gap)
+      const maxItemsToShow = Math.max(2, Math.floor(availableHeight / itemHeight));
       const sortedData = [...distribution].sort((a, b) => b.value - a.value).slice(0, maxItemsToShow);
       const maxValue = Math.max(...sortedData.map(d => d.value), 1);
       const totalResponses = distribution.reduce((sum, d) => sum + d.value, 0);
 
       return (
-        <div className="w-full h-full flex flex-col px-4 py-3 overflow-hidden">
-          <div className="flex flex-col justify-start gap-2.5 overflow-hidden">
+        <div className="w-full h-full flex flex-col px-3 py-2 overflow-hidden">
+          <div className="flex flex-col justify-start gap-2 overflow-hidden flex-1">
             {sortedData.map((item, index) => {
               const percentage = maxValue > 0 ? (item.value / maxValue) * 100 : 0;
               const responsePercent = totalResponses > 0 ? Math.round((item.value / totalResponses) * 100) : 0;
