@@ -988,7 +988,7 @@ export function ConnectSourceDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md border-0 shadow-2xl">
+      <DialogContent className="sm:max-w-md border-0 shadow-2xl bg-white dark:bg-slate-900">
         <DialogHeader>
           <div className="flex items-center gap-3">
             {step !== 'sources' && (
