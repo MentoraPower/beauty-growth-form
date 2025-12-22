@@ -182,114 +182,109 @@ export default function Paineis() {
     return (
       <div className="h-[calc(100vh-1.5rem)] flex flex-col -mt-6 -mr-6 -mb-6 -ml-6 rounded-2xl overflow-hidden bg-background">
         <div className="flex-1 overflow-y-auto p-6">
-          {/* Panel Templates */}
-          <div className="mb-8 flex flex-col items-center">
-            <h2 className="text-base font-medium text-foreground mb-1">
-              Escolha um modelo de painel
-            </h2>
-            <p className="text-sm text-muted-foreground mb-6">
-              Comece com um modelo para atender às suas necessidades
-            </p>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 max-w-3xl">
-              {painelOptions.map((painel) => (
-                <button
-                  key={painel.id}
-                  onClick={() => handlePainelSelect(painel.id)}
-                  className="group bg-card border border-border rounded-xl p-5 text-center transition-all duration-200 hover:bg-muted/50 focus:outline-none"
-                >
-                  <div className="w-11 h-11 rounded-lg flex items-center justify-center mx-auto mb-3 bg-muted">
-                    <painel.icon className="h-5 w-5 text-muted-foreground" />
-                  </div>
-                  <h3 className="text-sm font-medium text-foreground">
-                    {painel.title}
-                  </h3>
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Saved Dashboards Table */}
-          <div>
-            <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wider mb-4">
+          {/* Saved Dashboards Section */}
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
               Meus Painéis
             </h2>
-            
-            {isLoading ? (
-              <div className="bg-card border border-border rounded-xl p-8 text-center">
-                <p className="text-sm text-muted-foreground">Carregando...</p>
-              </div>
-            ) : dashboards.length === 0 ? (
-              <div className="bg-card border border-border rounded-xl p-8 text-center">
-                <LayoutDashboard className="h-10 w-10 text-muted-foreground/50 mx-auto mb-3" />
-                <p className="text-sm text-muted-foreground">
-                  Nenhum painel criado ainda. Escolha um modelo acima para começar.
-                </p>
-              </div>
-            ) : (
-              <div className="bg-card border border-border rounded-xl overflow-hidden">
-                {/* Table Header */}
-                <div className="grid grid-cols-[1fr_120px_60px] gap-4 px-4 py-3 border-b border-border bg-muted/30">
-                  <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Nome</span>
-                  <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Modelo</span>
-                  <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider text-center">Ações</span>
-                </div>
-                {/* Table Rows */}
-                <div className="divide-y divide-border">
-                  {dashboards.map((dashboard) => (
-                    <div
-                      key={dashboard.id}
-                      onClick={() => handleOpenDashboard(dashboard)}
-                      className="grid grid-cols-[1fr_120px_60px] gap-4 items-center px-4 py-3 cursor-pointer transition-colors hover:bg-muted/50"
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center shrink-0">
-                          <LayoutDashboard className="h-4 w-4 text-muted-foreground" />
-                        </div>
-                        <span className="font-medium text-foreground truncate">{dashboard.name}</span>
-                      </div>
-                      <span className="text-sm text-muted-foreground">
-                        {dashboard.type === 'scratch' ? 'Personalizado' : dashboard.type}
-                      </span>
-                      <div className="flex justify-center">
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-                            <Button 
-                              variant="outline" 
-                              size="icon" 
-                              className="h-8 w-8 rounded-lg border-border"
-                            >
-                              <MoreHorizontal className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem 
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleEditDashboard(dashboard);
-                              }}
-                            >
-                              <Pencil className="h-4 w-4 mr-2" />
-                              Renomear
-                            </DropdownMenuItem>
-                            <DropdownMenuItem 
-                              className="text-destructive focus:text-destructive"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleDeleteDashboard(dashboard);
-                              }}
-                            >
-                              <Trash2 className="h-4 w-4 mr-2" />
-                              Excluir
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
+            <Button
+              onClick={() => {
+                setIsDialogOpen(true);
+                setPainelName("");
+              }}
+              size="sm"
+              className="bg-foreground text-background hover:bg-foreground/90"
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Novo Painel
+            </Button>
           </div>
+          
+          {isLoading ? (
+            <div className="bg-card border border-border rounded-xl p-8 text-center">
+              <p className="text-sm text-muted-foreground">Carregando...</p>
+            </div>
+          ) : dashboards.length === 0 ? (
+            <div className="bg-card border border-border rounded-xl p-8 text-center">
+              <LayoutDashboard className="h-10 w-10 text-muted-foreground/50 mx-auto mb-3" />
+              <p className="text-sm text-muted-foreground mb-4">
+                Nenhum painel criado ainda.
+              </p>
+              <Button
+                onClick={() => {
+                  setIsDialogOpen(true);
+                  setPainelName("");
+                }}
+                className="bg-foreground text-background hover:bg-foreground/90"
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Criar primeiro painel
+              </Button>
+            </div>
+          ) : (
+            <div className="bg-card border border-border rounded-xl overflow-hidden">
+              {/* Table Header */}
+              <div className="grid grid-cols-[1fr_120px_60px] gap-4 px-4 py-3 border-b border-border bg-muted/30">
+                <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Nome</span>
+                <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Modelo</span>
+                <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider text-center">Ações</span>
+              </div>
+              {/* Table Rows */}
+              <div className="divide-y divide-border">
+                {dashboards.map((dashboard) => (
+                  <div
+                    key={dashboard.id}
+                    onClick={() => handleOpenDashboard(dashboard)}
+                    className="grid grid-cols-[1fr_120px_60px] gap-4 items-center px-4 py-3 cursor-pointer transition-colors hover:bg-muted/50"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center shrink-0">
+                        <LayoutDashboard className="h-4 w-4 text-muted-foreground" />
+                      </div>
+                      <span className="font-medium text-foreground truncate">{dashboard.name}</span>
+                    </div>
+                    <span className="text-sm text-muted-foreground">
+                      {dashboard.type === 'scratch' ? 'Personalizado' : dashboard.type}
+                    </span>
+                    <div className="flex justify-center">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+                          <Button 
+                            variant="outline" 
+                            size="icon" 
+                            className="h-8 w-8 rounded-lg border-border"
+                          >
+                            <MoreHorizontal className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem 
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleEditDashboard(dashboard);
+                            }}
+                          >
+                            <Pencil className="h-4 w-4 mr-2" />
+                            Renomear
+                          </DropdownMenuItem>
+                          <DropdownMenuItem 
+                            className="text-destructive focus:text-destructive"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDeleteDashboard(dashboard);
+                            }}
+                          >
+                            <Trash2 className="h-4 w-4 mr-2" />
+                            Excluir
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Create Dialog */}
