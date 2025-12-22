@@ -227,7 +227,7 @@ const OriginOverview = () => {
       {/* Charts Grid - SDR and Closer */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* SDR Appointments Chart */}
-        <Card className="bg-white border border-black/5 shadow-none rounded-2xl">
+        <Card className="bg-white border border-black/5 shadow-none rounded-3xl">
           <CardHeader className="pb-4">
             <CardTitle className="text-base font-semibold text-foreground">
               Agendamentos por SDR
@@ -274,7 +274,7 @@ const OriginOverview = () => {
         </Card>
 
         {/* SDR Sales Chart */}
-        <Card className="bg-white border border-black/5 shadow-none rounded-2xl">
+        <Card className="bg-white border border-black/5 shadow-none rounded-3xl">
           <CardHeader className="pb-4">
             <CardTitle className="text-base font-semibold text-foreground">
               Reuniões e Vendas por SDR
@@ -352,7 +352,7 @@ const OriginOverview = () => {
         </Card>
 
         {/* Closer Appointments Chart */}
-        <Card className="bg-white border border-black/5 shadow-none rounded-2xl">
+        <Card className="bg-white border border-black/5 shadow-none rounded-3xl">
           <CardHeader className="pb-4">
             <CardTitle className="text-base font-semibold text-foreground">
               Reuniões realizadas por Closer
@@ -399,7 +399,7 @@ const OriginOverview = () => {
         </Card>
 
         {/* Closer Sales Chart */}
-        <Card className="bg-white border border-black/5 shadow-none rounded-2xl">
+        <Card className="bg-white border border-black/5 shadow-none rounded-3xl">
           <CardHeader className="pb-4">
             <CardTitle className="text-base font-semibold text-foreground">
               Reuniões e Vendas por Closer
@@ -478,7 +478,7 @@ const OriginOverview = () => {
       </div>
 
       {/* Meetings by Hour Chart */}
-      <Card className="bg-white border border-black/5 shadow-none rounded-2xl">
+      <Card className="bg-white border border-black/5 shadow-none rounded-3xl">
         <CardHeader className="pb-4">
           <CardTitle className="text-base font-semibold text-foreground">
             Reuniões e Vendas por Horário
