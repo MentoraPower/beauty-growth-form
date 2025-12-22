@@ -52,6 +52,7 @@ export interface DashboardWidget {
   isLoading?: boolean;
   width?: number;
   height?: number;
+  customName?: string;
 }
 
 interface DashboardCanvasProps {
@@ -67,12 +68,16 @@ interface SortableWidgetProps {
   onResize: (id: string, width: number, height: number) => void;
   onDelete: (id: string) => void;
   onConnect: (id: string) => void;
+  onRename: (id: string, name: string) => void;
   containerWidth: number;
 }
 
-function SortableWidget({ widget, onResize, onDelete, onConnect, containerWidth }: SortableWidgetProps) {
+function SortableWidget({ widget, onResize, onDelete, onConnect, onRename, containerWidth }: SortableWidgetProps) {
   const widgetRef = useRef<HTMLDivElement>(null);
   const [actualWidth, setActualWidth] = useState(widget.width || 340);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editName, setEditName] = useState(widget.customName || widget.source?.sourceName || widget.chartType.name);
+  const inputRef = useRef<HTMLInputElement>(null);
   
   const {
     attributes,
@@ -155,10 +160,46 @@ function SortableWidget({ widget, onResize, onDelete, onConnect, containerWidth 
             <GripVertical className="h-4 w-4 text-muted-foreground shrink-0" />
           </div>
           
-          {/* Title */}
-          <h3 className="text-sm font-medium text-foreground truncate flex-1">
-            {widget.source?.sourceName || widget.chartType.name}
-          </h3>
+          {/* Title - Inline Editable */}
+          {isEditing ? (
+            <input
+              ref={inputRef}
+              type="text"
+              value={editName}
+              onChange={(e) => setEditName(e.target.value)}
+              onBlur={() => {
+                setIsEditing(false);
+                if (editName.trim() && editName !== (widget.customName || widget.source?.sourceName || widget.chartType.name)) {
+                  onRename(widget.id, editName.trim());
+                }
+              }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  setIsEditing(false);
+                  if (editName.trim() && editName !== (widget.customName || widget.source?.sourceName || widget.chartType.name)) {
+                    onRename(widget.id, editName.trim());
+                  }
+                }
+                if (e.key === 'Escape') {
+                  setEditName(widget.customName || widget.source?.sourceName || widget.chartType.name);
+                  setIsEditing(false);
+                }
+              }}
+              className="text-sm font-medium text-foreground bg-transparent border-b border-primary outline-none flex-1 min-w-0"
+              autoFocus
+            />
+          ) : (
+            <h3
+              onClick={() => {
+                setIsEditing(true);
+                setTimeout(() => inputRef.current?.select(), 0);
+              }}
+              className="text-sm font-medium text-foreground truncate flex-1 cursor-text hover:text-primary transition-colors"
+              title="Clique para editar"
+            >
+              {widget.customName || widget.source?.sourceName || widget.chartType.name}
+            </h3>
+          )}
         </div>
 
         {/* Delete Button - only visible on hover */}
@@ -841,6 +882,12 @@ export function DashboardCanvas({ painelName, dashboardId, onBack }: DashboardCa
     setWidgets(prev => prev.filter(w => w.id !== widgetId));
   };
 
+  const handleRenameWidget = (widgetId: string, newName: string) => {
+    setWidgets(prev => prev.map(w => 
+      w.id === widgetId ? { ...w, customName: newName } : w
+    ));
+  };
+
   const handleWidgetResize = useCallback((widgetId: string, nextWidth: number, nextHeight: number) => {
     const gap = 16;
     const MIN_WIDTH = 260;
@@ -1076,6 +1123,7 @@ export function DashboardCanvas({ painelName, dashboardId, onBack }: DashboardCa
                     onResize={handleWidgetResize}
                     onDelete={handleDeleteWidget}
                     onConnect={handleConnectWidget}
+                    onRename={handleRenameWidget}
                     containerWidth={containerWidth}
                   />
                 ))}
