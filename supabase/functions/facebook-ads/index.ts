@@ -216,7 +216,7 @@ serve(async (req) => {
       );
     }
 
-    // Action: Get campaign insights (spend, CPM, CPC)
+    // Action: Get campaign insights (spend, CPM, CPC) with date_preset
     if (action === 'get-insights') {
       if (!accessToken || !campaignIds || !campaignIds.length) {
         return new Response(
@@ -238,6 +238,67 @@ serve(async (req) => {
             campaignId,
             ...data.data[0]
           });
+        }
+      }
+
+      console.log(`Retrieved insights for ${insights.length} campaigns`);
+      return new Response(
+        JSON.stringify({ insights }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Action: Get campaign insights with custom date range
+    if (action === 'get-insights-daterange') {
+      const { since, until } = body;
+      
+      if (!accessToken || !campaignIds || !campaignIds.length) {
+        return new Response(
+          JSON.stringify({ error: 'Access token and campaign IDs required' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      if (!since || !until) {
+        return new Response(
+          JSON.stringify({ error: 'Date range (since, until) required' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      console.log(`Fetching insights for ${campaignIds.length} campaigns from ${since} to ${until}`);
+      const insights = [];
+
+      for (const campaignId of campaignIds) {
+        try {
+          const url = `https://graph.facebook.com/v18.0/${campaignId}/insights?fields=campaign_name,spend,cpm,cpc,impressions,clicks&time_range={"since":"${since}","until":"${until}"}&access_token=${accessToken}`;
+          const response = await fetch(url);
+          const data = await response.json();
+
+          if (data.error) {
+            console.error(`Error fetching insights for campaign ${campaignId}:`, data.error);
+            continue;
+          }
+
+          if (data.data && data.data.length > 0) {
+            insights.push({
+              campaignId,
+              ...data.data[0]
+            });
+          } else {
+            // No data for this period, include with zeros
+            insights.push({
+              campaignId,
+              campaign_name: null,
+              spend: "0",
+              cpm: "0",
+              cpc: "0",
+              impressions: "0",
+              clicks: "0"
+            });
+          }
+        } catch (err) {
+          console.error(`Error fetching campaign ${campaignId}:`, err);
         }
       }
 
