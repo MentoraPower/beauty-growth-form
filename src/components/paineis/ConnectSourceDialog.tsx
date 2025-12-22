@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Folder, FolderOpen, Facebook, ChevronRight, ArrowLeft, Users, UserPlus, UserMinus } from "lucide-react";
+import { Folder, FolderOpen, Facebook, ChevronRight, ArrowLeft, Users, UserPlus, UserMinus, TrendingUp, Globe, Target, Megaphone } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { ChartType } from "./ChartSelectorDialog";
 
@@ -18,7 +18,7 @@ interface Origin {
 }
 
 export interface WidgetSource {
-  type: 'origin' | 'sub_origin' | 'facebook_ads' | 'tracking_grupo_entrada' | 'tracking_grupo_saida';
+  type: 'origin' | 'sub_origin' | 'facebook_ads' | 'tracking_grupo_entrada' | 'tracking_grupo_saida' | 'utm_source' | 'utm_medium' | 'utm_campaign' | 'utm_all';
   sourceId?: string;
   sourceName?: string;
   credentials?: {
@@ -35,7 +35,7 @@ interface ConnectSourceDialogProps {
   onConnect: (source: WidgetSource) => void;
 }
 
-type Step = 'sources' | 'origins' | 'sub_origins' | 'facebook_form' | 'tracking' | 'tracking_origins' | 'tracking_sub_origins';
+type Step = 'sources' | 'origins' | 'sub_origins' | 'facebook_form' | 'tracking' | 'tracking_origins' | 'tracking_sub_origins' | 'utm_options' | 'utm_origins' | 'utm_sub_origins';
 
 export function ConnectSourceDialog({ 
   open, 
@@ -48,6 +48,7 @@ export function ConnectSourceDialog({
   const [subOrigins, setSubOrigins] = useState<SubOrigin[]>([]);
   const [selectedOrigin, setSelectedOrigin] = useState<Origin | null>(null);
   const [selectedTrackingType, setSelectedTrackingType] = useState<'grupo_entrada' | 'grupo_saida' | null>(null);
+  const [selectedUtmType, setSelectedUtmType] = useState<'utm_source' | 'utm_medium' | 'utm_campaign' | 'utm_all' | null>(null);
   
   // Facebook form state
   const [fbAppId, setFbAppId] = useState("");
@@ -59,6 +60,7 @@ export function ConnectSourceDialog({
       setStep('sources');
       setSelectedOrigin(null);
       setSelectedTrackingType(null);
+      setSelectedUtmType(null);
       setFbAppId("");
       setFbAppSecret("");
       setFbAccessToken("");
@@ -83,7 +85,7 @@ export function ConnectSourceDialog({
   };
 
   const handleBack = () => {
-    if (step === 'origins' || step === 'facebook_form' || step === 'tracking') {
+    if (step === 'origins' || step === 'facebook_form' || step === 'tracking' || step === 'utm_options') {
       setStep('sources');
     } else if (step === 'sub_origins') {
       setStep('origins');
@@ -92,6 +94,11 @@ export function ConnectSourceDialog({
       setStep('tracking');
     } else if (step === 'tracking_sub_origins') {
       setStep('tracking_origins');
+      setSelectedOrigin(null);
+    } else if (step === 'utm_origins') {
+      setStep('utm_options');
+    } else if (step === 'utm_sub_origins') {
+      setStep('utm_origins');
       setSelectedOrigin(null);
     }
   };
@@ -161,6 +168,35 @@ export function ConnectSourceDialog({
     onOpenChange(false);
   };
 
+  const handleSelectUtmType = (utmType: 'utm_source' | 'utm_medium' | 'utm_campaign' | 'utm_all') => {
+    setSelectedUtmType(utmType);
+    setStep('utm_origins');
+  };
+
+  const handleSelectUtmOrigin = (origin: Origin) => {
+    const subs = getSubOriginsForOrigin(origin.id);
+    if (subs.length > 0) {
+      setSelectedOrigin(origin);
+      setStep('utm_sub_origins');
+    }
+  };
+
+  const handleSelectUtmSubOrigin = (subOrigin: SubOrigin) => {
+    const utmLabels: Record<string, string> = {
+      'utm_source': 'UTM Source',
+      'utm_medium': 'UTM Medium',
+      'utm_campaign': 'UTM Campaign',
+      'utm_all': 'Todas as UTMs',
+    };
+    const sourceName = `${utmLabels[selectedUtmType || 'utm_all']} - ${subOrigin.nome}`;
+    onConnect({
+      type: selectedUtmType || 'utm_all',
+      sourceId: subOrigin.id,
+      sourceName,
+    });
+    onOpenChange(false);
+  };
+
   const renderContent = () => {
     switch (step) {
       case 'sources':
@@ -192,6 +228,21 @@ export function ConnectSourceDialog({
               <div className="flex-1">
                 <h3 className="text-sm font-medium text-foreground">Rastreamento de Grupos</h3>
                 <p className="text-xs text-muted-foreground">Entradas e saídas de leads em grupos</p>
+              </div>
+              <ChevronRight className="h-5 w-5 text-muted-foreground" />
+            </button>
+
+            {/* UTM Tracking option */}
+            <button
+              onClick={() => setStep('utm_options')}
+              className="w-full flex items-center gap-4 p-4 bg-white border border-border rounded-xl text-left transition-all duration-200 hover:shadow-md hover:border-foreground/20"
+            >
+              <div className="w-12 h-12 rounded-xl bg-violet-500/10 flex items-center justify-center">
+                <TrendingUp className="h-6 w-6 text-violet-600" />
+              </div>
+              <div className="flex-1">
+                <h3 className="text-sm font-medium text-foreground">UTMs e Tráfego</h3>
+                <p className="text-xs text-muted-foreground">Orgânico, pago e campanhas por UTM</p>
               </div>
               <ChevronRight className="h-5 w-5 text-muted-foreground" />
             </button>
@@ -411,7 +462,146 @@ export function ConnectSourceDialog({
           </div>
         );
 
-      case 'tracking_sub_origins':
+      case 'utm_options':
+        return (
+          <div className="space-y-3 py-4">
+            <p className="text-xs text-muted-foreground mb-3">
+              Selecione o tipo de análise de tráfego
+            </p>
+            
+            {/* UTM Source - Organic vs Paid */}
+            <button
+              onClick={() => handleSelectUtmType('utm_source')}
+              className="w-full flex items-center gap-3 p-4 bg-white border border-border rounded-lg text-left transition-all duration-200 hover:bg-muted/30 hover:border-violet-500/30"
+            >
+              <div className="w-10 h-10 rounded-lg bg-violet-500/10 flex items-center justify-center">
+                <Globe className="h-5 w-5 text-violet-600" />
+              </div>
+              <div className="flex-1">
+                <span className="text-sm font-medium text-foreground">Por Fonte (utm_source)</span>
+                <p className="text-xs text-muted-foreground">Google, Facebook, Instagram, Orgânico...</p>
+              </div>
+              <ChevronRight className="h-4 w-4 text-muted-foreground" />
+            </button>
+
+            {/* UTM Medium */}
+            <button
+              onClick={() => handleSelectUtmType('utm_medium')}
+              className="w-full flex items-center gap-3 p-4 bg-white border border-border rounded-lg text-left transition-all duration-200 hover:bg-muted/30 hover:border-violet-500/30"
+            >
+              <div className="w-10 h-10 rounded-lg bg-blue-500/10 flex items-center justify-center">
+                <Target className="h-5 w-5 text-blue-600" />
+              </div>
+              <div className="flex-1">
+                <span className="text-sm font-medium text-foreground">Por Mídia (utm_medium)</span>
+                <p className="text-xs text-muted-foreground">CPC, Email, Social, Orgânico...</p>
+              </div>
+              <ChevronRight className="h-4 w-4 text-muted-foreground" />
+            </button>
+
+            {/* UTM Campaign */}
+            <button
+              onClick={() => handleSelectUtmType('utm_campaign')}
+              className="w-full flex items-center gap-3 p-4 bg-white border border-border rounded-lg text-left transition-all duration-200 hover:bg-muted/30 hover:border-violet-500/30"
+            >
+              <div className="w-10 h-10 rounded-lg bg-amber-500/10 flex items-center justify-center">
+                <Megaphone className="h-5 w-5 text-amber-600" />
+              </div>
+              <div className="flex-1">
+                <span className="text-sm font-medium text-foreground">Por Campanha (utm_campaign)</span>
+                <p className="text-xs text-muted-foreground">Nome das campanhas de marketing</p>
+              </div>
+              <ChevronRight className="h-4 w-4 text-muted-foreground" />
+            </button>
+
+            {/* All UTMs */}
+            <button
+              onClick={() => handleSelectUtmType('utm_all')}
+              className="w-full flex items-center gap-3 p-4 bg-white border border-border rounded-lg text-left transition-all duration-200 hover:bg-muted/30 hover:border-violet-500/30"
+            >
+              <div className="w-10 h-10 rounded-lg bg-emerald-500/10 flex items-center justify-center">
+                <TrendingUp className="h-5 w-5 text-emerald-600" />
+              </div>
+              <div className="flex-1">
+                <span className="text-sm font-medium text-foreground">Orgânico vs Pago</span>
+                <p className="text-xs text-muted-foreground">Comparativo geral de fontes de tráfego</p>
+              </div>
+              <ChevronRight className="h-4 w-4 text-muted-foreground" />
+            </button>
+          </div>
+        );
+
+      case 'utm_origins':
+        return (
+          <div className="space-y-2 py-4">
+            <div className="flex items-center gap-2 p-3 rounded-lg mb-3 bg-violet-500/10">
+              <TrendingUp className="h-4 w-4 text-violet-600" />
+              <span className="text-sm font-medium">
+                {selectedUtmType === 'utm_source' && 'Por Fonte (utm_source)'}
+                {selectedUtmType === 'utm_medium' && 'Por Mídia (utm_medium)'}
+                {selectedUtmType === 'utm_campaign' && 'Por Campanha (utm_campaign)'}
+                {selectedUtmType === 'utm_all' && 'Orgânico vs Pago'}
+              </span>
+            </div>
+            <p className="text-xs text-muted-foreground mb-3">
+              Selecione a origem
+            </p>
+            {origins.length === 0 ? (
+              <p className="text-sm text-muted-foreground text-center py-8">
+                Nenhuma origem encontrada.
+              </p>
+            ) : (
+              origins.map((origin) => {
+                const subs = getSubOriginsForOrigin(origin.id);
+                if (subs.length === 0) return null;
+                return (
+                  <button
+                    key={origin.id}
+                    onClick={() => handleSelectUtmOrigin(origin)}
+                    className="w-full flex items-center gap-3 p-3 bg-white border border-border rounded-lg text-left transition-all duration-200 hover:bg-muted/30 hover:border-foreground/20"
+                  >
+                    <div className="w-9 h-9 rounded-lg bg-muted flex items-center justify-center">
+                      <Folder className="h-4 w-4 text-muted-foreground" />
+                    </div>
+                    <span className="flex-1 text-sm font-medium text-foreground">{origin.nome}</span>
+                    <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                  </button>
+                );
+              })
+            )}
+          </div>
+        );
+
+      case 'utm_sub_origins':
+        const utmSubOriginsForOrigin = selectedOrigin ? getSubOriginsForOrigin(selectedOrigin.id) : [];
+        return (
+          <div className="space-y-2 py-4">
+            <div className="flex items-center gap-2 p-3 rounded-lg mb-3 bg-violet-500/10">
+              <TrendingUp className="h-4 w-4 text-violet-600" />
+              <span className="text-sm font-medium">
+                {selectedUtmType === 'utm_source' && 'Por Fonte (utm_source)'}
+                {selectedUtmType === 'utm_medium' && 'Por Mídia (utm_medium)'}
+                {selectedUtmType === 'utm_campaign' && 'Por Campanha (utm_campaign)'}
+                {selectedUtmType === 'utm_all' && 'Orgânico vs Pago'}
+              </span>
+            </div>
+            <p className="text-xs text-muted-foreground mb-3">
+              Sub-origens de <strong>{selectedOrigin?.nome}</strong>
+            </p>
+            {utmSubOriginsForOrigin.map((subOrigin) => (
+              <button
+                key={subOrigin.id}
+                onClick={() => handleSelectUtmSubOrigin(subOrigin)}
+                className="w-full flex items-center gap-3 p-3 bg-white border border-border rounded-lg text-left transition-all duration-200 hover:bg-muted/30 hover:border-foreground/20"
+              >
+                <div className="w-9 h-9 rounded-lg bg-muted flex items-center justify-center">
+                  <FolderOpen className="h-4 w-4 text-muted-foreground" />
+                </div>
+                <span className="flex-1 text-sm font-medium text-foreground">{subOrigin.nome}</span>
+              </button>
+            ))}
+          </div>
+        );
         const trackingSubOriginsForOrigin = selectedOrigin ? getSubOriginsForOrigin(selectedOrigin.id) : [];
         return (
           <div className="space-y-2 py-4">
@@ -462,6 +652,12 @@ export function ConnectSourceDialog({
       case 'tracking_origins':
         return 'Selecione a origem';
       case 'tracking_sub_origins':
+        return 'Selecione a sub-origem';
+      case 'utm_options':
+        return 'UTMs e Tráfego';
+      case 'utm_origins':
+        return 'Selecione a origem';
+      case 'utm_sub_origins':
         return 'Selecione a sub-origem';
     }
   };

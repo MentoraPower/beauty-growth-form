@@ -642,6 +642,140 @@ export function DashboardCanvas({ painelName, dashboardId, onBack }: DashboardCa
         return { total, label, distribution, trend };
       }
 
+      // Handle UTM types
+      if (widget.source.type === 'utm_source' || widget.source.type === 'utm_medium' || widget.source.type === 'utm_campaign' || widget.source.type === 'utm_all') {
+        if (!widget.source.sourceId) {
+          return { total: 0, label: 'UTMs' };
+        }
+
+        // Fetch leads with UTM data filtered by date
+        let allLeads: { id: string; utm_source: string | null; utm_medium: string | null; utm_campaign: string | null; created_at: string }[] = [];
+        let from = 0;
+        const pageSize = 1000;
+        let hasMore = true;
+
+        while (hasMore) {
+          const { data: leads, error } = await supabase
+            .from("leads")
+            .select("id, utm_source, utm_medium, utm_campaign, created_at")
+            .eq("sub_origin_id", widget.source.sourceId)
+            .gte("created_at", filterStartDate)
+            .lte("created_at", filterEndDate)
+            .range(from, from + pageSize - 1);
+
+          if (error) {
+            console.error("Error fetching leads for UTM:", error);
+            return { total: 0, label: 'UTMs' };
+          }
+
+          if (leads && leads.length > 0) {
+            allLeads = [...allLeads, ...leads];
+            from += pageSize;
+            hasMore = leads.length === pageSize;
+          } else {
+            hasMore = false;
+          }
+        }
+
+        const total = allLeads.length;
+        let distribution: ChartDataPoint[] = [];
+        let label = 'UTMs';
+
+        if (widget.source.type === 'utm_source') {
+          label = 'Por Fonte';
+          const sourceMap = new Map<string, number>();
+          allLeads.forEach(lead => {
+            const source = lead.utm_source || 'Orgânico';
+            sourceMap.set(source, (sourceMap.get(source) || 0) + 1);
+          });
+          
+          const colors = ['#8b5cf6', '#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#6366f1', '#ec4899'];
+          let colorIndex = 0;
+          Array.from(sourceMap.entries())
+            .sort((a, b) => b[1] - a[1])
+            .forEach(([name, value]) => {
+              distribution.push({ name, value, color: colors[colorIndex % colors.length] });
+              colorIndex++;
+            });
+        } else if (widget.source.type === 'utm_medium') {
+          label = 'Por Mídia';
+          const mediumMap = new Map<string, number>();
+          allLeads.forEach(lead => {
+            const medium = lead.utm_medium || 'Direto';
+            mediumMap.set(medium, (mediumMap.get(medium) || 0) + 1);
+          });
+          
+          const colors = ['#3b82f6', '#8b5cf6', '#10b981', '#f59e0b', '#ef4444', '#6366f1', '#ec4899'];
+          let colorIndex = 0;
+          Array.from(mediumMap.entries())
+            .sort((a, b) => b[1] - a[1])
+            .forEach(([name, value]) => {
+              distribution.push({ name, value, color: colors[colorIndex % colors.length] });
+              colorIndex++;
+            });
+        } else if (widget.source.type === 'utm_campaign') {
+          label = 'Por Campanha';
+          const campaignMap = new Map<string, number>();
+          allLeads.forEach(lead => {
+            const campaign = lead.utm_campaign || 'Sem campanha';
+            campaignMap.set(campaign, (campaignMap.get(campaign) || 0) + 1);
+          });
+          
+          const colors = ['#f59e0b', '#8b5cf6', '#3b82f6', '#10b981', '#ef4444', '#6366f1', '#ec4899'];
+          let colorIndex = 0;
+          Array.from(campaignMap.entries())
+            .sort((a, b) => b[1] - a[1])
+            .forEach(([name, value]) => {
+              distribution.push({ name, value, color: colors[colorIndex % colors.length] });
+              colorIndex++;
+            });
+        } else if (widget.source.type === 'utm_all') {
+          label = 'Orgânico vs Pago';
+          let organic = 0;
+          let paid = 0;
+          
+          allLeads.forEach(lead => {
+            // If has utm_source or utm_medium that indicates paid traffic
+            const isPaid = lead.utm_source || lead.utm_medium || lead.utm_campaign;
+            if (isPaid) {
+              paid++;
+            } else {
+              organic++;
+            }
+          });
+          
+          distribution = [
+            { name: 'Orgânico', value: organic, color: '#10b981' },
+            { name: 'Pago', value: paid, color: '#8b5cf6' },
+          ];
+        }
+
+        // Calculate trend by day
+        const trend: ChartDataPoint[] = [];
+        const days = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
+        const daysDiff = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+        const daysToShow = Math.min(daysDiff, 7);
+        
+        for (let i = daysToShow - 1; i >= 0; i--) {
+          const date = new Date(endDate);
+          date.setDate(date.getDate() - i);
+          const dayStart = new Date(date.setHours(0, 0, 0, 0));
+          const dayEnd = new Date(date.setHours(23, 59, 59, 999));
+          
+          const count = allLeads.filter(l => {
+            const createdAt = new Date(l.created_at);
+            return createdAt >= dayStart && createdAt <= dayEnd;
+          }).length;
+
+          trend.push({
+            name: days[dayStart.getDay()],
+            value: count,
+          });
+        }
+
+        return { total, label, distribution, trend };
+      }
+
       // For origin/sub_origin types, require sourceId
       if (!widget.source.sourceId) return null;
 
