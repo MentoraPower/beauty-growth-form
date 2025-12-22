@@ -32,7 +32,6 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sidebarExpanded, setSidebarExpanded] = useState(false);
   const [activePanel, setActivePanel] = useState<ActivePanel>(globalActivePanel);
-  const [crmSubmenuOpen, setCrmSubmenuOpen] = useState(activePanel === 'crm');
   const [canAccessWhatsapp, setCanAccessWhatsapp] = useState(false);
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
   const [userName, setUserName] = useState<string>("");
@@ -45,6 +44,12 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
   const isAtendimentoActive = location.pathname.startsWith("/admin/atendimento");
   const isPaineisActive = location.pathname.startsWith("/admin/paineis");
   const isSettingsActive = location.pathname === "/admin/settings";
+
+  // Initialize CRM submenu state based on current route (only on mount)
+  const [crmSubmenuOpen, setCrmSubmenuOpen] = useState(() => {
+    // Only open if we're actually on CRM routes
+    return location.pathname.startsWith("/admin/crm") || location.pathname === "/admin";
+  });
 
   // Sync activePanel with current route
   useEffect(() => {
@@ -116,13 +121,10 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
     }] : []),
   ];
 
-  // Sync with global state and localStorage
+  // Sync with global state and localStorage (without affecting submenu)
   useEffect(() => {
     globalActivePanel = activePanel;
     localStorage.setItem('active_panel', activePanel);
-    
-    // Open/close CRM submenu based on active panel
-    setCrmSubmenuOpen(activePanel === 'crm');
   }, [activePanel]);
 
   // Navigate to first origin overview when CRM is clicked
