@@ -765,25 +765,69 @@ export function DashboardCanvas({ painelName, dashboardId, onBack }: DashboardCa
           cpc: 'CPC'
         };
 
-        let query = supabase
-          .from('facebook_ads_insights')
-          .select('campaign_id, campaign_name, spend, cpm, cpc')
-          .eq('connection_id', widget.source.sourceId);
+        // Get connection details to fetch fresh data with date filter
+        const { data: connection, error: connError } = await supabase
+          .from('facebook_ads_connections')
+          .select('access_token, selected_campaigns')
+          .eq('id', widget.source.sourceId)
+          .single();
 
-        // If a specific campaign was selected, filter by it
-        if (widget.source.fbCampaignId) {
-          query = query.eq('campaign_id', widget.source.fbCampaignId);
-        }
-
-        const { data: insights, error } = await query.limit(200);
-
-        if (error) {
-          console.error('Error fetching Facebook Ads insights:', error);
+        if (connError || !connection) {
+          console.error('Error fetching Facebook connection:', connError);
           return { total: 0, label: 'Facebook Ads', distribution: [], trend: [] };
         }
 
-        const points: ChartDataPoint[] = (insights || []).map((i) => ({
-          name: i.campaign_name || i.campaign_id,
+        // Determine which campaigns to fetch
+        const campaignsToFetch = widget.source.fbCampaignId 
+          ? [{ id: widget.source.fbCampaignId, name: widget.source.fbCampaignName }]
+          : (connection.selected_campaigns as { id: string; name: string }[]) || [];
+
+        if (campaignsToFetch.length === 0) {
+          return { total: 0, label: 'Facebook Ads', distribution: [], trend: [] };
+        }
+
+        // Format dates for Facebook API (YYYY-MM-DD)
+        const sinceDate = format(startDate, 'yyyy-MM-dd');
+        const untilDate = format(endDate, 'yyyy-MM-dd');
+
+        // Fetch fresh insights with date range
+        const { data: insightsData, error: insightsError } = await supabase.functions.invoke('facebook-ads', {
+          body: { 
+            action: 'get-insights-daterange',
+            accessToken: connection.access_token,
+            campaignIds: campaignsToFetch.map(c => c.id),
+            since: sinceDate,
+            until: untilDate
+          }
+        });
+
+        if (insightsError) {
+          console.error('Error fetching Facebook insights:', insightsError);
+          // Fallback to cached data
+          const { data: cachedInsights } = await supabase
+            .from('facebook_ads_insights')
+            .select('campaign_id, campaign_name, spend, cpm, cpc')
+            .eq('connection_id', widget.source.sourceId);
+
+          const points: ChartDataPoint[] = (cachedInsights || [])
+            .filter(i => !widget.source.fbCampaignId || i.campaign_id === widget.source.fbCampaignId)
+            .map((i) => ({
+              name: i.campaign_name || i.campaign_id,
+              value: Number(i[metric] || 0),
+            }));
+
+          const total = points.reduce((sum, p) => sum + p.value, 0);
+          return {
+            total: Math.round(total * 100) / 100,
+            label: `${metricLabels[metric]} (cache)`,
+            distribution: points,
+            trend: points,
+          };
+        }
+
+        const insights = insightsData?.insights || [];
+        const points: ChartDataPoint[] = insights.map((i: any) => ({
+          name: i.campaign_name || campaignsToFetch.find(c => c.id === i.campaignId)?.name || i.campaignId,
           value: Number(i[metric] || 0),
         }));
 
