@@ -1118,6 +1118,69 @@ export type Database = {
         }
         Relationships: []
       }
+      scheduled_emails: {
+        Row: {
+          automation_id: string
+          body_html: string
+          cancel_reason: string | null
+          cancelled_at: string | null
+          created_at: string
+          id: string
+          lead_email: string
+          lead_id: string
+          lead_name: string
+          scheduled_for: string
+          sent_at: string | null
+          status: string
+          subject: string
+        }
+        Insert: {
+          automation_id: string
+          body_html: string
+          cancel_reason?: string | null
+          cancelled_at?: string | null
+          created_at?: string
+          id?: string
+          lead_email: string
+          lead_id: string
+          lead_name: string
+          scheduled_for: string
+          sent_at?: string | null
+          status?: string
+          subject: string
+        }
+        Update: {
+          automation_id?: string
+          body_html?: string
+          cancel_reason?: string | null
+          cancelled_at?: string | null
+          created_at?: string
+          id?: string
+          lead_email?: string
+          lead_id?: string
+          lead_name?: string
+          scheduled_for?: string
+          sent_at?: string | null
+          status?: string
+          subject?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "scheduled_emails_automation_id_fkey"
+            columns: ["automation_id"]
+            isOneToOne: false
+            referencedRelation: "email_automations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "scheduled_emails_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       sent_emails: {
         Row: {
           body_html: string

@@ -11,13 +11,203 @@ const corsHeaders = {
 const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
 const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
-// Send email automation for lead_created trigger
+// Schedule email automation with delay support for triggers like "registered_no_group"
+async function scheduleEmailAutomation(
+  supabase: any,
+  lead: Record<string, any>,
+  pipelineId: string | null,
+  subOriginId: string | null
+) {
+  try {
+    console.log("[ScheduleEmailAutomation] Processing for lead:", lead.id, "subOriginId:", subOriginId);
+
+    // Fetch all active email automations
+    const { data: emailAutomations, error: emailError } = await supabase
+      .from("email_automations")
+      .select("*")
+      .eq("is_active", true);
+
+    if (emailError) {
+      console.error("[ScheduleEmailAutomation] Error fetching automations:", emailError);
+      return;
+    }
+
+    if (!emailAutomations || emailAutomations.length === 0) {
+      console.log("[ScheduleEmailAutomation] No active automations found");
+      return;
+    }
+
+    // Filter automations that apply to this sub_origin
+    const applicableAutomations = emailAutomations.filter((automation: any) => {
+      // Check if automation's sub_origin matches (or is null for all)
+      if (automation.sub_origin_id && automation.sub_origin_id !== subOriginId) {
+        return false;
+      }
+
+      // Check if automation has flow_steps with registered_no_group trigger
+      const flowSteps = automation.flow_steps as any[] | null;
+      if (!flowSteps || !Array.isArray(flowSteps)) return false;
+
+      const triggerNode = flowSteps.find((step: any) => step?.type === "trigger");
+      const triggers = triggerNode?.data?.triggers as any[] | null;
+      if (!triggers || !Array.isArray(triggers)) return false;
+
+      return triggers.some((t: any) => t?.type === "registered_no_group");
+    });
+
+    if (applicableAutomations.length === 0) {
+      console.log("[ScheduleEmailAutomation] No applicable automations for registered_no_group");
+      return;
+    }
+
+    console.log(`[ScheduleEmailAutomation] Found ${applicableAutomations.length} applicable automation(s)`);
+
+    const leadName = lead.name || "Cliente";
+    const replaceName = (value: string) =>
+      value
+        .replace(/\{\{name\}\}/g, leadName)
+        .replace(/\{\{nome\}\}/g, leadName)
+        .replace(/\{name\}/g, leadName)
+        .replace(/\{nome\}/g, leadName);
+
+    for (const automation of applicableAutomations) {
+      if (!lead.email) {
+        console.log("[ScheduleEmailAutomation] Lead has no email, skipping");
+        continue;
+      }
+
+      const flowSteps = automation.flow_steps as any[];
+      const edgesStep = flowSteps.find((step: any) => step?.type === "_edges");
+      const edges = edgesStep?.data?.edges as any[] | null;
+      const triggerNode = flowSteps.find((step: any) => step?.type === "trigger");
+
+      if (!triggerNode || !edges) {
+        console.log("[ScheduleEmailAutomation] No trigger node or edges found");
+        continue;
+      }
+
+      // Find the trigger that matches registered_no_group
+      const triggers = triggerNode?.data?.triggers as any[];
+      const matchedTriggerIndex = triggers.findIndex((t: any) => t?.type === "registered_no_group");
+      
+      if (matchedTriggerIndex < 0) continue;
+
+      // Find the path from trigger to email, calculating total delay
+      let totalDelayMinutes = 0;
+      let emailSubject = automation.subject;
+      let emailBodyHtml = automation.body_html;
+      let foundEmail = false;
+
+      const expectedHandle = `trigger-handle-${matchedTriggerIndex}`;
+      const startingEdge = edges.find((edge: any) => {
+        if (edge.source !== triggerNode.id) return false;
+        if (edge.sourceHandle === expectedHandle) return true;
+        if (matchedTriggerIndex === 0 && (!edge.sourceHandle || edge.sourceHandle === null)) return true;
+        return false;
+      });
+
+      if (!startingEdge) {
+        console.log("[ScheduleEmailAutomation] No starting edge found for trigger");
+        continue;
+      }
+
+      // Traverse the flow to find wait nodes and email node
+      let currentNodeId = startingEdge.target;
+      const visitedNodes = new Set<string>();
+      const maxIterations = 20;
+      let iterations = 0;
+
+      while (currentNodeId && iterations < maxIterations) {
+        iterations++;
+        if (visitedNodes.has(currentNodeId)) break;
+        visitedNodes.add(currentNodeId);
+
+        const currentNode = flowSteps.find((step: any) => step?.id === currentNodeId);
+        if (!currentNode) break;
+
+        console.log(`[ScheduleEmailAutomation] Visiting node: ${currentNodeId}, type: ${currentNode.type}`);
+
+        if (currentNode.type === "wait") {
+          // Add delay from wait node
+          const waitTime = currentNode.data?.waitTime || 0;
+          const waitUnit = currentNode.data?.waitUnit || "minutes";
+          
+          let delayMinutes = waitTime;
+          if (waitUnit === "hours") delayMinutes = waitTime * 60;
+          else if (waitUnit === "days") delayMinutes = waitTime * 60 * 24;
+          
+          totalDelayMinutes += delayMinutes;
+          console.log(`[ScheduleEmailAutomation] Wait node: ${waitTime} ${waitUnit} = ${delayMinutes} minutes`);
+        } else if (currentNode.type === "email") {
+          // Found email node
+          emailSubject = currentNode.data?.subject || emailSubject;
+          emailBodyHtml = currentNode.data?.bodyHtml || emailBodyHtml;
+          foundEmail = true;
+          console.log(`[ScheduleEmailAutomation] Found email node with subject: ${emailSubject}`);
+          break;
+        } else if (currentNode.type === "end") {
+          break;
+        }
+
+        // Find next edge
+        const nextEdge = edges.find((edge: any) => edge.source === currentNodeId);
+        if (nextEdge) {
+          currentNodeId = nextEdge.target;
+        } else {
+          break;
+        }
+      }
+
+      if (!foundEmail) {
+        console.log("[ScheduleEmailAutomation] No email node found in path");
+        continue;
+      }
+
+      // Calculate scheduled time
+      const scheduledFor = new Date(Date.now() + totalDelayMinutes * 60 * 1000);
+
+      // Replace name placeholders
+      emailSubject = replaceName(emailSubject);
+      emailBodyHtml = replaceName(emailBodyHtml);
+
+      console.log(`[ScheduleEmailAutomation] Scheduling email for ${lead.email} at ${scheduledFor.toISOString()} (delay: ${totalDelayMinutes} min)`);
+
+      // Insert scheduled email
+      const { error: scheduleError } = await supabase
+        .from("scheduled_emails")
+        .insert({
+          lead_id: lead.id,
+          automation_id: automation.id,
+          lead_name: leadName,
+          lead_email: lead.email,
+          subject: emailSubject,
+          body_html: emailBodyHtml,
+          scheduled_for: scheduledFor.toISOString(),
+          status: "pending",
+        });
+
+      if (scheduleError) {
+        console.error("[ScheduleEmailAutomation] Error scheduling email:", scheduleError);
+      } else {
+        console.log(`[ScheduleEmailAutomation] ✅ Email scheduled successfully for ${scheduledFor.toISOString()}`);
+      }
+    }
+  } catch (error) {
+    console.error("[ScheduleEmailAutomation] Error:", error);
+  }
+}
+
+// Send email automation for lead_created trigger (legacy - immediate send)
 async function triggerEmailAutomation(
   supabase: any,
   lead: Record<string, any>,
   pipelineId: string | null,
   subOriginId: string | null
 ) {
+  // First, schedule any registered_no_group automations with delay
+  await scheduleEmailAutomation(supabase, lead, pipelineId, subOriginId);
+
+  // Then handle immediate (legacy) pipeline-based automations
   if (!pipelineId) return;
 
   try {
@@ -40,6 +230,16 @@ async function triggerEmailAutomation(
     const resend = new Resend(resendApiKey);
 
     for (const automation of emailAutomations) {
+      // Skip automations that have flow_steps with delay (they're handled by scheduleEmailAutomation)
+      const flowSteps = automation.flow_steps as any[] | null;
+      if (flowSteps && Array.isArray(flowSteps)) {
+        const hasWaitNode = flowSteps.some((step: any) => step?.type === "wait");
+        if (hasWaitNode) {
+          console.log(`[EmailAutomation] Skipping "${automation.name}" - has wait node, handled by scheduler`);
+          continue;
+        }
+      }
+
       // Check sub_origin scope
       if (automation.sub_origin_id && automation.sub_origin_id !== subOriginId) {
         continue;
