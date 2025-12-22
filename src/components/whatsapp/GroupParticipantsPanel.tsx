@@ -100,6 +100,13 @@ export const GroupParticipantsPanel = ({
         console.error("[GroupParticipantsPanel] Cache save error:", error);
       } else {
         console.log("[GroupParticipantsPanel] Saved to cache:", records.length);
+        
+        // Update participant_count in whatsapp_groups
+        await supabase
+          .from("whatsapp_groups")
+          .update({ participant_count: participantsList.length })
+          .eq("group_jid", groupJid)
+          .eq("session_id", apiKey);
       }
     } catch (err) {
       console.error("[GroupParticipantsPanel] Cache save error:", err);
