@@ -494,9 +494,9 @@ export function ConnectSourceDialog({
         const campaigns = selectedConnection?.selected_campaigns || [];
         return (
           <div className="space-y-4 py-4">
-            <div className="flex items-center gap-2 p-3 rounded-lg bg-[#1877F2]/10">
+            <div className="flex items-center gap-2 p-3 rounded-lg bg-[#1877F2]/10 min-w-0">
               <Facebook className="h-4 w-4 text-[#1877F2]" />
-              <span className="text-sm font-medium">
+              <span className="text-sm font-medium truncate">
                 {selectedConnection?.ad_account_name || selectedConnection?.ad_account_id}
               </span>
             </div>
@@ -504,7 +504,7 @@ export function ConnectSourceDialog({
               Selecione a campanha que deseja monitorar
             </p>
             
-            <div className="space-y-2 max-h-[300px] overflow-y-auto pr-1">
+            <div className="space-y-2 max-h-[300px] overflow-y-auto overflow-x-hidden pr-1">
               {campaigns.length === 0 ? (
                 <p className="text-sm text-muted-foreground text-center py-6">
                   Nenhuma campanha configurada nesta conexão.
@@ -988,7 +988,7 @@ export function ConnectSourceDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md border-0 shadow-2xl bg-white dark:bg-slate-900">
+      <DialogContent className="sm:max-w-md border-0 shadow-2xl bg-background overflow-hidden">
         <DialogHeader>
           <div className="flex items-center gap-3">
             {step !== 'sources' && (
