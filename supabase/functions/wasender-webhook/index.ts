@@ -967,6 +967,104 @@ async function handler(req: Request): Promise<Response> {
         headers: { ...corsHeaders, "Content-Type": "application/json" } 
       });
     }
+
+    // ========== Handle contacts.update event (includes group photo/name changes) ==========
+    if (event === "contacts.update") {
+      const contactData = payload.data?.contacts || payload.data;
+      const contactId = contactData?.id || "";
+      const imgUrl = contactData?.imgUrl || "";
+      const name = contactData?.name || contactData?.notify || null;
+      
+      console.log(`[Wasender Webhook] 📇 contacts.update - id: ${contactId}, imgUrl: ${imgUrl}, name: ${name}`);
+      
+      // Check if this is a group update (ends with @g.us)
+      if (contactId.endsWith("@g.us")) {
+        console.log(`[Wasender Webhook] 📋 Group photo/name update detected for: ${contactId}`);
+        
+        // When imgUrl is "changed" or "removed", we need to fetch the actual photo via API
+        if (sessionId && (imgUrl === "changed" || imgUrl === "removed" || name)) {
+          try {
+            // Fetch group metadata to get the actual photo URL and name
+            const groupMetadataResponse = await fetch(
+              `https://www.wasenderapi.com/api/groups/${encodeURIComponent(contactId)}/metadata`,
+              {
+                method: "GET",
+                headers: {
+                  Authorization: `Bearer ${sessionId}`,
+                  "Content-Type": "application/json",
+                },
+              }
+            );
+            
+            if (groupMetadataResponse.ok) {
+              const groupMetadata = await groupMetadataResponse.json();
+              console.log(`[Wasender Webhook] Group metadata response:`, JSON.stringify(groupMetadata).substring(0, 500));
+              
+              if (groupMetadata.success && groupMetadata.data) {
+                const actualName = groupMetadata.data.subject || groupMetadata.data.name || null;
+                const actualPhoto = groupMetadata.data.profilePicture || groupMetadata.data.ppUrl || groupMetadata.data.imgUrl || null;
+                const description = groupMetadata.data.desc || groupMetadata.data.description || null;
+                const participantCount = groupMetadata.data.participants?.length || groupMetadata.data.size || null;
+                
+                console.log(`[Wasender Webhook] Actual group data - name: ${actualName}, photo: ${actualPhoto ? 'yes' : 'no'}`);
+                
+                // Build update object
+                const updateData: Record<string, any> = {};
+                if (actualName) updateData.name = actualName;
+                if (actualPhoto) updateData.photo_url = actualPhoto;
+                else if (imgUrl === "removed") updateData.photo_url = null;
+                if (description !== null) updateData.description = description;
+                if (participantCount !== null) updateData.participant_count = participantCount;
+                
+                if (Object.keys(updateData).length > 0) {
+                  // Update whatsapp_groups table
+                  const { error: groupUpdateError } = await supabase
+                    .from("whatsapp_groups")
+                    .update(updateData)
+                    .eq("group_jid", contactId);
+                  
+                  if (groupUpdateError) {
+                    console.error(`[Wasender Webhook] Error updating group ${contactId}:`, groupUpdateError);
+                  } else {
+                    console.log(`[Wasender Webhook] ✅ Updated group ${contactId} via contacts.update`);
+                  }
+                  
+                  // Also update whatsapp_chats
+                  const chatUpdateData: Record<string, any> = {};
+                  if (updateData.name) chatUpdateData.name = updateData.name;
+                  if (updateData.photo_url !== undefined) chatUpdateData.photo_url = updateData.photo_url;
+                  
+                  if (Object.keys(chatUpdateData).length > 0) {
+                    const { error: chatUpdateError } = await supabase
+                      .from("whatsapp_chats")
+                      .update(chatUpdateData)
+                      .eq("phone", contactId);
+                    
+                    if (!chatUpdateError) {
+                      console.log(`[Wasender Webhook] ✅ Also updated whatsapp_chats for group ${contactId}`);
+                    }
+                  }
+                }
+              }
+            } else {
+              console.error(`[Wasender Webhook] Failed to fetch group metadata: ${groupMetadataResponse.status}`);
+            }
+          } catch (metaError) {
+            console.error(`[Wasender Webhook] Error fetching group metadata for contacts.update:`, metaError);
+          }
+        }
+        
+        return new Response(JSON.stringify({ ok: true }), { 
+          headers: { ...corsHeaders, "Content-Type": "application/json" } 
+        });
+      }
+      
+      // For non-group contacts, just log and continue (we don't track individual contacts currently)
+      console.log(`[Wasender Webhook] Ignoring non-group contacts.update for: ${contactId}`);
+      return new Response(JSON.stringify({ ok: true }), { 
+        headers: { ...corsHeaders, "Content-Type": "application/json" } 
+      });
+    }
     
     // Only process message events (private chats and groups)
     if (event !== "messages.received" && event !== "messages.upsert") {
