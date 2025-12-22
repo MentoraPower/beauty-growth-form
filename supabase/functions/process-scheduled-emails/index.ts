@@ -61,7 +61,51 @@ const handler = async (req: Request): Promise<Response> => {
 
     for (const email of scheduledEmails) {
       try {
-        console.log(`[ProcessScheduledEmails] Sending email to ${email.lead_email} (scheduled for ${email.scheduled_for})`);
+        console.log(`[ProcessScheduledEmails] Processing email for ${email.lead_email} (scheduled for ${email.scheduled_for})`);
+
+        // Check if this is a "registered_no_group" automation - if so, verify lead hasn't joined the group
+        const { data: automation } = await supabase
+          .from("email_automations")
+          .select("flow_steps")
+          .eq("id", email.automation_id)
+          .single();
+
+        if (automation?.flow_steps) {
+          const flowSteps = automation.flow_steps as any[];
+          const triggerNode = flowSteps.find((step: any) => step?.type === "trigger");
+          const triggers = triggerNode?.data?.triggers as any[] | null;
+          
+          // Check if this automation uses registered_no_group trigger
+          const hasRegisteredNoGroupTrigger = triggers?.some((t: any) => t?.type === "registered_no_group");
+          
+          if (hasRegisteredNoGroupTrigger) {
+            // Check if lead has already joined a group (grupo_entrada tracking)
+            const { data: trackingEntries } = await supabase
+              .from("lead_tracking")
+              .select("id")
+              .eq("lead_id", email.lead_id)
+              .eq("tipo", "grupo_entrada")
+              .limit(1);
+
+            if (trackingEntries && trackingEntries.length > 0) {
+              console.log(`[ProcessScheduledEmails] ⏭️ Skipping email for ${email.lead_email} - lead already joined a group`);
+              
+              // Cancel this scheduled email
+              await supabase
+                .from("scheduled_emails")
+                .update({ 
+                  status: "cancelled", 
+                  cancelled_at: new Date().toISOString(),
+                  cancel_reason: "Lead já entrou no grupo antes do envio"
+                })
+                .eq("id", email.id);
+
+              continue;
+            }
+          }
+        }
+
+        console.log(`[ProcessScheduledEmails] Sending email to ${email.lead_email}`);
 
         // Send email via Resend
         const emailResponse = await resend.emails.send({
