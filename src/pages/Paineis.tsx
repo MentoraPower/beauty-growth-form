@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Skeleton } from "@/components/ui/skeleton";
 import { DashboardCanvas } from "@/components/paineis/DashboardCanvas";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -209,8 +210,31 @@ export default function Paineis() {
           </div>
           
           {isLoading ? (
-            <div className="bg-card border border-border rounded-xl p-8 text-center">
-              <p className="text-sm text-muted-foreground">Carregando...</p>
+            <div className="bg-card border border-border rounded-xl overflow-hidden">
+              {/* Skeleton Header */}
+              <div className="grid grid-cols-[1fr_120px_60px] gap-4 px-4 py-3 border-b border-border bg-muted/30">
+                <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Nome</span>
+                <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Modelo</span>
+                <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider text-center">Ações</span>
+              </div>
+              {/* Skeleton Rows */}
+              <div className="divide-y divide-border">
+                {[1, 2, 3].map((i) => (
+                  <div
+                    key={i}
+                    className="grid grid-cols-[1fr_120px_60px] gap-4 items-center px-4 py-3"
+                  >
+                    <div className="flex items-center gap-3">
+                      <Skeleton className="w-8 h-8 rounded-lg" />
+                      <Skeleton className="h-4 w-40" />
+                    </div>
+                    <Skeleton className="h-4 w-20" />
+                    <div className="flex justify-center">
+                      <Skeleton className="w-8 h-8 rounded-lg" />
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
           ) : dashboards.length === 0 ? (
             <div className="bg-card border border-border rounded-xl p-8 text-center">
