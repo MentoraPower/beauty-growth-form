@@ -429,42 +429,44 @@ function SortableOriginItem({
               }}
             />
             
-            {/* Overview Item */}
-            <li className="relative pl-6 py-1">
-              {/* Curva SVG perfeita */}
-              <svg 
-                className="absolute left-[4px] top-1/2 -translate-y-1/2 z-0" 
-                width="18" 
-                height="18" 
-                viewBox="0 0 18 18"
-                fill="none"
-              >
-                <path 
-                  d="M 8 0 L 8 5 Q 8 9 12 9 L 18 9" 
-                  stroke="hsl(var(--muted-foreground))"
-                  strokeWidth="2" 
+            {/* Overview Item - Only show if origin has a calendar sub-origin */}
+            {originSubOrigins.some(s => s.tipo === 'calendario') && (
+              <li className="relative pl-6 py-1">
+                {/* Curva SVG perfeita */}
+                <svg 
+                  className="absolute left-[4px] top-1/2 -translate-y-1/2 z-0" 
+                  width="18" 
+                  height="18" 
+                  viewBox="0 0 18 18"
                   fill="none"
-                />
-              </svg>
-              
-              <div className="flex items-center group">
-                <button
-                  onClick={() => handleOverviewClick(origin.id)}
-                  className={cn(
-                    "flex items-center gap-2 flex-1 py-2 px-3 rounded-md transition-all duration-200 ease-out text-xs",
-                    currentOverviewOriginId === origin.id 
-                      ? "bg-gradient-to-r from-[#8B0000] to-[#5C0000] text-white font-medium shadow-lg shadow-red-900/30"
-                      : "text-foreground/70 hover:text-foreground hover:bg-black/5"
-                  )}
                 >
-                  <Home className={cn(
-                    "h-3 w-3 flex-shrink-0",
-                    currentOverviewOriginId === origin.id ? "text-white" : "text-foreground/70"
-                  )} />
-                  <span className="font-bold">Overview</span>
-                </button>
-              </div>
-            </li>
+                  <path 
+                    d="M 8 0 L 8 5 Q 8 9 12 9 L 18 9" 
+                    stroke="hsl(var(--muted-foreground))"
+                    strokeWidth="2" 
+                    fill="none"
+                  />
+                </svg>
+                
+                <div className="flex items-center group">
+                  <button
+                    onClick={() => handleOverviewClick(origin.id)}
+                    className={cn(
+                      "flex items-center gap-2 flex-1 py-2 px-3 rounded-md transition-all duration-200 ease-out text-xs",
+                      currentOverviewOriginId === origin.id 
+                        ? "bg-gradient-to-r from-[#8B0000] to-[#5C0000] text-white font-medium shadow-lg shadow-red-900/30"
+                        : "text-foreground/70 hover:text-foreground hover:bg-black/5"
+                    )}
+                  >
+                    <Home className={cn(
+                      "h-3 w-3 flex-shrink-0",
+                      currentOverviewOriginId === origin.id ? "text-white" : "text-foreground/70"
+                    )} />
+                    <span className="font-bold">Overview</span>
+                  </button>
+                </div>
+              </li>
+            )}
 
             {/* Calendar sub-origin (appears right after Overview) */}
             {originSubOrigins.filter(s => s.tipo === 'calendario').map((subOrigin, index, filteredCalendars) => {
