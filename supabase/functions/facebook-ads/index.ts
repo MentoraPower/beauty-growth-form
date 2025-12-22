@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -12,10 +13,13 @@ serve(async (req) => {
   }
 
   try {
-    const { action, accessToken, adAccountId, campaignIds } = await req.json();
+    const body = await req.json();
+    const { action, accessToken, adAccountId, campaignIds, connectionId, redirectUri, code } = body;
     
     const FACEBOOK_APP_ID = Deno.env.get('FACEBOOK_APP_ID');
     const FACEBOOK_APP_SECRET = Deno.env.get('FACEBOOK_APP_SECRET');
+    const SUPABASE_URL = Deno.env.get('SUPABASE_URL');
+    const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
 
     if (!FACEBOOK_APP_ID || !FACEBOOK_APP_SECRET) {
       console.error('Missing Facebook credentials');
@@ -27,7 +31,6 @@ serve(async (req) => {
 
     // Action: Get OAuth URL for login
     if (action === 'get-oauth-url') {
-      const { redirectUri } = await req.json().catch(() => ({}));
       const scopes = 'ads_read,ads_management,business_management';
       const oauthUrl = `https://www.facebook.com/v18.0/dialog/oauth?client_id=${FACEBOOK_APP_ID}&redirect_uri=${encodeURIComponent(redirectUri || '')}&scope=${scopes}&response_type=code`;
       
@@ -40,8 +43,6 @@ serve(async (req) => {
 
     // Action: Exchange code for access token
     if (action === 'exchange-token') {
-      const { code, redirectUri } = await req.json().catch(() => ({}));
-      
       console.log('Exchanging code for access token');
       const tokenUrl = `https://graph.facebook.com/v18.0/oauth/access_token?client_id=${FACEBOOK_APP_ID}&redirect_uri=${encodeURIComponent(redirectUri)}&client_secret=${FACEBOOK_APP_SECRET}&code=${code}`;
       
@@ -157,6 +158,194 @@ serve(async (req) => {
       console.log(`Retrieved insights for ${insights.length} campaigns`);
       return new Response(
         JSON.stringify({ insights }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Action: Fetch and cache insights for a connection
+    if (action === 'cache-insights') {
+      if (!connectionId) {
+        return new Response(
+          JSON.stringify({ error: 'Connection ID required' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
+        console.error('Missing Supabase credentials');
+        return new Response(
+          JSON.stringify({ error: 'Supabase credentials not configured' }),
+          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+
+      // Get connection details
+      const { data: connection, error: connError } = await supabase
+        .from('facebook_ads_connections')
+        .select('*')
+        .eq('id', connectionId)
+        .single();
+
+      if (connError || !connection) {
+        console.error('Connection not found:', connError);
+        return new Response(
+          JSON.stringify({ error: 'Connection not found' }),
+          { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      const selectedCampaigns = connection.selected_campaigns || [];
+      const campaignIdsToFetch = selectedCampaigns.map((c: any) => c.id);
+
+      if (campaignIdsToFetch.length === 0) {
+        console.log('No campaigns selected');
+        return new Response(
+          JSON.stringify({ message: 'No campaigns selected', cached: 0 }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      console.log(`Caching insights for ${campaignIdsToFetch.length} campaigns`);
+      const insights = [];
+
+      for (const campaignId of campaignIdsToFetch) {
+        try {
+          const url = `https://graph.facebook.com/v18.0/${campaignId}/insights?fields=campaign_name,spend,cpm,cpc,impressions,clicks&date_preset=last_30d&access_token=${connection.access_token}`;
+          const response = await fetch(url);
+          const data = await response.json();
+
+          if (data.data && data.data.length > 0) {
+            const insight = data.data[0];
+            insights.push({
+              connection_id: connectionId,
+              campaign_id: campaignId,
+              campaign_name: insight.campaign_name || selectedCampaigns.find((c: any) => c.id === campaignId)?.name,
+              spend: parseFloat(insight.spend) || 0,
+              cpm: parseFloat(insight.cpm) || 0,
+              cpc: parseFloat(insight.cpc) || 0,
+              impressions: parseInt(insight.impressions) || 0,
+              clicks: parseInt(insight.clicks) || 0,
+              date_preset: 'last_30d',
+              fetched_at: new Date().toISOString()
+            });
+          }
+        } catch (err) {
+          console.error(`Error fetching insight for campaign ${campaignId}:`, err);
+        }
+      }
+
+      if (insights.length > 0) {
+        // Delete old insights for this connection
+        await supabase
+          .from('facebook_ads_insights')
+          .delete()
+          .eq('connection_id', connectionId);
+
+        // Insert new insights
+        const { error: insertError } = await supabase
+          .from('facebook_ads_insights')
+          .insert(insights);
+
+        if (insertError) {
+          console.error('Error inserting insights:', insertError);
+          return new Response(
+            JSON.stringify({ error: 'Failed to cache insights' }),
+            { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+      }
+
+      console.log(`Cached ${insights.length} insights successfully`);
+      return new Response(
+        JSON.stringify({ message: 'Insights cached successfully', cached: insights.length, insights }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Action: Refresh all active connections
+    if (action === 'refresh-all') {
+      if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
+        console.error('Missing Supabase credentials');
+        return new Response(
+          JSON.stringify({ error: 'Supabase credentials not configured' }),
+          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+
+      // Get all active connections
+      const { data: connections, error: connError } = await supabase
+        .from('facebook_ads_connections')
+        .select('*')
+        .eq('is_active', true);
+
+      if (connError) {
+        console.error('Error fetching connections:', connError);
+        return new Response(
+          JSON.stringify({ error: 'Failed to fetch connections' }),
+          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      console.log(`Refreshing insights for ${connections?.length || 0} connections`);
+      let totalCached = 0;
+
+      for (const connection of connections || []) {
+        const selectedCampaigns = connection.selected_campaigns || [];
+        const campaignIdsToFetch = selectedCampaigns.map((c: any) => c.id);
+
+        if (campaignIdsToFetch.length === 0) continue;
+
+        const insights = [];
+
+        for (const campaignId of campaignIdsToFetch) {
+          try {
+            const url = `https://graph.facebook.com/v18.0/${campaignId}/insights?fields=campaign_name,spend,cpm,cpc,impressions,clicks&date_preset=last_30d&access_token=${connection.access_token}`;
+            const response = await fetch(url);
+            const data = await response.json();
+
+            if (data.data && data.data.length > 0) {
+              const insight = data.data[0];
+              insights.push({
+                connection_id: connection.id,
+                campaign_id: campaignId,
+                campaign_name: insight.campaign_name || selectedCampaigns.find((c: any) => c.id === campaignId)?.name,
+                spend: parseFloat(insight.spend) || 0,
+                cpm: parseFloat(insight.cpm) || 0,
+                cpc: parseFloat(insight.cpc) || 0,
+                impressions: parseInt(insight.impressions) || 0,
+                clicks: parseInt(insight.clicks) || 0,
+                date_preset: 'last_30d',
+                fetched_at: new Date().toISOString()
+              });
+            }
+          } catch (err) {
+            console.error(`Error fetching insight for campaign ${campaignId}:`, err);
+          }
+        }
+
+        if (insights.length > 0) {
+          // Delete old insights for this connection
+          await supabase
+            .from('facebook_ads_insights')
+            .delete()
+            .eq('connection_id', connection.id);
+
+          // Insert new insights
+          await supabase
+            .from('facebook_ads_insights')
+            .insert(insights);
+
+          totalCached += insights.length;
+        }
+      }
+
+      console.log(`Refreshed ${totalCached} total insights`);
+      return new Response(
+        JSON.stringify({ message: 'All insights refreshed', totalCached }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }

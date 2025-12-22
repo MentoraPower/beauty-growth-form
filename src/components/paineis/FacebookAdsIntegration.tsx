@@ -210,16 +210,32 @@ export function FacebookAdsIntegration({ open, onOpenChange }: FacebookAdsIntegr
     
     try {
       // Save connection to database
-      const { error } = await supabase.from('facebook_ads_connections').insert({
+      const { data: connection, error } = await supabase.from('facebook_ads_connections').insert({
         access_token: accessToken,
         ad_account_id: selectedAdAccount,
         ad_account_name: adAccounts.find(a => a.id === selectedAdAccount)?.name || null,
         selected_campaigns: selected.map(c => ({ id: c.id, name: c.name })),
         selected_metrics: selectedMetrics,
         is_active: true
-      });
+      }).select().single();
 
       if (error) throw error;
+
+      // Cache insights in background
+      if (connection) {
+        supabase.functions.invoke('facebook-ads', {
+          body: { 
+            action: 'cache-insights',
+            connectionId: connection.id
+          }
+        }).then(({ data, error }) => {
+          if (error) {
+            console.error('Error caching insights:', error);
+          } else {
+            console.log('Insights cached:', data);
+          }
+        });
+      }
 
       toast.success(`${selected.length} campanhas configuradas!`);
       onOpenChange(false);
