@@ -25,23 +25,17 @@ interface ChartRendererProps {
   isLoading?: boolean;
 }
 
-// Modern vibrant color palette with gradients
-const MODERN_COLORS = [
-  "#8b5cf6", // violet
-  "#06b6d4", // cyan
-  "#10b981", // emerald
-  "#f59e0b", // amber
-  "#ef4444", // red
-  "#ec4899", // pink
-  "#3b82f6", // blue
-];
+// Red gradient palette
+const PRIMARY_RED = "#dc2626";
+const PRIMARY_RED_LIGHT = "#f87171";
+const PRIMARY_RED_DARK = "#991b1b";
 
 const GRADIENT_PAIRS = [
-  { start: "#8b5cf6", end: "#c4b5fd" }, // violet
-  { start: "#06b6d4", end: "#67e8f9" }, // cyan
-  { start: "#10b981", end: "#6ee7b7" }, // emerald
-  { start: "#f59e0b", end: "#fcd34d" }, // amber
-  { start: "#ef4444", end: "#fca5a5" }, // red
+  { start: "#dc2626", end: "#f87171" },
+  { start: "#b91c1c", end: "#ef4444" },
+  { start: "#991b1b", end: "#dc2626" },
+  { start: "#7f1d1d", end: "#b91c1c" },
+  { start: "#450a0a", end: "#991b1b" },
 ];
 
 export function ChartRenderer({ chartType, data, width, height, isLoading }: ChartRendererProps) {
@@ -54,8 +48,8 @@ export function ChartRenderer({ chartType, data, width, height, isLoading }: Cha
     return (
       <div className="w-full h-full flex items-center justify-center">
         <div className="relative">
-          <div className="absolute inset-0 bg-gradient-to-r from-violet-500/20 to-cyan-500/20 rounded-full blur-xl animate-pulse" />
-          <RefreshCw className="h-8 w-8 text-violet-500 animate-spin relative z-10" />
+          <div className="absolute inset-0 bg-gradient-to-r from-red-500/20 to-red-400/20 rounded-full blur-xl animate-pulse" />
+          <RefreshCw className="h-8 w-8 text-red-500 animate-spin relative z-10" />
         </div>
       </div>
     );
@@ -95,8 +89,8 @@ export function ChartRenderer({ chartType, data, width, height, isLoading }: Cha
           >
             {/* Subtle glow behind chart */}
             <div 
-              className="absolute inset-4 rounded-full blur-2xl opacity-30"
-              style={{ background: `radial-gradient(circle, ${MODERN_COLORS[0]}40, transparent 70%)` }}
+              className="absolute inset-4 rounded-full blur-2xl opacity-20"
+              style={{ background: `radial-gradient(circle, ${PRIMARY_RED}40, transparent 70%)` }}
             />
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
@@ -147,7 +141,7 @@ export function ChartRenderer({ chartType, data, width, height, isLoading }: Cha
             {/* Center total with subtle bg */}
             <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
               <div className="text-center bg-white/60 backdrop-blur-sm rounded-full p-3">
-                <p className={`${totalFontSize} font-bold bg-gradient-to-br from-violet-600 to-cyan-600 bg-clip-text text-transparent leading-none`}>
+                <p className={`${totalFontSize} font-bold text-foreground leading-none`}>
                   {total}
                 </p>
                 <p className={`${labelFontSize} text-muted-foreground mt-0.5 font-medium`}>total</p>
@@ -161,9 +155,9 @@ export function ChartRenderer({ chartType, data, width, height, isLoading }: Cha
               const percentage = total > 0 ? Math.round((entry.value / total) * 100) : 0;
               const gradientColor = GRADIENT_PAIRS[index % GRADIENT_PAIRS.length].start;
               return (
-                <div key={entry.name} className="flex items-center gap-2.5 min-w-0 group">
+                <div key={entry.name} className="flex items-center gap-2.5 min-w-0">
                   <div 
-                    className="w-3 h-3 rounded-full shrink-0 shadow-sm transition-transform group-hover:scale-110" 
+                    className="w-3 h-3 rounded-full shrink-0" 
                     style={{ 
                       background: entry.color || `linear-gradient(135deg, ${GRADIENT_PAIRS[index % GRADIENT_PAIRS.length].start}, ${GRADIENT_PAIRS[index % GRADIENT_PAIRS.length].end})`,
                     }}
@@ -174,13 +168,7 @@ export function ChartRenderer({ chartType, data, width, height, isLoading }: Cha
                   <span className="text-xs font-semibold text-foreground shrink-0 tabular-nums">
                     {entry.value}
                   </span>
-                  <span 
-                    className="text-[10px] font-medium shrink-0 w-10 text-right tabular-nums px-1.5 py-0.5 rounded-full"
-                    style={{ 
-                      backgroundColor: `${gradientColor}15`,
-                      color: gradientColor,
-                    }}
-                  >
+                  <span className="text-[10px] font-medium shrink-0 w-10 text-right tabular-nums text-muted-foreground">
                     {percentage}%
                   </span>
                 </div>
@@ -210,12 +198,9 @@ export function ChartRenderer({ chartType, data, width, height, isLoading }: Cha
             <BarChart data={trend} margin={{ top: 10, right: 10, left: -15, bottom: 5 }}>
               <defs>
                 <linearGradient id="barGradient" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#10b981" stopOpacity={1} />
-                  <stop offset="100%" stopColor="#06b6d4" stopOpacity={0.8} />
+                  <stop offset="0%" stopColor="#dc2626" stopOpacity={1} />
+                  <stop offset="100%" stopColor="#f87171" stopOpacity={0.8} />
                 </linearGradient>
-                <filter id="barShadow" x="-20%" y="-20%" width="140%" height="140%">
-                  <feDropShadow dx="0" dy="2" stdDeviation="3" floodColor="#10b981" floodOpacity="0.3"/>
-                </filter>
               </defs>
               <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" vertical={false} />
               <XAxis 
@@ -241,7 +226,7 @@ export function ChartRenderer({ chartType, data, width, height, isLoading }: Cha
                   fontSize: "12px",
                 }}
                 formatter={(val: number) => [`${val} leads`, "Quantidade"]}
-                cursor={{ fill: "rgba(139, 92, 246, 0.06)" }}
+                cursor={{ fill: "rgba(220, 38, 38, 0.06)" }}
               />
               <Bar 
                 dataKey="value" 
@@ -249,7 +234,6 @@ export function ChartRenderer({ chartType, data, width, height, isLoading }: Cha
                 radius={[6, 6, 0, 0]}
                 maxBarSize={50}
                 animationDuration={600}
-                style={{ filter: "url(#barShadow)" }}
               />
             </BarChart>
           </ResponsiveContainer>
@@ -281,20 +265,19 @@ export function ChartRenderer({ chartType, data, width, height, isLoading }: Cha
               const gradient = GRADIENT_PAIRS[index % GRADIENT_PAIRS.length];
               
               return (
-                <div key={item.name} className="flex items-center gap-3 min-w-0 group">
+                <div key={item.name} className="flex items-center gap-3 min-w-0">
                   <div className="w-12 shrink-0 flex items-center justify-start">
                     <span className="text-sm font-bold text-foreground tabular-nums">
                       {item.value}
                     </span>
                   </div>
                   
-                  <div className="flex-1 h-6 bg-gradient-to-r from-gray-100 to-gray-50 rounded-full overflow-hidden shadow-inner">
+                  <div className="flex-1 h-6 bg-gray-100 rounded-full overflow-hidden">
                     <div 
                       className="h-full rounded-full transition-all duration-700 ease-out relative overflow-hidden"
                       style={{ 
                         width: `${Math.max(percentage, 4)}%`, 
                         background: item.color || `linear-gradient(90deg, ${gradient.start}, ${gradient.end})`,
-                        boxShadow: `0 2px 8px ${gradient.start}40`,
                       }}
                     >
                       {/* Shine effect */}
@@ -309,13 +292,7 @@ export function ChartRenderer({ chartType, data, width, height, isLoading }: Cha
                     >
                       {item.name}
                     </span>
-                    <span 
-                      className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full"
-                      style={{ 
-                        backgroundColor: `${gradient.start}15`,
-                        color: gradient.start,
-                      }}
-                    >
+                    <span className="text-[10px] font-medium text-muted-foreground">
                       {responsePercent}%
                     </span>
                   </div>
@@ -349,13 +326,9 @@ export function ChartRenderer({ chartType, data, width, height, isLoading }: Cha
             <LineChart data={trend} margin={{ top: 10, right: 10, left: -15, bottom: 5 }}>
               <defs>
                 <linearGradient id="lineGradient" x1="0" y1="0" x2="1" y2="0">
-                  <stop offset="0%" stopColor="#8b5cf6" />
-                  <stop offset="50%" stopColor="#06b6d4" />
-                  <stop offset="100%" stopColor="#10b981" />
+                  <stop offset="0%" stopColor="#dc2626" />
+                  <stop offset="100%" stopColor="#f87171" />
                 </linearGradient>
-                <filter id="lineShadow" x="-20%" y="-20%" width="140%" height="140%">
-                  <feDropShadow dx="0" dy="4" stdDeviation="4" floodColor="#8b5cf6" floodOpacity="0.35"/>
-                </filter>
               </defs>
               <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" vertical={false} />
               <XAxis 
@@ -388,21 +361,18 @@ export function ChartRenderer({ chartType, data, width, height, isLoading }: Cha
                 stroke="url(#lineGradient)" 
                 strokeWidth={3}
                 dot={{ 
-                  fill: "#8b5cf6", 
+                  fill: "#dc2626", 
                   strokeWidth: 2, 
                   stroke: "#fff",
                   r: 5,
-                  filter: "drop-shadow(0 2px 4px rgba(139, 92, 246, 0.4))",
                 }}
                 activeDot={{ 
                   r: 7, 
-                  fill: "#8b5cf6",
+                  fill: "#dc2626",
                   stroke: "#fff",
                   strokeWidth: 2,
-                  filter: "drop-shadow(0 3px 6px rgba(139, 92, 246, 0.5))",
                 }}
                 animationDuration={700}
-                style={{ filter: "url(#lineShadow)" }}
               />
             </LineChart>
           </ResponsiveContainer>
@@ -424,14 +394,12 @@ export function ChartRenderer({ chartType, data, width, height, isLoading }: Cha
             <AreaChart data={trend} margin={{ top: 10, right: 10, left: -15, bottom: 5 }}>
               <defs>
                 <linearGradient id="areaGradient" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#8b5cf6" stopOpacity={0.4} />
-                  <stop offset="50%" stopColor="#06b6d4" stopOpacity={0.2} />
-                  <stop offset="100%" stopColor="#10b981" stopOpacity={0.02} />
+                  <stop offset="0%" stopColor="#dc2626" stopOpacity={0.35} />
+                  <stop offset="100%" stopColor="#f87171" stopOpacity={0.02} />
                 </linearGradient>
                 <linearGradient id="areaStrokeGradient" x1="0" y1="0" x2="1" y2="0">
-                  <stop offset="0%" stopColor="#8b5cf6" />
-                  <stop offset="50%" stopColor="#06b6d4" />
-                  <stop offset="100%" stopColor="#10b981" />
+                  <stop offset="0%" stopColor="#dc2626" />
+                  <stop offset="100%" stopColor="#f87171" />
                 </linearGradient>
               </defs>
               <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" vertical={false} />
@@ -484,16 +452,6 @@ export function ChartRenderer({ chartType, data, width, height, isLoading }: Cha
       
       return (
         <div className="w-full h-full flex flex-col items-center justify-center relative">
-          {/* Glow effect */}
-          <div 
-            className="absolute rounded-full blur-3xl opacity-20"
-            style={{
-              width: gaugeWidth * 0.6,
-              height: gaugeWidth * 0.3,
-              background: 'linear-gradient(90deg, #8b5cf6, #06b6d4)',
-              top: '40%',
-            }}
-          />
           <svg 
             width={gaugeWidth} 
             height={gaugeHeight} 
@@ -502,13 +460,9 @@ export function ChartRenderer({ chartType, data, width, height, isLoading }: Cha
           >
             <defs>
               <linearGradient id="gaugeGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                <stop offset="0%" stopColor="#8b5cf6" />
-                <stop offset="50%" stopColor="#06b6d4" />
-                <stop offset="100%" stopColor="#10b981" />
+                <stop offset="0%" stopColor="#dc2626" />
+                <stop offset="100%" stopColor="#f87171" />
               </linearGradient>
-              <filter id="gaugeShadow" x="-20%" y="-20%" width="140%" height="140%">
-                <feDropShadow dx="0" dy="2" stdDeviation="4" floodColor="#8b5cf6" floodOpacity="0.4"/>
-              </filter>
             </defs>
             {/* Background arc */}
             <path
@@ -528,24 +482,11 @@ export function ChartRenderer({ chartType, data, width, height, isLoading }: Cha
               strokeDasharray={`${filledLength} ${arcLength}`}
               style={{ 
                 transition: "stroke-dasharray 0.8s ease-out",
-                filter: "url(#gaugeShadow)",
               }}
             />
-            {/* End dot indicator */}
-            {gaugePercentage > 0 && (
-              <circle
-                cx={20 + (160 * gaugePercentage / 100)}
-                cy={100 - Math.sin(Math.PI * gaugePercentage / 100) * 80}
-                r="6"
-                fill="#fff"
-                stroke="#10b981"
-                strokeWidth="3"
-                style={{ filter: "drop-shadow(0 2px 4px rgba(16, 185, 129, 0.4))" }}
-              />
-            )}
           </svg>
           <div className="text-center -mt-6 relative z-10">
-            <p className="text-4xl font-bold bg-gradient-to-r from-violet-600 via-cyan-600 to-emerald-600 bg-clip-text text-transparent">
+            <p className="text-4xl font-bold text-foreground">
               {total.toLocaleString()}
             </p>
             <p className="text-xs text-muted-foreground font-medium mt-1">{data?.label || "Leads"}</p>
@@ -566,25 +507,14 @@ export function ChartRenderer({ chartType, data, width, height, isLoading }: Cha
       
       return (
         <div className="w-full h-full flex flex-col items-center justify-center relative">
-          {/* Background glow */}
-          <div 
-            className="absolute rounded-full blur-3xl opacity-20"
-            style={{
-              width: '60%',
-              height: '40%',
-              background: isPositive 
-                ? 'linear-gradient(90deg, #10b981, #06b6d4)' 
-                : 'linear-gradient(90deg, #ef4444, #f59e0b)',
-            }}
-          />
-          <p className="text-5xl font-bold bg-gradient-to-r from-violet-600 via-cyan-600 to-emerald-600 bg-clip-text text-transparent tracking-tight relative z-10">
+          <p className="text-5xl font-bold text-foreground tracking-tight relative z-10">
             {total.toLocaleString()}
           </p>
           <div className="flex items-center gap-2 mt-4 relative z-10">
-            <div className={`flex items-center gap-1 text-sm font-semibold px-3 py-1.5 rounded-full shadow-sm ${
+            <div className={`flex items-center gap-1 text-sm font-semibold px-3 py-1.5 rounded-full ${
               isPositive 
-                ? 'text-emerald-700 bg-gradient-to-r from-emerald-50 to-cyan-50 border border-emerald-200/50' 
-                : 'text-red-600 bg-gradient-to-r from-red-50 to-orange-50 border border-red-200/50'
+                ? 'text-emerald-700 bg-emerald-50' 
+                : 'text-red-600 bg-red-50'
             }`}>
               {isPositive ? <TrendingUp className="w-4 h-4" /> : <TrendingDown className="w-4 h-4" />}
               <span>{isPositive ? '+' : ''}{changePercent}%</span>
