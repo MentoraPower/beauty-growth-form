@@ -824,13 +824,19 @@ export function AutomationsDropdown({
       
       // Support both new triggers array format and legacy triggerPipelineId
       const triggers = triggerStep?.data?.triggers as Array<{ id: string; type: string; pipelineId?: string }> | undefined;
-      const extractedTriggerPipelineId = triggers?.[0]?.pipelineId || triggerStep?.data?.triggerPipelineId || triggerPipelineId;
-
-      // Validate trigger pipeline is selected
-      if (!extractedTriggerPipelineId) {
-        toast.error("Selecione uma pipeline de gatilho no nó de trigger");
+      
+      // Check if we have any trigger configured
+      const hasTriggers = triggers && triggers.length > 0;
+      const hasLegacyTrigger = triggerStep?.data?.triggerPipelineId || triggerPipelineId;
+      
+      if (!hasTriggers && !hasLegacyTrigger) {
+        toast.error("Selecione pelo menos um gatilho no nó de trigger");
         return;
       }
+      
+      // Get pipeline ID from first pipeline trigger (if any)
+      const pipelineTrigger = triggers?.find(t => t.type === "lead_entered_pipeline");
+      const extractedTriggerPipelineId = pipelineTrigger?.pipelineId || triggerStep?.data?.triggerPipelineId || triggerPipelineId || null;
 
       // For now, use the first email step's data
       const firstEmail = emailSteps[0];
@@ -921,13 +927,19 @@ export function AutomationsDropdown({
     
     // Support both new triggers array format and legacy triggerPipelineId
     const triggers = triggerStep?.data?.triggers as Array<{ id: string; type: string; pipelineId?: string }> | undefined;
-    const triggerPipelineId = triggers?.[0]?.pipelineId || triggerStep?.data?.triggerPipelineId || emailTriggerPipeline;
-
-    // Validate trigger pipeline is selected
-    if (!triggerPipelineId) {
-      toast.error("Selecione uma pipeline de gatilho no nó de trigger");
+    
+    // Check if we have any trigger configured
+    const hasTriggers = triggers && triggers.length > 0;
+    const hasLegacyTrigger = triggerStep?.data?.triggerPipelineId || emailTriggerPipeline;
+    
+    if (!hasTriggers && !hasLegacyTrigger) {
+      toast.error("Selecione pelo menos um gatilho no nó de trigger");
       return;
     }
+    
+    // Get pipeline ID from first pipeline trigger (if any)
+    const pipelineTrigger = triggers?.find(t => t.type === "lead_entered_pipeline");
+    const triggerPipelineId = pipelineTrigger?.pipelineId || triggerStep?.data?.triggerPipelineId || emailTriggerPipeline || null;
 
     const firstEmail = emailSteps[0];
     const subject = firstEmail.data.subject || emailSubject;

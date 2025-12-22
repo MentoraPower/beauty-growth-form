@@ -20,7 +20,7 @@ import {
   useReactFlow,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
-import { Play, Clock, CheckCircle2, Trash2, Copy, ArrowLeft, Plus, Mail, Zap, ChevronDown } from "lucide-react";
+import { Play, Clock, CheckCircle2, Trash2, Copy, ArrowLeft, Plus, Mail, Zap, ChevronDown, Users, UserMinus, UserX } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -105,6 +105,13 @@ const EntryNode = ({ data }: NodeProps) => {
   );
 };
 
+// Group trigger types
+const GROUP_TRIGGER_TYPES = [
+  { id: "joined_group", label: "Entrou no Grupo", icon: Users, description: "Lead entrou em um grupo WhatsApp" },
+  { id: "left_group", label: "Saiu do Grupo", icon: UserMinus, description: "Lead saiu de um grupo WhatsApp" },
+  { id: "registered_no_group", label: "Cadastrou mas não entrou", icon: UserX, description: "Lead se cadastrou mas não entrou no grupo em 2 min" },
+];
+
 // Trigger Node Component - Main entry point with multiple triggers
 const TriggerNode = ({ data, id, selected }: NodeProps & { data: { 
   label: string; 
@@ -116,6 +123,7 @@ const TriggerNode = ({ data, id, selected }: NodeProps & { data: {
   triggerPipelineId?: string;
 }}) => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [dropdownCategory, setDropdownCategory] = useState<"pipeline" | "group" | null>(null);
   
   // Convert legacy single trigger to array format
   const getTriggers = (): TriggerItem[] => {
@@ -134,12 +142,33 @@ const TriggerNode = ({ data, id, selected }: NodeProps & { data: {
   const selectedPipelineIds = triggers.map(t => t.pipelineId).filter(Boolean);
   const availablePipelines = data.pipelines?.filter(p => !selectedPipelineIds.includes(p.id)) || [];
 
+  // Filter out group triggers that are already added
+  const selectedGroupTypes = triggers.map(t => t.type).filter(type => 
+    GROUP_TRIGGER_TYPES.some(gt => gt.id === type)
+  );
+  const availableGroupTriggers = GROUP_TRIGGER_TYPES.filter(gt => !selectedGroupTypes.includes(gt.id));
+
   const getTriggerLabel = (trigger: TriggerItem) => {
     if (trigger.type === "lead_entered_pipeline" && trigger.pipelineId) {
       const pipeline = data.pipelines?.find(p => p.id === trigger.pipelineId);
       return `Lead entrou em: ${pipeline?.nome || ""}`;
     }
+    
+    const groupTrigger = GROUP_TRIGGER_TYPES.find(gt => gt.id === trigger.type);
+    if (groupTrigger) {
+      return groupTrigger.label;
+    }
+    
     return "Lead entrou em pipeline";
+  };
+
+  const getTriggerIcon = (trigger: TriggerItem) => {
+    const groupTrigger = GROUP_TRIGGER_TYPES.find(gt => gt.id === trigger.type);
+    if (groupTrigger) {
+      const Icon = groupTrigger.icon;
+      return <Icon className="w-4 h-4 text-[#F40000]" />;
+    }
+    return <Zap className="w-4 h-4 text-[#F40000]" />;
   };
 
   const addTriggerWithPipeline = (pipelineId: string) => {
@@ -153,6 +182,20 @@ const TriggerNode = ({ data, id, selected }: NodeProps & { data: {
       data.onTriggersChange(newTriggers);
     }
     setIsDropdownOpen(false);
+    setDropdownCategory(null);
+  };
+
+  const addGroupTrigger = (triggerType: string) => {
+    const newTrigger: TriggerItem = {
+      id: `trigger-${Date.now()}`,
+      type: triggerType,
+    };
+    const newTriggers = [...triggers, newTrigger];
+    if (data.onTriggersChange) {
+      data.onTriggersChange(newTriggers);
+    }
+    setIsDropdownOpen(false);
+    setDropdownCategory(null);
   };
 
   const removeTrigger = (triggerId: string) => {
@@ -161,6 +204,8 @@ const TriggerNode = ({ data, id, selected }: NodeProps & { data: {
       data.onTriggersChange(newTriggers);
     }
   };
+
+  const hasAvailableTriggers = availablePipelines.length > 0 || availableGroupTriggers.length > 0;
 
   return (
     <div className="relative">
@@ -193,6 +238,7 @@ const TriggerNode = ({ data, id, selected }: NodeProps & { data: {
               className="relative group"
             >
               <div className="flex items-center gap-2 p-3 rounded-lg border border-border bg-muted/30">
+                {getTriggerIcon(trigger)}
                 <div className="flex-1">
                   <span className="text-sm text-foreground font-medium">{getTriggerLabel(trigger)}</span>
                 </div>
@@ -215,8 +261,8 @@ const TriggerNode = ({ data, id, selected }: NodeProps & { data: {
             </div>
           ))}
           
-          {/* Add trigger button with dashed border - only show if there are available pipelines */}
-          {availablePipelines.length > 0 && (
+          {/* Add trigger button with dashed border */}
+          {hasAvailableTriggers && (
             <button
               onClick={() => setIsDropdownOpen(!isDropdownOpen)}
               className="w-full p-3 rounded-lg border-2 border-dashed border-muted-foreground/30 hover:border-muted-foreground/50 hover:bg-muted/20 transition-all flex items-center justify-center gap-2 text-muted-foreground"
@@ -228,8 +274,8 @@ const TriggerNode = ({ data, id, selected }: NodeProps & { data: {
         </div>
       </div>
       
-      {/* Pipeline dropdown - Shows only available pipelines */}
-      {isDropdownOpen && availablePipelines.length > 0 && (
+      {/* Category selection dropdown */}
+      {isDropdownOpen && !dropdownCategory && (
         <div 
           className="absolute left-3 right-3 rounded-lg shadow-xl nodrag"
           style={{ 
@@ -240,6 +286,62 @@ const TriggerNode = ({ data, id, selected }: NodeProps & { data: {
           }}
           onClick={(e) => e.stopPropagation()}
         >
+          <div className="px-3 py-2 text-xs font-semibold text-muted-foreground border-b border-gray-100" style={{ backgroundColor: '#f9fafb' }}>
+            Selecione o tipo de gatilho
+          </div>
+          
+          {availablePipelines.length > 0 && (
+            <button
+              onClick={() => setDropdownCategory("pipeline")}
+              className="w-full px-3 py-2.5 text-left text-sm hover:bg-gray-100 transition-colors flex items-center gap-2 text-foreground"
+              style={{ backgroundColor: '#ffffff' }}
+            >
+              <Zap className="w-4 h-4 text-[#F40000]" />
+              <div className="flex-1">
+                <div className="font-medium">Entrou em Pipeline</div>
+                <div className="text-xs text-muted-foreground">Quando lead entra em uma pipeline</div>
+              </div>
+              <ChevronDown className="w-4 h-4 text-muted-foreground -rotate-90" />
+            </button>
+          )}
+          
+          {availableGroupTriggers.length > 0 && (
+            <button
+              onClick={() => setDropdownCategory("group")}
+              className="w-full px-3 py-2.5 text-left text-sm hover:bg-gray-100 transition-colors flex items-center gap-2 text-foreground last:rounded-b-lg"
+              style={{ backgroundColor: '#ffffff' }}
+            >
+              <Users className="w-4 h-4 text-[#F40000]" />
+              <div className="flex-1">
+                <div className="font-medium">Gatilhos de Grupo</div>
+                <div className="text-xs text-muted-foreground">Relacionados a grupos WhatsApp</div>
+              </div>
+              <ChevronDown className="w-4 h-4 text-muted-foreground -rotate-90" />
+            </button>
+          )}
+        </div>
+      )}
+
+      {/* Pipeline selection dropdown */}
+      {isDropdownOpen && dropdownCategory === "pipeline" && availablePipelines.length > 0 && (
+        <div 
+          className="absolute left-3 right-3 rounded-lg shadow-xl nodrag"
+          style={{ 
+            zIndex: 9999, 
+            backgroundColor: '#ffffff',
+            top: 'calc(100% - 8px)',
+            border: '1px solid #e5e7eb'
+          }}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <button
+            onClick={() => setDropdownCategory(null)}
+            className="w-full px-3 py-2 text-xs font-semibold text-muted-foreground border-b border-gray-100 flex items-center gap-1 hover:bg-gray-50"
+            style={{ backgroundColor: '#f9fafb' }}
+          >
+            <ChevronDown className="w-3 h-3 rotate-90" />
+            Voltar
+          </button>
           <div className="px-3 py-2 text-xs font-semibold text-muted-foreground border-b border-gray-100" style={{ backgroundColor: '#f9fafb' }}>
             Lead entrou em pipeline
           </div>
@@ -254,6 +356,49 @@ const TriggerNode = ({ data, id, selected }: NodeProps & { data: {
               {pipeline.nome}
             </button>
           ))}
+        </div>
+      )}
+
+      {/* Group triggers selection dropdown */}
+      {isDropdownOpen && dropdownCategory === "group" && availableGroupTriggers.length > 0 && (
+        <div 
+          className="absolute left-3 right-3 rounded-lg shadow-xl nodrag"
+          style={{ 
+            zIndex: 9999, 
+            backgroundColor: '#ffffff',
+            top: 'calc(100% - 8px)',
+            border: '1px solid #e5e7eb'
+          }}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <button
+            onClick={() => setDropdownCategory(null)}
+            className="w-full px-3 py-2 text-xs font-semibold text-muted-foreground border-b border-gray-100 flex items-center gap-1 hover:bg-gray-50"
+            style={{ backgroundColor: '#f9fafb' }}
+          >
+            <ChevronDown className="w-3 h-3 rotate-90" />
+            Voltar
+          </button>
+          <div className="px-3 py-2 text-xs font-semibold text-muted-foreground border-b border-gray-100" style={{ backgroundColor: '#f9fafb' }}>
+            Gatilhos de Grupo
+          </div>
+          {availableGroupTriggers.map(groupTrigger => {
+            const Icon = groupTrigger.icon;
+            return (
+              <button
+                key={groupTrigger.id}
+                onClick={() => addGroupTrigger(groupTrigger.id)}
+                className="w-full px-3 py-2.5 text-left text-sm hover:bg-gray-100 transition-colors flex items-center gap-2 text-foreground last:rounded-b-lg"
+                style={{ backgroundColor: '#ffffff' }}
+              >
+                <Icon className="w-4 h-4 text-[#F40000]" />
+                <div>
+                  <div className="font-medium">{groupTrigger.label}</div>
+                  <div className="text-xs text-muted-foreground">{groupTrigger.description}</div>
+                </div>
+              </button>
+            );
+          })}
         </div>
       )}
     </div>
