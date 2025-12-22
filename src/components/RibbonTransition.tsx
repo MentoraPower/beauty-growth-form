@@ -58,7 +58,7 @@ const RibbonTransition = ({ isActive, onComplete }: RibbonTransitionProps) => {
       {ribbons.map((ribbon) => (
         <motion.div
           key={ribbon.id}
-          className="absolute left-0 bg-gradient-to-r from-[#F40000] to-[#A10000]"
+          className="absolute left-0 bg-gradient-to-r from-[#FF6B00] to-[#CC5500]"
           style={{
             top: ribbon.top,
             height: ribbon.height,
@@ -76,7 +76,7 @@ const RibbonTransition = ({ isActive, onComplete }: RibbonTransitionProps) => {
       
       {/* Middle ribbon with SCALE text - slower */}
       <motion.div
-        className="absolute left-0 bg-gradient-to-r from-[#F40000] to-[#A10000] flex items-center justify-center"
+        className="absolute left-0 bg-gradient-to-r from-[#FF6B00] to-[#CC5500] flex items-center justify-center"
         style={{
           top: "40vh",
           height: "14vh",

@@ -25,17 +25,17 @@ interface ChartRendererProps {
   isLoading?: boolean;
 }
 
-// Red gradient palette
-const PRIMARY_RED = "#dc2626";
-const PRIMARY_RED_LIGHT = "#f87171";
-const PRIMARY_RED_DARK = "#991b1b";
+// Orange gradient palette
+const PRIMARY_ORANGE = "#f97316";
+const PRIMARY_ORANGE_LIGHT = "#fb923c";
+const PRIMARY_ORANGE_DARK = "#c2410c";
 
 const GRADIENT_PAIRS = [
-  { start: "#dc2626", end: "#f87171" },
-  { start: "#b91c1c", end: "#ef4444" },
-  { start: "#991b1b", end: "#dc2626" },
-  { start: "#7f1d1d", end: "#b91c1c" },
-  { start: "#450a0a", end: "#991b1b" },
+  { start: "#f97316", end: "#fb923c" },
+  { start: "#ea580c", end: "#f97316" },
+  { start: "#c2410c", end: "#ea580c" },
+  { start: "#9a3412", end: "#c2410c" },
+  { start: "#7c2d12", end: "#9a3412" },
 ];
 
 export function ChartRenderer({ chartType, data, width, height, isLoading }: ChartRendererProps) {
@@ -48,8 +48,8 @@ export function ChartRenderer({ chartType, data, width, height, isLoading }: Cha
     return (
       <div className="w-full h-full flex items-center justify-center">
         <div className="relative">
-          <div className="absolute inset-0 bg-gradient-to-r from-red-500/20 to-red-400/20 rounded-full blur-xl animate-pulse" />
-          <RefreshCw className="h-8 w-8 text-red-500 animate-spin relative z-10" />
+          <div className="absolute inset-0 bg-gradient-to-r from-orange-500/20 to-orange-400/20 rounded-full blur-xl animate-pulse" />
+          <RefreshCw className="h-8 w-8 text-orange-500 animate-spin relative z-10" />
         </div>
       </div>
     );
@@ -90,7 +90,7 @@ export function ChartRenderer({ chartType, data, width, height, isLoading }: Cha
             {/* Subtle glow behind chart */}
             <div 
               className="absolute inset-4 rounded-full blur-2xl opacity-20"
-              style={{ background: `radial-gradient(circle, ${PRIMARY_RED}40, transparent 70%)` }}
+              style={{ background: `radial-gradient(circle, ${PRIMARY_ORANGE}40, transparent 70%)` }}
             />
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
@@ -198,8 +198,8 @@ export function ChartRenderer({ chartType, data, width, height, isLoading }: Cha
             <BarChart data={trend} margin={{ top: 10, right: 10, left: -15, bottom: 5 }}>
               <defs>
                 <linearGradient id="barGradient" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#dc2626" stopOpacity={1} />
-                  <stop offset="100%" stopColor="#f87171" stopOpacity={0.8} />
+                  <stop offset="0%" stopColor="#f97316" stopOpacity={1} />
+                  <stop offset="100%" stopColor="#fb923c" stopOpacity={0.8} />
                 </linearGradient>
               </defs>
               <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" vertical={false} />
@@ -226,7 +226,7 @@ export function ChartRenderer({ chartType, data, width, height, isLoading }: Cha
                   fontSize: "12px",
                 }}
                 formatter={(val: number) => [`${val} leads`, "Quantidade"]}
-                cursor={{ fill: "rgba(220, 38, 38, 0.06)" }}
+                cursor={{ fill: "rgba(249, 115, 22, 0.06)" }}
               />
               <Bar 
                 dataKey="value" 
@@ -328,8 +328,8 @@ export function ChartRenderer({ chartType, data, width, height, isLoading }: Cha
             <LineChart data={trend} margin={{ top: 10, right: 10, left: -15, bottom: 5 }}>
               <defs>
                 <linearGradient id="lineGradient" x1="0" y1="0" x2="1" y2="0">
-                  <stop offset="0%" stopColor="#dc2626" />
-                  <stop offset="100%" stopColor="#f87171" />
+                  <stop offset="0%" stopColor="#f97316" />
+                  <stop offset="100%" stopColor="#fb923c" />
                 </linearGradient>
               </defs>
               <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" vertical={false} />
@@ -363,14 +363,14 @@ export function ChartRenderer({ chartType, data, width, height, isLoading }: Cha
                 stroke="url(#lineGradient)" 
                 strokeWidth={3}
                 dot={{ 
-                  fill: "#dc2626", 
+                  fill: "#f97316", 
                   strokeWidth: 2, 
                   stroke: "#fff",
                   r: 5,
                 }}
                 activeDot={{ 
                   r: 7, 
-                  fill: "#dc2626",
+                  fill: "#f97316",
                   stroke: "#fff",
                   strokeWidth: 2,
                 }}
@@ -396,12 +396,12 @@ export function ChartRenderer({ chartType, data, width, height, isLoading }: Cha
             <AreaChart data={trend} margin={{ top: 10, right: 10, left: -15, bottom: 5 }}>
               <defs>
                 <linearGradient id="areaGradient" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#dc2626" stopOpacity={0.35} />
-                  <stop offset="100%" stopColor="#f87171" stopOpacity={0.02} />
+                  <stop offset="0%" stopColor="#f97316" stopOpacity={0.35} />
+                  <stop offset="100%" stopColor="#fb923c" stopOpacity={0.02} />
                 </linearGradient>
                 <linearGradient id="areaStrokeGradient" x1="0" y1="0" x2="1" y2="0">
-                  <stop offset="0%" stopColor="#dc2626" />
-                  <stop offset="100%" stopColor="#f87171" />
+                  <stop offset="0%" stopColor="#f97316" />
+                  <stop offset="100%" stopColor="#fb923c" />
                 </linearGradient>
               </defs>
               <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" vertical={false} />
@@ -462,8 +462,8 @@ export function ChartRenderer({ chartType, data, width, height, isLoading }: Cha
           >
             <defs>
               <linearGradient id="gaugeGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                <stop offset="0%" stopColor="#dc2626" />
-                <stop offset="100%" stopColor="#f87171" />
+                <stop offset="0%" stopColor="#f97316" />
+                <stop offset="100%" stopColor="#fb923c" />
               </linearGradient>
             </defs>
             {/* Background arc */}

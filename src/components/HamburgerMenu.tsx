@@ -160,7 +160,7 @@ const HamburgerMenu = () => {
       <div className="hidden md:block absolute top-0 left-0 right-0 z-50 px-5 pt-4">
         <div className="mx-auto w-full max-w-5xl">
           <div className="flex items-center justify-between py-3">
-            <span className="font-bold text-sm uppercase tracking-tight bg-gradient-to-r from-[#F40000] to-[#A10000] bg-clip-text text-transparent">
+            <span className="font-bold text-sm uppercase tracking-tight bg-gradient-to-r from-[#FF6B00] to-[#CC5500] bg-clip-text text-transparent">
               Scale Beauty
             </span>
             
@@ -170,11 +170,11 @@ const HamburgerMenu = () => {
                   key={item.label}
                   href={item.href}
                   onClick={(e) => handleNavClick(e, item.href)}
-                  className="relative text-sm font-medium bg-gradient-to-r from-[#F40000] to-[#A10000] bg-clip-text text-transparent group cursor-pointer"
+                  className="relative text-sm font-medium bg-gradient-to-r from-[#FF6B00] to-[#CC5500] bg-clip-text text-transparent group cursor-pointer"
                 >
                   {item.label}
                   <span 
-                    className="absolute left-0 -bottom-1 h-[1px] w-0 bg-gradient-to-r from-[#F40000] to-[#A10000] transition-all duration-300 ease-out group-hover:w-full"
+                    className="absolute left-0 -bottom-1 h-[1px] w-0 bg-gradient-to-r from-[#FF6B00] to-[#CC5500] transition-all duration-300 ease-out group-hover:w-full"
                   />
                 </a>
               ))}
