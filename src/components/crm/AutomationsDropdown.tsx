@@ -821,7 +821,10 @@ export function AutomationsDropdown({
 
       // Extract trigger configuration from TriggerNode
       const triggerStep = steps.find(s => s.type === "trigger");
-      const extractedTriggerPipelineId = triggerStep?.data?.triggerPipelineId || triggerPipelineId;
+      
+      // Support both new triggers array format and legacy triggerPipelineId
+      const triggers = triggerStep?.data?.triggers as Array<{ id: string; type: string; pipelineId?: string }> | undefined;
+      const extractedTriggerPipelineId = triggers?.[0]?.pipelineId || triggerStep?.data?.triggerPipelineId || triggerPipelineId;
 
       // Validate trigger pipeline is selected
       if (!extractedTriggerPipelineId) {
@@ -915,7 +918,10 @@ export function AutomationsDropdown({
     }
 
     const triggerStep = steps.find(s => s.type === "trigger");
-    const triggerPipelineId = triggerStep?.data?.triggerPipelineId || emailTriggerPipeline;
+    
+    // Support both new triggers array format and legacy triggerPipelineId
+    const triggers = triggerStep?.data?.triggers as Array<{ id: string; type: string; pipelineId?: string }> | undefined;
+    const triggerPipelineId = triggers?.[0]?.pipelineId || triggerStep?.data?.triggerPipelineId || emailTriggerPipeline;
 
     // Validate trigger pipeline is selected
     if (!triggerPipelineId) {
