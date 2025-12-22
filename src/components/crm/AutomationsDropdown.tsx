@@ -1117,7 +1117,7 @@ export function AutomationsDropdown({
             <Zap className="w-4 h-4" />
           </Button>
           {(activeAutomationsCount + activeWebhooksCount + activeEmailAutomationsCount) > 0 && (
-            <span className="absolute top-[2px] right-[2px] z-10 h-4 min-w-4 px-1 text-[10px] font-medium flex items-center justify-center bg-yellow-400 text-black rounded-full pointer-events-none">
+            <span className="absolute -top-1 -right-1 z-10 h-5 min-w-5 px-1 text-[10px] font-bold flex items-center justify-center bg-white text-orange-600 rounded-full pointer-events-none shadow-sm border border-orange-200">
               {activeAutomationsCount + activeWebhooksCount + activeEmailAutomationsCount}
             </span>
           )}
