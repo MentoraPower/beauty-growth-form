@@ -38,3 +38,6 @@ verify_jwt = false
 
 [functions.update-team-member]
 verify_jwt = false
+
+[functions.bulk-move-leads]
+verify_jwt = false
