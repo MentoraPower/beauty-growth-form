@@ -504,7 +504,7 @@ export function ConnectSourceDialog({
               Selecione a campanha que deseja monitorar
             </p>
             
-            <div className="space-y-2 max-h-[300px] overflow-y-auto">
+            <div className="space-y-2 max-h-[300px] overflow-y-auto pr-1">
               {campaigns.length === 0 ? (
                 <p className="text-sm text-muted-foreground text-center py-6">
                   Nenhuma campanha configurada nesta conexão.
@@ -514,10 +514,10 @@ export function ConnectSourceDialog({
                   <button
                     key={campaign.id}
                     onClick={() => handleSelectFbCampaign(campaign)}
-                    className="w-full flex items-center justify-between gap-3 p-3 bg-white border border-border rounded-lg text-left transition-all duration-200 hover:bg-muted/30 hover:border-[#1877F2]/30"
+                    className="w-full flex items-center justify-between gap-3 p-3 bg-white border border-border rounded-lg text-left transition-all duration-200 hover:bg-muted/30 hover:border-[#1877F2]/30 overflow-hidden"
                   >
-                    <span className="text-sm font-medium text-foreground truncate">{campaign.name}</span>
-                    <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-sm font-medium text-foreground truncate flex-1 min-w-0">{campaign.name}</span>
+                    <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
                   </button>
                 ))
               )}
