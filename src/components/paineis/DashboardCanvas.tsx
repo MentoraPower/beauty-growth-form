@@ -525,6 +525,10 @@ export function DashboardCanvas({ painelName, dashboardId, onBack }: DashboardCa
   const fetchWidgetData = useCallback(async (widget: DashboardWidget): Promise<WidgetData | null> => {
     if (!widget.source) return null;
 
+    // Use the date range for filtering
+    const filterStartDate = startDate.toISOString();
+    const filterEndDate = endDate.toISOString();
+
     try {
       // Handle tracking types - now requires sourceId for sub_origin filtering
       if (widget.source.type === 'tracking_grupo_entrada' || widget.source.type === 'tracking_grupo_saida') {
@@ -566,7 +570,7 @@ export function DashboardCanvas({ painelName, dashboardId, onBack }: DashboardCa
           return { total: 0, label, distribution: [], trend: [] };
         }
 
-        // Fetch tracking events for these leads
+        // Fetch tracking events for these leads filtered by date
         let allEvents: { id: string; created_at: string; lead_id: string }[] = [];
         from = 0;
         hasMore = true;
@@ -577,6 +581,8 @@ export function DashboardCanvas({ painelName, dashboardId, onBack }: DashboardCa
             .select("id, created_at, lead_id")
             .eq("tipo", trackingType)
             .in("lead_id", allLeadIds)
+            .gte("created_at", filterStartDate)
+            .lte("created_at", filterEndDate)
             .range(from, from + pageSize - 1);
 
           if (error) {
@@ -597,13 +603,16 @@ export function DashboardCanvas({ painelName, dashboardId, onBack }: DashboardCa
         const uniqueLeadIds = new Set(allEvents.map(e => e.lead_id));
         const total = uniqueLeadIds.size;
 
-        // Calculate trend by day (last 7 days) - count unique leads per day
+        // Calculate trend by day within selected range
         const trend: ChartDataPoint[] = [];
         const days = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
-        const today = new Date();
         
-        for (let i = 6; i >= 0; i--) {
-          const date = new Date(today);
+        // Calculate days between start and end
+        const daysDiff = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+        const daysToShow = Math.min(daysDiff, 7);
+        
+        for (let i = daysToShow - 1; i >= 0; i--) {
+          const date = new Date(endDate);
           date.setDate(date.getDate() - i);
           const dayStart = new Date(date.setHours(0, 0, 0, 0));
           const dayEnd = new Date(date.setHours(23, 59, 59, 999));
@@ -653,7 +662,7 @@ export function DashboardCanvas({ painelName, dashboardId, onBack }: DashboardCa
         }
       }
 
-      // Fetch leads with pipeline info - remove default 1000 limit
+      // Fetch leads with pipeline info filtered by date
       let allLeads: { id: string; pipeline_id: string | null; created_at: string }[] = [];
       let from = 0;
       const pageSize = 1000;
@@ -664,6 +673,8 @@ export function DashboardCanvas({ painelName, dashboardId, onBack }: DashboardCa
           .from("leads")
           .select("id, pipeline_id, created_at")
           .in("sub_origin_id", subOriginIds)
+          .gte("created_at", filterStartDate)
+          .lte("created_at", filterEndDate)
           .range(from, from + pageSize - 1);
 
         if (error) {
@@ -724,13 +735,16 @@ export function DashboardCanvas({ painelName, dashboardId, onBack }: DashboardCa
         });
       }
 
-      // Calculate trend by day (last 7 days)
+      // Calculate trend by day within selected range
       const trend: ChartDataPoint[] = [];
       const days = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
-      const today = new Date();
       
-      for (let i = 6; i >= 0; i--) {
-        const date = new Date(today);
+      // Calculate days between start and end
+      const daysDiff = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+      const daysToShow = Math.min(daysDiff, 7);
+      
+      for (let i = daysToShow - 1; i >= 0; i--) {
+        const date = new Date(endDate);
         date.setDate(date.getDate() - i);
         const dayStart = new Date(date.setHours(0, 0, 0, 0));
         const dayEnd = new Date(date.setHours(23, 59, 59, 999));
@@ -751,7 +765,7 @@ export function DashboardCanvas({ painelName, dashboardId, onBack }: DashboardCa
       console.error("Error fetching widget data:", error);
       return { total: 0, label: "Leads" };
     }
-  }, []);
+  }, [startDate, endDate]);
 
   // Refresh all connected widgets
   const refreshAllWidgets = useCallback(async () => {
@@ -765,6 +779,12 @@ export function DashboardCanvas({ painelName, dashboardId, onBack }: DashboardCa
       ));
     }
   }, [fetchWidgetData]);
+
+  // Refresh widgets when date range changes
+  useEffect(() => {
+    if (isInitialLoad) return;
+    refreshAllWidgets();
+  }, [startDate, endDate, refreshAllWidgets, isInitialLoad]);
 
   // Real-time subscription for leads changes
   useEffect(() => {
