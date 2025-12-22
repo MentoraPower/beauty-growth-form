@@ -853,12 +853,26 @@ export function AutomationsDropdown({
       }
 
       try {
+        const triggerPipelineIdForDb = extractedTriggerPipelineId && String(extractedTriggerPipelineId).trim()
+          ? extractedTriggerPipelineId
+          : null;
+
+        // Debug (avoid logging full HTML)
+        console.log("[EmailAutomationSaveInline]", {
+          editId,
+          subOriginId,
+          triggersCount: Array.isArray(triggers) ? triggers.length : 0,
+          triggerPipelineIdForDb,
+          subjectLen: finalSubject?.length || 0,
+          bodyHtmlLen: finalBodyHtml?.length || 0,
+        });
+
         if (editId) {
           const { error } = await (supabase as any)
             .from("email_automations")
             .update({
               name,
-              trigger_pipeline_id: extractedTriggerPipelineId,
+              trigger_pipeline_id: triggerPipelineIdForDb,
               subject: finalSubject,
               body_html: finalBodyHtml,
               flow_steps: steps,
@@ -868,7 +882,7 @@ export function AutomationsDropdown({
         } else {
           const { error } = await (supabase as any).from("email_automations").insert({
             name,
-            trigger_pipeline_id: extractedTriggerPipelineId,
+            trigger_pipeline_id: triggerPipelineIdForDb,
             sub_origin_id: subOriginId,
             subject: finalSubject,
             body_html: finalBodyHtml,
@@ -882,9 +896,9 @@ export function AutomationsDropdown({
         resetEmailForm();
         setShowEmailFlowBuilder(false);
         toast.success(editId ? "Automação atualizada!" : "Automação de e-mail criada!");
-      } catch (error) {
+      } catch (error: any) {
         console.error("Erro ao salvar automação de e-mail:", error);
-        toast.error("Erro ao salvar automação de e-mail");
+        toast.error(error?.message ? `Erro ao salvar automação: ${error.message}` : "Erro ao salvar automação de e-mail");
       }
     };
     
@@ -955,12 +969,24 @@ export function AutomationsDropdown({
     }
 
     try {
+      const triggerPipelineIdForDb = triggerPipelineId && String(triggerPipelineId).trim() ? triggerPipelineId : null;
+
+      // Debug (avoid logging full HTML)
+      console.log("[EmailAutomationSave]", {
+        editingEmailId,
+        subOriginId,
+        triggersCount: Array.isArray(triggers) ? triggers.length : 0,
+        triggerPipelineIdForDb,
+        subjectLen: subject?.length || 0,
+        bodyHtmlLen: bodyHtml?.length || 0,
+      });
+
       if (editingEmailId) {
         const { error } = await (supabase as any)
           .from("email_automations")
           .update({
             name: emailName,
-            trigger_pipeline_id: triggerPipelineId,
+            trigger_pipeline_id: triggerPipelineIdForDb,
             subject,
             body_html: bodyHtml,
             flow_steps: steps,
@@ -970,7 +996,7 @@ export function AutomationsDropdown({
       } else {
         const { error } = await (supabase as any).from("email_automations").insert({
           name: emailName,
-          trigger_pipeline_id: triggerPipelineId,
+          trigger_pipeline_id: triggerPipelineIdForDb,
           sub_origin_id: subOriginId,
           subject,
           body_html: bodyHtml,
@@ -984,9 +1010,9 @@ export function AutomationsDropdown({
       resetEmailForm();
       setShowEmailFlowBuilder(false);
       toast.success(editingEmailId ? "Automação atualizada!" : "Automação de e-mail criada!");
-    } catch (error) {
+    } catch (error: any) {
       console.error("Erro ao salvar automação de e-mail:", error);
-      toast.error("Erro ao salvar automação de e-mail");
+      toast.error(error?.message ? `Erro ao salvar automação: ${error.message}` : "Erro ao salvar automação de e-mail");
     }
   };
 
