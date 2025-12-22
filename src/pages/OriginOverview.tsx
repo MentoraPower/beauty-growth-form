@@ -260,9 +260,9 @@ const OriginOverview = () => {
                         <span className="text-sm font-medium text-foreground">{sdr}</span>
                         <span className="text-sm font-bold text-foreground">{count}</span>
                       </div>
-                      <div className="h-2 bg-muted/50 rounded-full overflow-hidden">
+                      <div className="h-2 bg-orange-100 rounded-full overflow-hidden">
                         <div 
-                          className="h-full bg-gradient-to-r from-neutral-600 to-neutral-400 rounded-full transition-all duration-500"
+                          className="h-full bg-gradient-to-r from-orange-600 via-orange-500 to-amber-400 rounded-full transition-all duration-500"
                           style={{ width: `${(count / maxCount) * 100}%` }}
                         />
                       </div>
@@ -314,26 +314,19 @@ const OriginOverview = () => {
                     <div key={sdr} className="space-y-1.5">
                       <span className="text-sm font-medium text-foreground">{sdr}</span>
                       <div className="flex items-center gap-3">
-                        <div className="flex-1 h-10 bg-muted/30 rounded-lg overflow-hidden relative">
+                        <div className="flex-1 h-10 bg-orange-100/50 rounded-lg overflow-hidden relative">
                           <div 
-                            className="h-full rounded-lg relative overflow-hidden animate-bar-fill"
+                            className="h-full rounded-lg relative overflow-hidden animate-bar-fill bg-gradient-to-r from-orange-600 via-orange-500 to-amber-400"
                             style={{ 
-                              width: `${(stats.sales / maxSales) * 100}%`,
-                              background: `repeating-linear-gradient(
-                                90deg,
-                                #10b98120,
-                                #10b98120 12px,
-                                #10b98130 12px,
-                                #10b98130 24px
-                              )`
+                              width: `${(stats.sales / maxSales) * 100}%`
                             }}
                           />
                         </div>
                         <div className="flex items-center gap-2 flex-shrink-0">
-                          <div className="w-10 h-10 rounded-full bg-emerald-700 flex items-center justify-center">
+                          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-orange-600 to-amber-500 flex items-center justify-center">
                             <span className="text-xs font-bold text-white">{conversionRate}%</span>
                           </div>
-                          <span className="text-lg font-bold text-emerald-600 min-w-[24px]">{stats.sales}</span>
+                          <span className="text-lg font-bold text-orange-600 min-w-[24px]">{stats.sales}</span>
                         </div>
                       </div>
                     </div>
@@ -378,9 +371,9 @@ const OriginOverview = () => {
                         <span className="text-sm font-medium text-foreground">{closer}</span>
                         <span className="text-sm font-bold text-foreground">{count}</span>
                       </div>
-                      <div className="h-2 bg-muted/50 rounded-full overflow-hidden">
+                      <div className="h-2 bg-orange-100 rounded-full overflow-hidden">
                         <div 
-                          className="h-full bg-gradient-to-r from-neutral-600 to-neutral-400 rounded-full transition-all duration-500"
+                          className="h-full bg-gradient-to-r from-orange-600 via-orange-500 to-amber-400 rounded-full transition-all duration-500"
                           style={{ width: `${(count / maxCount) * 100}%` }}
                         />
                       </div>
@@ -432,26 +425,19 @@ const OriginOverview = () => {
                     <div key={closer} className="space-y-1.5">
                       <span className="text-sm font-medium text-foreground">{closer}</span>
                       <div className="flex items-center gap-3">
-                        <div className="flex-1 h-10 bg-muted/30 rounded-lg overflow-hidden relative">
+                        <div className="flex-1 h-10 bg-orange-100/50 rounded-lg overflow-hidden relative">
                         <div 
-                          className="h-full rounded-lg relative overflow-hidden animate-bar-fill"
+                          className="h-full rounded-lg relative overflow-hidden animate-bar-fill bg-gradient-to-r from-orange-600 via-orange-500 to-amber-400"
                             style={{ 
-                              width: `${(stats.sales / maxSales) * 100}%`,
-                              background: `repeating-linear-gradient(
-                                90deg,
-                                #10b98120,
-                                #10b98120 12px,
-                                #10b98130 12px,
-                                #10b98130 24px
-                              )`
+                              width: `${(stats.sales / maxSales) * 100}%`
                             }}
                           />
                         </div>
                         <div className="flex items-center gap-2 flex-shrink-0">
-                          <div className="w-10 h-10 rounded-full bg-emerald-700 flex items-center justify-center">
+                          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-orange-600 to-amber-500 flex items-center justify-center">
                             <span className="text-xs font-bold text-white">{conversionRate}%</span>
                           </div>
-                          <span className="text-lg font-bold text-emerald-600 min-w-[24px]">{stats.sales}</span>
+                          <span className="text-lg font-bold text-orange-600 min-w-[24px]">{stats.sales}</span>
                         </div>
                       </div>
                     </div>
