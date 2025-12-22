@@ -433,51 +433,21 @@ function computeWidgetRows(widgets: DashboardWidget[], containerWidth: number): 
   return rows;
 }
 
-// Calculate the actual widths to display, scaling proportionally to fill container
+// Calculate the actual widths to display.
+// IMPORTANT: respect user-defined widths (do NOT auto-expand last widget to fill remaining space).
 function calculateDisplayWidths(widgets: DashboardWidget[], containerWidth: number): number[] {
   if (containerWidth <= 0) return widgets.map(w => getWidgetPixelWidth(w, REFERENCE_WIDTH));
-  
+
   const rows = computeWidgetRows(widgets, containerWidth);
   const displayWidths = new Array(widgets.length).fill(0);
 
-  rows.forEach(rowIndices => {
+  rows.forEach((rowIndices) => {
     const totalGaps = (rowIndices.length - 1) * GAP;
     const availableWidth = containerWidth - totalGaps;
-    
-    // Calculate total percentage for this row
-    const totalPercent = rowIndices.reduce((sum, i) => {
-      const widget = widgets[i];
-      if (widget.widthPercent !== undefined && widget.widthPercent > 0) {
-        return sum + widget.widthPercent;
-      }
-      // Convert legacy pixel width to percent for calculation
-      const pixelWidth = widget.width ?? DEFAULT_WIDTH;
-      return sum + pixelsToPercent(pixelWidth, REFERENCE_WIDTH);
-    }, 0);
 
-    // Distribute available width proportionally based on percentages
-    let remaining = availableWidth;
-    
-    rowIndices.forEach((i, idx) => {
-      const widget = widgets[i];
-      let widgetPercent: number;
-      
-      if (widget.widthPercent !== undefined && widget.widthPercent > 0) {
-        widgetPercent = widget.widthPercent;
-      } else {
-        const pixelWidth = widget.width ?? DEFAULT_WIDTH;
-        widgetPercent = pixelsToPercent(pixelWidth, REFERENCE_WIDTH);
-      }
-      
-      if (idx === rowIndices.length - 1) {
-        // Last widget gets remaining space
-        displayWidths[i] = Math.max(MIN_WIDTH, remaining);
-      } else {
-        // Scale proportionally
-        const scaledWidth = Math.max(MIN_WIDTH, Math.floor((widgetPercent / totalPercent) * availableWidth));
-        displayWidths[i] = scaledWidth;
-        remaining -= scaledWidth;
-      }
+    rowIndices.forEach((i) => {
+      const desired = getWidgetPixelWidth(widgets[i], containerWidth);
+      displayWidths[i] = Math.min(availableWidth, Math.max(MIN_WIDTH, desired));
     });
   });
 
