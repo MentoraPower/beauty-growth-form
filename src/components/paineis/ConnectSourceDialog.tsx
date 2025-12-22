@@ -219,19 +219,31 @@ export function ConnectSourceDialog({
   };
 
   const handleSelectFbMetric = (metric: 'spend' | 'cpm' | 'cpc') => {
+    console.log('[ConnectSourceDialog] handleSelectFbMetric called with metric:', metric);
+    console.log('[ConnectSourceDialog] selectedFbConnectionId:', selectedFbConnectionId);
+    console.log('[ConnectSourceDialog] selectedFbCampaign:', selectedFbCampaign);
+    
     const connection = fbConnections.find((c) => c.id === selectedFbConnectionId);
-    if (!connection || !selectedFbCampaign) return;
+    console.log('[ConnectSourceDialog] connection found:', connection);
+    
+    if (!connection || !selectedFbCampaign) {
+      console.error('[ConnectSourceDialog] Missing connection or campaign!', { connection, selectedFbCampaign });
+      return;
+    }
 
     const metricLabels = { spend: 'Valor Gasto', cpm: 'CPM', cpc: 'CPC' };
 
-    onConnect({
+    const source: WidgetSource = {
       type: 'facebook_ads',
       sourceId: connection.id,
       sourceName: `${metricLabels[metric]} - ${selectedFbCampaign.name}`,
       fbCampaignId: selectedFbCampaign.id,
       fbCampaignName: selectedFbCampaign.name,
       fbMetric: metric,
-    });
+    };
+    
+    console.log('[ConnectSourceDialog] Calling onConnect with source:', source);
+    onConnect(source);
     onOpenChange(false);
   };
 
