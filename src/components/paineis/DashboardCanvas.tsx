@@ -958,6 +958,98 @@ export function DashboardCanvas({ painelName, dashboardId, onBack }: DashboardCa
         return { total, label, distribution, trend };
       }
 
+      // Handle Custom Fields type
+      if (widget.source.type === 'custom_field') {
+        if (!widget.source.sourceId || !widget.source.customFieldId) {
+          return { total: 0, label: widget.source.customFieldLabel || 'Campo Personalizado' };
+        }
+
+        const label = widget.source.customFieldLabel || 'Campo Personalizado';
+
+        // Get leads from the sub-origin
+        const { data: subOriginLeads } = await supabase
+          .from("leads")
+          .select("id")
+          .eq("sub_origin_id", widget.source.sourceId)
+          .gte("created_at", filterStartDate)
+          .lte("created_at", filterEndDate);
+
+        const leadIds = subOriginLeads?.map(l => l.id) || [];
+        
+        if (leadIds.length === 0) {
+          return { total: 0, label, distribution: [], trend: [] };
+        }
+
+        // Get responses for this custom field
+        let allResponses: { id: string; lead_id: string; response_value: string | null; created_at: string }[] = [];
+        let from = 0;
+        const pageSize = 1000;
+        let hasMore = true;
+
+        while (hasMore) {
+          const { data: responses, error } = await supabase
+            .from("lead_custom_field_responses")
+            .select("id, lead_id, response_value, created_at")
+            .eq("field_id", widget.source.customFieldId)
+            .in("lead_id", leadIds)
+            .range(from, from + pageSize - 1);
+
+          if (error) break;
+
+          if (responses && responses.length > 0) {
+            allResponses = [...allResponses, ...responses];
+            from += pageSize;
+            hasMore = responses.length === pageSize;
+          } else {
+            hasMore = false;
+          }
+        }
+
+        // Count responses by value
+        const responseMap = new Map<string, number>();
+        allResponses.forEach(response => {
+          const value = response.response_value?.trim() || 'Sem resposta';
+          responseMap.set(value, (responseMap.get(value) || 0) + 1);
+        });
+
+        const total = allResponses.length;
+        const colors = ['#f97316', '#fb923c', '#fdba74', '#10b981', '#3b82f6', '#8b5cf6', '#ec4899'];
+        let colorIndex = 0;
+        
+        const distribution: ChartDataPoint[] = Array.from(responseMap.entries())
+          .sort((a, b) => b[1] - a[1])
+          .map(([name, value]) => ({
+            name,
+            value,
+            color: colors[colorIndex++ % colors.length],
+          }));
+
+        // Trend by day
+        const trend: ChartDataPoint[] = [];
+        const days = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
+        const daysDiff = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+        const daysToShow = Math.min(daysDiff, 7);
+        
+        for (let i = daysToShow - 1; i >= 0; i--) {
+          const date = new Date(endDate);
+          date.setDate(date.getDate() - i);
+          const dayStart = new Date(date.setHours(0, 0, 0, 0));
+          const dayEnd = new Date(date.setHours(23, 59, 59, 999));
+          
+          const count = allResponses.filter(r => {
+            const createdAt = new Date(r.created_at);
+            return createdAt >= dayStart && createdAt <= dayEnd;
+          }).length;
+
+          trend.push({
+            name: days[dayStart.getDay()],
+            value: count,
+          });
+        }
+
+        return { total, label, distribution, trend };
+      }
+
       // For origin/sub_origin types
       if (!widget.source.sourceId) return null;
 

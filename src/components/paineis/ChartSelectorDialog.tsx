@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { PieChart, BarChart3, TrendingUp, AreaChart, Activity, Target } from "lucide-react";
+import { PieChart, BarChart3, TrendingUp, AreaChart, Activity, Target, AlignLeft } from "lucide-react";
 
 export interface ChartType {
   id: string;
@@ -46,6 +46,20 @@ const chartTypes: ChartType[] = [
         <rect x="30" y="30" width="15" height="45" rx="2" fill="hsl(var(--muted-foreground))" />
         <rect x="50" y="15" width="15" height="60" rx="2" fill="hsl(var(--foreground))" />
         <rect x="70" y="35" width="15" height="40" rx="2" fill="hsl(var(--muted-foreground))" />
+      </svg>
+    ),
+  },
+  {
+    id: 'bar_horizontal',
+    name: 'Barras Horizontais',
+    description: 'Ideal para comparar respostas e categorias',
+    icon: AlignLeft,
+    preview: (
+      <svg viewBox="0 0 100 80" className="w-full h-full">
+        <rect x="5" y="10" width="80" height="12" rx="2" fill="hsl(var(--foreground))" />
+        <rect x="5" y="27" width="55" height="12" rx="2" fill="hsl(var(--muted-foreground))" />
+        <rect x="5" y="44" width="70" height="12" rx="2" fill="hsl(var(--muted))" />
+        <rect x="5" y="61" width="40" height="12" rx="2" fill="hsl(var(--muted-foreground))" />
       </svg>
     ),
   },
