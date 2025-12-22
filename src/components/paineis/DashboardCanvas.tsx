@@ -1028,30 +1028,7 @@ export function DashboardCanvas({ painelName, dashboardId, onBack }: DashboardCa
   useEffect(() => {
     if (isInitialLoad) return;
     refreshAllWidgets();
-  }, [startDate, endDate, refreshAllWidgets, isInitialLoad]);
-
-  // Real-time subscription for leads changes
-  useEffect(() => {
-    const channel = supabase
-      .channel('dashboard-leads-realtime')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'leads'
-        },
-        () => {
-          // Refresh all widgets when leads change
-          refreshAllWidgets();
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [refreshAllWidgets]);
+  }, [startDate, endDate, isInitialLoad]); // Removed refreshAllWidgets from deps to prevent loops
 
   const handleSelectChart = (chart: ChartType) => {
     setSelectedChart(chart);
