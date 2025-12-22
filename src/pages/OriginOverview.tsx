@@ -274,17 +274,7 @@ const OriginOverview = () => {
         </Card>
 
         {/* SDR Sales Chart */}
-        <Card className="bg-white border-0 shadow-none animated-dashed-border rounded-xl">
-          <svg className="rounded-xl">
-            <defs>
-              <linearGradient id="orangeGradientSDR" x1="0%" y1="0%" x2="100%" y2="0%">
-                <stop offset="0%" stopColor="#ea580c" />
-                <stop offset="50%" stopColor="#f59e0b" />
-                <stop offset="100%" stopColor="#ea580c" />
-              </linearGradient>
-            </defs>
-            <rect x="1" y="1" rx="11" ry="11" style={{ width: 'calc(100% - 2px)', height: 'calc(100% - 2px)', stroke: 'url(#orangeGradientSDR)' }} />
-          </svg>
+        <Card className="bg-white border border-black/5 shadow-none">
           <CardHeader className="pb-4">
             <CardTitle className="text-base font-semibold text-foreground">
               Reuniões e Vendas por SDR
@@ -329,6 +319,20 @@ const OriginOverview = () => {
                             className="h-full rounded-lg relative overflow-hidden animate-bar-fill bg-gradient-to-r from-orange-600 via-orange-500 to-amber-400"
                             style={{ 
                               width: `${(stats.sales / maxSales) * 100}%`
+                            }}
+                          />
+                          {/* Animated dashed overlay */}
+                          <div 
+                            className="absolute inset-0 rounded-lg pointer-events-none animate-bar-dash"
+                            style={{ 
+                              width: `${(stats.sales / maxSales) * 100}%`,
+                              background: `repeating-linear-gradient(
+                                90deg,
+                                transparent,
+                                transparent 6px,
+                                rgba(255,255,255,0.3) 6px,
+                                rgba(255,255,255,0.3) 12px
+                              )`
                             }}
                           />
                         </div>
@@ -395,17 +399,7 @@ const OriginOverview = () => {
         </Card>
 
         {/* Closer Sales Chart */}
-        <Card className="bg-white border-0 shadow-none animated-dashed-border rounded-xl">
-          <svg className="rounded-xl">
-            <defs>
-              <linearGradient id="orangeGradientCloser" x1="0%" y1="0%" x2="100%" y2="0%">
-                <stop offset="0%" stopColor="#ea580c" />
-                <stop offset="50%" stopColor="#f59e0b" />
-                <stop offset="100%" stopColor="#ea580c" />
-              </linearGradient>
-            </defs>
-            <rect x="1" y="1" rx="11" ry="11" style={{ width: 'calc(100% - 2px)', height: 'calc(100% - 2px)', stroke: 'url(#orangeGradientCloser)' }} />
-          </svg>
+        <Card className="bg-white border border-black/5 shadow-none">
           <CardHeader className="pb-4">
             <CardTitle className="text-base font-semibold text-foreground">
               Reuniões e Vendas por Closer
@@ -446,10 +440,24 @@ const OriginOverview = () => {
                       <span className="text-sm font-medium text-foreground">{closer}</span>
                       <div className="flex items-center gap-3">
                         <div className="flex-1 h-10 bg-orange-100/50 rounded-lg overflow-hidden relative">
-                        <div 
-                          className="h-full rounded-lg relative overflow-hidden animate-bar-fill bg-gradient-to-r from-orange-600 via-orange-500 to-amber-400"
+                          <div 
+                            className="h-full rounded-lg relative overflow-hidden animate-bar-fill bg-gradient-to-r from-orange-600 via-orange-500 to-amber-400"
                             style={{ 
                               width: `${(stats.sales / maxSales) * 100}%`
+                            }}
+                          />
+                          {/* Animated dashed overlay */}
+                          <div 
+                            className="absolute inset-0 rounded-lg pointer-events-none animate-bar-dash"
+                            style={{ 
+                              width: `${(stats.sales / maxSales) * 100}%`,
+                              background: `repeating-linear-gradient(
+                                90deg,
+                                transparent,
+                                transparent 6px,
+                                rgba(255,255,255,0.3) 6px,
+                                rgba(255,255,255,0.3) 12px
+                              )`
                             }}
                           />
                         </div>
