@@ -552,9 +552,11 @@ export function DashboardCanvas({ painelName, dashboardId, onBack }: DashboardCa
           }
         }
 
-        const total = allEvents.length;
+        // Count unique leads (not events)
+        const uniqueLeadIds = new Set(allEvents.map(e => e.lead_id));
+        const total = uniqueLeadIds.size;
 
-        // Calculate trend by day (last 7 days)
+        // Calculate trend by day (last 7 days) - count unique leads per day
         const trend: ChartDataPoint[] = [];
         const days = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
         const today = new Date();
@@ -565,18 +567,22 @@ export function DashboardCanvas({ painelName, dashboardId, onBack }: DashboardCa
           const dayStart = new Date(date.setHours(0, 0, 0, 0));
           const dayEnd = new Date(date.setHours(23, 59, 59, 999));
           
-          const count = allEvents.filter(e => {
-            const createdAt = new Date(e.created_at);
-            return createdAt >= dayStart && createdAt <= dayEnd;
-          }).length;
+          const leadsInDay = new Set(
+            allEvents
+              .filter(e => {
+                const createdAt = new Date(e.created_at);
+                return createdAt >= dayStart && createdAt <= dayEnd;
+              })
+              .map(e => e.lead_id)
+          );
 
           trend.push({
             name: days[dayStart.getDay()],
-            value: count,
+            value: leadsInDay.size,
           });
         }
 
-        // Distribution: just show total for now
+        // Distribution: show total unique leads
         const distribution: ChartDataPoint[] = [{
           name: label,
           value: total,
