@@ -1283,9 +1283,9 @@ export function KanbanBoard() {
         {/* Right side - settings */}
         <div className="flex items-center gap-2 flex-shrink-0">
           <Button
-            variant="outline"
             size="sm"
             onClick={() => setIsPipelinesDialogOpen(true)}
+            className="bg-gradient-to-r from-orange-600 to-amber-500 hover:from-orange-700 hover:to-amber-600 text-white border-0 shadow-lg shadow-orange-600/20"
           >
             <Settings className="w-4 h-4 mr-2" />
             Gerenciar Origens
