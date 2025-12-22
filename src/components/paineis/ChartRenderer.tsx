@@ -258,7 +258,7 @@ export function ChartRenderer({ chartType, data, width, height, isLoading }: Cha
 
       return (
         <div className="w-full h-full flex flex-col px-4 py-3 overflow-hidden">
-          <div className="flex-1 flex flex-col justify-start gap-2.5 overflow-hidden">
+          <div className="flex flex-col justify-start gap-2.5 overflow-hidden">
             {sortedData.map((item, index) => {
               const percentage = maxValue > 0 ? (item.value / maxValue) * 100 : 0;
               const responsePercent = totalResponses > 0 ? Math.round((item.value / totalResponses) * 100) : 0;
