@@ -165,16 +165,7 @@ function SortableWidget({
           : "border-border shadow-sm hover:shadow-md hover:border-border/80"
       )}
     >
-      {/* Decorative top banner */}
-      <div className="w-full h-6 overflow-hidden">
-        <img 
-          src={widgetDecoration} 
-          alt="" 
-          className="w-full h-full object-cover"
-          style={{ pointerEvents: 'auto' }}
-        />
-      </div>
-      <div className="relative h-[calc(100%-24px)] p-3 pt-2 flex flex-col">
+      <div className="relative h-full p-3 pt-2 flex flex-col">
         {/* Header Row - Drag handle + Title aligned */}
         <div className="flex items-center gap-0 mb-2 shrink-0">
           {/* Drag Handle */}
@@ -1510,6 +1501,15 @@ export function DashboardCanvas({ painelName, dashboardId, onBack }: DashboardCa
 
   return (
     <div className="h-full flex flex-col overflow-x-hidden">
+      {/* Decorative top banner */}
+      <div className="w-full h-8 mb-4 overflow-hidden rounded-lg">
+        <img 
+          src={widgetDecoration} 
+          alt="" 
+          className="w-full h-full object-cover"
+        />
+      </div>
+
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
         <h1 className="text-xl font-semibold text-foreground">
