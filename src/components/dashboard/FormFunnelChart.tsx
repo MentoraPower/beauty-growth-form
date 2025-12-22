@@ -32,8 +32,8 @@ export default function FormFunnelChart({ data }: FormFunnelChartProps) {
         >
           <defs>
             <linearGradient id="funnelGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-              <stop offset="0%" stopColor="#F40000" stopOpacity="0.9" />
-              <stop offset="100%" stopColor="#A10000" stopOpacity="0.6" />
+              <stop offset="0%" stopColor="#FF6B00" stopOpacity="0.9" />
+              <stop offset="100%" stopColor="#CC5500" stopOpacity="0.6" />
             </linearGradient>
           </defs>
           

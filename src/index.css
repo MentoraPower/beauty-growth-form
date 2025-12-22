@@ -41,8 +41,8 @@
     --popover: 0 0% 99%;
     --popover-foreground: 0 0% 0%;
 
-    --primary: 0 100% 48%;
-    --primary-dark: 0 100% 31.6%;
+    --primary: 25 100% 50%;
+    --primary-dark: 20 100% 40%;
     --primary-foreground: 0 0% 100%;
 
     --secondary: 220 14% 92%;
@@ -59,12 +59,12 @@
 
     --border: 220 13% 88%;
     --input: 220 13% 88%;
-    --ring: 0 100% 48%;
+    --ring: 25 100% 50%;
 
     --radius: 0.75rem;
 
     /* Custom gradients */
-    --gradient-primary: linear-gradient(90deg, hsl(0 100% 48%) 0%, hsl(0 100% 31.6%) 100%);
+    --gradient-primary: linear-gradient(90deg, hsl(25 100% 50%) 0%, hsl(20 100% 40%) 100%);
     
     /* Typography */
     --font-display: 'Metropolis', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
@@ -87,8 +87,8 @@
     --card-foreground: 0 0% 100%;
     --popover: 0 0% 8%;
     --popover-foreground: 0 0% 100%;
-    --primary: 0 100% 48%;
-    --primary-dark: 0 100% 31.6%;
+    --primary: 25 100% 50%;
+    --primary-dark: 20 100% 40%;
     --primary-foreground: 0 0% 100%;
     --secondary: 0 0% 15%;
     --secondary-foreground: 0 0% 100%;
@@ -100,7 +100,7 @@
     --destructive-foreground: 0 0% 100%;
     --border: 0 0% 20%;
     --input: 0 0% 20%;
-    --ring: 0 100% 48%;
+    --ring: 25 100% 50%;
   }
 }
 
@@ -252,20 +252,20 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    background: linear-gradient(135deg, hsl(0 100% 48%) 0%, hsl(0 100% 35%) 100%);
+    background: linear-gradient(135deg, hsl(25 100% 50%) 0%, hsl(20 100% 40%) 100%);
     transition: transform 0.15s ease-out, box-shadow 0.15s ease-out, background 0.15s ease-out;
-    box-shadow: 0 2px 8px -2px hsl(0 100% 48% / 30%);
+    box-shadow: 0 2px 8px -2px hsl(25 100% 50% / 30%);
   }
 
   .shimmer-button:hover:not(:active):not(:disabled) {
     transform: translateY(-1px);
-    box-shadow: 0 4px 12px -2px hsl(0 100% 48% / 40%);
-    background: linear-gradient(135deg, hsl(0 100% 50%) 0%, hsl(0 100% 38%) 100%);
+    box-shadow: 0 4px 12px -2px hsl(25 100% 50% / 40%);
+    background: linear-gradient(135deg, hsl(25 100% 55%) 0%, hsl(20 100% 45%) 100%);
   }
 
   .shimmer-button:active:not(:disabled) {
     transform: translateY(1px);
-    box-shadow: 0 1px 4px -1px hsl(0 100% 48% / 30%);
+    box-shadow: 0 1px 4px -1px hsl(25 100% 50% / 30%);
   }
 
   .shimmer-button:disabled {
@@ -308,17 +308,17 @@
   }
 
   .shimmer-button-icon::before {
-    box-shadow: 0 0 3px 2px hsl(0 20% 95%),
-        0 0 7px 4px hsl(0 20% 80%),
-        0 0 13px 4px hsl(0 50% 70%),
-        0 0 25px 5px hsl(0 100% 70%);
+    box-shadow: 0 0 3px 2px hsl(25 20% 95%),
+        0 0 7px 4px hsl(25 20% 80%),
+        0 0 13px 4px hsl(25 50% 70%),
+        0 0 25px 5px hsl(25 100% 70%);
     z-index: -1;
   }
 
   .shimmer-button-icon::after {
-    box-shadow: inset 0 0 0 1px hsl(0 70% 95%),
-        inset 0 0 2px 1px hsl(0 100% 80%),
-        inset 0 0 5px 2px hsl(0 100% 70%);
+    box-shadow: inset 0 0 0 1px hsl(25 70% 95%),
+        inset 0 0 2px 1px hsl(25 100% 80%),
+        inset 0 0 5px 2px hsl(25 100% 70%);
     z-index: 2;
   }
 
@@ -412,32 +412,32 @@
 .animated-circle #fundo3-4 path,
 .animated-circle #fundo2-3 path,
 .animated-circle #fundo1-2 path {
-  fill: #F40000;
+  fill: #FF6B00;
   transition: fill 0.3s ease;
 }
 
 .animated-circle #fundo5-1 {
-  fill: #A10000;
+  fill: #CC5500;
 }
 
 .animated-circle #fundo4-5 path {
-  fill: #B80000;
+  fill: #D95E00;
 }
 
 .animated-circle #fundo3-4 path {
-  fill: #C50000;
+  fill: #E66200;
 }
 
 .animated-circle #fundo2-3 path {
-  fill: #D80000;
+  fill: #F26600;
 }
 
 .animated-circle #fundo1-2 path {
-  fill: #E50000;
+  fill: #FF6B00;
 }
 
 .animated-circle #circle-fora {
-  stroke: #F40000;
+  stroke: #FF6B00;
   stroke-opacity: 0.3;
 }
 
@@ -447,8 +447,8 @@
 .animated-circle #circle-dentro-3 path,
 .animated-circle #circle-dentro-4 path,
 .animated-circle #circle-dentro-5 path {
-  fill: #F40000;
-  stroke: #F40000;
+  fill: #FF6B00;
+  stroke: #FF6B00;
 }
 
 /* Icon circles background */
@@ -457,7 +457,7 @@
 .animated-circle #circle3,
 .animated-circle #circle4,
 .animated-circle #circle5 {
-  fill: #FFD4D4;
+  fill: #FFE4CC;
 }
 
 /* Number text inside circles - black */
@@ -475,7 +475,7 @@
 .animated-circle #fundo3-4:hover path,
 .animated-circle #fundo2-3:hover path,
 .animated-circle #fundo1-2:hover path {
-  fill: #FF3333 !important;
+  fill: #FF8533 !important;
 }
 
 /* Smooth page transitions for dashboard */

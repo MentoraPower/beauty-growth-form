@@ -745,7 +745,7 @@ const Index = () => {
       case 1:
         return <div className="form-card">
             <h1 className="form-title max-w-[380px] md:max-w-none">
-              <span className="font-light">A sua assessoria de marketing no <span className="font-bold bg-gradient-to-r from-[#F40000] to-[#A10000] bg-clip-text text-transparent">Mundo Beauty.</span></span>
+              <span className="font-light">A sua assessoria de marketing no <span className="font-bold bg-gradient-to-r from-[#FF6B00] to-[#CC5500] bg-clip-text text-transparent">Mundo Beauty.</span></span>
               
             </h1>
             <p className="form-subtitle mt-4 mb-4">Você está prestes a tomar a melhor decisão para o seu negócio. Somos especialistas em escalar negócios de beleza através do Tráfego Pago.</p>
@@ -1218,7 +1218,7 @@ const Index = () => {
               <QuemSomosSection />
               
               {/* Mobile footer with terms */}
-              <div className="pb-4 pt-2 bg-gradient-to-r from-[#F40000] to-[#A10000] -mx-4">
+              <div className="pb-4 pt-2 bg-gradient-to-r from-[#FF6B00] to-[#CC5500] -mx-4">
                 <div className="w-full h-px bg-white/20 mb-4" />
                 <div className="text-center px-8 max-w-[320px] mx-auto">
                   <p className="text-xs text-white/80 leading-relaxed">
@@ -1301,7 +1301,7 @@ const Index = () => {
             <QuemSomosSection />
 
             {/* Desktop footer with terms */}
-            <div className="pb-6 pt-4 bg-gradient-to-r from-[#F40000] to-[#A10000]">
+            <div className="pb-6 pt-4 bg-gradient-to-r from-[#FF6B00] to-[#CC5500]">
               <div className="w-full h-px bg-white/20 mb-4" />
               <div className="text-center px-8">
                 <p className="text-xs text-white/80">
@@ -1452,12 +1452,12 @@ function AnimatedCircleSection() {
               {/* CRIATIVOS */}
               <div className="group relative p-4 lg:p-3 rounded-xl bg-gradient-to-br from-background to-muted/50 border border-border/30 hover:border-primary/30 transition-all duration-300">
                 <div className="flex items-start gap-3">
-                  <div className="w-9 h-9 lg:w-8 lg:h-8 rounded-lg border-2 border-[#F40000] flex items-center justify-center flex-shrink-0">
-                    <span className="text-[#F40000] font-bold text-xs">01</span>
+                  <div className="w-9 h-9 lg:w-8 lg:h-8 rounded-lg border-2 border-[#FF6B00] flex items-center justify-center flex-shrink-0">
+                    <span className="text-[#FF6B00] font-bold text-xs">01</span>
                   </div>
                   <div className="flex-1">
                     <h3 className="font-bold text-foreground text-base lg:text-sm tracking-tight flex items-center gap-1">
-                      <ArrowRight className="w-3 h-3 text-[#F40000]" />
+                      <ArrowRight className="w-3 h-3 text-[#FF6B00]" />
                       Roteiros
                     </h3>
                     <p className="text-sm lg:text-xs text-muted-foreground mt-1 leading-relaxed">Roteiros estratégicos para vídeos e anúncios que engajam e convertem em vendas.</p>
@@ -1468,12 +1468,12 @@ function AnimatedCircleSection() {
               {/* TRÁFEGO */}
               <div className="group relative p-4 lg:p-3 rounded-xl bg-gradient-to-br from-background to-muted/50 border border-border/30 hover:border-primary/30 transition-all duration-300">
                 <div className="flex items-start gap-3">
-                  <div className="w-9 h-9 lg:w-8 lg:h-8 rounded-lg border-2 border-[#F40000] flex items-center justify-center flex-shrink-0">
-                    <span className="text-[#F40000] font-bold text-xs">02</span>
+                  <div className="w-9 h-9 lg:w-8 lg:h-8 rounded-lg border-2 border-[#FF6B00] flex items-center justify-center flex-shrink-0">
+                    <span className="text-[#FF6B00] font-bold text-xs">02</span>
                   </div>
                   <div className="flex-1">
                     <h3 className="font-bold text-foreground text-base lg:text-sm tracking-tight flex items-center gap-1">
-                      <ArrowRight className="w-3 h-3 text-[#F40000]" />
+                      <ArrowRight className="w-3 h-3 text-[#FF6B00]" />
                       Tráfego
                     </h3>
                     <p className="text-sm lg:text-xs text-muted-foreground mt-1 leading-relaxed">
@@ -1486,12 +1486,12 @@ function AnimatedCircleSection() {
               {/* PÁGINAS DE VENDA */}
               <div className="group relative p-4 lg:p-3 rounded-xl bg-gradient-to-br from-background to-muted/50 border border-border/30 hover:border-primary/30 transition-all duration-300">
                 <div className="flex items-start gap-3">
-                  <div className="w-9 h-9 lg:w-8 lg:h-8 rounded-lg border-2 border-[#F40000] flex items-center justify-center flex-shrink-0">
-                    <span className="text-[#F40000] font-bold text-xs">03</span>
+                  <div className="w-9 h-9 lg:w-8 lg:h-8 rounded-lg border-2 border-[#FF6B00] flex items-center justify-center flex-shrink-0">
+                    <span className="text-[#FF6B00] font-bold text-xs">03</span>
                   </div>
                   <div className="flex-1">
                     <h3 className="font-bold text-foreground text-base lg:text-sm tracking-tight flex items-center gap-1">
-                      <ArrowRight className="w-3 h-3 text-[#F40000]" />
+                      <ArrowRight className="w-3 h-3 text-[#FF6B00]" />
                       Páginas de Venda
                     </h3>
                     <p className="text-sm lg:text-xs text-muted-foreground mt-1 leading-relaxed">
@@ -1512,7 +1512,7 @@ function QuemSomosSection() {
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[70%] md:w-[50%] h-8 md:h-12 bg-background rounded-b-[50px] z-10" />
       
       {/* Red background with padding for the curve */}
-      <div className="bg-gradient-to-r from-[#F40000] to-[#A10000] pt-8 md:pt-12 pb-16 md:pb-24">
+      <div className="bg-gradient-to-r from-[#FF6B00] to-[#CC5500] pt-8 md:pt-12 pb-16 md:pb-24">
         <div className="mx-auto w-full max-w-6xl px-8 md:px-8 pt-8 md:pt-12">
           <AnimatedContainer className="flex flex-col md:flex-row items-center gap-8 md:gap-12">
             {/* Image */}
