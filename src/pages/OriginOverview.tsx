@@ -515,16 +515,16 @@ const OriginOverview = () => {
                         <stop offset="100%" stopColor="#6b7280" stopOpacity={0} />
                       </linearGradient>
                       <linearGradient id="gradientVendas" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stopColor="#e11d48" stopOpacity={0.3} />
-                        <stop offset="100%" stopColor="#e11d48" stopOpacity={0} />
+                        <stop offset="0%" stopColor="#ea580c" stopOpacity={0.3} />
+                        <stop offset="100%" stopColor="#ea580c" stopOpacity={0} />
                       </linearGradient>
                       <linearGradient id="lineGradientAgendamentos" x1="0" y1="0" x2="1" y2="0">
                         <stop offset="0%" stopColor="#6b7280" />
                         <stop offset="100%" stopColor="#9ca3af" />
                       </linearGradient>
                       <linearGradient id="lineGradientVendas" x1="0" y1="0" x2="1" y2="0">
-                        <stop offset="0%" stopColor="#e11d48" />
-                        <stop offset="100%" stopColor="#FF6B6B" />
+                        <stop offset="0%" stopColor="#ea580c" />
+                        <stop offset="100%" stopColor="#f59e0b" />
                       </linearGradient>
                     </defs>
                     <CartesianGrid
