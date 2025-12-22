@@ -664,6 +664,37 @@ export function DashboardCanvas({ painelName, dashboardId, onBack }: DashboardCa
     fetchDataForLoadedWidgets();
   }, [isInitialLoad]);
 
+  // Auto-refresh Facebook Ads and CPL widgets every 30 seconds
+  useEffect(() => {
+    if (isInitialLoad) return;
+
+    const hasFacebookWidgets = widgets.some(w => 
+      w.isConnected && (w.source?.type === 'facebook_ads' || w.source?.type === 'cost_per_lead')
+    );
+
+    if (!hasFacebookWidgets) return;
+
+    const refreshFacebookData = async () => {
+      const fbWidgets = widgets.filter(w => 
+        w.isConnected && !w.isLoading && (w.source?.type === 'facebook_ads' || w.source?.type === 'cost_per_lead')
+      );
+
+      for (const widget of fbWidgets) {
+        const data = await fetchWidgetData(widget);
+        if (data) {
+          setWidgets(prev => prev.map(w => 
+            w.id === widget.id ? { ...w, data } : w
+          ));
+        }
+      }
+    };
+
+    // Refresh every 30 seconds
+    const intervalId = setInterval(refreshFacebookData, 30000);
+
+    return () => clearInterval(intervalId);
+  }, [isInitialLoad, widgets.length, startDate, endDate]);
+
   // Auto-save widgets to database (debounced)
   useEffect(() => {
     if (isInitialLoad || !dashboardId) return;
