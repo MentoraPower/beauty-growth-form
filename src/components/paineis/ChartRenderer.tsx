@@ -249,34 +249,31 @@ export function ChartRenderer({ chartType, data, width, height, isLoading }: Cha
         );
       }
 
-    // Minimal overhead - bars should only hide when border is very close
-    const availableHeight = height - 4;
-    const itemHeight = 26; // compact height per bar item
-    const maxItemsToShow = Math.max(2, Math.floor(availableHeight / itemHeight));
-      const sortedData = [...distribution].sort((a, b) => b.value - a.value).slice(0, maxItemsToShow);
+      // Render ALL bars - no slicing. Container is scrollable.
+      const sortedData = [...distribution].sort((a, b) => b.value - a.value);
       const maxValue = Math.max(...sortedData.map(d => d.value), 1);
       const totalResponses = distribution.reduce((sum, d) => sum + d.value, 0);
 
       return (
-        <div className="w-full h-full flex flex-col px-3 py-2 overflow-hidden">
-          <div className="flex flex-col justify-start gap-2 overflow-hidden flex-1">
+        <div className="w-full h-full flex flex-col px-3 py-1 overflow-hidden">
+          <div className="flex flex-col justify-start gap-1.5 overflow-y-auto flex-1 pr-1">
             {sortedData.map((item, index) => {
               const percentage = maxValue > 0 ? (item.value / maxValue) * 100 : 0;
               const responsePercent = totalResponses > 0 ? Math.round((item.value / totalResponses) * 100) : 0;
               const gradient = GRADIENT_PAIRS[index % GRADIENT_PAIRS.length];
               
               return (
-                <div key={item.name} className="flex items-center gap-2 min-w-0">
-                  <div className="w-10 shrink-0 flex items-center justify-start">
-                    <span className={`text-sm font-bold tabular-nums ${item.value === 0 ? 'text-muted-foreground' : 'text-foreground'}`}>
+                <div key={`${item.name}-${index}`} className="flex items-center gap-2 min-w-0 shrink-0">
+                  <div className="w-9 shrink-0 flex items-center justify-start">
+                    <span className={`text-xs font-bold tabular-nums ${item.value === 0 ? 'text-muted-foreground' : 'text-foreground'}`}>
                       {item.value}
                     </span>
                   </div>
                   
-                  <div className="flex-1 h-6 bg-gray-100 rounded-full overflow-hidden">
+                  <div className="flex-1 h-5 bg-gray-100 rounded-full overflow-hidden">
                     {item.value > 0 && (
                       <div 
-                        className="h-full rounded-full transition-all duration-700 ease-out relative overflow-hidden"
+                        className="h-full rounded-full relative overflow-hidden"
                         style={{ 
                           width: `${Math.max(percentage, 4)}%`, 
                           background: item.color || `linear-gradient(90deg, ${gradient.start}, ${gradient.end})`,
@@ -288,14 +285,14 @@ export function ChartRenderer({ chartType, data, width, height, isLoading }: Cha
                     )}
                   </div>
                   
-                  <div className="w-[70px] shrink-0 flex items-center justify-between gap-1">
+                  <div className="w-[65px] shrink-0 flex items-center justify-between gap-1">
                     <span 
-                      className={`text-[11px] truncate leading-tight font-medium ${item.value === 0 ? 'text-muted-foreground' : 'text-foreground/70'}`}
+                      className={`text-[10px] truncate leading-tight font-medium ${item.value === 0 ? 'text-muted-foreground' : 'text-foreground/70'}`}
                       title={item.name}
                     >
                       {item.name}
                     </span>
-                    <span className="text-[10px] font-medium text-muted-foreground">
+                    <span className="text-[9px] font-medium text-muted-foreground">
                       {item.value === 0 ? '-' : `${responsePercent}%`}
                     </span>
                   </div>
@@ -303,14 +300,6 @@ export function ChartRenderer({ chartType, data, width, height, isLoading }: Cha
               );
             })}
           </div>
-          
-          {distribution.length > maxItemsToShow && (
-            <div className="mt-2 pt-2 border-t border-border/30 shrink-0">
-              <p className="text-[10px] text-muted-foreground text-center font-medium">
-                +{distribution.length - maxItemsToShow} mais
-              </p>
-            </div>
-          )}
         </div>
       );
 
