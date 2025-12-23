@@ -3,6 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Switch } from "@/components/ui/switch";
 import { Folder, FolderOpen, Facebook, ChevronRight, ArrowLeft, Users, UserPlus, UserMinus, TrendingUp, Globe, Target, Megaphone, FormInput, DollarSign, BarChart3, MousePointer, RefreshCw, Loader2, Check } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -70,6 +71,7 @@ interface ConnectSourceDialogProps {
   onOpenChange: (open: boolean) => void;
   selectedChart: ChartType | null;
   onConnect: (source: WidgetSource) => void;
+  existingSource?: WidgetSource | null; // For editing existing widgets
 }
 
 type Step = 'sources' | 'origins' | 'sub_origins' | 'facebook_form' | 'facebook_campaigns' | 'facebook_metrics' | 'tracking' | 'tracking_origins' | 'tracking_sub_origins' | 'utm_options' | 'utm_origins' | 'utm_sub_origins' | 'custom_fields_origins' | 'custom_fields_sub_origins' | 'custom_fields_select' | 'custom_fields_traffic_type' | 'cpl_fb_connection' | 'cpl_fb_campaign' | 'cpl_select_sub_origin';
@@ -78,7 +80,8 @@ export function ConnectSourceDialog({
   open, 
   onOpenChange, 
   selectedChart,
-  onConnect 
+  onConnect,
+  existingSource
 }: ConnectSourceDialogProps) {
   const [step, setStep] = useState<Step>('sources');
   const [origins, setOrigins] = useState<Origin[]>([]);
@@ -115,6 +118,7 @@ export function ConnectSourceDialog({
       setSelectedFbCampaign(null);
       setSelectedCampaigns(new Map());
       setSelectedFbMetric(null);
+      setLiveCampaigns([]);
       return;
     }
 
@@ -144,13 +148,35 @@ export function ConnectSourceDialog({
           selected_metrics: (c.selected_metrics as { spend: boolean; cpm: boolean; cpc: boolean }) || { spend: true, cpm: true, cpc: true }
         }));
         setFbConnections(formatted);
+
+        // If editing an existing Facebook Ads source, pre-populate the selections
+        if (existingSource?.type === 'facebook_ads' && existingSource.sourceId) {
+          setSelectedFbConnectionId(existingSource.sourceId);
+          setSelectedFbMetric(existingSource.fbMetric || null);
+          
+          // Pre-populate selected campaigns from existing source
+          if (existingSource.fbCampaigns && existingSource.fbCampaigns.length > 0) {
+            const campaignMap = new Map<string, boolean>();
+            existingSource.fbCampaigns.forEach(c => {
+              if (c.active !== false) {
+                campaignMap.set(c.id, true);
+              }
+            });
+            setSelectedCampaigns(campaignMap);
+            // Set live campaigns from existing source for display
+            setLiveCampaigns(existingSource.fbCampaigns.map(c => ({ id: c.id, name: c.name })));
+          }
+          
+          // Jump directly to campaigns step
+          setStep('facebook_campaigns');
+        }
       } finally {
         setIsFbConnectionsLoading(false);
       }
     };
 
     fetchData();
-  }, [open]);
+  }, [open, existingSource]);
 
   const getSubOriginsForOrigin = (originId: string) => {
     return subOrigins.filter((so) => so.origin_id === originId);
@@ -652,6 +678,8 @@ export function ConnectSourceDialog({
         // Use live campaigns if available, otherwise fall back to saved
         const campaigns = liveCampaigns.length > 0 ? liveCampaigns : (selectedConnection?.selected_campaigns || []);
         const allSelected = selectedCampaigns.size === campaigns.length && campaigns.length > 0;
+        const activeCount = selectedCampaigns.size;
+        
         return (
           <div className="space-y-4 py-4">
             <div className="flex items-center justify-between gap-2 p-3 rounded-lg bg-[#1877F2]/10 min-w-0">
@@ -672,15 +700,20 @@ export function ConnectSourceDialog({
             </div>
             
             <div className="flex items-center justify-between">
-              <p className="text-xs text-muted-foreground">
-                Selecione as campanhas que deseja monitorar
-              </p>
+              <div>
+                <p className="text-sm font-medium text-foreground">
+                  Ative as campanhas para monitorar
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  {activeCount} de {campaigns.length} campanhas ativas
+                </p>
+              </div>
               {campaigns.length > 0 && (
                 <button
                   onClick={handleToggleAllCampaigns}
-                  className="text-xs text-[#1877F2] hover:underline"
+                  className="text-xs text-[#1877F2] hover:underline font-medium"
                 >
-                  {allSelected ? 'Desmarcar todas' : 'Selecionar todas'}
+                  {allSelected ? 'Desativar todas' : 'Ativar todas'}
                 </button>
               )}
             </div>
@@ -691,33 +724,38 @@ export function ConnectSourceDialog({
                 <span className="text-sm text-muted-foreground">Buscando campanhas do Facebook...</span>
               </div>
             ) : (
-              <div className="space-y-2 max-h-[250px] overflow-y-auto overflow-x-hidden pr-1">
+              <div className="space-y-2 max-h-[300px] overflow-y-auto overflow-x-hidden pr-1">
                 {campaigns.length === 0 ? (
                   <p className="text-sm text-muted-foreground text-center py-6">
                     Nenhuma campanha encontrada. Verifique se há campanhas ativas na conta.
                   </p>
                 ) : (
                   campaigns.map((campaign) => {
-                    const isSelected = selectedCampaigns.has(campaign.id);
+                    const isActive = selectedCampaigns.has(campaign.id);
                     return (
-                      <button
+                      <div
                         key={campaign.id}
-                        onClick={() => handleToggleCampaign(campaign)}
-                        className={`w-full flex items-center gap-3 p-3 border rounded-lg text-left transition-all duration-200 overflow-hidden ${
-                          isSelected 
+                        className={`flex items-center justify-between gap-3 p-3 border rounded-lg transition-all duration-200 ${
+                          isActive 
                             ? 'bg-[#1877F2]/5 border-[#1877F2]/30' 
-                            : 'bg-white border-border hover:bg-muted/30 hover:border-[#1877F2]/30'
+                            : 'bg-white border-border'
                         }`}
                       >
-                        <div className={`h-5 w-5 rounded border-2 flex items-center justify-center transition-colors shrink-0 ${
-                          isSelected 
-                            ? 'bg-[#1877F2] border-[#1877F2]' 
-                            : 'border-muted-foreground/30'
-                        }`}>
-                          {isSelected && <Check className="h-3 w-3 text-white" />}
+                        <div className="flex items-center gap-3 min-w-0 flex-1">
+                          <div className={`w-2 h-2 rounded-full shrink-0 ${isActive ? 'bg-green-500' : 'bg-muted-foreground/30'}`} />
+                          <span className="text-sm font-medium text-foreground truncate">{campaign.name}</span>
                         </div>
-                        <span className="text-sm font-medium text-foreground truncate flex-1 min-w-0">{campaign.name}</span>
-                      </button>
+                        <div className="flex items-center gap-2 shrink-0">
+                          <span className={`text-xs ${isActive ? 'text-green-600 font-medium' : 'text-muted-foreground'}`}>
+                            {isActive ? 'Ativa' : 'Inativa'}
+                          </span>
+                          <Switch
+                            checked={isActive}
+                            onCheckedChange={() => handleToggleCampaign(campaign)}
+                            className="data-[state=checked]:bg-[#1877F2]"
+                          />
+                        </div>
+                      </div>
                     );
                   })
                 )}
@@ -1469,7 +1507,7 @@ export function ConnectSourceDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md border-0 shadow-2xl bg-background overflow-hidden">
+      <DialogContent className={`border-0 shadow-2xl bg-background overflow-hidden ${step === 'facebook_campaigns' ? 'sm:max-w-xl' : 'sm:max-w-md'}`}>
         <DialogHeader>
           <div className="flex items-center gap-3">
             {step !== 'sources' && (
