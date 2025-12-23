@@ -953,13 +953,25 @@ export function DashboardCanvas({ painelName, dashboardId, onBack }: DashboardCa
 
       // Handle Cost per Lead (CPL) type
       if (widget.source.type === 'cost_per_lead') {
-        const { fbConnectionId, fbCampaignId, fbCampaignName, subOriginIdForLeads } = widget.source;
+        const { fbConnectionId, fbCampaignId, fbCampaignName, fbCampaigns, subOriginIdForLeads } = widget.source;
         
-        if (!fbConnectionId || !fbCampaignId || !subOriginIdForLeads) {
+        // Support both single campaign and multiple campaigns
+        let campaignIdsToFetch: string[] = [];
+        let campaignLabel = 'Campanha';
+        
+        if (fbCampaigns && fbCampaigns.length > 0) {
+          campaignIdsToFetch = fbCampaigns.filter(c => c.active !== false).map(c => c.id);
+          campaignLabel = fbCampaigns.length === 1 ? fbCampaigns[0].name : `${fbCampaigns.filter(c => c.active !== false).length} campanhas`;
+        } else if (fbCampaignId) {
+          campaignIdsToFetch = [fbCampaignId];
+          campaignLabel = fbCampaignName || 'Campanha';
+        }
+        
+        if (!fbConnectionId || campaignIdsToFetch.length === 0 || !subOriginIdForLeads) {
           return { total: 0, label: 'CPL' };
         }
 
-        // 1. Get Facebook spend for the campaign
+        // 1. Get Facebook spend for the campaign(s)
         const { data: connection, error: connError } = await supabase
           .from('facebook_ads_connections')
           .select('access_token')
@@ -978,7 +990,7 @@ export function DashboardCanvas({ painelName, dashboardId, onBack }: DashboardCa
           body: { 
             action: 'get-insights-daterange',
             accessToken: connection.access_token,
-            campaignIds: [fbCampaignId],
+            campaignIds: campaignIdsToFetch,
             since: sinceDate,
             until: untilDate
           }
@@ -1038,7 +1050,7 @@ export function DashboardCanvas({ painelName, dashboardId, onBack }: DashboardCa
           });
         }
 
-        const label = `CPL - ${fbCampaignName || 'Campanha'}`;
+        const label = `CPL - ${campaignLabel}`;
         
         return {
           total: Math.round(cpl * 100) / 100,
@@ -2082,6 +2094,7 @@ export function DashboardCanvas({ painelName, dashboardId, onBack }: DashboardCa
         }}
         selectedChart={selectedChart}
         onConnect={handleConnectSource}
+        existingSource={pendingWidgetId ? widgets.find(w => w.id === pendingWidgetId)?.source : null}
       />
     </div>
   );
