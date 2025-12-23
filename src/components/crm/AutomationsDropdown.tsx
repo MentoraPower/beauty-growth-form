@@ -1081,7 +1081,7 @@ export function AutomationsDropdown({
       <Dialog open={open} onOpenChange={handleOpenChange}>
         <DialogTrigger asChild>
           <div className="relative inline-flex overflow-visible">
-            <Button size="icon" className="h-9 w-9 bg-gradient-to-r from-orange-600 to-amber-500 hover:from-orange-700 hover:to-amber-600 text-white border-0 shadow-lg shadow-orange-600/20">
+            <Button size="icon" className="h-9 w-9 bg-white hover:bg-gray-50 text-foreground border border-border shadow-sm">
               <Zap className="w-4 h-4" />
             </Button>
             {(activeAutomationsCount + activeWebhooksCount + activeEmailAutomationsCount) > 0 && (
@@ -1113,7 +1113,7 @@ export function AutomationsDropdown({
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
         <div className="relative inline-flex overflow-visible">
-          <Button size="icon" className="h-9 w-9 bg-gradient-to-r from-orange-600 to-amber-500 hover:from-orange-700 hover:to-amber-600 text-white border-0 shadow-lg shadow-orange-600/20">
+          <Button size="icon" className="h-9 w-9 bg-white hover:bg-gray-50 text-foreground border border-border shadow-sm">
             <Zap className="w-4 h-4" />
           </Button>
           {(activeAutomationsCount + activeWebhooksCount + activeEmailAutomationsCount) > 0 && (
