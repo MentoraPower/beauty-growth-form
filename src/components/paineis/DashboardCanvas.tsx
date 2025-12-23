@@ -1629,23 +1629,29 @@ export function DashboardCanvas({ painelName, dashboardId, onBack }: DashboardCa
 
   const handleConnectSource = async (source: WidgetSource) => {
     if (pendingWidgetId) {
-      const widgetToUpdate = widgets.find(w => w.id === pendingWidgetId);
+      // Get the current widget from ref to avoid stale closure
+      const currentWidgets = widgetsRef.current;
+      const widgetToUpdate = currentWidgets.find(w => w.id === pendingWidgetId);
       if (!widgetToUpdate) {
         setPendingWidgetId(null);
         return;
       }
 
+      // First, update the widget with loading state and the NEW source
       setWidgets(prev => prev.map(widget => 
         widget.id === pendingWidgetId 
-          ? { ...widget, source, isConnected: true, isLoading: true }
+          ? { ...widget, source, isConnected: true, isLoading: true, data: undefined }
           : widget
       ));
 
+      // Create temp widget with the NEW source for data fetching
       const tempWidget: DashboardWidget = { 
         ...widgetToUpdate, 
-        source, 
+        source, // Use the NEW source, not the old one
         isConnected: true 
       };
+      
+      // Fetch data with the new source
       const data = await fetchWidgetData(tempWidget);
       
       // For horizontal bar charts, calculate height based on number of bars
@@ -1655,6 +1661,7 @@ export function DashboardCanvas({ painelName, dashboardId, onBack }: DashboardCa
         appropriateHeight = calculateOptimalBarHeight(data.distribution.length);
       }
       
+      // Update widget with fetched data
       setWidgets(prev => prev.map(widget => 
         widget.id === pendingWidgetId 
           ? { ...widget, source, isConnected: true, data: data || undefined, isLoading: false, height: appropriateHeight }
