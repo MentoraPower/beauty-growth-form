@@ -2083,12 +2083,17 @@ export function DashboardCanvas({ painelName, dashboardId, onBack }: DashboardCa
           setIsConnectSourceOpen(open);
           if (!open && pendingWidgetId) {
             const idToCheck = pendingWidgetId;
-            // Remove widget only if it is STILL not connected (avoid race with async connect)
-            setWidgets((prev) => {
-              const w = prev.find((x) => x.id === idToCheck);
-              if (w && !w.isConnected) return prev.filter((x) => x.id !== idToCheck);
-              return prev;
-            });
+            // Delay removal check to let the connect handler finish updating state
+            setTimeout(() => {
+              setWidgets((prev) => {
+                const w = prev.find((x) => x.id === idToCheck);
+                // Only remove if widget exists and is still not connected
+                if (w && !w.isConnected && !w.source) {
+                  return prev.filter((x) => x.id !== idToCheck);
+                }
+                return prev;
+              });
+            }, 100);
             setPendingWidgetId(null);
           }
         }}
