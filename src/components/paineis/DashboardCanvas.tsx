@@ -58,6 +58,7 @@ export interface DashboardWidget {
   height?: number;
   widthPercent?: number;
   customName?: string;
+  heightLocked?: boolean; // User manually adjusted height - don't auto-calculate
 }
 
 interface DashboardCanvasProps {
@@ -665,8 +666,9 @@ export function DashboardCanvas({ painelName, dashboardId, onBack }: DashboardCa
         const data = await fetchWidgetData(widget);
 
         // For horizontal bar charts, adjust height based on number of bars
+        // BUT only if user hasn't manually adjusted the height (heightLocked)
         let newHeight = widget.height;
-        if (widget.chartType.id === 'bar_horizontal' && data?.distribution) {
+        if (widget.chartType.id === 'bar_horizontal' && data?.distribution && !widget.heightLocked) {
           newHeight = calculateOptimalBarHeight(data.distribution.length);
         }
 
@@ -1511,8 +1513,9 @@ export function DashboardCanvas({ painelName, dashboardId, onBack }: DashboardCa
       const data = await fetchWidgetData(widget);
       
       // For horizontal bar charts, adjust height based on number of bars
+      // BUT only if user hasn't manually adjusted the height (heightLocked)
       let newHeight = widget.height;
-      if (widget.chartType.id === 'bar_horizontal' && data?.distribution) {
+      if (widget.chartType.id === 'bar_horizontal' && data?.distribution && !widget.heightLocked) {
         newHeight = calculateOptimalBarHeight(data.distribution.length);
       }
       
@@ -1766,6 +1769,7 @@ export function DashboardCanvas({ painelName, dashboardId, onBack }: DashboardCa
       next[idx].widthPercent = pixelsToPercent(clampedWidth, cw);
       next[idx].width = clampedWidth; // Keep pixel for backwards compat
       next[idx].height = clampedHeight;
+      next[idx].heightLocked = true; // User manually adjusted - don't auto-calculate anymore
 
       if (siblings.length === 0 || delta === 0) {
         return next;
