@@ -869,10 +869,19 @@ export function DashboardCanvas({ painelName, dashboardId, onBack }: DashboardCa
           return { total: 0, label: 'Facebook Ads', distribution: [], trend: [] };
         }
 
-        // Determine which campaigns to fetch
-        const campaignsToFetch = widget.source.fbCampaignId 
-          ? [{ id: widget.source.fbCampaignId, name: widget.source.fbCampaignName }]
-          : (connection.selected_campaigns as { id: string; name: string }[]) || [];
+        // Determine which campaigns to fetch - support fbCampaigns array, fallback to single fbCampaignId
+        let campaignsToFetch: { id: string; name?: string; active?: boolean }[] = [];
+        
+        if (widget.source.fbCampaigns && widget.source.fbCampaigns.length > 0) {
+          // Use the new multi-campaign array, filter only active ones
+          campaignsToFetch = widget.source.fbCampaigns.filter(c => c.active !== false);
+        } else if (widget.source.fbCampaignId) {
+          // Fallback to single campaign (legacy support)
+          campaignsToFetch = [{ id: widget.source.fbCampaignId, name: widget.source.fbCampaignName }];
+        } else {
+          // Use all campaigns from connection
+          campaignsToFetch = (connection.selected_campaigns as { id: string; name: string }[]) || [];
+        }
 
         if (campaignsToFetch.length === 0) {
           return { total: 0, label: 'Facebook Ads', distribution: [], trend: [] };
@@ -901,8 +910,9 @@ export function DashboardCanvas({ painelName, dashboardId, onBack }: DashboardCa
             .select('campaign_id, campaign_name, spend, cpm, cpc')
             .eq('connection_id', widget.source.sourceId);
 
+          const activeCampaignIds = new Set(campaignsToFetch.map(c => c.id));
           const points: ChartDataPoint[] = (cachedInsights || [])
-            .filter(i => !widget.source.fbCampaignId || i.campaign_id === widget.source.fbCampaignId)
+            .filter(i => activeCampaignIds.has(i.campaign_id))
             .map((i) => ({
               name: i.campaign_name || i.campaign_id,
               value: Number(i[metric] || 0),
@@ -924,10 +934,14 @@ export function DashboardCanvas({ painelName, dashboardId, onBack }: DashboardCa
         }));
 
         const total = points.reduce((sum, p) => sum + p.value, 0);
-        const campaignName = widget.source.fbCampaignName || 'Todas';
-        const label = widget.source.fbCampaignId 
-          ? `${metricLabels[metric]} - ${campaignName}` 
-          : `${metricLabels[metric]} (Total)`;
+        
+        // Generate label based on campaign selection
+        let label: string;
+        if (campaignsToFetch.length === 1) {
+          label = `${metricLabels[metric]} - ${campaignsToFetch[0].name || 'Campanha'}`;
+        } else {
+          label = `${metricLabels[metric]} - ${campaignsToFetch.length} campanhas`;
+        }
 
         return {
           total: Math.round(total * 100) / 100,

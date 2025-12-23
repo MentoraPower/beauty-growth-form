@@ -2,7 +2,8 @@ import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Folder, FolderOpen, Facebook, ChevronRight, ArrowLeft, Users, UserPlus, UserMinus, TrendingUp, Globe, Target, Megaphone, FormInput, DollarSign, BarChart3, MousePointer, RefreshCw, Loader2 } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Folder, FolderOpen, Facebook, ChevronRight, ArrowLeft, Users, UserPlus, UserMinus, TrendingUp, Globe, Target, Megaphone, FormInput, DollarSign, BarChart3, MousePointer, RefreshCw, Loader2, Check } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { ChartType } from "./ChartSelectorDialog";
@@ -48,6 +49,8 @@ export interface WidgetSource {
   customFieldLabel?: string;
   fbCampaignId?: string;
   fbCampaignName?: string;
+  // Support for multiple campaigns
+  fbCampaigns?: { id: string; name: string; active: boolean }[];
   fbMetric?: 'spend' | 'cpm' | 'cpc';
   // For cost_per_lead
   fbConnectionId?: string;
@@ -88,6 +91,8 @@ export function ConnectSourceDialog({
   const [fbConnections, setFbConnections] = useState<FbConnection[]>([]);
   const [selectedFbConnectionId, setSelectedFbConnectionId] = useState<string>("");
   const [selectedFbCampaign, setSelectedFbCampaign] = useState<FbCampaign | null>(null);
+  // Multi-campaign selection state
+  const [selectedCampaigns, setSelectedCampaigns] = useState<Map<string, boolean>>(new Map());
   const [selectedFbMetric, setSelectedFbMetric] = useState<'spend' | 'cpm' | 'cpc' | null>(null);
   const [isFbConnectionsLoading, setIsFbConnectionsLoading] = useState(false);
   const [isRefreshingCampaigns, setIsRefreshingCampaigns] = useState(false);
@@ -104,6 +109,7 @@ export function ConnectSourceDialog({
       setFbConnections([]);
       setSelectedFbConnectionId("");
       setSelectedFbCampaign(null);
+      setSelectedCampaigns(new Map());
       setSelectedFbMetric(null);
       return;
     }
@@ -306,23 +312,60 @@ export function ConnectSourceDialog({
     }
   };
 
-  const handleSelectFbCampaign = (campaign: FbCampaign) => {
-    setSelectedFbCampaign(campaign);
+  const handleToggleCampaign = (campaign: FbCampaign) => {
+    setSelectedCampaigns(prev => {
+      const newMap = new Map(prev);
+      if (newMap.has(campaign.id)) {
+        newMap.delete(campaign.id);
+      } else {
+        newMap.set(campaign.id, true);
+      }
+      return newMap;
+    });
+  };
+
+  const handleToggleAllCampaigns = () => {
+    const campaigns = liveCampaigns.length > 0 ? liveCampaigns : (fbConnections.find(c => c.id === selectedFbConnectionId)?.selected_campaigns || []);
+    
+    if (selectedCampaigns.size === campaigns.length) {
+      // Deselect all
+      setSelectedCampaigns(new Map());
+    } else {
+      // Select all
+      const newMap = new Map<string, boolean>();
+      campaigns.forEach(c => newMap.set(c.id, true));
+      setSelectedCampaigns(newMap);
+    }
+  };
+
+  const handleContinueToMetrics = () => {
+    if (selectedCampaigns.size === 0) return;
     setStep('facebook_metrics');
   };
 
   const handleSelectFbMetric = (metric: 'spend' | 'cpm' | 'cpc') => {
     const connection = fbConnections.find((c) => c.id === selectedFbConnectionId);
-    if (!connection || !selectedFbCampaign) return;
+    if (!connection || selectedCampaigns.size === 0) return;
 
     const metricLabels = { spend: 'Valor Gasto', cpm: 'CPM', cpc: 'CPC' };
+    const campaigns = liveCampaigns.length > 0 ? liveCampaigns : connection.selected_campaigns;
+    
+    // Build array of selected campaigns with active state
+    const fbCampaignsArray = campaigns
+      .filter(c => selectedCampaigns.has(c.id))
+      .map(c => ({ id: c.id, name: c.name, active: true }));
+
+    const campaignNames = fbCampaignsArray.length === 1 
+      ? fbCampaignsArray[0].name 
+      : `${fbCampaignsArray.length} campanhas`;
 
     onConnect({
       type: 'facebook_ads',
       sourceId: connection.id,
-      sourceName: `${metricLabels[metric]} - ${selectedFbCampaign.name}`,
-      fbCampaignId: selectedFbCampaign.id,
-      fbCampaignName: selectedFbCampaign.name,
+      sourceName: `${metricLabels[metric]} - ${campaignNames}`,
+      fbCampaignId: fbCampaignsArray.length === 1 ? fbCampaignsArray[0].id : undefined,
+      fbCampaignName: fbCampaignsArray.length === 1 ? fbCampaignsArray[0].name : undefined,
+      fbCampaigns: fbCampaignsArray,
       fbMetric: metric,
     });
     onOpenChange(false);
@@ -601,6 +644,7 @@ export function ConnectSourceDialog({
         const selectedConnection = fbConnections.find(c => c.id === selectedFbConnectionId);
         // Use live campaigns if available, otherwise fall back to saved
         const campaigns = liveCampaigns.length > 0 ? liveCampaigns : (selectedConnection?.selected_campaigns || []);
+        const allSelected = selectedCampaigns.size === campaigns.length && campaigns.length > 0;
         return (
           <div className="space-y-4 py-4">
             <div className="flex items-center justify-between gap-2 p-3 rounded-lg bg-[#1877F2]/10 min-w-0">
@@ -620,9 +664,19 @@ export function ConnectSourceDialog({
               </button>
             </div>
             
-            <p className="text-xs text-muted-foreground">
-              Selecione a campanha que deseja monitorar
-            </p>
+            <div className="flex items-center justify-between">
+              <p className="text-xs text-muted-foreground">
+                Selecione as campanhas que deseja monitorar
+              </p>
+              {campaigns.length > 0 && (
+                <button
+                  onClick={handleToggleAllCampaigns}
+                  className="text-xs text-[#1877F2] hover:underline"
+                >
+                  {allSelected ? 'Desmarcar todas' : 'Selecionar todas'}
+                </button>
+              )}
+            </div>
             
             {isRefreshingCampaigns ? (
               <div className="flex items-center justify-center py-8 gap-2">
@@ -630,35 +684,73 @@ export function ConnectSourceDialog({
                 <span className="text-sm text-muted-foreground">Buscando campanhas do Facebook...</span>
               </div>
             ) : (
-              <div className="space-y-2 max-h-[300px] overflow-y-auto overflow-x-hidden pr-1">
+              <div className="space-y-2 max-h-[250px] overflow-y-auto overflow-x-hidden pr-1">
                 {campaigns.length === 0 ? (
                   <p className="text-sm text-muted-foreground text-center py-6">
                     Nenhuma campanha encontrada. Verifique se há campanhas ativas na conta.
                   </p>
                 ) : (
-                  campaigns.map((campaign) => (
-                    <button
-                      key={campaign.id}
-                      onClick={() => handleSelectFbCampaign(campaign)}
-                      className="w-full flex items-center justify-between gap-3 p-3 bg-white border border-border rounded-lg text-left transition-all duration-200 hover:bg-muted/30 hover:border-[#1877F2]/30 overflow-hidden"
-                    >
-                      <span className="text-sm font-medium text-foreground truncate flex-1 min-w-0">{campaign.name}</span>
-                      <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
-                    </button>
-                  ))
+                  campaigns.map((campaign) => {
+                    const isSelected = selectedCampaigns.has(campaign.id);
+                    return (
+                      <button
+                        key={campaign.id}
+                        onClick={() => handleToggleCampaign(campaign)}
+                        className={`w-full flex items-center gap-3 p-3 border rounded-lg text-left transition-all duration-200 overflow-hidden ${
+                          isSelected 
+                            ? 'bg-[#1877F2]/5 border-[#1877F2]/30' 
+                            : 'bg-white border-border hover:bg-muted/30 hover:border-[#1877F2]/30'
+                        }`}
+                      >
+                        <div className={`h-5 w-5 rounded border-2 flex items-center justify-center transition-colors shrink-0 ${
+                          isSelected 
+                            ? 'bg-[#1877F2] border-[#1877F2]' 
+                            : 'border-muted-foreground/30'
+                        }`}>
+                          {isSelected && <Check className="h-3 w-3 text-white" />}
+                        </div>
+                        <span className="text-sm font-medium text-foreground truncate flex-1 min-w-0">{campaign.name}</span>
+                      </button>
+                    );
+                  })
                 )}
+              </div>
+            )}
+
+            {selectedCampaigns.size > 0 && (
+              <div className="pt-2 border-t border-border">
+                <p className="text-xs text-muted-foreground mb-3">
+                  {selectedCampaigns.size} campanha(s) selecionada(s)
+                </p>
+                <Button
+                  onClick={handleContinueToMetrics}
+                  className="w-full h-11 bg-[#1877F2] hover:bg-[#1877F2]/90 text-white"
+                >
+                  Continuar
+                  <ChevronRight className="h-4 w-4 ml-2" />
+                </Button>
               </div>
             )}
           </div>
         );
 
       case 'facebook_metrics':
+        const campaignNamesForMetrics = (() => {
+          const campaigns = liveCampaigns.length > 0 
+            ? liveCampaigns 
+            : (fbConnections.find(c => c.id === selectedFbConnectionId)?.selected_campaigns || []);
+          const selected = campaigns.filter(c => selectedCampaigns.has(c.id));
+          if (selected.length === 1) return selected[0].name;
+          if (selected.length <= 3) return selected.map(c => c.name).join(', ');
+          return `${selected.length} campanhas`;
+        })();
+        
         return (
           <div className="space-y-4 py-4">
             <div className="flex items-center gap-2 p-3 rounded-lg bg-[#1877F2]/10">
               <Facebook className="h-4 w-4 text-[#1877F2]" />
               <span className="text-sm font-medium truncate">
-                {selectedFbCampaign?.name}
+                {campaignNamesForMetrics}
               </span>
             </div>
             <p className="text-xs text-muted-foreground">
@@ -675,7 +767,7 @@ export function ConnectSourceDialog({
                 </div>
                 <div className="flex-1">
                   <p className="font-medium">Valor Gasto</p>
-                  <p className="text-xs text-muted-foreground">Total investido na campanha</p>
+                  <p className="text-xs text-muted-foreground">Total investido nas campanhas</p>
                 </div>
                 <ChevronRight className="h-4 w-4 text-muted-foreground" />
               </button>
