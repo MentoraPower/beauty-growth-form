@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Plus, Link2, X, Trash2, GripVertical, CalendarIcon } from "lucide-react";
+import { Plus, Link2, X, Trash2, GripVertical, CalendarIcon, Pencil } from "lucide-react";
 import type { Json } from "@/integrations/supabase/types";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -89,6 +89,7 @@ interface SortableWidgetProps {
   onResize: (id: string, width: number, height: number) => void;
   onDelete: (id: string) => void;
   onConnect: (id: string) => void;
+  onEdit: (id: string) => void;
   onRename: (id: string, name: string) => void;
   containerWidth: number;
   isDragging: boolean;
@@ -100,7 +101,8 @@ function SortableWidget({
   widgetWidth,
   onResize, 
   onDelete, 
-  onConnect, 
+  onConnect,
+  onEdit,
   onRename, 
   containerWidth, 
   isDragging: externalIsDragging,
@@ -229,14 +231,27 @@ function SortableWidget({
           )}
         </div>
 
-        {/* Delete Button */}
-        <button
-          onClick={() => onDelete(widget.id)}
-          className="absolute top-2 right-2 p-1.5 rounded-lg hover:bg-muted z-20 opacity-0 group-hover/widget:opacity-100 transition-opacity"
-          title="Remover widget"
-        >
-          <Trash2 className="h-3.5 w-3.5 text-muted-foreground hover:text-foreground" />
-        </button>
+        {/* Action Buttons */}
+        <div className="absolute top-2 right-2 flex items-center gap-1 z-20 opacity-0 group-hover/widget:opacity-100 transition-opacity">
+          {/* Edit Button - Only for Facebook Ads or CPL widgets */}
+          {widget.isConnected && (widget.source?.type === 'facebook_ads' || widget.source?.type === 'cost_per_lead') && (
+            <button
+              onClick={() => onEdit(widget.id)}
+              className="p-1.5 rounded-lg hover:bg-muted"
+              title="Editar campanhas"
+            >
+              <Pencil className="h-3.5 w-3.5 text-muted-foreground hover:text-foreground" />
+            </button>
+          )}
+          {/* Delete Button */}
+          <button
+            onClick={() => onDelete(widget.id)}
+            className="p-1.5 rounded-lg hover:bg-muted"
+            title="Remover widget"
+          >
+            <Trash2 className="h-3.5 w-3.5 text-muted-foreground hover:text-foreground" />
+          </button>
+        </div>
 
         {/* Connect Overlay */}
         {!widget.isConnected && (
@@ -1958,6 +1973,7 @@ export function DashboardCanvas({ painelName, dashboardId, onBack }: DashboardCa
                     onResize={handleWidgetResize}
                     onDelete={handleDeleteWidget}
                     onConnect={handleConnectWidget}
+                    onEdit={handleConnectWidget}
                     onRename={handleRenameWidget}
                     containerWidth={containerWidth}
                     isDragging={activeId !== null}
