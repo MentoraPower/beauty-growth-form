@@ -1854,14 +1854,6 @@ export function DashboardCanvas({ painelName, dashboardId, onBack }: DashboardCa
 
   return (
     <div className="h-full flex flex-col overflow-x-hidden">
-      {/* Decorative top banner */}
-      <div className="w-full h-8 mb-4 overflow-hidden rounded-lg">
-        <img 
-          src={widgetDecoration} 
-          alt="" 
-          className="w-full h-full object-cover"
-        />
-      </div>
 
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
