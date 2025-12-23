@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { Kanban, ChevronRight, Folder, FolderOpen, MoreVertical, Plus, Pencil, Trash2, GripVertical, Home, CalendarDays, ListTodo } from "lucide-react";
+import { Kanban, ChevronRight, Folder, FolderOpen, MoreVertical, Plus, Pencil, Trash2, GripVertical, CalendarDays, ListTodo } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import {
@@ -264,10 +264,8 @@ function SortableOriginItem({
   openEditSubOriginDialog,
   handleDeleteSubOrigin,
   handleSubOriginClick,
-  handleOverviewClick,
   leadCounts,
   currentSubOriginId,
-  currentOverviewOriginId,
   currentCalendarOriginId,
   userPermissions,
 }: {
@@ -282,10 +280,8 @@ function SortableOriginItem({
   openEditSubOriginDialog: (subOrigin: SubOrigin) => void;
   handleDeleteSubOrigin: (id: string) => void;
   handleSubOriginClick: (id: string, tipo: 'tarefas' | 'calendario') => void;
-  handleOverviewClick: (originId: string) => void;
   leadCounts: LeadCount[];
   currentSubOriginId: string | null;
-  currentOverviewOriginId: string | null;
   currentCalendarOriginId: string | null;
   userPermissions: {
     isAdmin: boolean;
@@ -429,41 +425,6 @@ function SortableOriginItem({
               }}
             />
             
-            {/* Overview Item - Only show if origin has a calendar sub-origin */}
-            {originSubOrigins.some(s => s.tipo === 'calendario') && (
-              <li className="relative pl-6 py-1">
-                {/* Curva SVG perfeita */}
-                <svg 
-                  className="absolute left-[4px] top-1/2 -translate-y-1/2 z-0" 
-                  width="18" 
-                  height="18" 
-                  viewBox="0 0 18 18"
-                  fill="none"
-                >
-                  <path 
-                    d="M 8 0 L 8 5 Q 8 9 12 9 L 18 9" 
-                    stroke="hsl(var(--muted-foreground))"
-                    strokeWidth="2" 
-                    fill="none"
-                  />
-                </svg>
-                
-                <div className="flex items-center group">
-                  <button
-                    onClick={() => handleOverviewClick(origin.id)}
-                    className={cn(
-                      "flex items-center gap-2 flex-1 py-2 px-3 rounded-md transition-all duration-200 ease-out text-xs font-medium",
-                      currentOverviewOriginId === origin.id 
-                        ? "bg-white text-black shadow-lg"
-                        : "bg-gradient-to-r from-orange-600 to-amber-500 text-white shadow-lg shadow-orange-600/30"
-                    )}
-                  >
-                    <Home className="h-3 w-3 flex-shrink-0" />
-                    <span className="font-bold">Overview</span>
-                  </button>
-                </div>
-              </li>
-            )}
 
             {/* Calendar sub-origin (appears right after Overview) */}
             {originSubOrigins.filter(s => s.tipo === 'calendario').map((subOrigin, index, filteredCalendars) => {
@@ -1022,14 +983,7 @@ export function CRMOriginsPanel({ isOpen, onClose, sidebarWidth, embedded = fals
     }
   };
 
-  const handleOverviewClick = (originId: string) => {
-    navigate(`/admin/crm/overview?origin=${originId}`);
-  };
-
   const currentSubOriginId = new URLSearchParams(location.search).get('origin');
-  const currentOverviewOriginId = location.pathname === '/admin/crm/overview' 
-    ? new URLSearchParams(location.search).get('origin') 
-    : null;
   const currentCalendarOriginId = location.pathname === '/admin/calendario' 
     ? new URLSearchParams(location.search).get('origin') 
     : null;
@@ -1070,10 +1024,8 @@ export function CRMOriginsPanel({ isOpen, onClose, sidebarWidth, embedded = fals
                   openEditSubOriginDialog={openEditSubOriginDialog}
                   handleDeleteSubOrigin={handleDeleteSubOrigin}
                   handleSubOriginClick={handleSubOriginClick}
-                  handleOverviewClick={handleOverviewClick}
                   leadCounts={leadCounts}
                   currentSubOriginId={currentSubOriginId}
-                  currentOverviewOriginId={currentOverviewOriginId}
                   currentCalendarOriginId={currentCalendarOriginId}
                   userPermissions={userPermissions}
                 />

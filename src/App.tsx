@@ -13,7 +13,6 @@ import CRM from "./pages/CRM";
 import LeadDetail from "./pages/LeadDetail";
 import Auth from "./pages/Auth";
 import Atendimento from "./pages/Atendimento";
-import OriginOverview from "./pages/OriginOverview";
 import AdminShell from "./pages/AdminShell";
 import Settings from "./pages/Settings";
 import OnboardingForm from "./pages/OnboardingForm";
@@ -39,7 +38,6 @@ const App = () => (
             <Route path="/admin" element={<AdminShell />}>
               <Route index element={<Dashboard />} />
               <Route path="crm" element={<CRM />} />
-              <Route path="crm/overview" element={<OriginOverview />} />
               <Route path="crm/:id" element={<LeadDetail />} />
               <Route path="atendimento" element={<Atendimento />} />
               <Route path="whatsapp" element={<Navigate to="/admin/atendimento?tab=whatsapp" replace />} />

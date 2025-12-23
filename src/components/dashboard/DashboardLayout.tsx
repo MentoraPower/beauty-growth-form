@@ -127,21 +127,23 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
     localStorage.setItem('active_panel', activePanel);
   }, [activePanel]);
 
-  // Navigate to first origin overview when CRM is clicked
+  // Navigate to first sub-origin when CRM is clicked
   const handleNavClick = async (panelId: ActivePanel) => {
     setActivePanel(panelId);
     
     if (panelId === 'crm') {
       setCrmSubmenuOpen(true);
-      // Always navigate to first origin overview when CRM is clicked
-      const { data: origins } = await supabase
-        .from('crm_origins')
+      // Navigate to first sub-origin when CRM is clicked
+      const { data: subOrigins } = await supabase
+        .from('crm_sub_origins')
         .select('id')
         .order('ordem')
         .limit(1);
       
-      if (origins && origins.length > 0) {
-        navigate(`/admin/crm/overview?origin=${origins[0].id}`);
+      if (subOrigins && subOrigins.length > 0) {
+        navigate(`/admin/crm?origin=${subOrigins[0].id}`);
+      } else {
+        navigate('/admin/crm');
       }
     } else {
       setCrmSubmenuOpen(false);
