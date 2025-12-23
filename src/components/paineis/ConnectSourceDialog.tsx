@@ -2,7 +2,8 @@ import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Folder, FolderOpen, Facebook, ChevronRight, ArrowLeft, Users, UserPlus, UserMinus, TrendingUp, Globe, Target, Megaphone, FormInput, DollarSign, BarChart3, MousePointer } from "lucide-react";
+import { Folder, FolderOpen, Facebook, ChevronRight, ArrowLeft, Users, UserPlus, UserMinus, TrendingUp, Globe, Target, Megaphone, FormInput, DollarSign, BarChart3, MousePointer, RefreshCw, Loader2 } from "lucide-react";
+import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { ChartType } from "./ChartSelectorDialog";
 
@@ -89,6 +90,8 @@ export function ConnectSourceDialog({
   const [selectedFbCampaign, setSelectedFbCampaign] = useState<FbCampaign | null>(null);
   const [selectedFbMetric, setSelectedFbMetric] = useState<'spend' | 'cpm' | 'cpc' | null>(null);
   const [isFbConnectionsLoading, setIsFbConnectionsLoading] = useState(false);
+  const [isRefreshingCampaigns, setIsRefreshingCampaigns] = useState(false);
+  const [liveCampaigns, setLiveCampaigns] = useState<FbCampaign[]>([]);
 
   useEffect(() => {
     if (!open) {
@@ -218,9 +221,89 @@ export function ConnectSourceDialog({
     onOpenChange(false);
   };
 
-  const handleSelectFbConnection = () => {
+  const handleSelectFbConnection = async () => {
     if (!selectedFbConnectionId) return;
+    
+    // Auto-fetch live campaigns when entering the campaigns step
+    await fetchLiveCampaigns(selectedFbConnectionId);
     setStep('facebook_campaigns');
+  };
+
+  const fetchLiveCampaigns = async (connectionId: string) => {
+    const connection = fbConnections.find(c => c.id === connectionId);
+    if (!connection) return;
+    
+    setIsRefreshingCampaigns(true);
+    setLiveCampaigns([]);
+    
+    try {
+      // Get the access token from the connection
+      const { data: connData } = await supabase
+        .from('facebook_ads_connections')
+        .select('access_token, ad_account_id')
+        .eq('id', connectionId)
+        .single();
+      
+      if (!connData) {
+        // Fallback to saved campaigns
+        setLiveCampaigns(connection.selected_campaigns);
+        return;
+      }
+
+      // Fetch live campaigns from Facebook
+      const { data, error } = await supabase.functions.invoke('facebook-ads', {
+        body: { 
+          action: 'get-campaigns',
+          accessToken: connData.access_token,
+          adAccountId: connData.ad_account_id
+        }
+      });
+
+      if (error) {
+        console.error('Error fetching campaigns:', error);
+        toast.error("Erro ao buscar campanhas. Usando campanhas salvas.");
+        setLiveCampaigns(connection.selected_campaigns);
+        return;
+      }
+      
+      if (data.campaigns) {
+        const formattedCampaigns: FbCampaign[] = data.campaigns.map((c: any) => ({
+          id: c.id,
+          name: c.name,
+        }));
+        setLiveCampaigns(formattedCampaigns);
+        
+        // Update the connection with new campaigns if there are new ones
+        const newCampaignIds = formattedCampaigns.map(c => c.id);
+        const savedCampaignIds = connection.selected_campaigns.map(c => c.id);
+        const hasNewCampaigns = newCampaignIds.some(id => !savedCampaignIds.includes(id));
+        
+        if (hasNewCampaigns) {
+          // Auto-update the saved campaigns with all available
+          await supabase
+            .from('facebook_ads_connections')
+            .update({ 
+              selected_campaigns: formattedCampaigns as unknown as any,
+              updated_at: new Date().toISOString()
+            })
+            .eq('id', connectionId);
+          
+          // Update local state
+          setFbConnections(prev => prev.map(c => 
+            c.id === connectionId 
+              ? { ...c, selected_campaigns: formattedCampaigns }
+              : c
+          ));
+          
+          toast.success(`${formattedCampaigns.length} campanhas atualizadas!`);
+        }
+      }
+    } catch (err) {
+      console.error('Error:', err);
+      setLiveCampaigns(connection.selected_campaigns);
+    } finally {
+      setIsRefreshingCampaigns(false);
+    }
   };
 
   const handleSelectFbCampaign = (campaign: FbCampaign) => {
@@ -516,37 +599,56 @@ export function ConnectSourceDialog({
 
       case 'facebook_campaigns':
         const selectedConnection = fbConnections.find(c => c.id === selectedFbConnectionId);
-        const campaigns = selectedConnection?.selected_campaigns || [];
+        // Use live campaigns if available, otherwise fall back to saved
+        const campaigns = liveCampaigns.length > 0 ? liveCampaigns : (selectedConnection?.selected_campaigns || []);
         return (
           <div className="space-y-4 py-4">
-            <div className="flex items-center gap-2 p-3 rounded-lg bg-[#1877F2]/10 min-w-0">
-              <Facebook className="h-4 w-4 text-[#1877F2]" />
-              <span className="text-sm font-medium truncate">
-                {selectedConnection?.ad_account_name || selectedConnection?.ad_account_id}
-              </span>
+            <div className="flex items-center justify-between gap-2 p-3 rounded-lg bg-[#1877F2]/10 min-w-0">
+              <div className="flex items-center gap-2 min-w-0">
+                <Facebook className="h-4 w-4 text-[#1877F2] shrink-0" />
+                <span className="text-sm font-medium truncate">
+                  {selectedConnection?.ad_account_name || selectedConnection?.ad_account_id}
+                </span>
+              </div>
+              <button
+                onClick={() => fetchLiveCampaigns(selectedFbConnectionId)}
+                disabled={isRefreshingCampaigns}
+                className="p-1.5 rounded-lg hover:bg-[#1877F2]/20 transition-colors shrink-0"
+                title="Atualizar campanhas"
+              >
+                <RefreshCw className={`h-4 w-4 text-[#1877F2] ${isRefreshingCampaigns ? 'animate-spin' : ''}`} />
+              </button>
             </div>
+            
             <p className="text-xs text-muted-foreground">
               Selecione a campanha que deseja monitorar
             </p>
             
-            <div className="space-y-2 max-h-[300px] overflow-y-auto overflow-x-hidden pr-1">
-              {campaigns.length === 0 ? (
-                <p className="text-sm text-muted-foreground text-center py-6">
-                  Nenhuma campanha configurada nesta conexão.
-                </p>
-              ) : (
-                campaigns.map((campaign) => (
-                  <button
-                    key={campaign.id}
-                    onClick={() => handleSelectFbCampaign(campaign)}
-                    className="w-full flex items-center justify-between gap-3 p-3 bg-white border border-border rounded-lg text-left transition-all duration-200 hover:bg-muted/30 hover:border-[#1877F2]/30 overflow-hidden"
-                  >
-                    <span className="text-sm font-medium text-foreground truncate flex-1 min-w-0">{campaign.name}</span>
-                    <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
-                  </button>
-                ))
-              )}
-            </div>
+            {isRefreshingCampaigns ? (
+              <div className="flex items-center justify-center py-8 gap-2">
+                <Loader2 className="h-5 w-5 text-[#1877F2] animate-spin" />
+                <span className="text-sm text-muted-foreground">Buscando campanhas do Facebook...</span>
+              </div>
+            ) : (
+              <div className="space-y-2 max-h-[300px] overflow-y-auto overflow-x-hidden pr-1">
+                {campaigns.length === 0 ? (
+                  <p className="text-sm text-muted-foreground text-center py-6">
+                    Nenhuma campanha encontrada. Verifique se há campanhas ativas na conta.
+                  </p>
+                ) : (
+                  campaigns.map((campaign) => (
+                    <button
+                      key={campaign.id}
+                      onClick={() => handleSelectFbCampaign(campaign)}
+                      className="w-full flex items-center justify-between gap-3 p-3 bg-white border border-border rounded-lg text-left transition-all duration-200 hover:bg-muted/30 hover:border-[#1877F2]/30 overflow-hidden"
+                    >
+                      <span className="text-sm font-medium text-foreground truncate flex-1 min-w-0">{campaign.name}</span>
+                      <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
+                    </button>
+                  ))
+                )}
+              </div>
+            )}
           </div>
         );
 
@@ -1031,8 +1133,11 @@ export function ConnectSourceDialog({
             )}
 
             <Button
-              onClick={() => {
-                if (selectedFbConnectionId) setStep('cpl_fb_campaign');
+              onClick={async () => {
+                if (selectedFbConnectionId) {
+                  await fetchLiveCampaigns(selectedFbConnectionId);
+                  setStep('cpl_fb_campaign');
+                }
               }}
               disabled={!selectedFbConnectionId}
               className="w-full h-11 bg-amber-500 hover:bg-amber-600 text-white"
@@ -1045,40 +1150,58 @@ export function ConnectSourceDialog({
 
       case 'cpl_fb_campaign':
         const cplConnection = fbConnections.find(c => c.id === selectedFbConnectionId);
-        const cplCampaigns = cplConnection?.selected_campaigns || [];
+        // Use live campaigns if available
+        const cplCampaigns = liveCampaigns.length > 0 ? liveCampaigns : (cplConnection?.selected_campaigns || []);
         return (
           <div className="space-y-4 py-4">
-            <div className="flex items-center gap-2 p-3 rounded-lg bg-amber-500/10 min-w-0">
-              <Facebook className="h-4 w-4 text-[#1877F2]" />
-              <span className="text-sm font-medium truncate">
-                {cplConnection?.ad_account_name || cplConnection?.ad_account_id}
-              </span>
+            <div className="flex items-center justify-between gap-2 p-3 rounded-lg bg-amber-500/10 min-w-0">
+              <div className="flex items-center gap-2 min-w-0">
+                <Facebook className="h-4 w-4 text-[#1877F2] shrink-0" />
+                <span className="text-sm font-medium truncate">
+                  {cplConnection?.ad_account_name || cplConnection?.ad_account_id}
+                </span>
+              </div>
+              <button
+                onClick={() => fetchLiveCampaigns(selectedFbConnectionId)}
+                disabled={isRefreshingCampaigns}
+                className="p-1.5 rounded-lg hover:bg-amber-500/20 transition-colors shrink-0"
+                title="Atualizar campanhas"
+              >
+                <RefreshCw className={`h-4 w-4 text-amber-600 ${isRefreshingCampaigns ? 'animate-spin' : ''}`} />
+              </button>
             </div>
             <p className="text-xs text-muted-foreground">
               2. Selecione a campanha para calcular o gasto
             </p>
             
-            <div className="space-y-2 max-h-[300px] overflow-y-auto overflow-x-hidden pr-1">
-              {cplCampaigns.length === 0 ? (
-                <p className="text-sm text-muted-foreground text-center py-6">
-                  Nenhuma campanha configurada nesta conexão.
-                </p>
-              ) : (
-                cplCampaigns.map((campaign) => (
-                  <button
-                    key={campaign.id}
-                    onClick={() => {
-                      setSelectedFbCampaign(campaign);
-                      setStep('cpl_select_sub_origin');
-                    }}
-                    className="w-full flex items-center justify-between gap-3 p-3 bg-white border border-border rounded-lg text-left transition-all duration-200 hover:bg-muted/30 hover:border-amber-500/30 overflow-hidden"
-                  >
-                    <span className="text-sm font-medium text-foreground truncate flex-1 min-w-0">{campaign.name}</span>
-                    <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
-                  </button>
-                ))
-              )}
-            </div>
+            {isRefreshingCampaigns ? (
+              <div className="flex items-center justify-center py-8 gap-2">
+                <Loader2 className="h-5 w-5 text-amber-600 animate-spin" />
+                <span className="text-sm text-muted-foreground">Buscando campanhas do Facebook...</span>
+              </div>
+            ) : (
+              <div className="space-y-2 max-h-[300px] overflow-y-auto overflow-x-hidden pr-1">
+                {cplCampaigns.length === 0 ? (
+                  <p className="text-sm text-muted-foreground text-center py-6">
+                    Nenhuma campanha encontrada. Verifique se há campanhas ativas na conta.
+                  </p>
+                ) : (
+                  cplCampaigns.map((campaign) => (
+                    <button
+                      key={campaign.id}
+                      onClick={() => {
+                        setSelectedFbCampaign(campaign);
+                        setStep('cpl_select_sub_origin');
+                      }}
+                      className="w-full flex items-center justify-between gap-3 p-3 bg-white border border-border rounded-lg text-left transition-all duration-200 hover:bg-muted/30 hover:border-amber-500/30 overflow-hidden"
+                    >
+                      <span className="text-sm font-medium text-foreground truncate flex-1 min-w-0">{campaign.name}</span>
+                      <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
+                    </button>
+                  ))
+                )}
+              </div>
+            )}
           </div>
         );
 
