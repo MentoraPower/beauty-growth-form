@@ -127,21 +127,33 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
     localStorage.setItem('active_panel', activePanel);
   }, [activePanel]);
 
-  // Navigate to first sub-origin when CRM is clicked
+  // Navigate to first sub-origin of first origin when CRM is clicked
   const handleNavClick = async (panelId: ActivePanel) => {
     setActivePanel(panelId);
     
     if (panelId === 'crm') {
       setCrmSubmenuOpen(true);
-      // Navigate to first sub-origin when CRM is clicked
-      const { data: subOrigins } = await supabase
-        .from('crm_sub_origins')
+      // Get first origin ordered by 'ordem'
+      const { data: origins } = await supabase
+        .from('crm_origins')
         .select('id')
         .order('ordem')
         .limit(1);
       
-      if (subOrigins && subOrigins.length > 0) {
-        navigate(`/admin/crm?origin=${subOrigins[0].id}`);
+      if (origins && origins.length > 0) {
+        // Get first sub-origin of that origin
+        const { data: subOrigins } = await supabase
+          .from('crm_sub_origins')
+          .select('id')
+          .eq('origin_id', origins[0].id)
+          .order('ordem')
+          .limit(1);
+        
+        if (subOrigins && subOrigins.length > 0) {
+          navigate(`/admin/crm?origin=${subOrigins[0].id}`);
+        } else {
+          navigate('/admin/crm');
+        }
       } else {
         navigate('/admin/crm');
       }
