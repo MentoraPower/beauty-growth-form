@@ -47,6 +47,8 @@ export interface WidgetSource {
   sourceName?: string;
   customFieldId?: string;
   customFieldLabel?: string;
+  // Filter for custom fields: 'all', 'paid', 'organic'
+  leadTrafficType?: 'all' | 'paid' | 'organic';
   fbCampaignId?: string;
   fbCampaignName?: string;
   // Support for multiple campaigns
@@ -70,7 +72,7 @@ interface ConnectSourceDialogProps {
   onConnect: (source: WidgetSource) => void;
 }
 
-type Step = 'sources' | 'origins' | 'sub_origins' | 'facebook_form' | 'facebook_campaigns' | 'facebook_metrics' | 'tracking' | 'tracking_origins' | 'tracking_sub_origins' | 'utm_options' | 'utm_origins' | 'utm_sub_origins' | 'custom_fields_origins' | 'custom_fields_sub_origins' | 'custom_fields_select' | 'cpl_fb_connection' | 'cpl_fb_campaign' | 'cpl_select_sub_origin';
+type Step = 'sources' | 'origins' | 'sub_origins' | 'facebook_form' | 'facebook_campaigns' | 'facebook_metrics' | 'tracking' | 'tracking_origins' | 'tracking_sub_origins' | 'utm_options' | 'utm_origins' | 'utm_sub_origins' | 'custom_fields_origins' | 'custom_fields_sub_origins' | 'custom_fields_select' | 'custom_fields_traffic_type' | 'cpl_fb_connection' | 'cpl_fb_campaign' | 'cpl_select_sub_origin';
 
 export function ConnectSourceDialog({ 
   open, 
@@ -86,6 +88,7 @@ export function ConnectSourceDialog({
   const [selectedSubOrigin, setSelectedSubOrigin] = useState<SubOrigin | null>(null);
   const [selectedTrackingType, setSelectedTrackingType] = useState<'grupo_entrada' | 'grupo_saida' | null>(null);
   const [selectedUtmType, setSelectedUtmType] = useState<'utm_source' | 'utm_medium' | 'utm_campaign' | 'utm_all' | null>(null);
+  const [selectedCustomField, setSelectedCustomField] = useState<CustomField | null>(null);
   
   // Facebook Ads connections state
   const [fbConnections, setFbConnections] = useState<FbConnection[]>([]);
@@ -106,6 +109,7 @@ export function ConnectSourceDialog({
       setSelectedTrackingType(null);
       setSelectedUtmType(null);
       setCustomFields([]);
+      setSelectedCustomField(null);
       setFbConnections([]);
       setSelectedFbConnectionId("");
       setSelectedFbCampaign(null);
@@ -193,6 +197,9 @@ export function ConnectSourceDialog({
       setStep('custom_fields_sub_origins');
       setSelectedSubOrigin(null);
       setCustomFields([]);
+    } else if (step === 'custom_fields_traffic_type') {
+      setStep('custom_fields_select');
+      setSelectedCustomField(null);
     } else if (step === 'cpl_fb_campaign') {
       setStep('cpl_fb_connection');
       setSelectedFbCampaign(null);
@@ -1148,14 +1155,8 @@ export function ConnectSourceDialog({
                 <button
                   key={field.id}
                   onClick={() => {
-                    onConnect({
-                      type: 'custom_field',
-                      sourceId: selectedSubOrigin?.id,
-                      sourceName: `${field.field_label} - ${selectedSubOrigin?.nome}`,
-                      customFieldId: field.id,
-                      customFieldLabel: field.field_label,
-                    });
-                    onOpenChange(false);
+                    setSelectedCustomField(field);
+                    setStep('custom_fields_traffic_type');
                   }}
                   className="w-full flex items-center gap-3 p-3 bg-white border border-border rounded-lg text-left transition-all duration-200 hover:bg-muted/30 hover:border-orange-500/30"
                 >
@@ -1166,9 +1167,80 @@ export function ConnectSourceDialog({
                     <span className="text-sm font-medium text-foreground">{field.field_label}</span>
                     <p className="text-xs text-muted-foreground">{field.field_type}</p>
                   </div>
+                  <ChevronRight className="h-4 w-4 text-muted-foreground" />
                 </button>
               ))
             )}
+          </div>
+        );
+
+      case 'custom_fields_traffic_type':
+        const handleSelectTrafficType = (trafficType: 'all' | 'paid' | 'organic') => {
+          const trafficLabels = { all: '', paid: ' (Pagos)', organic: ' (Orgânicos)' };
+          onConnect({
+            type: 'custom_field',
+            sourceId: selectedSubOrigin?.id,
+            sourceName: `${selectedCustomField?.field_label}${trafficLabels[trafficType]} - ${selectedSubOrigin?.nome}`,
+            customFieldId: selectedCustomField?.id,
+            customFieldLabel: selectedCustomField?.field_label,
+            leadTrafficType: trafficType,
+          });
+          onOpenChange(false);
+        };
+
+        return (
+          <div className="space-y-4 py-4">
+            <div className="flex items-center gap-2 p-3 rounded-lg bg-orange-500/10">
+              <FormInput className="h-4 w-4 text-orange-600" />
+              <span className="text-sm font-medium truncate">{selectedCustomField?.field_label}</span>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Filtrar por tipo de tráfego
+            </p>
+            
+            <div className="space-y-2">
+              <button
+                onClick={() => handleSelectTrafficType('all')}
+                className="w-full flex items-center gap-4 p-4 bg-white border border-border rounded-xl text-left transition-all duration-200 hover:bg-muted/30 hover:border-orange-500/30"
+              >
+                <div className="w-10 h-10 rounded-lg bg-gray-500/10 flex items-center justify-center">
+                  <Users className="h-5 w-5 text-gray-600" />
+                </div>
+                <div className="flex-1">
+                  <p className="font-medium">Todos os Leads</p>
+                  <p className="text-xs text-muted-foreground">Incluir leads pagos e orgânicos</p>
+                </div>
+                <ChevronRight className="h-4 w-4 text-muted-foreground" />
+              </button>
+
+              <button
+                onClick={() => handleSelectTrafficType('paid')}
+                className="w-full flex items-center gap-4 p-4 bg-white border border-border rounded-xl text-left transition-all duration-200 hover:bg-muted/30 hover:border-blue-500/30"
+              >
+                <div className="w-10 h-10 rounded-lg bg-blue-500/10 flex items-center justify-center">
+                  <Target className="h-5 w-5 text-blue-600" />
+                </div>
+                <div className="flex-1">
+                  <p className="font-medium">Apenas Pagos</p>
+                  <p className="text-xs text-muted-foreground">Leads de tráfego pago (Facebook Ads, Google Ads, etc.)</p>
+                </div>
+                <ChevronRight className="h-4 w-4 text-muted-foreground" />
+              </button>
+
+              <button
+                onClick={() => handleSelectTrafficType('organic')}
+                className="w-full flex items-center gap-4 p-4 bg-white border border-border rounded-xl text-left transition-all duration-200 hover:bg-muted/30 hover:border-emerald-500/30"
+              >
+                <div className="w-10 h-10 rounded-lg bg-emerald-500/10 flex items-center justify-center">
+                  <Globe className="h-5 w-5 text-emerald-600" />
+                </div>
+                <div className="flex-1">
+                  <p className="font-medium">Apenas Orgânicos</p>
+                  <p className="text-xs text-muted-foreground">Leads de tráfego orgânico (busca, direto, referências)</p>
+                </div>
+                <ChevronRight className="h-4 w-4 text-muted-foreground" />
+              </button>
+            </div>
           </div>
         );
 
@@ -1382,6 +1454,8 @@ export function ConnectSourceDialog({
         return 'Selecione a sub-origem';
       case 'custom_fields_select':
         return 'Selecione o campo';
+      case 'custom_fields_traffic_type':
+        return 'Tipo de Tráfego';
       case 'cpl_fb_connection':
         return 'Custo por Lead';
       case 'cpl_fb_campaign':
