@@ -306,9 +306,13 @@ export function KanbanBoard() {
         .from("crm_sub_origins")
         .select("*, crm_origins(nome)")
         .eq("id", subOriginId)
-        .single();
+        .maybeSingle();
 
-      if (error) return null;
+      if (error) {
+        console.error("Error fetching sub-origin:", error);
+        return null;
+      }
+      return data;
       return data;
     },
     enabled: !!subOriginId,
