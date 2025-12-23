@@ -4,9 +4,6 @@
  */
 
 // Real-time hooks
-export { useWhatsAppRealtime } from './useWhatsAppRealtime';
-export { useCRMRealtime } from './useCRMRealtime';
-export { useCalendarRealtime } from './useCalendarRealtime';
 export { useLeadActivities } from './use-lead-activities';
 
 // Real-time selectors
