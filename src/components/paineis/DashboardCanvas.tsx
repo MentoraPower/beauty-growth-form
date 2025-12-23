@@ -1262,17 +1262,38 @@ export function DashboardCanvas({ painelName, dashboardId, onBack }: DashboardCa
           return { total: 0, label: widget.source.customFieldLabel || 'Campo Personalizado' };
         }
 
-        const label = widget.source.customFieldLabel || 'Campo Personalizado';
+        const trafficType = widget.source.leadTrafficType || 'all';
+        const trafficLabels = { all: '', paid: ' (Pagos)', organic: ' (Orgânicos)' };
+        const label = `${widget.source.customFieldLabel}${trafficLabels[trafficType]}` || 'Campo Personalizado';
 
-        // Get leads from the sub-origin
+        // Get leads from the sub-origin with UTM data for traffic filtering
         const { data: subOriginLeads } = await supabase
           .from("leads")
-          .select("id")
+          .select("id, utm_source, utm_medium")
           .eq("sub_origin_id", widget.source.sourceId)
           .gte("created_at", filterStartDate)
           .lte("created_at", filterEndDate);
 
-        const leadIds = subOriginLeads?.map(l => l.id) || [];
+        // Filter leads by traffic type if needed
+        const paidMediumIndicators = ['cpc', 'ppc', 'paid', 'ads', 'cpm', 'cpv', 'display', 'banner', 'remarketing', 'retargeting', 'paidsocial', 'paid_social', 'paid-social'];
+        const paidSourceIndicators = ['facebook_ads', 'fb_ads', 'google_ads', 'googleads', 'meta_ads', 'tiktok_ads', 'instagram_ads', 'ads'];
+
+        const filteredLeads = (subOriginLeads || []).filter(lead => {
+          if (trafficType === 'all') return true;
+          
+          const utmMedium = (lead.utm_medium || '').toLowerCase().trim();
+          const utmSource = (lead.utm_source || '').toLowerCase().trim();
+          
+          const isPaidMedium = paidMediumIndicators.some(indicator => utmMedium.includes(indicator));
+          const isPaidSource = paidSourceIndicators.some(indicator => utmSource.includes(indicator) || utmSource === indicator);
+          const isPaid = isPaidMedium || isPaidSource;
+          
+          if (trafficType === 'paid') return isPaid;
+          if (trafficType === 'organic') return !isPaid;
+          return true;
+        });
+
+        const leadIds = filteredLeads.map(l => l.id);
         
         if (leadIds.length === 0) {
           return { total: 0, label, distribution: [], trend: [] };
