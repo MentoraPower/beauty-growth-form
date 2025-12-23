@@ -8,7 +8,6 @@ import Index from "./pages/Index";
 import TermsOfUse from "./pages/TermsOfUse";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import NotFound from "./pages/NotFound";
-import Dashboard from "./pages/Dashboard";
 import CRM from "./pages/CRM";
 import LeadDetail from "./pages/LeadDetail";
 import Auth from "./pages/Auth";
@@ -36,7 +35,7 @@ const App = () => (
             <Route path="/auth" element={<Auth />} />
 
             <Route path="/admin" element={<AdminShell />}>
-              <Route index element={<Dashboard />} />
+              <Route index element={<Navigate to="/admin/crm" replace />} />
               <Route path="crm" element={<CRM />} />
               <Route path="crm/:id" element={<LeadDetail />} />
               <Route path="atendimento" element={<Atendimento />} />
