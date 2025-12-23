@@ -277,8 +277,8 @@ function SortableWidget({
           <ChartRenderer
             chartType={widget.chartType.id}
             data={widget.data}
-            width={actualWidth - 32}
-            height={widgetHeight - 50}
+            width={Math.max(1, actualWidth - 32)}
+            height={Math.max(1, widgetHeight - 50)}
             isLoading={widget.isLoading}
           />
         </div>
@@ -661,20 +661,24 @@ export function DashboardCanvas({ painelName, dashboardId, onBack }: DashboardCa
     
     const fetchDataForLoadedWidgets = async () => {
       const connectedWidgets = widgets.filter(w => w.isConnected && w.isLoading);
-      
+
       for (const widget of connectedWidgets) {
         const data = await fetchWidgetData(widget);
+        const optimalBarHeight =
+          widget.chartType.id === 'bar_horizontal' && data?.distribution
+            ? calculateOptimalBarHeight(data.distribution.length)
+            : undefined;
 
-        // For horizontal bar charts, adjust height based on number of bars
-        // BUT only if user hasn't manually adjusted the height (heightLocked)
-        let newHeight = widget.height;
-        if (widget.chartType.id === 'bar_horizontal' && data?.distribution && !widget.heightLocked) {
-          newHeight = calculateOptimalBarHeight(data.distribution.length);
-        }
+        setWidgets(prev => prev.map(w => {
+          if (w.id !== widget.id) return w;
 
-        setWidgets(prev => prev.map(w => 
-          w.id === widget.id ? { ...w, data: data || undefined, isLoading: false, height: newHeight } : w
-        ));
+          const nextHeight =
+            w.chartType.id === 'bar_horizontal' && optimalBarHeight !== undefined && !w.heightLocked
+              ? optimalBarHeight
+              : w.height;
+
+          return { ...w, data: data || undefined, isLoading: false, height: nextHeight };
+        }));
       }
     };
 
@@ -1511,17 +1515,22 @@ export function DashboardCanvas({ painelName, dashboardId, onBack }: DashboardCa
     
     for (const widget of connectedWidgets) {
       const data = await fetchWidgetData(widget);
-      
-      // For horizontal bar charts, adjust height based on number of bars
-      // BUT only if user hasn't manually adjusted the height (heightLocked)
-      let newHeight = widget.height;
-      if (widget.chartType.id === 'bar_horizontal' && data?.distribution && !widget.heightLocked) {
-        newHeight = calculateOptimalBarHeight(data.distribution.length);
-      }
-      
-      setWidgets(prev => prev.map(w => 
-        w.id === widget.id ? { ...w, data: data || undefined, height: newHeight } : w
-      ));
+
+      const optimalBarHeight =
+        widget.chartType.id === 'bar_horizontal' && data?.distribution
+          ? calculateOptimalBarHeight(data.distribution.length)
+          : undefined;
+
+      setWidgets(prev => prev.map(w => {
+        if (w.id !== widget.id) return w;
+
+        const nextHeight =
+          w.chartType.id === 'bar_horizontal' && optimalBarHeight !== undefined && !w.heightLocked
+            ? optimalBarHeight
+            : w.height;
+
+        return { ...w, data: data || undefined, height: nextHeight };
+      }));
     }
   }, [fetchWidgetData]);
 
