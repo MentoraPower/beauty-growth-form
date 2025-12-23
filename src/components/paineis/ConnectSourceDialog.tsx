@@ -149,26 +149,87 @@ export function ConnectSourceDialog({
         }));
         setFbConnections(formatted);
 
-        // If editing an existing Facebook Ads source, pre-populate the selections
+        // If editing an existing widget source, pre-populate the selections
         if (existingSource?.type === 'facebook_ads' && existingSource.sourceId) {
           setSelectedFbConnectionId(existingSource.sourceId);
           setSelectedFbMetric(existingSource.fbMetric || null);
-          
+
           // Pre-populate selected campaigns from existing source
           if (existingSource.fbCampaigns && existingSource.fbCampaigns.length > 0) {
             const campaignMap = new Map<string, boolean>();
-            existingSource.fbCampaigns.forEach(c => {
-              if (c.active !== false) {
-                campaignMap.set(c.id, true);
-              }
+            existingSource.fbCampaigns.forEach((c) => {
+              if (c.active !== false) campaignMap.set(c.id, true);
             });
             setSelectedCampaigns(campaignMap);
+
             // Set live campaigns from existing source for display
-            setLiveCampaigns(existingSource.fbCampaigns.map(c => ({ id: c.id, name: c.name })));
+            setLiveCampaigns(existingSource.fbCampaigns.map((c) => ({ id: c.id, name: c.name })));
           }
-          
+
           // Jump directly to campaigns step
           setStep('facebook_campaigns');
+        } else if (existingSource?.type === 'cost_per_lead') {
+          const connectionId = existingSource.fbConnectionId || existingSource.sourceId;
+          if (connectionId) {
+            setSelectedFbConnectionId(connectionId);
+
+            const campaignMap = new Map<string, boolean>();
+
+            if (existingSource.fbCampaigns && existingSource.fbCampaigns.length > 0) {
+              existingSource.fbCampaigns.forEach((c) => {
+                if (c.active !== false) campaignMap.set(c.id, true);
+              });
+              setLiveCampaigns(existingSource.fbCampaigns.map((c) => ({ id: c.id, name: c.name })));
+            } else if (existingSource.fbCampaignId) {
+              campaignMap.set(existingSource.fbCampaignId, true);
+              if (existingSource.fbCampaignName) {
+                setLiveCampaigns([{ id: existingSource.fbCampaignId, name: existingSource.fbCampaignName }]);
+              }
+            }
+
+            if (campaignMap.size > 0) setSelectedCampaigns(campaignMap);
+
+            // Jump directly to CPL campaigns step
+            setStep('cpl_fb_campaign');
+          }
+        } else if (
+          existingSource?.type === 'custom_field' &&
+          existingSource.sourceId &&
+          existingSource.customFieldId
+        ) {
+          // Pre-populate custom field + traffic type editing
+          const sub = (subOriginsRes.data || []).find((s: any) => s.id === existingSource.sourceId) as SubOrigin | undefined;
+          const origin = sub
+            ? ((originsRes.data || []).find((o: any) => o.id === sub.origin_id) as Origin | undefined)
+            : undefined;
+
+          if (origin) setSelectedOrigin(origin);
+          if (sub) {
+            setSelectedSubOrigin(sub);
+
+            const { data: fields } = await supabase
+              .from("sub_origin_custom_fields")
+              .select("*")
+              .eq("sub_origin_id", sub.id)
+              .order("ordem");
+
+            setCustomFields(fields || []);
+
+            const selected = (fields || []).find((f: any) => f.id === existingSource.customFieldId) || null;
+            if (selected) {
+              setSelectedCustomField(selected);
+            } else if (existingSource.customFieldLabel) {
+              setSelectedCustomField({
+                id: existingSource.customFieldId,
+                field_key: existingSource.customFieldId,
+                field_label: existingSource.customFieldLabel,
+                field_type: "text",
+                sub_origin_id: sub.id,
+              } as any);
+            }
+
+            setStep('custom_fields_traffic_type');
+          }
         }
       } finally {
         setIsFbConnectionsLoading(false);
@@ -1337,6 +1398,12 @@ export function ConnectSourceDialog({
             <Button
               onClick={async () => {
                 if (selectedFbConnectionId) {
+                  // Default: use all campaigns saved in the connection (from Integrações)
+                  const conn = fbConnections.find((c) => c.id === selectedFbConnectionId);
+                  const initial = new Map<string, boolean>();
+                  (conn?.selected_campaigns || []).forEach((c) => initial.set(c.id, true));
+                  setSelectedCampaigns(initial);
+
                   await fetchLiveCampaigns(selectedFbConnectionId);
                   setStep('cpl_fb_campaign');
                 }
@@ -1351,9 +1418,11 @@ export function ConnectSourceDialog({
         );
 
       case 'cpl_fb_campaign':
-        const cplConnection = fbConnections.find(c => c.id === selectedFbConnectionId);
-        // Use live campaigns if available
+        const cplConnection = fbConnections.find((c) => c.id === selectedFbConnectionId);
         const cplCampaigns = liveCampaigns.length > 0 ? liveCampaigns : (cplConnection?.selected_campaigns || []);
+        const cplAllSelected = selectedCampaigns.size === cplCampaigns.length && cplCampaigns.length > 0;
+        const cplActiveCount = selectedCampaigns.size;
+
         return (
           <div className="space-y-4 py-4">
             <div className="flex items-center justify-between gap-2 p-3 rounded-lg bg-amber-500/10 min-w-0">
@@ -1372,10 +1441,24 @@ export function ConnectSourceDialog({
                 <RefreshCw className={`h-4 w-4 text-amber-600 ${isRefreshingCampaigns ? 'animate-spin' : ''}`} />
               </button>
             </div>
-            <p className="text-xs text-muted-foreground">
-              2. Selecione a campanha para calcular o gasto
-            </p>
-            
+
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-foreground">2. Ative as campanhas para somar o gasto</p>
+                <p className="text-xs text-muted-foreground">
+                  {cplActiveCount} de {cplCampaigns.length} campanhas ativas
+                </p>
+              </div>
+              {cplCampaigns.length > 0 && (
+                <button
+                  onClick={handleToggleAllCampaigns}
+                  className="text-xs text-amber-600 hover:underline font-medium"
+                >
+                  {cplAllSelected ? 'Desativar todas' : 'Ativar todas'}
+                </button>
+              )}
+            </div>
+
             {isRefreshingCampaigns ? (
               <div className="flex items-center justify-center py-8 gap-2">
                 <Loader2 className="h-5 w-5 text-amber-600 animate-spin" />
@@ -1388,38 +1471,73 @@ export function ConnectSourceDialog({
                     Nenhuma campanha encontrada. Verifique se há campanhas ativas na conta.
                   </p>
                 ) : (
-                  cplCampaigns.map((campaign) => (
-                    <button
-                      key={campaign.id}
-                      onClick={() => {
-                        setSelectedFbCampaign(campaign);
-                        setStep('cpl_select_sub_origin');
-                      }}
-                      className="w-full flex items-center justify-between gap-3 p-3 bg-white border border-border rounded-lg text-left transition-all duration-200 hover:bg-muted/30 hover:border-amber-500/30 overflow-hidden"
-                    >
-                      <span className="text-sm font-medium text-foreground truncate flex-1 min-w-0">{campaign.name}</span>
-                      <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
-                    </button>
-                  ))
+                  cplCampaigns.map((campaign) => {
+                    const isActive = selectedCampaigns.has(campaign.id);
+                    return (
+                      <div
+                        key={campaign.id}
+                        className={`flex items-center justify-between gap-3 p-3 border rounded-lg transition-all duration-200 ${
+                          isActive ? 'bg-amber-500/5 border-amber-500/30' : 'bg-white border-border'
+                        }`}
+                      >
+                        <div className="flex items-center gap-3 min-w-0 flex-1">
+                          <div
+                            className={`w-2 h-2 rounded-full shrink-0 ${
+                              isActive ? 'bg-green-500' : 'bg-muted-foreground/30'
+                            }`}
+                          />
+                          <span className="text-sm font-medium text-foreground truncate">{campaign.name}</span>
+                        </div>
+                        <div className="flex items-center gap-2 shrink-0">
+                          <span className={`text-xs ${isActive ? 'text-green-600 font-medium' : 'text-muted-foreground'}`}>
+                            {isActive ? 'Ativa' : 'Inativa'}
+                          </span>
+                          <Switch
+                            checked={isActive}
+                            onCheckedChange={() => handleToggleCampaign(campaign)}
+                            className="data-[state=checked]:bg-amber-500"
+                          />
+                        </div>
+                      </div>
+                    );
+                  })
                 )}
               </div>
             )}
+
+            <div className="pt-2 border-t border-border">
+              <p className="text-xs text-muted-foreground mb-3">{cplActiveCount} campanha(s) selecionada(s)</p>
+              <Button
+                onClick={() => setStep('cpl_select_sub_origin')}
+                disabled={cplActiveCount === 0}
+                className="w-full h-11 bg-amber-500 hover:bg-amber-600 text-white"
+              >
+                Continuar
+                <ChevronRight className="h-4 w-4 ml-2" />
+              </Button>
+            </div>
           </div>
         );
 
       case 'cpl_select_sub_origin':
+        const cplConn = fbConnections.find((c) => c.id === selectedFbConnectionId);
+        const cplSelectedCampaigns = liveCampaigns.length > 0 ? liveCampaigns : (cplConn?.selected_campaigns || []);
+        const activeCplCampaigns = cplSelectedCampaigns.filter((c) => selectedCampaigns.has(c.id));
+        const campaignTitle =
+          activeCplCampaigns.length === 1
+            ? activeCplCampaigns[0].name
+            : `${activeCplCampaigns.length} campanhas`;
+
         return (
           <div className="space-y-4 py-4">
             <div className="flex items-center gap-2 p-3 rounded-lg bg-amber-500/10 min-w-0">
               <DollarSign className="h-4 w-4 text-amber-600" />
-              <span className="text-sm font-medium truncate">
-                {selectedFbCampaign?.name}
-              </span>
+              <span className="text-sm font-medium truncate">CPL - {campaignTitle}</span>
             </div>
             <p className="text-xs text-muted-foreground">
-              3. Selecione a sub-origem para contar os <strong>leads pagos</strong> (utm_source=facebook_ads ou utm_medium=cpc)
+              3. Selecione a sub-origem para contar os <strong>leads pagos</strong> (utm_source/utm_medium)
             </p>
-            
+
             <div className="space-y-2 max-h-[300px] overflow-y-auto pr-1">
               {origins.map((origin) => {
                 const subs = getSubOriginsForOrigin(origin.id);
@@ -1431,13 +1549,22 @@ export function ConnectSourceDialog({
                       <button
                         key={sub.id}
                         onClick={() => {
+                          const fbCampaignsArray = activeCplCampaigns.map((c) => ({
+                            id: c.id,
+                            name: c.name,
+                            active: true,
+                          }));
+
+                          const sourceName = `CPL - ${campaignTitle}`;
+
                           onConnect({
                             type: 'cost_per_lead',
                             sourceId: selectedFbConnectionId,
-                            sourceName: `CPL - ${selectedFbCampaign?.name}`,
+                            sourceName,
                             fbConnectionId: selectedFbConnectionId,
-                            fbCampaignId: selectedFbCampaign?.id,
-                            fbCampaignName: selectedFbCampaign?.name,
+                            fbCampaignId: fbCampaignsArray.length === 1 ? fbCampaignsArray[0].id : undefined,
+                            fbCampaignName: fbCampaignsArray.length === 1 ? fbCampaignsArray[0].name : undefined,
+                            fbCampaigns: fbCampaignsArray,
                             subOriginIdForLeads: sub.id,
                             subOriginNameForLeads: sub.nome,
                           });
