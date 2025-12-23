@@ -35,11 +35,11 @@ const formatCurrency = (value: number): string => {
   }).format(value);
 };
 
-// Check if the label indicates a currency metric (spend)
+// Check if the label indicates a currency metric (spend or CPL)
 const isCurrencyMetric = (label?: string): boolean => {
   if (!label) return false;
   const lowerLabel = label.toLowerCase();
-  return lowerLabel.includes('valor gasto') || lowerLabel.includes('spend');
+  return lowerLabel.includes('valor gasto') || lowerLabel.includes('spend') || lowerLabel.includes('cpl');
 };
 
 // Orange gradient palette
