@@ -219,7 +219,7 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
             top: 12,
             height: 'calc(100vh - 1.5rem)',
             transition: 'width 300ms cubic-bezier(0.4,0,0.2,1)',
-            borderRight: '1px solid rgba(255, 255, 255, 0.08)',
+            borderRight: '1px solid rgba(255, 255, 255, 0.125)',
           }}
           className="hidden lg:flex flex-col fixed bg-[#0f0f12] overflow-hidden z-50 rounded-2xl"
         >
