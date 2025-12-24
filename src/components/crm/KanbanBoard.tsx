@@ -1318,15 +1318,15 @@ export function KanbanBoard() {
       {/* View Tabs - OverView | Quadro | Calendário */}
       {subOriginId && (
         <div className="w-full mb-4">
-          <div className="w-full flex items-center bg-foreground rounded-lg px-4 py-2.5">
+          <div className="w-full flex items-center bg-gray-200 rounded-lg px-4 py-2.5">
             <div className="inline-flex items-center gap-6">
               <button
                 onClick={() => handleViewChange("overview")}
                 className={cn(
                   "relative text-[13px] font-semibold tracking-wide transition-all antialiased",
                   activeView === "overview" 
-                    ? "text-background after:absolute after:-bottom-1.5 after:left-0 after:right-0 after:h-0.5 after:bg-background after:rounded-full"
-                    : "text-background/50 hover:text-background/75"
+                    ? "text-gray-900 after:absolute after:-bottom-1.5 after:left-0 after:right-0 after:h-0.5 after:bg-gray-900 after:rounded-full"
+                    : "text-gray-500 hover:text-gray-700"
                 )}
               >
                 OverView
@@ -1336,8 +1336,8 @@ export function KanbanBoard() {
                 className={cn(
                   "relative text-[13px] font-semibold tracking-wide transition-all antialiased",
                   activeView === "quadro" 
-                    ? "text-background after:absolute after:-bottom-1.5 after:left-0 after:right-0 after:h-0.5 after:bg-background after:rounded-full"
-                    : "text-background/50 hover:text-background/75"
+                    ? "text-gray-900 after:absolute after:-bottom-1.5 after:left-0 after:right-0 after:h-0.5 after:bg-gray-900 after:rounded-full"
+                    : "text-gray-500 hover:text-gray-700"
                 )}
               >
                 Quadro
@@ -1347,23 +1347,23 @@ export function KanbanBoard() {
                 className={cn(
                   "relative text-[13px] font-semibold tracking-wide transition-all antialiased",
                   activeView === "calendario" 
-                    ? "text-background after:absolute after:-bottom-1.5 after:left-0 after:right-0 after:h-0.5 after:bg-background after:rounded-full"
-                    : "text-background/50 hover:text-background/75"
+                    ? "text-gray-900 after:absolute after:-bottom-1.5 after:left-0 after:right-0 after:h-0.5 after:bg-gray-900 after:rounded-full"
+                    : "text-gray-500 hover:text-gray-700"
                 )}
               >
                 Calendário
               </button>
               
               {/* Separator */}
-              <div className="w-px h-4 bg-background/30" />
+              <div className="w-px h-4 bg-gray-400" />
               
               <button
                 onClick={() => handleViewChange("email")}
                 className={cn(
                   "relative text-[13px] font-semibold tracking-wide transition-all antialiased",
                   activeView === "email" 
-                    ? "text-background after:absolute after:-bottom-1.5 after:left-0 after:right-0 after:h-0.5 after:bg-background after:rounded-full"
-                    : "text-background/50 hover:text-background/75"
+                    ? "text-gray-900 after:absolute after:-bottom-1.5 after:left-0 after:right-0 after:h-0.5 after:bg-gray-900 after:rounded-full"
+                    : "text-gray-500 hover:text-gray-700"
                 )}
               >
                 Automations
