@@ -773,11 +773,11 @@ const messageTypeLabels: Record<WhatsAppMessageType, string> = {
 };
 
 const messageTypeIcons: Record<WhatsAppMessageType, React.ReactNode> = {
-  text: <Type className="w-4 h-4" />,
-  audio: <AudioLines className="w-4 h-4" />,
-  image: <ImagePlus className="w-4 h-4" />,
-  video: <Clapperboard className="w-4 h-4" />,
-  document: <FileUp className="w-4 h-4" />,
+  text: <Type className="w-4 h-4 text-white" />,
+  audio: <AudioLines className="w-4 h-4 text-white" />,
+  image: <ImagePlus className="w-4 h-4 text-white" />,
+  video: <Clapperboard className="w-4 h-4 text-white" />,
+  document: <FileUp className="w-4 h-4 text-white" />,
 };
 
 // WhatsApp Node Component - With account selection, message type, and orange gradient
