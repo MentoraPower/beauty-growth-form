@@ -1399,7 +1399,7 @@ export function KanbanBoard() {
                 
                 {/* Header with tabs */}
                 <div className="border-b border-border">
-                  <div className="px-6 py-4">
+                  <div className="px-6 py-3">
                     <h2 className="text-lg font-semibold">Configurações</h2>
                   </div>
                   
