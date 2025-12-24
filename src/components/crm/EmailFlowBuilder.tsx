@@ -512,18 +512,16 @@ const WaitNode = ({ data, id, selected }: NodeProps) => {
         className="w-24 h-24 bg-white border border-amber-200 transition-all rounded-2xl overflow-hidden cursor-pointer hover:shadow-lg hover:border-amber-300 flex flex-col items-center justify-center gap-2 shadow-sm"
         onClick={handleOpen}
       >
-        {/* Pending count badge */}
-        {pendingCount > 0 && (
-          <div className="absolute top-1.5 right-1.5 flex items-center gap-0.5 bg-amber-500 rounded-full px-1.5 py-0.5">
-            <User className="w-2.5 h-2.5 text-white" />
-            <span className="text-[10px] font-bold text-white">{pendingCount}</span>
-          </div>
-        )}
-        
-        {/* Icon */}
-        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-400 to-amber-500 flex items-center justify-center shadow-md">
-          <Clock className="w-5 h-5 text-white" />
-        </div>
+        {/* Clock icon with orange gradient */}
+        <Clock className="w-8 h-8" style={{ stroke: 'url(#clockGradient)' }} />
+        <svg width="0" height="0">
+          <defs>
+            <linearGradient id="clockGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stopColor="#FB923C" />
+              <stop offset="100%" stopColor="#F97316" />
+            </linearGradient>
+          </defs>
+        </svg>
         
         {/* Time display */}
         <div className="text-center">
@@ -531,6 +529,13 @@ const WaitNode = ({ data, id, selected }: NodeProps) => {
           <span className="text-[11px] text-gray-500 ml-1">{unitLabels[waitUnit]}</span>
         </div>
       </div>
+      
+      {/* Pending count badge - on the connection line */}
+      {pendingCount > 0 && (
+        <div className="absolute -right-3 top-1/2 -translate-y-1/2 translate-x-full flex items-center gap-0.5 bg-amber-500 rounded-full w-6 h-6 justify-center shadow-md z-20">
+          <span className="text-[10px] font-bold text-white">{pendingCount}</span>
+        </div>
+      )}
 
       {/* Editor Dropdown - Side */}
       {isEditing && (
