@@ -1052,6 +1052,7 @@ const CustomEdge = ({
   targetPosition,
   data,
 }: CustomEdgeProps) => {
+  // Use getBezierPath but handle edge cases for straight lines
   const [edgePath, labelX, labelY] = getBezierPath({
     sourceX,
     sourceY,
@@ -1059,7 +1060,13 @@ const CustomEdge = ({
     targetX,
     targetY,
     targetPosition,
+    // Add some curvature to prevent path from disappearing when perfectly aligned
+    curvature: 0.25,
   });
+
+  // Fallback to a simple line if the path is empty or invalid
+  const fallbackPath = `M ${sourceX} ${sourceY} L ${targetX} ${targetY}`;
+  const finalPath = edgePath && edgePath.length > 0 ? edgePath : fallbackPath;
 
   return (
     <>
@@ -1070,10 +1077,10 @@ const CustomEdge = ({
         </linearGradient>
       </defs>
       <path
-        d={edgePath}
+        d={finalPath}
         fill="none"
         stroke={`url(#edge-gradient-${id})`}
-        strokeWidth={1.5}
+        strokeWidth={2}
         strokeDasharray="6 4"
         strokeLinecap="round"
         style={{
@@ -1083,7 +1090,7 @@ const CustomEdge = ({
       <circle
         cx={targetX}
         cy={targetY}
-        r={3}
+        r={4}
         fill="#9A3412"
       />
       <EdgeLabelRenderer>
