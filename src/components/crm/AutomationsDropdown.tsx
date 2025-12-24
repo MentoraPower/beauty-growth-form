@@ -1121,7 +1121,7 @@ export function AutomationsDropdown({
         <div className="overflow-y-auto h-full">
           {/* Automations Tab */}
           {activeTab === "automations" && (
-            <div className="px-6 pb-6 pt-3">
+            <div className="px-6 pb-6">
               {/* Active/Inactive filter */}
               <div className="flex items-center gap-2 mb-6">
                 <button className="px-3 py-1.5 text-sm rounded-lg bg-foreground/10 text-foreground font-medium">
@@ -1195,7 +1195,7 @@ export function AutomationsDropdown({
 
           {/* Webhooks Tab */}
           {activeTab === "webhooks" && (
-            <div className="px-6 pb-6 pt-3">
+            <div className="px-6 pb-6">
               <div className="flex items-center gap-2 mb-6">
                 <button className="px-3 py-1.5 text-sm rounded-lg bg-foreground/10 text-foreground font-medium">
                   Receber
