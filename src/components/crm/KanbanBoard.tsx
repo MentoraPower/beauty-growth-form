@@ -26,7 +26,7 @@ import { KanbanCard } from "./KanbanCard";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Settings, Search, Filter, X, CalendarIcon } from "lucide-react";
+import { Settings, Search, Filter, X, CalendarIcon, Zap, Webhook, GitBranch } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -36,6 +36,7 @@ import {
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { format } from "date-fns";
@@ -114,6 +115,8 @@ export function KanbanBoard() {
   const [emailBuilderProps, setEmailBuilderProps] = useState<EmailBuilderState["props"] | null>(null);
   const [emailEditingContext, setEmailEditingContext] = useState<EmailEditingContext | null>(null);
   const [automationsOpen, setAutomationsOpen] = useState(false);
+  const [settingsDialogOpen, setSettingsDialogOpen] = useState(false);
+  const [settingsTab, setSettingsTab] = useState<"automations" | "webhooks" | "pipelines">("automations");
   const queryClient = useQueryClient();
   const searchTimeoutRef = useRef<number | null>(null);
 
@@ -1379,34 +1382,125 @@ export function KanbanBoard() {
             </div>
 
             {/* Settings Icon - Right side */}
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <button className="p-1.5 rounded-lg hover:bg-gray-300 transition-colors text-gray-600 hover:text-gray-900">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
-                    <circle cx="12" cy="12" r="4"/>
-                  </svg>
-                </button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-48">
-                <DropdownMenuLabel>Configurações</DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                <button
-                  onClick={() => setAutomationsOpen(true)}
-                  className="w-full flex items-center gap-2 px-2 py-1.5 text-sm hover:bg-muted rounded-sm cursor-pointer"
-                >
-                  <Settings className="w-4 h-4" />
-                  Automações
-                </button>
-                <button
-                  onClick={() => setIsPipelinesDialogOpen(true)}
-                  className="w-full flex items-center gap-2 px-2 py-1.5 text-sm hover:bg-muted rounded-sm cursor-pointer"
-                >
-                  <Settings className="w-4 h-4" />
-                  Gerenciar Origens
-                </button>
-              </DropdownMenuContent>
-            </DropdownMenu>
+            <button 
+              onClick={() => setSettingsDialogOpen(true)}
+              className="p-1.5 rounded-lg hover:bg-gray-300 transition-colors text-gray-600 hover:text-gray-900"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+                <circle cx="12" cy="12" r="4"/>
+              </svg>
+            </button>
+
+            {/* Settings Dialog */}
+            <Dialog open={settingsDialogOpen} onOpenChange={setSettingsDialogOpen}>
+              <DialogContent className="max-w-4xl h-[600px] p-0 overflow-hidden" aria-describedby={undefined}>
+                <DialogTitle className="sr-only">Configurações</DialogTitle>
+                
+                {/* Header with tabs */}
+                <div className="border-b border-border">
+                  <div className="px-6 py-4">
+                    <h2 className="text-lg font-semibold">Configurações</h2>
+                  </div>
+                  
+                  <div className="flex items-center gap-1 px-6">
+                    <button
+                      onClick={() => setSettingsTab("automations")}
+                      className={cn(
+                        "flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors",
+                        settingsTab === "automations"
+                          ? "border-orange-500 text-foreground"
+                          : "border-transparent text-muted-foreground hover:text-foreground"
+                      )}
+                    >
+                      <Zap className="w-4 h-4" />
+                      Automação
+                    </button>
+                    <button
+                      onClick={() => setSettingsTab("webhooks")}
+                      className={cn(
+                        "flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors",
+                        settingsTab === "webhooks"
+                          ? "border-orange-500 text-foreground"
+                          : "border-transparent text-muted-foreground hover:text-foreground"
+                      )}
+                    >
+                      <Webhook className="w-4 h-4" />
+                      WebHook
+                    </button>
+                    <button
+                      onClick={() => setSettingsTab("pipelines")}
+                      className={cn(
+                        "flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors",
+                        settingsTab === "pipelines"
+                          ? "border-orange-500 text-foreground"
+                          : "border-transparent text-muted-foreground hover:text-foreground"
+                      )}
+                    >
+                      <GitBranch className="w-4 h-4" />
+                      Pipelines
+                    </button>
+                  </div>
+                </div>
+
+                {/* Content */}
+                <div className="flex-1 overflow-auto p-6">
+                  {settingsTab === "automations" && (
+                    <div className="space-y-4">
+                      <p className="text-sm text-muted-foreground">
+                        Configure automações para mover leads automaticamente entre pipelines.
+                      </p>
+                      <Button 
+                        onClick={() => {
+                          setSettingsDialogOpen(false);
+                          setAutomationsOpen(true);
+                        }}
+                        className="bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600"
+                      >
+                        <Zap className="w-4 h-4 mr-2" />
+                        Abrir Automações
+                      </Button>
+                    </div>
+                  )}
+                  
+                  {settingsTab === "webhooks" && (
+                    <div className="space-y-4">
+                      <p className="text-sm text-muted-foreground">
+                        Configure webhooks para integrar com sistemas externos.
+                      </p>
+                      <Button 
+                        onClick={() => {
+                          setSettingsDialogOpen(false);
+                          setAutomationsOpen(true);
+                        }}
+                        variant="outline"
+                      >
+                        <Webhook className="w-4 h-4 mr-2" />
+                        Gerenciar Webhooks
+                      </Button>
+                    </div>
+                  )}
+                  
+                  {settingsTab === "pipelines" && (
+                    <div className="space-y-4">
+                      <p className="text-sm text-muted-foreground">
+                        Gerencie as origens e pipelines do CRM.
+                      </p>
+                      <Button 
+                        onClick={() => {
+                          setSettingsDialogOpen(false);
+                          setIsPipelinesDialogOpen(true);
+                        }}
+                        variant="outline"
+                      >
+                        <GitBranch className="w-4 h-4 mr-2" />
+                        Gerenciar Origens
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              </DialogContent>
+            </Dialog>
           </div>
         </div>
       )}
