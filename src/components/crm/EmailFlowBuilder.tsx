@@ -20,7 +20,7 @@ import {
   useReactFlow,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
-import { Play, Clock, CheckCircle2, Trash2, Copy, ArrowLeft, Plus, Mail, Zap, ChevronDown, Users, UserMinus, UserX, User } from "lucide-react";
+import { Play, Clock, CheckCircle2, Trash2, Copy, ArrowLeft, Plus, Mail, Zap, ChevronDown, Users, UserMinus, UserX, User, MessageCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -71,7 +71,7 @@ interface SavedEdge {
 
 interface EmailFlowStep {
   id: string;
-  type: "trigger" | "start" | "wait" | "email" | "end" | "entry" | "_edges";
+  type: "trigger" | "start" | "wait" | "email" | "whatsapp" | "end" | "entry" | "_edges";
   position?: { x: number; y: number };
   data: {
     label?: string;
@@ -79,6 +79,7 @@ interface EmailFlowStep {
     waitUnit?: "minutes" | "hours" | "days" | "months";
     subject?: string;
     bodyHtml?: string;
+    whatsappMessage?: string;
     triggers?: TriggerItem[];
     // Legacy support
     triggerType?: string;
@@ -768,6 +769,158 @@ const EmailNode = ({ id, data, selected }: NodeProps) => {
   );
 };
 
+// WhatsApp Node Component - Similar to Email Node
+const WhatsAppNode = ({ id, data, selected }: NodeProps) => {
+  const { setNodes, setEdges } = useReactFlow();
+  const [isEditing, setIsEditing] = useState(false);
+  const [localMessage, setLocalMessage] = useState((data.whatsappMessage as string) || "");
+  
+  const message = (data.whatsappMessage as string) || "";
+
+  // Auto-save on change while editing
+  useEffect(() => {
+    if (!isEditing) return;
+    
+    const timeout = setTimeout(() => {
+      setNodes((nds) =>
+        nds.map((node) =>
+          node.id === id
+            ? { ...node, data: { ...node.data, whatsappMessage: localMessage } }
+            : node
+        )
+      );
+    }, 300);
+
+    return () => clearTimeout(timeout);
+  }, [localMessage, isEditing, id, setNodes]);
+
+  const handleOpen = () => {
+    setLocalMessage(message);
+    setIsEditing(true);
+  };
+
+  const handleDelete = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setNodes((nds) => nds.filter((n) => n.id !== id));
+    setEdges((eds) => eds.filter((e) => e.source !== id && e.target !== id));
+  };
+
+  const handleDuplicate = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setNodes((nds) => {
+      const currentNode = nds.find((n) => n.id === id);
+      if (!currentNode) return nds;
+      const maxZIndex = Math.max(...nds.map((n) => n.zIndex ?? 0), 0);
+      return [
+        ...nds,
+        {
+          ...currentNode,
+          id: `whatsapp-${Date.now()}`,
+          position: { x: currentNode.position.x + 300, y: currentNode.position.y + 50 },
+          selected: false,
+          zIndex: maxZIndex + 1,
+        },
+      ];
+    });
+  };
+
+  return (
+    <div className="relative">
+      <div className="w-[320px] border border-border bg-background shadow-sm transition-all rounded-lg overflow-hidden">
+        <Handle
+          type="target"
+          position={Position.Left}
+          className="!w-2.5 !h-2.5 !bg-foreground !border-2 !border-background"
+        />
+        {/* Green header */}
+        <div 
+          className="px-4 py-2.5 flex items-center justify-between cursor-pointer hover:opacity-90 transition-opacity"
+          style={{ background: "linear-gradient(135deg, #25D366 0%, #128C7E 100%)" }}
+          onClick={handleOpen}
+        >
+          <div className="flex items-center gap-3">
+            <div className="w-7 h-7 rounded bg-white/20 flex items-center justify-center">
+              <MessageCircle className="w-4 h-4 text-white" />
+            </div>
+            <div>
+              <span className="text-xs font-semibold text-white uppercase tracking-wide block">WhatsApp</span>
+              {message && <span className="text-[11px] text-white/80 truncate block max-w-[180px]">{message.substring(0, 30)}...</span>}
+            </div>
+          </div>
+          <span className="text-white/70 text-xs">Editar</span>
+        </div>
+        
+        {/* Message Preview */}
+        <div className="p-4 bg-card min-h-[120px]">
+          <div 
+            className="bg-[#DCF8C6] rounded-lg p-3 text-sm text-gray-800 min-h-[80px]"
+          >
+            {message || <span className="text-gray-500 italic">Clique para editar a mensagem...</span>}
+          </div>
+        </div>
+
+        {/* Editor Dropdown - Side */}
+        {isEditing && (
+          <div className="absolute top-0 left-full ml-2 w-[400px] bg-background border border-border rounded-lg shadow-xl z-50 nodrag">
+            <div className="p-4 border-b border-border bg-muted/30">
+              <h4 className="text-sm font-semibold text-foreground">Editar Mensagem WhatsApp</h4>
+            </div>
+            <div className="p-4 space-y-4">
+              <div>
+                <label className="text-xs font-semibold text-muted-foreground uppercase mb-1.5 block">Mensagem</label>
+                <Textarea
+                  value={localMessage}
+                  onChange={(e) => setLocalMessage(e.target.value)}
+                  onWheelCapture={(e) => e.stopPropagation()}
+                  placeholder="Olá {{nome}}! Bem-vindo(a) ao nosso programa..."
+                  className="h-[150px] text-sm resize-none overflow-y-auto nowheel"
+                />
+                <p className="text-xs text-muted-foreground mt-2">
+                  Use {"{{nome}}"}, {"{{email}}"}, {"{{whatsapp}}"} para personalizar
+                </p>
+              </div>
+              <div className="flex justify-end pt-2">
+                <Button size="sm" onClick={() => setIsEditing(false)} className="bg-foreground text-background hover:bg-foreground/90">
+                  Fechar
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
+        
+        <Handle
+          type="source"
+          position={Position.Right}
+          className="!w-2.5 !h-2.5 !bg-foreground !border-2 !border-background"
+        />
+      </div>
+
+      {/* Action buttons */}
+      <div 
+        className={`absolute left-1/2 -translate-x-1/2 flex gap-1.5 transition-all duration-200 nodrag ${
+          selected ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-2 pointer-events-none'
+        }`}
+        style={{ bottom: 'calc(100% + 8px)' }}
+      >
+        <button
+          onClick={handleDuplicate}
+          className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-background border border-border hover:bg-muted/60 transition-colors text-xs font-medium text-foreground shadow-sm"
+        >
+          <Copy className="w-3.5 h-3.5" />
+          Duplicar
+        </button>
+        <button
+          onClick={handleDelete}
+          className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-destructive/10 border border-destructive/30 hover:bg-destructive/20 transition-colors text-xs font-medium text-destructive shadow-sm"
+        >
+          <Trash2 className="w-3.5 h-3.5" />
+          Apagar
+        </button>
+      </div>
+    </div>
+  );
+};
+
 // End Node Component - Pill shape, black/white with delete
 const EndNode = ({ data, id, selected }: NodeProps) => {
   const { setNodes, setEdges } = useReactFlow();
@@ -815,13 +968,14 @@ const nodeTypes = {
   start: StartNode,
   wait: WaitNode,
   email: EmailNode,
+  whatsapp: WhatsAppNode,
   end: EndNode,
 };
 
 // Custom Edge with + button
 interface CustomEdgeProps extends EdgeProps {
   data?: {
-    onAddNode?: (edgeId: string, type: "wait" | "email") => void;
+    onAddNode?: (edgeId: string, type: "wait" | "email" | "whatsapp") => void;
     onDeleteEdge?: (edgeId: string) => void;
   };
 }
@@ -887,6 +1041,10 @@ const CustomEdge = ({
               <DropdownMenuItem onClick={() => data?.onAddNode?.(id, "email")}>
                 <Mail className="w-4 h-4 mr-2" />
                 Enviar E-mail
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => data?.onAddNode?.(id, "whatsapp")}>
+                <MessageCircle className="w-4 h-4 mr-2 text-green-500" />
+                Enviar WhatsApp
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem 
@@ -1232,13 +1390,14 @@ export function EmailFlowBuilder({
   );
 
   // Add node from connection dropdown
-  const addNodeFromConnection = useCallback((type: "wait" | "email" | "end") => {
+  const addNodeFromConnection = useCallback((type: "wait" | "email" | "whatsapp" | "end") => {
     if (!connectionDropdown || !reactFlowWrapper.current) return;
 
     const newId = `${type}-${Date.now()}`;
     const defaultData: Record<string, any> = {
       wait: { label: "Espera", waitTime: 1, waitUnit: "hours" },
       email: { label: "E-mail", subject: "", bodyHtml: "" },
+      whatsapp: { label: "WhatsApp", whatsappMessage: "" },
       end: { label: "Fim" },
     };
 
@@ -1274,7 +1433,7 @@ export function EmailFlowBuilder({
     setSelectedNode(node);
   }, []);
 
-  const addNode = useCallback((type: "wait" | "email" | "end", position?: { x: number; y: number }) => {
+  const addNode = useCallback((type: "wait" | "email" | "whatsapp" | "end", position?: { x: number; y: number }) => {
     const lastNode = nodes[nodes.length - 1];
     const newId = `${type}-${Date.now()}`;
     const newX = position?.x ?? (lastNode ? lastNode.position.x + 220 : 100);
@@ -1283,6 +1442,7 @@ export function EmailFlowBuilder({
     const defaultData: Record<string, any> = {
       wait: { label: "Espera", waitTime: 1, waitUnit: "hours" },
       email: { label: "E-mail", subject: "", bodyHtml: "" },
+      whatsapp: { label: "WhatsApp", whatsappMessage: "" },
       end: { label: "Fim" },
     };
 
@@ -1318,7 +1478,7 @@ export function EmailFlowBuilder({
     (event: React.DragEvent) => {
       event.preventDefault();
 
-      const type = event.dataTransfer.getData("application/reactflow") as "wait" | "email" | "end";
+      const type = event.dataTransfer.getData("application/reactflow") as "wait" | "email" | "whatsapp" | "end";
       if (!type) return;
 
       const reactFlowBounds = event.currentTarget.getBoundingClientRect();
@@ -1333,7 +1493,7 @@ export function EmailFlowBuilder({
   );
 
   // Add node between two connected nodes
-  const addNodeBetween = useCallback((edgeId: string, type: "wait" | "email") => {
+  const addNodeBetween = useCallback((edgeId: string, type: "wait" | "email" | "whatsapp") => {
     const edge = edges.find((e) => e.id === edgeId);
     if (!edge) return;
 
@@ -1345,6 +1505,7 @@ export function EmailFlowBuilder({
     const defaultData: Record<string, any> = {
       wait: { label: "Espera", waitTime: 1, waitUnit: "hours" },
       email: { label: "E-mail", subject: "", bodyHtml: "" },
+      whatsapp: { label: "WhatsApp", whatsappMessage: "" },
     };
 
     // Position the new node between source and target
@@ -1531,6 +1692,20 @@ export function EmailFlowBuilder({
               <Mail className="w-5 h-5 text-foreground" />
             </div>
 
+            {/* WhatsApp Node - Green icon */}
+            <div
+              draggable
+              onDragStart={(e) => {
+                e.dataTransfer.setData("application/reactflow", "whatsapp");
+                e.dataTransfer.effectAllowed = "move";
+              }}
+              className="w-10 h-10 flex items-center justify-center rounded-lg bg-muted/50 cursor-grab active:cursor-grabbing hover:scale-105 transition-transform"
+              style={{ border: "1px solid #00000015" }}
+              title="Enviar WhatsApp"
+            >
+              <MessageCircle className="w-5 h-5" style={{ color: "#25D366" }} />
+            </div>
+
             {/* End Node - Red icon */}
             <div
               draggable
@@ -1605,6 +1780,13 @@ export function EmailFlowBuilder({
                 >
                   <Mail className="w-4 h-4 text-foreground" />
                   <span className="text-foreground">Enviar E-mail</span>
+                </button>
+                <button
+                  onClick={() => addNodeFromConnection("whatsapp")}
+                  className="w-full px-3 py-2.5 text-left text-sm hover:bg-muted/50 transition-colors flex items-center gap-2"
+                >
+                  <MessageCircle className="w-4 h-4" style={{ color: "#25D366" }} />
+                  <span className="text-foreground">Enviar WhatsApp</span>
                 </button>
                 <button
                   onClick={() => addNodeFromConnection("end")}
