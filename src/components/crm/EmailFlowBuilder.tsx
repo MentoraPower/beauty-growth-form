@@ -957,9 +957,7 @@ const WhatsAppNode = ({ id, data, selected }: NodeProps) => {
         );
       case 'image':
         return mediaUrl ? (
-          <div className="flex items-center gap-3 p-3 bg-green-600 rounded-lg">
-            <span className="text-sm text-white">Imagem configurada</span>
-          </div>
+          <img src={mediaUrl} alt="" className="w-full h-24 object-cover rounded-lg" />
         ) : (
           <div className="flex items-center justify-center h-16 bg-green-600/20 rounded-lg">
             <span className="text-sm text-white/70">Clique para adicionar imagem</span>
@@ -1117,9 +1115,15 @@ const WhatsAppNode = ({ id, data, selected }: NodeProps) => {
                     {messageTypeLabels[localMessageType]}
                   </label>
                   
-                  {localMediaUrl && (
+                  {localMediaUrl && localMessageType !== 'image' && (
                     <div className="mb-3">
                       {renderMediaPreview()}
+                    </div>
+                  )}
+                  
+                  {localMediaUrl && localMessageType === 'image' && (
+                    <div className="mb-3">
+                      <img src={localMediaUrl} alt="" className="w-full h-32 object-cover rounded-lg" />
                     </div>
                   )}
                   
