@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { createPortal } from "react-dom";
-import { ChevronDown, ChevronRight, Plus, MoreHorizontal, Calendar, X, User, Phone, Mail, Instagram } from "lucide-react";
+import { ChevronDown, ChevronRight, Plus, MoreHorizontal, Calendar, X, User, Phone, Mail, Instagram, GripVertical } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Lead, Pipeline } from "@/types/crm";
 import { useNavigate, useSearchParams } from "react-router-dom";
@@ -12,6 +12,23 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
 import { trackLeadEvent } from "@/lib/leadTracking";
+import {
+  DndContext,
+  closestCenter,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+  DragStartEvent,
+  DragOverlay,
+} from "@dnd-kit/core";
+import {
+  arrayMove,
+  SortableContext,
+  useSortable,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 
 interface ListViewProps {
   pipelines: Pipeline[];
@@ -23,6 +40,86 @@ interface InlineAddRowProps {
   pipelineId: string;
   subOriginId: string | null;
   onClose: () => void;
+}
+
+interface SortableLeadRowProps {
+  lead: Lead;
+  isSelected: boolean;
+  onLeadClick: (lead: Lead) => void;
+  onToggleSelection: (leadId: string, e: React.MouseEvent) => void;
+  isOverlay?: boolean;
+}
+
+function SortableLeadRow({ lead, isSelected, onLeadClick, onToggleSelection, isOverlay = false }: SortableLeadRowProps) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    isDragging,
+  } = useSortable({ id: lead.id, disabled: isOverlay });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition: undefined,
+  };
+
+  return (
+    <div
+      ref={isOverlay ? undefined : setNodeRef}
+      style={isOverlay ? undefined : style}
+      onClick={() => !isDragging && onLeadClick(lead)}
+      className={cn(
+        "grid grid-cols-12 gap-4 py-2.5 px-3 hover:bg-muted/40 rounded cursor-pointer transition-colors group border-b border-border/20 last:border-b-0",
+        isSelected && "bg-primary/5",
+        isDragging && !isOverlay && "opacity-30",
+        isOverlay && "shadow-lg bg-background border border-border rounded-lg"
+      )}
+    >
+      <div className="col-span-1 flex items-center gap-1">
+        <div
+          {...(isOverlay ? {} : attributes)}
+          {...(isOverlay ? {} : listeners)}
+          className="p-1 cursor-grab active:cursor-grabbing touch-none opacity-0 group-hover:opacity-100 transition-opacity"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <GripVertical className="w-3.5 h-3.5 text-muted-foreground" />
+        </div>
+        <Checkbox
+          checked={isSelected}
+          onCheckedChange={() => {}}
+          onClick={(e) => onToggleSelection(lead.id, e)}
+          className="border-[#00000040] data-[state=checked]:bg-[#00000040] data-[state=checked]:border-[#00000040]"
+        />
+      </div>
+      <div className="col-span-7 flex items-center gap-2">
+        <div className="w-5 h-5 rounded-full flex items-center justify-center bg-muted text-muted-foreground text-[10px] font-bold flex-shrink-0">
+          {lead.name.charAt(0).toUpperCase()}
+        </div>
+        <span className="text-sm text-foreground truncate">{lead.name}</span>
+      </div>
+      
+      <div className="col-span-3 flex items-center gap-1.5">
+        <Calendar className="w-4 h-4 text-muted-foreground" />
+        <span className="text-xs text-muted-foreground">
+          {new Date(lead.created_at).toLocaleDateString("pt-BR", {
+            day: "2-digit",
+            month: "short",
+            year: "numeric"
+          })}
+        </span>
+      </div>
+      
+      <div className="col-span-1 flex items-center justify-end opacity-0 group-hover:opacity-100 transition-opacity">
+        <button 
+          onClick={(e) => e.stopPropagation()}
+          className="p-1 hover:bg-muted rounded"
+        >
+          <MoreHorizontal className="w-4 h-4 text-muted-foreground" />
+        </button>
+      </div>
+    </div>
+  );
 }
 
 function InlineAddRow({ pipelineId, subOriginId, onClose }: InlineAddRowProps) {
@@ -266,13 +363,29 @@ function InlineAddRow({ pipelineId, subOriginId, onClose }: InlineAddRowProps) {
 }
 
 export function ListView({ pipelines, leadsByPipeline, subOriginId }: ListViewProps) {
+  const queryClient = useQueryClient();
   const [expandedPipelines, setExpandedPipelines] = useState<Set<string>>(
     new Set(pipelines.map(p => p.id))
   );
   const [selectedLeads, setSelectedLeads] = useState<Set<string>>(new Set());
   const [addingToPipeline, setAddingToPipeline] = useState<string | null>(null);
+  const [activeDragId, setActiveDragId] = useState<string | null>(null);
+  const [localLeadsByPipeline, setLocalLeadsByPipeline] = useState<Map<string, Lead[]>>(leadsByPipeline);
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+
+  // Sync local state with prop
+  useEffect(() => {
+    setLocalLeadsByPipeline(leadsByPipeline);
+  }, [leadsByPipeline]);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 5,
+      },
+    })
+  );
 
   const togglePipeline = (pipelineId: string) => {
     setExpandedPipelines(prev => {
@@ -310,7 +423,7 @@ export function ListView({ pipelines, leadsByPipeline, subOriginId }: ListViewPr
   };
 
   const toggleAllInPipeline = (pipelineId: string) => {
-    const leads = leadsByPipeline.get(pipelineId) || [];
+    const leads = localLeadsByPipeline.get(pipelineId) || [];
     const allSelected = leads.every(lead => selectedLeads.has(lead.id));
     
     setSelectedLeads(prev => {
@@ -324,6 +437,69 @@ export function ListView({ pipelines, leadsByPipeline, subOriginId }: ListViewPr
     });
   };
 
+  const handleDragStart = (event: DragStartEvent) => {
+    setActiveDragId(event.active.id as string);
+  };
+
+  const handleDragEnd = async (event: DragEndEvent) => {
+    const { active, over } = event;
+    setActiveDragId(null);
+
+    if (!over || active.id === over.id) return;
+
+    // Find which pipeline contains the dragged lead
+    let sourcePipelineId: string | null = null;
+    for (const [pipelineId, leads] of localLeadsByPipeline.entries()) {
+      if (leads.some(l => l.id === active.id)) {
+        sourcePipelineId = pipelineId;
+        break;
+      }
+    }
+
+    if (!sourcePipelineId) return;
+
+    const leads = localLeadsByPipeline.get(sourcePipelineId) || [];
+    const oldIndex = leads.findIndex(l => l.id === active.id);
+    const newIndex = leads.findIndex(l => l.id === over.id);
+
+    if (oldIndex === -1 || newIndex === -1) return;
+
+    const newLeads = arrayMove(leads, oldIndex, newIndex);
+    
+    // Update local state immediately
+    setLocalLeadsByPipeline(prev => {
+      const next = new Map(prev);
+      next.set(sourcePipelineId!, newLeads);
+      return next;
+    });
+
+    // Update ordem in database
+    try {
+      const updates = newLeads.map((lead, index) => ({
+        id: lead.id,
+        ordem: index,
+      }));
+
+      for (const update of updates) {
+        await supabase
+          .from("leads")
+          .update({ ordem: update.ordem })
+          .eq("id", update.id);
+      }
+
+      queryClient.invalidateQueries({ queryKey: ["crm-leads", subOriginId] });
+    } catch (error) {
+      console.error("Erro ao reordenar leads:", error);
+      toast.error("Erro ao reordenar leads");
+      // Revert on error
+      setLocalLeadsByPipeline(leadsByPipeline);
+    }
+  };
+
+  // Find the active lead for overlay
+  const activeLead = activeDragId
+    ? Array.from(localLeadsByPipeline.values()).flat().find(l => l.id === activeDragId)
+    : null;
 
   return (
     <div className="flex-1 overflow-auto bg-background rounded-lg border border-border">
@@ -338,7 +514,7 @@ export function ListView({ pipelines, leadsByPipeline, subOriginId }: ListViewPr
         {/* Pipelines as sections */}
         <div className="space-y-1">
           {pipelines.map((pipeline) => {
-            const leads = leadsByPipeline.get(pipeline.id) || [];
+            const leads = localLeadsByPipeline.get(pipeline.id) || [];
             const isExpanded = expandedPipelines.has(pipeline.id);
             const allSelected = leads.length > 0 && leads.every(lead => selectedLeads.has(lead.id));
             const isAdding = addingToPipeline === pipeline.id;
@@ -377,7 +553,7 @@ export function ListView({ pipelines, leadsByPipeline, subOriginId }: ListViewPr
                           <Checkbox
                             checked={allSelected}
                             onCheckedChange={() => toggleAllInPipeline(pipeline.id)}
-                            className="border-[#00000040] data-[state=checked]:bg-[#00000040] data-[state=checked]:border-[#00000040]"
+                            className="border-[#00000040] data-[state=checked]:bg-[#00000040] data-[state=checked]:border-[#00000040] ml-6"
                           />
                         </div>
                         <div className="col-span-7">Nome</div>
@@ -386,52 +562,43 @@ export function ListView({ pipelines, leadsByPipeline, subOriginId }: ListViewPr
                       </div>
                     )}
 
-                    {/* Leads Rows */}
-                    {leads.map((lead) => (
-                      <div
-                        key={lead.id}
-                        onClick={() => handleLeadClick(lead)}
-                        className={cn(
-                          "grid grid-cols-12 gap-4 py-2.5 px-3 hover:bg-muted/40 rounded cursor-pointer transition-colors group border-b border-border/20 last:border-b-0",
-                          selectedLeads.has(lead.id) && "bg-primary/5"
-                        )}
+                    {/* Leads Rows with DnD */}
+                    <DndContext
+                      sensors={sensors}
+                      collisionDetection={closestCenter}
+                      onDragStart={handleDragStart}
+                      onDragEnd={handleDragEnd}
+                    >
+                      <SortableContext
+                        items={leads.map(l => l.id)}
+                        strategy={verticalListSortingStrategy}
                       >
-                        <div className="col-span-1 flex items-center">
-                          <Checkbox
-                            checked={selectedLeads.has(lead.id)}
-                            onCheckedChange={() => {}}
-                            onClick={(e) => toggleLeadSelection(lead.id, e)}
-                            className="border-[#00000040] data-[state=checked]:bg-[#00000040] data-[state=checked]:border-[#00000040]"
+                        {leads.map((lead) => (
+                          <SortableLeadRow
+                            key={lead.id}
+                            lead={lead}
+                            isSelected={selectedLeads.has(lead.id)}
+                            onLeadClick={handleLeadClick}
+                            onToggleSelection={toggleLeadSelection}
                           />
-                        </div>
-                        <div className="col-span-7 flex items-center gap-2">
-                          <div className="w-5 h-5 rounded-full flex items-center justify-center bg-muted text-muted-foreground text-[10px] font-bold flex-shrink-0">
-                            {lead.name.charAt(0).toUpperCase()}
-                          </div>
-                          <span className="text-sm text-foreground truncate">{lead.name}</span>
-                        </div>
-                        
-                        <div className="col-span-3 flex items-center gap-1.5">
-                          <Calendar className="w-4 h-4 text-muted-foreground" />
-                          <span className="text-xs text-muted-foreground">
-                            {new Date(lead.created_at).toLocaleDateString("pt-BR", {
-                              day: "2-digit",
-                              month: "short",
-                              year: "numeric"
-                            })}
-                          </span>
-                        </div>
-                        
-                        <div className="col-span-1 flex items-center justify-end opacity-0 group-hover:opacity-100 transition-opacity">
-                          <button 
-                            onClick={(e) => e.stopPropagation()}
-                            className="p-1 hover:bg-muted rounded"
-                          >
-                            <MoreHorizontal className="w-4 h-4 text-muted-foreground" />
-                          </button>
-                        </div>
-                      </div>
-                    ))}
+                        ))}
+                      </SortableContext>
+
+                      {createPortal(
+                        <DragOverlay>
+                          {activeLead ? (
+                            <SortableLeadRow
+                              lead={activeLead}
+                              isSelected={selectedLeads.has(activeLead.id)}
+                              onLeadClick={() => {}}
+                              onToggleSelection={() => {}}
+                              isOverlay
+                            />
+                          ) : null}
+                        </DragOverlay>,
+                        document.body
+                      )}
+                    </DndContext>
 
                     {/* Inline Add Row */}
                     {isAdding ? (
