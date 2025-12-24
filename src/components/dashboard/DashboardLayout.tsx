@@ -44,23 +44,29 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
   const isAtendimentoActive = location.pathname.startsWith("/admin/atendimento");
   const isSettingsActive = location.pathname === "/admin/settings";
 
-  // Initialize CRM submenu state based on current route (only on mount)
+  // Initialize CRM submenu state from localStorage
   const [crmSubmenuOpen, setCrmSubmenuOpen] = useState(() => {
-    // Only open if we're actually on CRM routes
+    const saved = localStorage.getItem('crm_submenu_open');
+    if (saved !== null) {
+      return saved === 'true';
+    }
+    // Default: open if on CRM routes
     return location.pathname.startsWith("/admin/crm") || location.pathname === "/admin";
   });
 
-  // Sync activePanel with current route
+  // Persist submenu state to localStorage
+  useEffect(() => {
+    localStorage.setItem('crm_submenu_open', String(crmSubmenuOpen));
+  }, [crmSubmenuOpen]);
+
+  // Sync activePanel with current route (without forcing submenu open)
   useEffect(() => {
     if (isAtendimentoActive && activePanel !== 'atendimento') {
       setActivePanel('atendimento');
-      setCrmSubmenuOpen(false);
     } else if (isSettingsActive && activePanel !== 'settings') {
       setActivePanel('settings');
-      setCrmSubmenuOpen(false);
     } else if (isCRMActive && activePanel !== 'crm') {
       setActivePanel('crm');
-      setCrmSubmenuOpen(true);
     }
   }, [location.pathname, isCRMActive, isAtendimentoActive, isSettingsActive]);
 
