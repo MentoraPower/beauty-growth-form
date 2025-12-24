@@ -1111,12 +1111,6 @@ const CustomEdge = ({
           animation: "flowDash 1s linear infinite",
         }}
       />
-      <circle
-        cx={targetX}
-        cy={isNearlyStraight ? sourceY : targetY}
-        r={4}
-        fill="#9A3412"
-      />
       <EdgeLabelRenderer>
         <div
           style={{
