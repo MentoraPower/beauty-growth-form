@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect, memo, useRef } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { Menu, X, LogOut, LayoutGrid, Settings, ChevronDown, User, Inbox } from "lucide-react";
+import { Menu, X, LogOut, LayoutGrid, Settings, ChevronDown, User, Inbox, ChevronsLeft, ChevronsRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import scaleLogo from "@/assets/scale-logo-menu.png";
 import { CRMOriginsPanel } from "./CRMOriginsPanel";
@@ -397,12 +397,26 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
           <div className="h-full pl-4 pr-2" style={{ width: submenuWidth, minWidth: submenuWidth }}>
             <CRMOriginsPanel 
               isOpen={true} 
-              onClose={() => {}}
+              onClose={() => setCrmSubmenuOpen(false)}
               sidebarWidth={sidebarCollapsedWidth}
               embedded={true}
             />
           </div>
         </div>
+
+        {/* Floating button to reopen submenu when closed */}
+        {isCRMActive && !crmSubmenuOpen && (
+          <button
+            onClick={() => setCrmSubmenuOpen(true)}
+            style={{ 
+              left: sidebarCollapsedWidth + 12 - 16,
+              zIndex: 40,
+            }}
+            className="hidden lg:flex fixed top-1/2 -translate-y-1/2 w-8 h-16 items-center justify-center bg-zinc-900 rounded-r-xl hover:bg-zinc-800 transition-colors shadow-lg"
+          >
+            <ChevronsRight className="w-4 h-4 text-white" />
+          </button>
+        )}
 
         {/* Mobile Sidebar */}
         <aside
