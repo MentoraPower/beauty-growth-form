@@ -112,7 +112,7 @@ const EntryNode = ({ data }: NodeProps) => {
         type="source"
         position={Position.Right}
         isConnectable
-        className="!w-4 !h-4 !bg-background !border-2 !border-foreground !cursor-crosshair"
+        className="!w-3.5 !h-3.5 !bg-orange-500 !border-[3px] !border-white !cursor-crosshair !shadow-sm"
       />
     </div>
   );
@@ -227,7 +227,7 @@ const TriggerNode = ({ data, id, selected }: NodeProps & { data: {
         type="target"
         position={Position.Left}
         isConnectable
-        className="!w-4 !h-4 !bg-foreground !border-2 !border-background"
+        className="!w-3.5 !h-3.5 !bg-orange-500 !border-[3px] !border-white !shadow-sm"
       />
       <div 
         className="min-w-[280px] border border-border bg-card transition-all rounded-xl"
@@ -263,12 +263,11 @@ const TriggerNode = ({ data, id, selected }: NodeProps & { data: {
                 </button>
               </div>
               
-              {/* Individual handle for each trigger */}
               <Handle
                 type="source"
                 position={Position.Right}
                 id={`trigger-handle-${index}`}
-                className="!w-3 !h-3 !bg-orange-500 !border-2 !border-white"
+                className="!w-3.5 !h-3.5 !bg-orange-500 !border-[3px] !border-white !shadow-sm"
                 style={{ top: "50%", transform: "translateY(-50%)" }}
               />
             </div>
@@ -427,7 +426,7 @@ const StartNode = ({ data }: NodeProps) => {
       <Handle
         type="source"
         position={Position.Right}
-        className="!w-2.5 !h-2.5 !bg-background !border-2 !border-foreground"
+        className="!w-3.5 !h-3.5 !bg-orange-500 !border-[3px] !border-white !shadow-sm"
       />
     </div>
   );
@@ -505,7 +504,7 @@ const WaitNode = ({ data, id, selected }: NodeProps) => {
       <Handle
         type="target"
         position={Position.Left}
-        className="!w-2.5 !h-2.5 !bg-foreground !border-2 !border-background !z-10"
+        className="!w-3.5 !h-3.5 !bg-orange-500 !border-[3px] !border-white !shadow-sm !z-10"
       />
       
       {/* Square card - icon only */}
@@ -580,7 +579,7 @@ const WaitNode = ({ data, id, selected }: NodeProps) => {
       <Handle
         type="source"
         position={Position.Right}
-        className="!w-2.5 !h-2.5 !bg-foreground !border-2 !border-background !z-10"
+        className="!w-3.5 !h-3.5 !bg-orange-500 !border-[3px] !border-white !shadow-sm !z-10"
       />
 
       {/* Action buttons - slide down from top */}
@@ -672,7 +671,7 @@ const EmailNode = ({ id, data, selected }: NodeProps) => {
       <Handle
         type="target"
         position={Position.Left}
-        className="!w-2.5 !h-2.5 !bg-foreground !border-2 !border-background !z-10"
+        className="!w-3.5 !h-3.5 !bg-orange-500 !border-[3px] !border-white !shadow-sm !z-10"
       />
       <div className="w-[320px] border border-border bg-background shadow-sm transition-all rounded-lg overflow-hidden">
         {/* Orange gradient header with Gmail logo */}
@@ -739,7 +738,7 @@ const EmailNode = ({ id, data, selected }: NodeProps) => {
       <Handle
         type="source"
         position={Position.Right}
-        className="!w-2.5 !h-2.5 !bg-foreground !border-2 !border-background !z-10"
+        className="!w-3.5 !h-3.5 !bg-orange-500 !border-[3px] !border-white !shadow-sm !z-10"
       />
 
       {/* Action buttons - slide down from top */}
@@ -858,7 +857,7 @@ const WhatsAppNode = ({ id, data, selected }: NodeProps) => {
       <Handle
         type="target"
         position={Position.Left}
-        className="!w-2.5 !h-2.5 !bg-foreground !border-2 !border-background !z-10"
+        className="!w-3.5 !h-3.5 !bg-orange-500 !border-[3px] !border-white !shadow-sm !z-10"
       />
       <div className="w-[320px] border border-border bg-background shadow-sm transition-all rounded-lg overflow-hidden">
         {/* Orange gradient header */}
@@ -945,7 +944,7 @@ const WhatsAppNode = ({ id, data, selected }: NodeProps) => {
       <Handle
         type="source"
         position={Position.Right}
-        className="!w-2.5 !h-2.5 !bg-foreground !border-2 !border-background !z-10"
+        className="!w-3.5 !h-3.5 !bg-orange-500 !border-[3px] !border-white !shadow-sm !z-10"
       />
 
       {/* Action buttons */}
@@ -990,7 +989,7 @@ const EndNode = ({ data, id, selected }: NodeProps) => {
         <Handle
           type="target"
           position={Position.Left}
-          className="!w-2.5 !h-2.5 !bg-foreground !border-2 !border-background"
+          className="!w-3.5 !h-3.5 !bg-orange-500 !border-[3px] !border-white !shadow-sm"
         />
         <CheckCircle2 className="w-4 h-4 text-foreground" />
         <span className="text-sm font-medium text-foreground">{data.label as string}</span>
@@ -1039,43 +1038,33 @@ const CustomEdge = ({
   sourceY,
   targetX,
   targetY,
-  sourcePosition,
-  targetPosition,
   data,
 }: CustomEdgeProps) => {
-  // Use straight path only when perfectly aligned (keeps connection anchored to the handles)
-  const isNearlyStraight = Math.abs(sourceY - targetY) < 6;
-
-  // Use straight path for aligned nodes, bezier for others
-  const [edgePath, labelX, labelY] = isNearlyStraight
-    ? getStraightPath({
-        sourceX,
-        sourceY,
-        targetX,
-        targetY,
-      })
-    : getBezierPath({
-        sourceX,
-        sourceY,
-        sourcePosition,
-        targetX,
-        targetY,
-        targetPosition,
-        curvature: 0.25,
-      });
+  // Always use straight horizontal lines for clean appearance
+  // Step path: horizontal from source, then vertical, then horizontal to target
+  const midX = (sourceX + targetX) / 2;
+  
+  // Create a step path for non-aligned nodes, straight for aligned
+  const isAligned = Math.abs(sourceY - targetY) < 10;
+  
+  let edgePath: string;
+  if (isAligned) {
+    // Perfectly straight horizontal line
+    edgePath = `M ${sourceX} ${sourceY} L ${targetX} ${targetY}`;
+  } else {
+    // Step path: go right, then up/down, then right again
+    edgePath = `M ${sourceX} ${sourceY} L ${midX} ${sourceY} L ${midX} ${targetY} L ${targetX} ${targetY}`;
+  }
 
   const gradientId = `edge-gradient-${id}`.replace(/[^a-zA-Z0-9_-]/g, "_");
 
-  // Always use a valid path - straight line as ultimate fallback
-  const finalPath = edgePath || `M ${sourceX} ${sourceY} L ${targetX} ${targetY}`;
-
-  const safeLabelX = Number.isFinite(labelX) ? labelX : (sourceX + targetX) / 2;
-  const safeLabelY = Number.isFinite(labelY) ? labelY : (sourceY + targetY) / 2;
+  // Label position at the middle of the edge
+  const labelX = midX;
+  const labelY = isAligned ? sourceY : (sourceY + targetY) / 2;
 
   return (
     <>
       <defs>
-        {/* Use userSpaceOnUse to avoid zero-height/zero-width bbox making gradient invisible on straight lines */}
         <linearGradient
           id={gradientId}
           gradientUnits="userSpaceOnUse"
@@ -1089,29 +1078,26 @@ const CustomEdge = ({
         </linearGradient>
       </defs>
       <path
-        d={finalPath}
+        d={edgePath}
         fill="none"
         stroke={`url(#${gradientId})`}
-        strokeWidth={2}
-        strokeDasharray="6 4"
+        strokeWidth={3}
         strokeLinecap="round"
-        style={{
-          animation: "flowDash 1s linear infinite",
-        }}
+        strokeLinejoin="round"
       />
       <EdgeLabelRenderer>
         <div
           style={{
             position: "absolute",
-            transform: `translate(-50%, -50%) translate(${safeLabelX}px,${safeLabelY}px)`,
+            transform: `translate(-50%, -50%) translate(${labelX}px,${labelY}px)`,
             pointerEvents: "all",
           }}
           className="nodrag nopan"
         >
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <button className="w-6 h-6 rounded-full bg-background border border-border shadow-sm flex items-center justify-center hover:bg-muted hover:scale-110 transition-all">
-                <Plus className="w-3 h-3 text-muted-foreground" />
+              <button className="w-7 h-7 rounded-full bg-background border-2 border-orange-400 shadow-md flex items-center justify-center hover:bg-orange-50 hover:scale-110 transition-all">
+                <Plus className="w-4 h-4 text-orange-500" />
               </button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="center" className="w-40">
