@@ -1747,8 +1747,8 @@ export function EmailFlowBuilder({
             }}
             className="flex items-center gap-3 cursor-grab active:cursor-grabbing hover:bg-muted/50 rounded-xl p-2.5 transition-colors border border-border w-full"
           >
-            <div className="w-8 h-8 flex items-center justify-center rounded-full bg-red-50 border border-red-200 flex-shrink-0">
-              <Mail className="w-4 h-4" style={{ color: '#EA4335' }} />
+            <div className="w-8 h-8 flex items-center justify-center rounded-full bg-white flex-shrink-0">
+              <img src={gmailLogo} alt="Gmail" className="w-5 h-5 object-contain" />
             </div>
             <span className="text-sm text-foreground">E-mail</span>
           </div>
