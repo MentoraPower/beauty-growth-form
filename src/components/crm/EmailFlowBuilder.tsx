@@ -20,7 +20,8 @@ import {
   useReactFlow,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
-import { Play, Clock, CheckCircle2, Trash2, Copy, ArrowLeft, Plus, Mail, Zap, ChevronDown, Users, UserMinus, UserX, User, MessageCircle } from "lucide-react";
+import { Play, Clock, CheckCircle2, Trash2, Copy, ArrowLeft, Plus, Mail, Zap, ChevronDown, Users, UserMinus, UserX, User } from "lucide-react";
+import WhatsAppIcon from "@/components/icons/WhatsApp";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -840,7 +841,7 @@ const WhatsAppNode = ({ id, data, selected }: NodeProps) => {
         >
           <div className="flex items-center gap-3">
             <div className="w-7 h-7 rounded bg-white/20 flex items-center justify-center">
-              <MessageCircle className="w-4 h-4 text-white" />
+              <WhatsAppIcon className="w-4 h-4 text-white" />
             </div>
             <div>
               <span className="text-xs font-semibold text-white uppercase tracking-wide block">WhatsApp</span>
@@ -1004,7 +1005,7 @@ const CustomEdge = ({
       <path
         d={edgePath}
         fill="none"
-        stroke="#EA4335"
+        stroke="#F40000"
         strokeWidth={1.5}
         strokeDasharray="6 4"
         strokeLinecap="round"
@@ -1016,7 +1017,7 @@ const CustomEdge = ({
         cx={targetX}
         cy={targetY}
         r={3}
-        fill="#A10000"
+        fill="#F40000"
       />
       <EdgeLabelRenderer>
         <div
@@ -1043,7 +1044,7 @@ const CustomEdge = ({
                 Enviar E-mail
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => data?.onAddNode?.(id, "whatsapp")}>
-                <MessageCircle className="w-4 h-4 mr-2 text-green-500" />
+                <WhatsAppIcon className="w-4 h-4 mr-2 text-green-500" />
                 Enviar WhatsApp
               </DropdownMenuItem>
               <DropdownMenuSeparator />
@@ -1703,7 +1704,7 @@ export function EmailFlowBuilder({
               style={{ border: "1px solid #00000015" }}
               title="Enviar WhatsApp"
             >
-              <MessageCircle className="w-5 h-5" style={{ color: "#25D366" }} />
+              <WhatsAppIcon className="w-5 h-5" />
             </div>
 
             {/* End Node - Red icon */}
@@ -1785,7 +1786,7 @@ export function EmailFlowBuilder({
                   onClick={() => addNodeFromConnection("whatsapp")}
                   className="w-full px-3 py-2.5 text-left text-sm hover:bg-muted/50 transition-colors flex items-center gap-2"
                 >
-                  <MessageCircle className="w-4 h-4" style={{ color: "#25D366" }} />
+                  <WhatsAppIcon className="w-4 h-4" />
                   <span className="text-foreground">Enviar WhatsApp</span>
                 </button>
                 <button
