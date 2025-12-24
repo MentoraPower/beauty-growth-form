@@ -22,7 +22,7 @@ import {
   useReactFlow,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
-import { Play, Clock, Pause, CheckCircle2, Trash2, Copy, ArrowLeft, Plus, Mail, Zap, ChevronDown, Users, UserMinus, UserX, User, Send } from "lucide-react";
+import { Play, Clock, Pause, CheckCircle2, Trash2, Copy, ArrowLeft, ArrowUp, Plus, Mail, Zap, ChevronDown, Users, UserMinus, UserX, User, Send } from "lucide-react";
 import WhatsAppIcon from "@/components/icons/WhatsApp";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -1792,8 +1792,8 @@ export function EmailFlowBuilder({
             className="w-full justify-start gap-3 h-auto py-2.5 px-2.5 rounded-xl"
             onClick={() => setBroadcastDialogOpen(true)}
           >
-            <div className="w-8 h-8 flex items-center justify-center rounded-full bg-primary/10 flex-shrink-0">
-              <Send className="w-4 h-4 text-primary" />
+            <div className="w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 border border-gray-200 flex-shrink-0">
+              <ArrowUp className="w-4 h-4 text-gray-600" />
             </div>
             <span className="text-sm">Disparo</span>
           </Button>
