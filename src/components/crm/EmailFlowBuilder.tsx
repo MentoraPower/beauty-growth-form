@@ -509,10 +509,10 @@ const WaitNode = ({ data, id, selected }: NodeProps) => {
       
       {/* Square card - icon only */}
       <div 
-        className="w-16 h-16 bg-white border border-amber-200 transition-all rounded-2xl cursor-pointer hover:shadow-lg hover:border-amber-300 flex items-center justify-center shadow-sm"
+        className="w-20 h-20 bg-white border border-amber-200 transition-all rounded-2xl cursor-pointer hover:shadow-lg hover:border-amber-300 flex items-center justify-center shadow-sm"
         onClick={handleOpen}
       >
-        <Clock className="w-7 h-7" style={{ stroke: 'url(#clockGradient)' }} />
+        <Clock className="w-9 h-9" style={{ stroke: 'url(#clockGradient)' }} />
         <svg width="0" height="0">
           <defs>
             <linearGradient id="clockGradient" x1="0%" y1="0%" x2="100%" y2="100%">
