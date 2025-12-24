@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { Kanban, ChevronRight, ChevronsRight, Folder, FolderOpen, MoreVertical, Plus, Pencil, Trash2, GripVertical, CalendarDays, ListTodo, Search, LayoutGrid } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -629,10 +629,25 @@ export function CRMOriginsPanel({ isOpen, onClose, sidebarWidth, embedded = fals
       .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'crm_sub_origins' }, fetchData)
       .subscribe();
 
-    // Update lead counts using exact count queries (bypasses 1000 limit)
+    // Listen for custom event from dropdown
+    const handleCustomUpdate = () => fetchData();
+    window.addEventListener('crm-data-updated', handleCustomUpdate);
+
+    return () => {
+      supabase.removeChannel(originsChannel);
+      supabase.removeChannel(subOriginsChannel);
+      window.removeEventListener('crm-data-updated', handleCustomUpdate);
+    };
+  }, [fetchData]);
+
+  // Debounced lead count updates - separate from structure changes
+  useEffect(() => {
+    if (subOrigins.length === 0) return;
+
+    let debounceTimer: NodeJS.Timeout | null = null;
+    let isMounted = true;
+
     const updateLeadCounts = async () => {
-      if (subOrigins.length === 0) return;
-      
       const countPromises = subOrigins.map(async (subOrigin) => {
         const { count, error } = await supabase
           .from("leads")
@@ -646,32 +661,36 @@ export function CRMOriginsPanel({ isOpen, onClose, sidebarWidth, embedded = fals
       });
       
       const counts = await Promise.all(countPromises);
-      setLeadCounts(counts);
+      if (isMounted) {
+        setLeadCounts(prev => {
+          // Only update if values actually changed to prevent re-renders
+          const hasChanged = counts.some((c, i) => {
+            const prevCount = prev.find(p => p.sub_origin_id === c.sub_origin_id);
+            return !prevCount || prevCount.count !== c.count;
+          });
+          return hasChanged ? counts : prev;
+        });
+      }
     };
 
-    // Initial count fetch when subOrigins are loaded
-    if (subOrigins.length > 0) {
-      updateLeadCounts();
-    }
+    const debouncedUpdate = () => {
+      if (debounceTimer) clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(updateLeadCounts, 500);
+    };
 
     const leadsChannel = supabase
       .channel('crm-leads-panel-count-changes')
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'leads' }, updateLeadCounts)
-      .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'leads' }, updateLeadCounts)
-      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'leads' }, updateLeadCounts)
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'leads' }, debouncedUpdate)
+      .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'leads' }, debouncedUpdate)
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'leads', filter: 'sub_origin_id=neq.null' }, debouncedUpdate)
       .subscribe();
 
-    // Listen for custom event from dropdown
-    const handleCustomUpdate = () => fetchData();
-    window.addEventListener('crm-data-updated', handleCustomUpdate);
-
     return () => {
-      supabase.removeChannel(originsChannel);
-      supabase.removeChannel(subOriginsChannel);
+      isMounted = false;
+      if (debounceTimer) clearTimeout(debounceTimer);
       supabase.removeChannel(leadsChannel);
-      window.removeEventListener('crm-data-updated', handleCustomUpdate);
     };
-  }, [fetchData, subOrigins]);
+  }, [subOrigins]);
 
   const handleDragEnd = async (event: DragEndEvent) => {
     const { active, over } = event;
