@@ -1,4 +1,5 @@
 import { useState, useCallback, useMemo, useRef, useEffect } from "react";
+import { cn } from "@/lib/utils";
 import {
   ReactFlow,
   Controls,
@@ -22,7 +23,7 @@ import {
   useReactFlow,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
-import { Play, Clock, Pause, CheckCircle2, Trash2, Copy, ArrowLeft, ArrowUp, Plus, Mail, Zap, ChevronDown, Users, UserMinus, UserX, User, Send } from "lucide-react";
+import { Play, Clock, Pause, CheckCircle2, Trash2, Copy, ArrowLeft, ArrowUp, Plus, Mail, Zap, ChevronDown, ChevronUp, Users, UserMinus, UserX, User, Send, MessageSquare, Mic, Image, Video, FileText } from "lucide-react";
 import WhatsAppIcon from "@/components/icons/WhatsApp";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -760,17 +761,44 @@ const EmailNode = ({ id, data, selected }: NodeProps) => {
   );
 };
 
-// WhatsApp Node Component - With account selection and orange gradient
+// WhatsApp message types
+type WhatsAppMessageType = 'text' | 'audio' | 'image' | 'video' | 'document';
+
+const messageTypeLabels: Record<WhatsAppMessageType, string> = {
+  text: 'Texto',
+  audio: 'Áudio',
+  image: 'Imagem',
+  video: 'Vídeo',
+  document: 'Documento',
+};
+
+const messageTypeIcons: Record<WhatsAppMessageType, React.ReactNode> = {
+  text: <MessageSquare className="w-4 h-4" />,
+  audio: <Mic className="w-4 h-4" />,
+  image: <Image className="w-4 h-4" />,
+  video: <Video className="w-4 h-4" />,
+  document: <FileText className="w-4 h-4" />,
+};
+
+// WhatsApp Node Component - With account selection, message type, and orange gradient
 const WhatsAppNode = ({ id, data, selected }: NodeProps) => {
   const { setNodes, setEdges } = useReactFlow();
   const [isEditing, setIsEditing] = useState(false);
   const [localMessage, setLocalMessage] = useState((data.whatsappMessage as string) || "");
   const [localAccountId, setLocalAccountId] = useState((data.whatsappAccountId as string) || "");
+  const [localMessageType, setLocalMessageType] = useState<WhatsAppMessageType>((data.whatsappMessageType as WhatsAppMessageType) || "text");
+  const [localMediaUrl, setLocalMediaUrl] = useState((data.whatsappMediaUrl as string) || "");
+  const [localFileName, setLocalFileName] = useState((data.whatsappFileName as string) || "");
   const [accounts, setAccounts] = useState<WhatsAppAccount[]>([]);
   const [isLoadingAccounts, setIsLoadingAccounts] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   
   const message = (data.whatsappMessage as string) || "";
   const accountId = (data.whatsappAccountId as string) || "";
+  const messageType = (data.whatsappMessageType as WhatsAppMessageType) || "text";
+  const mediaUrl = (data.whatsappMediaUrl as string) || "";
+  const fileName = (data.whatsappFileName as string) || "";
 
   // Fetch WhatsApp accounts on mount
   useEffect(() => {
@@ -805,18 +833,31 @@ const WhatsAppNode = ({ id, data, selected }: NodeProps) => {
       setNodes((nds) =>
         nds.map((node) =>
           node.id === id
-            ? { ...node, data: { ...node.data, whatsappMessage: localMessage, whatsappAccountId: localAccountId } }
+            ? { 
+                ...node, 
+                data: { 
+                  ...node.data, 
+                  whatsappMessage: localMessage, 
+                  whatsappAccountId: localAccountId,
+                  whatsappMessageType: localMessageType,
+                  whatsappMediaUrl: localMediaUrl,
+                  whatsappFileName: localFileName,
+                } 
+              }
             : node
         )
       );
     }, 300);
 
     return () => clearTimeout(timeout);
-  }, [localMessage, localAccountId, isEditing, id, setNodes]);
+  }, [localMessage, localAccountId, localMessageType, localMediaUrl, localFileName, isEditing, id, setNodes]);
 
   const handleOpen = () => {
     setLocalMessage(message);
     setLocalAccountId(accountId);
+    setLocalMessageType(messageType);
+    setLocalMediaUrl(mediaUrl);
+    setLocalFileName(fileName);
     setIsEditing(true);
   };
 
@@ -845,6 +886,111 @@ const WhatsAppNode = ({ id, data, selected }: NodeProps) => {
     });
   };
 
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsUploading(true);
+    try {
+      const { supabase } = await import("@/integrations/supabase/client");
+      const fileExt = file.name.split('.').pop();
+      const filePath = `automation-media/${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+      
+      const { error: uploadError } = await supabase.storage
+        .from('whatsapp-media')
+        .upload(filePath, file);
+      
+      if (uploadError) throw uploadError;
+      
+      const { data: urlData } = supabase.storage
+        .from('whatsapp-media')
+        .getPublicUrl(filePath);
+      
+      setLocalMediaUrl(urlData.publicUrl);
+      setLocalFileName(file.name);
+    } catch (error) {
+      console.error("Error uploading file:", error);
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  const getAcceptedFileTypes = () => {
+    switch (localMessageType) {
+      case 'audio': return 'audio/*';
+      case 'image': return 'image/*';
+      case 'video': return 'video/*';
+      case 'document': return '.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt';
+      default: return '';
+    }
+  };
+
+  const renderMediaPreview = () => {
+    if (!localMediaUrl) return null;
+    
+    switch (localMessageType) {
+      case 'image':
+        return <img src={localMediaUrl} alt="Preview" className="w-full h-32 object-cover rounded-lg" />;
+      case 'video':
+        return <video src={localMediaUrl} className="w-full h-32 object-cover rounded-lg" controls />;
+      case 'audio':
+        return <audio src={localMediaUrl} className="w-full" controls />;
+      case 'document':
+        return (
+          <div className="flex items-center gap-2 p-3 bg-muted rounded-lg">
+            <FileText className="w-6 h-6 text-muted-foreground" />
+            <span className="text-sm truncate">{localFileName || 'Documento'}</span>
+          </div>
+        );
+      default:
+        return null;
+    }
+  };
+
+  const renderNodePreview = () => {
+    switch (messageType) {
+      case 'text':
+        return (
+          <div className="bg-[#DCF8C6] rounded-lg p-3 text-sm text-gray-800 min-h-[60px] whitespace-pre-wrap break-words">
+            {message || <span className="text-gray-500 italic">Clique para editar...</span>}
+          </div>
+        );
+      case 'image':
+        return mediaUrl ? (
+          <img src={mediaUrl} alt="Preview" className="w-full h-24 object-cover rounded-lg" />
+        ) : (
+          <div className="flex items-center justify-center h-24 bg-muted rounded-lg">
+            <Image className="w-8 h-8 text-muted-foreground" />
+          </div>
+        );
+      case 'video':
+        return mediaUrl ? (
+          <video src={mediaUrl} className="w-full h-24 object-cover rounded-lg" />
+        ) : (
+          <div className="flex items-center justify-center h-24 bg-muted rounded-lg">
+            <Video className="w-8 h-8 text-muted-foreground" />
+          </div>
+        );
+      case 'audio':
+        return mediaUrl ? (
+          <audio src={mediaUrl} className="w-full" controls />
+        ) : (
+          <div className="flex items-center justify-center h-16 bg-muted rounded-lg">
+            <Mic className="w-8 h-8 text-muted-foreground" />
+          </div>
+        );
+      case 'document':
+        return (
+          <div className="flex items-center gap-2 p-3 bg-muted rounded-lg">
+            <FileText className="w-6 h-6 text-muted-foreground" />
+            <span className="text-sm truncate">{fileName || 'Documento não selecionado'}</span>
+          </div>
+        );
+      default:
+        return null;
+    }
+  };
+
   return (
     <div className="relative">
       <Handle
@@ -856,24 +1002,23 @@ const WhatsAppNode = ({ id, data, selected }: NodeProps) => {
         {/* Orange gradient header */}
         <div 
           className="px-4 py-2.5 flex items-center justify-between cursor-pointer hover:opacity-90 transition-opacity"
-          style={{ background: "linear-gradient(135deg, #F97316 0%, #EA580C 100%)" }}
+          style={{ background: "linear-gradient(135deg, #25D366 0%, #128C7E 100%)" }}
           onClick={handleOpen}
         >
           <div className="flex items-center gap-3">
             <div className="w-7 h-7 rounded bg-white/20 flex items-center justify-center">
-              <WhatsAppIcon className="w-4 h-4 text-white" />
+              {messageTypeIcons[messageType]}
             </div>
-            <span className="text-xs font-semibold text-white uppercase tracking-wide">WhatsApp</span>
+            <div className="flex flex-col">
+              <span className="text-xs font-semibold text-white uppercase tracking-wide">WhatsApp</span>
+              <span className="text-[10px] text-white/70">{messageTypeLabels[messageType]}</span>
+            </div>
           </div>
           <span className="text-white/70 text-xs">Editar</span>
         </div>
         
-        <div className="p-4 bg-card min-h-[120px]">
-          <div 
-            className="bg-[#DCF8C6] rounded-lg p-3 text-sm text-gray-800 min-h-[80px] whitespace-pre-wrap break-words"
-          >
-            {message || <span className="text-gray-500 italic">Clique para editar a mensagem...</span>}
-          </div>
+        <div className="p-4 bg-card min-h-[80px]">
+          {renderNodePreview()}
         </div>
 
         {/* Editor Dropdown - Side */}
@@ -882,7 +1027,35 @@ const WhatsAppNode = ({ id, data, selected }: NodeProps) => {
             <div className="p-4 border-b border-border bg-muted/30">
               <h4 className="text-sm font-semibold text-foreground">Editar Mensagem WhatsApp</h4>
             </div>
-            <div className="p-4 space-y-4">
+            <div className="p-4 space-y-4 max-h-[500px] overflow-y-auto">
+              {/* Message Type selector */}
+              <div>
+                <label className="text-xs font-semibold text-muted-foreground uppercase mb-1.5 block">Tipo de Mensagem</label>
+                <div className="grid grid-cols-5 gap-2">
+                  {(['text', 'audio', 'image', 'video', 'document'] as WhatsAppMessageType[]).map((type) => (
+                    <button
+                      key={type}
+                      onClick={() => {
+                        setLocalMessageType(type);
+                        if (type === 'text') {
+                          setLocalMediaUrl('');
+                          setLocalFileName('');
+                        }
+                      }}
+                      className={cn(
+                        "flex flex-col items-center gap-1 p-2 rounded-lg border transition-all",
+                        localMessageType === type 
+                          ? "border-green-500 bg-green-50 text-green-700" 
+                          : "border-border hover:bg-muted"
+                      )}
+                    >
+                      {messageTypeIcons[type]}
+                      <span className="text-[10px]">{messageTypeLabels[type]}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
               {/* Account selector */}
               <div>
                 <label className="text-xs font-semibold text-muted-foreground uppercase mb-1.5 block">Conta Wasender</label>
@@ -906,24 +1079,71 @@ const WhatsAppNode = ({ id, data, selected }: NodeProps) => {
                     )}
                   </SelectContent>
                 </Select>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Número que irá disparar a mensagem
-                </p>
               </div>
 
-              <div>
-                <label className="text-xs font-semibold text-muted-foreground uppercase mb-1.5 block">Mensagem</label>
-                <Textarea
-                  value={localMessage}
-                  onChange={(e) => setLocalMessage(e.target.value)}
-                  onWheelCapture={(e) => e.stopPropagation()}
-                  placeholder="Olá {{nome}}! Bem-vindo(a) ao nosso programa..."
-                  className="h-[150px] text-sm resize-none overflow-y-auto nowheel"
-                />
-                <p className="text-xs text-muted-foreground mt-2">
-                  Use {"{{nome}}"}, {"{{email}}"}, {"{{whatsapp}}"} para personalizar
-                </p>
-              </div>
+              {/* Text message input */}
+              {localMessageType === 'text' && (
+                <div>
+                  <label className="text-xs font-semibold text-muted-foreground uppercase mb-1.5 block">Mensagem</label>
+                  <Textarea
+                    value={localMessage}
+                    onChange={(e) => setLocalMessage(e.target.value)}
+                    onWheelCapture={(e) => e.stopPropagation()}
+                    placeholder="Olá {{nome}}! Bem-vindo(a)..."
+                    className="h-[120px] text-sm resize-none overflow-y-auto nowheel"
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Use {"{{nome}}"}, {"{{email}}"}, {"{{whatsapp}}"} para personalizar
+                  </p>
+                </div>
+              )}
+
+              {/* Media upload for non-text types */}
+              {localMessageType !== 'text' && (
+                <div>
+                  <label className="text-xs font-semibold text-muted-foreground uppercase mb-1.5 block">
+                    {messageTypeLabels[localMessageType]}
+                  </label>
+                  
+                  {localMediaUrl && (
+                    <div className="mb-3">
+                      {renderMediaPreview()}
+                    </div>
+                  )}
+                  
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept={getAcceptedFileTypes()}
+                    onChange={handleFileUpload}
+                    className="hidden"
+                  />
+                  
+                  <Button
+                    variant="outline"
+                    className="w-full"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={isUploading}
+                  >
+                    {isUploading ? 'Enviando...' : localMediaUrl ? 'Trocar arquivo' : 'Selecionar arquivo'}
+                  </Button>
+
+                  {/* Caption for media */}
+                  {(localMessageType === 'image' || localMessageType === 'video') && (
+                    <div className="mt-3">
+                      <label className="text-xs font-semibold text-muted-foreground uppercase mb-1.5 block">Legenda (opcional)</label>
+                      <Textarea
+                        value={localMessage}
+                        onChange={(e) => setLocalMessage(e.target.value)}
+                        onWheelCapture={(e) => e.stopPropagation()}
+                        placeholder="Legenda da mídia..."
+                        className="h-[60px] text-sm resize-none overflow-y-auto nowheel"
+                      />
+                    </div>
+                  )}
+                </div>
+              )}
+
               <div className="flex justify-end pt-2">
                 <Button size="sm" onClick={() => setIsEditing(false)} className="bg-foreground text-background hover:bg-foreground/90">
                   Fechar
@@ -961,6 +1181,66 @@ const WhatsAppNode = ({ id, data, selected }: NodeProps) => {
           <Trash2 className="w-3.5 h-3.5" />
           Apagar
         </button>
+      </div>
+    </div>
+  );
+};
+
+// WhatsApp Sidebar Item with expandable dropdown
+const WhatsAppSidebarItem = () => {
+  const [isExpanded, setIsExpanded] = useState(false);
+  
+  const messageTypes: { type: string; label: string; icon: React.ReactNode }[] = [
+    { type: 'whatsapp-text', label: 'Texto', icon: <MessageSquare className="w-3.5 h-3.5" /> },
+    { type: 'whatsapp-audio', label: 'Áudio', icon: <Mic className="w-3.5 h-3.5" /> },
+    { type: 'whatsapp-image', label: 'Imagem', icon: <Image className="w-3.5 h-3.5" /> },
+    { type: 'whatsapp-video', label: 'Vídeo', icon: <Video className="w-3.5 h-3.5" /> },
+    { type: 'whatsapp-document', label: 'Documento', icon: <FileText className="w-3.5 h-3.5" /> },
+  ];
+
+  return (
+    <div className="w-full">
+      {/* Main WhatsApp button */}
+      <button
+        onClick={() => setIsExpanded(!isExpanded)}
+        className="flex items-center gap-3 w-full hover:bg-muted/50 rounded-xl p-2.5 transition-colors border border-border"
+      >
+        <div className="w-8 h-8 flex items-center justify-center rounded-full flex-shrink-0" style={{ backgroundColor: '#25D366' }}>
+          <WhatsAppIcon className="w-4 h-4 text-white" />
+        </div>
+        <span className="text-sm text-foreground flex-1 text-left">WhatsApp</span>
+        {isExpanded ? (
+          <ChevronUp className="w-4 h-4 text-muted-foreground" />
+        ) : (
+          <ChevronDown className="w-4 h-4 text-muted-foreground" />
+        )}
+      </button>
+      
+      {/* Expandable options */}
+      <div 
+        className="grid transition-[grid-template-rows] duration-200 ease-out"
+        style={{ gridTemplateRows: isExpanded ? '1fr' : '0fr' }}
+      >
+        <div className="overflow-hidden">
+          <div className="pl-4 pt-2 space-y-1">
+            {messageTypes.map((item) => (
+              <div
+                key={item.type}
+                draggable
+                onDragStart={(e) => {
+                  e.dataTransfer.setData("application/reactflow", item.type);
+                  e.dataTransfer.effectAllowed = "move";
+                }}
+                className="flex items-center gap-2 cursor-grab active:cursor-grabbing hover:bg-muted/50 rounded-lg p-2 transition-colors"
+              >
+                <div className="w-6 h-6 flex items-center justify-center rounded-full bg-green-100 text-green-600 flex-shrink-0">
+                  {item.icon}
+                </div>
+                <span className="text-xs text-foreground">{item.label}</span>
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
     </div>
   );
@@ -1492,24 +1772,33 @@ export function EmailFlowBuilder({
     setSelectedNode(node);
   }, []);
 
-  const addNode = useCallback((type: "wait" | "email" | "whatsapp" | "end", position?: { x: number; y: number }) => {
+  const addNode = useCallback((type: string, position?: { x: number; y: number }) => {
     const lastNode = nodes[nodes.length - 1];
-    const newId = `${type}-${Date.now()}`;
+    
+    // Map whatsapp subtypes to main whatsapp node
+    let nodeType = type;
+    let messageType = 'text';
+    if (type.startsWith('whatsapp-')) {
+      messageType = type.replace('whatsapp-', '');
+      nodeType = 'whatsapp';
+    }
+    
+    const newId = `${nodeType}-${Date.now()}`;
     const newX = position?.x ?? (lastNode ? lastNode.position.x + 220 : 100);
     const newY = position?.y ?? 200;
 
     const defaultData: Record<string, any> = {
       wait: { label: "Espera", waitTime: 1, waitUnit: "hours" },
       email: { label: "E-mail", subject: "", bodyHtml: "" },
-      whatsapp: { label: "WhatsApp", whatsappMessage: "" },
+      whatsapp: { label: "WhatsApp", whatsappMessage: "", whatsappMessageType: messageType },
       end: { label: "Fim" },
     };
 
     const newNode: Node = {
       id: newId,
-      type,
+      type: nodeType,
       position: { x: newX, y: newY },
-      data: defaultData[type],
+      data: defaultData[nodeType] || defaultData.whatsapp,
     };
 
     setNodes((nds) => [...nds, newNode]);
@@ -1537,7 +1826,7 @@ export function EmailFlowBuilder({
     (event: React.DragEvent) => {
       event.preventDefault();
 
-      const type = event.dataTransfer.getData("application/reactflow") as "wait" | "email" | "whatsapp" | "end";
+      const type = event.dataTransfer.getData("application/reactflow");
       if (!type) return;
 
       const reactFlowBounds = event.currentTarget.getBoundingClientRect();
@@ -1753,20 +2042,8 @@ export function EmailFlowBuilder({
             <span className="text-sm text-foreground">E-mail</span>
           </div>
 
-          {/* WhatsApp Node */}
-          <div
-            draggable
-            onDragStart={(e) => {
-              e.dataTransfer.setData("application/reactflow", "whatsapp");
-              e.dataTransfer.effectAllowed = "move";
-            }}
-            className="flex items-center gap-3 cursor-grab active:cursor-grabbing hover:bg-muted/50 rounded-xl p-2.5 transition-colors border border-border w-full"
-          >
-            <div className="w-8 h-8 flex items-center justify-center rounded-full flex-shrink-0" style={{ backgroundColor: '#25D366' }}>
-              <WhatsAppIcon className="w-4 h-4 text-white" />
-            </div>
-            <span className="text-sm text-foreground">WhatsApp</span>
-          </div>
+          {/* WhatsApp Node with Dropdown */}
+          <WhatsAppSidebarItem />
 
           {/* End Node */}
           <div
