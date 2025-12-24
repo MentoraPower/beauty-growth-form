@@ -88,6 +88,8 @@ interface AutomationsDropdownProps {
   onOpenChange?: (open: boolean) => void;
   emailEditingContext?: EmailEditingContext | null;
   onEmailContextChange?: (context: EmailEditingContext | null) => void;
+  embedded?: boolean;
+  embeddedTab?: "automations" | "webhooks";
 }
 
 interface EmailBuilderProps {
@@ -112,13 +114,15 @@ export function AutomationsDropdown({
   externalOpen, 
   onOpenChange,
   emailEditingContext,
-  onEmailContextChange 
+  onEmailContextChange,
+  embedded = false,
+  embeddedTab
 }: AutomationsDropdownProps) {
   const queryClient = useQueryClient();
   const [internalOpen, setInternalOpen] = useState(false);
-  const open = externalOpen !== undefined ? externalOpen : internalOpen;
+  const open = embedded ? true : (externalOpen !== undefined ? externalOpen : internalOpen);
   const setOpen = onOpenChange || setInternalOpen;
-  const [activeTab, setActiveTab] = useState<ActiveTab>("automations");
+  const [activeTab, setActiveTab] = useState<ActiveTab>(embeddedTab || "automations");
   
   // Automation creation/edit states
   const [isCreatingAutomation, setIsCreatingAutomation] = useState(false);
@@ -1107,6 +1111,155 @@ export function AutomationsDropdown({
           />
         </DialogContent>
       </Dialog>
+    );
+  }
+
+  // When embedded, just render the content without Dialog wrapper
+  if (embedded) {
+    return (
+      <div className="h-full overflow-y-auto">
+        <div className="overflow-y-auto h-full">
+          {/* Automations Tab */}
+          {activeTab === "automations" && (
+            <div className="p-6">
+              {/* Active/Inactive filter */}
+              <div className="flex items-center gap-2 mb-6">
+                <button className="px-3 py-1.5 text-sm rounded-lg bg-foreground/10 text-foreground font-medium">
+                  Ativo {activeAutomationsCount}
+                </button>
+                <button className="px-3 py-1.5 text-sm rounded-lg text-muted-foreground hover:bg-muted transition-colors">
+                  Inativo {automations.length - activeAutomationsCount}
+                </button>
+                <div className="flex-1" />
+                <Button
+                  onClick={() => {
+                    setIsCreatingAutomation(true);
+                    setSelectedTrigger("lead_moved");
+                  }}
+                  className="bg-foreground hover:bg-foreground/90 text-background"
+                  disabled={isCreatingAutomation}
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  Criar automação
+                </Button>
+              </div>
+
+              {/* Automations list - simplified for embedded view */}
+              {automations.length === 0 && !isCreatingAutomation ? (
+                <div className="text-center py-12 text-muted-foreground">
+                  <p>Nenhuma automação criada</p>
+                  <p className="text-sm mt-1">Crie sua primeira automação para automatizar movimentações de leads</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {automations.map((automation) => (
+                    <div key={automation.id} className="p-4 rounded-lg bg-muted/30 border border-border">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <div className={cn("w-2 h-2 rounded-full", automation.is_active ? "bg-emerald-500" : "bg-gray-400")} />
+                          <span className="text-sm font-medium">
+                            Quando lead entrar em "{getPipelineName(automation.pipeline_id || "")}"
+                          </span>
+                          <ArrowRight className="w-4 h-4 text-muted-foreground" />
+                          <span className="text-sm text-muted-foreground">
+                            Mover para "{getPipelineName(automation.target_pipeline_id || "")}"
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => updateAutomation(automation.id, { is_active: !automation.is_active })}
+                            className={cn(
+                              "relative w-10 h-5 rounded-full transition-colors",
+                              automation.is_active ? "bg-emerald-500" : "bg-muted"
+                            )}
+                          >
+                            <span className={cn(
+                              "absolute top-0.5 w-4 h-4 rounded-full bg-white shadow-sm transition-transform",
+                              automation.is_active ? "left-[22px]" : "left-0.5"
+                            )} />
+                          </button>
+                          <button
+                            onClick={() => deleteAutomation(automation.id)}
+                            className="p-1.5 text-muted-foreground hover:text-destructive transition-colors"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Webhooks Tab */}
+          {activeTab === "webhooks" && (
+            <div className="p-6">
+              <div className="flex items-center gap-2 mb-6">
+                <button className="px-3 py-1.5 text-sm rounded-lg bg-foreground/10 text-foreground font-medium">
+                  Receber
+                </button>
+                <button className="px-3 py-1.5 text-sm rounded-lg text-muted-foreground hover:bg-muted transition-colors">
+                  Enviar
+                </button>
+                <div className="flex-1" />
+                <Button
+                  onClick={() => setIsCreatingWebhook(true)}
+                  className="bg-foreground hover:bg-foreground/90 text-background"
+                  disabled={isCreatingWebhook}
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  Criar webhook
+                </Button>
+              </div>
+
+              {webhooks.length === 0 && !isCreatingWebhook ? (
+                <div className="text-center py-12 text-muted-foreground">
+                  <p>Nenhum webhook configurado</p>
+                  <p className="text-sm mt-1">Configure webhooks para integrar com sistemas externos</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {webhooks.map((webhook) => (
+                    <div key={webhook.id} className="p-4 rounded-lg bg-muted/30 border border-border">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <div className={cn("w-2 h-2 rounded-full", webhook.is_active ? "bg-emerald-500" : "bg-gray-400")} />
+                          <span className="text-sm font-medium">{webhook.name}</span>
+                          <span className="text-xs px-2 py-0.5 rounded bg-muted text-muted-foreground">
+                            {webhook.type === "receive" ? "Receber" : "Enviar"}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => toggleWebhook(webhook.id, webhook.is_active)}
+                            className={cn(
+                              "relative w-10 h-5 rounded-full transition-colors",
+                              webhook.is_active ? "bg-emerald-500" : "bg-muted"
+                            )}
+                          >
+                            <span className={cn(
+                              "absolute top-0.5 w-4 h-4 rounded-full bg-white shadow-sm transition-transform",
+                              webhook.is_active ? "left-[22px]" : "left-0.5"
+                            )} />
+                          </button>
+                          <button
+                            onClick={() => deleteWebhook(webhook.id)}
+                            className="p-1.5 text-muted-foreground hover:text-destructive transition-colors"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
     );
   }
 

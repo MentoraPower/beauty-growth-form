@@ -39,6 +39,7 @@ interface ManagePipelinesDialogProps {
   onOpenChange: (open: boolean) => void;
   pipelines: Pipeline[];
   subOriginId: string | null;
+  embedded?: boolean;
 }
 
 interface SortablePipelineItemProps {
@@ -201,6 +202,7 @@ export function ManagePipelinesDialog({
   onOpenChange,
   pipelines,
   subOriginId,
+  embedded = false,
 }: ManagePipelinesDialogProps) {
   const queryClient = useQueryClient();
   const [newPipelineName, setNewPipelineName] = useState("");
@@ -335,101 +337,108 @@ export function ManagePipelinesDialog({
     }
   };
 
+  const content = (
+    <div className={cn("space-y-6", embedded ? "p-6" : "px-6 py-6")}>
+      {/* Add New Pipeline */}
+      <div className="flex gap-3">
+        <Input
+          placeholder="Nome da nova pipeline..."
+          value={newPipelineName}
+          onChange={(e) => setNewPipelineName(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") addPipeline();
+          }}
+          className="flex-1 h-11"
+        />
+        <Button 
+          onClick={addPipeline} 
+          className="h-11 px-6 bg-gradient-to-r from-orange-600 to-amber-500 text-white shrink-0"
+        >
+          <Plus className="w-5 h-5 mr-2" />
+          Adicionar
+        </Button>
+      </div>
+
+      {/* Vertical Pipeline Flow */}
+      <div className="relative pl-4 space-y-6 max-h-[400px] overflow-y-auto pr-2 py-2">
+        {/* Main pipeline track line */}
+        {localPipelines.length > 1 && (
+          <div className="absolute left-6 top-6 bottom-6 w-0.5 bg-gradient-to-b from-primary/20 via-muted-foreground/20 to-primary/20 rounded-full" />
+        )}
+        
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          onDragStart={handleDragStart}
+          onDragEnd={handleDragEnd}
+          onDragCancel={handleDragCancel}
+        >
+          <SortableContext
+            items={localPipelines.map((p) => p.id)}
+            strategy={verticalListSortingStrategy}
+          >
+            {localPipelines.map((pipeline, index) => (
+              <SortablePipelineItem
+                key={pipeline.id}
+                pipeline={pipeline}
+                editingId={editingId}
+                editingName={editingName}
+                setEditingId={setEditingId}
+                setEditingName={setEditingName}
+                updatePipeline={updatePipeline}
+                deletePipeline={deletePipeline}
+                isDragging={activeId === pipeline.id}
+                isFirst={index === 0}
+                isLast={index === localPipelines.length - 1}
+              />
+            ))}
+          </SortableContext>
+
+          {typeof document !== "undefined"
+            ? createPortal(
+                <DragOverlay
+                  zIndex={99999}
+                  dropAnimation={null}
+                >
+                  {activePipeline ? (
+                    <SortablePipelineItem
+                      pipeline={activePipeline}
+                      editingId={null}
+                      editingName=""
+                      setEditingId={() => {}}
+                      setEditingName={() => {}}
+                      updatePipeline={() => {}}
+                      deletePipeline={() => {}}
+                      isOverlay
+                    />
+                  ) : null}
+                </DragOverlay>,
+                document.body
+              )
+            : null}
+        </DndContext>
+      </div>
+
+      {pipelines.length === 0 && (
+        <div className="text-center py-12 text-muted-foreground">
+          <p className="text-sm">Nenhuma pipeline criada ainda.</p>
+          <p className="text-xs mt-1">Adicione uma pipeline usando o campo acima.</p>
+        </div>
+      )}
+    </div>
+  );
+
+  if (embedded) {
+    return content;
+  }
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-4xl max-h-[85vh] overflow-hidden p-0">
         <DialogHeader className="px-6 pt-6 pb-4 border-b border-border bg-muted/30">
           <DialogTitle className="text-lg font-semibold">Gerenciar Pipelines</DialogTitle>
         </DialogHeader>
-
-        <div className="px-6 py-6 space-y-6">
-          {/* Add New Pipeline */}
-          <div className="flex gap-3">
-            <Input
-              placeholder="Nome da nova pipeline..."
-              value={newPipelineName}
-              onChange={(e) => setNewPipelineName(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") addPipeline();
-              }}
-              className="flex-1 h-11"
-            />
-            <Button 
-              onClick={addPipeline} 
-              className="h-11 px-6 bg-gradient-to-r from-orange-600 to-amber-500 text-white shrink-0"
-            >
-              <Plus className="w-5 h-5 mr-2" />
-              Adicionar
-            </Button>
-          </div>
-
-          {/* Vertical Pipeline Flow */}
-          <div className="relative pl-4 space-y-6 max-h-[400px] overflow-y-auto pr-2 py-2">
-            {/* Main pipeline track line */}
-            {localPipelines.length > 1 && (
-              <div className="absolute left-6 top-6 bottom-6 w-0.5 bg-gradient-to-b from-primary/20 via-muted-foreground/20 to-primary/20 rounded-full" />
-            )}
-            
-            <DndContext
-              sensors={sensors}
-              collisionDetection={closestCenter}
-              onDragStart={handleDragStart}
-              onDragEnd={handleDragEnd}
-              onDragCancel={handleDragCancel}
-            >
-              <SortableContext
-                items={localPipelines.map((p) => p.id)}
-                strategy={verticalListSortingStrategy}
-              >
-                {localPipelines.map((pipeline, index) => (
-                  <SortablePipelineItem
-                    key={pipeline.id}
-                    pipeline={pipeline}
-                    editingId={editingId}
-                    editingName={editingName}
-                    setEditingId={setEditingId}
-                    setEditingName={setEditingName}
-                    updatePipeline={updatePipeline}
-                    deletePipeline={deletePipeline}
-                    isDragging={activeId === pipeline.id}
-                    isFirst={index === 0}
-                    isLast={index === localPipelines.length - 1}
-                  />
-                ))}
-              </SortableContext>
-
-              {typeof document !== "undefined"
-                ? createPortal(
-                    <DragOverlay
-                      zIndex={99999}
-                      dropAnimation={null}
-                    >
-                      {activePipeline ? (
-                        <SortablePipelineItem
-                          pipeline={activePipeline}
-                          editingId={null}
-                          editingName=""
-                          setEditingId={() => {}}
-                          setEditingName={() => {}}
-                          updatePipeline={() => {}}
-                          deletePipeline={() => {}}
-                          isOverlay
-                        />
-                      ) : null}
-                    </DragOverlay>,
-                    document.body
-                  )
-                : null}
-            </DndContext>
-          </div>
-
-          {pipelines.length === 0 && (
-            <div className="text-center py-12 text-muted-foreground">
-              <p className="text-sm">Nenhuma pipeline criada ainda.</p>
-              <p className="text-xs mt-1">Adicione uma pipeline usando o campo acima.</p>
-            </div>
-          )}
-        </div>
+        {content}
       </DialogContent>
     </Dialog>
   );
