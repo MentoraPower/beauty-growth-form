@@ -94,11 +94,26 @@ export function EmailAutomationsView({ pipelines, subOriginId }: EmailAutomation
       return;
     }
 
-    const emailSteps = steps.filter(s => s.type === "email");
-    const triggerStep = steps.find(s => s.type === "trigger");
-    const triggerPipelineId = triggerStep?.data?.triggerPipelineId || pipelines[0]?.id;
+    // Filter out _edges step for processing
+    const nodeSteps = steps.filter(s => s.type !== "_edges");
+    
+    const emailSteps = nodeSteps.filter(s => s.type === "email");
+    const triggerStep = nodeSteps.find(s => s.type === "trigger");
+    
+    // Get trigger pipeline from triggers array or legacy field
+    let triggerPipelineId = triggerStep?.data?.triggerPipelineId;
+    if (!triggerPipelineId && triggerStep?.data?.triggers?.length > 0) {
+      const firstPipelineTrigger = triggerStep.data.triggers.find((t: any) => t.pipelineId);
+      triggerPipelineId = firstPipelineTrigger?.pipelineId;
+    }
+    
+    // Use first pipeline as fallback
+    if (!triggerPipelineId && pipelines.length > 0) {
+      triggerPipelineId = pipelines[0].id;
+    }
 
     if (!triggerPipelineId) {
+      console.log("Auto-save skipped: no trigger pipeline");
       return;
     }
 
@@ -144,9 +159,10 @@ export function EmailAutomationsView({ pipelines, subOriginId }: EmailAutomation
       }
 
       lastSavedStepsRef.current = stepsJson;
-      console.log("Automação salva automaticamente");
+      console.log("Automação salva automaticamente", { automationId, triggerPipelineId });
     } catch (error) {
       console.error("Erro ao salvar automação:", error);
+      toast.error("Erro ao salvar automação");
     }
   }, [automationId, subOriginId, pipelines]);
 
