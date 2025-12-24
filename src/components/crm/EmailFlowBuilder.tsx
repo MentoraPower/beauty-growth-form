@@ -978,14 +978,15 @@ const EndNode = ({ data, id, selected }: NodeProps) => {
 
   return (
     <div className="relative">
-      <div className="px-5 py-2.5 rounded-full border border-border bg-card transition-all flex items-center gap-2">
-        <Handle
-          type="target"
-          position={Position.Left}
-          className="!w-3.5 !h-3.5 !bg-orange-500 !border-[3px] !border-white !shadow-sm"
-        />
-        <CheckCircle2 className="w-4 h-4 text-foreground" />
-        <span className="text-sm font-medium text-foreground">{data.label as string}</span>
+      <Handle
+        type="target"
+        position={Position.Left}
+        className="!w-3.5 !h-3.5 !bg-gray-600 !border-[3px] !border-white !shadow-sm !z-10"
+      />
+      
+      {/* Square card with rounded corners */}
+      <div className="w-20 h-20 bg-white border border-gray-300 transition-all rounded-2xl flex items-center justify-center shadow-sm">
+        <CheckCircle2 className="w-9 h-9 text-gray-600" />
       </div>
 
       {/* Action button - slide down from top */}
@@ -1092,7 +1093,7 @@ const CustomEdge = ({
             </DropdownMenuTrigger>
             <DropdownMenuContent align="center" className="w-40">
               <DropdownMenuItem onClick={() => data?.onAddNode?.(id, "wait")}>
-                <Clock className="w-4 h-4 mr-2 text-amber-500" />
+                <Pause className="w-4 h-4 mr-2 text-gray-600" />
                 Tempo de Espera
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => data?.onAddNode?.(id, "email")}>
@@ -1731,8 +1732,8 @@ export function EmailFlowBuilder({
             }}
             className="flex items-center gap-3 cursor-grab active:cursor-grabbing hover:bg-muted/50 rounded-xl p-2.5 transition-colors border border-border w-full"
           >
-            <div className="w-8 h-8 flex items-center justify-center rounded-full bg-amber-100 border border-amber-200 flex-shrink-0">
-              <Clock className="w-4 h-4" style={{ color: "#F97316" }} />
+            <div className="w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 border border-gray-200 flex-shrink-0">
+              <Pause className="w-4 h-4 text-gray-600" />
             </div>
             <span className="text-sm text-foreground">Espera</span>
           </div>
@@ -1776,8 +1777,8 @@ export function EmailFlowBuilder({
             }}
             className="flex items-center gap-3 cursor-grab active:cursor-grabbing hover:bg-muted/50 rounded-xl p-2.5 transition-colors border border-border w-full"
           >
-            <div className="w-8 h-8 flex items-center justify-center rounded-full bg-red-100 border border-red-200 flex-shrink-0">
-              <CheckCircle2 className="w-4 h-4" style={{ color: "#F40000" }} />
+            <div className="w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 border border-gray-200 flex-shrink-0">
+              <CheckCircle2 className="w-4 h-4 text-gray-600" />
             </div>
             <span className="text-sm text-foreground">Finalizar</span>
           </div>
@@ -1847,7 +1848,7 @@ export function EmailFlowBuilder({
                   onClick={() => addNodeFromConnection("wait")}
                   className="w-full px-3 py-2.5 text-left text-sm hover:bg-muted/50 transition-colors flex items-center gap-2"
                 >
-                  <Clock className="w-4 h-4" style={{ color: "#FBBF24" }} />
+                  <Pause className="w-4 h-4 text-gray-600" />
                   <span className="text-foreground">Tempo de Espera</span>
                 </button>
                 <button
@@ -1868,7 +1869,7 @@ export function EmailFlowBuilder({
                   onClick={() => addNodeFromConnection("end")}
                   className="w-full px-3 py-2.5 text-left text-sm hover:bg-muted/50 transition-colors flex items-center gap-2"
                 >
-                  <CheckCircle2 className="w-4 h-4" style={{ color: "#F40000" }} />
+                  <CheckCircle2 className="w-4 h-4 text-gray-600" />
                   <span className="text-foreground">Finalizar</span>
                 </button>
               </div>
