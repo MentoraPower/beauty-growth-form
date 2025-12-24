@@ -101,30 +101,19 @@ export const KanbanCard = memo(function KanbanCard({ lead, isDragging: isDraggin
       onClick={handleClick}
     >
       <CardContent className="p-4 space-y-2">
-        <div className="flex items-center justify-between gap-2">
-          <div className="flex items-center gap-2 min-w-0">
-            {lead.photo_url ? (
-              <img 
-                src={lead.photo_url} 
-                alt={lead.name} 
-                className="w-6 h-6 rounded-full object-cover flex-shrink-0"
-              />
-            ) : (
-              <div className="w-6 h-6 rounded-full bg-muted flex items-center justify-center flex-shrink-0">
-                <User className="w-3.5 h-3.5 text-muted-foreground" />
-              </div>
-            )}
-            <h3 className="font-semibold text-sm truncate">{lead.name}</h3>
-          </div>
-          {lead.is_mql !== null && (
-            <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded flex-shrink-0 ${
-              lead.is_mql 
-                ? "bg-emerald-100 text-emerald-700" 
-                : "bg-orange-100 text-orange-700"
-            }`}>
-              {lead.is_mql ? "MQL" : "Não MQL"}
-            </span>
+        <div className="flex items-center gap-2 min-w-0">
+          {lead.photo_url ? (
+            <img 
+              src={lead.photo_url} 
+              alt={lead.name} 
+              className="w-6 h-6 rounded-full object-cover flex-shrink-0"
+            />
+          ) : (
+            <div className="w-6 h-6 rounded-full bg-muted flex items-center justify-center flex-shrink-0">
+              <User className="w-3.5 h-3.5 text-muted-foreground" />
+            </div>
           )}
+          <h3 className="font-semibold text-sm truncate">{lead.name}</h3>
         </div>
         
         <div className="space-y-1 text-xs text-muted-foreground">
