@@ -20,6 +20,7 @@ import {
   useSensors,
   DragEndEvent,
   DragStartEvent,
+  DragOverEvent,
   DragOverlay,
   MeasuringStrategy,
 } from "@dnd-kit/core";
@@ -448,10 +449,8 @@ export function ListView({ pipelines, leadsByPipeline, subOriginId }: ListViewPr
     setActiveDragId(event.active.id as string);
   };
 
-  const handleDragEnd = async (event: DragEndEvent) => {
+  const handleDragOver = (event: DragOverEvent) => {
     const { active, over } = event;
-    setActiveDragId(null);
-
     if (!over || active.id === over.id) return;
 
     // Find which pipeline contains the dragged lead
@@ -469,20 +468,36 @@ export function ListView({ pipelines, leadsByPipeline, subOriginId }: ListViewPr
     const oldIndex = leads.findIndex(l => l.id === active.id);
     const newIndex = leads.findIndex(l => l.id === over.id);
 
-    if (oldIndex === -1 || newIndex === -1) return;
+    if (oldIndex === -1 || newIndex === -1 || oldIndex === newIndex) return;
 
+    // Reorder immediately during drag
     const newLeads = arrayMove(leads, oldIndex, newIndex);
-    
-    // Update local state immediately
     setLocalLeadsByPipeline(prev => {
       const next = new Map(prev);
       next.set(sourcePipelineId!, newLeads);
       return next;
     });
+  };
+
+  const handleDragEnd = async (event: DragEndEvent) => {
+    setActiveDragId(null);
+
+    // Find which pipeline contains the dragged lead
+    let sourcePipelineId: string | null = null;
+    for (const [pipelineId, leads] of localLeadsByPipeline.entries()) {
+      if (leads.some(l => l.id === event.active.id)) {
+        sourcePipelineId = pipelineId;
+        break;
+      }
+    }
+
+    if (!sourcePipelineId) return;
+
+    const currentLeads = localLeadsByPipeline.get(sourcePipelineId) || [];
 
     // Update ordem in database
     try {
-      const updates = newLeads.map((lead, index) => ({
+      const updates = currentLeads.map((lead, index) => ({
         id: lead.id,
         ordem: index,
       }));
@@ -574,6 +589,7 @@ export function ListView({ pipelines, leadsByPipeline, subOriginId }: ListViewPr
                       sensors={sensors}
                       collisionDetection={closestCenter}
                       onDragStart={handleDragStart}
+                      onDragOver={handleDragOver}
                       onDragEnd={handleDragEnd}
                       measuring={measuring}
                     >
