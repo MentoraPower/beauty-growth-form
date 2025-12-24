@@ -1,7 +1,7 @@
 import { useState, useEffect, lazy, Suspense, useCallback, useRef } from "react";
 import { Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Pipeline } from "@/types/crm";
 
@@ -27,35 +27,57 @@ interface EmailAutomationsViewProps {
 }
 
 export function EmailAutomationsView({ pipelines, subOriginId }: EmailAutomationsViewProps) {
+  const queryClient = useQueryClient();
   const [automationId, setAutomationId] = useState<string | null>(null);
+  const [localAutomation, setLocalAutomation] = useState<EmailAutomation | null>(null);
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const lastSavedStepsRef = useRef<string>("");
   const didHydrateRef = useRef(false);
   const ignoreNextAutosaveRef = useRef(true);
   const lastKnownTriggerPipelineIdRef = useRef<string | null>(null);
+  const currentSubOriginRef = useRef<string | null>(null);
 
   // Reset local state when switching sub-origin
   useEffect(() => {
+    // Only reset if subOriginId actually changed
+    if (currentSubOriginRef.current === subOriginId) return;
+    
+    console.log("Switching sub-origin from", currentSubOriginRef.current, "to", subOriginId);
+    currentSubOriginRef.current = subOriginId;
+    
+    // Reset all refs
     didHydrateRef.current = false;
     ignoreNextAutosaveRef.current = true;
     lastSavedStepsRef.current = "";
     lastKnownTriggerPipelineIdRef.current = null;
+    
+    // Reset state
     setAutomationId(null);
+    setLocalAutomation(null);
 
+    // Clear any pending save
     if (saveTimeoutRef.current) {
       clearTimeout(saveTimeoutRef.current);
       saveTimeoutRef.current = null;
     }
-  }, [subOriginId]);
+    
+    // Invalidate the query cache for the previous origin
+    queryClient.invalidateQueries({ queryKey: ["email-automation-single"] });
+  }, [subOriginId, queryClient]);
 
   // Fetch existing automation for this sub_origin
   const { data: existingAutomation, isLoading, refetch } = useQuery({
     queryKey: ["email-automation-single", subOriginId],
     enabled: !!subOriginId,
+    staleTime: 0, // Always consider data stale
+    gcTime: 0, // Don't cache (previously cacheTime)
+    refetchOnMount: "always",
     queryFn: async () => {
       if (!subOriginId) return null;
 
-      const { data, error } = await (supabase as any)
+      console.log("Fetching automation for sub_origin:", subOriginId);
+      
+      const { data, error } = await supabase
         .from("email_automations")
         .select("*")
         .eq("sub_origin_id", subOriginId)
@@ -68,9 +90,59 @@ export function EmailAutomationsView({ pipelines, subOriginId }: EmailAutomation
         return null;
       }
 
+      console.log("Fetched automation:", data?.id, "for sub_origin:", subOriginId);
       return data as EmailAutomation | null;
     },
   });
+
+  // Real-time subscription for automation changes
+  useEffect(() => {
+    if (!subOriginId) return;
+
+    console.log("Setting up realtime subscription for sub_origin:", subOriginId);
+    
+    const channel = supabase
+      .channel(`email-automations-${subOriginId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'email_automations',
+          filter: `sub_origin_id=eq.${subOriginId}`,
+        },
+        (payload) => {
+          console.log("Realtime update received:", payload.eventType, payload.new);
+          
+          if (payload.eventType === 'INSERT' || payload.eventType === 'UPDATE') {
+            const newData = payload.new as EmailAutomation;
+            // Only update if it's for our current sub_origin
+            if (newData.sub_origin_id === subOriginId) {
+              setLocalAutomation(newData);
+              if (newData.id && !automationId) {
+                setAutomationId(newData.id);
+              }
+            }
+          } else if (payload.eventType === 'DELETE') {
+            setLocalAutomation(null);
+            setAutomationId(null);
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      console.log("Cleaning up realtime subscription for sub_origin:", subOriginId);
+      supabase.removeChannel(channel);
+    };
+  }, [subOriginId, automationId]);
+
+  // Sync local state with fetched data
+  useEffect(() => {
+    if (existingAutomation && existingAutomation.sub_origin_id === subOriginId) {
+      setLocalAutomation(existingAutomation);
+    }
+  }, [existingAutomation, subOriginId]);
 
   // Fetch pending emails count
   const { data: pendingCount = 0 } = useQuery({
@@ -94,8 +166,15 @@ export function EmailAutomationsView({ pipelines, subOriginId }: EmailAutomation
   // Hydrate refs when data loads (prevents overwriting on mount)
   useEffect(() => {
     if (didHydrateRef.current) return;
+    if (!localAutomation) return;
+    
+    // Ensure this automation is for the current sub_origin
+    if (localAutomation.sub_origin_id !== subOriginId) {
+      console.log("Skipping hydration: automation sub_origin mismatch", localAutomation.sub_origin_id, "vs", subOriginId);
+      return;
+    }
 
-    const flowSteps = existingAutomation?.flow_steps || [];
+    const flowSteps = localAutomation.flow_steps || [];
     
     // Create a clean version for comparison (without functions)
     const cleanSteps = flowSteps.map((s: any) => ({
@@ -108,15 +187,16 @@ export function EmailAutomationsView({ pipelines, subOriginId }: EmailAutomation
     }));
     
     lastSavedStepsRef.current = JSON.stringify(cleanSteps);
-    lastKnownTriggerPipelineIdRef.current = existingAutomation?.trigger_pipeline_id || null;
+    lastKnownTriggerPipelineIdRef.current = localAutomation.trigger_pipeline_id || null;
     ignoreNextAutosaveRef.current = true;
 
-    if (existingAutomation?.id) {
-      setAutomationId(existingAutomation.id);
+    if (localAutomation.id) {
+      setAutomationId(localAutomation.id);
     }
 
     didHydrateRef.current = true;
-  }, [existingAutomation]);
+    console.log("Hydrated automation:", localAutomation.id, "for sub_origin:", subOriginId);
+  }, [localAutomation, subOriginId]);
 
   const getPipelineName = useCallback(
     (pipelineId: string) => {
@@ -129,6 +209,12 @@ export function EmailAutomationsView({ pipelines, subOriginId }: EmailAutomation
   const autoSave = useCallback(async (steps: any[]) => {
     if (!didHydrateRef.current) {
       console.log("Auto-save skipped: not hydrated yet");
+      return;
+    }
+    
+    // Verify we're saving for the correct sub_origin
+    if (currentSubOriginRef.current !== subOriginId) {
+      console.log("Auto-save skipped: sub_origin changed during save");
       return;
     }
 
@@ -157,7 +243,7 @@ export function EmailAutomationsView({ pipelines, subOriginId }: EmailAutomation
       return;
     }
     
-    console.log("Auto-save: changes detected, saving...");
+    console.log("Auto-save: changes detected, saving for sub_origin:", subOriginId);
 
     // Filter out _edges step for processing
     const nodeSteps = steps.filter((s) => s.type !== "_edges");
@@ -194,7 +280,7 @@ export function EmailAutomationsView({ pipelines, subOriginId }: EmailAutomation
     try {
       if (automationId) {
         // Update existing
-        const { error } = await (supabase as any)
+        const { error } = await supabase
           .from("email_automations")
           .update({
             trigger_pipeline_id: triggerPipelineId,
@@ -207,7 +293,7 @@ export function EmailAutomationsView({ pipelines, subOriginId }: EmailAutomation
         if (error) throw error;
       } else {
         // Create new
-        const { data, error } = await (supabase as any)
+        const { data, error } = await supabase
           .from("email_automations")
           .insert({
             name: "Automação de Email",
@@ -230,7 +316,7 @@ export function EmailAutomationsView({ pipelines, subOriginId }: EmailAutomation
 
       lastSavedStepsRef.current = stepsJson;
       lastKnownTriggerPipelineIdRef.current = triggerPipelineId;
-      console.log("Automação salva automaticamente", { automationId, triggerPipelineId });
+      console.log("Automação salva automaticamente", { automationId, triggerPipelineId, subOriginId });
     } catch (error) {
       console.error("Erro ao salvar automação:", error);
       toast.error("Erro ao salvar automação");
@@ -275,6 +361,12 @@ export function EmailAutomationsView({ pipelines, subOriginId }: EmailAutomation
     );
   }
 
+  // Use a key to force remount when switching origins
+  const flowBuilderKey = `flow-builder-${subOriginId || 'none'}`;
+  
+  // Get the automation data to display (prefer localAutomation which has realtime updates)
+  const displayAutomation = localAutomation?.sub_origin_id === subOriginId ? localAutomation : null;
+
   // Always show flow builder directly
   return (
     <Suspense fallback={
@@ -283,12 +375,13 @@ export function EmailAutomationsView({ pipelines, subOriginId }: EmailAutomation
       </div>
     }>
       <EmailFlowBuilder
-        automationName={existingAutomation?.name || "Automação de Email"}
-        triggerPipelineName={existingAutomation ? getPipelineName(existingAutomation.trigger_pipeline_id) : (pipelines[0]?.nome || "")}
+        key={flowBuilderKey}
+        automationName={displayAutomation?.name || "Automação de Email"}
+        triggerPipelineName={displayAutomation ? getPipelineName(displayAutomation.trigger_pipeline_id) : (pipelines[0]?.nome || "")}
         onSave={handleManualSave}
         onCancel={() => {}} // No cancel needed since it's always open
         onChange={handleSaveFlow}
-        initialSteps={existingAutomation?.flow_steps || undefined}
+        initialSteps={displayAutomation?.flow_steps || undefined}
         pipelines={pipelines}
         subOriginId={subOriginId}
         automationId={automationId || undefined}
