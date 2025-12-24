@@ -86,11 +86,28 @@ export default {
           from: { transform: "rotate(0deg)" },
           to: { transform: "rotate(360deg)" },
         },
+        "loading-progress": {
+          "0%": { 
+            transform: "translateX(-100%)",
+            opacity: "0"
+          },
+          "10%": { 
+            opacity: "1"
+          },
+          "90%": { 
+            opacity: "1"
+          },
+          "100%": { 
+            transform: "translateX(100%)",
+            opacity: "0"
+          },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
         "spin-slow": "spin-slow 20s linear infinite",
+        "loading-progress": "loading-progress 1.5s cubic-bezier(0.4, 0, 0.2, 1) infinite",
       },
     },
   },
