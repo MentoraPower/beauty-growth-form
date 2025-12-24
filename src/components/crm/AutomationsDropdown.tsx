@@ -1144,6 +1144,203 @@ export function AutomationsDropdown({
                 </Button>
               </div>
 
+              {/* Create automation flow */}
+              {isCreatingAutomation && (
+                <div className="mb-6 p-5 rounded-xl bg-muted/50 border border-border">
+                  <div className="flex items-center justify-between mb-4">
+                    <span className="text-sm font-medium text-foreground">
+                      {editingAutomationId ? "Editar automação" : "Nova automação"}
+                    </span>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground"
+                      onClick={resetAutomationForm}
+                    >
+                      <X className="w-4 h-4" />
+                    </Button>
+                  </div>
+
+                  {/* Two-column layout: Trigger -> Action */}
+                  <div className="flex items-stretch gap-3">
+                    {/* Trigger Column */}
+                    <div className="flex-1">
+                      <div className="rounded-lg bg-background border border-border h-full">
+                        <div className="flex items-center gap-2 p-3 border-b border-border">
+                          <span className="text-foreground text-sm font-medium">Quando</span>
+                        </div>
+
+                        <div className="p-3 space-y-2">
+                          {/* Trigger type selector */}
+                          <Select
+                            value={selectedTriggerType}
+                            onValueChange={(v) => {
+                              setSelectedTriggerType(v);
+                              setSelectedTriggerPipeline("");
+                            }}
+                          >
+                            <SelectTrigger className="h-9 text-sm">
+                              <SelectValue placeholder="Selecione o gatilho..." />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="lead_moved">
+                                <div className="flex items-center gap-2">
+                                  <ArrowRight className="h-4 w-4" />
+                                  Lead movido para pipeline
+                                </div>
+                              </SelectItem>
+                              <SelectItem value="onboarding_completed">
+                                <div className="flex items-center gap-2">
+                                  <ClipboardCheck className="h-4 w-4" />
+                                  Onboarding preenchido
+                                </div>
+                              </SelectItem>
+                              <SelectItem value="grupo_entrada">
+                                <div className="flex items-center gap-2">
+                                  <UserPlus className="h-4 w-4" />
+                                  Entrou no grupo
+                                </div>
+                              </SelectItem>
+                              <SelectItem value="grupo_saida">
+                                <div className="flex items-center gap-2">
+                                  <UserMinus className="h-4 w-4" />
+                                  Saiu do grupo
+                                </div>
+                              </SelectItem>
+                            </SelectContent>
+                          </Select>
+
+                          {/* Pipeline selector - only for lead_moved */}
+                          {selectedTriggerType === "lead_moved" && (
+                            <Select value={selectedTriggerPipeline} onValueChange={setSelectedTriggerPipeline}>
+                              <SelectTrigger className="h-9 text-sm">
+                                <SelectValue placeholder="Selecione a pipeline..." />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {pipelines.map((pipeline) => (
+                                  <SelectItem key={pipeline.id} value={pipeline.id}>
+                                    {pipeline.nome}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Arrow */}
+                    <div className="flex items-center justify-center">
+                      <div className="w-8 h-8 rounded-full bg-muted border border-border flex items-center justify-center">
+                        <ArrowRight className="w-4 h-4 text-muted-foreground" />
+                      </div>
+                    </div>
+
+                    {/* Action Column */}
+                    <div className="flex-1">
+                      <div className="rounded-lg bg-background border border-border h-full">
+                        <div className="flex items-center gap-2 p-3 border-b border-border">
+                          <span className="text-foreground text-sm font-medium">Então</span>
+                        </div>
+
+                        <div className="p-3 space-y-2">
+                          <Select
+                            value={selectedActionOrigin}
+                            onValueChange={(v) => {
+                              setSelectedActionOrigin(v);
+                              setSelectedActionSubOrigin("");
+                              setSelectedActionPipeline("");
+                            }}
+                          >
+                            <SelectTrigger className="h-9 text-sm">
+                              <SelectValue placeholder="Origem..." />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {origins.map((origin) => (
+                                <SelectItem key={origin.id} value={origin.id}>
+                                  {origin.nome}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+
+                          <Select
+                            value={selectedActionSubOrigin}
+                            onValueChange={(v) => {
+                              setSelectedActionSubOrigin(v);
+                              setSelectedActionPipeline("");
+                            }}
+                            disabled={!selectedActionOrigin}
+                          >
+                            <SelectTrigger className="h-9 text-sm disabled:opacity-50">
+                              <SelectValue placeholder="Sub-origem..." />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {subOrigins
+                                .filter((s) => s.origin_id === selectedActionOrigin)
+                                .map((subOrigin) => (
+                                  <SelectItem key={subOrigin.id} value={subOrigin.id}>
+                                    {subOrigin.nome}
+                                  </SelectItem>
+                                ))}
+                            </SelectContent>
+                          </Select>
+
+                          <Select
+                            value={selectedActionPipeline}
+                            onValueChange={setSelectedActionPipeline}
+                            disabled={!selectedActionSubOrigin}
+                          >
+                            <SelectTrigger className="h-9 text-sm disabled:opacity-50">
+                              <SelectValue placeholder="Pipeline..." />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {getTargetPipelines(selectedActionSubOrigin).map((pipeline) => (
+                                <SelectItem key={pipeline.id} value={pipeline.id}>
+                                  {pipeline.nome}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Footer */}
+                  <div className="flex items-center justify-between mt-4 pt-4 border-t border-border">
+                    <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                      <span>Quando</span>
+                      <span className="px-1.5 py-0.5 bg-muted rounded text-foreground text-xs">
+                        {selectedTriggerType === "onboarding_completed"
+                          ? "Onboarding preenchido"
+                          : selectedTriggerType === "grupo_entrada"
+                            ? "Entrou no grupo"
+                            : selectedTriggerType === "grupo_saida"
+                              ? "Saiu do grupo"
+                              : selectedTriggerPipeline
+                                ? `Movido para ${getPipelineName(selectedTriggerPipeline)}`
+                                : "..."}
+                      </span>
+                      <ArrowRight className="w-3 h-3" />
+                      <span className="px-1.5 py-0.5 bg-muted rounded text-foreground text-xs">
+                        {selectedActionPipeline
+                          ? `${getOriginName(selectedActionOrigin)} / ${getSubOriginName(selectedActionSubOrigin)} / ${getPipelineName(selectedActionPipeline, allPipelines)}`
+                          : "..."}
+                      </span>
+                    </div>
+                    <Button
+                      size="sm"
+                      onClick={editingAutomationId ? saveAutomationEdit : createAutomation}
+                      className="h-8 bg-foreground hover:bg-foreground/90 text-background text-xs"
+                      disabled={selectedTriggerType === "lead_moved" && !selectedTriggerPipeline}
+                    >
+                      {editingAutomationId ? "Salvar" : "Criar"}
+                    </Button>
+                  </div>
+                </div>
+              )}
+
               {/* Automations list - simplified for embedded view */}
               {automations.length === 0 && !isCreatingAutomation ? (
                 <div className="text-center py-12 text-muted-foreground">
@@ -1173,10 +1370,12 @@ export function AutomationsDropdown({
                               automation.is_active ? "bg-emerald-500" : "bg-muted"
                             )}
                           >
-                            <span className={cn(
-                              "absolute top-0.5 w-4 h-4 rounded-full bg-white shadow-sm transition-transform",
-                              automation.is_active ? "left-[22px]" : "left-0.5"
-                            )} />
+                            <span
+                              className={cn(
+                                "absolute top-0.5 w-4 h-4 rounded-full bg-white shadow-sm transition-transform",
+                                automation.is_active ? "left-[22px]" : "left-0.5"
+                              )}
+                            />
                           </button>
                           <button
                             onClick={() => deleteAutomation(automation.id)}
@@ -1214,6 +1413,161 @@ export function AutomationsDropdown({
                 </Button>
               </div>
 
+              {/* Create webhook form */}
+              {isCreatingWebhook && (
+                <div className="mb-6 p-5 rounded-xl bg-muted/50 border border-border space-y-4">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium text-foreground">Novo Webhook</span>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground"
+                      onClick={resetWebhookForm}
+                    >
+                      <X className="w-4 h-4" />
+                    </Button>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <Input
+                      placeholder="Nome do webhook..."
+                      value={webhookName}
+                      onChange={(e) => setWebhookName(e.target.value)}
+                      className="h-10"
+                    />
+                    <Select value={webhookType} onValueChange={(v: "receive" | "send") => setWebhookType(v)}>
+                      <SelectTrigger className="h-10">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="receive">Receber</SelectItem>
+                        <SelectItem value="send">Enviar</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {webhookType === "send" && (
+                    <>
+                      <Input
+                        placeholder="URL de destino..."
+                        value={webhookUrl}
+                        onChange={(e) => setWebhookUrl(e.target.value)}
+                        className="h-10"
+                      />
+                      <Select
+                        value={webhookTrigger}
+                        onValueChange={(v) => {
+                          setWebhookTrigger(v);
+                          setWebhookTriggerPipelineId("");
+                        }}
+                      >
+                        <SelectTrigger className="h-10">
+                          <SelectValue placeholder="Selecione o gatilho..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="lead_created">Lead criado</SelectItem>
+                          <SelectItem value="lead_moved">Lead movido para pipeline</SelectItem>
+                          <SelectItem value="lead_updated">Lead atualizado</SelectItem>
+                          <SelectItem value="lead_deleted">Lead excluído</SelectItem>
+                        </SelectContent>
+                      </Select>
+
+                      {webhookTrigger === "lead_moved" && (
+                        <Select value={webhookTriggerPipelineId} onValueChange={setWebhookTriggerPipelineId}>
+                          <SelectTrigger className="h-10">
+                            <SelectValue placeholder="Selecione a pipeline..." />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {getSendTriggerPipelines().map((pipeline) => (
+                              <SelectItem key={pipeline.id} value={pipeline.id}>
+                                {pipeline.nome}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      )}
+                    </>
+                  )}
+
+                  <Select
+                    value={webhookScope}
+                    onValueChange={(v: "all" | "origin" | "sub_origin") => {
+                      setWebhookScope(v);
+                      setWebhookOriginId("");
+                      setWebhookSubOriginId("");
+                    }}
+                  >
+                    <SelectTrigger className="h-10">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Todas as origens</SelectItem>
+                      <SelectItem value="origin">Origem específica</SelectItem>
+                      <SelectItem value="sub_origin">Sub-origem específica</SelectItem>
+                    </SelectContent>
+                  </Select>
+
+                  {webhookScope === "origin" && (
+                    <Select value={webhookOriginId} onValueChange={setWebhookOriginId}>
+                      <SelectTrigger className="h-10">
+                        <SelectValue placeholder="Selecione a origem..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {origins.map((origin) => (
+                          <SelectItem key={origin.id} value={origin.id}>
+                            {origin.nome}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+
+                  {webhookScope === "sub_origin" && (
+                    <Select value={webhookSubOriginId} onValueChange={setWebhookSubOriginId}>
+                      <SelectTrigger className="h-10">
+                        <SelectValue placeholder="Selecione a sub-origem..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {subOrigins.map((subOrigin) => {
+                          const origin = origins.find((o) => o.id === subOrigin.origin_id);
+                          return (
+                            <SelectItem key={subOrigin.id} value={subOrigin.id}>
+                              {origin?.nome} / {subOrigin.nome}
+                            </SelectItem>
+                          );
+                        })}
+                      </SelectContent>
+                    </Select>
+                  )}
+
+                  {webhookType === "receive" && (
+                    <div className="p-3 rounded-lg bg-muted/50 border border-border">
+                      <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider block mb-2">
+                        URL gerada
+                      </span>
+                      <div className="flex gap-2">
+                        <Input value={getGeneratedWebhookUrl()} readOnly className="flex-1 h-9 text-xs font-mono" />
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="h-9 px-3"
+                          onClick={() => copyWebhookUrl(getGeneratedWebhookUrl())}
+                        >
+                          {copied ? <Check className="w-4 h-4 text-green-600" /> : <Copy className="w-4 h-4" />}
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+
+                  <Button
+                    className="w-full h-10 bg-foreground hover:bg-foreground/90 text-background"
+                    onClick={createWebhook}
+                  >
+                    Salvar Webhook
+                  </Button>
+                </div>
+              )}
+
               {webhooks.length === 0 && !isCreatingWebhook ? (
                 <div className="text-center py-12 text-muted-foreground">
                   <p>Nenhum webhook configurado</p>
@@ -1239,10 +1593,12 @@ export function AutomationsDropdown({
                               webhook.is_active ? "bg-emerald-500" : "bg-muted"
                             )}
                           >
-                            <span className={cn(
-                              "absolute top-0.5 w-4 h-4 rounded-full bg-white shadow-sm transition-transform",
-                              webhook.is_active ? "left-[22px]" : "left-0.5"
-                            )} />
+                            <span
+                              className={cn(
+                                "absolute top-0.5 w-4 h-4 rounded-full bg-white shadow-sm transition-transform",
+                                webhook.is_active ? "left-[22px]" : "left-0.5"
+                              )}
+                            />
                           </button>
                           <button
                             onClick={() => deleteWebhook(webhook.id)}
