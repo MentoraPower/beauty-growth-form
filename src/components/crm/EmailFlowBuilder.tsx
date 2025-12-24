@@ -684,10 +684,10 @@ const EmailNode = ({ id, data, selected }: NodeProps) => {
         className="!w-2.5 !h-2.5 !bg-foreground !border-2 !border-background !z-10"
       />
       <div className="w-[320px] border border-border bg-background shadow-sm transition-all rounded-lg overflow-hidden">
-        {/* Red gradient header with Gmail logo */}
+        {/* Orange gradient header with Gmail logo */}
         <div 
           className="px-4 py-2.5 flex items-center justify-between cursor-pointer hover:opacity-90 transition-opacity"
-          style={{ background: "linear-gradient(135deg, #F40000 0%, #A10000 100%)" }}
+          style={{ background: "linear-gradient(135deg, #F97316 0%, #EA580C 100%)" }}
           onClick={handleOpen}
         >
           <div className="flex items-center gap-3">
@@ -1093,8 +1093,8 @@ const CustomEdge = ({
           x2={targetX}
           y2={targetY}
         >
-          <stop offset="0%" stopColor="#EA580C" />
-          <stop offset="100%" stopColor="#9A3412" />
+          <stop offset="0%" stopColor="#F97316" />
+          <stop offset="100%" stopColor="#EA580C" />
         </linearGradient>
       </defs>
       <path
