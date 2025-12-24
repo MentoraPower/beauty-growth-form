@@ -1052,12 +1052,20 @@ const CustomEdge = ({
   targetPosition,
   data,
 }: CustomEdgeProps) => {
-  // Check if line is nearly straight (within 5px tolerance)
-  const isNearlyStraight = Math.abs(sourceY - targetY) < 5;
+  // Check if line is nearly straight (within 20px tolerance for easier alignment)
+  const isNearlyStraight = Math.abs(sourceY - targetY) < 20;
+  
+  // For nearly straight lines, force Y coordinates to match for perfectly straight rendering
+  const adjustedTargetY = isNearlyStraight ? sourceY : targetY;
   
   // Use straight path for aligned nodes, bezier for others
   const [edgePath, labelX, labelY] = isNearlyStraight
-    ? getStraightPath({ sourceX, sourceY, targetX, targetY })
+    ? getStraightPath({ 
+        sourceX, 
+        sourceY, 
+        targetX, 
+        targetY: adjustedTargetY 
+      })
     : getBezierPath({
         sourceX,
         sourceY,
@@ -1071,10 +1079,10 @@ const CustomEdge = ({
   const gradientId = `edge-gradient-${id}`.replace(/[^a-zA-Z0-9_-]/g, "_");
 
   // Always use a valid path - straight line as ultimate fallback
-  const finalPath = edgePath || `M ${sourceX} ${sourceY} L ${targetX} ${targetY}`;
+  const finalPath = edgePath || `M ${sourceX} ${sourceY} L ${targetX} ${adjustedTargetY}`;
 
   const safeLabelX = Number.isFinite(labelX) ? labelX : (sourceX + targetX) / 2;
-  const safeLabelY = Number.isFinite(labelY) ? labelY : (sourceY + targetY) / 2;
+  const safeLabelY = Number.isFinite(labelY) ? labelY : (sourceY + adjustedTargetY) / 2;
 
   return (
     <>
