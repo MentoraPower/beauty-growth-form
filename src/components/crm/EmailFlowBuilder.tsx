@@ -1741,64 +1741,67 @@ export function EmailFlowBuilder({
 
       <div className="flex flex-1 min-h-0">
         {/* Left Sidebar */}
-        <div className="border-r border-border bg-background p-4 flex flex-col gap-4">
-          <div className="bg-muted/30 rounded-xl p-3 flex flex-col gap-2" style={{ border: "1px solid #00000015" }}>
-            <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider text-center">Ações</span>
-            {/* Wait Node - Yellow icon */}
-            <div
-              draggable
-              onDragStart={(e) => {
-                e.dataTransfer.setData("application/reactflow", "wait");
-                e.dataTransfer.effectAllowed = "move";
-              }}
-              className="w-10 h-10 flex items-center justify-center rounded-lg bg-muted/50 cursor-grab active:cursor-grabbing hover:scale-105 transition-transform"
-              style={{ border: "1px solid #00000015" }}
-              title="Tempo de Espera"
-            >
-              <Clock className="w-5 h-5" style={{ color: "#FBBF24" }} />
+        <div className="border-r border-border bg-background p-4 flex flex-col gap-3 w-44">
+          <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">Ações</span>
+          
+          {/* Wait Node */}
+          <div
+            draggable
+            onDragStart={(e) => {
+              e.dataTransfer.setData("application/reactflow", "wait");
+              e.dataTransfer.effectAllowed = "move";
+            }}
+            className="flex items-center gap-3 cursor-grab active:cursor-grabbing hover:bg-muted/50 rounded-lg p-2 transition-colors"
+          >
+            <div className="w-9 h-9 flex items-center justify-center rounded-full bg-amber-100 border border-amber-200">
+              <Clock className="w-4 h-4" style={{ color: "#F97316" }} />
             </div>
+            <span className="text-sm text-foreground">Espera</span>
+          </div>
 
-            {/* Email Node - White icon */}
-            <div
-              draggable
-              onDragStart={(e) => {
-                e.dataTransfer.setData("application/reactflow", "email");
-                e.dataTransfer.effectAllowed = "move";
-              }}
-              className="w-10 h-10 flex items-center justify-center rounded-lg bg-muted/50 cursor-grab active:cursor-grabbing hover:scale-105 transition-transform"
-              style={{ border: "1px solid #00000015" }}
-              title="Enviar E-mail"
-            >
-              <Mail className="w-5 h-5 text-foreground" />
+          {/* Email Node */}
+          <div
+            draggable
+            onDragStart={(e) => {
+              e.dataTransfer.setData("application/reactflow", "email");
+              e.dataTransfer.effectAllowed = "move";
+            }}
+            className="flex items-center gap-3 cursor-grab active:cursor-grabbing hover:bg-muted/50 rounded-lg p-2 transition-colors"
+          >
+            <div className="w-9 h-9 flex items-center justify-center rounded-full bg-gray-100 border border-gray-200">
+              <Mail className="w-4 h-4 text-foreground" />
             </div>
+            <span className="text-sm text-foreground">E-mail</span>
+          </div>
 
-            {/* WhatsApp Node - Green icon */}
-            <div
-              draggable
-              onDragStart={(e) => {
-                e.dataTransfer.setData("application/reactflow", "whatsapp");
-                e.dataTransfer.effectAllowed = "move";
-              }}
-              className="w-10 h-10 flex items-center justify-center rounded-lg bg-muted/50 cursor-grab active:cursor-grabbing hover:scale-105 transition-transform"
-              style={{ border: "1px solid #00000015" }}
-              title="Enviar WhatsApp"
-            >
-              <WhatsAppIcon className="w-5 h-5" />
+          {/* WhatsApp Node */}
+          <div
+            draggable
+            onDragStart={(e) => {
+              e.dataTransfer.setData("application/reactflow", "whatsapp");
+              e.dataTransfer.effectAllowed = "move";
+            }}
+            className="flex items-center gap-3 cursor-grab active:cursor-grabbing hover:bg-muted/50 rounded-lg p-2 transition-colors"
+          >
+            <div className="w-9 h-9 flex items-center justify-center rounded-full bg-green-100 border border-green-200">
+              <WhatsAppIcon className="w-4 h-4" />
             </div>
+            <span className="text-sm text-foreground">WhatsApp</span>
+          </div>
 
-            {/* End Node - Red icon */}
-            <div
-              draggable
-              onDragStart={(e) => {
-                e.dataTransfer.setData("application/reactflow", "end");
-                e.dataTransfer.effectAllowed = "move";
-              }}
-              className="w-10 h-10 flex items-center justify-center rounded-lg bg-muted/50 cursor-grab active:cursor-grabbing hover:scale-105 transition-transform"
-              style={{ border: "1px solid #00000015" }}
-              title="Finalizar"
-            >
-              <CheckCircle2 className="w-5 h-5" style={{ color: "#F40000" }} />
+          {/* End Node */}
+          <div
+            draggable
+            onDragStart={(e) => {
+              e.dataTransfer.setData("application/reactflow", "end");
+              e.dataTransfer.effectAllowed = "move";
+            }}
+            className="flex items-center gap-3 cursor-grab active:cursor-grabbing hover:bg-muted/50 rounded-lg p-2 transition-colors"
+          >
+            <div className="w-9 h-9 flex items-center justify-center rounded-full bg-red-100 border border-red-200">
+              <CheckCircle2 className="w-4 h-4" style={{ color: "#F40000" }} />
             </div>
+            <span className="text-sm text-foreground">Finalizar</span>
           </div>
         </div>
 
