@@ -70,6 +70,14 @@ interface SavedEdge {
   targetHandle?: string | null;
 }
 
+interface WhatsAppAccount {
+  id: string;
+  name: string;
+  phone_number?: string;
+  status: string;
+  api_key?: string;
+}
+
 interface EmailFlowStep {
   id: string;
   type: "trigger" | "start" | "wait" | "email" | "whatsapp" | "end" | "entry" | "_edges";
@@ -81,6 +89,7 @@ interface EmailFlowStep {
     subject?: string;
     bodyHtml?: string;
     whatsappMessage?: string;
+    whatsappAccountId?: string;
     triggers?: TriggerItem[];
     // Legacy support
     triggerType?: string;
@@ -770,13 +779,42 @@ const EmailNode = ({ id, data, selected }: NodeProps) => {
   );
 };
 
-// WhatsApp Node Component - Similar to Email Node
+// WhatsApp Node Component - With account selection and orange gradient
 const WhatsAppNode = ({ id, data, selected }: NodeProps) => {
   const { setNodes, setEdges } = useReactFlow();
   const [isEditing, setIsEditing] = useState(false);
   const [localMessage, setLocalMessage] = useState((data.whatsappMessage as string) || "");
+  const [localAccountId, setLocalAccountId] = useState((data.whatsappAccountId as string) || "");
+  const [accounts, setAccounts] = useState<WhatsAppAccount[]>([]);
+  const [isLoadingAccounts, setIsLoadingAccounts] = useState(false);
   
   const message = (data.whatsappMessage as string) || "";
+  const accountId = (data.whatsappAccountId as string) || "";
+
+  // Fetch WhatsApp accounts on mount
+  useEffect(() => {
+    const fetchAccounts = async () => {
+      setIsLoadingAccounts(true);
+      try {
+        const { supabase } = await import("@/integrations/supabase/client");
+        const { data: result } = await supabase.functions.invoke("wasender-whatsapp", {
+          body: { action: "list-sessions" },
+        });
+        if (result?.success && Array.isArray(result.data)) {
+          setAccounts(result.data);
+        }
+      } catch (error) {
+        console.error("Error fetching WhatsApp accounts:", error);
+      } finally {
+        setIsLoadingAccounts(false);
+      }
+    };
+    fetchAccounts();
+  }, []);
+
+  // Get selected account name
+  const selectedAccount = accounts.find(acc => acc.id === accountId || acc.api_key === accountId);
+  const accountLabel = selectedAccount ? (selectedAccount.name || selectedAccount.phone_number || "Conta conectada") : "";
 
   // Auto-save on change while editing
   useEffect(() => {
@@ -786,17 +824,18 @@ const WhatsAppNode = ({ id, data, selected }: NodeProps) => {
       setNodes((nds) =>
         nds.map((node) =>
           node.id === id
-            ? { ...node, data: { ...node.data, whatsappMessage: localMessage } }
+            ? { ...node, data: { ...node.data, whatsappMessage: localMessage, whatsappAccountId: localAccountId } }
             : node
         )
       );
     }, 300);
 
     return () => clearTimeout(timeout);
-  }, [localMessage, isEditing, id, setNodes]);
+  }, [localMessage, localAccountId, isEditing, id, setNodes]);
 
   const handleOpen = () => {
     setLocalMessage(message);
+    setLocalAccountId(accountId);
     setIsEditing(true);
   };
 
@@ -833,10 +872,10 @@ const WhatsAppNode = ({ id, data, selected }: NodeProps) => {
           position={Position.Left}
           className="!w-2.5 !h-2.5 !bg-foreground !border-2 !border-background"
         />
-        {/* Green header */}
+        {/* Orange gradient header */}
         <div 
           className="px-4 py-2.5 flex items-center justify-between cursor-pointer hover:opacity-90 transition-opacity"
-          style={{ background: "linear-gradient(135deg, #25D366 0%, #128C7E 100%)" }}
+          style={{ background: "linear-gradient(135deg, #F97316 0%, #EA580C 100%)" }}
           onClick={handleOpen}
         >
           <div className="flex items-center gap-3">
@@ -845,7 +884,7 @@ const WhatsAppNode = ({ id, data, selected }: NodeProps) => {
             </div>
             <div>
               <span className="text-xs font-semibold text-white uppercase tracking-wide block">WhatsApp</span>
-              {message && <span className="text-[11px] text-white/80 truncate block max-w-[180px]">{message.substring(0, 30)}...</span>}
+              {accountLabel && <span className="text-[11px] text-white/80 truncate block max-w-[180px]">{accountLabel}</span>}
             </div>
           </div>
           <span className="text-white/70 text-xs">Editar</span>
@@ -867,6 +906,34 @@ const WhatsAppNode = ({ id, data, selected }: NodeProps) => {
               <h4 className="text-sm font-semibold text-foreground">Editar Mensagem WhatsApp</h4>
             </div>
             <div className="p-4 space-y-4">
+              {/* Account selector */}
+              <div>
+                <label className="text-xs font-semibold text-muted-foreground uppercase mb-1.5 block">Conta Wasender</label>
+                <Select value={localAccountId} onValueChange={setLocalAccountId}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder={isLoadingAccounts ? "Carregando..." : "Selecione a conta"} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {accounts.map(acc => (
+                      <SelectItem key={acc.id} value={acc.api_key || acc.id}>
+                        <div className="flex items-center gap-2">
+                          <div className={`w-2 h-2 rounded-full ${acc.status === 'CONNECTED' ? 'bg-green-500' : 'bg-yellow-500'}`} />
+                          {acc.name || acc.phone_number || acc.id}
+                        </div>
+                      </SelectItem>
+                    ))}
+                    {accounts.length === 0 && !isLoadingAccounts && (
+                      <SelectItem value="none" disabled>
+                        Nenhuma conta conectada
+                      </SelectItem>
+                    )}
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Número que irá disparar a mensagem
+                </p>
+              </div>
+
               <div>
                 <label className="text-xs font-semibold text-muted-foreground uppercase mb-1.5 block">Mensagem</label>
                 <Textarea
