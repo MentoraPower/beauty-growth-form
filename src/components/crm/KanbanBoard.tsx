@@ -1299,22 +1299,22 @@ export function KanbanBoard() {
 
       {/* View Tabs - OverView | Quadro | Calendário */}
       {subOriginId && (
-        <div className="flex items-center mb-4">
-          <div className="inline-flex items-center bg-foreground rounded-lg p-1 gap-0.5">
+        <div className="w-full mb-4">
+          <div className="flex items-center w-full bg-foreground rounded-lg p-1 gap-0.5">
             <button
-              className="px-4 py-1.5 text-xs font-medium rounded-md transition-all text-background/60 hover:text-background/80"
+              className="flex-1 px-4 py-1.5 text-xs font-medium rounded-md transition-all text-background/60 hover:text-background/80"
             >
               OverView
             </button>
             <div className="w-px h-4 bg-background/20" />
             <button
-              className="px-4 py-1.5 text-xs font-medium rounded-md transition-all bg-background text-foreground"
+              className="flex-1 px-4 py-1.5 text-xs font-medium rounded-md transition-all bg-background text-foreground"
             >
               Quadro
             </button>
             <div className="w-px h-4 bg-background/20" />
             <button
-              className="px-4 py-1.5 text-xs font-medium rounded-md transition-all text-background/60 hover:text-background/80"
+              className="flex-1 px-4 py-1.5 text-xs font-medium rounded-md transition-all text-background/60 hover:text-background/80"
             >
               Calendário
             </button>
