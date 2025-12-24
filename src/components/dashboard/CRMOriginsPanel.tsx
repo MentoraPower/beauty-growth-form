@@ -65,51 +65,27 @@ interface CRMOriginsPanelProps {
 }
 
 
-// Add Sub-origin Dropdown Component
+// Add Sub-origin Dropdown Component (only Tarefas type now)
 function AddSubOriginDropdown({ 
   originId, 
   subOriginsCount,
-  hasCalendar,
   onCreated 
 }: { 
   originId: string; 
   subOriginsCount: number;
-  hasCalendar: boolean;
   onCreated: () => void;
 }) {
   const [isOpen, setIsOpen] = useState(false);
-  const [step, setStep] = useState<'type' | 'name'>('type');
-  const [selectedTipo, setSelectedTipo] = useState<'tarefas' | 'calendario'>('tarefas');
   const [inputValue, setInputValue] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const handleSelectType = async (tipo: 'tarefas' | 'calendario') => {
-    if (tipo === 'calendario') {
-      // Create calendar directly with default name
-      setIsLoading(true);
-      const { error } = await supabase.from("crm_sub_origins").insert({ 
-        nome: 'Calendário', 
-        origin_id: originId,
-        ordem: subOriginsCount,
-        tipo: 'calendario'
-      });
-      
-      setIsLoading(false);
-      
-      if (error) {
-        toast.error("Erro ao criar calendário");
-        return;
-      }
-      
-      toast.success("Calendário criado");
-      setIsOpen(false);
-      onCreated();
-      window.dispatchEvent(new CustomEvent('crm-data-updated'));
-    } else {
-      setSelectedTipo(tipo);
-      setStep('name');
+  const handleOpenChange = (open: boolean) => {
+    setIsOpen(open);
+    if (open) {
       setTimeout(() => inputRef.current?.focus(), 100);
+    } else {
+      setInputValue('');
     }
   };
 
@@ -124,7 +100,7 @@ function AddSubOriginDropdown({
       nome: inputValue.trim(), 
       origin_id: originId,
       ordem: subOriginsCount,
-      tipo: selectedTipo
+      tipo: 'tarefas'
     });
     
     setIsLoading(false);
@@ -136,22 +112,11 @@ function AddSubOriginDropdown({
     
     toast.success("Sub-origem criada");
     setIsOpen(false);
-    setStep('type');
     setInputValue('');
-    setSelectedTipo('tarefas');
     onCreated();
     
     // Trigger a refetch
     window.dispatchEvent(new CustomEvent('crm-data-updated'));
-  };
-
-  const handleOpenChange = (open: boolean) => {
-    setIsOpen(open);
-    if (!open) {
-      setStep('type');
-      setInputValue('');
-      setSelectedTipo('tarefas');
-    }
   };
 
   return (
@@ -167,84 +132,31 @@ function AddSubOriginDropdown({
           align="start" 
           side="right"
           sideOffset={8}
-          className="w-72 p-2 z-[9999] bg-popover"
+          className="w-64 p-3 z-[9999] bg-popover"
         >
-          {step === 'type' ? (
-            <div className="space-y-0.5">
-              <p className="text-[10px] font-medium text-muted-foreground/60 uppercase tracking-wider px-2 py-1">Tipo</p>
-              <button
-                onClick={() => handleSelectType('tarefas')}
-                className="flex items-center gap-2.5 w-full py-2 px-2.5 rounded-lg hover:bg-black/[0.03] transition-all group"
-              >
-                <div className="w-7 h-7 rounded-md bg-black/[0.04] flex items-center justify-center">
-                  <ListTodo className="h-3.5 w-3.5 text-foreground/60" />
-                </div>
-                <div className="text-left flex-1 min-w-0">
-                  <p className="text-[13px] font-medium text-foreground leading-tight">Tarefas</p>
-                  <p className="text-[10px] text-muted-foreground/60 leading-tight">Kanban com atividades</p>
-                </div>
-                <ChevronRight className="h-3.5 w-3.5 text-foreground/20 group-hover:text-foreground/40 transition-colors" />
-              </button>
-              <button
-                onClick={() => !hasCalendar && handleSelectType('calendario')}
-                disabled={hasCalendar}
-                className={cn(
-                  "flex items-center gap-2.5 w-full py-2 px-2.5 rounded-lg transition-all group",
-                  hasCalendar 
-                    ? "opacity-40 cursor-not-allowed" 
-                    : "hover:bg-black/[0.03]"
-                )}
-              >
-                <div className="w-7 h-7 rounded-md bg-black/[0.04] flex items-center justify-center">
-                  <CalendarDays className="h-3.5 w-3.5 text-foreground/60" />
-                </div>
-                <div className="text-left flex-1 min-w-0">
-                  <p className="text-[13px] font-medium text-foreground leading-tight">Calendário</p>
-                  <p className="text-[10px] text-muted-foreground/60 leading-tight">
-                    {hasCalendar ? 'Já existe um calendário' : 'Agendamentos'}
-                  </p>
-                </div>
-                {!hasCalendar && (
-                  <ChevronRight className="h-3.5 w-3.5 text-foreground/20 group-hover:text-foreground/40 transition-colors" />
-                )}
-              </button>
-            </div>
-          ) : (
-            <div className="space-y-2 p-0.5">
-              <div className="flex items-center gap-2">
-                <button 
-                  onClick={() => setStep('type')}
-                  className="p-1 rounded-md hover:bg-black/[0.04] transition-colors"
-                >
-                  <ChevronRight className="h-3.5 w-3.5 rotate-180 text-foreground/40" />
-                </button>
-                <div className="w-5 h-5 rounded bg-black/[0.04] flex items-center justify-center">
-                  {selectedTipo === 'tarefas' 
-                    ? <ListTodo className="h-3 w-3 text-foreground/60" />
-                    : <CalendarDays className="h-3 w-3 text-foreground/60" />
-                  }
-                </div>
-                <span className="text-[13px] font-medium text-foreground">
-                  {selectedTipo === 'tarefas' ? 'Nova Tarefa' : 'Novo Calendário'}
-                </span>
+          <div className="space-y-2">
+            <div className="flex items-center gap-2">
+              <div className="w-5 h-5 rounded bg-black/[0.04] flex items-center justify-center">
+                <ListTodo className="h-3 w-3 text-foreground/60" />
               </div>
-              <input
-                ref={inputRef}
-                value={inputValue}
-                onChange={(e) => setInputValue(e.target.value)}
-                placeholder="Nome da sub-origem"
-                className="w-full bg-transparent border-0 border-b-2 border-foreground/20 focus:border-foreground/60 outline-none py-2 text-[13px] text-foreground placeholder:text-foreground/30 transition-colors"
-                onKeyDown={(e) => e.key === 'Enter' && handleCreate()}
-              />
-              <Button 
-                onClick={handleCreate} 
-                disabled={isLoading || !inputValue.trim()}
-                className="w-full h-8 bg-foreground hover:bg-foreground/90 text-background text-[13px]"
-              >
-                {isLoading ? 'Criando...' : 'Criar'}
-              </Button>
+              <span className="text-[13px] font-medium text-foreground">Nova Sub-origem</span>
             </div>
-          )}
+            <input
+              ref={inputRef}
+              value={inputValue}
+              onChange={(e) => setInputValue(e.target.value)}
+              placeholder="Nome da sub-origem"
+              className="w-full bg-transparent border-0 border-b-2 border-foreground/20 focus:border-foreground/60 outline-none py-2 text-[13px] text-foreground placeholder:text-foreground/30 transition-colors"
+              onKeyDown={(e) => e.key === 'Enter' && handleCreate()}
+            />
+            <Button 
+              onClick={handleCreate} 
+              disabled={isLoading || !inputValue.trim()}
+              className="w-full h-8 bg-foreground hover:bg-foreground/90 text-background text-[13px]"
+            >
+              {isLoading ? 'Criando...' : 'Criar'}
+            </Button>
+          </div>
         </DropdownMenuContent>
       </DropdownMenu>
     </li>
@@ -426,87 +338,7 @@ function SortableOriginItem({
             />
             
 
-            {/* Calendar sub-origin (appears right after Overview) */}
-            {originSubOrigins.filter(s => s.tipo === 'calendario').map((subOrigin, index, filteredCalendars) => {
-              const isActive = currentCalendarOriginId === subOrigin.id;
-              const taskSubOrigins = originSubOrigins.filter(s => s.tipo === 'tarefas');
-              const isLastOfAll = index === filteredCalendars.length - 1 && taskSubOrigins.length === 0;
-              
-              return (
-                <li 
-                  key={subOrigin.id} 
-                  className="relative pl-6 py-1"
-                  ref={isLastOfAll ? (el) => { lastSubOriginRef.current = el; } : undefined}
-                >
-                  {/* Curva SVG perfeita */}
-                  <svg 
-                    className="absolute left-[4px] top-1/2 -translate-y-1/2 z-0" 
-                    width="18" 
-                    height="18" 
-                    viewBox="0 0 18 18"
-                    fill="none"
-                  >
-                    <path 
-                      d="M 8 0 L 8 5 Q 8 9 12 9 L 18 9" 
-                      stroke="hsl(var(--muted-foreground))"
-                      strokeWidth="2" 
-                      fill="none"
-                    />
-                  </svg>
-                  
-                  <div className="flex items-center group">
-                    <button
-                      onClick={() => handleSubOriginClick(subOrigin.id, subOrigin.tipo)}
-                      className={cn(
-                        "flex items-center gap-2 flex-1 py-1.5 px-2 rounded-lg transition-all duration-200 ease-out text-xs",
-                        isActive 
-                          ? "bg-black/10 font-medium"
-                          : "text-foreground/70 hover:text-foreground hover:bg-black/5"
-                      )}
-                    >
-                      <CalendarDays className={cn(
-                        "h-3 w-3 flex-shrink-0",
-                        isActive ? "text-orange-600" : "text-foreground/70"
-                      )} />
-                      <span className={cn(
-                        "font-bold",
-                        isActive && "bg-gradient-to-r from-orange-600 to-amber-500 bg-clip-text text-transparent"
-                      )}>{subOrigin.nome}</span>
-                    </button>
-                    
-                    {/* Sub-origin Actions - only show for admins */}
-                    {userPermissions.isAdmin && (
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <button 
-                            onClick={(e) => e.stopPropagation()}
-                            className="p-1.5 rounded opacity-0 group-hover:opacity-100 transition-all duration-200 ease-out hover:bg-black/5"
-                          >
-                            <MoreVertical className="h-4 w-4 text-foreground/70" />
-                          </button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" className="w-40 z-[9999] bg-popover">
-                          <DropdownMenuItem onClick={() => openEditSubOriginDialog(subOrigin)}>
-                            <Pencil className="h-4 w-4 mr-2" />
-                            Editar
-                          </DropdownMenuItem>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem 
-                            className="text-destructive focus:text-destructive"
-                            onClick={() => handleDeleteSubOrigin(subOrigin.id)}
-                          >
-                            <Trash2 className="h-4 w-4 mr-2" />
-                            Excluir
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    )}
-                  </div>
-                </li>
-              );
-            })}
-
-            {/* Task sub-origins */}
+            {/* Task sub-origins only (calendar is now accessed via tabs in CRM page) */}
             {originSubOrigins.filter(s => s.tipo === 'tarefas').map((subOrigin, index, filteredArr) => {
               const leadCount = leadCounts.find(lc => lc.sub_origin_id === subOrigin.id)?.count || 0;
               const isActive = currentSubOriginId === subOrigin.id;
@@ -601,7 +433,6 @@ function SortableOriginItem({
               <AddSubOriginDropdown 
                 originId={origin.id}
                 subOriginsCount={originSubOrigins.length}
-                hasCalendar={originSubOrigins.some(s => s.tipo === 'calendario')}
                 onCreated={() => {}}
               />
             )}
