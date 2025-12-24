@@ -132,7 +132,7 @@ const AnimatedConnectionLine = ({
     <g>
       <path
         fill="none"
-        stroke="#22c55e"
+        stroke="#f97316"
         strokeWidth={2}
         strokeDasharray="8 4"
         strokeLinecap="round"
@@ -145,7 +145,7 @@ const AnimatedConnectionLine = ({
         cx={toX}
         cy={toY}
         r={6}
-        fill="#22c55e"
+        fill="#f97316"
         stroke="white"
         strokeWidth={2}
       />
