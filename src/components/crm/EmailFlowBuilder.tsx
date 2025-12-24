@@ -884,10 +884,9 @@ const WhatsAppNode = ({ id, data, selected }: NodeProps) => {
           <span className="text-white/70 text-xs">Editar</span>
         </div>
         
-        {/* Message Preview */}
         <div className="p-4 bg-card min-h-[120px]">
           <div 
-            className="bg-[#DCF8C6] rounded-lg p-3 text-sm text-gray-800 min-h-[80px]"
+            className="bg-[#DCF8C6] rounded-lg p-3 text-sm text-gray-800 min-h-[80px] whitespace-pre-wrap break-words"
           >
             {message || <span className="text-gray-500 italic">Clique para editar a mensagem...</span>}
           </div>
