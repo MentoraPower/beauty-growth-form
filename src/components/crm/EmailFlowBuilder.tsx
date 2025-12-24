@@ -229,11 +229,11 @@ const TriggerNode = ({ data, id, selected }: NodeProps & { data: {
         className="!w-4 !h-4 !bg-foreground !border-2 !border-background"
       />
       <div 
-        className="min-w-[280px] border border-border bg-card transition-all rounded-xl overflow-hidden"
+        className="min-w-[280px] border border-border bg-card transition-all rounded-xl"
       >
         {/* Orange accent header */}
         <div 
-          className="px-4 py-4 flex items-center gap-3"
+          className="px-4 py-4 flex items-center gap-3 rounded-t-xl"
           style={{ background: "linear-gradient(135deg, #F97316 0%, #EA580C 100%)" }}
         >
           <div className="w-10 h-10 rounded-lg bg-white/20 flex items-center justify-center">
@@ -501,12 +501,12 @@ const WaitNode = ({ data, id, selected }: NodeProps) => {
 
   return (
     <div className="relative">
+      <Handle
+        type="target"
+        position={Position.Left}
+        className="!w-2.5 !h-2.5 !bg-foreground !border-2 !border-background !z-10"
+      />
       <div className="w-56 border border-border bg-card transition-all rounded-xl overflow-hidden">
-        <Handle
-          type="target"
-          position={Position.Left}
-          className="!w-2.5 !h-2.5 !bg-foreground !border-2 !border-background"
-        />
         {/* Yellow header */}
         <div 
           className="px-4 py-3 flex items-center justify-between cursor-pointer hover:opacity-90 transition-opacity"
@@ -584,13 +584,13 @@ const WaitNode = ({ data, id, selected }: NodeProps) => {
             </div>
           </div>
         )}
-        
-        <Handle
-          type="source"
-          position={Position.Right}
-          className="!w-2.5 !h-2.5 !bg-foreground !border-2 !border-background"
-        />
       </div>
+
+      <Handle
+        type="source"
+        position={Position.Right}
+        className="!w-2.5 !h-2.5 !bg-foreground !border-2 !border-background !z-10"
+      />
 
       {/* Action buttons - slide down from top */}
       <div 
@@ -678,12 +678,12 @@ const EmailNode = ({ id, data, selected }: NodeProps) => {
 
   return (
     <div className="relative">
+      <Handle
+        type="target"
+        position={Position.Left}
+        className="!w-2.5 !h-2.5 !bg-foreground !border-2 !border-background !z-10"
+      />
       <div className="w-[320px] border border-border bg-background shadow-sm transition-all rounded-lg overflow-hidden">
-        <Handle
-          type="target"
-          position={Position.Left}
-          className="!w-2.5 !h-2.5 !bg-foreground !border-2 !border-background"
-        />
         {/* Red gradient header with Gmail logo */}
         <div 
           className="px-4 py-2.5 flex items-center justify-between cursor-pointer hover:opacity-90 transition-opacity"
@@ -743,13 +743,13 @@ const EmailNode = ({ id, data, selected }: NodeProps) => {
             </div>
           </div>
         )}
-        
-        <Handle
-          type="source"
-          position={Position.Right}
-          className="!w-2.5 !h-2.5 !bg-foreground !border-2 !border-background"
-        />
       </div>
+
+      <Handle
+        type="source"
+        position={Position.Right}
+        className="!w-2.5 !h-2.5 !bg-foreground !border-2 !border-background !z-10"
+      />
 
       {/* Action buttons - slide down from top */}
       <div 
@@ -864,12 +864,12 @@ const WhatsAppNode = ({ id, data, selected }: NodeProps) => {
 
   return (
     <div className="relative">
+      <Handle
+        type="target"
+        position={Position.Left}
+        className="!w-2.5 !h-2.5 !bg-foreground !border-2 !border-background !z-10"
+      />
       <div className="w-[320px] border border-border bg-background shadow-sm transition-all rounded-lg overflow-hidden">
-        <Handle
-          type="target"
-          position={Position.Left}
-          className="!w-2.5 !h-2.5 !bg-foreground !border-2 !border-background"
-        />
         {/* Orange gradient header */}
         <div 
           className="px-4 py-2.5 flex items-center justify-between cursor-pointer hover:opacity-90 transition-opacity"
@@ -949,13 +949,13 @@ const WhatsAppNode = ({ id, data, selected }: NodeProps) => {
             </div>
           </div>
         )}
-        
-        <Handle
-          type="source"
-          position={Position.Right}
-          className="!w-2.5 !h-2.5 !bg-foreground !border-2 !border-background"
-        />
       </div>
+
+      <Handle
+        type="source"
+        position={Position.Right}
+        className="!w-2.5 !h-2.5 !bg-foreground !border-2 !border-background !z-10"
+      />
 
       {/* Action buttons */}
       <div 
@@ -1052,19 +1052,16 @@ const CustomEdge = ({
   targetPosition,
   data,
 }: CustomEdgeProps) => {
-  // Check if line is nearly straight (within 20px tolerance for easier alignment)
-  const isNearlyStraight = Math.abs(sourceY - targetY) < 20;
-  
-  // For nearly straight lines, force Y coordinates to match for perfectly straight rendering
-  const adjustedTargetY = isNearlyStraight ? sourceY : targetY;
-  
+  // Use straight path only when perfectly aligned (keeps connection anchored to the handles)
+  const isNearlyStraight = Math.abs(sourceY - targetY) < 6;
+
   // Use straight path for aligned nodes, bezier for others
   const [edgePath, labelX, labelY] = isNearlyStraight
-    ? getStraightPath({ 
-        sourceX, 
-        sourceY, 
-        targetX, 
-        targetY: adjustedTargetY 
+    ? getStraightPath({
+        sourceX,
+        sourceY,
+        targetX,
+        targetY,
       })
     : getBezierPath({
         sourceX,
@@ -1079,10 +1076,10 @@ const CustomEdge = ({
   const gradientId = `edge-gradient-${id}`.replace(/[^a-zA-Z0-9_-]/g, "_");
 
   // Always use a valid path - straight line as ultimate fallback
-  const finalPath = edgePath || `M ${sourceX} ${sourceY} L ${targetX} ${adjustedTargetY}`;
+  const finalPath = edgePath || `M ${sourceX} ${sourceY} L ${targetX} ${targetY}`;
 
   const safeLabelX = Number.isFinite(labelX) ? labelX : (sourceX + targetX) / 2;
-  const safeLabelY = Number.isFinite(labelY) ? labelY : (sourceY + adjustedTargetY) / 2;
+  const safeLabelY = Number.isFinite(labelY) ? labelY : (sourceY + targetY) / 2;
 
   return (
     <>
