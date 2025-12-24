@@ -22,7 +22,7 @@ import {
   useReactFlow,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
-import { Play, Clock, CheckCircle2, Trash2, Copy, ArrowLeft, Plus, Mail, Zap, ChevronDown, Users, UserMinus, UserX, User, Send } from "lucide-react";
+import { Play, Clock, CheckCircle2, Trash2, Copy, ArrowLeft, Plus, Mail, Zap, ChevronDown, Users, UserMinus, UserX, User, Send, Pause } from "lucide-react";
 import WhatsAppIcon from "@/components/icons/WhatsApp";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -1094,8 +1094,8 @@ const CustomEdge = ({
         >
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <button className="w-7 h-7 rounded-full bg-background border-2 border-orange-400 shadow-md flex items-center justify-center hover:bg-orange-50 hover:scale-110 transition-all">
-                <Plus className="w-4 h-4 text-orange-500" />
+              <button className="w-7 h-7 rounded-full bg-background border border-gray-300 shadow-md flex items-center justify-center hover:bg-gray-100 hover:scale-110 transition-all">
+                <Pause className="w-4 h-4 text-gray-600" />
               </button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="center" className="w-40">
