@@ -151,15 +151,15 @@ export const KanbanCard = memo(function KanbanCard({ lead, isDragging: isDraggin
         
         {/* Icons and time */}
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2 [&_svg]:text-orange-500">
+          <div className="flex items-center gap-2">
             {hasInstagram && (
-              <Instagram className="w-3.5 h-3.5" />
+              <Instagram className="w-3.5 h-3.5 text-muted-foreground" />
             )}
             {hasWhatsapp && (
-              <WhatsApp className="w-3.5 h-3.5" />
+              <WhatsApp className="w-3.5 h-3.5 text-muted-foreground" />
             )}
             {hasEmail && (
-              <Mail className="w-3.5 h-3.5" />
+              <Mail className="w-3.5 h-3.5 text-muted-foreground" />
             )}
           </div>
           <span className="text-[10px] text-muted-foreground">
