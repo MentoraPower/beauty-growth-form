@@ -957,36 +957,46 @@ const WhatsAppNode = ({ id, data, selected }: NodeProps) => {
         );
       case 'image':
         return mediaUrl ? (
-          <div className="flex items-center gap-3 p-3 bg-muted rounded-lg">
-            <ImagePlus className="w-6 h-6 text-green-600" />
-            <span className="text-sm text-foreground">Imagem configurada</span>
+          <div className="flex items-center gap-3 p-3 bg-green-600 rounded-lg">
+            <ImagePlus className="w-6 h-6 text-white" />
+            <span className="text-sm text-white">Imagem configurada</span>
           </div>
         ) : (
-          <div className="flex items-center justify-center h-16 bg-muted rounded-lg">
-            <ImagePlus className="w-8 h-8 text-muted-foreground" />
+          <div className="flex items-center justify-center h-16 bg-green-600/20 rounded-lg">
+            <ImagePlus className="w-8 h-8 text-white" />
           </div>
         );
       case 'video':
         return mediaUrl ? (
-          <video src={mediaUrl} className="w-full h-24 object-cover rounded-lg" />
+          <div className="flex items-center gap-3 p-3 bg-green-600 rounded-lg">
+            <Clapperboard className="w-6 h-6 text-white" />
+            <span className="text-sm text-white">Vídeo configurado</span>
+          </div>
         ) : (
-          <div className="flex items-center justify-center h-24 bg-muted rounded-lg">
-            <Clapperboard className="w-8 h-8 text-muted-foreground" />
+          <div className="flex items-center justify-center h-16 bg-green-600/20 rounded-lg">
+            <Clapperboard className="w-8 h-8 text-white" />
           </div>
         );
       case 'audio':
         return mediaUrl ? (
-          <audio src={mediaUrl} className="w-full" controls />
+          <div className="flex items-center gap-3 p-3 bg-green-600 rounded-lg">
+            <AudioLines className="w-6 h-6 text-white" />
+            <span className="text-sm text-white">Áudio configurado</span>
+          </div>
         ) : (
-          <div className="flex items-center justify-center h-16 bg-muted rounded-lg">
-            <AudioLines className="w-8 h-8 text-muted-foreground" />
+          <div className="flex items-center justify-center h-16 bg-green-600/20 rounded-lg">
+            <AudioLines className="w-8 h-8 text-white" />
           </div>
         );
       case 'document':
-        return (
-          <div className="flex items-center gap-2 p-3 bg-muted rounded-lg">
-            <FileUp className="w-6 h-6 text-muted-foreground" />
-            <span className="text-sm truncate">{fileName || 'Documento não selecionado'}</span>
+        return fileName ? (
+          <div className="flex items-center gap-3 p-3 bg-green-600 rounded-lg">
+            <FileUp className="w-6 h-6 text-white" />
+            <span className="text-sm text-white truncate">{fileName}</span>
+          </div>
+        ) : (
+          <div className="flex items-center justify-center h-16 bg-green-600/20 rounded-lg">
+            <FileUp className="w-8 h-8 text-white" />
           </div>
         );
       default:
