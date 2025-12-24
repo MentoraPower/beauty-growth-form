@@ -1058,12 +1058,12 @@ const WhatsAppNode = ({ id, data, selected }: NodeProps) => {
                       className={cn(
                         "flex flex-col items-center gap-1 p-2 rounded-lg border transition-all",
                         localMessageType === type 
-                          ? "border-green-500 bg-green-50 text-green-700" 
-                          : "border-border hover:bg-muted"
+                          ? "border-green-500 bg-green-600 text-white" 
+                          : "border-border bg-green-600/80 text-white hover:bg-green-600"
                       )}
                     >
-                      {messageTypeIcons[type]}
-                      <span className="text-[10px]">{messageTypeLabels[type]}</span>
+                      <span className="text-white">{messageTypeIcons[type]}</span>
+                      <span className="text-[10px] text-white">{messageTypeLabels[type]}</span>
                     </button>
                   ))}
                 </div>
