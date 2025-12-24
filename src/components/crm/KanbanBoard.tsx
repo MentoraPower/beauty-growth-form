@@ -1319,13 +1319,27 @@ export function KanbanBoard() {
       {subOriginId && (
         <div className="w-full mb-4">
           <div className="w-full flex items-center bg-gray-200 rounded-lg px-4 py-2.5">
-            <div className="inline-flex items-center gap-6">
+            <div className="relative inline-flex items-center gap-6">
+              {/* Animated gradient indicator */}
+              <div 
+                className="absolute -bottom-1.5 h-0.5 rounded-full bg-gradient-to-r from-orange-400 to-orange-600 transition-all duration-300 ease-out"
+                style={{
+                  left: activeView === "overview" ? "0px" : 
+                        activeView === "quadro" ? "calc(55px + 24px)" : 
+                        activeView === "calendario" ? "calc(55px + 24px + 48px + 24px)" :
+                        "calc(55px + 24px + 48px + 24px + 72px + 24px + 16px + 24px)",
+                  width: activeView === "overview" ? "55px" : 
+                         activeView === "quadro" ? "48px" : 
+                         activeView === "calendario" ? "72px" :
+                         "82px"
+                }}
+              />
               <button
                 onClick={() => handleViewChange("overview")}
                 className={cn(
                   "relative text-[13px] font-semibold tracking-wide transition-all antialiased",
                   activeView === "overview" 
-                    ? "text-gray-900 after:absolute after:-bottom-1.5 after:left-0 after:right-0 after:h-0.5 after:bg-gray-900 after:rounded-full"
+                    ? "text-gray-900"
                     : "text-gray-500 hover:text-gray-700"
                 )}
               >
@@ -1336,7 +1350,7 @@ export function KanbanBoard() {
                 className={cn(
                   "relative text-[13px] font-semibold tracking-wide transition-all antialiased",
                   activeView === "quadro" 
-                    ? "text-gray-900 after:absolute after:-bottom-1.5 after:left-0 after:right-0 after:h-0.5 after:bg-gray-900 after:rounded-full"
+                    ? "text-gray-900"
                     : "text-gray-500 hover:text-gray-700"
                 )}
               >
@@ -1347,7 +1361,7 @@ export function KanbanBoard() {
                 className={cn(
                   "relative text-[13px] font-semibold tracking-wide transition-all antialiased",
                   activeView === "calendario" 
-                    ? "text-gray-900 after:absolute after:-bottom-1.5 after:left-0 after:right-0 after:h-0.5 after:bg-gray-900 after:rounded-full"
+                    ? "text-gray-900"
                     : "text-gray-500 hover:text-gray-700"
                 )}
               >
@@ -1362,7 +1376,7 @@ export function KanbanBoard() {
                 className={cn(
                   "relative text-[13px] font-semibold tracking-wide transition-all antialiased",
                   activeView === "email" 
-                    ? "text-gray-900 after:absolute after:-bottom-1.5 after:left-0 after:right-0 after:h-0.5 after:bg-gray-900 after:rounded-full"
+                    ? "text-gray-900"
                     : "text-gray-500 hover:text-gray-700"
                 )}
               >
