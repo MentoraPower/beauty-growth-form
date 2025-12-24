@@ -1366,7 +1366,7 @@ export function KanbanBoard() {
                     : "text-background/50 hover:text-background/75"
                 )}
               >
-                Email
+                Automations
               </button>
             </div>
           </div>
