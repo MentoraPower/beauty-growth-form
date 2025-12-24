@@ -23,7 +23,7 @@ import {
   useReactFlow,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
-import { Play, Clock, Pause, CheckCircle2, Trash2, Copy, ArrowLeft, ArrowUp, Plus, Mail, Zap, ChevronDown, ChevronUp, Users, UserMinus, UserX, User, Send, MessageSquare, Mic, Image, Video, FileText } from "lucide-react";
+import { Play, Clock, Pause, CheckCircle2, Trash2, Copy, ArrowLeft, ArrowUp, Plus, Mail, Zap, ChevronDown, ChevronUp, Users, UserMinus, UserX, User, Send, MessageCircle, AudioLines, ImagePlus, Clapperboard, FileUp } from "lucide-react";
 import WhatsAppIcon from "@/components/icons/WhatsApp";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -773,11 +773,11 @@ const messageTypeLabels: Record<WhatsAppMessageType, string> = {
 };
 
 const messageTypeIcons: Record<WhatsAppMessageType, React.ReactNode> = {
-  text: <MessageSquare className="w-4 h-4" />,
-  audio: <Mic className="w-4 h-4" />,
-  image: <Image className="w-4 h-4" />,
-  video: <Video className="w-4 h-4" />,
-  document: <FileText className="w-4 h-4" />,
+  text: <MessageCircle className="w-4 h-4" />,
+  audio: <AudioLines className="w-4 h-4" />,
+  image: <ImagePlus className="w-4 h-4" />,
+  video: <Clapperboard className="w-4 h-4" />,
+  document: <FileUp className="w-4 h-4" />,
 };
 
 // WhatsApp Node Component - With account selection, message type, and orange gradient
@@ -938,7 +938,7 @@ const WhatsAppNode = ({ id, data, selected }: NodeProps) => {
       case 'document':
         return (
           <div className="flex items-center gap-2 p-3 bg-muted rounded-lg">
-            <FileText className="w-6 h-6 text-muted-foreground" />
+            <FileUp className="w-6 h-6 text-muted-foreground" />
             <span className="text-sm truncate">{localFileName || 'Documento'}</span>
           </div>
         );
@@ -960,7 +960,7 @@ const WhatsAppNode = ({ id, data, selected }: NodeProps) => {
           <img src={mediaUrl} alt="Preview" className="w-full h-24 object-cover rounded-lg" />
         ) : (
           <div className="flex items-center justify-center h-24 bg-muted rounded-lg">
-            <Image className="w-8 h-8 text-muted-foreground" />
+            <ImagePlus className="w-8 h-8 text-muted-foreground" />
           </div>
         );
       case 'video':
@@ -968,7 +968,7 @@ const WhatsAppNode = ({ id, data, selected }: NodeProps) => {
           <video src={mediaUrl} className="w-full h-24 object-cover rounded-lg" />
         ) : (
           <div className="flex items-center justify-center h-24 bg-muted rounded-lg">
-            <Video className="w-8 h-8 text-muted-foreground" />
+            <Clapperboard className="w-8 h-8 text-muted-foreground" />
           </div>
         );
       case 'audio':
@@ -976,13 +976,13 @@ const WhatsAppNode = ({ id, data, selected }: NodeProps) => {
           <audio src={mediaUrl} className="w-full" controls />
         ) : (
           <div className="flex items-center justify-center h-16 bg-muted rounded-lg">
-            <Mic className="w-8 h-8 text-muted-foreground" />
+            <AudioLines className="w-8 h-8 text-muted-foreground" />
           </div>
         );
       case 'document':
         return (
           <div className="flex items-center gap-2 p-3 bg-muted rounded-lg">
-            <FileText className="w-6 h-6 text-muted-foreground" />
+            <FileUp className="w-6 h-6 text-muted-foreground" />
             <span className="text-sm truncate">{fileName || 'Documento não selecionado'}</span>
           </div>
         );
@@ -1191,11 +1191,11 @@ const WhatsAppSidebarItem = () => {
   const [isExpanded, setIsExpanded] = useState(false);
   
   const messageTypes: { type: string; label: string; icon: React.ReactNode }[] = [
-    { type: 'whatsapp-text', label: 'Texto', icon: <MessageSquare className="w-3.5 h-3.5" /> },
-    { type: 'whatsapp-audio', label: 'Áudio', icon: <Mic className="w-3.5 h-3.5" /> },
-    { type: 'whatsapp-image', label: 'Imagem', icon: <Image className="w-3.5 h-3.5" /> },
-    { type: 'whatsapp-video', label: 'Vídeo', icon: <Video className="w-3.5 h-3.5" /> },
-    { type: 'whatsapp-document', label: 'Documento', icon: <FileText className="w-3.5 h-3.5" /> },
+    { type: 'whatsapp-text', label: 'Texto', icon: <MessageCircle className="w-3.5 h-3.5" /> },
+    { type: 'whatsapp-audio', label: 'Áudio', icon: <AudioLines className="w-3.5 h-3.5" /> },
+    { type: 'whatsapp-image', label: 'Imagem', icon: <ImagePlus className="w-3.5 h-3.5" /> },
+    { type: 'whatsapp-video', label: 'Vídeo', icon: <Clapperboard className="w-3.5 h-3.5" /> },
+    { type: 'whatsapp-document', label: 'Documento', icon: <FileUp className="w-3.5 h-3.5" /> },
   ];
 
   return (
