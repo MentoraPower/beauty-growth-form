@@ -507,13 +507,12 @@ const WaitNode = ({ data, id, selected }: NodeProps) => {
         className="!w-2.5 !h-2.5 !bg-foreground !border-2 !border-background !z-10"
       />
       
-      {/* Square card design with white background */}
+      {/* Square card - icon only */}
       <div 
-        className="w-24 h-24 bg-white border border-amber-200 transition-all rounded-2xl overflow-hidden cursor-pointer hover:shadow-lg hover:border-amber-300 flex flex-col items-center justify-center gap-2 shadow-sm"
+        className="w-16 h-16 bg-white border border-amber-200 transition-all rounded-2xl cursor-pointer hover:shadow-lg hover:border-amber-300 flex items-center justify-center shadow-sm"
         onClick={handleOpen}
       >
-        {/* Clock icon with orange gradient */}
-        <Clock className="w-8 h-8" style={{ stroke: 'url(#clockGradient)' }} />
+        <Clock className="w-7 h-7" style={{ stroke: 'url(#clockGradient)' }} />
         <svg width="0" height="0">
           <defs>
             <linearGradient id="clockGradient" x1="0%" y1="0%" x2="100%" y2="100%">
@@ -522,17 +521,11 @@ const WaitNode = ({ data, id, selected }: NodeProps) => {
             </linearGradient>
           </defs>
         </svg>
-        
-        {/* Time display */}
-        <div className="text-center">
-          <span className="text-base font-bold text-gray-800">{waitTime}</span>
-          <span className="text-[11px] text-gray-500 ml-1">{unitLabels[waitUnit]}</span>
-        </div>
       </div>
       
       {/* Pending count badge - on the connection line */}
       {pendingCount > 0 && (
-        <div className="absolute -right-3 top-1/2 -translate-y-1/2 translate-x-full flex items-center gap-0.5 bg-amber-500 rounded-full w-6 h-6 justify-center shadow-md z-20">
+        <div className="absolute -right-3 top-1/2 -translate-y-1/2 translate-x-full flex items-center bg-amber-500 rounded-full w-6 h-6 justify-center shadow-md z-20">
           <span className="text-[10px] font-bold text-white">{pendingCount}</span>
         </div>
       )}
