@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
 import { Send, Mail, ArrowRight, ArrowLeft, Clock, Check } from "lucide-react";
 import WhatsAppIcon from "@/components/icons/WhatsApp";
@@ -29,7 +31,7 @@ interface BroadcastDialogProps {
 }
 
 type ChannelType = "whatsapp_web" | "whatsapp_api" | "email";
-type Step = "channel" | "origin" | "suborigin" | "pipeline" | "confirm";
+type Step = "channel" | "origin" | "suborigin" | "pipeline" | "compose" | "confirm";
 
 export function BroadcastDialog({ open, onOpenChange }: BroadcastDialogProps) {
   const [step, setStep] = useState<Step>("channel");
@@ -37,6 +39,11 @@ export function BroadcastDialog({ open, onOpenChange }: BroadcastDialogProps) {
   const [selectedOrigin, setSelectedOrigin] = useState<Origin | null>(null);
   const [selectedSubOrigin, setSelectedSubOrigin] = useState<SubOrigin | null>(null);
   const [selectedPipeline, setSelectedPipeline] = useState<Pipeline | "all" | null>(null);
+  
+  // Message content
+  const [emailSubject, setEmailSubject] = useState("");
+  const [emailBody, setEmailBody] = useState("");
+  const [whatsappMessage, setWhatsappMessage] = useState("");
   
   const [origins, setOrigins] = useState<Origin[]>([]);
   const [subOrigins, setSubOrigins] = useState<SubOrigin[]>([]);
@@ -53,6 +60,9 @@ export function BroadcastDialog({ open, onOpenChange }: BroadcastDialogProps) {
       setSelectedOrigin(null);
       setSelectedSubOrigin(null);
       setSelectedPipeline(null);
+      setEmailSubject("");
+      setEmailBody("");
+      setWhatsappMessage("");
       setLeadsCount(0);
     }
   }, [open]);
@@ -164,6 +174,29 @@ export function BroadcastDialog({ open, onOpenChange }: BroadcastDialogProps) {
 
   const handleSelectPipeline = (pipeline: Pipeline | "all") => {
     setSelectedPipeline(pipeline);
+    setStep("compose");
+  };
+
+  const handleComposeNext = () => {
+    if (selectedChannel === "email") {
+      if (!emailSubject.trim() || !emailBody.trim()) {
+        toast({
+          title: "Campos obrigatórios",
+          description: "Preencha o assunto e o conteúdo do e-mail.",
+          variant: "destructive",
+        });
+        return;
+      }
+    } else if (selectedChannel === "whatsapp_web") {
+      if (!whatsappMessage.trim()) {
+        toast({
+          title: "Campo obrigatório",
+          description: "Preencha a mensagem do WhatsApp.",
+          variant: "destructive",
+        });
+        return;
+      }
+    }
     setStep("confirm");
   };
 
@@ -177,9 +210,11 @@ export function BroadcastDialog({ open, onOpenChange }: BroadcastDialogProps) {
     } else if (step === "pipeline") {
       setStep("suborigin");
       setSelectedSubOrigin(null);
-    } else if (step === "confirm") {
+    } else if (step === "compose") {
       setStep("pipeline");
       setSelectedPipeline(null);
+    } else if (step === "confirm") {
+      setStep("compose");
     }
   };
 
@@ -204,9 +239,19 @@ export function BroadcastDialog({ open, onOpenChange }: BroadcastDialogProps) {
     return "";
   };
 
+  const isComposeComplete = () => {
+    if (selectedChannel === "email") {
+      return emailSubject.trim() && emailBody.trim();
+    }
+    if (selectedChannel === "whatsapp_web") {
+      return whatsappMessage.trim();
+    }
+    return false;
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[80vh] overflow-hidden flex flex-col">
+      <DialogContent className="max-w-2xl max-h-[85vh] overflow-hidden flex flex-col">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Send className="w-5 h-5 text-primary" />
@@ -215,40 +260,47 @@ export function BroadcastDialog({ open, onOpenChange }: BroadcastDialogProps) {
         </DialogHeader>
 
         {/* Progress indicator */}
-        <div className="flex items-center gap-2 px-2 py-3 border-b border-border">
-          <div className={`flex items-center gap-1.5 ${step === "channel" ? "text-primary" : "text-muted-foreground"}`}>
-            <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-medium ${step === "channel" ? "bg-primary text-primary-foreground" : selectedChannel ? "bg-primary/20 text-primary" : "bg-muted text-muted-foreground"}`}>
-              {selectedChannel ? <Check className="w-3.5 h-3.5" /> : "1"}
+        <div className="flex items-center gap-1.5 px-2 py-3 border-b border-border overflow-x-auto">
+          <div className={`flex items-center gap-1 ${step === "channel" ? "text-primary" : "text-muted-foreground"}`}>
+            <div className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-medium ${step === "channel" ? "bg-primary text-primary-foreground" : selectedChannel ? "bg-primary/20 text-primary" : "bg-muted text-muted-foreground"}`}>
+              {selectedChannel ? <Check className="w-3 h-3" /> : "1"}
             </div>
-            <span className="text-xs">Canal</span>
+            <span className="text-[10px] whitespace-nowrap">Canal</span>
           </div>
-          <ArrowRight className="w-4 h-4 text-muted-foreground" />
-          <div className={`flex items-center gap-1.5 ${step === "origin" ? "text-primary" : "text-muted-foreground"}`}>
-            <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-medium ${step === "origin" ? "bg-primary text-primary-foreground" : selectedOrigin ? "bg-primary/20 text-primary" : "bg-muted text-muted-foreground"}`}>
-              {selectedOrigin ? <Check className="w-3.5 h-3.5" /> : "2"}
+          <ArrowRight className="w-3 h-3 text-muted-foreground flex-shrink-0" />
+          <div className={`flex items-center gap-1 ${step === "origin" ? "text-primary" : "text-muted-foreground"}`}>
+            <div className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-medium ${step === "origin" ? "bg-primary text-primary-foreground" : selectedOrigin ? "bg-primary/20 text-primary" : "bg-muted text-muted-foreground"}`}>
+              {selectedOrigin ? <Check className="w-3 h-3" /> : "2"}
             </div>
-            <span className="text-xs">Origem</span>
+            <span className="text-[10px] whitespace-nowrap">Origem</span>
           </div>
-          <ArrowRight className="w-4 h-4 text-muted-foreground" />
-          <div className={`flex items-center gap-1.5 ${step === "suborigin" ? "text-primary" : "text-muted-foreground"}`}>
-            <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-medium ${step === "suborigin" ? "bg-primary text-primary-foreground" : selectedSubOrigin ? "bg-primary/20 text-primary" : "bg-muted text-muted-foreground"}`}>
-              {selectedSubOrigin ? <Check className="w-3.5 h-3.5" /> : "3"}
+          <ArrowRight className="w-3 h-3 text-muted-foreground flex-shrink-0" />
+          <div className={`flex items-center gap-1 ${step === "suborigin" ? "text-primary" : "text-muted-foreground"}`}>
+            <div className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-medium ${step === "suborigin" ? "bg-primary text-primary-foreground" : selectedSubOrigin ? "bg-primary/20 text-primary" : "bg-muted text-muted-foreground"}`}>
+              {selectedSubOrigin ? <Check className="w-3 h-3" /> : "3"}
             </div>
-            <span className="text-xs">Sub-origem</span>
+            <span className="text-[10px] whitespace-nowrap">Sub-origem</span>
           </div>
-          <ArrowRight className="w-4 h-4 text-muted-foreground" />
-          <div className={`flex items-center gap-1.5 ${step === "pipeline" ? "text-primary" : "text-muted-foreground"}`}>
-            <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-medium ${step === "pipeline" ? "bg-primary text-primary-foreground" : selectedPipeline ? "bg-primary/20 text-primary" : "bg-muted text-muted-foreground"}`}>
-              {selectedPipeline ? <Check className="w-3.5 h-3.5" /> : "4"}
+          <ArrowRight className="w-3 h-3 text-muted-foreground flex-shrink-0" />
+          <div className={`flex items-center gap-1 ${step === "pipeline" ? "text-primary" : "text-muted-foreground"}`}>
+            <div className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-medium ${step === "pipeline" ? "bg-primary text-primary-foreground" : selectedPipeline ? "bg-primary/20 text-primary" : "bg-muted text-muted-foreground"}`}>
+              {selectedPipeline ? <Check className="w-3 h-3" /> : "4"}
             </div>
-            <span className="text-xs">Pipeline</span>
+            <span className="text-[10px] whitespace-nowrap">Pipeline</span>
           </div>
-          <ArrowRight className="w-4 h-4 text-muted-foreground" />
-          <div className={`flex items-center gap-1.5 ${step === "confirm" ? "text-primary" : "text-muted-foreground"}`}>
-            <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-medium ${step === "confirm" ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"}`}>
-              5
+          <ArrowRight className="w-3 h-3 text-muted-foreground flex-shrink-0" />
+          <div className={`flex items-center gap-1 ${step === "compose" ? "text-primary" : "text-muted-foreground"}`}>
+            <div className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-medium ${step === "compose" ? "bg-primary text-primary-foreground" : isComposeComplete() ? "bg-primary/20 text-primary" : "bg-muted text-muted-foreground"}`}>
+              {isComposeComplete() ? <Check className="w-3 h-3" /> : "5"}
             </div>
-            <span className="text-xs">Confirmar</span>
+            <span className="text-[10px] whitespace-nowrap">Mensagem</span>
+          </div>
+          <ArrowRight className="w-3 h-3 text-muted-foreground flex-shrink-0" />
+          <div className={`flex items-center gap-1 ${step === "confirm" ? "text-primary" : "text-muted-foreground"}`}>
+            <div className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-medium ${step === "confirm" ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"}`}>
+              6
+            </div>
+            <span className="text-[10px] whitespace-nowrap">Confirmar</span>
           </div>
         </div>
 
@@ -403,7 +455,59 @@ export function BroadcastDialog({ open, onOpenChange }: BroadcastDialogProps) {
             </div>
           )}
 
-          {/* Step 5: Confirmation */}
+          {/* Step 5: Compose Message */}
+          {step === "compose" && (
+            <div className="space-y-4">
+              {selectedChannel === "email" ? (
+                <>
+                  <p className="text-sm text-muted-foreground">Compose o e-mail que será enviado:</p>
+                  <div className="space-y-4">
+                    <div>
+                      <label className="text-sm font-medium text-foreground mb-1.5 block">Assunto</label>
+                      <Input
+                        value={emailSubject}
+                        onChange={(e) => setEmailSubject(e.target.value)}
+                        placeholder="Digite o assunto do e-mail..."
+                        className="w-full"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-foreground mb-1.5 block">Conteúdo do E-mail (HTML)</label>
+                      <Textarea
+                        value={emailBody}
+                        onChange={(e) => setEmailBody(e.target.value)}
+                        placeholder="Digite o conteúdo do e-mail em HTML..."
+                        className="w-full min-h-[200px] font-mono text-sm"
+                      />
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Você pode usar variáveis como {"{nome}"}, {"{email}"} que serão substituídas pelos dados do lead.
+                      </p>
+                    </div>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <p className="text-sm text-muted-foreground">Escreva a mensagem do WhatsApp:</p>
+                  <div className="space-y-4">
+                    <div>
+                      <label className="text-sm font-medium text-foreground mb-1.5 block">Mensagem</label>
+                      <Textarea
+                        value={whatsappMessage}
+                        onChange={(e) => setWhatsappMessage(e.target.value)}
+                        placeholder="Digite a mensagem que será enviada..."
+                        className="w-full min-h-[200px]"
+                      />
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Você pode usar variáveis como {"{nome}"}, {"{email}"} que serão substituídas pelos dados do lead.
+                      </p>
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
+          )}
+
+          {/* Step 6: Confirmation */}
           {step === "confirm" && (
             <div className="space-y-6">
               <div className="bg-muted/50 rounded-xl p-4 space-y-3">
@@ -427,11 +531,32 @@ export function BroadcastDialog({ open, onOpenChange }: BroadcastDialogProps) {
                       {selectedPipeline === "all" ? "Todos os leads" : (selectedPipeline as Pipeline)?.nome}
                     </span>
                   </div>
+                  {selectedChannel === "email" && (
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Assunto:</span>
+                      <span className="font-medium text-foreground truncate max-w-[200px]">{emailSubject}</span>
+                    </div>
+                  )}
                   <div className="flex justify-between pt-2 border-t border-border">
                     <span className="text-muted-foreground">Total de leads:</span>
                     <span className="font-bold text-primary text-lg">{leadsCount}</span>
                   </div>
                 </div>
+              </div>
+              
+              {/* Preview */}
+              <div className="bg-muted/30 rounded-xl p-4">
+                <h4 className="text-sm font-semibold text-foreground mb-2">Preview da mensagem:</h4>
+                {selectedChannel === "email" ? (
+                  <div className="bg-white rounded-lg border border-border p-4 text-sm">
+                    <div className="text-xs text-muted-foreground mb-2">Assunto: <span className="text-foreground">{emailSubject}</span></div>
+                    <div className="prose prose-sm max-w-none" dangerouslySetInnerHTML={{ __html: emailBody || "<p class='text-muted-foreground'>Sem conteúdo</p>" }} />
+                  </div>
+                ) : (
+                  <div className="bg-green-50 rounded-lg border border-green-200 p-4 text-sm whitespace-pre-wrap">
+                    {whatsappMessage || "Sem mensagem"}
+                  </div>
+                )}
               </div>
               
               <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
@@ -453,6 +578,13 @@ export function BroadcastDialog({ open, onOpenChange }: BroadcastDialogProps) {
             </Button>
           ) : (
             <div />
+          )}
+          
+          {step === "compose" && (
+            <Button onClick={handleComposeNext} className="bg-primary hover:bg-primary/90">
+              Continuar
+              <ArrowRight className="w-4 h-4 ml-2" />
+            </Button>
           )}
           
           {step === "confirm" && (
