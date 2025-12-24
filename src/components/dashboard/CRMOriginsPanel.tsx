@@ -384,16 +384,16 @@ function SortableOriginItem({
                         "truncate font-bold",
                         isActive && "bg-gradient-to-r from-orange-500 to-amber-400 bg-clip-text text-transparent"
                       )}>{subOrigin.nome}</span>
-                      {leadCount > 0 && (
-                        <span className={cn(
-                          "ml-auto text-[10px] px-1.5 py-0.5 rounded-full",
-                          isActive 
+                      <span className={cn(
+                        "ml-auto text-[10px] px-1.5 py-0.5 rounded-full min-w-[24px] text-center tabular-nums",
+                        leadCount > 0 
+                          ? isActive 
                             ? "bg-zinc-700 text-white"
                             : "bg-zinc-800 text-zinc-400"
-                        )}>
-                          {leadCount.toLocaleString('pt-BR')}
-                        </span>
-                      )}
+                          : "opacity-0"
+                      )}>
+                        {leadCount > 0 ? leadCount.toLocaleString('pt-BR') : '0'}
+                      </span>
                     </button>
                     
                     {/* Sub-origin Actions - only show for admins */}
