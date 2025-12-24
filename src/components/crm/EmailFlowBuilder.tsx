@@ -1762,8 +1762,8 @@ export function EmailFlowBuilder({
             }}
             className="flex items-center gap-3 cursor-grab active:cursor-grabbing hover:bg-muted/50 rounded-xl p-2.5 transition-colors border border-border w-full"
           >
-            <div className="w-8 h-8 flex items-center justify-center rounded-full bg-green-100 border border-green-200 flex-shrink-0">
-              <WhatsAppIcon className="w-4 h-4" />
+            <div className="w-8 h-8 flex items-center justify-center rounded-full bg-emerald-100 border border-emerald-300 flex-shrink-0">
+              <WhatsAppIcon className="w-4 h-4 text-emerald-600" />
             </div>
             <span className="text-sm text-foreground">WhatsApp</span>
           </div>
