@@ -300,12 +300,15 @@ const handler = async (req: Request): Promise<Response> => {
                       const maxIterations = 20; // Safety limit
                       let iterations = 0;
                       
+                      // Collect all action nodes in the path (email, whatsapp, etc.)
+                      const actionNodes: { id: string; type: string; node: any }[] = [];
+                      
                       while (currentNodeId && iterations < maxIterations) {
                         iterations++;
                         
                         // Avoid infinite loops
                         if (visitedNodes.has(currentNodeId)) {
-                          console.log(`[EmailAutomation] Detected cycle at node: ${currentNodeId}`);
+                          console.log(`[Automation] Detected cycle at node: ${currentNodeId}`);
                           break;
                         }
                         visitedNodes.add(currentNodeId);
@@ -314,22 +317,27 @@ const handler = async (req: Request): Promise<Response> => {
                         const currentNode = flowSteps.find((step) => step?.id === currentNodeId);
                         
                         if (!currentNode) {
-                          console.log(`[EmailAutomation] Node not found: ${currentNodeId}`);
+                          console.log(`[Automation] Node not found: ${currentNodeId}`);
                           break;
                         }
                         
-                        console.log(`[EmailAutomation] Visiting node: ${currentNodeId}, type: ${currentNode.type}`);
+                        console.log(`[Automation] Visiting node: ${currentNodeId}, type: ${currentNode.type}`);
                         
-                        // If it's an email node, we found our target
+                        // If it's an email node, add to action nodes
                         if (currentNode.type === "email") {
-                          targetEmailNodeId = currentNodeId;
-                          console.log(`[EmailAutomation] Found email node: ${targetEmailNodeId}`);
-                          break;
+                          actionNodes.push({ id: currentNodeId, type: "email", node: currentNode });
+                          console.log(`[Automation] Found email node: ${currentNodeId}`);
+                        }
+                        
+                        // If it's a whatsapp node, add to action nodes
+                        if (currentNode.type === "whatsapp") {
+                          actionNodes.push({ id: currentNodeId, type: "whatsapp", node: currentNode });
+                          console.log(`[Automation] Found whatsapp node: ${currentNodeId}`);
                         }
                         
                         // If it's an end node, stop the chain
                         if (currentNode.type === "end") {
-                          console.log(`[EmailAutomation] Reached end node - no email in path`);
+                          console.log(`[Automation] Reached end node`);
                           break;
                         }
                         
@@ -339,20 +347,88 @@ const handler = async (req: Request): Promise<Response> => {
                         if (nextEdge) {
                           currentNodeId = nextEdge.target;
                         } else {
-                          console.log(`[EmailAutomation] No outgoing edge from node: ${currentNodeId}`);
+                          console.log(`[Automation] No outgoing edge from node: ${currentNodeId}`);
                           break;
                         }
                       }
+                      
+                      // Process all action nodes found in the path
+                      for (const actionNode of actionNodes) {
+                        if (actionNode.type === "email") {
+                          targetEmailNodeId = actionNode.id;
+                        }
+                        
+                        if (actionNode.type === "whatsapp") {
+                          // Process WhatsApp node
+                          const whatsappNode = actionNode.node;
+                          const whatsappMessage = whatsappNode?.data?.whatsappMessage;
+                          const whatsappAccountId = whatsappNode?.data?.whatsappAccountId;
+                          
+                          if (whatsappMessage && whatsappAccountId && payload.lead?.whatsapp) {
+                            console.log(`[Automation] Processing WhatsApp node: ${actionNode.id}`);
+                            
+                            try {
+                              // Replace placeholders in message
+                              const leadName = payload.lead.name || "Cliente";
+                              let message = whatsappMessage
+                                .replace(/\{\{name\}\}/g, leadName)
+                                .replace(/\{\{nome\}\}/g, leadName)
+                                .replace(/\{name\}/g, leadName)
+                                .replace(/\{nome\}/g, leadName)
+                                .replace(/\{\{email\}\}/g, payload.lead.email || "")
+                                .replace(/\{email\}/g, payload.lead.email || "")
+                                .replace(/\{\{whatsapp\}\}/g, payload.lead.whatsapp || "")
+                                .replace(/\{whatsapp\}/g, payload.lead.whatsapp || "");
+                              
+                              // Format phone number
+                              let phone = payload.lead.whatsapp.replace(/\D/g, "");
+                              const countryCode = (payload.lead.country_code || "+55").replace(/\D/g, "");
+                              if (!phone.startsWith(countryCode)) {
+                                phone = countryCode + phone;
+                              }
+                              
+                              console.log(`[Automation] Sending WhatsApp to ${phone} via account ${whatsappAccountId}`);
+                              
+                              // Call Wasender API directly
+                              const wasenderResponse = await fetch("https://www.wasenderapi.com/api/send-message", {
+                                method: "POST",
+                                headers: {
+                                  "Content-Type": "application/json",
+                                  "Authorization": `Bearer ${whatsappAccountId}`,
+                                },
+                                body: JSON.stringify({
+                                  to: phone,
+                                  text: message,
+                                }),
+                              });
+                              
+                              const wasenderResult = await wasenderResponse.json();
+                              
+                              if (wasenderResponse.ok) {
+                                console.log(`[Automation] WhatsApp sent successfully:`, wasenderResult);
+                                triggeredEmails.push(`WhatsApp: ${automation.name}`);
+                              } else {
+                                console.error(`[Automation] WhatsApp failed:`, wasenderResult);
+                              }
+                            } catch (whatsappError: any) {
+                              console.error(`[Automation] WhatsApp error:`, whatsappError.message);
+                            }
+                          } else {
+                            console.log(`[Automation] WhatsApp node missing data - message: ${!!whatsappMessage}, account: ${!!whatsappAccountId}, phone: ${!!payload.lead?.whatsapp}`);
+                          }
+                        }
+                      }
                     } else {
-                      console.log(`[EmailAutomation] No matching edge found for handle: ${expectedHandle} - skipping email`);
+                      console.log(`[Automation] No matching edge found for handle: ${expectedHandle}`);
                       continue;
                     }
                   }
                 }
                 
-                // Only send if there's a valid connected email node
+                // Only send email if there's a valid connected email node
                 if (!targetEmailNodeId) {
-                  console.log(`[EmailAutomation] No valid email node in connection path - skipping automation "${automation.name}"`);
+                  console.log(`[Automation] No email node in path for automation "${automation.name}" - continuing with other actions`);
+                  // Don't skip - we may have already sent WhatsApp
                   continue;
                 }
                 
@@ -360,13 +436,13 @@ const handler = async (req: Request): Promise<Response> => {
                 let emailNode = flowSteps.find((step) => step?.id === targetEmailNodeId && step?.type === "email");
                 
                 if (!emailNode?.data) {
-                  console.log(`[EmailAutomation] Email node "${targetEmailNodeId}" has no data - skipping`);
+                  console.log(`[Automation] Email node "${targetEmailNodeId}" has no data - skipping email`);
                   continue;
                 }
                 
                 subject = emailNode.data.subject || subject;
                 bodyHtml = emailNode.data.bodyHtml || bodyHtml;
-                console.log(`[EmailAutomation] Using email node: ${emailNode.id}`);
+                console.log(`[Automation] Using email node: ${emailNode.id}`);
               }
 
               subject = replaceName(subject);
