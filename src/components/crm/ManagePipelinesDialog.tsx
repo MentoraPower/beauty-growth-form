@@ -63,7 +63,9 @@ function SortablePipelineItem({
   deletePipeline,
   isDragging = false,
   isOverlay = false,
-}: SortablePipelineItemProps) {
+  isFirst = false,
+  isLast = false,
+}: SortablePipelineItemProps & { isFirst?: boolean; isLast?: boolean }) {
   const {
     attributes,
     listeners,
@@ -75,7 +77,7 @@ function SortablePipelineItem({
 
   const style = {
     transform: CSS.Transform.toString(transform),
-    transition: undefined, // Sem transição para evitar pulo
+    transition: undefined,
   };
 
   const dragging = isDragging || isSortableDragging;
@@ -84,25 +86,41 @@ function SortablePipelineItem({
     <div
       ref={isOverlay ? undefined : setNodeRef}
       style={isOverlay ? undefined : style}
-      className={cn(
-        "group rounded-xl border p-4",
-        dragging && !isOverlay
-          ? "opacity-30 border-dashed border-muted-foreground/30 bg-muted/10"
-          : "bg-gradient-to-br from-background to-muted/30 border-border/60 hover:border-border hover:shadow-md",
-        isOverlay && "shadow-2xl border-border bg-background"
-      )}
+      className="relative"
     >
-      <div className="flex items-center gap-4">
+      {/* Connector line from top */}
+      {!isFirst && !isOverlay && (
+        <div className="absolute left-6 -top-3 w-0.5 h-3 bg-gradient-to-b from-muted-foreground/20 to-muted-foreground/40" />
+      )}
+      
+      {/* Pipeline node */}
+      <div
+        className={cn(
+          "group relative flex items-center gap-3 rounded-xl border-2 p-3 pl-4 transition-all",
+          dragging && !isOverlay
+            ? "opacity-30 border-dashed border-muted-foreground/30 bg-muted/10"
+            : "bg-gradient-to-r from-background via-background to-muted/20 border-border/60 hover:border-primary/40 hover:shadow-lg hover:shadow-primary/5",
+          isOverlay && "shadow-2xl border-primary/50 bg-background"
+        )}
+      >
+        {/* Pipeline indicator dot */}
+        <div 
+          className={cn(
+            "absolute -left-[7px] top-1/2 -translate-y-1/2 w-3 h-3 rounded-full border-2 border-background transition-all",
+            dragging && !isOverlay ? "bg-muted-foreground/30" : "bg-primary shadow-md shadow-primary/30"
+          )}
+        />
+
         {/* Drag Handle */}
         <div
           {...(isOverlay ? {} : attributes)}
           {...(isOverlay ? {} : listeners)}
           className={cn(
-            "p-1 -m-1 rounded transition-all cursor-grab active:cursor-grabbing touch-none",
-            isOverlay ? "opacity-100" : "opacity-50 group-hover:opacity-100 hover:bg-muted"
+            "p-1.5 -m-1 rounded-lg transition-all cursor-grab active:cursor-grabbing touch-none",
+            isOverlay ? "opacity-100 bg-muted" : "opacity-40 group-hover:opacity-100 hover:bg-muted"
           )}
         >
-          <GripVertical className="w-5 h-5 text-muted-foreground pointer-events-none" />
+          <GripVertical className="w-4 h-4 text-muted-foreground pointer-events-none" />
         </div>
 
         {/* Content */}
@@ -119,50 +137,49 @@ function SortablePipelineItem({
                 }}
                 onClick={(e) => e.stopPropagation()}
                 autoFocus
-                className="h-9 flex-1"
+                className="h-8 flex-1 text-sm"
               />
               <Button
                 size="sm"
-                className="h-9 px-3 bg-green-600 hover:bg-green-700 text-white"
+                className="h-8 w-8 p-0 bg-green-600 hover:bg-green-700 text-white"
                 onClick={() => updatePipeline(pipeline.id)}
               >
-                <Check className="h-4 w-4" />
+                <Check className="h-3.5 w-3.5" />
               </Button>
               <Button
                 size="sm"
                 variant="outline"
-                className="h-9 px-3"
+                className="h-8 w-8 p-0"
                 onClick={() => setEditingId(null)}
               >
-                <X className="h-4 w-4" />
+                <X className="h-3.5 w-3.5" />
               </Button>
             </div>
           ) : (
-            <h3 className="font-medium text-sm truncate">
+            <span className="font-medium text-sm truncate block">
               {pipeline.nome}
-            </h3>
+            </span>
           )}
         </div>
 
         {/* Actions */}
         {editingId !== pipeline.id && !isOverlay && (
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
             <Button
               size="sm"
               variant="ghost"
-              className="h-8 px-3 text-xs gap-1.5 hover:bg-muted"
+              className="h-7 w-7 p-0 hover:bg-muted"
               onClick={() => {
                 setEditingId(pipeline.id);
                 setEditingName(pipeline.nome);
               }}
             >
-              <Pencil className="h-3.5 w-3.5" />
-              Editar
+              <Pencil className="h-3.5 w-3.5 text-muted-foreground" />
             </Button>
             <Button
               size="sm"
               variant="ghost"
-              className="h-8 w-8 p-0 text-destructive hover:text-destructive hover:bg-destructive/10"
+              className="h-7 w-7 p-0 text-destructive hover:text-destructive hover:bg-destructive/10"
               onClick={() => deletePipeline(pipeline.id)}
             >
               <Trash2 className="h-3.5 w-3.5" />
@@ -170,6 +187,11 @@ function SortablePipelineItem({
           </div>
         )}
       </div>
+
+      {/* Connector line to bottom */}
+      {!isLast && !isOverlay && (
+        <div className="absolute left-6 -bottom-3 w-0.5 h-3 bg-gradient-to-b from-muted-foreground/40 to-muted-foreground/20" />
+      )}
     </div>
   );
 }
@@ -341,8 +363,13 @@ export function ManagePipelinesDialog({
             </Button>
           </div>
 
-          {/* Vertical Scroll Container with DnD */}
-          <div className="space-y-2 max-h-[400px] overflow-y-auto pr-2">
+          {/* Vertical Pipeline Flow */}
+          <div className="relative pl-4 space-y-6 max-h-[400px] overflow-y-auto pr-2 py-2">
+            {/* Main pipeline track line */}
+            {localPipelines.length > 1 && (
+              <div className="absolute left-6 top-6 bottom-6 w-0.5 bg-gradient-to-b from-primary/20 via-muted-foreground/20 to-primary/20 rounded-full" />
+            )}
+            
             <DndContext
               sensors={sensors}
               collisionDetection={closestCenter}
@@ -354,7 +381,7 @@ export function ManagePipelinesDialog({
                 items={localPipelines.map((p) => p.id)}
                 strategy={verticalListSortingStrategy}
               >
-                {localPipelines.map((pipeline) => (
+                {localPipelines.map((pipeline, index) => (
                   <SortablePipelineItem
                     key={pipeline.id}
                     pipeline={pipeline}
@@ -365,6 +392,8 @@ export function ManagePipelinesDialog({
                     updatePipeline={updatePipeline}
                     deletePipeline={deletePipeline}
                     isDragging={activeId === pipeline.id}
+                    isFirst={index === 0}
+                    isLast={index === localPipelines.length - 1}
                   />
                 ))}
               </SortableContext>
