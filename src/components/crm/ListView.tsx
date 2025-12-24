@@ -1,8 +1,9 @@
 import { useState } from "react";
-import { ChevronDown, ChevronRight, Plus, MoreHorizontal, User, Calendar, Flag } from "lucide-react";
+import { ChevronDown, ChevronRight, Plus, MoreHorizontal, Calendar } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Lead, Pipeline } from "@/types/crm";
 import { useNavigate } from "react-router-dom";
+import { Checkbox } from "@/components/ui/checkbox";
 
 interface ListViewProps {
   pipelines: Pipeline[];
@@ -14,6 +15,7 @@ export function ListView({ pipelines, leadsByPipeline, subOriginId }: ListViewPr
   const [expandedPipelines, setExpandedPipelines] = useState<Set<string>>(
     new Set(pipelines.map(p => p.id))
   );
+  const [selectedLeads, setSelectedLeads] = useState<Set<string>>(new Set());
   const navigate = useNavigate();
 
   const togglePipeline = (pipelineId: string) => {
@@ -30,6 +32,34 @@ export function ListView({ pipelines, leadsByPipeline, subOriginId }: ListViewPr
 
   const handleLeadClick = (lead: Lead) => {
     navigate(`/admin/lead/${lead.id}`);
+  };
+
+  const toggleLeadSelection = (leadId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setSelectedLeads(prev => {
+      const next = new Set(prev);
+      if (next.has(leadId)) {
+        next.delete(leadId);
+      } else {
+        next.add(leadId);
+      }
+      return next;
+    });
+  };
+
+  const toggleAllInPipeline = (pipelineId: string) => {
+    const leads = leadsByPipeline.get(pipelineId) || [];
+    const allSelected = leads.every(lead => selectedLeads.has(lead.id));
+    
+    setSelectedLeads(prev => {
+      const next = new Set(prev);
+      if (allSelected) {
+        leads.forEach(lead => next.delete(lead.id));
+      } else {
+        leads.forEach(lead => next.add(lead.id));
+      }
+      return next;
+    });
   };
 
   const getPipelineColor = (index: number) => {
@@ -59,11 +89,12 @@ export function ListView({ pipelines, leadsByPipeline, subOriginId }: ListViewPr
           {pipelines.map((pipeline, index) => {
             const leads = leadsByPipeline.get(pipeline.id) || [];
             const isExpanded = expandedPipelines.has(pipeline.id);
+            const allSelected = leads.length > 0 && leads.every(lead => selectedLeads.has(lead.id));
 
             return (
               <div key={pipeline.id} className="border-b border-border/50 last:border-b-0">
                 {/* Pipeline Header */}
-                <div className="flex items-center gap-2 py-2 px-1 hover:bg-muted/30 rounded transition-colors">
+                <div className="flex items-center gap-2 py-2 px-1 hover:bg-muted/30 rounded transition-colors group">
                   <button
                     onClick={() => togglePipeline(pipeline.id)}
                     className="p-0.5 hover:bg-muted rounded"
@@ -97,10 +128,15 @@ export function ListView({ pipelines, leadsByPipeline, subOriginId }: ListViewPr
                   <div className="ml-6">
                     {/* Table Header */}
                     <div className="grid grid-cols-12 gap-4 py-2 px-3 text-xs text-muted-foreground border-b border-border/30">
-                      <div className="col-span-6">Nome</div>
-                      <div className="col-span-2">Responsável</div>
-                      <div className="col-span-2">Data de entrada</div>
-                      <div className="col-span-1">MQL</div>
+                      <div className="col-span-1 flex items-center">
+                        <Checkbox
+                          checked={allSelected}
+                          onCheckedChange={() => toggleAllInPipeline(pipeline.id)}
+                          className="data-[state=checked]:bg-primary data-[state=checked]:border-primary"
+                        />
+                      </div>
+                      <div className="col-span-7">Nome</div>
+                      <div className="col-span-3">Data de entrada</div>
                       <div className="col-span-1"></div>
                     </div>
 
@@ -109,11 +145,22 @@ export function ListView({ pipelines, leadsByPipeline, subOriginId }: ListViewPr
                       <div
                         key={lead.id}
                         onClick={() => handleLeadClick(lead)}
-                        className="grid grid-cols-12 gap-4 py-2.5 px-3 hover:bg-muted/40 rounded cursor-pointer transition-colors group border-b border-border/20 last:border-b-0"
+                        className={cn(
+                          "grid grid-cols-12 gap-4 py-2.5 px-3 hover:bg-muted/40 rounded cursor-pointer transition-colors group border-b border-border/20 last:border-b-0",
+                          selectedLeads.has(lead.id) && "bg-primary/5"
+                        )}
                       >
-                        <div className="col-span-6 flex items-center gap-2">
+                        <div className="col-span-1 flex items-center">
+                          <Checkbox
+                            checked={selectedLeads.has(lead.id)}
+                            onCheckedChange={() => {}}
+                            onClick={(e) => toggleLeadSelection(lead.id, e)}
+                            className="data-[state=checked]:bg-primary data-[state=checked]:border-primary"
+                          />
+                        </div>
+                        <div className="col-span-7 flex items-center gap-2">
                           <div className={cn(
-                            "w-4 h-4 rounded-full flex items-center justify-center text-white text-[10px] font-bold",
+                            "w-5 h-5 rounded-full flex items-center justify-center text-white text-[10px] font-bold flex-shrink-0",
                             getPipelineColor(index)
                           )}>
                             {lead.name.charAt(0).toUpperCase()}
@@ -121,26 +168,15 @@ export function ListView({ pipelines, leadsByPipeline, subOriginId }: ListViewPr
                           <span className="text-sm text-foreground truncate">{lead.name}</span>
                         </div>
                         
-                        <div className="col-span-2 flex items-center">
-                          <User className="w-4 h-4 text-muted-foreground" />
-                        </div>
-                        
-                        <div className="col-span-2 flex items-center">
+                        <div className="col-span-3 flex items-center gap-1.5">
                           <Calendar className="w-4 h-4 text-muted-foreground" />
-                          <span className="text-xs text-muted-foreground ml-1">
+                          <span className="text-xs text-muted-foreground">
                             {new Date(lead.created_at).toLocaleDateString("pt-BR", {
                               day: "2-digit",
-                              month: "short"
+                              month: "short",
+                              year: "numeric"
                             })}
                           </span>
-                        </div>
-                        
-                        <div className="col-span-1 flex items-center">
-                          {lead.is_mql && (
-                            <span className="px-1.5 py-0.5 text-[10px] font-medium bg-emerald-100 text-emerald-700 rounded">
-                              MQL
-                            </span>
-                          )}
                         </div>
                         
                         <div className="col-span-1 flex items-center justify-end opacity-0 group-hover:opacity-100 transition-opacity">
