@@ -139,10 +139,16 @@ export function EmailAutomationsView({ pipelines, subOriginId }: EmailAutomation
 
   // Sync local state with fetched data
   useEffect(() => {
-    if (existingAutomation && existingAutomation.sub_origin_id === subOriginId) {
+    if (existingAutomation) {
+      console.log("Syncing local state from existingAutomation:", existingAutomation.id);
       setLocalAutomation(existingAutomation);
+      if (existingAutomation.id) {
+        setAutomationId(existingAutomation.id);
+      }
+      // Mark as hydrated when we have data
+      didHydrateRef.current = true;
     }
-  }, [existingAutomation, subOriginId]);
+  }, [existingAutomation]);
 
   // Fetch pending emails count
   const { data: pendingCount = 0 } = useQuery({
@@ -165,8 +171,7 @@ export function EmailAutomationsView({ pipelines, subOriginId }: EmailAutomation
 
   // Hydrate refs when data loads (prevents overwriting on mount)
   useEffect(() => {
-    if (didHydrateRef.current) return;
-    if (!localAutomation) return;
+    if (!localAutomation?.flow_steps) return;
     
     // Ensure this automation is for the current sub_origin
     if (localAutomation.sub_origin_id !== subOriginId) {
@@ -188,14 +193,13 @@ export function EmailAutomationsView({ pipelines, subOriginId }: EmailAutomation
     
     lastSavedStepsRef.current = JSON.stringify(cleanSteps);
     lastKnownTriggerPipelineIdRef.current = localAutomation.trigger_pipeline_id || null;
-    ignoreNextAutosaveRef.current = true;
-
-    if (localAutomation.id) {
-      setAutomationId(localAutomation.id);
+    
+    // Only ignore first autosave if not already hydrated for this origin
+    if (!didHydrateRef.current) {
+      ignoreNextAutosaveRef.current = true;
+      didHydrateRef.current = true;
+      console.log("Hydrated automation:", localAutomation.id, "for sub_origin:", subOriginId);
     }
-
-    didHydrateRef.current = true;
-    console.log("Hydrated automation:", localAutomation.id, "for sub_origin:", subOriginId);
   }, [localAutomation, subOriginId]);
 
   const getPipelineName = useCallback(
@@ -362,10 +366,10 @@ export function EmailAutomationsView({ pipelines, subOriginId }: EmailAutomation
   }
 
   // Use a key to force remount when switching origins
-  const flowBuilderKey = `flow-builder-${subOriginId || 'none'}`;
+  const flowBuilderKey = `flow-builder-${subOriginId || 'none'}-${automationId || 'new'}`;
   
-  // Get the automation data to display (prefer localAutomation which has realtime updates)
-  const displayAutomation = localAutomation?.sub_origin_id === subOriginId ? localAutomation : null;
+  // Get the automation data to display - use localAutomation or existingAutomation
+  const displayAutomation = localAutomation || existingAutomation;
 
   // Always show flow builder directly
   return (
