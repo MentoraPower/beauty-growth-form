@@ -499,6 +499,9 @@ const WaitNode = ({ data, id, selected }: NodeProps) => {
     });
   };
 
+  // Calculate progress animation percentage (visual only, loops every 4 seconds)
+  const progressPercentage = 75; // Static visual fill
+
   return (
     <div className="relative">
       <Handle
@@ -506,85 +509,87 @@ const WaitNode = ({ data, id, selected }: NodeProps) => {
         position={Position.Left}
         className="!w-2.5 !h-2.5 !bg-foreground !border-2 !border-background !z-10"
       />
-      <div className="w-56 border border-border bg-card transition-all rounded-xl overflow-hidden">
-        {/* Yellow header */}
+      
+      {/* Square card design */}
+      <div 
+        className="w-28 h-28 border border-border bg-card transition-all rounded-2xl overflow-hidden cursor-pointer hover:shadow-lg hover:scale-105 flex flex-col"
+        onClick={handleOpen}
+      >
+        {/* Progress fill background */}
         <div 
-          className="px-4 py-3 flex items-center justify-between cursor-pointer hover:opacity-90 transition-opacity"
-          style={{ background: "linear-gradient(135deg, #FBBF24 0%, #F59E0B 100%)" }}
-          onClick={handleOpen}
-        >
-          <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-black/10 flex items-center justify-center">
-              <Clock className="w-4 h-4 text-black" />
-            </div>
-            <span className="text-sm font-semibold text-black uppercase tracking-wide">Espera</span>
+          className="absolute inset-0 rounded-2xl transition-all duration-500"
+          style={{ 
+            background: `linear-gradient(to top, rgba(251, 191, 36, 0.15) ${progressPercentage}%, transparent ${progressPercentage}%)` 
+          }}
+        />
+        
+        {/* Icon container */}
+        <div className="flex-1 flex items-center justify-center relative z-10">
+          <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-amber-400 to-amber-500 flex items-center justify-center shadow-lg">
+            <Clock className="w-6 h-6 text-white" />
           </div>
+        </div>
+        
+        {/* Time display at bottom */}
+        <div className="px-2 pb-3 text-center relative z-10">
+          <span className="text-lg font-bold text-foreground">{waitTime}</span>
+          <span className="text-xs text-muted-foreground ml-1">{unitLabels[waitUnit]}</span>
           
           {/* Pending count badge */}
           {pendingCount > 0 && (
-            <div className="flex items-center gap-1 bg-black/20 rounded-full px-2 py-0.5">
-              <User className="w-3 h-3 text-black" />
-              <span className="text-xs font-bold text-black">{pendingCount}</span>
+            <div className="absolute top-0 right-2 flex items-center gap-0.5 bg-amber-500 rounded-full px-1.5 py-0.5">
+              <User className="w-2.5 h-2.5 text-white" />
+              <span className="text-[10px] font-bold text-white">{pendingCount}</span>
             </div>
           )}
         </div>
-        
-        {/* Time display */}
-        <div className="px-4 py-4 flex items-center justify-center">
-          <span className="text-2xl font-bold text-foreground">
-            {waitTime}
-          </span>
-          <span className="text-sm text-muted-foreground ml-2">
-            {unitLabels[waitUnit]}
-          </span>
-        </div>
+      </div>
 
-        {/* Editor Dropdown - Side */}
-        {isEditing && (
-          <div className="absolute top-0 left-full ml-2 w-[280px] bg-background border border-border rounded-lg shadow-xl z-50 nodrag">
-            <div className="p-4 border-b border-border bg-muted/30">
-              <h4 className="text-sm font-semibold text-foreground">Configurar tempo</h4>
+      {/* Editor Dropdown - Side */}
+      {isEditing && (
+        <div className="absolute top-0 left-full ml-2 w-[280px] bg-background border border-border rounded-lg shadow-xl z-50 nodrag">
+          <div className="p-4 border-b border-border bg-muted/30">
+            <h4 className="text-sm font-semibold text-foreground">Configurar tempo</h4>
+          </div>
+          <div className="p-4 space-y-4">
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="text-xs font-semibold text-muted-foreground uppercase mb-1.5 block">Tempo</label>
+                <Input
+                  type="number"
+                  min={1}
+                  value={localWaitTime}
+                  onChange={(e) => setLocalWaitTime(parseInt(e.target.value) || 1)}
+                  className="h-9 text-sm"
+                />
+              </div>
+              <div>
+                <label className="text-xs font-semibold text-muted-foreground uppercase mb-1.5 block">Unidade</label>
+                <Select
+                  value={localWaitUnit}
+                  onValueChange={(v) => setLocalWaitUnit(v)}
+                >
+                  <SelectTrigger className="h-9">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="seconds">Segundos</SelectItem>
+                    <SelectItem value="minutes">Minutos</SelectItem>
+                    <SelectItem value="hours">Horas</SelectItem>
+                    <SelectItem value="days">Dias</SelectItem>
+                    <SelectItem value="months">Meses</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
-            <div className="p-4 space-y-4">
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="text-xs font-semibold text-muted-foreground uppercase mb-1.5 block">Tempo</label>
-                  <Input
-                    type="number"
-                    min={1}
-                    value={localWaitTime}
-                    onChange={(e) => setLocalWaitTime(parseInt(e.target.value) || 1)}
-                    className="h-9 text-sm"
-                  />
-                </div>
-                <div>
-                  <label className="text-xs font-semibold text-muted-foreground uppercase mb-1.5 block">Unidade</label>
-                  <Select
-                    value={localWaitUnit}
-                    onValueChange={(v) => setLocalWaitUnit(v)}
-                  >
-                    <SelectTrigger className="h-9">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="seconds">Segundos</SelectItem>
-                      <SelectItem value="minutes">Minutos</SelectItem>
-                      <SelectItem value="hours">Horas</SelectItem>
-                      <SelectItem value="days">Dias</SelectItem>
-                      <SelectItem value="months">Meses</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-              <div className="flex justify-end pt-2">
-                <Button size="sm" onClick={() => setIsEditing(false)} className="bg-foreground text-background hover:bg-foreground/90">
-                  Fechar
-                </Button>
-              </div>
+            <div className="flex justify-end pt-2">
+              <Button size="sm" onClick={() => setIsEditing(false)} className="bg-foreground text-background hover:bg-foreground/90">
+                Fechar
+              </Button>
             </div>
           </div>
-        )}
-      </div>
+        </div>
+      )}
 
       <Handle
         type="source"
