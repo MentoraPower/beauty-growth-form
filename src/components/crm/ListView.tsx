@@ -132,7 +132,7 @@ export function ListView({ pipelines, leadsByPipeline, subOriginId }: ListViewPr
                         <Checkbox
                           checked={allSelected}
                           onCheckedChange={() => toggleAllInPipeline(pipeline.id)}
-                          className="data-[state=checked]:bg-primary data-[state=checked]:border-primary"
+                          className="border-[#00000040] data-[state=checked]:bg-[#00000040] data-[state=checked]:border-[#00000040]"
                         />
                       </div>
                       <div className="col-span-7">Nome</div>
@@ -155,7 +155,7 @@ export function ListView({ pipelines, leadsByPipeline, subOriginId }: ListViewPr
                             checked={selectedLeads.has(lead.id)}
                             onCheckedChange={() => {}}
                             onClick={(e) => toggleLeadSelection(lead.id, e)}
-                            className="data-[state=checked]:bg-primary data-[state=checked]:border-primary"
+                            className="border-[#00000040] data-[state=checked]:bg-[#00000040] data-[state=checked]:border-[#00000040]"
                           />
                         </div>
                         <div className="col-span-7 flex items-center gap-2">
