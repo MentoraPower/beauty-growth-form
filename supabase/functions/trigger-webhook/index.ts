@@ -393,11 +393,21 @@ const handler = async (req: Request): Promise<Response> => {
                                   .replace(/\{whatsapp\}/g, payload.lead.whatsapp || "");
                               };
                               
-                              let wasenderResponse: Response;
+                              let wasenderResponse: Response | undefined;
                               let wasenderResult: any;
-                              
+
+                              const readWasenderResult = async (res: Response) => {
+                                const text = await res.text();
+                                try {
+                                  return JSON.parse(text);
+                                } catch {
+                                  return text;
+                                }
+                              };
+
                               console.log(`[Automation] Sending WhatsApp ${whatsappMessageType} to ${phone} via account ${whatsappAccountId}`);
-                              
+
+                              // Wasender envia tudo via /send-message mudando o payload (imageUrl, audioUrl, videoUrl, documentUrl)
                               switch (whatsappMessageType) {
                                 case "text": {
                                   if (!whatsappMessage) {
@@ -416,17 +426,16 @@ const handler = async (req: Request): Promise<Response> => {
                                       text: message,
                                     }),
                                   });
-                                  wasenderResult = await wasenderResponse.json();
+                                  wasenderResult = await readWasenderResult(wasenderResponse);
                                   break;
                                 }
-                                
+
                                 case "image": {
                                   if (!whatsappMediaUrl) {
                                     console.log(`[Automation] Image URL is missing - skipping`);
                                     break;
                                   }
-                                  const caption = replacePlaceholders(whatsappMessage || "");
-                                  wasenderResponse = await fetch("https://www.wasenderapi.com/api/send-image", {
+                                  wasenderResponse = await fetch("https://www.wasenderapi.com/api/send-message", {
                                     method: "POST",
                                     headers: {
                                       "Content-Type": "application/json",
@@ -435,19 +444,18 @@ const handler = async (req: Request): Promise<Response> => {
                                     body: JSON.stringify({
                                       to: phone,
                                       imageUrl: whatsappMediaUrl,
-                                      caption: caption || undefined,
                                     }),
                                   });
-                                  wasenderResult = await wasenderResponse.json();
+                                  wasenderResult = await readWasenderResult(wasenderResponse);
                                   break;
                                 }
-                                
+
                                 case "audio": {
                                   if (!whatsappMediaUrl) {
                                     console.log(`[Automation] Audio URL is missing - skipping`);
                                     break;
                                   }
-                                  wasenderResponse = await fetch("https://www.wasenderapi.com/api/send-audio", {
+                                  wasenderResponse = await fetch("https://www.wasenderapi.com/api/send-message", {
                                     method: "POST",
                                     headers: {
                                       "Content-Type": "application/json",
@@ -458,17 +466,16 @@ const handler = async (req: Request): Promise<Response> => {
                                       audioUrl: whatsappMediaUrl,
                                     }),
                                   });
-                                  wasenderResult = await wasenderResponse.json();
+                                  wasenderResult = await readWasenderResult(wasenderResponse);
                                   break;
                                 }
-                                
+
                                 case "video": {
                                   if (!whatsappMediaUrl) {
                                     console.log(`[Automation] Video URL is missing - skipping`);
                                     break;
                                   }
-                                  const videoCaption = replacePlaceholders(whatsappMessage || "");
-                                  wasenderResponse = await fetch("https://www.wasenderapi.com/api/send-video", {
+                                  wasenderResponse = await fetch("https://www.wasenderapi.com/api/send-message", {
                                     method: "POST",
                                     headers: {
                                       "Content-Type": "application/json",
@@ -477,19 +484,18 @@ const handler = async (req: Request): Promise<Response> => {
                                     body: JSON.stringify({
                                       to: phone,
                                       videoUrl: whatsappMediaUrl,
-                                      caption: videoCaption || undefined,
                                     }),
                                   });
-                                  wasenderResult = await wasenderResponse.json();
+                                  wasenderResult = await readWasenderResult(wasenderResponse);
                                   break;
                                 }
-                                
+
                                 case "document": {
                                   if (!whatsappMediaUrl) {
                                     console.log(`[Automation] Document URL is missing - skipping`);
                                     break;
                                   }
-                                  wasenderResponse = await fetch("https://www.wasenderapi.com/api/send-file", {
+                                  wasenderResponse = await fetch("https://www.wasenderapi.com/api/send-message", {
                                     method: "POST",
                                     headers: {
                                       "Content-Type": "application/json",
@@ -497,14 +503,14 @@ const handler = async (req: Request): Promise<Response> => {
                                     },
                                     body: JSON.stringify({
                                       to: phone,
-                                      fileUrl: whatsappMediaUrl,
-                                      fileName: whatsappFileName || "documento",
+                                      documentUrl: whatsappMediaUrl,
+                                      text: whatsappFileName || "",
                                     }),
                                   });
-                                  wasenderResult = await wasenderResponse.json();
+                                  wasenderResult = await readWasenderResult(wasenderResponse);
                                   break;
                                 }
-                                
+
                                 default:
                                   console.log(`[Automation] Unknown message type: ${whatsappMessageType}`);
                               }
