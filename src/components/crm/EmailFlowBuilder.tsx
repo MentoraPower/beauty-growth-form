@@ -1053,7 +1053,7 @@ const WhatsAppNode = ({ id, data, selected }: NodeProps) => {
         {/* Orange gradient header */}
         <div 
           className="px-4 py-2.5 flex items-center justify-between cursor-pointer hover:opacity-90 transition-opacity"
-          style={{ background: "linear-gradient(135deg, #25D366 0%, #128C7E 100%)" }}
+          style={{ background: "linear-gradient(135deg, #f97316 0%, #ea580c 100%)" }}
           onClick={handleOpen}
         >
           <div className="flex items-center gap-3">
