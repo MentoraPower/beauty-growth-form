@@ -15,7 +15,6 @@ import {
   NodeProps,
   BaseEdge,
   EdgeLabelRenderer,
-  getBezierPath,
   getStraightPath,
   EdgeProps,
   useReactFlow,
@@ -682,19 +681,19 @@ const EmailNode = ({ id, data, selected }: NodeProps) => {
         type="target"
         position={Position.Left}
         className="!w-2.5 !h-2.5 !bg-foreground !border-2 !border-background !z-10"
+        style={{ top: "50%" }}
       />
       <div className="w-[320px] border border-border bg-background shadow-sm transition-all rounded-lg overflow-hidden">
         {/* Orange gradient header with Gmail logo */}
-        <div 
-          className="px-4 py-2.5 flex items-center justify-between cursor-pointer hover:opacity-90 transition-opacity"
-          style={{ background: "linear-gradient(135deg, #F97316 0%, #EA580C 100%)" }}
+        <div
+          className="px-4 py-2.5 flex items-center justify-between cursor-pointer bg-gradient-to-br from-primary to-primary.dark text-primary-foreground hover:opacity-90 transition-opacity"
           onClick={handleOpen}
         >
           <div className="flex items-center gap-3">
-            <img src={gmailLogo} alt="Gmail" className="w-7 h-7 rounded" />
-            <span className="text-xs font-semibold text-white uppercase tracking-wide">E-mail</span>
+            <img src={gmailLogo} alt="Logo do Gmail" className="w-7 h-7 rounded" loading="lazy" />
+            <span className="text-xs font-semibold uppercase tracking-wide">E-mail</span>
           </div>
-          <span className="text-white/70 text-xs">Clique para editar</span>
+          <span className="text-primary-foreground/70 text-xs">Clique para editar</span>
         </div>
         
         {/* Email Preview - Large */}
@@ -749,6 +748,7 @@ const EmailNode = ({ id, data, selected }: NodeProps) => {
         type="source"
         position={Position.Right}
         className="!w-2.5 !h-2.5 !bg-foreground !border-2 !border-background !z-10"
+        style={{ top: "50%" }}
       />
 
       {/* Action buttons - slide down from top */}
@@ -1052,26 +1052,12 @@ const CustomEdge = ({
   targetPosition,
   data,
 }: CustomEdgeProps) => {
-  // Use straight path only when perfectly aligned (keeps connection anchored to the handles)
-  const isNearlyStraight = Math.abs(sourceY - targetY) < 6;
-
-  // Use straight path for aligned nodes, bezier for others
-  const [edgePath, labelX, labelY] = isNearlyStraight
-    ? getStraightPath({
-        sourceX,
-        sourceY,
-        targetX,
-        targetY,
-      })
-    : getBezierPath({
-        sourceX,
-        sourceY,
-        sourcePosition,
-        targetX,
-        targetY,
-        targetPosition,
-        curvature: 0.25,
-      });
+  const [edgePath, labelX, labelY] = getStraightPath({
+    sourceX,
+    sourceY,
+    targetX,
+    targetY,
+  });
 
   const gradientId = `edge-gradient-${id}`.replace(/[^a-zA-Z0-9_-]/g, "_");
 
@@ -1093,8 +1079,8 @@ const CustomEdge = ({
           x2={targetX}
           y2={targetY}
         >
-          <stop offset="0%" stopColor="#F97316" />
-          <stop offset="100%" stopColor="#EA580C" />
+          <stop offset="0%" stopColor="hsl(var(--primary))" />
+          <stop offset="100%" stopColor="hsl(var(--primary-dark))" />
         </linearGradient>
       </defs>
       <path
