@@ -96,7 +96,18 @@ export function EmailAutomationsView({ pipelines, subOriginId }: EmailAutomation
     if (didHydrateRef.current) return;
 
     const flowSteps = existingAutomation?.flow_steps || [];
-    lastSavedStepsRef.current = JSON.stringify(flowSteps);
+    
+    // Create a clean version for comparison (without functions)
+    const cleanSteps = flowSteps.map((s: any) => ({
+      id: s.id,
+      type: s.type,
+      position: s.position,
+      data: s.data ? Object.fromEntries(
+        Object.entries(s.data).filter(([_, v]) => typeof v !== 'function')
+      ) : {},
+    }));
+    
+    lastSavedStepsRef.current = JSON.stringify(cleanSteps);
     lastKnownTriggerPipelineIdRef.current = existingAutomation?.trigger_pipeline_id || null;
     ignoreNextAutosaveRef.current = true;
 
@@ -116,14 +127,28 @@ export function EmailAutomationsView({ pipelines, subOriginId }: EmailAutomation
 
   // Auto-save function
   const autoSave = useCallback(async (steps: any[]) => {
-    if (!didHydrateRef.current) return;
+    if (!didHydrateRef.current) {
+      console.log("Auto-save skipped: not hydrated yet");
+      return;
+    }
 
-    const stepsJson = JSON.stringify(steps);
+    // Create a clean version of steps without functions for comparison
+    const cleanSteps = steps.map(s => ({
+      id: s.id,
+      type: s.type,
+      position: s.position,
+      data: s.data ? Object.fromEntries(
+        Object.entries(s.data).filter(([_, v]) => typeof v !== 'function')
+      ) : {},
+    }));
+    
+    const stepsJson = JSON.stringify(cleanSteps);
 
     // Ignore the first onChange emission after mount/hydration (prevents overwriting)
     if (ignoreNextAutosaveRef.current) {
       lastSavedStepsRef.current = stepsJson;
       ignoreNextAutosaveRef.current = false;
+      console.log("Auto-save: first call ignored (hydration)");
       return;
     }
 
@@ -131,6 +156,8 @@ export function EmailAutomationsView({ pipelines, subOriginId }: EmailAutomation
     if (stepsJson === lastSavedStepsRef.current) {
       return;
     }
+    
+    console.log("Auto-save: changes detected, saving...");
 
     // Filter out _edges step for processing
     const nodeSteps = steps.filter((s) => s.type !== "_edges");
