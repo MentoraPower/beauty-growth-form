@@ -168,9 +168,9 @@ const TriggerNode = ({ data, id, selected }: NodeProps & { data: {
     const groupTrigger = GROUP_TRIGGER_TYPES.find(gt => gt.id === trigger.type);
     if (groupTrigger) {
       const Icon = groupTrigger.icon;
-      return <Icon className="w-4 h-4 text-[#F40000]" />;
+      return <Icon className="w-4 h-4 text-orange-500" />;
     }
-    return <Zap className="w-4 h-4 text-[#F40000]" />;
+    return <Zap className="w-4 h-4 text-orange-500" />;
   };
 
   const addTriggerWithPipeline = (pipelineId: string) => {
@@ -221,10 +221,10 @@ const TriggerNode = ({ data, id, selected }: NodeProps & { data: {
       <div 
         className="min-w-[280px] border border-border bg-card transition-all rounded-xl overflow-hidden"
       >
-        {/* Red accent header */}
+        {/* Orange accent header */}
         <div 
           className="px-4 py-4 flex items-center gap-3"
-          style={{ background: "linear-gradient(135deg, #F40000 0%, #A10000 100%)" }}
+          style={{ background: "linear-gradient(135deg, #F97316 0%, #EA580C 100%)" }}
         >
           <div className="w-10 h-10 rounded-lg bg-white/20 flex items-center justify-center">
             <Zap className="w-5 h-5 text-white" />
@@ -257,7 +257,7 @@ const TriggerNode = ({ data, id, selected }: NodeProps & { data: {
                 type="source"
                 position={Position.Right}
                 id={`trigger-handle-${index}`}
-                className="!w-3 !h-3 !bg-[#F40000] !border-2 !border-white"
+                className="!w-3 !h-3 !bg-orange-500 !border-2 !border-white"
                 style={{ top: "50%", transform: "translateY(-50%)" }}
               />
             </div>
@@ -298,7 +298,7 @@ const TriggerNode = ({ data, id, selected }: NodeProps & { data: {
               className="w-full px-3 py-2.5 text-left text-sm hover:bg-gray-100 transition-colors flex items-center gap-2 text-foreground"
               style={{ backgroundColor: '#ffffff' }}
             >
-              <Zap className="w-4 h-4 text-[#F40000]" />
+              <Zap className="w-4 h-4 text-orange-500" />
               <div className="flex-1">
                 <div className="font-medium">Entrou em Pipeline</div>
                 <div className="text-xs text-muted-foreground">Quando lead entra em uma pipeline</div>
@@ -313,7 +313,7 @@ const TriggerNode = ({ data, id, selected }: NodeProps & { data: {
               className="w-full px-3 py-2.5 text-left text-sm hover:bg-gray-100 transition-colors flex items-center gap-2 text-foreground last:rounded-b-lg"
               style={{ backgroundColor: '#ffffff' }}
             >
-              <Users className="w-4 h-4 text-[#F40000]" />
+              <Users className="w-4 h-4 text-orange-500" />
               <div className="flex-1">
                 <div className="font-medium">Gatilhos de Grupo</div>
                 <div className="text-xs text-muted-foreground">Relacionados a grupos WhatsApp</div>
