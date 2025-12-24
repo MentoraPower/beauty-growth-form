@@ -8,6 +8,12 @@ import Instagram from "@/components/icons/Instagram";
 import WhatsApp from "@/components/icons/WhatsApp";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { differenceInMinutes, differenceInHours, differenceInDays, differenceInWeeks, differenceInMonths, differenceInYears } from "date-fns";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 interface KanbanCardProps {
   lead: Lead;
@@ -151,17 +157,46 @@ export const KanbanCard = memo(function KanbanCard({ lead, isDragging: isDraggin
         
         {/* Icons and time */}
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            {hasInstagram && (
-              <Instagram className="w-3.5 h-3.5 text-muted-foreground" />
-            )}
-            {hasWhatsapp && (
-              <WhatsApp className="w-3.5 h-3.5 text-muted-foreground" />
-            )}
-            {hasEmail && (
-              <Mail className="w-3.5 h-3.5 text-muted-foreground" />
-            )}
-          </div>
+          <TooltipProvider delayDuration={200}>
+            <div className="flex items-center gap-2">
+              {hasInstagram && (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div className="cursor-pointer">
+                      <Instagram className="w-3.5 h-3.5 text-muted-foreground hover:text-foreground transition-colors" />
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom" className="text-xs">
+                    <p>@{lead.instagram.replace('@', '')}</p>
+                  </TooltipContent>
+                </Tooltip>
+              )}
+              {hasWhatsapp && (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div className="cursor-pointer">
+                      <WhatsApp className="w-3.5 h-3.5 text-muted-foreground hover:text-foreground transition-colors" />
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom" className="text-xs">
+                    <p>{lead.whatsapp}</p>
+                  </TooltipContent>
+                </Tooltip>
+              )}
+              {hasEmail && (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div className="cursor-pointer">
+                      <Mail className="w-3.5 h-3.5 text-muted-foreground hover:text-foreground transition-colors" />
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom" className="text-xs">
+                    <p>{lead.email}</p>
+                  </TooltipContent>
+                </Tooltip>
+              )}
+            </div>
+          </TooltipProvider>
           <span className="text-[10px] text-muted-foreground">
             {formatTimeAgo(new Date(lead.created_at))}
           </span>
