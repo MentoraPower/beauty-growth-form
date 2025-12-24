@@ -1033,11 +1033,11 @@ const WhatsAppNode = ({ id, data, selected }: NodeProps) => {
 
         {/* Editor Dropdown - Side */}
         {isEditing && (
-          <div className="absolute top-0 left-full ml-2 w-[400px] bg-background border border-border rounded-lg shadow-xl z-50 nodrag">
-            <div className="p-4 border-b border-border bg-muted/30">
+          <div className="absolute top-0 left-full ml-2 w-[400px] bg-background border border-border rounded-lg shadow-xl z-50 nodrag flex flex-col max-h-[550px]">
+            <div className="p-4 border-b border-border bg-muted/30 flex-shrink-0">
               <h4 className="text-sm font-semibold text-foreground">Editar Mensagem WhatsApp</h4>
             </div>
-            <div className="p-4 space-y-4 max-h-[500px] overflow-y-auto">
+            <div className="p-4 space-y-4 overflow-y-auto flex-1">
               {/* Message Type selector */}
               <div>
                 <label className="text-xs font-semibold text-muted-foreground uppercase mb-1.5 block">Tipo de Mensagem</label>
@@ -1159,8 +1159,11 @@ const WhatsAppNode = ({ id, data, selected }: NodeProps) => {
                   )}
                 </div>
               )}
-
-              <div className="flex justify-end pt-2">
+            </div>
+            
+            {/* Footer with close button - always visible */}
+            <div className="p-4 border-t border-border bg-muted/30 flex-shrink-0">
+              <div className="flex justify-end">
                 <Button size="sm" onClick={() => setIsEditing(false)} className="bg-foreground text-background hover:bg-foreground/90">
                   Fechar
                 </Button>
