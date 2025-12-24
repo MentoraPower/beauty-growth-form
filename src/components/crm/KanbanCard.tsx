@@ -147,7 +147,7 @@ export const KanbanCard = memo(function KanbanCard({ lead, isDragging: isDraggin
         </div>
         
         {/* Divider line */}
-        <div className="w-full h-px bg-border my-2" />
+        <div className="h-px bg-border my-2 -mx-3 w-[calc(100%+1.5rem)]" />
         
         {/* Icons and time */}
         <div className="flex items-center justify-between">
