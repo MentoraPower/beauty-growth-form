@@ -1023,7 +1023,7 @@ export function KanbanBoard() {
   return (
     <div className="relative flex flex-col h-full overflow-hidden">
       {/* Header - all on same line */}
-      <div className="flex items-center gap-4 mb-4">
+      <div className="flex items-center gap-4 mb-2">
         {/* Title - left */}
         <h1 className="text-xl font-light flex-shrink-0">{pageTitle}</h1>
 
@@ -1296,6 +1296,31 @@ export function KanbanBoard() {
           </Button>
         </div>
       </div>
+
+      {/* View Tabs - OverView | Quadro | Calendário */}
+      {subOriginId && (
+        <div className="flex items-center mb-4">
+          <div className="inline-flex items-center bg-foreground rounded-lg p-1 gap-0.5">
+            <button
+              className="px-4 py-1.5 text-xs font-medium rounded-md transition-all text-background/60 hover:text-background/80"
+            >
+              OverView
+            </button>
+            <div className="w-px h-4 bg-background/20" />
+            <button
+              className="px-4 py-1.5 text-xs font-medium rounded-md transition-all bg-background text-foreground"
+            >
+              Quadro
+            </button>
+            <div className="w-px h-4 bg-background/20" />
+            <button
+              className="px-4 py-1.5 text-xs font-medium rounded-md transition-all text-background/60 hover:text-background/80"
+            >
+              Calendário
+            </button>
+          </div>
+        </div>
+      )}
 
       {!subOriginId && (
         <p className="text-sm text-muted-foreground mb-4">
