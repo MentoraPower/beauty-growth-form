@@ -14,11 +14,11 @@ export const LoadingBar = () => {
   if (!isLoading) return null;
 
   return (
-    <div className="fixed top-0 left-0 right-0 h-1 z-[99999] overflow-hidden pointer-events-none">
+    <div className="fixed top-0 left-0 right-0 h-[3px] z-[99999] overflow-hidden pointer-events-none bg-transparent">
       <div 
-        className="h-full w-full animate-loading-bar"
+        className="h-full w-full animate-loading-progress"
         style={{
-          background: "linear-gradient(90deg, transparent, #ea580c, #f59e0b, #ea580c, transparent)"
+          background: "linear-gradient(90deg, transparent 0%, hsl(var(--primary)) 20%, hsl(var(--primary)) 80%, transparent 100%)",
         }}
       />
     </div>
