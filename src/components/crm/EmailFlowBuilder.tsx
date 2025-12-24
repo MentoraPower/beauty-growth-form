@@ -499,9 +499,6 @@ const WaitNode = ({ data, id, selected }: NodeProps) => {
     });
   };
 
-  // Calculate progress animation percentage (visual only, loops every 4 seconds)
-  const progressPercentage = 75; // Static visual fill
-
   return (
     <div className="relative">
       <Handle
@@ -510,38 +507,28 @@ const WaitNode = ({ data, id, selected }: NodeProps) => {
         className="!w-2.5 !h-2.5 !bg-foreground !border-2 !border-background !z-10"
       />
       
-      {/* Square card design */}
+      {/* Square card design with white background */}
       <div 
-        className="w-28 h-28 border border-border bg-card transition-all rounded-2xl overflow-hidden cursor-pointer hover:shadow-lg hover:scale-105 flex flex-col"
+        className="w-24 h-24 bg-white border border-amber-200 transition-all rounded-2xl overflow-hidden cursor-pointer hover:shadow-lg hover:border-amber-300 flex flex-col items-center justify-center gap-2 shadow-sm"
         onClick={handleOpen}
       >
-        {/* Progress fill background */}
-        <div 
-          className="absolute inset-0 rounded-2xl transition-all duration-500"
-          style={{ 
-            background: `linear-gradient(to top, rgba(251, 191, 36, 0.15) ${progressPercentage}%, transparent ${progressPercentage}%)` 
-          }}
-        />
-        
-        {/* Icon container */}
-        <div className="flex-1 flex items-center justify-center relative z-10">
-          <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-amber-400 to-amber-500 flex items-center justify-center shadow-lg">
-            <Clock className="w-6 h-6 text-white" />
+        {/* Pending count badge */}
+        {pendingCount > 0 && (
+          <div className="absolute top-1.5 right-1.5 flex items-center gap-0.5 bg-amber-500 rounded-full px-1.5 py-0.5">
+            <User className="w-2.5 h-2.5 text-white" />
+            <span className="text-[10px] font-bold text-white">{pendingCount}</span>
           </div>
+        )}
+        
+        {/* Icon */}
+        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-400 to-amber-500 flex items-center justify-center shadow-md">
+          <Clock className="w-5 h-5 text-white" />
         </div>
         
-        {/* Time display at bottom */}
-        <div className="px-2 pb-3 text-center relative z-10">
-          <span className="text-lg font-bold text-foreground">{waitTime}</span>
-          <span className="text-xs text-muted-foreground ml-1">{unitLabels[waitUnit]}</span>
-          
-          {/* Pending count badge */}
-          {pendingCount > 0 && (
-            <div className="absolute top-0 right-2 flex items-center gap-0.5 bg-amber-500 rounded-full px-1.5 py-0.5">
-              <User className="w-2.5 h-2.5 text-white" />
-              <span className="text-[10px] font-bold text-white">{pendingCount}</span>
-            </div>
-          )}
+        {/* Time display */}
+        <div className="text-center">
+          <span className="text-base font-bold text-gray-800">{waitTime}</span>
+          <span className="text-[11px] text-gray-500 ml-1">{unitLabels[waitUnit]}</span>
         </div>
       </div>
 
