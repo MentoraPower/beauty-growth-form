@@ -249,11 +249,13 @@ export function BroadcastDialog({ open, onOpenChange }: BroadcastDialogProps) {
           return;
         }
         
-        // Send emails to each lead
+        // Send emails to each lead with 7 second delay
         let successCount = 0;
         let errorCount = 0;
         
-        for (const lead of leads) {
+        for (let i = 0; i < leads.length; i++) {
+          const lead = leads[i];
+          
           if (!lead.email) {
             errorCount++;
             continue;
@@ -290,6 +292,11 @@ export function BroadcastDialog({ open, onOpenChange }: BroadcastDialogProps) {
           } catch (err) {
             console.error("Error sending email to", lead.email, err);
             errorCount++;
+          }
+          
+          // Wait 7 seconds before sending the next email (except for the last one)
+          if (i < leads.length - 1) {
+            await new Promise(resolve => setTimeout(resolve, 7000));
           }
         }
         
