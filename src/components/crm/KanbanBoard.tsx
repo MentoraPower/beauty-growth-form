@@ -1444,59 +1444,69 @@ export function KanbanBoard() {
                 </div>
 
                 {/* Content */}
-                <div className="flex-1 overflow-auto p-6">
+                <div className="flex-1 overflow-auto">
                   {settingsTab === "automations" && (
-                    <div className="space-y-4">
-                      <p className="text-sm text-muted-foreground">
-                        Configure automações para mover leads automaticamente entre pipelines.
-                      </p>
-                      <Button 
-                        onClick={() => {
-                          setSettingsDialogOpen(false);
-                          setAutomationsOpen(true);
+                    <div className="h-full">
+                      <AutomationsDropdown 
+                        pipelines={pipelines} 
+                        subOriginId={subOriginId}
+                        externalOpen={true}
+                        onOpenChange={() => {}}
+                        emailEditingContext={emailEditingContext}
+                        onEmailContextChange={(ctx) => setEmailEditingContext(ctx)}
+                        onShowEmailBuilder={(show, props) => {
+                          if (show && props) {
+                            if (props.editingContext) {
+                              setEmailEditingContext(props.editingContext);
+                            }
+                            setSettingsDialogOpen(false);
+                            openEmailBuilder(props);
+                          } else {
+                            closeEmailBuilder();
+                          }
                         }}
-                        className="bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600"
-                      >
-                        <Zap className="w-4 h-4 mr-2" />
-                        Abrir Automações
-                      </Button>
+                        embedded={true}
+                        embeddedTab="automations"
+                      />
                     </div>
                   )}
                   
                   {settingsTab === "webhooks" && (
-                    <div className="space-y-4">
-                      <p className="text-sm text-muted-foreground">
-                        Configure webhooks para integrar com sistemas externos.
-                      </p>
-                      <Button 
-                        onClick={() => {
-                          setSettingsDialogOpen(false);
-                          setAutomationsOpen(true);
+                    <div className="h-full">
+                      <AutomationsDropdown 
+                        pipelines={pipelines} 
+                        subOriginId={subOriginId}
+                        externalOpen={true}
+                        onOpenChange={() => {}}
+                        emailEditingContext={emailEditingContext}
+                        onEmailContextChange={(ctx) => setEmailEditingContext(ctx)}
+                        onShowEmailBuilder={(show, props) => {
+                          if (show && props) {
+                            if (props.editingContext) {
+                              setEmailEditingContext(props.editingContext);
+                            }
+                            setSettingsDialogOpen(false);
+                            openEmailBuilder(props);
+                          } else {
+                            closeEmailBuilder();
+                          }
                         }}
-                        variant="outline"
-                      >
-                        <Webhook className="w-4 h-4 mr-2" />
-                        Gerenciar Webhooks
-                      </Button>
+                        embedded={true}
+                        embeddedTab="webhooks"
+                      />
                     </div>
                   )}
                   
                   {settingsTab === "pipelines" && (
-                    <div className="space-y-4">
-                      <p className="text-sm text-muted-foreground">
-                        Gerencie as origens e pipelines do CRM.
-                      </p>
-                      <Button 
-                        onClick={() => {
-                          setSettingsDialogOpen(false);
-                          setIsPipelinesDialogOpen(true);
-                        }}
-                        variant="outline"
-                      >
-                        <GitBranch className="w-4 h-4 mr-2" />
-                        Gerenciar Origens
-                      </Button>
-                    </div>
+                    <Suspense fallback={<div className="p-6"><Skeleton className="h-64 w-full" /></div>}>
+                      <ManagePipelinesDialog
+                        open={true}
+                        onOpenChange={() => {}}
+                        pipelines={pipelines}
+                        subOriginId={subOriginId}
+                        embedded={true}
+                      />
+                    </Suspense>
                   )}
                 </div>
               </DialogContent>
