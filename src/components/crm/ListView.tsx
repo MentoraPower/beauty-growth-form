@@ -62,17 +62,6 @@ export function ListView({ pipelines, leadsByPipeline, subOriginId }: ListViewPr
     });
   };
 
-  const getPipelineColor = (index: number) => {
-    const colors = [
-      "bg-violet-600",
-      "bg-amber-500",
-      "bg-emerald-500",
-      "bg-blue-500",
-      "bg-rose-500",
-      "bg-cyan-500",
-    ];
-    return colors[index % colors.length];
-  };
 
   return (
     <div className="flex-1 overflow-auto bg-background rounded-lg border border-border">
@@ -106,21 +95,13 @@ export function ListView({ pipelines, leadsByPipeline, subOriginId }: ListViewPr
                     )}
                   </button>
                   
-                  <span className={cn(
-                    "px-2.5 py-1 text-xs font-semibold text-white rounded",
-                    getPipelineColor(index)
-                  )}>
-                    {pipeline.nome.toUpperCase()}
+                  <span className="text-sm font-medium text-foreground">
+                    {pipeline.nome}
                   </span>
                   
                   <span className="text-xs text-muted-foreground">{leads.length}</span>
                   
                   <MoreHorizontal className="w-4 h-4 text-muted-foreground opacity-0 group-hover:opacity-100" />
-                  
-                  <button className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors ml-2">
-                    <Plus className="w-3 h-3" />
-                    Adicionar Lead
-                  </button>
                 </div>
 
                 {/* Leads Table */}
@@ -159,10 +140,7 @@ export function ListView({ pipelines, leadsByPipeline, subOriginId }: ListViewPr
                           />
                         </div>
                         <div className="col-span-7 flex items-center gap-2">
-                          <div className={cn(
-                            "w-5 h-5 rounded-full flex items-center justify-center text-white text-[10px] font-bold flex-shrink-0",
-                            getPipelineColor(index)
-                          )}>
+                          <div className="w-5 h-5 rounded-full flex items-center justify-center bg-muted text-muted-foreground text-[10px] font-bold flex-shrink-0">
                             {lead.name.charAt(0).toUpperCase()}
                           </div>
                           <span className="text-sm text-foreground truncate">{lead.name}</span>
