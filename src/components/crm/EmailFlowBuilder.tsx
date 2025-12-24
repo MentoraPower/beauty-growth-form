@@ -22,7 +22,7 @@ import {
   useReactFlow,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
-import { Play, Clock, CheckCircle2, Trash2, Copy, ArrowLeft, Plus, Mail, Zap, ChevronDown, Users, UserMinus, UserX, User, Send } from "lucide-react";
+import { Play, Clock, Pause, CheckCircle2, Trash2, Copy, ArrowLeft, Plus, Mail, Zap, ChevronDown, Users, UserMinus, UserX, User, Send } from "lucide-react";
 import WhatsAppIcon from "@/components/icons/WhatsApp";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -505,28 +505,20 @@ const WaitNode = ({ data, id, selected }: NodeProps) => {
       <Handle
         type="target"
         position={Position.Left}
-        className="!w-3.5 !h-3.5 !bg-orange-500 !border-[3px] !border-white !shadow-sm !z-10"
+        className="!w-3.5 !h-3.5 !bg-gray-600 !border-[3px] !border-white !shadow-sm !z-10"
       />
       
       {/* Square card - icon only */}
       <div 
-        className="w-20 h-20 bg-white border border-amber-200 transition-all rounded-2xl cursor-pointer hover:shadow-lg hover:border-amber-300 flex items-center justify-center shadow-sm"
+        className="w-20 h-20 bg-white border border-gray-300 transition-all rounded-2xl cursor-pointer hover:shadow-lg hover:border-gray-400 flex items-center justify-center shadow-sm"
         onClick={handleOpen}
       >
-        <Clock className="w-9 h-9" style={{ stroke: 'url(#clockGradient)' }} />
-        <svg width="0" height="0">
-          <defs>
-            <linearGradient id="clockGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stopColor="#FB923C" />
-              <stop offset="100%" stopColor="#F97316" />
-            </linearGradient>
-          </defs>
-        </svg>
+        <Pause className="w-9 h-9 text-gray-600" />
       </div>
       
       {/* Pending count badge - on the connection line */}
       {pendingCount > 0 && (
-        <div className="absolute -right-3 top-1/2 -translate-y-1/2 translate-x-full flex items-center bg-amber-500 rounded-full w-6 h-6 justify-center shadow-md z-20">
+        <div className="absolute -right-3 top-1/2 -translate-y-1/2 translate-x-full flex items-center bg-gray-600 rounded-full w-6 h-6 justify-center shadow-md z-20">
           <span className="text-[10px] font-bold text-white">{pendingCount}</span>
         </div>
       )}
@@ -580,7 +572,7 @@ const WaitNode = ({ data, id, selected }: NodeProps) => {
       <Handle
         type="source"
         position={Position.Right}
-        className="!w-3.5 !h-3.5 !bg-orange-500 !border-[3px] !border-white !shadow-sm !z-10"
+        className="!w-3.5 !h-3.5 !bg-gray-600 !border-[3px] !border-white !shadow-sm !z-10"
       />
 
       {/* Action buttons - slide down from top */}
