@@ -21,6 +21,7 @@ import {
   DragEndEvent,
   DragStartEvent,
   DragOverlay,
+  MeasuringStrategy,
 } from "@dnd-kit/core";
 import {
   arrayMove,
@@ -382,10 +383,16 @@ export function ListView({ pipelines, leadsByPipeline, subOriginId }: ListViewPr
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
-        distance: 5,
+        distance: 3,
       },
     })
   );
+
+  const measuring = {
+    droppable: {
+      strategy: MeasuringStrategy.Always,
+    },
+  };
 
   const togglePipeline = (pipelineId: string) => {
     setExpandedPipelines(prev => {
@@ -568,6 +575,7 @@ export function ListView({ pipelines, leadsByPipeline, subOriginId }: ListViewPr
                       collisionDetection={closestCenter}
                       onDragStart={handleDragStart}
                       onDragEnd={handleDragEnd}
+                      measuring={measuring}
                     >
                       <SortableContext
                         items={leads.map(l => l.id)}
