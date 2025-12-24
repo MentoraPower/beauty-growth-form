@@ -1002,10 +1002,16 @@ const CustomEdge = ({
 
   return (
     <>
+      <defs>
+        <linearGradient id={`edge-gradient-${id}`} x1="0%" y1="0%" x2="100%" y2="0%">
+          <stop offset="0%" stopColor="#EA580C" />
+          <stop offset="100%" stopColor="#9A3412" />
+        </linearGradient>
+      </defs>
       <path
         d={edgePath}
         fill="none"
-        stroke="#F40000"
+        stroke={`url(#edge-gradient-${id})`}
         strokeWidth={1.5}
         strokeDasharray="6 4"
         strokeLinecap="round"
@@ -1017,7 +1023,7 @@ const CustomEdge = ({
         cx={targetX}
         cy={targetY}
         r={3}
-        fill="#F40000"
+        fill="#9A3412"
       />
       <EdgeLabelRenderer>
         <div
