@@ -54,6 +54,10 @@ const ManagePipelinesDialog = lazy(() =>
 
 const CalendarPageLazy = lazy(() => import("@/pages/CalendarPage"));
 
+const EmailAutomationsView = lazy(() => 
+  import("./EmailAutomationsView").then(m => ({ default: m.EmailAutomationsView }))
+);
+
 interface EmailEditingContext {
   emailName: string;
   emailTriggerPipeline: string;
@@ -79,7 +83,7 @@ interface EmailBuilderState {
   };
 }
 
-type CRMView = "overview" | "quadro" | "calendario";
+type CRMView = "overview" | "quadro" | "calendario" | "email";
 
 export function KanbanBoard() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -1349,6 +1353,21 @@ export function KanbanBoard() {
               >
                 Calendário
               </button>
+              
+              {/* Separator */}
+              <div className="w-px h-4 bg-background/30" />
+              
+              <button
+                onClick={() => handleViewChange("email")}
+                className={cn(
+                  "relative text-[13px] font-semibold tracking-wide transition-all antialiased",
+                  activeView === "email" 
+                    ? "text-background after:absolute after:-bottom-1.5 after:left-0 after:right-0 after:h-0.5 after:bg-background after:rounded-full"
+                    : "text-background/50 hover:text-background/75"
+                )}
+              >
+                Email
+              </button>
             </div>
           </div>
         </div>
@@ -1375,6 +1394,20 @@ export function KanbanBoard() {
           </div>
         }>
           <CalendarPageLazy />
+        </Suspense>
+      )}
+
+      {/* Email */}
+      {activeView === "email" && subOriginId && (
+        <Suspense fallback={
+          <div className="flex-1 flex items-center justify-center">
+            <Skeleton className="h-96 w-full max-w-4xl rounded-xl" />
+          </div>
+        }>
+          <EmailAutomationsView 
+            pipelines={pipelines} 
+            subOriginId={subOriginId}
+          />
         </Suspense>
       )}
 
