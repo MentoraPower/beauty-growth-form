@@ -912,24 +912,28 @@ interface EmailFlowBuilderProps {
   initialSteps?: EmailFlowStep[];
   onSave: (steps: EmailFlowStep[]) => void;
   onCancel: () => void;
+  onChange?: (steps: EmailFlowStep[]) => void;
   automationName: string;
   triggerPipelineName?: string;
   pipelines?: Pipeline[];
   subOriginId?: string | null;
   automationId?: string;
   pendingEmailsCount?: number;
+  hideHeader?: boolean;
 }
 
 export function EmailFlowBuilder({
   initialSteps,
   onSave,
   onCancel,
+  onChange,
   automationName,
   triggerPipelineName,
   pipelines = [],
   subOriginId,
   automationId,
   pendingEmailsCount = 0,
+  hideHeader = false,
 }: EmailFlowBuilderProps) {
   const [selectedNode, setSelectedNode] = useState<Node | null>(null);
   const [triggerType, setTriggerType] = useState<string>("");
@@ -1155,6 +1159,38 @@ export function EmailFlowBuilder({
       }));
     }
   }, [pendingEmailsCount, setNodes]);
+
+  // Call onChange when nodes or edges change (for auto-save)
+  useEffect(() => {
+    if (!onChange) return;
+    
+    // Build steps from current nodes and edges
+    const steps: EmailFlowStep[] = nodes
+      .filter(n => n.type !== "entry")
+      .map(node => ({
+        id: node.id,
+        type: node.type as EmailFlowStep["type"],
+        data: node.data,
+        position: node.position,
+      }));
+
+    // Store edges in a special step
+    steps.push({
+      id: "_edges",
+      type: "_edges" as any,
+      data: {
+        edges: edges.map(e => ({
+          id: e.id,
+          source: e.source,
+          target: e.target,
+          sourceHandle: e.sourceHandle,
+          targetHandle: e.targetHandle,
+        })),
+      },
+    });
+
+    onChange(steps);
+  }, [nodes, edges, onChange]);
 
   const onConnect = useCallback(
     (params: Connection) => {
@@ -1441,24 +1477,26 @@ export function EmailFlowBuilder({
   return (
     <div className="flex flex-col h-full w-full bg-muted/30 rounded-2xl overflow-hidden border border-border">
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-border bg-background">
-        <div className="flex items-center gap-3">
-          <Button variant="ghost" size="icon" onClick={onCancel} className="h-8 w-8">
-            <ArrowLeft className="w-4 h-4" />
-          </Button>
-          <div>
-            <h2 className="text-sm font-semibold text-foreground">{automationName}</h2>
+      {!hideHeader && (
+        <div className="flex items-center justify-between px-4 py-3 border-b border-border bg-background">
+          <div className="flex items-center gap-3">
+            <Button variant="ghost" size="icon" onClick={onCancel} className="h-8 w-8">
+              <ArrowLeft className="w-4 h-4" />
+            </Button>
+            <div>
+              <h2 className="text-sm font-semibold text-foreground">{automationName}</h2>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm" onClick={onCancel}>
+              Cancelar
+            </Button>
+            <Button size="sm" onClick={handleSave} className="bg-foreground text-background hover:bg-foreground/90">
+              Salvar fluxo
+            </Button>
           </div>
         </div>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" onClick={onCancel}>
-            Cancelar
-          </Button>
-          <Button size="sm" onClick={handleSave} className="bg-foreground text-background hover:bg-foreground/90">
-            Salvar fluxo
-          </Button>
-        </div>
-      </div>
+      )}
 
       <div className="flex flex-1 min-h-0">
         {/* Left Sidebar */}
