@@ -1113,7 +1113,7 @@ const CustomEdge = ({
       />
       <circle
         cx={targetX}
-        cy={targetY}
+        cy={isNearlyStraight ? sourceY : targetY}
         r={4}
         fill="#9A3412"
       />
