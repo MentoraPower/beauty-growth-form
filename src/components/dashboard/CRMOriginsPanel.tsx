@@ -584,6 +584,15 @@ export function CRMOriginsPanel({ isOpen, onClose, sidebarWidth, embedded = fals
     }
   }, [fetchData, fetchUserPermissions]);
 
+  // Auto-expand first origin when data loads
+  useEffect(() => {
+    if (origins.length > 0 && expandedOrigins.size === 0) {
+      // Expand first origin automatically
+      const firstOriginId = origins[0].id;
+      setExpandedOrigins(new Set([firstOriginId]));
+    }
+  }, [origins]);
+
   // Filter origins and sub-origins based on user permissions
   const filteredOrigins = userPermissions.isAdmin 
     ? origins 
