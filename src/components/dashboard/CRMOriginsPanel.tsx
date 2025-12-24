@@ -123,7 +123,7 @@ function AddSubOriginDropdown({
     <li className="relative pl-6 py-0.5">
       <DropdownMenu open={isOpen} onOpenChange={handleOpenChange}>
         <DropdownMenuTrigger asChild>
-          <button className="flex items-center gap-2 w-full py-1.5 px-2 rounded-lg transition-all duration-200 ease-out text-xs text-foreground/50 hover:text-foreground hover:bg-black/5">
+          <button className="flex items-center gap-2 w-full py-1.5 px-2 rounded-lg transition-all duration-200 ease-out text-xs text-zinc-500 hover:text-white hover:bg-zinc-800">
             <Plus className="h-3 w-3" />
             <span>Criar sub origem</span>
           </button>
@@ -259,9 +259,9 @@ function SortableOriginItem({
             <button
               {...attributes}
               {...listeners}
-              className="p-1 rounded cursor-grab active:cursor-grabbing hover:bg-black/5"
+              className="p-1 rounded cursor-grab active:cursor-grabbing hover:bg-zinc-800"
             >
-              <GripVertical className="h-3 w-3 text-foreground/50" />
+              <GripVertical className="h-3 w-3 text-zinc-500" />
             </button>
           </div>
         )}
@@ -269,19 +269,19 @@ function SortableOriginItem({
         <button
           onClick={() => toggleOrigin(origin.id)}
           className={cn(
-            "flex items-center gap-2 flex-1 py-2 px-2 rounded-lg transition-all duration-200 ease-out text-sm text-foreground/80 hover:text-foreground hover:bg-black/5",
+            "flex items-center gap-2 flex-1 py-2 px-2 rounded-lg transition-all duration-200 ease-out text-sm text-zinc-300 hover:text-white hover:bg-zinc-800",
             userPermissions.isAdmin && "group-hover/origin:translate-x-4 group-has-[.actions-area:hover]/origin:translate-x-0"
           )}
         >
           {isOriginExpanded ? (
-            <FolderOpen className="h-4 w-4 flex-shrink-0 fill-current text-foreground/80" />
+            <FolderOpen className="h-4 w-4 flex-shrink-0 fill-current text-zinc-400" />
           ) : (
-            <Folder className="h-4 w-4 flex-shrink-0 fill-current text-foreground/80" />
+            <Folder className="h-4 w-4 flex-shrink-0 fill-current text-zinc-400" />
           )}
           <span className="flex-1 text-left truncate font-bold">{origin.nome}</span>
           <ChevronRight 
             className={cn(
-              "h-3 w-3 transition-transform duration-300 text-foreground/60",
+              "h-3 w-3 transition-transform duration-300 text-zinc-500",
               isOriginExpanded ? "rotate-90" : ""
             )} 
           />
@@ -294,9 +294,9 @@ function SortableOriginItem({
               <DropdownMenuTrigger asChild>
                 <button 
                   onClick={(e) => e.stopPropagation()}
-                  className="p-1.5 rounded opacity-0 group-hover/origin:opacity-100 transition-all duration-200 ease-out hover:bg-black/5"
+                  className="p-1.5 rounded opacity-0 group-hover/origin:opacity-100 transition-all duration-200 ease-out hover:bg-zinc-800"
                 >
-                  <MoreVertical className="h-4 w-4 text-foreground/70" />
+                  <MoreVertical className="h-4 w-4 text-zinc-400" />
                 </button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-40 z-[9999] bg-popover">
@@ -333,7 +333,7 @@ function SortableOriginItem({
               style={{
                 top: `${LINE_TOP_PX}px`,
                 height: `${treeLineHeightPx}px`,
-                backgroundColor: "hsl(var(--muted-foreground))",
+                backgroundColor: "#52525b",
               }}
             />
             
@@ -360,7 +360,7 @@ function SortableOriginItem({
                   >
                     <path 
                       d="M 8 0 L 8 5 Q 8 9 12 9 L 18 9" 
-                      stroke="hsl(var(--muted-foreground))"
+                      stroke="#52525b"
                       strokeWidth="2" 
                       fill="none"
                     />
@@ -372,24 +372,24 @@ function SortableOriginItem({
                       className={cn(
                         "flex items-center gap-2 flex-1 py-1.5 px-2 rounded-lg transition-all duration-200 ease-out text-xs",
                         isActive 
-                          ? "bg-black/10 font-medium"
-                          : "text-foreground/70 hover:text-foreground hover:bg-black/5"
+                          ? "bg-zinc-800 font-medium text-white"
+                          : "text-zinc-400 hover:text-white hover:bg-zinc-800"
                       )}
                     >
                       <Kanban className={cn(
                         "h-3 w-3 flex-shrink-0",
-                        isActive ? "text-orange-600" : "text-foreground/70"
+                        isActive ? "text-orange-500" : "text-zinc-500"
                       )} />
                       <span className={cn(
                         "truncate font-bold",
-                        isActive && "bg-gradient-to-r from-orange-600 to-amber-500 bg-clip-text text-transparent"
+                        isActive && "bg-gradient-to-r from-orange-500 to-amber-400 bg-clip-text text-transparent"
                       )}>{subOrigin.nome}</span>
                       {leadCount > 0 && (
                         <span className={cn(
                           "ml-auto text-[10px] px-1.5 py-0.5 rounded-full",
                           isActive 
-                            ? "bg-black/10 text-foreground"
-                            : "bg-black/5 text-foreground/60"
+                            ? "bg-zinc-700 text-white"
+                            : "bg-zinc-800 text-zinc-400"
                         )}>
                           {leadCount.toLocaleString('pt-BR')}
                         </span>
@@ -402,9 +402,9 @@ function SortableOriginItem({
                         <DropdownMenuTrigger asChild>
                           <button 
                             onClick={(e) => e.stopPropagation()}
-                            className="p-1.5 rounded opacity-0 group-hover:opacity-100 transition-all duration-200 ease-out hover:bg-black/5"
+                            className="p-1.5 rounded opacity-0 group-hover:opacity-100 transition-all duration-200 ease-out hover:bg-zinc-800"
                           >
-                            <MoreVertical className="h-4 w-4 text-foreground/70" />
+                            <MoreVertical className="h-4 w-4 text-zinc-400" />
                           </button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end" className="w-40 z-[9999] bg-popover">
@@ -843,25 +843,25 @@ export function CRMOriginsPanel({ isOpen, onClose, sidebarWidth, embedded = fals
     <>
       {/* Header */}
       <div className="px-4 pl-2 py-4 flex items-center justify-between">
-        <h2 className="text-foreground font-semibold text-sm">Espaços</h2>
+        <h2 className="text-white font-semibold text-sm">Espaços</h2>
         <button
           onClick={onClose}
-          className="w-7 h-7 flex items-center justify-center rounded-full border border-border hover:bg-muted transition-colors"
+          className="w-7 h-7 flex items-center justify-center rounded-full border border-zinc-700 hover:bg-zinc-800 transition-colors"
         >
-          <ChevronsRight className="w-4 h-4 text-muted-foreground" />
+          <ChevronsRight className="w-4 h-4 text-zinc-400" />
         </button>
       </div>
 
       {/* Search field */}
       <div className="px-2 pb-3">
-        <div className="flex items-center gap-2 border-b border-border pb-2">
-          <Search className="w-4 h-4 text-muted-foreground" />
+        <div className="flex items-center gap-2 border-b border-zinc-700 pb-2">
+          <Search className="w-4 h-4 text-zinc-400" />
           <input
             type="text"
             placeholder="Pesquisar..."
-            className="flex-1 bg-transparent text-sm text-foreground placeholder:text-muted-foreground focus:outline-none"
+            className="flex-1 bg-transparent text-sm text-white placeholder:text-zinc-500 focus:outline-none"
           />
-          <div className="flex items-center gap-0.5 text-muted-foreground">
+          <div className="flex items-center gap-0.5 text-zinc-400">
             <LayoutGrid className="w-3.5 h-3.5" />
             <span className="text-xs font-medium">K</span>
           </div>
@@ -911,7 +911,7 @@ export function CRMOriginsPanel({ isOpen, onClose, sidebarWidth, embedded = fals
         {(userPermissions.isAdmin || userPermissions.canCreateOrigins) && (
           <button
             onClick={openCreateOriginDialog}
-            className="flex items-center gap-2 w-full py-2 px-2 rounded-lg transition-colors duration-200 text-xs text-foreground/60 hover:text-foreground hover:bg-black/5"
+            className="flex items-center gap-2 w-full py-2 px-2 rounded-lg transition-colors duration-200 text-xs text-zinc-400 hover:text-white hover:bg-zinc-800"
           >
             <Plus className="h-3 w-3" />
             <span>Nova Origem</span>
@@ -1004,7 +1004,7 @@ export function CRMOriginsPanel({ isOpen, onClose, sidebarWidth, embedded = fals
 
   // When embedded, just return the content
   if (embedded) {
-    return <div className="h-full flex flex-col">{content}</div>;
+    return <div className="h-full flex flex-col bg-zinc-900 text-white">{content}</div>;
   }
 
   // Standalone mode (mobile/fallback)
