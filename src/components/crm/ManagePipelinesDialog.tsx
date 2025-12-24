@@ -338,7 +338,7 @@ export function ManagePipelinesDialog({
   };
 
   const content = (
-    <div className={cn("space-y-3", embedded ? "px-6 pb-6" : "px-6 py-6")}>
+    <div className={cn("space-y-2", embedded ? "px-6 pb-6" : "px-6 py-6")}>
       {/* Add New Pipeline */}
       <div className="flex gap-3">
         <Input
