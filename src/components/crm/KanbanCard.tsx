@@ -107,6 +107,7 @@ export const KanbanCard = memo(function KanbanCard({ lead, isDragging: isDraggin
       if (subOriginId) params.set("origin", subOriginId);
       const searchQuery = searchParams.get("search");
       if (searchQuery) params.set("search", searchQuery);
+      params.set("view", "quadro");
       const queryString = params.toString();
       const url = `/admin/crm/${lead.id}${queryString ? `?${queryString}` : ''}`;
       navigate(url);

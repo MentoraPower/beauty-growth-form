@@ -412,6 +412,7 @@ export function ListView({ pipelines, leadsByPipeline, subOriginId }: ListViewPr
     if (subOriginId) params.set("origin", subOriginId);
     const searchQuery = searchParams.get("search");
     if (searchQuery) params.set("search", searchQuery);
+    params.set("view", "lista");
     const queryString = params.toString();
     const url = `/admin/crm/${lead.id}${queryString ? `?${queryString}` : ''}`;
     navigate(url);
