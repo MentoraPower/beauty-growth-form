@@ -81,7 +81,7 @@ export function EmailAutomationsView({ pipelines, subOriginId }: EmailAutomation
         .from("email_automations")
         .select("*")
         .eq("sub_origin_id", subOriginId)
-        .order("created_at", { ascending: true })
+        .order("created_at", { ascending: false })
         .limit(1)
         .maybeSingle();
 
