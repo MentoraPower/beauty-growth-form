@@ -33,6 +33,13 @@ interface BroadcastDialogProps {
 type ChannelType = "whatsapp_web" | "whatsapp_api" | "email";
 type Step = "channel" | "origin" | "suborigin" | "pipeline" | "compose" | "confirm" | "sending";
 
+// Error detail interface
+interface ErrorDetail {
+  lead: string;
+  email: string;
+  reason: string;
+}
+
 // Broadcast state interface for background sending
 interface BroadcastState {
   isActive: boolean;
@@ -41,6 +48,7 @@ interface BroadcastState {
   sentCount: number;
   errorCount: number;
   currentLead: string;
+  errors: ErrorDetail[];
 }
 
 // Global broadcast state (persists across dialog open/close)
@@ -51,6 +59,7 @@ let globalBroadcastState: BroadcastState = {
   sentCount: 0,
   errorCount: 0,
   currentLead: "",
+  errors: [],
 };
 
 // Subscribers for broadcast state updates
@@ -317,6 +326,7 @@ export function BroadcastDialog({ open, onOpenChange }: BroadcastDialogProps) {
           sentCount: 0,
           errorCount: 0,
           currentLead: "",
+          errors: [],
         });
         
         // Send emails to each lead with 7 second delay
@@ -335,7 +345,14 @@ export function BroadcastDialog({ open, onOpenChange }: BroadcastDialogProps) {
           updateBroadcastState({ currentLead: lead.name || lead.email || "Lead" });
           
           if (!lead.email) {
-            updateBroadcastState({ errorCount: globalBroadcastState.errorCount + 1 });
+            updateBroadcastState({ 
+              errorCount: globalBroadcastState.errorCount + 1,
+              errors: [...globalBroadcastState.errors, {
+                lead: lead.name || "Lead sem nome",
+                email: "N/A",
+                reason: "Lead sem e-mail cadastrado"
+              }]
+            });
             continue;
           }
           
@@ -363,13 +380,30 @@ export function BroadcastDialog({ open, onOpenChange }: BroadcastDialogProps) {
             
             if (error) {
               console.error("Error sending email to", lead.email, error);
-              updateBroadcastState({ errorCount: globalBroadcastState.errorCount + 1 });
+              const errorMessage = typeof error === 'object' && error !== null 
+                ? (error as any).message || JSON.stringify(error)
+                : String(error);
+              updateBroadcastState({ 
+                errorCount: globalBroadcastState.errorCount + 1,
+                errors: [...globalBroadcastState.errors, {
+                  lead: lead.name || "Lead",
+                  email: lead.email,
+                  reason: errorMessage
+                }]
+              });
             } else {
               updateBroadcastState({ sentCount: globalBroadcastState.sentCount + 1 });
             }
-          } catch (err) {
+          } catch (err: any) {
             console.error("Error sending email to", lead.email, err);
-            updateBroadcastState({ errorCount: globalBroadcastState.errorCount + 1 });
+            updateBroadcastState({ 
+              errorCount: globalBroadcastState.errorCount + 1,
+              errors: [...globalBroadcastState.errors, {
+                lead: lead.name || "Lead",
+                email: lead.email,
+                reason: err?.message || "Erro desconhecido"
+              }]
+            });
           }
           
           // Wait 7 seconds before sending the next email (except for the last one)
@@ -411,6 +445,7 @@ export function BroadcastDialog({ open, onOpenChange }: BroadcastDialogProps) {
       sentCount: 0,
       errorCount: 0,
       currentLead: "",
+      errors: [],
     });
   };
 
@@ -484,6 +519,21 @@ export function BroadcastDialog({ open, onOpenChange }: BroadcastDialogProps) {
                   </span>
                 </div>
               </div>
+              
+              {/* Error Details */}
+              {broadcastState.errors.length > 0 && (
+                <div className="mt-4 space-y-2">
+                  <h4 className="text-sm font-medium text-destructive">Erros encontrados:</h4>
+                  <div className="max-h-32 overflow-y-auto space-y-1 bg-destructive/5 rounded-lg p-3">
+                    {broadcastState.errors.map((error, index) => (
+                      <div key={index} className="text-xs p-2 bg-background rounded border border-destructive/20">
+                        <div className="font-medium text-foreground">{error.lead} ({error.email})</div>
+                        <div className="text-destructive mt-0.5">{error.reason}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
               
               {/* Cancel button */}
               <div className="pt-4 flex justify-center">
