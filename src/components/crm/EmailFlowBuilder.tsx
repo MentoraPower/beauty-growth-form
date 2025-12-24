@@ -698,10 +698,10 @@ const EmailNode = ({ id, data, selected }: NodeProps) => {
         </div>
         
         {/* Email Preview - Large */}
-        <div className="p-4 bg-card min-h-[400px]">
+        <div className="p-2 bg-card min-h-[400px]">
           <div 
-            className="bg-card rounded-lg border border-border p-3 min-h-[360px] text-xs overflow-y-auto nodrag nowheel [&_*]:!text-xs [&_*]:!leading-tight"
-            style={{ maxHeight: "380px", fontSize: "11px" }}
+            className="bg-card rounded border border-border p-2 min-h-[380px] text-xs overflow-y-auto nodrag nowheel [&_*]:!text-xs [&_*]:!leading-tight"
+            style={{ maxHeight: "390px", fontSize: "11px" }}
             onWheelCapture={(e) => e.stopPropagation()}
             dangerouslySetInnerHTML={{ 
               __html: bodyHtml || '<div style="color:#999; font-style:italic;">Clique para editar o e-mail...</div>' 
