@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
-import { Send, MessageSquare, Mail, ArrowRight, ArrowLeft, Clock, Check } from "lucide-react";
+import { Send, Mail, ArrowRight, ArrowLeft, Clock, Check } from "lucide-react";
 import WhatsAppIcon from "@/components/icons/WhatsApp";
 import { toast } from "@/hooks/use-toast";
 
@@ -277,7 +277,7 @@ export function BroadcastDialog({ open, onOpenChange }: BroadcastDialogProps) {
                   className="flex items-center gap-4 p-4 rounded-xl border border-border hover:border-green-400 transition-all text-left opacity-60 cursor-not-allowed relative"
                 >
                   <div className="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center">
-                    <MessageSquare className="w-6 h-6 text-green-600" />
+                    <WhatsAppIcon className="w-6 h-6" />
                   </div>
                   <div>
                     <h3 className="font-semibold text-foreground">WhatsApp API Oficial</h3>
