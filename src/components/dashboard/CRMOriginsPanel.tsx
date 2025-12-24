@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { Kanban, ChevronRight, Folder, FolderOpen, MoreVertical, Plus, Pencil, Trash2, GripVertical, CalendarDays, ListTodo } from "lucide-react";
+import { Kanban, ChevronRight, ChevronsRight, Folder, FolderOpen, MoreVertical, Plus, Pencil, Trash2, GripVertical, CalendarDays, ListTodo, Search, LayoutGrid } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import {
@@ -842,8 +842,30 @@ export function CRMOriginsPanel({ isOpen, onClose, sidebarWidth, embedded = fals
   const content = (
     <>
       {/* Header */}
-      <div className="px-4 pl-0 py-4">
-        <h2 className="text-foreground font-semibold text-sm px-2">Origens CRM</h2>
+      <div className="px-4 pl-2 py-4 flex items-center justify-between">
+        <h2 className="text-foreground font-semibold text-sm">Espaços</h2>
+        <button
+          onClick={onClose}
+          className="w-7 h-7 flex items-center justify-center rounded-full border border-border hover:bg-muted transition-colors"
+        >
+          <ChevronsRight className="w-4 h-4 text-muted-foreground" />
+        </button>
+      </div>
+
+      {/* Search field */}
+      <div className="px-2 pb-3">
+        <div className="flex items-center gap-2 border-b border-border pb-2">
+          <Search className="w-4 h-4 text-muted-foreground" />
+          <input
+            type="text"
+            placeholder="Pesquisar..."
+            className="flex-1 bg-transparent text-sm text-foreground placeholder:text-muted-foreground focus:outline-none"
+          />
+          <div className="flex items-center gap-0.5 text-muted-foreground">
+            <LayoutGrid className="w-3.5 h-3.5" />
+            <span className="text-xs font-medium">K</span>
+          </div>
+        </div>
       </div>
 
       {/* Content */}
