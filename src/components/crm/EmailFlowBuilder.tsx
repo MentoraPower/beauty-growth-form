@@ -1064,14 +1064,30 @@ const CustomEdge = ({
     curvature: 0.25,
   });
 
+  const gradientId = `edge-gradient-${id}`.replace(/[^a-zA-Z0-9_-]/g, "_");
+
+  const isValidPath = (p?: string) =>
+    !!p && p.length > 0 && !p.includes("NaN") && !p.includes("undefined");
+
   // Fallback to a simple line if the path is empty or invalid
   const fallbackPath = `M ${sourceX} ${sourceY} L ${targetX} ${targetY}`;
-  const finalPath = edgePath && edgePath.length > 0 ? edgePath : fallbackPath;
+  const finalPath = isValidPath(edgePath) ? edgePath : fallbackPath;
+
+  const safeLabelX = Number.isFinite(labelX) ? labelX : (sourceX + targetX) / 2;
+  const safeLabelY = Number.isFinite(labelY) ? labelY : (sourceY + targetY) / 2;
 
   return (
     <>
       <defs>
-        <linearGradient id={`edge-gradient-${id}`} x1="0%" y1="0%" x2="100%" y2="0%">
+        {/* Use userSpaceOnUse to avoid zero-height/zero-width bbox making gradient invisible on straight lines */}
+        <linearGradient
+          id={gradientId}
+          gradientUnits="userSpaceOnUse"
+          x1={sourceX}
+          y1={sourceY}
+          x2={targetX}
+          y2={targetY}
+        >
           <stop offset="0%" stopColor="#EA580C" />
           <stop offset="100%" stopColor="#9A3412" />
         </linearGradient>
@@ -1079,7 +1095,7 @@ const CustomEdge = ({
       <path
         d={finalPath}
         fill="none"
-        stroke={`url(#edge-gradient-${id})`}
+        stroke={`url(#${gradientId})`}
         strokeWidth={2}
         strokeDasharray="6 4"
         strokeLinecap="round"
@@ -1097,7 +1113,7 @@ const CustomEdge = ({
         <div
           style={{
             position: "absolute",
-            transform: `translate(-50%, -50%) translate(${labelX}px,${labelY}px)`,
+            transform: `translate(-50%, -50%) translate(${safeLabelX}px,${safeLabelY}px)`,
             pointerEvents: "all",
           }}
           className="nodrag nopan"
