@@ -584,14 +584,25 @@ export function CRMOriginsPanel({ isOpen, onClose, sidebarWidth, embedded = fals
     }
   }, [fetchData, fetchUserPermissions]);
 
-  // Auto-expand first origin when data loads
+  // Auto-expand origin of currently selected sub-origin (from URL) or first origin
   useEffect(() => {
-    if (origins.length > 0 && expandedOrigins.size === 0) {
-      // Expand first origin automatically
+    if (origins.length === 0 || subOrigins.length === 0) return;
+    
+    const urlParams = new URLSearchParams(location.search);
+    const selectedSubOriginId = urlParams.get('origin');
+    
+    if (selectedSubOriginId) {
+      // Find which origin contains this sub-origin and expand it
+      const selectedSubOrigin = subOrigins.find(s => s.id === selectedSubOriginId);
+      if (selectedSubOrigin && !expandedOrigins.has(selectedSubOrigin.origin_id)) {
+        setExpandedOrigins(new Set([...expandedOrigins, selectedSubOrigin.origin_id]));
+      }
+    } else if (expandedOrigins.size === 0) {
+      // No sub-origin selected and nothing expanded - expand first origin
       const firstOriginId = origins[0].id;
       setExpandedOrigins(new Set([firstOriginId]));
     }
-  }, [origins]);
+  }, [origins, subOrigins, location.search]);
 
   // Filter origins and sub-origins based on user permissions
   const filteredOrigins = userPermissions.isAdmin 
