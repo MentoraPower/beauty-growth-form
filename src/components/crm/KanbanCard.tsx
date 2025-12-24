@@ -5,9 +5,9 @@ import { Lead } from "@/types/crm";
 import { Card, CardContent } from "@/components/ui/card";
 import { Mail, Phone, User } from "lucide-react";
 import Instagram from "@/components/icons/Instagram";
+import WhatsApp from "@/components/icons/WhatsApp";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { formatDistanceToNow } from "date-fns";
-import { ptBR } from "date-fns/locale";
+import { differenceInMinutes, differenceInHours, differenceInDays, differenceInWeeks, differenceInMonths, differenceInYears } from "date-fns";
 
 interface KanbanCardProps {
   lead: Lead;
@@ -23,6 +23,31 @@ const animateLayoutChanges: AnimateLayoutChanges = (args) => {
     return false;
   }
   return false;
+};
+
+// Format time ago in compact format
+const formatTimeAgo = (date: Date): string => {
+  const now = new Date();
+  
+  const years = differenceInYears(now, date);
+  if (years > 0) return `${years}a`;
+  
+  const months = differenceInMonths(now, date);
+  if (months > 0) return `${months}m`;
+  
+  const weeks = differenceInWeeks(now, date);
+  if (weeks > 0) return `${weeks}sem`;
+  
+  const days = differenceInDays(now, date);
+  if (days > 0) return `${days}d`;
+  
+  const hours = differenceInHours(now, date);
+  if (hours > 0) return `${hours}h`;
+  
+  const minutes = differenceInMinutes(now, date);
+  if (minutes > 0) return `${minutes}min`;
+  
+  return "agora";
 };
 
 export const KanbanCard = memo(function KanbanCard({ lead, isDragging: isDraggingOverlay, subOriginId }: KanbanCardProps) {
@@ -84,6 +109,10 @@ export const KanbanCard = memo(function KanbanCard({ lead, isDragging: isDraggin
     wasDragged.current = false;
   };
 
+  const hasInstagram = lead.instagram && lead.instagram.trim() !== "";
+  const hasWhatsapp = lead.whatsapp && lead.whatsapp.trim() !== "";
+  const hasEmail = lead.email && lead.email.trim() !== "";
+
   return (
     <Card
       ref={setNodeRef}
@@ -100,7 +129,8 @@ export const KanbanCard = memo(function KanbanCard({ lead, isDragging: isDraggin
       onPointerMove={handlePointerMove}
       onClick={handleClick}
     >
-      <CardContent className="p-4 space-y-2">
+      <CardContent className="p-3">
+        {/* Name with photo */}
         <div className="flex items-center gap-2 min-w-0">
           {lead.photo_url ? (
             <img 
@@ -116,26 +146,24 @@ export const KanbanCard = memo(function KanbanCard({ lead, isDragging: isDraggin
           <h3 className="font-semibold text-sm truncate">{lead.name}</h3>
         </div>
         
-        <div className="space-y-1 text-xs text-muted-foreground">
+        {/* Divider line */}
+        <div className="w-full h-px bg-border my-2" />
+        
+        {/* Icons and time */}
+        <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Mail className="w-3 h-3 flex-shrink-0" />
-            <span className="truncate">{lead.email}</span>
+            {hasInstagram && (
+              <Instagram className="w-3.5 h-3.5 text-muted-foreground" />
+            )}
+            {hasWhatsapp && (
+              <WhatsApp className="w-3.5 h-3.5 text-muted-foreground" />
+            )}
+            {hasEmail && (
+              <Mail className="w-3.5 h-3.5 text-muted-foreground" />
+            )}
           </div>
-          
-          <div className="flex items-center gap-2">
-            <Phone className="w-3 h-3 flex-shrink-0" />
-            <span>{lead.country_code} {lead.whatsapp}</span>
-          </div>
-          
-          <div className="flex items-center gap-2">
-            <Instagram className="w-3 h-3 flex-shrink-0" />
-            <span className="truncate">{lead.instagram}</span>
-          </div>
-        </div>
-
-        <div className="flex items-center justify-between pt-2 text-[10px] text-muted-foreground">
-          <span>
-            {formatDistanceToNow(new Date(lead.created_at), { addSuffix: true, locale: ptBR })}
+          <span className="text-[10px] text-muted-foreground">
+            {formatTimeAgo(new Date(lead.created_at))}
           </span>
         </div>
       </CardContent>
