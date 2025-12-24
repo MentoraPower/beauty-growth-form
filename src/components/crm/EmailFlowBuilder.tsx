@@ -930,7 +930,7 @@ const WhatsAppNode = ({ id, data, selected }: NodeProps) => {
     
     switch (localMessageType) {
       case 'image':
-        return <img src={localMediaUrl} alt="Preview" className="w-full h-32 object-cover rounded-lg" />;
+        return <img src={localMediaUrl} alt="" className="w-full h-32 object-cover rounded-lg" />;
       case 'video':
         return <video src={localMediaUrl} className="w-full h-32 object-cover rounded-lg" controls />;
       case 'audio':
