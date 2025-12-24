@@ -218,7 +218,8 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
             left: 12,
             top: 12,
             height: 'calc(100vh - 1.5rem)',
-            transition: 'width 300ms cubic-bezier(0.4,0,0.2,1)'
+            transition: 'width 300ms cubic-bezier(0.4,0,0.2,1)',
+            borderRight: '1px solid rgba(255, 255, 255, 0.08)',
           }}
           className="hidden lg:flex flex-col fixed bg-[#0f0f12] overflow-hidden z-50 rounded-2xl"
         >
@@ -391,7 +392,6 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
             zIndex: 39,
             pointerEvents: crmSubmenuOpen ? 'auto' : 'none',
             transition: "width 400ms cubic-bezier(0.4,0,0.2,1), opacity 200ms ease-out",
-            borderRight: '1px solid rgba(255, 255, 255, 0.08)',
           }}
           className="hidden lg:block fixed top-[24px] bottom-[24px] rounded-r-2xl bg-zinc-900 overflow-hidden"
         >
