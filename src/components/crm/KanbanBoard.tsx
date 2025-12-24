@@ -1314,15 +1314,15 @@ export function KanbanBoard() {
       {/* View Tabs - OverView | Quadro | Calendário */}
       {subOriginId && (
         <div className="w-full mb-4">
-          <div className="w-full flex items-center bg-foreground rounded-lg px-4 py-2">
+          <div className="w-full flex items-center bg-foreground rounded-lg px-4 py-2.5">
             <div className="inline-flex items-center gap-6">
               <button
                 onClick={() => handleViewChange("overview")}
                 className={cn(
-                  "relative text-sm font-medium transition-all",
+                  "relative text-[13px] font-semibold tracking-wide transition-all antialiased",
                   activeView === "overview" 
-                    ? "text-background after:absolute after:-bottom-1 after:left-0 after:right-0 after:h-0.5 after:bg-background after:rounded-full"
-                    : "text-background/60 hover:text-background/80"
+                    ? "text-background after:absolute after:-bottom-1.5 after:left-0 after:right-0 after:h-0.5 after:bg-background after:rounded-full"
+                    : "text-background/50 hover:text-background/75"
                 )}
               >
                 OverView
@@ -1330,10 +1330,10 @@ export function KanbanBoard() {
               <button
                 onClick={() => handleViewChange("quadro")}
                 className={cn(
-                  "relative text-sm font-medium transition-all",
+                  "relative text-[13px] font-semibold tracking-wide transition-all antialiased",
                   activeView === "quadro" 
-                    ? "text-background after:absolute after:-bottom-1 after:left-0 after:right-0 after:h-0.5 after:bg-background after:rounded-full"
-                    : "text-background/60 hover:text-background/80"
+                    ? "text-background after:absolute after:-bottom-1.5 after:left-0 after:right-0 after:h-0.5 after:bg-background after:rounded-full"
+                    : "text-background/50 hover:text-background/75"
                 )}
               >
                 Quadro
@@ -1341,10 +1341,10 @@ export function KanbanBoard() {
               <button
                 onClick={() => handleViewChange("calendario")}
                 className={cn(
-                  "relative text-sm font-medium transition-all",
+                  "relative text-[13px] font-semibold tracking-wide transition-all antialiased",
                   activeView === "calendario" 
-                    ? "text-background after:absolute after:-bottom-1 after:left-0 after:right-0 after:h-0.5 after:bg-background after:rounded-full"
-                    : "text-background/60 hover:text-background/80"
+                    ? "text-background after:absolute after:-bottom-1.5 after:left-0 after:right-0 after:h-0.5 after:bg-background after:rounded-full"
+                    : "text-background/50 hover:text-background/75"
                 )}
               >
                 Calendário
