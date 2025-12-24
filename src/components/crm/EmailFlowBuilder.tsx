@@ -1741,7 +1741,7 @@ export function EmailFlowBuilder({
 
       <div className="flex flex-1 min-h-0">
         {/* Left Sidebar */}
-        <div className="border-r border-border bg-background p-4 flex flex-col gap-3 w-44">
+        <div className="border-r border-border bg-background p-4 flex flex-col gap-3 w-48">
           <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">Ações</span>
           
           {/* Wait Node */}
@@ -1751,9 +1751,9 @@ export function EmailFlowBuilder({
               e.dataTransfer.setData("application/reactflow", "wait");
               e.dataTransfer.effectAllowed = "move";
             }}
-            className="flex items-center gap-3 cursor-grab active:cursor-grabbing hover:bg-muted/50 rounded-lg p-2 transition-colors"
+            className="flex items-center gap-3 cursor-grab active:cursor-grabbing hover:bg-muted/50 rounded-xl p-2.5 transition-colors border border-border w-full"
           >
-            <div className="w-9 h-9 flex items-center justify-center rounded-full bg-amber-100 border border-amber-200">
+            <div className="w-8 h-8 flex items-center justify-center rounded-full bg-amber-100 border border-amber-200 flex-shrink-0">
               <Clock className="w-4 h-4" style={{ color: "#F97316" }} />
             </div>
             <span className="text-sm text-foreground">Espera</span>
@@ -1766,9 +1766,9 @@ export function EmailFlowBuilder({
               e.dataTransfer.setData("application/reactflow", "email");
               e.dataTransfer.effectAllowed = "move";
             }}
-            className="flex items-center gap-3 cursor-grab active:cursor-grabbing hover:bg-muted/50 rounded-lg p-2 transition-colors"
+            className="flex items-center gap-3 cursor-grab active:cursor-grabbing hover:bg-muted/50 rounded-xl p-2.5 transition-colors border border-border w-full"
           >
-            <div className="w-9 h-9 flex items-center justify-center rounded-full bg-gray-100 border border-gray-200">
+            <div className="w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 border border-gray-200 flex-shrink-0">
               <Mail className="w-4 h-4 text-foreground" />
             </div>
             <span className="text-sm text-foreground">E-mail</span>
@@ -1781,9 +1781,9 @@ export function EmailFlowBuilder({
               e.dataTransfer.setData("application/reactflow", "whatsapp");
               e.dataTransfer.effectAllowed = "move";
             }}
-            className="flex items-center gap-3 cursor-grab active:cursor-grabbing hover:bg-muted/50 rounded-lg p-2 transition-colors"
+            className="flex items-center gap-3 cursor-grab active:cursor-grabbing hover:bg-muted/50 rounded-xl p-2.5 transition-colors border border-border w-full"
           >
-            <div className="w-9 h-9 flex items-center justify-center rounded-full bg-green-100 border border-green-200">
+            <div className="w-8 h-8 flex items-center justify-center rounded-full bg-green-100 border border-green-200 flex-shrink-0">
               <WhatsAppIcon className="w-4 h-4" />
             </div>
             <span className="text-sm text-foreground">WhatsApp</span>
@@ -1796,9 +1796,9 @@ export function EmailFlowBuilder({
               e.dataTransfer.setData("application/reactflow", "end");
               e.dataTransfer.effectAllowed = "move";
             }}
-            className="flex items-center gap-3 cursor-grab active:cursor-grabbing hover:bg-muted/50 rounded-lg p-2 transition-colors"
+            className="flex items-center gap-3 cursor-grab active:cursor-grabbing hover:bg-muted/50 rounded-xl p-2.5 transition-colors border border-border w-full"
           >
-            <div className="w-9 h-9 flex items-center justify-center rounded-full bg-red-100 border border-red-200">
+            <div className="w-8 h-8 flex items-center justify-center rounded-full bg-red-100 border border-red-200 flex-shrink-0">
               <CheckCircle2 className="w-4 h-4" style={{ color: "#F40000" }} />
             </div>
             <span className="text-sm text-foreground">Finalizar</span>
