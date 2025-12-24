@@ -1116,9 +1116,9 @@ export function AutomationsDropdown({
           <Button size="icon" className="h-9 w-9 bg-white hover:bg-gray-50 text-foreground border border-border shadow-sm">
             <Zap className="w-4 h-4" />
           </Button>
-          {(activeAutomationsCount + activeWebhooksCount + activeEmailAutomationsCount) > 0 && (
+          {(activeAutomationsCount + activeWebhooksCount) > 0 && (
             <span className="absolute -top-1 -right-1 z-10 h-5 min-w-5 px-1 text-[10px] font-bold flex items-center justify-center bg-white text-orange-600 rounded-full pointer-events-none shadow-sm border border-orange-200">
-              {activeAutomationsCount + activeWebhooksCount + activeEmailAutomationsCount}
+              {activeAutomationsCount + activeWebhooksCount}
             </span>
           )}
         </div>
@@ -1191,27 +1191,6 @@ export function AutomationsDropdown({
                 >
                   <Plus className="w-4 h-4 mr-2" />
                   Criar automação
-                </Button>
-                <Button
-                  onClick={() => {
-                    // Check if there's an existing email automation for this sub_origin
-                    const existingEmail = emailAutomations.find(e => e.sub_origin_id === subOriginId);
-                    if (existingEmail) {
-                      handleOpenEmailFlowBuilder(existingEmail);
-                    } else {
-                      handleOpenEmailFlowBuilder(null);
-                    }
-                  }}
-                  variant="outline"
-                  className="border-border"
-                >
-                  <Mail className="w-4 h-4 mr-2" />
-                  E-mail
-                  {activeEmailAutomationsCount > 0 && (
-                    <span className="ml-2 px-1.5 py-0.5 text-[10px] rounded bg-muted text-muted-foreground">
-                      {activeEmailAutomationsCount}
-                    </span>
-                  )}
                 </Button>
               </div>
 
