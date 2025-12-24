@@ -22,6 +22,7 @@ import { Lead, Pipeline } from "@/types/crm";
 import { triggerWebhook } from "@/lib/webhooks";
 import { trackPipelineMove, trackPositionChange } from "@/lib/leadTracking";
 import { KanbanColumn } from "./KanbanColumn";
+import { ListView } from "./ListView";
 import { KanbanCard } from "./KanbanCard";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -84,7 +85,7 @@ interface EmailBuilderState {
   };
 }
 
-type CRMView = "overview" | "quadro" | "calendario" | "email";
+type CRMView = "overview" | "quadro" | "lista" | "calendario" | "email";
 
 export function KanbanBoard() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -1323,10 +1324,12 @@ export function KanbanBoard() {
                 style={{
                   left: activeView === "overview" ? "0px" : 
                         activeView === "quadro" ? "calc(55px + 24px)" : 
-                        activeView === "calendario" ? "calc(55px + 24px + 48px + 24px)" :
-                        "calc(55px + 24px + 48px + 24px + 72px + 24px + 16px + 24px)",
+                        activeView === "lista" ? "calc(55px + 24px + 48px + 24px)" :
+                        activeView === "calendario" ? "calc(55px + 24px + 48px + 24px + 28px + 24px)" :
+                        "calc(55px + 24px + 48px + 24px + 28px + 24px + 72px + 24px + 16px + 24px)",
                   width: activeView === "overview" ? "55px" : 
                          activeView === "quadro" ? "48px" : 
+                         activeView === "lista" ? "28px" :
                          activeView === "calendario" ? "72px" :
                          "82px"
                 }}
@@ -1352,6 +1355,17 @@ export function KanbanBoard() {
                 )}
               >
                 Quadro
+              </button>
+              <button
+                onClick={() => handleViewChange("lista")}
+                className={cn(
+                  "relative text-[13px] font-semibold tracking-wide transition-all antialiased",
+                  activeView === "lista" 
+                    ? "text-gray-900"
+                    : "text-gray-500 hover:text-gray-700"
+                )}
+              >
+                List
               </button>
               <button
                 onClick={() => handleViewChange("calendario")}
@@ -1551,6 +1565,15 @@ export function KanbanBoard() {
             subOriginId={subOriginId}
           />
         </Suspense>
+      )}
+
+      {/* Lista */}
+      {activeView === "lista" && subOriginId && (
+        <ListView
+          pipelines={pipelines}
+          leadsByPipeline={leadsByPipeline}
+          subOriginId={subOriginId}
+        />
       )}
 
       {/* Quadro (Kanban) */}
