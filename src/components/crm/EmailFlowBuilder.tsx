@@ -678,7 +678,7 @@ const EmailNode = ({ id, data, selected }: NodeProps) => {
 
   return (
     <div className="relative">
-      <div className="w-[420px] border border-border bg-background shadow-sm transition-all rounded-lg overflow-hidden">
+      <div className="w-[320px] border border-border bg-background shadow-sm transition-all rounded-lg overflow-hidden">
         <Handle
           type="target"
           position={Position.Left}
