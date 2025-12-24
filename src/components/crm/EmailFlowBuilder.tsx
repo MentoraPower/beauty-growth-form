@@ -107,9 +107,9 @@ interface EmailFlowStep {
 // Entry Node Component - Fully rounded pill shape "Start"
 const EntryNode = ({ data }: NodeProps) => {
   return (
-    <div className="px-6 py-3 rounded-full bg-foreground shadow-sm transition-all flex items-center gap-2">
-      <Play className="w-4 h-4 text-background fill-background" />
-      <span className="text-sm font-semibold text-background tracking-wide">Start</span>
+    <div className="px-6 py-3 rounded-full bg-transparent border border-border shadow-sm transition-all flex items-center gap-2">
+      <Play className="w-4 h-4 text-foreground" />
+      <span className="text-sm font-semibold text-foreground tracking-wide">Start</span>
       <Handle
         id="entry-out"
         type="source"
