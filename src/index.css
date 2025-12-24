@@ -655,16 +655,3 @@
 .animate-bar-dash {
   animation: bar-dash-scroll 0.8s linear infinite;
 }
-
-
-
-
-/* Flow edge animation */
-@keyframes flowDash {
-  0% {
-    stroke-dashoffset: 10;
-  }
-  100% {
-    stroke-dashoffset: 0;
-  }
-}
