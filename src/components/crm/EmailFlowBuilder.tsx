@@ -21,6 +21,7 @@ import {
   getSmoothStepPath,
   EdgeProps,
   useReactFlow,
+  ConnectionLineComponentProps,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import { Play, Clock, Pause, CheckCircle2, Trash2, Copy, ArrowLeft, ArrowUp, Plus, Mail, Zap, ChevronDown, ChevronUp, Users, UserMinus, UserX, User, Send, Type, AudioLines, ImagePlus, Clapperboard, FileUp } from "lucide-react";
@@ -120,7 +121,47 @@ const EntryNode = ({ data }: NodeProps) => {
   );
 };
 
-// Group trigger types
+// Custom animated connection line while dragging
+const AnimatedConnectionLine = ({
+  fromX,
+  fromY,
+  toX,
+  toY,
+}: ConnectionLineComponentProps) => {
+  return (
+    <g>
+      <path
+        fill="none"
+        stroke="#22c55e"
+        strokeWidth={2}
+        strokeDasharray="8 4"
+        strokeLinecap="round"
+        d={`M${fromX},${fromY} C ${fromX + 50},${fromY} ${toX - 50},${toY} ${toX},${toY}`}
+        style={{
+          animation: "dash 0.5s linear infinite",
+        }}
+      />
+      <circle
+        cx={toX}
+        cy={toY}
+        r={6}
+        fill="#22c55e"
+        stroke="white"
+        strokeWidth={2}
+      />
+      <style>
+        {`
+          @keyframes dash {
+            to {
+              stroke-dashoffset: -12;
+            }
+          }
+        `}
+      </style>
+    </g>
+  );
+};
+
 const GROUP_TRIGGER_TYPES = [
   { id: "joined_group", label: "Entrou no Grupo", icon: Users, description: "Lead entrou em um grupo WhatsApp" },
   { id: "left_group", label: "Saiu do Grupo", icon: UserMinus, description: "Lead saiu de um grupo WhatsApp" },
@@ -2110,6 +2151,7 @@ export function EmailFlowBuilder({
             onPaneClick={() => setConnectionDropdown(null)}
             nodeTypes={nodeTypes}
             edgeTypes={edgeTypes}
+            connectionLineComponent={AnimatedConnectionLine}
             fitView
             snapToGrid
             snapGrid={[20, 20]}
