@@ -1082,8 +1082,12 @@ const CustomEdge = ({
         fill="none"
         stroke={`url(#${gradientId})`}
         strokeWidth={3}
+        strokeDasharray="8 5"
         strokeLinecap="round"
         strokeLinejoin="round"
+        style={{
+          animation: "flowDash 1s linear infinite",
+        }}
       />
       <EdgeLabelRenderer>
         <div
