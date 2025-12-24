@@ -1,7 +1,7 @@
 import { useState, useEffect, lazy, Suspense, useCallback, useRef } from "react";
 import { Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Pipeline } from "@/types/crm";
 
@@ -27,17 +27,34 @@ interface EmailAutomationsViewProps {
 }
 
 export function EmailAutomationsView({ pipelines, subOriginId }: EmailAutomationsViewProps) {
-  const queryClient = useQueryClient();
   const [automationId, setAutomationId] = useState<string | null>(null);
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const lastSavedStepsRef = useRef<string>("");
+  const didHydrateRef = useRef(false);
+  const ignoreNextAutosaveRef = useRef(true);
+  const lastKnownTriggerPipelineIdRef = useRef<string | null>(null);
+
+  // Reset local state when switching sub-origin
+  useEffect(() => {
+    didHydrateRef.current = false;
+    ignoreNextAutosaveRef.current = true;
+    lastSavedStepsRef.current = "";
+    lastKnownTriggerPipelineIdRef.current = null;
+    setAutomationId(null);
+
+    if (saveTimeoutRef.current) {
+      clearTimeout(saveTimeoutRef.current);
+      saveTimeoutRef.current = null;
+    }
+  }, [subOriginId]);
 
   // Fetch existing automation for this sub_origin
   const { data: existingAutomation, isLoading, refetch } = useQuery({
     queryKey: ["email-automation-single", subOriginId],
+    enabled: !!subOriginId,
     queryFn: async () => {
       if (!subOriginId) return null;
-      
+
       const { data, error } = await (supabase as any)
         .from("email_automations")
         .select("*")
@@ -45,12 +62,12 @@ export function EmailAutomationsView({ pipelines, subOriginId }: EmailAutomation
         .order("created_at", { ascending: true })
         .limit(1)
         .maybeSingle();
-      
+
       if (error) {
         console.error("Error fetching email automation:", error);
         return null;
       }
-      
+
       return data as EmailAutomation | null;
     },
   });
@@ -60,13 +77,13 @@ export function EmailAutomationsView({ pipelines, subOriginId }: EmailAutomation
     queryKey: ["scheduled-emails-count", automationId],
     queryFn: async () => {
       if (!automationId) return 0;
-      
+
       const { count, error } = await supabase
         .from("scheduled_emails")
         .select("*", { count: "exact", head: true })
         .eq("automation_id", automationId)
         .eq("status", "pending");
-      
+
       if (error) return 0;
       return count || 0;
     },
@@ -74,40 +91,66 @@ export function EmailAutomationsView({ pipelines, subOriginId }: EmailAutomation
     refetchInterval: 30000,
   });
 
-  // Set automation ID when data loads
+  // Hydrate refs when data loads (prevents overwriting on mount)
   useEffect(() => {
+    if (didHydrateRef.current) return;
+
+    const flowSteps = existingAutomation?.flow_steps || [];
+    lastSavedStepsRef.current = JSON.stringify(flowSteps);
+    lastKnownTriggerPipelineIdRef.current = existingAutomation?.trigger_pipeline_id || null;
+    ignoreNextAutosaveRef.current = true;
+
     if (existingAutomation?.id) {
       setAutomationId(existingAutomation.id);
     }
+
+    didHydrateRef.current = true;
   }, [existingAutomation]);
 
-  const getPipelineName = useCallback((pipelineId: string) => {
-    return pipelines.find(p => p.id === pipelineId)?.nome || "";
-  }, [pipelines]);
+  const getPipelineName = useCallback(
+    (pipelineId: string) => {
+      return pipelines.find((p) => p.id === pipelineId)?.nome || "";
+    },
+    [pipelines]
+  );
 
   // Auto-save function
   const autoSave = useCallback(async (steps: any[]) => {
+    if (!didHydrateRef.current) return;
+
     const stepsJson = JSON.stringify(steps);
-    
+
+    // Ignore the first onChange emission after mount/hydration (prevents overwriting)
+    if (ignoreNextAutosaveRef.current) {
+      lastSavedStepsRef.current = stepsJson;
+      ignoreNextAutosaveRef.current = false;
+      return;
+    }
+
     // Skip if nothing changed
     if (stepsJson === lastSavedStepsRef.current) {
       return;
     }
 
     // Filter out _edges step for processing
-    const nodeSteps = steps.filter(s => s.type !== "_edges");
-    
-    const emailSteps = nodeSteps.filter(s => s.type === "email");
-    const triggerStep = nodeSteps.find(s => s.type === "trigger");
-    
+    const nodeSteps = steps.filter((s) => s.type !== "_edges");
+
+    const emailSteps = nodeSteps.filter((s) => s.type === "email");
+    const triggerStep = nodeSteps.find((s) => s.type === "trigger");
+
     // Get trigger pipeline from triggers array or legacy field
     let triggerPipelineId = triggerStep?.data?.triggerPipelineId;
     if (!triggerPipelineId && triggerStep?.data?.triggers?.length > 0) {
       const firstPipelineTrigger = triggerStep.data.triggers.find((t: any) => t.pipelineId);
       triggerPipelineId = firstPipelineTrigger?.pipelineId;
     }
-    
-    // Use first pipeline as fallback
+
+    // Keep last known pipeline as fallback (prevents switching when trigger list is temporarily empty)
+    if (!triggerPipelineId) {
+      triggerPipelineId = lastKnownTriggerPipelineIdRef.current || undefined;
+    }
+
+    // Use first pipeline as last resort
     if (!triggerPipelineId && pipelines.length > 0) {
       triggerPipelineId = pipelines[0].id;
     }
@@ -152,13 +195,14 @@ export function EmailAutomationsView({ pipelines, subOriginId }: EmailAutomation
           .single();
 
         if (error) throw error;
-        
+
         if (data) {
           setAutomationId(data.id);
         }
       }
 
       lastSavedStepsRef.current = stepsJson;
+      lastKnownTriggerPipelineIdRef.current = triggerPipelineId;
       console.log("Automação salva automaticamente", { automationId, triggerPipelineId });
     } catch (error) {
       console.error("Erro ao salvar automação:", error);
