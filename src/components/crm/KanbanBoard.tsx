@@ -1045,9 +1045,9 @@ export function KanbanBoard() {
         {/* Title - left */}
         <h1 className="text-xl font-light flex-shrink-0">{pageTitle}</h1>
 
-        {/* Search centered with filters */}
-        <div className="flex-1 flex items-center justify-center gap-2">
-          {subOriginId && (
+        {/* Hidden AutomationsDropdown - controlled externally */}
+        {subOriginId && (
+          <div className="hidden">
             <AutomationsDropdown 
               pipelines={pipelines} 
               subOriginId={subOriginId}
@@ -1057,7 +1057,6 @@ export function KanbanBoard() {
               onEmailContextChange={(ctx) => setEmailEditingContext(ctx)}
               onShowEmailBuilder={(show, props) => {
                 if (show && props) {
-                  // Save the editing context for when we come back
                   if (props.editingContext) {
                     setEmailEditingContext(props.editingContext);
                   }
@@ -1067,8 +1066,15 @@ export function KanbanBoard() {
                 }
               }}
             />
-          )}
-          <div className="relative w-full max-w-md">
+          </div>
+        )}
+
+        {/* Center space */}
+        <div className="flex-1" />
+
+        {/* Right side - Search and Filters */}
+        <div className="flex items-center gap-2 flex-shrink-0">
+          <div className="relative w-64">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <Input
               type="text"
@@ -1301,24 +1307,12 @@ export function KanbanBoard() {
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
-
-        {/* Right side - settings */}
-        <div className="flex items-center gap-2 flex-shrink-0">
-          <Button
-            size="sm"
-            onClick={() => setIsPipelinesDialogOpen(true)}
-            className="bg-gradient-to-r from-orange-600 to-amber-500 hover:from-orange-700 hover:to-amber-600 text-white border-0 shadow-lg shadow-orange-600/20"
-          >
-            <Settings className="w-4 h-4 mr-2" />
-            Gerenciar Origens
-          </Button>
-        </div>
       </div>
 
       {/* View Tabs - OverView | Quadro | Calendário */}
       {subOriginId && (
         <div className="w-full mb-4">
-          <div className="w-full flex items-center bg-gray-200 rounded-lg px-4 py-2.5">
+          <div className="w-full flex items-center justify-between bg-gray-200 rounded-lg px-4 py-2.5">
             <div className="relative inline-flex items-center gap-6">
               {/* Animated gradient indicator */}
               <div 
@@ -1383,6 +1377,36 @@ export function KanbanBoard() {
                 Automations
               </button>
             </div>
+
+            {/* Settings Icon - Right side */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button className="p-1.5 rounded-lg hover:bg-gray-300 transition-colors text-gray-600 hover:text-gray-900">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+                    <circle cx="12" cy="12" r="4"/>
+                  </svg>
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-48">
+                <DropdownMenuLabel>Configurações</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <button
+                  onClick={() => setAutomationsOpen(true)}
+                  className="w-full flex items-center gap-2 px-2 py-1.5 text-sm hover:bg-muted rounded-sm cursor-pointer"
+                >
+                  <Settings className="w-4 h-4" />
+                  Automações
+                </button>
+                <button
+                  onClick={() => setIsPipelinesDialogOpen(true)}
+                  className="w-full flex items-center gap-2 px-2 py-1.5 text-sm hover:bg-muted rounded-sm cursor-pointer"
+                >
+                  <Settings className="w-4 h-4" />
+                  Gerenciar Origens
+                </button>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </div>
       )}
