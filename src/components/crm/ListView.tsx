@@ -2,7 +2,7 @@ import { useState } from "react";
 import { ChevronDown, ChevronRight, Plus, MoreHorizontal, Calendar } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Lead, Pipeline } from "@/types/crm";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { Checkbox } from "@/components/ui/checkbox";
 
 interface ListViewProps {
@@ -17,6 +17,7 @@ export function ListView({ pipelines, leadsByPipeline, subOriginId }: ListViewPr
   );
   const [selectedLeads, setSelectedLeads] = useState<Set<string>>(new Set());
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
 
   const togglePipeline = (pipelineId: string) => {
     setExpandedPipelines(prev => {
@@ -31,7 +32,13 @@ export function ListView({ pipelines, leadsByPipeline, subOriginId }: ListViewPr
   };
 
   const handleLeadClick = (lead: Lead) => {
-    navigate(`/admin/lead/${lead.id}`);
+    const params = new URLSearchParams();
+    if (subOriginId) params.set("origin", subOriginId);
+    const searchQuery = searchParams.get("search");
+    if (searchQuery) params.set("search", searchQuery);
+    const queryString = params.toString();
+    const url = `/admin/crm/${lead.id}${queryString ? `?${queryString}` : ''}`;
+    navigate(url);
   };
 
   const toggleLeadSelection = (leadId: string, e: React.MouseEvent) => {
