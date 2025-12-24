@@ -691,10 +691,7 @@ const EmailNode = ({ id, data, selected }: NodeProps) => {
         >
           <div className="flex items-center gap-3">
             <img src={gmailLogo} alt="Gmail" className="w-7 h-7 rounded" />
-            <div>
-              <span className="text-xs font-semibold text-white uppercase tracking-wide block">E-mail</span>
-              {subject && <span className="text-[11px] text-white/80 truncate block max-w-[280px]">{subject}</span>}
-            </div>
+            <span className="text-xs font-semibold text-white uppercase tracking-wide">E-mail</span>
           </div>
           <span className="text-white/70 text-xs">Clique para editar</span>
         </div>
@@ -882,10 +879,7 @@ const WhatsAppNode = ({ id, data, selected }: NodeProps) => {
             <div className="w-7 h-7 rounded bg-white/20 flex items-center justify-center">
               <WhatsAppIcon className="w-4 h-4 text-white" />
             </div>
-            <div>
-              <span className="text-xs font-semibold text-white uppercase tracking-wide block">WhatsApp</span>
-              {accountLabel && <span className="text-[11px] text-white/80 truncate block max-w-[180px]">{accountLabel}</span>}
-            </div>
+            <span className="text-xs font-semibold text-white uppercase tracking-wide">WhatsApp</span>
           </div>
           <span className="text-white/70 text-xs">Editar</span>
         </div>
