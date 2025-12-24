@@ -958,12 +958,11 @@ const WhatsAppNode = ({ id, data, selected }: NodeProps) => {
       case 'image':
         return mediaUrl ? (
           <div className="flex items-center gap-3 p-3 bg-green-600 rounded-lg">
-            <ImagePlus className="w-6 h-6 text-white" />
             <span className="text-sm text-white">Imagem configurada</span>
           </div>
         ) : (
           <div className="flex items-center justify-center h-16 bg-green-600/20 rounded-lg">
-            <ImagePlus className="w-8 h-8 text-white" />
+            <span className="text-sm text-white/70">Clique para adicionar imagem</span>
           </div>
         );
       case 'video':
