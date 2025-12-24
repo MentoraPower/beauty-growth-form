@@ -221,13 +221,98 @@ export function BroadcastDialog({ open, onOpenChange }: BroadcastDialogProps) {
   const handleSend = async () => {
     setIsSending(true);
     
-    // Simulate sending - in real implementation, call an edge function
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    
-    toast({
-      title: "Disparo iniciado",
-      description: `Enviando para ${leadsCount} leads via ${selectedChannel === "whatsapp_web" ? "WhatsApp Web" : "E-mail"}.`,
-    });
+    try {
+      if (selectedChannel === "email") {
+        // Fetch leads for the broadcast
+        let query = supabase
+          .from("leads")
+          .select("id, name, email")
+          .eq("sub_origin_id", selectedSubOrigin?.id);
+        
+        if (selectedPipeline !== "all" && selectedPipeline) {
+          query = query.eq("pipeline_id", selectedPipeline.id);
+        }
+        
+        const { data: leads, error: leadsError } = await query;
+        
+        if (leadsError) {
+          throw new Error("Erro ao buscar leads: " + leadsError.message);
+        }
+        
+        if (!leads || leads.length === 0) {
+          toast({
+            title: "Nenhum lead encontrado",
+            description: "Não há leads para enviar o e-mail.",
+            variant: "destructive",
+          });
+          setIsSending(false);
+          return;
+        }
+        
+        // Send emails to each lead
+        let successCount = 0;
+        let errorCount = 0;
+        
+        for (const lead of leads) {
+          if (!lead.email) {
+            errorCount++;
+            continue;
+          }
+          
+          // Replace variables in subject and body
+          const personalizedSubject = emailSubject
+            .replace(/\{nome\}/gi, lead.name || "")
+            .replace(/\{name\}/gi, lead.name || "")
+            .replace(/\{email\}/gi, lead.email || "");
+          
+          const personalizedBody = emailBody
+            .replace(/\{nome\}/gi, lead.name || "")
+            .replace(/\{name\}/gi, lead.name || "")
+            .replace(/\{email\}/gi, lead.email || "");
+          
+          try {
+            const { error } = await supabase.functions.invoke("send-email", {
+              body: {
+                leadId: lead.id,
+                leadName: lead.name,
+                leadEmail: lead.email,
+                subject: personalizedSubject,
+                bodyHtml: personalizedBody,
+              },
+            });
+            
+            if (error) {
+              console.error("Error sending email to", lead.email, error);
+              errorCount++;
+            } else {
+              successCount++;
+            }
+          } catch (err) {
+            console.error("Error sending email to", lead.email, err);
+            errorCount++;
+          }
+        }
+        
+        toast({
+          title: "Disparo concluído",
+          description: `${successCount} e-mails enviados com sucesso${errorCount > 0 ? `, ${errorCount} falhas` : ""}.`,
+          variant: successCount > 0 ? "default" : "destructive",
+        });
+      } else if (selectedChannel === "whatsapp_web") {
+        // WhatsApp Web - just show message for now
+        toast({
+          title: "Disparo iniciado",
+          description: `Enviando para ${leadsCount} leads via WhatsApp Web.`,
+        });
+      }
+    } catch (error: any) {
+      console.error("Broadcast error:", error);
+      toast({
+        title: "Erro no disparo",
+        description: error.message || "Ocorreu um erro ao enviar as mensagens.",
+        variant: "destructive",
+      });
+    }
     
     setIsSending(false);
     onOpenChange(false);
