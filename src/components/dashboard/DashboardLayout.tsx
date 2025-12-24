@@ -392,7 +392,7 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
             pointerEvents: crmSubmenuOpen ? 'auto' : 'none',
             transition: "width 400ms cubic-bezier(0.4,0,0.2,1), opacity 200ms ease-out",
           }}
-          className="hidden lg:block fixed top-[2px] bottom-[2px] rounded-r-2xl bg-zinc-900 overflow-hidden"
+          className="hidden lg:block fixed top-0 bottom-0 rounded-r-2xl bg-zinc-900 overflow-hidden"
         >
           <div className="h-full pl-4 pr-2" style={{ width: submenuWidth, minWidth: submenuWidth }}>
             <CRMOriginsPanel 
