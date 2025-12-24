@@ -1747,8 +1747,8 @@ export function EmailFlowBuilder({
             }}
             className="flex items-center gap-3 cursor-grab active:cursor-grabbing hover:bg-muted/50 rounded-xl p-2.5 transition-colors border border-border w-full"
           >
-            <div className="w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 border border-gray-200 flex-shrink-0">
-              <Mail className="w-4 h-4 text-foreground" />
+            <div className="w-8 h-8 flex items-center justify-center rounded-full flex-shrink-0" style={{ background: 'linear-gradient(135deg, #EA4335 25%, #FBBC05 25%, #FBBC05 50%, #34A853 50%, #34A853 75%, #4285F4 75%)' }}>
+              <Mail className="w-4 h-4 text-white" />
             </div>
             <span className="text-sm text-foreground">E-mail</span>
           </div>
@@ -1762,8 +1762,8 @@ export function EmailFlowBuilder({
             }}
             className="flex items-center gap-3 cursor-grab active:cursor-grabbing hover:bg-muted/50 rounded-xl p-2.5 transition-colors border border-border w-full"
           >
-            <div className="w-8 h-8 flex items-center justify-center rounded-full bg-emerald-100 border border-emerald-300 flex-shrink-0">
-              <WhatsAppIcon className="w-4 h-4 text-emerald-600" />
+            <div className="w-8 h-8 flex items-center justify-center rounded-full flex-shrink-0" style={{ backgroundColor: '#25D366' }}>
+              <WhatsAppIcon className="w-4 h-4 text-white" />
             </div>
             <span className="text-sm text-foreground">WhatsApp</span>
           </div>
