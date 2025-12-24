@@ -47,10 +47,12 @@ import { AutomationsDropdown } from "./AutomationsDropdown";
 import { EmailFlowBuilder } from "./EmailFlowBuilder";
 
 
-// Lazy load heavy dialog
+// Lazy load heavy components
 const ManagePipelinesDialog = lazy(() => 
   import("./ManagePipelinesDialog").then(m => ({ default: m.ManagePipelinesDialog }))
 );
+
+const CalendarPageLazy = lazy(() => import("@/pages/CalendarPage"));
 
 interface EmailEditingContext {
   emailName: string;
@@ -77,15 +79,19 @@ interface EmailBuilderState {
   };
 }
 
+type CRMView = "overview" | "quadro" | "calendario";
+
 export function KanbanBoard() {
   const [searchParams, setSearchParams] = useSearchParams();
   const subOriginId = searchParams.get("origin");
   const urlSearchQuery = searchParams.get("search") || "";
+  const urlView = searchParams.get("view") as CRMView | null;
   const isEmailBuilderOpen = searchParams.get("emailBuilder") === "open";
   const emailBuilderEmailId = searchParams.get("emailId");
   const emailBuilderName = searchParams.get("emailName");
   const emailBuilderTriggerPipelineId = searchParams.get("emailTrigger");
   
+  const [activeView, setActiveView] = useState<CRMView>(urlView || "quadro");
   const [activeId, setActiveId] = useState<string | null>(null);
   const [overId, setOverId] = useState<string | null>(null);
   const [dropIndicator, setDropIndicator] = useState<{
@@ -106,6 +112,14 @@ export function KanbanBoard() {
   const [automationsOpen, setAutomationsOpen] = useState(false);
   const queryClient = useQueryClient();
   const searchTimeoutRef = useRef<number | null>(null);
+
+  // Handle view change and update URL
+  const handleViewChange = useCallback((view: CRMView) => {
+    setActiveView(view);
+    const newParams = new URLSearchParams(searchParams);
+    newParams.set("view", view);
+    setSearchParams(newParams, { replace: true });
+  }, [searchParams, setSearchParams]);
 
   // Open email builder with URL param (and persist minimum state in URL for refresh/deep-link)
   const openEmailBuilder = useCallback((props: EmailBuilderState["props"]) => {
@@ -1303,17 +1317,35 @@ export function KanbanBoard() {
           <div className="w-full flex items-center bg-foreground rounded-lg px-4 py-2">
             <div className="inline-flex items-center gap-6">
               <button
-                className="relative text-sm font-medium transition-all text-background/60 hover:text-background/80"
+                onClick={() => handleViewChange("overview")}
+                className={cn(
+                  "relative text-sm font-medium transition-all",
+                  activeView === "overview" 
+                    ? "text-background after:absolute after:-bottom-1 after:left-0 after:right-0 after:h-0.5 after:bg-background after:rounded-full"
+                    : "text-background/60 hover:text-background/80"
+                )}
               >
                 OverView
               </button>
               <button
-                className="relative text-sm font-medium transition-all text-background after:absolute after:-bottom-1 after:left-0 after:right-0 after:h-0.5 after:bg-background after:rounded-full"
+                onClick={() => handleViewChange("quadro")}
+                className={cn(
+                  "relative text-sm font-medium transition-all",
+                  activeView === "quadro" 
+                    ? "text-background after:absolute after:-bottom-1 after:left-0 after:right-0 after:h-0.5 after:bg-background after:rounded-full"
+                    : "text-background/60 hover:text-background/80"
+                )}
               >
                 Quadro
               </button>
               <button
-                className="relative text-sm font-medium transition-all text-background/60 hover:text-background/80"
+                onClick={() => handleViewChange("calendario")}
+                className={cn(
+                  "relative text-sm font-medium transition-all",
+                  activeView === "calendario" 
+                    ? "text-background after:absolute after:-bottom-1 after:left-0 after:right-0 after:h-0.5 after:bg-background after:rounded-full"
+                    : "text-background/60 hover:text-background/80"
+                )}
               >
                 Calendário
               </button>
@@ -1328,61 +1360,84 @@ export function KanbanBoard() {
         </p>
       )}
 
-      <DndContext
-        sensors={sensors}
-        collisionDetection={collisionDetection}
-        onDragStart={handleDragStart}
-        onDragOver={handleDragOver}
-        onDragEnd={handleDragEnd}
-        onDragCancel={handleDragCancel}
-        measuring={{
-          droppable: {
-            strategy: MeasuringStrategy.Always,
-          },
-        }}
-      >
-        {isLoading ? (
-          // Loading skeletons
-          <div className="flex gap-4 overflow-x-auto flex-1 pb-0 min-h-0 animate-in fade-in duration-300">
-            {[1, 2, 3, 4].map((i) => (
-              <div key={i} className="flex-shrink-0 w-72 bg-muted/40 rounded-xl p-3 min-h-0">
-                <Skeleton className="h-6 w-24 mb-4" />
-                <div className="space-y-3">
-                  <Skeleton className="h-20 w-full rounded-lg" />
-                  <Skeleton className="h-20 w-full rounded-lg" />
-                  <Skeleton className="h-20 w-full rounded-lg" />
-                </div>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <div className="flex gap-4 overflow-x-auto flex-1 pb-0 min-h-0 animate-in fade-in duration-300">
-            {pipelines.map((pipeline) => (
-              <KanbanColumn
-                key={pipeline.id}
-                pipeline={pipeline}
-                leads={leadsByPipeline.get(pipeline.id) || []}
-                leadCount={hasActiveFilters || searchQuery ? undefined : pipelineCounts[pipeline.id]}
-                isOver={overId === pipeline.id}
-                subOriginId={subOriginId}
-                activeId={activeId}
-                dropIndicator={dropIndicator}
-                activePipelineId={activeLead?.pipeline_id}
-              />
-            ))}
-          </div>
-        )}
+      {/* OverView */}
+      {activeView === "overview" && subOriginId && (
+        <div className="flex-1 flex items-center justify-center text-muted-foreground">
+          <p>OverView - Em breve</p>
+        </div>
+      )}
 
-        <DragOverlay 
-          dropAnimation={null}
-        >
-          {activeLead ? (
-            <div className="rotate-2 scale-[1.02] opacity-95 cursor-grabbing pointer-events-none">
-              <KanbanCard lead={activeLead} isDragging />
-            </div>
-          ) : null}
-        </DragOverlay>
-      </DndContext>
+      {/* Calendário */}
+      {activeView === "calendario" && subOriginId && (
+        <Suspense fallback={
+          <div className="flex-1 flex items-center justify-center">
+            <Skeleton className="h-96 w-full max-w-4xl rounded-xl" />
+          </div>
+        }>
+          <CalendarPageLazy />
+        </Suspense>
+      )}
+
+      {/* Quadro (Kanban) */}
+      {activeView === "quadro" && (
+        <>
+          <DndContext
+            sensors={sensors}
+            collisionDetection={collisionDetection}
+            onDragStart={handleDragStart}
+            onDragOver={handleDragOver}
+            onDragEnd={handleDragEnd}
+            onDragCancel={handleDragCancel}
+            measuring={{
+              droppable: {
+                strategy: MeasuringStrategy.Always,
+              },
+            }}
+          >
+            {isLoading ? (
+              // Loading skeletons
+              <div className="flex gap-4 overflow-x-auto flex-1 pb-0 min-h-0 animate-in fade-in duration-300">
+                {[1, 2, 3, 4].map((i) => (
+                  <div key={i} className="flex-shrink-0 w-72 bg-muted/40 rounded-xl p-3 min-h-0">
+                    <Skeleton className="h-6 w-24 mb-4" />
+                    <div className="space-y-3">
+                      <Skeleton className="h-20 w-full rounded-lg" />
+                      <Skeleton className="h-20 w-full rounded-lg" />
+                      <Skeleton className="h-20 w-full rounded-lg" />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="flex gap-4 overflow-x-auto flex-1 pb-0 min-h-0 animate-in fade-in duration-300">
+                {pipelines.map((pipeline) => (
+                  <KanbanColumn
+                    key={pipeline.id}
+                    pipeline={pipeline}
+                    leads={leadsByPipeline.get(pipeline.id) || []}
+                    leadCount={hasActiveFilters || searchQuery ? undefined : pipelineCounts[pipeline.id]}
+                    isOver={overId === pipeline.id}
+                    subOriginId={subOriginId}
+                    activeId={activeId}
+                    dropIndicator={dropIndicator}
+                    activePipelineId={activeLead?.pipeline_id}
+                  />
+                ))}
+              </div>
+            )}
+
+            <DragOverlay 
+              dropAnimation={null}
+            >
+              {activeLead ? (
+                <div className="rotate-2 scale-[1.02] opacity-95 cursor-grabbing pointer-events-none">
+                  <KanbanCard lead={activeLead} isDragging />
+                </div>
+              ) : null}
+            </DragOverlay>
+          </DndContext>
+        </>
+      )}
 
       <Suspense fallback={null}>
         <ManagePipelinesDialog
