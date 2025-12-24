@@ -1,14 +1,9 @@
-import { useState, useEffect, lazy, Suspense } from "react";
-import { Mail, Plus, Trash2, Settings, ArrowRight, Loader2 } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Skeleton } from "@/components/ui/skeleton";
+import { useState, useEffect, lazy, Suspense, useCallback, useRef } from "react";
+import { Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Pipeline } from "@/types/crm";
-import { cn } from "@/lib/utils";
 
 const EmailFlowBuilder = lazy(() => 
   import("./EmailFlowBuilder").then(m => ({ default: m.EmailFlowBuilder }))
@@ -33,381 +28,186 @@ interface EmailAutomationsViewProps {
 
 export function EmailAutomationsView({ pipelines, subOriginId }: EmailAutomationsViewProps) {
   const queryClient = useQueryClient();
-  const [isCreating, setIsCreating] = useState(false);
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [emailName, setEmailName] = useState("");
-  const [emailTriggerPipeline, setEmailTriggerPipeline] = useState("");
-  const [showFlowBuilder, setShowFlowBuilder] = useState(false);
-  const [flowBuilderData, setFlowBuilderData] = useState<EmailAutomation | null>(null);
+  const [automationId, setAutomationId] = useState<string | null>(null);
+  const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const lastSavedStepsRef = useRef<string>("");
 
-  // Fetch email automations
-  const { data: emailAutomations = [], isLoading, refetch } = useQuery({
-    queryKey: ["email-automations", subOriginId],
+  // Fetch existing automation for this sub_origin
+  const { data: existingAutomation, isLoading, refetch } = useQuery({
+    queryKey: ["email-automation-single", subOriginId],
     queryFn: async () => {
+      if (!subOriginId) return null;
+      
       const { data, error } = await (supabase as any)
         .from("email_automations")
         .select("*")
-        .order("created_at", { ascending: false });
+        .eq("sub_origin_id", subOriginId)
+        .order("created_at", { ascending: true })
+        .limit(1)
+        .maybeSingle();
       
       if (error) {
-        console.error("Error fetching email automations:", error);
-        return [];
+        console.error("Error fetching email automation:", error);
+        return null;
       }
       
-      let filtered = data || [];
-      if (subOriginId) {
-        filtered = filtered.filter((e: any) => e.sub_origin_id === subOriginId);
-      }
-      return filtered as EmailAutomation[];
+      return data as EmailAutomation | null;
     },
   });
 
   // Fetch pending emails count
-  const { data: pendingCounts = {} } = useQuery({
-    queryKey: ["scheduled-emails-counts", subOriginId],
+  const { data: pendingCount = 0 } = useQuery({
+    queryKey: ["scheduled-emails-count", automationId],
     queryFn: async () => {
-      const { data, error } = await supabase
+      if (!automationId) return 0;
+      
+      const { count, error } = await supabase
         .from("scheduled_emails")
-        .select("automation_id")
+        .select("*", { count: "exact", head: true })
+        .eq("automation_id", automationId)
         .eq("status", "pending");
       
-      if (error) return {};
-      
-      const counts: Record<string, number> = {};
-      (data || []).forEach((row: any) => {
-        counts[row.automation_id] = (counts[row.automation_id] || 0) + 1;
-      });
-      return counts;
+      if (error) return 0;
+      return count || 0;
     },
+    enabled: !!automationId,
     refetchInterval: 30000,
   });
 
-  const activeCount = emailAutomations.filter(e => e.is_active).length;
+  // Set automation ID when data loads
+  useEffect(() => {
+    if (existingAutomation?.id) {
+      setAutomationId(existingAutomation.id);
+    }
+  }, [existingAutomation]);
 
-  const getPipelineName = (pipelineId: string) => {
+  const getPipelineName = useCallback((pipelineId: string) => {
     return pipelines.find(p => p.id === pipelineId)?.nome || "";
-  };
+  }, [pipelines]);
 
-  const toggleAutomation = async (id: string, isActive: boolean) => {
-    try {
-      const { error } = await (supabase as any)
-        .from("email_automations")
-        .update({ is_active: !isActive })
-        .eq("id", id);
-
-      if (error) throw error;
-      refetch();
-    } catch (error) {
-      console.error("Erro ao atualizar automação:", error);
-      toast.error("Erro ao atualizar automação");
-    }
-  };
-
-  const deleteAutomation = async (id: string) => {
-    try {
-      const { error } = await (supabase as any)
-        .from("email_automations")
-        .delete()
-        .eq("id", id);
-
-      if (error) throw error;
-      refetch();
-      toast.success("Automação removida!");
-    } catch (error) {
-      console.error("Erro ao remover automação:", error);
-      toast.error("Erro ao remover automação");
-    }
-  };
-
-  const startCreating = () => {
-    setIsCreating(true);
-    setEditingId(null);
-    setEmailName("");
-    setEmailTriggerPipeline("");
-  };
-
-  const startEditing = (automation: EmailAutomation) => {
-    setFlowBuilderData(automation);
-    setShowFlowBuilder(true);
-  };
-
-  const cancelCreating = () => {
-    setIsCreating(false);
-    setEmailName("");
-    setEmailTriggerPipeline("");
-  };
-
-  const handleContinueToBuilder = () => {
-    if (!emailName.trim()) {
-      toast.error("Digite um nome para a automação");
-      return;
-    }
-    if (!emailTriggerPipeline) {
-      toast.error("Selecione uma pipeline de gatilho");
+  // Auto-save function
+  const autoSave = useCallback(async (steps: any[]) => {
+    const stepsJson = JSON.stringify(steps);
+    
+    // Skip if nothing changed
+    if (stepsJson === lastSavedStepsRef.current) {
       return;
     }
 
-    setFlowBuilderData({
-      id: "",
-      name: emailName,
-      trigger_pipeline_id: emailTriggerPipeline,
-      sub_origin_id: subOriginId,
-      subject: "",
-      body_html: "",
-      is_active: true,
-      created_at: "",
-      flow_steps: null,
-    });
-    setShowFlowBuilder(true);
-    setIsCreating(false);
-  };
-
-  const handleSaveFlow = async (steps: any[]) => {
     const emailSteps = steps.filter(s => s.type === "email");
-    if (emailSteps.length === 0) {
-      toast.error("Adicione pelo menos um passo de e-mail");
+    const triggerStep = steps.find(s => s.type === "trigger");
+    const triggerPipelineId = triggerStep?.data?.triggerPipelineId || pipelines[0]?.id;
+
+    if (!triggerPipelineId) {
       return;
     }
-
-    const triggerStep = steps.find(s => s.type === "trigger");
-    const triggerPipelineId = triggerStep?.data?.triggerPipelineId || flowBuilderData?.trigger_pipeline_id;
 
     const firstEmailStep = emailSteps[0];
     const subject = firstEmailStep?.data?.subject || "";
     const bodyHtml = firstEmailStep?.data?.bodyHtml || "";
 
     try {
-      if (flowBuilderData?.id) {
+      if (automationId) {
         // Update existing
         const { error } = await (supabase as any)
           .from("email_automations")
           .update({
-            name: flowBuilderData.name,
             trigger_pipeline_id: triggerPipelineId,
             subject,
             body_html: bodyHtml,
             flow_steps: steps,
           })
-          .eq("id", flowBuilderData.id);
+          .eq("id", automationId);
 
         if (error) throw error;
-        toast.success("Automação atualizada!");
       } else {
         // Create new
-        const { error } = await (supabase as any)
+        const { data, error } = await (supabase as any)
           .from("email_automations")
           .insert({
-            name: flowBuilderData?.name || emailName,
+            name: "Automação de Email",
             trigger_pipeline_id: triggerPipelineId,
             sub_origin_id: subOriginId,
             subject,
             body_html: bodyHtml,
             flow_steps: steps,
             is_active: true,
-          });
+          })
+          .select()
+          .single();
 
         if (error) throw error;
-        toast.success("Automação criada!");
+        
+        if (data) {
+          setAutomationId(data.id);
+        }
       }
 
-      refetch();
-      setShowFlowBuilder(false);
-      setFlowBuilderData(null);
+      lastSavedStepsRef.current = stepsJson;
+      console.log("Automação salva automaticamente");
     } catch (error) {
       console.error("Erro ao salvar automação:", error);
-      toast.error("Erro ao salvar automação");
     }
-  };
+  }, [automationId, subOriginId, pipelines]);
 
-  const handleCancelFlow = () => {
-    setShowFlowBuilder(false);
-    setFlowBuilderData(null);
-  };
+  // Debounced save handler
+  const handleSaveFlow = useCallback((steps: any[]) => {
+    if (saveTimeoutRef.current) {
+      clearTimeout(saveTimeoutRef.current);
+    }
+    
+    saveTimeoutRef.current = setTimeout(() => {
+      autoSave(steps);
+    }, 1000); // Auto-save after 1 second of inactivity
+  }, [autoSave]);
 
-  // Show flow builder full screen
-  if (showFlowBuilder && flowBuilderData) {
-    return (
-      <Suspense fallback={
-        <div className="flex-1 flex items-center justify-center">
-          <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
-        </div>
-      }>
-        <EmailFlowBuilder
-          automationName={flowBuilderData.name}
-          triggerPipelineName={getPipelineName(flowBuilderData.trigger_pipeline_id)}
-          onSave={handleSaveFlow}
-          onCancel={handleCancelFlow}
-          initialSteps={flowBuilderData.flow_steps || undefined}
-          pipelines={pipelines}
-          subOriginId={subOriginId}
-          automationId={flowBuilderData.id || undefined}
-          pendingEmailsCount={flowBuilderData.id ? (pendingCounts[flowBuilderData.id] || 0) : 0}
-        />
-      </Suspense>
-    );
-  }
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  // Manual save (for explicit save button if needed)
+  const handleManualSave = async (steps: any[]) => {
+    if (saveTimeoutRef.current) {
+      clearTimeout(saveTimeoutRef.current);
+    }
+    await autoSave(steps);
+    toast.success("Automação salva!");
+    refetch();
+  };
 
   if (isLoading) {
     return (
-      <div className="space-y-4 p-6">
-        <Skeleton className="h-10 w-48" />
-        <Skeleton className="h-24 w-full" />
-        <Skeleton className="h-24 w-full" />
+      <div className="flex-1 flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
       </div>
     );
   }
 
+  // Always show flow builder directly
   return (
-    <div className="flex-1 p-6 space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
-            <Mail className="w-5 h-5 text-primary" />
-          </div>
-          <div>
-            <h2 className="text-lg font-semibold">Automações de Email</h2>
-            <p className="text-sm text-muted-foreground">
-              {activeCount} automação{activeCount !== 1 ? "ões" : ""} ativa{activeCount !== 1 ? "s" : ""}
-            </p>
-          </div>
-        </div>
-        <Button
-          onClick={startCreating}
-          className="bg-foreground hover:bg-foreground/90 text-background"
-          disabled={isCreating}
-        >
-          <Plus className="w-4 h-4 mr-2" />
-          Nova automação
-        </Button>
+    <Suspense fallback={
+      <div className="flex-1 flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
       </div>
-
-      {/* Create form */}
-      {isCreating && (
-        <div className="p-5 rounded-xl bg-muted/50 border border-border space-y-4">
-          <div className="flex items-center justify-between">
-            <span className="text-sm font-medium">Nova Automação de Email</span>
-            <Button
-              size="sm"
-              variant="ghost"
-              onClick={cancelCreating}
-            >
-              Cancelar
-            </Button>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <Input
-              placeholder="Nome da automação..."
-              value={emailName}
-              onChange={(e) => setEmailName(e.target.value)}
-            />
-            <Select value={emailTriggerPipeline} onValueChange={setEmailTriggerPipeline}>
-              <SelectTrigger>
-                <SelectValue placeholder="Pipeline de gatilho..." />
-              </SelectTrigger>
-              <SelectContent>
-                {pipelines.map((pipeline) => (
-                  <SelectItem key={pipeline.id} value={pipeline.id}>
-                    {pipeline.nome}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="flex justify-end">
-            <Button onClick={handleContinueToBuilder}>
-              Continuar para o editor
-              <ArrowRight className="w-4 h-4 ml-2" />
-            </Button>
-          </div>
-        </div>
-      )}
-
-      {/* Empty state */}
-      {emailAutomations.length === 0 && !isCreating && (
-        <div className="flex flex-col items-center justify-center py-16 text-center">
-          <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-4">
-            <Mail className="w-8 h-8 text-muted-foreground" />
-          </div>
-          <h3 className="text-foreground font-medium mb-2">Nenhuma automação de email</h3>
-          <p className="text-muted-foreground text-sm max-w-md mb-6">
-            Configure automações para enviar emails automaticamente quando leads chegarem em determinadas pipelines.
-          </p>
-          <Button onClick={startCreating}>
-            <Plus className="w-4 h-4 mr-2" />
-            Criar automação
-          </Button>
-        </div>
-      )}
-
-      {/* Automations list */}
-      {emailAutomations.length > 0 && (
-        <div className="space-y-3">
-          {emailAutomations.map((automation) => (
-            <div
-              key={automation.id}
-              className={cn(
-                "p-4 rounded-xl border transition-colors",
-                automation.is_active 
-                  ? "bg-card border-border" 
-                  : "bg-muted/20 border-border opacity-60"
-              )}
-            >
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-4">
-                  <button
-                    onClick={() => toggleAutomation(automation.id, automation.is_active)}
-                    className={cn(
-                      "relative w-11 h-6 rounded-full transition-colors",
-                      automation.is_active ? "bg-primary" : "bg-muted-foreground/30"
-                    )}
-                  >
-                    <span
-                      className={cn(
-                        "absolute left-0.5 top-0.5 w-5 h-5 rounded-full bg-background shadow-sm transition-transform",
-                        automation.is_active ? "translate-x-5" : "translate-x-0"
-                      )}
-                    />
-                  </button>
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <span className="font-medium text-sm">{automation.name}</span>
-                      {pendingCounts[automation.id] > 0 && (
-                        <span className="text-xs px-2 py-0.5 rounded-full bg-amber-100 text-amber-700">
-                          {pendingCounts[automation.id]} pendente{pendingCounts[automation.id] !== 1 ? "s" : ""}
-                        </span>
-                      )}
-                    </div>
-                    <div className="flex items-center gap-2 text-xs text-muted-foreground mt-0.5">
-                      <span>Gatilho: {getPipelineName(automation.trigger_pipeline_id)}</span>
-                    </div>
-                  </div>
-                </div>
-                <div className="flex items-center gap-1">
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    className="h-8 w-8 p-0"
-                    onClick={() => startEditing(automation)}
-                  >
-                    <Settings className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    className="h-8 w-8 p-0 text-destructive hover:text-destructive hover:bg-destructive/10"
-                    onClick={() => deleteAutomation(automation.id)}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
+    }>
+      <EmailFlowBuilder
+        automationName={existingAutomation?.name || "Automação de Email"}
+        triggerPipelineName={existingAutomation ? getPipelineName(existingAutomation.trigger_pipeline_id) : (pipelines[0]?.nome || "")}
+        onSave={handleManualSave}
+        onCancel={() => {}} // No cancel needed since it's always open
+        onChange={handleSaveFlow}
+        initialSteps={existingAutomation?.flow_steps || undefined}
+        pipelines={pipelines}
+        subOriginId={subOriginId}
+        automationId={automationId || undefined}
+        pendingEmailsCount={pendingCount}
+        hideHeader={true}
+      />
+    </Suspense>
   );
 }
