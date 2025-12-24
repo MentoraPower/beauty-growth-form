@@ -23,7 +23,7 @@ import {
   useReactFlow,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
-import { Play, Clock, Pause, CheckCircle2, Trash2, Copy, ArrowLeft, ArrowUp, Plus, Mail, Zap, ChevronDown, ChevronUp, Users, UserMinus, UserX, User, Send, MessageCircle, AudioLines, ImagePlus, Clapperboard, FileUp } from "lucide-react";
+import { Play, Clock, Pause, CheckCircle2, Trash2, Copy, ArrowLeft, ArrowUp, Plus, Mail, Zap, ChevronDown, ChevronUp, Users, UserMinus, UserX, User, Send, Type, AudioLines, ImagePlus, Clapperboard, FileUp } from "lucide-react";
 import WhatsAppIcon from "@/components/icons/WhatsApp";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -773,7 +773,7 @@ const messageTypeLabels: Record<WhatsAppMessageType, string> = {
 };
 
 const messageTypeIcons: Record<WhatsAppMessageType, React.ReactNode> = {
-  text: <MessageCircle className="w-4 h-4" />,
+  text: <Type className="w-4 h-4" />,
   audio: <AudioLines className="w-4 h-4" />,
   image: <ImagePlus className="w-4 h-4" />,
   video: <Clapperboard className="w-4 h-4" />,
@@ -1191,7 +1191,7 @@ const WhatsAppSidebarItem = () => {
   const [isExpanded, setIsExpanded] = useState(false);
   
   const messageTypes: { type: string; label: string; icon: React.ReactNode }[] = [
-    { type: 'whatsapp-text', label: 'Texto', icon: <MessageCircle className="w-3.5 h-3.5" /> },
+    { type: 'whatsapp-text', label: 'Texto', icon: <Type className="w-3.5 h-3.5" /> },
     { type: 'whatsapp-audio', label: 'Áudio', icon: <AudioLines className="w-3.5 h-3.5" /> },
     { type: 'whatsapp-image', label: 'Imagem', icon: <ImagePlus className="w-3.5 h-3.5" /> },
     { type: 'whatsapp-video', label: 'Vídeo', icon: <Clapperboard className="w-3.5 h-3.5" /> },
