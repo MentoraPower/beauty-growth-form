@@ -17,6 +17,7 @@ import {
   EdgeLabelRenderer,
   getBezierPath,
   getStraightPath,
+  getSmoothStepPath,
   EdgeProps,
   useReactFlow,
 } from "@xyflow/react";
@@ -1038,29 +1039,22 @@ const CustomEdge = ({
   sourceY,
   targetX,
   targetY,
+  sourcePosition,
+  targetPosition,
   data,
 }: CustomEdgeProps) => {
-  // Always use straight horizontal lines for clean appearance
-  // Step path: horizontal from source, then vertical, then horizontal to target
-  const midX = (sourceX + targetX) / 2;
-  
-  // Create a step path for non-aligned nodes, straight for aligned
-  const isAligned = Math.abs(sourceY - targetY) < 10;
-  
-  let edgePath: string;
-  if (isAligned) {
-    // Perfectly straight horizontal line
-    edgePath = `M ${sourceX} ${sourceY} L ${targetX} ${targetY}`;
-  } else {
-    // Step path: go right, then up/down, then right again
-    edgePath = `M ${sourceX} ${sourceY} L ${midX} ${sourceY} L ${midX} ${targetY} L ${targetX} ${targetY}`;
-  }
+  // Use getSmoothStepPath for clean orthogonal (90°) edges
+  const [edgePath, labelX, labelY] = getSmoothStepPath({
+    sourceX,
+    sourceY,
+    sourcePosition: sourcePosition || Position.Right,
+    targetX,
+    targetY,
+    targetPosition: targetPosition || Position.Left,
+    borderRadius: 0, // Sharp 90° corners for straight lines
+  });
 
   const gradientId = `edge-gradient-${id}`.replace(/[^a-zA-Z0-9_-]/g, "_");
-
-  // Label position at the middle of the edge
-  const labelX = midX;
-  const labelY = isAligned ? sourceY : (sourceY + targetY) / 2;
 
   return (
     <>
