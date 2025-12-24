@@ -16,6 +16,7 @@ import {
   BaseEdge,
   EdgeLabelRenderer,
   getBezierPath,
+  getStraightPath,
   EdgeProps,
   useReactFlow,
 } from "@xyflow/react";
@@ -1051,26 +1052,26 @@ const CustomEdge = ({
   targetPosition,
   data,
 }: CustomEdgeProps) => {
-  // Use getBezierPath but handle edge cases for straight lines
-  const [edgePath, labelX, labelY] = getBezierPath({
-    sourceX,
-    sourceY,
-    sourcePosition,
-    targetX,
-    targetY,
-    targetPosition,
-    // Add some curvature to prevent path from disappearing when perfectly aligned
-    curvature: 0.25,
-  });
+  // Check if line is nearly straight (within 5px tolerance)
+  const isNearlyStraight = Math.abs(sourceY - targetY) < 5;
+  
+  // Use straight path for aligned nodes, bezier for others
+  const [edgePath, labelX, labelY] = isNearlyStraight
+    ? getStraightPath({ sourceX, sourceY, targetX, targetY })
+    : getBezierPath({
+        sourceX,
+        sourceY,
+        sourcePosition,
+        targetX,
+        targetY,
+        targetPosition,
+        curvature: 0.25,
+      });
 
   const gradientId = `edge-gradient-${id}`.replace(/[^a-zA-Z0-9_-]/g, "_");
 
-  const isValidPath = (p?: string) =>
-    !!p && p.length > 0 && !p.includes("NaN") && !p.includes("undefined");
-
-  // Fallback to a simple line if the path is empty or invalid
-  const fallbackPath = `M ${sourceX} ${sourceY} L ${targetX} ${targetY}`;
-  const finalPath = isValidPath(edgePath) ? edgePath : fallbackPath;
+  // Always use a valid path - straight line as ultimate fallback
+  const finalPath = edgePath || `M ${sourceX} ${sourceY} L ${targetX} ${targetY}`;
 
   const safeLabelX = Number.isFinite(labelX) ? labelX : (sourceX + targetX) / 2;
   const safeLabelY = Number.isFinite(labelY) ? labelY : (sourceY + targetY) / 2;
