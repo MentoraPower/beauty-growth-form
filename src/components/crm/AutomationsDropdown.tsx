@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useMemo } from "react";
-import { Zap, Plus, Trash2, ArrowRight, Webhook, FolderSync, Copy, Check, Send, X, Settings, Mail, Loader2, Workflow, ClipboardCheck, UserPlus, UserMinus } from "lucide-react";
+import { Play, Plus, Trash2, ArrowRight, Webhook, FolderSync, Copy, Check, Send, X, Settings, Mail, Loader2, Workflow, ClipboardCheck, UserPlus, UserMinus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -1081,8 +1081,9 @@ export function AutomationsDropdown({
       <Dialog open={open} onOpenChange={handleOpenChange}>
         <DialogTrigger asChild>
           <div className="relative inline-flex overflow-visible">
-            <Button size="icon" className="h-9 w-9 bg-white hover:bg-gray-50 text-foreground border border-border shadow-sm">
-              <Zap className="w-4 h-4" />
+            <Button variant="outline" className="h-9 gap-2 bg-transparent hover:bg-muted/50 text-foreground border border-border">
+              <Play className="w-4 h-4" />
+              <span className="text-sm font-medium">Start</span>
             </Button>
             {(activeAutomationsCount + activeWebhooksCount + activeEmailAutomationsCount) > 0 && (
               <span className="absolute top-[2px] right-[2px] z-10 h-4 min-w-4 px-1 text-[10px] font-medium flex items-center justify-center bg-yellow-400 text-black rounded-full pointer-events-none">
@@ -1113,8 +1114,9 @@ export function AutomationsDropdown({
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
         <div className="relative inline-flex overflow-visible">
-          <Button size="icon" className="h-9 w-9 bg-white hover:bg-gray-50 text-foreground border border-border shadow-sm">
-            <Zap className="w-4 h-4" />
+          <Button variant="outline" className="h-9 gap-2 bg-transparent hover:bg-muted/50 text-foreground border border-border">
+            <Play className="w-4 h-4" />
+            <span className="text-sm font-medium">Start</span>
           </Button>
           {(activeAutomationsCount + activeWebhooksCount) > 0 && (
             <span className="absolute -top-1 -right-1 z-10 h-5 min-w-5 px-1 text-[10px] font-bold flex items-center justify-center bg-white text-orange-600 rounded-full pointer-events-none shadow-sm border border-orange-200">
