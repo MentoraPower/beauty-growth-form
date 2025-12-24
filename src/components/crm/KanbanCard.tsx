@@ -131,7 +131,7 @@ export const KanbanCard = memo(function KanbanCard({ lead, isDragging: isDraggin
     >
       <CardContent className="p-3">
         {/* Name with photo */}
-        <div className="flex items-center gap-2 min-w-0">
+        <div className="flex items-center gap-2 min-w-0 py-1">
           {lead.photo_url ? (
             <img 
               src={lead.photo_url} 
