@@ -363,23 +363,14 @@ const handler = async (req: Request): Promise<Response> => {
                           const whatsappNode = actionNode.node;
                           const whatsappMessage = whatsappNode?.data?.whatsappMessage;
                           const whatsappAccountId = whatsappNode?.data?.whatsappAccountId;
+                          const whatsappMessageType = whatsappNode?.data?.whatsappMessageType || "text";
+                          const whatsappMediaUrl = whatsappNode?.data?.whatsappMediaUrl;
+                          const whatsappFileName = whatsappNode?.data?.whatsappFileName;
                           
-                          if (whatsappMessage && whatsappAccountId && payload.lead?.whatsapp) {
-                            console.log(`[Automation] Processing WhatsApp node: ${actionNode.id}`);
+                          if (whatsappAccountId && payload.lead?.whatsapp) {
+                            console.log(`[Automation] Processing WhatsApp node: ${actionNode.id}, type: ${whatsappMessageType}`);
                             
                             try {
-                              // Replace placeholders in message
-                              const leadName = payload.lead.name || "Cliente";
-                              let message = whatsappMessage
-                                .replace(/\{\{name\}\}/g, leadName)
-                                .replace(/\{\{nome\}\}/g, leadName)
-                                .replace(/\{name\}/g, leadName)
-                                .replace(/\{nome\}/g, leadName)
-                                .replace(/\{\{email\}\}/g, payload.lead.email || "")
-                                .replace(/\{email\}/g, payload.lead.email || "")
-                                .replace(/\{\{whatsapp\}\}/g, payload.lead.whatsapp || "")
-                                .replace(/\{whatsapp\}/g, payload.lead.whatsapp || "");
-                              
                               // Format phone number
                               let phone = payload.lead.whatsapp.replace(/\D/g, "");
                               const countryCode = (payload.lead.country_code || "+55").replace(/\D/g, "");
@@ -387,34 +378,148 @@ const handler = async (req: Request): Promise<Response> => {
                                 phone = countryCode + phone;
                               }
                               
-                              console.log(`[Automation] Sending WhatsApp to ${phone} via account ${whatsappAccountId}`);
+                              // Replace placeholders in message if exists
+                              const leadName = payload.lead.name || "Cliente";
+                              const replacePlaceholders = (text: string) => {
+                                if (!text) return text;
+                                return text
+                                  .replace(/\{\{name\}\}/g, leadName)
+                                  .replace(/\{\{nome\}\}/g, leadName)
+                                  .replace(/\{name\}/g, leadName)
+                                  .replace(/\{nome\}/g, leadName)
+                                  .replace(/\{\{email\}\}/g, payload.lead.email || "")
+                                  .replace(/\{email\}/g, payload.lead.email || "")
+                                  .replace(/\{\{whatsapp\}\}/g, payload.lead.whatsapp || "")
+                                  .replace(/\{whatsapp\}/g, payload.lead.whatsapp || "");
+                              };
                               
-                              // Call Wasender API directly
-                              const wasenderResponse = await fetch("https://www.wasenderapi.com/api/send-message", {
-                                method: "POST",
-                                headers: {
-                                  "Content-Type": "application/json",
-                                  "Authorization": `Bearer ${whatsappAccountId}`,
-                                },
-                                body: JSON.stringify({
-                                  to: phone,
-                                  text: message,
-                                }),
-                              });
+                              let wasenderResponse: Response;
+                              let wasenderResult: any;
                               
-                              const wasenderResult = await wasenderResponse.json();
+                              console.log(`[Automation] Sending WhatsApp ${whatsappMessageType} to ${phone} via account ${whatsappAccountId}`);
                               
-                              if (wasenderResponse.ok) {
-                                console.log(`[Automation] WhatsApp sent successfully:`, wasenderResult);
-                                triggeredEmails.push(`WhatsApp: ${automation.name}`);
-                              } else {
-                                console.error(`[Automation] WhatsApp failed:`, wasenderResult);
+                              switch (whatsappMessageType) {
+                                case "text": {
+                                  if (!whatsappMessage) {
+                                    console.log(`[Automation] Text message is empty - skipping`);
+                                    break;
+                                  }
+                                  const message = replacePlaceholders(whatsappMessage);
+                                  wasenderResponse = await fetch("https://www.wasenderapi.com/api/send-message", {
+                                    method: "POST",
+                                    headers: {
+                                      "Content-Type": "application/json",
+                                      "Authorization": `Bearer ${whatsappAccountId}`,
+                                    },
+                                    body: JSON.stringify({
+                                      to: phone,
+                                      text: message,
+                                    }),
+                                  });
+                                  wasenderResult = await wasenderResponse.json();
+                                  break;
+                                }
+                                
+                                case "image": {
+                                  if (!whatsappMediaUrl) {
+                                    console.log(`[Automation] Image URL is missing - skipping`);
+                                    break;
+                                  }
+                                  const caption = replacePlaceholders(whatsappMessage || "");
+                                  wasenderResponse = await fetch("https://www.wasenderapi.com/api/send-image", {
+                                    method: "POST",
+                                    headers: {
+                                      "Content-Type": "application/json",
+                                      "Authorization": `Bearer ${whatsappAccountId}`,
+                                    },
+                                    body: JSON.stringify({
+                                      to: phone,
+                                      imageUrl: whatsappMediaUrl,
+                                      caption: caption || undefined,
+                                    }),
+                                  });
+                                  wasenderResult = await wasenderResponse.json();
+                                  break;
+                                }
+                                
+                                case "audio": {
+                                  if (!whatsappMediaUrl) {
+                                    console.log(`[Automation] Audio URL is missing - skipping`);
+                                    break;
+                                  }
+                                  wasenderResponse = await fetch("https://www.wasenderapi.com/api/send-audio", {
+                                    method: "POST",
+                                    headers: {
+                                      "Content-Type": "application/json",
+                                      "Authorization": `Bearer ${whatsappAccountId}`,
+                                    },
+                                    body: JSON.stringify({
+                                      to: phone,
+                                      audioUrl: whatsappMediaUrl,
+                                    }),
+                                  });
+                                  wasenderResult = await wasenderResponse.json();
+                                  break;
+                                }
+                                
+                                case "video": {
+                                  if (!whatsappMediaUrl) {
+                                    console.log(`[Automation] Video URL is missing - skipping`);
+                                    break;
+                                  }
+                                  const videoCaption = replacePlaceholders(whatsappMessage || "");
+                                  wasenderResponse = await fetch("https://www.wasenderapi.com/api/send-video", {
+                                    method: "POST",
+                                    headers: {
+                                      "Content-Type": "application/json",
+                                      "Authorization": `Bearer ${whatsappAccountId}`,
+                                    },
+                                    body: JSON.stringify({
+                                      to: phone,
+                                      videoUrl: whatsappMediaUrl,
+                                      caption: videoCaption || undefined,
+                                    }),
+                                  });
+                                  wasenderResult = await wasenderResponse.json();
+                                  break;
+                                }
+                                
+                                case "document": {
+                                  if (!whatsappMediaUrl) {
+                                    console.log(`[Automation] Document URL is missing - skipping`);
+                                    break;
+                                  }
+                                  wasenderResponse = await fetch("https://www.wasenderapi.com/api/send-file", {
+                                    method: "POST",
+                                    headers: {
+                                      "Content-Type": "application/json",
+                                      "Authorization": `Bearer ${whatsappAccountId}`,
+                                    },
+                                    body: JSON.stringify({
+                                      to: phone,
+                                      fileUrl: whatsappMediaUrl,
+                                      fileName: whatsappFileName || "documento",
+                                    }),
+                                  });
+                                  wasenderResult = await wasenderResponse.json();
+                                  break;
+                                }
+                                
+                                default:
+                                  console.log(`[Automation] Unknown message type: ${whatsappMessageType}`);
+                              }
+                              
+                              if (wasenderResponse! && wasenderResponse.ok) {
+                                console.log(`[Automation] WhatsApp ${whatsappMessageType} sent successfully:`, wasenderResult);
+                                triggeredEmails.push(`WhatsApp ${whatsappMessageType}: ${automation.name}`);
+                              } else if (wasenderResult) {
+                                console.error(`[Automation] WhatsApp ${whatsappMessageType} failed:`, wasenderResult);
                               }
                             } catch (whatsappError: any) {
                               console.error(`[Automation] WhatsApp error:`, whatsappError.message);
                             }
                           } else {
-                            console.log(`[Automation] WhatsApp node missing data - message: ${!!whatsappMessage}, account: ${!!whatsappAccountId}, phone: ${!!payload.lead?.whatsapp}`);
+                            console.log(`[Automation] WhatsApp node missing data - account: ${!!whatsappAccountId}, phone: ${!!payload.lead?.whatsapp}`);
                           }
                         }
                       }
