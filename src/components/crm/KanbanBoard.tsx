@@ -1394,7 +1394,7 @@ export function KanbanBoard() {
 
             {/* Settings Dialog */}
             <Dialog open={settingsDialogOpen} onOpenChange={setSettingsDialogOpen}>
-              <DialogContent className="max-w-4xl h-[600px] p-0 overflow-hidden" aria-describedby={undefined}>
+              <DialogContent className="max-w-4xl h-[600px] p-0 overflow-hidden flex flex-col gap-0" aria-describedby={undefined}>
                 <DialogTitle className="sr-only">Configurações</DialogTitle>
                 
                 {/* Header with tabs */}
@@ -1444,7 +1444,7 @@ export function KanbanBoard() {
                 </div>
 
                 {/* Content */}
-                <div className="flex-1 overflow-auto">
+                <div className="flex-1 overflow-auto min-h-0">
                   {settingsTab === "automations" && (
                     <div className="h-full">
                       <AutomationsDropdown 
