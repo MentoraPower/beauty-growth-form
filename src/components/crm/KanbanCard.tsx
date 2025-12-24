@@ -166,7 +166,7 @@ export const KanbanCard = memo(function KanbanCard({ lead, isDragging: isDraggin
                       <Instagram className="w-3.5 h-3.5 text-muted-foreground hover:text-foreground transition-colors" />
                     </div>
                   </TooltipTrigger>
-                  <TooltipContent side="bottom" className="text-xs">
+                  <TooltipContent side="top" className="text-xs">
                     <p>@{lead.instagram.replace('@', '')}</p>
                   </TooltipContent>
                 </Tooltip>
@@ -178,7 +178,7 @@ export const KanbanCard = memo(function KanbanCard({ lead, isDragging: isDraggin
                       <WhatsApp className="w-3.5 h-3.5 text-muted-foreground hover:text-foreground transition-colors" />
                     </div>
                   </TooltipTrigger>
-                  <TooltipContent side="bottom" className="text-xs">
+                  <TooltipContent side="top" className="text-xs">
                     <p>{lead.whatsapp}</p>
                   </TooltipContent>
                 </Tooltip>
@@ -190,7 +190,7 @@ export const KanbanCard = memo(function KanbanCard({ lead, isDragging: isDraggin
                       <Mail className="w-3.5 h-3.5 text-muted-foreground hover:text-foreground transition-colors" />
                     </div>
                   </TooltipTrigger>
-                  <TooltipContent side="bottom" className="text-xs">
+                  <TooltipContent side="top" className="text-xs">
                     <p>{lead.email}</p>
                   </TooltipContent>
                 </Tooltip>
