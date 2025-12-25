@@ -137,8 +137,8 @@ function SortableLeadRow({ lead, isSelected, onLeadClick, onToggleSelection, isO
       style={isOverlay ? undefined : style}
       onClick={() => !isDragging && onLeadClick(lead)}
       className={cn(
-        "grid gap-2 py-2.5 px-3 hover:bg-muted/40 rounded cursor-pointer transition-colors group border-b border-border/20 last:border-b-0",
-        "grid-cols-[40px_minmax(120px,1.5fr)_minmax(140px,1fr)_minmax(100px,1fr)_minmax(100px,1fr)_minmax(80px,1fr)_minmax(70px,0.5fr)_40px]",
+        "grid gap-6 py-2.5 px-3 hover:bg-muted/40 rounded cursor-pointer transition-colors group border-b border-border/20 last:border-b-0",
+        "grid-cols-[40px_minmax(140px,1.5fr)_minmax(160px,1fr)_minmax(120px,1fr)_minmax(120px,1fr)_minmax(100px,1fr)_minmax(80px,0.5fr)_40px]",
         isSelected && "bg-primary/5",
         isDragging && !isOverlay && "opacity-30",
         isOverlay && "shadow-lg bg-background border border-border rounded-lg"
@@ -671,8 +671,8 @@ export function ListView({ pipelines, leadsByPipeline, subOriginId, tagsMap }: L
                     {/* Table Header */}
                     {leads.length > 0 && (
                       <div className="overflow-x-auto">
-                        <div className="min-w-[850px]">
-                          <div className="grid gap-2 py-2 px-3 text-[10px] uppercase tracking-wider text-muted-foreground font-medium border-b border-border/30 grid-cols-[40px_minmax(120px,1.5fr)_minmax(140px,1fr)_minmax(100px,1fr)_minmax(100px,1fr)_minmax(80px,1fr)_minmax(70px,0.5fr)_40px]">
+                        <div className="min-w-[950px]">
+                          <div className="grid gap-6 py-2 px-3 text-[10px] uppercase tracking-wider text-muted-foreground font-medium border-b border-border/30 grid-cols-[40px_minmax(140px,1.5fr)_minmax(160px,1fr)_minmax(120px,1fr)_minmax(120px,1fr)_minmax(100px,1fr)_minmax(80px,0.5fr)_40px]">
                             <div className="flex items-center">
                               <Checkbox
                                 checked={allSelected}
@@ -694,7 +694,7 @@ export function ListView({ pipelines, leadsByPipeline, subOriginId, tagsMap }: L
 
                     {/* Leads Rows with DnD */}
                     <div className="overflow-x-auto">
-                      <div className="min-w-[850px]">
+                      <div className="min-w-[950px]">
                         <DndContext
                           sensors={sensors}
                           collisionDetection={closestCenter}
