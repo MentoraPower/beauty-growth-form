@@ -200,19 +200,31 @@ export function OverviewCardComponent({
         const innerTop = parentRect.top + padTop;
         const innerBottom = parentRect.bottom - padBottom;
 
-        let maxW = MAX_CARD_WIDTH;
-        let maxH = MAX_CARD_HEIGHT;
+        let maxW = startW; // Default: no growth allowed unless direction matches
+        let maxH = startH;
 
+        // Only allow width growth in the direction being resized
         if (direction.includes("right")) {
-          maxW = Math.min(MAX_CARD_WIDTH, startW + (innerRight - cardRect.right));
+          const spaceRight = innerRight - cardRect.right;
+          maxW = Math.min(MAX_CARD_WIDTH, startW + Math.max(0, spaceRight));
         } else if (direction.includes("left")) {
-          maxW = Math.min(MAX_CARD_WIDTH, startW + (cardRect.left - innerLeft));
+          const spaceLeft = cardRect.left - innerLeft;
+          maxW = Math.min(MAX_CARD_WIDTH, startW + Math.max(0, spaceLeft));
+        } else {
+          // Not resizing horizontally, allow current width
+          maxW = startW;
         }
 
+        // Only allow height growth in the direction being resized
         if (direction.includes("bottom")) {
-          maxH = Math.min(MAX_CARD_HEIGHT, startH + (innerBottom - cardRect.bottom));
+          const spaceBottom = innerBottom - cardRect.bottom;
+          maxH = Math.min(MAX_CARD_HEIGHT, startH + Math.max(0, spaceBottom));
         } else if (direction.includes("top")) {
-          maxH = Math.min(MAX_CARD_HEIGHT, startH + (cardRect.top - innerTop));
+          const spaceTop = cardRect.top - innerTop;
+          maxH = Math.min(MAX_CARD_HEIGHT, startH + Math.max(0, spaceTop));
+        } else {
+          // Not resizing vertically, allow current height
+          maxH = startH;
         }
 
         maxSizeRef.current = {
