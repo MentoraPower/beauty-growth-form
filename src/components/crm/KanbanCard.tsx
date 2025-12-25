@@ -232,7 +232,10 @@ export const KanbanCard = memo(function KanbanCard({ lead, isDragging: isDraggin
                       className="cursor-pointer"
                       onClick={(e) => e.stopPropagation()}
                     >
-                      <Tags className="w-3.5 h-3.5 text-muted-foreground hover:text-foreground transition-colors" />
+                      <Tags 
+                        className="w-3.5 h-3.5 transition-colors hover:opacity-70" 
+                        style={{ color: extraTags[0]?.color }}
+                      />
                     </div>
                   </PopoverTrigger>
                   <PopoverContent 
