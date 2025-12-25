@@ -178,7 +178,7 @@ function SortableLeadRow({ lead, isSelected, onLeadClick, onToggleSelection, isO
       
       {/* WhatsApp */}
       <div className="col-span-2 flex items-center gap-1 min-w-0">
-        <WhatsAppIcon className="w-3.5 h-3.5 text-[#25D366] flex-shrink-0" />
+        <WhatsAppIcon className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0" />
         <span className="text-xs text-muted-foreground truncate">
           {formatPhone(lead.whatsapp, lead.country_code)}
         </span>
