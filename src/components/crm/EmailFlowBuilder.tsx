@@ -1463,122 +1463,81 @@ const AnalyticsNode = ({ id, data, selected }: NodeProps) => {
   const currentMetrics = activeTab === "email" ? emailMetrics : whatsappMetrics;
   const isLoading = activeTab === "email" ? isLoadingEmail : isLoadingWhatsapp;
   const maxCount = Math.max(...currentMetrics.byDayOfWeek.map(d => d.count), 1);
-
-  // Render metrics content
-  const renderMetricsContent = () => {
-    if (isLoading) {
-      return (
-        <div className="text-center py-6">
-          <div className={cn(
-            "animate-spin w-6 h-6 border-2 border-t-transparent rounded-full mx-auto",
-            activeTab === "email" ? "border-orange-500" : "border-green-500"
-          )} />
-          <p className="text-xs text-muted-foreground mt-2">Carregando métricas...</p>
-        </div>
-      );
-    }
-
-    return (
-      <>
-        {/* Stats Grid */}
-        <div className="grid grid-cols-3 gap-3 mb-4">
-          <div className="bg-green-50 rounded-xl p-3 text-center">
-            <CheckCheck className="w-5 h-5 text-green-500 mx-auto mb-1" />
-            <p className="text-xl font-bold text-green-600">{currentMetrics.sent}</p>
-            <p className="text-[11px] text-green-600/70">Enviados</p>
-          </div>
-          <div className="bg-red-50 rounded-xl p-3 text-center">
-            <XCircle className="w-5 h-5 text-red-500 mx-auto mb-1" />
-            <p className="text-xl font-bold text-red-600">{currentMetrics.failed}</p>
-            <p className="text-[11px] text-red-600/70">Falhas</p>
-          </div>
-          <div className="bg-yellow-50 rounded-xl p-3 text-center">
-            <Clock className="w-5 h-5 text-yellow-500 mx-auto mb-1" />
-            <p className="text-xl font-bold text-yellow-600">{currentMetrics.pending}</p>
-            <p className="text-[11px] text-yellow-600/70">Pendentes</p>
-          </div>
-        </div>
-
-        {/* Day of Week Chart */}
-        {currentMetrics.byDayOfWeek.length > 0 && (
-          <div className="mt-4">
-            <p className="text-xs font-medium text-muted-foreground mb-3 flex items-center gap-1">
-              <TrendingUp className="w-3.5 h-3.5" />
-              Disparos por dia da semana
-            </p>
-            <div className="flex items-end justify-between gap-1.5 h-20">
-              {currentMetrics.byDayOfWeek.map((day, i) => (
-                <div key={i} className="flex-1 flex flex-col items-center gap-1">
-                  <div 
-                    className={cn(
-                      "w-full rounded-t-md transition-all",
-                      activeTab === "email" ? "bg-gradient-to-t from-orange-500 to-amber-400" : "bg-gradient-to-t from-green-500 to-emerald-400"
-                    )}
-                    style={{ 
-                      height: `${Math.max((day.count / maxCount) * 64, 4)}px`,
-                    }}
-                  />
-                  <span className="text-[10px] font-medium text-muted-foreground">{day.day}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-      </>
-    );
-  };
+  const totalMessages = currentMetrics.sent + currentMetrics.failed + currentMetrics.pending;
+  const successRate = totalMessages > 0 ? Math.round((currentMetrics.sent / totalMessages) * 100) : 0;
 
   return (
     <div className="relative">
       <Handle
         type="target"
         position={Position.Left}
-        className="!w-3.5 !h-3.5 !bg-orange-500 !border-[3px] !border-white !shadow-sm !z-10"
+        className="!w-4 !h-4 !bg-violet-500 !border-[3px] !border-white !shadow-md !z-10"
       />
       
-      {/* Node Card */}
+      {/* Node Card - Wider and more modern */}
       <div 
         className={cn(
-          "bg-white border transition-all shadow-sm rounded-xl w-[360px] overflow-hidden",
-          hasBothConnections ? "border-orange-300" : 
-          connectedTypes.email ? "border-orange-300" : 
-          connectedTypes.whatsapp ? "border-green-300" : "border-orange-300"
+          "bg-background border-2 transition-all shadow-lg rounded-2xl w-[440px] overflow-hidden",
+          hasBothConnections ? "border-violet-400/50" : 
+          connectedTypes.email ? "border-orange-400/50" : 
+          connectedTypes.whatsapp ? "border-green-400/50" : "border-violet-400/50"
         )}
       >
-        {/* Gradient Header */}
-        <div className="bg-gradient-to-r from-orange-500 to-amber-400 px-4 py-3 flex items-center gap-3">
-          <div className="w-9 h-9 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center">
-            <ChartPie className="w-5 h-5 text-white" />
+        {/* Gradient Header - More prominent */}
+        <div 
+          className={cn(
+            "px-5 py-4 flex items-center justify-between",
+            hasBothConnections ? "bg-gradient-to-r from-violet-600 via-purple-500 to-fuchsia-500" :
+            connectedTypes.email ? "bg-gradient-to-r from-orange-500 via-amber-500 to-yellow-400" :
+            connectedTypes.whatsapp ? "bg-gradient-to-r from-green-500 via-emerald-500 to-teal-400" :
+            "bg-gradient-to-r from-violet-600 via-purple-500 to-fuchsia-500"
+          )}
+        >
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center shadow-inner">
+              <ChartPie className="w-6 h-6 text-white" />
+            </div>
+            <div>
+              <h4 className="text-base font-bold text-white tracking-tight">Análise de Métricas</h4>
+              <p className="text-sm text-white/80 mt-0.5">
+                {hasBothConnections ? "E-mail & WhatsApp" : 
+                 connectedTypes.email ? "Métricas de E-mail" : 
+                 connectedTypes.whatsapp ? "Métricas de WhatsApp" : "Conecte para visualizar"}
+              </p>
+            </div>
           </div>
-          <div>
-            <h4 className="text-sm font-semibold text-white">Análise</h4>
-            <p className="text-xs text-white/80">
-              {hasBothConnections ? "E-mail & WhatsApp" : 
-               connectedTypes.email ? "Métricas de E-mail" : 
-               connectedTypes.whatsapp ? "Métricas de WhatsApp" : "Conecte a um nó"}
-            </p>
-          </div>
+          {hasAnyConnection && !isLoading && (
+            <div className="text-right">
+              <p className="text-2xl font-bold text-white">{successRate}%</p>
+              <p className="text-xs text-white/70">Taxa de sucesso</p>
+            </div>
+          )}
         </div>
         
         {/* Content */}
-        <div className="p-4">
+        <div className="p-5">
           {!hasAnyConnection ? (
-            <div className="text-center py-6 text-muted-foreground text-sm">
-              <ChartPie className="w-10 h-10 mx-auto mb-2 text-orange-300" />
-              Arraste uma conexão de um nó de<br/>E-mail ou WhatsApp para este nó
+            <div className="text-center py-10 text-muted-foreground">
+              <div className="w-16 h-16 rounded-2xl bg-violet-100 flex items-center justify-center mx-auto mb-4">
+                <ChartPie className="w-8 h-8 text-violet-400" />
+              </div>
+              <p className="text-sm font-medium">Nenhuma conexão detectada</p>
+              <p className="text-xs mt-1 text-muted-foreground/70">
+                Arraste uma conexão de um nó de<br/>E-mail ou WhatsApp para este nó
+              </p>
             </div>
           ) : (
             <>
               {/* Tabs - only show when both are connected */}
               {hasBothConnections && (
-                <div className="flex gap-2 mb-4">
+                <div className="flex gap-2 mb-5 p-1 bg-muted/50 rounded-xl">
                   <button
                     onClick={() => setActiveTab("email")}
                     className={cn(
-                      "flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-lg text-sm font-medium transition-all",
+                      "flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-lg text-sm font-semibold transition-all",
                       activeTab === "email" 
-                        ? "bg-gradient-to-r from-orange-500 to-amber-400 text-white shadow-sm" 
-                        : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                        ? "bg-gradient-to-r from-orange-500 to-amber-400 text-white shadow-md" 
+                        : "text-muted-foreground hover:text-foreground hover:bg-muted"
                     )}
                   >
                     <Mail className="w-4 h-4" />
@@ -1587,10 +1546,10 @@ const AnalyticsNode = ({ id, data, selected }: NodeProps) => {
                   <button
                     onClick={() => setActiveTab("whatsapp")}
                     className={cn(
-                      "flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-lg text-sm font-medium transition-all",
+                      "flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-lg text-sm font-semibold transition-all",
                       activeTab === "whatsapp" 
-                        ? "bg-gradient-to-r from-green-500 to-emerald-400 text-white shadow-sm" 
-                        : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                        ? "bg-gradient-to-r from-green-500 to-emerald-400 text-white shadow-md" 
+                        : "text-muted-foreground hover:text-foreground hover:bg-muted"
                     )}
                   >
                     <WhatsAppIcon className="w-4 h-4" />
@@ -1599,7 +1558,82 @@ const AnalyticsNode = ({ id, data, selected }: NodeProps) => {
                 </div>
               )}
 
-              {renderMetricsContent()}
+              {isLoading ? (
+                <div className="text-center py-10">
+                  <div className={cn(
+                    "animate-spin w-8 h-8 border-3 border-t-transparent rounded-full mx-auto",
+                    activeTab === "email" ? "border-orange-500" : "border-green-500"
+                  )} />
+                  <p className="text-sm text-muted-foreground mt-3">Carregando métricas...</p>
+                </div>
+              ) : (
+                <>
+                  {/* Stats Grid - Larger cards */}
+                  <div className="grid grid-cols-3 gap-3 mb-5">
+                    <div className="bg-gradient-to-br from-green-50 to-emerald-50 border border-green-200/50 rounded-xl p-4 text-center">
+                      <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center mx-auto mb-2">
+                        <CheckCheck className="w-5 h-5 text-green-600" />
+                      </div>
+                      <p className="text-2xl font-bold text-green-700">{currentMetrics.sent}</p>
+                      <p className="text-xs font-medium text-green-600/80 mt-0.5">Enviados</p>
+                    </div>
+                    <div className="bg-gradient-to-br from-red-50 to-rose-50 border border-red-200/50 rounded-xl p-4 text-center">
+                      <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center mx-auto mb-2">
+                        <XCircle className="w-5 h-5 text-red-600" />
+                      </div>
+                      <p className="text-2xl font-bold text-red-700">{currentMetrics.failed}</p>
+                      <p className="text-xs font-medium text-red-600/80 mt-0.5">Falhas</p>
+                    </div>
+                    <div className="bg-gradient-to-br from-amber-50 to-yellow-50 border border-amber-200/50 rounded-xl p-4 text-center">
+                      <div className="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center mx-auto mb-2">
+                        <Clock className="w-5 h-5 text-amber-600" />
+                      </div>
+                      <p className="text-2xl font-bold text-amber-700">{currentMetrics.pending}</p>
+                      <p className="text-xs font-medium text-amber-600/80 mt-0.5">Pendentes</p>
+                    </div>
+                  </div>
+
+                  {/* Day of Week Chart - Improved */}
+                  {currentMetrics.byDayOfWeek.length > 0 && (
+                    <div className="bg-muted/30 rounded-xl p-4">
+                      <div className="flex items-center justify-between mb-4">
+                        <p className="text-sm font-semibold text-foreground flex items-center gap-2">
+                          <TrendingUp className="w-4 h-4 text-muted-foreground" />
+                          Disparos por dia
+                        </p>
+                        <span className="text-xs text-muted-foreground bg-muted px-2 py-1 rounded-md">
+                          Últimos 30 dias
+                        </span>
+                      </div>
+                      <div className="flex items-end justify-between gap-2 h-24">
+                        {currentMetrics.byDayOfWeek.map((day, i) => (
+                          <div key={i} className="flex-1 flex flex-col items-center gap-2">
+                            <div className="relative w-full group">
+                              <div 
+                                className={cn(
+                                  "w-full rounded-lg transition-all cursor-default",
+                                  activeTab === "email" 
+                                    ? "bg-gradient-to-t from-orange-500 to-amber-400 shadow-orange-200/50" 
+                                    : "bg-gradient-to-t from-green-500 to-emerald-400 shadow-green-200/50",
+                                  "shadow-sm hover:shadow-md"
+                                )}
+                                style={{ 
+                                  height: `${Math.max((day.count / maxCount) * 80, 8)}px`,
+                                }}
+                              />
+                              {/* Tooltip on hover */}
+                              <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-foreground text-background text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap">
+                                {day.count} envios
+                              </div>
+                            </div>
+                            <span className="text-xs font-semibold text-muted-foreground">{day.day}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </>
+              )}
             </>
           )}
         </div>
@@ -1607,16 +1641,16 @@ const AnalyticsNode = ({ id, data, selected }: NodeProps) => {
 
       {/* Action buttons */}
       <div 
-        className={`absolute left-1/2 -translate-x-1/2 flex gap-1.5 transition-all duration-200 nodrag ${
+        className={`absolute left-1/2 -translate-x-1/2 flex gap-2 transition-all duration-200 nodrag ${
           selected ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-2 pointer-events-none'
         }`}
-        style={{ bottom: 'calc(100% + 8px)' }}
+        style={{ bottom: 'calc(100% + 10px)' }}
       >
         <button
           onClick={handleDelete}
-          className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-destructive/10 border border-destructive/30 hover:bg-destructive/20 transition-colors text-xs font-medium text-destructive shadow-sm"
+          className="flex items-center gap-2 px-3 py-2 rounded-xl bg-destructive/10 border border-destructive/30 hover:bg-destructive/20 transition-colors text-sm font-medium text-destructive shadow-sm backdrop-blur-sm"
         >
-          <Trash2 className="w-3.5 h-3.5" />
+          <Trash2 className="w-4 h-4" />
           Apagar
         </button>
       </div>
