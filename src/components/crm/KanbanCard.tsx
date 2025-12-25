@@ -128,7 +128,7 @@ export const KanbanCard = memo(function KanbanCard({ lead, isDragging: isDraggin
       data-lead-id={lead.id}
       className={`
         cursor-grab active:cursor-grabbing bg-card shadow-none select-none touch-none
-        border border-black/10
+        border border-black/10 rounded-xl
         ${isBeingDragged ? "opacity-100 shadow-lg scale-[1.02]" : ""}
         hover:shadow-md
       `}
@@ -137,20 +137,20 @@ export const KanbanCard = memo(function KanbanCard({ lead, isDragging: isDraggin
       onClick={handleClick}
     >
       <CardContent className="p-3">
-        {/* Name with photo */}
-        <div className="flex items-center gap-2 min-w-0 py-1">
+        {/* Name on left, photo on right */}
+        <div className="flex items-center justify-between gap-2 min-w-0 py-1">
+          <h3 className="font-semibold text-sm truncate">{lead.name}</h3>
           {lead.photo_url ? (
             <img 
               src={lead.photo_url} 
               alt={lead.name} 
-              className="w-6 h-6 rounded-full object-cover flex-shrink-0"
+              className="w-8 h-8 rounded-lg object-cover flex-shrink-0"
             />
           ) : (
-            <div className="w-6 h-6 rounded-full bg-muted flex items-center justify-center flex-shrink-0">
-              <User className="w-3.5 h-3.5 text-muted-foreground" />
+            <div className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center flex-shrink-0">
+              <User className="w-4 h-4 text-muted-foreground" />
             </div>
           )}
-          <h3 className="font-semibold text-sm truncate">{lead.name}</h3>
         </div>
         
         {/* Divider line */}
