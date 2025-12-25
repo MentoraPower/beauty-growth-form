@@ -283,13 +283,13 @@ export function CardConfigPanel({
 
   return (
     <>
-      {/* Backdrop with blur - covers entire page */}
+      {/* Backdrop with blur - covers entire page including menus */}
       <div 
-        className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm"
+        className="fixed inset-0 z-[9998] bg-black/60 backdrop-blur-sm"
         onClick={onClose}
       />
       {/* Panel */}
-      <div className="fixed inset-8 sm:inset-16 z-[101] bg-background flex overflow-hidden rounded-xl border border-border shadow-2xl">
+      <div className="fixed inset-8 sm:inset-16 z-[9999] bg-background flex overflow-hidden rounded-xl border border-border shadow-2xl">
       {/* Left side - Chart Preview */}
       <div className="flex-1 flex flex-col">
         {/* Header */}
