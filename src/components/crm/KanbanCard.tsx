@@ -166,7 +166,7 @@ export const KanbanCard = memo(function KanbanCard({ lead, isDragging: isDraggin
               </div>
             )}
             {/* Name */}
-            <h3 className="font-semibold text-sm truncate">{lead.name}</h3>
+            <h3 className="font-semibold text-sm truncate mt-1">{lead.name}</h3>
           </div>
           {/* Photo aligned center */}
           {lead.photo_url ? (
