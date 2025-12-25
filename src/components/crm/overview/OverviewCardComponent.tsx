@@ -57,6 +57,10 @@ export function OverviewCardComponent({
   const [isResizing, setIsResizing] = useState(false);
   const [resizeDirection, setResizeDirection] = useState<ResizeDirection | null>(null);
   const [currentSize, setCurrentSize] = useState<CardSize>(card.size);
+
+  const cardRef = useRef<HTMLDivElement | null>(null);
+  const maxSizeRef = useRef({ maxW: MAX_CARD_WIDTH, maxH: MAX_CARD_HEIGHT });
+
   const startPosRef = useRef({ x: 0, y: 0 });
   const startSizeRef = useRef({ width: card.size.width, height: card.size.height });
   const currentSizeRef = useRef<CardSize>(card.size);
@@ -165,6 +169,23 @@ export function OverviewCardComponent({
     (e: React.MouseEvent, direction: ResizeDirection) => {
       e.preventDefault();
       e.stopPropagation();
+
+      // Cap max width to the available space in the container so dragging past the edge
+      // doesn't start "resizing" other sides/axes.
+      const parent = cardRef.current?.parentElement;
+      if (parent) {
+        const style = window.getComputedStyle(parent);
+        const paddingX =
+          (parseFloat(style.paddingLeft) || 0) + (parseFloat(style.paddingRight) || 0);
+        const availableW = Math.floor(parent.clientWidth - paddingX);
+        maxSizeRef.current = {
+          maxW: Math.min(MAX_CARD_WIDTH, Math.max(MIN_CARD_WIDTH, availableW)),
+          maxH: MAX_CARD_HEIGHT,
+        };
+      } else {
+        maxSizeRef.current = { maxW: MAX_CARD_WIDTH, maxH: MAX_CARD_HEIGHT };
+      }
+
       setIsResizing(true);
       setResizeDirection(direction);
       startPosRef.current = { x: e.clientX, y: e.clientY };
@@ -188,6 +209,9 @@ export function OverviewCardComponent({
       const startW = startSizeRef.current.width;
       const startH = startSizeRef.current.height;
 
+      const maxW = maxSizeRef.current.maxW;
+      const maxH = maxSizeRef.current.maxH;
+
       let nextW = startW;
       let nextH = startH;
 
@@ -200,30 +224,30 @@ export function OverviewCardComponent({
         const rawW = startW + widthDelta;
         const rawH = startH + heightDelta;
 
-        const clampedW = clamp(rawW, MIN_CARD_WIDTH, MAX_CARD_WIDTH);
-        const clampedH = clamp(rawH, MIN_CARD_HEIGHT, MAX_CARD_HEIGHT);
+        const clampedW = clamp(rawW, MIN_CARD_WIDTH, maxW);
+        const clampedH = clamp(rawH, MIN_CARD_HEIGHT, maxH);
 
         const allowedW = clampedW - startW;
         const allowedH = clampedH - startH;
 
-        // If one axis hits a limit first, we scale BOTH deltas so the other axis doesn't keep growing alone.
+        // If one axis hits a limit first, scale BOTH deltas so the other axis doesn't keep growing alone.
         let s = 1;
         if (widthDelta !== 0 && allowedW !== widthDelta) s = Math.min(s, allowedW / widthDelta);
         if (heightDelta !== 0 && allowedH !== heightDelta) s = Math.min(s, allowedH / heightDelta);
 
-        nextW = clamp(startW + widthDelta * s, MIN_CARD_WIDTH, MAX_CARD_WIDTH);
-        nextH = clamp(startH + heightDelta * s, MIN_CARD_HEIGHT, MAX_CARD_HEIGHT);
+        nextW = clamp(startW + widthDelta * s, MIN_CARD_WIDTH, maxW);
+        nextH = clamp(startH + heightDelta * s, MIN_CARD_HEIGHT, maxH);
       } else {
         if (resizeDirection === "right") {
-          nextW = clamp(startW + deltaX, MIN_CARD_WIDTH, MAX_CARD_WIDTH);
+          nextW = clamp(startW + deltaX, MIN_CARD_WIDTH, maxW);
         } else if (resizeDirection === "left") {
-          nextW = clamp(startW - deltaX, MIN_CARD_WIDTH, MAX_CARD_WIDTH);
+          nextW = clamp(startW - deltaX, MIN_CARD_WIDTH, maxW);
         }
 
         if (resizeDirection === "bottom") {
-          nextH = clamp(startH + deltaY, MIN_CARD_HEIGHT, MAX_CARD_HEIGHT);
+          nextH = clamp(startH + deltaY, MIN_CARD_HEIGHT, maxH);
         } else if (resizeDirection === "top") {
-          nextH = clamp(startH - deltaY, MIN_CARD_HEIGHT, MAX_CARD_HEIGHT);
+          nextH = clamp(startH - deltaY, MIN_CARD_HEIGHT, maxH);
         }
       }
 
@@ -440,6 +464,7 @@ export function OverviewCardComponent({
 
   return (
     <div
+      ref={cardRef}
       className={cn(
         "bg-white rounded-xl border border-[#00000015] shadow-sm overflow-hidden flex flex-col group relative",
         isDragging && "opacity-50 shadow-lg",
