@@ -696,10 +696,10 @@ export function WhatsAppChatDropdown({ phone, countryCode, contactName, sessionI
       {/* Small trigger button - placed inline */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="p-1 rounded-full hover:bg-red-100/50 transition-colors"
+        className="h-6 w-6 flex items-center justify-center transition-opacity hover:opacity-70"
         title="Abrir WhatsApp"
       >
-        <svg className="h-3 w-3" viewBox="0 0 24 24">
+        <svg className="h-4 w-4" viewBox="0 0 24 24">
           <defs>
             <linearGradient id="whatsapp-gradient" x1="0%" y1="0%" x2="100%" y2="0%">
               <stop offset="0%" stopColor="#ea580c" />
