@@ -59,11 +59,17 @@ export function OverviewCardComponent({
   const [currentSize, setCurrentSize] = useState<CardSize>(card.size);
   const startPosRef = useRef({ x: 0, y: 0 });
   const startSizeRef = useRef({ width: card.size.width, height: card.size.height });
+  const currentSizeRef = useRef<CardSize>(card.size);
+
+  useEffect(() => {
+    currentSizeRef.current = currentSize;
+  }, [currentSize]);
 
   // Sync with card.size when it changes externally
   useEffect(() => {
     if (!isResizing) {
       setCurrentSize(card.size);
+      currentSizeRef.current = card.size;
     }
   }, [card.size, isResizing]);
 
@@ -155,46 +161,78 @@ export function OverviewCardComponent({
   }, [card.dataSource, leads]);
 
   // Resize handlers
-  const handleResizeStart = useCallback((e: React.MouseEvent, direction: ResizeDirection) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setIsResizing(true);
-    setResizeDirection(direction);
-    startPosRef.current = { x: e.clientX, y: e.clientY };
-    startSizeRef.current = { width: currentSize.width, height: currentSize.height };
-  }, [currentSize]);
+  const handleResizeStart = useCallback(
+    (e: React.MouseEvent, direction: ResizeDirection) => {
+      e.preventDefault();
+      e.stopPropagation();
+      setIsResizing(true);
+      setResizeDirection(direction);
+      startPosRef.current = { x: e.clientX, y: e.clientY };
+      startSizeRef.current = {
+        width: currentSizeRef.current.width,
+        height: currentSizeRef.current.height,
+      };
+    },
+    []
+  );
 
   useEffect(() => {
     if (!isResizing || !resizeDirection) return;
+
+    const clamp = (v: number, min: number, max: number) => Math.max(min, Math.min(max, v));
 
     const handleMouseMove = (e: MouseEvent) => {
       const deltaX = e.clientX - startPosRef.current.x;
       const deltaY = e.clientY - startPosRef.current.y;
 
-      let newWidth = startSizeRef.current.width;
-      let newHeight = startSizeRef.current.height;
+      const startW = startSizeRef.current.width;
+      const startH = startSizeRef.current.height;
 
-      // Horizontal resize - right side increases, left side decreases
-      if (resizeDirection === "right" || resizeDirection === "top-right" || resizeDirection === "bottom-right") {
-        newWidth = Math.max(MIN_CARD_WIDTH, Math.min(MAX_CARD_WIDTH, startSizeRef.current.width + deltaX));
-      } else if (resizeDirection === "left" || resizeDirection === "top-left" || resizeDirection === "bottom-left") {
-        // Left side: dragging left (negative deltaX) = increase, dragging right = decrease
-        newWidth = Math.max(MIN_CARD_WIDTH, Math.min(MAX_CARD_WIDTH, startSizeRef.current.width - deltaX));
+      let nextW = startW;
+      let nextH = startH;
+
+      const isCorner = resizeDirection.includes("-");
+
+      if (isCorner) {
+        const widthDelta = resizeDirection.endsWith("right") ? deltaX : -deltaX;
+        const heightDelta = resizeDirection.startsWith("bottom") ? deltaY : -deltaY;
+
+        const rawW = startW + widthDelta;
+        const rawH = startH + heightDelta;
+
+        const clampedW = clamp(rawW, MIN_CARD_WIDTH, MAX_CARD_WIDTH);
+        const clampedH = clamp(rawH, MIN_CARD_HEIGHT, MAX_CARD_HEIGHT);
+
+        const allowedW = clampedW - startW;
+        const allowedH = clampedH - startH;
+
+        // If one axis hits a limit first, we scale BOTH deltas so the other axis doesn't keep growing alone.
+        let s = 1;
+        if (widthDelta !== 0 && allowedW !== widthDelta) s = Math.min(s, allowedW / widthDelta);
+        if (heightDelta !== 0 && allowedH !== heightDelta) s = Math.min(s, allowedH / heightDelta);
+
+        nextW = clamp(startW + widthDelta * s, MIN_CARD_WIDTH, MAX_CARD_WIDTH);
+        nextH = clamp(startH + heightDelta * s, MIN_CARD_HEIGHT, MAX_CARD_HEIGHT);
+      } else {
+        if (resizeDirection === "right") {
+          nextW = clamp(startW + deltaX, MIN_CARD_WIDTH, MAX_CARD_WIDTH);
+        } else if (resizeDirection === "left") {
+          nextW = clamp(startW - deltaX, MIN_CARD_WIDTH, MAX_CARD_WIDTH);
+        }
+
+        if (resizeDirection === "bottom") {
+          nextH = clamp(startH + deltaY, MIN_CARD_HEIGHT, MAX_CARD_HEIGHT);
+        } else if (resizeDirection === "top") {
+          nextH = clamp(startH - deltaY, MIN_CARD_HEIGHT, MAX_CARD_HEIGHT);
+        }
       }
 
-      // Vertical resize - bottom side increases, top side decreases
-      if (resizeDirection === "bottom" || resizeDirection === "bottom-left" || resizeDirection === "bottom-right") {
-        newHeight = Math.max(MIN_CARD_HEIGHT, Math.min(MAX_CARD_HEIGHT, startSizeRef.current.height + deltaY));
-      } else if (resizeDirection === "top" || resizeDirection === "top-left" || resizeDirection === "top-right") {
-        // Top side: dragging up (negative deltaY) = increase, dragging down = decrease
-        newHeight = Math.max(MIN_CARD_HEIGHT, Math.min(MAX_CARD_HEIGHT, startSizeRef.current.height - deltaY));
-      }
-
-      // Only update if size actually changed (within valid range)
-      if (newWidth !== currentSize.width || newHeight !== currentSize.height) {
-        const newSize = { width: newWidth, height: newHeight };
-        setCurrentSize(newSize);
-        onResize(card.id, newSize);
+      const prev = currentSizeRef.current;
+      if (nextW !== prev.width || nextH !== prev.height) {
+        const next = { width: nextW, height: nextH };
+        currentSizeRef.current = next;
+        setCurrentSize(next);
+        onResize(card.id, next);
       }
     };
 
@@ -210,7 +248,7 @@ export function OverviewCardComponent({
       document.removeEventListener("mousemove", handleMouseMove);
       document.removeEventListener("mouseup", handleMouseUp);
     };
-  }, [isResizing, resizeDirection, card.id, onResize, currentSize.width, currentSize.height]);
+  }, [isResizing, resizeDirection, card.id, onResize]);
 
   const renderChart = () => {
     const isLarge = currentSize.height >= 280;
