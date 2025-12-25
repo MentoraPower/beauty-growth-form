@@ -67,6 +67,14 @@ function TagsBadge({ tags }: { tags?: { id: string; name: string; color: string 
   const visibleTags = tags.slice(0, MAX_VISIBLE_TAGS);
   const remainingTags = tags.slice(MAX_VISIBLE_TAGS);
 
+  // Convert hex to rgba with opacity
+  const hexToRgba = (hex: string, alpha: number) => {
+    const r = parseInt(hex.slice(1, 3), 16);
+    const g = parseInt(hex.slice(3, 5), 16);
+    const b = parseInt(hex.slice(5, 7), 16);
+    return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+  };
+
   return (
     <div className="flex items-center gap-1 flex-wrap">
       {visibleTags.map((tag) => (
@@ -74,7 +82,7 @@ function TagsBadge({ tags }: { tags?: { id: string; name: string; color: string 
           key={tag.id}
           className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium truncate max-w-[80px]"
           style={{
-            backgroundColor: `${tag.color}20`,
+            backgroundColor: hexToRgba(tag.color, 0.15),
             color: tag.color,
           }}
         >
@@ -99,7 +107,7 @@ function TagsBadge({ tags }: { tags?: { id: string; name: string; color: string 
                   key={tag.id}
                   className="inline-flex items-center px-2 py-1 rounded text-xs font-medium"
                   style={{
-                    backgroundColor: `${tag.color}20`,
+                    backgroundColor: hexToRgba(tag.color, 0.15),
                     color: tag.color,
                   }}
                 >
