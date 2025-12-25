@@ -133,7 +133,7 @@ export const ActivityDetails = memo(function ActivityDetails({
             
             {/* Balão editável que cresce conforme o conteúdo */}
             <div className="inline-block max-w-full">
-              <div className="bg-primary text-primary-foreground rounded-2xl rounded-tl-sm p-4 shadow-sm inline-block">
+              <div className="bg-green-100 text-foreground rounded-2xl rounded-tl-sm p-4 shadow-sm inline-block">
                 <EditorContent 
                   editor={editor} 
                   className="prose prose-sm prose-invert max-w-none [&_.ProseMirror]:min-h-[24px] [&_.ProseMirror]:outline-none [&_.ProseMirror_p]:mb-2 [&_.ProseMirror_p:last-child]:mb-0 [&_.ProseMirror_p.is-editor-empty:first-child::before]:content-['Digite_seu_script...'] [&_.ProseMirror_p.is-editor-empty:first-child::before]:text-primary-foreground/50 [&_.ProseMirror_p.is-editor-empty:first-child::before]:float-left [&_.ProseMirror_p.is-editor-empty:first-child::before]:pointer-events-none" 
