@@ -1568,37 +1568,36 @@ const AnalyticsNode = ({ id, data, selected }: NodeProps) => {
                 </div>
               ) : (
                 <>
-                  {/* Stats Grid - Larger cards */}
+                  {/* Stats Grid - Clean cards */}
                   <div className="grid grid-cols-3 gap-3 mb-5">
-                    <div className="bg-gradient-to-br from-green-50 to-emerald-50 border border-green-200/50 rounded-xl p-4 text-center">
+                    <div className="border border-border rounded-xl p-4 text-center">
                       <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center mx-auto mb-2">
                         <CheckCheck className="w-5 h-5 text-green-600" />
                       </div>
-                      <p className="text-2xl font-bold text-green-700">{currentMetrics.sent}</p>
-                      <p className="text-xs font-medium text-green-600/80 mt-0.5">Enviados</p>
+                      <p className="text-2xl font-bold text-foreground">{currentMetrics.sent}</p>
+                      <p className="text-xs font-medium text-muted-foreground mt-0.5">Enviados</p>
                     </div>
-                    <div className="bg-gradient-to-br from-red-50 to-rose-50 border border-red-200/50 rounded-xl p-4 text-center">
+                    <div className="border border-border rounded-xl p-4 text-center">
                       <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center mx-auto mb-2">
                         <XCircle className="w-5 h-5 text-red-600" />
                       </div>
-                      <p className="text-2xl font-bold text-red-700">{currentMetrics.failed}</p>
-                      <p className="text-xs font-medium text-red-600/80 mt-0.5">Falhas</p>
+                      <p className="text-2xl font-bold text-foreground">{currentMetrics.failed}</p>
+                      <p className="text-xs font-medium text-muted-foreground mt-0.5">Falhas</p>
                     </div>
-                    <div className="bg-gradient-to-br from-amber-50 to-yellow-50 border border-amber-200/50 rounded-xl p-4 text-center">
+                    <div className="border border-border rounded-xl p-4 text-center">
                       <div className="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center mx-auto mb-2">
                         <Clock className="w-5 h-5 text-amber-600" />
                       </div>
-                      <p className="text-2xl font-bold text-amber-700">{currentMetrics.pending}</p>
-                      <p className="text-xs font-medium text-amber-600/80 mt-0.5">Pendentes</p>
+                      <p className="text-2xl font-bold text-foreground">{currentMetrics.pending}</p>
+                      <p className="text-xs font-medium text-muted-foreground mt-0.5">Pendentes</p>
                     </div>
                   </div>
 
-                  {/* Day of Week Chart - Improved */}
+                  {/* Day of Week Chart */}
                   {currentMetrics.byDayOfWeek.length > 0 && (
                     <div className="bg-muted/30 rounded-xl p-4">
                       <div className="flex items-center justify-between mb-4">
-                        <p className="text-sm font-semibold text-foreground flex items-center gap-2">
-                          <TrendingUp className="w-4 h-4 text-muted-foreground" />
+                        <p className="text-sm font-semibold text-foreground">
                           Disparos por dia
                         </p>
                         <span className="text-xs text-muted-foreground bg-muted px-2 py-1 rounded-md">
