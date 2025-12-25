@@ -1311,141 +1311,146 @@ const WhatsAppSidebarItem = () => {
 };
 
 // Analytics Node Component - Shows metrics for connected email/whatsapp nodes
+// Analytics metrics type
+type AnalyticsMetrics = {
+  sent: number;
+  failed: number;
+  pending: number;
+  byDayOfWeek: { day: string; count: number }[];
+};
+
 const AnalyticsNode = ({ id, data, selected }: NodeProps) => {
   const { setNodes, setEdges, getEdges, getNodes } = useReactFlow();
-  const [isExpanded, setIsExpanded] = useState(true);
-  const [metrics, setMetrics] = useState<{
-    sent: number;
-    failed: number;
-    pending: number;
-    byDayOfWeek: { day: string; count: number }[];
-  }>({ sent: 0, failed: 0, pending: 0, byDayOfWeek: [] });
-  const [isLoading, setIsLoading] = useState(false);
-  const [connectedType, setConnectedType] = useState<"email" | "whatsapp" | null>(null);
-  const [connectedNodeId, setConnectedNodeId] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<"email" | "whatsapp">("email");
+  const [emailMetrics, setEmailMetrics] = useState<AnalyticsMetrics>({ sent: 0, failed: 0, pending: 0, byDayOfWeek: [] });
+  const [whatsappMetrics, setWhatsappMetrics] = useState<AnalyticsMetrics>({ sent: 0, failed: 0, pending: 0, byDayOfWeek: [] });
+  const [isLoadingEmail, setIsLoadingEmail] = useState(false);
+  const [isLoadingWhatsapp, setIsLoadingWhatsapp] = useState(false);
+  const [connectedTypes, setConnectedTypes] = useState<{ email: boolean; whatsapp: boolean }>({ email: false, whatsapp: false });
 
-  // Find connected source node
+  // Find all connected source nodes (can be multiple)
   useEffect(() => {
     const edges = getEdges();
     const nodes = getNodes();
-    const incomingEdge = edges.find(e => e.target === id);
+    const incomingEdges = edges.filter(e => e.target === id);
     
-    if (incomingEdge) {
-      const sourceNode = nodes.find(n => n.id === incomingEdge.source);
-      if (sourceNode) {
-        if (sourceNode.type === "email") {
-          setConnectedType("email");
-          setConnectedNodeId(sourceNode.id);
-        } else if (sourceNode.type === "whatsapp") {
-          setConnectedType("whatsapp");
-          setConnectedNodeId(sourceNode.id);
-        } else {
-          setConnectedType(null);
-          setConnectedNodeId(null);
-        }
-      }
-    } else {
-      setConnectedType(null);
-      setConnectedNodeId(null);
-    }
+    let hasEmail = false;
+    let hasWhatsapp = false;
+    
+    incomingEdges.forEach(edge => {
+      const sourceNode = nodes.find(n => n.id === edge.source);
+      if (sourceNode?.type === "email") hasEmail = true;
+      if (sourceNode?.type === "whatsapp") hasWhatsapp = true;
+    });
+    
+    setConnectedTypes({ email: hasEmail, whatsapp: hasWhatsapp });
+    
+    // Set active tab to first available
+    if (hasEmail && !hasWhatsapp) setActiveTab("email");
+    else if (hasWhatsapp && !hasEmail) setActiveTab("whatsapp");
   }, [id, getEdges, getNodes]);
 
-  // Fetch metrics when connected (always expanded now)
+  // Fetch email metrics
   useEffect(() => {
-    if (!connectedType || !connectedNodeId) return;
+    if (!connectedTypes.email) return;
 
-    const fetchMetrics = async () => {
-      setIsLoading(true);
+    const fetchEmailMetrics = async () => {
+      setIsLoadingEmail(true);
       try {
-        if (connectedType === "email") {
-          // Fetch email metrics from sent_emails table
-          // We'll use the automation_id from the node to filter
-          const { data: sentEmails, error } = await supabase
-            .from("sent_emails")
-            .select("status, created_at")
+        const { data: sentEmails, error } = await supabase
+          .from("sent_emails")
+          .select("status, created_at")
+          .order("created_at", { ascending: false })
+          .limit(500);
+
+        if (error) throw error;
+
+        const sent = sentEmails?.filter(e => e.status === "sent").length || 0;
+        const failed = sentEmails?.filter(e => e.status === "failed").length || 0;
+        const pending = sentEmails?.filter(e => e.status === "pending").length || 0;
+
+        const dayNames = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
+        const dayCounts = [0, 0, 0, 0, 0, 0, 0];
+        
+        sentEmails?.forEach(email => {
+          if (email.status === "sent") {
+            const date = new Date(email.created_at);
+            dayCounts[date.getDay()]++;
+          }
+        });
+
+        setEmailMetrics({
+          sent,
+          failed,
+          pending,
+          byDayOfWeek: dayNames.map((day, i) => ({ day, count: dayCounts[i] })),
+        });
+      } catch (error) {
+        console.error("Error fetching email analytics:", error);
+      } finally {
+        setIsLoadingEmail(false);
+      }
+    };
+
+    fetchEmailMetrics();
+  }, [connectedTypes.email]);
+
+  // Fetch WhatsApp metrics
+  useEffect(() => {
+    if (!connectedTypes.whatsapp) return;
+
+    const fetchWhatsappMetrics = async () => {
+      setIsLoadingWhatsapp(true);
+      try {
+        const { data: result } = await supabase.functions.invoke("wasender-whatsapp", {
+          body: { action: "get-stats" },
+        });
+
+        if (result?.success && result?.data) {
+          const stats = result.data;
+          setWhatsappMetrics({
+            sent: stats.sent || 0,
+            failed: stats.failed || 0,
+            pending: stats.pending || 0,
+            byDayOfWeek: stats.byDayOfWeek || [],
+          });
+        } else {
+          // Fallback to local whatsapp_messages table
+          const { data: messages } = await supabase
+            .from("whatsapp_messages")
+            .select("status, created_at, from_me")
+            .eq("from_me", true)
             .order("created_at", { ascending: false })
             .limit(500);
 
-          if (error) throw error;
+          const sent = messages?.filter(m => m.status === "SENT" || m.status === "DELIVERED" || m.status === "READ").length || 0;
+          const failed = messages?.filter(m => m.status === "FAILED").length || 0;
+          const pending = messages?.filter(m => m.status === "PENDING").length || 0;
 
-          const sent = sentEmails?.filter(e => e.status === "sent").length || 0;
-          const failed = sentEmails?.filter(e => e.status === "failed").length || 0;
-          const pending = sentEmails?.filter(e => e.status === "pending").length || 0;
-
-          // Group by day of week
           const dayNames = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
           const dayCounts = [0, 0, 0, 0, 0, 0, 0];
           
-          sentEmails?.forEach(email => {
-            if (email.status === "sent") {
-              const date = new Date(email.created_at);
-              dayCounts[date.getDay()]++;
-            }
+          messages?.forEach(msg => {
+            const date = new Date(msg.created_at);
+            dayCounts[date.getDay()]++;
           });
 
-          setMetrics({
+          setWhatsappMetrics({
             sent,
             failed,
             pending,
             byDayOfWeek: dayNames.map((day, i) => ({ day, count: dayCounts[i] })),
           });
-        } else if (connectedType === "whatsapp") {
-          // Fetch WhatsApp metrics from wasender
-          try {
-            const { data: result } = await supabase.functions.invoke("wasender-whatsapp", {
-              body: { action: "get-stats" },
-            });
-
-            if (result?.success && result?.data) {
-              const stats = result.data;
-              setMetrics({
-                sent: stats.sent || 0,
-                failed: stats.failed || 0,
-                pending: stats.pending || 0,
-                byDayOfWeek: stats.byDayOfWeek || [],
-              });
-            } else {
-              // Fallback to local whatsapp_messages table
-              const { data: messages } = await supabase
-                .from("whatsapp_messages")
-                .select("status, created_at, from_me")
-                .eq("from_me", true)
-                .order("created_at", { ascending: false })
-                .limit(500);
-
-              const sent = messages?.filter(m => m.status === "SENT" || m.status === "DELIVERED" || m.status === "READ").length || 0;
-              const failed = messages?.filter(m => m.status === "FAILED").length || 0;
-              const pending = messages?.filter(m => m.status === "PENDING").length || 0;
-
-              const dayNames = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
-              const dayCounts = [0, 0, 0, 0, 0, 0, 0];
-              
-              messages?.forEach(msg => {
-                const date = new Date(msg.created_at);
-                dayCounts[date.getDay()]++;
-              });
-
-              setMetrics({
-                sent,
-                failed,
-                pending,
-                byDayOfWeek: dayNames.map((day, i) => ({ day, count: dayCounts[i] })),
-              });
-            }
-          } catch {
-            // Silent fallback
-            setMetrics({ sent: 0, failed: 0, pending: 0, byDayOfWeek: [] });
-          }
         }
-      } catch (error) {
-        console.error("Error fetching analytics:", error);
+      } catch {
+        setWhatsappMetrics({ sent: 0, failed: 0, pending: 0, byDayOfWeek: [] });
       } finally {
-        setIsLoading(false);
+        setIsLoadingWhatsapp(false);
       }
     };
 
-    fetchMetrics();
-  }, [connectedType, connectedNodeId]);
+    fetchWhatsappMetrics();
+  }, [connectedTypes.whatsapp]);
 
   const handleDelete = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -1453,8 +1458,75 @@ const AnalyticsNode = ({ id, data, selected }: NodeProps) => {
     setEdges((eds) => eds.filter((e) => e.source !== id && e.target !== id));
   };
 
-  // Calculate max for chart
-  const maxCount = Math.max(...metrics.byDayOfWeek.map(d => d.count), 1);
+  const hasAnyConnection = connectedTypes.email || connectedTypes.whatsapp;
+  const hasBothConnections = connectedTypes.email && connectedTypes.whatsapp;
+  const currentMetrics = activeTab === "email" ? emailMetrics : whatsappMetrics;
+  const isLoading = activeTab === "email" ? isLoadingEmail : isLoadingWhatsapp;
+  const maxCount = Math.max(...currentMetrics.byDayOfWeek.map(d => d.count), 1);
+
+  // Render metrics content
+  const renderMetricsContent = () => {
+    if (isLoading) {
+      return (
+        <div className="text-center py-6">
+          <div className={cn(
+            "animate-spin w-6 h-6 border-2 border-t-transparent rounded-full mx-auto",
+            activeTab === "email" ? "border-orange-500" : "border-green-500"
+          )} />
+          <p className="text-xs text-muted-foreground mt-2">Carregando métricas...</p>
+        </div>
+      );
+    }
+
+    return (
+      <>
+        {/* Stats Grid */}
+        <div className="grid grid-cols-3 gap-3 mb-4">
+          <div className="bg-green-50 rounded-xl p-3 text-center">
+            <CheckCheck className="w-5 h-5 text-green-500 mx-auto mb-1" />
+            <p className="text-xl font-bold text-green-600">{currentMetrics.sent}</p>
+            <p className="text-[11px] text-green-600/70">Enviados</p>
+          </div>
+          <div className="bg-red-50 rounded-xl p-3 text-center">
+            <XCircle className="w-5 h-5 text-red-500 mx-auto mb-1" />
+            <p className="text-xl font-bold text-red-600">{currentMetrics.failed}</p>
+            <p className="text-[11px] text-red-600/70">Falhas</p>
+          </div>
+          <div className="bg-yellow-50 rounded-xl p-3 text-center">
+            <Clock className="w-5 h-5 text-yellow-500 mx-auto mb-1" />
+            <p className="text-xl font-bold text-yellow-600">{currentMetrics.pending}</p>
+            <p className="text-[11px] text-yellow-600/70">Pendentes</p>
+          </div>
+        </div>
+
+        {/* Day of Week Chart */}
+        {currentMetrics.byDayOfWeek.length > 0 && (
+          <div className="mt-4">
+            <p className="text-xs font-medium text-muted-foreground mb-3 flex items-center gap-1">
+              <TrendingUp className="w-3.5 h-3.5" />
+              Disparos por dia da semana
+            </p>
+            <div className="flex items-end justify-between gap-1.5 h-20">
+              {currentMetrics.byDayOfWeek.map((day, i) => (
+                <div key={i} className="flex-1 flex flex-col items-center gap-1">
+                  <div 
+                    className={cn(
+                      "w-full rounded-t-md transition-all",
+                      activeTab === "email" ? "bg-gradient-to-t from-orange-500 to-amber-400" : "bg-gradient-to-t from-green-500 to-emerald-400"
+                    )}
+                    style={{ 
+                      height: `${Math.max((day.count / maxCount) * 64, 4)}px`,
+                    }}
+                  />
+                  <span className="text-[10px] font-medium text-muted-foreground">{day.day}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </>
+    );
+  };
 
   return (
     <div className="relative">
@@ -1468,96 +1540,66 @@ const AnalyticsNode = ({ id, data, selected }: NodeProps) => {
       <div 
         className={cn(
           "bg-white border transition-all shadow-sm rounded-xl w-[360px] overflow-hidden",
-          connectedType === "email" ? "border-orange-300" : connectedType === "whatsapp" ? "border-green-300" : "border-orange-300"
+          hasBothConnections ? "border-orange-300" : 
+          connectedTypes.email ? "border-orange-300" : 
+          connectedTypes.whatsapp ? "border-green-300" : "border-orange-300"
         )}
       >
-        {/* Orange Gradient Header */}
-        <div className={cn(
-          "px-4 py-3 flex items-center gap-3",
-          connectedType === "email" 
-            ? "bg-gradient-to-r from-orange-500 to-amber-400" 
-            : connectedType === "whatsapp" 
-              ? "bg-gradient-to-r from-green-500 to-emerald-400" 
-              : "bg-gradient-to-r from-orange-500 to-amber-400"
-        )}>
+        {/* Gradient Header */}
+        <div className="bg-gradient-to-r from-orange-500 to-amber-400 px-4 py-3 flex items-center gap-3">
           <div className="w-9 h-9 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center">
-            {connectedType === "email" ? (
-              <Mail className="w-5 h-5 text-white" />
-            ) : connectedType === "whatsapp" ? (
-              <WhatsAppIcon className="w-5 h-5 text-white" />
-            ) : (
-              <ChartPie className="w-5 h-5 text-white" />
-            )}
+            <ChartPie className="w-5 h-5 text-white" />
           </div>
           <div>
-            <h4 className="text-sm font-semibold text-white">
-              {connectedType === "email" ? "Análise de E-mail" : connectedType === "whatsapp" ? "Análise de WhatsApp" : "Análise"}
-            </h4>
+            <h4 className="text-sm font-semibold text-white">Análise</h4>
             <p className="text-xs text-white/80">
-              {connectedType ? "Métricas de envio" : "Conecte a um nó"}
+              {hasBothConnections ? "E-mail & WhatsApp" : 
+               connectedTypes.email ? "Métricas de E-mail" : 
+               connectedTypes.whatsapp ? "Métricas de WhatsApp" : "Conecte a um nó"}
             </p>
           </div>
         </div>
         
         {/* Content */}
         <div className="p-4">
-
-            {!connectedType ? (
-              <div className="text-center py-6 text-muted-foreground text-sm">
-                <ChartPie className="w-10 h-10 mx-auto mb-2 text-orange-300" />
-                Arraste uma conexão de um nó de<br/>E-mail ou WhatsApp para este nó
-              </div>
-            ) : isLoading ? (
-              <div className="text-center py-6">
-                <div className="animate-spin w-6 h-6 border-2 border-orange-500 border-t-transparent rounded-full mx-auto" />
-                <p className="text-xs text-muted-foreground mt-2">Carregando métricas...</p>
-              </div>
-            ) : (
+          {!hasAnyConnection ? (
+            <div className="text-center py-6 text-muted-foreground text-sm">
+              <ChartPie className="w-10 h-10 mx-auto mb-2 text-orange-300" />
+              Arraste uma conexão de um nó de<br/>E-mail ou WhatsApp para este nó
+            </div>
+          ) : (
             <>
-              {/* Stats Grid */}
-              <div className="grid grid-cols-3 gap-3 mb-4">
-                <div className="bg-green-50 rounded-xl p-3 text-center">
-                  <CheckCheck className="w-5 h-5 text-green-500 mx-auto mb-1" />
-                  <p className="text-xl font-bold text-green-600">{metrics.sent}</p>
-                  <p className="text-[11px] text-green-600/70">Enviados</p>
-                </div>
-                <div className="bg-red-50 rounded-xl p-3 text-center">
-                  <XCircle className="w-5 h-5 text-red-500 mx-auto mb-1" />
-                  <p className="text-xl font-bold text-red-600">{metrics.failed}</p>
-                  <p className="text-[11px] text-red-600/70">Falhas</p>
-                </div>
-                <div className="bg-yellow-50 rounded-xl p-3 text-center">
-                  <Clock className="w-5 h-5 text-yellow-500 mx-auto mb-1" />
-                  <p className="text-xl font-bold text-yellow-600">{metrics.pending}</p>
-                  <p className="text-[11px] text-yellow-600/70">Pendentes</p>
-                </div>
-              </div>
-
-              {/* Day of Week Chart */}
-              {metrics.byDayOfWeek.length > 0 && (
-                <div className="mt-4">
-                  <p className="text-xs font-medium text-muted-foreground mb-3 flex items-center gap-1">
-                    <TrendingUp className="w-3.5 h-3.5" />
-                    Disparos por dia da semana
-                  </p>
-                  <div className="flex items-end justify-between gap-1.5 h-20">
-                    {metrics.byDayOfWeek.map((day, i) => (
-                      <div key={i} className="flex-1 flex flex-col items-center gap-1">
-                        <div 
-                          className={cn(
-                            "w-full rounded-t-md transition-all",
-                            connectedType === "email" ? "bg-gradient-to-t from-orange-500 to-amber-400" : "bg-gradient-to-t from-green-500 to-emerald-400"
-                          )}
-                          style={{ 
-                            height: `${Math.max((day.count / maxCount) * 64, 4)}px`,
-                          }}
-                        />
-                        <span className="text-[10px] font-medium text-muted-foreground">{day.day}</span>
-                      </div>
-                    ))}
-                  </div>
+              {/* Tabs - only show when both are connected */}
+              {hasBothConnections && (
+                <div className="flex gap-2 mb-4">
+                  <button
+                    onClick={() => setActiveTab("email")}
+                    className={cn(
+                      "flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-lg text-sm font-medium transition-all",
+                      activeTab === "email" 
+                        ? "bg-gradient-to-r from-orange-500 to-amber-400 text-white shadow-sm" 
+                        : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                    )}
+                  >
+                    <Mail className="w-4 h-4" />
+                    E-mail
+                  </button>
+                  <button
+                    onClick={() => setActiveTab("whatsapp")}
+                    className={cn(
+                      "flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-lg text-sm font-medium transition-all",
+                      activeTab === "whatsapp" 
+                        ? "bg-gradient-to-r from-green-500 to-emerald-400 text-white shadow-sm" 
+                        : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                    )}
+                  >
+                    <WhatsAppIcon className="w-4 h-4" />
+                    WhatsApp
+                  </button>
                 </div>
               )}
+
+              {renderMetricsContent()}
             </>
           )}
         </div>
