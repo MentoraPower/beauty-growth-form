@@ -585,6 +585,7 @@ export function OverviewCardComponent({
       )}
       style={{
         width: currentSize.width,
+        maxWidth: "100%",
         height: currentSize.height,
       }}
     >
@@ -616,10 +617,13 @@ export function OverviewCardComponent({
       </div>
 
       {/* Chart Content */}
-      <div className="flex-1 p-4 min-h-0 overflow-hidden">
+      <div className="flex-1 p-4 min-h-0 overflow-hidden relative z-30">
         {!card.dataSource ? (
           <button 
-            onClick={() => onConnectDataSource?.(card)}
+            onClick={(e) => {
+              e.stopPropagation();
+              onConnectDataSource?.(card);
+            }}
             className="w-full h-full flex flex-col items-center justify-center gap-3 hover:bg-muted/30 rounded-lg transition-colors cursor-pointer"
           >
             <div className="w-16 h-12 bg-muted/60 rounded-lg flex items-center justify-center">
