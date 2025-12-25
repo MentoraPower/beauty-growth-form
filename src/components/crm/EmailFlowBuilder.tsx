@@ -1477,7 +1477,7 @@ const AnalyticsNode = ({ id, data, selected }: NodeProps) => {
       {/* Node Card - Wider and more modern */}
       <div 
         className={cn(
-          "bg-background border-2 transition-all shadow-lg rounded-2xl w-[440px] overflow-hidden",
+          "bg-background border-2 transition-all shadow-lg rounded-2xl w-[580px] overflow-hidden",
           hasBothConnections ? "border-orange-400/50" : 
           connectedTypes.email ? "border-orange-400/50" : 
           connectedTypes.whatsapp ? "border-green-400/50" : "border-orange-400/50"
