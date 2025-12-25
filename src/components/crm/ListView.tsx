@@ -94,11 +94,19 @@ function SortableLeadRow({ lead, isSelected, onLeadClick, onToggleSelection, isO
           className="border-[#00000040] data-[state=checked]:bg-[#00000040] data-[state=checked]:border-[#00000040]"
         />
       </div>
-      <div className="col-span-7 flex items-center gap-2">
-        <div className="w-5 h-5 rounded-full flex items-center justify-center bg-muted text-muted-foreground text-[10px] font-bold flex-shrink-0">
-          {lead.name.charAt(0).toUpperCase()}
-        </div>
+      <div className="col-span-7 flex items-center justify-between gap-2">
         <span className="text-sm text-foreground truncate">{lead.name}</span>
+        {lead.photo_url ? (
+          <img 
+            src={lead.photo_url} 
+            alt={lead.name} 
+            className="w-6 h-6 rounded-md object-cover flex-shrink-0"
+          />
+        ) : (
+          <div className="w-6 h-6 rounded-md flex items-center justify-center bg-muted text-muted-foreground text-[10px] font-bold flex-shrink-0">
+            {lead.name.charAt(0).toUpperCase()}
+          </div>
+        )}
       </div>
       
       <div className="col-span-3 flex items-center gap-1.5">
