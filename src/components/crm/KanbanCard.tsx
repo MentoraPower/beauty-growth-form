@@ -148,24 +148,27 @@ export const KanbanCard = memo(function KanbanCard({ lead, isDragging: isDraggin
       onClick={handleClick}
     >
       <CardContent className="p-3">
-        {/* Tags above name - only show if there are tags */}
-        {tags.length > 0 && (
-          <div className="flex items-center gap-1 mb-1.5 flex-wrap">
-            {visibleTags.map((tag) => (
-              <span
-                key={tag.id}
-                className="text-[10px] px-1.5 py-0.5 rounded-full font-medium truncate max-w-[80px] text-white"
-                style={{ backgroundColor: tag.color }}
-              >
-                {tag.name}
-              </span>
-            ))}
+        {/* Tags + Name with photo aligned to center */}
+        <div className="flex items-center justify-between gap-2 min-w-0">
+          <div className="flex-1 min-w-0">
+            {/* Tags above name */}
+            {tags.length > 0 && (
+              <div className="flex items-center gap-1 mb-0.5 flex-wrap">
+                {visibleTags.map((tag) => (
+                  <span
+                    key={tag.id}
+                    className="text-[10px] px-1.5 py-0.5 rounded-full font-medium truncate max-w-[80px] text-white"
+                    style={{ backgroundColor: tag.color }}
+                  >
+                    {tag.name}
+                  </span>
+                ))}
+              </div>
+            )}
+            {/* Name */}
+            <h3 className="font-semibold text-sm truncate">{lead.name}</h3>
           </div>
-        )}
-
-        {/* Name on left, photo on right */}
-        <div className="flex items-center justify-between gap-2 min-w-0 py-1">
-          <h3 className="font-semibold text-sm truncate">{lead.name}</h3>
+          {/* Photo aligned center */}
           {lead.photo_url ? (
             <img 
               src={lead.photo_url} 
