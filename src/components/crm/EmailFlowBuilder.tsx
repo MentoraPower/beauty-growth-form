@@ -1509,10 +1509,10 @@ const AnalyticsNode = ({ id, data, selected }: NodeProps) => {
         <div 
           className={cn(
             "px-4 py-3 flex items-center justify-between",
-            hasBothConnections ? "bg-gradient-to-r from-orange-500 via-amber-500 to-yellow-400" :
-            connectedTypes.email ? "bg-gradient-to-r from-orange-500 via-amber-500 to-yellow-400" :
+            hasBothConnections ? "bg-gradient-to-r from-orange-600 via-orange-500 to-orange-400" :
+            connectedTypes.email ? "bg-gradient-to-r from-orange-600 via-orange-500 to-orange-400" :
             connectedTypes.whatsapp ? "bg-gradient-to-r from-green-500 via-emerald-500 to-teal-400" :
-            "bg-gradient-to-r from-orange-500 via-amber-500 to-yellow-400"
+            "bg-gradient-to-r from-orange-600 via-orange-500 to-orange-400"
           )}
         >
           <div className="flex items-center gap-3">
