@@ -178,67 +178,18 @@ export function OverviewCardComponent({
 
   // Resize handlers
   const handleResizeStart = useCallback(
-    (e: React.MouseEvent, direction: ResizeDirection) => {
+    (e: React.PointerEvent<HTMLDivElement>, direction: ResizeDirection) => {
       e.preventDefault();
       e.stopPropagation();
+
+      // Keep receiving events even if the pointer leaves the handle.
+      e.currentTarget.setPointerCapture?.(e.pointerId);
 
       const startW = currentSizeRef.current.width;
       const startH = currentSizeRef.current.height;
 
-      // Cap max size by the REAL free space inside the parent (direction-aware).
-      // If the card is already flush with an edge and you drag further, nothing grows.
-      const el = cardRef.current;
-      const parent = el?.parentElement;
-
-      if (el && parent) {
-        const cardRect = el.getBoundingClientRect();
-        const parentRect = parent.getBoundingClientRect();
-        const style = window.getComputedStyle(parent);
-
-        const padLeft = parseFloat(style.paddingLeft) || 0;
-        const padRight = parseFloat(style.paddingRight) || 0;
-        const padTop = parseFloat(style.paddingTop) || 0;
-        const padBottom = parseFloat(style.paddingBottom) || 0;
-
-        const innerLeft = parentRect.left + padLeft;
-        const innerRight = parentRect.right - padRight;
-        const innerTop = parentRect.top + padTop;
-        const innerBottom = parentRect.bottom - padBottom;
-
-        let maxW = startW; // Default: no growth allowed unless direction matches
-        let maxH = startH;
-
-        // Only allow width growth in the direction being resized
-        if (direction.includes("right")) {
-          const spaceRight = innerRight - cardRect.right;
-          maxW = Math.min(MAX_CARD_WIDTH, startW + Math.max(0, spaceRight));
-        } else if (direction.includes("left")) {
-          const spaceLeft = cardRect.left - innerLeft;
-          maxW = Math.min(MAX_CARD_WIDTH, startW + Math.max(0, spaceLeft));
-        } else {
-          // Not resizing horizontally, allow current width
-          maxW = startW;
-        }
-
-        // Only allow height growth in the direction being resized
-        if (direction.includes("bottom")) {
-          const spaceBottom = innerBottom - cardRect.bottom;
-          maxH = Math.min(MAX_CARD_HEIGHT, startH + Math.max(0, spaceBottom));
-        } else if (direction.includes("top")) {
-          const spaceTop = cardRect.top - innerTop;
-          maxH = Math.min(MAX_CARD_HEIGHT, startH + Math.max(0, spaceTop));
-        } else {
-          // Not resizing vertically, allow current height
-          maxH = startH;
-        }
-
-        maxSizeRef.current = {
-          maxW: Math.max(MIN_CARD_WIDTH, Math.floor(maxW)),
-          maxH: Math.max(MIN_CARD_HEIGHT, Math.floor(maxH)),
-        };
-      } else {
-        maxSizeRef.current = { maxW: MAX_CARD_WIDTH, maxH: MAX_CARD_HEIGHT };
-      }
+      // Allow resizing freely (only min/max constraints).
+      maxSizeRef.current = { maxW: MAX_CARD_WIDTH, maxH: MAX_CARD_HEIGHT };
 
       setIsResizing(true);
       setResizeDirection(direction);
@@ -372,12 +323,14 @@ export function OverviewCardComponent({
       setAtLimit({ left: false, right: false, top: false, bottom: false });
     };
 
-    document.addEventListener("mousemove", handleMouseMove);
-    document.addEventListener("mouseup", handleMouseUp);
+    document.addEventListener("pointermove", handleMouseMove);
+    document.addEventListener("pointerup", handleMouseUp);
+    document.addEventListener("pointercancel", handleMouseUp);
 
     return () => {
-      document.removeEventListener("mousemove", handleMouseMove);
-      document.removeEventListener("mouseup", handleMouseUp);
+      document.removeEventListener("pointermove", handleMouseMove);
+      document.removeEventListener("pointerup", handleMouseUp);
+      document.removeEventListener("pointercancel", handleMouseUp);
     };
   }, [isResizing, resizeDirection, card.id, onResize]);
 
@@ -617,7 +570,7 @@ export function OverviewCardComponent({
       </div>
 
       {/* Chart Content */}
-      <div className="flex-1 p-4 min-h-0 overflow-hidden relative z-30">
+      <div className="flex-1 p-4 min-h-0 overflow-hidden">
         {!card.dataSource ? (
           <button 
             onClick={(e) => {
@@ -653,50 +606,50 @@ export function OverviewCardComponent({
       {/* Resize Handles */}
       {/* Left handle */}
       <div
-        className="absolute left-0 top-2 bottom-2 w-2 cursor-ew-resize opacity-0 group-hover:opacity-100 hover:bg-primary/20 z-10"
-        onMouseDown={(e) => handleResizeStart(e, "left")}
+        className="absolute left-0 top-2 bottom-2 w-2 cursor-ew-resize opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto hover:bg-primary/20 z-40 touch-none"
+        onPointerDown={(e) => handleResizeStart(e, "left")}
       />
       
       {/* Right handle */}
       <div
-        className="absolute right-0 top-2 bottom-2 w-2 cursor-ew-resize opacity-0 group-hover:opacity-100 hover:bg-primary/20 z-10"
-        onMouseDown={(e) => handleResizeStart(e, "right")}
+        className="absolute right-0 top-2 bottom-2 w-2 cursor-ew-resize opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto hover:bg-primary/20 z-40 touch-none"
+        onPointerDown={(e) => handleResizeStart(e, "right")}
       />
       
       {/* Top handle */}
       <div
-        className="absolute top-0 left-2 right-2 h-2 cursor-ns-resize opacity-0 group-hover:opacity-100 hover:bg-primary/20 z-10"
-        onMouseDown={(e) => handleResizeStart(e, "top")}
+        className="absolute top-0 left-2 right-2 h-2 cursor-ns-resize opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto hover:bg-primary/20 z-40 touch-none"
+        onPointerDown={(e) => handleResizeStart(e, "top")}
       />
       
       {/* Bottom handle */}
       <div
-        className="absolute bottom-0 left-2 right-2 h-2 cursor-ns-resize opacity-0 group-hover:opacity-100 hover:bg-primary/20 z-10"
-        onMouseDown={(e) => handleResizeStart(e, "bottom")}
+        className="absolute bottom-0 left-2 right-2 h-2 cursor-ns-resize opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto hover:bg-primary/20 z-40 touch-none"
+        onPointerDown={(e) => handleResizeStart(e, "bottom")}
       />
       
       {/* Top-left corner */}
       <div
-        className="absolute top-0 left-0 w-3 h-3 cursor-nwse-resize opacity-0 group-hover:opacity-100 hover:bg-primary/20 z-20"
-        onMouseDown={(e) => handleResizeStart(e, "top-left")}
+        className="absolute top-0 left-0 w-3 h-3 cursor-nwse-resize opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto hover:bg-primary/20 z-50 touch-none"
+        onPointerDown={(e) => handleResizeStart(e, "top-left")}
       />
       
       {/* Top-right corner */}
       <div
-        className="absolute top-0 right-0 w-3 h-3 cursor-nesw-resize opacity-0 group-hover:opacity-100 hover:bg-primary/20 z-20"
-        onMouseDown={(e) => handleResizeStart(e, "top-right")}
+        className="absolute top-0 right-0 w-3 h-3 cursor-nesw-resize opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto hover:bg-primary/20 z-50 touch-none"
+        onPointerDown={(e) => handleResizeStart(e, "top-right")}
       />
       
       {/* Bottom-left corner */}
       <div
-        className="absolute bottom-0 left-0 w-3 h-3 cursor-nesw-resize opacity-0 group-hover:opacity-100 hover:bg-primary/20 z-20"
-        onMouseDown={(e) => handleResizeStart(e, "bottom-left")}
+        className="absolute bottom-0 left-0 w-3 h-3 cursor-nesw-resize opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto hover:bg-primary/20 z-50 touch-none"
+        onPointerDown={(e) => handleResizeStart(e, "bottom-left")}
       />
       
       {/* Bottom-right corner */}
       <div
-        className="absolute bottom-0 right-0 w-4 h-4 cursor-nwse-resize opacity-0 group-hover:opacity-100 z-20"
-        onMouseDown={(e) => handleResizeStart(e, "bottom-right")}
+        className="absolute bottom-0 right-0 w-4 h-4 cursor-nwse-resize opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto z-50 touch-none"
+        onPointerDown={(e) => handleResizeStart(e, "bottom-right")}
       >
         <div className="absolute bottom-1 right-1 w-2 h-2 border-r-2 border-b-2 border-muted-foreground/50 group-hover:border-primary" />
       </div>
