@@ -1477,29 +1477,29 @@ const AnalyticsNode = ({ id, data, selected }: NodeProps) => {
       {/* Node Card - Wider and more modern */}
       <div 
         className={cn(
-          "bg-background border-2 transition-all shadow-lg rounded-2xl w-[680px] overflow-hidden",
+          "bg-background border-2 transition-all shadow-lg rounded-2xl w-[820px] overflow-hidden",
           hasBothConnections ? "border-orange-400/50" : 
           connectedTypes.email ? "border-orange-400/50" : 
           connectedTypes.whatsapp ? "border-green-400/50" : "border-orange-400/50"
         )}
       >
-        {/* Gradient Header - More prominent */}
+        {/* Gradient Header - Compact */}
         <div 
           className={cn(
-            "px-5 py-4 flex items-center justify-between",
+            "px-4 py-3 flex items-center justify-between",
             hasBothConnections ? "bg-gradient-to-r from-orange-500 via-amber-500 to-yellow-400" :
             connectedTypes.email ? "bg-gradient-to-r from-orange-500 via-amber-500 to-yellow-400" :
             connectedTypes.whatsapp ? "bg-gradient-to-r from-green-500 via-emerald-500 to-teal-400" :
             "bg-gradient-to-r from-orange-500 via-amber-500 to-yellow-400"
           )}
         >
-          <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center shadow-inner">
-              <ChartPie className="w-6 h-6 text-white" />
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-lg bg-white/20 backdrop-blur-sm flex items-center justify-center shadow-inner">
+              <ChartPie className="w-5 h-5 text-white" />
             </div>
             <div>
-              <h4 className="text-base font-bold text-white tracking-tight">Análise de Métricas</h4>
-              <p className="text-sm text-white/80 mt-0.5">
+              <h4 className="text-sm font-bold text-white tracking-tight">Análise de Métricas</h4>
+              <p className="text-xs text-white/80">
                 {hasBothConnections ? "E-mail & WhatsApp" : 
                  connectedTypes.email ? "Métricas de E-mail" : 
                  connectedTypes.whatsapp ? "Métricas de WhatsApp" : "Conecte para visualizar"}
@@ -1509,26 +1509,26 @@ const AnalyticsNode = ({ id, data, selected }: NodeProps) => {
         </div>
         
         {/* Content */}
-        <div className="p-5">
+        <div className="p-4">
           {!hasAnyConnection ? (
-            <div className="text-center py-10 text-muted-foreground">
-              <div className="w-16 h-16 rounded-2xl bg-orange-100 flex items-center justify-center mx-auto mb-4">
-                <ChartPie className="w-8 h-8 text-orange-400" />
+            <div className="text-center py-6 text-muted-foreground">
+              <div className="w-12 h-12 rounded-xl bg-orange-100 flex items-center justify-center mx-auto mb-3">
+                <ChartPie className="w-6 h-6 text-orange-400" />
               </div>
               <p className="text-sm font-medium">Nenhuma conexão detectada</p>
               <p className="text-xs mt-1 text-muted-foreground/70">
-                Arraste uma conexão de um nó de<br/>E-mail ou WhatsApp para este nó
+                Arraste uma conexão de um nó de E-mail ou WhatsApp
               </p>
             </div>
           ) : (
             <>
               {/* Tabs - only show when both are connected */}
               {hasBothConnections && (
-                <div className="flex gap-6 mb-5 border-b border-border">
+                <div className="flex gap-6 mb-4 border-b border-border">
                   <button
                     onClick={() => setActiveTab("email")}
                     className={cn(
-                      "relative flex items-center gap-2 py-3 px-1 text-sm font-semibold transition-all",
+                      "relative flex items-center gap-2 py-2 px-1 text-sm font-semibold transition-all",
                       activeTab === "email" 
                         ? "text-orange-500" 
                         : "text-muted-foreground hover:text-foreground"
@@ -1543,7 +1543,7 @@ const AnalyticsNode = ({ id, data, selected }: NodeProps) => {
                   <button
                     onClick={() => setActiveTab("whatsapp")}
                     className={cn(
-                      "relative flex items-center gap-2 py-3 px-1 text-sm font-semibold transition-all",
+                      "relative flex items-center gap-2 py-2 px-1 text-sm font-semibold transition-all",
                       activeTab === "whatsapp" 
                         ? "text-green-500" 
                         : "text-muted-foreground hover:text-foreground"
@@ -1559,37 +1559,28 @@ const AnalyticsNode = ({ id, data, selected }: NodeProps) => {
               )}
 
               {isLoading ? (
-                <div className="text-center py-10">
+                <div className="text-center py-6">
                   <div className={cn(
-                    "animate-spin w-8 h-8 border-3 border-t-transparent rounded-full mx-auto",
+                    "animate-spin w-6 h-6 border-2 border-t-transparent rounded-full mx-auto",
                     activeTab === "email" ? "border-orange-500" : "border-green-500"
                   )} />
-                  <p className="text-sm text-muted-foreground mt-3">Carregando métricas...</p>
+                  <p className="text-xs text-muted-foreground mt-2">Carregando...</p>
                 </div>
               ) : (
                 <>
-                  {/* Stats Grid - Clean cards */}
-                  <div className="grid grid-cols-3 gap-3 mb-5">
-                    <div className="border border-border rounded-xl p-4 text-center">
-                      <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center mx-auto mb-2">
-                        <CheckCheck className="w-5 h-5 text-green-600" />
-                      </div>
-                      <p className="text-2xl font-bold text-foreground">{currentMetrics.sent}</p>
-                      <p className="text-xs font-medium text-muted-foreground mt-0.5">Enviados</p>
+                  {/* Stats Grid - Compact, no icons */}
+                  <div className="grid grid-cols-3 gap-3 mb-4">
+                    <div className="border border-green-200 bg-green-50/50 rounded-lg p-3 text-center">
+                      <p className="text-xl font-bold text-green-600">{currentMetrics.sent}</p>
+                      <p className="text-xs font-medium text-green-600/80">Enviados</p>
                     </div>
-                    <div className="border border-border rounded-xl p-4 text-center">
-                      <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center mx-auto mb-2">
-                        <XCircle className="w-5 h-5 text-red-600" />
-                      </div>
-                      <p className="text-2xl font-bold text-foreground">{currentMetrics.failed}</p>
-                      <p className="text-xs font-medium text-muted-foreground mt-0.5">Falhas</p>
+                    <div className="border border-red-200 bg-red-50/50 rounded-lg p-3 text-center">
+                      <p className="text-xl font-bold text-red-600">{currentMetrics.failed}</p>
+                      <p className="text-xs font-medium text-red-600/80">Falhas</p>
                     </div>
-                    <div className="border border-border rounded-xl p-4 text-center">
-                      <div className="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center mx-auto mb-2">
-                        <Clock className="w-5 h-5 text-amber-600" />
-                      </div>
-                      <p className="text-2xl font-bold text-foreground">{currentMetrics.pending}</p>
-                      <p className="text-xs font-medium text-muted-foreground mt-0.5">Pendentes</p>
+                    <div className="border border-amber-200 bg-amber-50/50 rounded-lg p-3 text-center">
+                      <p className="text-xl font-bold text-amber-600">{currentMetrics.pending}</p>
+                      <p className="text-xs font-medium text-amber-600/80">Pendentes</p>
                     </div>
                   </div>
 
