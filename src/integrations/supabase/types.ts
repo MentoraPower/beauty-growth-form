@@ -1039,6 +1039,56 @@ export type Database = {
         }
         Relationships: []
       }
+      overview_cards: {
+        Row: {
+          card_id: string
+          card_order: number
+          chart_type: string
+          created_at: string
+          data_source: string | null
+          height: number
+          id: string
+          sub_origin_id: string
+          title: string
+          updated_at: string
+          width: number
+        }
+        Insert: {
+          card_id: string
+          card_order?: number
+          chart_type: string
+          created_at?: string
+          data_source?: string | null
+          height?: number
+          id?: string
+          sub_origin_id: string
+          title: string
+          updated_at?: string
+          width?: number
+        }
+        Update: {
+          card_id?: string
+          card_order?: number
+          chart_type?: string
+          created_at?: string
+          data_source?: string | null
+          height?: number
+          id?: string
+          sub_origin_id?: string
+          title?: string
+          updated_at?: string
+          width?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "overview_cards_sub_origin_id_fkey"
+            columns: ["sub_origin_id"]
+            isOneToOne: false
+            referencedRelation: "crm_sub_origins"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       page_views: {
         Row: {
           created_at: string

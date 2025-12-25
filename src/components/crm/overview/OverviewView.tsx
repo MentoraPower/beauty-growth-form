@@ -7,6 +7,8 @@ import { OverviewCardComponent } from "./OverviewCardComponent";
 import { AddCardDialog } from "./AddCardDialog";
 import { CardConfigPanel } from "./CardConfigPanel";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 interface OverviewViewProps {
   leads: Lead[];
@@ -15,40 +17,86 @@ interface OverviewViewProps {
   subOriginId: string | null;
 }
 
-const STORAGE_KEY = "crm-overview-cards";
-
 export function OverviewView({ leads, pipelines, leadTags, subOriginId }: OverviewViewProps) {
   const [cards, setCards] = useState<OverviewCard[]>([]);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [configPanelCard, setConfigPanelCard] = useState<OverviewCard | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Load cards from localStorage
+  // Load cards from Supabase
   useEffect(() => {
-    const storageKey = subOriginId ? `${STORAGE_KEY}-${subOriginId}` : STORAGE_KEY;
-    const saved = localStorage.getItem(storageKey);
-    if (saved) {
-      try {
-        setCards(JSON.parse(saved));
-      } catch {
-        setCards([]);
-      }
-    } else {
-      // Start with empty cards - user will add their own
+    if (!subOriginId) {
       setCards([]);
+      setIsLoading(false);
+      return;
+    }
+
+    const loadCards = async () => {
+      setIsLoading(true);
+      try {
+        const { data, error } = await supabase
+          .from("overview_cards")
+          .select("*")
+          .eq("sub_origin_id", subOriginId)
+          .order("card_order", { ascending: true });
+
+        if (error) throw error;
+
+        const loadedCards: OverviewCard[] = (data || []).map((row) => ({
+          id: row.card_id,
+          title: row.title,
+          chartType: row.chart_type as OverviewCard["chartType"],
+          dataSource: row.data_source as DataSource | null,
+          size: { width: row.width, height: row.height },
+          order: row.card_order,
+        }));
+
+        setCards(loadedCards);
+      } catch (error) {
+        console.error("Error loading cards:", error);
+        toast.error("Erro ao carregar cartões");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadCards();
+  }, [subOriginId]);
+
+  // Save card to Supabase
+  const saveCardToDb = useCallback(async (card: OverviewCard) => {
+    if (!subOriginId) return;
+    
+    try {
+      const { error } = await supabase
+        .from("overview_cards")
+        .upsert({
+          sub_origin_id: subOriginId,
+          card_id: card.id,
+          title: card.title,
+          chart_type: card.chartType,
+          data_source: card.dataSource,
+          width: card.size.width,
+          height: card.size.height,
+          card_order: card.order,
+        }, { onConflict: "sub_origin_id,card_id" });
+
+      if (error) throw error;
+    } catch (error) {
+      console.error("Error saving card:", error);
     }
   }, [subOriginId]);
 
-  // Save cards to localStorage with debounce for performance during resize
+  // Debounced save for resize operations
   const saveCards = useCallback((cardsToSave: OverviewCard[]) => {
     if (saveTimeoutRef.current) {
       clearTimeout(saveTimeoutRef.current);
     }
     saveTimeoutRef.current = setTimeout(() => {
-      const storageKey = subOriginId ? `${STORAGE_KEY}-${subOriginId}` : STORAGE_KEY;
-      localStorage.setItem(storageKey, JSON.stringify(cardsToSave));
-    }, 100);
-  }, [subOriginId]);
+      cardsToSave.forEach(saveCardToDb);
+    }, 300);
+  }, [saveCardToDb]);
 
   // Cleanup timeout on unmount
   useEffect(() => {
