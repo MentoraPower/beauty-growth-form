@@ -107,7 +107,7 @@ export function OverviewView({ leads, pipelines, leadTags, subOriginId }: Overvi
   }, [saveCards]);
 
   return (
-    <div className="flex flex-col h-full overflow-hidden">
+    <div className="relative flex flex-col h-full overflow-hidden">
       {/* Header */}
       <div className="flex items-center justify-between pb-4 shrink-0">
         <h2 className="text-lg font-semibold text-foreground">Visão Geral</h2>

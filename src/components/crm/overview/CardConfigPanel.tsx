@@ -282,7 +282,7 @@ export function CardConfigPanel({
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-background flex">
+    <div className="absolute inset-0 sm:inset-4 z-50 bg-background flex overflow-hidden sm:rounded-xl sm:border sm:border-border sm:shadow-lg">
       {/* Left side - Chart Preview */}
       <div className="flex-1 flex flex-col">
         {/* Header */}
