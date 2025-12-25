@@ -24,7 +24,8 @@ import {
   ConnectionLineComponentProps,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
-import { Play, Clock, Pause, CheckCircle2, Trash2, Copy, ArrowLeft, ArrowUp, Plus, Mail, Zap, ChevronDown, ChevronUp, Users, UserMinus, UserX, User, Send, Type, AudioLines, ImagePlus, Clapperboard, FileUp } from "lucide-react";
+import { Play, Clock, Pause, CheckCircle2, Trash2, Copy, ArrowLeft, ArrowUp, Plus, Mail, Zap, ChevronDown, ChevronUp, Users, UserMinus, UserX, User, Send, Type, AudioLines, ImagePlus, Clapperboard, FileUp, BarChart3, TrendingUp, AlertCircle, CheckCheck, XCircle } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 import WhatsAppIcon from "@/components/icons/WhatsApp";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -85,7 +86,7 @@ interface WhatsAppAccount {
 
 interface EmailFlowStep {
   id: string;
-  type: "trigger" | "start" | "wait" | "email" | "whatsapp" | "end" | "entry" | "_edges";
+  type: "trigger" | "start" | "wait" | "email" | "whatsapp" | "end" | "entry" | "analytics" | "_edges";
   position?: { x: number; y: number };
   data: {
     label?: string;
@@ -96,6 +97,9 @@ interface EmailFlowStep {
     whatsappMessage?: string;
     whatsappAccountId?: string;
     triggers?: TriggerItem[];
+    // Analytics node
+    connectedNodeId?: string;
+    connectedNodeType?: "email" | "whatsapp";
     // Legacy support
     triggerType?: string;
     triggerPipelineId?: string;
@@ -1306,6 +1310,283 @@ const WhatsAppSidebarItem = () => {
   );
 };
 
+// Analytics Node Component - Shows metrics for connected email/whatsapp nodes
+const AnalyticsNode = ({ id, data, selected }: NodeProps) => {
+  const { setNodes, setEdges, getEdges, getNodes } = useReactFlow();
+  const [isExpanded, setIsExpanded] = useState(false);
+  const [metrics, setMetrics] = useState<{
+    sent: number;
+    failed: number;
+    pending: number;
+    byDayOfWeek: { day: string; count: number }[];
+  }>({ sent: 0, failed: 0, pending: 0, byDayOfWeek: [] });
+  const [isLoading, setIsLoading] = useState(false);
+  const [connectedType, setConnectedType] = useState<"email" | "whatsapp" | null>(null);
+  const [connectedNodeId, setConnectedNodeId] = useState<string | null>(null);
+
+  // Find connected source node
+  useEffect(() => {
+    const edges = getEdges();
+    const nodes = getNodes();
+    const incomingEdge = edges.find(e => e.target === id);
+    
+    if (incomingEdge) {
+      const sourceNode = nodes.find(n => n.id === incomingEdge.source);
+      if (sourceNode) {
+        if (sourceNode.type === "email") {
+          setConnectedType("email");
+          setConnectedNodeId(sourceNode.id);
+        } else if (sourceNode.type === "whatsapp") {
+          setConnectedType("whatsapp");
+          setConnectedNodeId(sourceNode.id);
+        } else {
+          setConnectedType(null);
+          setConnectedNodeId(null);
+        }
+      }
+    } else {
+      setConnectedType(null);
+      setConnectedNodeId(null);
+    }
+  }, [id, getEdges, getNodes]);
+
+  // Fetch metrics when expanded and connected
+  useEffect(() => {
+    if (!isExpanded || !connectedType || !connectedNodeId) return;
+
+    const fetchMetrics = async () => {
+      setIsLoading(true);
+      try {
+        if (connectedType === "email") {
+          // Fetch email metrics from sent_emails table
+          // We'll use the automation_id from the node to filter
+          const { data: sentEmails, error } = await supabase
+            .from("sent_emails")
+            .select("status, created_at")
+            .order("created_at", { ascending: false })
+            .limit(500);
+
+          if (error) throw error;
+
+          const sent = sentEmails?.filter(e => e.status === "sent").length || 0;
+          const failed = sentEmails?.filter(e => e.status === "failed").length || 0;
+          const pending = sentEmails?.filter(e => e.status === "pending").length || 0;
+
+          // Group by day of week
+          const dayNames = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
+          const dayCounts = [0, 0, 0, 0, 0, 0, 0];
+          
+          sentEmails?.forEach(email => {
+            if (email.status === "sent") {
+              const date = new Date(email.created_at);
+              dayCounts[date.getDay()]++;
+            }
+          });
+
+          setMetrics({
+            sent,
+            failed,
+            pending,
+            byDayOfWeek: dayNames.map((day, i) => ({ day, count: dayCounts[i] })),
+          });
+        } else if (connectedType === "whatsapp") {
+          // Fetch WhatsApp metrics from wasender
+          try {
+            const { data: result } = await supabase.functions.invoke("wasender-whatsapp", {
+              body: { action: "get-stats" },
+            });
+
+            if (result?.success && result?.data) {
+              const stats = result.data;
+              setMetrics({
+                sent: stats.sent || 0,
+                failed: stats.failed || 0,
+                pending: stats.pending || 0,
+                byDayOfWeek: stats.byDayOfWeek || [],
+              });
+            } else {
+              // Fallback to local whatsapp_messages table
+              const { data: messages } = await supabase
+                .from("whatsapp_messages")
+                .select("status, created_at, from_me")
+                .eq("from_me", true)
+                .order("created_at", { ascending: false })
+                .limit(500);
+
+              const sent = messages?.filter(m => m.status === "SENT" || m.status === "DELIVERED" || m.status === "READ").length || 0;
+              const failed = messages?.filter(m => m.status === "FAILED").length || 0;
+              const pending = messages?.filter(m => m.status === "PENDING").length || 0;
+
+              const dayNames = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
+              const dayCounts = [0, 0, 0, 0, 0, 0, 0];
+              
+              messages?.forEach(msg => {
+                const date = new Date(msg.created_at);
+                dayCounts[date.getDay()]++;
+              });
+
+              setMetrics({
+                sent,
+                failed,
+                pending,
+                byDayOfWeek: dayNames.map((day, i) => ({ day, count: dayCounts[i] })),
+              });
+            }
+          } catch {
+            // Silent fallback
+            setMetrics({ sent: 0, failed: 0, pending: 0, byDayOfWeek: [] });
+          }
+        }
+      } catch (error) {
+        console.error("Error fetching analytics:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchMetrics();
+  }, [isExpanded, connectedType, connectedNodeId]);
+
+  const handleDelete = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setNodes((nds) => nds.filter((n) => n.id !== id));
+    setEdges((eds) => eds.filter((e) => e.source !== id && e.target !== id));
+  };
+
+  // Calculate max for chart
+  const maxCount = Math.max(...metrics.byDayOfWeek.map(d => d.count), 1);
+
+  return (
+    <div className="relative">
+      <Handle
+        type="target"
+        position={Position.Left}
+        className="!w-3.5 !h-3.5 !bg-purple-500 !border-[3px] !border-white !shadow-sm !z-10"
+      />
+      
+      {/* Node Card */}
+      <div 
+        className={cn(
+          "bg-white border transition-all shadow-sm cursor-pointer",
+          isExpanded ? "w-[320px] rounded-xl" : "w-20 h-20 rounded-2xl",
+          connectedType === "email" ? "border-orange-300" : connectedType === "whatsapp" ? "border-green-300" : "border-purple-300"
+        )}
+        onClick={() => setIsExpanded(!isExpanded)}
+      >
+        {!isExpanded ? (
+          <div className="w-full h-full flex items-center justify-center">
+            <BarChart3 className={cn(
+              "w-9 h-9",
+              connectedType === "email" ? "text-orange-500" : connectedType === "whatsapp" ? "text-green-500" : "text-purple-500"
+            )} />
+          </div>
+        ) : (
+          <div className="p-4">
+            {/* Header */}
+            <div className="flex items-center gap-2 mb-4 pb-3 border-b border-gray-100">
+              <div className={cn(
+                "w-8 h-8 rounded-full flex items-center justify-center",
+                connectedType === "email" ? "bg-orange-100" : connectedType === "whatsapp" ? "bg-green-100" : "bg-purple-100"
+              )}>
+                {connectedType === "email" ? (
+                  <Mail className="w-4 h-4 text-orange-500" />
+                ) : connectedType === "whatsapp" ? (
+                  <WhatsAppIcon className="w-4 h-4 text-green-500" />
+                ) : (
+                  <BarChart3 className="w-4 h-4 text-purple-500" />
+                )}
+              </div>
+              <div>
+                <h4 className="text-sm font-semibold text-foreground">
+                  {connectedType === "email" ? "Análise de E-mail" : connectedType === "whatsapp" ? "Análise de WhatsApp" : "Análise"}
+                </h4>
+                <p className="text-xs text-muted-foreground">
+                  {connectedType ? "Métricas de envio" : "Conecte a um nó de e-mail ou WhatsApp"}
+                </p>
+              </div>
+            </div>
+
+            {!connectedType ? (
+              <div className="text-center py-6 text-muted-foreground text-sm">
+                <BarChart3 className="w-10 h-10 mx-auto mb-2 text-purple-300" />
+                Arraste uma conexão de um nó de<br/>E-mail ou WhatsApp para este nó
+              </div>
+            ) : isLoading ? (
+              <div className="text-center py-6">
+                <div className="animate-spin w-6 h-6 border-2 border-purple-500 border-t-transparent rounded-full mx-auto" />
+                <p className="text-xs text-muted-foreground mt-2">Carregando métricas...</p>
+              </div>
+            ) : (
+              <>
+                {/* Stats Grid */}
+                <div className="grid grid-cols-3 gap-2 mb-4">
+                  <div className="bg-green-50 rounded-lg p-2 text-center">
+                    <CheckCheck className="w-4 h-4 text-green-500 mx-auto mb-1" />
+                    <p className="text-lg font-bold text-green-600">{metrics.sent}</p>
+                    <p className="text-[10px] text-green-600/70">Enviados</p>
+                  </div>
+                  <div className="bg-red-50 rounded-lg p-2 text-center">
+                    <XCircle className="w-4 h-4 text-red-500 mx-auto mb-1" />
+                    <p className="text-lg font-bold text-red-600">{metrics.failed}</p>
+                    <p className="text-[10px] text-red-600/70">Falhas</p>
+                  </div>
+                  <div className="bg-yellow-50 rounded-lg p-2 text-center">
+                    <Clock className="w-4 h-4 text-yellow-500 mx-auto mb-1" />
+                    <p className="text-lg font-bold text-yellow-600">{metrics.pending}</p>
+                    <p className="text-[10px] text-yellow-600/70">Pendentes</p>
+                  </div>
+                </div>
+
+                {/* Day of Week Chart */}
+                {metrics.byDayOfWeek.length > 0 && (
+                  <div className="mt-4">
+                    <p className="text-xs font-medium text-muted-foreground mb-2 flex items-center gap-1">
+                      <TrendingUp className="w-3 h-3" />
+                      Disparos por dia da semana
+                    </p>
+                    <div className="flex items-end justify-between gap-1 h-16">
+                      {metrics.byDayOfWeek.map((day, i) => (
+                        <div key={i} className="flex-1 flex flex-col items-center gap-1">
+                          <div 
+                            className={cn(
+                              "w-full rounded-t transition-all",
+                              connectedType === "email" ? "bg-orange-400" : "bg-green-400"
+                            )}
+                            style={{ 
+                              height: `${Math.max((day.count / maxCount) * 48, 4)}px`,
+                            }}
+                          />
+                          <span className="text-[9px] text-muted-foreground">{day.day}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* Action buttons */}
+      <div 
+        className={`absolute left-1/2 -translate-x-1/2 flex gap-1.5 transition-all duration-200 nodrag ${
+          selected ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-2 pointer-events-none'
+        }`}
+        style={{ bottom: 'calc(100% + 8px)' }}
+      >
+        <button
+          onClick={handleDelete}
+          className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-destructive/10 border border-destructive/30 hover:bg-destructive/20 transition-colors text-xs font-medium text-destructive shadow-sm"
+        >
+          <Trash2 className="w-3.5 h-3.5" />
+          Apagar
+        </button>
+      </div>
+    </div>
+  );
+};
+
 // End Node Component - Pill shape, black/white with delete
 const EndNode = ({ data, id, selected }: NodeProps) => {
   const { setNodes, setEdges } = useReactFlow();
@@ -1355,6 +1636,7 @@ const nodeTypes = {
   wait: WaitNode,
   email: EmailNode,
   whatsapp: WhatsAppNode,
+  analytics: AnalyticsNode,
   end: EndNode,
 };
 
@@ -1788,7 +2070,7 @@ export function EmailFlowBuilder({
   );
 
   // Add node from connection dropdown
-  const addNodeFromConnection = useCallback((type: "wait" | "email" | "whatsapp" | "end") => {
+  const addNodeFromConnection = useCallback((type: "wait" | "email" | "whatsapp" | "end" | "analytics") => {
     if (!connectionDropdown || !reactFlowWrapper.current) return;
 
     const newId = `${type}-${Date.now()}`;
@@ -1796,6 +2078,7 @@ export function EmailFlowBuilder({
       wait: { label: "Espera", waitTime: 1, waitUnit: "hours" },
       email: { label: "E-mail", subject: "", bodyHtml: "" },
       whatsapp: { label: "WhatsApp", whatsappMessage: "" },
+      analytics: { label: "Análise" },
       end: { label: "Fim" },
     };
 
@@ -1850,6 +2133,7 @@ export function EmailFlowBuilder({
       wait: { label: "Espera", waitTime: 1, waitUnit: "hours" },
       email: { label: "E-mail", subject: "", bodyHtml: "" },
       whatsapp: { label: "WhatsApp", whatsappMessage: "", whatsappMessageType: messageType },
+      analytics: { label: "Análise" },
       end: { label: "Fim" },
     };
 
@@ -2104,6 +2388,21 @@ export function EmailFlowBuilder({
           {/* WhatsApp Node with Dropdown */}
           <WhatsAppSidebarItem />
 
+          {/* Analytics Node */}
+          <div
+            draggable
+            onDragStart={(e) => {
+              e.dataTransfer.setData("application/reactflow", "analytics");
+              e.dataTransfer.effectAllowed = "move";
+            }}
+            className="flex items-center gap-3 cursor-grab active:cursor-grabbing hover:bg-muted/50 rounded-xl p-2.5 transition-colors border border-border w-full"
+          >
+            <div className="w-8 h-8 flex items-center justify-center rounded-full bg-purple-100 border border-purple-200 flex-shrink-0">
+              <BarChart3 className="w-4 h-4 text-purple-600" />
+            </div>
+            <span className="text-sm text-foreground">Análise</span>
+          </div>
+
           {/* End Node */}
           <div
             draggable
@@ -2186,6 +2485,13 @@ export function EmailFlowBuilder({
                 >
                   <WhatsAppIcon className="w-4 h-4" />
                   <span className="text-foreground">Enviar WhatsApp</span>
+                </button>
+                <button
+                  onClick={() => addNodeFromConnection("analytics")}
+                  className="w-full px-3 py-2.5 text-left text-sm hover:bg-muted/50 transition-colors flex items-center gap-2"
+                >
+                  <BarChart3 className="w-4 h-4 text-purple-500" />
+                  <span className="text-foreground">Análise</span>
                 </button>
                 <button
                   onClick={() => addNodeFromConnection("end")}
