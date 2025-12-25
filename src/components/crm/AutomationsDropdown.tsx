@@ -57,6 +57,8 @@ interface CrmWebhook {
   trigger: string | null;
   trigger_pipeline_id: string | null;
   is_active: boolean;
+  auto_tag_name: string | null;
+  auto_tag_color: string | null;
 }
 
 interface EmailAutomation {
@@ -136,6 +138,7 @@ export function AutomationsDropdown({
   
   // Webhook states
   const [isCreatingWebhook, setIsCreatingWebhook] = useState(false);
+  const [editingWebhookId, setEditingWebhookId] = useState<string | null>(null);
   const [webhookName, setWebhookName] = useState("");
   const [webhookType, setWebhookType] = useState<"receive" | "send">("receive");
   const [webhookUrl, setWebhookUrl] = useState("");
@@ -144,6 +147,8 @@ export function AutomationsDropdown({
   const [webhookSubOriginId, setWebhookSubOriginId] = useState<string>("");
   const [webhookTrigger, setWebhookTrigger] = useState<string>("");
   const [webhookTriggerPipelineId, setWebhookTriggerPipelineId] = useState<string>("");
+  const [webhookAutoTagName, setWebhookAutoTagName] = useState<string>("");
+  const [webhookAutoTagColor, setWebhookAutoTagColor] = useState<string>("#6366f1");
   
   // Email automation states
   const [isCreatingEmail, setIsCreatingEmail] = useState(false);
@@ -496,27 +501,39 @@ export function AutomationsDropdown({
     }
 
     try {
-      const { error } = await supabase.from("crm_webhooks").insert({
+      const webhookData = {
         name: webhookName,
         type: webhookType,
         url: webhookType === "send" ? webhookUrl : getGeneratedWebhookUrl(),
         scope: webhookScope,
         origin_id: webhookOriginId || null,
-        sub_origin_id: subOriginId, // Always use current sub_origin
+        sub_origin_id: subOriginId,
         trigger: webhookType === "send" ? webhookTrigger : null,
         trigger_pipeline_id: webhookType === "send" && webhookTrigger === "lead_moved" ? webhookTriggerPipelineId : null,
         is_active: true,
-      });
+        auto_tag_name: webhookAutoTagName.trim() || null,
+        auto_tag_color: webhookAutoTagColor || "#6366f1",
+      };
 
-      if (error) throw error;
+      if (editingWebhookId) {
+        const { error } = await supabase
+          .from("crm_webhooks")
+          .update(webhookData)
+          .eq("id", editingWebhookId);
+        if (error) throw error;
+        toast.success("Webhook atualizado!");
+      } else {
+        const { error } = await supabase.from("crm_webhooks").insert(webhookData);
+        if (error) throw error;
+        toast.success("Webhook criado!");
+      }
 
       refetchWebhooks();
       queryClient.invalidateQueries({ queryKey: ["crm-webhooks", subOriginId] });
       resetWebhookForm();
-      toast.success("Webhook criado!");
     } catch (error) {
-      console.error("Erro ao criar webhook:", error);
-      toast.error("Erro ao criar webhook");
+      console.error("Erro ao salvar webhook:", error);
+      toast.error("Erro ao salvar webhook");
     }
   };
 
@@ -551,6 +568,7 @@ export function AutomationsDropdown({
 
   const resetWebhookForm = () => {
     setIsCreatingWebhook(false);
+    setEditingWebhookId(null);
     setWebhookName("");
     setWebhookType("receive");
     setWebhookUrl("");
@@ -559,6 +577,23 @@ export function AutomationsDropdown({
     setWebhookSubOriginId("");
     setWebhookTrigger("");
     setWebhookTriggerPipelineId("");
+    setWebhookAutoTagName("");
+    setWebhookAutoTagColor("#6366f1");
+  };
+
+  const startEditingWebhook = (webhook: CrmWebhook & { auto_tag_name?: string | null; auto_tag_color?: string | null }) => {
+    setEditingWebhookId(webhook.id);
+    setIsCreatingWebhook(true);
+    setWebhookName(webhook.name);
+    setWebhookType(webhook.type);
+    setWebhookUrl(webhook.url || "");
+    setWebhookScope(webhook.scope);
+    setWebhookOriginId(webhook.origin_id || "");
+    setWebhookSubOriginId(webhook.sub_origin_id || "");
+    setWebhookTrigger(webhook.trigger || "");
+    setWebhookTriggerPipelineId(webhook.trigger_pipeline_id || "");
+    setWebhookAutoTagName(webhook.auto_tag_name || "");
+    setWebhookAutoTagColor(webhook.auto_tag_color || "#6366f1");
   };
 
   // Bulk send function
@@ -1417,7 +1452,9 @@ export function AutomationsDropdown({
               {isCreatingWebhook && (
                 <div className="mb-6 p-5 rounded-xl bg-muted/50 border border-border space-y-4">
                   <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium text-foreground">Novo Webhook</span>
+                    <span className="text-sm font-medium text-foreground">
+                      {editingWebhookId ? "Editar Webhook" : "Novo Webhook"}
+                    </span>
                     <Button
                       size="sm"
                       variant="ghost"
@@ -1541,29 +1578,55 @@ export function AutomationsDropdown({
                   )}
 
                   {webhookType === "receive" && (
-                    <div className="p-3 rounded-lg bg-muted/50 border border-border">
-                      <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider block mb-2">
-                        URL gerada
-                      </span>
-                      <div className="flex gap-2">
-                        <Input value={getGeneratedWebhookUrl()} readOnly className="flex-1 h-9 text-xs font-mono" />
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="h-9 px-3"
-                          onClick={() => copyWebhookUrl(getGeneratedWebhookUrl())}
-                        >
-                          {copied ? <Check className="w-4 h-4 text-green-600" /> : <Copy className="w-4 h-4" />}
-                        </Button>
+                    <>
+                      <div className="p-3 rounded-lg bg-muted/50 border border-border">
+                        <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider block mb-2">
+                          URL gerada
+                        </span>
+                        <div className="flex gap-2">
+                          <Input value={getGeneratedWebhookUrl()} readOnly className="flex-1 h-9 text-xs font-mono" />
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="h-9 px-3"
+                            onClick={() => copyWebhookUrl(getGeneratedWebhookUrl())}
+                          >
+                            {copied ? <Check className="w-4 h-4 text-green-600" /> : <Copy className="w-4 h-4" />}
+                          </Button>
+                        </div>
                       </div>
-                    </div>
+                      
+                      {/* Auto-tag section */}
+                      <div className="p-3 rounded-lg bg-muted/50 border border-border">
+                        <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider block mb-2">
+                          Tag automática (opcional)
+                        </span>
+                        <p className="text-xs text-muted-foreground mb-3">
+                          Quando um lead for criado por este webhook, a tag será adicionada automaticamente
+                        </p>
+                        <div className="flex gap-2">
+                          <Input 
+                            placeholder="Nome da tag..." 
+                            value={webhookAutoTagName}
+                            onChange={(e) => setWebhookAutoTagName(e.target.value)}
+                            className="flex-1 h-9"
+                          />
+                          <input
+                            type="color"
+                            value={webhookAutoTagColor}
+                            onChange={(e) => setWebhookAutoTagColor(e.target.value)}
+                            className="w-9 h-9 rounded border border-border cursor-pointer"
+                          />
+                        </div>
+                      </div>
+                    </>
                   )}
 
                   <Button
                     className="w-full h-10 bg-foreground hover:bg-foreground/90 text-background"
                     onClick={createWebhook}
                   >
-                    Salvar Webhook
+                    {editingWebhookId ? "Salvar alterações" : "Salvar Webhook"}
                   </Button>
                 </div>
               )}
@@ -1601,6 +1664,12 @@ export function AutomationsDropdown({
                             />
                           </button>
                           <button
+                            onClick={() => startEditingWebhook(webhook as any)}
+                            className="p-1.5 text-muted-foreground hover:text-foreground transition-colors"
+                          >
+                            <Settings className="w-4 h-4" />
+                          </button>
+                          <button
                             onClick={() => deleteWebhook(webhook.id)}
                             className="p-1.5 text-muted-foreground hover:text-destructive transition-colors"
                           >
@@ -1608,6 +1677,18 @@ export function AutomationsDropdown({
                           </button>
                         </div>
                       </div>
+                      {/* Show auto-tag badge if configured */}
+                      {(webhook as any).auto_tag_name && (
+                        <div className="mt-2 flex items-center gap-2">
+                          <span className="text-xs text-muted-foreground">Tag automática:</span>
+                          <span 
+                            className="text-[10px] px-2 py-0.5 rounded-full font-semibold text-white uppercase"
+                            style={{ backgroundColor: (webhook as any).auto_tag_color || "#6366f1" }}
+                          >
+                            {(webhook as any).auto_tag_name}
+                          </span>
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>
