@@ -51,18 +51,73 @@ export function LeadTagsManager({ leadId }: LeadTagsManagerProps) {
   }, [leadId]);
 
   const fetchTags = async () => {
-    const { data, error } = await supabase
-      .from("lead_tags")
-      .select("*")
-      .eq("lead_id", leadId)
-      .order("created_at", { ascending: true });
+    try {
+      // Get current lead contact info
+      const { data: currentLead, error: leadError } = await supabase
+        .from("leads")
+        .select("email, whatsapp")
+        .eq("id", leadId)
+        .maybeSingle();
 
-    if (error) {
-      console.error("Error fetching tags:", error);
-      return;
+      if (leadError || !currentLead) {
+        console.error("Error fetching lead for tags:", leadError);
+        // Fallback: fetch tags only for this lead
+        const { data, error } = await supabase
+          .from("lead_tags")
+          .select("*")
+          .eq("lead_id", leadId)
+          .order("created_at", { ascending: true });
+        if (error) console.error("Error fetching tags:", error);
+        setTags(data || []);
+        return;
+      }
+
+      const filters: string[] = [];
+      if (currentLead.email) filters.push(`email.eq.${currentLead.email}`);
+      if (currentLead.whatsapp) filters.push(`whatsapp.eq.${currentLead.whatsapp}`);
+      if (filters.length === 0) filters.push(`id.eq.${leadId}`);
+
+      // Find all leads related by email/whatsapp (so details shows same tags as the cards)
+      const { data: relatedLeads, error: relatedError } = await supabase
+        .from("leads")
+        .select("id")
+        .or(filters.join(","));
+
+      const leadIds = (relatedError || !relatedLeads || relatedLeads.length === 0)
+        ? [leadId]
+        : relatedLeads.map((l) => l.id);
+
+      const { data, error } = await supabase
+        .from("lead_tags")
+        .select("*")
+        .in("lead_id", leadIds)
+        .order("created_at", { ascending: true });
+
+      if (error) {
+        console.error("Error fetching tags:", error);
+        setTags([]);
+        return;
+      }
+
+      // Dedupe by name (case-insensitive). Prefer the tag from the current lead if it exists.
+      const unique = new Map<string, Tag>();
+      (data || []).forEach((tag) => {
+        const key = (tag.name || "").trim().toLowerCase();
+        const existing = unique.get(key);
+        if (!existing) {
+          unique.set(key, tag);
+          return;
+        }
+        if (tag.lead_id === leadId && existing.lead_id !== leadId) {
+          unique.set(key, tag);
+        }
+      });
+
+      setTags(Array.from(unique.values()));
+    } catch (err) {
+      console.error("Error fetching tags:", err);
+      setTags([]);
     }
-
-    setTags(data || []);
   };
 
   const fetchAllTags = async () => {
