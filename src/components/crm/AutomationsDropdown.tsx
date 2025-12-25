@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useMemo } from "react";
-import { Play, Plus, Trash2, ArrowRight, Webhook, FolderSync, Copy, Check, Send, X, Settings, Mail, Loader2, Workflow, ClipboardCheck, UserPlus, UserMinus } from "lucide-react";
+import { Play, Plus, Trash2, ArrowRight, Webhook, FolderSync, Copy, Check, Send, X, Settings, Mail, Loader2, Workflow, ClipboardCheck, UserPlus, UserMinus, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -22,6 +22,11 @@ import { toast } from "sonner";
 import { Pipeline } from "@/types/crm";
 import { cn } from "@/lib/utils";
 import { EmailFlowBuilder } from "./EmailFlowBuilder";
+
+interface ExistingTag {
+  name: string;
+  color: string;
+}
 
 interface Origin {
   id: string;
@@ -149,6 +154,8 @@ export function AutomationsDropdown({
   const [webhookTriggerPipelineId, setWebhookTriggerPipelineId] = useState<string>("");
   const [webhookAutoTagName, setWebhookAutoTagName] = useState<string>("");
   const [webhookAutoTagColor, setWebhookAutoTagColor] = useState<string>("#6366f1");
+  const [tagDropdownOpen, setTagDropdownOpen] = useState(false);
+  const tagInputRef = useRef<HTMLInputElement>(null);
   
   // Email automation states
   const [isCreatingEmail, setIsCreatingEmail] = useState(false);
@@ -194,6 +201,23 @@ export function AutomationsDropdown({
       supabase.removeChannel(channel);
     };
   }, [queryClient]);
+
+  // Close tag dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (tagInputRef.current && !tagInputRef.current.closest('.relative')?.contains(event.target as Node)) {
+        setTagDropdownOpen(false);
+      }
+    };
+    
+    if (tagDropdownOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [tagDropdownOpen]);
   
   const [copied, setCopied] = useState(false);
   const [triggerDropdownOpen, setTriggerDropdownOpen] = useState(false);
@@ -310,6 +334,46 @@ export function AutomationsDropdown({
     enabled: open,
     refetchInterval: 30000, // Refresh every 30 seconds
   });
+
+  // Fetch existing unique tags for autocomplete
+  const { data: existingTags = [] } = useQuery({
+    queryKey: ["unique-lead-tags"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("lead_tags")
+        .select("name, color")
+        .order("name");
+      
+      if (error) {
+        console.error("Error fetching tags:", error);
+        return [];
+      }
+      
+      // Get unique tags by name (use first occurrence's color)
+      const uniqueMap = new Map<string, string>();
+      (data || []).forEach((tag: any) => {
+        if (!uniqueMap.has(tag.name)) {
+          uniqueMap.set(tag.name, tag.color);
+        }
+      });
+      
+      return Array.from(uniqueMap.entries()).map(([name, color]) => ({ name, color })) as ExistingTag[];
+    },
+    enabled: open,
+  });
+
+  // Filtered tags based on search input
+  const filteredExistingTags = useMemo(() => {
+    if (!webhookAutoTagName.trim()) return existingTags;
+    const search = webhookAutoTagName.toLowerCase().trim();
+    return existingTags.filter(tag => tag.name.toLowerCase().includes(search));
+  }, [webhookAutoTagName, existingTags]);
+
+  // Check if the current input matches an existing tag exactly
+  const isNewTag = useMemo(() => {
+    if (!webhookAutoTagName.trim()) return false;
+    return !existingTags.some(tag => tag.name.toLowerCase() === webhookAutoTagName.toLowerCase().trim());
+  }, [webhookAutoTagName, existingTags]);
 
   const activeEmailAutomationsCount = emailAutomations.filter(e => e.is_active).length;
 
@@ -579,6 +643,7 @@ export function AutomationsDropdown({
     setWebhookTriggerPipelineId("");
     setWebhookAutoTagName("");
     setWebhookAutoTagColor("#6366f1");
+    setTagDropdownOpen(false);
   };
 
   const startEditingWebhook = (webhook: CrmWebhook & { auto_tag_name?: string | null; auto_tag_color?: string | null }) => {
@@ -1604,19 +1669,86 @@ export function AutomationsDropdown({
                         <p className="text-xs text-muted-foreground mb-3">
                           Quando um lead for criado por este webhook, a tag será adicionada automaticamente
                         </p>
-                        <div className="flex gap-2">
-                          <Input 
-                            placeholder="Nome da tag..." 
-                            value={webhookAutoTagName}
-                            onChange={(e) => setWebhookAutoTagName(e.target.value)}
-                            className="flex-1 h-9"
-                          />
-                          <input
-                            type="color"
-                            value={webhookAutoTagColor}
-                            onChange={(e) => setWebhookAutoTagColor(e.target.value)}
-                            className="w-9 h-9 rounded border border-border cursor-pointer"
-                          />
+                        <div className="relative">
+                          <div className="flex gap-2">
+                            <div className="relative flex-1">
+                              <Input 
+                                ref={tagInputRef}
+                                placeholder="Digite ou selecione uma tag..." 
+                                value={webhookAutoTagName}
+                                onChange={(e) => {
+                                  setWebhookAutoTagName(e.target.value);
+                                  setTagDropdownOpen(true);
+                                }}
+                                onFocus={() => setTagDropdownOpen(true)}
+                                className="h-9 pr-8"
+                              />
+                              <button
+                                type="button"
+                                onClick={() => setTagDropdownOpen(!tagDropdownOpen)}
+                                className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                              >
+                                <ChevronDown className={cn("w-4 h-4 transition-transform", tagDropdownOpen && "rotate-180")} />
+                              </button>
+                              
+                              {/* Dropdown with existing tags */}
+                              {tagDropdownOpen && filteredExistingTags.length > 0 && !isNewTag && (
+                                <div className="absolute z-50 top-full left-0 right-0 mt-1 py-1 bg-popover border border-border rounded-lg shadow-lg max-h-40 overflow-y-auto">
+                                  {filteredExistingTags.map((tag) => (
+                                    <button
+                                      key={tag.name}
+                                      type="button"
+                                      onClick={() => {
+                                        setWebhookAutoTagName(tag.name);
+                                        setWebhookAutoTagColor(tag.color);
+                                        setTagDropdownOpen(false);
+                                      }}
+                                      className="w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-muted transition-colors text-left"
+                                    >
+                                      <span 
+                                        className="w-3 h-3 rounded-full shrink-0"
+                                        style={{ backgroundColor: tag.color }}
+                                      />
+                                      <span>{tag.name}</span>
+                                    </button>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                            
+                            {/* Show color picker only for new tags */}
+                            {isNewTag && (
+                              <input
+                                type="color"
+                                value={webhookAutoTagColor}
+                                onChange={(e) => setWebhookAutoTagColor(e.target.value)}
+                                className="w-9 h-9 rounded border border-border cursor-pointer shrink-0"
+                                title="Escolha a cor da nova tag"
+                              />
+                            )}
+                            
+                            {/* Show selected tag color preview when using existing tag */}
+                            {!isNewTag && webhookAutoTagName.trim() && (
+                              <div 
+                                className="w-9 h-9 rounded border border-border shrink-0"
+                                style={{ backgroundColor: webhookAutoTagColor }}
+                                title="Cor da tag selecionada"
+                              />
+                            )}
+                          </div>
+                          
+                          {/* New tag indicator */}
+                          {isNewTag && webhookAutoTagName.trim() && (
+                            <div className="flex items-center gap-2 mt-2">
+                              <span className="text-xs text-muted-foreground">Nova tag:</span>
+                              <span 
+                                className="text-[10px] px-2 py-0.5 rounded-full font-semibold text-white uppercase"
+                                style={{ backgroundColor: webhookAutoTagColor }}
+                              >
+                                {webhookAutoTagName}
+                              </span>
+                            </div>
+                          )}
                         </div>
                       </div>
                     </>
