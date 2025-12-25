@@ -11,6 +11,40 @@ const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
 const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const resendApiKey = Deno.env.get("RESEND_API_KEY")!;
 
+// Function to inject tracking into email HTML
+function injectEmailTracking(html: string, scheduledEmailId: string): string {
+  const trackingBaseUrl = `${supabaseUrl}/functions/v1/email-tracking`;
+  
+  // 1. Inject tracking pixel before closing </body> tag
+  const trackingPixel = `<img src="${trackingBaseUrl}/open/${scheduledEmailId}" width="1" height="1" style="display:none;visibility:hidden;" alt="" />`;
+  
+  let trackedHtml = html;
+  if (trackedHtml.includes("</body>")) {
+    trackedHtml = trackedHtml.replace("</body>", `${trackingPixel}</body>`);
+  } else {
+    // If no body tag, append at the end
+    trackedHtml += trackingPixel;
+  }
+  
+  // 2. Wrap all links with tracking redirect
+  // Match href="..." patterns and wrap the URL
+  const linkRegex = /href=["']([^"']+)["']/gi;
+  trackedHtml = trackedHtml.replace(linkRegex, (match, url) => {
+    // Skip mailto:, tel:, and anchor links
+    if (url.startsWith("mailto:") || url.startsWith("tel:") || url.startsWith("#")) {
+      return match;
+    }
+    // Skip tracking URL itself to avoid recursion
+    if (url.includes("/email-tracking/")) {
+      return match;
+    }
+    const trackedUrl = `${trackingBaseUrl}/click/${scheduledEmailId}?url=${encodeURIComponent(url)}`;
+    return `href="${trackedUrl}"`;
+  });
+  
+  return trackedHtml;
+}
+
 const handler = async (req: Request): Promise<Response> => {
   console.log("[ProcessScheduledEmails] Starting scheduled email processing...");
 
@@ -107,12 +141,16 @@ const handler = async (req: Request): Promise<Response> => {
 
         console.log(`[ProcessScheduledEmails] Sending email to ${email.lead_email}`);
 
+        // Inject tracking into the email HTML
+        const trackedHtml = injectEmailTracking(email.body_html, email.id);
+        console.log(`[ProcessScheduledEmails] Tracking injected for email ${email.id}`);
+
         // Send email via Resend
         const emailResponse = await resend.emails.send({
           from: `${fromName} <${fromEmail}>`,
           to: [email.lead_email],
           subject: email.subject,
-          html: email.body_html,
+          html: trackedHtml,
         });
 
         const resendError = (emailResponse as any)?.error;
@@ -132,13 +170,13 @@ const handler = async (req: Request): Promise<Response> => {
           .update({ status: "sent", sent_at: new Date().toISOString() })
           .eq("id", email.id);
 
-        // Record in sent_emails
+        // Record in sent_emails (with tracked HTML)
         await supabase.from("sent_emails").insert({
           lead_id: email.lead_id,
           lead_name: email.lead_name,
           lead_email: email.lead_email,
           subject: email.subject,
-          body_html: email.body_html,
+          body_html: trackedHtml,
           status: "sent",
           resend_id: resendId,
           sent_at: new Date().toISOString(),

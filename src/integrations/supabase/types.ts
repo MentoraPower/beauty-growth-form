@@ -340,6 +340,44 @@ export type Database = {
         }
         Relationships: []
       }
+      email_tracking_events: {
+        Row: {
+          created_at: string
+          event_type: string
+          id: string
+          ip_address: string | null
+          link_url: string | null
+          scheduled_email_id: string | null
+          user_agent: string | null
+        }
+        Insert: {
+          created_at?: string
+          event_type: string
+          id?: string
+          ip_address?: string | null
+          link_url?: string | null
+          scheduled_email_id?: string | null
+          user_agent?: string | null
+        }
+        Update: {
+          created_at?: string
+          event_type?: string
+          id?: string
+          ip_address?: string | null
+          link_url?: string | null
+          scheduled_email_id?: string | null
+          user_agent?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_tracking_events_scheduled_email_id_fkey"
+            columns: ["scheduled_email_id"]
+            isOneToOne: false
+            referencedRelation: "scheduled_emails"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       facebook_ads_connections: {
         Row: {
           access_token: string

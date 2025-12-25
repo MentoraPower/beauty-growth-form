@@ -47,3 +47,6 @@ verify_jwt = false
 
 [functions.facebook-ads]
 verify_jwt = false
+
+[functions.email-tracking]
+verify_jwt = false
