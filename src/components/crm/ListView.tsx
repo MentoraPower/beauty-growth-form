@@ -75,8 +75,8 @@ function TagsBadge({ tags }: { tags?: { id: string; name: string; color: string 
   return (
     <div className="flex items-center gap-1">
       <span
-        className="text-[11px] font-medium truncate max-w-[70px]"
-        style={{ color: firstTag.color }}
+        className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium text-white truncate max-w-[70px]"
+        style={{ backgroundColor: firstTag.color }}
       >
         {firstTag.name}
       </span>
