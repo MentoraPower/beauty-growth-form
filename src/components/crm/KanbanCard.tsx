@@ -1,9 +1,9 @@
 import { memo, useRef } from "react";
 import { useSortable, defaultAnimateLayoutChanges, AnimateLayoutChanges } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { Lead } from "@/types/crm";
+import { Lead, LeadTag } from "@/types/crm";
 import { Card, CardContent } from "@/components/ui/card";
-import { Mail, Phone, User } from "lucide-react";
+import { Mail, Phone, User, Tag } from "lucide-react";
 import Instagram from "@/components/icons/Instagram";
 import WhatsApp from "@/components/icons/WhatsApp";
 import { useNavigate, useSearchParams } from "react-router-dom";
@@ -14,11 +14,17 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 
 interface KanbanCardProps {
   lead: Lead;
   isDragging?: boolean;
   subOriginId?: string | null;
+  tags?: LeadTag[];
 }
 
 // Custom animateLayoutChanges - disable animations after drop for instant positioning
@@ -56,11 +62,16 @@ const formatTimeAgo = (date: Date): string => {
   return "agora";
 };
 
-export const KanbanCard = memo(function KanbanCard({ lead, isDragging: isDraggingOverlay, subOriginId }: KanbanCardProps) {
+export const KanbanCard = memo(function KanbanCard({ lead, isDragging: isDraggingOverlay, subOriginId, tags = [] }: KanbanCardProps) {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const dragStartPos = useRef<{ x: number; y: number } | null>(null);
   const wasDragged = useRef(false);
+  
+  // Tags to display
+  const visibleTags = tags.slice(0, 2);
+  const extraTags = tags.slice(2);
+  const hasExtraTags = extraTags.length > 0;
   
   const {
     attributes,
@@ -137,6 +148,24 @@ export const KanbanCard = memo(function KanbanCard({ lead, isDragging: isDraggin
       onClick={handleClick}
     >
       <CardContent className="p-3">
+        {/* Tags above name - only show if there are tags */}
+        {tags.length > 0 && (
+          <div className="flex items-center gap-1 mb-1.5 flex-wrap">
+            {visibleTags.map((tag) => (
+              <span
+                key={tag.id}
+                className="text-[10px] px-1.5 py-0.5 rounded-full font-medium truncate max-w-[80px]"
+                style={{ 
+                  backgroundColor: `${tag.color}20`,
+                  color: tag.color,
+                }}
+              >
+                {tag.name}
+              </span>
+            ))}
+          </div>
+        )}
+
         {/* Name on left, photo on right */}
         <div className="flex items-center justify-between gap-2 min-w-0 py-1">
           <h3 className="font-semibold text-sm truncate">{lead.name}</h3>
@@ -195,6 +224,39 @@ export const KanbanCard = memo(function KanbanCard({ lead, isDragging: isDraggin
                     <p>{lead.email}</p>
                   </TooltipContent>
                 </Tooltip>
+              )}
+              {hasExtraTags && (
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <div 
+                      className="cursor-pointer"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <Tag className="w-3.5 h-3.5 text-muted-foreground hover:text-foreground transition-colors" />
+                    </div>
+                  </PopoverTrigger>
+                  <PopoverContent 
+                    side="top" 
+                    className="w-auto p-2 bg-background border shadow-lg"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <p className="text-xs text-muted-foreground mb-2">Todas as tags</p>
+                    <div className="flex flex-wrap gap-1.5 max-w-[200px]">
+                      {tags.map((tag) => (
+                        <span
+                          key={tag.id}
+                          className="text-[10px] px-2 py-0.5 rounded-full font-medium"
+                          style={{ 
+                            backgroundColor: `${tag.color}20`,
+                            color: tag.color,
+                          }}
+                        >
+                          {tag.name}
+                        </span>
+                      ))}
+                    </div>
+                  </PopoverContent>
+                </Popover>
               )}
             </div>
           </TooltipProvider>

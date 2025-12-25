@@ -7,6 +7,12 @@ export interface Pipeline {
   created_at?: string;
 }
 
+export interface LeadTag {
+  id: string;
+  name: string;
+  color: string;
+}
+
 export interface Lead {
   id: string;
   name: string;
@@ -32,4 +38,5 @@ export interface Lead {
   ai_analysis?: string | null;
   analysis_created_at?: string | null;
   photo_url?: string | null;
+  tags?: LeadTag[];
 }
