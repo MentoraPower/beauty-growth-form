@@ -5,6 +5,7 @@ import {
   GripVertical,
   ArrowUpRight,
   ArrowDownRight,
+  Folder,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -384,8 +385,11 @@ export function OverviewCardComponent({
         const pieData = chartData as Array<{ name: string; value: number; color: string }>;
         if (pieData.every(d => d.value === 0)) {
           return (
-            <div className="flex items-center justify-center h-full text-muted-foreground text-sm">
-              Sem dados
+            <div className="flex flex-col items-center justify-center h-full gap-3">
+              <div className="w-16 h-12 bg-muted/60 rounded-lg flex items-center justify-center">
+                <Folder className="h-8 w-8 text-muted-foreground/50" fill="currentColor" strokeWidth={1} />
+              </div>
+              <span className="text-muted-foreground text-sm">Conecte uma fonte de dados</span>
             </div>
           );
         }
@@ -529,8 +533,11 @@ export function OverviewCardComponent({
               </div>
             ))}
             {listData.length === 0 && (
-              <div className="flex items-center justify-center h-full text-muted-foreground text-sm">
-                Nenhum lead
+              <div className="flex flex-col items-center justify-center h-full gap-3">
+                <div className="w-16 h-12 bg-muted/60 rounded-lg flex items-center justify-center">
+                  <Folder className="h-8 w-8 text-muted-foreground/50" fill="currentColor" strokeWidth={1} />
+                </div>
+                <span className="text-muted-foreground text-sm">Conecte uma fonte de dados</span>
               </div>
             )}
           </div>
