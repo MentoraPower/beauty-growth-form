@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { ChevronDown, ChevronRight, Plus, MoreHorizontal, Calendar, X, User, Phone, Mail, Instagram, GripVertical, Tag } from "lucide-react";
+import WhatsAppIcon from "@/components/icons/WhatsApp";
 import { cn } from "@/lib/utils";
 import { Lead, Pipeline } from "@/types/crm";
 import { useNavigate, useSearchParams } from "react-router-dom";
@@ -177,7 +178,7 @@ function SortableLeadRow({ lead, isSelected, onLeadClick, onToggleSelection, isO
       
       {/* WhatsApp */}
       <div className="col-span-2 flex items-center gap-1 min-w-0">
-        <Phone className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0" />
+        <WhatsAppIcon className="w-3.5 h-3.5 text-[#25D366] flex-shrink-0" />
         <span className="text-xs text-muted-foreground truncate">
           {formatPhone(lead.whatsapp, lead.country_code)}
         </span>
