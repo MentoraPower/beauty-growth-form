@@ -113,7 +113,7 @@ export const ActivityDetails = memo(function ActivityDetails({
       {/* Header */}
       <div className="flex items-center gap-3 pb-3 border-b border-black/5">
         <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
-          {activity.tipo === 'ligacao' ? <Phone className="h-5 w-5" strokeWidth={1.5} /> : <ClipboardList className="h-5 w-5" strokeWidth={1.5} />}
+          {activity.tipo === 'ligacao' ? <Phone className="h-5 w-5" /> : <ClipboardList className="h-5 w-5" />}
         </div>
         <div className="flex-1 min-w-0">
           <h3 className="font-medium truncate">{activity.titulo}</h3>
@@ -134,9 +134,9 @@ export const ActivityDetails = memo(function ActivityDetails({
             {/* Área do script com estilo balão */}
             <div className="flex-1 overflow-y-auto">
               {editor?.getText()?.trim() ? (
-                <div className="rounded-2xl rounded-tl-sm p-4 max-w-[90%] border border-border/50">
+                <div className="bg-primary text-primary-foreground rounded-2xl rounded-tl-sm p-4 max-w-[90%] shadow-sm">
                   <div 
-                    className="prose prose-sm max-w-none [&_p]:mb-2 [&_p:last-child]:mb-0"
+                    className="prose prose-sm prose-invert max-w-none [&_p]:mb-2 [&_p:last-child]:mb-0"
                     dangerouslySetInnerHTML={{ __html: editor?.getHTML() || '' }}
                   />
                 </div>
@@ -144,11 +144,13 @@ export const ActivityDetails = memo(function ActivityDetails({
             </div>
 
             {/* Editor minimalista para ligação */}
-            <div className="mt-3 pt-3 border-t border-border/30">
-              <EditorContent 
-                editor={editor} 
-                className="prose prose-sm max-w-none [&_.ProseMirror]:min-h-[80px] [&_.ProseMirror]:outline-none [&_.ProseMirror_p.is-editor-empty:first-child::before]:content-['Escreva_seu_script_aqui...'] [&_.ProseMirror_p.is-editor-empty:first-child::before]:text-muted-foreground [&_.ProseMirror_p.is-editor-empty:first-child::before]:float-left [&_.ProseMirror_p.is-editor-empty:first-child::before]:pointer-events-none" 
-              />
+            <div className="mt-3 pt-3 border-t border-black/5">
+              <div className="bg-muted/50 rounded-xl p-3">
+                <EditorContent 
+                  editor={editor} 
+                  className="prose prose-sm max-w-none [&_.ProseMirror]:min-h-[80px] [&_.ProseMirror]:outline-none [&_.ProseMirror_p.is-editor-empty:first-child::before]:content-['Escreva_seu_script_aqui...'] [&_.ProseMirror_p.is-editor-empty:first-child::before]:text-muted-foreground [&_.ProseMirror_p.is-editor-empty:first-child::before]:float-left [&_.ProseMirror_p.is-editor-empty:first-child::before]:pointer-events-none" 
+                />
+              </div>
             </div>
           </div>
         ) : (
