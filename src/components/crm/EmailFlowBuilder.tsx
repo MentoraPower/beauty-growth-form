@@ -1506,12 +1506,6 @@ const AnalyticsNode = ({ id, data, selected }: NodeProps) => {
               </p>
             </div>
           </div>
-          {hasAnyConnection && !isLoading && (
-            <div className="text-right">
-              <p className="text-2xl font-bold text-white">{successRate}%</p>
-              <p className="text-xs text-white/70">Taxa de sucesso</p>
-            </div>
-          )}
         </div>
         
         {/* Content */}
