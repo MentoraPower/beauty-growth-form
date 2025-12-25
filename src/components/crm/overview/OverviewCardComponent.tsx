@@ -57,9 +57,16 @@ export function OverviewCardComponent({
   const [isResizing, setIsResizing] = useState(false);
   const [resizeDirection, setResizeDirection] = useState<ResizeDirection | null>(null);
   const [currentSize, setCurrentSize] = useState<CardSize>(card.size);
+  const [atLimit, setAtLimit] = useState<{ left: boolean; right: boolean; top: boolean; bottom: boolean }>({
+    left: false,
+    right: false,
+    top: false,
+    bottom: false,
+  });
 
   const cardRef = useRef<HTMLDivElement | null>(null);
   const maxSizeRef = useRef({ maxW: MAX_CARD_WIDTH, maxH: MAX_CARD_HEIGHT });
+  const limitsRef = useRef({ left: false, right: false, top: false, bottom: false });
 
   const startPosRef = useRef({ x: 0, y: 0 });
   const startSizeRef = useRef({ width: card.size.width, height: card.size.height });
@@ -281,6 +288,43 @@ export function OverviewCardComponent({
         }
       }
 
+      // Check which sides are at their limit
+      const el = cardRef.current;
+      const parent = el?.parentElement;
+      if (el && parent) {
+        const cardRect = el.getBoundingClientRect();
+        const parentRect = parent.getBoundingClientRect();
+        const style = window.getComputedStyle(parent);
+
+        const padLeft = parseFloat(style.paddingLeft) || 0;
+        const padRight = parseFloat(style.paddingRight) || 0;
+        const padTop = parseFloat(style.paddingTop) || 0;
+        const padBottom = parseFloat(style.paddingBottom) || 0;
+
+        const innerLeft = parentRect.left + padLeft;
+        const innerRight = parentRect.right - padRight;
+        const innerTop = parentRect.top + padTop;
+        const innerBottom = parentRect.bottom - padBottom;
+
+        const THRESHOLD = 2; // pixels tolerance
+        const newLimits = {
+          left: cardRect.left <= innerLeft + THRESHOLD,
+          right: cardRect.right >= innerRight - THRESHOLD,
+          top: cardRect.top <= innerTop + THRESHOLD,
+          bottom: cardRect.bottom >= innerBottom - THRESHOLD,
+        };
+
+        if (
+          newLimits.left !== limitsRef.current.left ||
+          newLimits.right !== limitsRef.current.right ||
+          newLimits.top !== limitsRef.current.top ||
+          newLimits.bottom !== limitsRef.current.bottom
+        ) {
+          limitsRef.current = newLimits;
+          setAtLimit(newLimits);
+        }
+      }
+
       const prev = currentSizeRef.current;
       if (nextW !== prev.width || nextH !== prev.height) {
         const next = { width: nextW, height: nextH };
@@ -293,6 +337,9 @@ export function OverviewCardComponent({
     const handleMouseUp = () => {
       setIsResizing(false);
       setResizeDirection(null);
+      // Clear limits after resize ends
+      limitsRef.current = { left: false, right: false, top: false, bottom: false };
+      setAtLimit({ left: false, right: false, top: false, bottom: false });
     };
 
     document.addEventListener("mousemove", handleMouseMove);
@@ -536,6 +583,20 @@ export function OverviewCardComponent({
       <div className="flex-1 p-4 min-h-0 overflow-hidden">
         {renderChart()}
       </div>
+
+      {/* Limit indicators - show red lines when at edge */}
+      {isResizing && atLimit.left && (
+        <div className="absolute left-0 top-0 bottom-0 w-1 bg-red-500 z-30" />
+      )}
+      {isResizing && atLimit.right && (
+        <div className="absolute right-0 top-0 bottom-0 w-1 bg-red-500 z-30" />
+      )}
+      {isResizing && atLimit.top && (
+        <div className="absolute top-0 left-0 right-0 h-1 bg-red-500 z-30" />
+      )}
+      {isResizing && atLimit.bottom && (
+        <div className="absolute bottom-0 left-0 right-0 h-1 bg-red-500 z-30" />
+      )}
 
       {/* Resize Handles */}
       {/* Left handle */}
