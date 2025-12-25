@@ -389,16 +389,16 @@ export function KanbanBoard() {
     enabled: leads.length > 0,
   });
 
-  // Fetch tags for leads (for filtering)
-  const { data: leadTags = [] } = useQuery({
-    queryKey: ["lead-tags-map", subOriginId, leads.length],
+  // Fetch tags for leads (for filtering and display on cards)
+  const { data: leadTagsRaw = [] } = useQuery({
+    queryKey: ["lead-tags-full", subOriginId, leads.length],
     queryFn: async () => {
       const leadIds = leads.map(l => l.id);
       if (leadIds.length === 0) return [];
       
       const { data, error } = await supabase
         .from("lead_tags")
-        .select("lead_id, name")
+        .select("id, lead_id, name, color")
         .in("lead_id", leadIds);
 
       if (error) return [];
@@ -406,6 +406,23 @@ export function KanbanBoard() {
     },
     enabled: leads.length > 0,
   });
+
+  // Convert leadTags to filtering format (backwards compatibility)
+  const leadTags = useMemo(() => 
+    leadTagsRaw.map(t => ({ lead_id: t.lead_id, name: t.name })),
+    [leadTagsRaw]
+  );
+
+  // Map of lead_id -> LeadTag[] for card display
+  const tagsMap = useMemo(() => {
+    const map = new Map<string, { id: string; name: string; color: string }[]>();
+    leadTagsRaw.forEach(tag => {
+      const existing = map.get(tag.lead_id) || [];
+      existing.push({ id: tag.id, name: tag.name, color: tag.color });
+      map.set(tag.lead_id, existing);
+    });
+    return map;
+  }, [leadTagsRaw]);
 
   // Consider loading only while queries are still in progress
   const isLoading = isLoadingPipelines || isLoadingLeads || isLoadingSubOrigin;
@@ -1651,6 +1668,7 @@ export function KanbanBoard() {
                     activeId={activeId}
                     dropIndicator={dropIndicator}
                     activePipelineId={activeLead?.pipeline_id}
+                    tagsMap={tagsMap}
                   />
                 ))}
               </div>
@@ -1661,7 +1679,7 @@ export function KanbanBoard() {
             >
               {activeLead ? (
                 <div className="rotate-2 scale-[1.02] opacity-95 cursor-grabbing pointer-events-none">
-                  <KanbanCard lead={activeLead} isDragging />
+                  <KanbanCard lead={activeLead} isDragging tags={tagsMap.get(activeLead.id) || []} />
                 </div>
               ) : null}
             </DragOverlay>

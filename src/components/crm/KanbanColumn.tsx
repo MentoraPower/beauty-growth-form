@@ -1,7 +1,7 @@
 import { memo, useMemo } from "react";
 import { useDroppable } from "@dnd-kit/core";
 import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
-import { Lead, Pipeline } from "@/types/crm";
+import { Lead, Pipeline, LeadTag } from "@/types/crm";
 import { KanbanCard } from "./KanbanCard";
 import { InlineAddContact } from "./InlineAddContact";
 
@@ -20,6 +20,7 @@ interface KanbanColumnProps {
   activeId?: string | null;
   dropIndicator?: DropIndicator | null;
   activePipelineId?: string | null;
+  tagsMap?: Map<string, LeadTag[]>;
 }
 
 export const KanbanColumn = memo(function KanbanColumn({ 
@@ -31,6 +32,7 @@ export const KanbanColumn = memo(function KanbanColumn({
   activeId,
   dropIndicator,
   activePipelineId,
+  tagsMap,
 }: KanbanColumnProps) {
   // Use exact count if provided, fallback to leads array length
   const displayCount = leadCount !== undefined ? leadCount : leads.length;
@@ -94,6 +96,7 @@ export const KanbanColumn = memo(function KanbanColumn({
                   key={lead.id}
                   lead={lead} 
                   subOriginId={subOriginId}
+                  tags={tagsMap?.get(lead.id) || []}
                 />
               ))}
 
