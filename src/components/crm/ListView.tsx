@@ -95,10 +95,9 @@ function TagsBadge({ tags }: { tags?: { id: string; name: string; color: string 
               {tags.map((tag) => (
                 <span
                   key={tag.id}
-                  className="inline-flex items-center px-2 py-1 rounded text-xs font-medium"
+                  className="inline-flex items-center px-2 py-1 rounded text-xs font-medium text-white"
                   style={{
-                    backgroundColor: hexToRgba(tag.color, 0.15),
-                    color: tag.color,
+                    backgroundColor: tag.color,
                   }}
                 >
                   {tag.name}
