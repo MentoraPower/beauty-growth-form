@@ -25,7 +25,7 @@ export interface OverviewCard {
   id: string;
   title: string;
   chartType: ChartType;
-  dataSource: DataSource;
+  dataSource: DataSource | null;
   size: CardSize;
   order: number;
   config?: Record<string, any>;

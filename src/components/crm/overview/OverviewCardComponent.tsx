@@ -32,6 +32,7 @@ interface OverviewCardComponentProps {
   leadTags: Array<{ lead_id: string; name: string; color: string }>;
   onDelete: (id: string) => void;
   onResize: (id: string, size: CardSize) => void;
+  onConnectDataSource?: (card: OverviewCard) => void;
   isDragging?: boolean;
 }
 
@@ -53,6 +54,7 @@ export function OverviewCardComponent({
   leadTags,
   onDelete,
   onResize,
+  onConnectDataSource,
   isDragging,
 }: OverviewCardComponentProps) {
   const [isResizing, setIsResizing] = useState(false);
@@ -87,6 +89,8 @@ export function OverviewCardComponent({
 
   // Calculate data based on dataSource
   const chartData = useMemo(() => {
+    if (!card.dataSource) return null;
+    
     switch (card.dataSource) {
       case "leads_by_pipeline": {
         return pipelines.map((pipeline) => ({
@@ -613,7 +617,19 @@ export function OverviewCardComponent({
 
       {/* Chart Content */}
       <div className="flex-1 p-4 min-h-0 overflow-hidden">
-        {renderChart()}
+        {!card.dataSource ? (
+          <button 
+            onClick={() => onConnectDataSource?.(card)}
+            className="w-full h-full flex flex-col items-center justify-center gap-3 hover:bg-muted/30 rounded-lg transition-colors cursor-pointer"
+          >
+            <div className="w-16 h-12 bg-muted/60 rounded-lg flex items-center justify-center">
+              <Folder className="h-8 w-8 text-muted-foreground/50" fill="currentColor" strokeWidth={1} />
+            </div>
+            <span className="text-muted-foreground text-sm">Conecte uma fonte de dados</span>
+          </button>
+        ) : (
+          renderChart()
+        )}
       </div>
 
       {/* Limit indicators - show lines when at edge */}
