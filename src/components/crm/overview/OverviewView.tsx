@@ -15,30 +15,11 @@ interface OverviewViewProps {
 }
 
 const STORAGE_KEY = "crm-overview-cards";
-const GRID_GAP = 16;
-const GRID_COLUMNS = 3;
-const ROW_HEIGHT = 180;
 
 export function OverviewView({ leads, pipelines, leadTags, subOriginId }: OverviewViewProps) {
   const [cards, setCards] = useState<OverviewCard[]>([]);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
-  const [gridCellWidth, setGridCellWidth] = useState(300);
-  const containerRef = useRef<HTMLDivElement>(null);
-
-  // Calculate grid cell width based on container
-  useEffect(() => {
-    const updateGridWidth = () => {
-      if (containerRef.current) {
-        const containerWidth = containerRef.current.offsetWidth - 16; // account for scrollbar
-        const cellWidth = (containerWidth - (GRID_GAP * (GRID_COLUMNS - 1))) / GRID_COLUMNS;
-        setGridCellWidth(cellWidth);
-      }
-    };
-
-    updateGridWidth();
-    window.addEventListener("resize", updateGridWidth);
-    return () => window.removeEventListener("resize", updateGridWidth);
-  }, []);
+  const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Load cards from localStorage
   useEffect(() => {
@@ -58,7 +39,7 @@ export function OverviewView({ leads, pipelines, leadTags, subOriginId }: Overvi
           title: "Total de Leads",
           chartType: "number",
           dataSource: "total_leads",
-          size: { width: 1, height: 1 },
+          size: { width: 280, height: 180 },
           order: 0,
         },
         {
@@ -66,7 +47,7 @@ export function OverviewView({ leads, pipelines, leadTags, subOriginId }: Overvi
           title: "Leads por Pipeline",
           chartType: "pie",
           dataSource: "leads_by_pipeline",
-          size: { width: 1, height: 2 },
+          size: { width: 320, height: 360 },
           order: 1,
         },
         {
@@ -74,20 +55,32 @@ export function OverviewView({ leads, pipelines, leadTags, subOriginId }: Overvi
           title: "Leads ao Longo do Tempo",
           chartType: "area",
           dataSource: "leads_over_time",
-          size: { width: 2, height: 2 },
+          size: { width: 500, height: 320 },
           order: 2,
         },
       ]);
     }
   }, [subOriginId]);
 
-  // Save cards to localStorage
-  useEffect(() => {
-    if (cards.length > 0) {
-      const storageKey = subOriginId ? `${STORAGE_KEY}-${subOriginId}` : STORAGE_KEY;
-      localStorage.setItem(storageKey, JSON.stringify(cards));
+  // Save cards to localStorage with debounce for performance during resize
+  const saveCards = useCallback((cardsToSave: OverviewCard[]) => {
+    if (saveTimeoutRef.current) {
+      clearTimeout(saveTimeoutRef.current);
     }
-  }, [cards, subOriginId]);
+    saveTimeoutRef.current = setTimeout(() => {
+      const storageKey = subOriginId ? `${STORAGE_KEY}-${subOriginId}` : STORAGE_KEY;
+      localStorage.setItem(storageKey, JSON.stringify(cardsToSave));
+    }, 100);
+  }, [subOriginId]);
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current);
+      }
+    };
+  }, []);
 
   const handleAddCard = useCallback((template: CardTemplate) => {
     const newCard: OverviewCard = {
@@ -98,18 +91,24 @@ export function OverviewView({ leads, pipelines, leadTags, subOriginId }: Overvi
       size: template.defaultSize,
       order: cards.length,
     };
-    setCards((prev) => [...prev, newCard]);
-  }, [cards.length]);
+    const newCards = [...cards, newCard];
+    setCards(newCards);
+    saveCards(newCards);
+  }, [cards, saveCards]);
 
   const handleDeleteCard = useCallback((id: string) => {
-    setCards((prev) => prev.filter((c) => c.id !== id));
-  }, []);
+    const newCards = cards.filter((c) => c.id !== id);
+    setCards(newCards);
+    saveCards(newCards);
+  }, [cards, saveCards]);
 
   const handleResizeCard = useCallback((id: string, size: CardSize) => {
-    setCards((prev) =>
-      prev.map((c) => (c.id === id ? { ...c, size } : c))
-    );
-  }, []);
+    setCards((prev) => {
+      const newCards = prev.map((c) => (c.id === id ? { ...c, size } : c));
+      saveCards(newCards);
+      return newCards;
+    });
+  }, [saveCards]);
 
   return (
     <div className="flex flex-col h-full overflow-hidden">
@@ -122,15 +121,9 @@ export function OverviewView({ leads, pipelines, leadTags, subOriginId }: Overvi
         </Button>
       </div>
 
-      {/* Cards Grid */}
-      <ScrollArea className="flex-1" ref={containerRef}>
-        <div 
-          className="grid gap-4 pb-4 pr-4"
-          style={{
-            gridTemplateColumns: `repeat(${GRID_COLUMNS}, minmax(0, 1fr))`,
-            gridAutoRows: `${ROW_HEIGHT}px`,
-          }}
-        >
+      {/* Cards - Flex wrap layout for free positioning */}
+      <ScrollArea className="flex-1">
+        <div className="flex flex-wrap gap-4 pb-4 pr-4 content-start">
           {cards
             .sort((a, b) => a.order - b.order)
             .map((card) => (
@@ -142,8 +135,6 @@ export function OverviewView({ leads, pipelines, leadTags, subOriginId }: Overvi
                 leadTags={leadTags}
                 onDelete={handleDeleteCard}
                 onResize={handleResizeCard}
-                gridCellWidth={gridCellWidth}
-                gridCellHeight={ROW_HEIGHT}
               />
             ))}
         </div>
