@@ -1,6 +1,5 @@
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Button } from "@/components/ui/button";
 import { 
   PieChart, 
   Users, 
@@ -89,20 +88,20 @@ export function DataSourcePanel({ open, onClose, card, onSelectDataSource }: Dat
   };
 
   return (
-    <Sheet open={open} onOpenChange={onClose}>
-      <SheetContent className="w-[400px] sm:w-[540px] p-0">
-        <SheetHeader className="p-6 pb-4 border-b border-border">
-          <SheetTitle className="flex items-center gap-2">
+    <Dialog open={open} onOpenChange={onClose}>
+      <DialogContent className="max-w-2xl max-h-[85vh] p-0 gap-0">
+        <DialogHeader className="p-6 pb-4 border-b border-border">
+          <DialogTitle className="flex items-center gap-2">
             <Database className="h-5 w-5 text-primary" />
             Fonte de dados
-          </SheetTitle>
+          </DialogTitle>
           <p className="text-sm text-muted-foreground">
             Selecione uma fonte de dados para o cartão "{card.title}"
           </p>
-        </SheetHeader>
+        </DialogHeader>
 
-        <ScrollArea className="h-[calc(100vh-140px)]">
-          <div className="p-6 space-y-2">
+        <ScrollArea className="max-h-[60vh]">
+          <div className="p-6 grid grid-cols-2 gap-3">
             {DATA_SOURCES.map((source) => {
               const Icon = source.icon;
               const isSelected = card.dataSource === source.id;
@@ -112,7 +111,7 @@ export function DataSourcePanel({ open, onClose, card, onSelectDataSource }: Dat
                   key={source.id}
                   onClick={() => handleSelect(source.id)}
                   className={cn(
-                    "w-full flex items-center gap-4 p-4 rounded-xl border transition-all text-left group",
+                    "flex items-center gap-4 p-4 rounded-xl border transition-all text-left group",
                     isSelected 
                       ? "border-primary bg-primary/5" 
                       : "border-border hover:border-primary/50 hover:bg-muted/50"
@@ -136,25 +135,17 @@ export function DataSourcePanel({ open, onClose, card, onSelectDataSource }: Dat
                       )}>
                         {source.title}
                       </span>
-                      <span className="text-xs px-2 py-0.5 rounded-full bg-muted text-muted-foreground">
-                        {source.category}
-                      </span>
                     </div>
                     <p className="text-xs text-muted-foreground mt-0.5">
                       {source.description}
                     </p>
                   </div>
-
-                  <ChevronRight className={cn(
-                    "h-4 w-4 shrink-0 transition-colors",
-                    isSelected ? "text-primary" : "text-muted-foreground group-hover:text-primary"
-                  )} />
                 </button>
               );
             })}
           </div>
         </ScrollArea>
-      </SheetContent>
-    </Sheet>
+      </DialogContent>
+    </Dialog>
   );
 }
