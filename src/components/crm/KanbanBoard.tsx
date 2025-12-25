@@ -395,34 +395,62 @@ export function KanbanBoard() {
     queryFn: async () => {
       if (leads.length === 0) return [];
       
-      // Get emails and whatsapps from current leads
+      // First, get tags for current leads directly (simpler and more reliable)
+      const leadIds = leads.map(l => l.id);
+      const { data: directTags, error: directError } = await supabase
+        .from("lead_tags")
+        .select("id, lead_id, name, color")
+        .in("lead_id", leadIds);
+      
+      if (directError) {
+        console.error("Error fetching direct tags:", directError);
+        return [];
+      }
+      
+      // If we have direct tags, also try to get related tags
       const emails = leads.map(l => l.email).filter(Boolean);
       const whatsapps = leads.map(l => l.whatsapp).filter(Boolean);
       
-      // Find ALL lead IDs that match by email OR whatsapp (across all origins)
-      const { data: relatedLeads, error: relatedError } = await supabase
-        .from("leads")
-        .select("id, email, whatsapp")
-        .or(`email.in.(${emails.map(e => `"${e}"`).join(",")}),whatsapp.in.(${whatsapps.map(w => `"${w}"`).join(",")})`);
+      // Find related leads by email OR whatsapp using separate queries (more reliable)
+      let relatedLeads: { id: string; email: string; whatsapp: string }[] = [];
       
-      if (relatedError || !relatedLeads || relatedLeads.length === 0) {
-        // Fallback to just current leads
-        const leadIds = leads.map(l => l.id);
-        const { data, error } = await supabase
-          .from("lead_tags")
-          .select("id, lead_id, name, color")
-          .in("lead_id", leadIds);
-        return error ? [] : data;
+      if (emails.length > 0) {
+        const { data: byEmail } = await supabase
+          .from("leads")
+          .select("id, email, whatsapp")
+          .in("email", emails);
+        if (byEmail) relatedLeads = [...relatedLeads, ...byEmail];
       }
       
-      // Get all tags for related leads
-      const relatedLeadIds = relatedLeads.map(l => l.id);
-      const { data: allTags, error: tagsError } = await supabase
-        .from("lead_tags")
-        .select("id, lead_id, name, color")
-        .in("lead_id", relatedLeadIds);
+      if (whatsapps.length > 0) {
+        const { data: byWhatsapp } = await supabase
+          .from("leads")
+          .select("id, email, whatsapp")
+          .in("whatsapp", whatsapps);
+        if (byWhatsapp) {
+          // Dedupe by id
+          const existingIds = new Set(relatedLeads.map(l => l.id));
+          byWhatsapp.forEach(l => {
+            if (!existingIds.has(l.id)) relatedLeads.push(l);
+          });
+        }
+      }
       
-      if (tagsError || !allTags) return [];
+      // Get all tags for related leads (if any exist beyond current leads)
+      const relatedLeadIds = relatedLeads.map(l => l.id);
+      const newRelatedIds = relatedLeadIds.filter(id => !leadIds.includes(id));
+      
+      let allTags = directTags || [];
+      
+      if (newRelatedIds.length > 0) {
+        const { data: relatedTagsData } = await supabase
+          .from("lead_tags")
+          .select("id, lead_id, name, color")
+          .in("lead_id", newRelatedIds);
+        if (relatedTagsData) {
+          allTags = [...allTags, ...relatedTagsData];
+        }
+      }
       
       // Create a mapping: email -> tags, whatsapp -> tags
       const emailToTags = new Map<string, typeof allTags>();
