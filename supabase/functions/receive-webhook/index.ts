@@ -993,6 +993,49 @@ const handler = async (req: Request): Promise<Response> => {
         }).then(({ error }) => {
           if (error) console.log("[Webhook] Tracking insert failed:", error.message);
         });
+
+        // Check for auto-tag configuration in webhooks for this sub_origin
+        try {
+          const { data: webhooksWithAutoTag } = await supabase
+            .from("crm_webhooks")
+            .select("auto_tag_name, auto_tag_color")
+            .eq("sub_origin_id", targetSubOriginId)
+            .eq("type", "receive")
+            .eq("is_active", true)
+            .not("auto_tag_name", "is", null);
+
+          if (webhooksWithAutoTag && webhooksWithAutoTag.length > 0) {
+            for (const webhook of webhooksWithAutoTag) {
+              if (webhook.auto_tag_name && webhook.auto_tag_name.trim()) {
+                // Check if tag already exists for this lead
+                const { data: existingTag } = await supabase
+                  .from("lead_tags")
+                  .select("id")
+                  .eq("lead_id", savedLeadId)
+                  .eq("name", webhook.auto_tag_name)
+                  .maybeSingle();
+
+                if (!existingTag) {
+                  const { error: tagError } = await supabase
+                    .from("lead_tags")
+                    .insert({
+                      lead_id: savedLeadId,
+                      name: webhook.auto_tag_name,
+                      color: webhook.auto_tag_color || "#6366f1",
+                    });
+
+                  if (tagError) {
+                    console.log("[Webhook] Auto-tag insert failed:", tagError.message);
+                  } else {
+                    console.log(`[Webhook] Auto-tag "${webhook.auto_tag_name}" added to lead`);
+                  }
+                }
+              }
+            }
+          }
+        } catch (tagError) {
+          console.log("[Webhook] Error adding auto-tag:", tagError);
+        }
       }
 
       // Save custom field responses if any exist

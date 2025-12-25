@@ -134,6 +134,8 @@ export type Database = {
       }
       crm_webhooks: {
         Row: {
+          auto_tag_color: string | null
+          auto_tag_name: string | null
           created_at: string
           id: string
           is_active: boolean
@@ -148,6 +150,8 @@ export type Database = {
           url: string | null
         }
         Insert: {
+          auto_tag_color?: string | null
+          auto_tag_name?: string | null
           created_at?: string
           id?: string
           is_active?: boolean
@@ -162,6 +166,8 @@ export type Database = {
           url?: string | null
         }
         Update: {
+          auto_tag_color?: string | null
+          auto_tag_name?: string | null
           created_at?: string
           id?: string
           is_active?: boolean
