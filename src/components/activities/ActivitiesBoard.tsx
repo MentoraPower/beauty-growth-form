@@ -26,9 +26,9 @@ interface ActivitiesBoardProps {
 const getTipoIcon = (tipo: string) => {
   switch (tipo) {
     case 'tarefas':
-      return <ClipboardList className="h-4 w-4" />;
+      return <ClipboardList className="h-5 w-5" strokeWidth={1.5} />;
     case 'ligacao':
-      return <Phone className="h-4 w-4" />;
+      return <Phone className="h-5 w-5" strokeWidth={1.5} />;
     default:
       return null;
   }
@@ -153,13 +153,17 @@ export function ActivitiesBoard({ leadId, leadName, currentPipelineId, currentSu
                         )}
                       >
                         {/* Ícone do tipo ou número em círculo */}
-                        <div className={cn(
-                          "flex items-center justify-center w-7 h-7 rounded-full text-xs font-medium flex-shrink-0 transition-colors",
-                          activity.concluida 
-                            ? "bg-neutral-800 text-white" 
-                            : "bg-neutral-900 text-white"
-                        )}>
-                          {getTipoIcon(activity.tipo) || (index + 1)}
+                        <div className="flex items-center justify-center w-7 h-7 flex-shrink-0 text-foreground">
+                          {getTipoIcon(activity.tipo) || (
+                            <span className={cn(
+                              "flex items-center justify-center w-7 h-7 rounded-full text-xs font-medium",
+                              activity.concluida 
+                                ? "bg-neutral-800 text-white" 
+                                : "bg-neutral-900 text-white"
+                            )}>
+                              {index + 1}
+                            </span>
+                          )}
                         </div>
 
                         {/* Atividade - título */}
