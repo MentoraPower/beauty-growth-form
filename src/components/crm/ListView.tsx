@@ -545,7 +545,7 @@ export function ListView({ pipelines, leadsByPipeline, subOriginId }: ListViewPr
             return (
               <div key={pipeline.id} className="border-b border-border/50 last:border-b-0">
                 {/* Pipeline Header */}
-                <div className="flex items-center gap-2 py-2 px-1 hover:bg-muted/30 rounded transition-colors group">
+                <div className="flex items-center gap-2 py-2 px-3 bg-background hover:bg-muted/30 rounded transition-colors group">
                   <button
                     onClick={() => togglePipeline(pipeline.id)}
                     className="p-0.5 hover:bg-muted rounded"
