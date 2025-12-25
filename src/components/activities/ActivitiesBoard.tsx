@@ -26,9 +26,9 @@ interface ActivitiesBoardProps {
 const getTipoIcon = (tipo: string) => {
   switch (tipo) {
     case 'tarefas':
-      return <ClipboardList className="h-4 w-4" />;
+      return <ClipboardList className="h-3.5 w-3.5" strokeWidth={2.5} />;
     case 'ligacao':
-      return <Phone className="h-4 w-4" />;
+      return <Phone className="h-3.5 w-3.5" strokeWidth={2.5} />;
     default:
       return null;
   }
@@ -114,7 +114,7 @@ export function ActivitiesBoard({ leadId, leadName, currentPipelineId, currentSu
       {/* Two columns layout - left narrower */}
       <div className="grid grid-cols-1 lg:grid-cols-[480px_1fr] gap-4">
         {/* Left block - Activities List */}
-        <Card className="border-[#00000010] bg-[#fafafa] shadow-none min-h-[calc(100vh-380px)]">
+        <Card className="border-none bg-transparent shadow-none min-h-[calc(100vh-380px)]">
           <CardContent className="p-4 flex flex-col h-full">
             {isLoadingActivities ? (
               <div className="space-y-3 flex-1">
@@ -226,7 +226,7 @@ export function ActivitiesBoard({ leadId, leadName, currentPipelineId, currentSu
         </Card>
 
         {/* Right block - Activity Details / Tasks */}
-        <Card className="border-[#00000010] bg-[#fafafa] shadow-none min-h-[calc(100vh-380px)]">
+        <Card className="border-none bg-transparent shadow-none min-h-[calc(100vh-380px)]">
           <CardContent className="p-4 h-full flex flex-col">
             <ActivityDetails
               activity={selectedActivity}
