@@ -642,7 +642,7 @@ export function ListView({ pipelines, leadsByPipeline, subOriginId, tagsMap }: L
             const isAdding = addingToPipeline === pipeline.id;
 
             return (
-              <div key={pipeline.id} className="border-b border-border/50 last:border-b-0">
+              <div key={pipeline.id} className="bg-white rounded-lg border border-[#00000015] mb-3 last:mb-0">
                 {/* Pipeline Header */}
                 <div className="flex items-center gap-2 py-2 px-3 bg-background hover:bg-muted/30 rounded transition-colors group">
                   <button
