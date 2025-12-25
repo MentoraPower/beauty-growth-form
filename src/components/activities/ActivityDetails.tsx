@@ -116,7 +116,7 @@ export const ActivityDetails = memo(function ActivityDetails({
           {activity.tipo === 'ligacao' ? <Phone className="h-5 w-5" strokeWidth={1.5} /> : <ClipboardList className="h-5 w-5" strokeWidth={1.5} />}
         </div>
         <div className="flex-1 min-w-0">
-          <h3 className="font-medium truncate">{activity.titulo}</h3>
+          <h3 className="font-semibold truncate">{activity.titulo}</h3>
         </div>
         <div className="text-xs text-muted-foreground flex items-center gap-1.5">
           {saveStatus === 'saving' && <><Loader2 className="h-3 w-3 animate-spin" />Salvando...</>}
