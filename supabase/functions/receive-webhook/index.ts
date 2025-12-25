@@ -884,51 +884,94 @@ const handler = async (req: Request): Promise<Response> => {
         leadData.biggest_difficulty = String(payload.biggest_difficulty);
       }
 
-      // Check for existing lead in the same sub-origin by email OR whatsapp
+      // Check for existing lead GLOBALLY by email OR whatsapp (same contact can be in multiple origins)
       let savedLeadId: string | null = null;
-      let existingLead: { id: string } | null = null;
+      let existingLead: { id: string; name: string; email: string; whatsapp: string; sub_origin_id: string | null } | null = null;
+      let isUpdate = false;
 
-      // First, check by email within the same sub-origin
+      // First, check by email globally
       if (leadData.email && leadData.email.trim() !== "") {
         const { data: leadByEmail } = await supabase
           .from("leads")
-          .select("id")
-          .eq("sub_origin_id", targetSubOriginId)
+          .select("id, name, email, whatsapp, sub_origin_id")
           .eq("email", leadData.email)
           .maybeSingle();
         
         if (leadByEmail) {
           existingLead = leadByEmail;
-          console.log(`[Webhook] Found existing lead by email in sub-origin: ${leadByEmail.id}`);
+          console.log(`[Webhook] Found existing lead by email globally: ${leadByEmail.id}`);
         }
       }
 
-      // If not found by email, check by whatsapp within the same sub-origin
+      // If not found by email, check by whatsapp globally
       if (!existingLead && leadData.whatsapp && leadData.whatsapp.trim() !== "") {
         const { data: leadByPhone } = await supabase
           .from("leads")
-          .select("id")
-          .eq("sub_origin_id", targetSubOriginId)
+          .select("id, name, email, whatsapp, sub_origin_id")
           .eq("whatsapp", leadData.whatsapp)
           .maybeSingle();
         
         if (leadByPhone) {
           existingLead = leadByPhone;
-          console.log(`[Webhook] Found existing lead by whatsapp in sub-origin: ${leadByPhone.id}`);
+          console.log(`[Webhook] Found existing lead by whatsapp globally: ${leadByPhone.id}`);
         }
       }
 
       if (existingLead?.id) {
+        // Build update data - only update fields that have non-empty values
+        const updateData: Record<string, any> = {};
+        
+        // Always update pipeline and sub_origin to the new destination
+        updateData.pipeline_id = targetPipelineId;
+        updateData.sub_origin_id = targetSubOriginId;
+        
+        // Only update other fields if they have values
+        if (leadData.name && leadData.name.trim()) updateData.name = leadData.name;
+        if (leadData.email && leadData.email.trim()) updateData.email = leadData.email;
+        if (leadData.whatsapp && leadData.whatsapp.trim()) updateData.whatsapp = leadData.whatsapp;
+        if (leadData.country_code && leadData.country_code.trim()) updateData.country_code = leadData.country_code;
+        if (leadData.instagram && leadData.instagram.trim()) updateData.instagram = leadData.instagram;
+        if (leadData.clinic_name && leadData.clinic_name.trim()) updateData.clinic_name = leadData.clinic_name;
+        if (leadData.service_area && leadData.service_area.trim()) updateData.service_area = leadData.service_area;
+        if (leadData.monthly_billing && leadData.monthly_billing.trim()) updateData.monthly_billing = leadData.monthly_billing;
+        if (leadData.weekly_attendance && leadData.weekly_attendance.trim()) updateData.weekly_attendance = leadData.weekly_attendance;
+        if (leadData.workspace_type && leadData.workspace_type.trim()) updateData.workspace_type = leadData.workspace_type;
+        if (leadData.years_experience && leadData.years_experience.trim()) updateData.years_experience = leadData.years_experience;
+        if (leadData.average_ticket !== null) updateData.average_ticket = leadData.average_ticket;
+        if (leadData.estimated_revenue !== null) updateData.estimated_revenue = leadData.estimated_revenue;
+        if (leadData.biggest_difficulty && leadData.biggest_difficulty.trim()) updateData.biggest_difficulty = leadData.biggest_difficulty;
+        if (leadData.utm_source) updateData.utm_source = leadData.utm_source;
+        if (leadData.utm_medium) updateData.utm_medium = leadData.utm_medium;
+        if (leadData.utm_campaign) updateData.utm_campaign = leadData.utm_campaign;
+        if (leadData.utm_term) updateData.utm_term = leadData.utm_term;
+        if (leadData.utm_content) updateData.utm_content = leadData.utm_content;
+
         // Update existing lead
         const { data, error } = await supabase
           .from("leads")
-          .update(leadData)
+          .update(updateData)
           .eq("id", existingLead.id)
           .select("id")
           .single();
         if (error) throw error;
         savedLeadId = data.id;
+        isUpdate = true;
         console.log(`[Webhook] Lead updated: ${savedLeadId}`);
+
+        // Add tracking for update
+        const fromSubOrigin = existingLead.sub_origin_id !== targetSubOriginId 
+          ? `Movido para nova sub-origem` 
+          : `Dados atualizados`;
+        
+        await supabase.from("lead_tracking").insert({
+          lead_id: savedLeadId,
+          tipo: "atualizacao",
+          titulo: "Lead atualizado via Webhook",
+          descricao: fromSubOrigin,
+          origem: "webhook",
+        }).then(({ error }) => {
+          if (error) console.log("[Webhook] Tracking insert failed:", error.message);
+        });
       } else {
         // Create new lead
         const { data, error } = await supabase
@@ -939,6 +982,17 @@ const handler = async (req: Request): Promise<Response> => {
         if (error) throw error;
         savedLeadId = data.id;
         console.log(`[Webhook] Lead created: ${savedLeadId}`);
+
+        // Add tracking for creation
+        await supabase.from("lead_tracking").insert({
+          lead_id: savedLeadId,
+          tipo: "webhook",
+          titulo: "Lead recebido via Webhook",
+          descricao: "Lead criado via webhook externo",
+          origem: "webhook",
+        }).then(({ error }) => {
+          if (error) console.log("[Webhook] Tracking insert failed:", error.message);
+        });
       }
 
       // Save custom field responses if any exist
