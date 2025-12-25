@@ -60,6 +60,10 @@ const EmailAutomationsView = lazy(() =>
   import("./EmailAutomationsView").then(m => ({ default: m.EmailAutomationsView }))
 );
 
+const OverviewView = lazy(() => 
+  import("./overview/OverviewView").then(m => ({ default: m.OverviewView }))
+);
+
 interface EmailEditingContext {
   emailName: string;
   emailTriggerPipeline: string;
@@ -1712,9 +1716,18 @@ export function KanbanBoard() {
 
       {/* OverView */}
       {activeView === "overview" && subOriginId && (
-        <div className="flex-1 flex items-center justify-center text-muted-foreground">
-          <p>OverView - Em breve</p>
-        </div>
+        <Suspense fallback={
+          <div className="flex-1 flex items-center justify-center">
+            <Skeleton className="h-96 w-full max-w-4xl rounded-xl" />
+          </div>
+        }>
+          <OverviewView
+            leads={leads}
+            pipelines={pipelines}
+            leadTags={leadTagsRaw}
+            subOriginId={subOriginId}
+          />
+        </Suspense>
       )}
 
       {/* Calendário */}
