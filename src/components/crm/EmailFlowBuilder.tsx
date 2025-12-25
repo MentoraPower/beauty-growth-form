@@ -1477,7 +1477,7 @@ const AnalyticsNode = ({ id, data, selected }: NodeProps) => {
       {/* Node Card - Wider and more modern */}
       <div 
         className={cn(
-          "bg-background border-2 transition-all shadow-lg rounded-2xl w-[580px] overflow-hidden",
+          "bg-background border-2 transition-all shadow-lg rounded-2xl w-[680px] overflow-hidden",
           hasBothConnections ? "border-orange-400/50" : 
           connectedTypes.email ? "border-orange-400/50" : 
           connectedTypes.whatsapp ? "border-green-400/50" : "border-orange-400/50"
@@ -1524,30 +1524,36 @@ const AnalyticsNode = ({ id, data, selected }: NodeProps) => {
             <>
               {/* Tabs - only show when both are connected */}
               {hasBothConnections && (
-                <div className="flex gap-2 mb-5 p-1 bg-muted/50 rounded-xl">
+                <div className="flex gap-6 mb-5 border-b border-border">
                   <button
                     onClick={() => setActiveTab("email")}
                     className={cn(
-                      "flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-lg text-sm font-semibold transition-all",
+                      "relative flex items-center gap-2 py-3 px-1 text-sm font-semibold transition-all",
                       activeTab === "email" 
-                        ? "bg-gradient-to-r from-orange-500 to-amber-400 text-white shadow-md" 
-                        : "text-muted-foreground hover:text-foreground hover:bg-muted"
+                        ? "text-orange-500" 
+                        : "text-muted-foreground hover:text-foreground"
                     )}
                   >
                     <Mail className="w-4 h-4" />
                     E-mail
+                    {activeTab === "email" && (
+                      <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-orange-500 rounded-full" />
+                    )}
                   </button>
                   <button
                     onClick={() => setActiveTab("whatsapp")}
                     className={cn(
-                      "flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-lg text-sm font-semibold transition-all",
+                      "relative flex items-center gap-2 py-3 px-1 text-sm font-semibold transition-all",
                       activeTab === "whatsapp" 
-                        ? "bg-gradient-to-r from-green-500 to-emerald-400 text-white shadow-md" 
-                        : "text-muted-foreground hover:text-foreground hover:bg-muted"
+                        ? "text-green-500" 
+                        : "text-muted-foreground hover:text-foreground"
                     )}
                   >
                     <WhatsAppIcon className="w-4 h-4" />
                     WhatsApp
+                    {activeTab === "whatsapp" && (
+                      <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-green-500 rounded-full" />
+                    )}
                   </button>
                 </div>
               )}
