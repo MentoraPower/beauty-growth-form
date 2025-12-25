@@ -113,7 +113,7 @@ export const ActivityDetails = memo(function ActivityDetails({
       {/* Header */}
       <div className="flex items-center gap-3 pb-3 border-b border-black/5">
         <div className="flex items-center justify-center text-foreground">
-          {activity.tipo === 'ligacao' ? <Phone className="h-6 w-6" strokeWidth={1.5} /> : <ClipboardList className="h-6 w-6" strokeWidth={1.5} />}
+          {activity.tipo === 'ligacao' ? <Phone className="h-5 w-5" strokeWidth={1.5} /> : <ClipboardList className="h-5 w-5" strokeWidth={1.5} />}
         </div>
         <div className="flex-1 min-w-0">
           <h3 className="font-medium truncate">{activity.titulo}</h3>
