@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from "react";
+import { createPortal } from "react-dom";
 import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Lead, Pipeline } from "@/types/crm";
@@ -189,6 +190,15 @@ export function OverviewView({ leads, pipelines, leadTags, subOriginId }: Overvi
     });
   }, [saveCardToDb]);
 
+  // Show loading state
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-full">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+      </div>
+    );
+  }
+
   return (
     <div className="relative flex flex-col h-full overflow-hidden">
       {/* Header */}
@@ -244,8 +254,8 @@ export function OverviewView({ leads, pipelines, leadTags, subOriginId }: Overvi
         onAddCard={handleAddCard}
       />
 
-      {/* Card Config Panel */}
-      {configPanelCard && (
+      {/* Card Config Panel - rendered in portal to be above everything */}
+      {configPanelCard && createPortal(
         <CardConfigPanel
           card={configPanelCard}
           leads={leads}
@@ -253,7 +263,8 @@ export function OverviewView({ leads, pipelines, leadTags, subOriginId }: Overvi
           leadTags={leadTags}
           onClose={() => setConfigPanelCard(null)}
           onUpdateCard={handleUpdateCard}
-        />
+        />,
+        document.body
       )}
     </div>
   );
