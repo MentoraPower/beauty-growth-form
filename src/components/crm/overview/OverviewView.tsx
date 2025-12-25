@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Lead, Pipeline } from "@/types/crm";
@@ -15,10 +15,30 @@ interface OverviewViewProps {
 }
 
 const STORAGE_KEY = "crm-overview-cards";
+const GRID_GAP = 16;
+const GRID_COLUMNS = 3;
+const ROW_HEIGHT = 180;
 
 export function OverviewView({ leads, pipelines, leadTags, subOriginId }: OverviewViewProps) {
   const [cards, setCards] = useState<OverviewCard[]>([]);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [gridCellWidth, setGridCellWidth] = useState(300);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  // Calculate grid cell width based on container
+  useEffect(() => {
+    const updateGridWidth = () => {
+      if (containerRef.current) {
+        const containerWidth = containerRef.current.offsetWidth - 16; // account for scrollbar
+        const cellWidth = (containerWidth - (GRID_GAP * (GRID_COLUMNS - 1))) / GRID_COLUMNS;
+        setGridCellWidth(cellWidth);
+      }
+    };
+
+    updateGridWidth();
+    window.addEventListener("resize", updateGridWidth);
+    return () => window.removeEventListener("resize", updateGridWidth);
+  }, []);
 
   // Load cards from localStorage
   useEffect(() => {
@@ -103,12 +123,12 @@ export function OverviewView({ leads, pipelines, leadTags, subOriginId }: Overvi
       </div>
 
       {/* Cards Grid */}
-      <ScrollArea className="flex-1">
+      <ScrollArea className="flex-1" ref={containerRef}>
         <div 
           className="grid gap-4 pb-4 pr-4"
           style={{
-            gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
-            gridAutoRows: "180px",
+            gridTemplateColumns: `repeat(${GRID_COLUMNS}, minmax(0, 1fr))`,
+            gridAutoRows: `${ROW_HEIGHT}px`,
           }}
         >
           {cards
@@ -122,6 +142,8 @@ export function OverviewView({ leads, pipelines, leadTags, subOriginId }: Overvi
                 leadTags={leadTags}
                 onDelete={handleDeleteCard}
                 onResize={handleResizeCard}
+                gridCellWidth={gridCellWidth}
+                gridCellHeight={ROW_HEIGHT}
               />
             ))}
         </div>
