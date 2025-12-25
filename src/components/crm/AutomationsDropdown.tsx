@@ -329,38 +329,73 @@ export function AutomationsDropdown({
     refetchInterval: 30000, // Refresh every 30 seconds
   });
 
-  // Fetch existing unique tags for autocomplete
+  // Fetch existing unique tags for autocomplete - with pagination to get ALL tags
   const { data: existingTags = [] } = useQuery({
     queryKey: ["unique-lead-tags"],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("lead_tags")
-        .select("name, color")
-        .order("name");
+      const PAGE_SIZE = 1000;
+      let allTags: { name: string; color: string }[] = [];
+      let page = 0;
+      let hasMore = true;
       
-      if (error) {
-        console.error("Error fetching tags:", error);
-        return [];
+      // Fetch all pages
+      while (hasMore) {
+        const from = page * PAGE_SIZE;
+        const to = from + PAGE_SIZE - 1;
+        
+        const { data, error } = await supabase
+          .from("lead_tags")
+          .select("name, color")
+          .range(from, to)
+          .order("created_at", { ascending: true });
+        
+        if (error) {
+          console.error("Error fetching tags page:", error);
+          break;
+        }
+        
+        if (data && data.length > 0) {
+          allTags = [...allTags, ...data];
+          hasMore = data.length === PAGE_SIZE;
+          page++;
+        } else {
+          hasMore = false;
+        }
       }
       
-      // Get unique tags by name (use first occurrence's color)
+      // Get unique tags by name (case-insensitive, use first occurrence's color)
       const uniqueMap = new Map<string, string>();
-      (data || []).forEach((tag: any) => {
-        if (!uniqueMap.has(tag.name)) {
-          uniqueMap.set(tag.name, tag.color);
+      allTags.forEach((tag: any) => {
+        const key = (tag.name || "").trim().toLowerCase();
+        if (key && !uniqueMap.has(key)) {
+          uniqueMap.set(key, tag.color);
         }
       });
       
-      return Array.from(uniqueMap.entries()).map(([name, color]) => ({ name, color })) as ExistingTag[];
+      // Convert to array and sort alphabetically
+      const result = Array.from(uniqueMap.entries())
+        .map(([name, color]) => {
+          // Find original name with proper casing
+          const original = allTags.find(t => (t.name || "").trim().toLowerCase() === name);
+          return { name: original?.name || name, color };
+        })
+        .sort((a, b) => a.name.localeCompare(b.name, 'pt-BR'));
+      
+      return result as ExistingTag[];
     },
     enabled: open,
   });
 
-  // Filtered tags based on search input
+  // Normalize string for accent-insensitive search
+  const normalizeString = (str: string) => {
+    return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
+  };
+
+  // Filtered tags based on search input (accent-insensitive)
   const filteredExistingTags = useMemo(() => {
     if (!webhookAutoTagName.trim()) return existingTags;
-    const search = webhookAutoTagName.toLowerCase().trim();
-    return existingTags.filter(tag => tag.name.toLowerCase().includes(search));
+    const search = normalizeString(webhookAutoTagName);
+    return existingTags.filter(tag => normalizeString(tag.name).includes(search));
   }, [webhookAutoTagName, existingTags]);
 
   // Check if the current input matches an existing tag exactly

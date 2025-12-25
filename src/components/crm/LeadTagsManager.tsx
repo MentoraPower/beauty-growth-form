@@ -129,31 +129,61 @@ export function LeadTagsManager({ leadId }: LeadTagsManagerProps) {
   };
 
   const fetchAllTags = async () => {
-    const { data, error } = await supabase
-      .from("lead_tags")
-      .select("name, color")
-      .order("name", { ascending: true });
+    const PAGE_SIZE = 1000;
+    let allTagsData: { name: string; color: string }[] = [];
+    let page = 0;
+    let hasMore = true;
+    
+    // Fetch all pages to get ALL tags
+    while (hasMore) {
+      const from = page * PAGE_SIZE;
+      const to = from + PAGE_SIZE - 1;
+      
+      const { data, error } = await supabase
+        .from("lead_tags")
+        .select("name, color")
+        .range(from, to)
+        .order("created_at", { ascending: true });
 
-    if (error) {
-      console.error("Error fetching all tags:", error);
-      return;
+      if (error) {
+        console.error("Error fetching all tags page:", error);
+        break;
+      }
+
+      if (data && data.length > 0) {
+        allTagsData = [...allTagsData, ...data];
+        hasMore = data.length === PAGE_SIZE;
+        page++;
+      } else {
+        hasMore = false;
+      }
     }
 
-    // Get unique tags by name
-    const uniqueTags = data?.reduce((acc: {name: string; color: string}[], tag) => {
-      if (!acc.find(t => t.name.toLowerCase() === tag.name.toLowerCase())) {
-        acc.push({ name: tag.name, color: tag.color });
+    // Get unique tags by name (case-insensitive, keep first occurrence)
+    const uniqueMap = new Map<string, { name: string; color: string }>();
+    allTagsData.forEach((tag) => {
+      const key = (tag.name || "").trim().toLowerCase();
+      if (key && !uniqueMap.has(key)) {
+        uniqueMap.set(key, { name: tag.name, color: tag.color });
       }
-      return acc;
-    }, []) || [];
+    });
+
+    // Convert to array and sort alphabetically
+    const uniqueTags = Array.from(uniqueMap.values())
+      .sort((a, b) => a.name.localeCompare(b.name, 'pt-BR'));
 
     setAllTags(uniqueTags);
   };
 
-  // Filter suggestions based on input - show all matching tags
+  // Normalize string for accent-insensitive search
+  const normalizeString = (str: string) => {
+    return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
+  };
+
+  // Filter suggestions based on input - show all matching tags (accent-insensitive)
   const suggestions = newTagName.trim()
     ? allTags.filter(tag => 
-        tag.name.toLowerCase().includes(newTagName.toLowerCase())
+        normalizeString(tag.name).includes(normalizeString(newTagName))
       ).map(tag => ({
         ...tag,
         alreadyAdded: !!tags.find(t => t.name.toLowerCase() === tag.name.toLowerCase())
