@@ -1,4 +1,4 @@
-import { useState, useMemo, useRef, useCallback } from "react";
+import { useState, useMemo, useRef, useCallback, useEffect } from "react";
 import { 
   MoreHorizontal, 
   Trash2,
@@ -13,7 +13,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
-import { OverviewCard, CardSize } from "./types";
+import { OverviewCard, CardSize, MIN_CARD_WIDTH, MIN_CARD_HEIGHT, MAX_CARD_WIDTH, MAX_CARD_HEIGHT } from "./types";
 import { Lead, Pipeline } from "@/types/crm";
 import { PieChart, Pie, Cell, ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip, BarChart, Bar, Funnel, FunnelChart, LabelList } from "recharts";
 import { format, subDays, startOfDay, eachDayOfInterval } from "date-fns";
@@ -28,8 +28,6 @@ interface OverviewCardComponentProps {
   onDelete: (id: string) => void;
   onResize: (id: string, size: CardSize) => void;
   isDragging?: boolean;
-  gridCellWidth: number;
-  gridCellHeight: number;
 }
 
 const COLORS = [
@@ -51,15 +49,19 @@ export function OverviewCardComponent({
   onDelete,
   onResize,
   isDragging,
-  gridCellWidth,
-  gridCellHeight,
 }: OverviewCardComponentProps) {
   const [isResizing, setIsResizing] = useState(false);
   const [resizeDirection, setResizeDirection] = useState<"right" | "bottom" | "corner" | null>(null);
-  const [previewSize, setPreviewSize] = useState<CardSize | null>(null);
-  const cardRef = useRef<HTMLDivElement>(null);
+  const [currentSize, setCurrentSize] = useState<CardSize>(card.size);
   const startPosRef = useRef({ x: 0, y: 0 });
   const startSizeRef = useRef({ width: card.size.width, height: card.size.height });
+
+  // Sync with card.size when it changes externally
+  useEffect(() => {
+    if (!isResizing) {
+      setCurrentSize(card.size);
+    }
+  }, [card.size, isResizing]);
 
   // Calculate data based on dataSource
   const chartData = useMemo(() => {
@@ -155,82 +157,50 @@ export function OverviewCardComponent({
     setIsResizing(true);
     setResizeDirection(direction);
     startPosRef.current = { x: e.clientX, y: e.clientY };
-    startSizeRef.current = { width: card.size.width, height: card.size.height };
-    setPreviewSize(card.size);
-  }, [card.size]);
+    startSizeRef.current = { width: currentSize.width, height: currentSize.height };
+  }, [currentSize]);
 
-  const handleResizeMove = useCallback((e: MouseEvent) => {
-    if (!isResizing || !resizeDirection) return;
+  useEffect(() => {
+    if (!isResizing) return;
 
-    const deltaX = e.clientX - startPosRef.current.x;
-    const deltaY = e.clientY - startPosRef.current.y;
+    const handleMouseMove = (e: MouseEvent) => {
+      const deltaX = e.clientX - startPosRef.current.x;
+      const deltaY = e.clientY - startPosRef.current.y;
 
-    let newWidth = startSizeRef.current.width;
-    let newHeight = startSizeRef.current.height;
+      let newWidth = startSizeRef.current.width;
+      let newHeight = startSizeRef.current.height;
 
-    // Calculate new size based on drag distance relative to cell size
-    if (resizeDirection === "right" || resizeDirection === "corner") {
-      const widthChange = Math.round(deltaX / gridCellWidth);
-      newWidth = Math.max(1, Math.min(3, startSizeRef.current.width + widthChange)) as 1 | 2 | 3;
-    }
+      if (resizeDirection === "right" || resizeDirection === "corner") {
+        newWidth = Math.max(MIN_CARD_WIDTH, Math.min(MAX_CARD_WIDTH, startSizeRef.current.width + deltaX));
+      }
 
-    if (resizeDirection === "bottom" || resizeDirection === "corner") {
-      const heightChange = Math.round(deltaY / gridCellHeight);
-      newHeight = Math.max(1, Math.min(3, startSizeRef.current.height + heightChange)) as 1 | 2 | 3;
-    }
+      if (resizeDirection === "bottom" || resizeDirection === "corner") {
+        newHeight = Math.max(MIN_CARD_HEIGHT, Math.min(MAX_CARD_HEIGHT, startSizeRef.current.height + deltaY));
+      }
 
-    setPreviewSize({ width: newWidth, height: newHeight });
-  }, [isResizing, resizeDirection, gridCellWidth, gridCellHeight]);
+      const newSize = { width: newWidth, height: newHeight };
+      setCurrentSize(newSize);
+      // Save in real-time
+      onResize(card.id, newSize);
+    };
 
-  const handleResizeEnd = useCallback(() => {
-    if (previewSize && (previewSize.width !== card.size.width || previewSize.height !== card.size.height)) {
-      onResize(card.id, previewSize);
-    }
-    setIsResizing(false);
-    setResizeDirection(null);
-    setPreviewSize(null);
-  }, [card.id, card.size, previewSize, onResize]);
+    const handleMouseUp = () => {
+      setIsResizing(false);
+      setResizeDirection(null);
+    };
 
-  // Attach/detach global mouse events
-  useState(() => {
-    const handleMouseMove = (e: MouseEvent) => handleResizeMove(e);
-    const handleMouseUp = () => handleResizeEnd();
-
-    if (isResizing) {
-      document.addEventListener("mousemove", handleMouseMove);
-      document.addEventListener("mouseup", handleMouseUp);
-    }
+    document.addEventListener("mousemove", handleMouseMove);
+    document.addEventListener("mouseup", handleMouseUp);
 
     return () => {
       document.removeEventListener("mousemove", handleMouseMove);
       document.removeEventListener("mouseup", handleMouseUp);
     };
-  });
-
-  // Use effect to handle resize events
-  const handleMouseMove = useCallback((e: MouseEvent) => {
-    handleResizeMove(e);
-  }, [handleResizeMove]);
-
-  const handleMouseUp = useCallback(() => {
-    handleResizeEnd();
-  }, [handleResizeEnd]);
-
-  // Attach global listeners when resizing
-  useMemo(() => {
-    if (isResizing) {
-      document.addEventListener("mousemove", handleMouseMove);
-      document.addEventListener("mouseup", handleMouseUp);
-      return () => {
-        document.removeEventListener("mousemove", handleMouseMove);
-        document.removeEventListener("mouseup", handleMouseUp);
-      };
-    }
-  }, [isResizing, handleMouseMove, handleMouseUp]);
-
-  const displaySize = previewSize || card.size;
+  }, [isResizing, resizeDirection, card.id, onResize]);
 
   const renderChart = () => {
+    const isLarge = currentSize.height >= 280;
+    
     switch (card.chartType) {
       case "pie":
         const pieData = chartData as Array<{ name: string; value: number; color: string }>;
@@ -248,8 +218,8 @@ export function OverviewCardComponent({
                 data={pieData}
                 cx="50%"
                 cy="50%"
-                innerRadius={displaySize.height >= 2 ? 50 : 30}
-                outerRadius={displaySize.height >= 2 ? 80 : 50}
+                innerRadius={isLarge ? 50 : 30}
+                outerRadius={isLarge ? 80 : 50}
                 paddingAngle={2}
                 dataKey="value"
               >
@@ -275,7 +245,7 @@ export function OverviewCardComponent({
           <ResponsiveContainer width="100%" height="100%">
             <AreaChart data={areaData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
               <defs>
-                <linearGradient id="colorCount" x1="0" y1="0" x2="0" y2="1">
+                <linearGradient id={`colorCount-${card.id}`} x1="0" y1="0" x2="0" y2="1">
                   <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.3} />
                   <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0} />
                 </linearGradient>
@@ -304,7 +274,7 @@ export function OverviewCardComponent({
                 dataKey="count"
                 stroke="hsl(var(--primary))"
                 fillOpacity={1}
-                fill="url(#colorCount)"
+                fill={`url(#colorCount-${card.id})`}
                 strokeWidth={2}
               />
             </AreaChart>
@@ -371,7 +341,7 @@ export function OverviewCardComponent({
                 key={lead.id}
                 className="flex items-center gap-3 p-2 rounded-lg bg-muted/50 hover:bg-muted transition-colors"
               >
-                <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-medium text-sm">
+                <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-medium text-sm shrink-0">
                   {lead.name.charAt(0).toUpperCase()}
                 </div>
                 <div className="flex-1 min-w-0">
@@ -416,33 +386,20 @@ export function OverviewCardComponent({
     }
   };
 
-  // Size classes mapping
-  const sizeClasses = {
-    width: {
-      1: "col-span-1",
-      2: "col-span-2",
-      3: "col-span-3",
-    },
-    height: {
-      1: "row-span-1",
-      2: "row-span-2",
-      3: "row-span-3",
-    },
-  };
-
   return (
     <div
-      ref={cardRef}
       className={cn(
         "bg-white rounded-xl border border-[#00000015] shadow-sm overflow-hidden flex flex-col group relative",
-        sizeClasses.width[displaySize.width],
-        sizeClasses.height[displaySize.height],
         isDragging && "opacity-50 shadow-lg",
-        isResizing && "ring-2 ring-primary/50"
+        isResizing && "select-none"
       )}
+      style={{
+        width: currentSize.width,
+        height: currentSize.height,
+      }}
     >
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-border/50">
+      <div className="flex items-center justify-between px-4 py-3 border-b border-border/50 shrink-0">
         <div className="flex items-center gap-2">
           <GripVertical className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity cursor-grab" />
           <h3 className="font-medium text-sm text-foreground">{card.title}</h3>
@@ -469,20 +426,20 @@ export function OverviewCardComponent({
       </div>
 
       {/* Chart Content */}
-      <div className="flex-1 p-4 min-h-0">
+      <div className="flex-1 p-4 min-h-0 overflow-hidden">
         {renderChart()}
       </div>
 
       {/* Resize Handles */}
       {/* Right handle */}
       <div
-        className="absolute right-0 top-0 bottom-0 w-2 cursor-ew-resize opacity-0 group-hover:opacity-100 hover:bg-primary/20 transition-all z-10"
+        className="absolute right-0 top-0 bottom-0 w-2 cursor-ew-resize opacity-0 group-hover:opacity-100 hover:bg-primary/20 z-10"
         onMouseDown={(e) => handleResizeStart(e, "right")}
       />
       
       {/* Bottom handle */}
       <div
-        className="absolute bottom-0 left-0 right-0 h-2 cursor-ns-resize opacity-0 group-hover:opacity-100 hover:bg-primary/20 transition-all z-10"
+        className="absolute bottom-0 left-0 right-0 h-2 cursor-ns-resize opacity-0 group-hover:opacity-100 hover:bg-primary/20 z-10"
         onMouseDown={(e) => handleResizeStart(e, "bottom")}
       />
       
@@ -491,19 +448,8 @@ export function OverviewCardComponent({
         className="absolute bottom-0 right-0 w-4 h-4 cursor-nwse-resize opacity-0 group-hover:opacity-100 z-20"
         onMouseDown={(e) => handleResizeStart(e, "corner")}
       >
-        <div className="absolute bottom-1 right-1 w-2 h-2 border-r-2 border-b-2 border-muted-foreground/50 group-hover:border-primary transition-colors" />
+        <div className="absolute bottom-1 right-1 w-2 h-2 border-r-2 border-b-2 border-muted-foreground/50 group-hover:border-primary" />
       </div>
-
-      {/* Size indicator during resize */}
-      {isResizing && previewSize && (
-        <div className="absolute inset-0 bg-primary/5 flex items-center justify-center pointer-events-none z-30">
-          <div className="bg-background/90 backdrop-blur-sm px-3 py-1.5 rounded-full border shadow-sm">
-            <span className="text-sm font-medium text-foreground">
-              {previewSize.width}x{previewSize.height}
-            </span>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
