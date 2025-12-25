@@ -222,12 +222,6 @@ export function AutomationsDropdown({
   const [copied, setCopied] = useState(false);
   const [triggerDropdownOpen, setTriggerDropdownOpen] = useState(false);
   const [actionDropdownOpen, setActionDropdownOpen] = useState(false);
-  
-  // Bulk send states
-  const [bulkSendUrl, setBulkSendUrl] = useState("");
-  const [bulkSendPipelineId, setBulkSendPipelineId] = useState<string>("");
-  const [isBulkSending, setIsBulkSending] = useState(false);
-  const [bulkSendProgress, setBulkSendProgress] = useState({ sent: 0, total: 0 });
 
   // Fetch origins - only when dropdown is open
   const { data: origins = [] } = useQuery({
@@ -661,112 +655,6 @@ export function AutomationsDropdown({
     setWebhookAutoTagColor(webhook.auto_tag_color || "#6366f1");
   };
 
-  // Bulk send function
-  const executeBulkSend = async () => {
-    if (!bulkSendUrl.trim()) {
-      toast.error("Digite a URL de destino");
-      return;
-    }
-    if (!bulkSendPipelineId) {
-      toast.error("Selecione a pipeline");
-      return;
-    }
-
-    setIsBulkSending(true);
-    setBulkSendProgress({ sent: 0, total: 0 });
-
-    try {
-      // Fetch all leads from selected pipeline
-      const { data: leads, error: leadsError } = await supabase
-        .from("leads")
-        .select("*")
-        .eq("pipeline_id", bulkSendPipelineId);
-
-      if (leadsError) throw leadsError;
-
-      if (!leads || leads.length === 0) {
-        toast.error("Nenhum lead encontrado nesta pipeline");
-        setIsBulkSending(false);
-        return;
-      }
-
-      setBulkSendProgress({ sent: 0, total: leads.length });
-
-      let successCount = 0;
-      let errorCount = 0;
-
-      // Send each lead one by one
-      for (let i = 0; i < leads.length; i++) {
-        const lead = leads[i];
-        try {
-          const payload = {
-            evento: "bulk_send",
-            data_envio: new Date().toISOString(),
-            dados: {
-              id: lead.id,
-              nome: lead.name,
-              email: lead.email,
-              whatsapp: lead.whatsapp,
-              country_code: lead.country_code,
-              instagram: lead.instagram,
-              service_area: lead.service_area,
-              monthly_billing: lead.monthly_billing,
-              weekly_attendance: lead.weekly_attendance,
-              workspace_type: lead.workspace_type,
-              years_experience: lead.years_experience,
-              clinic_name: lead.clinic_name,
-              average_ticket: lead.average_ticket,
-              estimated_revenue: lead.estimated_revenue,
-              is_mql: lead.is_mql,
-              created_at: lead.created_at,
-            },
-            pipeline: {
-              atual: bulkSendPipelineId,
-            },
-            origem: {
-              sub_origin_id: lead.sub_origin_id,
-            },
-          };
-
-          const response = await fetch(bulkSendUrl, {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify(payload),
-          });
-
-          if (response.ok) {
-            successCount++;
-          } else {
-            errorCount++;
-            console.error(`Error sending lead ${lead.id}:`, response.status);
-          }
-        } catch (err) {
-          errorCount++;
-          console.error(`Error sending lead ${lead.id}:`, err);
-        }
-
-        setBulkSendProgress({ sent: i + 1, total: leads.length });
-      }
-
-      if (errorCount === 0) {
-        toast.success(`${successCount} leads enviados com sucesso!`);
-      } else {
-        toast.warning(`${successCount} enviados, ${errorCount} erros`);
-      }
-
-      // Reset form
-      setBulkSendUrl("");
-      setBulkSendPipelineId("");
-    } catch (error) {
-      console.error("Erro ao disparar em massa:", error);
-      toast.error("Erro ao disparar em massa");
-    } finally {
-      setIsBulkSending(false);
-      setBulkSendProgress({ sent: 0, total: 0 });
-    }
-  };
 
   // Email automation functions
   const createEmailAutomation = async () => {
@@ -2515,81 +2403,6 @@ export function AutomationsDropdown({
                   )}
                 </div>
               )}
-
-              {/* Bulk Send Section - Hidden for now */}
-              {/* 
-              <div className="mt-6 pt-6 border-t border-neutral-800">
-                <div className="flex items-center gap-2 mb-4">
-                  <div className="w-6 h-6 rounded bg-orange-500/20 flex items-center justify-center">
-                    <ListOrdered className="w-3.5 h-3.5 text-orange-500" />
-                  </div>
-                  <span className="text-sm font-medium text-white">Disparo em Massa</span>
-                </div>
-                <p className="text-xs text-neutral-400 mb-4">
-                  Envie todos os leads de uma pipeline para uma URL via webhook, um por um.
-                </p>
-                <div className="space-y-3">
-                  <Select value={bulkSendPipelineId} onValueChange={setBulkSendPipelineId}>
-                    <SelectTrigger className="h-10 bg-neutral-700 border-neutral-600 text-white">
-                      <SelectValue placeholder="Selecione a pipeline..." />
-                    </SelectTrigger>
-                    <SelectContent className="bg-neutral-800 border-neutral-700">
-                      {allPipelines.map((pipeline) => {
-                        const pipelineSubOrigin = subOrigins.find(s => s.id === pipeline.sub_origin_id);
-                        const pipelineOrigin = pipelineSubOrigin 
-                          ? origins.find(o => o.id === pipelineSubOrigin.origin_id) 
-                          : null;
-                        return (
-                          <SelectItem key={pipeline.id} value={pipeline.id} className="text-white">
-                            {pipelineOrigin?.nome} / {pipelineSubOrigin?.nome} / {pipeline.nome}
-                          </SelectItem>
-                        );
-                      })}
-                    </SelectContent>
-                  </Select>
-                  <Input
-                    placeholder="URL de destino (POST)..."
-                    value={bulkSendUrl}
-                    onChange={(e) => setBulkSendUrl(e.target.value)}
-                    className="h-10 bg-neutral-700 border-neutral-600 text-white placeholder:text-neutral-500"
-                    disabled={isBulkSending}
-                  />
-                  {isBulkSending && bulkSendProgress.total > 0 && (
-                    <div className="p-3 rounded-lg bg-orange-500/10 border border-orange-500/20">
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="text-xs text-orange-400">Enviando...</span>
-                        <span className="text-xs text-white">
-                          {bulkSendProgress.sent} / {bulkSendProgress.total}
-                        </span>
-                      </div>
-                      <div className="w-full h-2 bg-neutral-700 rounded-full overflow-hidden">
-                        <div 
-                          className="h-full bg-orange-500 transition-all duration-300"
-                          style={{ width: `${(bulkSendProgress.sent / bulkSendProgress.total) * 100}%` }}
-                        />
-                      </div>
-                    </div>
-                  )}
-                  <Button
-                    className="w-full h-10 bg-orange-600 hover:bg-orange-700 text-white"
-                    onClick={executeBulkSend}
-                    disabled={isBulkSending || !bulkSendUrl.trim() || !bulkSendPipelineId}
-                  >
-                    {isBulkSending ? (
-                      <>
-                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                        Disparando...
-                      </>
-                    ) : (
-                      <>
-                        <Send className="w-4 h-4 mr-2" />
-                        Disparar Leads
-                      </>
-                    )}
-                  </Button>
-                </div>
-              </div>
-              */}
             </div>
           )}
         </div>
