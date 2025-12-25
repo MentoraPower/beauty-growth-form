@@ -6,7 +6,7 @@ import { StepNavigation } from "./StepNavigation";
 import { AddActivityDialog } from "./AddActivityDialog";
 import { ActivityDetails } from "./ActivityDetails";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Plus, MoreVertical, Trash2, Pencil, ClipboardList, ListChecks, Phone } from "lucide-react";
+import { Plus, MoreVertical, Trash2, Pencil, ClipboardList, Phone } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
@@ -27,8 +27,6 @@ const getTipoIcon = (tipo: string) => {
   switch (tipo) {
     case 'tarefas':
       return <ClipboardList className="h-4 w-4" />;
-    case 'checklist':
-      return <ListChecks className="h-4 w-4" />;
     case 'ligacao':
       return <Phone className="h-4 w-4" />;
     default:
