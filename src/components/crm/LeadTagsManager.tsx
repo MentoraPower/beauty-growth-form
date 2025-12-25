@@ -114,46 +114,140 @@ export function LeadTagsManager({ leadId }: LeadTagsManagerProps) {
 
     setIsLoading(true);
 
-    const { data, error } = await supabase
-      .from("lead_tags")
-      .insert({
-        lead_id: leadId,
-        name: newTagName.trim(),
-        color: selectedColor,
-      })
-      .select()
-      .single();
+    try {
+      // First, get the current lead's contact info
+      const { data: currentLead, error: leadError } = await supabase
+        .from("leads")
+        .select("email, whatsapp")
+        .eq("id", leadId)
+        .single();
 
-    if (error) {
-      console.error("Error adding tag:", error);
+      if (leadError) {
+        console.error("Error fetching lead:", leadError);
+        toast.error("Erro ao buscar informações do lead");
+        setIsLoading(false);
+        return;
+      }
+
+      // Find all leads with the same email or whatsapp
+      const { data: relatedLeads, error: relatedError } = await supabase
+        .from("leads")
+        .select("id")
+        .or(`email.eq.${currentLead.email},whatsapp.eq.${currentLead.whatsapp}`);
+
+      if (relatedError) {
+        console.error("Error fetching related leads:", relatedError);
+        toast.error("Erro ao buscar leads relacionados");
+        setIsLoading(false);
+        return;
+      }
+
+      const tagName = newTagName.trim();
+      const tagsToInsert: { lead_id: string; name: string; color: string }[] = [];
+
+      // For each related lead, check if the tag already exists
+      for (const lead of relatedLeads || []) {
+        const { data: existingTags } = await supabase
+          .from("lead_tags")
+          .select("id")
+          .eq("lead_id", lead.id)
+          .ilike("name", tagName);
+
+        // Only add if tag doesn't exist on this lead
+        if (!existingTags || existingTags.length === 0) {
+          tagsToInsert.push({
+            lead_id: lead.id,
+            name: tagName,
+            color: selectedColor,
+          });
+        }
+      }
+
+      if (tagsToInsert.length > 0) {
+        const { error: insertError } = await supabase
+          .from("lead_tags")
+          .insert(tagsToInsert);
+
+        if (insertError) {
+          console.error("Error adding tags:", insertError);
+          toast.error("Erro ao adicionar tag");
+          setIsLoading(false);
+          return;
+        }
+      }
+
+      // Refresh local tags
+      await fetchTags();
+      setNewTagName("");
+      setSelectedColor(TAG_COLORS[0]);
+      setShowColorPicker(false);
+      setIsOpen(false);
+      
+      const count = tagsToInsert.length;
+      if (count > 1) {
+        toast.success(`Tag adicionada em ${count} leads`);
+      } else {
+        toast.success("Tag adicionada");
+      }
+    } catch (err) {
+      console.error("Error in handleAddTag:", err);
       toast.error("Erro ao adicionar tag");
+    } finally {
       setIsLoading(false);
-      return;
     }
-
-    setTags([...tags, data]);
-    setNewTagName("");
-    setSelectedColor(TAG_COLORS[0]);
-    setShowColorPicker(false);
-    setIsOpen(false);
-    setIsLoading(false);
-    toast.success("Tag adicionada");
   };
 
   const handleRemoveTag = async (tagId: string) => {
-    const { error } = await supabase
-      .from("lead_tags")
-      .delete()
-      .eq("id", tagId);
+    const tagToRemove = tags.find(t => t.id === tagId);
+    if (!tagToRemove) return;
 
-    if (error) {
-      console.error("Error removing tag:", error);
+    try {
+      // Get the current lead's contact info
+      const { data: currentLead, error: leadError } = await supabase
+        .from("leads")
+        .select("email, whatsapp")
+        .eq("id", leadId)
+        .single();
+
+      if (leadError) {
+        console.error("Error fetching lead:", leadError);
+        toast.error("Erro ao buscar informações do lead");
+        return;
+      }
+
+      // Find all leads with the same email or whatsapp
+      const { data: relatedLeads, error: relatedError } = await supabase
+        .from("leads")
+        .select("id")
+        .or(`email.eq.${currentLead.email},whatsapp.eq.${currentLead.whatsapp}`);
+
+      if (relatedError) {
+        console.error("Error fetching related leads:", relatedError);
+        toast.error("Erro ao buscar leads relacionados");
+        return;
+      }
+
+      const leadIds = relatedLeads?.map(l => l.id) || [];
+
+      // Delete the tag from all related leads
+      const { error: deleteError } = await supabase
+        .from("lead_tags")
+        .delete()
+        .in("lead_id", leadIds)
+        .ilike("name", tagToRemove.name);
+
+      if (deleteError) {
+        console.error("Error removing tags:", deleteError);
+        toast.error("Erro ao remover tag");
+        return;
+      }
+
+      setTags(tags.filter((t) => t.id !== tagId));
+      toast.success("Tag removida de todos os leads relacionados");
+    } catch (err) {
+      console.error("Error in handleRemoveTag:", err);
       toast.error("Erro ao remover tag");
-      return;
     }
-
-    setTags(tags.filter((t) => t.id !== tagId));
-    toast.success("Tag removida");
   };
 
   return (
