@@ -170,17 +170,47 @@ export function OverviewCardComponent({
       e.preventDefault();
       e.stopPropagation();
 
-      // Cap max width to the available space in the container so dragging past the edge
-      // doesn't start "resizing" other sides/axes.
-      const parent = cardRef.current?.parentElement;
-      if (parent) {
+      const startW = currentSizeRef.current.width;
+      const startH = currentSizeRef.current.height;
+
+      // Cap max size by the REAL free space inside the parent (direction-aware).
+      // If the card is already flush with an edge and you drag further, nothing grows.
+      const el = cardRef.current;
+      const parent = el?.parentElement;
+
+      if (el && parent) {
+        const cardRect = el.getBoundingClientRect();
+        const parentRect = parent.getBoundingClientRect();
         const style = window.getComputedStyle(parent);
-        const paddingX =
-          (parseFloat(style.paddingLeft) || 0) + (parseFloat(style.paddingRight) || 0);
-        const availableW = Math.floor(parent.clientWidth - paddingX);
+
+        const padLeft = parseFloat(style.paddingLeft) || 0;
+        const padRight = parseFloat(style.paddingRight) || 0;
+        const padTop = parseFloat(style.paddingTop) || 0;
+        const padBottom = parseFloat(style.paddingBottom) || 0;
+
+        const innerLeft = parentRect.left + padLeft;
+        const innerRight = parentRect.right - padRight;
+        const innerTop = parentRect.top + padTop;
+        const innerBottom = parentRect.bottom - padBottom;
+
+        let maxW = MAX_CARD_WIDTH;
+        let maxH = MAX_CARD_HEIGHT;
+
+        if (direction.includes("right")) {
+          maxW = Math.min(MAX_CARD_WIDTH, startW + (innerRight - cardRect.right));
+        } else if (direction.includes("left")) {
+          maxW = Math.min(MAX_CARD_WIDTH, startW + (cardRect.left - innerLeft));
+        }
+
+        if (direction.includes("bottom")) {
+          maxH = Math.min(MAX_CARD_HEIGHT, startH + (innerBottom - cardRect.bottom));
+        } else if (direction.includes("top")) {
+          maxH = Math.min(MAX_CARD_HEIGHT, startH + (cardRect.top - innerTop));
+        }
+
         maxSizeRef.current = {
-          maxW: Math.min(MAX_CARD_WIDTH, Math.max(MIN_CARD_WIDTH, availableW)),
-          maxH: MAX_CARD_HEIGHT,
+          maxW: Math.max(MIN_CARD_WIDTH, Math.floor(maxW)),
+          maxH: Math.max(MIN_CARD_HEIGHT, Math.floor(maxH)),
         };
       } else {
         maxSizeRef.current = { maxW: MAX_CARD_WIDTH, maxH: MAX_CARD_HEIGHT };
@@ -190,8 +220,8 @@ export function OverviewCardComponent({
       setResizeDirection(direction);
       startPosRef.current = { x: e.clientX, y: e.clientY };
       startSizeRef.current = {
-        width: currentSizeRef.current.width,
-        height: currentSizeRef.current.height,
+        width: startW,
+        height: startH,
       };
     },
     []
