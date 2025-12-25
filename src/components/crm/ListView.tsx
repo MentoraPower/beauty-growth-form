@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { createPortal } from "react-dom";
-import { ChevronDown, ChevronRight, Plus, MoreHorizontal, Calendar, X, User, Phone, Mail, Instagram, GripVertical } from "lucide-react";
+import { ChevronDown, ChevronRight, Plus, MoreHorizontal, Calendar, X, User, Phone, Mail, Instagram, GripVertical, Tag } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Lead, Pipeline } from "@/types/crm";
 import { useNavigate, useSearchParams } from "react-router-dom";
@@ -12,6 +12,11 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
 import { trackLeadEvent } from "@/lib/leadTracking";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import {
   DndContext,
   closestCenter,
@@ -52,6 +57,61 @@ interface SortableLeadRowProps {
   isOverlay?: boolean;
 }
 
+const MAX_VISIBLE_TAGS = 2;
+
+function TagsBadge({ tags }: { tags?: { id: string; name: string; color: string }[] }) {
+  if (!tags || tags.length === 0) return null;
+
+  const visibleTags = tags.slice(0, MAX_VISIBLE_TAGS);
+  const remainingTags = tags.slice(MAX_VISIBLE_TAGS);
+
+  return (
+    <div className="flex items-center gap-1 flex-wrap">
+      {visibleTags.map((tag) => (
+        <span
+          key={tag.id}
+          className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium truncate max-w-[80px]"
+          style={{
+            backgroundColor: `${tag.color}20`,
+            color: tag.color,
+          }}
+        >
+          {tag.name}
+        </span>
+      ))}
+      {remainingTags.length > 0 && (
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button
+              onClick={(e) => e.stopPropagation()}
+              className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-medium bg-muted text-muted-foreground hover:bg-muted/80"
+            >
+              <Tag className="w-3 h-3" />
+              +{remainingTags.length}
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="start" className="p-2 min-w-[120px]">
+            <div className="flex flex-col gap-1">
+              {remainingTags.map((tag) => (
+                <span
+                  key={tag.id}
+                  className="inline-flex items-center px-2 py-1 rounded text-xs font-medium"
+                  style={{
+                    backgroundColor: `${tag.color}20`,
+                    color: tag.color,
+                  }}
+                >
+                  {tag.name}
+                </span>
+              ))}
+            </div>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      )}
+    </div>
+  );
+}
+
 function SortableLeadRow({ lead, isSelected, onLeadClick, onToggleSelection, isOverlay = false }: SortableLeadRowProps) {
   const {
     attributes,
@@ -66,13 +126,18 @@ function SortableLeadRow({ lead, isSelected, onLeadClick, onToggleSelection, isO
     transition: undefined,
   };
 
+  const formatPhone = (phone: string, countryCode: string) => {
+    if (!phone) return "-";
+    return `${countryCode} ${phone}`;
+  };
+
   return (
     <div
       ref={isOverlay ? undefined : setNodeRef}
       style={isOverlay ? undefined : style}
       onClick={() => !isDragging && onLeadClick(lead)}
       className={cn(
-        "grid grid-cols-12 gap-4 py-2.5 px-3 hover:bg-muted/40 rounded cursor-pointer transition-colors group border-b border-border/20 last:border-b-0",
+        "grid grid-cols-12 gap-2 py-2.5 px-3 hover:bg-muted/40 rounded cursor-pointer transition-colors group border-b border-border/20 last:border-b-0",
         isSelected && "bg-primary/5",
         isDragging && !isOverlay && "opacity-30",
         isOverlay && "shadow-lg bg-background border border-border rounded-lg"
@@ -94,20 +159,43 @@ function SortableLeadRow({ lead, isSelected, onLeadClick, onToggleSelection, isO
           className="border-[#00000040] data-[state=checked]:bg-[#00000040] data-[state=checked]:border-[#00000040]"
         />
       </div>
-      <div className="col-span-7 flex items-center gap-2">
+      
+      {/* Nome */}
+      <div className="col-span-3 flex items-center gap-2">
         <div className="w-5 h-5 rounded-full flex items-center justify-center bg-muted text-muted-foreground text-[10px] font-bold flex-shrink-0">
           {lead.name.charAt(0).toUpperCase()}
         </div>
         <span className="text-sm text-foreground truncate">{lead.name}</span>
       </div>
       
-      <div className="col-span-3 flex items-center gap-1.5">
-        <Calendar className="w-4 h-4 text-muted-foreground" />
-        <span className="text-xs text-muted-foreground">
+      {/* Email */}
+      <div className="col-span-2 flex items-center gap-1 min-w-0">
+        <Mail className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0" />
+        <span className="text-xs text-muted-foreground truncate">
+          {lead.email && lead.email !== "sem@email.com" ? lead.email : "-"}
+        </span>
+      </div>
+      
+      {/* WhatsApp */}
+      <div className="col-span-2 flex items-center gap-1 min-w-0">
+        <Phone className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0" />
+        <span className="text-xs text-muted-foreground truncate">
+          {formatPhone(lead.whatsapp, lead.country_code)}
+        </span>
+      </div>
+      
+      {/* Tags */}
+      <div className="col-span-2 flex items-center min-w-0">
+        <TagsBadge tags={lead.tags} />
+      </div>
+      
+      {/* Data */}
+      <div className="col-span-1 flex items-center gap-1">
+        <Calendar className="w-3.5 h-3.5 text-muted-foreground" />
+        <span className="text-[10px] text-muted-foreground">
           {new Date(lead.created_at).toLocaleDateString("pt-BR", {
             day: "2-digit",
             month: "short",
-            year: "numeric"
           })}
         </span>
       </div>
