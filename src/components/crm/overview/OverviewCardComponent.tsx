@@ -20,6 +20,10 @@ import { format, subDays, startOfDay, eachDayOfInterval } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 
+type ResizeDirection = 
+  | "left" | "right" | "top" | "bottom" 
+  | "top-left" | "top-right" | "bottom-left" | "bottom-right";
+
 interface OverviewCardComponentProps {
   card: OverviewCard;
   leads: Lead[];
@@ -51,7 +55,7 @@ export function OverviewCardComponent({
   isDragging,
 }: OverviewCardComponentProps) {
   const [isResizing, setIsResizing] = useState(false);
-  const [resizeDirection, setResizeDirection] = useState<"right" | "bottom" | "corner" | null>(null);
+  const [resizeDirection, setResizeDirection] = useState<ResizeDirection | null>(null);
   const [currentSize, setCurrentSize] = useState<CardSize>(card.size);
   const startPosRef = useRef({ x: 0, y: 0 });
   const startSizeRef = useRef({ width: card.size.width, height: card.size.height });
@@ -151,7 +155,7 @@ export function OverviewCardComponent({
   }, [card.dataSource, leads]);
 
   // Resize handlers
-  const handleResizeStart = useCallback((e: React.MouseEvent, direction: "right" | "bottom" | "corner") => {
+  const handleResizeStart = useCallback((e: React.MouseEvent, direction: ResizeDirection) => {
     e.preventDefault();
     e.stopPropagation();
     setIsResizing(true);
@@ -161,7 +165,7 @@ export function OverviewCardComponent({
   }, [currentSize]);
 
   useEffect(() => {
-    if (!isResizing) return;
+    if (!isResizing || !resizeDirection) return;
 
     const handleMouseMove = (e: MouseEvent) => {
       const deltaX = e.clientX - startPosRef.current.x;
@@ -170,12 +174,20 @@ export function OverviewCardComponent({
       let newWidth = startSizeRef.current.width;
       let newHeight = startSizeRef.current.height;
 
-      if (resizeDirection === "right" || resizeDirection === "corner") {
+      // Horizontal resize
+      if (resizeDirection === "right" || resizeDirection === "top-right" || resizeDirection === "bottom-right") {
         newWidth = Math.max(MIN_CARD_WIDTH, Math.min(MAX_CARD_WIDTH, startSizeRef.current.width + deltaX));
       }
+      if (resizeDirection === "left" || resizeDirection === "top-left" || resizeDirection === "bottom-left") {
+        newWidth = Math.max(MIN_CARD_WIDTH, Math.min(MAX_CARD_WIDTH, startSizeRef.current.width - deltaX));
+      }
 
-      if (resizeDirection === "bottom" || resizeDirection === "corner") {
+      // Vertical resize
+      if (resizeDirection === "bottom" || resizeDirection === "bottom-left" || resizeDirection === "bottom-right") {
         newHeight = Math.max(MIN_CARD_HEIGHT, Math.min(MAX_CARD_HEIGHT, startSizeRef.current.height + deltaY));
+      }
+      if (resizeDirection === "top" || resizeDirection === "top-left" || resizeDirection === "top-right") {
+        newHeight = Math.max(MIN_CARD_HEIGHT, Math.min(MAX_CARD_HEIGHT, startSizeRef.current.height - deltaY));
       }
 
       const newSize = { width: newWidth, height: newHeight };
@@ -431,22 +443,52 @@ export function OverviewCardComponent({
       </div>
 
       {/* Resize Handles */}
+      {/* Left handle */}
+      <div
+        className="absolute left-0 top-2 bottom-2 w-2 cursor-ew-resize opacity-0 group-hover:opacity-100 hover:bg-primary/20 z-10"
+        onMouseDown={(e) => handleResizeStart(e, "left")}
+      />
+      
       {/* Right handle */}
       <div
-        className="absolute right-0 top-0 bottom-0 w-2 cursor-ew-resize opacity-0 group-hover:opacity-100 hover:bg-primary/20 z-10"
+        className="absolute right-0 top-2 bottom-2 w-2 cursor-ew-resize opacity-0 group-hover:opacity-100 hover:bg-primary/20 z-10"
         onMouseDown={(e) => handleResizeStart(e, "right")}
+      />
+      
+      {/* Top handle */}
+      <div
+        className="absolute top-0 left-2 right-2 h-2 cursor-ns-resize opacity-0 group-hover:opacity-100 hover:bg-primary/20 z-10"
+        onMouseDown={(e) => handleResizeStart(e, "top")}
       />
       
       {/* Bottom handle */}
       <div
-        className="absolute bottom-0 left-0 right-0 h-2 cursor-ns-resize opacity-0 group-hover:opacity-100 hover:bg-primary/20 z-10"
+        className="absolute bottom-0 left-2 right-2 h-2 cursor-ns-resize opacity-0 group-hover:opacity-100 hover:bg-primary/20 z-10"
         onMouseDown={(e) => handleResizeStart(e, "bottom")}
       />
       
-      {/* Corner handle */}
+      {/* Top-left corner */}
+      <div
+        className="absolute top-0 left-0 w-3 h-3 cursor-nwse-resize opacity-0 group-hover:opacity-100 hover:bg-primary/20 z-20"
+        onMouseDown={(e) => handleResizeStart(e, "top-left")}
+      />
+      
+      {/* Top-right corner */}
+      <div
+        className="absolute top-0 right-0 w-3 h-3 cursor-nesw-resize opacity-0 group-hover:opacity-100 hover:bg-primary/20 z-20"
+        onMouseDown={(e) => handleResizeStart(e, "top-right")}
+      />
+      
+      {/* Bottom-left corner */}
+      <div
+        className="absolute bottom-0 left-0 w-3 h-3 cursor-nesw-resize opacity-0 group-hover:opacity-100 hover:bg-primary/20 z-20"
+        onMouseDown={(e) => handleResizeStart(e, "bottom-left")}
+      />
+      
+      {/* Bottom-right corner */}
       <div
         className="absolute bottom-0 right-0 w-4 h-4 cursor-nwse-resize opacity-0 group-hover:opacity-100 z-20"
-        onMouseDown={(e) => handleResizeStart(e, "corner")}
+        onMouseDown={(e) => handleResizeStart(e, "bottom-right")}
       >
         <div className="absolute bottom-1 right-1 w-2 h-2 border-r-2 border-b-2 border-muted-foreground/50 group-hover:border-primary" />
       </div>
