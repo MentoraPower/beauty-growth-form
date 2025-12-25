@@ -1718,7 +1718,7 @@ export function KanbanBoard() {
       {activeView === "overview" && subOriginId && (
         <Suspense fallback={
           <div className="flex-1 flex items-center justify-center">
-            <Skeleton className="h-96 w-full max-w-4xl rounded-xl" />
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
           </div>
         }>
           <OverviewView
@@ -1734,7 +1734,7 @@ export function KanbanBoard() {
       {activeView === "calendario" && subOriginId && (
         <Suspense fallback={
           <div className="flex-1 flex items-center justify-center">
-            <Skeleton className="h-96 w-full max-w-4xl rounded-xl" />
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
           </div>
         }>
           <CalendarPageLazy />
@@ -1745,7 +1745,7 @@ export function KanbanBoard() {
       {activeView === "email" && subOriginId && (
         <Suspense fallback={
           <div className="flex-1 flex items-center justify-center">
-            <Skeleton className="h-96 w-full max-w-4xl rounded-xl" />
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
           </div>
         }>
           <EmailAutomationsView 
