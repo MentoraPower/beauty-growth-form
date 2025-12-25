@@ -44,7 +44,7 @@ import {
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 import gmailLogo from "@/assets/gmail-logo.png";
-import { BroadcastDialog } from "./BroadcastDialog";
+
 
 // Connection dropdown state interface
 interface ConnectionDropdown {
@@ -1495,7 +1495,6 @@ export function EmailFlowBuilder({
   const [triggerType, setTriggerType] = useState<string>("");
   const [triggerPipelineId, setTriggerPipelineId] = useState<string>("");
   const [connectionDropdown, setConnectionDropdown] = useState<ConnectionDropdown | null>(null);
-  const [broadcastDialogOpen, setBroadcastDialogOpen] = useState(false);
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
 
   // Filter pipelines for current sub-origin
@@ -2119,21 +2118,6 @@ export function EmailFlowBuilder({
             </div>
             <span className="text-sm text-foreground">Finalizar</span>
           </div>
-          
-          {/* Divider */}
-          <div className="border-t border-border my-2" />
-          
-          {/* Broadcast Button */}
-          <Button
-            variant="outline"
-            className="w-full justify-start gap-3 h-auto py-2.5 px-2.5 rounded-xl"
-            onClick={() => setBroadcastDialogOpen(true)}
-          >
-            <div className="w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 border border-gray-200 flex-shrink-0">
-              <ArrowUp className="w-4 h-4 text-gray-600" />
-            </div>
-            <span className="text-sm">Disparo</span>
-          </Button>
         </div>
 
         {/* Flow Canvas */}
@@ -2215,12 +2199,6 @@ export function EmailFlowBuilder({
           )}
         </div>
       </div>
-
-      {/* Broadcast Dialog */}
-      <BroadcastDialog 
-        open={broadcastDialogOpen} 
-        onOpenChange={setBroadcastDialogOpen} 
-      />
     </div>
   );
 }
