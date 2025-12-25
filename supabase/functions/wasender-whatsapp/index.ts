@@ -1302,6 +1302,65 @@ async function handler(req: Request): Promise<Response> {
       });
     }
 
+    // =========================
+    // ACTION: get-stats (Get WhatsApp message statistics)
+    // =========================
+    if (action === "get-stats") {
+      console.log(`[Wasender] Getting message statistics`);
+      
+      // Fetch messages from the last 30 days
+      const thirtyDaysAgo = new Date();
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+      
+      const { data: messages, error: msgError } = await supabase
+        .from("whatsapp_messages")
+        .select("status, created_at, from_me")
+        .eq("from_me", true)
+        .gte("created_at", thirtyDaysAgo.toISOString())
+        .order("created_at", { ascending: false });
+
+      if (msgError) {
+        console.error("[Wasender] Error fetching message stats:", msgError);
+        return new Response(JSON.stringify({ error: msgError.message }), {
+          status: 500,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      // Calculate stats
+      const sent = messages?.filter(m => 
+        m.status === "SENT" || m.status === "DELIVERED" || m.status === "READ"
+      ).length || 0;
+      const failed = messages?.filter(m => m.status === "FAILED").length || 0;
+      const pending = messages?.filter(m => m.status === "PENDING").length || 0;
+
+      // Group by day of week
+      const dayNames = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
+      const dayCounts = [0, 0, 0, 0, 0, 0, 0];
+      
+      messages?.forEach(msg => {
+        const date = new Date(msg.created_at);
+        dayCounts[date.getDay()]++;
+      });
+
+      const byDayOfWeek = dayNames.map((day, i) => ({ day, count: dayCounts[i] }));
+
+      console.log(`[Wasender] Stats - Sent: ${sent}, Failed: ${failed}, Pending: ${pending}`);
+
+      return new Response(JSON.stringify({ 
+        success: true, 
+        data: {
+          sent,
+          failed,
+          pending,
+          byDayOfWeek,
+          total: messages?.length || 0,
+        }
+      }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     return new Response(JSON.stringify({ error: "Unknown action" }), {
       status: 400,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
