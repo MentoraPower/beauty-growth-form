@@ -174,26 +174,28 @@ export function OverviewCardComponent({
       let newWidth = startSizeRef.current.width;
       let newHeight = startSizeRef.current.height;
 
-      // Horizontal resize
+      // Horizontal resize - right side increases, left side decreases
       if (resizeDirection === "right" || resizeDirection === "top-right" || resizeDirection === "bottom-right") {
         newWidth = Math.max(MIN_CARD_WIDTH, Math.min(MAX_CARD_WIDTH, startSizeRef.current.width + deltaX));
-      }
-      if (resizeDirection === "left" || resizeDirection === "top-left" || resizeDirection === "bottom-left") {
+      } else if (resizeDirection === "left" || resizeDirection === "top-left" || resizeDirection === "bottom-left") {
+        // Left side: dragging left (negative deltaX) = increase, dragging right = decrease
         newWidth = Math.max(MIN_CARD_WIDTH, Math.min(MAX_CARD_WIDTH, startSizeRef.current.width - deltaX));
       }
 
-      // Vertical resize
+      // Vertical resize - bottom side increases, top side decreases
       if (resizeDirection === "bottom" || resizeDirection === "bottom-left" || resizeDirection === "bottom-right") {
         newHeight = Math.max(MIN_CARD_HEIGHT, Math.min(MAX_CARD_HEIGHT, startSizeRef.current.height + deltaY));
-      }
-      if (resizeDirection === "top" || resizeDirection === "top-left" || resizeDirection === "top-right") {
+      } else if (resizeDirection === "top" || resizeDirection === "top-left" || resizeDirection === "top-right") {
+        // Top side: dragging up (negative deltaY) = increase, dragging down = decrease
         newHeight = Math.max(MIN_CARD_HEIGHT, Math.min(MAX_CARD_HEIGHT, startSizeRef.current.height - deltaY));
       }
 
-      const newSize = { width: newWidth, height: newHeight };
-      setCurrentSize(newSize);
-      // Save in real-time
-      onResize(card.id, newSize);
+      // Only update if size actually changed (within valid range)
+      if (newWidth !== currentSize.width || newHeight !== currentSize.height) {
+        const newSize = { width: newWidth, height: newHeight };
+        setCurrentSize(newSize);
+        onResize(card.id, newSize);
+      }
     };
 
     const handleMouseUp = () => {
@@ -208,7 +210,7 @@ export function OverviewCardComponent({
       document.removeEventListener("mousemove", handleMouseMove);
       document.removeEventListener("mouseup", handleMouseUp);
     };
-  }, [isResizing, resizeDirection, card.id, onResize]);
+  }, [isResizing, resizeDirection, card.id, onResize, currentSize.width, currentSize.height]);
 
   const renderChart = () => {
     const isLarge = currentSize.height >= 280;
