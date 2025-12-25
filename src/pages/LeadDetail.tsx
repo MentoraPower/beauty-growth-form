@@ -112,6 +112,9 @@ export default function LeadDetail() {
     const params = new URLSearchParams();
     if (subOriginId) params.set("origin", subOriginId);
     if (searchQuery) params.set("search", searchQuery);
+    // Preserve view param (lista or kanban)
+    const viewParam = searchParams.get("view");
+    if (viewParam) params.set("view", viewParam);
     const queryString = params.toString();
     return `/admin/crm${queryString ? `?${queryString}` : ''}`;
   };
