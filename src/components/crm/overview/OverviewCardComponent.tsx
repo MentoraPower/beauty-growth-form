@@ -1,23 +1,16 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef, useCallback } from "react";
 import { 
   MoreHorizontal, 
-  Maximize2, 
-  Minimize2, 
   Trash2,
   GripVertical,
   ArrowUpRight,
   ArrowDownRight,
-  ArrowRight
 } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
-  DropdownMenuSub,
-  DropdownMenuSubContent,
-  DropdownMenuSubTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 import { OverviewCard, CardSize } from "./types";
@@ -35,6 +28,8 @@ interface OverviewCardComponentProps {
   onDelete: (id: string) => void;
   onResize: (id: string, size: CardSize) => void;
   isDragging?: boolean;
+  gridCellWidth: number;
+  gridCellHeight: number;
 }
 
 const COLORS = [
@@ -56,7 +51,16 @@ export function OverviewCardComponent({
   onDelete,
   onResize,
   isDragging,
+  gridCellWidth,
+  gridCellHeight,
 }: OverviewCardComponentProps) {
+  const [isResizing, setIsResizing] = useState(false);
+  const [resizeDirection, setResizeDirection] = useState<"right" | "bottom" | "corner" | null>(null);
+  const [previewSize, setPreviewSize] = useState<CardSize | null>(null);
+  const cardRef = useRef<HTMLDivElement>(null);
+  const startPosRef = useRef({ x: 0, y: 0 });
+  const startSizeRef = useRef({ width: card.size.width, height: card.size.height });
+
   // Calculate data based on dataSource
   const chartData = useMemo(() => {
     switch (card.dataSource) {
@@ -144,6 +148,88 @@ export function OverviewCardComponent({
     };
   }, [card.dataSource, leads]);
 
+  // Resize handlers
+  const handleResizeStart = useCallback((e: React.MouseEvent, direction: "right" | "bottom" | "corner") => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsResizing(true);
+    setResizeDirection(direction);
+    startPosRef.current = { x: e.clientX, y: e.clientY };
+    startSizeRef.current = { width: card.size.width, height: card.size.height };
+    setPreviewSize(card.size);
+  }, [card.size]);
+
+  const handleResizeMove = useCallback((e: MouseEvent) => {
+    if (!isResizing || !resizeDirection) return;
+
+    const deltaX = e.clientX - startPosRef.current.x;
+    const deltaY = e.clientY - startPosRef.current.y;
+
+    let newWidth = startSizeRef.current.width;
+    let newHeight = startSizeRef.current.height;
+
+    // Calculate new size based on drag distance relative to cell size
+    if (resizeDirection === "right" || resizeDirection === "corner") {
+      const widthChange = Math.round(deltaX / gridCellWidth);
+      newWidth = Math.max(1, Math.min(3, startSizeRef.current.width + widthChange)) as 1 | 2 | 3;
+    }
+
+    if (resizeDirection === "bottom" || resizeDirection === "corner") {
+      const heightChange = Math.round(deltaY / gridCellHeight);
+      newHeight = Math.max(1, Math.min(3, startSizeRef.current.height + heightChange)) as 1 | 2 | 3;
+    }
+
+    setPreviewSize({ width: newWidth, height: newHeight });
+  }, [isResizing, resizeDirection, gridCellWidth, gridCellHeight]);
+
+  const handleResizeEnd = useCallback(() => {
+    if (previewSize && (previewSize.width !== card.size.width || previewSize.height !== card.size.height)) {
+      onResize(card.id, previewSize);
+    }
+    setIsResizing(false);
+    setResizeDirection(null);
+    setPreviewSize(null);
+  }, [card.id, card.size, previewSize, onResize]);
+
+  // Attach/detach global mouse events
+  useState(() => {
+    const handleMouseMove = (e: MouseEvent) => handleResizeMove(e);
+    const handleMouseUp = () => handleResizeEnd();
+
+    if (isResizing) {
+      document.addEventListener("mousemove", handleMouseMove);
+      document.addEventListener("mouseup", handleMouseUp);
+    }
+
+    return () => {
+      document.removeEventListener("mousemove", handleMouseMove);
+      document.removeEventListener("mouseup", handleMouseUp);
+    };
+  });
+
+  // Use effect to handle resize events
+  const handleMouseMove = useCallback((e: MouseEvent) => {
+    handleResizeMove(e);
+  }, [handleResizeMove]);
+
+  const handleMouseUp = useCallback(() => {
+    handleResizeEnd();
+  }, [handleResizeEnd]);
+
+  // Attach global listeners when resizing
+  useMemo(() => {
+    if (isResizing) {
+      document.addEventListener("mousemove", handleMouseMove);
+      document.addEventListener("mouseup", handleMouseUp);
+      return () => {
+        document.removeEventListener("mousemove", handleMouseMove);
+        document.removeEventListener("mouseup", handleMouseUp);
+      };
+    }
+  }, [isResizing, handleMouseMove, handleMouseUp]);
+
+  const displaySize = previewSize || card.size;
+
   const renderChart = () => {
     switch (card.chartType) {
       case "pie":
@@ -162,8 +248,8 @@ export function OverviewCardComponent({
                 data={pieData}
                 cx="50%"
                 cy="50%"
-                innerRadius={card.size.height >= 2 ? 50 : 30}
-                outerRadius={card.size.height >= 2 ? 80 : 50}
+                innerRadius={displaySize.height >= 2 ? 50 : 30}
+                outerRadius={displaySize.height >= 2 ? 80 : 50}
                 paddingAngle={2}
                 dataKey="value"
               >
@@ -346,11 +432,13 @@ export function OverviewCardComponent({
 
   return (
     <div
+      ref={cardRef}
       className={cn(
-        "bg-white rounded-xl border border-[#00000015] shadow-sm overflow-hidden flex flex-col group",
-        sizeClasses.width[card.size.width],
-        sizeClasses.height[card.size.height],
-        isDragging && "opacity-50 shadow-lg"
+        "bg-white rounded-xl border border-[#00000015] shadow-sm overflow-hidden flex flex-col group relative",
+        sizeClasses.width[displaySize.width],
+        sizeClasses.height[displaySize.height],
+        isDragging && "opacity-50 shadow-lg",
+        isResizing && "ring-2 ring-primary/50"
       )}
     >
       {/* Header */}
@@ -368,41 +456,6 @@ export function OverviewCardComponent({
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuSub>
-                <DropdownMenuSubTrigger>
-                  <Maximize2 className="h-4 w-4 mr-2" />
-                  Largura
-                </DropdownMenuSubTrigger>
-                <DropdownMenuSubContent>
-                  <DropdownMenuItem onClick={() => onResize(card.id, { ...card.size, width: 1 })}>
-                    Pequeno (1x)
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => onResize(card.id, { ...card.size, width: 2 })}>
-                    Médio (2x)
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => onResize(card.id, { ...card.size, width: 3 })}>
-                    Grande (3x)
-                  </DropdownMenuItem>
-                </DropdownMenuSubContent>
-              </DropdownMenuSub>
-              <DropdownMenuSub>
-                <DropdownMenuSubTrigger>
-                  <ArrowRight className="h-4 w-4 mr-2 rotate-90" />
-                  Altura
-                </DropdownMenuSubTrigger>
-                <DropdownMenuSubContent>
-                  <DropdownMenuItem onClick={() => onResize(card.id, { ...card.size, height: 1 })}>
-                    Pequeno (1x)
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => onResize(card.id, { ...card.size, height: 2 })}>
-                    Médio (2x)
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => onResize(card.id, { ...card.size, height: 3 })}>
-                    Grande (3x)
-                  </DropdownMenuItem>
-                </DropdownMenuSubContent>
-              </DropdownMenuSub>
-              <DropdownMenuSeparator />
               <DropdownMenuItem 
                 onClick={() => onDelete(card.id)}
                 className="text-destructive focus:text-destructive"
@@ -419,6 +472,38 @@ export function OverviewCardComponent({
       <div className="flex-1 p-4 min-h-0">
         {renderChart()}
       </div>
+
+      {/* Resize Handles */}
+      {/* Right handle */}
+      <div
+        className="absolute right-0 top-0 bottom-0 w-2 cursor-ew-resize opacity-0 group-hover:opacity-100 hover:bg-primary/20 transition-all z-10"
+        onMouseDown={(e) => handleResizeStart(e, "right")}
+      />
+      
+      {/* Bottom handle */}
+      <div
+        className="absolute bottom-0 left-0 right-0 h-2 cursor-ns-resize opacity-0 group-hover:opacity-100 hover:bg-primary/20 transition-all z-10"
+        onMouseDown={(e) => handleResizeStart(e, "bottom")}
+      />
+      
+      {/* Corner handle */}
+      <div
+        className="absolute bottom-0 right-0 w-4 h-4 cursor-nwse-resize opacity-0 group-hover:opacity-100 z-20"
+        onMouseDown={(e) => handleResizeStart(e, "corner")}
+      >
+        <div className="absolute bottom-1 right-1 w-2 h-2 border-r-2 border-b-2 border-muted-foreground/50 group-hover:border-primary transition-colors" />
+      </div>
+
+      {/* Size indicator during resize */}
+      {isResizing && previewSize && (
+        <div className="absolute inset-0 bg-primary/5 flex items-center justify-center pointer-events-none z-30">
+          <div className="bg-background/90 backdrop-blur-sm px-3 py-1.5 rounded-full border shadow-sm">
+            <span className="text-sm font-medium text-foreground">
+              {previewSize.width}x{previewSize.height}
+            </span>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
