@@ -503,6 +503,38 @@ export function KanbanBoard() {
     };
   }, [queryClient, subOriginId]);
 
+  // Auto-navigate to first sub-origin if none selected
+  useEffect(() => {
+    const autoSelectFirstSubOrigin = async () => {
+      if (subOriginId) return; // Already have a sub-origin selected
+      
+      // Get first origin ordered by 'ordem'
+      const { data: origins } = await supabase
+        .from('crm_origins')
+        .select('id')
+        .order('ordem')
+        .limit(1);
+      
+      if (origins && origins.length > 0) {
+        // Get first sub-origin of that origin
+        const { data: subOrigins } = await supabase
+          .from('crm_sub_origins')
+          .select('id')
+          .eq('origin_id', origins[0].id)
+          .order('ordem')
+          .limit(1);
+        
+        if (subOrigins && subOrigins.length > 0) {
+          const newParams = new URLSearchParams(searchParams);
+          newParams.set('origin', subOrigins[0].id);
+          setSearchParams(newParams, { replace: true });
+        }
+      }
+    };
+
+    autoSelectFirstSubOrigin();
+  }, [subOriginId, searchParams, setSearchParams]);
+
   const handleDragStart = useCallback((event: DragStartEvent) => {
     setActiveId(event.active.id as string);
     setDropIndicator(null);
