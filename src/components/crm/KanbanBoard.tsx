@@ -97,7 +97,17 @@ export function KanbanBoard() {
   const emailBuilderName = searchParams.get("emailName");
   const emailBuilderTriggerPipelineId = searchParams.get("emailTrigger");
   
-  const [activeView, setActiveView] = useState<CRMView>(urlView || "quadro");
+  // Get initial view from URL, then localStorage, then default to "quadro"
+  const getInitialView = (): CRMView => {
+    if (urlView) return urlView;
+    const savedView = localStorage.getItem("crm-view-preference") as CRMView | null;
+    if (savedView && ["overview", "quadro", "lista", "calendario", "email"].includes(savedView)) {
+      return savedView;
+    }
+    return "quadro";
+  };
+  
+  const [activeView, setActiveView] = useState<CRMView>(getInitialView);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [overId, setOverId] = useState<string | null>(null);
   const [dropIndicator, setDropIndicator] = useState<{
@@ -121,9 +131,10 @@ export function KanbanBoard() {
   const queryClient = useQueryClient();
   const searchTimeoutRef = useRef<number | null>(null);
 
-  // Handle view change and update URL
+  // Handle view change and update URL + localStorage
   const handleViewChange = useCallback((view: CRMView) => {
     setActiveView(view);
+    localStorage.setItem("crm-view-preference", view);
     const newParams = new URLSearchParams(searchParams);
     newParams.set("view", view);
     setSearchParams(newParams, { replace: true });
