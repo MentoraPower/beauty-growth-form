@@ -59,50 +59,40 @@ interface SortableLeadRowProps {
   tags?: { id: string; name: string; color: string }[];
 }
 
-const MAX_VISIBLE_TAGS = 2;
+// Convert hex to rgba with opacity
+const hexToRgba = (hex: string, alpha: number) => {
+  const r = parseInt(hex.slice(1, 3), 16);
+  const g = parseInt(hex.slice(3, 5), 16);
+  const b = parseInt(hex.slice(5, 7), 16);
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+};
 
 function TagsBadge({ tags }: { tags?: { id: string; name: string; color: string }[] }) {
   if (!tags || tags.length === 0) return null;
 
-  const visibleTags = tags.slice(0, MAX_VISIBLE_TAGS);
-  const remainingTags = tags.slice(MAX_VISIBLE_TAGS);
-
-  // Convert hex to rgba with opacity
-  const hexToRgba = (hex: string, alpha: number) => {
-    const r = parseInt(hex.slice(1, 3), 16);
-    const g = parseInt(hex.slice(3, 5), 16);
-    const b = parseInt(hex.slice(5, 7), 16);
-    return `rgba(${r}, ${g}, ${b}, ${alpha})`;
-  };
+  const firstTag = tags[0];
 
   return (
-    <div className="flex items-center gap-1 flex-wrap">
-      {visibleTags.map((tag) => (
-        <span
-          key={tag.id}
-          className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium truncate max-w-[80px]"
-          style={{
-            backgroundColor: hexToRgba(tag.color, 0.15),
-            color: tag.color,
-          }}
-        >
-          {tag.name}
-        </span>
-      ))}
-      {remainingTags.length > 0 && (
+    <div className="flex items-center gap-1">
+      <span
+        className="text-[11px] font-medium truncate max-w-[70px]"
+        style={{ color: firstTag.color }}
+      >
+        {firstTag.name}
+      </span>
+      {tags.length > 1 && (
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <button
               onClick={(e) => e.stopPropagation()}
-              className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-medium bg-muted text-muted-foreground hover:bg-muted/80"
+              className="inline-flex items-center justify-center w-5 h-5 rounded hover:bg-muted/80 text-muted-foreground"
             >
-              <Tag className="w-3 h-3" />
-              +{remainingTags.length}
+              <ChevronDown className="w-3.5 h-3.5" />
             </button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="start" className="p-2 min-w-[120px]">
+          <DropdownMenuContent align="start" className="p-2 min-w-[120px] bg-popover">
             <div className="flex flex-col gap-1">
-              {remainingTags.map((tag) => (
+              {tags.map((tag) => (
                 <span
                   key={tag.id}
                   className="inline-flex items-center px-2 py-1 rounded text-xs font-medium"
