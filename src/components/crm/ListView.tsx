@@ -137,13 +137,15 @@ function SortableLeadRow({ lead, isSelected, onLeadClick, onToggleSelection, isO
       style={isOverlay ? undefined : style}
       onClick={() => !isDragging && onLeadClick(lead)}
       className={cn(
-        "grid grid-cols-12 gap-2 py-2.5 px-3 hover:bg-muted/40 rounded cursor-pointer transition-colors group border-b border-border/20 last:border-b-0",
+        "grid gap-2 py-2.5 px-3 hover:bg-muted/40 rounded cursor-pointer transition-colors group border-b border-border/20 last:border-b-0",
+        "grid-cols-[40px_minmax(120px,1.5fr)_minmax(140px,1fr)_minmax(100px,1fr)_minmax(100px,1fr)_minmax(80px,1fr)_minmax(70px,0.5fr)_40px]",
         isSelected && "bg-primary/5",
         isDragging && !isOverlay && "opacity-30",
         isOverlay && "shadow-lg bg-background border border-border rounded-lg"
       )}
     >
-      <div className="col-span-1 flex items-center gap-1">
+      {/* Checkbox */}
+      <div className="flex items-center gap-1">
         <div
           {...(isOverlay ? {} : attributes)}
           {...(isOverlay ? {} : listeners)}
@@ -161,7 +163,7 @@ function SortableLeadRow({ lead, isSelected, onLeadClick, onToggleSelection, isO
       </div>
       
       {/* Nome */}
-      <div className="col-span-3 flex items-center gap-2">
+      <div className="flex items-center gap-2 min-w-0">
         <div className="w-5 h-5 rounded-full flex items-center justify-center bg-muted text-muted-foreground text-[10px] font-bold flex-shrink-0">
           {lead.name.charAt(0).toUpperCase()}
         </div>
@@ -169,7 +171,7 @@ function SortableLeadRow({ lead, isSelected, onLeadClick, onToggleSelection, isO
       </div>
       
       {/* Email */}
-      <div className="col-span-2 flex items-center gap-1 min-w-0">
+      <div className="flex items-center gap-1 min-w-0">
         <Mail className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0" />
         <span className="text-xs text-muted-foreground truncate">
           {lead.email && lead.email !== "sem@email.com" ? lead.email : "-"}
@@ -177,20 +179,28 @@ function SortableLeadRow({ lead, isSelected, onLeadClick, onToggleSelection, isO
       </div>
       
       {/* WhatsApp */}
-      <div className="col-span-2 flex items-center gap-1 min-w-0">
+      <div className="flex items-center gap-1 min-w-0">
         <WhatsAppIcon className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0" />
         <span className="text-xs text-muted-foreground truncate">
           {formatPhone(lead.whatsapp, lead.country_code)}
         </span>
       </div>
       
+      {/* Instagram */}
+      <div className="flex items-center gap-1 min-w-0">
+        <Instagram className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0" />
+        <span className="text-xs text-muted-foreground truncate">
+          {lead.instagram && lead.instagram !== "-" ? lead.instagram : "-"}
+        </span>
+      </div>
+      
       {/* Tags */}
-      <div className="col-span-2 flex items-center min-w-0">
+      <div className="flex items-center min-w-0">
         <TagsBadge tags={tags} />
       </div>
       
       {/* Data */}
-      <div className="col-span-1 flex items-center gap-1">
+      <div className="flex items-center gap-1">
         <Calendar className="w-3.5 h-3.5 text-muted-foreground" />
         <span className="text-[10px] text-muted-foreground">
           {new Date(lead.created_at).toLocaleDateString("pt-BR", {
@@ -200,7 +210,8 @@ function SortableLeadRow({ lead, isSelected, onLeadClick, onToggleSelection, isO
         </span>
       </div>
       
-      <div className="col-span-1 flex items-center justify-end opacity-0 group-hover:opacity-100 transition-opacity">
+      {/* Actions */}
+      <div className="flex items-center justify-end opacity-0 group-hover:opacity-100 transition-opacity">
         <button 
           onClick={(e) => e.stopPropagation()}
           className="p-1 hover:bg-muted rounded"
@@ -659,64 +670,73 @@ export function ListView({ pipelines, leadsByPipeline, subOriginId, tagsMap }: L
                   <div className="ml-6">
                     {/* Table Header */}
                     {leads.length > 0 && (
-                      <div className="grid grid-cols-12 gap-2 py-2 px-3 text-xs text-muted-foreground border-b border-border/30">
-                        <div className="col-span-1 flex items-center">
-                          <Checkbox
-                            checked={allSelected}
-                            onCheckedChange={() => toggleAllInPipeline(pipeline.id)}
-                            className="border-[#00000040] data-[state=checked]:bg-[#00000040] data-[state=checked]:border-[#00000040] ml-6"
-                          />
+                      <div className="overflow-x-auto">
+                        <div className="min-w-[850px]">
+                          <div className="grid gap-2 py-2 px-3 text-[10px] uppercase tracking-wider text-muted-foreground font-medium border-b border-border/30 grid-cols-[40px_minmax(120px,1.5fr)_minmax(140px,1fr)_minmax(100px,1fr)_minmax(100px,1fr)_minmax(80px,1fr)_minmax(70px,0.5fr)_40px]">
+                            <div className="flex items-center">
+                              <Checkbox
+                                checked={allSelected}
+                                onCheckedChange={() => toggleAllInPipeline(pipeline.id)}
+                                className="border-[#00000040] data-[state=checked]:bg-[#00000040] data-[state=checked]:border-[#00000040]"
+                              />
+                            </div>
+                            <div>Nome</div>
+                            <div>Email</div>
+                            <div>WhatsApp</div>
+                            <div>Instagram</div>
+                            <div>Tags</div>
+                            <div>Entrada</div>
+                            <div></div>
+                          </div>
                         </div>
-                        <div className="col-span-3">Nome</div>
-                        <div className="col-span-2">Email</div>
-                        <div className="col-span-2">WhatsApp</div>
-                        <div className="col-span-2">Tags</div>
-                        <div className="col-span-1">Entrada</div>
-                        <div className="col-span-1"></div>
                       </div>
                     )}
 
                     {/* Leads Rows with DnD */}
-                    <DndContext
-                      sensors={sensors}
-                      collisionDetection={closestCenter}
-                      onDragStart={handleDragStart}
-                      onDragOver={handleDragOver}
-                      onDragEnd={handleDragEnd}
-                      measuring={measuring}
-                    >
-                      <SortableContext
-                        items={leads.map(l => l.id)}
-                        strategy={verticalListSortingStrategy}
-                      >
-                        {leads.map((lead) => (
-                          <SortableLeadRow
-                            key={lead.id}
-                            lead={lead}
-                            isSelected={selectedLeads.has(lead.id)}
-                            onLeadClick={handleLeadClick}
-                            onToggleSelection={toggleLeadSelection}
-                            tags={tagsMap.get(lead.id) || []}
-                          />
-                        ))}
-                      </SortableContext>
+                    <div className="overflow-x-auto">
+                      <div className="min-w-[850px]">
+                        <DndContext
+                          sensors={sensors}
+                          collisionDetection={closestCenter}
+                          onDragStart={handleDragStart}
+                          onDragOver={handleDragOver}
+                          onDragEnd={handleDragEnd}
+                          measuring={measuring}
+                        >
+                          <SortableContext
+                            items={leads.map(l => l.id)}
+                            strategy={verticalListSortingStrategy}
+                          >
+                            {leads.map((lead) => (
+                              <SortableLeadRow
+                                key={lead.id}
+                                lead={lead}
+                                isSelected={selectedLeads.has(lead.id)}
+                                onLeadClick={handleLeadClick}
+                                onToggleSelection={toggleLeadSelection}
+                                tags={tagsMap.get(lead.id) || []}
+                              />
+                            ))}
+                          </SortableContext>
 
-                      {createPortal(
-                        <DragOverlay>
-                          {activeLead ? (
-                            <SortableLeadRow
-                              lead={activeLead}
-                              isSelected={selectedLeads.has(activeLead.id)}
-                              onLeadClick={() => {}}
-                              onToggleSelection={() => {}}
-                              isOverlay
-                              tags={tagsMap.get(activeLead.id) || []}
-                            />
-                          ) : null}
-                        </DragOverlay>,
-                        document.body
-                      )}
-                    </DndContext>
+                          {createPortal(
+                            <DragOverlay>
+                              {activeLead ? (
+                                <SortableLeadRow
+                                  lead={activeLead}
+                                  isSelected={selectedLeads.has(activeLead.id)}
+                                  onLeadClick={() => {}}
+                                  onToggleSelection={() => {}}
+                                  isOverlay
+                                  tags={tagsMap.get(activeLead.id) || []}
+                                />
+                              ) : null}
+                            </DragOverlay>,
+                            document.body
+                          )}
+                        </DndContext>
+                      </div>
+                    </div>
 
                     {/* Inline Add Row */}
                     {isAdding ? (
