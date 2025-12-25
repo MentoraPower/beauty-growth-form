@@ -1313,7 +1313,7 @@ const WhatsAppSidebarItem = () => {
 // Analytics Node Component - Shows metrics for connected email/whatsapp nodes
 const AnalyticsNode = ({ id, data, selected }: NodeProps) => {
   const { setNodes, setEdges, getEdges, getNodes } = useReactFlow();
-  const [isExpanded, setIsExpanded] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(true);
   const [metrics, setMetrics] = useState<{
     sent: number;
     failed: number;
@@ -1350,9 +1350,9 @@ const AnalyticsNode = ({ id, data, selected }: NodeProps) => {
     }
   }, [id, getEdges, getNodes]);
 
-  // Fetch metrics when expanded and connected
+  // Fetch metrics when connected (always expanded now)
   useEffect(() => {
-    if (!isExpanded || !connectedType || !connectedNodeId) return;
+    if (!connectedType || !connectedNodeId) return;
 
     const fetchMetrics = async () => {
       setIsLoading(true);
@@ -1445,7 +1445,7 @@ const AnalyticsNode = ({ id, data, selected }: NodeProps) => {
     };
 
     fetchMetrics();
-  }, [isExpanded, connectedType, connectedNodeId]);
+  }, [connectedType, connectedNodeId]);
 
   const handleDelete = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -1467,44 +1467,40 @@ const AnalyticsNode = ({ id, data, selected }: NodeProps) => {
       {/* Node Card */}
       <div 
         className={cn(
-          "bg-white border transition-all shadow-sm cursor-pointer",
-          isExpanded ? "w-[320px] rounded-xl" : "w-20 h-20 rounded-2xl",
+          "bg-white border transition-all shadow-sm rounded-xl w-[360px] overflow-hidden",
           connectedType === "email" ? "border-orange-300" : connectedType === "whatsapp" ? "border-green-300" : "border-purple-300"
         )}
-        onClick={() => setIsExpanded(!isExpanded)}
       >
-        {!isExpanded ? (
-          <div className="w-full h-full flex items-center justify-center">
-            <BarChart3 className={cn(
-              "w-9 h-9",
-              connectedType === "email" ? "text-orange-500" : connectedType === "whatsapp" ? "text-green-500" : "text-purple-500"
-            )} />
+        {/* Orange Gradient Header */}
+        <div className={cn(
+          "px-4 py-3 flex items-center gap-3",
+          connectedType === "email" 
+            ? "bg-gradient-to-r from-orange-500 to-amber-400" 
+            : connectedType === "whatsapp" 
+              ? "bg-gradient-to-r from-green-500 to-emerald-400" 
+              : "bg-gradient-to-r from-purple-500 to-violet-400"
+        )}>
+          <div className="w-9 h-9 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center">
+            {connectedType === "email" ? (
+              <Mail className="w-5 h-5 text-white" />
+            ) : connectedType === "whatsapp" ? (
+              <WhatsAppIcon className="w-5 h-5 text-white" />
+            ) : (
+              <BarChart3 className="w-5 h-5 text-white" />
+            )}
           </div>
-        ) : (
-          <div className="p-4">
-            {/* Header */}
-            <div className="flex items-center gap-2 mb-4 pb-3 border-b border-gray-100">
-              <div className={cn(
-                "w-8 h-8 rounded-full flex items-center justify-center",
-                connectedType === "email" ? "bg-orange-100" : connectedType === "whatsapp" ? "bg-green-100" : "bg-purple-100"
-              )}>
-                {connectedType === "email" ? (
-                  <Mail className="w-4 h-4 text-orange-500" />
-                ) : connectedType === "whatsapp" ? (
-                  <WhatsAppIcon className="w-4 h-4 text-green-500" />
-                ) : (
-                  <BarChart3 className="w-4 h-4 text-purple-500" />
-                )}
-              </div>
-              <div>
-                <h4 className="text-sm font-semibold text-foreground">
-                  {connectedType === "email" ? "Análise de E-mail" : connectedType === "whatsapp" ? "Análise de WhatsApp" : "Análise"}
-                </h4>
-                <p className="text-xs text-muted-foreground">
-                  {connectedType ? "Métricas de envio" : "Conecte a um nó de e-mail ou WhatsApp"}
-                </p>
-              </div>
-            </div>
+          <div>
+            <h4 className="text-sm font-semibold text-white">
+              {connectedType === "email" ? "Análise de E-mail" : connectedType === "whatsapp" ? "Análise de WhatsApp" : "Análise"}
+            </h4>
+            <p className="text-xs text-white/80">
+              {connectedType ? "Métricas de envio" : "Conecte a um nó"}
+            </p>
+          </div>
+        </div>
+        
+        {/* Content */}
+        <div className="p-4">
 
             {!connectedType ? (
               <div className="text-center py-6 text-muted-foreground text-sm">
@@ -1517,55 +1513,54 @@ const AnalyticsNode = ({ id, data, selected }: NodeProps) => {
                 <p className="text-xs text-muted-foreground mt-2">Carregando métricas...</p>
               </div>
             ) : (
-              <>
-                {/* Stats Grid */}
-                <div className="grid grid-cols-3 gap-2 mb-4">
-                  <div className="bg-green-50 rounded-lg p-2 text-center">
-                    <CheckCheck className="w-4 h-4 text-green-500 mx-auto mb-1" />
-                    <p className="text-lg font-bold text-green-600">{metrics.sent}</p>
-                    <p className="text-[10px] text-green-600/70">Enviados</p>
-                  </div>
-                  <div className="bg-red-50 rounded-lg p-2 text-center">
-                    <XCircle className="w-4 h-4 text-red-500 mx-auto mb-1" />
-                    <p className="text-lg font-bold text-red-600">{metrics.failed}</p>
-                    <p className="text-[10px] text-red-600/70">Falhas</p>
-                  </div>
-                  <div className="bg-yellow-50 rounded-lg p-2 text-center">
-                    <Clock className="w-4 h-4 text-yellow-500 mx-auto mb-1" />
-                    <p className="text-lg font-bold text-yellow-600">{metrics.pending}</p>
-                    <p className="text-[10px] text-yellow-600/70">Pendentes</p>
+            <>
+              {/* Stats Grid */}
+              <div className="grid grid-cols-3 gap-3 mb-4">
+                <div className="bg-green-50 rounded-xl p-3 text-center">
+                  <CheckCheck className="w-5 h-5 text-green-500 mx-auto mb-1" />
+                  <p className="text-xl font-bold text-green-600">{metrics.sent}</p>
+                  <p className="text-[11px] text-green-600/70">Enviados</p>
+                </div>
+                <div className="bg-red-50 rounded-xl p-3 text-center">
+                  <XCircle className="w-5 h-5 text-red-500 mx-auto mb-1" />
+                  <p className="text-xl font-bold text-red-600">{metrics.failed}</p>
+                  <p className="text-[11px] text-red-600/70">Falhas</p>
+                </div>
+                <div className="bg-yellow-50 rounded-xl p-3 text-center">
+                  <Clock className="w-5 h-5 text-yellow-500 mx-auto mb-1" />
+                  <p className="text-xl font-bold text-yellow-600">{metrics.pending}</p>
+                  <p className="text-[11px] text-yellow-600/70">Pendentes</p>
+                </div>
+              </div>
+
+              {/* Day of Week Chart */}
+              {metrics.byDayOfWeek.length > 0 && (
+                <div className="mt-4">
+                  <p className="text-xs font-medium text-muted-foreground mb-3 flex items-center gap-1">
+                    <TrendingUp className="w-3.5 h-3.5" />
+                    Disparos por dia da semana
+                  </p>
+                  <div className="flex items-end justify-between gap-1.5 h-20">
+                    {metrics.byDayOfWeek.map((day, i) => (
+                      <div key={i} className="flex-1 flex flex-col items-center gap-1">
+                        <div 
+                          className={cn(
+                            "w-full rounded-t-md transition-all",
+                            connectedType === "email" ? "bg-gradient-to-t from-orange-500 to-amber-400" : "bg-gradient-to-t from-green-500 to-emerald-400"
+                          )}
+                          style={{ 
+                            height: `${Math.max((day.count / maxCount) * 64, 4)}px`,
+                          }}
+                        />
+                        <span className="text-[10px] font-medium text-muted-foreground">{day.day}</span>
+                      </div>
+                    ))}
                   </div>
                 </div>
-
-                {/* Day of Week Chart */}
-                {metrics.byDayOfWeek.length > 0 && (
-                  <div className="mt-4">
-                    <p className="text-xs font-medium text-muted-foreground mb-2 flex items-center gap-1">
-                      <TrendingUp className="w-3 h-3" />
-                      Disparos por dia da semana
-                    </p>
-                    <div className="flex items-end justify-between gap-1 h-16">
-                      {metrics.byDayOfWeek.map((day, i) => (
-                        <div key={i} className="flex-1 flex flex-col items-center gap-1">
-                          <div 
-                            className={cn(
-                              "w-full rounded-t transition-all",
-                              connectedType === "email" ? "bg-orange-400" : "bg-green-400"
-                            )}
-                            style={{ 
-                              height: `${Math.max((day.count / maxCount) * 48, 4)}px`,
-                            }}
-                          />
-                          <span className="text-[9px] text-muted-foreground">{day.day}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </>
-            )}
-          </div>
-        )}
+              )}
+            </>
+          )}
+        </div>
       </div>
 
       {/* Action buttons */}
