@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Plus, X, Pencil } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import {
   Popover,
@@ -29,6 +30,7 @@ const TAG_COLORS = [
 ];
 
 export function LeadTagsManager({ leadId }: LeadTagsManagerProps) {
+  const queryClient = useQueryClient();
   const [tags, setTags] = useState<Tag[]>([]);
   const [allTags, setAllTags] = useState<{name: string; color: string}[]>([]);
   const [isOpen, setIsOpen] = useState(false);
@@ -44,6 +46,12 @@ export function LeadTagsManager({ leadId }: LeadTagsManagerProps) {
   const [editTagColor, setEditTagColor] = useState("");
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [isEditLoading, setIsEditLoading] = useState(false);
+
+  // Invalidate all tag-related queries to update Kanban and other views
+  const invalidateTagQueries = () => {
+    queryClient.invalidateQueries({ queryKey: ["lead-tags-full-related"] });
+    queryClient.invalidateQueries({ queryKey: ["all-tags"] });
+  };
 
   useEffect(() => {
     fetchTags();
@@ -238,8 +246,9 @@ export function LeadTagsManager({ leadId }: LeadTagsManagerProps) {
         }
       }
 
-      // Refresh local tags
+      // Refresh local tags and invalidate queries for Kanban update
       await fetchTags();
+      invalidateTagQueries();
       setNewTagName("");
       setSelectedColor(TAG_COLORS[0]);
       setShowColorPicker(false);
@@ -305,6 +314,7 @@ export function LeadTagsManager({ leadId }: LeadTagsManagerProps) {
       }
 
       setTags(tags.filter((t) => t.id !== tagId));
+      invalidateTagQueries();
       toast.success("Tag removida de todos os leads relacionados");
     } catch (err) {
       console.error("Error in handleRemoveTag:", err);
@@ -340,9 +350,10 @@ export function LeadTagsManager({ leadId }: LeadTagsManagerProps) {
         return;
       }
 
-      // Refresh local tags
+      // Refresh local tags and invalidate queries for Kanban update
       await fetchTags();
       await fetchAllTags();
+      invalidateTagQueries();
       
       setIsEditOpen(false);
       setEditingTag(null);
