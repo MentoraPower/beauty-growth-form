@@ -41,6 +41,7 @@ interface ListViewProps {
   pipelines: Pipeline[];
   leadsByPipeline: Map<string, Lead[]>;
   subOriginId: string | null;
+  tagsMap: Map<string, { id: string; name: string; color: string }[]>;
 }
 
 interface InlineAddRowProps {
@@ -55,6 +56,7 @@ interface SortableLeadRowProps {
   onLeadClick: (lead: Lead) => void;
   onToggleSelection: (leadId: string, e: React.MouseEvent) => void;
   isOverlay?: boolean;
+  tags?: { id: string; name: string; color: string }[];
 }
 
 const MAX_VISIBLE_TAGS = 2;
@@ -112,7 +114,7 @@ function TagsBadge({ tags }: { tags?: { id: string; name: string; color: string 
   );
 }
 
-function SortableLeadRow({ lead, isSelected, onLeadClick, onToggleSelection, isOverlay = false }: SortableLeadRowProps) {
+function SortableLeadRow({ lead, isSelected, onLeadClick, onToggleSelection, isOverlay = false, tags = [] }: SortableLeadRowProps) {
   const {
     attributes,
     listeners,
@@ -186,7 +188,7 @@ function SortableLeadRow({ lead, isSelected, onLeadClick, onToggleSelection, isO
       
       {/* Tags */}
       <div className="col-span-2 flex items-center min-w-0">
-        <TagsBadge tags={lead.tags} />
+        <TagsBadge tags={tags} />
       </div>
       
       {/* Data */}
@@ -452,7 +454,7 @@ function InlineAddRow({ pipelineId, subOriginId, onClose }: InlineAddRowProps) {
   );
 }
 
-export function ListView({ pipelines, leadsByPipeline, subOriginId }: ListViewProps) {
+export function ListView({ pipelines, leadsByPipeline, subOriginId, tagsMap }: ListViewProps) {
   const queryClient = useQueryClient();
   const [expandedPipelines, setExpandedPipelines] = useState<Set<string>>(
     new Set(pipelines.map(p => p.id))
@@ -659,7 +661,7 @@ export function ListView({ pipelines, leadsByPipeline, subOriginId }: ListViewPr
                   <div className="ml-6">
                     {/* Table Header */}
                     {leads.length > 0 && (
-                      <div className="grid grid-cols-12 gap-4 py-2 px-3 text-xs text-muted-foreground border-b border-border/30">
+                      <div className="grid grid-cols-12 gap-2 py-2 px-3 text-xs text-muted-foreground border-b border-border/30">
                         <div className="col-span-1 flex items-center">
                           <Checkbox
                             checked={allSelected}
@@ -667,8 +669,11 @@ export function ListView({ pipelines, leadsByPipeline, subOriginId }: ListViewPr
                             className="border-[#00000040] data-[state=checked]:bg-[#00000040] data-[state=checked]:border-[#00000040] ml-6"
                           />
                         </div>
-                        <div className="col-span-7">Nome</div>
-                        <div className="col-span-3">Data de entrada</div>
+                        <div className="col-span-3">Nome</div>
+                        <div className="col-span-2">Email</div>
+                        <div className="col-span-2">WhatsApp</div>
+                        <div className="col-span-2">Tags</div>
+                        <div className="col-span-1">Entrada</div>
                         <div className="col-span-1"></div>
                       </div>
                     )}
@@ -693,6 +698,7 @@ export function ListView({ pipelines, leadsByPipeline, subOriginId }: ListViewPr
                             isSelected={selectedLeads.has(lead.id)}
                             onLeadClick={handleLeadClick}
                             onToggleSelection={toggleLeadSelection}
+                            tags={tagsMap.get(lead.id) || []}
                           />
                         ))}
                       </SortableContext>
@@ -706,6 +712,7 @@ export function ListView({ pipelines, leadsByPipeline, subOriginId }: ListViewPr
                               onLeadClick={() => {}}
                               onToggleSelection={() => {}}
                               isOverlay
+                              tags={tagsMap.get(activeLead.id) || []}
                             />
                           ) : null}
                         </DragOverlay>,

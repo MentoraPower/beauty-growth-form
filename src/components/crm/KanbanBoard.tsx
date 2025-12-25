@@ -1737,6 +1737,7 @@ export function KanbanBoard() {
           pipelines={pipelines}
           leadsByPipeline={leadsByPipeline}
           subOriginId={subOriginId}
+          tagsMap={tagsMap}
         />
       )}
 
