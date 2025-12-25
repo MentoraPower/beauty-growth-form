@@ -154,11 +154,8 @@ export const KanbanCard = memo(function KanbanCard({ lead, isDragging: isDraggin
             {visibleTags.map((tag) => (
               <span
                 key={tag.id}
-                className="text-[10px] px-1.5 py-0.5 rounded-full font-medium truncate max-w-[80px]"
-                style={{ 
-                  backgroundColor: `${tag.color}20`,
-                  color: tag.color,
-                }}
+                className="text-[10px] px-1.5 py-0.5 rounded-full font-medium truncate max-w-[80px] text-white"
+                style={{ backgroundColor: tag.color }}
               >
                 {tag.name}
               </span>
@@ -248,11 +245,8 @@ export const KanbanCard = memo(function KanbanCard({ lead, isDragging: isDraggin
                       {tags.map((tag) => (
                         <span
                           key={tag.id}
-                          className="text-[10px] px-2 py-0.5 rounded-full font-medium"
-                          style={{ 
-                            backgroundColor: `${tag.color}20`,
-                            color: tag.color,
-                          }}
+                          className="text-[10px] px-2 py-0.5 rounded-full font-medium text-white"
+                          style={{ backgroundColor: tag.color }}
                         >
                           {tag.name}
                         </span>
