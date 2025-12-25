@@ -1568,19 +1568,19 @@ const AnalyticsNode = ({ id, data, selected }: NodeProps) => {
                 </div>
               ) : (
                 <>
-                  {/* Stats Grid - Compact, no icons */}
+                  {/* Stats Grid - Compact, no icons, no background */}
                   <div className="grid grid-cols-3 gap-3 mb-4">
-                    <div className="border border-green-200 bg-green-50/50 rounded-lg p-3 text-center">
+                    <div className="border border-border rounded-lg p-3 text-center">
                       <p className="text-xl font-bold text-green-600">{currentMetrics.sent}</p>
-                      <p className="text-xs font-medium text-green-600/80">Enviados</p>
+                      <p className="text-xs font-medium text-muted-foreground">Enviados</p>
                     </div>
-                    <div className="border border-red-200 bg-red-50/50 rounded-lg p-3 text-center">
+                    <div className="border border-border rounded-lg p-3 text-center">
                       <p className="text-xl font-bold text-red-600">{currentMetrics.failed}</p>
-                      <p className="text-xs font-medium text-red-600/80">Falhas</p>
+                      <p className="text-xs font-medium text-muted-foreground">Falhas</p>
                     </div>
-                    <div className="border border-amber-200 bg-amber-50/50 rounded-lg p-3 text-center">
+                    <div className="border border-border rounded-lg p-3 text-center">
                       <p className="text-xl font-bold text-amber-600">{currentMetrics.pending}</p>
-                      <p className="text-xs font-medium text-amber-600/80">Pendentes</p>
+                      <p className="text-xs font-medium text-muted-foreground">Pendentes</p>
                     </div>
                   </div>
 
