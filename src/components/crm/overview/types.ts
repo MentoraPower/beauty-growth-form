@@ -118,5 +118,5 @@ export const CARD_TEMPLATES: CardTemplate[] = [
 // Min/max constraints
 export const MIN_CARD_WIDTH = 200;
 export const MIN_CARD_HEIGHT = 150;
-export const MAX_CARD_WIDTH = 800;
-export const MAX_CARD_HEIGHT = 600;
+export const MAX_CARD_WIDTH = 2000;
+export const MAX_CARD_HEIGHT = 1200;
