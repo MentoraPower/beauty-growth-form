@@ -5,7 +5,7 @@ import { Lead, Pipeline } from "@/types/crm";
 import { OverviewCard, CardTemplate, CardSize, DataSource } from "./types";
 import { OverviewCardComponent } from "./OverviewCardComponent";
 import { AddCardDialog } from "./AddCardDialog";
-import { DataSourcePanel } from "./DataSourcePanel";
+import { CardConfigPanel } from "./CardConfigPanel";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface OverviewViewProps {
@@ -20,7 +20,7 @@ const STORAGE_KEY = "crm-overview-cards";
 export function OverviewView({ leads, pipelines, leadTags, subOriginId }: OverviewViewProps) {
   const [cards, setCards] = useState<OverviewCard[]>([]);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
-  const [dataSourcePanelCard, setDataSourcePanelCard] = useState<OverviewCard | null>(null);
+  const [configPanelCard, setConfigPanelCard] = useState<OverviewCard | null>(null);
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Load cards from localStorage
@@ -96,21 +96,26 @@ export function OverviewView({ leads, pipelines, leadTags, subOriginId }: Overvi
     const newCards = [...cards, newCard];
     setCards(newCards);
     saveCards(newCards);
-    // Automatically open data source panel for the new card
-    setDataSourcePanelCard(newCard);
+    // Automatically open config panel for the new card
+    setConfigPanelCard(newCard);
   }, [cards, saveCards]);
 
   const handleConnectDataSource = useCallback((card: OverviewCard) => {
-    setDataSourcePanelCard(card);
+    setConfigPanelCard(card);
   }, []);
 
-  const handleSelectDataSource = useCallback((cardId: string, dataSource: DataSource) => {
+  const handleUpdateCard = useCallback((cardId: string, updates: Partial<OverviewCard>) => {
     setCards((prev) => {
-      const newCards = prev.map((c) => (c.id === cardId ? { ...c, dataSource } : c));
+      const newCards = prev.map((c) => (c.id === cardId ? { ...c, ...updates } : c));
       saveCards(newCards);
+      // Update the config panel card reference if it's the one being edited
+      const updatedCard = newCards.find(c => c.id === cardId);
+      if (configPanelCard && configPanelCard.id === cardId && updatedCard) {
+        setConfigPanelCard(updatedCard);
+      }
       return newCards;
     });
-  }, [saveCards]);
+  }, [saveCards, configPanelCard]);
 
   const handleDeleteCard = useCallback((id: string) => {
     const newCards = cards.filter((c) => c.id !== id);
@@ -181,13 +186,17 @@ export function OverviewView({ leads, pipelines, leadTags, subOriginId }: Overvi
         onAddCard={handleAddCard}
       />
 
-      {/* Data Source Panel */}
-      <DataSourcePanel
-        open={!!dataSourcePanelCard}
-        onClose={() => setDataSourcePanelCard(null)}
-        card={dataSourcePanelCard}
-        onSelectDataSource={handleSelectDataSource}
-      />
+      {/* Card Config Panel */}
+      {configPanelCard && (
+        <CardConfigPanel
+          card={configPanelCard}
+          leads={leads}
+          pipelines={pipelines}
+          leadTags={leadTags}
+          onClose={() => setConfigPanelCard(null)}
+          onUpdateCard={handleUpdateCard}
+        />
+      )}
     </div>
   );
 }
