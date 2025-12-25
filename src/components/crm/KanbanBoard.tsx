@@ -389,20 +389,75 @@ export function KanbanBoard() {
     enabled: leads.length > 0,
   });
 
-  // Fetch tags for leads (for filtering and display on cards)
+  // Fetch tags for leads INCLUDING tags from related leads (same email/whatsapp) in other origins
   const { data: leadTagsRaw = [] } = useQuery({
-    queryKey: ["lead-tags-full", subOriginId, leads.length],
+    queryKey: ["lead-tags-full-related", subOriginId, leads.length],
     queryFn: async () => {
-      const leadIds = leads.map(l => l.id);
-      if (leadIds.length === 0) return [];
+      if (leads.length === 0) return [];
       
-      const { data, error } = await supabase
+      // Get emails and whatsapps from current leads
+      const emails = leads.map(l => l.email).filter(Boolean);
+      const whatsapps = leads.map(l => l.whatsapp).filter(Boolean);
+      
+      // Find ALL lead IDs that match by email OR whatsapp (across all origins)
+      const { data: relatedLeads, error: relatedError } = await supabase
+        .from("leads")
+        .select("id, email, whatsapp")
+        .or(`email.in.(${emails.map(e => `"${e}"`).join(",")}),whatsapp.in.(${whatsapps.map(w => `"${w}"`).join(",")})`);
+      
+      if (relatedError || !relatedLeads || relatedLeads.length === 0) {
+        // Fallback to just current leads
+        const leadIds = leads.map(l => l.id);
+        const { data, error } = await supabase
+          .from("lead_tags")
+          .select("id, lead_id, name, color")
+          .in("lead_id", leadIds);
+        return error ? [] : data;
+      }
+      
+      // Get all tags for related leads
+      const relatedLeadIds = relatedLeads.map(l => l.id);
+      const { data: allTags, error: tagsError } = await supabase
         .from("lead_tags")
         .select("id, lead_id, name, color")
-        .in("lead_id", leadIds);
-
-      if (error) return [];
-      return data;
+        .in("lead_id", relatedLeadIds);
+      
+      if (tagsError || !allTags) return [];
+      
+      // Create a mapping: email -> tags, whatsapp -> tags
+      const emailToTags = new Map<string, typeof allTags>();
+      const whatsappToTags = new Map<string, typeof allTags>();
+      
+      relatedLeads.forEach(rl => {
+        const tagsForLead = allTags.filter(t => t.lead_id === rl.id);
+        if (rl.email) {
+          const existing = emailToTags.get(rl.email) || [];
+          emailToTags.set(rl.email, [...existing, ...tagsForLead]);
+        }
+        if (rl.whatsapp) {
+          const existing = whatsappToTags.get(rl.whatsapp) || [];
+          whatsappToTags.set(rl.whatsapp, [...existing, ...tagsForLead]);
+        }
+      });
+      
+      // Map tags back to current leads, merging by email/whatsapp
+      const result: typeof allTags = [];
+      leads.forEach(lead => {
+        const tagsByEmail = emailToTags.get(lead.email) || [];
+        const tagsByWhatsapp = whatsappToTags.get(lead.whatsapp) || [];
+        
+        // Combine and dedupe by tag name (keeping first occurrence)
+        const seenNames = new Set<string>();
+        [...tagsByEmail, ...tagsByWhatsapp].forEach(tag => {
+          if (!seenNames.has(tag.name)) {
+            seenNames.add(tag.name);
+            // Associate tag with current lead for display
+            result.push({ ...tag, lead_id: lead.id });
+          }
+        });
+      });
+      
+      return result;
     },
     enabled: leads.length > 0,
   });
