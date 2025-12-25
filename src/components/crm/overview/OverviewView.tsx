@@ -34,33 +34,8 @@ export function OverviewView({ leads, pipelines, leadTags, subOriginId }: Overvi
         setCards([]);
       }
     } else {
-      // Default cards for new overview
-      setCards([
-        {
-          id: "default-1",
-          title: "Total de Leads",
-          chartType: "number",
-          dataSource: "total_leads",
-          size: { width: 280, height: 180 },
-          order: 0,
-        },
-        {
-          id: "default-2",
-          title: "Leads por Pipeline",
-          chartType: "pie",
-          dataSource: "leads_by_pipeline",
-          size: { width: 320, height: 360 },
-          order: 1,
-        },
-        {
-          id: "default-3",
-          title: "Leads ao Longo do Tempo",
-          chartType: "area",
-          dataSource: "leads_over_time",
-          size: { width: 500, height: 320 },
-          order: 2,
-        },
-      ]);
+      // Start with empty cards - user will add their own
+      setCards([]);
     }
   }, [subOriginId]);
 
