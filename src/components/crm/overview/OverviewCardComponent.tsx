@@ -585,8 +585,8 @@ export function OverviewCardComponent({
       )}
       style={{
         width: currentSize.width,
-        maxWidth: "100%",
         height: currentSize.height,
+        flexShrink: 0,
       }}
     >
       {/* Header */}
