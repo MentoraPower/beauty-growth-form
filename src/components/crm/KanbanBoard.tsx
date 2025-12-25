@@ -389,67 +389,90 @@ export function KanbanBoard() {
     enabled: leads.length > 0,
   });
 
+  // Helper to batch queries (Supabase has URL length limits with .in())
+  const batchQuery = async <T,>(
+    ids: string[],
+    queryFn: (batch: string[]) => Promise<T[]>
+  ): Promise<T[]> => {
+    const BATCH_SIZE = 50; // Safe batch size to avoid URL length issues
+    const results: T[] = [];
+    for (let i = 0; i < ids.length; i += BATCH_SIZE) {
+      const batch = ids.slice(i, i + BATCH_SIZE);
+      const batchResults = await queryFn(batch);
+      results.push(...batchResults);
+    }
+    return results;
+  };
+
   // Fetch tags for leads INCLUDING tags from related leads (same email/whatsapp) in other origins
   const { data: leadTagsRaw = [] } = useQuery({
     queryKey: ["lead-tags-full-related", subOriginId, leads.length],
     queryFn: async () => {
       if (leads.length === 0) return [];
       
-      // First, get tags for current leads directly (simpler and more reliable)
+      // First, get tags for current leads directly using batched queries
       const leadIds = leads.map(l => l.id);
-      const { data: directTags, error: directError } = await supabase
-        .from("lead_tags")
-        .select("id, lead_id, name, color")
-        .in("lead_id", leadIds);
       
-      if (directError) {
-        console.error("Error fetching direct tags:", directError);
-        return [];
-      }
+      const directTags = await batchQuery(leadIds, async (batch) => {
+        const { data, error } = await supabase
+          .from("lead_tags")
+          .select("id, lead_id, name, color")
+          .in("lead_id", batch);
+        if (error) {
+          console.error("Error fetching direct tags batch:", error);
+          return [];
+        }
+        return data || [];
+      });
       
-      // If we have direct tags, also try to get related tags
+      // Get emails and whatsapps for related lead lookup
       const emails = leads.map(l => l.email).filter(Boolean);
       const whatsapps = leads.map(l => l.whatsapp).filter(Boolean);
       
-      // Find related leads by email OR whatsapp using separate queries (more reliable)
+      // Find related leads by email OR whatsapp using batched queries
       let relatedLeads: { id: string; email: string; whatsapp: string }[] = [];
       
       if (emails.length > 0) {
-        const { data: byEmail } = await supabase
-          .from("leads")
-          .select("id, email, whatsapp")
-          .in("email", emails);
-        if (byEmail) relatedLeads = [...relatedLeads, ...byEmail];
+        const byEmail = await batchQuery(emails, async (batch) => {
+          const { data } = await supabase
+            .from("leads")
+            .select("id, email, whatsapp")
+            .in("email", batch);
+          return data || [];
+        });
+        relatedLeads = [...relatedLeads, ...byEmail];
       }
       
       if (whatsapps.length > 0) {
-        const { data: byWhatsapp } = await supabase
-          .from("leads")
-          .select("id, email, whatsapp")
-          .in("whatsapp", whatsapps);
-        if (byWhatsapp) {
-          // Dedupe by id
-          const existingIds = new Set(relatedLeads.map(l => l.id));
-          byWhatsapp.forEach(l => {
-            if (!existingIds.has(l.id)) relatedLeads.push(l);
-          });
-        }
+        const byWhatsapp = await batchQuery(whatsapps, async (batch) => {
+          const { data } = await supabase
+            .from("leads")
+            .select("id, email, whatsapp")
+            .in("whatsapp", batch);
+          return data || [];
+        });
+        // Dedupe by id
+        const existingIds = new Set(relatedLeads.map(l => l.id));
+        byWhatsapp.forEach(l => {
+          if (!existingIds.has(l.id)) relatedLeads.push(l);
+        });
       }
       
       // Get all tags for related leads (if any exist beyond current leads)
       const relatedLeadIds = relatedLeads.map(l => l.id);
       const newRelatedIds = relatedLeadIds.filter(id => !leadIds.includes(id));
       
-      let allTags = directTags || [];
+      let allTags = [...directTags];
       
       if (newRelatedIds.length > 0) {
-        const { data: relatedTagsData } = await supabase
-          .from("lead_tags")
-          .select("id, lead_id, name, color")
-          .in("lead_id", newRelatedIds);
-        if (relatedTagsData) {
-          allTags = [...allTags, ...relatedTagsData];
-        }
+        const relatedTagsData = await batchQuery(newRelatedIds, async (batch) => {
+          const { data } = await supabase
+            .from("lead_tags")
+            .select("id, lead_id, name, color")
+            .in("lead_id", batch);
+          return data || [];
+        });
+        allTags = [...allTags, ...relatedTagsData];
       }
       
       // Create a mapping: email -> tags, whatsapp -> tags
