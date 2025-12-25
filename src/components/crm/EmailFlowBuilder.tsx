@@ -1316,14 +1316,16 @@ type AnalyticsMetrics = {
   sent: number;
   failed: number;
   pending: number;
+  opens: number;
+  clicks: number;
   byDayOfWeek: { day: string; count: number }[];
 };
 
 const AnalyticsNode = ({ id, data, selected }: NodeProps) => {
   const { setNodes, setEdges, getEdges, getNodes } = useReactFlow();
   const [activeTab, setActiveTab] = useState<"email" | "whatsapp">("email");
-  const [emailMetrics, setEmailMetrics] = useState<AnalyticsMetrics>({ sent: 0, failed: 0, pending: 0, byDayOfWeek: [] });
-  const [whatsappMetrics, setWhatsappMetrics] = useState<AnalyticsMetrics>({ sent: 0, failed: 0, pending: 0, byDayOfWeek: [] });
+  const [emailMetrics, setEmailMetrics] = useState<AnalyticsMetrics>({ sent: 0, failed: 0, pending: 0, opens: 0, clicks: 0, byDayOfWeek: [] });
+  const [whatsappMetrics, setWhatsappMetrics] = useState<AnalyticsMetrics>({ sent: 0, failed: 0, pending: 0, opens: 0, clicks: 0, byDayOfWeek: [] });
   const [isLoadingEmail, setIsLoadingEmail] = useState(false);
   const [isLoadingWhatsapp, setIsLoadingWhatsapp] = useState(false);
   const [connectedTypes, setConnectedTypes] = useState<{ email: boolean; whatsapp: boolean }>({ email: false, whatsapp: false });
@@ -1360,17 +1362,11 @@ const AnalyticsNode = ({ id, data, selected }: NodeProps) => {
     const fetchEmailMetrics = async () => {
       setIsLoadingEmail(true);
       try {
-        // Build query - filter by automationId if available
-        let query = supabase
-          .from("sent_emails")
-          .select("status, created_at");
-        
-        // Note: sent_emails doesn't have automation_id, so we use scheduled_emails
-        // which has automation_id and tracks emails sent by this automation
         if (automationId) {
+          // Get scheduled emails for this automation
           const { data: scheduledEmails, error: schedError } = await supabase
             .from("scheduled_emails")
-            .select("status, created_at, sent_at")
+            .select("id, status, created_at, sent_at")
             .eq("automation_id", automationId);
 
           if (schedError) throw schedError;
@@ -1378,6 +1374,28 @@ const AnalyticsNode = ({ id, data, selected }: NodeProps) => {
           const sent = scheduledEmails?.filter(e => e.status === "sent").length || 0;
           const failed = scheduledEmails?.filter(e => e.status === "failed" || e.status === "cancelled").length || 0;
           const pending = scheduledEmails?.filter(e => e.status === "pending").length || 0;
+
+          // Get tracking events for these emails
+          const emailIds = scheduledEmails?.filter(e => e.status === "sent").map(e => e.id) || [];
+          let opens = 0;
+          let clicks = 0;
+
+          if (emailIds.length > 0) {
+            const { data: trackingEvents } = await supabase
+              .from("email_tracking_events")
+              .select("event_type, scheduled_email_id")
+              .in("scheduled_email_id", emailIds);
+
+            if (trackingEvents) {
+              // Count unique opens (one per email)
+              const uniqueOpens = new Set(trackingEvents.filter(e => e.event_type === "open").map(e => e.scheduled_email_id));
+              opens = uniqueOpens.size;
+              
+              // Count unique clicks (one per email)
+              const uniqueClicks = new Set(trackingEvents.filter(e => e.event_type === "click").map(e => e.scheduled_email_id));
+              clicks = uniqueClicks.size;
+            }
+          }
 
           const dayNames = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
           const dayCounts = [0, 0, 0, 0, 0, 0, 0];
@@ -1393,6 +1411,8 @@ const AnalyticsNode = ({ id, data, selected }: NodeProps) => {
             sent,
             failed,
             pending,
+            opens,
+            clicks,
             byDayOfWeek: dayNames.map((day, i) => ({ day, count: dayCounts[i] })),
           });
         } else {
@@ -1401,6 +1421,8 @@ const AnalyticsNode = ({ id, data, selected }: NodeProps) => {
             sent: 0,
             failed: 0,
             pending: 0,
+            opens: 0,
+            clicks: 0,
             byDayOfWeek: ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"].map(day => ({ day, count: 0 })),
           });
         }
@@ -1410,6 +1432,8 @@ const AnalyticsNode = ({ id, data, selected }: NodeProps) => {
           sent: 0,
           failed: 0,
           pending: 0,
+          opens: 0,
+          clicks: 0,
           byDayOfWeek: ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"].map(day => ({ day, count: 0 })),
         });
       } finally {
@@ -1437,6 +1461,8 @@ const AnalyticsNode = ({ id, data, selected }: NodeProps) => {
             sent: stats.sent || 0,
             failed: stats.failed || 0,
             pending: stats.pending || 0,
+            opens: 0, // WhatsApp doesn't have open tracking
+            clicks: 0,
             byDayOfWeek: stats.byDayOfWeek || [],
           });
         } else {
@@ -1445,8 +1471,7 @@ const AnalyticsNode = ({ id, data, selected }: NodeProps) => {
             .from("whatsapp_messages")
             .select("status, created_at, from_me")
             .eq("from_me", true)
-            .order("created_at", { ascending: false })
-            .limit(500);
+            .order("created_at", { ascending: false });
 
           const sent = messages?.filter(m => m.status === "SENT" || m.status === "DELIVERED" || m.status === "READ").length || 0;
           const failed = messages?.filter(m => m.status === "FAILED").length || 0;
@@ -1464,11 +1489,13 @@ const AnalyticsNode = ({ id, data, selected }: NodeProps) => {
             sent,
             failed,
             pending,
+            opens: 0,
+            clicks: 0,
             byDayOfWeek: dayNames.map((day, i) => ({ day, count: dayCounts[i] })),
           });
         }
       } catch {
-        setWhatsappMetrics({ sent: 0, failed: 0, pending: 0, byDayOfWeek: [] });
+        setWhatsappMetrics({ sent: 0, failed: 0, pending: 0, opens: 0, clicks: 0, byDayOfWeek: [] });
       } finally {
         setIsLoadingWhatsapp(false);
       }
@@ -1590,8 +1617,8 @@ const AnalyticsNode = ({ id, data, selected }: NodeProps) => {
                 </div>
               ) : (
                 <>
-                  {/* Stats Grid - Compact, no icons, no background */}
-                  <div className="grid grid-cols-3 gap-3 mb-4">
+                  {/* Stats Grid - Compact */}
+                  <div className="grid grid-cols-3 gap-3 mb-3">
                     <div className="border border-border rounded-lg p-3 text-center">
                       <p className="text-xl font-bold text-green-600">{currentMetrics.sent}</p>
                       <p className="text-xs font-medium text-muted-foreground">Enviados</p>
@@ -1605,6 +1632,30 @@ const AnalyticsNode = ({ id, data, selected }: NodeProps) => {
                       <p className="text-xs font-medium text-muted-foreground">Pendentes</p>
                     </div>
                   </div>
+
+                  {/* Email-only: Opens and Clicks */}
+                  {activeTab === "email" && currentMetrics.sent > 0 && (
+                    <div className="grid grid-cols-2 gap-3 mb-4">
+                      <div className="border border-border rounded-lg p-3 text-center bg-blue-50/50">
+                        <p className="text-xl font-bold text-blue-600">
+                          {currentMetrics.opens}
+                          <span className="text-sm font-normal text-muted-foreground ml-1">
+                            ({currentMetrics.sent > 0 ? Math.round((currentMetrics.opens / currentMetrics.sent) * 100) : 0}%)
+                          </span>
+                        </p>
+                        <p className="text-xs font-medium text-muted-foreground">Aberturas</p>
+                      </div>
+                      <div className="border border-border rounded-lg p-3 text-center bg-purple-50/50">
+                        <p className="text-xl font-bold text-purple-600">
+                          {currentMetrics.clicks}
+                          <span className="text-sm font-normal text-muted-foreground ml-1">
+                            ({currentMetrics.sent > 0 ? Math.round((currentMetrics.clicks / currentMetrics.sent) * 100) : 0}%)
+                          </span>
+                        </p>
+                        <p className="text-xs font-medium text-muted-foreground">Cliques</p>
+                      </div>
+                    </div>
+                  )}
 
                   {/* Day of Week Chart */}
                   {currentMetrics.byDayOfWeek.length > 0 && (
