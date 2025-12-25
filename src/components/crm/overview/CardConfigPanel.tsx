@@ -282,7 +282,14 @@ export function CardConfigPanel({
   };
 
   return (
-    <div className="absolute inset-0 sm:inset-4 z-50 bg-background flex overflow-hidden sm:rounded-xl sm:border sm:border-border sm:shadow-lg">
+    <>
+      {/* Backdrop with blur */}
+      <div 
+        className="absolute inset-0 z-40 bg-black/50 backdrop-blur-sm"
+        onClick={onClose}
+      />
+      {/* Panel */}
+      <div className="absolute inset-4 sm:inset-8 z-50 bg-background flex overflow-hidden rounded-xl border border-border shadow-2xl">
       {/* Left side - Chart Preview */}
       <div className="flex-1 flex flex-col">
         {/* Header */}
@@ -433,5 +440,6 @@ export function CardConfigPanel({
         </Tabs>
       </div>
     </div>
+    </>
   );
 }
