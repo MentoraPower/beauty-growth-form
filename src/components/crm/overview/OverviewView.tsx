@@ -2,9 +2,10 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Lead, Pipeline } from "@/types/crm";
-import { OverviewCard, CardTemplate, CardSize } from "./types";
+import { OverviewCard, CardTemplate, CardSize, DataSource } from "./types";
 import { OverviewCardComponent } from "./OverviewCardComponent";
 import { AddCardDialog } from "./AddCardDialog";
+import { DataSourcePanel } from "./DataSourcePanel";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface OverviewViewProps {
@@ -19,6 +20,7 @@ const STORAGE_KEY = "crm-overview-cards";
 export function OverviewView({ leads, pipelines, leadTags, subOriginId }: OverviewViewProps) {
   const [cards, setCards] = useState<OverviewCard[]>([]);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [dataSourcePanelCard, setDataSourcePanelCard] = useState<OverviewCard | null>(null);
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Load cards from localStorage
@@ -87,14 +89,28 @@ export function OverviewView({ leads, pipelines, leadTags, subOriginId }: Overvi
       id: `card-${Date.now()}`,
       title: template.title,
       chartType: template.chartType,
-      dataSource: template.dataSource,
+      dataSource: null, // Start with no data source
       size: template.defaultSize,
       order: cards.length,
     };
     const newCards = [...cards, newCard];
     setCards(newCards);
     saveCards(newCards);
+    // Automatically open data source panel for the new card
+    setDataSourcePanelCard(newCard);
   }, [cards, saveCards]);
+
+  const handleConnectDataSource = useCallback((card: OverviewCard) => {
+    setDataSourcePanelCard(card);
+  }, []);
+
+  const handleSelectDataSource = useCallback((cardId: string, dataSource: DataSource) => {
+    setCards((prev) => {
+      const newCards = prev.map((c) => (c.id === cardId ? { ...c, dataSource } : c));
+      saveCards(newCards);
+      return newCards;
+    });
+  }, [saveCards]);
 
   const handleDeleteCard = useCallback((id: string) => {
     const newCards = cards.filter((c) => c.id !== id);
@@ -135,6 +151,7 @@ export function OverviewView({ leads, pipelines, leadTags, subOriginId }: Overvi
                 leadTags={leadTags}
                 onDelete={handleDeleteCard}
                 onResize={handleResizeCard}
+                onConnectDataSource={handleConnectDataSource}
               />
             ))}
         </div>
@@ -162,6 +179,14 @@ export function OverviewView({ leads, pipelines, leadTags, subOriginId }: Overvi
         open={isAddDialogOpen}
         onClose={() => setIsAddDialogOpen(false)}
         onAddCard={handleAddCard}
+      />
+
+      {/* Data Source Panel */}
+      <DataSourcePanel
+        open={!!dataSourcePanelCard}
+        onClose={() => setDataSourcePanelCard(null)}
+        card={dataSourcePanelCard}
+        onSelectDataSource={handleSelectDataSource}
       />
     </div>
   );
