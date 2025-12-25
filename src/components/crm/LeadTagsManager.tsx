@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Plus, X } from "lucide-react";
+import { Plus, X, Pencil } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import {
@@ -37,6 +37,13 @@ export function LeadTagsManager({ leadId }: LeadTagsManagerProps) {
   const [isHovered, setIsHovered] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [showColorPicker, setShowColorPicker] = useState(false);
+  
+  // Edit state
+  const [editingTag, setEditingTag] = useState<Tag | null>(null);
+  const [editTagName, setEditTagName] = useState("");
+  const [editTagColor, setEditTagColor] = useState("");
+  const [isEditOpen, setIsEditOpen] = useState(false);
+  const [isEditLoading, setIsEditLoading] = useState(false);
 
   useEffect(() => {
     fetchTags();
@@ -250,22 +257,139 @@ export function LeadTagsManager({ leadId }: LeadTagsManagerProps) {
     }
   };
 
+  const handleStartEdit = (tag: Tag) => {
+    setEditingTag(tag);
+    setEditTagName(tag.name);
+    setEditTagColor(tag.color);
+    setIsEditOpen(true);
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editingTag || !editTagName.trim()) return;
+    
+    setIsEditLoading(true);
+    
+    try {
+      // Update all tags with the same name across all leads
+      const { error } = await supabase
+        .from("lead_tags")
+        .update({ 
+          name: editTagName.trim(),
+          color: editTagColor 
+        })
+        .eq("name", editingTag.name);
+
+      if (error) {
+        console.error("Error updating tags:", error);
+        toast.error("Erro ao atualizar tag");
+        return;
+      }
+
+      // Refresh local tags
+      await fetchTags();
+      await fetchAllTags();
+      
+      setIsEditOpen(false);
+      setEditingTag(null);
+      toast.success("Tag atualizada em todos os leads");
+    } catch (err) {
+      console.error("Error in handleSaveEdit:", err);
+      toast.error("Erro ao atualizar tag");
+    } finally {
+      setIsEditLoading(false);
+    }
+  };
+
   return (
     <div className="flex flex-wrap items-center gap-1.5">
       {tags.map((tag) => (
-        <span
-          key={tag.id}
-          className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium text-white"
-          style={{ backgroundColor: tag.color }}
+        <Popover 
+          key={tag.id} 
+          open={isEditOpen && editingTag?.id === tag.id} 
+          onOpenChange={(open) => {
+            if (!open) {
+              setIsEditOpen(false);
+              setEditingTag(null);
+            }
+          }}
         >
-          {tag.name}
-          <button
-            onClick={() => handleRemoveTag(tag.id)}
-            className="hover:opacity-70 transition-opacity"
-          >
-            <X className="h-3 w-3" />
-          </button>
-        </span>
+          <PopoverTrigger asChild>
+            <span
+              className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium text-white cursor-pointer hover:opacity-90 transition-opacity group"
+              style={{ backgroundColor: tag.color }}
+              onClick={() => handleStartEdit(tag)}
+            >
+              {tag.name}
+              <Pencil className="h-2.5 w-2.5 opacity-0 group-hover:opacity-70 transition-opacity" />
+            </span>
+          </PopoverTrigger>
+          <PopoverContent className="w-64 p-3" align="start">
+            <div className="space-y-3">
+              <div>
+                <p className="text-xs text-muted-foreground mb-1.5">Nome da tag</p>
+                <Input
+                  placeholder="Nome da tag"
+                  value={editTagName}
+                  onChange={(e) => setEditTagName(e.target.value)}
+                  className="h-8 text-sm"
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      handleSaveEdit();
+                    }
+                  }}
+                />
+              </div>
+
+              <div>
+                <p className="text-xs text-muted-foreground mb-1.5">Cor</p>
+                <div className="grid grid-cols-8 gap-1.5">
+                  {TAG_COLORS.map((color) => (
+                    <button
+                      key={color}
+                      onClick={() => setEditTagColor(color)}
+                      className={`h-5 w-5 rounded-full transition-transform hover:scale-110 ${
+                        editTagColor === color
+                          ? "ring-2 ring-offset-2 ring-black/20"
+                          : ""
+                      }`}
+                      style={{ backgroundColor: color }}
+                    />
+                  ))}
+                </div>
+              </div>
+
+              {/* Preview */}
+              {editTagName.trim() && (
+                <div className="pt-2 border-t border-black/5">
+                  <p className="text-xs text-muted-foreground mb-1">Preview</p>
+                  <span
+                    className="inline-flex items-center px-2.5 py-1 rounded-full text-sm font-medium text-white"
+                    style={{ backgroundColor: editTagColor }}
+                  >
+                    {editTagName}
+                  </span>
+                </div>
+              )}
+
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  onClick={() => handleRemoveTag(tag.id)}
+                  className="flex-1 h-8 text-sm text-destructive hover:text-destructive"
+                >
+                  Excluir
+                </Button>
+                <Button
+                  onClick={handleSaveEdit}
+                  disabled={!editTagName.trim() || isEditLoading}
+                  className="flex-1 h-8 text-sm bg-gradient-to-r from-[#F40000] to-[#A10000] hover:opacity-90 text-white"
+                >
+                  {isEditLoading ? "Salvando..." : "Salvar"}
+                </Button>
+              </div>
+            </div>
+          </PopoverContent>
+        </Popover>
       ))}
 
       {/* Add tag button */}
