@@ -1580,7 +1580,7 @@ export function AutomationsDropdown({
                               </button>
                               
                               {/* Dropdown with existing tags */}
-                              {tagDropdownOpen && filteredExistingTags.length > 0 && !isNewTag && (
+                              {tagDropdownOpen && filteredExistingTags.length > 0 && (
                                 <div className="absolute z-50 top-full left-0 right-0 mt-1 py-1 bg-popover border border-border rounded-lg shadow-lg max-h-40 overflow-y-auto">
                                   {filteredExistingTags.map((tag) => (
                                     <button
@@ -1591,13 +1591,19 @@ export function AutomationsDropdown({
                                         setWebhookAutoTagColor(tag.color);
                                         setTagDropdownOpen(false);
                                       }}
-                                      className="w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-muted transition-colors text-left"
+                                      className={cn(
+                                        "w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-muted transition-colors text-left",
+                                        tag.name.toLowerCase() === webhookAutoTagName.toLowerCase().trim() && "bg-muted"
+                                      )}
                                     >
                                       <span 
                                         className="w-3 h-3 rounded-full shrink-0"
                                         style={{ backgroundColor: tag.color }}
                                       />
                                       <span>{tag.name}</span>
+                                      {tag.name.toLowerCase() === webhookAutoTagName.toLowerCase().trim() && (
+                                        <Check className="w-3 h-3 ml-auto text-foreground" />
+                                      )}
                                     </button>
                                   ))}
                                 </div>
