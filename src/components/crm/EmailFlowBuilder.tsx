@@ -24,7 +24,7 @@ import {
   ConnectionLineComponentProps,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
-import { Play, Clock, Pause, CheckCircle2, Trash2, Copy, ArrowLeft, ArrowUp, Plus, Mail, Zap, ChevronDown, ChevronUp, Users, UserMinus, UserX, User, Send, Type, AudioLines, ImagePlus, Clapperboard, FileUp, BarChart3, TrendingUp, AlertCircle, CheckCheck, XCircle } from "lucide-react";
+import { Play, Clock, Pause, CheckCircle2, Trash2, Copy, ArrowLeft, ArrowUp, Plus, Mail, Zap, ChevronDown, ChevronUp, Users, UserMinus, UserX, User, Send, Type, AudioLines, ImagePlus, Clapperboard, FileUp, ChartPie, TrendingUp, AlertCircle, CheckCheck, XCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import WhatsAppIcon from "@/components/icons/WhatsApp";
 import { Button } from "@/components/ui/button";
@@ -1461,14 +1461,14 @@ const AnalyticsNode = ({ id, data, selected }: NodeProps) => {
       <Handle
         type="target"
         position={Position.Left}
-        className="!w-3.5 !h-3.5 !bg-purple-500 !border-[3px] !border-white !shadow-sm !z-10"
+        className="!w-3.5 !h-3.5 !bg-orange-500 !border-[3px] !border-white !shadow-sm !z-10"
       />
       
       {/* Node Card */}
       <div 
         className={cn(
           "bg-white border transition-all shadow-sm rounded-xl w-[360px] overflow-hidden",
-          connectedType === "email" ? "border-orange-300" : connectedType === "whatsapp" ? "border-green-300" : "border-purple-300"
+          connectedType === "email" ? "border-orange-300" : connectedType === "whatsapp" ? "border-green-300" : "border-orange-300"
         )}
       >
         {/* Orange Gradient Header */}
@@ -1478,7 +1478,7 @@ const AnalyticsNode = ({ id, data, selected }: NodeProps) => {
             ? "bg-gradient-to-r from-orange-500 to-amber-400" 
             : connectedType === "whatsapp" 
               ? "bg-gradient-to-r from-green-500 to-emerald-400" 
-              : "bg-gradient-to-r from-purple-500 to-violet-400"
+              : "bg-gradient-to-r from-orange-500 to-amber-400"
         )}>
           <div className="w-9 h-9 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center">
             {connectedType === "email" ? (
@@ -1486,7 +1486,7 @@ const AnalyticsNode = ({ id, data, selected }: NodeProps) => {
             ) : connectedType === "whatsapp" ? (
               <WhatsAppIcon className="w-5 h-5 text-white" />
             ) : (
-              <BarChart3 className="w-5 h-5 text-white" />
+              <ChartPie className="w-5 h-5 text-white" />
             )}
           </div>
           <div>
@@ -1504,12 +1504,12 @@ const AnalyticsNode = ({ id, data, selected }: NodeProps) => {
 
             {!connectedType ? (
               <div className="text-center py-6 text-muted-foreground text-sm">
-                <BarChart3 className="w-10 h-10 mx-auto mb-2 text-purple-300" />
+                <ChartPie className="w-10 h-10 mx-auto mb-2 text-orange-300" />
                 Arraste uma conexão de um nó de<br/>E-mail ou WhatsApp para este nó
               </div>
             ) : isLoading ? (
               <div className="text-center py-6">
-                <div className="animate-spin w-6 h-6 border-2 border-purple-500 border-t-transparent rounded-full mx-auto" />
+                <div className="animate-spin w-6 h-6 border-2 border-orange-500 border-t-transparent rounded-full mx-auto" />
                 <p className="text-xs text-muted-foreground mt-2">Carregando métricas...</p>
               </div>
             ) : (
@@ -2392,8 +2392,8 @@ export function EmailFlowBuilder({
             }}
             className="flex items-center gap-3 cursor-grab active:cursor-grabbing hover:bg-muted/50 rounded-xl p-2.5 transition-colors border border-border w-full"
           >
-            <div className="w-8 h-8 flex items-center justify-center rounded-full bg-purple-100 border border-purple-200 flex-shrink-0">
-              <BarChart3 className="w-4 h-4 text-purple-600" />
+            <div className="w-8 h-8 flex items-center justify-center rounded-full bg-orange-100 border border-orange-200 flex-shrink-0">
+              <ChartPie className="w-4 h-4 text-orange-600" />
             </div>
             <span className="text-sm text-foreground">Análise</span>
           </div>
@@ -2485,7 +2485,7 @@ export function EmailFlowBuilder({
                   onClick={() => addNodeFromConnection("analytics")}
                   className="w-full px-3 py-2.5 text-left text-sm hover:bg-muted/50 transition-colors flex items-center gap-2"
                 >
-                  <BarChart3 className="w-4 h-4 text-purple-500" />
+                  <ChartPie className="w-4 h-4 text-orange-500" />
                   <span className="text-foreground">Análise</span>
                 </button>
                 <button
