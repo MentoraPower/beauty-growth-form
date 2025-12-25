@@ -1471,26 +1471,26 @@ const AnalyticsNode = ({ id, data, selected }: NodeProps) => {
       <Handle
         type="target"
         position={Position.Left}
-        className="!w-4 !h-4 !bg-violet-500 !border-[3px] !border-white !shadow-md !z-10"
+        className="!w-4 !h-4 !bg-orange-500 !border-[3px] !border-white !shadow-md !z-10"
       />
       
       {/* Node Card - Wider and more modern */}
       <div 
         className={cn(
           "bg-background border-2 transition-all shadow-lg rounded-2xl w-[440px] overflow-hidden",
-          hasBothConnections ? "border-violet-400/50" : 
+          hasBothConnections ? "border-orange-400/50" : 
           connectedTypes.email ? "border-orange-400/50" : 
-          connectedTypes.whatsapp ? "border-green-400/50" : "border-violet-400/50"
+          connectedTypes.whatsapp ? "border-green-400/50" : "border-orange-400/50"
         )}
       >
         {/* Gradient Header - More prominent */}
         <div 
           className={cn(
             "px-5 py-4 flex items-center justify-between",
-            hasBothConnections ? "bg-gradient-to-r from-violet-600 via-purple-500 to-fuchsia-500" :
+            hasBothConnections ? "bg-gradient-to-r from-orange-500 via-amber-500 to-yellow-400" :
             connectedTypes.email ? "bg-gradient-to-r from-orange-500 via-amber-500 to-yellow-400" :
             connectedTypes.whatsapp ? "bg-gradient-to-r from-green-500 via-emerald-500 to-teal-400" :
-            "bg-gradient-to-r from-violet-600 via-purple-500 to-fuchsia-500"
+            "bg-gradient-to-r from-orange-500 via-amber-500 to-yellow-400"
           )}
         >
           <div className="flex items-center gap-4">
@@ -1518,8 +1518,8 @@ const AnalyticsNode = ({ id, data, selected }: NodeProps) => {
         <div className="p-5">
           {!hasAnyConnection ? (
             <div className="text-center py-10 text-muted-foreground">
-              <div className="w-16 h-16 rounded-2xl bg-violet-100 flex items-center justify-center mx-auto mb-4">
-                <ChartPie className="w-8 h-8 text-violet-400" />
+              <div className="w-16 h-16 rounded-2xl bg-orange-100 flex items-center justify-center mx-auto mb-4">
+                <ChartPie className="w-8 h-8 text-orange-400" />
               </div>
               <p className="text-sm font-medium">Nenhuma conexão detectada</p>
               <p className="text-xs mt-1 text-muted-foreground/70">
