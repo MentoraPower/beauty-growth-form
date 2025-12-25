@@ -67,12 +67,12 @@ export function AddCardDialog({ open, onClose, onAddCard }: AddCardDialogProps) 
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl max-h-[85vh] p-0 gap-0">
+      <DialogContent className="w-[90vw] max-w-4xl max-h-[85vh] h-auto p-0 gap-0 overflow-hidden">
         <DialogHeader className="p-4 pb-0">
           <DialogTitle className="text-lg font-semibold">Adicionar cartão</DialogTitle>
         </DialogHeader>
         
-        <div className="flex h-[600px]">
+        <div className="flex h-[500px] max-h-[calc(85vh-60px)]">
           {/* Sidebar */}
           <div className="w-56 border-r border-border p-3 flex flex-col gap-1">
             {CATEGORIES.map((category) => {
