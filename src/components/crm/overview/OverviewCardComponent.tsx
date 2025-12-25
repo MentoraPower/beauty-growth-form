@@ -387,7 +387,7 @@ export function OverviewCardComponent({
     switch (card.chartType) {
       case "pie":
         const pieData = chartData as Array<{ name: string; value: number; color: string }>;
-        if (pieData.every(d => d.value === 0)) {
+        if (!Array.isArray(pieData) || pieData.length === 0 || pieData.every(d => d.value === 0)) {
           return (
             <div className="flex flex-col items-center justify-center h-full gap-3">
               <div className="w-16 h-12 bg-muted/60 rounded-lg flex items-center justify-center">
