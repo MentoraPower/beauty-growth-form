@@ -6,7 +6,7 @@ import { StepNavigation } from "./StepNavigation";
 import { AddActivityDialog } from "./AddActivityDialog";
 import { ActivityDetails } from "./ActivityDetails";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Plus, MoreVertical, Trash2, Pencil, ClipboardList, ListChecks } from "lucide-react";
+import { Plus, MoreVertical, Trash2, Pencil, ClipboardList, ListChecks, Phone } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
@@ -29,8 +29,10 @@ const getTipoIcon = (tipo: string) => {
       return <ClipboardList className="h-4 w-4" />;
     case 'checklist':
       return <ListChecks className="h-4 w-4" />;
+    case 'ligacao':
+      return <Phone className="h-4 w-4" />;
     default:
-      return <ClipboardList className="h-4 w-4" />;
+      return null;
   }
 };
 
@@ -152,14 +154,14 @@ export function ActivitiesBoard({ leadId, leadName, currentPipelineId, currentSu
                           activity.concluida && "opacity-60"
                         )}
                       >
-                        {/* Número em círculo moderno */}
+                        {/* Ícone do tipo ou número em círculo */}
                         <div className={cn(
                           "flex items-center justify-center w-7 h-7 rounded-full text-xs font-medium flex-shrink-0 transition-colors",
                           activity.concluida 
                             ? "bg-neutral-800 text-white" 
                             : "bg-neutral-900 text-white"
                         )}>
-                          {index + 1}
+                          {getTipoIcon(activity.tipo) || (index + 1)}
                         </div>
 
                         {/* Atividade - título */}
