@@ -1,7 +1,6 @@
 import { memo, useState, useEffect, useRef, useCallback } from "react";
-import { Plus, Check, X, ClipboardList, ListChecks, Bold, Italic, List as ListIcon, ListOrdered, Quote, ChevronDown, Heading1, Heading2, Pilcrow, Loader2, CheckCircle2, Image as ImageIcon } from "lucide-react";
+import { ClipboardList, Phone, Bold, Italic, List as ListIcon, ListOrdered, Quote, ChevronDown, Heading1, Heading2, Pilcrow, Loader2, CheckCircle2, Image as ImageIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
@@ -12,12 +11,6 @@ import TiptapLink from "@tiptap/extension-link";
 import { LeadActivity } from "@/hooks/use-lead-activities";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-
-interface ChecklistItem {
-  id: string;
-  text: string;
-  completed: boolean;
-}
 
 interface ActivityDetailsProps {
   activity: LeadActivity | null;
@@ -31,9 +24,6 @@ export const ActivityDetails = memo(function ActivityDetails({
   onSaveNotes,
 }: ActivityDetailsProps) {
   const [showToolbar, setShowToolbar] = useState(false);
-  const [checklistItems, setChecklistItems] = useState<ChecklistItem[]>([]);
-  const [newChecklistItem, setNewChecklistItem] = useState("");
-  const [isAddingChecklistItem, setIsAddingChecklistItem] = useState(false);
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
   const [isUploadingImage, setIsUploadingImage] = useState(false);
   const imageInputRef = useRef<HTMLInputElement>(null);
@@ -80,64 +70,11 @@ export const ActivityDetails = memo(function ActivityDetails({
   useEffect(() => {
     if (!activity) return;
     setSaveStatus('idle');
-    if (activity.tipo === 'checklist') {
-      try {
-        const items = activity.notas ? JSON.parse(activity.notas) : [];
-        setChecklistItems(Array.isArray(items) ? items : []);
-      } catch { 
-        setChecklistItems([]); 
-      }
-    } else {
-      if (editor && editor.getHTML() !== (activity.notas || "")) {
-        editor.commands.setContent(activity.notas || "");
-      }
+    if (editor && editor.getHTML() !== (activity.notas || "")) {
+      editor.commands.setContent(activity.notas || "");
     }
     setShowToolbar(false);
   }, [activity?.id, activity?.tipo, editor]);
-
-  const saveChecklist = useCallback(async (items: ChecklistItem[]) => {
-    if (!activity) return;
-    setSaveStatus('saving');
-    
-    const notasJson = JSON.stringify(items);
-    
-    // Se a atividade tiver um group_id, atualizar todas do grupo
-    if (activity.activity_group_id) {
-      await supabase
-        .from("lead_activities")
-        .update({ notas: notasJson })
-        .eq("activity_group_id", activity.activity_group_id);
-    } else {
-      await supabase
-        .from("lead_activities")
-        .update({ notas: notasJson })
-        .eq("id", activity.id);
-    }
-    
-    showSavedStatus();
-  }, [activity, showSavedStatus]);
-
-  const handleAddChecklistItem = useCallback(() => {
-    if (!newChecklistItem.trim()) return;
-    const newItems = [...checklistItems, { id: crypto.randomUUID(), text: newChecklistItem.trim(), completed: false }];
-    setChecklistItems(newItems);
-    setNewChecklistItem("");
-    saveChecklist(newItems);
-  }, [newChecklistItem, checklistItems, saveChecklist]);
-
-  const handleToggleChecklistItem = useCallback((id: string) => {
-    const newItems = checklistItems.map(item => 
-      item.id === id ? { ...item, completed: !item.completed } : item
-    );
-    setChecklistItems(newItems);
-    saveChecklist(newItems);
-  }, [checklistItems, saveChecklist]);
-
-  const handleRemoveChecklistItem = useCallback((id: string) => {
-    const newItems = checklistItems.filter(item => item.id !== id);
-    setChecklistItems(newItems);
-    saveChecklist(newItems);
-  }, [checklistItems, saveChecklist]);
 
   const handleImageUpload = useCallback(async (file: File) => {
     if (!editor || !activity || !file.type.startsWith('image/') || file.size > 10 * 1024 * 1024) {
@@ -176,7 +113,7 @@ export const ActivityDetails = memo(function ActivityDetails({
       {/* Header */}
       <div className="flex items-center gap-3 pb-3 border-b border-black/5">
         <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
-          {activity.tipo === 'tarefas' ? <ClipboardList className="h-5 w-5" /> : <ListChecks className="h-5 w-5" />}
+          {activity.tipo === 'ligacao' ? <Phone className="h-5 w-5" /> : <ClipboardList className="h-5 w-5" />}
         </div>
         <div className="flex-1 min-w-0">
           <h3 className="font-medium truncate">{activity.titulo}</h3>
@@ -189,90 +126,35 @@ export const ActivityDetails = memo(function ActivityDetails({
 
       {/* Content */}
       <div className="flex-1 mt-3 overflow-hidden">
-        {activity.tipo === 'checklist' ? (
-          <div className="space-y-3 h-full flex flex-col">
-            {/* Progress bar */}
-            {checklistItems.length > 0 && (
-              <div className="h-1.5 bg-muted rounded-full overflow-hidden">
-                <div 
-                  className="h-full bg-green-500 transition-all duration-300" 
-                  style={{ width: `${(checklistItems.filter(i => i.completed).length / checklistItems.length) * 100}%` }} 
-                />
-              </div>
-            )}
-
-            {/* Items list */}
-            <div className="flex-1 overflow-y-auto space-y-2">
-              {checklistItems.map((item, index) => (
-                <div key={item.id} className="group flex items-center gap-3 p-2 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors">
-                  <button 
-                    onClick={() => handleToggleChecklistItem(item.id)} 
-                    className={cn(
-                      "h-7 w-7 rounded-lg flex items-center justify-center text-xs font-medium transition-colors", 
-                      item.completed ? "bg-green-500 text-white" : "bg-muted text-muted-foreground"
-                    )}
-                  >
-                    {item.completed ? <Check className="h-4 w-4" /> : index + 1}
-                  </button>
-                  <span className={cn("flex-1 text-sm", item.completed && "line-through text-muted-foreground")}>
-                    {item.text}
-                  </span>
-                  <button 
-                    onClick={() => handleRemoveChecklistItem(item.id)} 
-                    className="opacity-0 group-hover:opacity-100 p-1.5 hover:text-destructive transition-all"
-                  >
-                    <X className="h-4 w-4" />
-                  </button>
+        {activity.tipo === 'ligacao' ? (
+          /* Ligação - Script em estilo balão de mensagem */
+          <div className="h-full flex flex-col">
+            <p className="text-xs text-muted-foreground mb-3">Escreva seu script para a ligação</p>
+            
+            {/* Área do script com estilo balão */}
+            <div className="flex-1 overflow-y-auto">
+              {editor?.getText()?.trim() ? (
+                <div className="bg-primary text-primary-foreground rounded-2xl rounded-tl-sm p-4 max-w-[90%] shadow-sm">
+                  <div 
+                    className="prose prose-sm prose-invert max-w-none [&_p]:mb-2 [&_p:last-child]:mb-0"
+                    dangerouslySetInnerHTML={{ __html: editor?.getHTML() || '' }}
+                  />
                 </div>
-              ))}
+              ) : null}
             </div>
 
-            {/* Add item */}
-            <div className="pt-2 border-t border-black/5">
-              {isAddingChecklistItem ? (
-                <div className="flex items-center gap-2">
-                  <Input 
-                    value={newChecklistItem} 
-                    onChange={(e) => setNewChecklistItem(e.target.value)} 
-                    onKeyDown={(e) => { 
-                      if (e.key === 'Enter') { 
-                        handleAddChecklistItem(); 
-                        setIsAddingChecklistItem(false); 
-                      } 
-                      if (e.key === 'Escape') {
-                        setIsAddingChecklistItem(false);
-                        setNewChecklistItem("");
-                      }
-                    }} 
-                    placeholder="Digite o item..." 
-                    className="h-9 text-sm" 
-                    autoFocus
-                  />
-                  <Button 
-                    size="sm" 
-                    onClick={() => { 
-                      handleAddChecklistItem(); 
-                      setIsAddingChecklistItem(false); 
-                    }}
-                    disabled={!newChecklistItem.trim()}
-                  >
-                    <Plus className="h-4 w-4" />
-                  </Button>
-                </div>
-              ) : (
-                <Button 
-                  variant="ghost" 
-                  size="sm"
-                  onClick={() => setIsAddingChecklistItem(true)} 
-                  className="text-muted-foreground hover:text-foreground"
-                >
-                  <Plus className="h-4 w-4 mr-1.5" />
-                  Adicionar item
-                </Button>
-              )}
+            {/* Editor minimalista para ligação */}
+            <div className="mt-3 pt-3 border-t border-black/5">
+              <div className="bg-muted/50 rounded-xl p-3">
+                <EditorContent 
+                  editor={editor} 
+                  className="prose prose-sm max-w-none [&_.ProseMirror]:min-h-[80px] [&_.ProseMirror]:outline-none [&_.ProseMirror_p.is-editor-empty:first-child::before]:content-['Escreva_seu_script_aqui...'] [&_.ProseMirror_p.is-editor-empty:first-child::before]:text-muted-foreground [&_.ProseMirror_p.is-editor-empty:first-child::before]:float-left [&_.ProseMirror_p.is-editor-empty:first-child::before]:pointer-events-none" 
+                />
+              </div>
             </div>
           </div>
         ) : (
+          /* Tarefas - Editor com toolbar */
           <div className="h-full flex flex-col">
             {/* Toolbar - only visible when active */}
             <div className={cn(
