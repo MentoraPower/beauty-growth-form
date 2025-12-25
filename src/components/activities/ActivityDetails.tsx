@@ -127,28 +127,16 @@ export const ActivityDetails = memo(function ActivityDetails({
       {/* Content */}
       <div className="flex-1 mt-3 overflow-hidden">
         {activity.tipo === 'ligacao' ? (
-          /* Ligação - Script em estilo balão de mensagem */
+          /* Ligação - Script editável direto no balão */
           <div className="h-full flex flex-col">
             <p className="text-xs text-muted-foreground mb-3">Escreva seu script para a ligação</p>
             
-            {/* Área do script com estilo balão */}
-            <div className="flex-1 overflow-y-auto">
-              {editor?.getText()?.trim() ? (
-                <div className="bg-primary text-primary-foreground rounded-2xl rounded-tl-sm p-4 max-w-[90%] shadow-sm">
-                  <div 
-                    className="prose prose-sm prose-invert max-w-none [&_p]:mb-2 [&_p:last-child]:mb-0"
-                    dangerouslySetInnerHTML={{ __html: editor?.getHTML() || '' }}
-                  />
-                </div>
-              ) : null}
-            </div>
-
-            {/* Editor minimalista para ligação */}
-            <div className="mt-3 pt-3 border-t border-black/5">
-              <div className="bg-muted/50 rounded-xl p-3">
+            {/* Balão editável que cresce conforme o conteúdo */}
+            <div className="inline-block max-w-full">
+              <div className="bg-primary text-primary-foreground rounded-2xl rounded-tl-sm p-4 shadow-sm inline-block">
                 <EditorContent 
                   editor={editor} 
-                  className="prose prose-sm max-w-none [&_.ProseMirror]:min-h-[80px] [&_.ProseMirror]:outline-none [&_.ProseMirror_p.is-editor-empty:first-child::before]:content-['Escreva_seu_script_aqui...'] [&_.ProseMirror_p.is-editor-empty:first-child::before]:text-muted-foreground [&_.ProseMirror_p.is-editor-empty:first-child::before]:float-left [&_.ProseMirror_p.is-editor-empty:first-child::before]:pointer-events-none" 
+                  className="prose prose-sm prose-invert max-w-none [&_.ProseMirror]:min-h-[24px] [&_.ProseMirror]:outline-none [&_.ProseMirror_p]:mb-2 [&_.ProseMirror_p:last-child]:mb-0 [&_.ProseMirror_p.is-editor-empty:first-child::before]:content-['Digite_seu_script...'] [&_.ProseMirror_p.is-editor-empty:first-child::before]:text-primary-foreground/50 [&_.ProseMirror_p.is-editor-empty:first-child::before]:float-left [&_.ProseMirror_p.is-editor-empty:first-child::before]:pointer-events-none" 
                 />
               </div>
             </div>
