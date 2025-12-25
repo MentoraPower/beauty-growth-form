@@ -1328,6 +1328,9 @@ const AnalyticsNode = ({ id, data, selected }: NodeProps) => {
   const [isLoadingWhatsapp, setIsLoadingWhatsapp] = useState(false);
   const [connectedTypes, setConnectedTypes] = useState<{ email: boolean; whatsapp: boolean }>({ email: false, whatsapp: false });
 
+  // Get automationId from node data (passed from parent)
+  const automationId = (data as any)?.automationId;
+
   // Find all connected source nodes (can be multiple)
   useEffect(() => {
     const edges = getEdges();
@@ -1350,50 +1353,72 @@ const AnalyticsNode = ({ id, data, selected }: NodeProps) => {
     else if (hasWhatsapp && !hasEmail) setActiveTab("whatsapp");
   }, [id, getEdges, getNodes]);
 
-  // Fetch email metrics
+  // Fetch email metrics filtered by automationId
   useEffect(() => {
     if (!connectedTypes.email) return;
 
     const fetchEmailMetrics = async () => {
       setIsLoadingEmail(true);
       try {
-        const { data: sentEmails, error } = await supabase
+        // Build query - filter by automationId if available
+        let query = supabase
           .from("sent_emails")
-          .select("status, created_at")
-          .order("created_at", { ascending: false })
-          .limit(500);
-
-        if (error) throw error;
-
-        const sent = sentEmails?.filter(e => e.status === "sent").length || 0;
-        const failed = sentEmails?.filter(e => e.status === "failed").length || 0;
-        const pending = sentEmails?.filter(e => e.status === "pending").length || 0;
-
-        const dayNames = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
-        const dayCounts = [0, 0, 0, 0, 0, 0, 0];
+          .select("status, created_at");
         
-        sentEmails?.forEach(email => {
-          if (email.status === "sent") {
-            const date = new Date(email.created_at);
-            dayCounts[date.getDay()]++;
-          }
-        });
+        // Note: sent_emails doesn't have automation_id, so we use scheduled_emails
+        // which has automation_id and tracks emails sent by this automation
+        if (automationId) {
+          const { data: scheduledEmails, error: schedError } = await supabase
+            .from("scheduled_emails")
+            .select("status, created_at, sent_at")
+            .eq("automation_id", automationId);
 
-        setEmailMetrics({
-          sent,
-          failed,
-          pending,
-          byDayOfWeek: dayNames.map((day, i) => ({ day, count: dayCounts[i] })),
-        });
+          if (schedError) throw schedError;
+
+          const sent = scheduledEmails?.filter(e => e.status === "sent").length || 0;
+          const failed = scheduledEmails?.filter(e => e.status === "failed" || e.status === "cancelled").length || 0;
+          const pending = scheduledEmails?.filter(e => e.status === "pending").length || 0;
+
+          const dayNames = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
+          const dayCounts = [0, 0, 0, 0, 0, 0, 0];
+          
+          scheduledEmails?.forEach(email => {
+            if (email.status === "sent" && email.sent_at) {
+              const date = new Date(email.sent_at);
+              dayCounts[date.getDay()]++;
+            }
+          });
+
+          setEmailMetrics({
+            sent,
+            failed,
+            pending,
+            byDayOfWeek: dayNames.map((day, i) => ({ day, count: dayCounts[i] })),
+          });
+        } else {
+          // No automationId - show zeros (start from now)
+          setEmailMetrics({
+            sent: 0,
+            failed: 0,
+            pending: 0,
+            byDayOfWeek: ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"].map(day => ({ day, count: 0 })),
+          });
+        }
       } catch (error) {
         console.error("Error fetching email analytics:", error);
+        setEmailMetrics({
+          sent: 0,
+          failed: 0,
+          pending: 0,
+          byDayOfWeek: ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"].map(day => ({ day, count: 0 })),
+        });
       } finally {
         setIsLoadingEmail(false);
       }
     };
 
     fetchEmailMetrics();
-  }, [connectedTypes.email]);
+  }, [connectedTypes.email, automationId]);
 
   // Fetch WhatsApp metrics
   useEffect(() => {
@@ -1879,6 +1904,8 @@ export function EmailFlowBuilder({
             ...step.data,
             pipelines: filteredPipelines,
             onTriggersChange: handleTriggersChange,
+            // Pass automationId to analytics nodes
+            ...(nodeType === "analytics" ? { automationId } : {}),
           },
         };
       });
@@ -1917,7 +1944,7 @@ export function EmailFlowBuilder({
         },
       },
     ];
-  }, [initialSteps, filteredPipelines, handleTriggersChange]);
+  }, [initialSteps, filteredPipelines, handleTriggersChange, automationId]);
 
   const initialEdges: Edge[] = useMemo(() => {
     if (initialSteps?.length) {
@@ -2136,7 +2163,7 @@ export function EmailFlowBuilder({
       wait: { label: "Espera", waitTime: 1, waitUnit: "hours" },
       email: { label: "E-mail", subject: "", bodyHtml: "" },
       whatsapp: { label: "WhatsApp", whatsappMessage: "" },
-      analytics: { label: "Análise" },
+      analytics: { label: "Análise", automationId },
       end: { label: "Fim" },
     };
 
@@ -2166,7 +2193,7 @@ export function EmailFlowBuilder({
     ]);
 
     setConnectionDropdown(null);
-  }, [connectionDropdown, setNodes, setEdges]);
+  }, [connectionDropdown, setNodes, setEdges, automationId]);
 
   const onNodeClick = useCallback((_: React.MouseEvent, node: Node) => {
     setSelectedNode(node);
@@ -2191,7 +2218,7 @@ export function EmailFlowBuilder({
       wait: { label: "Espera", waitTime: 1, waitUnit: "hours" },
       email: { label: "E-mail", subject: "", bodyHtml: "" },
       whatsapp: { label: "WhatsApp", whatsappMessage: "", whatsappMessageType: messageType },
-      analytics: { label: "Análise" },
+      analytics: { label: "Análise", automationId },
       end: { label: "Fim" },
     };
 
@@ -2216,7 +2243,7 @@ export function EmailFlowBuilder({
         },
       ]);
     }
-  }, [nodes, setNodes, setEdges]);
+  }, [nodes, setNodes, setEdges, automationId]);
 
   const onDragOver = useCallback((event: React.DragEvent) => {
     event.preventDefault();
