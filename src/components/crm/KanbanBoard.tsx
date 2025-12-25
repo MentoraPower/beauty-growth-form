@@ -615,6 +615,15 @@ export function KanbanBoard() {
           queryClient.invalidateQueries({ queryKey: ["pipelines", subOriginId] });
         }
       )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "lead_tags" },
+        () => {
+          // Invalidate tags query to update cards in real-time
+          queryClient.invalidateQueries({ queryKey: ["lead-tags-full-related"] });
+          queryClient.invalidateQueries({ queryKey: ["all-tags"] });
+        }
+      )
       .subscribe();
 
     return () => {
