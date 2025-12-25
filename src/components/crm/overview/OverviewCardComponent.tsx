@@ -267,8 +267,19 @@ export function OverviewCardComponent({
       const isCorner = resizeDirection.includes("-");
 
       if (isCorner) {
-        const widthDelta = resizeDirection.endsWith("right") ? deltaX : -deltaX;
-        const heightDelta = resizeDirection.startsWith("bottom") ? deltaY : -deltaY;
+        // Corner resize: allow growth only towards bottom/right in this flow layout.
+        // Growing towards top/left would visually "force" the opposite side.
+        let widthDelta = resizeDirection.endsWith("right") ? deltaX : -deltaX;
+        let heightDelta = resizeDirection.startsWith("bottom") ? deltaY : -deltaY;
+
+        if (resizeDirection.includes("left") && deltaX < 0) {
+          // Dragging left would mean grow-to-left: block
+          widthDelta = 0;
+        }
+        if (resizeDirection.includes("top") && deltaY < 0) {
+          // Dragging up would mean grow-to-top: block
+          heightDelta = 0;
+        }
 
         const rawW = startW + widthDelta;
         const rawH = startH + heightDelta;
@@ -290,13 +301,15 @@ export function OverviewCardComponent({
         if (resizeDirection === "right") {
           nextW = clamp(startW + deltaX, MIN_CARD_WIDTH, maxW);
         } else if (resizeDirection === "left") {
-          nextW = clamp(startW - deltaX, MIN_CARD_WIDTH, maxW);
+          // Don't allow grow-to-left (deltaX < 0)
+          nextW = clamp(startW - Math.max(0, deltaX), MIN_CARD_WIDTH, maxW);
         }
 
         if (resizeDirection === "bottom") {
           nextH = clamp(startH + deltaY, MIN_CARD_HEIGHT, maxH);
         } else if (resizeDirection === "top") {
-          nextH = clamp(startH - deltaY, MIN_CARD_HEIGHT, maxH);
+          // Don't allow grow-to-top (deltaY < 0)
+          nextH = clamp(startH - Math.max(0, deltaY), MIN_CARD_HEIGHT, maxH);
         }
       }
 
@@ -596,18 +609,18 @@ export function OverviewCardComponent({
         {renderChart()}
       </div>
 
-      {/* Limit indicators - show red lines when at edge */}
+      {/* Limit indicators - show lines when at edge */}
       {isResizing && atLimit.left && (
-        <div className="absolute left-0 top-0 bottom-0 w-1 bg-red-500 z-30" />
+        <div className="absolute left-0 top-0 bottom-0 w-1 bg-destructive z-30" />
       )}
       {isResizing && atLimit.right && (
-        <div className="absolute right-0 top-0 bottom-0 w-1 bg-red-500 z-30" />
+        <div className="absolute right-0 top-0 bottom-0 w-1 bg-destructive z-30" />
       )}
       {isResizing && atLimit.top && (
-        <div className="absolute top-0 left-0 right-0 h-1 bg-red-500 z-30" />
+        <div className="absolute top-0 left-0 right-0 h-1 bg-destructive z-30" />
       )}
       {isResizing && atLimit.bottom && (
-        <div className="absolute bottom-0 left-0 right-0 h-1 bg-red-500 z-30" />
+        <div className="absolute bottom-0 left-0 right-0 h-1 bg-destructive z-30" />
       )}
 
       {/* Resize Handles */}
