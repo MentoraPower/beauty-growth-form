@@ -88,16 +88,6 @@ export function OverviewView({ leads, pipelines, leadTags, subOriginId }: Overvi
     }
   }, [subOriginId]);
 
-  // Debounced save for resize operations
-  const saveCards = useCallback((cardsToSave: OverviewCard[]) => {
-    if (saveTimeoutRef.current) {
-      clearTimeout(saveTimeoutRef.current);
-    }
-    saveTimeoutRef.current = setTimeout(() => {
-      cardsToSave.forEach(saveCardToDb);
-    }, 300);
-  }, [saveCardToDb]);
-
   // Cleanup timeout on unmount
   useEffect(() => {
     return () => {
@@ -107,21 +97,42 @@ export function OverviewView({ leads, pipelines, leadTags, subOriginId }: Overvi
     };
   }, []);
 
-  const handleAddCard = useCallback((template: CardTemplate) => {
+  const handleAddCard = useCallback(async (template: CardTemplate) => {
+    if (!subOriginId) return;
+
     const newCard: OverviewCard = {
       id: `card-${Date.now()}`,
       title: template.title,
       chartType: template.chartType,
-      dataSource: null, // Start with no data source
+      dataSource: null,
       size: template.defaultSize,
       order: cards.length,
     };
-    const newCards = [...cards, newCard];
-    setCards(newCards);
-    saveCards(newCards);
-    // Automatically open config panel for the new card
-    setConfigPanelCard(newCard);
-  }, [cards, saveCards]);
+
+    // Save to database immediately
+    try {
+      const { error } = await supabase
+        .from("overview_cards")
+        .insert({
+          sub_origin_id: subOriginId,
+          card_id: newCard.id,
+          title: newCard.title,
+          chart_type: newCard.chartType,
+          data_source: newCard.dataSource,
+          width: newCard.size.width,
+          height: newCard.size.height,
+          card_order: newCard.order,
+        });
+
+      if (error) throw error;
+
+      setCards((prev) => [...prev, newCard]);
+      setConfigPanelCard(newCard);
+    } catch (error) {
+      console.error("Error adding card:", error);
+      toast.error("Erro ao adicionar cartão");
+    }
+  }, [cards.length, subOriginId]);
 
   const handleConnectDataSource = useCallback((card: OverviewCard) => {
     setConfigPanelCard(card);
@@ -130,29 +141,53 @@ export function OverviewView({ leads, pipelines, leadTags, subOriginId }: Overvi
   const handleUpdateCard = useCallback((cardId: string, updates: Partial<OverviewCard>) => {
     setCards((prev) => {
       const newCards = prev.map((c) => (c.id === cardId ? { ...c, ...updates } : c));
-      saveCards(newCards);
-      // Update the config panel card reference if it's the one being edited
+      // Save updated card to database
       const updatedCard = newCards.find(c => c.id === cardId);
+      if (updatedCard) {
+        saveCardToDb(updatedCard);
+      }
       if (configPanelCard && configPanelCard.id === cardId && updatedCard) {
         setConfigPanelCard(updatedCard);
       }
       return newCards;
     });
-  }, [saveCards, configPanelCard]);
+  }, [saveCardToDb, configPanelCard]);
 
-  const handleDeleteCard = useCallback((id: string) => {
-    const newCards = cards.filter((c) => c.id !== id);
-    setCards(newCards);
-    saveCards(newCards);
-  }, [cards, saveCards]);
+  const handleDeleteCard = useCallback(async (id: string) => {
+    if (!subOriginId) return;
+
+    try {
+      const { error } = await supabase
+        .from("overview_cards")
+        .delete()
+        .eq("sub_origin_id", subOriginId)
+        .eq("card_id", id);
+
+      if (error) throw error;
+
+      setCards((prev) => prev.filter((c) => c.id !== id));
+    } catch (error) {
+      console.error("Error deleting card:", error);
+      toast.error("Erro ao deletar cartão");
+    }
+  }, [subOriginId]);
 
   const handleResizeCard = useCallback((id: string, size: CardSize) => {
     setCards((prev) => {
       const newCards = prev.map((c) => (c.id === id ? { ...c, size } : c));
-      saveCards(newCards);
+      // Save resized card to database with debounce
+      const resizedCard = newCards.find(c => c.id === id);
+      if (resizedCard) {
+        if (saveTimeoutRef.current) {
+          clearTimeout(saveTimeoutRef.current);
+        }
+        saveTimeoutRef.current = setTimeout(() => {
+          saveCardToDb(resizedCard);
+        }, 300);
+      }
       return newCards;
     });
-  }, [saveCards]);
+  }, [saveCardToDb]);
 
   return (
     <div className="relative flex flex-col h-full overflow-hidden">
