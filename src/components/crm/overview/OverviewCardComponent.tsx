@@ -60,6 +60,7 @@ export function OverviewCardComponent({
   const [isResizing, setIsResizing] = useState(false);
   const [resizeDirection, setResizeDirection] = useState<ResizeDirection | null>(null);
   const [currentSize, setCurrentSize] = useState<CardSize>(card.size);
+  const [containerWidth, setContainerWidth] = useState(0);
   const [atLimit, setAtLimit] = useState<{ left: boolean; right: boolean; top: boolean; bottom: boolean }>({
     left: false,
     right: false,
@@ -70,6 +71,7 @@ export function OverviewCardComponent({
   const cardRef = useRef<HTMLDivElement | null>(null);
   const maxSizeRef = useRef({ maxW: MAX_CARD_WIDTH, maxH: MAX_CARD_HEIGHT });
   const limitsRef = useRef({ left: false, right: false, top: false, bottom: false });
+  const containerWidthRef = useRef(0);
 
   const startPosRef = useRef({ x: 0, y: 0 });
   const startSizeRef = useRef({ width: card.size.width, height: card.size.height });
@@ -86,6 +88,28 @@ export function OverviewCardComponent({
       currentSizeRef.current = card.size;
     }
   }, [card.size, isResizing]);
+
+  // Monitor parent container width with ResizeObserver
+  useEffect(() => {
+    const parent = cardRef.current?.parentElement;
+    if (!parent) return;
+
+    const updateContainerWidth = () => {
+      const width = parent.getBoundingClientRect().width;
+      setContainerWidth(width);
+      containerWidthRef.current = width;
+    };
+
+    // Initial measurement
+    updateContainerWidth();
+
+    const observer = new ResizeObserver(() => {
+      updateContainerWidth();
+    });
+
+    observer.observe(parent);
+    return () => observer.disconnect();
+  }, []);
 
   // Calculate data based on dataSource
   const chartData = useMemo(() => {
@@ -188,14 +212,11 @@ export function OverviewCardComponent({
       const startW = currentSizeRef.current.width;
       const startH = currentSizeRef.current.height;
 
-      // Calculate max width based on available container width
-      const parent = cardRef.current?.parentElement;
-      let maxW = MAX_CARD_WIDTH;
-      if (parent) {
-        const parentRect = parent.getBoundingClientRect();
-        const availableWidth = parentRect.width - 32; // Account for padding/gap
-        maxW = Math.min(MAX_CARD_WIDTH, availableWidth);
-      }
+      // Calculate max width based on available container width (using ref for latest value)
+      const availableWidth = containerWidthRef.current > 0 
+        ? containerWidthRef.current - 32 
+        : MAX_CARD_WIDTH;
+      const maxW = Math.min(MAX_CARD_WIDTH, availableWidth);
       maxSizeRef.current = { maxW, maxH: MAX_CARD_HEIGHT };
 
       setIsResizing(true);
@@ -544,9 +565,9 @@ export function OverviewCardComponent({
         isResizing && "select-none"
       )}
       style={{
-        width: currentSize.width,
+        width: containerWidth > 0 ? Math.min(currentSize.width, containerWidth - 16) : currentSize.width,
         height: currentSize.height,
-        maxWidth: 'calc(100vw - 320px)',
+        maxWidth: '100%',
         flexShrink: 0,
       }}
     >
