@@ -3,7 +3,7 @@ import { createPortal } from "react-dom";
 import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Lead, Pipeline } from "@/types/crm";
-import { OverviewCard, CardTemplate, CardSize, DataSource, MIN_CARD_WIDTH_PX } from "./types";
+import { OverviewCard, CardTemplate, CardSize, DataSource, MIN_CARD_WIDTH_PX, MIN_CARD_WIDTH_PERCENT } from "./types";
 import { OverviewCardComponent } from "./OverviewCardComponent";
 import { AddCardDialog } from "./AddCardDialog";
 import { CardConfigPanel } from "./CardConfigPanel";
@@ -142,9 +142,12 @@ function SortableCard({
     : 0;
 
   // Wrapper style: percentage-based width minus proportional gap offset
+  // flexShrink: 0 prevents browser from auto-shrinking cards
   const wrapperStyle: React.CSSProperties = {
     width: `calc(${card.size.widthPercent}% - ${gapOffset}px)`,
     flexBasis: `calc(${card.size.widthPercent}% - ${gapOffset}px)`,
+    flexShrink: 0,
+    flexGrow: 0,
     maxWidth: '100%',
     minWidth: `${MIN_CARD_WIDTH_PX}px`,
     transform: transform
@@ -535,7 +538,7 @@ export function OverviewView({ leads, pipelines, leadTags, subOriginId }: Overvi
         : cardsInLine[cardIndex - 1];
       
       if (!neighborCard) {
-        // No neighbor - normal resize
+        // No neighbor in this direction - normal resize (card can grow freely)
         const newCards = prev.map((c) => (c.id === id ? { ...c, size } : c));
         const resizedCard = newCards.find(c => c.id === id);
         if (resizedCard) {
@@ -545,67 +548,94 @@ export function OverviewView({ leads, pipelines, leadTags, subOriginId }: Overvi
         return newCards;
       }
       
-      // Calculate delta in width percent
+      // Calculate delta in width percent (positive = growing, negative = shrinking)
       const deltaPercent = size.widthPercent - currentCard.size.widthPercent;
       
-      // Minimum percent for neighbor (15% minimum width)
-      const effectiveMinPercent = 15;
+      // Calculate effective minimum percent based on container width and MIN_CARD_WIDTH_PX
+      // This ensures the minimum percentage aligns with the actual pixel minimum
+      const effectiveMinPercent = containerWidth > 0
+        ? Math.max(MIN_CARD_WIDTH_PERCENT, (MIN_CARD_WIDTH_PX / containerWidth) * 100)
+        : MIN_CARD_WIDTH_PERCENT;
       
-      // Calculate new neighbor width
-      const neighborNewPercent = neighborCard.size.widthPercent - deltaPercent;
+      // Calculate current line sum (all cards in this line)
+      const lineSum = cardsInLine.reduce((sum, c) => sum + c.size.widthPercent, 0);
       
-      if (neighborNewPercent >= effectiveMinPercent) {
-        // Neighbor can shrink - apply to both
-        const newCards = prev.map(c => {
-          if (c.id === id) return { ...c, size };
-          if (c.id === neighborCard.id) return { 
-            ...c, 
-            size: { ...c.size, widthPercent: neighborNewPercent } 
-          };
-          return c;
-        });
+      // Calculate "slack" - how much space is left before the line is full (100%)
+      const slack = Math.max(0, 100 - lineSum);
+      
+      // If growing (delta > 0):
+      // 1. First consume slack (neighbor doesn't shrink yet)
+      // 2. Then shrink neighbor
+      // 3. If neighbor is at minimum, let current card continue growing (will cause wrap)
+      if (deltaPercent > 0) {
+        // How much do we need to take from neighbor after consuming slack?
+        const shrinkNeeded = Math.max(0, deltaPercent - slack);
         
-        // Debounced save for both cards
-        if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
-        saveTimeoutRef.current = setTimeout(() => {
-          const cardsToSave = [
-            newCards.find(c => c.id === id)!,
-            newCards.find(c => c.id === neighborCard.id)!,
-          ].filter(Boolean);
-          saveMultipleCardsToDb(cardsToSave);
-        }, 300);
+        // Calculate new neighbor width
+        const neighborNewPercent = neighborCard.size.widthPercent - shrinkNeeded;
         
-        return newCards;
+        if (neighborNewPercent >= effectiveMinPercent) {
+          // Neighbor can accommodate (either no shrink needed, or it can shrink enough)
+          const newCards = prev.map(c => {
+            if (c.id === id) return { ...c, size };
+            if (c.id === neighborCard.id && shrinkNeeded > 0) {
+              return { 
+                ...c, 
+                size: { ...c.size, widthPercent: neighborNewPercent } 
+              };
+            }
+            return c;
+          });
+          
+          // Debounced save
+          if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
+          saveTimeoutRef.current = setTimeout(() => {
+            const cardsToSave = [newCards.find(c => c.id === id)!];
+            if (shrinkNeeded > 0) {
+              cardsToSave.push(newCards.find(c => c.id === neighborCard.id)!);
+            }
+            saveMultipleCardsToDb(cardsToSave.filter(Boolean));
+          }, 300);
+          
+          return newCards;
+        } else {
+          // Neighbor would go below minimum
+          // Let the current card grow anyway - this will cause the neighbor to wrap to next line
+          // (flex-wrap will handle it naturally when sum > 100%)
+          const neighborAtMin = effectiveMinPercent;
+          
+          const newCards = prev.map(c => {
+            if (c.id === id) return { ...c, size }; // Let it grow!
+            if (c.id === neighborCard.id) return { 
+              ...c, 
+              size: { ...c.size, widthPercent: neighborAtMin } 
+            };
+            return c;
+          });
+          
+          if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
+          saveTimeoutRef.current = setTimeout(() => {
+            const cardsToSave = [
+              newCards.find(c => c.id === id)!,
+              newCards.find(c => c.id === neighborCard.id)!,
+            ].filter(Boolean);
+            saveMultipleCardsToDb(cardsToSave);
+          }, 300);
+          
+          return newCards;
+        }
       } else {
-        // Neighbor is at minimum - constrain the resize
-        const maxDelta = neighborCard.size.widthPercent - effectiveMinPercent;
-        const constrainedNewPercent = currentCard.size.widthPercent + maxDelta;
-        
-        const newCards = prev.map(c => {
-          if (c.id === id) return { 
-            ...c, 
-            size: { ...size, widthPercent: constrainedNewPercent } 
-          };
-          if (c.id === neighborCard.id) return { 
-            ...c, 
-            size: { ...c.size, widthPercent: effectiveMinPercent } 
-          };
-          return c;
-        });
-        
-        if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
-        saveTimeoutRef.current = setTimeout(() => {
-          const cardsToSave = [
-            newCards.find(c => c.id === id)!,
-            newCards.find(c => c.id === neighborCard.id)!,
-          ].filter(Boolean);
-          saveMultipleCardsToDb(cardsToSave);
-        }, 300);
-        
+        // Shrinking (delta < 0) - just apply the size change, no collaborative resize needed
+        const newCards = prev.map((c) => (c.id === id ? { ...c, size } : c));
+        const resizedCard = newCards.find(c => c.id === id);
+        if (resizedCard) {
+          if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
+          saveTimeoutRef.current = setTimeout(() => saveCardToDb(resizedCard), 300);
+        }
         return newCards;
       }
     });
-  }, [saveCardToDb, saveMultipleCardsToDb, findCardsInSameLine]);
+  }, [saveCardToDb, saveMultipleCardsToDb, findCardsInSameLine, containerWidth]);
 
   // Drag handlers
   const handleDragStart = useCallback((event: DragStartEvent) => {
