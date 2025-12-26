@@ -93,7 +93,8 @@ export function OverviewCardComponent({
 
   // Monitor parent container width with ResizeObserver + window resize listener
   useEffect(() => {
-    const parent = cardRef.current?.parentElement;
+    // cardRef -> wrapper (sortable item) -> cards container (flex wrap)
+    const parent = cardRef.current?.parentElement?.parentElement;
     if (!parent) return;
 
     const updateContainerWidth = () => {
@@ -577,11 +578,8 @@ export function OverviewCardComponent({
         isResizing && "select-none"
       )}
       style={{
-        // CSS min() nativo garante que o card nunca ultrapasse o container
-        // Alinhado com o botão + Adicionar cartão (sem margem extra)
-        width: `min(${currentSize.width}px, 100%)`,
+        width: currentSize.width,
         height: currentSize.height,
-        maxWidth: '100%',
         flexShrink: 0,
       }}
     >
