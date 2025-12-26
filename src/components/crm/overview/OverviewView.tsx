@@ -180,7 +180,28 @@ export function OverviewView({ leads, pipelines, leadTags, subOriginId }: Overvi
     })
   );
 
-  // Load cards from Supabase
+  // Helper to convert DB row to OverviewCard
+  const rowToCard = useCallback((row: {
+    card_id: string;
+    title: string;
+    chart_type: string;
+    data_source: string | null;
+    width_percent: number | null;
+    height: number;
+    card_order: number;
+  }): OverviewCard => ({
+    id: row.card_id,
+    title: row.title,
+    chartType: row.chart_type as OverviewCard["chartType"],
+    dataSource: row.data_source as DataSource | null,
+    size: { 
+      widthPercent: row.width_percent ?? 25, // fallback to 25% if not set
+      height: row.height 
+    },
+    order: row.card_order,
+  }), []);
+
+  // Load cards from Supabase and subscribe to realtime updates
   useEffect(() => {
     if (!subOriginId) {
       setCards([]);
@@ -199,18 +220,7 @@ export function OverviewView({ leads, pipelines, leadTags, subOriginId }: Overvi
 
         if (error) throw error;
 
-        const loadedCards: OverviewCard[] = (data || []).map((row) => ({
-          id: row.card_id,
-          title: row.title,
-          chartType: row.chart_type as OverviewCard["chartType"],
-          dataSource: row.data_source as DataSource | null,
-          size: { 
-            widthPercent: row.width_percent ?? 25, // fallback to 25% if not set
-            height: row.height 
-          },
-          order: row.card_order,
-        }));
-
+        const loadedCards: OverviewCard[] = (data || []).map(rowToCard);
         setCards(loadedCards);
       } catch (error) {
         console.error("Error loading cards:", error);
@@ -221,7 +231,43 @@ export function OverviewView({ leads, pipelines, leadTags, subOriginId }: Overvi
     };
 
     loadCards();
-  }, [subOriginId]);
+
+    // Subscribe to realtime changes
+    const channel = supabase
+      .channel(`overview-cards-${subOriginId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'overview_cards',
+          filter: `sub_origin_id=eq.${subOriginId}`
+        },
+        (payload) => {
+          console.log('[Realtime] overview_cards change:', payload.eventType);
+          
+          if (payload.eventType === 'INSERT') {
+            const newCard = rowToCard(payload.new as any);
+            setCards(prev => {
+              // Avoid duplicates
+              if (prev.some(c => c.id === newCard.id)) return prev;
+              return [...prev, newCard].sort((a, b) => a.order - b.order);
+            });
+          } else if (payload.eventType === 'UPDATE') {
+            const updatedCard = rowToCard(payload.new as any);
+            setCards(prev => prev.map(c => c.id === updatedCard.id ? updatedCard : c));
+          } else if (payload.eventType === 'DELETE') {
+            const deletedCardId = (payload.old as any).card_id;
+            setCards(prev => prev.filter(c => c.id !== deletedCardId));
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [subOriginId, rowToCard]);
 
   // Save card to Supabase
   const saveCardToDb = useCallback(async (card: OverviewCard) => {
