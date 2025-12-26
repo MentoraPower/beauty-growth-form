@@ -3,7 +3,7 @@ import { createPortal } from "react-dom";
 import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Lead, Pipeline } from "@/types/crm";
-import { OverviewCard, CardTemplate, CardSize, DataSource } from "./types";
+import { OverviewCard, CardTemplate, CardSize, DataSource, MIN_CARD_WIDTH_PX } from "./types";
 import { OverviewCardComponent } from "./OverviewCardComponent";
 import { AddCardDialog } from "./AddCardDialog";
 import { CardConfigPanel } from "./CardConfigPanel";
@@ -71,7 +71,7 @@ function GhostPlaceholder({ card }: { card: OverviewCard }) {
   );
 }
 
-// Sortable wrapper for cards - controls width via percentage
+// Sortable wrapper for cards - controls width via percentage with minimum pixel constraint
 function SortableCard({
   card,
   leads,
@@ -81,6 +81,7 @@ function SortableCard({
   onResize,
   onConnectDataSource,
   isBeingDragged,
+  containerWidth,
 }: {
   card: OverviewCard;
   leads: Lead[];
@@ -90,6 +91,7 @@ function SortableCard({
   onResize: (id: string, size: CardSize) => void;
   onConnectDataSource?: (card: OverviewCard) => void;
   isBeingDragged: boolean;
+  containerWidth: number;
 }) {
   const {
     attributes,
@@ -98,12 +100,25 @@ function SortableCard({
     transform,
   } = useSortable({ id: card.id });
 
-  // Wrapper style: percentage-based width that responds to container size changes
+  // Calculate effective width: use percentage but enforce minimum pixel width
+  const calculatedPixelWidth = containerWidth > 0 
+    ? (card.size.widthPercent / 100) * containerWidth 
+    : 0;
+  
+  // Ensure minimum pixel width for readability on smaller screens
+  const effectivePixelWidth = Math.max(calculatedPixelWidth, MIN_CARD_WIDTH_PX);
+  
+  // Convert back to percentage for the wrapper
+  const effectiveWidthPercent = containerWidth > 0 
+    ? Math.min((effectivePixelWidth / containerWidth) * 100, 100)
+    : card.size.widthPercent;
+
+  // Wrapper style: percentage-based width with minimum pixel constraint
   const wrapperStyle: React.CSSProperties = {
-    width: `${card.size.widthPercent}%`,
-    flexBasis: `${card.size.widthPercent}%`,
+    width: `${effectiveWidthPercent}%`,
+    flexBasis: `${effectiveWidthPercent}%`,
     maxWidth: '100%',
-    minWidth: 0,
+    minWidth: `${MIN_CARD_WIDTH_PX}px`,
     transform: transform
       ? `translate3d(${transform.x}px, ${transform.y}px, 0)`
       : undefined,
@@ -501,6 +516,7 @@ export function OverviewView({ leads, pipelines, leadTags, subOriginId }: Overvi
                   onResize={handleResizeCard}
                   onConnectDataSource={handleConnectDataSource}
                   isBeingDragged={activeId === card.id}
+                  containerWidth={containerWidth}
                 />
               ))}
             </div>
@@ -508,20 +524,29 @@ export function OverviewView({ leads, pipelines, leadTags, subOriginId }: Overvi
 
           {/* Drag overlay - shows floating card on top with shadow */}
           <DragOverlay dropAnimation={null}>
-            {activeCard ? (
-              <div className="shadow-2xl shadow-black/20 rounded-xl">
-                <OverviewCardComponent
-                  card={activeCard}
-                  leads={leads}
-                  pipelines={pipelines}
-                  leadTags={leadTags}
-                  onDelete={() => {}}
-                  onResize={() => {}}
-                  containerWidth={containerWidth}
-                  isDragging
-                />
-              </div>
-            ) : null}
+            {activeCard ? (() => {
+              // Calculate pixel width with minimum constraint for drag overlay
+              const overlayPixelWidth = containerWidth > 0 
+                ? Math.max(
+                    (activeCard.size.widthPercent / 100) * containerWidth,
+                    MIN_CARD_WIDTH_PX
+                  )
+                : undefined;
+              return (
+                <div className="shadow-2xl shadow-black/20 rounded-xl" style={{ width: overlayPixelWidth }}>
+                  <OverviewCardComponent
+                    card={activeCard}
+                    leads={leads}
+                    pipelines={pipelines}
+                    leadTags={leadTags}
+                    onDelete={() => {}}
+                    onResize={() => {}}
+                    containerWidth={containerWidth}
+                    isDragging
+                  />
+                </div>
+              );
+            })() : null}
           </DragOverlay>
         </DndContext>
 

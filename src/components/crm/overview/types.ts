@@ -117,6 +117,7 @@ export const CARD_TEMPLATES: CardTemplate[] = [
 
 // Min/max constraints
 export const MIN_CARD_WIDTH_PERCENT = 15; // minimum 15% of container
+export const MIN_CARD_WIDTH_PX = 280; // minimum width in pixels (ensures readability on smaller screens)
 export const MIN_CARD_HEIGHT = 150;
 export const MAX_CARD_WIDTH_PERCENT = 100; // can be full width
 export const MAX_CARD_HEIGHT = 1200;
