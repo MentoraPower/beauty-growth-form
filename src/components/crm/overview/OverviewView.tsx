@@ -523,6 +523,8 @@ export function OverviewView({ leads, pipelines, leadTags, subOriginId }: Overvi
                   leadTags={leadTags}
                   onDelete={() => {}}
                   onResize={() => {}}
+                  containerWidth={containerWidth}
+                  isDragging
                 />
               </div>
             ) : null}
