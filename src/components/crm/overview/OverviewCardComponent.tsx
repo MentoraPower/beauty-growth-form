@@ -35,6 +35,7 @@ interface OverviewCardComponentProps {
   onConnectDataSource?: (card: OverviewCard) => void;
   isDragging?: boolean;
   dragHandleProps?: React.HTMLAttributes<HTMLDivElement>;
+  containerWidth?: number;
 }
 
 const COLORS = [
@@ -58,17 +59,21 @@ export function OverviewCardComponent({
   onConnectDataSource,
   isDragging,
   dragHandleProps,
+  containerWidth: externalContainerWidth,
 }: OverviewCardComponentProps) {
   const [isResizing, setIsResizing] = useState(false);
   const [resizeDirection, setResizeDirection] = useState<ResizeDirection | null>(null);
   const [currentSize, setCurrentSize] = useState<CardSize>(card.size);
-  const [containerWidth, setContainerWidth] = useState(0);
+  const [measuredContainerWidth, setMeasuredContainerWidth] = useState(0);
   const [atLimit, setAtLimit] = useState<{ left: boolean; right: boolean; top: boolean; bottom: boolean }>({
     left: false,
     right: false,
     top: false,
     bottom: false,
   });
+
+  // Use external width if provided (for DragOverlay), otherwise use measured width
+  const containerWidth = externalContainerWidth ?? measuredContainerWidth;
 
   const cardRef = useRef<HTMLDivElement | null>(null);
   const limitsRef = useRef({ left: false, right: false, top: false, bottom: false });
@@ -91,14 +96,17 @@ export function OverviewCardComponent({
   }, [card.size, isResizing]);
 
   // Monitor parent container width with ResizeObserver + window resize listener
+  // Skip if external width is provided
   useEffect(() => {
+    if (externalContainerWidth !== undefined) return;
+    
     // cardRef -> wrapper (sortable item) -> cards container (flex wrap)
     const parent = cardRef.current?.parentElement?.parentElement;
     if (!parent) return;
 
     const updateContainerWidth = () => {
       const width = parent.getBoundingClientRect().width;
-      setContainerWidth(width);
+      setMeasuredContainerWidth(width);
       containerWidthRef.current = width;
     };
 
@@ -121,7 +129,7 @@ export function OverviewCardComponent({
       observer.disconnect();
       window.removeEventListener('resize', handleWindowResize);
     };
-  }, []);
+  }, [externalContainerWidth]);
 
   // Calculate actual pixel width from percentage
   const pixelWidth = useMemo(() => {
