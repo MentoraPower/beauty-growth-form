@@ -188,8 +188,15 @@ export function OverviewCardComponent({
       const startW = currentSizeRef.current.width;
       const startH = currentSizeRef.current.height;
 
-      // Allow resizing freely (only min/max constraints).
-      maxSizeRef.current = { maxW: MAX_CARD_WIDTH, maxH: MAX_CARD_HEIGHT };
+      // Calculate max width based on available container width
+      const parent = cardRef.current?.parentElement;
+      let maxW = MAX_CARD_WIDTH;
+      if (parent) {
+        const parentRect = parent.getBoundingClientRect();
+        const availableWidth = parentRect.width - 32; // Account for padding/gap
+        maxW = Math.min(MAX_CARD_WIDTH, availableWidth);
+      }
+      maxSizeRef.current = { maxW, maxH: MAX_CARD_HEIGHT };
 
       setIsResizing(true);
       setResizeDirection(direction);
@@ -539,6 +546,7 @@ export function OverviewCardComponent({
       style={{
         width: currentSize.width,
         height: currentSize.height,
+        maxWidth: 'calc(100vw - 320px)',
         flexShrink: 0,
       }}
     >
