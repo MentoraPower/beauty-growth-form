@@ -212,7 +212,7 @@ export function OverviewView({ leads, pipelines, leadTags, subOriginId }: Overvi
 
       {/* Cards - Flex wrap layout for free positioning */}
       <ScrollArea className="flex-1">
-        <div className="flex flex-wrap gap-4 pb-4 pr-4 content-start">
+        <div className="flex flex-wrap gap-4 pb-4 pr-4 content-start overflow-hidden">
           {cards
             .sort((a, b) => a.order - b.order)
             .map((card) => (
