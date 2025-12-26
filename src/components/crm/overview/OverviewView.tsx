@@ -10,6 +10,21 @@ import { CardConfigPanel } from "./CardConfigPanel";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import {
+  DndContext,
+  closestCenter,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragStartEvent,
+  DragEndEvent,
+  DragOverlay,
+} from "@dnd-kit/core";
+import {
+  SortableContext,
+  useSortable,
+  rectSortingStrategy,
+} from "@dnd-kit/sortable";
 
 interface OverviewViewProps {
   leads: Lead[];
@@ -18,12 +33,92 @@ interface OverviewViewProps {
   subOriginId: string | null;
 }
 
+// Sortable wrapper for cards
+function SortableCard({
+  card,
+  leads,
+  pipelines,
+  leadTags,
+  onDelete,
+  onResize,
+  onConnectDataSource,
+  isDragging,
+}: {
+  card: OverviewCard;
+  leads: Lead[];
+  pipelines: Pipeline[];
+  leadTags: Array<{ lead_id: string; name: string; color: string }>;
+  onDelete: (id: string) => void;
+  onResize: (id: string, size: CardSize) => void;
+  onConnectDataSource?: (card: OverviewCard) => void;
+  isDragging: boolean;
+}) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging: isSortableDragging,
+  } = useSortable({ id: card.id });
+
+  const style: React.CSSProperties = {
+    transform: transform
+      ? `translate3d(${transform.x}px, ${transform.y}px, 0)`
+      : undefined,
+    // No transition for instant response
+    transition: undefined,
+    zIndex: isSortableDragging ? 50 : undefined,
+  };
+
+  return (
+    <div ref={setNodeRef} style={style}>
+      <OverviewCardComponent
+        card={card}
+        leads={leads}
+        pipelines={pipelines}
+        leadTags={leadTags}
+        onDelete={onDelete}
+        onResize={onResize}
+        onConnectDataSource={onConnectDataSource}
+        isDragging={isDragging || isSortableDragging}
+        dragHandleProps={{ ...attributes, ...listeners }}
+      />
+    </div>
+  );
+}
+
+// Ghost placeholder shown during drag
+function GhostPlaceholder({ card }: { card: OverviewCard }) {
+  return (
+    <div
+      className="rounded-xl border-2 border-dashed border-muted-foreground/20 bg-muted/30"
+      style={{
+        width: card.size.width,
+        height: card.size.height,
+        maxWidth: '100%',
+        flexShrink: 0,
+      }}
+    />
+  );
+}
+
 export function OverviewView({ leads, pipelines, leadTags, subOriginId }: OverviewViewProps) {
   const [cards, setCards] = useState<OverviewCard[]>([]);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [configPanelCard, setConfigPanelCard] = useState<OverviewCard | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [activeId, setActiveId] = useState<string | null>(null);
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Configure sensors - require some movement before starting drag
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8,
+      },
+    })
+  );
 
   // Load cards from Supabase
   useEffect(() => {
@@ -86,6 +181,32 @@ export function OverviewView({ leads, pipelines, leadTags, subOriginId }: Overvi
       if (error) throw error;
     } catch (error) {
       console.error("Error saving card:", error);
+    }
+  }, [subOriginId]);
+
+  // Save multiple cards order to DB
+  const saveCardsOrder = useCallback(async (cardsToSave: OverviewCard[]) => {
+    if (!subOriginId) return;
+    
+    try {
+      const updates = cardsToSave.map(card => ({
+        sub_origin_id: subOriginId,
+        card_id: card.id,
+        title: card.title,
+        chart_type: card.chartType,
+        data_source: card.dataSource,
+        width: card.size.width,
+        height: card.size.height,
+        card_order: card.order,
+      }));
+
+      const { error } = await supabase
+        .from("overview_cards")
+        .upsert(updates, { onConflict: "sub_origin_id,card_id" });
+
+      if (error) throw error;
+    } catch (error) {
+      console.error("Error saving cards order:", error);
     }
   }, [subOriginId]);
 
@@ -190,6 +311,44 @@ export function OverviewView({ leads, pipelines, leadTags, subOriginId }: Overvi
     });
   }, [saveCardToDb]);
 
+  // Drag handlers
+  const handleDragStart = useCallback((event: DragStartEvent) => {
+    setActiveId(event.active.id as string);
+  }, []);
+
+  const handleDragEnd = useCallback((event: DragEndEvent) => {
+    const { active, over } = event;
+    setActiveId(null);
+
+    if (over && active.id !== over.id) {
+      setCards((prev) => {
+        const oldIndex = prev.findIndex((c) => c.id === active.id);
+        const newIndex = prev.findIndex((c) => c.id === over.id);
+
+        if (oldIndex === -1 || newIndex === -1) return prev;
+
+        // Reorder array
+        const reordered = [...prev];
+        const [removed] = reordered.splice(oldIndex, 1);
+        reordered.splice(newIndex, 0, removed);
+
+        // Update order property
+        const withNewOrder = reordered.map((card, index) => ({
+          ...card,
+          order: index,
+        }));
+
+        // Save to DB
+        saveCardsOrder(withNewOrder);
+
+        return withNewOrder;
+      });
+    }
+  }, [saveCardsOrder]);
+
+  const activeCard = activeId ? cards.find((c) => c.id === activeId) : null;
+  const sortedCards = [...cards].sort((a, b) => a.order - b.order);
+
   // Show loading state
   if (isLoading) {
     return (
@@ -210,24 +369,47 @@ export function OverviewView({ leads, pipelines, leadTags, subOriginId }: Overvi
         </Button>
       </div>
 
-      {/* Cards - Flex wrap layout for free positioning */}
+      {/* Cards - Flex wrap layout with drag and drop */}
       <ScrollArea className="flex-1">
-        <div className="flex flex-wrap gap-4 pb-4 content-start overflow-hidden">
-          {cards
-            .sort((a, b) => a.order - b.order)
-            .map((card) => (
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          onDragStart={handleDragStart}
+          onDragEnd={handleDragEnd}
+        >
+          <SortableContext items={sortedCards.map((c) => c.id)} strategy={rectSortingStrategy}>
+            <div className="flex flex-wrap gap-4 pb-4 content-start overflow-hidden">
+              {sortedCards.map((card) => (
+                <SortableCard
+                  key={card.id}
+                  card={card}
+                  leads={leads}
+                  pipelines={pipelines}
+                  leadTags={leadTags}
+                  onDelete={handleDeleteCard}
+                  onResize={handleResizeCard}
+                  onConnectDataSource={handleConnectDataSource}
+                  isDragging={activeId === card.id}
+                />
+              ))}
+            </div>
+          </SortableContext>
+
+          {/* Drag overlay - shows floating card while dragging */}
+          <DragOverlay dropAnimation={null}>
+            {activeCard ? (
               <OverviewCardComponent
-                key={card.id}
-                card={card}
+                card={activeCard}
                 leads={leads}
                 pipelines={pipelines}
                 leadTags={leadTags}
-                onDelete={handleDeleteCard}
-                onResize={handleResizeCard}
-                onConnectDataSource={handleConnectDataSource}
+                onDelete={() => {}}
+                onResize={() => {}}
+                isDragging
               />
-            ))}
-        </div>
+            ) : null}
+          </DragOverlay>
+        </DndContext>
 
         {/* Empty State */}
         {cards.length === 0 && (
