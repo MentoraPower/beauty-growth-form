@@ -264,19 +264,9 @@ export function OverviewCardComponent({
       const isCorner = resizeDirection.includes("-");
 
       if (isCorner) {
-        // Corner resize: allow growth only towards bottom/right in this flow layout.
-        // Growing towards top/left would visually "force" the opposite side.
+        // Corner resize: calculate deltas based on which corner
         let widthDelta = resizeDirection.endsWith("right") ? deltaX : -deltaX;
         let heightDelta = resizeDirection.startsWith("bottom") ? deltaY : -deltaY;
-
-        if (resizeDirection.includes("left") && deltaX < 0) {
-          // Dragging left would mean grow-to-left: block
-          widthDelta = 0;
-        }
-        if (resizeDirection.includes("top") && deltaY < 0) {
-          // Dragging up would mean grow-to-top: block
-          heightDelta = 0;
-        }
 
         const rawW = startW + widthDelta;
         const rawH = startH + heightDelta;
@@ -284,29 +274,21 @@ export function OverviewCardComponent({
         const clampedW = clamp(rawW, MIN_CARD_WIDTH, maxW);
         const clampedH = clamp(rawH, MIN_CARD_HEIGHT, maxH);
 
-        const allowedW = clampedW - startW;
-        const allowedH = clampedH - startH;
-
-        // If one axis hits a limit first, scale BOTH deltas so the other axis doesn't keep growing alone.
-        let s = 1;
-        if (widthDelta !== 0 && allowedW !== widthDelta) s = Math.min(s, allowedW / widthDelta);
-        if (heightDelta !== 0 && allowedH !== heightDelta) s = Math.min(s, allowedH / heightDelta);
-
-        nextW = clamp(startW + widthDelta * s, MIN_CARD_WIDTH, maxW);
-        nextH = clamp(startH + heightDelta * s, MIN_CARD_HEIGHT, maxH);
+        nextW = clampedW;
+        nextH = clampedH;
       } else {
         if (resizeDirection === "right") {
           nextW = clamp(startW + deltaX, MIN_CARD_WIDTH, maxW);
         } else if (resizeDirection === "left") {
-          // Don't allow grow-to-left (deltaX < 0)
-          nextW = clamp(startW - Math.max(0, deltaX), MIN_CARD_WIDTH, maxW);
+          // Dragging left (negative deltaX) increases width
+          nextW = clamp(startW - deltaX, MIN_CARD_WIDTH, maxW);
         }
 
         if (resizeDirection === "bottom") {
           nextH = clamp(startH + deltaY, MIN_CARD_HEIGHT, maxH);
         } else if (resizeDirection === "top") {
-          // Don't allow grow-to-top (deltaY < 0)
-          nextH = clamp(startH - Math.max(0, deltaY), MIN_CARD_HEIGHT, maxH);
+          // Dragging up (negative deltaY) increases height
+          nextH = clamp(startH - deltaY, MIN_CARD_HEIGHT, maxH);
         }
       }
 
