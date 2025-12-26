@@ -60,26 +60,18 @@ interface OverviewViewProps {
 }
 
 // Ghost placeholder shown during drag - appears where the card will land
-function GhostPlaceholder({ card, containerWidth }: { card: OverviewCard; containerWidth: number }) {
-  const pixelWidth = containerWidth > 0 
-    ? (card.size.widthPercent / 100) * containerWidth 
-    : 280;
-  
+function GhostPlaceholder({ card }: { card: OverviewCard }) {
   return (
     <div
-      className="rounded-xl border-2 border-dashed border-muted-foreground/20 bg-muted/30"
+      className="rounded-xl border-2 border-dashed border-muted-foreground/20 bg-muted/30 w-full"
       style={{
-        width: pixelWidth,
         height: card.size.height,
-        maxWidth: '100%',
-        flexShrink: 0,
-        transition: 'width 300ms cubic-bezier(0.4, 0, 0.2, 1)',
       }}
     />
   );
 }
 
-// Sortable wrapper for cards
+// Sortable wrapper for cards - controls width via percentage
 function SortableCard({
   card,
   leads,
@@ -89,7 +81,6 @@ function SortableCard({
   onResize,
   onConnectDataSource,
   isBeingDragged,
-  containerWidth,
 }: {
   card: OverviewCard;
   leads: Lead[];
@@ -99,7 +90,6 @@ function SortableCard({
   onResize: (id: string, size: CardSize) => void;
   onConnectDataSource?: (card: OverviewCard) => void;
   isBeingDragged: boolean;
-  containerWidth: number;
 }) {
   const {
     attributes,
@@ -108,25 +98,30 @@ function SortableCard({
     transform,
   } = useSortable({ id: card.id });
 
-  const style: React.CSSProperties = {
+  // Wrapper style: percentage-based width that responds to container size changes
+  const wrapperStyle: React.CSSProperties = {
+    width: `${card.size.widthPercent}%`,
+    flexBasis: `${card.size.widthPercent}%`,
+    maxWidth: '100%',
+    minWidth: 0,
     transform: transform
       ? `translate3d(${transform.x}px, ${transform.y}px, 0)`
       : undefined,
-    // No transition for instant response
+    // No transition for instant drag response
     transition: undefined,
   };
 
-  // When this card is being dragged, show a ghost placeholder that moves with the transform
+  // When this card is being dragged, show a ghost placeholder
   if (isBeingDragged) {
     return (
-      <div ref={setNodeRef} style={style}>
-        <GhostPlaceholder card={card} containerWidth={containerWidth} />
+      <div ref={setNodeRef} style={wrapperStyle}>
+        <GhostPlaceholder card={card} />
       </div>
     );
   }
 
   return (
-    <div ref={setNodeRef} style={style}>
+    <div ref={setNodeRef} style={wrapperStyle}>
       <OverviewCardComponent
         card={card}
         leads={leads}
@@ -475,7 +470,7 @@ export function OverviewView({ leads, pipelines, leadTags, subOriginId }: Overvi
   }
 
   return (
-    <div className="relative flex flex-col h-full overflow-x-clip overflow-y-hidden">
+    <div className="relative flex flex-col h-full overflow-hidden">
       {/* Header */}
       <div className="flex items-center justify-between pb-4 shrink-0">
         <h2 className="text-lg font-semibold text-foreground">Visão Geral</h2>
@@ -494,7 +489,7 @@ export function OverviewView({ leads, pipelines, leadTags, subOriginId }: Overvi
           onDragEnd={handleDragEnd}
         >
           <SortableContext items={sortedCards.map((c) => c.id)} strategy={rectSortingStrategy}>
-            <div ref={containerRef} className="flex flex-wrap gap-4 pb-4 content-start overflow-x-clip overflow-y-visible">
+            <div ref={containerRef} className="flex flex-wrap gap-4 pb-4 content-start overflow-hidden">
               {sortedCards.map((card) => (
                 <SortableCard
                   key={card.id}
@@ -506,7 +501,6 @@ export function OverviewView({ leads, pipelines, leadTags, subOriginId }: Overvi
                   onResize={handleResizeCard}
                   onConnectDataSource={handleConnectDataSource}
                   isBeingDragged={activeId === card.id}
-                  containerWidth={containerWidth}
                 />
               ))}
             </div>

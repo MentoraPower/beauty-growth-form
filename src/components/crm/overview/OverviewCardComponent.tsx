@@ -578,16 +578,12 @@ export function OverviewCardComponent({
     <div
       ref={cardRef}
       className={cn(
-        "relative rounded-xl border bg-card p-4 transition-shadow",
+        "relative rounded-xl border bg-card p-4 transition-shadow w-full",
         isDragging && "opacity-50",
         isResizing ? "shadow-lg ring-2 ring-primary/20" : "shadow-sm"
       )}
       style={{
-        width: pixelWidth,
         height: currentSize.height,
-        maxWidth: '100%',
-        flexShrink: 0,
-        transition: isResizing ? 'none' : 'width 300ms cubic-bezier(0.4, 0, 0.2, 1)',
       }}
     >
       {/* Header */}
