@@ -82,16 +82,18 @@ function SortableCard({
   onConnectDataSource,
   isBeingDragged,
   containerWidth,
+  allCards,
 }: {
   card: OverviewCard;
   leads: Lead[];
   pipelines: Pipeline[];
   leadTags: Array<{ lead_id: string; name: string; color: string }>;
   onDelete: (id: string) => void;
-  onResize: (id: string, size: CardSize) => void;
+  onResize: (id: string, size: CardSize, resizeDirection?: string) => void;
   onConnectDataSource?: (card: OverviewCard) => void;
   isBeingDragged: boolean;
   containerWidth: number;
+  allCards: OverviewCard[];
 }) {
   const {
     attributes,
@@ -420,22 +422,169 @@ export function OverviewView({ leads, pipelines, leadTags, subOriginId }: Overvi
     }
   }, [subOriginId]);
 
-  const handleResizeCard = useCallback((id: string, size: CardSize) => {
-    setCards((prev) => {
-      const newCards = prev.map((c) => (c.id === id ? { ...c, size } : c));
-      // Save resized card to database with debounce
-      const resizedCard = newCards.find(c => c.id === id);
-      if (resizedCard) {
-        if (saveTimeoutRef.current) {
-          clearTimeout(saveTimeoutRef.current);
+  // Find cards that are visually on the same line
+  const findCardsInSameLine = useCallback((cards: OverviewCard[], targetCardId: string, containerW: number): OverviewCard[] => {
+    const sortedCards = [...cards].sort((a, b) => a.order - b.order);
+    const GAP_PX = 16; // gap-4 = 16px
+    
+    let currentLineWidth = 0;
+    let currentLine: OverviewCard[] = [];
+    
+    for (const card of sortedCards) {
+      const cardPixelWidth = Math.max((card.size.widthPercent / 100) * containerW, MIN_CARD_WIDTH_PX);
+      const gapToAdd = currentLine.length > 0 ? GAP_PX : 0;
+      
+      // If adding this card exceeds container, start new line
+      if (currentLineWidth + cardPixelWidth + gapToAdd > containerW && currentLine.length > 0) {
+        // Check if target is in this line
+        if (currentLine.some(c => c.id === targetCardId)) {
+          return currentLine;
         }
-        saveTimeoutRef.current = setTimeout(() => {
-          saveCardToDb(resizedCard);
-        }, 300);
+        // Start new line
+        currentLine = [card];
+        currentLineWidth = cardPixelWidth;
+      } else {
+        currentLine.push(card);
+        currentLineWidth += cardPixelWidth + gapToAdd;
       }
-      return newCards;
+    }
+    
+    // Check last line
+    if (currentLine.some(c => c.id === targetCardId)) {
+      return currentLine;
+    }
+    
+    return [];
+  }, []);
+
+  // Save multiple cards to DB
+  const saveMultipleCardsToDb = useCallback(async (cardsToSave: OverviewCard[]) => {
+    if (!subOriginId) return;
+    
+    try {
+      const updates = cardsToSave.map((card) => ({
+        sub_origin_id: subOriginId,
+        card_id: card.id,
+        title: card.title,
+        chart_type: card.chartType,
+        data_source: card.dataSource,
+        width_percent: card.size.widthPercent,
+        width: Math.round((card.size.widthPercent / 100) * (containerWidth || 1000)),
+        height: Math.round(card.size.height),
+        card_order: card.order,
+      }));
+
+      await supabase
+        .from("overview_cards")
+        .upsert(updates, { onConflict: "sub_origin_id,card_id" });
+    } catch (error) {
+      console.error("Error saving cards:", error);
+    }
+  }, [subOriginId, containerWidth]);
+
+  const handleResizeCard = useCallback((id: string, size: CardSize, resizeDirection?: string) => {
+    setCards((prev) => {
+      const currentCard = prev.find(c => c.id === id);
+      if (!currentCard) return prev;
+      
+      // Only apply collaborative resize for horizontal resizing
+      const isHorizontalResize = resizeDirection === 'left' || resizeDirection === 'right' || 
+        resizeDirection?.includes('left') || resizeDirection?.includes('right');
+      
+      if (!isHorizontalResize || containerWidth <= 0) {
+        // Vertical-only resize or no container width - just resize this card
+        const newCards = prev.map((c) => (c.id === id ? { ...c, size } : c));
+        const resizedCard = newCards.find(c => c.id === id);
+        if (resizedCard) {
+          if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
+          saveTimeoutRef.current = setTimeout(() => saveCardToDb(resizedCard), 300);
+        }
+        return newCards;
+      }
+      
+      // Find cards in the same line
+      const cardsInLine = findCardsInSameLine(prev, id, containerWidth);
+      const cardIndex = cardsInLine.findIndex(c => c.id === id);
+      
+      // Determine neighbor based on resize direction
+      const isResizingRight = resizeDirection === 'right' || resizeDirection === 'top-right' || resizeDirection === 'bottom-right';
+      const neighborCard = isResizingRight 
+        ? cardsInLine[cardIndex + 1] 
+        : cardsInLine[cardIndex - 1];
+      
+      if (!neighborCard) {
+        // No neighbor - normal resize
+        const newCards = prev.map((c) => (c.id === id ? { ...c, size } : c));
+        const resizedCard = newCards.find(c => c.id === id);
+        if (resizedCard) {
+          if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
+          saveTimeoutRef.current = setTimeout(() => saveCardToDb(resizedCard), 300);
+        }
+        return newCards;
+      }
+      
+      // Calculate delta in width percent
+      const deltaPercent = size.widthPercent - currentCard.size.widthPercent;
+      
+      // Calculate minimum percent for neighbor
+      const minPercentForNeighbor = (MIN_CARD_WIDTH_PX / containerWidth) * 100;
+      const effectiveMinPercent = Math.max(15, minPercentForNeighbor); // At least 15%
+      
+      // Calculate new neighbor width
+      const neighborNewPercent = neighborCard.size.widthPercent - deltaPercent;
+      
+      if (neighborNewPercent >= effectiveMinPercent) {
+        // Neighbor can shrink - apply to both
+        const newCards = prev.map(c => {
+          if (c.id === id) return { ...c, size };
+          if (c.id === neighborCard.id) return { 
+            ...c, 
+            size: { ...c.size, widthPercent: neighborNewPercent } 
+          };
+          return c;
+        });
+        
+        // Debounced save for both cards
+        if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
+        saveTimeoutRef.current = setTimeout(() => {
+          const cardsToSave = [
+            newCards.find(c => c.id === id)!,
+            newCards.find(c => c.id === neighborCard.id)!,
+          ].filter(Boolean);
+          saveMultipleCardsToDb(cardsToSave);
+        }, 300);
+        
+        return newCards;
+      } else {
+        // Neighbor is at minimum - constrain the resize
+        const maxDelta = neighborCard.size.widthPercent - effectiveMinPercent;
+        const constrainedNewPercent = currentCard.size.widthPercent + maxDelta;
+        
+        const newCards = prev.map(c => {
+          if (c.id === id) return { 
+            ...c, 
+            size: { ...size, widthPercent: constrainedNewPercent } 
+          };
+          if (c.id === neighborCard.id) return { 
+            ...c, 
+            size: { ...c.size, widthPercent: effectiveMinPercent } 
+          };
+          return c;
+        });
+        
+        if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
+        saveTimeoutRef.current = setTimeout(() => {
+          const cardsToSave = [
+            newCards.find(c => c.id === id)!,
+            newCards.find(c => c.id === neighborCard.id)!,
+          ].filter(Boolean);
+          saveMultipleCardsToDb(cardsToSave);
+        }, 300);
+        
+        return newCards;
+      }
     });
-  }, [saveCardToDb]);
+  }, [saveCardToDb, saveMultipleCardsToDb, findCardsInSameLine, containerWidth]);
 
   // Drag handlers
   const handleDragStart = useCallback((event: DragStartEvent) => {
@@ -517,6 +666,7 @@ export function OverviewView({ leads, pipelines, leadTags, subOriginId }: Overvi
                   onConnectDataSource={handleConnectDataSource}
                   isBeingDragged={activeId === card.id}
                   containerWidth={containerWidth}
+                  allCards={sortedCards}
                 />
               ))}
             </div>
