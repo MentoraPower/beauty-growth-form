@@ -73,17 +73,7 @@ function SortableCard({
     listeners,
     setNodeRef,
     transform,
-    isDragging: isSortableDragging,
   } = useSortable({ id: card.id });
-
-  // When this card is being dragged, show a ghost placeholder instead
-  if (isBeingDragged) {
-    return (
-      <div ref={setNodeRef}>
-        <GhostPlaceholder card={card} />
-      </div>
-    );
-  }
 
   const style: React.CSSProperties = {
     transform: transform
@@ -91,8 +81,16 @@ function SortableCard({
       : undefined,
     // No transition for instant response
     transition: undefined,
-    zIndex: isSortableDragging ? 50 : undefined,
   };
+
+  // When this card is being dragged, show a ghost placeholder that moves with the transform
+  if (isBeingDragged) {
+    return (
+      <div ref={setNodeRef} style={style}>
+        <GhostPlaceholder card={card} />
+      </div>
+    );
+  }
 
   return (
     <div ref={setNodeRef} style={style}>
@@ -402,17 +400,19 @@ export function OverviewView({ leads, pipelines, leadTags, subOriginId }: Overvi
             </div>
           </SortableContext>
 
-          {/* Drag overlay - shows floating card while dragging (no transparency) */}
+          {/* Drag overlay - shows floating card on top with shadow */}
           <DragOverlay dropAnimation={null}>
             {activeCard ? (
-              <OverviewCardComponent
-                card={activeCard}
-                leads={leads}
-                pipelines={pipelines}
-                leadTags={leadTags}
-                onDelete={() => {}}
-                onResize={() => {}}
-              />
+              <div className="shadow-2xl shadow-black/20 rounded-xl">
+                <OverviewCardComponent
+                  card={activeCard}
+                  leads={leads}
+                  pipelines={pipelines}
+                  leadTags={leadTags}
+                  onDelete={() => {}}
+                  onResize={() => {}}
+                />
+              </div>
             ) : null}
           </DragOverlay>
         </DndContext>
