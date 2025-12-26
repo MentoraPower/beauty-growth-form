@@ -1052,6 +1052,7 @@ export type Database = {
           title: string
           updated_at: string
           width: number
+          width_percent: number
         }
         Insert: {
           card_id: string
@@ -1065,6 +1066,7 @@ export type Database = {
           title: string
           updated_at?: string
           width?: number
+          width_percent?: number
         }
         Update: {
           card_id?: string
@@ -1078,6 +1080,7 @@ export type Database = {
           title?: string
           updated_at?: string
           width?: number
+          width_percent?: number
         }
         Relationships: [
           {

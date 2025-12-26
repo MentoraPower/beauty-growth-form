@@ -1,5 +1,5 @@
 export type CardSize = {
-  width: number; // in pixels
+  widthPercent: number; // percentage of container width (0-100)
   height: number; // in pixels
 };
 
@@ -49,7 +49,7 @@ export const CARD_TEMPLATES: CardTemplate[] = [
     description: "Gráfico de pizza com a distribuição de leads por pipeline",
     chartType: "pie",
     dataSource: "leads_by_pipeline",
-    defaultSize: { width: 320, height: 360 },
+    defaultSize: { widthPercent: 30, height: 360 },
     icon: "PieChart",
     category: "featured",
   },
@@ -59,7 +59,7 @@ export const CARD_TEMPLATES: CardTemplate[] = [
     description: "Mostra o número total de leads no CRM",
     chartType: "number",
     dataSource: "total_leads",
-    defaultSize: { width: 280, height: 180 },
+    defaultSize: { widthPercent: 22, height: 180 },
     icon: "Users",
     category: "metrics",
   },
@@ -69,7 +69,7 @@ export const CARD_TEMPLATES: CardTemplate[] = [
     description: "Gráfico de área mostrando entrada de leads",
     chartType: "area",
     dataSource: "leads_over_time",
-    defaultSize: { width: 500, height: 320 },
+    defaultSize: { widthPercent: 50, height: 320 },
     icon: "TrendingUp",
     category: "featured",
   },
@@ -79,7 +79,7 @@ export const CARD_TEMPLATES: CardTemplate[] = [
     description: "Proporção de leads qualificados",
     chartType: "pie",
     dataSource: "leads_by_mql",
-    defaultSize: { width: 320, height: 360 },
+    defaultSize: { widthPercent: 30, height: 360 },
     icon: "Target",
     category: "charts",
   },
@@ -89,7 +89,7 @@ export const CARD_TEMPLATES: CardTemplate[] = [
     description: "Lista dos últimos leads adicionados",
     chartType: "list",
     dataSource: "recent_leads",
-    defaultSize: { width: 320, height: 400 },
+    defaultSize: { widthPercent: 30, height: 400 },
     icon: "List",
     category: "lists",
   },
@@ -99,7 +99,7 @@ export const CARD_TEMPLATES: CardTemplate[] = [
     description: "Distribuição de leads por tags",
     chartType: "bar",
     dataSource: "leads_by_tag",
-    defaultSize: { width: 450, height: 320 },
+    defaultSize: { widthPercent: 40, height: 320 },
     icon: "Tag",
     category: "charts",
   },
@@ -109,15 +109,14 @@ export const CARD_TEMPLATES: CardTemplate[] = [
     description: "Visualize a progressão dos leads pelos pipelines",
     chartType: "funnel",
     dataSource: "conversion_rate",
-    defaultSize: { width: 450, height: 360 },
+    defaultSize: { widthPercent: 40, height: 360 },
     icon: "Filter",
     category: "featured",
   },
 ];
 
 // Min/max constraints
-export const MIN_CARD_WIDTH = 200;
+export const MIN_CARD_WIDTH_PERCENT = 15; // minimum 15% of container
 export const MIN_CARD_HEIGHT = 150;
-// MAX_CARD_WIDTH é usado como fallback - o limite real é dinâmico baseado no container
-export const MAX_CARD_WIDTH = 10000;
+export const MAX_CARD_WIDTH_PERCENT = 100; // can be full width
 export const MAX_CARD_HEIGHT = 1200;

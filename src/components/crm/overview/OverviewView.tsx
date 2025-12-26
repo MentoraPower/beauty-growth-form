@@ -60,12 +60,16 @@ interface OverviewViewProps {
 }
 
 // Ghost placeholder shown during drag - appears where the card will land
-function GhostPlaceholder({ card }: { card: OverviewCard }) {
+function GhostPlaceholder({ card, containerWidth }: { card: OverviewCard; containerWidth: number }) {
+  const pixelWidth = containerWidth > 0 
+    ? (card.size.widthPercent / 100) * containerWidth 
+    : 280;
+  
   return (
     <div
       className="rounded-xl border-2 border-dashed border-muted-foreground/20 bg-muted/30"
       style={{
-        width: card.size.width,
+        width: pixelWidth,
         height: card.size.height,
         maxWidth: '100%',
         flexShrink: 0,
@@ -84,6 +88,7 @@ function SortableCard({
   onResize,
   onConnectDataSource,
   isBeingDragged,
+  containerWidth,
 }: {
   card: OverviewCard;
   leads: Lead[];
@@ -93,6 +98,7 @@ function SortableCard({
   onResize: (id: string, size: CardSize) => void;
   onConnectDataSource?: (card: OverviewCard) => void;
   isBeingDragged: boolean;
+  containerWidth: number;
 }) {
   const {
     attributes,
@@ -113,7 +119,7 @@ function SortableCard({
   if (isBeingDragged) {
     return (
       <div ref={setNodeRef} style={style}>
-        <GhostPlaceholder card={card} />
+        <GhostPlaceholder card={card} containerWidth={containerWidth} />
       </div>
     );
   }
@@ -140,7 +146,30 @@ export function OverviewView({ leads, pipelines, leadTags, subOriginId }: Overvi
   const [configPanelCard, setConfigPanelCard] = useState<OverviewCard | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [activeId, setActiveId] = useState<string | null>(null);
+  const [containerWidth, setContainerWidth] = useState(0);
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const containerRef = useRef<HTMLDivElement | null>(null);
+
+  // Monitor container width
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    const updateWidth = () => {
+      setContainerWidth(container.getBoundingClientRect().width);
+    };
+
+    updateWidth();
+
+    const observer = new ResizeObserver(updateWidth);
+    observer.observe(container);
+    window.addEventListener('resize', updateWidth);
+
+    return () => {
+      observer.disconnect();
+      window.removeEventListener('resize', updateWidth);
+    };
+  }, []);
 
   // Configure sensors - use custom sensor that ignores resize handles
   const sensors = useSensors(
@@ -175,7 +204,10 @@ export function OverviewView({ leads, pipelines, leadTags, subOriginId }: Overvi
           title: row.title,
           chartType: row.chart_type as OverviewCard["chartType"],
           dataSource: row.data_source as DataSource | null,
-          size: { width: row.width, height: row.height },
+          size: { 
+            widthPercent: row.width_percent ?? 25, // fallback to 25% if not set
+            height: row.height 
+          },
           order: row.card_order,
         }));
 
@@ -205,7 +237,8 @@ export function OverviewView({ leads, pipelines, leadTags, subOriginId }: Overvi
             title: card.title,
             chart_type: card.chartType,
             data_source: card.dataSource,
-            width: Math.round(card.size.width),
+            width_percent: card.size.widthPercent,
+            width: Math.round((card.size.widthPercent / 100) * (containerWidth || 1000)), // legacy column
             height: Math.round(card.size.height),
             card_order: card.order,
           },
@@ -216,7 +249,7 @@ export function OverviewView({ leads, pipelines, leadTags, subOriginId }: Overvi
     } catch (error) {
       console.error("Error saving card:", error);
     }
-  }, [subOriginId]);
+  }, [subOriginId, containerWidth]);
 
   // Save multiple cards order to DB
   const saveCardsOrder = useCallback(async (cardsToSave: OverviewCard[]) => {
@@ -229,7 +262,8 @@ export function OverviewView({ leads, pipelines, leadTags, subOriginId }: Overvi
         title: card.title,
         chart_type: card.chartType,
         data_source: card.dataSource,
-        width: Math.round(card.size.width),
+        width_percent: card.size.widthPercent,
+        width: Math.round((card.size.widthPercent / 100) * (containerWidth || 1000)), // legacy column
         height: Math.round(card.size.height),
         card_order: card.order,
       }));
@@ -242,7 +276,7 @@ export function OverviewView({ leads, pipelines, leadTags, subOriginId }: Overvi
     } catch (error) {
       console.error("Error saving cards order:", error);
     }
-  }, [subOriginId]);
+  }, [subOriginId, containerWidth]);
 
   // Cleanup timeout on unmount
   useEffect(() => {
@@ -275,7 +309,8 @@ export function OverviewView({ leads, pipelines, leadTags, subOriginId }: Overvi
           title: newCard.title,
           chart_type: newCard.chartType,
           data_source: newCard.dataSource,
-          width: newCard.size.width,
+          width_percent: newCard.size.widthPercent,
+          width: Math.round((newCard.size.widthPercent / 100) * (containerWidth || 1000)), // legacy column
           height: newCard.size.height,
           card_order: newCard.order,
         });
@@ -288,7 +323,7 @@ export function OverviewView({ leads, pipelines, leadTags, subOriginId }: Overvi
       console.error("Error adding card:", error);
       toast.error("Erro ao adicionar cartão");
     }
-  }, [cards.length, subOriginId]);
+  }, [cards.length, subOriginId, containerWidth]);
 
   const handleConnectDataSource = useCallback((card: OverviewCard) => {
     setConfigPanelCard(card);
@@ -412,7 +447,7 @@ export function OverviewView({ leads, pipelines, leadTags, subOriginId }: Overvi
           onDragEnd={handleDragEnd}
         >
           <SortableContext items={sortedCards.map((c) => c.id)} strategy={rectSortingStrategy}>
-            <div className="flex flex-wrap gap-4 pb-4 content-start overflow-hidden">
+            <div ref={containerRef} className="flex flex-wrap gap-4 pb-4 content-start overflow-hidden">
               {sortedCards.map((card) => (
                 <SortableCard
                   key={card.id}
@@ -424,6 +459,7 @@ export function OverviewView({ leads, pipelines, leadTags, subOriginId }: Overvi
                   onResize={handleResizeCard}
                   onConnectDataSource={handleConnectDataSource}
                   isBeingDragged={activeId === card.id}
+                  containerWidth={containerWidth}
                 />
               ))}
             </div>
