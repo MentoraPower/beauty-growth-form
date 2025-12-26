@@ -33,6 +33,21 @@ interface OverviewViewProps {
   subOriginId: string | null;
 }
 
+// Ghost placeholder shown during drag - appears where the card will land
+function GhostPlaceholder({ card }: { card: OverviewCard }) {
+  return (
+    <div
+      className="rounded-xl border-2 border-dashed border-muted-foreground/20 bg-muted/30"
+      style={{
+        width: card.size.width,
+        height: card.size.height,
+        maxWidth: '100%',
+        flexShrink: 0,
+      }}
+    />
+  );
+}
+
 // Sortable wrapper for cards
 function SortableCard({
   card,
@@ -42,7 +57,7 @@ function SortableCard({
   onDelete,
   onResize,
   onConnectDataSource,
-  isDragging,
+  isBeingDragged,
 }: {
   card: OverviewCard;
   leads: Lead[];
@@ -51,16 +66,24 @@ function SortableCard({
   onDelete: (id: string) => void;
   onResize: (id: string, size: CardSize) => void;
   onConnectDataSource?: (card: OverviewCard) => void;
-  isDragging: boolean;
+  isBeingDragged: boolean;
 }) {
   const {
     attributes,
     listeners,
     setNodeRef,
     transform,
-    transition,
     isDragging: isSortableDragging,
   } = useSortable({ id: card.id });
+
+  // When this card is being dragged, show a ghost placeholder instead
+  if (isBeingDragged) {
+    return (
+      <div ref={setNodeRef}>
+        <GhostPlaceholder card={card} />
+      </div>
+    );
+  }
 
   const style: React.CSSProperties = {
     transform: transform
@@ -81,25 +104,9 @@ function SortableCard({
         onDelete={onDelete}
         onResize={onResize}
         onConnectDataSource={onConnectDataSource}
-        isDragging={isDragging || isSortableDragging}
         dragHandleProps={{ ...attributes, ...listeners }}
       />
     </div>
-  );
-}
-
-// Ghost placeholder shown during drag
-function GhostPlaceholder({ card }: { card: OverviewCard }) {
-  return (
-    <div
-      className="rounded-xl border-2 border-dashed border-muted-foreground/20 bg-muted/30"
-      style={{
-        width: card.size.width,
-        height: card.size.height,
-        maxWidth: '100%',
-        flexShrink: 0,
-      }}
-    />
   );
 }
 
@@ -389,13 +396,13 @@ export function OverviewView({ leads, pipelines, leadTags, subOriginId }: Overvi
                   onDelete={handleDeleteCard}
                   onResize={handleResizeCard}
                   onConnectDataSource={handleConnectDataSource}
-                  isDragging={activeId === card.id}
+                  isBeingDragged={activeId === card.id}
                 />
               ))}
             </div>
           </SortableContext>
 
-          {/* Drag overlay - shows floating card while dragging */}
+          {/* Drag overlay - shows floating card while dragging (no transparency) */}
           <DragOverlay dropAnimation={null}>
             {activeCard ? (
               <OverviewCardComponent
@@ -405,7 +412,6 @@ export function OverviewView({ leads, pipelines, leadTags, subOriginId }: Overvi
                 leadTags={leadTags}
                 onDelete={() => {}}
                 onResize={() => {}}
-                isDragging
               />
             ) : null}
           </DragOverlay>
