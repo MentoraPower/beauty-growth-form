@@ -32,7 +32,7 @@ interface OverviewCardComponentProps {
   pipelines: Pipeline[];
   leadTags: Array<{ lead_id: string; name: string; color: string }>;
   onDelete: (id: string) => void;
-  onResize: (id: string, size: CardSize) => void;
+  onResize: (id: string, size: CardSize, resizeDirection?: string) => void;
   onConnectDataSource?: (card: OverviewCard) => void;
   isDragging?: boolean;
   dragHandleProps?: React.HTMLAttributes<HTMLDivElement>;
@@ -343,7 +343,7 @@ export function OverviewCardComponent({
         const next: CardSize = { widthPercent: nextWidthPercent, height: nextH };
         currentSizeRef.current = next;
         setCurrentSize(next);
-        onResize(card.id, next);
+        onResize(card.id, next, resizeDirection);
       }
     };
 
