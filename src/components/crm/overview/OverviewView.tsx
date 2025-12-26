@@ -19,12 +19,32 @@ import {
   DragStartEvent,
   DragEndEvent,
   DragOverlay,
+  PointerSensorOptions,
 } from "@dnd-kit/core";
 import {
   SortableContext,
   useSortable,
   rectSortingStrategy,
 } from "@dnd-kit/sortable";
+
+// Custom pointer sensor that ignores elements with data-no-dnd attribute
+class NoResizePointerSensor extends PointerSensor {
+  static activators = [
+    {
+      eventName: 'onPointerDown' as const,
+      handler: ({ nativeEvent: event }: { nativeEvent: PointerEvent }) => {
+        let element = event.target as Element | null;
+        while (element) {
+          if (element.getAttribute?.('data-no-dnd') === 'true') {
+            return false;
+          }
+          element = element.parentElement;
+        }
+        return true;
+      },
+    },
+  ];
+}
 
 interface OverviewViewProps {
   leads: Lead[];
@@ -116,9 +136,9 @@ export function OverviewView({ leads, pipelines, leadTags, subOriginId }: Overvi
   const [activeId, setActiveId] = useState<string | null>(null);
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Configure sensors - require some movement before starting drag
+  // Configure sensors - use custom sensor that ignores resize handles
   const sensors = useSensors(
-    useSensor(PointerSensor, {
+    useSensor(NoResizePointerSensor, {
       activationConstraint: {
         distance: 8,
       },
