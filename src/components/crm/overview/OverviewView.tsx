@@ -71,7 +71,34 @@ function GhostPlaceholder({ card }: { card: OverviewCard }) {
   );
 }
 
-// Sortable wrapper for cards - controls width via percentage with minimum pixel constraint
+// Calculate cards in the same visual line based on percentage sum
+function getCardsInSameLine(allCards: OverviewCard[], targetCardId: string): OverviewCard[] {
+  const sortedCards = [...allCards].sort((a, b) => a.order - b.order);
+  
+  let currentPercentSum = 0;
+  let currentLine: OverviewCard[] = [];
+  
+  for (const card of sortedCards) {
+    if (currentPercentSum + card.size.widthPercent > 100.5 && currentLine.length > 0) {
+      if (currentLine.some(c => c.id === targetCardId)) {
+        return currentLine;
+      }
+      currentLine = [card];
+      currentPercentSum = card.size.widthPercent;
+    } else {
+      currentLine.push(card);
+      currentPercentSum += card.size.widthPercent;
+    }
+  }
+  
+  if (currentLine.some(c => c.id === targetCardId)) {
+    return currentLine;
+  }
+  
+  return [];
+}
+
+// Sortable wrapper for cards - controls width via percentage with gap offset
 function SortableCard({
   card,
   leads,
@@ -102,29 +129,27 @@ function SortableCard({
     transform,
   } = useSortable({ id: card.id });
 
-  // Calculate effective width: use percentage but enforce minimum pixel width
-  const calculatedPixelWidth = containerWidth > 0 
-    ? (card.size.widthPercent / 100) * containerWidth 
-    : 0;
-  
-  // Ensure minimum pixel width for readability on smaller screens
-  const effectivePixelWidth = Math.max(calculatedPixelWidth, MIN_CARD_WIDTH_PX);
-  
-  // Convert back to percentage for the wrapper
-  const effectiveWidthPercent = containerWidth > 0 
-    ? Math.min((effectivePixelWidth / containerWidth) * 100, 100)
-    : card.size.widthPercent;
+  const GAP_PX = 16; // gap-4 = 16px
 
-  // Wrapper style: percentage-based width with minimum pixel constraint
+  // Find how many cards are in the same line
+  const cardsInLine = getCardsInSameLine(allCards, card.id);
+  const numberOfGaps = Math.max(0, cardsInLine.length - 1);
+  
+  // Calculate gap offset: each card subtracts its proportional share of the total gaps
+  // gapOffset = (totalGaps / numCards) = (numberOfGaps * GAP_PX) / numCardsInLine
+  const gapOffset = cardsInLine.length > 0 
+    ? (numberOfGaps * GAP_PX) / cardsInLine.length 
+    : 0;
+
+  // Wrapper style: percentage-based width minus proportional gap offset
   const wrapperStyle: React.CSSProperties = {
-    width: `${effectiveWidthPercent}%`,
-    flexBasis: `${effectiveWidthPercent}%`,
+    width: `calc(${card.size.widthPercent}% - ${gapOffset}px)`,
+    flexBasis: `calc(${card.size.widthPercent}% - ${gapOffset}px)`,
     maxWidth: '100%',
     minWidth: `${MIN_CARD_WIDTH_PX}px`,
     transform: transform
       ? `translate3d(${transform.x}px, ${transform.y}px, 0)`
       : undefined,
-    // No transition for instant drag response
     transition: undefined,
   };
 
@@ -423,29 +448,26 @@ export function OverviewView({ leads, pipelines, leadTags, subOriginId }: Overvi
   }, [subOriginId]);
 
   // Find cards that are visually on the same line
-  const findCardsInSameLine = useCallback((cards: OverviewCard[], targetCardId: string, containerW: number): OverviewCard[] => {
+  // Uses percentage sum (should sum to ~100% for a full line)
+  const findCardsInSameLine = useCallback((cards: OverviewCard[], targetCardId: string): OverviewCard[] => {
     const sortedCards = [...cards].sort((a, b) => a.order - b.order);
-    const GAP_PX = 16; // gap-4 = 16px
     
-    let currentLineWidth = 0;
+    let currentPercentSum = 0;
     let currentLine: OverviewCard[] = [];
     
     for (const card of sortedCards) {
-      const cardPixelWidth = Math.max((card.size.widthPercent / 100) * containerW, MIN_CARD_WIDTH_PX);
-      const gapToAdd = currentLine.length > 0 ? GAP_PX : 0;
-      
-      // If adding this card exceeds container, start new line
-      if (currentLineWidth + cardPixelWidth + gapToAdd > containerW && currentLine.length > 0) {
+      // If adding this card exceeds 100%, start new line
+      if (currentPercentSum + card.size.widthPercent > 100.5 && currentLine.length > 0) {
         // Check if target is in this line
         if (currentLine.some(c => c.id === targetCardId)) {
           return currentLine;
         }
         // Start new line
         currentLine = [card];
-        currentLineWidth = cardPixelWidth;
+        currentPercentSum = card.size.widthPercent;
       } else {
         currentLine.push(card);
-        currentLineWidth += cardPixelWidth + gapToAdd;
+        currentPercentSum += card.size.widthPercent;
       }
     }
     
@@ -491,8 +513,8 @@ export function OverviewView({ leads, pipelines, leadTags, subOriginId }: Overvi
       const isHorizontalResize = resizeDirection === 'left' || resizeDirection === 'right' || 
         resizeDirection?.includes('left') || resizeDirection?.includes('right');
       
-      if (!isHorizontalResize || containerWidth <= 0) {
-        // Vertical-only resize or no container width - just resize this card
+      if (!isHorizontalResize) {
+        // Vertical-only resize - just resize this card
         const newCards = prev.map((c) => (c.id === id ? { ...c, size } : c));
         const resizedCard = newCards.find(c => c.id === id);
         if (resizedCard) {
@@ -503,7 +525,7 @@ export function OverviewView({ leads, pipelines, leadTags, subOriginId }: Overvi
       }
       
       // Find cards in the same line
-      const cardsInLine = findCardsInSameLine(prev, id, containerWidth);
+      const cardsInLine = findCardsInSameLine(prev, id);
       const cardIndex = cardsInLine.findIndex(c => c.id === id);
       
       // Determine neighbor based on resize direction
@@ -526,9 +548,8 @@ export function OverviewView({ leads, pipelines, leadTags, subOriginId }: Overvi
       // Calculate delta in width percent
       const deltaPercent = size.widthPercent - currentCard.size.widthPercent;
       
-      // Calculate minimum percent for neighbor
-      const minPercentForNeighbor = (MIN_CARD_WIDTH_PX / containerWidth) * 100;
-      const effectiveMinPercent = Math.max(15, minPercentForNeighbor); // At least 15%
+      // Minimum percent for neighbor (15% minimum width)
+      const effectiveMinPercent = 15;
       
       // Calculate new neighbor width
       const neighborNewPercent = neighborCard.size.widthPercent - deltaPercent;
@@ -584,7 +605,7 @@ export function OverviewView({ leads, pipelines, leadTags, subOriginId }: Overvi
         return newCards;
       }
     });
-  }, [saveCardToDb, saveMultipleCardsToDb, findCardsInSameLine, containerWidth]);
+  }, [saveCardToDb, saveMultipleCardsToDb, findCardsInSameLine]);
 
   // Drag handlers
   const handleDragStart = useCallback((event: DragStartEvent) => {
