@@ -47,6 +47,7 @@ import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { AutomationsDropdown } from "./AutomationsDropdown";
 import { EmailFlowBuilder } from "./EmailFlowBuilder";
+import { ViewTabs } from "./ViewTabs";
 
 
 // Lazy load heavy components
@@ -1494,218 +1495,133 @@ export function KanbanBoard() {
 
       {/* View Tabs - OverView | Quadro | Calendário */}
       {subOriginId && (
-        <div className="w-full mb-4">
-          <div className="w-full flex items-center justify-between bg-gray-200 rounded-lg px-4 py-2.5">
-            <div className="relative inline-flex items-center gap-6">
-              {/* Animated gradient indicator */}
-              <div 
-                className="absolute -bottom-1.5 h-0.5 rounded-full bg-gradient-to-r from-orange-400 to-orange-600 transition-all duration-300 ease-out"
-                style={{
-                  left: activeView === "overview" ? "0px" : 
-                        activeView === "quadro" ? "calc(55px + 24px)" : 
-                        activeView === "lista" ? "calc(55px + 24px + 48px + 24px)" :
-                        activeView === "calendario" ? "calc(55px + 24px + 48px + 24px + 28px + 24px)" :
-                        "calc(55px + 24px + 48px + 24px + 28px + 24px + 72px + 24px + 16px + 24px)",
-                  width: activeView === "overview" ? "55px" : 
-                         activeView === "quadro" ? "48px" : 
-                         activeView === "lista" ? "28px" :
-                         activeView === "calendario" ? "72px" :
-                         "82px"
-                }}
-              />
-              <button
-                onClick={() => handleViewChange("overview")}
-                className={cn(
-                  "relative text-[13px] font-semibold tracking-wide transition-all antialiased",
-                  activeView === "overview" 
-                    ? "text-gray-900"
-                    : "text-gray-500 hover:text-gray-700"
-                )}
-              >
-                OverView
-              </button>
-              <button
-                onClick={() => handleViewChange("quadro")}
-                className={cn(
-                  "relative text-[13px] font-semibold tracking-wide transition-all antialiased",
-                  activeView === "quadro" 
-                    ? "text-gray-900"
-                    : "text-gray-500 hover:text-gray-700"
-                )}
-              >
-                Quadro
-              </button>
-              <button
-                onClick={() => handleViewChange("lista")}
-                className={cn(
-                  "relative text-[13px] font-semibold tracking-wide transition-all antialiased",
-                  activeView === "lista" 
-                    ? "text-gray-900"
-                    : "text-gray-500 hover:text-gray-700"
-                )}
-              >
-                List
-              </button>
-              <button
-                onClick={() => handleViewChange("calendario")}
-                className={cn(
-                  "relative text-[13px] font-semibold tracking-wide transition-all antialiased",
-                  activeView === "calendario" 
-                    ? "text-gray-900"
-                    : "text-gray-500 hover:text-gray-700"
-                )}
-              >
-                Calendário
-              </button>
+        <>
+          <ViewTabs 
+            activeView={activeView} 
+            onViewChange={handleViewChange} 
+            onSettingsClick={() => setSettingsDialogOpen(true)}
+          />
+          
+          {/* Settings Dialog */}
+          <Dialog open={settingsDialogOpen} onOpenChange={setSettingsDialogOpen}>
+            <DialogContent className="max-w-5xl h-[500px] p-0 flex flex-col gap-0" aria-describedby={undefined}>
+              <DialogTitle className="sr-only">Configurações</DialogTitle>
               
-              {/* Separator */}
-              <div className="w-px h-4 bg-gray-400" />
-              
-              <button
-                onClick={() => handleViewChange("email")}
-                className={cn(
-                  "relative text-[13px] font-semibold tracking-wide transition-all antialiased",
-                  activeView === "email" 
-                    ? "text-gray-900"
-                    : "text-gray-500 hover:text-gray-700"
-                )}
-              >
-                Automations
-              </button>
-            </div>
-
-            {/* Settings Icon - Right side */}
-            <button 
-              onClick={() => setSettingsDialogOpen(true)}
-              className="p-1.5 rounded-lg hover:bg-gray-300 transition-colors text-gray-600 hover:text-gray-900"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
-                <circle cx="12" cy="12" r="4"/>
-              </svg>
-            </button>
-
-            {/* Settings Dialog */}
-            <Dialog open={settingsDialogOpen} onOpenChange={setSettingsDialogOpen}>
-              <DialogContent className="max-w-5xl h-[500px] p-0 flex flex-col gap-0" aria-describedby={undefined}>
-                <DialogTitle className="sr-only">Configurações</DialogTitle>
+              {/* Header with tabs */}
+              <div className="border-b border-border">
+                <div className="px-6 py-3">
+                  <h2 className="text-lg font-semibold">Configurações</h2>
+                </div>
                 
-                {/* Header with tabs */}
-                <div className="border-b border-border">
-                  <div className="px-6 py-3">
-                    <h2 className="text-lg font-semibold">Configurações</h2>
-                  </div>
-                  
-                  <div className="flex items-center gap-1 px-6">
-                    <button
-                      onClick={() => setSettingsTab("automations")}
-                      className={cn(
-                        "flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors",
-                        settingsTab === "automations"
-                          ? "border-orange-500 text-foreground"
-                          : "border-transparent text-muted-foreground hover:text-foreground"
-                      )}
-                    >
-                      <Zap className="w-4 h-4" />
-                      Automação
-                    </button>
-                    <button
-                      onClick={() => setSettingsTab("webhooks")}
-                      className={cn(
-                        "flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors",
-                        settingsTab === "webhooks"
-                          ? "border-orange-500 text-foreground"
-                          : "border-transparent text-muted-foreground hover:text-foreground"
-                      )}
-                    >
-                      <Webhook className="w-4 h-4" />
-                      WebHook
-                    </button>
-                    <button
-                      onClick={() => setSettingsTab("pipelines")}
-                      className={cn(
-                        "flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors",
-                        settingsTab === "pipelines"
-                          ? "border-orange-500 text-foreground"
-                          : "border-transparent text-muted-foreground hover:text-foreground"
-                      )}
-                    >
-                      <GitBranch className="w-4 h-4" />
-                      Pipelines
-                    </button>
-                  </div>
+                <div className="flex items-center gap-1 px-6">
+                  <button
+                    onClick={() => setSettingsTab("automations")}
+                    className={cn(
+                      "flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors",
+                      settingsTab === "automations"
+                        ? "border-orange-500 text-foreground"
+                        : "border-transparent text-muted-foreground hover:text-foreground"
+                    )}
+                  >
+                    <Zap className="w-4 h-4" />
+                    Automação
+                  </button>
+                  <button
+                    onClick={() => setSettingsTab("webhooks")}
+                    className={cn(
+                      "flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors",
+                      settingsTab === "webhooks"
+                        ? "border-orange-500 text-foreground"
+                        : "border-transparent text-muted-foreground hover:text-foreground"
+                    )}
+                  >
+                    <Webhook className="w-4 h-4" />
+                    WebHook
+                  </button>
+                  <button
+                    onClick={() => setSettingsTab("pipelines")}
+                    className={cn(
+                      "flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors",
+                      settingsTab === "pipelines"
+                        ? "border-orange-500 text-foreground"
+                        : "border-transparent text-muted-foreground hover:text-foreground"
+                    )}
+                  >
+                    <GitBranch className="w-4 h-4" />
+                    Pipelines
+                  </button>
                 </div>
+              </div>
 
-                {/* Content */}
-                <div className="flex-1 overflow-auto min-h-0 pt-4">
-                  {settingsTab === "automations" && (
-                    <div className="h-full">
-                      <AutomationsDropdown 
-                        pipelines={pipelines} 
-                        subOriginId={subOriginId}
-                        externalOpen={true}
-                        onOpenChange={() => {}}
-                        emailEditingContext={emailEditingContext}
-                        onEmailContextChange={(ctx) => setEmailEditingContext(ctx)}
-                        onShowEmailBuilder={(show, props) => {
-                          if (show && props) {
-                            if (props.editingContext) {
-                              setEmailEditingContext(props.editingContext);
-                            }
-                            setSettingsDialogOpen(false);
-                            openEmailBuilder(props);
-                          } else {
-                            closeEmailBuilder();
+              {/* Content */}
+              <div className="flex-1 overflow-auto min-h-0 pt-4">
+                {settingsTab === "automations" && (
+                  <div className="h-full">
+                    <AutomationsDropdown 
+                      pipelines={pipelines} 
+                      subOriginId={subOriginId}
+                      externalOpen={true}
+                      onOpenChange={() => {}}
+                      emailEditingContext={emailEditingContext}
+                      onEmailContextChange={(ctx) => setEmailEditingContext(ctx)}
+                      onShowEmailBuilder={(show, props) => {
+                        if (show && props) {
+                          if (props.editingContext) {
+                            setEmailEditingContext(props.editingContext);
                           }
-                        }}
-                        embedded={true}
-                        embeddedTab="automations"
-                      />
-                    </div>
-                  )}
-                  
-                  {settingsTab === "webhooks" && (
-                    <div className="h-full">
-                      <AutomationsDropdown 
-                        pipelines={pipelines} 
-                        subOriginId={subOriginId}
-                        externalOpen={true}
-                        onOpenChange={() => {}}
-                        emailEditingContext={emailEditingContext}
-                        onEmailContextChange={(ctx) => setEmailEditingContext(ctx)}
-                        onShowEmailBuilder={(show, props) => {
-                          if (show && props) {
-                            if (props.editingContext) {
-                              setEmailEditingContext(props.editingContext);
-                            }
-                            setSettingsDialogOpen(false);
-                            openEmailBuilder(props);
-                          } else {
-                            closeEmailBuilder();
+                          setSettingsDialogOpen(false);
+                          openEmailBuilder(props);
+                        } else {
+                          closeEmailBuilder();
+                        }
+                      }}
+                      embedded={true}
+                      embeddedTab="automations"
+                    />
+                  </div>
+                )}
+                
+                {settingsTab === "webhooks" && (
+                  <div className="h-full">
+                    <AutomationsDropdown 
+                      pipelines={pipelines} 
+                      subOriginId={subOriginId}
+                      externalOpen={true}
+                      onOpenChange={() => {}}
+                      emailEditingContext={emailEditingContext}
+                      onEmailContextChange={(ctx) => setEmailEditingContext(ctx)}
+                      onShowEmailBuilder={(show, props) => {
+                        if (show && props) {
+                          if (props.editingContext) {
+                            setEmailEditingContext(props.editingContext);
                           }
-                        }}
-                        embedded={true}
-                        embeddedTab="webhooks"
-                      />
-                    </div>
-                  )}
-                  
-                  {settingsTab === "pipelines" && (
-                    <Suspense fallback={<div className="p-6"><Skeleton className="h-64 w-full" /></div>}>
-                      <ManagePipelinesDialog
-                        open={true}
-                        onOpenChange={() => {}}
-                        pipelines={pipelines}
-                        subOriginId={subOriginId}
-                        embedded={true}
-                      />
-                    </Suspense>
-                  )}
-                </div>
-              </DialogContent>
-            </Dialog>
-          </div>
-        </div>
+                          setSettingsDialogOpen(false);
+                          openEmailBuilder(props);
+                        } else {
+                          closeEmailBuilder();
+                        }
+                      }}
+                      embedded={true}
+                      embeddedTab="webhooks"
+                    />
+                  </div>
+                )}
+                
+                {settingsTab === "pipelines" && (
+                  <Suspense fallback={<div className="p-6"><Skeleton className="h-64 w-full" /></div>}>
+                    <ManagePipelinesDialog
+                      open={true}
+                      onOpenChange={() => {}}
+                      pipelines={pipelines}
+                      subOriginId={subOriginId}
+                      embedded={true}
+                    />
+                  </Suspense>
+                )}
+              </div>
+            </DialogContent>
+          </Dialog>
+        </>
       )}
 
       {!subOriginId && (
