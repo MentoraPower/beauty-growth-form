@@ -34,6 +34,7 @@ interface OverviewCardComponentProps {
   onResize: (id: string, size: CardSize) => void;
   onConnectDataSource?: (card: OverviewCard) => void;
   isDragging?: boolean;
+  dragHandleProps?: React.HTMLAttributes<HTMLDivElement>;
 }
 
 const COLORS = [
@@ -56,6 +57,7 @@ export function OverviewCardComponent({
   onResize,
   onConnectDataSource,
   isDragging,
+  dragHandleProps,
 }: OverviewCardComponentProps) {
   const [isResizing, setIsResizing] = useState(false);
   const [resizeDirection, setResizeDirection] = useState<ResizeDirection | null>(null);
@@ -586,7 +588,12 @@ export function OverviewCardComponent({
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-border/50 shrink-0">
         <div className="flex items-center gap-2">
-          <GripVertical className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity cursor-grab" />
+          <div
+            {...dragHandleProps}
+            className="cursor-grab active:cursor-grabbing touch-none"
+          >
+            <GripVertical className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+          </div>
           <h3 className="font-medium text-sm text-foreground">{card.title}</h3>
         </div>
         
