@@ -31,15 +31,21 @@ import {
 class NoResizePointerSensor extends PointerSensor {
   static activators = [
     {
-      eventName: 'onPointerDown' as const,
-      handler: ({ nativeEvent: event }: { nativeEvent: PointerEvent }) => {
+      eventName: "onPointerDown" as const,
+      handler: (
+        { nativeEvent: event }: { nativeEvent: PointerEvent },
+        { onActivation }: PointerSensorOptions
+      ) => {
         let element = event.target as Element | null;
         while (element) {
-          if (element.getAttribute?.('data-no-dnd') === 'true') {
+          if (element.getAttribute?.("data-no-dnd") === "true") {
             return false;
           }
           element = element.parentElement;
         }
+
+        // Keep default PointerSensor behavior (important for activation constraints)
+        onActivation?.({ event });
         return true;
       },
     },

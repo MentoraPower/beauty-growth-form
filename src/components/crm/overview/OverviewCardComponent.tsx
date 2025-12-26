@@ -643,56 +643,80 @@ export function OverviewCardComponent({
       <div
         data-no-dnd="true"
         className="absolute left-0 top-2 bottom-2 w-2 cursor-ew-resize opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto hover:bg-primary/20 z-40 touch-none"
-        onPointerDown={(e) => handleResizeStart(e, "left")}
+        onPointerDown={(e) => {
+          e.stopPropagation();
+          handleResizeStart(e, "left");
+        }}
       />
-      
+
       {/* Right handle (inset to avoid ScrollArea scrollbar overlap) */}
       <div
         data-no-dnd="true"
         className="absolute right-3 top-2 bottom-2 w-3 cursor-ew-resize opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto hover:bg-primary/20 z-40 touch-none"
-        onPointerDown={(e) => handleResizeStart(e, "right")}
+        onPointerDown={(e) => {
+          e.stopPropagation();
+          handleResizeStart(e, "right");
+        }}
       />
-      
+
       {/* Top handle */}
       <div
         data-no-dnd="true"
         className="absolute top-0 left-2 right-2 h-2 cursor-ns-resize opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto hover:bg-primary/20 z-40 touch-none"
-        onPointerDown={(e) => handleResizeStart(e, "top")}
+        onPointerDown={(e) => {
+          e.stopPropagation();
+          handleResizeStart(e, "top");
+        }}
       />
-      
+
       {/* Bottom handle */}
       <div
         data-no-dnd="true"
         className="absolute bottom-0 left-2 right-2 h-2 cursor-ns-resize opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto hover:bg-primary/20 z-40 touch-none"
-        onPointerDown={(e) => handleResizeStart(e, "bottom")}
+        onPointerDown={(e) => {
+          e.stopPropagation();
+          handleResizeStart(e, "bottom");
+        }}
       />
-      
+
       {/* Top-left corner */}
       <div
         data-no-dnd="true"
         className="absolute top-0 left-0 w-3 h-3 cursor-nwse-resize opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto hover:bg-primary/20 z-50 touch-none"
-        onPointerDown={(e) => handleResizeStart(e, "top-left")}
+        onPointerDown={(e) => {
+          e.stopPropagation();
+          handleResizeStart(e, "top-left");
+        }}
       />
-      
+
       {/* Top-right corner (inset to avoid ScrollArea scrollbar overlap) */}
       <div
         data-no-dnd="true"
         className="absolute top-0 right-3 w-3 h-3 cursor-nesw-resize opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto hover:bg-primary/20 z-50 touch-none"
-        onPointerDown={(e) => handleResizeStart(e, "top-right")}
+        onPointerDown={(e) => {
+          e.stopPropagation();
+          handleResizeStart(e, "top-right");
+        }}
       />
-      
+
       {/* Bottom-left corner */}
       <div
         data-no-dnd="true"
         className="absolute bottom-0 left-0 w-3 h-3 cursor-nesw-resize opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto hover:bg-primary/20 z-50 touch-none"
-        onPointerDown={(e) => handleResizeStart(e, "bottom-left")}
+        onPointerDown={(e) => {
+          e.stopPropagation();
+          handleResizeStart(e, "bottom-left");
+        }}
       />
-      
+
       {/* Bottom-right corner (inset to avoid ScrollArea scrollbar overlap) */}
       <div
         data-no-dnd="true"
         className="absolute bottom-0 right-3 w-4 h-4 cursor-nwse-resize opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto z-50 touch-none"
-        onPointerDown={(e) => handleResizeStart(e, "bottom-right")}
+        onPointerDown={(e) => {
+          e.stopPropagation();
+          handleResizeStart(e, "bottom-right");
+        }}
       >
         <div className="absolute bottom-1 right-1 w-2 h-2 border-r-2 border-b-2 border-muted-foreground/50 group-hover:border-primary" />
       </div>
