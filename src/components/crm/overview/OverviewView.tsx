@@ -475,7 +475,7 @@ export function OverviewView({ leads, pipelines, leadTags, subOriginId }: Overvi
   }
 
   return (
-    <div className="relative flex flex-col h-full overflow-hidden">
+    <div className="relative flex flex-col h-full overflow-x-clip overflow-y-hidden">
       {/* Header */}
       <div className="flex items-center justify-between pb-4 shrink-0">
         <h2 className="text-lg font-semibold text-foreground">Visão Geral</h2>
@@ -494,7 +494,7 @@ export function OverviewView({ leads, pipelines, leadTags, subOriginId }: Overvi
           onDragEnd={handleDragEnd}
         >
           <SortableContext items={sortedCards.map((c) => c.id)} strategy={rectSortingStrategy}>
-            <div ref={containerRef} className="flex flex-wrap gap-4 pb-4 content-start overflow-hidden">
+            <div ref={containerRef} className="flex flex-wrap gap-4 pb-4 content-start overflow-x-clip overflow-y-visible">
               {sortedCards.map((card) => (
                 <SortableCard
                   key={card.id}
