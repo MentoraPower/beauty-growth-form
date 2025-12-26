@@ -212,12 +212,13 @@ export function OverviewCardComponent({
       const startW = currentSizeRef.current.width;
       const startH = currentSizeRef.current.height;
 
-      // Calculate max width based on available container width (using ref for latest value)
+      // O limite máximo é sempre baseado no container disponível, não num valor fixo
+      // Isso permite expansão até 100% em telas ultrawide
       const availableWidth = containerWidthRef.current > 0 
-        ? containerWidthRef.current - 32 
-        : MAX_CARD_WIDTH;
-      const maxW = Math.min(MAX_CARD_WIDTH, availableWidth);
-      maxSizeRef.current = { maxW, maxH: MAX_CARD_HEIGHT };
+        ? containerWidthRef.current - 16 
+        : window.innerWidth - 320; // fallback: viewport - sidebar aproximada
+      
+      maxSizeRef.current = { maxW: availableWidth, maxH: MAX_CARD_HEIGHT };
 
       setIsResizing(true);
       setResizeDirection(direction);
