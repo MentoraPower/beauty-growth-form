@@ -143,13 +143,14 @@ function SortableCard({
 
   // Wrapper style: percentage-based width minus proportional gap offset
   // flexShrink: 0 prevents browser from auto-shrinking cards
+  // Using percentage-based minWidth ensures consistent layout across all desktop screen sizes
   const wrapperStyle: React.CSSProperties = {
     width: `calc(${card.size.widthPercent}% - ${gapOffset}px)`,
     flexBasis: `calc(${card.size.widthPercent}% - ${gapOffset}px)`,
     flexShrink: 0,
     flexGrow: 0,
     maxWidth: '100%',
-    minWidth: `${MIN_CARD_WIDTH_PX}px`,
+    minWidth: `${MIN_CARD_WIDTH_PERCENT}%`,
     transform: transform
       ? `translate3d(${transform.x}px, ${transform.y}px, 0)`
       : undefined,
@@ -551,11 +552,9 @@ export function OverviewView({ leads, pipelines, leadTags, subOriginId }: Overvi
       // Calculate delta in width percent (positive = growing, negative = shrinking)
       const deltaPercent = size.widthPercent - currentCard.size.widthPercent;
       
-      // Calculate effective minimum percent based on container width and MIN_CARD_WIDTH_PX
-      // This ensures the minimum percentage aligns with the actual pixel minimum
-      const effectiveMinPercent = containerWidth > 0
-        ? Math.max(MIN_CARD_WIDTH_PERCENT, (MIN_CARD_WIDTH_PX / containerWidth) * 100)
-        : MIN_CARD_WIDTH_PERCENT;
+      // Use only percentage-based minimum to ensure consistent layout across all desktop screen sizes
+      // This way, if two cards are 50% + 50%, they'll always be side-by-side on any desktop
+      const effectiveMinPercent = MIN_CARD_WIDTH_PERCENT;
       
       // Calculate current line sum (all cards in this line)
       const lineSum = cardsInLine.reduce((sum, c) => sum + c.size.widthPercent, 0);
