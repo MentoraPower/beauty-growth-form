@@ -571,15 +571,12 @@ export function OverviewCardComponent({
   };
 
   // Resize handle class
-  const handleClass = (pos: "left" | "right" | "top" | "bottom") => cn(
-    "absolute bg-transparent transition-colors z-10",
-    isResizing && resizeDirection?.includes(pos) && "bg-primary/20",
-    atLimit[pos] && isResizing && "!bg-destructive/30"
+  const handleClass = () => cn(
+    "absolute bg-transparent z-10"
   );
 
   const cornerClass = cn(
-    "absolute w-4 h-4 bg-transparent z-20 transition-colors",
-    isResizing && "bg-primary/20"
+    "absolute w-4 h-4 bg-transparent z-20"
   );
 
   // Calculate pixel width for DragOverlay (which has no percentage wrapper)
@@ -594,7 +591,7 @@ export function OverviewCardComponent({
         "relative rounded-xl border bg-card p-4 transition-shadow",
         !isDragging && "w-full", // w-full only when NOT dragging (uses wrapper percentage)
         isDragging && "opacity-50",
-        isResizing ? "shadow-lg ring-2 ring-primary/20" : "shadow-sm"
+        isResizing ? "shadow-lg" : "shadow-sm"
       )}
       style={{
         height: currentSize.height,
@@ -664,22 +661,22 @@ export function OverviewCardComponent({
       {/* Resize handles – edges */}
       <div
         data-no-dnd="true"
-        className={cn(handleClass("left"), "left-0 top-2 bottom-2 w-2 cursor-ew-resize")}
+        className={cn(handleClass(), "left-0 top-2 bottom-2 w-2 cursor-ew-resize")}
         onPointerDown={(e) => handleResizeStart(e, "left")}
       />
       <div
         data-no-dnd="true"
-        className={cn(handleClass("right"), "right-0 top-2 bottom-2 w-2 cursor-ew-resize")}
+        className={cn(handleClass(), "right-0 top-2 bottom-2 w-2 cursor-ew-resize")}
         onPointerDown={(e) => handleResizeStart(e, "right")}
       />
       <div
         data-no-dnd="true"
-        className={cn(handleClass("top"), "top-0 left-2 right-2 h-2 cursor-ns-resize")}
+        className={cn(handleClass(), "top-0 left-2 right-2 h-2 cursor-ns-resize")}
         onPointerDown={(e) => handleResizeStart(e, "top")}
       />
       <div
         data-no-dnd="true"
-        className={cn(handleClass("bottom"), "bottom-0 left-2 right-2 h-2 cursor-ns-resize")}
+        className={cn(handleClass(), "bottom-0 left-2 right-2 h-2 cursor-ns-resize")}
         onPointerDown={(e) => handleResizeStart(e, "bottom")}
       />
 
