@@ -14,7 +14,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
-import { OverviewCard, CardSize, MIN_CARD_WIDTH_PERCENT, MIN_CARD_HEIGHT, MAX_CARD_WIDTH_PERCENT, MAX_CARD_HEIGHT } from "./types";
+import { OverviewCard, CardSize, MIN_CARD_WIDTH_PERCENT, MIN_CARD_WIDTH_PX, MIN_CARD_HEIGHT, MAX_CARD_WIDTH_PERCENT, MAX_CARD_HEIGHT } from "./types";
 import { Lead, Pipeline } from "@/types/crm";
 import { PieChart, Pie, Cell, ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip, BarChart, Bar, Funnel, FunnelChart, LabelList } from "recharts";
 import { format, subDays, startOfDay, eachDayOfInterval } from "date-fns";
@@ -262,6 +262,13 @@ export function OverviewCardComponent({
       const containerW = containerWidthRef.current || 1;
       const deltaPercent = (deltaX / containerW) * 100;
 
+      // Calculate effective minimum percent based on pixel minimum
+      // This ensures cards never get smaller than MIN_CARD_WIDTH_PX regardless of container size
+      const minPercentFromPixels = containerW > 0 
+        ? (MIN_CARD_WIDTH_PX / containerW) * 100 
+        : MIN_CARD_WIDTH_PERCENT;
+      const effectiveMinPercent = Math.max(MIN_CARD_WIDTH_PERCENT, minPercentFromPixels);
+
       let nextWidthPercent = startWidthPercent;
       let nextH = startH;
 
@@ -275,14 +282,14 @@ export function OverviewCardComponent({
         const rawWidthPercent = startWidthPercent + widthDeltaPercent;
         const rawH = startH + heightDelta;
 
-        nextWidthPercent = clamp(rawWidthPercent, MIN_CARD_WIDTH_PERCENT, MAX_CARD_WIDTH_PERCENT);
+        nextWidthPercent = clamp(rawWidthPercent, effectiveMinPercent, MAX_CARD_WIDTH_PERCENT);
         nextH = clamp(rawH, MIN_CARD_HEIGHT, MAX_CARD_HEIGHT);
       } else {
         if (resizeDirection === "right") {
-          nextWidthPercent = clamp(startWidthPercent + deltaPercent, MIN_CARD_WIDTH_PERCENT, MAX_CARD_WIDTH_PERCENT);
+          nextWidthPercent = clamp(startWidthPercent + deltaPercent, effectiveMinPercent, MAX_CARD_WIDTH_PERCENT);
         } else if (resizeDirection === "left") {
           // Dragging left (negative deltaX) increases width
-          nextWidthPercent = clamp(startWidthPercent - deltaPercent, MIN_CARD_WIDTH_PERCENT, MAX_CARD_WIDTH_PERCENT);
+          nextWidthPercent = clamp(startWidthPercent - deltaPercent, effectiveMinPercent, MAX_CARD_WIDTH_PERCENT);
         }
 
         if (resizeDirection === "bottom") {
