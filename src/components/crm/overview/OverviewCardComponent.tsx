@@ -89,7 +89,7 @@ export function OverviewCardComponent({
     }
   }, [card.size, isResizing]);
 
-  // Monitor parent container width with ResizeObserver
+  // Monitor parent container width with ResizeObserver + window resize listener
   useEffect(() => {
     const parent = cardRef.current?.parentElement;
     if (!parent) return;
@@ -103,12 +103,22 @@ export function OverviewCardComponent({
     // Initial measurement
     updateContainerWidth();
 
+    // ResizeObserver for container changes
     const observer = new ResizeObserver(() => {
       updateContainerWidth();
     });
-
     observer.observe(parent);
-    return () => observer.disconnect();
+
+    // Window resize listener como backup para resposta imediata
+    const handleWindowResize = () => {
+      updateContainerWidth();
+    };
+    window.addEventListener('resize', handleWindowResize);
+
+    return () => {
+      observer.disconnect();
+      window.removeEventListener('resize', handleWindowResize);
+    };
   }, []);
 
   // Calculate data based on dataSource
@@ -566,7 +576,9 @@ export function OverviewCardComponent({
         isResizing && "select-none"
       )}
       style={{
-        width: containerWidth > 0 ? Math.min(currentSize.width, containerWidth - 16) : currentSize.width,
+        // CSS min() nativo garante que o card nunca ultrapasse o container
+        // e responde instantaneamente a mudanças de viewport
+        width: `min(${currentSize.width}px, calc(100% - 16px))`,
         height: currentSize.height,
         maxWidth: '100%',
         flexShrink: 0,
