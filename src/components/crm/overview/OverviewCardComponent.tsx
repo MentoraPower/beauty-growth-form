@@ -222,10 +222,9 @@ export function OverviewCardComponent({
       const startW = currentSizeRef.current.width;
       const startH = currentSizeRef.current.height;
 
-      // O limite máximo é sempre baseado no container disponível, não num valor fixo
-      // Isso permite expansão até 100% em telas ultrawide
+      // O limite máximo é o container completo (alinhado com o botão + Adicionar cartão)
       const availableWidth = containerWidthRef.current > 0 
-        ? containerWidthRef.current - 16 
+        ? containerWidthRef.current 
         : window.innerWidth - 320; // fallback: viewport - sidebar aproximada
       
       maxSizeRef.current = { maxW: availableWidth, maxH: MAX_CARD_HEIGHT };
@@ -577,8 +576,8 @@ export function OverviewCardComponent({
       )}
       style={{
         // CSS min() nativo garante que o card nunca ultrapasse o container
-        // e responde instantaneamente a mudanças de viewport
-        width: `min(${currentSize.width}px, calc(100% - 16px))`,
+        // Alinhado com o botão + Adicionar cartão (sem margem extra)
+        width: `min(${currentSize.width}px, 100%)`,
         height: currentSize.height,
         maxWidth: '100%',
         flexShrink: 0,
