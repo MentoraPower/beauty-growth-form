@@ -14,7 +14,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
-import { OverviewCard, CardSize, MIN_CARD_WIDTH, MIN_CARD_HEIGHT, MAX_CARD_WIDTH, MAX_CARD_HEIGHT } from "./types";
+import { OverviewCard, CardSize, MIN_CARD_WIDTH_PERCENT, MIN_CARD_HEIGHT, MAX_CARD_WIDTH_PERCENT, MAX_CARD_HEIGHT } from "./types";
 import { Lead, Pipeline } from "@/types/crm";
 import { PieChart, Pie, Cell, ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip, BarChart, Bar, Funnel, FunnelChart, LabelList } from "recharts";
 import { format, subDays, startOfDay, eachDayOfInterval } from "date-fns";
@@ -71,12 +71,11 @@ export function OverviewCardComponent({
   });
 
   const cardRef = useRef<HTMLDivElement | null>(null);
-  const maxSizeRef = useRef({ maxW: MAX_CARD_WIDTH, maxH: MAX_CARD_HEIGHT });
   const limitsRef = useRef({ left: false, right: false, top: false, bottom: false });
   const containerWidthRef = useRef(0);
 
   const startPosRef = useRef({ x: 0, y: 0 });
-  const startSizeRef = useRef({ width: card.size.width, height: card.size.height });
+  const startSizeRef = useRef({ widthPercent: card.size.widthPercent, height: card.size.height });
   const currentSizeRef = useRef<CardSize>(card.size);
 
   useEffect(() => {
@@ -123,6 +122,12 @@ export function OverviewCardComponent({
       window.removeEventListener('resize', handleWindowResize);
     };
   }, []);
+
+  // Calculate actual pixel width from percentage
+  const pixelWidth = useMemo(() => {
+    if (containerWidth <= 0) return 280; // fallback
+    return (currentSize.widthPercent / 100) * containerWidth;
+  }, [currentSize.widthPercent, containerWidth]);
 
   // Calculate data based on dataSource
   const chartData = useMemo(() => {
@@ -222,22 +227,12 @@ export function OverviewCardComponent({
       // Keep receiving events even if the pointer leaves the handle.
       e.currentTarget.setPointerCapture?.(e.pointerId);
 
-      const startW = currentSizeRef.current.width;
-      const startH = currentSizeRef.current.height;
-
-      // O limite máximo é o container completo (alinhado com o botão + Adicionar cartão)
-      const availableWidth = containerWidthRef.current > 0 
-        ? containerWidthRef.current 
-        : window.innerWidth - 320; // fallback: viewport - sidebar aproximada
-      
-      maxSizeRef.current = { maxW: availableWidth, maxH: MAX_CARD_HEIGHT };
-
       setIsResizing(true);
       setResizeDirection(direction);
       startPosRef.current = { x: e.clientX, y: e.clientY };
       startSizeRef.current = {
-        width: startW,
-        height: startH,
+        widthPercent: currentSizeRef.current.widthPercent,
+        height: currentSizeRef.current.height,
       };
     },
     []
@@ -252,43 +247,41 @@ export function OverviewCardComponent({
       const deltaX = e.clientX - startPosRef.current.x;
       const deltaY = e.clientY - startPosRef.current.y;
 
-      const startW = startSizeRef.current.width;
+      const startWidthPercent = startSizeRef.current.widthPercent;
       const startH = startSizeRef.current.height;
 
-      const maxW = maxSizeRef.current.maxW;
-      const maxH = maxSizeRef.current.maxH;
+      // Convert deltaX to percentage change based on container width
+      const containerW = containerWidthRef.current || 1;
+      const deltaPercent = (deltaX / containerW) * 100;
 
-      let nextW = startW;
+      let nextWidthPercent = startWidthPercent;
       let nextH = startH;
 
       const isCorner = resizeDirection.includes("-");
 
       if (isCorner) {
         // Corner resize: calculate deltas based on which corner
-        let widthDelta = resizeDirection.endsWith("right") ? deltaX : -deltaX;
+        let widthDeltaPercent = resizeDirection.endsWith("right") ? deltaPercent : -deltaPercent;
         let heightDelta = resizeDirection.startsWith("bottom") ? deltaY : -deltaY;
 
-        const rawW = startW + widthDelta;
+        const rawWidthPercent = startWidthPercent + widthDeltaPercent;
         const rawH = startH + heightDelta;
 
-        const clampedW = clamp(rawW, MIN_CARD_WIDTH, maxW);
-        const clampedH = clamp(rawH, MIN_CARD_HEIGHT, maxH);
-
-        nextW = clampedW;
-        nextH = clampedH;
+        nextWidthPercent = clamp(rawWidthPercent, MIN_CARD_WIDTH_PERCENT, MAX_CARD_WIDTH_PERCENT);
+        nextH = clamp(rawH, MIN_CARD_HEIGHT, MAX_CARD_HEIGHT);
       } else {
         if (resizeDirection === "right") {
-          nextW = clamp(startW + deltaX, MIN_CARD_WIDTH, maxW);
+          nextWidthPercent = clamp(startWidthPercent + deltaPercent, MIN_CARD_WIDTH_PERCENT, MAX_CARD_WIDTH_PERCENT);
         } else if (resizeDirection === "left") {
           // Dragging left (negative deltaX) increases width
-          nextW = clamp(startW - deltaX, MIN_CARD_WIDTH, maxW);
+          nextWidthPercent = clamp(startWidthPercent - deltaPercent, MIN_CARD_WIDTH_PERCENT, MAX_CARD_WIDTH_PERCENT);
         }
 
         if (resizeDirection === "bottom") {
-          nextH = clamp(startH + deltaY, MIN_CARD_HEIGHT, maxH);
+          nextH = clamp(startH + deltaY, MIN_CARD_HEIGHT, MAX_CARD_HEIGHT);
         } else if (resizeDirection === "top") {
           // Dragging up (negative deltaY) increases height
-          nextH = clamp(startH - deltaY, MIN_CARD_HEIGHT, maxH);
+          nextH = clamp(startH - deltaY, MIN_CARD_HEIGHT, MAX_CARD_HEIGHT);
         }
       }
 
@@ -330,8 +323,8 @@ export function OverviewCardComponent({
       }
 
       const prev = currentSizeRef.current;
-      if (nextW !== prev.width || nextH !== prev.height) {
-        const next = { width: nextW, height: nextH };
+      if (nextWidthPercent !== prev.widthPercent || nextH !== prev.height) {
+        const next: CardSize = { widthPercent: nextWidthPercent, height: nextH };
         currentSizeRef.current = next;
         setCurrentSize(next);
         onResize(card.id, next);
@@ -497,34 +490,39 @@ export function OverviewCardComponent({
       case "list":
         const listData = chartData as Lead[];
         return (
-          <div className="flex flex-col gap-2 overflow-auto h-full pr-2">
+          <div className="flex flex-col gap-2 overflow-y-auto h-full pr-2">
             {listData.map((lead) => (
               <div
                 key={lead.id}
                 className="flex items-center gap-3 p-2 rounded-lg bg-muted/50 hover:bg-muted transition-colors"
               >
-                <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-medium text-sm shrink-0">
+                <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-sm font-medium text-primary">
                   {lead.name.charAt(0).toUpperCase()}
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-foreground truncate">{lead.name}</p>
                   <p className="text-xs text-muted-foreground truncate">{lead.email}</p>
                 </div>
+                <span className="text-xs text-muted-foreground">
+                  {format(new Date(lead.created_at), "dd/MM", { locale: ptBR })}
+                </span>
               </div>
             ))}
-            {listData.length === 0 && (
-              <div className="flex flex-col items-center justify-center h-full gap-3">
-                <div className="w-16 h-12 bg-muted/60 rounded-lg flex items-center justify-center">
-                  <Folder className="h-8 w-8 text-muted-foreground/50" fill="currentColor" strokeWidth={1} />
-                </div>
-                <span className="text-muted-foreground text-sm">Conecte uma fonte de dados</span>
-              </div>
-            )}
           </div>
         );
 
       case "funnel":
         const funnelData = chartData as Array<{ name: string; value: number; fill: string }>;
+        if (!Array.isArray(funnelData) || funnelData.length === 0) {
+          return (
+            <div className="flex flex-col items-center justify-center h-full gap-3">
+              <div className="w-16 h-12 bg-muted/60 rounded-lg flex items-center justify-center">
+                <Folder className="h-8 w-8 text-muted-foreground/50" fill="currentColor" strokeWidth={1} />
+              </div>
+              <span className="text-muted-foreground text-sm">Conecte uma fonte de dados</span>
+            </div>
+          );
+        }
         return (
           <ResponsiveContainer width="100%" height="100%">
             <FunnelChart>
@@ -536,170 +534,144 @@ export function OverviewCardComponent({
                 }}
               />
               <Funnel
-                dataKey="value"
                 data={funnelData}
+                dataKey="value"
+                nameKey="name"
                 isAnimationActive
               >
-                <LabelList position="right" fill="#000" stroke="none" dataKey="name" fontSize={11} />
+                <LabelList position="right" fill="hsl(var(--foreground))" stroke="none" dataKey="name" fontSize={11} />
               </Funnel>
             </FunnelChart>
           </ResponsiveContainer>
         );
 
       default:
-        return null;
+        return (
+          <div className="flex items-center justify-center h-full text-muted-foreground">
+            Tipo de gráfico não suportado
+          </div>
+        );
     }
   };
+
+  // Resize handle class
+  const handleClass = (pos: "left" | "right" | "top" | "bottom") => cn(
+    "absolute bg-transparent transition-colors z-10",
+    isResizing && resizeDirection?.includes(pos) && "bg-primary/20",
+    atLimit[pos] && isResizing && "!bg-destructive/30"
+  );
+
+  const cornerClass = cn(
+    "absolute w-4 h-4 bg-transparent z-20 transition-colors",
+    isResizing && "bg-primary/20"
+  );
 
   return (
     <div
       ref={cardRef}
       className={cn(
-        "bg-white rounded-xl border border-[#00000015] shadow-sm overflow-hidden flex flex-col group relative",
-        isDragging && "opacity-50 shadow-lg",
-        isResizing && "select-none"
+        "relative rounded-xl border bg-card p-4 transition-shadow",
+        isDragging && "opacity-50",
+        isResizing ? "shadow-lg ring-2 ring-primary/20" : "shadow-sm"
       )}
       style={{
-        width: currentSize.width,
+        width: pixelWidth,
         height: currentSize.height,
+        maxWidth: '100%',
         flexShrink: 0,
       }}
     >
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-border/50 shrink-0">
+      <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
+          {/* Drag handle */}
           <div
             {...dragHandleProps}
-            className="cursor-grab active:cursor-grabbing touch-none"
+            className="cursor-grab active:cursor-grabbing p-1 -ml-1 text-muted-foreground hover:text-foreground transition-colors"
           >
-            <GripVertical className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+            <GripVertical className="h-4 w-4" />
           </div>
-          <h3 className="font-medium text-sm text-foreground">{card.title}</h3>
+          <h3 className="font-medium text-sm text-foreground truncate">{card.title}</h3>
         </div>
-        
-        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" className="h-7 w-7">
-                <MoreHorizontal className="h-4 w-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem 
-                onClick={() => onDelete(card.id)}
-                className="text-destructive focus:text-destructive"
-              >
-                <Trash2 className="h-4 w-4 mr-2" />
-                Remover
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" size="icon" className="h-7 w-7">
+              <MoreHorizontal className="h-4 w-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem
+              onClick={() => onDelete(card.id)}
+              className="text-destructive focus:text-destructive"
+            >
+              <Trash2 className="h-4 w-4 mr-2" />
+              Excluir
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
 
-      {/* Chart Content */}
-      <div className="flex-1 p-4 min-h-0 overflow-hidden">
-        {!card.dataSource ? (
-          <button 
-            onClick={(e) => {
-              e.stopPropagation();
-              onConnectDataSource?.(card);
-            }}
-            className="w-full h-full flex flex-col items-center justify-center gap-3 hover:bg-muted/30 rounded-lg transition-colors cursor-pointer"
+      {/* Chart content */}
+      <div className="h-[calc(100%-40px)]">
+        {card.dataSource ? (
+          renderChart()
+        ) : (
+          <button
+            type="button"
+            onClick={() => onConnectDataSource?.(card)}
+            className="flex flex-col items-center justify-center h-full gap-3 w-full rounded-lg border-2 border-dashed border-muted-foreground/20 hover:border-primary/40 transition-colors cursor-pointer"
           >
             <div className="w-16 h-12 bg-muted/60 rounded-lg flex items-center justify-center">
               <Folder className="h-8 w-8 text-muted-foreground/50" fill="currentColor" strokeWidth={1} />
             </div>
-            <span className="text-muted-foreground text-sm">Conecte uma fonte de dados</span>
+            <span className="text-muted-foreground text-sm">Conectar fonte de dados</span>
           </button>
-        ) : (
-          renderChart()
         )}
       </div>
 
-
-      {/* Resize Handles */}
-      {/* Left handle */}
+      {/* Resize handles – edges */}
       <div
         data-no-dnd="true"
-        className="absolute left-0 top-2 bottom-2 w-2 cursor-ew-resize opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto hover:bg-primary/20 z-40 touch-none"
-        onPointerDown={(e) => {
-          e.stopPropagation();
-          handleResizeStart(e, "left");
-        }}
+        className={cn(handleClass("left"), "left-0 top-2 bottom-2 w-2 cursor-ew-resize")}
+        onPointerDown={(e) => handleResizeStart(e, "left")}
+      />
+      <div
+        data-no-dnd="true"
+        className={cn(handleClass("right"), "right-0 top-2 bottom-2 w-2 cursor-ew-resize")}
+        onPointerDown={(e) => handleResizeStart(e, "right")}
+      />
+      <div
+        data-no-dnd="true"
+        className={cn(handleClass("top"), "top-0 left-2 right-2 h-2 cursor-ns-resize")}
+        onPointerDown={(e) => handleResizeStart(e, "top")}
+      />
+      <div
+        data-no-dnd="true"
+        className={cn(handleClass("bottom"), "bottom-0 left-2 right-2 h-2 cursor-ns-resize")}
+        onPointerDown={(e) => handleResizeStart(e, "bottom")}
       />
 
-      {/* Right handle (inset to avoid ScrollArea scrollbar overlap) */}
+      {/* Corner handles */}
       <div
         data-no-dnd="true"
-        className="absolute right-3 top-2 bottom-2 w-3 cursor-ew-resize opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto hover:bg-primary/20 z-40 touch-none"
-        onPointerDown={(e) => {
-          e.stopPropagation();
-          handleResizeStart(e, "right");
-        }}
+        className={cn(cornerClass, "top-0 left-0 cursor-nwse-resize")}
+        onPointerDown={(e) => handleResizeStart(e, "top-left")}
       />
-
-      {/* Top handle */}
       <div
         data-no-dnd="true"
-        className="absolute top-0 left-2 right-2 h-2 cursor-ns-resize opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto hover:bg-primary/20 z-40 touch-none"
-        onPointerDown={(e) => {
-          e.stopPropagation();
-          handleResizeStart(e, "top");
-        }}
+        className={cn(cornerClass, "top-0 right-0 cursor-nesw-resize")}
+        onPointerDown={(e) => handleResizeStart(e, "top-right")}
       />
-
-      {/* Bottom handle */}
       <div
         data-no-dnd="true"
-        className="absolute bottom-0 left-2 right-2 h-2 cursor-ns-resize opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto hover:bg-primary/20 z-40 touch-none"
-        onPointerDown={(e) => {
-          e.stopPropagation();
-          handleResizeStart(e, "bottom");
-        }}
+        className={cn(cornerClass, "bottom-0 left-0 cursor-nesw-resize")}
+        onPointerDown={(e) => handleResizeStart(e, "bottom-left")}
       />
-
-      {/* Top-left corner */}
       <div
         data-no-dnd="true"
-        className="absolute top-0 left-0 w-3 h-3 cursor-nwse-resize opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto hover:bg-primary/20 z-50 touch-none"
-        onPointerDown={(e) => {
-          e.stopPropagation();
-          handleResizeStart(e, "top-left");
-        }}
+        className={cn(cornerClass, "bottom-0 right-0 cursor-nwse-resize")}
+        onPointerDown={(e) => handleResizeStart(e, "bottom-right")}
       />
-
-      {/* Top-right corner (inset to avoid ScrollArea scrollbar overlap) */}
-      <div
-        data-no-dnd="true"
-        className="absolute top-0 right-3 w-3 h-3 cursor-nesw-resize opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto hover:bg-primary/20 z-50 touch-none"
-        onPointerDown={(e) => {
-          e.stopPropagation();
-          handleResizeStart(e, "top-right");
-        }}
-      />
-
-      {/* Bottom-left corner */}
-      <div
-        data-no-dnd="true"
-        className="absolute bottom-0 left-0 w-3 h-3 cursor-nesw-resize opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto hover:bg-primary/20 z-50 touch-none"
-        onPointerDown={(e) => {
-          e.stopPropagation();
-          handleResizeStart(e, "bottom-left");
-        }}
-      />
-
-      {/* Bottom-right corner (inset to avoid ScrollArea scrollbar overlap) */}
-      <div
-        data-no-dnd="true"
-        className="absolute bottom-0 right-3 w-4 h-4 cursor-nwse-resize opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto z-50 touch-none"
-        onPointerDown={(e) => {
-          e.stopPropagation();
-          handleResizeStart(e, "bottom-right");
-        }}
-      >
-        <div className="absolute bottom-1 right-1 w-2 h-2 border-r-2 border-b-2 border-muted-foreground/50 group-hover:border-primary" />
-      </div>
     </div>
   );
 }
