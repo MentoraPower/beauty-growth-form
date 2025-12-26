@@ -651,9 +651,9 @@ export function OverviewCardComponent({
         onPointerDown={(e) => handleResizeStart(e, "left")}
       />
       
-      {/* Right handle */}
+      {/* Right handle (inset to avoid ScrollArea scrollbar overlap) */}
       <div
-        className="absolute right-0 top-2 bottom-2 w-2 cursor-ew-resize opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto hover:bg-primary/20 z-40 touch-none"
+        className="absolute right-3 top-2 bottom-2 w-3 cursor-ew-resize opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto hover:bg-primary/20 z-40 touch-none"
         onPointerDown={(e) => handleResizeStart(e, "right")}
       />
       
@@ -675,9 +675,9 @@ export function OverviewCardComponent({
         onPointerDown={(e) => handleResizeStart(e, "top-left")}
       />
       
-      {/* Top-right corner */}
+      {/* Top-right corner (inset to avoid ScrollArea scrollbar overlap) */}
       <div
-        className="absolute top-0 right-0 w-3 h-3 cursor-nesw-resize opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto hover:bg-primary/20 z-50 touch-none"
+        className="absolute top-0 right-3 w-3 h-3 cursor-nesw-resize opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto hover:bg-primary/20 z-50 touch-none"
         onPointerDown={(e) => handleResizeStart(e, "top-right")}
       />
       
@@ -687,9 +687,9 @@ export function OverviewCardComponent({
         onPointerDown={(e) => handleResizeStart(e, "bottom-left")}
       />
       
-      {/* Bottom-right corner */}
+      {/* Bottom-right corner (inset to avoid ScrollArea scrollbar overlap) */}
       <div
-        className="absolute bottom-0 right-0 w-4 h-4 cursor-nwse-resize opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto z-50 touch-none"
+        className="absolute bottom-0 right-3 w-4 h-4 cursor-nwse-resize opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto z-50 touch-none"
         onPointerDown={(e) => handleResizeStart(e, "bottom-right")}
       >
         <div className="absolute bottom-1 right-1 w-2 h-2 border-r-2 border-b-2 border-muted-foreground/50 group-hover:border-primary" />
