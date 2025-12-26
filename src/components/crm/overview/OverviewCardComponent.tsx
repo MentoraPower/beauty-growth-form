@@ -263,12 +263,9 @@ export function OverviewCardComponent({
       const containerW = containerWidthRef.current || 1;
       const deltaPercent = (deltaX / containerW) * 100;
 
-      // Calculate effective minimum percent based on pixel minimum
-      // This ensures cards never get smaller than MIN_CARD_WIDTH_PX regardless of container size
-      const minPercentFromPixels = containerW > 0 
-        ? (MIN_CARD_WIDTH_PX / containerW) * 100 
-        : MIN_CARD_WIDTH_PERCENT;
-      const effectiveMinPercent = Math.max(MIN_CARD_WIDTH_PERCENT, minPercentFromPixels);
+      // Use only percentage-based minimum to ensure consistent layout across all desktop screen sizes
+      // This ensures cards maintain their proportional size on any screen
+      const effectiveMinPercent = MIN_CARD_WIDTH_PERCENT;
 
       let nextWidthPercent = startWidthPercent;
       let nextH = startH;
