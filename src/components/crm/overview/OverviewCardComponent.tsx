@@ -574,16 +574,24 @@ export function OverviewCardComponent({
     isResizing && "bg-primary/20"
   );
 
+  // Calculate pixel width for DragOverlay (which has no percentage wrapper)
+  const dragPixelWidth = containerWidth > 0 
+    ? (currentSize.widthPercent / 100) * containerWidth 
+    : undefined;
+
   return (
     <div
       ref={cardRef}
       className={cn(
-        "relative rounded-xl border bg-card p-4 transition-shadow w-full",
+        "relative rounded-xl border bg-card p-4 transition-shadow",
+        !isDragging && "w-full", // w-full only when NOT dragging (uses wrapper percentage)
         isDragging && "opacity-50",
         isResizing ? "shadow-lg ring-2 ring-primary/20" : "shadow-sm"
       )}
       style={{
         height: currentSize.height,
+        // When dragging (in DragOverlay), use fixed pixel width to maintain size
+        ...(isDragging && dragPixelWidth ? { width: dragPixelWidth } : {}),
       }}
     >
       {/* Header */}
