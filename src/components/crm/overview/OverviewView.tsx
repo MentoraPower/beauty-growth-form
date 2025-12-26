@@ -198,16 +198,19 @@ export function OverviewView({ leads, pipelines, leadTags, subOriginId }: Overvi
     try {
       const { error } = await supabase
         .from("overview_cards")
-        .upsert({
-          sub_origin_id: subOriginId,
-          card_id: card.id,
-          title: card.title,
-          chart_type: card.chartType,
-          data_source: card.dataSource,
-          width: card.size.width,
-          height: card.size.height,
-          card_order: card.order,
-        }, { onConflict: "sub_origin_id,card_id" });
+        .upsert(
+          {
+            sub_origin_id: subOriginId,
+            card_id: card.id,
+            title: card.title,
+            chart_type: card.chartType,
+            data_source: card.dataSource,
+            width: Math.round(card.size.width),
+            height: Math.round(card.size.height),
+            card_order: card.order,
+          },
+          { onConflict: "sub_origin_id,card_id" }
+        );
 
       if (error) throw error;
     } catch (error) {
@@ -220,14 +223,14 @@ export function OverviewView({ leads, pipelines, leadTags, subOriginId }: Overvi
     if (!subOriginId) return;
     
     try {
-      const updates = cardsToSave.map(card => ({
+      const updates = cardsToSave.map((card) => ({
         sub_origin_id: subOriginId,
         card_id: card.id,
         title: card.title,
         chart_type: card.chartType,
         data_source: card.dataSource,
-        width: card.size.width,
-        height: card.size.height,
+        width: Math.round(card.size.width),
+        height: Math.round(card.size.height),
         card_order: card.order,
       }));
 
