@@ -8,10 +8,7 @@ import {
   Area, 
   XAxis, 
   YAxis, 
-  Tooltip, 
-  Funnel,
-  FunnelChart,
-  LabelList
+  Tooltip
 } from "recharts";
 import { format, subDays, startOfDay, eachDayOfInterval } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -130,13 +127,6 @@ export function ChartRenderer({
           tagCounts[tag.name].count++;
         });
         return Object.values(tagCounts).sort((a, b) => b.count - a.count).slice(0, 10);
-      }
-      case "conversion_rate": {
-        return pipelines.map((pipeline, index) => ({
-          name: pipeline.nome,
-          value: leads.filter((l) => l.pipeline_id === pipeline.id).length,
-          fill: MODERN_COLORS[index % MODERN_COLORS.length].solid,
-        }));
       }
       default:
         return null;
@@ -466,55 +456,6 @@ export function ChartRenderer({
             ))}
           </div>
         </ScrollArea>
-      );
-    }
-
-    case "funnel": {
-      const funnelData = chartData as Array<{ name: string; value: number; fill: string }>;
-      if (!Array.isArray(funnelData) || funnelData.length === 0) {
-        return renderEmptyState();
-      }
-      
-      // Add gradient colors
-      const enhancedFunnelData = funnelData.map((item, index) => ({
-        ...item,
-        fill: MODERN_COLORS[index % MODERN_COLORS.length].solid,
-      }));
-      
-      return (
-        <ResponsiveContainer width="100%" height="100%">
-          <FunnelChart margin={{ top: 10, right: 80, left: 10, bottom: 10 }}>
-            <defs>
-              {enhancedFunnelData.map((entry, index) => (
-                <linearGradient key={`funnelGradient-${index}`} id={`funnelGradient-${cardId}-${index}`} x1="0" y1="0" x2="1" y2="0">
-                  <stop offset="0%" stopColor={MODERN_COLORS[index % MODERN_COLORS.length].gradient[1]} />
-                  <stop offset="100%" stopColor={MODERN_COLORS[index % MODERN_COLORS.length].gradient[0]} />
-                </linearGradient>
-              ))}
-            </defs>
-            <Tooltip content={<CustomTooltip />} />
-            <Funnel
-              data={enhancedFunnelData.map((item, index) => ({
-                ...item,
-                fill: `url(#funnelGradient-${cardId}-${index})`,
-              }))}
-              dataKey="value"
-              nameKey="name"
-              isAnimationActive
-              animationBegin={0}
-              animationDuration={800}
-            >
-              <LabelList 
-                position="right" 
-                fill="hsl(var(--foreground))" 
-                stroke="none" 
-                dataKey="name" 
-                fontSize={11}
-                fontWeight={500}
-              />
-            </Funnel>
-          </FunnelChart>
-        </ResponsiveContainer>
       );
     }
 
