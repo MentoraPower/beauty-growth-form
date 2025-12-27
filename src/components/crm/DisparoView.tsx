@@ -79,25 +79,32 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   className={cn(
-                    "p-4 rounded-2xl",
-                    msg.role === "user"
-                      ? "text-foreground ml-auto max-w-[80%]"
-                      : "text-foreground mr-auto max-w-[80%]"
+                    "flex",
+                    msg.role === "user" ? "justify-end" : "justify-start"
                   )}
                 >
-                  {msg.content}
+                  <div className={cn(
+                    "p-4 rounded-2xl max-w-[80%]",
+                    msg.role === "user"
+                      ? "text-foreground text-right"
+                      : "text-foreground text-left"
+                  )}>
+                    {msg.content}
+                  </div>
                 </motion.div>
               ))}
               {isLoading && (
                 <motion.div
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
-                  className="text-foreground p-4 rounded-2xl mr-auto max-w-[80%]"
+                  className="flex justify-start"
                 >
-                  <div className="flex gap-1">
-                    <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: "0ms" }} />
-                    <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: "150ms" }} />
-                    <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: "300ms" }} />
+                  <div className="p-4 rounded-2xl">
+                    <div className="flex gap-1">
+                      <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: "0ms" }} />
+                      <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: "150ms" }} />
+                      <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: "300ms" }} />
+                    </div>
                   </div>
                 </motion.div>
               )}
