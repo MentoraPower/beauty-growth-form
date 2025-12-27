@@ -706,34 +706,21 @@ function OriginsListComponent({ origins, onSelect }: { origins: Origin[]; onSele
   );
 }
 
-// Component to display leads preview - Simple text format
+// Component to display leads preview - Clean compact format
 function LeadsPreviewComponent({ preview }: { preview: LeadsPreview }) {
   return (
     <motion.div
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      className="my-3 text-sm text-foreground space-y-1"
+      className="my-3 text-sm text-muted-foreground"
     >
-      <p>Total de leads: {preview.totalLeads}</p>
-      <p>Leads válidos: <span className="text-green-500 font-medium">{preview.validLeads}</span></p>
-      {preview.invalidLeads > 0 && (
-        <p className="text-yellow-600">{preview.invalidLeads} leads sem {preview.dispatchType === 'email' ? 'email' : 'WhatsApp'} válido</p>
-      )}
-      <p>Origem: {preview.originName}</p>
-      <p>Lista: {preview.subOriginName}</p>
-      <p>Intervalo: {preview.intervalSeconds}s entre envios</p>
-      <p>Tempo estimado: ~{preview.estimatedMinutes} minutos</p>
-      
-      {preview.leads.length > 0 && (
-        <div className="mt-2 pt-2 border-t border-border/50">
-          <p className="text-muted-foreground text-xs mb-1">Primeiros leads:</p>
-          {preview.leads.map((lead, i) => (
-            <p key={i} className="text-xs">
-              {lead.name} - <span className="text-muted-foreground">{lead.contact}</span>
-            </p>
-          ))}
-        </div>
-      )}
+      <div className="flex flex-wrap gap-x-4 gap-y-1">
+        <span>{preview.validLeads} leads válidos</span>
+        <span>•</span>
+        <span>{preview.originName} → {preview.subOriginName}</span>
+        <span>•</span>
+        <span>~{preview.estimatedMinutes} min</span>
+      </div>
     </motion.div>
   );
 }
@@ -812,7 +799,7 @@ function CsvLeadsPreviewComponent({ leads, type }: { leads: CsvLead[]; type: 'em
   );
 }
 
-// Component for HTML/message input - Modern code-style like ChatGPT
+// Component for HTML/message input - Modern light theme editor
 function HtmlEditorComponent({ onSubmit }: { onSubmit: (html: string) => void }) {
   const [content, setContent] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -837,56 +824,51 @@ function HtmlEditorComponent({ onSubmit }: { onSubmit: (html: string) => void })
       animate={{ opacity: 1, y: 0 }}
       className="my-4"
     >
-      <div className="text-sm text-muted-foreground mb-2">Template do Email</div>
-      <div className="text-xs text-muted-foreground mb-3">
-        Use <code className="bg-muted px-1 py-0.5 rounded text-foreground">{"{{name}}"}</code> para o nome do lead
+      <div className="text-sm text-muted-foreground mb-2">
+        Template do Email · Use <code className="bg-muted px-1.5 py-0.5 rounded text-xs text-foreground">{"{{name}}"}</code> para personalizar
       </div>
       
-      {/* Code-style container like ChatGPT */}
-      <div className="rounded-lg overflow-hidden border border-border bg-[#1e1e1e]">
+      {/* Modern light editor container */}
+      <div className="rounded-xl overflow-hidden border border-border/60 bg-muted/30 shadow-sm">
         {/* Header bar */}
-        <div className="flex items-center justify-between px-4 py-2 bg-[#2d2d2d] border-b border-[#404040]">
-          <span className="text-xs text-[#999]">
-            {content.includes('<') ? 'html' : 'text'}
+        <div className="flex items-center justify-between px-4 py-2.5 bg-muted/50 border-b border-border/40">
+          <span className="text-xs text-muted-foreground font-medium">
+            {content.includes('<') ? 'HTML' : 'Texto'}
           </span>
           <button 
             onClick={handleCopy}
-            className="text-xs text-[#999] hover:text-white transition-colors flex items-center gap-1.5"
+            className="text-xs text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1.5"
           >
             <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
             </svg>
-            Copiar código
+            Copiar
           </button>
         </div>
         
-        {/* Code textarea */}
+        {/* Editor textarea - larger with light background */}
         <textarea
           value={content}
           onChange={(e) => setContent(e.target.value)}
           placeholder={`Cole aqui o HTML do email ou mensagem simples...
 
-Exemplo HTML:
-<html>
-  <body>
-    <h1>Olá {{name}}!</h1>
-    <p>Temos uma oferta especial.</p>
-  </body>
-</html>
+Exemplo:
+<h1>Olá {{name}}!</h1>
+<p>Temos uma oferta especial para você.</p>
 
-Ou mensagem simples:
+Ou texto simples:
 Olá {{name}}, temos uma oferta especial!`}
-          className="w-full h-56 p-4 bg-[#1e1e1e] font-mono text-sm text-[#d4d4d4] placeholder:text-[#666] focus:outline-none resize-none"
+          className="w-full min-h-[320px] p-5 bg-background font-mono text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none resize-y"
           spellCheck={false}
         />
       </div>
 
-      <div className="flex items-center justify-end mt-3">
+      <div className="flex items-center justify-end mt-4">
         <button
           onClick={handleSubmit}
           disabled={isSubmitting || !content.trim()}
           className={cn(
-            "px-4 py-2 rounded-lg text-sm font-medium transition-colors",
+            "px-5 py-2.5 rounded-lg text-sm font-medium transition-colors",
             "bg-primary text-primary-foreground hover:bg-primary/90",
             "disabled:opacity-50 disabled:cursor-not-allowed"
           )}
