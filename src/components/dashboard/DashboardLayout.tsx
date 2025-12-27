@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect, memo, useRef } from "react";
+import { useState, useCallback, useEffect, memo, useRef, useMemo } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Menu, X, LogOut, LayoutGrid, Settings, ChevronDown, User, Inbox, ChevronsLeft, ChevronsRight, SquareUser } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -30,6 +30,14 @@ const getInitialPanelState = (): ActivePanel => {
 
 let globalActivePanel: ActivePanel = getInitialPanelState();
 
+// Memoized route content to prevent re-renders when submenu toggles
+const RouteContentMemo = memo(function RouteContentMemo({ children }: { children: React.ReactNode }) {
+  return <>{children}</>;
+});
+
+// Memoized CRM Origins Panel wrapper
+const MemoizedCRMOriginsPanel = memo(CRMOriginsPanel);
+
 const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [activePanel, setActivePanel] = useState<ActivePanel>(globalActivePanel);
@@ -57,26 +65,10 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
     return location.pathname.startsWith("/admin/crm") || location.pathname === "/admin";
   });
 
-  // Mount/unmount submenu content with a small delay so the open animation stays smooth
-  const [crmSubmenuContentMounted, setCrmSubmenuContentMounted] = useState(() => {
-    const saved = localStorage.getItem('crm_submenu_open');
-    if (saved !== null) {
-      return saved === 'true';
-    }
-    return location.pathname.startsWith("/admin/crm") || location.pathname === "/admin";
-  });
-
-  useEffect(() => {
-    if (crmSubmenuOpen) {
-      // Mount content immediately for faster perceived load
-      setCrmSubmenuContentMounted(true);
-      return;
-    }
-
-    // Delay unmount so close animation completes
-    const t = window.setTimeout(() => setCrmSubmenuContentMounted(false), 240);
-    return () => window.clearTimeout(t);
-  }, [crmSubmenuOpen]);
+  // Stable onClose callback to prevent re-renders
+  const handleCloseSubmenu = useCallback(() => {
+    setCrmSubmenuOpen(false);
+  }, []);
 
   // Persist submenu state to localStorage
   useEffect(() => {
@@ -223,17 +215,6 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
   // Sidebar dimensions
   const sidebarCollapsedWidth = 64;
   const submenuWidth = 256;
-
-  // Main content margin - sidebar is overlay, but CRM origins panel pushes content
-  const contentGap = 4;
-  const getMainContentMargin = () => {
-    if (crmSubmenuOpen) {
-      return sidebarCollapsedWidth + 12 + submenuWidth + contentGap;
-    }
-    return sidebarCollapsedWidth + 12 + contentGap;
-  };
-
-  const mainContentMargin = getMainContentMargin();
 
   return (
     <div className="min-h-screen bg-card p-3">
@@ -462,7 +443,7 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
           </div>
         </aside>
 
-        {/* CRM Submenu Panel - pushes content (via mainContentMargin), smooth transform */}
+        {/* CRM Submenu Panel - always mounted, visibility controlled via CSS for smooth transitions */}
         <div
           style={{
             left: sidebarCollapsedWidth + 12,
@@ -471,8 +452,9 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
             zIndex: 39,
             pointerEvents: crmSubmenuOpen ? 'auto' : 'none',
             willChange: 'transform',
+            visibility: crmSubmenuOpen ? 'visible' : 'hidden',
           }}
-          className="hidden lg:block fixed top-[24px] bottom-[24px] rounded-r-2xl bg-zinc-900 overflow-hidden transition-transform duration-300 ease-out"
+          className="hidden lg:block fixed top-[24px] bottom-[24px] rounded-r-2xl bg-zinc-900 overflow-hidden transition-[transform,visibility] duration-300 ease-out"
         >
           <div
             className="h-full pl-4 pr-2 transition-opacity duration-200"
@@ -483,18 +465,12 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
               transitionDelay: crmSubmenuOpen ? '50ms' : '0ms',
             }}
           >
-            {crmSubmenuContentMounted ? (
-              <CRMOriginsPanel
-                isOpen={crmSubmenuOpen}
-                onClose={() => setCrmSubmenuOpen(false)}
-                sidebarWidth={sidebarCollapsedWidth}
-                embedded={true}
-              />
-            ) : (
-              <div className="h-full flex items-center justify-center">
-                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white/40" />
-              </div>
-            )}
+            <MemoizedCRMOriginsPanel
+              isOpen={crmSubmenuOpen}
+              onClose={handleCloseSubmenu}
+              sidebarWidth={sidebarCollapsedWidth}
+              embedded={true}
+            />
           </div>
         </div>
 
@@ -622,20 +598,23 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
           />
         )}
 
-        {/* Main Content - CRM origins panel pushes content with synced transition */}
+        {/* Main Content - uses transform for smooth GPU-accelerated animation */}
         <main 
           style={{ 
-            left: `${mainContentMargin}px`,
+            left: sidebarCollapsedWidth + 12 + 4,
             top: 12,
             right: 0,
             bottom: 12,
-            willChange: 'left',
+            transform: crmSubmenuOpen ? `translateX(${submenuWidth}px)` : 'translateX(0)',
+            willChange: 'transform',
           }}
-          className="hidden lg:block fixed transition-[left] duration-300 ease-out"
+          className="hidden lg:block fixed transition-transform duration-300 ease-out"
         >
           <div className="h-full overflow-hidden relative bg-card rounded-l-2xl py-4 px-6 shadow-sm flex flex-col">
             <PageTransition>
-              {children}
+              <RouteContentMemo>
+                {children}
+              </RouteContentMemo>
             </PageTransition>
           </div>
         </main>
