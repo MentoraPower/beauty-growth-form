@@ -81,8 +81,8 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
                   className={cn(
                     "p-4 rounded-2xl",
                     msg.role === "user"
-                      ? "bg-primary text-primary-foreground ml-auto max-w-[80%]"
-                      : "bg-muted text-foreground mr-auto max-w-[80%]"
+                      ? "text-foreground ml-auto max-w-[80%]"
+                      : "text-foreground mr-auto max-w-[80%]"
                   )}
                 >
                   {msg.content}
@@ -92,7 +92,7 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
                 <motion.div
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
-                  className="bg-muted text-foreground p-4 rounded-2xl mr-auto max-w-[80%]"
+                  className="text-foreground p-4 rounded-2xl mr-auto max-w-[80%]"
                 >
                   <div className="flex gap-1">
                     <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: "0ms" }} />
