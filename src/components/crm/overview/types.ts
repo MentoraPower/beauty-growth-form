@@ -43,8 +43,8 @@ export interface CardTemplate {
 export const CARD_TEMPLATES: CardTemplate[] = [
   {
     id: "leads_by_pipeline",
-    title: "Leads por Pipeline",
-    description: "Gráfico de pizza com a distribuição de leads por pipeline",
+    title: "Gráfico de Pizza - Leads por Pipeline",
+    description: "Distribuição de leads por pipeline",
     chartType: "pie",
     dataSource: "leads_by_pipeline",
     defaultSize: { widthPercent: 30, height: 360 },
@@ -53,7 +53,7 @@ export const CARD_TEMPLATES: CardTemplate[] = [
   },
   {
     id: "total_leads",
-    title: "Total de Leads",
+    title: "Cartão Numérico - Total de Leads",
     description: "Mostra o número total de leads no CRM",
     chartType: "number",
     dataSource: "total_leads",
@@ -63,8 +63,8 @@ export const CARD_TEMPLATES: CardTemplate[] = [
   },
   {
     id: "leads_over_time",
-    title: "Leads ao Longo do Tempo",
-    description: "Gráfico de área mostrando entrada de leads",
+    title: "Gráfico de Área - Leads ao Longo do Tempo",
+    description: "Mostra entrada de leads ao longo do tempo",
     chartType: "area",
     dataSource: "leads_over_time",
     defaultSize: { widthPercent: 50, height: 320 },
@@ -73,7 +73,7 @@ export const CARD_TEMPLATES: CardTemplate[] = [
   },
   {
     id: "leads_by_mql",
-    title: "MQL vs Não-MQL",
+    title: "Gráfico de Pizza - MQL vs Não-MQL",
     description: "Proporção de leads qualificados",
     chartType: "pie",
     dataSource: "leads_by_mql",
@@ -83,7 +83,7 @@ export const CARD_TEMPLATES: CardTemplate[] = [
   },
   {
     id: "recent_leads",
-    title: "Leads Recentes",
+    title: "Lista - Leads Recentes",
     description: "Lista dos últimos leads adicionados",
     chartType: "list",
     dataSource: "recent_leads",
@@ -93,7 +93,7 @@ export const CARD_TEMPLATES: CardTemplate[] = [
   },
   {
     id: "leads_by_tag",
-    title: "Leads por Tag",
+    title: "Gráfico de Barras - Leads por Tag",
     description: "Distribuição de leads por tags",
     chartType: "bar",
     dataSource: "leads_by_tag",
