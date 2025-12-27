@@ -39,4 +39,5 @@ export interface Lead {
   analysis_created_at?: string | null;
   photo_url?: string | null;
   tags?: LeadTag[];
+  assigned_to?: string | null;
 }
