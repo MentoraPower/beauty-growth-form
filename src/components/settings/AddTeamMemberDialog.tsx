@@ -136,7 +136,7 @@ export function AddTeamMemberDialog({
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   placeholder="Digite o nome"
-                  className="pl-8 h-9 text-sm bg-gray-50 border-gray-200 rounded-lg focus:bg-white focus:border-gray-400 focus:ring-1 focus:ring-gray-400/20 transition-all text-gray-900 placeholder:text-gray-400"
+                  className="pl-8 h-9 text-sm bg-gray-50 border-transparent rounded-lg focus:bg-white focus:border-transparent focus:ring-0 focus:outline-none transition-all text-gray-900 placeholder:text-gray-400"
                 />
                 <UserPlus className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
               </div>
@@ -154,7 +154,7 @@ export function AddTeamMemberDialog({
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="email@exemplo.com"
-                  className="pl-8 h-9 text-sm bg-gray-50 border-gray-200 rounded-lg focus:bg-white focus:border-gray-400 focus:ring-1 focus:ring-gray-400/20 transition-all text-gray-900 placeholder:text-gray-400"
+                  className="pl-8 h-9 text-sm bg-gray-50 border-transparent rounded-lg focus:bg-white focus:border-transparent focus:ring-0 focus:outline-none transition-all text-gray-900 placeholder:text-gray-400"
                 />
                 <Mail className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
               </div>
@@ -175,7 +175,7 @@ export function AddTeamMemberDialog({
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
                   placeholder="(00) 00000-0000"
-                  className="pl-8 h-9 text-sm bg-gray-50 border-gray-200 rounded-lg focus:bg-white focus:border-gray-400 focus:ring-1 focus:ring-gray-400/20 transition-all text-gray-900 placeholder:text-gray-400"
+                  className="pl-8 h-9 text-sm bg-gray-50 border-transparent rounded-lg focus:bg-white focus:border-transparent focus:ring-0 focus:outline-none transition-all text-gray-900 placeholder:text-gray-400"
                 />
                 <Phone className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
               </div>
@@ -193,7 +193,7 @@ export function AddTeamMemberDialog({
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="Mínimo 6 caracteres"
-                  className="pl-8 pr-8 h-9 text-sm bg-gray-50 border-gray-200 rounded-lg focus:bg-white focus:border-gray-400 focus:ring-1 focus:ring-gray-400/20 transition-all text-gray-900 placeholder:text-gray-400"
+                  className="pl-8 pr-8 h-9 text-sm bg-gray-50 border-transparent rounded-lg focus:bg-white focus:border-transparent focus:ring-0 focus:outline-none transition-all text-gray-900 placeholder:text-gray-400"
                 />
                 <Lock className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
                 <Button
@@ -218,7 +218,7 @@ export function AddTeamMemberDialog({
             <Label className="text-xs font-medium text-gray-600">Função</Label>
             <div className="relative">
               <Select value={role} onValueChange={setRole}>
-                <SelectTrigger className="pl-8 h-9 text-sm bg-gray-50 border-gray-200 rounded-lg focus:bg-white focus:border-gray-400 focus:ring-1 focus:ring-gray-400/20 transition-all text-gray-900">
+                <SelectTrigger className="pl-8 h-9 text-sm bg-gray-50 border-transparent rounded-lg focus:bg-white focus:border-transparent focus:ring-0 focus:outline-none transition-all text-gray-900">
                   <SelectValue placeholder="Selecione a função" />
                 </SelectTrigger>
                 <SelectContent className="bg-white border-gray-200 rounded-lg shadow-xl">
