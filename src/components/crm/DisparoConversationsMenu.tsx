@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
-import { ChevronDown, Plus, MoreVertical, Trash2, MessageSquare } from "lucide-react";
+import { ChevronDown, Plus, MoreVertical, Trash2, MessageSquare, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -43,6 +44,7 @@ export function DisparoConversationsMenu({
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [currentTitle, setCurrentTitle] = useState("Disparo");
+  const [searchQuery, setSearchQuery] = useState("");
 
   // Fetch conversations
   const fetchConversations = async () => {
@@ -195,20 +197,38 @@ export function DisparoConversationsMenu({
     }
   };
 
+  // Filter conversations based on search
+  const filteredConversations = conversations.filter(conv =>
+    conv.title.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  // If inside a conversation, show breadcrumb style
+  const isInConversation = currentConversationId && messages.length > 0;
+
   return (
-    <DropdownMenu>
+    <DropdownMenu onOpenChange={() => setSearchQuery("")}>
       <DropdownMenuTrigger asChild>
         <Button 
           variant="ghost" 
-          className="flex items-center gap-2 text-foreground font-semibold text-lg hover:bg-muted/50"
+          className="flex items-center gap-2 text-foreground font-semibold text-lg hover:bg-muted/50 px-2"
         >
-          {currentTitle}
-          <ChevronDown className="h-4 w-4" />
+          {isInConversation ? (
+            <span className="flex items-center gap-1">
+              <span className="text-muted-foreground">Scale</span>
+              <span className="text-muted-foreground">&gt;</span>
+              <span className="max-w-[200px] truncate">{currentTitle}</span>
+            </span>
+          ) : (
+            <>
+              Disparo
+              <ChevronDown className="h-4 w-4" />
+            </>
+          )}
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent 
         align="start" 
-        className="w-72 bg-popover border border-border shadow-lg z-50"
+        className="w-80 bg-popover border border-border shadow-lg z-50"
       >
         <DropdownMenuItem 
           onClick={onNewConversation}
@@ -221,52 +241,74 @@ export function DisparoConversationsMenu({
         {conversations.length > 0 && (
           <>
             <DropdownMenuSeparator />
+            
+            {/* Search field */}
+            <div className="px-2 py-2">
+              <div className="relative">
+                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input 
+                  placeholder="Buscar conversas..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-8 h-8 text-sm bg-muted/50"
+                  onClick={(e) => e.stopPropagation()}
+                  onKeyDown={(e) => e.stopPropagation()}
+                />
+              </div>
+            </div>
+            
             <div className="px-2 py-1.5 text-xs text-muted-foreground font-medium">
-              Conversas salvas
+              Conversas salvas ({filteredConversations.length})
             </div>
             
             <div className="max-h-[300px] overflow-y-auto">
-              {conversations.map((conv) => (
-                <div 
-                  key={conv.id}
-                  className="flex items-center justify-between group hover:bg-muted/50 rounded-sm"
-                >
-                  <DropdownMenuItem 
-                    onClick={() => loadConversation(conv.id)}
-                    className="flex-1 flex items-center gap-2 cursor-pointer pr-1"
-                  >
-                    <MessageSquare className="h-4 w-4 shrink-0 text-muted-foreground" />
-                    <div className="flex-1 min-w-0">
-                      <div className="truncate text-sm">{conv.title}</div>
-                      <div className="text-xs text-muted-foreground">
-                        {format(new Date(conv.updated_at), "dd MMM, HH:mm", { locale: ptBR })}
-                      </div>
-                    </div>
-                  </DropdownMenuItem>
-                  
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button 
-                        variant="ghost" 
-                        size="icon" 
-                        className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity mr-1"
-                        onClick={(e) => e.stopPropagation()}
-                      >
-                        <MoreVertical className="h-4 w-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="bg-popover border border-border z-[60]">
-                      <DropdownMenuItem 
-                        onClick={(e) => deleteConversation(conv.id, e)}
-                        className="text-destructive cursor-pointer"
-                      >
-                        <Trash2 className="h-4 w-4 mr-2" />
-                        Apagar
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
+              {filteredConversations.length === 0 ? (
+                <div className="px-4 py-3 text-sm text-muted-foreground text-center">
+                  Nenhuma conversa encontrada
                 </div>
-              ))}
+              ) : (
+                filteredConversations.map((conv) => (
+                  <div 
+                    key={conv.id}
+                    className="flex items-center justify-between group hover:bg-muted/50 rounded-sm"
+                  >
+                    <DropdownMenuItem 
+                      onClick={() => loadConversation(conv.id)}
+                      className="flex-1 flex items-center gap-2 cursor-pointer pr-1"
+                    >
+                      <MessageSquare className="h-4 w-4 shrink-0 text-muted-foreground" />
+                      <div className="flex-1 min-w-0">
+                        <div className="truncate text-sm">{conv.title}</div>
+                        <div className="text-xs text-muted-foreground">
+                          {format(new Date(conv.updated_at), "dd MMM, HH:mm", { locale: ptBR })}
+                        </div>
+                      </div>
+                    </DropdownMenuItem>
+                    
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity mr-1"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <MoreVertical className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="bg-popover border border-border z-[60]">
+                        <DropdownMenuItem 
+                          onClick={(e) => deleteConversation(conv.id, e)}
+                          className="text-destructive cursor-pointer"
+                        >
+                          <Trash2 className="h-4 w-4 mr-2" />
+                          Apagar
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
+                ))
+              )}
             </div>
           </>
         )}
