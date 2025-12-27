@@ -515,7 +515,7 @@ export default function LeadDetail() {
         </LayoutGroup>
 
         {/* Tab Content */}
-        <div className="mt-4 flex-1 overflow-y-auto max-h-[calc(100vh-280px)]">
+        <div className={`mt-4 flex-1 ${activeTab !== "atividades" ? "overflow-y-auto max-h-[calc(100vh-280px)]" : ""}`}>
           <AnimatePresence mode="wait">
             {activeTab === "atividades" && (
               <motion.div
