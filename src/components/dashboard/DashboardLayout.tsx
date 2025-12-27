@@ -231,16 +231,18 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
         >
           <div className="flex flex-col h-full relative">
             {/* Logo */}
-            <div className="h-14 flex items-center px-3">
-              <img 
-                src={scaleLogo} 
-                alt="Scale Beauty" 
-                className="object-contain transition-all duration-300 ease-out origin-left"
-                style={{ 
-                  height: sidebarExpanded ? 28 : 16,
-                  maxWidth: sidebarExpanded ? 140 : 40,
-                }}
-              />
+            <div className="h-14 flex items-center justify-center px-3">
+              <div className="w-10 h-10 flex items-center justify-center flex-shrink-0">
+                <img 
+                  src={scaleLogo} 
+                  alt="Scale Beauty" 
+                  className="object-contain transition-all duration-300 ease-out"
+                  style={{ 
+                    width: 28,
+                    height: 28,
+                  }}
+                />
+              </div>
             </div>
 
             <nav className="flex-1 overflow-y-auto overflow-x-hidden px-3 py-2">
