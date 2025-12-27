@@ -172,17 +172,17 @@ export default function Equipe() {
         {selectedMember ? (
           <div className="space-y-4 animate-fade-in">
             {/* Header Card */}
-            <div className="bg-gradient-to-br from-slate-800 via-slate-900 to-slate-950 rounded-xl p-6 text-white shadow-lg">
+            <div className="bg-white rounded-xl p-6 border border-slate-100 shadow-sm">
               <div className="flex items-start justify-between">
                 <div className="flex items-center gap-4">
-                  <div className="w-16 h-16 rounded-2xl bg-white/10 backdrop-blur-sm flex items-center justify-center border border-white/20">
-                    <UserCircle className="w-10 h-10 text-white/80" strokeWidth={1} />
+                  <div className="w-16 h-16 rounded-2xl bg-slate-100 flex items-center justify-center">
+                    <UserCircle className="w-10 h-10 text-slate-400" strokeWidth={1} />
                   </div>
                   <div>
-                    <h2 className="text-xl font-semibold text-white">
+                    <h2 className="text-xl font-semibold text-slate-800">
                       {selectedMember.name || "Sem nome"}
                     </h2>
-                    <p className="text-sm text-white/60">
+                    <p className="text-sm text-slate-500">
                       {selectedMember.role ? roleLabels[selectedMember.role] || selectedMember.role : "Sem função"}
                     </p>
                   </div>
@@ -192,7 +192,7 @@ export default function Equipe() {
                     variant="outline"
                     size="sm"
                     onClick={() => setEditingMember(selectedMember)}
-                    className="h-8 bg-white/10 border-white/20 text-white hover:bg-white/20 hover:text-white"
+                    className="h-8"
                   >
                     <Settings2 className="w-4 h-4 mr-1.5" />
                     Permissões
@@ -201,7 +201,7 @@ export default function Equipe() {
                     variant="outline"
                     size="sm"
                     onClick={() => handleDeleteMember(selectedMember.user_id)}
-                    className="h-8 bg-red-500/10 border-red-500/30 text-red-400 hover:bg-red-500/20 hover:text-red-300"
+                    className="h-8 text-destructive hover:text-destructive hover:bg-destructive/10"
                   >
                     <Trash2 className="w-4 h-4" />
                   </Button>
@@ -212,7 +212,7 @@ export default function Equipe() {
             {/* Info and Stats Grid */}
             <div className="grid grid-cols-3 gap-4">
               {/* Contact Block */}
-              <div className="bg-gradient-to-br from-slate-50 to-white rounded-xl p-5 border border-slate-100 shadow-sm">
+              <div className="bg-white rounded-xl p-5 border border-slate-100 shadow-sm">
                 <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-4">Contato</h3>
                 <div className="space-y-4">
                   <div className="flex items-center gap-3">
@@ -242,22 +242,22 @@ export default function Equipe() {
               </div>
 
               {/* Activities Chart Placeholder */}
-              <div className="bg-gradient-to-br from-blue-50 to-white rounded-xl p-5 border border-blue-100 shadow-sm">
-                <h3 className="text-xs font-semibold text-blue-400 uppercase tracking-wider mb-4">Atividades</h3>
+              <div className="bg-white rounded-xl p-5 border border-slate-100 shadow-sm">
+                <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-4">Atividades</h3>
                 <div className="flex flex-col items-center justify-center h-[calc(100%-32px)] text-slate-400">
-                  <div className="w-12 h-12 rounded-xl bg-blue-100/50 flex items-center justify-center mb-3">
-                    <FolderOpen className="w-6 h-6 text-blue-300" />
+                  <div className="w-12 h-12 rounded-xl bg-slate-100 flex items-center justify-center mb-3">
+                    <FolderOpen className="w-6 h-6 text-slate-300" />
                   </div>
                   <p className="text-xs text-slate-400">Sem atividades</p>
                 </div>
               </div>
 
               {/* Performance Chart Placeholder */}
-              <div className="bg-gradient-to-br from-emerald-50 to-white rounded-xl p-5 border border-emerald-100 shadow-sm">
-                <h3 className="text-xs font-semibold text-emerald-400 uppercase tracking-wider mb-4">Desempenho</h3>
+              <div className="bg-white rounded-xl p-5 border border-slate-100 shadow-sm">
+                <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-4">Desempenho</h3>
                 <div className="flex flex-col items-center justify-center h-[calc(100%-32px)] text-slate-400">
-                  <div className="w-12 h-12 rounded-xl bg-emerald-100/50 flex items-center justify-center mb-3">
-                    <FolderOpen className="w-6 h-6 text-emerald-300" />
+                  <div className="w-12 h-12 rounded-xl bg-slate-100 flex items-center justify-center mb-3">
+                    <FolderOpen className="w-6 h-6 text-slate-300" />
                   </div>
                   <p className="text-xs text-slate-400">Sem atividades</p>
                 </div>
@@ -265,7 +265,7 @@ export default function Equipe() {
             </div>
 
             {/* Timeline Chart */}
-            <div className="bg-gradient-to-br from-slate-50 to-white rounded-xl p-5 border border-slate-100 shadow-sm">
+            <div className="bg-white rounded-xl p-5 border border-slate-100 shadow-sm">
               <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-4">Histórico de Atividades</h3>
               <div className="flex flex-col items-center justify-center py-10 text-slate-400">
                 <div className="w-14 h-14 rounded-2xl bg-slate-100 flex items-center justify-center mb-4">
