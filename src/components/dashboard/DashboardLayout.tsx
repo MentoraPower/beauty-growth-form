@@ -648,7 +648,7 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
           }}
           className="hidden lg:block fixed transition-[left] duration-300 ease-out"
         >
-          <div className="h-full overflow-hidden relative rounded-l-2xl py-4 px-6 shadow-sm flex flex-col" style={{ backgroundColor: '#F8F8F8' }}>
+          <div className={cn("h-full overflow-hidden relative rounded-l-2xl shadow-sm flex flex-col", isDisparoActive ? "" : "py-4 px-6")} style={{ backgroundColor: '#F8F8F8' }}>
             <PageTransition>
               <RouteContentMemo>
                 {children}
