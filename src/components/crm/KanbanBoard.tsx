@@ -21,7 +21,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Lead, Pipeline } from "@/types/crm";
 import { triggerWebhook } from "@/lib/webhooks";
 import { trackPipelineMove, trackPositionChange } from "@/lib/leadTracking";
-import { KanbanColumn } from "./KanbanColumn";
+import { VirtualizedKanbanColumn } from "./VirtualizedKanbanColumn";
 import { ListView } from "./ListView";
 import { KanbanCard } from "./KanbanCard";
 import { Button } from "@/components/ui/button";
@@ -39,6 +39,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { TooltipProvider } from "@/components/ui/tooltip";
 import { Calendar } from "@/components/ui/calendar";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -1634,22 +1635,24 @@ export function KanbanBoard() {
                 ))}
               </div>
             ) : (
-              <div className="flex gap-4 overflow-x-auto flex-1 pb-0 min-h-0">
-                {pipelines.map((pipeline) => (
-                  <KanbanColumn
-                    key={pipeline.id}
-                    pipeline={pipeline}
-                    leads={leadsByPipeline.get(pipeline.id) || []}
-                    leadCount={hasActiveFilters || searchQuery ? undefined : pipelineCounts[pipeline.id]}
-                    isOver={overId === pipeline.id}
-                    subOriginId={subOriginId}
-                    activeId={activeId}
-                    dropIndicator={dropIndicator}
-                    activePipelineId={activeLead?.pipeline_id}
-                    tagsMap={tagsMap}
-                  />
-                ))}
-              </div>
+              <TooltipProvider delayDuration={300}>
+                <div className="flex gap-4 overflow-x-auto flex-1 pb-0 min-h-0">
+                  {pipelines.map((pipeline) => (
+                    <VirtualizedKanbanColumn
+                      key={pipeline.id}
+                      pipeline={pipeline}
+                      leads={leadsByPipeline.get(pipeline.id) || []}
+                      leadCount={hasActiveFilters || searchQuery ? undefined : pipelineCounts[pipeline.id]}
+                      isOver={overId === pipeline.id}
+                      subOriginId={subOriginId}
+                      activeId={activeId}
+                      dropIndicator={dropIndicator}
+                      activePipelineId={activeLead?.pipeline_id}
+                      tagsMap={tagsMap}
+                    />
+                  ))}
+                </div>
+              </TooltipProvider>
             )}
 
             <DragOverlay dropAnimation={null}>

@@ -35,6 +35,8 @@ export function AssignMemberDropdown({ leadId, assignedTo, onAssign, size = "def
       if (error) throw new Error(error.message);
       return (data?.members || []) as TeamMember[];
     },
+    staleTime: 60000, // 60 seconds - team members rarely change
+    gcTime: 300000,   // 5 minutes - keep in cache longer
   });
 
   const assignMutation = useMutation({

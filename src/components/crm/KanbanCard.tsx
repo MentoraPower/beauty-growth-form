@@ -1,9 +1,9 @@
-import { memo, useRef } from "react";
-import { useSortable, defaultAnimateLayoutChanges, AnimateLayoutChanges } from "@dnd-kit/sortable";
+import { memo, useRef, useMemo } from "react";
+import { useSortable, AnimateLayoutChanges } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { Lead, LeadTag } from "@/types/crm";
 import { Card, CardContent } from "@/components/ui/card";
-import { Mail, Phone, User, Tags } from "lucide-react";
+import { Mail, User, Tags } from "lucide-react";
 import Instagram from "@/components/icons/Instagram";
 import WhatsApp from "@/components/icons/WhatsApp";
 import { useNavigate, useSearchParams } from "react-router-dom";
@@ -11,7 +11,6 @@ import { differenceInMinutes, differenceInHours, differenceInDays, differenceInW
 import {
   Tooltip,
   TooltipContent,
-  TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import {
@@ -19,7 +18,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { AssignMemberDropdown } from "./AssignMemberDropdown";
+import { LazyAssignMemberDropdown } from "./LazyAssignMemberDropdown";
 
 interface KanbanCardProps {
   lead: Lead;
@@ -73,6 +72,9 @@ export const KanbanCard = memo(function KanbanCard({ lead, isDragging: isDraggin
   const visibleTags = tags.slice(0, 2);
   const extraTags = tags.slice(2);
   const hasExtraTags = extraTags.length > 0;
+  
+  // Memoize time ago to avoid recalculation on every render
+  const timeAgo = useMemo(() => formatTimeAgo(new Date(lead.created_at)), [lead.created_at]);
   
   const {
     attributes,
@@ -188,82 +190,80 @@ export const KanbanCard = memo(function KanbanCard({ lead, isDragging: isDraggin
         
         {/* Icons and time */}
         <div className="flex items-center justify-between">
-          <TooltipProvider delayDuration={200}>
-            <div className="flex items-center gap-2">
-              <AssignMemberDropdown leadId={lead.id} assignedTo={lead.assigned_to} size="sm" />
-              {hasInstagram && (
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <div className="cursor-pointer">
-                      <Instagram className="w-3.5 h-3.5 text-muted-foreground hover:text-foreground transition-colors" />
-                    </div>
-                  </TooltipTrigger>
-                  <TooltipContent side="top" className="text-xs">
-                    <p>@{lead.instagram.replace('@', '')}</p>
-                  </TooltipContent>
-                </Tooltip>
-              )}
-              {hasWhatsapp && (
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <div className="cursor-pointer">
-                      <WhatsApp className="w-3.5 h-3.5 text-muted-foreground hover:text-foreground transition-colors" />
-                    </div>
-                  </TooltipTrigger>
-                  <TooltipContent side="top" className="text-xs">
-                    <p>{lead.whatsapp}</p>
-                  </TooltipContent>
-                </Tooltip>
-              )}
-              {hasEmail && (
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <div className="cursor-pointer">
-                      <Mail className="w-3.5 h-3.5 text-muted-foreground hover:text-foreground transition-colors" />
-                    </div>
-                  </TooltipTrigger>
-                  <TooltipContent side="top" className="text-xs">
-                    <p>{lead.email}</p>
-                  </TooltipContent>
-                </Tooltip>
-              )}
-              {hasExtraTags && (
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <div 
-                      className="cursor-pointer"
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      <Tags 
-                        className="w-3.5 h-3.5 transition-colors hover:opacity-70" 
-                        style={{ color: extraTags[0]?.color }}
-                      />
-                    </div>
-                  </PopoverTrigger>
-                  <PopoverContent 
-                    side="top" 
-                    className="w-auto p-2 bg-background border shadow-lg"
+          <div className="flex items-center gap-2">
+            <LazyAssignMemberDropdown leadId={lead.id} assignedTo={lead.assigned_to} size="sm" />
+            {hasInstagram && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="cursor-pointer">
+                    <Instagram className="w-3.5 h-3.5 text-muted-foreground hover:text-foreground transition-colors" />
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent side="top" className="text-xs">
+                  <p>@{lead.instagram.replace('@', '')}</p>
+                </TooltipContent>
+              </Tooltip>
+            )}
+            {hasWhatsapp && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="cursor-pointer">
+                    <WhatsApp className="w-3.5 h-3.5 text-muted-foreground hover:text-foreground transition-colors" />
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent side="top" className="text-xs">
+                  <p>{lead.whatsapp}</p>
+                </TooltipContent>
+              </Tooltip>
+            )}
+            {hasEmail && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="cursor-pointer">
+                    <Mail className="w-3.5 h-3.5 text-muted-foreground hover:text-foreground transition-colors" />
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent side="top" className="text-xs">
+                  <p>{lead.email}</p>
+                </TooltipContent>
+              </Tooltip>
+            )}
+            {hasExtraTags && (
+              <Popover>
+                <PopoverTrigger asChild>
+                  <div 
+                    className="cursor-pointer"
                     onClick={(e) => e.stopPropagation()}
                   >
-                    <p className="text-xs text-muted-foreground mb-2">Todas as tags</p>
-                    <div className="flex flex-wrap gap-1.5 max-w-[200px]">
-                      {tags.map((tag) => (
-                        <span
-                          key={tag.id}
-                          className="text-[7px] px-2 py-0.5 rounded-full font-semibold text-white uppercase tracking-wide"
-                          style={{ backgroundColor: tag.color }}
-                        >
-                          {tag.name}
-                        </span>
-                      ))}
-                    </div>
-                  </PopoverContent>
-                </Popover>
-              )}
-            </div>
-          </TooltipProvider>
+                    <Tags 
+                      className="w-3.5 h-3.5 transition-colors hover:opacity-70" 
+                      style={{ color: extraTags[0]?.color }}
+                    />
+                  </div>
+                </PopoverTrigger>
+                <PopoverContent 
+                  side="top" 
+                  className="w-auto p-2 bg-background border shadow-lg"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <p className="text-xs text-muted-foreground mb-2">Todas as tags</p>
+                  <div className="flex flex-wrap gap-1.5 max-w-[200px]">
+                    {tags.map((tag) => (
+                      <span
+                        key={tag.id}
+                        className="text-[7px] px-2 py-0.5 rounded-full font-semibold text-white uppercase tracking-wide"
+                        style={{ backgroundColor: tag.color }}
+                      >
+                        {tag.name}
+                      </span>
+                    ))}
+                  </div>
+                </PopoverContent>
+              </Popover>
+            )}
+          </div>
           <span className="text-[10px] text-muted-foreground">
-            {formatTimeAgo(new Date(lead.created_at))}
+            {timeAgo}
           </span>
         </div>
       </CardContent>
