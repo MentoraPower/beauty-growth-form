@@ -105,16 +105,16 @@ export function AddTeamMemberDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[480px] p-0 gap-0 overflow-hidden">
+      <DialogContent className="sm:max-w-[640px] bg-white border-0 shadow-2xl p-0 gap-0 overflow-hidden rounded-2xl">
         {/* Header */}
-        <div className="bg-foreground px-6 py-5">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-background/10 flex items-center justify-center">
-              <UserPlus className="w-5 h-5 text-background" />
+        <div className="px-8 pt-8 pb-6">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center shadow-lg shadow-blue-500/25">
+              <UserPlus className="w-6 h-6 text-white" />
             </div>
             <div>
-              <DialogTitle className="text-background text-lg">Novo membro</DialogTitle>
-              <DialogDescription className="text-background/60 text-sm">
+              <DialogTitle className="text-gray-900 text-xl font-semibold">Novo membro</DialogTitle>
+              <DialogDescription className="text-gray-500 text-sm mt-0.5">
                 Adicione um novo membro à equipe
               </DialogDescription>
             </div>
@@ -122,128 +122,134 @@ export function AddTeamMemberDialog({
         </div>
 
         {/* Form */}
-        <div className="p-6 space-y-5">
-          {/* Name field */}
-          <div className="space-y-2">
-            <Label htmlFor="member-name" className="text-sm font-medium">
-              Nome completo
-            </Label>
-            <div className="relative">
-              <Input
-                id="member-name"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="Digite o nome"
-                className="pl-10 h-11 bg-muted/30 border-border/50 focus:bg-background transition-colors"
-              />
-              <UserPlus className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+        <div className="px-8 pb-6 space-y-5">
+          {/* Two columns for name and email */}
+          <div className="grid grid-cols-2 gap-4">
+            {/* Name field */}
+            <div className="space-y-2">
+              <Label htmlFor="member-name" className="text-sm font-medium text-gray-700">
+                Nome completo
+              </Label>
+              <div className="relative">
+                <Input
+                  id="member-name"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="Digite o nome"
+                  className="pl-10 h-12 bg-gray-50 border-gray-200 rounded-xl focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all text-gray-900 placeholder:text-gray-400"
+                />
+                <UserPlus className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+              </div>
+            </div>
+
+            {/* Email field */}
+            <div className="space-y-2">
+              <Label htmlFor="member-email" className="text-sm font-medium text-gray-700">
+                E-mail
+              </Label>
+              <div className="relative">
+                <Input
+                  id="member-email"
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="email@exemplo.com"
+                  className="pl-10 h-12 bg-gray-50 border-gray-200 rounded-xl focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all text-gray-900 placeholder:text-gray-400"
+                />
+                <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+              </div>
             </div>
           </div>
 
-          {/* Email field */}
-          <div className="space-y-2">
-            <Label htmlFor="member-email" className="text-sm font-medium">
-              E-mail
-            </Label>
-            <div className="relative">
-              <Input
-                id="member-email"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="email@exemplo.com"
-                className="pl-10 h-11 bg-muted/30 border-border/50 focus:bg-background transition-colors"
-              />
-              <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          {/* Two columns for phone and password */}
+          <div className="grid grid-cols-2 gap-4">
+            {/* Phone field */}
+            <div className="space-y-2">
+              <Label htmlFor="member-phone" className="text-sm font-medium text-gray-700">
+                Telefone <span className="text-gray-400 font-normal">(opcional)</span>
+              </Label>
+              <div className="relative">
+                <Input
+                  id="member-phone"
+                  type="tel"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  placeholder="(00) 00000-0000"
+                  className="pl-10 h-12 bg-gray-50 border-gray-200 rounded-xl focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all text-gray-900 placeholder:text-gray-400"
+                />
+                <Phone className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+              </div>
+            </div>
+
+            {/* Password field */}
+            <div className="space-y-2">
+              <Label htmlFor="member-password" className="text-sm font-medium text-gray-700">
+                Senha
+              </Label>
+              <div className="relative">
+                <Input
+                  id="member-password"
+                  type={showPassword ? "text" : "password"}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="Mínimo 6 caracteres"
+                  className="pl-10 pr-10 h-12 bg-gray-50 border-gray-200 rounded-xl focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all text-gray-900 placeholder:text-gray-400"
+                />
+                <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="absolute right-1 top-1/2 -translate-y-1/2 h-10 w-10 hover:bg-gray-100 rounded-lg"
+                  onClick={() => setShowPassword(!showPassword)}
+                >
+                  {showPassword ? (
+                    <EyeOff className="h-4 w-4 text-gray-400" />
+                  ) : (
+                    <Eye className="h-4 w-4 text-gray-400" />
+                  )}
+                </Button>
+              </div>
             </div>
           </div>
 
-          {/* Phone field */}
+          {/* Role field - full width */}
           <div className="space-y-2">
-            <Label htmlFor="member-phone" className="text-sm font-medium">
-              Telefone <span className="text-muted-foreground font-normal">(opcional)</span>
-            </Label>
-            <div className="relative">
-              <Input
-                id="member-phone"
-                type="tel"
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-                placeholder="(00) 00000-0000"
-                className="pl-10 h-11 bg-muted/30 border-border/50 focus:bg-background transition-colors"
-              />
-              <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-            </div>
-          </div>
-
-          {/* Password field */}
-          <div className="space-y-2">
-            <Label htmlFor="member-password" className="text-sm font-medium">
-              Senha
-            </Label>
-            <div className="relative">
-              <Input
-                id="member-password"
-                type={showPassword ? "text" : "password"}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="Mínimo 6 caracteres"
-                className="pl-10 pr-10 h-11 bg-muted/30 border-border/50 focus:bg-background transition-colors"
-              />
-              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
-                onClick={() => setShowPassword(!showPassword)}
-              >
-                {showPassword ? (
-                  <EyeOff className="h-4 w-4 text-muted-foreground" />
-                ) : (
-                  <Eye className="h-4 w-4 text-muted-foreground" />
-                )}
-              </Button>
-            </div>
-          </div>
-
-          {/* Role field */}
-          <div className="space-y-2">
-            <Label className="text-sm font-medium">Função</Label>
+            <Label className="text-sm font-medium text-gray-700">Função</Label>
             <div className="relative">
               <Select value={role} onValueChange={setRole}>
-                <SelectTrigger className="pl-10 h-11 bg-muted/30 border-border/50 focus:bg-background transition-colors">
+                <SelectTrigger className="pl-10 h-12 bg-gray-50 border-gray-200 rounded-xl focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all text-gray-900">
                   <SelectValue placeholder="Selecione a função" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="bg-white border-gray-200 rounded-xl shadow-xl">
                   {roles.map((r) => (
-                    <SelectItem key={r.value} value={r.value} className="py-3">
+                    <SelectItem key={r.value} value={r.value} className="py-3 rounded-lg focus:bg-gray-50">
                       <div className="flex flex-col">
-                        <span className="font-medium">{r.label}</span>
-                        <span className="text-xs text-muted-foreground">{r.description}</span>
+                        <span className="font-medium text-gray-900">{r.label}</span>
+                        <span className="text-xs text-gray-500">{r.description}</span>
                       </div>
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
-              <Briefcase className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+              <Briefcase className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
             </div>
           </div>
         </div>
 
         {/* Footer */}
-        <div className="px-6 py-4 bg-muted/30 border-t border-border/50 flex gap-3">
+        <div className="px-8 py-6 bg-gray-50/80 border-t border-gray-100 flex gap-3">
           <Button
             variant="outline"
             onClick={() => onOpenChange(false)}
-            className="flex-1 h-11"
+            className="flex-1 h-12 rounded-xl border-gray-200 text-gray-700 hover:bg-gray-100 hover:text-gray-900 font-medium"
           >
             Cancelar
           </Button>
           <Button
             onClick={() => createMember.mutate()}
             disabled={createMember.isPending}
-            className="flex-1 h-11 bg-foreground text-background hover:bg-foreground/90"
+            className="flex-1 h-12 rounded-xl bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-medium shadow-lg shadow-blue-500/25 transition-all hover:shadow-xl hover:shadow-blue-500/30"
           >
             {createMember.isPending ? (
               <>
