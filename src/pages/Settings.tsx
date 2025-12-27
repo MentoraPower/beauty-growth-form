@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,10 +10,31 @@ import { cn } from "@/lib/utils";
 import { TeamManagement } from "@/components/settings/TeamManagement";
 
 export default function Settings() {
-  const [activeTab, setActiveTab] = useState<"profile" | "team">("profile");
+  const [searchParams, setSearchParams] = useSearchParams();
+  const tabFromUrl = searchParams.get('tab');
+  const [activeTab, setActiveTab] = useState<"profile" | "team">(tabFromUrl === 'team' ? 'team' : 'profile');
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const queryClient = useQueryClient();
+
+  // Sync activeTab with URL param
+  useEffect(() => {
+    if (tabFromUrl === 'team' && activeTab !== 'team') {
+      setActiveTab('team');
+    } else if (!tabFromUrl && activeTab === 'team') {
+      setActiveTab('profile');
+    }
+  }, [tabFromUrl]);
+
+  // Update URL when tab changes
+  const handleTabChange = (tab: "profile" | "team") => {
+    setActiveTab(tab);
+    if (tab === 'team') {
+      setSearchParams({ tab: 'team' });
+    } else {
+      setSearchParams({});
+    }
+  };
 
   // Check if current user is admin
   const { data: isAdmin } = useQuery({
@@ -103,7 +125,7 @@ export default function Settings() {
         {tabs.map((tab) => (
           <button
             key={tab.id}
-            onClick={() => setActiveTab(tab.id)}
+            onClick={() => handleTabChange(tab.id)}
             className={cn(
               "px-4 py-2.5 text-sm font-medium transition-colors relative",
               activeTab === tab.id
