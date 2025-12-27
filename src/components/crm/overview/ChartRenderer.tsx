@@ -188,78 +188,105 @@ export function ChartRenderer({
       }
       const total = pieData.reduce((acc, cur) => acc + cur.value, 0);
       
-      // Dynamic radius based on height - scales proportionally
-      const baseRadius = Math.min(height * 0.35, 120); // Max outer radius of 120px
-      const outerRadius = Math.max(baseRadius, 40); // Min outer radius of 40px
-      const innerRadius = outerRadius * 0.6; // Inner is 60% of outer for donut effect
+      // Dynamic radius based on height - smaller to make room for labels
+      const baseRadius = Math.min(height * 0.25, 80);
+      const outerRadius = Math.max(baseRadius, 30);
+      const innerRadius = outerRadius * 0.6;
       
       // Dynamic font sizes based on height
-      const totalFontSize = Math.max(Math.min(height * 0.12, 36), 16);
-      const labelFontSize = Math.max(Math.min(height * 0.04, 10), 8);
+      const totalFontSize = Math.max(Math.min(height * 0.09, 24), 12);
+      const labelFontSize = Math.max(Math.min(height * 0.032, 9), 7);
+
+      // Custom label with leader line
+      const renderCustomLabel = ({ cx, cy, midAngle, outerRadius: oR, index, name, value }: any) => {
+        const RADIAN = Math.PI / 180;
+        const sin = Math.sin(-RADIAN * midAngle);
+        const cos = Math.cos(-RADIAN * midAngle);
+        
+        // Start point (on the pie edge)
+        const sx = cx + (oR + 6) * cos;
+        const sy = cy + (oR + 6) * sin;
+        
+        // Middle point
+        const mx = cx + (oR + 20) * cos;
+        const my = cy + (oR + 20) * sin;
+        
+        // End point (horizontal line)
+        const ex = mx + (cos >= 0 ? 1 : -1) * 18;
+        const ey = my;
+        
+        const textAnchor = cos >= 0 ? 'start' : 'end';
+        const color = MODERN_COLORS[index % MODERN_COLORS.length].solid;
+
+        return (
+          <g>
+            {/* Leader line */}
+            <path
+              d={`M${sx},${sy}L${mx},${my}L${ex},${ey}`}
+              stroke={color}
+              strokeWidth={1.5}
+              fill="none"
+              opacity={0.6}
+            />
+            {/* Label text - name and value on same line */}
+            <text
+              x={ex + (cos >= 0 ? 5 : -5)}
+              y={ey}
+              textAnchor={textAnchor}
+              dominantBaseline="central"
+              style={{ fontSize: labelFontSize }}
+            >
+              <tspan className="fill-muted-foreground">{name} </tspan>
+              <tspan className="fill-foreground font-semibold">{value}</tspan>
+            </text>
+          </g>
+        );
+      };
       
       return (
-        <div className="relative w-full h-full flex">
-          {/* Chart */}
-          <div className="flex-1 relative">
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <defs>
-                  {pieData.map((entry, index) => (
-                    <linearGradient key={`gradient-${index}`} id={`pieGradient-${cardId}-${index}`} x1="0" y1="0" x2="1" y2="1">
-                      <stop offset="0%" stopColor={MODERN_COLORS[index % MODERN_COLORS.length].gradient[0]} />
-                      <stop offset="100%" stopColor={MODERN_COLORS[index % MODERN_COLORS.length].gradient[1]} />
-                    </linearGradient>
-                  ))}
-                </defs>
-                <Pie
-                  data={pieData}
-                  cx="50%"
-                  cy="50%"
-                  innerRadius={innerRadius}
-                  outerRadius={outerRadius}
-                  paddingAngle={2}
-                  dataKey="value"
-                  strokeWidth={0}
-                  animationBegin={0}
-                  animationDuration={800}
-                >
-                  {pieData.map((entry, index) => (
-                    <Cell 
-                      key={`cell-${index}`} 
-                      fill={`url(#pieGradient-${cardId}-${index})`}
-                      className="drop-shadow-sm"
-                    />
-                  ))}
-                </Pie>
-                <Tooltip content={<CustomTooltip />} />
-              </PieChart>
-            </ResponsiveContainer>
-            {/* Center total */}
-            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-              <div className="text-center">
-                <p className="font-bold text-foreground" style={{ fontSize: totalFontSize }}>{total}</p>
-                <p className="text-muted-foreground uppercase tracking-wide" style={{ fontSize: labelFontSize }}>Total</p>
-              </div>
+        <div className="relative w-full h-full flex items-center justify-center">
+          <ResponsiveContainer width="100%" height="100%">
+            <PieChart>
+              <defs>
+                {pieData.map((entry, index) => (
+                  <linearGradient key={`gradient-${index}`} id={`pieGradient-${cardId}-${index}`} x1="0" y1="0" x2="1" y2="1">
+                    <stop offset="0%" stopColor={MODERN_COLORS[index % MODERN_COLORS.length].gradient[0]} />
+                    <stop offset="100%" stopColor={MODERN_COLORS[index % MODERN_COLORS.length].gradient[1]} />
+                  </linearGradient>
+                ))}
+              </defs>
+              <Pie
+                data={pieData}
+                cx="50%"
+                cy="50%"
+                innerRadius={innerRadius}
+                outerRadius={outerRadius}
+                paddingAngle={2}
+                dataKey="value"
+                strokeWidth={0}
+                animationBegin={0}
+                animationDuration={800}
+                label={renderCustomLabel}
+                labelLine={false}
+              >
+                {pieData.map((entry, index) => (
+                  <Cell 
+                    key={`cell-${index}`} 
+                    fill={`url(#pieGradient-${cardId}-${index})`}
+                    className="drop-shadow-sm"
+                  />
+                ))}
+              </Pie>
+              <Tooltip content={<CustomTooltip />} />
+            </PieChart>
+          </ResponsiveContainer>
+          {/* Center total */}
+          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+            <div className="text-center">
+              <p className="font-bold text-foreground" style={{ fontSize: totalFontSize }}>{total}</p>
+              <p className="text-muted-foreground uppercase tracking-wide" style={{ fontSize: labelFontSize }}>Total</p>
             </div>
           </div>
-          
-          {/* Legend sidebar */}
-          {isLarge && (
-            <div className="w-[140px] flex flex-col justify-center gap-3 pl-4">
-              {pieData.map((entry, index) => (
-                <div key={index} className="flex flex-col gap-0.5">
-                  <div className="flex items-center gap-2">
-                    <div 
-                      className="w-2.5 h-2.5 rounded-full shrink-0" 
-                      style={{ background: `linear-gradient(135deg, ${MODERN_COLORS[index % MODERN_COLORS.length].gradient[0]}, ${MODERN_COLORS[index % MODERN_COLORS.length].gradient[1]})` }}
-                    />
-                    <span className="text-xs text-muted-foreground truncate">{entry.name}</span>
-                  </div>
-                  <span className="text-lg font-bold text-foreground pl-[18px]">{entry.value}</span>
-                </div>
-              ))}
-            </div>
-          )}
         </div>
       );
     }
