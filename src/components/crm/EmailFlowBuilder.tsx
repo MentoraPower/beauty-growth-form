@@ -1532,23 +1532,15 @@ const AnalyticsNode = ({ id, data, selected }: NodeProps) => {
           "bg-background border transition-all shadow-lg rounded-2xl w-[820px] overflow-hidden border-border"
         )}
       >
-        {/* Gradient Header - Compact */}
-        <div 
-          className={cn(
-            "px-4 py-3 flex items-center justify-between",
-            hasBothConnections ? "bg-gradient-to-r from-orange-600 via-orange-500 to-orange-400" :
-            connectedTypes.email ? "bg-gradient-to-r from-orange-600 via-orange-500 to-orange-400" :
-            connectedTypes.whatsapp ? "bg-gradient-to-r from-green-500 via-emerald-500 to-teal-400" :
-            "bg-gradient-to-r from-orange-600 via-orange-500 to-orange-400"
-          )}
-        >
+        {/* Header - Dark/Neutral */}
+        <div className="px-4 py-3 flex items-center justify-between bg-foreground">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-lg bg-white/20 backdrop-blur-sm flex items-center justify-center shadow-inner">
-              <ChartPie className="w-5 h-5 text-white" />
+            <div className="w-9 h-9 rounded-lg bg-background/10 backdrop-blur-sm flex items-center justify-center shadow-inner">
+              <ChartPie className="w-5 h-5 text-background" />
             </div>
             <div>
-              <h4 className="text-sm font-bold text-white tracking-tight">Análise de Métricas</h4>
-              <p className="text-xs text-white/80">
+              <h4 className="text-sm font-bold text-background tracking-tight">Análise de Métricas</h4>
+              <p className="text-xs text-background/70">
                 {hasBothConnections ? "E-mail & WhatsApp" : 
                  connectedTypes.email ? "Métricas de E-mail" : 
                  connectedTypes.whatsapp ? "Métricas de WhatsApp" : "Conecte para visualizar"}
