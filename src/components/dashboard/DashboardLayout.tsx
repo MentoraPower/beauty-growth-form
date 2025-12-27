@@ -55,15 +55,27 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
   const isAnalizerActive = location.pathname === "/admin/analizer";
   const isEquipeActive = location.pathname === "/admin/equipe";
 
-  // Initialize CRM submenu state from localStorage
-  const [crmSubmenuOpen, setCrmSubmenuOpen] = useState(() => {
+  // Initialize CRM submenu state - always start closed to enable animation
+  const [crmSubmenuOpen, setCrmSubmenuOpen] = useState(false);
+  const hasInitialized = useRef(false);
+
+  // Open submenu with delay after mount to enable smooth animation
+  useEffect(() => {
+    if (hasInitialized.current) return;
+    hasInitialized.current = true;
+
     const saved = localStorage.getItem('crm_submenu_open');
-    if (saved !== null) {
-      return saved === 'true';
+    const shouldBeOpen = saved !== 'false' && 
+      (location.pathname.startsWith("/admin/crm") || location.pathname === "/admin");
+    
+    if (shouldBeOpen) {
+      // Small delay to allow initial render, then animate open
+      const timer = setTimeout(() => {
+        setCrmSubmenuOpen(true);
+      }, 50);
+      return () => clearTimeout(timer);
     }
-    // Default: open if on CRM routes
-    return location.pathname.startsWith("/admin/crm") || location.pathname === "/admin";
-  });
+  }, []);
 
   // Stable onClose callback to prevent re-renders
   const handleCloseSubmenu = useCallback(() => {
@@ -443,7 +455,7 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
           </div>
         </aside>
 
-        {/* CRM Submenu Panel - always mounted, visibility controlled via CSS for smooth transitions */}
+        {/* CRM Submenu Panel - always mounted, animated via transform */}
         <div
           style={{
             left: sidebarCollapsedWidth + 12,
@@ -452,9 +464,8 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
             zIndex: 39,
             pointerEvents: crmSubmenuOpen ? 'auto' : 'none',
             willChange: 'transform',
-            visibility: crmSubmenuOpen ? 'visible' : 'hidden',
           }}
-          className="hidden lg:block fixed top-[24px] bottom-[24px] rounded-r-2xl bg-zinc-900 overflow-hidden transition-[transform,visibility] duration-300 ease-out"
+          className="hidden lg:block fixed top-[24px] bottom-[24px] rounded-r-2xl bg-zinc-900 overflow-hidden transition-transform duration-300 ease-out"
         >
           <div
             className="h-full pl-4 pr-2 transition-opacity duration-200"
