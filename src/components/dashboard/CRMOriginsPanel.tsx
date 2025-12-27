@@ -887,62 +887,64 @@ export function CRMOriginsPanel({ isOpen, onClose, sidebarWidth, embedded = fals
         </div>
       </div>
 
-      {/* Content */}
-      <div className="flex-1 overflow-y-auto px-3 pl-0 pb-3 space-y-1 max-h-[calc(100vh-6rem)]">
-        <DndContext
-          sensors={sensors}
-          collisionDetection={closestCenter}
-          onDragEnd={handleDragEnd}
-        >
-          <SortableContext
-            items={filteredOrigins.map(o => o.id)}
-            strategy={verticalListSortingStrategy}
+      {/* Content - scrollable area that goes under the fixed logo */}
+      <div className="flex-1 flex flex-col overflow-hidden">
+        <div className="flex-1 overflow-y-auto px-3 pl-0 pb-24 space-y-1">
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragEnd={handleDragEnd}
           >
-            {filteredOrigins.map((origin) => {
-              const originSubOrigins = filteredSubOrigins.filter(s => s.origin_id === origin.id);
-              const isOriginExpanded = expandedOrigins.has(origin.id);
-
-              return (
-                <SortableOriginItem
-                  key={origin.id}
-                  origin={origin}
-                  originSubOrigins={originSubOrigins}
-                  isOriginExpanded={isOriginExpanded}
-                  expandedOrigins={expandedOrigins}
-                  toggleOrigin={toggleOrigin}
-                  openEditOriginDialog={openEditOriginDialog}
-                  handleDeleteOrigin={handleDeleteOrigin}
-                  openCreateSubOriginDialog={openCreateSubOriginDialog}
-                  openEditSubOriginDialog={openEditSubOriginDialog}
-                  handleDeleteSubOrigin={handleDeleteSubOrigin}
-                  handleSubOriginClick={handleSubOriginClick}
-                  leadCounts={leadCounts}
-                  currentSubOriginId={currentSubOriginId}
-                  currentCalendarOriginId={currentCalendarOriginId}
-                  userPermissions={userPermissions}
-                />
-              );
-            })}
-          </SortableContext>
-        </DndContext>
-
-        {/* Add Origin Button - only show for admins or users with permission */}
-        {(userPermissions.isAdmin || userPermissions.canCreateOrigins) && (
-          <div className="flex justify-center pt-4 pb-2 px-2">
-            <button
-              onClick={openCreateOriginDialog}
-              className="relative flex items-center justify-center gap-2 py-2.5 px-8 w-full rounded-lg text-xs font-medium transition-all duration-200 hover:scale-[1.02] group bg-transparent border border-dashed border-orange-500/50 hover:border-orange-400/70"
+            <SortableContext
+              items={filteredOrigins.map(o => o.id)}
+              strategy={verticalListSortingStrategy}
             >
-              <Plus className="h-4 w-4 text-orange-400 group-hover:text-orange-300 transition-colors" />
-              <span className="bg-gradient-to-r from-orange-400 to-amber-400 bg-clip-text text-transparent group-hover:from-orange-300 group-hover:to-amber-300 transition-all">
-                Nova Origem
-              </span>
-            </button>
-          </div>
-        )}
+              {filteredOrigins.map((origin) => {
+                const originSubOrigins = filteredSubOrigins.filter(s => s.origin_id === origin.id);
+                const isOriginExpanded = expandedOrigins.has(origin.id);
 
-        {/* Logo Banner */}
-        <div className="px-3 pb-4 pt-2">
+                return (
+                  <SortableOriginItem
+                    key={origin.id}
+                    origin={origin}
+                    originSubOrigins={originSubOrigins}
+                    isOriginExpanded={isOriginExpanded}
+                    expandedOrigins={expandedOrigins}
+                    toggleOrigin={toggleOrigin}
+                    openEditOriginDialog={openEditOriginDialog}
+                    handleDeleteOrigin={handleDeleteOrigin}
+                    openCreateSubOriginDialog={openCreateSubOriginDialog}
+                    openEditSubOriginDialog={openEditSubOriginDialog}
+                    handleDeleteSubOrigin={handleDeleteSubOrigin}
+                    handleSubOriginClick={handleSubOriginClick}
+                    leadCounts={leadCounts}
+                    currentSubOriginId={currentSubOriginId}
+                    currentCalendarOriginId={currentCalendarOriginId}
+                    userPermissions={userPermissions}
+                  />
+                );
+              })}
+            </SortableContext>
+          </DndContext>
+
+          {/* Add Origin Button - only show for admins or users with permission */}
+          {(userPermissions.isAdmin || userPermissions.canCreateOrigins) && (
+            <div className="flex justify-center pt-4 pb-2 px-2">
+              <button
+                onClick={openCreateOriginDialog}
+                className="relative flex items-center justify-center gap-2 py-2.5 px-8 w-full rounded-lg text-xs font-medium transition-all duration-200 hover:scale-[1.02] group bg-transparent border border-dashed border-orange-500/50 hover:border-orange-400/70"
+              >
+                <Plus className="h-4 w-4 text-orange-400 group-hover:text-orange-300 transition-colors" />
+                <span className="bg-gradient-to-r from-orange-400 to-amber-400 bg-clip-text text-transparent group-hover:from-orange-300 group-hover:to-amber-300 transition-all">
+                  Nova Origem
+                </span>
+              </button>
+            </div>
+          )}
+        </div>
+
+        {/* Fixed Logo Banner at bottom */}
+        <div className="absolute bottom-0 left-0 right-0 px-3 pb-4 pt-2 bg-gradient-to-t from-sidebar via-sidebar to-transparent">
           <img 
             src="/scale-logo-sidebar.png" 
             alt="Scale Logo" 
