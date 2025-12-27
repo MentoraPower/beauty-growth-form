@@ -297,7 +297,7 @@ export function OverviewCardComponent({
           >
             <GripVertical className="h-4 w-4" />
           </div>
-          <h3 className="font-medium text-sm text-foreground truncate 
+          <h3 className="font-bold text-sm text-foreground truncate 
                         -ml-4 group-hover:ml-1.5
                         transition-all duration-300 ease-out">{card.title}</h3>
         </div>
