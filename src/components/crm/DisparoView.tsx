@@ -57,12 +57,9 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
             className="w-full max-w-2xl"
           >
             <div className="text-center mb-8">
-              <h2 className="text-2xl font-semibold text-foreground mb-2">
-                Como posso ajudar?
+              <h2 className="text-2xl font-semibold text-foreground">
+                Eai, oque vamos disparar hoje?
               </h2>
-              <p className="text-muted-foreground">
-                Digite sua mensagem para começar uma conversa
-              </p>
             </div>
             <PromptInputBox
               onSend={handleSend}
