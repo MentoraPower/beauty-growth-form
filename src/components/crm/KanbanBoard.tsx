@@ -133,6 +133,7 @@ export function KanbanBoard() {
   const [automationsOpen, setAutomationsOpen] = useState(false);
   const [settingsDialogOpen, setSettingsDialogOpen] = useState(false);
   const [settingsTab, setSettingsTab] = useState<"automations" | "webhooks" | "pipelines">("automations");
+  const [overviewAddCardOpen, setOverviewAddCardOpen] = useState(false);
   const queryClient = useQueryClient();
   const searchTimeoutRef = useRef<number | null>(null);
 
@@ -1500,6 +1501,14 @@ export function KanbanBoard() {
             activeView={activeView} 
             onViewChange={handleViewChange} 
             onSettingsClick={() => setSettingsDialogOpen(true)}
+            extraActions={activeView === "overview" ? (
+              <button
+                onClick={() => setOverviewAddCardOpen(true)}
+                className="px-3 py-1.5 text-xs font-medium rounded-md bg-foreground/5 hover:bg-foreground/10 text-foreground transition-colors"
+              >
+                Adicionar cartão
+              </button>
+            ) : undefined}
           />
           
           {/* Settings Dialog */}
@@ -1642,6 +1651,8 @@ export function KanbanBoard() {
             pipelines={pipelines}
             leadTags={leadTagsRaw}
             subOriginId={subOriginId}
+            addDialogOpen={overviewAddCardOpen}
+            onAddDialogOpenChange={setOverviewAddCardOpen}
           />
         </Suspense>
       )}
