@@ -327,67 +327,39 @@ export function ChartRenderer({
       const maxCount = Math.max(...barData.map(d => d.count), 1);
       
       return (
-        <TooltipProvider delayDuration={100}>
-          <div className="h-full flex flex-col justify-between py-1">
-            {barData.map((item, index) => {
-              const percentage = (item.count / maxCount) * 100;
-              return (
-                <div key={index} className="flex items-center gap-2 flex-1 min-h-0">
-                  {/* Info icon with tooltip */}
-                  <UITooltip>
-                    <TooltipTrigger asChild>
-                      <div className="w-6 h-6 rounded-full bg-muted flex items-center justify-center shrink-0 cursor-help hover:bg-muted-foreground/20 transition-colors">
-                        <Info className="w-3.5 h-3.5 text-muted-foreground" />
-                      </div>
-                    </TooltipTrigger>
-                    <TooltipContent side="right" className="max-w-[200px]">
-                      <p className="font-medium">{item.name}</p>
-                      <p className="text-xs text-muted-foreground">{item.count} leads</p>
-                    </TooltipContent>
-                  </UITooltip>
-                  
-                  {/* Bar - height adapts to available space */}
-                  <div className="flex-1 bg-muted/50 rounded-xl overflow-hidden relative my-1" style={{ height: 'calc(100% - 8px)', minHeight: '32px' }}>
-                    <div 
-                      className="h-full rounded-xl transition-all duration-700 ease-out"
-                      style={{ 
-                        width: `${percentage}%`,
-                        background: `linear-gradient(90deg, ${MODERN_COLORS[index % MODERN_COLORS.length].gradient[1]}, ${MODERN_COLORS[index % MODERN_COLORS.length].gradient[0]})`,
-                      }}
-                    />
-                    {/* Label inside bar */}
-                    <div className="absolute inset-0 flex items-center px-4">
-                      <span className={cn(
-                        "text-sm font-semibold truncate",
-                        percentage > 30 ? "text-white" : "text-foreground"
-                      )}>
-                        {item.name}
-                      </span>
-                    </div>
+        <div className="h-full flex flex-col justify-between py-1">
+          {barData.map((item, index) => {
+            const percentage = (item.count / maxCount) * 100;
+            return (
+              <div key={index} className="flex items-center gap-2 flex-1 min-h-0">
+                {/* Bar - height adapts to available space */}
+                <div className="flex-1 bg-muted/50 rounded-xl overflow-hidden relative my-1" style={{ height: 'calc(100% - 8px)', minHeight: '32px' }}>
+                  <div 
+                    className="h-full rounded-xl transition-all duration-700 ease-out"
+                    style={{ 
+                      width: `${percentage}%`,
+                      background: `linear-gradient(90deg, ${MODERN_COLORS[index % MODERN_COLORS.length].gradient[1]}, ${MODERN_COLORS[index % MODERN_COLORS.length].gradient[0]})`,
+                    }}
+                  />
+                  {/* Label inside bar */}
+                  <div className="absolute inset-0 flex items-center px-4">
+                    <span className={cn(
+                      "text-sm font-semibold truncate",
+                      percentage > 30 ? "text-white" : "text-foreground"
+                    )}>
+                      {item.name}
+                    </span>
                   </div>
-                  
-                  {/* Count */}
-                  <span className="text-base font-bold text-foreground w-10 text-right shrink-0">
-                    {item.count}
-                  </span>
-                  
-                  {/* Info icon right side */}
-                  <UITooltip>
-                    <TooltipTrigger asChild>
-                      <div className="w-6 h-6 rounded-full bg-muted flex items-center justify-center shrink-0 cursor-help hover:bg-muted-foreground/20 transition-colors">
-                        <Info className="w-3.5 h-3.5 text-muted-foreground" />
-                      </div>
-                    </TooltipTrigger>
-                    <TooltipContent side="left" className="max-w-[200px]">
-                      <p className="font-medium">{item.name}</p>
-                      <p className="text-xs text-muted-foreground">{item.count} leads • {Math.round(percentage)}% do total</p>
-                    </TooltipContent>
-                  </UITooltip>
                 </div>
-              );
-            })}
-          </div>
-        </TooltipProvider>
+                
+                {/* Count */}
+                <span className="text-base font-bold text-foreground w-10 text-right shrink-0">
+                  {item.count}
+                </span>
+              </div>
+            );
+          })}
+        </div>
       );
     }
 
