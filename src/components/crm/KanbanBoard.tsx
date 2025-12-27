@@ -1708,19 +1708,27 @@ export function KanbanBoard() {
         </Suspense>
       )}
 
-      {/* Lista View */}
-      {subOriginId && activeView === "lista" && (
-        <ListView
-          pipelines={pipelines}
-          leadsByPipeline={leadsByPipeline}
-          subOriginId={subOriginId}
-          tagsMap={tagsMap}
-        />
+      {/* Lista View - keep mounted when visited, hide with CSS for instant switching */}
+      {subOriginId && (activeView === "lista" || activeView === "quadro") && (
+        <div 
+          className={activeView === "lista" ? "flex-1 min-h-0 flex flex-col" : "hidden"}
+          style={{ display: activeView === "lista" ? undefined : "none" }}
+        >
+          <ListView
+            pipelines={pipelines}
+            leadsByPipeline={leadsByPipeline}
+            subOriginId={subOriginId}
+            tagsMap={tagsMap}
+          />
+        </div>
       )}
 
-      {/* Quadro (Kanban) View */}
-      {activeView === "quadro" && (
-        <div className="flex-1 min-h-0 flex flex-col">
+      {/* Quadro (Kanban) View - keep mounted when visited, hide with CSS for instant switching */}
+      {(activeView === "quadro" || activeView === "lista") && (
+        <div 
+          className={activeView === "quadro" ? "flex-1 min-h-0 flex flex-col" : "hidden"}
+          style={{ display: activeView === "quadro" ? undefined : "none" }}
+        >
           <DndContext
             sensors={sensors}
             collisionDetection={collisionDetection}
@@ -1730,7 +1738,7 @@ export function KanbanBoard() {
             onDragCancel={handleDragCancel}
             measuring={{
               droppable: {
-                strategy: MeasuringStrategy.Always,
+                strategy: MeasuringStrategy.WhileDragging,
               },
             }}
           >
