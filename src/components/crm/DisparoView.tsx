@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { PromptInputBox } from "@/components/ui/ai-prompt-box";
 import { motion } from "framer-motion";
+import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import { DispatchProgressTable } from "./DispatchProgressTable";
 import disparoLogo from "@/assets/disparo-logo.png";
@@ -356,11 +357,7 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
       {/* When no messages, center the input */}
       {!hasMessages ? (
         <div className="flex-1 flex items-center justify-center p-6">
-          <motion.div 
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="w-full max-w-2xl"
-          >
+          <div className="w-full max-w-2xl">
             <div className="text-center mb-8">
               <div className="flex items-center justify-center gap-3">
                 <img src={disparoLogo} alt="Logo" className="w-6 h-6" />
@@ -377,7 +374,7 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
             <p className="text-xs text-muted-foreground text-center mt-3">
               A Scale pode cometer erros. Confira informações importantes.
             </p>
-          </motion.div>
+          </div>
         </div>
       ) : (
         <>
@@ -405,19 +402,13 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
                 </div>
               ))}
               {isLoading && messages[messages.length - 1]?.role !== "assistant" && (
-                <motion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  className="flex justify-start"
-                >
-                  <div className="p-4 rounded-2xl">
-                    <div className="flex gap-1">
-                      <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: "0ms" }} />
-                      <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: "150ms" }} />
-                      <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: "300ms" }} />
-                    </div>
+                <div className="flex justify-start">
+                  <div className="space-y-2 w-[60%]">
+                    <Skeleton className="h-4 w-full" />
+                    <Skeleton className="h-4 w-[80%]" />
+                    <Skeleton className="h-4 w-[60%]" />
                   </div>
-                </motion.div>
+                </div>
               )}
               <div ref={messagesEndRef} />
             </div>
