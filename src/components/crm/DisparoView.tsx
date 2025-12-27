@@ -609,12 +609,9 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
                 </div>
               ))}
               {isLoading && messages[messages.length - 1]?.role !== "assistant" && (
-                <div className="flex justify-start">
-                  <div className="space-y-2 w-[60%]">
-                    <Skeleton className="h-4 w-full" />
-                    <Skeleton className="h-4 w-[80%]" />
-                    <Skeleton className="h-4 w-[60%]" />
-                  </div>
+                <div className="flex items-center gap-2 text-muted-foreground text-sm">
+                  <div className="w-1.5 h-1.5 bg-muted-foreground/60 rounded-full animate-pulse" />
+                  <span>pensando...</span>
                 </div>
               )}
               <div ref={messagesEndRef} />
