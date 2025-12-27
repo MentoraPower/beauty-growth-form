@@ -21,7 +21,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { toast } from "sonner";
-import { Loader2, Eye, EyeOff, UserCog, Mail, Lock, Briefcase, User } from "lucide-react";
+import { Loader2, Eye, EyeOff, Mail, Lock, Briefcase, User } from "lucide-react";
 
 interface TeamMember {
   id: string;
@@ -195,182 +195,190 @@ export function EditPermissionsDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[520px] p-0 gap-0 overflow-hidden max-h-[90vh]">
+      <DialogContent className="sm:max-w-[580px] bg-white border-0 shadow-2xl p-0 gap-0 overflow-hidden rounded-xl max-h-[90vh]">
         {/* Header */}
-        <div className="bg-foreground px-6 py-5">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-background/10 flex items-center justify-center">
-              <UserCog className="w-5 h-5 text-background" />
-            </div>
-            <div>
-              <DialogTitle className="text-background text-lg">Editar membro</DialogTitle>
-              <DialogDescription className="text-background/60 text-sm">
-                {member.name || member.email}
-              </DialogDescription>
-            </div>
+        <div className="px-6 pt-6 pb-4">
+          <div>
+            <DialogTitle className="text-gray-900 text-base font-semibold">Editar membro</DialogTitle>
+            <DialogDescription className="text-gray-500 text-xs mt-0.5">
+              {member.name || member.email}
+            </DialogDescription>
           </div>
         </div>
 
         {/* Form */}
-        <div className="p-6 space-y-5 overflow-y-auto max-h-[60vh]">
-          {/* Name */}
-          <div className="space-y-2">
-            <Label htmlFor="edit-name" className="text-sm font-medium">Nome</Label>
-            <div className="relative">
-              <Input
-                id="edit-name"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="Nome do membro"
-                className="pl-10 h-11 bg-muted/30 border-border/50 focus:bg-background transition-colors"
-              />
-              <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+        <div className="px-6 pb-5 space-y-4 overflow-y-auto max-h-[60vh]">
+          {/* Two columns for name and email */}
+          <div className="grid grid-cols-2 gap-3">
+            {/* Name */}
+            <div className="space-y-1.5">
+              <Label htmlFor="edit-name" className="text-xs font-medium text-gray-600">Nome</Label>
+              <div className="relative">
+                <Input
+                  id="edit-name"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="Nome do membro"
+                  className="pl-8 h-9 text-sm bg-gray-50 border-transparent rounded-lg focus:bg-white focus:border-transparent focus:ring-0 focus:outline-none transition-all text-gray-900 placeholder:text-gray-400"
+                />
+                <User className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
+              </div>
+            </div>
+
+            {/* Email */}
+            <div className="space-y-1.5">
+              <Label htmlFor="edit-email" className="text-xs font-medium text-gray-600">E-mail</Label>
+              <div className="relative">
+                <Input
+                  id="edit-email"
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="email@exemplo.com"
+                  className="pl-8 h-9 text-sm bg-gray-50 border-transparent rounded-lg focus:bg-white focus:border-transparent focus:ring-0 focus:outline-none transition-all text-gray-900 placeholder:text-gray-400"
+                />
+                <Mail className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
+              </div>
             </div>
           </div>
 
-          {/* Email */}
-          <div className="space-y-2">
-            <Label htmlFor="edit-email" className="text-sm font-medium">E-mail</Label>
-            <div className="relative">
-              <Input
-                id="edit-email"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="email@exemplo.com"
-                className="pl-10 h-11 bg-muted/30 border-border/50 focus:bg-background transition-colors"
-              />
-              <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          {/* Two columns for password and role */}
+          <div className="grid grid-cols-2 gap-3">
+            {/* Password */}
+            <div className="space-y-1.5">
+              <Label htmlFor="edit-password" className="text-xs font-medium text-gray-600">
+                Nova senha <span className="text-gray-400 font-normal">(opcional)</span>
+              </Label>
+              <div className="relative">
+                <Input
+                  id="edit-password"
+                  type={showPassword ? "text" : "password"}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="Mínimo 6 caracteres"
+                  className="pl-8 pr-8 h-9 text-sm bg-gray-50 border-transparent rounded-lg focus:bg-white focus:border-transparent focus:ring-0 focus:outline-none transition-all text-gray-900 placeholder:text-gray-400"
+                />
+                <Lock className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="absolute right-0.5 top-1/2 -translate-y-1/2 h-8 w-8 hover:bg-gray-100 rounded-md"
+                  onClick={() => setShowPassword(!showPassword)}
+                >
+                  {showPassword ? (
+                    <EyeOff className="h-3.5 w-3.5 text-gray-400" />
+                  ) : (
+                    <Eye className="h-3.5 w-3.5 text-gray-400" />
+                  )}
+                </Button>
+              </div>
             </div>
-          </div>
 
-          {/* Password */}
-          <div className="space-y-2">
-            <Label htmlFor="edit-password" className="text-sm font-medium">
-              Nova senha <span className="text-muted-foreground font-normal">(deixe em branco para manter)</span>
-            </Label>
-            <div className="relative">
-              <Input
-                id="edit-password"
-                type={showPassword ? "text" : "password"}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="Mínimo 6 caracteres"
-                className="pl-10 pr-10 h-11 bg-muted/30 border-border/50 focus:bg-background transition-colors"
-              />
-              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
-                onClick={() => setShowPassword(!showPassword)}
-              >
-                {showPassword ? (
-                  <EyeOff className="h-4 w-4 text-muted-foreground" />
-                ) : (
-                  <Eye className="h-4 w-4 text-muted-foreground" />
-                )}
-              </Button>
-            </div>
-          </div>
-
-          {/* Role */}
-          <div className="space-y-2">
-            <Label className="text-sm font-medium">Função</Label>
-            <div className="relative">
-              <Select value={role} onValueChange={setRole}>
-                <SelectTrigger className="pl-10 h-11 bg-muted/30 border-border/50 focus:bg-background transition-colors">
-                  <SelectValue placeholder="Selecione a função" />
-                </SelectTrigger>
-                <SelectContent>
-                  {roles.map((r) => (
-                    <SelectItem key={r.value} value={r.value}>
-                      {r.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <Briefcase className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+            {/* Role */}
+            <div className="space-y-1.5">
+              <Label className="text-xs font-medium text-gray-600">Função</Label>
+              <div className="relative">
+                <Select value={role} onValueChange={setRole}>
+                  <SelectTrigger className="pl-8 h-9 text-sm bg-gray-50 border-transparent rounded-lg focus:bg-white focus:border-transparent focus:ring-0 focus:outline-none transition-all text-gray-900">
+                    <SelectValue placeholder="Selecione" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-white border-gray-200 rounded-lg shadow-xl">
+                    {roles.map((r) => (
+                      <SelectItem key={r.value} value={r.value} className="text-sm rounded-md focus:bg-gray-50">
+                        {r.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Briefcase className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400 pointer-events-none" />
+              </div>
             </div>
           </div>
 
           {/* Show permissions only for non-admin roles */}
           {role !== "admin" && (
             <>
-              <div className="pt-2 border-t border-border">
-                <p className="text-sm font-medium mb-4">Permissões</p>
+              <div className="pt-3 border-t border-gray-100">
+                <p className="text-xs font-medium text-gray-600 mb-3">Permissões</p>
 
-                {/* WhatsApp Access */}
-                <div className="flex items-center justify-between p-3 rounded-lg border border-border/50 bg-muted/20 mb-3">
-                  <div>
-                    <Label className="font-medium text-sm">Acesso ao WhatsApp</Label>
-                    <p className="text-xs text-muted-foreground">
-                      Permite acessar a página de WhatsApp
-                    </p>
+                {/* Permission switches in a grid */}
+                <div className="grid grid-cols-1 gap-2">
+                  {/* WhatsApp Access */}
+                  <div className="flex items-center justify-between p-2.5 rounded-lg bg-gray-50">
+                    <div>
+                      <Label className="font-medium text-xs text-gray-700">Acesso ao WhatsApp</Label>
+                      <p className="text-[10px] text-gray-500">
+                        Permite acessar a página de WhatsApp
+                      </p>
+                    </div>
+                    <Switch
+                      checked={canAccessWhatsapp}
+                      onCheckedChange={setCanAccessWhatsapp}
+                      className="scale-90"
+                    />
                   </div>
-                  <Switch
-                    checked={canAccessWhatsapp}
-                    onCheckedChange={setCanAccessWhatsapp}
-                  />
-                </div>
 
-                {/* Create Origins Permission */}
-                <div className="flex items-center justify-between p-3 rounded-lg border border-border/50 bg-muted/20 mb-3">
-                  <div>
-                    <Label className="font-medium text-sm">Criar Origens</Label>
-                    <p className="text-xs text-muted-foreground">
-                      Permite criar novas origens no CRM
-                    </p>
+                  {/* Create Origins Permission */}
+                  <div className="flex items-center justify-between p-2.5 rounded-lg bg-gray-50">
+                    <div>
+                      <Label className="font-medium text-xs text-gray-700">Criar Origens</Label>
+                      <p className="text-[10px] text-gray-500">
+                        Permite criar novas origens no CRM
+                      </p>
+                    </div>
+                    <Switch
+                      checked={canCreateOrigins}
+                      onCheckedChange={setCanCreateOrigins}
+                      className="scale-90"
+                    />
                   </div>
-                  <Switch
-                    checked={canCreateOrigins}
-                    onCheckedChange={setCanCreateOrigins}
-                  />
-                </div>
 
-                {/* Create Sub-Origins Permission */}
-                <div className="flex items-center justify-between p-3 rounded-lg border border-border/50 bg-muted/20">
-                  <div>
-                    <Label className="font-medium text-sm">Criar Sub-origens</Label>
-                    <p className="text-xs text-muted-foreground">
-                      Permite criar novas sub-origens no CRM
-                    </p>
+                  {/* Create Sub-Origins Permission */}
+                  <div className="flex items-center justify-between p-2.5 rounded-lg bg-gray-50">
+                    <div>
+                      <Label className="font-medium text-xs text-gray-700">Criar Sub-origens</Label>
+                      <p className="text-[10px] text-gray-500">
+                        Permite criar novas sub-origens no CRM
+                      </p>
+                    </div>
+                    <Switch
+                      checked={canCreateSubOrigins}
+                      onCheckedChange={setCanCreateSubOrigins}
+                      className="scale-90"
+                    />
                   </div>
-                  <Switch
-                    checked={canCreateSubOrigins}
-                    onCheckedChange={setCanCreateSubOrigins}
-                  />
                 </div>
               </div>
 
               {/* Origins Access */}
-              <div className="space-y-3">
-                <Label className="font-medium text-sm">Origens CRM</Label>
-                <p className="text-xs text-muted-foreground">
+              <div className="space-y-2">
+                <Label className="font-medium text-xs text-gray-600">Origens CRM</Label>
+                <p className="text-[10px] text-gray-500">
                   Selecione as origens que o membro pode acessar
                 </p>
-                <div className="space-y-2 p-3 rounded-lg border border-border/50 bg-muted/20">
+                <div className="space-y-1.5 p-2.5 rounded-lg bg-gray-50 max-h-32 overflow-y-auto">
                   {origins?.map((origin) => (
                     <div
                       key={origin.id}
-                      className="flex items-center space-x-3"
+                      className="flex items-center space-x-2"
                     >
                       <Checkbox
                         id={`origin-${origin.id}`}
                         checked={selectedOrigins.includes(origin.id)}
                         onCheckedChange={() => toggleOrigin(origin.id)}
+                        className="h-3.5 w-3.5"
                       />
                       <label
                         htmlFor={`origin-${origin.id}`}
-                        className="text-sm cursor-pointer"
+                        className="text-xs text-gray-700 cursor-pointer"
                       >
                         {origin.nome}
                       </label>
                     </div>
                   ))}
                   {(!origins || origins.length === 0) && (
-                    <p className="text-sm text-muted-foreground">
+                    <p className="text-xs text-gray-500">
                       Nenhuma origem cadastrada
                     </p>
                   )}
@@ -379,12 +387,12 @@ export function EditPermissionsDialog({
 
               {/* Sub-Origins Access */}
               {selectedOrigins.length > 0 && (
-                <div className="space-y-3">
-                  <Label className="font-medium text-sm">Sub-origens CRM</Label>
-                  <p className="text-xs text-muted-foreground">
+                <div className="space-y-2">
+                  <Label className="font-medium text-xs text-gray-600">Sub-origens CRM</Label>
+                  <p className="text-[10px] text-gray-500">
                     Selecione as sub-origens que o membro pode acessar
                   </p>
-                  <div className="space-y-2 p-3 rounded-lg border border-border/50 bg-muted/20">
+                  <div className="space-y-1.5 p-2.5 rounded-lg bg-gray-50 max-h-32 overflow-y-auto">
                     {filteredSubOrigins?.map((subOrigin) => {
                       const origin = origins?.find(
                         (o) => o.id === subOrigin.origin_id
@@ -392,16 +400,17 @@ export function EditPermissionsDialog({
                       return (
                         <div
                           key={subOrigin.id}
-                          className="flex items-center space-x-3"
+                          className="flex items-center space-x-2"
                         >
                           <Checkbox
                             id={`suborigin-${subOrigin.id}`}
                             checked={selectedSubOrigins.includes(subOrigin.id)}
                             onCheckedChange={() => toggleSubOrigin(subOrigin.id)}
+                            className="h-3.5 w-3.5"
                           />
                           <label
                             htmlFor={`suborigin-${subOrigin.id}`}
-                            className="text-sm cursor-pointer"
+                            className="text-xs text-gray-700 cursor-pointer"
                           >
                             {origin?.nome} → {subOrigin.nome}
                           </label>
@@ -409,8 +418,8 @@ export function EditPermissionsDialog({
                       );
                     })}
                     {(!filteredSubOrigins || filteredSubOrigins.length === 0) && (
-                      <p className="text-sm text-muted-foreground">
-                        Nenhuma sub-origem disponível para as origens selecionadas
+                      <p className="text-xs text-gray-500">
+                        Nenhuma sub-origem disponível
                       </p>
                     )}
                   </div>
@@ -421,22 +430,22 @@ export function EditPermissionsDialog({
         </div>
 
         {/* Footer */}
-        <div className="px-6 py-4 bg-muted/30 border-t border-border/50 flex gap-3">
+        <div className="px-6 py-4 bg-gray-50/80 border-t border-gray-100 flex gap-2">
           <Button
             variant="outline"
             onClick={() => onOpenChange(false)}
-            className="flex-1 h-11"
+            className="flex-1 h-9 text-sm rounded-lg border-gray-200 text-gray-600 hover:bg-gray-100 hover:text-gray-900"
           >
             Cancelar
           </Button>
           <Button
             onClick={() => saveMember.mutate()}
             disabled={saveMember.isPending}
-            className="flex-1 h-11 bg-foreground text-background hover:bg-foreground/90"
+            className="flex-1 h-9 text-sm rounded-lg bg-gray-900 hover:bg-gray-800 text-white"
           >
             {saveMember.isPending ? (
               <>
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                <Loader2 className="w-3.5 h-3.5 mr-2 animate-spin" />
                 Salvando...
               </>
             ) : (
