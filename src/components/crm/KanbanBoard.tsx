@@ -508,7 +508,8 @@ export function KanbanBoard() {
         window.clearTimeout(invalidateLeadsTimeoutRef.current);
       }
       invalidateLeadsTimeoutRef.current = window.setTimeout(() => {
-        queryClient.invalidateQueries({ queryKey: ["crm-leads", subOriginId] });
+        // Use the correct queryKey that matches the data fetch
+        queryClient.invalidateQueries({ queryKey: ["crm-leads-with-tags", subOriginId] });
         // Also invalidate pipeline counts to keep them in sync
         queryClient.invalidateQueries({ queryKey: ["pipeline-counts", subOriginId] });
         invalidateLeadsTimeoutRef.current = null;
@@ -772,9 +773,9 @@ export function KanbanBoard() {
           }
           
           // Also update react-query cache to prevent refetch from overwriting
-          queryClient.setQueryData<Lead[]>(["crm-leads", subOriginId], (oldData) => {
+          queryClient.setQueryData(["crm-leads-with-tags", subOriginId], (oldData: any) => {
             if (!oldData) return oldData;
-            return oldData.map((l) => {
+            return oldData.map((l: any) => {
               const update = updates.find((u) => u.id === l.id);
               return update ? { ...l, ordem: update.ordem } : l;
             });
@@ -782,7 +783,7 @@ export function KanbanBoard() {
         } catch (error) {
           console.error("Erro ao reordenar leads:", error);
           toast.error("Erro ao reordenar leads");
-          queryClient.invalidateQueries({ queryKey: ["crm-leads", subOriginId] });
+          queryClient.invalidateQueries({ queryKey: ["crm-leads-with-tags", subOriginId] });
         } finally {
           // Clear reordering flag after a short delay to let DB sync
           setTimeout(() => { isReorderingRef.current = false; }, 500);
@@ -1081,15 +1082,25 @@ export function KanbanBoard() {
   };
 
   // Memoize leads grouped by pipeline for Kanban view
-  const leadsByPipeline = useMemo(() => {
+  // Also track leads with null/invalid pipeline_id
+  const { leadsByPipeline, orphanLeads } = useMemo(() => {
     const map = new Map<string, Lead[]>();
+    const orphans: Lead[] = [];
+    const pipelineIds = new Set(pipelines.map(p => p.id));
+    
     pipelines.forEach(p => map.set(p.id, []));
+    
     displayLeads.forEach(lead => {
-      if (lead.pipeline_id) {
+      if (lead.pipeline_id && pipelineIds.has(lead.pipeline_id)) {
+        // Lead has valid pipeline
         const arr = map.get(lead.pipeline_id);
         if (arr) arr.push(lead);
+      } else {
+        // Lead has null pipeline_id or pipeline_id doesn't exist in current pipelines
+        orphans.push(lead);
       }
     });
+    
     // Sort each pipeline's leads
     map.forEach((pipelineLeads) => {
       const hasManualOrder = pipelineLeads.some((l) => (l.ordem ?? 0) !== 0);
@@ -1103,8 +1114,22 @@ export function KanbanBoard() {
         return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
       });
     });
-    return map;
+    
+    // Sort orphan leads by created_at (newest first)
+    orphans.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+    
+    return { leadsByPipeline: map, orphanLeads: orphans };
   }, [displayLeads, pipelines]);
+
+  // Create a virtual "orphan" pipeline for display
+  const orphanPipeline: Pipeline | null = orphanLeads.length > 0 ? {
+    id: "__orphan__",
+    nome: "Sem pipeline",
+    cor: "#9ca3af",
+    ordem: -1,
+    sub_origin_id: subOriginId,
+    created_at: new Date().toISOString(),
+  } : null;
 
   // Check if sub-origin doesn't exist (after loading completes)
   if (subOriginId && !isLoadingSubOrigin && !currentSubOrigin) {
@@ -1659,6 +1684,22 @@ export function KanbanBoard() {
             ) : (
               <TooltipProvider delayDuration={300}>
                 <div className="flex gap-4 overflow-x-auto flex-1 pb-0 min-h-0">
+                  {/* Orphan leads column (leads with null or invalid pipeline_id) */}
+                  {orphanPipeline && (
+                    <VirtualizedKanbanColumn
+                      key="__orphan__"
+                      pipeline={orphanPipeline}
+                      leads={orphanLeads}
+                      leadCount={orphanLeads.length}
+                      isOver={overId === "__orphan__"}
+                      subOriginId={subOriginId}
+                      activeId={activeId}
+                      dropIndicator={dropIndicator}
+                      activePipelineId={activeLead?.pipeline_id}
+                      tagsMap={tagsMap}
+                      teamMembersMap={teamMembersMap}
+                    />
+                  )}
                   {pipelines.map((pipeline) => (
                     <VirtualizedKanbanColumn
                       key={pipeline.id}

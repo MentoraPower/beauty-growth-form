@@ -1,4 +1,4 @@
-import { memo, useRef, useCallback } from "react";
+import { memo, useRef, useCallback, useEffect } from "react";
 import { useDroppable } from "@dnd-kit/core";
 import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { useVirtualizer } from "@tanstack/react-virtual";
@@ -41,14 +41,16 @@ export const VirtualizedKanbanColumn = memo(function VirtualizedKanbanColumn({
   teamMembersMap,
 }: VirtualizedKanbanColumnProps) {
   const displayCount = leadCount !== undefined ? leadCount : leads.length;
-  const parentRef = useRef<HTMLDivElement>(null);
   
-  const { setNodeRef } = useDroppable({
+  // Separate refs for droppable and scroll container
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  
+  const { setNodeRef: setDroppableRef, isOver: isOverDroppable } = useDroppable({
     id: pipeline.id,
   });
 
   // Check if column is being targeted for drop
-  const isTargeted = isOver || (dropIndicator?.pipelineId === pipeline.id);
+  const isTargeted = isOver || isOverDroppable || (dropIndicator?.pipelineId === pipeline.id);
   
   // Check if this is a cross-pipeline drag
   const isCrossPipelineDrag = activeId && activePipelineId && activePipelineId !== pipeline.id;
@@ -56,26 +58,28 @@ export const VirtualizedKanbanColumn = memo(function VirtualizedKanbanColumn({
   // Only show placeholder in EMPTY columns
   const showTopPlaceholder = isTargeted && isCrossPipelineDrag && leads.length === 0;
 
-  // Virtual list setup
+  // Virtual list setup - use the scroll container ref
   const virtualizer = useVirtualizer({
     count: leads.length,
-    getScrollElement: () => parentRef.current,
+    getScrollElement: () => scrollContainerRef.current,
     estimateSize: useCallback(() => CARD_HEIGHT + CARD_GAP, []),
-    overscan: 5, // Render 5 extra items above/below viewport
+    overscan: 8, // Increase overscan to render more items above/below viewport
   });
 
-  const virtualItems = virtualizer.getVirtualItems();
+  // Force re-measure when leads change
+  useEffect(() => {
+    virtualizer.measure();
+  }, [leads.length, virtualizer]);
 
-  // Combine refs for droppable and scroll container
-  const setRefs = useCallback((node: HTMLDivElement | null) => {
-    setNodeRef(node);
-    (parentRef as React.MutableRefObject<HTMLDivElement | null>).current = node;
-  }, [setNodeRef]);
+  const virtualItems = virtualizer.getVirtualItems();
+  const totalSize = virtualizer.getTotalSize();
 
   return (
-    <div className="flex-shrink-0 w-80 flex flex-col min-h-0 relative">
+    <div 
+      ref={setDroppableRef}
+      className="flex-shrink-0 w-80 flex flex-col min-h-0 relative"
+    >
       <div
-        ref={setRefs}
         className={`flex-1 min-h-0 rounded-xl rounded-b-none border border-b-0 transition-colors duration-100 flex flex-col overflow-hidden ${
           isTargeted
             ? "bg-black/[0.02] border-black/15 border-dashed"
@@ -97,10 +101,11 @@ export const VirtualizedKanbanColumn = memo(function VirtualizedKanbanColumn({
           <InlineAddContact pipelineId={pipeline.id} subOriginId={subOriginId || null} />
         </div>
 
-        {/* Virtualized Cards container */}
+        {/* Virtualized Cards container - this is the scroll container */}
         <div 
-          ref={parentRef}
+          ref={scrollContainerRef}
           className="flex-1 overflow-y-auto p-3"
+          style={{ minHeight: 0 }} // Important for flex child scrolling
         >
           <SortableContext
             items={leads.map(l => l.id)}
@@ -116,16 +121,19 @@ export const VirtualizedKanbanColumn = memo(function VirtualizedKanbanColumn({
             {leads.length > 0 ? (
               <div
                 style={{
-                  height: `${virtualizer.getTotalSize()}px`,
+                  height: `${totalSize}px`,
                   width: '100%',
                   position: 'relative',
                 }}
               >
                 {virtualItems.map((virtualItem) => {
                   const lead = leads[virtualItem.index];
+                  if (!lead) return null; // Safety check
+                  
                   return (
                     <div
                       key={lead.id}
+                      data-index={virtualItem.index}
                       style={{
                         position: 'absolute',
                         top: 0,
