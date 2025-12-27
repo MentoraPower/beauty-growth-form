@@ -515,7 +515,7 @@ export default function LeadDetail() {
         </LayoutGroup>
 
         {/* Tab Content */}
-        <div className={`mt-4 flex-1 ${activeTab !== "atividades" ? "overflow-y-auto max-h-[calc(100vh-280px)]" : ""}`}>
+        <div className="mt-4 flex-1">
           <AnimatePresence mode="wait">
             {activeTab === "atividades" && (
               <motion.div
@@ -546,7 +546,7 @@ export default function LeadDetail() {
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
                 transition={{ duration: 0.15 }}
-                className="space-y-6"
+                className="h-[calc(100vh-280px)] overflow-y-auto"
               >
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {/* Contact Info */}
@@ -667,6 +667,7 @@ export default function LeadDetail() {
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
                 transition={{ duration: 0.15 }}
+                className="h-[calc(100vh-280px)] overflow-y-auto"
               >
                 <LeadTrackingTimeline
                   leadId={lead.id}
