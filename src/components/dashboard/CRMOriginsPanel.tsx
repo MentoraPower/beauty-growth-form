@@ -982,7 +982,7 @@ export function CRMOriginsPanel({ isOpen, onClose, sidebarWidth, embedded = fals
         <img 
           src="/scale-logo-sidebar.png" 
           alt="Scale Logo" 
-          className="w-full rounded-lg"
+          className="w-full rounded-2xl"
         />
         
         {/* Vectar IA Bar */}
