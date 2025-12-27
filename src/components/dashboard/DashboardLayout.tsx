@@ -327,12 +327,24 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
                 <div className="my-2 border-t border-white/10" />
 
                 {/* Analizer */}
-                <div className="flex items-center h-10 rounded-lg text-white/50">
+                <button
+                  onClick={() => {
+                    setCrmSubmenuOpen(false);
+                    navigate('/admin/analizer');
+                  }}
+                  className={cn(
+                    "relative flex items-center h-10 rounded-lg transition-all duration-200",
+                    location.pathname === '/admin/analizer'
+                      ? "bg-white/10 text-white before:absolute before:-left-3 before:top-1/2 before:-translate-y-1/2 before:h-[70%] before:w-1.5 before:rounded-r-full before:bg-gradient-to-b before:from-orange-500 before:to-amber-500"
+                      : "text-white/50 hover:bg-white/5 hover:text-white/70"
+                  )}
+                >
                   <div className="w-10 flex items-center justify-center flex-shrink-0">
                     <img 
                       src={analizerLogo} 
                       alt="Analizer" 
-                      className="w-5 h-5 object-contain opacity-50"
+                      className="w-5 h-5 object-contain"
+                      style={{ opacity: location.pathname === '/admin/analizer' ? 1 : 0.5 }}
                     />
                   </div>
                   <span 
@@ -343,7 +355,7 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
                   >
                     Analizer
                   </span>
-                </div>
+                </button>
               </div>
             </nav>
 
