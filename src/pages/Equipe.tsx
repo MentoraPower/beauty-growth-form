@@ -146,21 +146,21 @@ export default function Equipe() {
   }
 
   return (
-    <div className="flex gap-6 h-[calc(100vh-6rem)]">
+    <div className="flex gap-4 h-[calc(100vh-6rem)]">
       {/* Left Side - Members List */}
-      <div className="w-[280px] flex-shrink-0 flex flex-col">
-        <div className="flex items-center justify-between mb-4">
-          <h1 className="text-lg font-semibold text-foreground">Equipe</h1>
+      <div className="w-[240px] flex-shrink-0 flex flex-col bg-white border rounded-lg" style={{ borderColor: '#00000010' }}>
+        <div className="flex items-center justify-between p-3 border-b" style={{ borderColor: '#00000010' }}>
+          <h1 className="text-sm font-semibold text-foreground">Equipe</h1>
           <Button
             onClick={() => setIsAddDialogOpen(true)}
             size="sm"
-            className="h-8 bg-foreground text-background hover:bg-foreground/90"
+            className="h-7 w-7 p-0 bg-foreground text-background hover:bg-foreground/90"
           >
-            <Plus className="w-4 h-4" />
+            <Plus className="w-3.5 h-3.5" />
           </Button>
         </div>
 
-        <div className="flex-1 overflow-y-auto space-y-2">
+        <div className="flex-1 overflow-y-auto p-2 space-y-1">
           {teamMembers?.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
               <FolderOpen className="w-10 h-10 mb-3 opacity-40" />
@@ -172,32 +172,21 @@ export default function Equipe() {
                 key={member.user_id}
                 onClick={() => setSelectedMember(member)}
                 className={cn(
-                  "p-3 rounded-lg cursor-pointer transition-colors border",
+                  "p-2.5 rounded-md cursor-pointer transition-colors",
                   selectedMember?.user_id === member.user_id
-                    ? "bg-foreground text-background border-foreground"
-                    : "bg-background border-border hover:border-foreground/30"
+                    ? "bg-black/5"
+                    : "hover:bg-black/[0.02]"
                 )}
               >
-                <div className="flex items-center gap-3">
-                  <div className={cn(
-                    "w-9 h-9 rounded-full flex items-center justify-center text-xs font-medium",
-                    selectedMember?.user_id === member.user_id
-                      ? "bg-background text-foreground"
-                      : "bg-foreground text-background"
-                  )}>
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-full bg-foreground text-background flex items-center justify-center text-xs font-medium">
                     {(member.name || member.email || "?").charAt(0).toUpperCase()}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className={cn(
-                      "font-medium text-sm truncate",
-                      selectedMember?.user_id === member.user_id ? "text-background" : "text-foreground"
-                    )}>
+                    <p className="font-medium text-sm text-foreground truncate">
                       {member.name || "Sem nome"}
                     </p>
-                    <p className={cn(
-                      "text-xs truncate",
-                      selectedMember?.user_id === member.user_id ? "text-background/70" : "text-muted-foreground"
-                    )}>
+                    <p className="text-xs text-muted-foreground truncate">
                       {member.role ? roleLabels[member.role] || member.role : "Sem função"}
                     </p>
                   </div>
