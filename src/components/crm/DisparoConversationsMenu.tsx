@@ -284,7 +284,7 @@ export function DisparoConversationsMenu({
         </DropdownMenuTrigger>
         <DropdownMenuContent 
           align="start" 
-          className="w-72 bg-popover shadow-md z-50 p-1"
+          className="w-72 bg-transparent border-none shadow-none z-50 p-1"
         >
           <DropdownMenuItem 
             onClick={onNewConversation}
@@ -342,7 +342,7 @@ export function DisparoConversationsMenu({
                             <MoreVertical className="h-4 w-4" />
                           </Button>
                         </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" className="bg-popover shadow-md z-[60]">
+                        <DropdownMenuContent align="end" className="bg-background/95 backdrop-blur-sm z-[60]">
                           <DropdownMenuItem 
                             onClick={(e) => openRenameDialog(conv.id, conv.title, e)}
                             className="cursor-pointer"
