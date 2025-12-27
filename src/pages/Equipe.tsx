@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -17,7 +17,9 @@ import {
   ContactBlock, 
   ActivitiesBlock, 
   PerformanceBlock, 
-  ActivityHistoryBlock 
+  ActivityHistoryBlock,
+  MembersListSkeleton,
+  MemberDetailsSkeleton
 } from "@/components/equipe";
 
 interface TeamMember {
@@ -64,6 +66,13 @@ export default function Equipe() {
     },
   });
 
+  // Auto-select first member when data loads
+  useEffect(() => {
+    if (teamMembers && teamMembers.length > 0 && !selectedMember) {
+      setSelectedMember(teamMembers[0]);
+    }
+  }, [teamMembers]);
+
   // No stats available yet - would require user_id tracking on activities
   const memberStats = null;
 
@@ -101,8 +110,27 @@ export default function Equipe() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center py-12">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-foreground" />
+      <div className="flex gap-4 h-[calc(100vh-6rem)]">
+        {/* Left Side - Members List Skeleton */}
+        <div className="w-[260px] flex-shrink-0 flex flex-col bg-gradient-to-b from-slate-50 to-white rounded-xl border border-slate-100 overflow-hidden">
+          <div className="flex items-center justify-between p-4 bg-gradient-to-r from-slate-100/80 to-slate-50/50 border-b border-slate-100">
+            <h1 className="text-sm font-semibold text-slate-800">Equipe</h1>
+            <Button
+              size="sm"
+              disabled
+              className="h-8 px-3 bg-gradient-to-r from-orange-500 to-orange-600 text-white rounded-lg shadow-sm opacity-50"
+            >
+              <Plus className="w-3.5 h-3.5 mr-1" />
+              Novo
+            </Button>
+          </div>
+          <MembersListSkeleton />
+        </div>
+        
+        {/* Right Side - Details Skeleton */}
+        <div className="flex-1 overflow-y-auto">
+          <MemberDetailsSkeleton />
+        </div>
       </div>
     );
   }
