@@ -1,10 +1,12 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { cn } from "@/lib/utils";
 import { PromptInputBox } from "@/components/ui/ai-prompt-box";
 import { motion } from "framer-motion";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import { DispatchProgressTable } from "./DispatchProgressTable";
+import { DisparoConversationsMenu } from "./DisparoConversationsMenu";
+import { supabase } from "@/integrations/supabase/client";
 import disparoLogo from "@/assets/disparo-logo.png";
 
 interface DisparoViewProps {
@@ -73,6 +75,7 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [activeJobId, setActiveJobId] = useState<string | null>(null);
   const [csvLeads, setCsvLeads] = useState<CsvLead[] | null>(null);
+  const [currentConversationId, setCurrentConversationId] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Auto-scroll to bottom when messages change
@@ -350,10 +353,34 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
     }
   };
 
+  // Handle selecting a conversation from menu
+  const handleSelectConversation = useCallback((id: string, loadedMessages: Message[]) => {
+    setCurrentConversationId(id);
+    setMessages(loadedMessages);
+  }, []);
+
+  // Handle new conversation
+  const handleNewConversation = useCallback(() => {
+    setCurrentConversationId(null);
+    setMessages([]);
+    setCsvLeads(null);
+    setActiveJobId(null);
+  }, []);
+
   const hasMessages = messages.length > 0;
 
   return (
     <div className="flex-1 flex flex-col h-full bg-background">
+      {/* Header with conversations menu */}
+      <div className="px-6 pt-4 pb-2">
+        <DisparoConversationsMenu
+          currentConversationId={currentConversationId}
+          onSelectConversation={handleSelectConversation}
+          onNewConversation={handleNewConversation}
+          messages={messages}
+        />
+      </div>
+
       {/* When no messages, center the input */}
       {!hasMessages ? (
         <div className="flex-1 flex items-center justify-center p-6">
