@@ -103,8 +103,8 @@ const Analizer = () => {
         
         {/* Coming Soon Text */}
         <div className="text-center mt-4">
-          <h1 className="text-2xl font-semibold text-white/90 mb-1">Analizer</h1>
-          <p className="text-lg text-white/40 tracking-wide">Em Breve...</p>
+          <h1 className="text-2xl font-semibold text-foreground mb-1">Analizer</h1>
+          <p className="text-lg text-muted-foreground tracking-wide">Em Breve...</p>
         </div>
       </div>
     </div>
