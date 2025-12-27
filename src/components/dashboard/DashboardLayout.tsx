@@ -300,13 +300,12 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
                 {/* Equipe Button */}
                 <button
                   onClick={() => {
-                    setActivePanel('settings');
                     setCrmSubmenuOpen(false);
-                    navigate('/admin/settings?tab=team');
+                    navigate('/admin/equipe');
                   }}
                   className={cn(
                     "relative flex items-center h-10 rounded-lg transition-all duration-200",
-                    location.pathname === '/admin/settings' && location.search.includes('tab=team')
+                    location.pathname === '/admin/equipe'
                       ? "bg-white/10 text-white before:absolute before:-left-3 before:top-1/2 before:-translate-y-1/2 before:h-[70%] before:w-1.5 before:rounded-r-full before:bg-gradient-to-b before:from-orange-500 before:to-amber-500"
                       : "text-white/70 hover:bg-white/5 hover:text-white"
                   )}

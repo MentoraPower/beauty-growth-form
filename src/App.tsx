@@ -17,6 +17,7 @@ import Settings from "./pages/Settings";
 import OnboardingForm from "./pages/OnboardingForm";
 import CalendarPage from "./pages/CalendarPage";
 import Analizer from "./pages/Analizer";
+import Equipe from "./pages/Equipe";
 
 const queryClient = new QueryClient();
 
@@ -44,6 +45,7 @@ const App = () => (
               <Route path="calendario" element={<CalendarPage />} />
               <Route path="agenda" element={<CalendarPage />} />
               <Route path="settings" element={<Settings />} />
+              <Route path="equipe" element={<Equipe />} />
               <Route path="analizer" element={<Analizer />} />
             </Route>
 
