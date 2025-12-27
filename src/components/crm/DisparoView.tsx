@@ -9,18 +9,6 @@ interface DisparoViewProps {
 export function DisparoView({ subOriginId }: DisparoViewProps) {
   return (
     <div className="flex-1 flex flex-col h-full p-6">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-orange-500 to-orange-600 flex items-center justify-center">
-            <Send className="w-5 h-5 text-white" />
-          </div>
-          <div>
-            <h1 className="text-xl font-semibold text-foreground">Disparos</h1>
-            <p className="text-sm text-muted-foreground">Gerencie seus emails agendados e enviados</p>
-          </div>
-        </div>
-      </div>
 
       {/* Content placeholder */}
       <div className="flex-1 flex items-center justify-center border-2 border-dashed border-muted-foreground/20 rounded-xl">
