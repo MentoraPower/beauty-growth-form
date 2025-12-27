@@ -1,9 +1,8 @@
 import { useState } from "react";
-import { X, Settings2, Database, Eye, Percent, List, Filter } from "lucide-react";
+import { X, Settings2, Eye, Percent, List } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { DataSource, OverviewCard } from "./types";
 import { Lead, Pipeline } from "@/types/crm";
@@ -307,137 +306,70 @@ export function CardConfigPanel({
 
       {/* Right side - Config Panel */}
       <div className="w-[380px] border-l border-border bg-background flex flex-col">
-        <Tabs defaultValue="config" className="flex-1 flex flex-col">
-          <div className="flex items-center justify-between border-b border-border">
-            <TabsList className="w-auto justify-start rounded-none bg-transparent h-auto p-0">
-              <TabsTrigger 
-                value="config" 
-                className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-6 py-3"
-              >
-                <Settings2 className="h-4 w-4 mr-2" />
-                Configurações
-              </TabsTrigger>
-              <TabsTrigger 
-                value="data"
-                className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-6 py-3"
-              >
-                <Database className="h-4 w-4 mr-2" />
-                Dados
-              </TabsTrigger>
-            </TabsList>
-            <Button variant="ghost" size="sm" onClick={onClose} className="mr-2 h-7 w-7 p-0">
+        <div className="flex-1 flex flex-col">
+          <div className="flex items-center justify-between px-6 py-3 border-b border-border">
+            <div className="flex items-center gap-2">
+              <Settings2 className="h-4 w-4 text-muted-foreground" />
+              <span className="text-sm font-medium">Configurações</span>
+            </div>
+            <Button variant="ghost" size="sm" onClick={onClose} className="h-7 w-7 p-0">
               <X className="h-4 w-4" />
             </Button>
           </div>
 
-          <TabsContent value="config" className="flex-1 m-0">
-            <ScrollArea className="h-full">
-              <div className="p-6 space-y-6">
-                {/* Fonte de dados */}
-                <div className="space-y-2">
-                  <label className="text-sm text-muted-foreground">Fonte de dados</label>
-                  <Select 
-                    value={card.dataSource || ""} 
-                    onValueChange={(value) => handleDataSourceChange(value as DataSource)}
-                  >
-                    <SelectTrigger className="w-full">
-                      <SelectValue placeholder="Selecionar fonte" />
-                    </SelectTrigger>
-                    <SelectContent className="bg-background border border-border">
-                      {DATA_SOURCES.map((source) => (
-                        <SelectItem key={source.id} value={source.id}>
-                          {source.title}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+          <ScrollArea className="flex-1">
+            <div className="p-6 space-y-6">
+              {/* Fonte de dados */}
+              <div className="space-y-2">
+                <label className="text-sm text-muted-foreground">Fonte de dados</label>
+                <Select 
+                  value={card.dataSource || ""} 
+                  onValueChange={(value) => handleDataSourceChange(value as DataSource)}
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Selecionar fonte" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-background border border-border">
+                    {DATA_SOURCES.map((source) => (
+                      <SelectItem key={source.id} value={source.id}>
+                        {source.title}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Tela */}
+              <div className="space-y-4">
+                <h3 className="text-sm font-medium text-muted-foreground">Tela</h3>
+                
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Eye className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-sm">Exibir como gráfico em anel</span>
+                  </div>
+                  <Switch checked={showAsDonut} onCheckedChange={setShowAsDonut} />
                 </div>
 
-                {/* Tela */}
-                <div className="space-y-4">
-                  <h3 className="text-sm font-medium text-muted-foreground">Tela</h3>
-                  
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <Eye className="h-4 w-4 text-muted-foreground" />
-                      <span className="text-sm">Exibir como gráfico em anel</span>
-                    </div>
-                    <Switch checked={showAsDonut} onCheckedChange={setShowAsDonut} />
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Percent className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-sm">Exibir como porcentagens</span>
                   </div>
-
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <Percent className="h-4 w-4 text-muted-foreground" />
-                      <span className="text-sm">Exibir como porcentagens</span>
-                    </div>
-                    <Switch checked={showPercentages} onCheckedChange={setShowPercentages} />
-                  </div>
-
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <List className="h-4 w-4 text-muted-foreground" />
-                      <span className="text-sm">Mostrar legenda</span>
-                    </div>
-                    <Switch checked={showLegend} onCheckedChange={setShowLegend} />
-                  </div>
+                  <Switch checked={showPercentages} onCheckedChange={setShowPercentages} />
                 </div>
 
-                {/* Dados */}
-                <div className="space-y-4">
-                  <h3 className="text-sm font-medium text-muted-foreground">Dados</h3>
-                  
-                  <div className="space-y-2">
-                    <label className="text-sm text-muted-foreground">Medida</label>
-                    <Select defaultValue="count">
-                      <SelectTrigger className="w-full">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent className="bg-background border border-border">
-                        <SelectItem value="count">Número de leads</SelectItem>
-                        <SelectItem value="revenue">Receita estimada</SelectItem>
-                      </SelectContent>
-                    </Select>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <List className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-sm">Mostrar legenda</span>
                   </div>
-
-                  <div className="space-y-2">
-                    <label className="text-sm text-muted-foreground">Agrupar por</label>
-                    <Select defaultValue="pipeline">
-                      <SelectTrigger className="w-full">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent className="bg-background border border-border">
-                        <SelectItem value="pipeline">Pipeline</SelectItem>
-                        <SelectItem value="tag">Tag</SelectItem>
-                        <SelectItem value="mql">MQL</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-
-                {/* Filtros */}
-                <div className="space-y-4">
-                  <h3 className="text-sm font-medium text-muted-foreground">Filtros</h3>
-                  <div className="flex flex-wrap gap-2">
-                    <Button variant="outline" size="sm" className="text-xs">
-                      <Filter className="h-3 w-3 mr-1" />
-                      Filtro
-                    </Button>
-                  </div>
+                  <Switch checked={showLegend} onCheckedChange={setShowLegend} />
                 </div>
               </div>
-            </ScrollArea>
-          </TabsContent>
-
-          <TabsContent value="data" className="flex-1 m-0">
-            <ScrollArea className="h-full">
-              <div className="p-6">
-                <p className="text-sm text-muted-foreground">
-                  Dados do cartão aparecerão aqui.
-                </p>
-              </div>
-            </ScrollArea>
-          </TabsContent>
-        </Tabs>
+            </div>
+          </ScrollArea>
+        </div>
       </div>
     </div>
     </>
