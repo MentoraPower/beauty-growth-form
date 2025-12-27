@@ -377,7 +377,7 @@ export function ChartRenderer({
                   </span>
                 </div>
                 {/* Bar */}
-                <div className="w-full bg-muted/50 rounded-lg overflow-hidden" style={{ height: '12px' }}>
+                <div className="w-full bg-muted/50 rounded-lg overflow-hidden" style={{ height: '20px' }}>
                   <div 
                     className="h-full rounded-lg transition-all duration-700 ease-out"
                     style={{ 
