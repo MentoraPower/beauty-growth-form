@@ -270,25 +270,27 @@ export function KanbanBoard() {
     return rectIntersection(args);
   }, []);
 
+  // Persist last used subOriginId for instant navigation
+  useEffect(() => {
+    if (subOriginId) {
+      localStorage.setItem("crm_last_sub_origin", subOriginId);
+    }
+  }, [subOriginId]);
+
   const { data: pipelines = [], isLoading: isLoadingPipelines } = useQuery({
     queryKey: ["pipelines", subOriginId],
     queryFn: async () => {
-      let query = supabase
+      const { data, error } = await supabase
         .from("pipelines")
         .select("*")
+        .eq("sub_origin_id", subOriginId)
         .order("ordem", { ascending: true });
-      
-      // Filter by sub_origin_id if selected
-      if (subOriginId) {
-        query = query.eq("sub_origin_id", subOriginId);
-      }
-
-      const { data, error } = await query;
 
       if (error) throw error;
       return data as Pipeline[];
     },
     staleTime: 5000,
+    enabled: !!subOriginId, // Only run when we have a subOriginId
   });
 
   // Fetch exact lead counts per pipeline (bypasses 1000 row limit)
@@ -385,17 +387,11 @@ export function KanbanBoard() {
   const { data: leads = [], dataUpdatedAt, isLoading: isLoadingLeads } = useQuery({
     queryKey: ["crm-leads", subOriginId],
     queryFn: async () => {
-      let query = supabase
+      const { data, error } = await supabase
         .from("leads")
         .select("*")
+        .eq("sub_origin_id", subOriginId)
         .order("created_at", { ascending: false });
-
-      // Filter by sub_origin_id if one is selected
-      if (subOriginId) {
-        query = query.eq("sub_origin_id", subOriginId);
-      }
-
-      const { data, error } = await query;
 
       if (error) throw error;
       return data as Lead[];
@@ -403,6 +399,7 @@ export function KanbanBoard() {
     staleTime: 5000,
     refetchOnMount: true,
     refetchOnWindowFocus: false,
+    enabled: !!subOriginId, // Only run when we have a subOriginId
   });
 
   // Fetch all tags for filtering (after leads is declared)
@@ -572,8 +569,8 @@ export function KanbanBoard() {
     return map;
   }, [leadTagsRaw]);
 
-  // Consider loading only while queries are still in progress
-  const isLoading = isLoadingPipelines || isLoadingLeads || isLoadingSubOrigin;
+  // Consider loading: always loading if no subOriginId yet, or while queries are in progress
+  const isLoading = !subOriginId || isLoadingPipelines || isLoadingLeads || isLoadingSubOrigin;
 
   // Track previous values to prevent unnecessary updates
   const prevDataUpdatedAtRef = useRef(dataUpdatedAt);
@@ -600,8 +597,10 @@ export function KanbanBoard() {
     }
   }, [dataUpdatedAt, subOriginId, leads]);
 
-  // Real-time subscription
+  // Real-time subscription - only when subOriginId exists
   useEffect(() => {
+    if (!subOriginId) return; // Don't subscribe to "all" changes
+
     const scheduleLeadsInvalidate = () => {
       if (invalidateLeadsTimeoutRef.current) {
         window.clearTimeout(invalidateLeadsTimeoutRef.current);

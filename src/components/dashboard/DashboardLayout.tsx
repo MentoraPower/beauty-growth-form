@@ -156,24 +156,32 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
     localStorage.setItem('active_panel', activePanel);
   }, [activePanel]);
 
-  // Navigate to CRM immediately; load the first origin in the background only if needed
-  const handleNavClick = (panelId: ActivePanel) => {
+  // Navigate to CRM immediately using last used origin for instant load
+  const handleNavClick = useCallback((panelId: ActivePanel) => {
     setActivePanel(panelId);
 
     if (panelId === 'crm') {
       setCrmSubmenuOpen(true);
 
-      // Navigate instantly (don't await DB calls)
-      const alreadyOnCrm = location.pathname.startsWith('/admin/crm');
-      if (!alreadyOnCrm) {
+      // Check if already on CRM with an origin
+      const originParam = new URLSearchParams(location.search).get('origin');
+      if (location.pathname.startsWith('/admin/crm') && originParam) {
+        return; // Already on CRM with origin, nothing to do
+      }
+
+      // Try to use last saved origin for instant navigation
+      const lastOrigin = localStorage.getItem('crm_last_sub_origin');
+      if (lastOrigin) {
+        navigate(`/admin/crm?origin=${lastOrigin}`, { replace: true });
+        return;
+      }
+
+      // No last origin - navigate to CRM (will show skeleton) and fetch default async
+      if (!location.pathname.startsWith('/admin/crm')) {
         navigate('/admin/crm');
       }
 
-      // If there's already an origin in the URL, keep it
-      const originParam = new URLSearchParams(location.search).get('origin');
-      if (originParam) return;
-
-      // Otherwise, resolve the default origin asynchronously and replace the URL
+      // Fetch default origin in background
       void (async () => {
         const { data: origins } = await supabase
           .from('crm_origins')
@@ -199,7 +207,7 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
     }
 
     setCrmSubmenuOpen(false);
-  };
+  }, [location.pathname, location.search, navigate]);
 
   // Navigate when panel changes
   useEffect(() => {
@@ -251,7 +259,7 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
           <div className="w-9" />
         </header>
 
-        {/* Desktop Sidebar - Black background, collapsible on hover, overlay mode */}
+        {/* Desktop Sidebar - Black background, CSS-only hover expansion */}
         <aside
           ref={sidebarRef}
           onMouseEnter={() => setSidebarExpanded(true)}
@@ -261,10 +269,10 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
             left: 12,
             top: 12,
             height: 'calc(100vh - 1.5rem)',
-            transition: 'width 300ms cubic-bezier(0.4,0,0.2,1)',
             borderRight: '1px solid rgba(255, 255, 255, 0.125)',
+            willChange: 'width',
           }}
-          className="hidden lg:flex flex-col fixed bg-[#0f0f12] overflow-hidden z-50 rounded-2xl"
+          className="hidden lg:flex flex-col fixed bg-[#0f0f12] overflow-hidden z-50 rounded-2xl transition-[width] duration-200 ease-out"
         >
           <div className="flex flex-col h-full relative">
             {/* Logo */}
@@ -512,24 +520,25 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
           </div>
         </aside>
 
-        {/* CRM Submenu Panel - pushes content (via mainContentMargin) */}
+        {/* CRM Submenu Panel - pushes content (via mainContentMargin), smooth transform */}
         <div
           style={{
             left: sidebarCollapsedWidth + 12,
             width: submenuWidth,
-            transform: crmSubmenuOpen ? 'translateX(0)' : `translateX(-${submenuWidth + 16}px)`,
-            opacity: crmSubmenuOpen ? 1 : 0,
+            transform: crmSubmenuOpen ? 'translateX(0)' : `translateX(-${submenuWidth + 20}px)`,
             zIndex: 39,
             pointerEvents: crmSubmenuOpen ? 'auto' : 'none',
-            willChange: 'transform, opacity',
+            willChange: 'transform',
           }}
-          className="hidden lg:block fixed top-[24px] bottom-[24px] rounded-r-2xl bg-zinc-900 overflow-hidden transition-[transform,opacity] duration-300 ease-out"
+          className="hidden lg:block fixed top-[24px] bottom-[24px] rounded-r-2xl bg-zinc-900 overflow-hidden transition-transform duration-300 ease-out"
         >
           <div
-            className="h-full pl-4 pr-2"
+            className="h-full pl-4 pr-2 transition-opacity duration-200"
             style={{
               width: submenuWidth,
               minWidth: submenuWidth,
+              opacity: crmSubmenuOpen ? 1 : 0,
+              transitionDelay: crmSubmenuOpen ? '50ms' : '0ms',
             }}
           >
             {crmSubmenuContentMounted ? (
@@ -541,7 +550,7 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
               />
             ) : (
               <div className="h-full flex items-center justify-center">
-                <span className="text-sm text-white/60">Carregando…</span>
+                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white/40" />
               </div>
             )}
           </div>
@@ -671,16 +680,16 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
           />
         )}
 
-        {/* Main Content - CRM origins panel pushes content */}
+        {/* Main Content - CRM origins panel pushes content with synced transition */}
         <main 
           style={{ 
             left: `${mainContentMargin}px`,
             top: 12,
             right: 0,
             bottom: 12,
-            transition: 'left 300ms cubic-bezier(0.4,0,0.2,1)'
+            willChange: 'left',
           }}
-          className="hidden lg:block fixed"
+          className="hidden lg:block fixed transition-[left] duration-300 ease-out"
         >
           <div className="h-full overflow-hidden relative bg-card rounded-l-2xl py-4 px-6 shadow-sm flex flex-col">
             <PageTransition>
