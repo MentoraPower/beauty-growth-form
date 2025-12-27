@@ -94,12 +94,131 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
   const [activeJobId, setActiveJobId] = useState<string | null>(null);
   const [csvLeads, setCsvLeads] = useState<CsvLead[] | null>(null);
   const [currentConversationId, setCurrentConversationId] = useState<string | null>(null);
+  const [selectedOriginData, setSelectedOriginData] = useState<{ subOriginId: string; subOriginName: string; originName: string } | null>(null);
+  const [dispatchType, setDispatchType] = useState<'email' | 'whatsapp_web' | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Auto-scroll to bottom when messages change
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
+
+  // Handle origin selection from table
+  const handleOriginSelect = useCallback(async (subOriginId: string, subOriginName: string, originName: string) => {
+    setSelectedOriginData({ subOriginId, subOriginName, originName });
+    
+    // Determine dispatch type from conversation context
+    const lastMessages = messages.slice(-10);
+    const hasEmail = lastMessages.some(m => m.content.toLowerCase().includes('email'));
+    const type = hasEmail ? 'email' : 'whatsapp_web';
+    setDispatchType(type);
+    
+    // Auto-send message to fetch leads
+    const autoMessage = `Usar a lista "${subOriginName}" da origem "${originName}"`;
+    
+    // Add user message
+    const userMessage: Message = {
+      id: crypto.randomUUID(),
+      content: autoMessage,
+      role: "user",
+      timestamp: new Date(),
+    };
+    setMessages(prev => [...prev, userMessage]);
+    setIsLoading(true);
+
+    try {
+      // Fetch leads for this sub-origin
+      const response = await fetch(CHAT_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ command: `FETCH_LEADS:${type}:${subOriginId}` }),
+      });
+
+      if (!response.ok) throw new Error("Erro ao buscar leads");
+      const result = await response.json();
+
+      if (result.type === 'leads_preview') {
+        const previewComponent = (
+          <LeadsPreviewComponent 
+            key={`preview-${Date.now()}`}
+            preview={result.data} 
+          />
+        );
+
+        const assistantMessage: Message = {
+          id: crypto.randomUUID(),
+          content: `Encontrei **${result.data.validLeads}** leads válidos na lista "${subOriginName}"! 🎯`,
+          role: "assistant",
+          timestamp: new Date(),
+          component: (
+            <div className="mt-4 space-y-4">
+              {previewComponent}
+              <HtmlEditorComponent 
+                onSubmit={(html) => handleHtmlSubmit(html, subOriginId, type)}
+              />
+            </div>
+          ),
+        };
+        setMessages(prev => [...prev, assistantMessage]);
+      }
+    } catch (error) {
+      console.error("Error fetching leads:", error);
+      toast.error("Erro ao buscar leads");
+    } finally {
+      setIsLoading(false);
+    }
+  }, [messages]);
+
+  // Handle HTML submission
+  const handleHtmlSubmit = async (html: string, subOriginId: string, type: string) => {
+    setIsLoading(true);
+    
+    const userMessage: Message = {
+      id: crypto.randomUUID(),
+      content: "Iniciar disparo com o template fornecido",
+      role: "user",
+      timestamp: new Date(),
+    };
+    setMessages(prev => [...prev, userMessage]);
+
+    try {
+      const templateType = html.includes('<') ? 'html' : 'simple';
+      const response = await fetch(CHAT_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ 
+          command: `START_DISPATCH:${type}:${subOriginId}:${templateType}:${html}` 
+        }),
+      });
+
+      if (!response.ok) throw new Error("Erro ao iniciar disparo");
+      const result = await response.json();
+
+      if (result.type === 'dispatch_started') {
+        setActiveJobId(result.data.jobId);
+        const assistantMessage: Message = {
+          id: crypto.randomUUID(),
+          content: `Disparo iniciado! 🚀 Enviando para **${result.data.validLeads}** leads...`,
+          role: "assistant",
+          timestamp: new Date(),
+          component: (
+            <div className="mt-4">
+              <DispatchProgressTable
+                jobId={result.data.jobId}
+                onCommand={handleCommand}
+              />
+            </div>
+          ),
+        };
+        setMessages(prev => [...prev, assistantMessage]);
+      }
+    } catch (error) {
+      console.error("Error starting dispatch:", error);
+      toast.error("Erro ao iniciar disparo");
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   // Process commands from Grok's response
   const processCommands = async (content: string): Promise<{ cleanContent: string; components: React.ReactNode[] }> => {
@@ -133,11 +252,12 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
         cleanContent = cleanContent.replace(`[COMMAND:${command}]`, '');
 
         if (result.type === 'origins') {
-          // Add origins list component
+          // Add origins list component with selection handler
           const originsComponent = (
             <OriginsListComponent 
               key={`origins-${Date.now()}`}
-              origins={result.data} 
+              origins={result.data}
+              onSelect={handleOriginSelect}
             />
           );
           components.push(originsComponent);
@@ -483,35 +603,61 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
   );
 }
 
-// Component to display origins list
-function OriginsListComponent({ origins }: { origins: Origin[] }) {
+// Component to display origins list as clickable table
+function OriginsListComponent({ origins, onSelect }: { origins: Origin[]; onSelect?: (subOriginId: string, subOriginName: string, originName: string) => void }) {
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+
+  const handleSelect = (subOrigin: { id: string; nome: string }, originName: string) => {
+    setSelectedId(subOrigin.id);
+    onSelect?.(subOrigin.id, subOrigin.nome, originName);
+  };
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      className="bg-card border border-border rounded-xl p-4 my-4"
+      className="bg-card border border-border rounded-xl overflow-hidden my-4"
     >
-      <h3 className="font-medium text-foreground mb-3">📋 Listas disponíveis:</h3>
-      <div className="space-y-3">
-        {origins.map(origin => (
-          <div key={origin.id} className="space-y-1">
-            <div className="font-medium text-sm text-foreground">{origin.nome}</div>
-            <div className="pl-4 space-y-1">
-              {origin.crm_sub_origins.map(sub => (
-                <div 
-                  key={sub.id}
-                  className="text-sm text-muted-foreground hover:text-foreground cursor-pointer transition-colors"
-                >
-                  → {sub.nome}
-                </div>
-              ))}
-            </div>
-          </div>
-        ))}
+      <div className="px-4 py-3 border-b border-border bg-muted/30">
+        <h3 className="font-medium text-foreground">📋 Selecione uma lista</h3>
       </div>
-      <p className="text-xs text-muted-foreground mt-3">
-        Digite o nome da lista que deseja usar
-      </p>
+      <div className="max-h-[300px] overflow-y-auto">
+        <table className="w-full">
+          <thead className="bg-muted/50 sticky top-0">
+            <tr>
+              <th className="text-left text-xs font-medium text-muted-foreground px-4 py-2">Origem</th>
+              <th className="text-left text-xs font-medium text-muted-foreground px-4 py-2">Lista</th>
+              <th className="text-right text-xs font-medium text-muted-foreground px-4 py-2">Ação</th>
+            </tr>
+          </thead>
+          <tbody>
+            {origins.flatMap(origin => 
+              origin.crm_sub_origins.map(sub => (
+                <tr 
+                  key={sub.id}
+                  onClick={() => handleSelect(sub, origin.nome)}
+                  className={cn(
+                    "border-b border-border/50 cursor-pointer transition-colors",
+                    selectedId === sub.id 
+                      ? "bg-primary/10" 
+                      : "hover:bg-muted/50"
+                  )}
+                >
+                  <td className="px-4 py-3 text-sm text-muted-foreground">{origin.nome}</td>
+                  <td className="px-4 py-3 text-sm font-medium text-foreground">{sub.nome}</td>
+                  <td className="px-4 py-3 text-right">
+                    {selectedId === sub.id ? (
+                      <span className="text-xs text-primary font-medium">✓ Selecionado</span>
+                    ) : (
+                      <span className="text-xs text-muted-foreground">Clique para selecionar</span>
+                    )}
+                  </td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
     </motion.div>
   );
 }
@@ -663,6 +809,82 @@ function CsvLeadsPreviewComponent({ leads, type }: { leads: CsvLead[]; type: 'em
       <p className="text-xs text-muted-foreground mt-3">
         Confirme para iniciar o disparo
       </p>
+    </motion.div>
+  );
+}
+
+// Component for HTML/message input
+function HtmlEditorComponent({ onSubmit }: { onSubmit: (html: string) => void }) {
+  const [content, setContent] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleSubmit = () => {
+    if (!content.trim()) {
+      toast.error("Por favor, insira o conteúdo do email");
+      return;
+    }
+    setIsSubmitting(true);
+    onSubmit(content);
+  };
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="bg-card border border-border rounded-xl overflow-hidden my-4"
+    >
+      <div className="px-4 py-3 border-b border-border bg-muted/30 flex items-center justify-between">
+        <h3 className="font-medium text-foreground">📝 Template do Email</h3>
+        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+          <span>Use</span>
+          <code className="bg-muted px-1 py-0.5 rounded">{"{{name}}"}</code>
+          <span>para o nome do lead</span>
+        </div>
+      </div>
+      
+      <div className="p-4">
+        <div className="mb-3">
+          <textarea
+            value={content}
+            onChange={(e) => setContent(e.target.value)}
+            placeholder="Cole aqui o HTML do email ou digite uma mensagem simples...
+
+Exemplo de HTML:
+<html>
+  <body>
+    <h1>Olá {{name}}!</h1>
+    <p>Temos uma oferta especial para você.</p>
+  </body>
+</html>
+
+Ou mensagem simples:
+Olá {{name}}, temos uma oferta especial para você!"
+            className={cn(
+              "w-full h-48 p-3 rounded-lg border border-border bg-muted/30",
+              "font-mono text-sm text-foreground placeholder:text-muted-foreground",
+              "focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary",
+              "resize-none"
+            )}
+          />
+        </div>
+
+        <div className="flex items-center justify-between">
+          <div className="text-xs text-muted-foreground">
+            {content.includes('<') ? '📧 Formato HTML detectado' : '📝 Mensagem simples'}
+          </div>
+          <button
+            onClick={handleSubmit}
+            disabled={isSubmitting || !content.trim()}
+            className={cn(
+              "px-4 py-2 rounded-lg text-sm font-medium transition-colors",
+              "bg-primary text-primary-foreground hover:bg-primary/90",
+              "disabled:opacity-50 disabled:cursor-not-allowed"
+            )}
+          >
+            {isSubmitting ? "Iniciando..." : "🚀 Iniciar Disparo"}
+          </button>
+        </div>
+      </div>
     </motion.div>
   );
 }
