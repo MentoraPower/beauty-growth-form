@@ -83,14 +83,15 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
                     msg.role === "user" ? "justify-end" : "justify-start"
                   )}
                 >
-                  <div className={cn(
-                    "p-4 rounded-2xl max-w-[80%]",
-                    msg.role === "user"
-                      ? "text-foreground text-right"
-                      : "text-foreground text-left"
-                  )}>
-                    {msg.content}
-                  </div>
+                  {msg.role === "user" ? (
+                    <div className="bg-[#2A2A2A] text-white px-5 py-4 rounded-2xl max-w-[70%]">
+                      <p className="text-[15px] leading-relaxed whitespace-pre-wrap">{msg.content}</p>
+                    </div>
+                  ) : (
+                    <div className="text-foreground max-w-[85%]">
+                      <p className="text-[15px] leading-relaxed whitespace-pre-wrap">{msg.content}</p>
+                    </div>
+                  )}
                 </motion.div>
               ))}
               {isLoading && (
