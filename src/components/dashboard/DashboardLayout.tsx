@@ -239,10 +239,10 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
         >
           <div className="flex flex-col h-full relative">
             {/* Logo */}
-            <div className="h-14 flex items-center px-3 relative overflow-hidden">
+            <div className="h-14 flex items-center justify-center relative overflow-hidden">
               {/* Icon logo - visible when collapsed */}
               <div 
-                className="absolute left-3 flex items-center justify-center transition-all duration-500 ease-in-out"
+                className="absolute inset-0 flex items-center justify-center transition-all duration-500 ease-in-out"
                 style={{
                   opacity: sidebarExpanded ? 0 : 1,
                   visibility: sidebarExpanded ? 'hidden' : 'visible',
