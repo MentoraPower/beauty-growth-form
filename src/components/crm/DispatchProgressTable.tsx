@@ -127,129 +127,81 @@ export function DispatchProgressTable({ jobId, onCommand }: DispatchProgressTabl
     <motion.div
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      className="bg-card border border-border rounded-xl p-4 space-y-4 my-4"
+      className="my-4"
     >
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <span className="text-lg font-medium">{getTypeLabel()}</span>
-          <span className="text-muted-foreground">•</span>
-          <span className="text-muted-foreground text-sm">
-            {job.origin_name} / {job.sub_origin_name}
+      {/* Simple Progress Bar with percentage on the edge */}
+      <div className="space-y-1">
+        <div className="flex items-center gap-3">
+          <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
+            <motion.div
+              initial={{ width: 0 }}
+              animate={{ width: `${progress}%` }}
+              transition={{ duration: 0.3 }}
+              className={cn(
+                "h-full rounded-full",
+                job.status === 'completed' ? "bg-green-500" :
+                job.status === 'failed' ? "bg-red-500" :
+                job.status === 'paused' ? "bg-yellow-500" :
+                "bg-primary"
+              )}
+            />
+          </div>
+          <span className="text-sm font-medium text-foreground min-w-[40px] text-right">
+            {progress}%
           </span>
         </div>
-        <div className={cn("flex items-center gap-1.5", statusInfo.color)}>
-          <StatusIcon className={cn("w-4 h-4", statusInfo.animate && "animate-spin")} />
-          <span className="text-sm font-medium">{statusInfo.label}</span>
-        </div>
-      </div>
-
-      {/* Progress Bar */}
-      <div className="space-y-2">
-        <div className="h-2 bg-muted rounded-full overflow-hidden">
-          <motion.div
-            initial={{ width: 0 }}
-            animate={{ width: `${progress}%` }}
-            transition={{ duration: 0.3 }}
-            className={cn(
-              "h-full rounded-full",
-              job.status === 'completed' ? "bg-green-500" :
-              job.status === 'failed' ? "bg-red-500" :
-              job.status === 'paused' ? "bg-yellow-500" :
-              "bg-primary"
-            )}
-          />
-        </div>
-        <div className="flex items-center justify-between text-sm">
-          <span className="text-muted-foreground">
-            {job.sent_count} de {job.valid_leads} enviados
-            {job.failed_count > 0 && (
-              <span className="text-red-500 ml-2">({job.failed_count} falhas)</span>
-            )}
-          </span>
-          <span className="font-medium">{progress}%</span>
-        </div>
-      </div>
-
-      {/* Current Lead & Time */}
-      {job.status === 'running' && (
-        <div className="flex items-center justify-between text-sm text-muted-foreground">
+        
+        {/* Minimal status text */}
+        <div className="flex items-center justify-between text-xs text-muted-foreground">
           <span>
-            {job.current_lead_name && (
-              <>Enviando para: <span className="text-foreground">{job.current_lead_name}</span></>
-            )}
+            {job.sent_count}/{job.valid_leads} enviados
+            {job.failed_count > 0 && <span className="text-red-500"> • {job.failed_count} falhas</span>}
           </span>
-          <span>
-            ⏱️ ~{estimatedMinutes} min restantes
-          </span>
-        </div>
-      )}
-
-      {/* Stats Grid */}
-      <div className="grid grid-cols-4 gap-2 py-2">
-        <div className="text-center">
-          <div className="text-2xl font-semibold text-foreground">{job.total_leads}</div>
-          <div className="text-xs text-muted-foreground">Total</div>
-        </div>
-        <div className="text-center">
-          <div className="text-2xl font-semibold text-foreground">{job.valid_leads}</div>
-          <div className="text-xs text-muted-foreground">Válidos</div>
-        </div>
-        <div className="text-center">
-          <div className="text-2xl font-semibold text-green-500">{job.sent_count}</div>
-          <div className="text-xs text-muted-foreground">Enviados</div>
-        </div>
-        <div className="text-center">
-          <div className="text-2xl font-semibold text-red-500">{job.failed_count}</div>
-          <div className="text-xs text-muted-foreground">Falhas</div>
+          {job.status === 'running' && remainingLeads > 0 && (
+            <span>~{estimatedMinutes}min restantes</span>
+          )}
+          {job.status === 'completed' && (
+            <span className="text-green-500">Concluído</span>
+          )}
+          {job.status === 'paused' && (
+            <span className="text-yellow-500">Pausado</span>
+          )}
         </div>
       </div>
 
-      {/* Actions */}
+      {/* Compact action buttons */}
       {(job.status === 'running' || job.status === 'paused') && (
-        <div className="flex items-center gap-2 pt-2 border-t border-border">
+        <div className="flex items-center gap-2 mt-2">
           {job.status === 'running' ? (
             <Button
-              variant="outline"
+              variant="ghost"
               size="sm"
               onClick={() => onCommand(`PAUSE_DISPATCH:${job.id}`)}
-              className="flex-1"
+              className="h-7 px-2 text-xs"
             >
-              <Pause className="w-4 h-4 mr-2" />
+              <Pause className="w-3 h-3 mr-1" />
               Pausar
             </Button>
           ) : (
             <Button
-              variant="outline"
+              variant="ghost"
               size="sm"
               onClick={() => onCommand(`RESUME_DISPATCH:${job.id}`)}
-              className="flex-1"
+              className="h-7 px-2 text-xs"
             >
-              <Play className="w-4 h-4 mr-2" />
+              <Play className="w-3 h-3 mr-1" />
               Retomar
             </Button>
           )}
           <Button
-            variant="outline"
+            variant="ghost"
             size="sm"
             onClick={() => onCommand(`CANCEL_DISPATCH:${job.id}`)}
-            className="flex-1 text-red-500 hover:text-red-600 hover:border-red-300"
+            className="h-7 px-2 text-xs text-red-500 hover:text-red-600"
           >
-            <X className="w-4 h-4 mr-2" />
+            <X className="w-3 h-3 mr-1" />
             Cancelar
           </Button>
-        </div>
-      )}
-
-      {/* Completed/Cancelled message */}
-      {job.status === 'completed' && (
-        <div className="text-center text-sm text-green-600 pt-2 border-t border-border">
-          ✅ Disparo concluído com sucesso!
-        </div>
-      )}
-      {job.status === 'cancelled' && (
-        <div className="text-center text-sm text-muted-foreground pt-2 border-t border-border">
-          Disparo cancelado pelo usuário
         </div>
       )}
     </motion.div>

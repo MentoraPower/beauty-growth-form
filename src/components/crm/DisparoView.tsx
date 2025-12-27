@@ -147,7 +147,7 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
 
         const assistantMessage: Message = {
           id: crypto.randomUUID(),
-          content: `Encontrei **${result.data.validLeads}** leads válidos na lista "${subOriginName}"! 🎯`,
+          content: `Encontrei ${result.data.validLeads} leads válidos na lista "${subOriginName}"`,
           role: "assistant",
           timestamp: new Date(),
           component: (
@@ -198,7 +198,7 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
         setActiveJobId(result.data.jobId);
         const assistantMessage: Message = {
           id: crypto.randomUUID(),
-          content: `Disparo iniciado! 🚀 Enviando para **${result.data.validLeads}** leads...`,
+          content: `Disparo iniciado. Enviando para ${result.data.validLeads} leads...`,
           role: "assistant",
           timestamp: new Date(),
           component: (
@@ -634,12 +634,20 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
   );
 }
 
-// Component to display origins list as clickable table
+// Component to display origins list with grouped selection
 function OriginsListComponent({ origins, onSelect }: { origins: Origin[]; onSelect?: (subOriginId: string, subOriginName: string, originName: string) => void }) {
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [selectedOriginId, setSelectedOriginId] = useState<string | null>(null);
+  const [selectedSubOriginId, setSelectedSubOriginId] = useState<string | null>(null);
 
-  const handleSelect = (subOrigin: { id: string; nome: string }, originName: string) => {
-    setSelectedId(subOrigin.id);
+  const selectedOrigin = origins.find(o => o.id === selectedOriginId);
+
+  const handleOriginSelect = (originId: string) => {
+    setSelectedOriginId(originId);
+    setSelectedSubOriginId(null);
+  };
+
+  const handleSubOriginSelect = (subOrigin: { id: string; nome: string }, originName: string) => {
+    setSelectedSubOriginId(subOrigin.id);
     onSelect?.(subOrigin.id, subOrigin.nome, originName);
   };
 
@@ -647,125 +655,85 @@ function OriginsListComponent({ origins, onSelect }: { origins: Origin[]; onSele
     <motion.div
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      className="bg-card border border-border rounded-xl overflow-hidden my-4"
+      className="my-4 space-y-3"
     >
-      <div className="px-4 py-3 border-b border-border bg-muted/30">
-        <h3 className="font-medium text-foreground">📋 Selecione uma lista</h3>
-      </div>
-      <div className="max-h-[300px] overflow-y-auto">
-        <table className="w-full">
-          <thead className="bg-muted/50 sticky top-0">
-            <tr>
-              <th className="text-left text-xs font-medium text-muted-foreground px-4 py-2">Origem</th>
-              <th className="text-left text-xs font-medium text-muted-foreground px-4 py-2">Lista</th>
-              <th className="text-right text-xs font-medium text-muted-foreground px-4 py-2">Ação</th>
-            </tr>
-          </thead>
-          <tbody>
-            {origins.flatMap(origin => 
-              origin.crm_sub_origins.map(sub => (
-                <tr 
-                  key={sub.id}
-                  onClick={() => handleSelect(sub, origin.nome)}
-                  className={cn(
-                    "border-b border-border/50 cursor-pointer transition-colors",
-                    selectedId === sub.id 
-                      ? "bg-primary/10" 
-                      : "hover:bg-muted/50"
-                  )}
-                >
-                  <td className="px-4 py-3 text-sm text-muted-foreground">{origin.nome}</td>
-                  <td className="px-4 py-3 text-sm font-medium text-foreground">{sub.nome}</td>
-                  <td className="px-4 py-3 text-right">
-                    {selectedId === sub.id ? (
-                      <span className="text-xs text-primary font-medium">✓ Selecionado</span>
-                    ) : (
-                      <span className="text-xs text-muted-foreground">Clique para selecionar</span>
-                    )}
-                  </td>
-                </tr>
-              ))
+      {/* Step 1: Select Origin */}
+      <div className="text-sm text-muted-foreground mb-2">Selecione a origem:</div>
+      <div className="flex flex-wrap gap-2">
+        {origins.map(origin => (
+          <button
+            key={origin.id}
+            onClick={() => handleOriginSelect(origin.id)}
+            className={cn(
+              "px-3 py-1.5 rounded-lg text-sm transition-colors",
+              selectedOriginId === origin.id
+                ? "bg-primary text-primary-foreground"
+                : "bg-muted hover:bg-muted/80 text-foreground"
             )}
-          </tbody>
-        </table>
+          >
+            {origin.nome}
+          </button>
+        ))}
       </div>
+
+      {/* Step 2: Select Sub-Origin */}
+      {selectedOrigin && (
+        <motion.div
+          initial={{ opacity: 0, height: 0 }}
+          animate={{ opacity: 1, height: 'auto' }}
+          className="mt-3"
+        >
+          <div className="text-sm text-muted-foreground mb-2">Selecione a lista:</div>
+          <div className="flex flex-wrap gap-2">
+            {selectedOrigin.crm_sub_origins.map(sub => (
+              <button
+                key={sub.id}
+                onClick={() => handleSubOriginSelect(sub, selectedOrigin.nome)}
+                className={cn(
+                  "px-3 py-1.5 rounded-lg text-sm transition-colors",
+                  selectedSubOriginId === sub.id
+                    ? "bg-green-500 text-white"
+                    : "bg-muted hover:bg-muted/80 text-foreground"
+                )}
+              >
+                {sub.nome}
+              </button>
+            ))}
+          </div>
+        </motion.div>
+      )}
     </motion.div>
   );
 }
 
-// Component to display leads preview
+// Component to display leads preview - Simple text format
 function LeadsPreviewComponent({ preview }: { preview: LeadsPreview }) {
-  const getTypeIcon = () => {
-    switch (preview.dispatchType) {
-      case 'email': return '📧';
-      case 'whatsapp_web': return '📱';
-      default: return '📤';
-    }
-  };
-
   return (
     <motion.div
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      className="bg-card border border-border rounded-xl p-4 my-4"
+      className="my-3 text-sm text-foreground space-y-1"
     >
-      <h3 className="font-medium text-foreground mb-3">
-        {getTypeIcon()} Preview do Disparo
-      </h3>
-      
-      <div className="grid grid-cols-2 gap-4 mb-4">
-        <div className="bg-muted/50 rounded-lg p-3 text-center">
-          <div className="text-2xl font-bold text-foreground">{preview.totalLeads}</div>
-          <div className="text-xs text-muted-foreground">Total de leads</div>
-        </div>
-        <div className="bg-muted/50 rounded-lg p-3 text-center">
-          <div className="text-2xl font-bold text-green-500">{preview.validLeads}</div>
-          <div className="text-xs text-muted-foreground">Leads válidos</div>
-        </div>
-      </div>
-
+      <p>Total de leads: {preview.totalLeads}</p>
+      <p>Leads válidos: <span className="text-green-500 font-medium">{preview.validLeads}</span></p>
       {preview.invalidLeads > 0 && (
-        <div className="text-sm text-yellow-600 mb-3">
-          ⚠️ {preview.invalidLeads} leads sem {preview.dispatchType === 'email' ? 'email válido' : 'WhatsApp válido'}
-        </div>
+        <p className="text-yellow-600">{preview.invalidLeads} leads sem {preview.dispatchType === 'email' ? 'email' : 'WhatsApp'} válido</p>
       )}
-
-      <div className="space-y-2 text-sm mb-4">
-        <div className="flex justify-between">
-          <span className="text-muted-foreground">Origem:</span>
-          <span className="text-foreground">{preview.originName}</span>
-        </div>
-        <div className="flex justify-between">
-          <span className="text-muted-foreground">Lista:</span>
-          <span className="text-foreground">{preview.subOriginName}</span>
-        </div>
-        <div className="flex justify-between">
-          <span className="text-muted-foreground">Intervalo:</span>
-          <span className="text-foreground">{preview.intervalSeconds}s entre envios</span>
-        </div>
-        <div className="flex justify-between">
-          <span className="text-muted-foreground">Tempo estimado:</span>
-          <span className="text-foreground">~{preview.estimatedMinutes} minutos</span>
-        </div>
-      </div>
-
+      <p>Origem: {preview.originName}</p>
+      <p>Lista: {preview.subOriginName}</p>
+      <p>Intervalo: {preview.intervalSeconds}s entre envios</p>
+      <p>Tempo estimado: ~{preview.estimatedMinutes} minutos</p>
+      
       {preview.leads.length > 0 && (
-        <div className="border-t border-border pt-3">
-          <div className="text-xs text-muted-foreground mb-2">Primeiros leads:</div>
-          <div className="space-y-1">
-            {preview.leads.map((lead, i) => (
-              <div key={i} className="text-sm text-foreground flex justify-between">
-                <span>{lead.name}</span>
-                <span className="text-muted-foreground text-xs">{lead.contact}</span>
-              </div>
-            ))}
-          </div>
+        <div className="mt-2 pt-2 border-t border-border/50">
+          <p className="text-muted-foreground text-xs mb-1">Primeiros leads:</p>
+          {preview.leads.map((lead, i) => (
+            <p key={i} className="text-xs">
+              {lead.name} - <span className="text-muted-foreground">{lead.contact}</span>
+            </p>
+          ))}
         </div>
       )}
-
-      <p className="text-xs text-muted-foreground mt-3">
-        Confirme para iniciar o disparo
-      </p>
     </motion.div>
   );
 }
@@ -844,7 +812,7 @@ function CsvLeadsPreviewComponent({ leads, type }: { leads: CsvLead[]; type: 'em
   );
 }
 
-// Component for HTML/message input
+// Component for HTML/message input - Modern code-style like ChatGPT
 function HtmlEditorComponent({ onSubmit }: { onSubmit: (html: string) => void }) {
   const [content, setContent] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -858,63 +826,73 @@ function HtmlEditorComponent({ onSubmit }: { onSubmit: (html: string) => void })
     onSubmit(content);
   };
 
+  const handleCopy = () => {
+    navigator.clipboard.writeText(content);
+    toast.success("Copiado!");
+  };
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      className="bg-card border border-border rounded-xl overflow-hidden my-4"
+      className="my-4"
     >
-      <div className="px-4 py-3 border-b border-border bg-muted/30 flex items-center justify-between">
-        <h3 className="font-medium text-foreground">📝 Template do Email</h3>
-        <div className="flex items-center gap-2 text-xs text-muted-foreground">
-          <span>Use</span>
-          <code className="bg-muted px-1 py-0.5 rounded">{"{{name}}"}</code>
-          <span>para o nome do lead</span>
-        </div>
+      <div className="text-sm text-muted-foreground mb-2">Template do Email</div>
+      <div className="text-xs text-muted-foreground mb-3">
+        Use <code className="bg-muted px-1 py-0.5 rounded text-foreground">{"{{name}}"}</code> para o nome do lead
       </div>
       
-      <div className="p-4">
-        <div className="mb-3">
-          <textarea
-            value={content}
-            onChange={(e) => setContent(e.target.value)}
-            placeholder="Cole aqui o HTML do email ou digite uma mensagem simples...
+      {/* Code-style container like ChatGPT */}
+      <div className="rounded-lg overflow-hidden border border-border bg-[#1e1e1e]">
+        {/* Header bar */}
+        <div className="flex items-center justify-between px-4 py-2 bg-[#2d2d2d] border-b border-[#404040]">
+          <span className="text-xs text-[#999]">
+            {content.includes('<') ? 'html' : 'text'}
+          </span>
+          <button 
+            onClick={handleCopy}
+            className="text-xs text-[#999] hover:text-white transition-colors flex items-center gap-1.5"
+          >
+            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+            </svg>
+            Copiar código
+          </button>
+        </div>
+        
+        {/* Code textarea */}
+        <textarea
+          value={content}
+          onChange={(e) => setContent(e.target.value)}
+          placeholder={`Cole aqui o HTML do email ou mensagem simples...
 
-Exemplo de HTML:
+Exemplo HTML:
 <html>
   <body>
     <h1>Olá {{name}}!</h1>
-    <p>Temos uma oferta especial para você.</p>
+    <p>Temos uma oferta especial.</p>
   </body>
 </html>
 
 Ou mensagem simples:
-Olá {{name}}, temos uma oferta especial para você!"
-            className={cn(
-              "w-full h-48 p-3 rounded-lg border border-border bg-muted/30",
-              "font-mono text-sm text-foreground placeholder:text-muted-foreground",
-              "focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary",
-              "resize-none"
-            )}
-          />
-        </div>
+Olá {{name}}, temos uma oferta especial!`}
+          className="w-full h-56 p-4 bg-[#1e1e1e] font-mono text-sm text-[#d4d4d4] placeholder:text-[#666] focus:outline-none resize-none"
+          spellCheck={false}
+        />
+      </div>
 
-        <div className="flex items-center justify-between">
-          <div className="text-xs text-muted-foreground">
-            {content.includes('<') ? '📧 Formato HTML detectado' : '📝 Mensagem simples'}
-          </div>
-          <button
-            onClick={handleSubmit}
-            disabled={isSubmitting || !content.trim()}
-            className={cn(
-              "px-4 py-2 rounded-lg text-sm font-medium transition-colors",
-              "bg-primary text-primary-foreground hover:bg-primary/90",
-              "disabled:opacity-50 disabled:cursor-not-allowed"
-            )}
-          >
-            {isSubmitting ? "Iniciando..." : "🚀 Iniciar Disparo"}
-          </button>
-        </div>
+      <div className="flex items-center justify-end mt-3">
+        <button
+          onClick={handleSubmit}
+          disabled={isSubmitting || !content.trim()}
+          className={cn(
+            "px-4 py-2 rounded-lg text-sm font-medium transition-colors",
+            "bg-primary text-primary-foreground hover:bg-primary/90",
+            "disabled:opacity-50 disabled:cursor-not-allowed"
+          )}
+        >
+          {isSubmitting ? "Iniciando..." : "Iniciar Disparo"}
+        </button>
       </div>
     </motion.div>
   );
