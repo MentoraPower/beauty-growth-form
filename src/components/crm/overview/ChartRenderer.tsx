@@ -198,7 +198,7 @@ export function ChartRenderer({
       const labelFontSize = Math.max(Math.min(height * 0.04, 10), 8);
       
       return (
-        <div className="relative w-full h-full flex">
+        <div className="relative w-full h-full flex rounded-xl" style={{ border: '1px solid #00000005' }}>
           {/* Chart */}
           <div className="flex-1 relative">
             <ResponsiveContainer width="100%" height="100%">
@@ -267,7 +267,8 @@ export function ChartRenderer({
       const maxValue = Math.max(...areaData.map(d => d.count), 1);
       
       return (
-        <ResponsiveContainer width="100%" height="100%">
+        <div className="rounded-xl" style={{ border: '1px solid #00000005' }}>
+          <ResponsiveContainer width="100%" height="100%">
           <AreaChart data={areaData} margin={{ top: 20, right: 10, left: -15, bottom: 0 }}>
             <defs>
               <linearGradient id={`areaGradient-${cardId}`} x1="0" y1="0" x2="0" y2="1">
@@ -316,6 +317,7 @@ export function ChartRenderer({
             />
           </AreaChart>
         </ResponsiveContainer>
+        </div>
       );
     }
 
@@ -327,7 +329,7 @@ export function ChartRenderer({
       const maxCount = Math.max(...barData.map(d => d.count), 1);
       
       return (
-        <div className="h-full flex flex-col justify-between py-1">
+        <div className="h-full flex flex-col justify-between py-1 rounded-xl" style={{ border: '1px solid #00000005' }}>
           {barData.map((item, index) => {
             const percentage = (item.count / maxCount) * 100;
             return (
@@ -369,7 +371,7 @@ export function ChartRenderer({
         return renderEmptyState();
       }
       return (
-        <div className="flex flex-col items-center justify-center h-full gap-2">
+        <div className="flex flex-col items-center justify-center h-full gap-2 rounded-xl" style={{ border: '1px solid #00000005' }}>
           <div className="relative">
             <div className="absolute inset-0 blur-2xl bg-gradient-to-r from-primary/20 to-primary/10 rounded-full" />
             <div className="relative flex items-center gap-2">
@@ -402,7 +404,8 @@ export function ChartRenderer({
       };
       
       return (
-        <ScrollArea className="h-full">
+        <div className="rounded-xl" style={{ border: '1px solid #00000005' }}>
+          <ScrollArea className="h-full">
           <div className="flex flex-col gap-2 pr-3">
             {listData.map((lead, index) => {
               const formattedDate = formatDate(lead.created_at);
@@ -437,6 +440,7 @@ export function ChartRenderer({
             })}
           </div>
         </ScrollArea>
+        </div>
       );
     }
 
