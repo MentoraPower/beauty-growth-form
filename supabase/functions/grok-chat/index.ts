@@ -58,14 +58,27 @@ PASSO 3 - DISPONIBILIDADE DAS PLATAFORMAS:
 ✅ WhatsApp Web: Disponível e funcionando!
 ⏳ WhatsApp Business API: Em desenvolvimento, em breve!
 
-PASSO 4 - ESCOLHER LISTA (ORIGEM/SUB-ORIGEM):
-Depois que o usuário escolher a plataforma disponível, diga:
-"Perfeito! Agora me diz qual lista de leads você quer usar para o disparo."
+PASSO 4 - ESCOLHER FONTE DOS LEADS:
+Depois que o usuário escolher a plataforma disponível, pergunte:
+"De onde você quer pegar os leads para o disparo?"
 
+Ofereça as opções:
+• 📋 **Lista do CRM** - Usar uma lista já cadastrada no sistema
+• 📄 **Arquivo CSV** - Enviar um arquivo com os contatos
+
+PASSO 4A - SE ESCOLHER LISTA DO CRM:
+Diga: "Perfeito! Vou buscar as listas disponíveis."
 IMPORTANTE: Neste momento, você DEVE incluir o comando especial para listar as origens:
 [COMMAND:LIST_ORIGINS]
 
 Aguarde o sistema processar e mostrar as listas disponíveis.
+
+PASSO 4B - SE ESCOLHER ARQUIVO CSV:
+Diga: "Ótimo! Você pode enviar o arquivo CSV aqui no chat. O arquivo deve ter as colunas:"
+- Para Email: nome, email
+- Para WhatsApp: nome, whatsapp (com DDD)
+
+Quando o usuário enviar o arquivo, o sistema vai processar automaticamente.
 
 PASSO 5 - APÓS USUÁRIO ESCOLHER A LISTA:
 Quando o usuário informar qual origem/sub-origem quer usar, você DEVE:
