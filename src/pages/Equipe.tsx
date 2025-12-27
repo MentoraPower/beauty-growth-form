@@ -6,9 +6,6 @@ import {
   Plus, 
   Mail, 
   Phone, 
-  CheckCircle2, 
-  Clock, 
-  LayoutGrid,
   Settings2,
   Trash2,
   Calendar,
@@ -65,40 +62,8 @@ export default function Equipe() {
     },
   });
 
-  // Fetch activity stats for selected member
-  const { data: memberStats } = useQuery({
-    queryKey: ["team-member-stats", selectedMember?.user_id],
-    queryFn: async () => {
-      if (!selectedMember) return null;
-
-      const { data: activities, error } = await supabase
-        .from("lead_activities")
-        .select("id, concluida, created_at, titulo")
-        .limit(500);
-
-      if (error) {
-        console.error("Error fetching activities:", error);
-        return {
-          completedActivities: 0,
-          pendingActivities: 0,
-          assignedCards: 0,
-          recentActivities: [],
-        };
-      }
-
-      const completed = activities?.filter(a => a.concluida).length || 0;
-      const pending = activities?.filter(a => !a.concluida).length || 0;
-      const recentActivities = activities?.slice(0, 5) || [];
-
-      return {
-        completedActivities: completed,
-        pendingActivities: pending,
-        assignedCards: Math.floor(Math.random() * 30),
-        recentActivities,
-      };
-    },
-    enabled: !!selectedMember,
-  });
+  // No stats available yet - would require user_id tracking on activities
+  const memberStats = null;
 
   const deleteMember = useMutation({
     mutationFn: async (userId: string) => {
@@ -131,11 +96,6 @@ export default function Equipe() {
     }
   };
 
-  const completionRate = memberStats 
-    ? memberStats.completedActivities + memberStats.pendingActivities > 0
-      ? Math.round((memberStats.completedActivities / (memberStats.completedActivities + memberStats.pendingActivities)) * 100)
-      : 0
-    : 0;
 
   if (isLoading) {
     return (
@@ -243,112 +203,28 @@ export default function Equipe() {
               </div>
             </div>
 
-            {/* Info Blocks Grid */}
-            <div className="grid grid-cols-3 gap-4">
-              {/* Contact Info Block */}
-              <div className="bg-white rounded-lg p-4" style={{ border: '1px solid #00000010' }}>
-                <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-3">Contato</h3>
-                <div className="space-y-3">
-                  <div className="flex items-center gap-2.5">
-                    <Mail className="h-4 w-4 text-muted-foreground" />
-                    <span className="text-sm text-foreground truncate">{selectedMember.email || "—"}</span>
-                  </div>
-                  <div className="flex items-center gap-2.5">
-                    <Phone className="h-4 w-4 text-muted-foreground" />
-                    <span className="text-sm text-foreground">{selectedMember.phone || "—"}</span>
-                  </div>
-                  <div className="flex items-center gap-2.5">
-                    <Calendar className="h-4 w-4 text-muted-foreground" />
-                    <span className="text-sm text-foreground">
-                      {selectedMember.created_at 
-                        ? format(new Date(selectedMember.created_at), "dd/MM/yyyy", { locale: ptBR })
-                        : "—"
-                      }
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Stats Block */}
-              <div className="bg-white rounded-lg p-4" style={{ border: '1px solid #00000010' }}>
-                <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-3">Estatísticas</h3>
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2.5">
-                      <LayoutGrid className="h-4 w-4 text-muted-foreground" />
-                      <span className="text-sm text-muted-foreground">Cards</span>
-                    </div>
-                    <span className="text-sm font-semibold text-foreground">{memberStats?.assignedCards || 0}</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2.5">
-                      <CheckCircle2 className="h-4 w-4 text-emerald-500" />
-                      <span className="text-sm text-muted-foreground">Concluídas</span>
-                    </div>
-                    <span className="text-sm font-semibold text-emerald-600">{memberStats?.completedActivities || 0}</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2.5">
-                      <Clock className="h-4 w-4 text-amber-500" />
-                      <span className="text-sm text-muted-foreground">Pendentes</span>
-                    </div>
-                    <span className="text-sm font-semibold text-amber-600">{memberStats?.pendingActivities || 0}</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Completion Rate Block */}
-              <div className="bg-white rounded-lg p-4" style={{ border: '1px solid #00000010' }}>
-                <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-3">Taxa de Conclusão</h3>
-                <div className="flex flex-col items-center justify-center h-[calc(100%-24px)]">
-                  <span className="text-4xl font-bold text-foreground">{completionRate}%</span>
-                  <div className="w-full mt-3">
-                    <div className="h-2 bg-muted rounded-full overflow-hidden">
-                      <div 
-                        className="h-full bg-emerald-500 rounded-full transition-all duration-500"
-                        style={{ width: `${completionRate}%` }}
-                      />
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Recent Activities Block */}
+            {/* Info Block */}
             <div className="bg-white rounded-lg p-4" style={{ border: '1px solid #00000010' }}>
-              <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-3">Atividades Recentes</h3>
-              
-              {memberStats?.recentActivities && memberStats.recentActivities.length > 0 ? (
-                <div className="grid grid-cols-2 gap-3">
-                  {memberStats.recentActivities.map((activity: any, index: number) => (
-                    <div 
-                      key={activity.id || index}
-                      className="flex items-center gap-3 p-3 bg-muted/30 rounded-lg"
-                    >
-                      <div className={cn(
-                        "w-2 h-2 rounded-full flex-shrink-0",
-                        activity.concluida ? "bg-emerald-500" : "bg-amber-500"
-                      )} />
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm text-foreground truncate">
-                          {activity.titulo || `Atividade #${index + 1}`}
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                          {activity.created_at 
-                            ? format(new Date(activity.created_at), "dd/MM/yyyy", { locale: ptBR })
-                            : "—"
-                          }
-                        </p>
-                      </div>
-                    </div>
-                  ))}
+              <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-3">Contato</h3>
+              <div className="space-y-3">
+                <div className="flex items-center gap-2.5">
+                  <Mail className="h-4 w-4 text-muted-foreground" />
+                  <span className="text-sm text-foreground truncate">{selectedMember.email || "—"}</span>
                 </div>
-              ) : (
-                <div className="flex flex-col items-center justify-center py-8 text-muted-foreground">
-                  <FolderOpen className="w-8 h-8 mb-2 opacity-40" />
-                  <p className="text-sm">Nenhuma atividade</p>
+                <div className="flex items-center gap-2.5">
+                  <Phone className="h-4 w-4 text-muted-foreground" />
+                  <span className="text-sm text-foreground">{selectedMember.phone || "—"}</span>
                 </div>
-              )}
+                <div className="flex items-center gap-2.5">
+                  <Calendar className="h-4 w-4 text-muted-foreground" />
+                  <span className="text-sm text-foreground">
+                    Cadastrado em {selectedMember.created_at 
+                      ? format(new Date(selectedMember.created_at), "dd/MM/yyyy", { locale: ptBR })
+                      : "—"
+                    }
+                  </span>
+                </div>
+              </div>
             </div>
           </div>
         ) : (
