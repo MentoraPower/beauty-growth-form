@@ -174,16 +174,16 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
         return; // Already on CRM with origin, nothing to do
       }
 
-      // Try to use last saved origin for instant navigation
+      // Try to use last saved origin for instant navigation - always open in overview
       const lastOrigin = localStorage.getItem('crm_last_sub_origin');
       if (lastOrigin) {
-        navigate(`/admin/crm?origin=${lastOrigin}`, { replace: true });
+        navigate(`/admin/crm?origin=${lastOrigin}&view=overview`, { replace: true });
         return;
       }
 
-      // No last origin - navigate to CRM (will show skeleton) and fetch default async
+      // No last origin - navigate to CRM with overview (will show skeleton) and fetch default async
       if (!location.pathname.startsWith('/admin/crm')) {
-        navigate('/admin/crm');
+        navigate('/admin/crm?view=overview');
       }
 
       // Fetch default origin in background
@@ -204,9 +204,10 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
           .limit(1);
 
         if (subOrigins && subOrigins.length > 0) {
-          navigate(`/admin/crm?origin=${subOrigins[0].id}`, { replace: true });
+          navigate(`/admin/crm?origin=${subOrigins[0].id}&view=overview`, { replace: true });
         }
       })();
+
 
       return;
     }
