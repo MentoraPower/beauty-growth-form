@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { Resend } from "https://esm.sh/resend@2.0.0";
 
 declare const EdgeRuntime: {
   waitUntil(promise: Promise<unknown>): void;
@@ -9,6 +10,9 @@ const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
+
+// Initialize Resend
+const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -44,6 +48,16 @@ serve(async (req) => {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
+
+    // Get email settings for sender info
+    const { data: emailSettings } = await supabase
+      .from('email_settings')
+      .select('*')
+      .limit(1)
+      .single();
+
+    const fromName = emailSettings?.from_name || 'Scale Beauty';
+    const fromEmail = emailSettings?.from_email || 'onboarding@resend.dev';
 
     // Get leads for this job
     const { data: leads, error: leadsError } = await supabase
@@ -97,16 +111,52 @@ serve(async (req) => {
             .update({ current_lead_name: lead.name })
             .eq('id', jobId);
 
-          // Simulate sending (replace with actual email/whatsapp logic)
           if (job.type === 'email') {
-            // TODO: Integrate with send-email function
+            // Send email via Resend
             console.log(`Sending email to ${lead.name} (${lead.email})`);
-            // For now, simulate success
-            await new Promise(resolve => setTimeout(resolve, 500));
+            
+            // Replace {{name}} placeholder in message template
+            const personalizedMessage = (job.message_template || 'Olá {{name}}!')
+              .replace(/\{\{name\}\}/g, lead.name);
+            
+            const emailResponse = await resend.emails.send({
+              from: `${fromName} <${fromEmail}>`,
+              to: [lead.email],
+              subject: `Mensagem para ${lead.name}`,
+              html: `
+                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                  <p>${personalizedMessage.replace(/\n/g, '<br>')}</p>
+                </div>
+              `,
+            });
+
+            const resendError = (emailResponse as any)?.error;
+            if (resendError) {
+              throw new Error(
+                typeof resendError === "string"
+                  ? resendError
+                  : resendError?.message || "Erro ao enviar e-mail"
+              );
+            }
+
+            console.log(`Email sent successfully to ${lead.email}:`, emailResponse);
+
+            // Record sent email in database
+            await supabase.from("sent_emails").insert({
+              lead_id: lead.id,
+              lead_name: lead.name,
+              lead_email: lead.email,
+              subject: `Mensagem para ${lead.name}`,
+              body_html: personalizedMessage,
+              status: "sent",
+              resend_id: (emailResponse as any)?.data?.id ?? null,
+              sent_at: new Date().toISOString(),
+            });
+
           } else {
-            // TODO: Integrate with wasender-whatsapp function
+            // WhatsApp sending via wasender
             console.log(`Sending WhatsApp to ${lead.name} (${lead.country_code}${lead.whatsapp})`);
-            // For now, simulate success
+            // TODO: Integrate with wasender-whatsapp function
             await new Promise(resolve => setTimeout(resolve, 500));
           }
 
