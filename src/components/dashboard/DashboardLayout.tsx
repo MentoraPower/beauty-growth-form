@@ -58,6 +58,25 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
     return location.pathname.startsWith("/admin/crm") || location.pathname === "/admin";
   });
 
+  // Mount/unmount submenu content with a small delay so the open animation stays smooth
+  const [crmSubmenuContentMounted, setCrmSubmenuContentMounted] = useState(() => {
+    const saved = localStorage.getItem('crm_submenu_open');
+    if (saved !== null) {
+      return saved === 'true';
+    }
+    return location.pathname.startsWith("/admin/crm") || location.pathname === "/admin";
+  });
+
+  useEffect(() => {
+    if (crmSubmenuOpen) {
+      const t = window.setTimeout(() => setCrmSubmenuContentMounted(true), 140);
+      return () => window.clearTimeout(t);
+    }
+
+    const t = window.setTimeout(() => setCrmSubmenuContentMounted(false), 240);
+    return () => window.clearTimeout(t);
+  }, [crmSubmenuOpen]);
+
   // Persist submenu state to localStorage
   useEffect(() => {
     localStorage.setItem('crm_submenu_open', String(crmSubmenuOpen));
@@ -137,39 +156,49 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
     localStorage.setItem('active_panel', activePanel);
   }, [activePanel]);
 
-  // Navigate to first sub-origin of first origin when CRM is clicked
-  const handleNavClick = async (panelId: ActivePanel) => {
+  // Navigate to CRM immediately; load the first origin in the background only if needed
+  const handleNavClick = (panelId: ActivePanel) => {
     setActivePanel(panelId);
-    
+
     if (panelId === 'crm') {
       setCrmSubmenuOpen(true);
-      // Get first origin ordered by 'ordem'
-      const { data: origins } = await supabase
-        .from('crm_origins')
-        .select('id')
-        .order('ordem')
-        .limit(1);
-      
-      if (origins && origins.length > 0) {
-        // Get first sub-origin of that origin
+
+      // Navigate instantly (don't await DB calls)
+      const alreadyOnCrm = location.pathname.startsWith('/admin/crm');
+      if (!alreadyOnCrm) {
+        navigate('/admin/crm');
+      }
+
+      // If there's already an origin in the URL, keep it
+      const originParam = new URLSearchParams(location.search).get('origin');
+      if (originParam) return;
+
+      // Otherwise, resolve the default origin asynchronously and replace the URL
+      void (async () => {
+        const { data: origins } = await supabase
+          .from('crm_origins')
+          .select('id')
+          .order('ordem')
+          .limit(1);
+
+        if (!origins || origins.length === 0) return;
+
         const { data: subOrigins } = await supabase
           .from('crm_sub_origins')
           .select('id')
           .eq('origin_id', origins[0].id)
           .order('ordem')
           .limit(1);
-        
+
         if (subOrigins && subOrigins.length > 0) {
-          navigate(`/admin/crm?origin=${subOrigins[0].id}`);
-        } else {
-          navigate('/admin/crm');
+          navigate(`/admin/crm?origin=${subOrigins[0].id}`, { replace: true });
         }
-      } else {
-        navigate('/admin/crm');
-      }
-    } else {
-      setCrmSubmenuOpen(false);
+      })();
+
+      return;
     }
+
+    setCrmSubmenuOpen(false);
   };
 
   // Navigate when panel changes
@@ -483,33 +512,38 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
           </div>
         </aside>
 
-        {/* CRM Submenu Panel - pushes content, comes out of fixed menu */}
+        {/* CRM Submenu Panel - pushes content (via mainContentMargin) */}
         <div
-          style={{ 
+          style={{
             left: sidebarCollapsedWidth + 12,
-            width: crmSubmenuOpen ? submenuWidth : 0,
+            width: submenuWidth,
+            transform: crmSubmenuOpen ? 'translateX(0)' : `translateX(-${submenuWidth + 16}px)`,
+            opacity: crmSubmenuOpen ? 1 : 0,
             zIndex: 39,
             pointerEvents: crmSubmenuOpen ? 'auto' : 'none',
-            willChange: 'width',
+            willChange: 'transform, opacity',
           }}
-          className="hidden lg:block fixed top-[24px] bottom-[24px] rounded-r-2xl bg-zinc-900 overflow-hidden transition-[width] duration-300 ease-out"
+          className="hidden lg:block fixed top-[24px] bottom-[24px] rounded-r-2xl bg-zinc-900 overflow-hidden transition-[transform,opacity] duration-300 ease-out"
         >
-          <div 
+          <div
             className="h-full pl-4 pr-2"
-            style={{ 
-              width: submenuWidth, 
+            style={{
+              width: submenuWidth,
               minWidth: submenuWidth,
-              opacity: crmSubmenuOpen ? 1 : 0,
-              transition: 'opacity 150ms ease-out',
-              transitionDelay: crmSubmenuOpen ? '100ms' : '0ms',
             }}
           >
-            <CRMOriginsPanel 
-              isOpen={crmSubmenuOpen} 
-              onClose={() => setCrmSubmenuOpen(false)}
-              sidebarWidth={sidebarCollapsedWidth}
-              embedded={true}
-            />
+            {crmSubmenuContentMounted ? (
+              <CRMOriginsPanel
+                isOpen={crmSubmenuOpen}
+                onClose={() => setCrmSubmenuOpen(false)}
+                sidebarWidth={sidebarCollapsedWidth}
+                embedded={true}
+              />
+            ) : (
+              <div className="h-full flex items-center justify-center">
+                <span className="text-sm text-white/60">Carregando…</span>
+              </div>
+            )}
           </div>
         </div>
 
