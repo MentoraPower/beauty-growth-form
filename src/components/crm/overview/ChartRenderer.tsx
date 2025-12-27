@@ -198,6 +198,15 @@ export function ChartRenderer({
       }
       const total = pieData.reduce((acc, cur) => acc + cur.value, 0);
       
+      // Dynamic radius based on height - scales proportionally
+      const baseRadius = Math.min(height * 0.35, 120); // Max outer radius of 120px
+      const outerRadius = Math.max(baseRadius, 40); // Min outer radius of 40px
+      const innerRadius = outerRadius * 0.6; // Inner is 60% of outer for donut effect
+      
+      // Dynamic font sizes based on height
+      const totalFontSize = Math.max(Math.min(height * 0.12, 36), 16);
+      const labelFontSize = Math.max(Math.min(height * 0.04, 10), 8);
+      
       return (
         <div className="relative w-full h-full flex">
           {/* Chart */}
@@ -216,8 +225,8 @@ export function ChartRenderer({
                   data={pieData}
                   cx="50%"
                   cy="50%"
-                  innerRadius={isLarge ? 45 : 30}
-                  outerRadius={isLarge ? 70 : 48}
+                  innerRadius={innerRadius}
+                  outerRadius={outerRadius}
                   paddingAngle={2}
                   dataKey="value"
                   strokeWidth={0}
@@ -238,23 +247,23 @@ export function ChartRenderer({
             {/* Center total */}
             <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
               <div className="text-center">
-                <p className="text-xl font-bold text-foreground">{total}</p>
-                <p className="text-[9px] text-muted-foreground uppercase tracking-wide">Total</p>
+                <p className="font-bold text-foreground" style={{ fontSize: totalFontSize }}>{total}</p>
+                <p className="text-muted-foreground uppercase tracking-wide" style={{ fontSize: labelFontSize }}>Total</p>
               </div>
             </div>
           </div>
           
           {/* Legend sidebar */}
           {isLarge && (
-            <div className="w-[120px] flex flex-col justify-center gap-1.5 pl-2">
+            <div className="w-[130px] flex flex-col justify-center gap-2 pl-3">
               {pieData.map((entry, index) => (
                 <div key={index} className="flex items-center gap-2">
                   <div 
-                    className="w-2.5 h-2.5 rounded-full shrink-0" 
+                    className="w-3 h-3 rounded-full shrink-0" 
                     style={{ background: `linear-gradient(135deg, ${MODERN_COLORS[index % MODERN_COLORS.length].gradient[0]}, ${MODERN_COLORS[index % MODERN_COLORS.length].gradient[1]})` }}
                   />
-                  <span className="text-[10px] text-muted-foreground truncate flex-1">{entry.name}</span>
-                  <span className="text-[10px] font-semibold text-foreground">{entry.value}</span>
+                  <span className="text-xs text-muted-foreground truncate flex-1">{entry.name}</span>
+                  <span className="text-xs font-semibold text-foreground">{entry.value}</span>
                 </div>
               ))}
             </div>
