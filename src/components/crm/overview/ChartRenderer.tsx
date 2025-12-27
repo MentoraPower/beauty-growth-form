@@ -321,8 +321,10 @@ export function ChartRenderer({
 
     case "bar": {
       const barData = chartData as Array<{ name: string; count: number; color: string }>;
+      if (!Array.isArray(barData) || barData.length === 0) {
+        return renderEmptyState();
+      }
       const maxCount = Math.max(...barData.map(d => d.count), 1);
-      const barCount = barData.length || 1;
       
       return (
         <TooltipProvider delayDuration={100}>
