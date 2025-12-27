@@ -191,7 +191,7 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
   const currentSidebarWidth = sidebarExpanded ? sidebarExpandedWidth : sidebarCollapsedWidth;
 
   // Main content margin - sidebar is overlay, but CRM origins panel pushes content
-  const contentGap = 12;
+  const contentGap = 4;
   const getMainContentMargin = () => {
     if (crmSubmenuOpen) {
       return sidebarCollapsedWidth + 12 + submenuWidth + contentGap;
