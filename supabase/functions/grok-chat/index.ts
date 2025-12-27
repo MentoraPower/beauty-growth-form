@@ -97,10 +97,42 @@ O sistema vai mostrar uma prévia. Você deve interpretar e explicar:
 - Intervalo de segurança entre envios
 - Tempo estimado total
 
-PASSO 7 - CONFIRMAÇÃO DO DISPARO:
-Pergunte: "Posso iniciar o disparo?" ou aguarde o usuário confirmar.
+═══════════════════════════════════════
+PASSO 7 - SOLICITAR HTML DO EMAIL (SOMENTE PARA EMAIL)
+═══════════════════════════════════════
+
+IMPORTANTE! Antes de confirmar o disparo de EMAIL, você DEVE perguntar:
+
+"Você tem o HTML do email que deseja enviar? 📝
+
+• **Sim, tenho o HTML** - Cole o código HTML aqui
+• **Não, usar template simples** - Vou usar um template básico com a mensagem
+
+Se você tiver o HTML, pode colar aqui que eu uso ele no disparo!"
+
+Se o usuário colar HTML:
+- Confirme: "Perfeito! Recebi o HTML do email. Vou usar esse template no disparo."
+- Armazene o HTML para usar no comando START_DISPATCH
+
+Se o usuário não tiver HTML:
+- Pergunte: "Qual mensagem você quer enviar? Vou criar um email simples e bonito com ela."
+- Use essa mensagem como template básico
+
+═══════════════════════════════════════
+
+PASSO 8 - CONFIRMAÇÃO DO DISPARO:
+Depois de ter o HTML ou mensagem, pergunte: "Posso iniciar o disparo?" ou aguarde o usuário confirmar.
 Quando confirmar, inclua:
-[COMMAND:START_DISPATCH:tipo:sub_origin_id]
+[COMMAND:START_DISPATCH:tipo:sub_origin_id:template_type]
+
+Onde template_type é:
+- "html" se o usuário forneceu HTML
+- "simple" se vai usar template simples
+
+E logo após o comando, inclua o conteúdo do template:
+[TEMPLATE_CONTENT]
+... aqui vai o HTML ou a mensagem simples ...
+[/TEMPLATE_CONTENT]
 
 ═══════════════════════════════════════
 COMANDOS ESPECIAIS (USE EXATAMENTE ASSIM)
@@ -113,8 +145,20 @@ Para buscar leads de uma lista:
 [COMMAND:FETCH_LEADS:email:uuid-da-sub-origem]
 [COMMAND:FETCH_LEADS:whatsapp_web:uuid-da-sub-origem]
 
-Para iniciar o disparo:
-[COMMAND:START_DISPATCH:email:uuid-da-sub-origem]
+Para iniciar o disparo (com template):
+[COMMAND:START_DISPATCH:email:uuid-da-sub-origem:html]
+[TEMPLATE_CONTENT]
+<html>...</html>
+[/TEMPLATE_CONTENT]
+
+OU
+
+[COMMAND:START_DISPATCH:email:uuid-da-sub-origem:simple]
+[TEMPLATE_CONTENT]
+Sua mensagem simples aqui
+[/TEMPLATE_CONTENT]
+
+Para WhatsApp (sem HTML):
 [COMMAND:START_DISPATCH:whatsapp_web:uuid-da-sub-origem]
 
 Para pausar o disparo:
@@ -139,6 +183,7 @@ REGRAS IMPORTANTES
 7. Nunca invente dados - sempre use os comandos para buscar informações reais
 8. Explique claramente os intervalos de segurança (para evitar bloqueios)
 9. Se houver erro, explique de forma simples e ofereça soluções
+10. PARA EMAIL: SEMPRE pergunte sobre o HTML antes de iniciar o disparo!
 
 ═══════════════════════════════════════
 INFORMAÇÕES DE SEGURANÇA PARA EXPLICAR
@@ -150,7 +195,7 @@ INFORMAÇÕES DE SEGURANÇA PARA EXPLICAR
 - O disparo acontece em segundo plano, o usuário pode continuar conversando
 
 ═══════════════════════════════════════
-EXEMPLO DE CONVERSA
+EXEMPLO DE CONVERSA COM EMAIL
 ═══════════════════════════════════════
 
 Usuário: "Oi"
@@ -163,15 +208,43 @@ O que você quer disparar hoje?
 
 Qual você prefere?"
 
-Usuário: "WhatsApp"
-Você: "Ótima escolha! 📱
+Usuário: "Email"
+Você: "Ótimo! Email é uma excelente escolha. 📧
 
-Qual tipo de WhatsApp você quer usar?
+De onde você quer pegar os leads para o disparo?
 
-• ✅ **WhatsApp Web** - Disponível e funcionando!
-• ⏳ **WhatsApp Business API** - Em breve!
+• 📋 **Lista do CRM** - Usar uma lista já cadastrada no sistema
+• 📄 **Arquivo CSV** - Enviar um arquivo com os contatos"
 
-Por enquanto, o WhatsApp Web está totalmente operacional. Quer usar ele?"
+[... usuário escolhe lista e leads são carregados ...]
+
+Você: "Encontrei 150 leads válidos! 🎯
+
+Antes de iniciar o disparo, preciso do conteúdo do email.
+
+Você tem o HTML do email que deseja enviar? 📝
+
+• **Sim, tenho o HTML** - Cole o código HTML aqui
+• **Não, usar template simples** - Vou usar um template básico com a mensagem
+
+Se você tiver o HTML, pode colar aqui!"
+
+Usuário: "Não tenho, quero usar simples"
+
+Você: "Sem problemas! Qual mensagem você quer enviar? 
+Vou criar um email bonito e profissional com ela. ✨"
+
+Usuário: "Olá {{name}}, temos uma oferta especial para você!"
+
+Você: "Perfeito! Vou usar essa mensagem no email. 
+
+📧 **Resumo do disparo:**
+- Lista: Nome da Lista
+- Leads válidos: 150
+- Mensagem: "Olá {{name}}, temos uma oferta especial para você!"
+- Tempo estimado: ~13 minutos
+
+Posso iniciar o disparo?"
 
 [E assim por diante seguindo o fluxo...]
 `;
@@ -271,6 +344,8 @@ serve(async (req) => {
         const parts = command.split(':');
         const type = parts[1];
         const subOriginId = parts[2];
+        const templateType = parts[3] || 'simple'; // 'html' or 'simple'
+        const templateContent = parts.slice(4).join(':') || ''; // Everything after template type
 
         // Get sub-origin info
         const { data: subOrigin } = await supabase
@@ -293,7 +368,7 @@ serve(async (req) => {
           }
         }) || [];
 
-        // Create dispatch job
+        // Create dispatch job with message template
         const { data: job, error: jobError } = await supabase
           .from('dispatch_jobs')
           .insert({
@@ -304,14 +379,15 @@ serve(async (req) => {
             total_leads: leads?.length || 0,
             valid_leads: validLeads.length,
             status: 'running',
-            started_at: new Date().toISOString()
+            started_at: new Date().toISOString(),
+            message_template: templateContent || null
           })
           .select()
           .single();
 
         if (jobError) throw jobError;
 
-        // Trigger background dispatch
+        // Trigger background dispatch with template info
         const dispatchUrl = `${supabaseUrl}/functions/v1/process-dispatch`;
         fetch(dispatchUrl, {
           method: 'POST',
@@ -319,7 +395,11 @@ serve(async (req) => {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${supabaseKey}`
           },
-          body: JSON.stringify({ jobId: job.id })
+          body: JSON.stringify({ 
+            jobId: job.id,
+            templateType,
+            templateContent 
+          })
         }).catch(err => console.error('Error triggering dispatch:', err));
 
         return new Response(JSON.stringify({
@@ -328,7 +408,8 @@ serve(async (req) => {
             jobId: job.id,
             status: 'running',
             totalLeads: leads?.length || 0,
-            validLeads: validLeads.length
+            validLeads: validLeads.length,
+            templateType
           }
         }), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },

@@ -24,8 +24,8 @@ serve(async (req) => {
   const supabase = createClient(supabaseUrl, supabaseKey);
 
   try {
-    const { jobId } = await req.json();
-    console.log(`Starting dispatch processing for job: ${jobId}`);
+    const { jobId, templateType, templateContent } = await req.json();
+    console.log(`Starting dispatch processing for job: ${jobId}, templateType: ${templateType}`);
 
     // Get job details
     const { data: job, error: jobError } = await supabase
@@ -115,19 +115,36 @@ serve(async (req) => {
             // Send email via Resend
             console.log(`Sending email to ${lead.name} (${lead.email})`);
             
-            // Replace {{name}} placeholder in message template
-            const personalizedMessage = (job.message_template || 'Olá {{name}}!')
-              .replace(/\{\{name\}\}/g, lead.name);
+            // Get the template content (from request or job)
+            const rawTemplate = templateContent || job.message_template || 'Olá {{name}}!';
+            const isHtmlTemplate = rawTemplate.trim().startsWith('<') || templateType === 'html';
+            
+            // Replace {{name}} placeholder
+            const personalizedContent = rawTemplate.replace(/\{\{name\}\}/g, lead.name);
+            
+            // Build the final HTML
+            let finalHtml: string;
+            if (isHtmlTemplate) {
+              // Use the HTML directly (already formatted)
+              finalHtml = personalizedContent;
+            } else {
+              // Wrap simple text in a nice template
+              finalHtml = `
+                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+                  <p style="font-size: 16px; line-height: 1.6; color: #333;">${personalizedContent.replace(/\n/g, '<br>')}</p>
+                </div>
+              `;
+            }
+
+            // Extract subject from HTML if present, otherwise use default
+            const subjectMatch = personalizedContent.match(/<title>(.*?)<\/title>/i);
+            const emailSubject = subjectMatch ? subjectMatch[1] : `Mensagem para ${lead.name}`;
             
             const emailResponse = await resend.emails.send({
               from: `${fromName} <${fromEmail}>`,
               to: [lead.email],
-              subject: `Mensagem para ${lead.name}`,
-              html: `
-                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-                  <p>${personalizedMessage.replace(/\n/g, '<br>')}</p>
-                </div>
-              `,
+              subject: emailSubject,
+              html: finalHtml,
             });
 
             const resendError = (emailResponse as any)?.error;
@@ -146,8 +163,8 @@ serve(async (req) => {
               lead_id: lead.id,
               lead_name: lead.name,
               lead_email: lead.email,
-              subject: `Mensagem para ${lead.name}`,
-              body_html: personalizedMessage,
+              subject: emailSubject,
+              body_html: finalHtml,
               status: "sent",
               resend_id: (emailResponse as any)?.data?.id ?? null,
               sent_at: new Date().toISOString(),
