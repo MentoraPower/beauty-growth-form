@@ -1612,15 +1612,15 @@ const AnalyticsNode = ({ id, data, selected }: NodeProps) => {
                   {/* Stats Grid - Compact */}
                   <div className="grid grid-cols-3 gap-3 mb-3">
                     <div className="border border-border rounded-lg p-3 text-center">
-                      <p className="text-xl font-bold text-green-600">{currentMetrics.sent}</p>
+                      <p className="text-xl font-bold text-zinc-700">{currentMetrics.sent}</p>
                       <p className="text-xs font-medium text-muted-foreground">Enviados</p>
                     </div>
                     <div className="border border-border rounded-lg p-3 text-center">
-                      <p className="text-xl font-bold text-red-600">{currentMetrics.failed}</p>
+                      <p className="text-xl font-bold text-zinc-700">{currentMetrics.failed}</p>
                       <p className="text-xs font-medium text-muted-foreground">Falhas</p>
                     </div>
                     <div className="border border-border rounded-lg p-3 text-center">
-                      <p className="text-xl font-bold text-amber-600">{currentMetrics.pending}</p>
+                      <p className="text-xl font-bold text-zinc-700">{currentMetrics.pending}</p>
                       <p className="text-xs font-medium text-muted-foreground">Pendentes</p>
                     </div>
                   </div>
@@ -1628,8 +1628,8 @@ const AnalyticsNode = ({ id, data, selected }: NodeProps) => {
                   {/* Email-only: Opens and Clicks */}
                   {activeTab === "email" && currentMetrics.sent > 0 && (
                     <div className="grid grid-cols-2 gap-3 mb-4">
-                      <div className="border border-border rounded-lg p-3 text-center bg-blue-50/50">
-                        <p className="text-xl font-bold text-blue-600">
+                      <div className="border border-border rounded-lg p-3 text-center">
+                        <p className="text-xl font-bold text-zinc-700">
                           {currentMetrics.opens}
                           <span className="text-sm font-normal text-muted-foreground ml-1">
                             ({currentMetrics.sent > 0 ? Math.round((currentMetrics.opens / currentMetrics.sent) * 100) : 0}%)
@@ -1637,8 +1637,8 @@ const AnalyticsNode = ({ id, data, selected }: NodeProps) => {
                         </p>
                         <p className="text-xs font-medium text-muted-foreground">Aberturas</p>
                       </div>
-                      <div className="border border-border rounded-lg p-3 text-center bg-purple-50/50">
-                        <p className="text-xl font-bold text-purple-600">
+                      <div className="border border-border rounded-lg p-3 text-center">
+                        <p className="text-xl font-bold text-zinc-700">
                           {currentMetrics.clicks}
                           <span className="text-sm font-normal text-muted-foreground ml-1">
                             ({currentMetrics.sent > 0 ? Math.round((currentMetrics.clicks / currentMetrics.sent) * 100) : 0}%)
@@ -1665,13 +1665,7 @@ const AnalyticsNode = ({ id, data, selected }: NodeProps) => {
                           <div key={i} className="flex-1 flex flex-col items-center gap-2">
                             <div className="relative w-full group">
                               <div 
-                                className={cn(
-                                  "w-full rounded-lg transition-all cursor-default",
-                                  activeTab === "email" 
-                                    ? "bg-gradient-to-t from-orange-500 to-amber-400 shadow-orange-200/50" 
-                                    : "bg-gradient-to-t from-green-500 to-emerald-400 shadow-green-200/50",
-                                  "shadow-sm hover:shadow-md"
-                                )}
+                                className="w-full rounded-lg transition-all cursor-default bg-gradient-to-t from-zinc-600 to-zinc-500 shadow-sm hover:shadow-md"
                                 style={{ 
                                   height: `${Math.max((day.count / maxCount) * 80, 8)}px`,
                                 }}
