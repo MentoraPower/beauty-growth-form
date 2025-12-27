@@ -14,6 +14,7 @@ interface TeamMember {
   name: string | null;
   email: string | null;
   user_id: string;
+  photo_url: string | null;
 }
 
 interface AssignMemberDropdownProps {
@@ -79,7 +80,16 @@ export function AssignMemberDropdown({ leadId, assignedTo, onAssign, size = "def
           )}
           title={assignedMember?.name || "Atribuir responsável"}
         >
-          {assignedMember?.name ? (
+          {assignedMember?.photo_url ? (
+            <img 
+              src={assignedMember.photo_url} 
+              alt={assignedMember.name || ""}
+              className={cn(
+                "object-cover",
+                size === "sm" ? "w-5 h-5 rounded-full" : "w-full h-full rounded-lg"
+              )}
+            />
+          ) : assignedMember?.name ? (
             <span className={cn(
               "font-bold uppercase",
               size === "sm" ? "text-[8px]" : "text-xs"
@@ -125,11 +135,19 @@ export function AssignMemberDropdown({ leadId, assignedTo, onAssign, size = "def
                   assignedTo === member.user_id && "bg-slate-100"
                 )}
               >
-                <div className="w-5 h-5 rounded-full bg-slate-200 flex items-center justify-center flex-shrink-0">
-                  <span className="text-[8px] font-semibold text-slate-600 uppercase">
-                    {member.name?.split(' ').map(n => n[0]).slice(0, 2).join('') || '?'}
-                  </span>
-                </div>
+                {member.photo_url ? (
+                  <img 
+                    src={member.photo_url} 
+                    alt={member.name || ""}
+                    className="w-5 h-5 rounded-full object-cover flex-shrink-0"
+                  />
+                ) : (
+                  <div className="w-5 h-5 rounded-full bg-slate-200 flex items-center justify-center flex-shrink-0">
+                    <span className="text-[8px] font-semibold text-slate-600 uppercase">
+                      {member.name?.split(' ').map(n => n[0]).slice(0, 2).join('') || '?'}
+                    </span>
+                  </div>
+                )}
                 <span className="truncate flex-1 text-left">{member.name || member.email || "Sem nome"}</span>
                 {assignedTo === member.user_id && (
                   <Check className="w-3.5 h-3.5 text-orange-500 flex-shrink-0" />

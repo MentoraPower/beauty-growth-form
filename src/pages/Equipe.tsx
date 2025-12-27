@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -7,7 +7,8 @@ import {
   Settings2,
   Trash2,
   FolderOpen,
-  UserCircle
+  UserCircle,
+  Camera
 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -27,6 +28,7 @@ interface TeamMember {
   name: string | null;
   email: string | null;
   phone?: string | null;
+  photo_url?: string | null;
   role: string | null;
   user_id: string;
   created_at?: string;
@@ -51,6 +53,8 @@ export default function Equipe() {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [editingMember, setEditingMember] = useState<TeamMember | null>(null);
   const [selectedMember, setSelectedMember] = useState<TeamMember | null>(null);
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const queryClient = useQueryClient();
 
   const { data: teamMembers, isLoading } = useQuery({
@@ -107,6 +111,45 @@ export default function Equipe() {
     }
   };
 
+  const handlePhotoUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file || !selectedMember) return;
+
+    setUploadingPhoto(true);
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${selectedMember.user_id}.${fileExt}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('profile-photos')
+        .upload(fileName, file, { upsert: true });
+
+      if (uploadError) throw uploadError;
+
+      const { data: urlData } = supabase.storage
+        .from('profile-photos')
+        .getPublicUrl(fileName);
+
+      const photoUrl = urlData.publicUrl + `?t=${Date.now()}`;
+
+      const { error: updateError } = await supabase
+        .from('profiles')
+        .update({ photo_url: photoUrl })
+        .eq('id', selectedMember.user_id);
+
+      if (updateError) throw updateError;
+
+      setSelectedMember({ ...selectedMember, photo_url: photoUrl });
+      queryClient.invalidateQueries({ queryKey: ["team-members"] });
+      queryClient.invalidateQueries({ queryKey: ["team-members-list"] });
+      toast.success("Foto atualizada com sucesso!");
+    } catch (error) {
+      console.error("Erro ao fazer upload:", error);
+      toast.error("Erro ao atualizar foto");
+    } finally {
+      setUploadingPhoto(false);
+    }
+  };
 
   if (isLoading) {
     return (
@@ -170,17 +213,25 @@ export default function Equipe() {
                 )}
               >
                 <div className="flex items-center gap-3">
-                  <div className={cn(
-                    "w-10 h-10 rounded-full flex items-center justify-center",
-                    selectedMember?.user_id === member.user_id
-                      ? "bg-gradient-to-br from-slate-700 to-slate-900"
-                      : "bg-gradient-to-br from-slate-200 to-slate-300"
-                  )}>
-                    <UserCircle className={cn(
-                      "w-6 h-6",
-                      selectedMember?.user_id === member.user_id ? "text-white" : "text-slate-500"
-                    )} strokeWidth={1.5} />
-                  </div>
+                  {member.photo_url ? (
+                    <img 
+                      src={member.photo_url} 
+                      alt={member.name || ""}
+                      className="w-10 h-10 rounded-full object-cover"
+                    />
+                  ) : (
+                    <div className={cn(
+                      "w-10 h-10 rounded-full flex items-center justify-center",
+                      selectedMember?.user_id === member.user_id
+                        ? "bg-gradient-to-br from-slate-700 to-slate-900"
+                        : "bg-gradient-to-br from-slate-200 to-slate-300"
+                    )}>
+                      <UserCircle className={cn(
+                        "w-6 h-6",
+                        selectedMember?.user_id === member.user_id ? "text-white" : "text-slate-500"
+                      )} strokeWidth={1.5} />
+                    </div>
+                  )}
                   <div className="flex-1 min-w-0">
                     <p className="font-medium text-sm text-slate-800 truncate">
                       {member.name || "Sem nome"}
@@ -204,9 +255,35 @@ export default function Equipe() {
             <div className="bg-white rounded-xl p-6 border border-slate-100 shadow-sm">
               <div className="flex items-start justify-between">
                 <div className="flex items-center gap-4">
-                  <div className="w-16 h-16 rounded-2xl bg-slate-100 flex items-center justify-center">
-                    <UserCircle className="w-10 h-10 text-slate-400" strokeWidth={1} />
+                  <div 
+                    className="relative w-16 h-16 rounded-2xl bg-slate-100 flex items-center justify-center overflow-hidden group cursor-pointer"
+                    onClick={() => fileInputRef.current?.click()}
+                  >
+                    {selectedMember.photo_url ? (
+                      <img 
+                        src={selectedMember.photo_url} 
+                        alt={selectedMember.name || ""}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <UserCircle className="w-10 h-10 text-slate-400" strokeWidth={1} />
+                    )}
+                    <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                      <Camera className="w-5 h-5 text-white" />
+                    </div>
+                    {uploadingPhoto && (
+                      <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                        <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      </div>
+                    )}
                   </div>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={handlePhotoUpload}
+                  />
                   <div>
                     <h2 className="text-xl font-semibold text-slate-800">
                       {selectedMember.name || "Sem nome"}
