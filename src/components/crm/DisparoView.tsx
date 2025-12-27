@@ -331,10 +331,8 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
           <div className="flex-1 overflow-auto p-6">
             <div className="max-w-3xl mx-auto space-y-4">
               {messages.map((msg) => (
-                <motion.div
+                <div
                   key={msg.id}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
                   className={cn(
                     "flex flex-col",
                     msg.role === "user" ? "items-end" : "items-start"
@@ -350,7 +348,7 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
                       {msg.component}
                     </div>
                   )}
-                </motion.div>
+                </div>
               ))}
               {isLoading && messages[messages.length - 1]?.role !== "assistant" && (
                 <motion.div
