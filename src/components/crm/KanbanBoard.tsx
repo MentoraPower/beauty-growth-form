@@ -384,91 +384,52 @@ export function KanbanBoard() {
     enabled: !!subOriginId,
   });
 
-  const { data: leads = [], dataUpdatedAt, isLoading: isLoadingLeads } = useQuery({
-    queryKey: ["crm-leads", subOriginId],
+  // Fetch leads WITH tags in a single query - much faster!
+  const { data: leadsWithTags, dataUpdatedAt, isLoading: isLoadingLeads } = useQuery({
+    queryKey: ["crm-leads-with-tags", subOriginId],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("leads")
-        .select("*")
+        .select(`
+          *,
+          lead_tags (id, name, color)
+        `)
         .eq("sub_origin_id", subOriginId)
         .order("created_at", { ascending: false });
 
       if (error) throw error;
-      return data as Lead[];
+      return data as (Lead & { lead_tags: { id: string; name: string; color: string }[] })[];
     },
-    staleTime: 5000,
+    staleTime: 10000,
     refetchOnMount: true,
     refetchOnWindowFocus: false,
-    enabled: !!subOriginId, // Only run when we have a subOriginId
+    enabled: !!subOriginId,
   });
 
-  // Fetch all tags for filtering (after leads is declared)
-  const { data: allTags = [] } = useQuery({
-    queryKey: ["all-tags", subOriginId, leads.length],
-    queryFn: async () => {
-      const leadIds = leads.map(l => l.id);
-      if (leadIds.length === 0) return [];
-      
-      const { data, error } = await supabase
-        .from("lead_tags")
-        .select("name, color")
-        .in("lead_id", leadIds);
+  // Extract leads and tags from combined query
+  const leads = useMemo(() => 
+    (leadsWithTags || []).map(({ lead_tags, ...lead }) => lead as Lead),
+    [leadsWithTags]
+  );
+  
+  // Pre-process tags by lead_id for O(1) lookup
+  const leadTagsRaw = useMemo(() => {
+    if (!leadsWithTags) return [];
+    return leadsWithTags.flatMap(lead => 
+      (lead.lead_tags || []).map(tag => ({ ...tag, lead_id: lead.id }))
+    );
+  }, [leadsWithTags]);
 
-      if (error) return [];
-      
-      // Get unique tags
-      const uniqueTags = new Map<string, { name: string; color: string }>();
-      data.forEach(tag => {
-        if (!uniqueTags.has(tag.name)) {
-          uniqueTags.set(tag.name, tag);
-        }
-      });
-      return Array.from(uniqueTags.values());
-    },
-    enabled: leads.length > 0,
-  });
-
-  // Helper to batch queries (Supabase has URL length limits with .in())
-  const batchQuery = async <T,>(
-    ids: string[],
-    queryFn: (batch: string[]) => Promise<T[]>
-  ): Promise<T[]> => {
-    const BATCH_SIZE = 50; // Safe batch size to avoid URL length issues
-    const results: T[] = [];
-    for (let i = 0; i < ids.length; i += BATCH_SIZE) {
-      const batch = ids.slice(i, i + BATCH_SIZE);
-      const batchResults = await queryFn(batch);
-      results.push(...batchResults);
-    }
-    return results;
-  };
-
-  // Fetch tags for leads - optimized: only direct tags, no related lead lookups
-  const { data: leadTagsRaw = [] } = useQuery({
-    queryKey: ["lead-tags-direct", subOriginId, leads.length],
-    queryFn: async () => {
-      if (leads.length === 0) return [];
-      
-      const leadIds = leads.map(l => l.id);
-      
-      // Single batched query for direct tags only - much faster
-      const directTags = await batchQuery(leadIds, async (batch) => {
-        const { data, error } = await supabase
-          .from("lead_tags")
-          .select("id, lead_id, name, color")
-          .in("lead_id", batch);
-        if (error) {
-          console.error("Error fetching tags batch:", error);
-          return [];
-        }
-        return data || [];
-      });
-      
-      return directTags;
-    },
-    enabled: leads.length > 0,
-    staleTime: 30000, // Cache por 30 segundos
-  });
+  // Get unique tags for filtering
+  const allTags = useMemo(() => {
+    const uniqueTags = new Map<string, { name: string; color: string }>();
+    leadTagsRaw.forEach(tag => {
+      if (!uniqueTags.has(tag.name)) {
+        uniqueTags.set(tag.name, { name: tag.name, color: tag.color });
+      }
+    });
+    return Array.from(uniqueTags.values());
+  }, [leadTagsRaw]);
 
   // Convert leadTags to filtering format (backwards compatibility)
   const leadTags = useMemo(() => 
