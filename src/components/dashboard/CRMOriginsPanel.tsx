@@ -340,7 +340,9 @@ function SortableOriginItem({
 
             {/* Task sub-origins only (calendar is now accessed via tabs in CRM page) */}
             {originSubOrigins.filter(s => s.tipo === 'tarefas').map((subOrigin, index, filteredArr) => {
-              const leadCount = leadCounts.find(lc => lc.sub_origin_id === subOrigin.id)?.count || 0;
+              const leadCountEntry = leadCounts.find(lc => lc.sub_origin_id === subOrigin.id);
+              const isCountLoading = leadCountEntry === undefined;
+              const leadCount = leadCountEntry?.count || 0;
               const isActive = currentSubOriginId === subOrigin.id;
               const isLastTask = index === filteredArr.length - 1;
               
@@ -385,14 +387,16 @@ function SortableOriginItem({
                         isActive && "bg-gradient-to-r from-orange-500 to-amber-400 bg-clip-text text-transparent"
                       )}>{subOrigin.nome}</span>
                       <span className={cn(
-                        "ml-auto text-[10px] px-1.5 py-0.5 rounded-full min-w-[24px] text-center tabular-nums",
-                        leadCount > 0 
-                          ? isActive 
-                            ? "bg-zinc-700 text-white"
-                            : "bg-zinc-800 text-zinc-400"
-                          : "opacity-0"
+                        "ml-auto text-[10px] px-1.5 py-0.5 rounded-full min-w-[24px] text-center tabular-nums transition-opacity duration-200",
+                        isCountLoading 
+                          ? "bg-zinc-800 text-zinc-500"
+                          : leadCount > 0 
+                            ? isActive 
+                              ? "bg-zinc-700 text-white"
+                              : "bg-zinc-800 text-zinc-400"
+                            : "opacity-0"
                       )}>
-                        {leadCount > 0 ? leadCount.toLocaleString('pt-BR') : '0'}
+                        {isCountLoading ? "..." : leadCount > 0 ? leadCount.toLocaleString('pt-BR') : '0'}
                       </span>
                     </button>
                     
@@ -493,9 +497,18 @@ export function CRMOriginsPanel({ isOpen, onClose, sidebarWidth, embedded = fals
     localStorage.setItem('crm_expanded_origins', JSON.stringify([...expandedOrigins]));
   }, [expandedOrigins]);
 
-  // Fetch user permissions
+  // Fetch user permissions with localStorage cache for instant load
   const fetchUserPermissions = useCallback(async () => {
     try {
+      // Try to use cached permissions first for instant render
+      const cached = localStorage.getItem('crm_user_permissions');
+      if (cached) {
+        try {
+          const parsed = JSON.parse(cached);
+          setUserPermissions(parsed);
+        } catch { /* ignore parse errors */ }
+      }
+
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
@@ -508,14 +521,16 @@ export function CRMOriginsPanel({ isOpen, onClose, sidebarWidth, embedded = fals
 
       const isAdmin = roleData?.role === "admin";
 
+      let newPermissions: UserPermissions;
+
       if (isAdmin) {
-        setUserPermissions({
+        newPermissions = {
           isAdmin: true,
           canCreateOrigins: true,
           canCreateSubOrigins: true,
           allowedOriginIds: [],
           allowedSubOriginIds: [],
-        });
+        };
       } else {
         // Fetch user permissions
         const { data: permData } = await supabase
@@ -524,21 +539,44 @@ export function CRMOriginsPanel({ isOpen, onClose, sidebarWidth, embedded = fals
           .eq("user_id", user.id)
           .single();
 
-        setUserPermissions({
+        newPermissions = {
           isAdmin: false,
           canCreateOrigins: permData?.can_create_origins ?? false,
           canCreateSubOrigins: permData?.can_create_sub_origins ?? false,
           allowedOriginIds: permData?.allowed_origin_ids ?? [],
           allowedSubOriginIds: permData?.allowed_sub_origin_ids ?? [],
-        });
+        };
       }
+
+      // Update state and cache
+      setUserPermissions(newPermissions);
+      localStorage.setItem('crm_user_permissions', JSON.stringify(newPermissions));
     } catch (error) {
       console.error('Error fetching user permissions:', error);
     }
   }, []);
 
+  // Fetch lead counts in a non-blocking way (deferred after structure is rendered)
+  const fetchLeadCounts = useCallback(async (subOriginsList: SubOrigin[]) => {
+    const countPromises = subOriginsList.map(async (subOrigin) => {
+      const { count, error } = await supabase
+        .from("leads")
+        .select("*", { count: "exact", head: true })
+        .eq("sub_origin_id", subOrigin.id);
+      
+      return {
+        sub_origin_id: subOrigin.id,
+        count: error ? 0 : (count || 0),
+      };
+    });
+    
+    const counts = await Promise.all(countPromises);
+    setLeadCounts(counts);
+  }, []);
+
   const fetchData = useCallback(async () => {
     try {
+      // Fetch only structure first (origins + sub-origins) - this is fast
       const [originsRes, subOriginsRes] = await Promise.all([
         supabase.from("crm_origins").select("*").order("ordem"),
         supabase.from("crm_sub_origins").select("*").order("ordem"),
@@ -547,34 +585,31 @@ export function CRMOriginsPanel({ isOpen, onClose, sidebarWidth, embedded = fals
       if (originsRes.data) {
         setOrigins(originsRes.data);
       }
+      
+      let parsedSubOrigins: SubOrigin[] = [];
       if (subOriginsRes.data) {
-        setSubOrigins(subOriginsRes.data.map(s => ({
+        parsedSubOrigins = subOriginsRes.data.map(s => ({
           ...s,
           tipo: (s.tipo === 'calendario' ? 'calendario' : 'tarefas') as 'tarefas' | 'calendario'
-        })));
-        
-        // Fetch exact counts for each sub-origin using head:true (no 1000 limit)
-        const countPromises = subOriginsRes.data.map(async (subOrigin) => {
-          const { count, error } = await supabase
-            .from("leads")
-            .select("*", { count: "exact", head: true })
-            .eq("sub_origin_id", subOrigin.id);
-          
-          return {
-            sub_origin_id: subOrigin.id,
-            count: error ? 0 : (count || 0),
-          };
-        });
-        
-        const counts = await Promise.all(countPromises);
-        setLeadCounts(counts);
+        }));
+        setSubOrigins(parsedSubOrigins);
       }
       
       hasInitialized.current = true;
+
+      // Defer lead counts fetch to after UI renders (non-blocking)
+      if (parsedSubOrigins.length > 0) {
+        // Use requestIdleCallback if available, otherwise setTimeout
+        if ('requestIdleCallback' in window) {
+          window.requestIdleCallback(() => fetchLeadCounts(parsedSubOrigins), { timeout: 500 });
+        } else {
+          setTimeout(() => fetchLeadCounts(parsedSubOrigins), 100);
+        }
+      }
     } catch (error) {
       console.error('Error fetching CRM data:', error);
     }
-  }, []);
+  }, [fetchLeadCounts]);
 
   // Fetch data and permissions on first mount
   useEffect(() => {

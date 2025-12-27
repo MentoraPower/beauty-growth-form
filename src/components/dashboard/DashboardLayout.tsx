@@ -68,10 +68,12 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
 
   useEffect(() => {
     if (crmSubmenuOpen) {
-      const t = window.setTimeout(() => setCrmSubmenuContentMounted(true), 140);
-      return () => window.clearTimeout(t);
+      // Mount content immediately for faster perceived load
+      setCrmSubmenuContentMounted(true);
+      return;
     }
 
+    // Delay unmount so close animation completes
     const t = window.setTimeout(() => setCrmSubmenuContentMounted(false), 240);
     return () => window.clearTimeout(t);
   }, [crmSubmenuOpen]);
