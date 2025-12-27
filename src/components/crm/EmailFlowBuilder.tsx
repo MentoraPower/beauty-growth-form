@@ -1792,22 +1792,34 @@ const CustomEdge = ({
   targetPosition,
   data,
 }: CustomEdgeProps) => {
-  // Use getSmoothStepPath for clean orthogonal (90°) edges
-  const [edgePath, labelX, labelY] = getSmoothStepPath({
+  // Use getBezierPath for smooth curved edges
+  const [edgePath, labelX, labelY] = getBezierPath({
     sourceX,
     sourceY,
     sourcePosition: sourcePosition || Position.Right,
     targetX,
     targetY,
     targetPosition: targetPosition || Position.Left,
-    borderRadius: 0, // Sharp 90° corners for straight lines
   });
 
+  const glowFilterId = `edge-glow-${id}`.replace(/[^a-zA-Z0-9_-]/g, "_");
   const gradientId = `edge-gradient-${id}`.replace(/[^a-zA-Z0-9_-]/g, "_");
 
   return (
     <>
       <defs>
+        {/* Glow filter */}
+        <filter id={glowFilterId} x="-50%" y="-50%" width="200%" height="200%">
+          <feGaussianBlur stdDeviation="4" result="blur1" />
+          <feGaussianBlur stdDeviation="8" result="blur2" />
+          <feMerge>
+            <feMergeNode in="blur2" />
+            <feMergeNode in="blur1" />
+            <feMergeNode in="SourceGraphic" />
+          </feMerge>
+        </filter>
+        
+        {/* Gradient for the line */}
         <linearGradient
           id={gradientId}
           gradientUnits="userSpaceOnUse"
@@ -1816,22 +1828,60 @@ const CustomEdge = ({
           x2={targetX}
           y2={targetY}
         >
-          <stop offset="0%" stopColor="#F97316" />
-          <stop offset="100%" stopColor="#EA580C" />
+          <stop offset="0%" stopColor="rgba(255, 255, 255, 0.9)" />
+          <stop offset="50%" stopColor="rgba(180, 210, 255, 1)" />
+          <stop offset="100%" stopColor="rgba(255, 255, 255, 0.9)" />
         </linearGradient>
       </defs>
+      
+      {/* Outer glow layer */}
+      <path
+        d={edgePath}
+        fill="none"
+        stroke="rgba(150, 200, 255, 0.3)"
+        strokeWidth={16}
+        strokeLinecap="round"
+        filter={`url(#${glowFilterId})`}
+        style={{
+          animation: "pulseGlow 2s ease-in-out infinite",
+        }}
+      />
+      
+      {/* Middle glow layer */}
+      <path
+        d={edgePath}
+        fill="none"
+        stroke="rgba(200, 225, 255, 0.5)"
+        strokeWidth={8}
+        strokeLinecap="round"
+        filter={`url(#${glowFilterId})`}
+      />
+      
+      {/* Main line with gradient */}
       <path
         d={edgePath}
         fill="none"
         stroke={`url(#${gradientId})`}
         strokeWidth={3}
-        strokeDasharray="8 5"
         strokeLinecap="round"
-        strokeLinejoin="round"
         style={{
-          animation: "flowDash 1s linear infinite",
+          animation: "pulseGlow 2s ease-in-out infinite",
         }}
       />
+      
+      {/* Energy flow animation */}
+      <path
+        d={edgePath}
+        fill="none"
+        stroke="rgba(255, 255, 255, 0.8)"
+        strokeWidth={2}
+        strokeLinecap="round"
+        strokeDasharray="10 30"
+        style={{
+          animation: "energyFlow 1.5s linear infinite",
+        }}
+      />
+      
       <EdgeLabelRenderer>
         <div
           style={{

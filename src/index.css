@@ -659,10 +659,20 @@
 
 
 
-/* Flow edge animation */
-@keyframes flowDash {
+/* Flow edge glow animation */
+@keyframes pulseGlow {
+  0%, 100% {
+    opacity: 0.7;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+/* Energy flow animation along the edge */
+@keyframes energyFlow {
   0% {
-    stroke-dashoffset: 10;
+    stroke-dashoffset: 40;
   }
   100% {
     stroke-dashoffset: 0;
