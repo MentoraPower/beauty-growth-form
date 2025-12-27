@@ -235,10 +235,11 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
             <div className="h-14 flex items-center px-3 relative overflow-hidden">
               {/* Icon logo - visible when collapsed */}
               <div 
-                className="absolute left-3 flex items-center justify-center transition-all duration-300 ease-out"
+                className="absolute left-3 flex items-center justify-center transition-all duration-500 ease-in-out"
                 style={{
                   opacity: sidebarExpanded ? 0 : 1,
-                  transform: sidebarExpanded ? 'scale(0.8)' : 'scale(1)',
+                  visibility: sidebarExpanded ? 'hidden' : 'visible',
+                  transitionDelay: sidebarExpanded ? '0ms' : '100ms',
                 }}
               >
                 <img 
@@ -251,10 +252,11 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
               
               {/* Full logo - visible when expanded */}
               <div 
-                className="flex items-center transition-all duration-300 ease-out"
+                className="flex items-center transition-all duration-500 ease-in-out"
                 style={{
                   opacity: sidebarExpanded ? 1 : 0,
-                  transform: sidebarExpanded ? 'translateX(0)' : 'translateX(-10px)',
+                  visibility: sidebarExpanded ? 'visible' : 'hidden',
+                  transitionDelay: sidebarExpanded ? '100ms' : '0ms',
                 }}
               >
                 <img 
