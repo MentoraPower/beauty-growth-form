@@ -324,6 +324,9 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
               isLoading={isLoading}
               placeholder="Digite sua mensagem aqui..."
             />
+            <p className="text-xs text-muted-foreground text-center mt-3">
+              A Scale pode cometer erros. Confira informações importantes.
+            </p>
           </motion.div>
         </div>
       ) : (
