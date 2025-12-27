@@ -312,11 +312,8 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
           >
             <div className="text-center mb-8">
               <h2 className="text-2xl font-semibold text-foreground">
-                Eai, o que vamos disparar hoje? 🚀
+                Eai, o que vamos disparar hoje?
               </h2>
-              <p className="text-muted-foreground mt-2">
-                Email, WhatsApp Web ou Business API
-              </p>
             </div>
             <PromptInputBox
               onSend={handleSend}
