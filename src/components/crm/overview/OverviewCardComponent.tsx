@@ -325,8 +325,8 @@ export function OverviewCardComponent({
         </div>
       </div>
 
-      {/* Chart content */}
-      <div className="h-[calc(100%-40px)]">
+      {/* Chart content wrapper */}
+      <div className="h-[calc(100%-40px)] rounded-xl bg-muted/30 p-3">
         {card.dataSource ? (
           <ChartRenderer
             cardId={card.id}
@@ -335,18 +335,18 @@ export function OverviewCardComponent({
             leads={leads}
             pipelines={pipelines}
             leadTags={leadTags}
-            height={currentSize.height}
+            height={currentSize.height - 70}
           />
         ) : (
           <button
             type="button"
             onClick={() => onConnectDataSource?.(card)}
-            className="flex flex-col items-center justify-center h-full gap-3 w-full rounded-lg border-2 border-dashed border-muted-foreground/20 hover:border-primary/40 transition-colors cursor-pointer"
+            className="flex flex-col items-center justify-center h-full gap-3 w-full rounded-lg border-2 border-dashed border-muted-foreground/20 hover:border-primary/40 transition-colors cursor-pointer bg-background/50"
           >
-            <div className="w-16 h-12 bg-muted/60 rounded-lg flex items-center justify-center">
-              <Folder className="h-8 w-8 text-muted-foreground/50" fill="currentColor" strokeWidth={1} />
+            <div className="w-14 h-14 rounded-2xl bg-muted/60 flex items-center justify-center">
+              <Folder className="h-7 w-7 text-muted-foreground/40" fill="currentColor" strokeWidth={1} />
             </div>
-            <span className="text-muted-foreground text-sm">Conectar fonte de dados</span>
+            <span className="text-muted-foreground text-sm font-medium">Conectar fonte de dados</span>
           </button>
         )}
       </div>
