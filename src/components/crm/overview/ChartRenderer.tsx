@@ -412,37 +412,57 @@ export function ChartRenderer({
 
     case "list": {
       const listData = chartData as Lead[];
+      if (!Array.isArray(listData) || listData.length === 0) {
+        return renderEmptyState();
+      }
+      
+      const formatDate = (dateStr: string) => {
+        try {
+          const date = new Date(dateStr);
+          if (isNaN(date.getTime())) return { date: '-', time: '-' };
+          return {
+            date: format(date, "dd MMM", { locale: ptBR }),
+            time: format(date, "HH:mm")
+          };
+        } catch {
+          return { date: '-', time: '-' };
+        }
+      };
+      
       return (
         <ScrollArea className="h-full">
           <div className="flex flex-col gap-2 pr-3">
-            {listData.map((lead, index) => (
-              <div
-                key={lead.id}
-                className="flex items-center gap-3 p-3 rounded-xl bg-gradient-to-r from-muted/50 to-transparent hover:from-muted hover:to-muted/50 transition-all duration-200 border border-transparent hover:border-border/50"
-                style={{ animationDelay: `${index * 50}ms` }}
-              >
-                <div 
-                  className="w-10 h-10 rounded-xl flex items-center justify-center text-sm font-semibold text-white shadow-sm"
-                  style={{ 
-                    background: `linear-gradient(135deg, ${MODERN_COLORS[index % MODERN_COLORS.length].gradient[0]}, ${MODERN_COLORS[index % MODERN_COLORS.length].gradient[1]})` 
-                  }}
+            {listData.map((lead, index) => {
+              const formattedDate = formatDate(lead.created_at);
+              return (
+                <div
+                  key={lead.id}
+                  className="flex items-center gap-3 p-3 rounded-xl bg-gradient-to-r from-muted/50 to-transparent hover:from-muted hover:to-muted/50 transition-all duration-200 border border-transparent hover:border-border/50"
+                  style={{ animationDelay: `${index * 50}ms` }}
                 >
-                  {lead.name.charAt(0).toUpperCase()}
+                  <div 
+                    className="w-10 h-10 rounded-xl flex items-center justify-center text-sm font-semibold text-white shadow-sm"
+                    style={{ 
+                      background: `linear-gradient(135deg, ${MODERN_COLORS[index % MODERN_COLORS.length].gradient[0]}, ${MODERN_COLORS[index % MODERN_COLORS.length].gradient[1]})` 
+                    }}
+                  >
+                    {lead.name?.charAt(0)?.toUpperCase() || '?'}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-foreground truncate">{lead.name || 'Sem nome'}</p>
+                    <p className="text-xs text-muted-foreground truncate">{lead.email || '-'}</p>
+                  </div>
+                  <div className="flex flex-col items-end gap-0.5">
+                    <span className="text-xs font-medium text-foreground/80">
+                      {formattedDate.date}
+                    </span>
+                    <span className="text-[10px] text-muted-foreground">
+                      {formattedDate.time}
+                    </span>
+                  </div>
                 </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-foreground truncate">{lead.name}</p>
-                  <p className="text-xs text-muted-foreground truncate">{lead.email}</p>
-                </div>
-                <div className="flex flex-col items-end gap-0.5">
-                  <span className="text-xs font-medium text-foreground/80">
-                    {format(new Date(lead.created_at), "dd MMM", { locale: ptBR })}
-                  </span>
-                  <span className="text-[10px] text-muted-foreground">
-                    {format(new Date(lead.created_at), "HH:mm")}
-                  </span>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </ScrollArea>
       );
