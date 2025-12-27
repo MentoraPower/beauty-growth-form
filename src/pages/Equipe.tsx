@@ -181,8 +181,8 @@ export default function Equipe() {
   return (
     <div className="flex gap-4 h-[calc(100vh-6rem)]">
       {/* Left Side - Members List */}
-      <div className="w-[260px] flex-shrink-0 flex flex-col bg-gray-100 rounded-xl border border-gray-200/50 overflow-hidden">
-        <div className="flex items-center justify-between p-4 border-b border-gray-200/50">
+      <div className="w-[260px] flex-shrink-0 flex flex-col rounded-xl overflow-hidden" style={{ backgroundColor: '#FFFFFF', border: '1px solid #00000010' }}>
+        <div className="flex items-center justify-between p-4" style={{ borderBottom: '1px solid #00000010' }}>
           <h1 className="text-sm font-semibold text-gray-700">Equipe</h1>
           <Button
             onClick={() => setIsAddDialogOpen(true)}
@@ -252,7 +252,7 @@ export default function Equipe() {
         {selectedMember ? (
           <div className="space-y-4 animate-fade-in">
             {/* Header Card */}
-            <div className="bg-gray-100 rounded-xl p-6 border border-gray-200/50">
+            <div className="rounded-xl p-6" style={{ backgroundColor: '#FFFFFF', border: '1px solid #00000010' }}>
               <div className="flex items-start justify-between">
                 <div className="flex items-center gap-4">
                   <div 
