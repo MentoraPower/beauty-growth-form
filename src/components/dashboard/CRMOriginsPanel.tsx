@@ -931,18 +931,8 @@ export function CRMOriginsPanel({ isOpen, onClose, sidebarWidth, embedded = fals
           <div className="flex justify-center pt-4 pb-2">
             <button
               onClick={openCreateOriginDialog}
-              className="relative flex items-center justify-center gap-2 py-2.5 px-5 rounded-lg text-sm font-medium transition-all duration-200 hover:scale-105 group bg-transparent"
+              className="relative flex items-center justify-center gap-2 py-2.5 px-5 rounded-lg text-sm font-medium transition-all duration-200 hover:scale-105 group bg-transparent border-2 border-dashed border-orange-500/60 hover:border-orange-400"
             >
-              {/* Orange gradient border */}
-              <span 
-                className="absolute inset-0 rounded-lg bg-gradient-to-r from-orange-500 via-amber-500 to-orange-500"
-                style={{ 
-                  padding: '1.5px',
-                  WebkitMask: 'linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)',
-                  WebkitMaskComposite: 'xor',
-                  maskComposite: 'exclude',
-                }}
-              />
               <Plus className="h-4 w-4 text-orange-400 group-hover:text-orange-300 transition-colors" />
               <span className="bg-gradient-to-r from-orange-400 to-amber-400 bg-clip-text text-transparent group-hover:from-orange-300 group-hover:to-amber-300 transition-all">
                 Nova Origem
