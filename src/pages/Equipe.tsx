@@ -9,7 +9,8 @@ import {
   Settings2,
   Trash2,
   Calendar,
-  FolderOpen
+  FolderOpen,
+  UserCircle
 } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
@@ -260,8 +261,8 @@ export default function Equipe() {
           </div>
         ) : (
           <div className="h-full flex flex-col items-center justify-center text-muted-foreground">
-            <FolderOpen className="w-16 h-16 mb-4 opacity-30" />
-            <p className="text-lg font-medium">Sem informações</p>
+            <UserCircle className="w-20 h-20 mb-4 opacity-30" strokeWidth={1} />
+            <p className="text-lg font-medium">Nenhum perfil selecionado</p>
             <p className="text-sm mt-1">Selecione um membro para ver os detalhes</p>
           </div>
         )}
