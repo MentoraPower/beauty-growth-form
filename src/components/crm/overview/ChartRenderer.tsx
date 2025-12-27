@@ -264,6 +264,9 @@ export function ChartRenderer({
 
     case "area": {
       const areaData = chartData as Array<{ date: string; count: number }>;
+      if (!Array.isArray(areaData) || areaData.length === 0) {
+        return renderEmptyState();
+      }
       const maxValue = Math.max(...areaData.map(d => d.count), 1);
       
       return (
