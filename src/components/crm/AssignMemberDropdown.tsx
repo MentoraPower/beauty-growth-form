@@ -66,19 +66,17 @@ export function AssignMemberDropdown({ leadId, assignedTo, onAssign }: AssignMem
             setOpen(true);
           }}
           className={cn(
-            "w-6 h-6 rounded-md flex items-center justify-center transition-all",
-            assignedTo 
-              ? "bg-gradient-to-br from-orange-500 to-orange-600 text-white" 
-              : "bg-slate-100 hover:bg-slate-200 text-slate-400"
+            "h-10 w-10 rounded-lg border border-input bg-background flex items-center justify-center transition-all hover:bg-accent hover:text-accent-foreground",
+            assignedTo && "bg-gradient-to-br from-orange-500 to-orange-600 text-white border-orange-500 hover:from-orange-600 hover:to-orange-700"
           )}
           title={assignedMember?.name || "Atribuir responsável"}
         >
           {assignedMember?.name ? (
-            <span className="text-[9px] font-bold uppercase">
+            <span className="text-xs font-bold uppercase">
               {assignedMember.name.split(' ').map(n => n[0]).slice(0, 2).join('')}
             </span>
           ) : (
-            <UserCircle className="w-3.5 h-3.5" strokeWidth={1.5} />
+            <UserCircle className="w-4 h-4" strokeWidth={1.5} />
           )}
         </button>
       </PopoverTrigger>
