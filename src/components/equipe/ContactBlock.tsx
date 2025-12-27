@@ -40,8 +40,8 @@ function ContactContent({ email, phone, createdAt }: ContactBlockProps) {
 
 export function ContactBlock({ email, phone, createdAt }: ContactBlockProps) {
   return (
-    <div className="bg-white rounded-xl p-5 border border-slate-100 shadow-sm">
-      <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-4">Contato</h3>
+    <div className="bg-gray-100 rounded-xl p-5 border border-gray-200/50">
+      <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-4">Contato</h3>
       <ContactContent email={email} phone={phone} createdAt={createdAt} />
     </div>
   );

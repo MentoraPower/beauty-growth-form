@@ -252,7 +252,7 @@ export default function Equipe() {
         {selectedMember ? (
           <div className="space-y-4 animate-fade-in">
             {/* Header Card */}
-            <div className="bg-white rounded-xl p-6 border border-slate-100 shadow-sm">
+            <div className="bg-gray-100 rounded-xl p-6 border border-gray-200/50">
               <div className="flex items-start justify-between">
                 <div className="flex items-center gap-4">
                   <div 

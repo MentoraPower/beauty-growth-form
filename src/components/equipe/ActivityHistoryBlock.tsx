@@ -14,8 +14,8 @@ function ActivityHistoryContent() {
 
 export function ActivityHistoryBlock() {
   return (
-    <div className="bg-white rounded-xl p-5 border border-slate-100 shadow-sm">
-      <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-4">Histórico de Atividades</h3>
+    <div className="bg-gray-100 rounded-xl p-5 border border-gray-200/50">
+      <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-4">Histórico de Atividades</h3>
       <ActivityHistoryContent />
     </div>
   );
