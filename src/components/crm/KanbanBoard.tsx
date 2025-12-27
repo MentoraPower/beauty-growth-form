@@ -443,113 +443,31 @@ export function KanbanBoard() {
     return results;
   };
 
-  // Fetch tags for leads INCLUDING tags from related leads (same email/whatsapp) in other origins
+  // Fetch tags for leads - optimized: only direct tags, no related lead lookups
   const { data: leadTagsRaw = [] } = useQuery({
-    queryKey: ["lead-tags-full-related", subOriginId, leads.length],
+    queryKey: ["lead-tags-direct", subOriginId, leads.length],
     queryFn: async () => {
       if (leads.length === 0) return [];
       
-      // First, get tags for current leads directly using batched queries
       const leadIds = leads.map(l => l.id);
       
+      // Single batched query for direct tags only - much faster
       const directTags = await batchQuery(leadIds, async (batch) => {
         const { data, error } = await supabase
           .from("lead_tags")
           .select("id, lead_id, name, color")
           .in("lead_id", batch);
         if (error) {
-          console.error("Error fetching direct tags batch:", error);
+          console.error("Error fetching tags batch:", error);
           return [];
         }
         return data || [];
       });
       
-      // Get emails and whatsapps for related lead lookup
-      const emails = leads.map(l => l.email).filter(Boolean);
-      const whatsapps = leads.map(l => l.whatsapp).filter(Boolean);
-      
-      // Find related leads by email OR whatsapp using batched queries
-      let relatedLeads: { id: string; email: string; whatsapp: string }[] = [];
-      
-      if (emails.length > 0) {
-        const byEmail = await batchQuery(emails, async (batch) => {
-          const { data } = await supabase
-            .from("leads")
-            .select("id, email, whatsapp")
-            .in("email", batch);
-          return data || [];
-        });
-        relatedLeads = [...relatedLeads, ...byEmail];
-      }
-      
-      if (whatsapps.length > 0) {
-        const byWhatsapp = await batchQuery(whatsapps, async (batch) => {
-          const { data } = await supabase
-            .from("leads")
-            .select("id, email, whatsapp")
-            .in("whatsapp", batch);
-          return data || [];
-        });
-        // Dedupe by id
-        const existingIds = new Set(relatedLeads.map(l => l.id));
-        byWhatsapp.forEach(l => {
-          if (!existingIds.has(l.id)) relatedLeads.push(l);
-        });
-      }
-      
-      // Get all tags for related leads (if any exist beyond current leads)
-      const relatedLeadIds = relatedLeads.map(l => l.id);
-      const newRelatedIds = relatedLeadIds.filter(id => !leadIds.includes(id));
-      
-      let allTags = [...directTags];
-      
-      if (newRelatedIds.length > 0) {
-        const relatedTagsData = await batchQuery(newRelatedIds, async (batch) => {
-          const { data } = await supabase
-            .from("lead_tags")
-            .select("id, lead_id, name, color")
-            .in("lead_id", batch);
-          return data || [];
-        });
-        allTags = [...allTags, ...relatedTagsData];
-      }
-      
-      // Create a mapping: email -> tags, whatsapp -> tags
-      const emailToTags = new Map<string, typeof allTags>();
-      const whatsappToTags = new Map<string, typeof allTags>();
-      
-      relatedLeads.forEach(rl => {
-        const tagsForLead = allTags.filter(t => t.lead_id === rl.id);
-        if (rl.email) {
-          const existing = emailToTags.get(rl.email) || [];
-          emailToTags.set(rl.email, [...existing, ...tagsForLead]);
-        }
-        if (rl.whatsapp) {
-          const existing = whatsappToTags.get(rl.whatsapp) || [];
-          whatsappToTags.set(rl.whatsapp, [...existing, ...tagsForLead]);
-        }
-      });
-      
-      // Map tags back to current leads, merging by email/whatsapp
-      const result: typeof allTags = [];
-      leads.forEach(lead => {
-        const tagsByEmail = emailToTags.get(lead.email) || [];
-        const tagsByWhatsapp = whatsappToTags.get(lead.whatsapp) || [];
-        
-        // Combine and dedupe by tag name (keeping first occurrence)
-        const seenNames = new Set<string>();
-        [...tagsByEmail, ...tagsByWhatsapp].forEach(tag => {
-          if (!seenNames.has(tag.name)) {
-            seenNames.add(tag.name);
-            // Associate tag with current lead for display
-            result.push({ ...tag, lead_id: lead.id });
-          }
-        });
-      });
-      
-      return result;
+      return directTags;
     },
     enabled: leads.length > 0,
+    staleTime: 30000, // Cache por 30 segundos
   });
 
   // Convert leadTags to filtering format (backwards compatibility)
