@@ -4,6 +4,7 @@ import { Menu, X, LogOut, LayoutGrid, Settings, ChevronDown, User, Inbox, Chevro
 import { cn } from "@/lib/utils";
 import scaleLogo from "@/assets/scale-logo-menu.png";
 import scaleLogoFull from "@/assets/scale-logo-full.png";
+import analizerLogo from "@/assets/analizer-logo.png";
 import { CRMOriginsPanel } from "./CRMOriginsPanel";
 import { PageTransition } from "./PageTransition";
 import { LoadingBar } from "@/components/LoadingBar";
@@ -321,6 +322,28 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
                     </button>
                   );
                 })}
+
+                {/* Separator */}
+                <div className="my-2 border-t border-white/10" />
+
+                {/* Analizer */}
+                <div className="flex items-center h-10 rounded-lg text-white/50">
+                  <div className="w-10 flex items-center justify-center flex-shrink-0">
+                    <img 
+                      src={analizerLogo} 
+                      alt="Analizer" 
+                      className="w-5 h-5 object-contain opacity-50"
+                    />
+                  </div>
+                  <span 
+                    className={cn(
+                      "text-sm font-medium whitespace-nowrap transition-all duration-200 overflow-hidden",
+                      sidebarExpanded ? "opacity-100 w-auto" : "opacity-0 w-0"
+                    )}
+                  >
+                    Analizer
+                  </span>
+                </div>
               </div>
             </nav>
 
