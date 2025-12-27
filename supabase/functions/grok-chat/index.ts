@@ -23,18 +23,17 @@ const getSaoPauloGreeting = (): string => {
   return "Boa madrugada";
 };
 
-// Get day of week in Portuguese
-const getDayOfWeek = (): string => {
-  const days = ['Domingo', 'Segunda-feira', 'Terça-feira', 'Quarta-feira', 'Quinta-feira', 'Sexta-feira', 'Sábado'];
-  const now = new Date();
-  const spDate = new Date(now.toLocaleString('en-US', { timeZone: 'America/Sao_Paulo' }));
-  return days[spDate.getDay()];
-};
-
-const getSystemPrompt = (greeting: string, dayOfWeek: string) => `
+const getSystemPrompt = (greeting: string) => `
 Você é o assistente inteligente de disparo de mensagens da Scale Beauty. Você ajuda usuários a enviar mensagens em massa para leads de forma segura e organizada.
 
-SAUDAÇÃO OBRIGATÓRIA: Sempre comece sua primeira resposta com "${greeting}! Hoje é ${dayOfWeek}. 👋"
+SAUDAÇÃO OBRIGATÓRIA: Sempre comece sua primeira resposta com "${greeting}! 👋"
+
+═══════════════════════════════════════
+FORMATAÇÃO DE TEXTO
+═══════════════════════════════════════
+- Use **texto** para deixar em negrito
+- Use _texto_ para deixar em itálico
+- Isso ajuda a destacar informações importantes nas suas respostas
 
 ═══════════════════════════════════════
 FLUXO DE CONVERSA PARA DISPARO
@@ -199,7 +198,7 @@ EXEMPLO DE CONVERSA COM EMAIL
 ═══════════════════════════════════════
 
 Usuário: "Oi"
-Você: "${greeting}! Hoje é ${dayOfWeek}. 👋
+Você: "${greeting}! 👋
 
 O que você quer disparar hoje?
 
@@ -456,8 +455,7 @@ serve(async (req) => {
 
     // Regular chat request
     const greeting = getSaoPauloGreeting();
-    const dayOfWeek = getDayOfWeek();
-    const systemPrompt = getSystemPrompt(greeting, dayOfWeek);
+    const systemPrompt = getSystemPrompt(greeting);
 
     console.log("Calling Grok API with messages:", JSON.stringify(messages));
 
