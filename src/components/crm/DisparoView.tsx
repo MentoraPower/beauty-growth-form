@@ -1,25 +1,38 @@
 import { useState } from "react";
-import { Send, Mail, Clock, CheckCircle, XCircle, Eye, MousePointer } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { AIChatInput } from "./AIChatInput";
 
 interface DisparoViewProps {
   subOriginId: string | null;
 }
 
 export function DisparoView({ subOriginId }: DisparoViewProps) {
-  return (
-    <div className="flex-1 flex flex-col h-full p-6">
+  const [isLoading, setIsLoading] = useState(false);
 
-      {/* Content placeholder */}
-      <div className="flex-1 flex items-center justify-center border-2 border-dashed border-muted-foreground/20 rounded-xl">
-        <div className="text-center">
-          <Mail className="w-12 h-12 text-muted-foreground/40 mx-auto mb-4" />
-          <h2 className="text-lg font-medium text-muted-foreground mb-2">
-            Página de Disparos
-          </h2>
-          <p className="text-sm text-muted-foreground/60 max-w-md">
-            Configure e visualize seus disparos de email aqui.
-          </p>
+  const handleSend = (message: string) => {
+    console.log("Message sent:", message);
+    setIsLoading(true);
+    // Simulate API call
+    setTimeout(() => {
+      setIsLoading(false);
+    }, 2000);
+  };
+
+  return (
+    <div className="flex-1 flex flex-col h-full">
+      {/* Chat messages area */}
+      <div className="flex-1 overflow-auto p-6">
+        {/* Messages will go here */}
+      </div>
+
+      {/* AI Chat Input - fixed at bottom */}
+      <div className="p-6 pt-0">
+        <div className="max-w-3xl mx-auto">
+          <AIChatInput
+            onSend={handleSend}
+            isLoading={isLoading}
+            placeholder="Digite sua mensagem aqui..."
+          />
         </div>
       </div>
     </div>
