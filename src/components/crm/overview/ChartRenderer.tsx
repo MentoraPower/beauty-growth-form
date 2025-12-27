@@ -563,11 +563,6 @@ export function ChartRenderer({
         return renderEmptyState();
       }
 
-      // Dynamic sizing based on height
-      const cellSize = Math.max(Math.min(height * 0.08, 18), 12);
-      const cellGap = Math.max(Math.min(height * 0.015, 4), 2);
-      const labelFontSize = Math.max(Math.min(height * 0.045, 11), 8);
-
       // Get last 12 weeks of data
       const today = new Date();
       const startDate = subDays(today, 84); // 12 weeks
@@ -609,43 +604,40 @@ export function ChartRenderer({
         return { background: 'linear-gradient(135deg, #f97316, #ea580c)' };
       };
 
-      const dayLabels = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
+      const dayLabels = ['D', 'S', 'T', 'Q', 'Q', 'S', 'S'];
 
       return (
         <TooltipProvider>
-          <div className="h-full flex flex-col justify-between p-3">
-            <div className="flex flex-1 items-center">
+          <div className="h-full w-full flex flex-col p-2">
+            <div className="flex-1 flex items-center justify-center">
               {/* Day labels */}
-              <div className="flex flex-col pr-3" style={{ gap: cellGap }}>
+              <div className="flex flex-col gap-[3px] mr-2">
                 {dayLabels.map((label, i) => (
                   <div 
                     key={i} 
-                    className="flex items-center justify-end"
-                    style={{ height: cellSize }}
+                    className="flex items-center justify-end h-[calc((100%-24px)/7)]"
+                    style={{ minHeight: '14px' }}
                   >
-                    <span 
-                      className="text-muted-foreground font-medium"
-                      style={{ fontSize: labelFontSize }}
-                    >
-                      {i % 2 === 0 ? label : ''}
+                    <span className="text-[10px] text-muted-foreground font-medium">
+                      {label}
                     </span>
                   </div>
                 ))}
               </div>
-              {/* Weeks grid */}
-              <div className="flex flex-1 justify-center" style={{ gap: cellGap }}>
+              {/* Weeks grid - fill available space */}
+              <div className="flex-1 flex justify-between gap-[3px]">
                 {weeks.map((week, weekIndex) => (
-                  <div key={weekIndex} className="flex flex-col" style={{ gap: cellGap }}>
+                  <div key={weekIndex} className="flex-1 flex flex-col gap-[3px]">
                     {Array.from({ length: 7 }).map((_, dayIndex) => {
                       const dayData = week.find(d => d.dayOfWeek === dayIndex);
                       return (
                         <UITooltip key={dayIndex}>
                           <TooltipTrigger asChild>
                             <div 
-                              className="rounded-sm transition-all duration-200 hover:scale-110 hover:ring-2 hover:ring-primary/50 cursor-pointer"
+                              className="flex-1 rounded-sm transition-all duration-200 hover:scale-105 hover:ring-1 hover:ring-primary/50 cursor-pointer"
                               style={{ 
-                                width: cellSize, 
-                                height: cellSize,
+                                minHeight: '14px',
+                                aspectRatio: '1',
                                 ...(dayData ? getColorStyle(dayData.count) : { background: 'transparent' })
                               }}
                             />
@@ -664,31 +656,16 @@ export function ChartRenderer({
               </div>
             </div>
             {/* Legend */}
-            <div className="flex items-center justify-center gap-3 pt-3 border-t border-border/30">
-              <span className="text-muted-foreground font-medium" style={{ fontSize: labelFontSize }}>Menos</span>
-              <div className="flex" style={{ gap: cellGap }}>
-                <div 
-                  className="rounded-sm" 
-                  style={{ width: cellSize * 0.7, height: cellSize * 0.7, background: 'hsl(var(--muted) / 0.3)' }} 
-                />
-                <div 
-                  className="rounded-sm" 
-                  style={{ width: cellSize * 0.7, height: cellSize * 0.7, background: 'linear-gradient(135deg, #fed7aa, #fdba74)' }} 
-                />
-                <div 
-                  className="rounded-sm" 
-                  style={{ width: cellSize * 0.7, height: cellSize * 0.7, background: 'linear-gradient(135deg, #fdba74, #fb923c)' }} 
-                />
-                <div 
-                  className="rounded-sm" 
-                  style={{ width: cellSize * 0.7, height: cellSize * 0.7, background: 'linear-gradient(135deg, #fb923c, #f97316)' }} 
-                />
-                <div 
-                  className="rounded-sm" 
-                  style={{ width: cellSize * 0.7, height: cellSize * 0.7, background: 'linear-gradient(135deg, #f97316, #ea580c)' }} 
-                />
+            <div className="flex items-center justify-center gap-2 pt-2 mt-2 border-t border-border/30">
+              <span className="text-[9px] text-muted-foreground font-medium">Menos</span>
+              <div className="flex gap-1">
+                <div className="w-3 h-3 rounded-sm" style={{ background: 'hsl(var(--muted) / 0.3)' }} />
+                <div className="w-3 h-3 rounded-sm" style={{ background: 'linear-gradient(135deg, #fed7aa, #fdba74)' }} />
+                <div className="w-3 h-3 rounded-sm" style={{ background: 'linear-gradient(135deg, #fdba74, #fb923c)' }} />
+                <div className="w-3 h-3 rounded-sm" style={{ background: 'linear-gradient(135deg, #fb923c, #f97316)' }} />
+                <div className="w-3 h-3 rounded-sm" style={{ background: 'linear-gradient(135deg, #f97316, #ea580c)' }} />
               </div>
-              <span className="text-muted-foreground font-medium" style={{ fontSize: labelFontSize }}>Mais</span>
+              <span className="text-[9px] text-muted-foreground font-medium">Mais</span>
             </div>
           </div>
         </TooltipProvider>
