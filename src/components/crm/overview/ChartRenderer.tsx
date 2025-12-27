@@ -19,16 +19,16 @@ import { Lead, Pipeline } from "@/types/crm";
 import { DataSource, ChartType } from "./types";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
-// Modern color palette with gradients
+// Modern color palette with black, dark gray and orange gradient
 const MODERN_COLORS = [
-  { solid: "#6366f1", gradient: ["#818cf8", "#4f46e5"] }, // Indigo
-  { solid: "#8b5cf6", gradient: ["#a78bfa", "#7c3aed"] }, // Violet
-  { solid: "#ec4899", gradient: ["#f472b6", "#db2777"] }, // Pink
-  { solid: "#14b8a6", gradient: ["#2dd4bf", "#0d9488"] }, // Teal
-  { solid: "#f59e0b", gradient: ["#fbbf24", "#d97706"] }, // Amber
-  { solid: "#3b82f6", gradient: ["#60a5fa", "#2563eb"] }, // Blue
-  { solid: "#10b981", gradient: ["#34d399", "#059669"] }, // Emerald
-  { solid: "#f43f5e", gradient: ["#fb7185", "#e11d48"] }, // Rose
+  { solid: "#f97316", gradient: ["#fb923c", "#ea580c"] }, // Orange (primary)
+  { solid: "#1a1a1a", gradient: ["#2d2d2d", "#0a0a0a"] }, // Black
+  { solid: "#404040", gradient: ["#525252", "#262626"] }, // Dark Gray
+  { solid: "#f97316", gradient: ["#fdba74", "#c2410c"] }, // Orange variant
+  { solid: "#171717", gradient: ["#262626", "#0a0a0a"] }, // Darker Black
+  { solid: "#525252", gradient: ["#737373", "#3f3f46"] }, // Medium Gray
+  { solid: "#ea580c", gradient: ["#f97316", "#c2410c"] }, // Deep Orange
+  { solid: "#292929", gradient: ["#3d3d3d", "#171717"] }, // Charcoal
 ];
 
 interface ChartRendererProps {
