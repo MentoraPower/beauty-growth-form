@@ -112,10 +112,10 @@ export function ActivitiesBoard({ leadId, leadName, currentPipelineId, currentSu
       </Card>
 
       {/* Two columns layout - left narrower */}
-      <div className="grid grid-cols-1 lg:grid-cols-[480px_1fr] gap-4">
+      <div className="grid grid-cols-1 lg:grid-cols-[480px_1fr] gap-4 h-[calc(100vh-380px)]">
         {/* Left block - Activities List */}
-        <Card className="border-[#00000010] bg-[#fafafa] shadow-none min-h-[calc(100vh-380px)]">
-          <CardContent className="p-4 flex flex-col h-full">
+        <Card className="border-[#00000010] bg-[#fafafa] shadow-none flex flex-col overflow-hidden">
+          <CardContent className="p-4 flex flex-col h-full min-h-0">
             {isLoadingActivities ? (
               <div className="space-y-3 flex-1">
                 {[1, 2, 3].map((i) => (
@@ -125,14 +125,14 @@ export function ActivitiesBoard({ leadId, leadName, currentPipelineId, currentSu
             ) : (
               <>
                 {/* Column headers */}
-                <div className="flex items-center gap-2 pb-2 border-b border-black/10 mb-2">
+                <div className="flex items-center gap-2 pb-2 border-b border-black/10 mb-2 flex-shrink-0">
                   <span className="flex-1 text-xs font-medium text-muted-foreground uppercase tracking-wide">Atividade</span>
                   <span className="w-14 text-xs font-medium text-muted-foreground uppercase tracking-wide text-center">Data</span>
                   <span className="w-16 text-xs font-medium text-muted-foreground uppercase tracking-wide text-center">Concluído</span>
                   <span className="w-8"></span>
                 </div>
 
-                <div className="flex-1 overflow-y-auto space-y-1">
+                <div className="flex-1 overflow-y-auto space-y-1 min-h-0">
                   {activities.length === 0 ? (
                     <div className="h-full flex items-center justify-center">
                       <p className="text-sm text-muted-foreground">
@@ -218,7 +218,7 @@ export function ActivitiesBoard({ leadId, leadName, currentPipelineId, currentSu
                 {/* Add activity button at bottom */}
                 <Button
                   variant="outline"
-                  className="w-full mt-4 border-dashed"
+                  className="w-full mt-4 border-dashed flex-shrink-0"
                   onClick={handleOpenAddDialog}
                 >
                   <Plus className="h-4 w-4 mr-2" />
@@ -230,8 +230,8 @@ export function ActivitiesBoard({ leadId, leadName, currentPipelineId, currentSu
         </Card>
 
         {/* Right block - Activity Details / Tasks */}
-        <Card className="border-[#00000010] bg-[#fafafa] shadow-none min-h-[calc(100vh-380px)]">
-          <CardContent className="p-4 h-full flex flex-col">
+        <Card className="border-[#00000010] bg-[#fafafa] shadow-none flex flex-col overflow-hidden">
+          <CardContent className="p-4 h-full flex flex-col min-h-0 overflow-y-auto">
             <ActivityDetails
               activity={selectedActivity}
               leadId={leadId}
