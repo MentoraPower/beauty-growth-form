@@ -323,19 +323,20 @@ export function ChartRenderer({
     case "bar": {
       const barData = chartData as Array<{ name: string; count: number; color: string }>;
       const maxCount = Math.max(...barData.map(d => d.count), 1);
+      const barCount = barData.length || 1;
       
       return (
         <TooltipProvider delayDuration={100}>
-          <div className="h-full flex flex-col gap-2 py-1">
+          <div className="h-full flex flex-col justify-between py-1">
             {barData.map((item, index) => {
               const percentage = (item.count / maxCount) * 100;
               return (
-                <div key={index} className="flex items-center gap-3">
+                <div key={index} className="flex items-center gap-2 flex-1 min-h-0">
                   {/* Info icon with tooltip */}
                   <UITooltip>
                     <TooltipTrigger asChild>
-                      <div className="w-5 h-5 rounded-full bg-muted flex items-center justify-center shrink-0 cursor-help hover:bg-muted-foreground/20 transition-colors">
-                        <Info className="w-3 h-3 text-muted-foreground" />
+                      <div className="w-6 h-6 rounded-full bg-muted flex items-center justify-center shrink-0 cursor-help hover:bg-muted-foreground/20 transition-colors">
+                        <Info className="w-3.5 h-3.5 text-muted-foreground" />
                       </div>
                     </TooltipTrigger>
                     <TooltipContent side="right" className="max-w-[200px]">
@@ -344,19 +345,19 @@ export function ChartRenderer({
                     </TooltipContent>
                   </UITooltip>
                   
-                  {/* Bar */}
-                  <div className="flex-1 h-8 bg-muted/50 rounded-lg overflow-hidden relative">
+                  {/* Bar - height adapts to available space */}
+                  <div className="flex-1 bg-muted/50 rounded-xl overflow-hidden relative my-1" style={{ height: 'calc(100% - 8px)', minHeight: '32px' }}>
                     <div 
-                      className="h-full rounded-lg transition-all duration-700 ease-out"
+                      className="h-full rounded-xl transition-all duration-700 ease-out"
                       style={{ 
                         width: `${percentage}%`,
                         background: `linear-gradient(90deg, ${MODERN_COLORS[index % MODERN_COLORS.length].gradient[1]}, ${MODERN_COLORS[index % MODERN_COLORS.length].gradient[0]})`,
                       }}
                     />
                     {/* Label inside bar */}
-                    <div className="absolute inset-0 flex items-center px-3">
+                    <div className="absolute inset-0 flex items-center px-4">
                       <span className={cn(
-                        "text-xs font-medium truncate",
+                        "text-sm font-semibold truncate",
                         percentage > 30 ? "text-white" : "text-foreground"
                       )}>
                         {item.name}
@@ -365,15 +366,15 @@ export function ChartRenderer({
                   </div>
                   
                   {/* Count */}
-                  <span className="text-sm font-semibold text-foreground w-8 text-right shrink-0">
+                  <span className="text-base font-bold text-foreground w-10 text-right shrink-0">
                     {item.count}
                   </span>
                   
                   {/* Info icon right side */}
                   <UITooltip>
                     <TooltipTrigger asChild>
-                      <div className="w-5 h-5 rounded-full bg-muted flex items-center justify-center shrink-0 cursor-help hover:bg-muted-foreground/20 transition-colors">
-                        <Info className="w-3 h-3 text-muted-foreground" />
+                      <div className="w-6 h-6 rounded-full bg-muted flex items-center justify-center shrink-0 cursor-help hover:bg-muted-foreground/20 transition-colors">
+                        <Info className="w-3.5 h-3.5 text-muted-foreground" />
                       </div>
                     </TooltipTrigger>
                     <TooltipContent side="left" className="max-w-[200px]">
