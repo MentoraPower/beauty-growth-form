@@ -608,55 +608,65 @@ export function ChartRenderer({
 
       return (
         <TooltipProvider>
-          <div className="h-full w-full flex flex-col p-2">
-            <div className="flex-1 flex items-center justify-center">
-              {/* Day labels */}
-              <div className="flex flex-col gap-[3px] mr-2">
+          <div className="h-full w-full flex flex-col p-3 overflow-hidden">
+            {/* Main grid container */}
+            <div className="flex-1 flex min-h-0">
+              {/* Day labels column */}
+              <div 
+                className="flex flex-col justify-between pr-2 py-[2px]"
+                style={{ height: '100%' }}
+              >
                 {dayLabels.map((label, i) => (
                   <div 
                     key={i} 
-                    className="flex items-center justify-end h-[calc((100%-24px)/7)]"
-                    style={{ minHeight: '14px' }}
+                    className="flex-1 flex items-center justify-end"
                   >
-                    <span className="text-[10px] text-muted-foreground font-medium">
+                    <span className="text-[10px] text-muted-foreground font-medium leading-none">
                       {label}
                     </span>
                   </div>
                 ))}
               </div>
-              {/* Weeks grid - fill available space */}
-              <div className="flex-1 flex justify-between gap-[3px]">
+              
+              {/* Weeks grid - CSS Grid for perfect fill */}
+              <div 
+                className="flex-1 grid min-w-0"
+                style={{ 
+                  gridTemplateColumns: `repeat(${weeks.length}, 1fr)`,
+                  gridTemplateRows: 'repeat(7, 1fr)',
+                  gap: '3px',
+                }}
+              >
                 {weeks.map((week, weekIndex) => (
-                  <div key={weekIndex} className="flex-1 flex flex-col gap-[3px]">
-                    {Array.from({ length: 7 }).map((_, dayIndex) => {
-                      const dayData = week.find(d => d.dayOfWeek === dayIndex);
-                      return (
-                        <UITooltip key={dayIndex}>
-                          <TooltipTrigger asChild>
-                            <div 
-                              className="flex-1 rounded-sm transition-all duration-200 hover:scale-105 hover:ring-1 hover:ring-primary/50 cursor-pointer"
-                              style={{ 
-                                minHeight: '14px',
-                                aspectRatio: '1',
-                                ...(dayData ? getColorStyle(dayData.count) : { background: 'transparent' })
-                              }}
-                            />
-                          </TooltipTrigger>
-                          {dayData && (
-                            <TooltipContent side="top" className="bg-background/95 backdrop-blur-sm border border-border/50">
-                              <p className="font-semibold text-foreground">{format(dayData.date, "dd MMM yyyy", { locale: ptBR })}</p>
-                              <p className="text-primary font-bold">{dayData.count} leads</p>
-                            </TooltipContent>
-                          )}
-                        </UITooltip>
-                      );
-                    })}
-                  </div>
+                  Array.from({ length: 7 }).map((_, dayIndex) => {
+                    const dayData = week.find(d => d.dayOfWeek === dayIndex);
+                    return (
+                      <UITooltip key={`${weekIndex}-${dayIndex}`}>
+                        <TooltipTrigger asChild>
+                          <div 
+                            className="w-full h-full rounded-sm transition-all duration-200 hover:scale-110 hover:ring-2 hover:ring-primary/50 cursor-pointer"
+                            style={{ 
+                              gridColumn: weekIndex + 1,
+                              gridRow: dayIndex + 1,
+                              ...(dayData ? getColorStyle(dayData.count) : { background: 'hsl(var(--muted) / 0.15)' })
+                            }}
+                          />
+                        </TooltipTrigger>
+                        {dayData && (
+                          <TooltipContent side="top" className="bg-background/95 backdrop-blur-sm border border-border/50">
+                            <p className="font-semibold text-foreground">{format(dayData.date, "dd MMM yyyy", { locale: ptBR })}</p>
+                            <p className="text-primary font-bold">{dayData.count} leads</p>
+                          </TooltipContent>
+                        )}
+                      </UITooltip>
+                    );
+                  })
                 ))}
               </div>
             </div>
-            {/* Legend */}
-            <div className="flex items-center justify-center gap-2 pt-2 mt-2 border-t border-border/30">
+            
+            {/* Legend - compact */}
+            <div className="flex items-center justify-center gap-2 pt-2 mt-2 border-t border-border/20 shrink-0">
               <span className="text-[9px] text-muted-foreground font-medium">Menos</span>
               <div className="flex gap-1">
                 <div className="w-3 h-3 rounded-sm" style={{ background: 'hsl(var(--muted) / 0.3)' }} />
