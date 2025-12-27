@@ -6,10 +6,12 @@ export type CardSize = {
 export type ChartType = 
   | "pie" 
   | "bar" 
+  | "bar_vertical"
   | "area" 
   | "gauge" 
   | "number" 
-  | "list";
+  | "list"
+  | "heatmap";
 
 export type DataSource = 
   | "leads_by_pipeline" 
@@ -100,6 +102,26 @@ export const CARD_TEMPLATES: CardTemplate[] = [
     defaultSize: { widthPercent: 40, height: 320 },
     icon: "Tag",
     category: "charts",
+  },
+  {
+    id: "leads_vertical_bar",
+    title: "Gráfico de Barras Verticais - Leads por Pipeline",
+    description: "Barras verticais modernas por pipeline",
+    chartType: "bar_vertical",
+    dataSource: "leads_by_pipeline",
+    defaultSize: { widthPercent: 45, height: 320 },
+    icon: "BarChart3",
+    category: "charts",
+  },
+  {
+    id: "leads_heatmap",
+    title: "Heatmap de Calendário - Atividade por Dia",
+    description: "Visualização de quadrados com atividade diária",
+    chartType: "heatmap",
+    dataSource: "leads_over_time",
+    defaultSize: { widthPercent: 60, height: 240 },
+    icon: "Calendar",
+    category: "featured",
   },
 ];
 

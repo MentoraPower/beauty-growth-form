@@ -8,9 +8,12 @@ import {
   Area, 
   XAxis, 
   YAxis, 
-  Tooltip
+  Tooltip,
+  BarChart,
+  Bar,
+  CartesianGrid,
 } from "recharts";
-import { format, subDays, startOfDay, eachDayOfInterval } from "date-fns";
+import { format, subDays, startOfDay, eachDayOfInterval, getDay, startOfWeek, addDays, getWeek } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { TrendingUp, TrendingDown, Users, BarChart3, Info } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -464,6 +467,169 @@ export function ChartRenderer({
             })}
           </div>
         </ScrollArea>
+      );
+    }
+
+    case "bar_vertical": {
+      const barData = chartData as Array<{ name: string; value: number; color: string }>;
+      if (!Array.isArray(barData) || barData.length === 0 || barData.every(d => d.value === 0)) {
+        return renderEmptyState();
+      }
+
+      return (
+        <ResponsiveContainer width="100%" height="100%">
+          <BarChart data={barData} margin={{ top: 20, right: 10, left: -15, bottom: 40 }}>
+            <defs>
+              {barData.map((entry, index) => (
+                <linearGradient key={`vbar-gradient-${index}`} id={`vbarGradient-${cardId}-${index}`} x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor={MODERN_COLORS[index % MODERN_COLORS.length].gradient[0]} />
+                  <stop offset="100%" stopColor={MODERN_COLORS[index % MODERN_COLORS.length].gradient[1]} />
+                </linearGradient>
+              ))}
+            </defs>
+            <CartesianGrid 
+              strokeDasharray="3 3" 
+              stroke="hsl(var(--border))" 
+              vertical={false}
+              opacity={0.5}
+            />
+            <XAxis 
+              dataKey="name" 
+              tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }} 
+              tickLine={false}
+              axisLine={false}
+              interval={0}
+              angle={-35}
+              textAnchor="end"
+              height={50}
+            />
+            <YAxis 
+              tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }} 
+              tickLine={false}
+              axisLine={false}
+            />
+            <Tooltip content={<CustomTooltip />} cursor={{ fill: 'hsl(var(--muted) / 0.3)' }} />
+            <Bar
+              dataKey="value"
+              radius={[6, 6, 0, 0]}
+              maxBarSize={50}
+              animationBegin={0}
+              animationDuration={800}
+            >
+              {barData.map((entry, index) => (
+                <Cell 
+                  key={`cell-${index}`} 
+                  fill={`url(#vbarGradient-${cardId}-${index})`}
+                  className="drop-shadow-sm"
+                />
+              ))}
+            </Bar>
+          </BarChart>
+        </ResponsiveContainer>
+      );
+    }
+
+    case "heatmap": {
+      const heatmapData = chartData as Array<{ date: string; count: number }>;
+      if (!Array.isArray(heatmapData) || heatmapData.length === 0) {
+        return renderEmptyState();
+      }
+
+      // Get last 12 weeks of data
+      const today = new Date();
+      const startDate = subDays(today, 84); // 12 weeks
+      const days = eachDayOfInterval({ start: startDate, end: today });
+      
+      // Create a map of date to count
+      const countMap: Record<string, number> = {};
+      heatmapData.forEach(d => {
+        const key = d.date;
+        countMap[key] = d.count;
+      });
+
+      // Find max for color scaling
+      const maxCount = Math.max(...heatmapData.map(d => d.count), 1);
+
+      // Group by week
+      const weeks: Array<Array<{ date: Date; count: number; dayOfWeek: number }>> = [];
+      let currentWeek: Array<{ date: Date; count: number; dayOfWeek: number }> = [];
+      
+      days.forEach((day, index) => {
+        const dayOfWeek = getDay(day);
+        const formattedDate = format(day, "dd/MM", { locale: ptBR });
+        const count = countMap[formattedDate] || 0;
+        
+        currentWeek.push({ date: day, count, dayOfWeek });
+        
+        if (dayOfWeek === 6 || index === days.length - 1) {
+          weeks.push(currentWeek);
+          currentWeek = [];
+        }
+      });
+
+      const getColorIntensity = (count: number) => {
+        if (count === 0) return 'bg-muted/30';
+        const ratio = count / maxCount;
+        if (ratio < 0.25) return 'bg-orange-200 dark:bg-orange-900/50';
+        if (ratio < 0.5) return 'bg-orange-400 dark:bg-orange-700';
+        if (ratio < 0.75) return 'bg-orange-500 dark:bg-orange-600';
+        return 'bg-orange-600 dark:bg-orange-500';
+      };
+
+      const dayLabels = ['D', 'S', 'T', 'Q', 'Q', 'S', 'S'];
+
+      return (
+        <div className="h-full flex flex-col gap-2 p-2">
+          <div className="flex gap-1">
+            {/* Day labels */}
+            <div className="flex flex-col gap-[3px] pr-2">
+              {dayLabels.map((label, i) => (
+                <div key={i} className="h-[14px] w-4 flex items-center justify-center">
+                  <span className="text-[9px] text-muted-foreground">{i % 2 === 1 ? label : ''}</span>
+                </div>
+              ))}
+            </div>
+            {/* Weeks grid */}
+            <div className="flex gap-[3px] flex-1 overflow-hidden">
+              {weeks.map((week, weekIndex) => (
+                <div key={weekIndex} className="flex flex-col gap-[3px]">
+                  {Array.from({ length: 7 }).map((_, dayIndex) => {
+                    const dayData = week.find(d => d.dayOfWeek === dayIndex);
+                    return (
+                      <UITooltip key={dayIndex}>
+                        <TooltipTrigger asChild>
+                          <div 
+                            className={`w-[14px] h-[14px] rounded-[3px] transition-colors ${
+                              dayData ? getColorIntensity(dayData.count) : 'bg-transparent'
+                            }`}
+                          />
+                        </TooltipTrigger>
+                        {dayData && (
+                          <TooltipContent side="top" className="text-xs">
+                            <p className="font-medium">{format(dayData.date, "dd MMM yyyy", { locale: ptBR })}</p>
+                            <p className="text-muted-foreground">{dayData.count} leads</p>
+                          </TooltipContent>
+                        )}
+                      </UITooltip>
+                    );
+                  })}
+                </div>
+              ))}
+            </div>
+          </div>
+          {/* Legend */}
+          <div className="flex items-center justify-end gap-2 mt-1">
+            <span className="text-[10px] text-muted-foreground">Menos</span>
+            <div className="flex gap-[2px]">
+              <div className="w-3 h-3 rounded-[2px] bg-muted/30" />
+              <div className="w-3 h-3 rounded-[2px] bg-orange-200 dark:bg-orange-900/50" />
+              <div className="w-3 h-3 rounded-[2px] bg-orange-400 dark:bg-orange-700" />
+              <div className="w-3 h-3 rounded-[2px] bg-orange-500 dark:bg-orange-600" />
+              <div className="w-3 h-3 rounded-[2px] bg-orange-600 dark:bg-orange-500" />
+            </div>
+            <span className="text-[10px] text-muted-foreground">Mais</span>
+          </div>
+        </div>
       );
     }
 
