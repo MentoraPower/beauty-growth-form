@@ -32,7 +32,6 @@ let globalActivePanel: ActivePanel = getInitialPanelState();
 
 const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [sidebarExpanded, setSidebarExpanded] = useState(false);
   const [activePanel, setActivePanel] = useState<ActivePanel>(globalActivePanel);
   const [canAccessWhatsapp, setCanAccessWhatsapp] = useState(false);
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
@@ -221,11 +220,7 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
 
   // Sidebar dimensions
   const sidebarCollapsedWidth = 64;
-  const sidebarExpandedWidth = 180;
   const submenuWidth = 256;
-
-  // Current sidebar width based on expanded state
-  const currentSidebarWidth = sidebarExpanded ? sidebarExpandedWidth : sidebarCollapsedWidth;
 
   // Main content margin - sidebar is overlay, but CRM origins panel pushes content
   const contentGap = 4;
@@ -262,52 +257,32 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
         {/* Desktop Sidebar - Black background, CSS-only hover expansion */}
         <aside
           ref={sidebarRef}
-          onMouseEnter={() => setSidebarExpanded(true)}
-          onMouseLeave={() => setSidebarExpanded(false)}
           style={{ 
-            width: currentSidebarWidth,
             left: 12,
             top: 12,
             height: 'calc(100vh - 1.5rem)',
             borderRight: '1px solid rgba(255, 255, 255, 0.125)',
-            willChange: 'width',
           }}
-          className="hidden lg:flex flex-col fixed bg-[#0f0f12] overflow-hidden z-50 rounded-2xl transition-[width] duration-200 ease-out"
+          className="group hidden lg:flex flex-col fixed bg-[#0f0f12] overflow-hidden z-50 rounded-2xl w-16 hover:w-[180px] transition-[width] duration-200 ease-out"
         >
           <div className="flex flex-col h-full relative">
             {/* Logo */}
             <div className="h-14 flex items-center justify-center relative overflow-hidden">
               {/* Icon logo - visible when collapsed */}
-              <div 
-                className="absolute inset-0 flex items-center justify-center transition-all duration-500 ease-in-out"
-                style={{
-                  opacity: sidebarExpanded ? 0 : 1,
-                  visibility: sidebarExpanded ? 'hidden' : 'visible',
-                  transitionDelay: sidebarExpanded ? '0ms' : '100ms',
-                }}
-              >
+              <div className="absolute inset-0 flex items-center justify-center transition-all duration-200 ease-out opacity-100 group-hover:opacity-0">
                 <img 
                   src={scaleLogo} 
                   alt="Scale Beauty" 
-                  className="object-contain"
-                  style={{ width: 28, height: 28 }}
+                  className="object-contain w-7 h-7"
                 />
               </div>
               
               {/* Full logo - visible when expanded */}
-              <div 
-                className="absolute inset-0 flex items-center pl-3 transition-all duration-500 ease-in-out"
-                style={{
-                  opacity: sidebarExpanded ? 1 : 0,
-                  visibility: sidebarExpanded ? 'visible' : 'hidden',
-                  transitionDelay: sidebarExpanded ? '100ms' : '0ms',
-                }}
-              >
+              <div className="absolute inset-0 flex items-center pl-3 transition-all duration-200 ease-out opacity-0 group-hover:opacity-100">
                 <img 
                   src={scaleLogoFull} 
                   alt="Scale Beauty" 
-                  className="object-contain"
-                  style={{ height: 28 }}
+                  className="object-contain h-7"
                 />
               </div>
             </div>
@@ -327,12 +302,7 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
                   <div className="w-10 flex items-center justify-center flex-shrink-0">
                     <LayoutGrid className="h-5 w-5" strokeWidth={1.5} />
                   </div>
-                  <span 
-                    className={cn(
-                      "text-sm font-medium whitespace-nowrap transition-all duration-200 overflow-hidden",
-                      sidebarExpanded ? "opacity-100 w-auto" : "opacity-0 w-0"
-                    )}
-                  >
+                  <span className="text-sm font-medium whitespace-nowrap transition-all duration-200 overflow-hidden opacity-0 w-0 group-hover:opacity-100 group-hover:w-auto">
                     Espaços
                   </span>
                 </button>
@@ -354,12 +324,7 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
                   <div className="w-10 flex items-center justify-center flex-shrink-0">
                     <SquareUser className="h-5 w-5" strokeWidth={1.5} />
                   </div>
-                  <span 
-                    className={cn(
-                      "text-sm font-medium whitespace-nowrap transition-all duration-200 overflow-hidden",
-                      sidebarExpanded ? "opacity-100 w-auto" : "opacity-0 w-0"
-                    )}
-                  >
+                  <span className="text-sm font-medium whitespace-nowrap transition-all duration-200 overflow-hidden opacity-0 w-0 group-hover:opacity-100 group-hover:w-auto">
                     Equipe
                   </span>
                 </button>
@@ -381,12 +346,7 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
                       <div className="w-10 flex items-center justify-center flex-shrink-0">
                         <item.icon className="h-5 w-5" />
                       </div>
-                      <span 
-                        className={cn(
-                          "text-sm font-medium whitespace-nowrap transition-all duration-200 overflow-hidden",
-                          sidebarExpanded ? "opacity-100 w-auto" : "opacity-0 w-0"
-                        )}
-                      >
+                      <span className="text-sm font-medium whitespace-nowrap transition-all duration-200 overflow-hidden opacity-0 w-0 group-hover:opacity-100 group-hover:w-auto">
                         {item.label}
                       </span>
                     </button>
@@ -418,12 +378,7 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
                       style={{ opacity: activePanel === 'analizer' ? 1 : 0.5 }}
                     />
                   </div>
-                  <span 
-                    className={cn(
-                      "text-sm font-medium whitespace-nowrap transition-all duration-200 overflow-hidden",
-                      sidebarExpanded ? "opacity-100 w-auto" : "opacity-0 w-0"
-                    )}
-                  >
+                  <span className="text-sm font-medium whitespace-nowrap transition-all duration-200 overflow-hidden opacity-0 w-0 group-hover:opacity-100 group-hover:w-auto">
                     Analizer
                   </span>
                 </button>
@@ -449,12 +404,7 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
                         <User className="h-4 w-4 text-white" strokeWidth={1.5} />
                       </div>
                     </div>
-                    <div 
-                      className={cn(
-                        "flex-1 flex items-center justify-between transition-all duration-200 overflow-hidden pr-2",
-                        sidebarExpanded ? "opacity-100 w-auto" : "opacity-0 w-0"
-                      )}
-                    >
+                    <div className="flex-1 flex items-center justify-between transition-all duration-200 overflow-hidden pr-2 opacity-0 w-0 group-hover:opacity-100 group-hover:w-auto">
                       <span className="text-sm font-medium whitespace-nowrap truncate max-w-[80px]">
                         {userName}
                       </span>
@@ -485,12 +435,7 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
                     <div className="w-10 flex items-center justify-center flex-shrink-0">
                       <Settings className="h-4 w-4" strokeWidth={1.5} />
                     </div>
-                    <span 
-                      className={cn(
-                        "text-sm font-medium whitespace-nowrap transition-all duration-200 overflow-hidden",
-                        sidebarExpanded ? "opacity-100 w-auto" : "opacity-0 w-0"
-                      )}
-                    >
+                    <span className="text-sm font-medium whitespace-nowrap transition-all duration-200 overflow-hidden opacity-0 w-0 group-hover:opacity-100 group-hover:w-auto">
                       Configurações
                     </span>
                   </button>
@@ -505,12 +450,7 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
                     <div className="w-10 flex items-center justify-center flex-shrink-0">
                       <LogOut className="h-4 w-4" strokeWidth={1.5} />
                     </div>
-                    <span 
-                      className={cn(
-                        "text-sm font-medium whitespace-nowrap transition-all duration-200 overflow-hidden",
-                        sidebarExpanded ? "opacity-100 w-auto" : "opacity-0 w-0"
-                      )}
-                    >
+                    <span className="text-sm font-medium whitespace-nowrap transition-all duration-200 overflow-hidden opacity-0 w-0 group-hover:opacity-100 group-hover:w-auto">
                       Sair
                     </span>
                   </button>
