@@ -202,7 +202,7 @@ export default function Equipe() {
         {selectedMember ? (
           <div className="space-y-4">
             {/* Header Card */}
-            <div className="bg-background border border-border rounded-lg p-5">
+            <div className="bg-white rounded-lg p-5" style={{ border: '1px solid #00000010' }}>
               <div className="flex items-start justify-between">
                 <div className="flex items-center gap-4">
                   <div className="w-14 h-14 rounded-xl bg-foreground text-background flex items-center justify-center text-lg font-semibold">
@@ -246,7 +246,7 @@ export default function Equipe() {
             {/* Info Blocks Grid */}
             <div className="grid grid-cols-3 gap-4">
               {/* Contact Info Block */}
-              <div className="bg-background border border-border rounded-lg p-4">
+              <div className="bg-white rounded-lg p-4" style={{ border: '1px solid #00000010' }}>
                 <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-3">Contato</h3>
                 <div className="space-y-3">
                   <div className="flex items-center gap-2.5">
@@ -270,7 +270,7 @@ export default function Equipe() {
               </div>
 
               {/* Stats Block */}
-              <div className="bg-background border border-border rounded-lg p-4">
+              <div className="bg-white rounded-lg p-4" style={{ border: '1px solid #00000010' }}>
                 <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-3">Estatísticas</h3>
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
@@ -298,7 +298,7 @@ export default function Equipe() {
               </div>
 
               {/* Completion Rate Block */}
-              <div className="bg-background border border-border rounded-lg p-4">
+              <div className="bg-white rounded-lg p-4" style={{ border: '1px solid #00000010' }}>
                 <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-3">Taxa de Conclusão</h3>
                 <div className="flex flex-col items-center justify-center h-[calc(100%-24px)]">
                   <span className="text-4xl font-bold text-foreground">{completionRate}%</span>
@@ -315,7 +315,7 @@ export default function Equipe() {
             </div>
 
             {/* Recent Activities Block */}
-            <div className="bg-background border border-border rounded-lg p-4">
+            <div className="bg-white rounded-lg p-4" style={{ border: '1px solid #00000010' }}>
               <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-3">Atividades Recentes</h3>
               
               {memberStats?.recentActivities && memberStats.recentActivities.length > 0 ? (
