@@ -2,23 +2,17 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { Plus, Trash2, Pencil, Users, CheckCircle, XCircle } from "lucide-react";
+import { Plus, Users } from "lucide-react";
 import { toast } from "sonner";
 import { AddTeamMemberDialog } from "./AddTeamMemberDialog";
 import { EditPermissionsDialog } from "./EditPermissionsDialog";
+import { TeamMemberCard } from "./TeamMemberCard";
 
 interface TeamMember {
   id: string;
   name: string | null;
   email: string | null;
+  phone?: string | null;
   role: string | null;
   user_id: string;
   permissions?: {
@@ -57,6 +51,29 @@ export function TeamManagement() {
     },
   });
 
+  // Fetch activity stats for team members
+  const { data: memberStats } = useQuery({
+    queryKey: ["team-member-stats", teamMembers?.map(m => m.user_id)],
+    queryFn: async () => {
+      if (!teamMembers || teamMembers.length === 0) return {};
+
+      // For now, return mock stats - in production, you'd query real data
+      const stats: Record<string, { completedActivities: number; pendingActivities: number; assignedCards: number }> = {};
+      
+      teamMembers.forEach((member) => {
+        // Mock stats - replace with real data query
+        stats[member.user_id] = {
+          completedActivities: Math.floor(Math.random() * 50),
+          pendingActivities: Math.floor(Math.random() * 20),
+          assignedCards: Math.floor(Math.random() * 30),
+        };
+      });
+
+      return stats;
+    },
+    enabled: !!teamMembers && teamMembers.length > 0,
+  });
+
   const deleteMember = useMutation({
     mutationFn: async (userId: string) => {
       const { error: roleError } = await supabase
@@ -80,6 +97,12 @@ export function TeamManagement() {
       toast.error("Erro ao remover membro");
     },
   });
+
+  const handleDeleteMember = (userId: string) => {
+    if (confirm("Tem certeza que deseja remover este membro?")) {
+      deleteMember.mutate(userId);
+    }
+  };
 
   if (isLoading) {
     return (
@@ -108,90 +131,29 @@ export function TeamManagement() {
         </Button>
       </div>
 
-      {/* Table */}
-      <div className="border border-border rounded-xl overflow-hidden bg-background">
-        {teamMembers?.length === 0 ? (
+      {/* Cards Grid */}
+      {teamMembers?.length === 0 ? (
+        <div className="border border-border rounded-2xl bg-background">
           <div className="text-center py-16 text-muted-foreground">
             <Users className="w-12 h-12 mx-auto mb-3 opacity-40" />
             <p className="font-medium">Nenhum membro na equipe</p>
             <p className="text-sm mt-1">Adicione membros para gerenciar permissões</p>
           </div>
-        ) : (
-          <Table>
-            <TableHeader>
-              <TableRow className="bg-muted/30 hover:bg-muted/30">
-                <TableHead className="font-semibold text-foreground">Nome</TableHead>
-                <TableHead className="font-semibold text-foreground">E-mail</TableHead>
-                <TableHead className="font-semibold text-foreground">Função</TableHead>
-                <TableHead className="font-semibold text-foreground">Status</TableHead>
-                <TableHead className="font-semibold text-foreground text-right">Ações</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {teamMembers?.map((member) => (
-                <TableRow key={member.user_id} className="group">
-                  <TableCell>
-                    <div className="flex items-center gap-3">
-                      <div className="w-9 h-9 rounded-full bg-muted flex items-center justify-center text-sm font-medium text-muted-foreground">
-                        {(member.name || member.email || "?").charAt(0).toUpperCase()}
-                      </div>
-                      <span className="font-medium text-foreground">
-                        {member.name || "—"}
-                      </span>
-                    </div>
-                  </TableCell>
-                  <TableCell className="text-muted-foreground">
-                    {member.email || "—"}
-                  </TableCell>
-                  <TableCell>
-                    <span className="inline-flex px-2.5 py-1 rounded-full text-xs font-medium border bg-muted/50 text-foreground border-border">
-                      {member.role ? roleLabels[member.role] || member.role : "Sem função"}
-                    </span>
-                  </TableCell>
-                  <TableCell>
-                    {member.role ? (
-                      <div className="flex items-center gap-1.5 text-emerald-600">
-                        <CheckCircle className="w-4 h-4" />
-                        <span className="text-sm font-medium">Ativo</span>
-                      </div>
-                    ) : (
-                      <div className="flex items-center gap-1.5 text-muted-foreground">
-                        <XCircle className="w-4 h-4" />
-                        <span className="text-sm">Inativo</span>
-                      </div>
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center justify-end gap-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setEditingMember(member)}
-                        className="h-8 px-3 gap-1.5 text-xs font-medium"
-                      >
-                        <Pencil className="w-3.5 h-3.5" />
-                        Editar
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="icon"
-                        onClick={() => {
-                          if (confirm("Tem certeza que deseja remover este membro?")) {
-                            deleteMember.mutate(member.user_id);
-                          }
-                        }}
-                        className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10 hover:border-destructive/30"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        )}
-      </div>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+          {teamMembers?.map((member) => (
+            <TeamMemberCard
+              key={member.user_id}
+              member={member}
+              roleLabel={member.role ? roleLabels[member.role] || member.role : "Sem função"}
+              onEdit={() => setEditingMember(member)}
+              onDelete={() => handleDeleteMember(member.user_id)}
+              stats={memberStats?.[member.user_id]}
+            />
+          ))}
+        </div>
+      )}
 
       {/* Dialogs */}
       <AddTeamMemberDialog

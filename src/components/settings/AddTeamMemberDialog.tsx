@@ -19,7 +19,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { toast } from "sonner";
-import { Loader2, Eye, EyeOff, UserPlus, Mail, Lock, Briefcase } from "lucide-react";
+import { Loader2, Eye, EyeOff, UserPlus, Mail, Lock, Briefcase, Phone } from "lucide-react";
 
 interface AddTeamMemberDialogProps {
   open: boolean;
@@ -40,6 +40,7 @@ export function AddTeamMemberDialog({
 }: AddTeamMemberDialogProps) {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [role, setRole] = useState("");
@@ -48,6 +49,7 @@ export function AddTeamMemberDialog({
   const resetForm = () => {
     setName("");
     setEmail("");
+    setPhone("");
     setPassword("");
     setShowPassword(false);
     setRole("");
@@ -56,7 +58,7 @@ export function AddTeamMemberDialog({
   const createMember = useMutation({
     mutationFn: async () => {
       if (!name || !email || !password || !role) {
-        throw new Error("Preencha todos os campos");
+        throw new Error("Preencha todos os campos obrigatórios");
       }
 
       if (password.length < 6) {
@@ -64,7 +66,7 @@ export function AddTeamMemberDialog({
       }
 
       const { data, error } = await supabase.functions.invoke("create-team-member", {
-        body: { name, email, password, role },
+        body: { name, email, phone, password, role },
       });
 
       if (error) {
@@ -153,6 +155,24 @@ export function AddTeamMemberDialog({
                 className="pl-10 h-11 bg-muted/30 border-border/50 focus:bg-background transition-colors"
               />
               <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            </div>
+          </div>
+
+          {/* Phone field */}
+          <div className="space-y-2">
+            <Label htmlFor="member-phone" className="text-sm font-medium">
+              Telefone <span className="text-muted-foreground font-normal">(opcional)</span>
+            </Label>
+            <div className="relative">
+              <Input
+                id="member-phone"
+                type="tel"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                placeholder="(00) 00000-0000"
+                className="pl-10 h-11 bg-muted/30 border-border/50 focus:bg-background transition-colors"
+              />
+              <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             </div>
           </div>
 
