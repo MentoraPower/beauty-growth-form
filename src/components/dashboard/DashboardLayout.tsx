@@ -230,7 +230,7 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
   const submenuWidth = 256;
 
   return (
-    <div className="min-h-screen bg-card p-3">
+    <div className="min-h-screen bg-[#F8F8F8] p-3">
       <div className="min-h-[calc(100vh-1.5rem)] relative">
         <LoadingBar />
         
