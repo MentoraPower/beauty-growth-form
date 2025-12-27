@@ -1792,7 +1792,7 @@ const CustomEdge = ({
   targetPosition,
   data,
 }: CustomEdgeProps) => {
-  // Use getBezierPath for smooth curved edges
+  // Use getBezierPath for smooth curved S-shape edges
   const [edgePath, labelX, labelY] = getBezierPath({
     sourceX,
     sourceY,
@@ -1800,26 +1800,32 @@ const CustomEdge = ({
     targetX,
     targetY,
     targetPosition: targetPosition || Position.Left,
+    curvature: 0.5, // Smooth S-curve
   });
 
-  const glowFilterId = `edge-glow-${id}`.replace(/[^a-zA-Z0-9_-]/g, "_");
+  const filterId = `edge-glow-${id}`.replace(/[^a-zA-Z0-9_-]/g, "_");
+  const outerGlowId = `edge-outer-glow-${id}`.replace(/[^a-zA-Z0-9_-]/g, "_");
   const gradientId = `edge-gradient-${id}`.replace(/[^a-zA-Z0-9_-]/g, "_");
+
+  // Calculate midpoint for radial glow at center
+  const midX = (sourceX + targetX) / 2;
+  const midY = (sourceY + targetY) / 2;
 
   return (
     <>
       <defs>
-        {/* Glow filter */}
-        <filter id={glowFilterId} x="-50%" y="-50%" width="200%" height="200%">
-          <feGaussianBlur stdDeviation="4" result="blur1" />
-          <feGaussianBlur stdDeviation="8" result="blur2" />
-          <feMerge>
-            <feMergeNode in="blur2" />
-            <feMergeNode in="blur1" />
-            <feMergeNode in="SourceGraphic" />
-          </feMerge>
+        {/* Soft blur filter for ethereal glow */}
+        <filter id={filterId} x="-100%" y="-100%" width="300%" height="300%">
+          <feGaussianBlur stdDeviation="6" result="blur" />
+          <feComposite in="SourceGraphic" in2="blur" operator="over" />
         </filter>
         
-        {/* Gradient for the line */}
+        {/* Heavy blur for outer glow */}
+        <filter id={outerGlowId} x="-100%" y="-100%" width="300%" height="300%">
+          <feGaussianBlur stdDeviation="12" result="blur" />
+        </filter>
+        
+        {/* Gradient that brightens in the middle for variable thickness illusion */}
         <linearGradient
           id={gradientId}
           gradientUnits="userSpaceOnUse"
@@ -1828,58 +1834,123 @@ const CustomEdge = ({
           x2={targetX}
           y2={targetY}
         >
-          <stop offset="0%" stopColor="rgba(255, 255, 255, 0.9)" />
-          <stop offset="50%" stopColor="rgba(180, 210, 255, 1)" />
-          <stop offset="100%" stopColor="rgba(255, 255, 255, 0.9)" />
+          <stop offset="0%" stopColor="rgba(249, 115, 22, 0.2)" />
+          <stop offset="15%" stopColor="rgba(249, 115, 22, 0.5)" />
+          <stop offset="40%" stopColor="rgba(255, 180, 120, 0.9)" />
+          <stop offset="50%" stopColor="rgba(255, 220, 180, 1)" />
+          <stop offset="60%" stopColor="rgba(255, 180, 120, 0.9)" />
+          <stop offset="85%" stopColor="rgba(249, 115, 22, 0.5)" />
+          <stop offset="100%" stopColor="rgba(249, 115, 22, 0.2)" />
         </linearGradient>
       </defs>
       
-      {/* Outer glow layer */}
+      {/* Layer 1: Outermost diffuse glow - creates the ethereal spread */}
       <path
         d={edgePath}
         fill="none"
-        stroke="rgba(150, 200, 255, 0.3)"
-        strokeWidth={16}
+        stroke="rgba(249, 115, 22, 0.08)"
+        strokeWidth={50}
         strokeLinecap="round"
-        filter={`url(#${glowFilterId})`}
+        filter={`url(#${outerGlowId})`}
         style={{
-          animation: "pulseGlow 2s ease-in-out infinite",
+          animation: "breatheGlow 4s ease-in-out infinite",
         }}
       />
       
-      {/* Middle glow layer */}
+      {/* Layer 2: Wide soft glow */}
       <path
         d={edgePath}
         fill="none"
-        stroke="rgba(200, 225, 255, 0.5)"
-        strokeWidth={8}
+        stroke="rgba(249, 115, 22, 0.12)"
+        strokeWidth={30}
         strokeLinecap="round"
-        filter={`url(#${glowFilterId})`}
+        filter={`url(#${outerGlowId})`}
+        style={{
+          animation: "breatheGlow 4s ease-in-out infinite 0.5s",
+        }}
       />
       
-      {/* Main line with gradient */}
+      {/* Layer 3: Medium glow layer */}
+      <path
+        d={edgePath}
+        fill="none"
+        stroke="rgba(255, 150, 80, 0.2)"
+        strokeWidth={16}
+        strokeLinecap="round"
+        filter={`url(#${filterId})`}
+      />
+      
+      {/* Layer 4: Core glow - brighter, narrower */}
+      <path
+        d={edgePath}
+        fill="none"
+        stroke="rgba(255, 200, 150, 0.5)"
+        strokeWidth={8}
+        strokeLinecap="round"
+        filter={`url(#${filterId})`}
+      />
+      
+      {/* Layer 5: Main bright core line with gradient */}
       <path
         d={edgePath}
         fill="none"
         stroke={`url(#${gradientId})`}
-        strokeWidth={3}
+        strokeWidth={4}
         strokeLinecap="round"
         style={{
-          animation: "pulseGlow 2s ease-in-out infinite",
+          animation: "breatheGlow 4s ease-in-out infinite",
         }}
       />
       
-      {/* Energy flow animation */}
+      {/* Layer 6: Bright white core for intensity */}
       <path
         d={edgePath}
         fill="none"
-        stroke="rgba(255, 255, 255, 0.8)"
+        stroke="rgba(255, 240, 220, 0.9)"
         strokeWidth={2}
         strokeLinecap="round"
-        strokeDasharray="10 30"
+      />
+
+      {/* Connection point glow - Source */}
+      <circle
+        cx={sourceX}
+        cy={sourceY}
+        r={12}
+        fill="none"
+        stroke="rgba(249, 115, 22, 0.15)"
+        strokeWidth={8}
+        filter={`url(#${outerGlowId})`}
         style={{
-          animation: "energyFlow 1.5s linear infinite",
+          animation: "breatheGlow 4s ease-in-out infinite",
         }}
+      />
+      <circle
+        cx={sourceX}
+        cy={sourceY}
+        r={6}
+        fill="rgba(255, 220, 180, 0.4)"
+        filter={`url(#${filterId})`}
+      />
+      
+      {/* Connection point glow - Target */}
+      <circle
+        cx={targetX}
+        cy={targetY}
+        r={12}
+        fill="none"
+        stroke="rgba(249, 115, 22, 0.15)"
+        strokeWidth={8}
+        filter={`url(#${outerGlowId})`}
+        style={{
+          animation: "breatheGlow 4s ease-in-out infinite 2s",
+        }}
+      />
+      <circle
+        cx={targetX}
+        cy={targetY}
+        r={6}
+        fill="rgba(255, 220, 180, 0.4)"
+        filter={`url(#${filterId})`}
       />
       
       <EdgeLabelRenderer>
