@@ -186,45 +186,40 @@ export function ChartRenderer({
   switch (chartType) {
     case "pie": {
       const pieData = chartData as Array<{ name: string; value: number; color: string }>;
-      if (!Array.isArray(pieData) || pieData.length === 0 || pieData.every(d => d.value === 0)) {
+      if (!Array.isArray(pieData) || pieData.length === 0 || pieData.every((d) => d.value === 0)) {
         return renderEmptyState();
       }
+
       const total = pieData.reduce((acc, cur) => acc + cur.value, 0);
-      
-      // Dynamic radius based on height - smaller to make room for labels
-      const baseRadius = Math.min(height * 0.2, 60);
-      const outerRadius = Math.max(baseRadius, 25);
+
+      // Keep the pie reasonably large; labels are laid out with collision avoidance.
+      const baseRadius = Math.min(height * 0.26, 85);
+      const outerRadius = Math.max(baseRadius, 35);
       const innerRadius = outerRadius * 0.6;
-      
-      // Dynamic font sizes based on height
-      const totalFontSize = Math.max(Math.min(height * 0.08, 20), 10);
-      const labelFontSize = Math.max(Math.min(height * 0.028, 8), 6);
-      
-      // Minimum vertical spacing between labels
+
+      const totalFontSize = Math.max(Math.min(height * 0.09, 24), 12);
+      const labelFontSize = Math.max(Math.min(height * 0.032, 9), 7);
+
       const minLabelSpacing = labelFontSize + 6;
 
-      // Calculate label positions with collision avoidance
       const calculateLabelPositions = (data: typeof pieData, cx: number, cy: number, oR: number) => {
         const RADIAN = Math.PI / 180;
         let currentAngle = 0;
-        
-        // First pass: calculate initial positions
+
+        const labelDistance = oR + Math.max(28, oR * 0.35);
+
         const labels = data.map((item, index) => {
           const sliceAngle = (item.value / total) * 360;
           const midAngle = currentAngle + sliceAngle / 2;
           currentAngle += sliceAngle;
-          
+
           const sin = Math.sin(-RADIAN * midAngle);
           const cos = Math.cos(-RADIAN * midAngle);
-          
-          // Start point on pie edge
+
           const sx = cx + (oR + 4) * cos;
           const sy = cy + (oR + 4) * sin;
-          
-          // Initial end point for label
-          const labelDistance = oR + 25;
           const initialY = cy + labelDistance * sin;
-          
+
           return {
             index,
             name: item.name,
@@ -234,123 +229,116 @@ export function ChartRenderer({
             sin,
             sx,
             sy,
-            side: cos >= 0 ? 'right' : 'left',
+            side: cos >= 0 ? "right" : "left",
             initialY,
             finalY: initialY,
             color: MODERN_COLORS[index % MODERN_COLORS.length].solid,
           };
         });
-        
-        // Separate labels by side
-        const rightLabels = labels.filter(l => l.side === 'right').sort((a, b) => a.initialY - b.initialY);
-        const leftLabels = labels.filter(l => l.side === 'left').sort((a, b) => a.initialY - b.initialY);
-        
-        // Resolve collisions for each side
+
+        const rightLabels = labels.filter((l) => l.side === "right").sort((a, b) => a.initialY - b.initialY);
+        const leftLabels = labels.filter((l) => l.side === "left").sort((a, b) => a.initialY - b.initialY);
+
         const resolveCollisions = (sideLabels: typeof labels) => {
           if (sideLabels.length <= 1) return;
-          
+
+          // Push-down pass
           for (let i = 1; i < sideLabels.length; i++) {
             const prev = sideLabels[i - 1];
             const curr = sideLabels[i];
             const minY = prev.finalY + minLabelSpacing;
-            
-            if (curr.finalY < minY) {
-              curr.finalY = minY;
-            }
+            if (curr.finalY < minY) curr.finalY = minY;
           }
-          
-          // Check if labels exceed container bounds and adjust
-          const containerHeight = height;
-          const maxY = cy + containerHeight * 0.4;
-          const minTopY = cy - containerHeight * 0.4;
-          
-          // Adjust if exceeding bottom
-          if (sideLabels.length > 0) {
-            const lastLabel = sideLabels[sideLabels.length - 1];
-            if (lastLabel.finalY > maxY) {
-              const overflow = lastLabel.finalY - maxY;
-              sideLabels.forEach(label => {
-                label.finalY -= overflow;
-              });
-            }
+
+          // Clamp block within bounds and re-center if needed
+          const maxY = cy + height * 0.43;
+          const minY = cy - height * 0.43;
+
+          const first = sideLabels[0];
+          const last = sideLabels[sideLabels.length - 1];
+
+          if (last.finalY > maxY) {
+            const overflow = last.finalY - maxY;
+            sideLabels.forEach((l) => (l.finalY -= overflow));
           }
-          
-          // Ensure minimum top position
-          if (sideLabels.length > 0 && sideLabels[0].finalY < minTopY) {
-            const offset = minTopY - sideLabels[0].finalY;
-            sideLabels.forEach(label => {
-              label.finalY += offset;
-            });
+
+          if (first.finalY < minY) {
+            const offset = minY - first.finalY;
+            sideLabels.forEach((l) => (l.finalY += offset));
           }
         };
-        
+
         resolveCollisions(rightLabels);
         resolveCollisions(leftLabels);
-        
+
         return labels;
       };
 
-      // Custom label renderer using pre-calculated positions
-      const renderCustomLabels = (props: any) => {
-        const { cx, cy } = props;
-        const labelPositions = calculateLabelPositions(pieData, cx, cy, outerRadius);
-        
+      // Cache computed layout per render (Recharts calls label renderer once per slice)
+      let layoutCache: ReturnType<typeof calculateLabelPositions> | null = null;
+      let layoutCx: number | null = null;
+      let layoutCy: number | null = null;
+
+      const renderCustomLabel = (props: any) => {
+        const { cx, cy, index } = props;
+
+        if (!layoutCache || layoutCx !== cx || layoutCy !== cy) {
+          layoutCache = calculateLabelPositions(pieData, cx, cy, outerRadius);
+          layoutCx = cx;
+          layoutCy = cy;
+        }
+
+        const label = layoutCache[index];
+        if (!label) return null;
+
+        const xOffset = Math.max(42, Math.min(90, outerRadius * 1.05));
+        const labelX = label.side === "right" ? cx + outerRadius + xOffset : cx - outerRadius - xOffset;
+        const endX = labelX - (label.side === "right" ? 6 : -6);
+
+        const mx = cx + (outerRadius + 14) * label.cos;
+        const my = cy + (outerRadius + 14) * label.sin;
+
+        const textAnchor = label.side === "right" ? "start" : "end";
+        const safeName = typeof label.name === "string" && label.name.length > 18 ? `${label.name.slice(0, 16)}…` : label.name;
+
         return (
           <g>
-            {labelPositions.map((label) => {
-              const labelX = label.side === 'right' 
-                ? cx + outerRadius + 35 
-                : cx - outerRadius - 35;
-              
-              // Middle point for the bend
-              const mx = cx + (outerRadius + 15) * label.cos;
-              const my = cy + (outerRadius + 15) * label.sin;
-              
-              const textAnchor = label.side === 'right' ? 'start' : 'end';
-              
-              return (
-                <g key={label.index}>
-                  {/* Leader line with bend */}
-                  <path
-                    d={`M${label.sx},${label.sy} L${mx},${my} L${labelX - (label.side === 'right' ? 5 : -5)},${label.finalY}`}
-                    stroke={label.color}
-                    strokeWidth={1}
-                    fill="none"
-                    opacity={0.5}
-                  />
-                  {/* Small dot at connection point */}
-                  <circle
-                    cx={label.sx}
-                    cy={label.sy}
-                    r={2}
-                    fill={label.color}
-                    opacity={0.7}
-                  />
-                  {/* Label text */}
-                  <text
-                    x={labelX}
-                    y={label.finalY}
-                    textAnchor={textAnchor}
-                    dominantBaseline="central"
-                    style={{ fontSize: labelFontSize }}
-                  >
-                    <tspan className="fill-muted-foreground">{label.name} </tspan>
-                    <tspan className="fill-foreground font-semibold">{label.value}</tspan>
-                  </text>
-                </g>
-              );
-            })}
+            <path
+              d={`M${label.sx},${label.sy} L${mx},${my} L${endX},${label.finalY}`}
+              stroke={label.color}
+              strokeWidth={1}
+              fill="none"
+              opacity={0.55}
+            />
+            <circle cx={label.sx} cy={label.sy} r={2} fill={label.color} opacity={0.75} />
+            <text
+              x={labelX}
+              y={label.finalY}
+              textAnchor={textAnchor}
+              dominantBaseline="middle"
+              style={{ fontSize: labelFontSize }}
+            >
+              <tspan className="fill-muted-foreground">{safeName} </tspan>
+              <tspan className="fill-foreground font-semibold">{label.value}</tspan>
+            </text>
           </g>
         );
       };
-      
+
       return (
         <div className="relative w-full h-full flex items-center justify-center">
           <ResponsiveContainer width="100%" height="100%">
             <PieChart>
               <defs>
                 {pieData.map((entry, index) => (
-                  <linearGradient key={`gradient-${index}`} id={`pieGradient-${cardId}-${index}`} x1="0" y1="0" x2="1" y2="1">
+                  <linearGradient
+                    key={`gradient-${index}`}
+                    id={`pieGradient-${cardId}-${index}`}
+                    x1="0"
+                    y1="0"
+                    x2="1"
+                    y2="1"
+                  >
                     <stop offset="0%" stopColor={MODERN_COLORS[index % MODERN_COLORS.length].gradient[0]} />
                     <stop offset="100%" stopColor={MODERN_COLORS[index % MODERN_COLORS.length].gradient[1]} />
                   </linearGradient>
@@ -367,36 +355,28 @@ export function ChartRenderer({
                 strokeWidth={0}
                 animationBegin={0}
                 animationDuration={800}
+                label={renderCustomLabel}
                 labelLine={false}
               >
                 {pieData.map((entry, index) => (
-                  <Cell 
-                    key={`cell-${index}`} 
+                  <Cell
+                    key={`cell-${index}`}
                     fill={`url(#pieGradient-${cardId}-${index})`}
                     className="drop-shadow-sm"
                   />
                 ))}
               </Pie>
-              {/* Custom labels layer */}
-              <Pie
-                data={pieData}
-                cx="50%"
-                cy="50%"
-                innerRadius={0}
-                outerRadius={0}
-                dataKey="value"
-                isAnimationActive={false}
-                label={renderCustomLabels}
-                labelLine={false}
-              />
               <Tooltip content={<CustomTooltip />} />
             </PieChart>
           </ResponsiveContainer>
-          {/* Center total */}
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
             <div className="text-center">
-              <p className="font-bold text-foreground" style={{ fontSize: totalFontSize }}>{total}</p>
-              <p className="text-muted-foreground uppercase tracking-wide" style={{ fontSize: labelFontSize }}>Total</p>
+              <p className="font-bold text-foreground" style={{ fontSize: totalFontSize }}>
+                {total}
+              </p>
+              <p className="text-muted-foreground uppercase tracking-wide" style={{ fontSize: labelFontSize }}>
+                Total
+              </p>
             </div>
           </div>
         </div>
