@@ -273,7 +273,7 @@ export function OverviewCardComponent({
     <div
       ref={cardRef}
       className={cn(
-        "relative rounded-xl bg-card p-4 transition-shadow",
+        "relative rounded-xl bg-card p-4 transition-shadow group",
         !isDragging && "w-full", // w-full only when NOT dragging (uses wrapper percentage)
         isDragging && "opacity-50",
         isResizing ? "shadow-lg" : "shadow-sm"
@@ -291,13 +291,13 @@ export function OverviewCardComponent({
           {/* Drag handle */}
           <div
             {...dragHandleProps}
-            className="cursor-grab active:cursor-grabbing p-1 -ml-1 text-muted-foreground hover:text-foreground transition-colors"
+            className="cursor-grab active:cursor-grabbing p-1 -ml-1 text-muted-foreground hover:text-foreground transition-colors opacity-0 group-hover:opacity-100"
           >
             <GripVertical className="h-4 w-4" />
           </div>
           <h3 className="font-medium text-sm text-foreground truncate">{card.title}</h3>
         </div>
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
           <Button 
             variant="ghost" 
             size="icon" 
