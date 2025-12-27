@@ -928,13 +928,26 @@ export function CRMOriginsPanel({ isOpen, onClose, sidebarWidth, embedded = fals
 
         {/* Add Origin Button - only show for admins or users with permission */}
         {(userPermissions.isAdmin || userPermissions.canCreateOrigins) && (
-          <button
-            onClick={openCreateOriginDialog}
-            className="flex items-center gap-2 w-full py-2 px-2 rounded-lg transition-colors duration-200 text-xs text-zinc-400 hover:text-white hover:bg-zinc-800"
-          >
-            <Plus className="h-3 w-3" />
-            <span>Nova Origem</span>
-          </button>
+          <div className="flex justify-center pt-4 pb-2">
+            <button
+              onClick={openCreateOriginDialog}
+              className="relative flex items-center justify-center gap-2 py-2 px-4 rounded-lg text-xs text-white font-medium transition-all duration-200 hover:scale-105 group"
+            >
+              {/* Orange gradient border */}
+              <span 
+                className="absolute inset-0 rounded-lg p-[1.5px] bg-gradient-to-r from-orange-500 via-amber-500 to-orange-500"
+                style={{ 
+                  WebkitMask: 'linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)',
+                  WebkitMaskComposite: 'xor',
+                  maskComposite: 'exclude',
+                }}
+              />
+              <Plus className="h-3.5 w-3.5 text-orange-400 group-hover:text-orange-300 transition-colors" />
+              <span className="bg-gradient-to-r from-orange-400 to-amber-400 bg-clip-text text-transparent group-hover:from-orange-300 group-hover:to-amber-300 transition-all">
+                Nova Origem
+              </span>
+            </button>
+          </div>
         )}
       </div>
 
