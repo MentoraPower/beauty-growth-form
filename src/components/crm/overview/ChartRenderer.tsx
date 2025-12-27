@@ -392,7 +392,10 @@ export function ChartRenderer({
     }
 
     case "number": {
-      const numberData = chartData as { total: number };
+      const numberData = chartData as { total: number } | null;
+      if (!numberData || typeof numberData.total !== 'number') {
+        return renderEmptyState();
+      }
       return (
         <div className="flex flex-col items-center justify-center h-full gap-2">
           <div className="relative">
