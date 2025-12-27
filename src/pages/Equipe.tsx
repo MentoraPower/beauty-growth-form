@@ -203,27 +203,58 @@ export default function Equipe() {
               </div>
             </div>
 
-            {/* Info Block */}
+            {/* Info and Stats Grid */}
+            <div className="grid grid-cols-3 gap-4">
+              {/* Contact Block */}
+              <div className="bg-white rounded-lg p-4" style={{ border: '1px solid #00000010' }}>
+                <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-3">Contato</h3>
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2.5">
+                    <Mail className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-sm text-foreground truncate">{selectedMember.email || "—"}</span>
+                  </div>
+                  <div className="flex items-center gap-2.5">
+                    <Phone className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-sm text-foreground">{selectedMember.phone || "—"}</span>
+                  </div>
+                  <div className="flex items-center gap-2.5">
+                    <Calendar className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-sm text-foreground">
+                      {selectedMember.created_at 
+                        ? format(new Date(selectedMember.created_at), "dd/MM/yyyy", { locale: ptBR })
+                        : "—"
+                      }
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Activities Chart Placeholder */}
+              <div className="bg-white rounded-lg p-4" style={{ border: '1px solid #00000010' }}>
+                <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-3">Atividades</h3>
+                <div className="flex flex-col items-center justify-center h-[calc(100%-24px)] text-muted-foreground">
+                  <FolderOpen className="w-8 h-8 mb-2 opacity-40" />
+                  <p className="text-xs">Sem atividades</p>
+                </div>
+              </div>
+
+              {/* Performance Chart Placeholder */}
+              <div className="bg-white rounded-lg p-4" style={{ border: '1px solid #00000010' }}>
+                <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-3">Desempenho</h3>
+                <div className="flex flex-col items-center justify-center h-[calc(100%-24px)] text-muted-foreground">
+                  <FolderOpen className="w-8 h-8 mb-2 opacity-40" />
+                  <p className="text-xs">Sem atividades</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Timeline Chart */}
             <div className="bg-white rounded-lg p-4" style={{ border: '1px solid #00000010' }}>
-              <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-3">Contato</h3>
-              <div className="space-y-3">
-                <div className="flex items-center gap-2.5">
-                  <Mail className="h-4 w-4 text-muted-foreground" />
-                  <span className="text-sm text-foreground truncate">{selectedMember.email || "—"}</span>
-                </div>
-                <div className="flex items-center gap-2.5">
-                  <Phone className="h-4 w-4 text-muted-foreground" />
-                  <span className="text-sm text-foreground">{selectedMember.phone || "—"}</span>
-                </div>
-                <div className="flex items-center gap-2.5">
-                  <Calendar className="h-4 w-4 text-muted-foreground" />
-                  <span className="text-sm text-foreground">
-                    Cadastrado em {selectedMember.created_at 
-                      ? format(new Date(selectedMember.created_at), "dd/MM/yyyy", { locale: ptBR })
-                      : "—"
-                    }
-                  </span>
-                </div>
+              <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-3">Histórico de Atividades</h3>
+              <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
+                <FolderOpen className="w-10 h-10 mb-3 opacity-40" />
+                <p className="text-sm">Sem atividades registradas</p>
+                <p className="text-xs mt-1">As atividades do membro aparecerão aqui</p>
               </div>
             </div>
           </div>
