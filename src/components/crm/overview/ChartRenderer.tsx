@@ -401,27 +401,11 @@ export function ChartRenderer({
           <div className="relative">
             <div className="absolute inset-0 blur-2xl bg-gradient-to-r from-primary/20 to-primary/10 rounded-full" />
             <div className="relative flex items-center gap-2">
-              <Users className="h-8 w-8 text-primary/60" />
               <span className="text-5xl font-bold bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
                 {numberData.total.toLocaleString()}
               </span>
             </div>
           </div>
-          {previousPeriodChange && (
-            <div className={cn(
-              "flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium",
-              previousPeriodChange.direction === "up" 
-                ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400" 
-                : "bg-rose-500/10 text-rose-600 dark:text-rose-400"
-            )}>
-              {previousPeriodChange.direction === "up" ? (
-                <TrendingUp className="h-4 w-4" />
-              ) : (
-                <TrendingDown className="h-4 w-4" />
-              )}
-              <span>{previousPeriodChange.change}% vs período anterior</span>
-            </div>
-          )}
         </div>
       );
     }
