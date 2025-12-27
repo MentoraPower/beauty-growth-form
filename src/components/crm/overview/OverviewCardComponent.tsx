@@ -327,7 +327,7 @@ export function OverviewCardComponent({
       </div>
 
       {/* Chart content wrapper */}
-      <div className="h-[calc(100%-40px)] rounded-xl bg-muted/30 p-3">
+      <div className="h-[calc(100%-40px)] rounded-xl p-3" style={{ backgroundColor: '#F8F8F8' }}>
         {card.dataSource ? (
           <ChartRenderer
             cardId={card.id}
