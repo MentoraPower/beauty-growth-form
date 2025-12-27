@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { ChevronDown, Plus, MoreVertical, Trash2, MessageSquare, Search, Pencil } from "lucide-react";
+import { ChevronDown, Plus, MoreVertical, Trash2, Search, Pencil } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -313,10 +313,6 @@ export function DisparoConversationsMenu({
                 </div>
               </div>
               
-              <div className="px-2 py-1.5 text-xs text-muted-foreground font-medium">
-                Conversas salvas ({filteredConversations.length})
-              </div>
-              
               <div className="max-h-[300px] overflow-y-auto">
                 {filteredConversations.length === 0 ? (
                   <div className="px-4 py-3 text-sm text-muted-foreground text-center">
@@ -330,15 +326,9 @@ export function DisparoConversationsMenu({
                     >
                       <DropdownMenuItem 
                         onClick={() => loadConversation(conv.id)}
-                        className="flex-1 flex items-center gap-2 cursor-pointer pr-1"
+                        className="flex-1 cursor-pointer pr-1 py-2"
                       >
-                        <MessageSquare className="h-4 w-4 shrink-0 text-muted-foreground" />
-                        <div className="flex-1 min-w-0">
-                          <div className="truncate text-sm">{conv.title}</div>
-                          <div className="text-xs text-muted-foreground">
-                            {format(new Date(conv.updated_at), "dd MMM, HH:mm", { locale: ptBR })}
-                          </div>
-                        </div>
+                        <span className="truncate text-sm">{conv.title}</span>
                       </DropdownMenuItem>
                       
                       <DropdownMenu>
