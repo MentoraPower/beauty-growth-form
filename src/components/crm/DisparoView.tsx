@@ -70,6 +70,24 @@ const parseCSV = (content: string): CsvLead[] => {
   }).filter(l => l.name);
 };
 
+// Parse markdown-like formatting: **bold** and _italic_
+const formatMessageContent = (content: string): React.ReactNode => {
+  // Split by markdown patterns while preserving the delimiters
+  const parts = content.split(/(\*\*[^*]+\*\*|_[^_]+_)/g);
+  
+  return parts.map((part, index) => {
+    // Bold: **text**
+    if (part.startsWith('**') && part.endsWith('**')) {
+      return <strong key={index} className="font-semibold">{part.slice(2, -2)}</strong>;
+    }
+    // Italic: _text_
+    if (part.startsWith('_') && part.endsWith('_') && part.length > 2) {
+      return <em key={index}>{part.slice(1, -1)}</em>;
+    }
+    return part;
+  });
+};
+
 export function DisparoView({ subOriginId }: DisparoViewProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -367,6 +385,11 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
     setActiveJobId(null);
   }, []);
 
+  // Handle conversation created (auto-save)
+  const handleConversationCreated = useCallback((id: string) => {
+    setCurrentConversationId(id);
+  }, []);
+
   const hasMessages = messages.length > 0;
 
   return (
@@ -377,6 +400,7 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
           currentConversationId={currentConversationId}
           onSelectConversation={handleSelectConversation}
           onNewConversation={handleNewConversation}
+          onConversationCreated={handleConversationCreated}
           messages={messages}
         />
       </div>
@@ -422,7 +446,9 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
                     </div>
                   ) : (
                     <div className="text-foreground max-w-[85%]">
-                      <p className="text-[15px] leading-relaxed whitespace-pre-wrap">{msg.content}</p>
+                      <p className="text-[15px] leading-relaxed whitespace-pre-wrap">
+                        {formatMessageContent(msg.content)}
+                      </p>
                       {msg.component}
                     </div>
                   )}
