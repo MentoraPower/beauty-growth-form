@@ -280,7 +280,7 @@ export function OverviewCardComponent({
       )}
       style={{
         height: currentSize.height,
-        border: '1px solid #00000005',
+        border: '1px solid #00000013',
         // When dragging (in DragOverlay), use fixed pixel width to maintain size
         ...(isDragging && dragPixelWidth ? { width: dragPixelWidth } : {}),
       }}
