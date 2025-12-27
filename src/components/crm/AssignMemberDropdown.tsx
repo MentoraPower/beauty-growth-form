@@ -20,9 +20,10 @@ interface AssignMemberDropdownProps {
   leadId: string;
   assignedTo?: string | null;
   onAssign?: (userId: string | null) => void;
+  size?: "sm" | "default";
 }
 
-export function AssignMemberDropdown({ leadId, assignedTo, onAssign }: AssignMemberDropdownProps) {
+export function AssignMemberDropdown({ leadId, assignedTo, onAssign, size = "default" }: AssignMemberDropdownProps) {
   const [open, setOpen] = useState(false);
   const queryClient = useQueryClient();
 
@@ -66,17 +67,27 @@ export function AssignMemberDropdown({ leadId, assignedTo, onAssign }: AssignMem
             setOpen(true);
           }}
           className={cn(
-            "h-10 w-10 rounded-lg border border-input bg-background flex items-center justify-center transition-all hover:bg-accent hover:text-accent-foreground",
-            assignedTo && "bg-gradient-to-br from-orange-500 to-orange-600 text-white border-orange-500 hover:from-orange-600 hover:to-orange-700"
+            "flex items-center justify-center transition-all",
+            size === "sm" 
+              ? "w-5 h-5 rounded-full" 
+              : "h-10 w-10 rounded-lg border border-input bg-background hover:bg-accent hover:text-accent-foreground",
+            assignedTo 
+              ? "bg-gradient-to-br from-orange-500 to-orange-600 text-white hover:from-orange-600 hover:to-orange-700" 
+              : size === "sm"
+                ? "bg-muted/60 hover:bg-muted text-muted-foreground"
+                : ""
           )}
           title={assignedMember?.name || "Atribuir responsável"}
         >
           {assignedMember?.name ? (
-            <span className="text-xs font-bold uppercase">
+            <span className={cn(
+              "font-bold uppercase",
+              size === "sm" ? "text-[8px]" : "text-xs"
+            )}>
               {assignedMember.name.split(' ').map(n => n[0]).slice(0, 2).join('')}
             </span>
           ) : (
-            <UserCircle className="w-4 h-4" strokeWidth={1.5} />
+            <UserCircle className={cn(size === "sm" ? "w-3 h-3" : "w-4 h-4")} strokeWidth={1.5} />
           )}
         </button>
       </PopoverTrigger>
