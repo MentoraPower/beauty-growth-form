@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { createPortal } from "react-dom";
-import { ChevronDown, ChevronRight, Plus, MoreHorizontal, Calendar, X, User, Phone, Mail, Instagram, GripVertical, Tag } from "lucide-react";
+import { ChevronDown, ChevronRight, Plus, MoreHorizontal, Calendar, X, User, Phone, Mail, Instagram, GripVertical, Tag, ArrowUpDown } from "lucide-react";
 import WhatsAppIcon from "@/components/icons/WhatsApp";
 import { cn } from "@/lib/utils";
 import { Lead, Pipeline } from "@/types/crm";
@@ -154,6 +154,94 @@ function SortableLeadRow({ lead, isSelected, onLeadClick, onToggleSelection, isO
         >
           <GripVertical className="w-3.5 h-3.5 text-muted-foreground" />
         </div>
+        <Checkbox
+          checked={isSelected}
+          onCheckedChange={() => {}}
+          onClick={(e) => onToggleSelection(lead.id, e)}
+          className="border-[#00000040] data-[state=checked]:bg-[#00000040] data-[state=checked]:border-[#00000040]"
+        />
+      </div>
+      
+      {/* Nome */}
+      <div className="flex items-center gap-2 min-w-0">
+        <div className="w-5 h-5 rounded-full flex items-center justify-center bg-muted text-muted-foreground text-[10px] font-bold flex-shrink-0">
+          {lead.name.charAt(0).toUpperCase()}
+        </div>
+        <span className="text-sm text-foreground truncate">{lead.name}</span>
+      </div>
+      
+      {/* Email */}
+      <div className="flex items-center gap-1 min-w-0">
+        <Mail className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0" />
+        <span className="text-xs text-muted-foreground truncate">
+          {lead.email && lead.email !== "sem@email.com" ? lead.email : "-"}
+        </span>
+      </div>
+      
+      {/* WhatsApp */}
+      <div className="flex items-center gap-1 min-w-0">
+        <WhatsAppIcon className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0" />
+        <span className="text-xs text-muted-foreground truncate">
+          {formatPhone(lead.whatsapp, lead.country_code)}
+        </span>
+      </div>
+      
+      {/* Instagram */}
+      <div className="flex items-center gap-1 min-w-0">
+        <Instagram className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0" />
+        <span className="text-xs text-muted-foreground truncate">
+          {lead.instagram && lead.instagram !== "-" ? lead.instagram : "-"}
+        </span>
+      </div>
+      
+      {/* Tags */}
+      <div className="flex items-center min-w-0">
+        <TagsBadge tags={tags} />
+      </div>
+      
+      {/* Data */}
+      <div className="flex items-center gap-1">
+        <Calendar className="w-3.5 h-3.5 text-muted-foreground" />
+        <span className="text-[10px] text-muted-foreground">
+          {new Date(lead.created_at).toLocaleDateString("pt-BR", {
+            day: "2-digit",
+            month: "short",
+          })}
+        </span>
+      </div>
+      
+      {/* Actions */}
+      <div className="flex items-center justify-end opacity-0 group-hover:opacity-100 transition-opacity">
+        <button 
+          onClick={(e) => e.stopPropagation()}
+          className="p-1 hover:bg-muted rounded"
+        >
+          <MoreHorizontal className="w-4 h-4 text-muted-foreground" />
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// Static row without dnd-kit hooks - much faster render for default view mode
+function StaticLeadRow({ lead, isSelected, onLeadClick, onToggleSelection, tags = [] }: Omit<SortableLeadRowProps, 'isOverlay'>) {
+  const formatPhone = (phone: string, countryCode: string) => {
+    if (!phone) return "-";
+    return `${countryCode} ${phone}`;
+  };
+
+  return (
+    <div
+      onClick={() => onLeadClick(lead)}
+      className={cn(
+        "grid gap-6 py-2.5 px-3 hover:bg-muted/40 rounded cursor-pointer transition-colors group border-b border-border/20 last:border-b-0",
+        "grid-cols-[40px_minmax(140px,1.5fr)_minmax(160px,1fr)_minmax(120px,1fr)_minmax(120px,1fr)_minmax(100px,1fr)_minmax(80px,0.5fr)_40px]",
+        isSelected && "bg-primary/5"
+      )}
+    >
+      {/* Checkbox */}
+      <div className="flex items-center gap-1">
+        <div className="w-5" /> {/* Placeholder for grip icon */}
         <Checkbox
           checked={isSelected}
           onCheckedChange={() => {}}
@@ -472,6 +560,7 @@ export function ListView({ pipelines, leadsByPipeline, subOriginId, tagsMap }: L
   const [addingToPipeline, setAddingToPipeline] = useState<string | null>(null);
   const [activeDragId, setActiveDragId] = useState<string | null>(null);
   const [localLeadsByPipeline, setLocalLeadsByPipeline] = useState<Map<string, Lead[]>>(leadsByPipeline);
+  const [reorderMode, setReorderMode] = useState(false); // DnD only when active
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
 
@@ -490,7 +579,7 @@ export function ListView({ pipelines, leadsByPipeline, subOriginId, tagsMap }: L
 
   const measuring = {
     droppable: {
-      strategy: MeasuringStrategy.Always,
+      strategy: MeasuringStrategy.WhileDragging,
     },
   };
 
@@ -630,7 +719,16 @@ export function ListView({ pipelines, leadsByPipeline, subOriginId, tagsMap }: L
         <div className="flex items-center gap-2 mb-4">
           <ChevronDown className="w-4 h-4 text-muted-foreground" />
           <span className="font-semibold text-foreground">List</span>
-          <MoreHorizontal className="w-4 h-4 text-muted-foreground" />
+          <div className="flex-1" />
+          <Button
+            variant={reorderMode ? "default" : "outline"}
+            size="sm"
+            onClick={() => setReorderMode(!reorderMode)}
+            className="h-7 gap-1.5 text-xs"
+          >
+            <ArrowUpDown className="w-3 h-3" />
+            {reorderMode ? "Concluir" : "Reordenar"}
+          </Button>
         </div>
 
         {/* Pipelines as sections */}
@@ -692,49 +790,63 @@ export function ListView({ pipelines, leadsByPipeline, subOriginId, tagsMap }: L
                       </div>
                     )}
 
-                    {/* Leads Rows with DnD */}
+                    {/* Leads Rows - conditional DnD */}
                     <div className="overflow-x-auto">
                       <div className="min-w-[950px]">
-                        <DndContext
-                          sensors={sensors}
-                          collisionDetection={closestCenter}
-                          onDragStart={handleDragStart}
-                          onDragOver={handleDragOver}
-                          onDragEnd={handleDragEnd}
-                          measuring={measuring}
-                        >
-                          <SortableContext
-                            items={leads.map(l => l.id)}
-                            strategy={verticalListSortingStrategy}
+                        {reorderMode ? (
+                          <DndContext
+                            sensors={sensors}
+                            collisionDetection={closestCenter}
+                            onDragStart={handleDragStart}
+                            onDragOver={handleDragOver}
+                            onDragEnd={handleDragEnd}
+                            measuring={measuring}
                           >
-                            {leads.map((lead) => (
-                              <SortableLeadRow
-                                key={lead.id}
-                                lead={lead}
-                                isSelected={selectedLeads.has(lead.id)}
-                                onLeadClick={handleLeadClick}
-                                onToggleSelection={toggleLeadSelection}
-                                tags={tagsMap.get(lead.id) || []}
-                              />
-                            ))}
-                          </SortableContext>
-
-                          {createPortal(
-                            <DragOverlay>
-                              {activeLead ? (
+                            <SortableContext
+                              items={leads.map(l => l.id)}
+                              strategy={verticalListSortingStrategy}
+                            >
+                              {leads.map((lead) => (
                                 <SortableLeadRow
-                                  lead={activeLead}
-                                  isSelected={selectedLeads.has(activeLead.id)}
-                                  onLeadClick={() => {}}
-                                  onToggleSelection={() => {}}
-                                  isOverlay
-                                  tags={tagsMap.get(activeLead.id) || []}
+                                  key={lead.id}
+                                  lead={lead}
+                                  isSelected={selectedLeads.has(lead.id)}
+                                  onLeadClick={handleLeadClick}
+                                  onToggleSelection={toggleLeadSelection}
+                                  tags={tagsMap.get(lead.id) || []}
                                 />
-                              ) : null}
-                            </DragOverlay>,
-                            document.body
-                          )}
-                        </DndContext>
+                              ))}
+                            </SortableContext>
+
+                            {createPortal(
+                              <DragOverlay>
+                                {activeLead ? (
+                                  <SortableLeadRow
+                                    lead={activeLead}
+                                    isSelected={selectedLeads.has(activeLead.id)}
+                                    onLeadClick={() => {}}
+                                    onToggleSelection={() => {}}
+                                    isOverlay
+                                    tags={tagsMap.get(activeLead.id) || []}
+                                  />
+                                ) : null}
+                              </DragOverlay>,
+                              document.body
+                            )}
+                          </DndContext>
+                        ) : (
+                          /* Static rows without DnD - much faster render */
+                          leads.map((lead) => (
+                            <StaticLeadRow
+                              key={lead.id}
+                              lead={lead}
+                              isSelected={selectedLeads.has(lead.id)}
+                              onLeadClick={handleLeadClick}
+                              onToggleSelection={toggleLeadSelection}
+                              tags={tagsMap.get(lead.id) || []}
+                            />
+                          ))
+                        )}
                       </div>
                     </div>
 
