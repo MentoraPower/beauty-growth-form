@@ -905,6 +905,7 @@ export type Database = {
         Row: {
           ai_analysis: string | null
           analysis_created_at: string | null
+          assigned_to: string | null
           average_ticket: number | null
           biggest_difficulty: string | null
           can_afford: string | null
@@ -937,6 +938,7 @@ export type Database = {
         Insert: {
           ai_analysis?: string | null
           analysis_created_at?: string | null
+          assigned_to?: string | null
           average_ticket?: number | null
           biggest_difficulty?: string | null
           can_afford?: string | null
@@ -969,6 +971,7 @@ export type Database = {
         Update: {
           ai_analysis?: string | null
           analysis_created_at?: string | null
+          assigned_to?: string | null
           average_ticket?: number | null
           biggest_difficulty?: string | null
           can_afford?: string | null

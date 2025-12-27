@@ -19,6 +19,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import { AssignMemberDropdown } from "./AssignMemberDropdown";
 
 interface KanbanCardProps {
   lead: Lead;
@@ -260,9 +261,12 @@ export const KanbanCard = memo(function KanbanCard({ lead, isDragging: isDraggin
               )}
             </div>
           </TooltipProvider>
-          <span className="text-[10px] text-muted-foreground">
-            {formatTimeAgo(new Date(lead.created_at))}
-          </span>
+          <div className="flex items-center gap-2">
+            <AssignMemberDropdown leadId={lead.id} assignedTo={lead.assigned_to} />
+            <span className="text-[10px] text-muted-foreground">
+              {formatTimeAgo(new Date(lead.created_at))}
+            </span>
+          </div>
         </div>
       </CardContent>
     </Card>

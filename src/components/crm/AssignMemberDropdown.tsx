@@ -1,0 +1,141 @@
+import { useState } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { UserCircle, Check, X } from "lucide-react";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { cn } from "@/lib/utils";
+
+interface TeamMember {
+  id: string;
+  name: string | null;
+  email: string | null;
+  user_id: string;
+}
+
+interface AssignMemberDropdownProps {
+  leadId: string;
+  assignedTo?: string | null;
+  onAssign?: (userId: string | null) => void;
+}
+
+export function AssignMemberDropdown({ leadId, assignedTo, onAssign }: AssignMemberDropdownProps) {
+  const [open, setOpen] = useState(false);
+  const queryClient = useQueryClient();
+
+  const { data: teamMembers, isLoading } = useQuery({
+    queryKey: ["team-members-list"],
+    queryFn: async () => {
+      const { data, error } = await supabase.functions.invoke("list-team-members");
+      if (error) throw new Error(error.message);
+      return (data?.members || []) as TeamMember[];
+    },
+  });
+
+  const assignMutation = useMutation({
+    mutationFn: async (userId: string | null) => {
+      const { error } = await supabase
+        .from("leads")
+        .update({ assigned_to: userId })
+        .eq("id", leadId);
+      if (error) throw error;
+      return userId;
+    },
+    onSuccess: (userId) => {
+      queryClient.invalidateQueries({ queryKey: ["leads"] });
+      onAssign?.(userId);
+      setOpen(false);
+    },
+  });
+
+  const assignedMember = teamMembers?.find(m => m.user_id === assignedTo);
+
+  const handleSelect = (userId: string | null) => {
+    assignMutation.mutate(userId);
+  };
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            setOpen(true);
+          }}
+          className={cn(
+            "w-6 h-6 rounded-md flex items-center justify-center transition-all",
+            assignedTo 
+              ? "bg-gradient-to-br from-orange-500 to-orange-600 text-white" 
+              : "bg-slate-100 hover:bg-slate-200 text-slate-400"
+          )}
+          title={assignedMember?.name || "Atribuir responsável"}
+        >
+          {assignedMember?.name ? (
+            <span className="text-[9px] font-bold uppercase">
+              {assignedMember.name.split(' ').map(n => n[0]).slice(0, 2).join('')}
+            </span>
+          ) : (
+            <UserCircle className="w-3.5 h-3.5" strokeWidth={1.5} />
+          )}
+        </button>
+      </PopoverTrigger>
+      <PopoverContent 
+        side="bottom" 
+        align="end"
+        className="w-48 p-1 bg-white border shadow-lg z-50"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <p className="text-xs text-muted-foreground px-2 py-1.5 font-medium">Atribuir responsável</p>
+        
+        {isLoading ? (
+          <div className="px-2 py-3 text-center text-xs text-muted-foreground">
+            Carregando...
+          </div>
+        ) : (
+          <div className="max-h-48 overflow-y-auto">
+            {/* Unassign option */}
+            {assignedTo && (
+              <button
+                onClick={() => handleSelect(null)}
+                className="w-full flex items-center gap-2 px-2 py-1.5 text-xs hover:bg-slate-100 rounded-md transition-colors text-destructive"
+              >
+                <X className="w-3.5 h-3.5" />
+                <span>Remover responsável</span>
+              </button>
+            )}
+            
+            {teamMembers?.map((member) => (
+              <button
+                key={member.user_id}
+                onClick={() => handleSelect(member.user_id)}
+                className={cn(
+                  "w-full flex items-center gap-2 px-2 py-1.5 text-xs hover:bg-slate-100 rounded-md transition-colors",
+                  assignedTo === member.user_id && "bg-slate-100"
+                )}
+              >
+                <div className="w-5 h-5 rounded-full bg-slate-200 flex items-center justify-center flex-shrink-0">
+                  <span className="text-[8px] font-semibold text-slate-600 uppercase">
+                    {member.name?.split(' ').map(n => n[0]).slice(0, 2).join('') || '?'}
+                  </span>
+                </div>
+                <span className="truncate flex-1 text-left">{member.name || member.email || "Sem nome"}</span>
+                {assignedTo === member.user_id && (
+                  <Check className="w-3.5 h-3.5 text-orange-500 flex-shrink-0" />
+                )}
+              </button>
+            ))}
+            
+            {teamMembers?.length === 0 && (
+              <div className="px-2 py-3 text-center text-xs text-muted-foreground">
+                Nenhum membro encontrado
+              </div>
+            )}
+          </div>
+        )}
+      </PopoverContent>
+    </Popover>
+  );
+}
