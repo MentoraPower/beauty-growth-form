@@ -140,9 +140,7 @@ export default function Equipe() {
                 )}
               >
                 <div className="flex items-center gap-2.5">
-                  <div className="w-8 h-8 rounded-full bg-foreground text-background flex items-center justify-center text-xs font-medium">
-                    {(member.name || member.email || "?").charAt(0).toUpperCase()}
-                  </div>
+                  <UserCircle className="w-8 h-8 text-muted-foreground" strokeWidth={1.5} />
                   <div className="flex-1 min-w-0">
                     <p className="font-medium text-sm text-foreground truncate">
                       {member.name || "Sem nome"}
@@ -166,13 +164,7 @@ export default function Equipe() {
             <div className="bg-white rounded-lg p-5" style={{ border: '1px solid #00000010' }}>
               <div className="flex items-start justify-between">
                 <div className="flex items-center gap-4">
-                  <div className="w-14 h-14 rounded-xl bg-foreground text-background flex items-center justify-center text-lg font-semibold">
-                    {(selectedMember.name || selectedMember.email || "?")
-                      .split(" ")
-                      .map((word) => word.charAt(0).toUpperCase())
-                      .slice(0, 2)
-                      .join("")}
-                  </div>
+                  <UserCircle className="w-14 h-14 text-muted-foreground" strokeWidth={1} />
                   <div>
                     <h2 className="text-xl font-semibold text-foreground">
                       {selectedMember.name || "Sem nome"}
