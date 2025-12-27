@@ -105,16 +105,16 @@ export function AddTeamMemberDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[640px] bg-white border-0 shadow-2xl p-0 gap-0 overflow-hidden rounded-2xl">
+      <DialogContent className="sm:max-w-[580px] bg-white border-0 shadow-2xl p-0 gap-0 overflow-hidden rounded-xl">
         {/* Header */}
-        <div className="px-8 pt-8 pb-6">
-          <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center shadow-lg shadow-blue-500/25">
-              <UserPlus className="w-6 h-6 text-white" />
+        <div className="px-6 pt-6 pb-4">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-lg bg-gray-900 flex items-center justify-center">
+              <UserPlus className="w-4 h-4 text-white" />
             </div>
             <div>
-              <DialogTitle className="text-gray-900 text-xl font-semibold">Novo membro</DialogTitle>
-              <DialogDescription className="text-gray-500 text-sm mt-0.5">
+              <DialogTitle className="text-gray-900 text-base font-semibold">Novo membro</DialogTitle>
+              <DialogDescription className="text-gray-500 text-xs mt-0.5">
                 Adicione um novo membro à equipe
               </DialogDescription>
             </div>
@@ -122,12 +122,12 @@ export function AddTeamMemberDialog({
         </div>
 
         {/* Form */}
-        <div className="px-8 pb-6 space-y-5">
+        <div className="px-6 pb-5 space-y-4">
           {/* Two columns for name and email */}
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-2 gap-3">
             {/* Name field */}
-            <div className="space-y-2">
-              <Label htmlFor="member-name" className="text-sm font-medium text-gray-700">
+            <div className="space-y-1.5">
+              <Label htmlFor="member-name" className="text-xs font-medium text-gray-600">
                 Nome completo
               </Label>
               <div className="relative">
@@ -136,15 +136,15 @@ export function AddTeamMemberDialog({
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   placeholder="Digite o nome"
-                  className="pl-10 h-12 bg-gray-50 border-gray-200 rounded-xl focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all text-gray-900 placeholder:text-gray-400"
+                  className="pl-8 h-9 text-sm bg-gray-50 border-gray-200 rounded-lg focus:bg-white focus:border-gray-400 focus:ring-1 focus:ring-gray-400/20 transition-all text-gray-900 placeholder:text-gray-400"
                 />
-                <UserPlus className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <UserPlus className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
               </div>
             </div>
 
             {/* Email field */}
-            <div className="space-y-2">
-              <Label htmlFor="member-email" className="text-sm font-medium text-gray-700">
+            <div className="space-y-1.5">
+              <Label htmlFor="member-email" className="text-xs font-medium text-gray-600">
                 E-mail
               </Label>
               <div className="relative">
@@ -154,18 +154,18 @@ export function AddTeamMemberDialog({
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="email@exemplo.com"
-                  className="pl-10 h-12 bg-gray-50 border-gray-200 rounded-xl focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all text-gray-900 placeholder:text-gray-400"
+                  className="pl-8 h-9 text-sm bg-gray-50 border-gray-200 rounded-lg focus:bg-white focus:border-gray-400 focus:ring-1 focus:ring-gray-400/20 transition-all text-gray-900 placeholder:text-gray-400"
                 />
-                <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <Mail className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
               </div>
             </div>
           </div>
 
           {/* Two columns for phone and password */}
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-2 gap-3">
             {/* Phone field */}
-            <div className="space-y-2">
-              <Label htmlFor="member-phone" className="text-sm font-medium text-gray-700">
+            <div className="space-y-1.5">
+              <Label htmlFor="member-phone" className="text-xs font-medium text-gray-600">
                 Telefone <span className="text-gray-400 font-normal">(opcional)</span>
               </Label>
               <div className="relative">
@@ -175,15 +175,15 @@ export function AddTeamMemberDialog({
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
                   placeholder="(00) 00000-0000"
-                  className="pl-10 h-12 bg-gray-50 border-gray-200 rounded-xl focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all text-gray-900 placeholder:text-gray-400"
+                  className="pl-8 h-9 text-sm bg-gray-50 border-gray-200 rounded-lg focus:bg-white focus:border-gray-400 focus:ring-1 focus:ring-gray-400/20 transition-all text-gray-900 placeholder:text-gray-400"
                 />
-                <Phone className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <Phone className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
               </div>
             </div>
 
             {/* Password field */}
-            <div className="space-y-2">
-              <Label htmlFor="member-password" className="text-sm font-medium text-gray-700">
+            <div className="space-y-1.5">
+              <Label htmlFor="member-password" className="text-xs font-medium text-gray-600">
                 Senha
               </Label>
               <div className="relative">
@@ -193,20 +193,20 @@ export function AddTeamMemberDialog({
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="Mínimo 6 caracteres"
-                  className="pl-10 pr-10 h-12 bg-gray-50 border-gray-200 rounded-xl focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all text-gray-900 placeholder:text-gray-400"
+                  className="pl-8 pr-8 h-9 text-sm bg-gray-50 border-gray-200 rounded-lg focus:bg-white focus:border-gray-400 focus:ring-1 focus:ring-gray-400/20 transition-all text-gray-900 placeholder:text-gray-400"
                 />
-                <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <Lock className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
                 <Button
                   type="button"
                   variant="ghost"
                   size="icon"
-                  className="absolute right-1 top-1/2 -translate-y-1/2 h-10 w-10 hover:bg-gray-100 rounded-lg"
+                  className="absolute right-0.5 top-1/2 -translate-y-1/2 h-8 w-8 hover:bg-gray-100 rounded-md"
                   onClick={() => setShowPassword(!showPassword)}
                 >
                   {showPassword ? (
-                    <EyeOff className="h-4 w-4 text-gray-400" />
+                    <EyeOff className="h-3.5 w-3.5 text-gray-400" />
                   ) : (
-                    <Eye className="h-4 w-4 text-gray-400" />
+                    <Eye className="h-3.5 w-3.5 text-gray-400" />
                   )}
                 </Button>
               </div>
@@ -214,16 +214,16 @@ export function AddTeamMemberDialog({
           </div>
 
           {/* Role field - full width */}
-          <div className="space-y-2">
-            <Label className="text-sm font-medium text-gray-700">Função</Label>
+          <div className="space-y-1.5">
+            <Label className="text-xs font-medium text-gray-600">Função</Label>
             <div className="relative">
               <Select value={role} onValueChange={setRole}>
-                <SelectTrigger className="pl-10 h-12 bg-gray-50 border-gray-200 rounded-xl focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all text-gray-900">
+                <SelectTrigger className="pl-8 h-9 text-sm bg-gray-50 border-gray-200 rounded-lg focus:bg-white focus:border-gray-400 focus:ring-1 focus:ring-gray-400/20 transition-all text-gray-900">
                   <SelectValue placeholder="Selecione a função" />
                 </SelectTrigger>
-                <SelectContent className="bg-white border-gray-200 rounded-xl shadow-xl">
+                <SelectContent className="bg-white border-gray-200 rounded-lg shadow-xl">
                   {roles.map((r) => (
-                    <SelectItem key={r.value} value={r.value} className="py-3 rounded-lg focus:bg-gray-50">
+                    <SelectItem key={r.value} value={r.value} className="py-2 text-sm rounded-md focus:bg-gray-50">
                       <div className="flex flex-col">
                         <span className="font-medium text-gray-900">{r.label}</span>
                         <span className="text-xs text-gray-500">{r.description}</span>
@@ -232,28 +232,28 @@ export function AddTeamMemberDialog({
                   ))}
                 </SelectContent>
               </Select>
-              <Briefcase className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+              <Briefcase className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400 pointer-events-none" />
             </div>
           </div>
         </div>
 
         {/* Footer */}
-        <div className="px-8 py-6 bg-gray-50/80 border-t border-gray-100 flex gap-3">
+        <div className="px-6 py-4 bg-gray-50/80 border-t border-gray-100 flex gap-2">
           <Button
             variant="outline"
             onClick={() => onOpenChange(false)}
-            className="flex-1 h-12 rounded-xl border-gray-200 text-gray-700 hover:bg-gray-100 hover:text-gray-900 font-medium"
+            className="flex-1 h-9 text-sm rounded-lg border-gray-200 text-gray-600 hover:bg-gray-100 hover:text-gray-900"
           >
             Cancelar
           </Button>
           <Button
             onClick={() => createMember.mutate()}
             disabled={createMember.isPending}
-            className="flex-1 h-12 rounded-xl bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-medium shadow-lg shadow-blue-500/25 transition-all hover:shadow-xl hover:shadow-blue-500/30"
+            className="flex-1 h-9 text-sm rounded-lg bg-gray-900 hover:bg-gray-800 text-white"
           >
             {createMember.isPending ? (
               <>
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                <Loader2 className="w-3.5 h-3.5 mr-2 animate-spin" />
                 Criando...
               </>
             ) : (
