@@ -37,12 +37,41 @@ interface LeadsPreview {
   leads: { name: string; contact: string }[];
 }
 
+interface CsvLead {
+  name: string;
+  email?: string;
+  whatsapp?: string;
+}
+
 const CHAT_URL = `https://ytdfwkchsumgdvcroaqg.supabase.co/functions/v1/grok-chat`;
+
+// Parse CSV file
+const parseCSV = (content: string): CsvLead[] => {
+  const lines = content.trim().split('\n');
+  if (lines.length < 2) return [];
+  
+  const headers = lines[0].toLowerCase().split(/[,;]/).map(h => h.trim().replace(/"/g, ''));
+  const nameIdx = headers.findIndex(h => h === 'nome' || h === 'name');
+  const emailIdx = headers.findIndex(h => h === 'email' || h === 'e-mail');
+  const whatsappIdx = headers.findIndex(h => h === 'whatsapp' || h === 'telefone' || h === 'phone' || h === 'celular');
+  
+  if (nameIdx === -1) return [];
+  
+  return lines.slice(1).map(line => {
+    const values = line.split(/[,;]/).map(v => v.trim().replace(/"/g, ''));
+    return {
+      name: values[nameIdx] || '',
+      email: emailIdx >= 0 ? values[emailIdx] : undefined,
+      whatsapp: whatsappIdx >= 0 ? values[whatsappIdx]?.replace(/\D/g, '') : undefined,
+    };
+  }).filter(l => l.name);
+};
 
 export function DisparoView({ subOriginId }: DisparoViewProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [activeJobId, setActiveJobId] = useState<string | null>(null);
+  const [csvLeads, setCsvLeads] = useState<CsvLead[] | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Auto-scroll to bottom when messages change
@@ -152,12 +181,33 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
   };
 
   const handleSend = async (message: string, files?: File[]) => {
-    if (!message.trim()) return;
+    if (!message.trim() && (!files || files.length === 0)) return;
+    
+    // Check if there's a CSV file
+    let csvContent = '';
+    let csvFileName = '';
+    if (files && files.length > 0) {
+      const csvFile = files.find(f => f.name.endsWith('.csv'));
+      if (csvFile) {
+        csvFileName = csvFile.name;
+        csvContent = await csvFile.text();
+        const parsedLeads = parseCSV(csvContent);
+        if (parsedLeads.length > 0) {
+          setCsvLeads(parsedLeads);
+          toast.success(`${parsedLeads.length} leads encontrados no arquivo`);
+        }
+      }
+    }
+    
+    // Build message content
+    const messageContent = csvFileName 
+      ? `${message}\n\n[Arquivo enviado: ${csvFileName} com ${csvLeads?.length || parseCSV(csvContent).length} leads]`
+      : message;
     
     // Add user message
     const userMessage: Message = {
       id: crypto.randomUUID(),
-      content: message,
+      content: messageContent,
       role: "user",
       timestamp: new Date(),
     };
@@ -486,6 +536,80 @@ function LeadsPreviewComponent({ preview }: { preview: LeadsPreview }) {
               <div key={i} className="text-sm text-foreground flex justify-between">
                 <span>{lead.name}</span>
                 <span className="text-muted-foreground text-xs">{lead.contact}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      <p className="text-xs text-muted-foreground mt-3">
+        Confirme para iniciar o disparo
+      </p>
+    </motion.div>
+  );
+}
+
+// Component to display CSV leads preview
+function CsvLeadsPreviewComponent({ leads, type }: { leads: CsvLead[]; type: 'email' | 'whatsapp' }) {
+  const validLeads = leads.filter(l => 
+    type === 'email' ? l.email && l.email.includes('@') : l.whatsapp && l.whatsapp.length >= 8
+  );
+  const invalidLeads = leads.length - validLeads.length;
+  const intervalSeconds = 5;
+  const estimatedMinutes = Math.ceil((validLeads.length * intervalSeconds) / 60);
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="bg-card border border-border rounded-xl p-4 my-4"
+    >
+      <h3 className="font-medium text-foreground mb-3">
+        📄 Preview do Arquivo CSV
+      </h3>
+      
+      <div className="grid grid-cols-2 gap-4 mb-4">
+        <div className="bg-muted/50 rounded-lg p-3 text-center">
+          <div className="text-2xl font-bold text-foreground">{leads.length}</div>
+          <div className="text-xs text-muted-foreground">Total de leads</div>
+        </div>
+        <div className="bg-muted/50 rounded-lg p-3 text-center">
+          <div className="text-2xl font-bold text-green-500">{validLeads.length}</div>
+          <div className="text-xs text-muted-foreground">Leads válidos</div>
+        </div>
+      </div>
+
+      {invalidLeads > 0 && (
+        <div className="text-sm text-yellow-600 mb-3">
+          ⚠️ {invalidLeads} leads sem {type === 'email' ? 'email válido' : 'WhatsApp válido'}
+        </div>
+      )}
+
+      <div className="space-y-2 text-sm mb-4">
+        <div className="flex justify-between">
+          <span className="text-muted-foreground">Fonte:</span>
+          <span className="text-foreground">Arquivo CSV</span>
+        </div>
+        <div className="flex justify-between">
+          <span className="text-muted-foreground">Intervalo:</span>
+          <span className="text-foreground">{intervalSeconds}s entre envios</span>
+        </div>
+        <div className="flex justify-between">
+          <span className="text-muted-foreground">Tempo estimado:</span>
+          <span className="text-foreground">~{estimatedMinutes} minutos</span>
+        </div>
+      </div>
+
+      {validLeads.length > 0 && (
+        <div className="border-t border-border pt-3">
+          <div className="text-xs text-muted-foreground mb-2">Primeiros leads:</div>
+          <div className="space-y-1">
+            {validLeads.slice(0, 5).map((lead, i) => (
+              <div key={i} className="text-sm text-foreground flex justify-between">
+                <span>{lead.name}</span>
+                <span className="text-muted-foreground text-xs">
+                  {type === 'email' ? lead.email : lead.whatsapp}
+                </span>
               </div>
             ))}
           </div>
