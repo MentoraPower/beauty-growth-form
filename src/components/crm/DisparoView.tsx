@@ -84,7 +84,7 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
                   )}
                 >
                   {msg.role === "user" ? (
-                    <div className="bg-[#2A2A2A] text-white px-5 py-4 rounded-2xl max-w-[70%]">
+                    <div className="bg-[#E8E8E8] text-foreground px-5 py-4 rounded-2xl max-w-[70%]">
                       <p className="text-[15px] leading-relaxed whitespace-pre-wrap">{msg.content}</p>
                     </div>
                   ) : (
