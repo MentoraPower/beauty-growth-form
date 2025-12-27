@@ -359,35 +359,30 @@ export function ChartRenderer({
       const maxCount = Math.max(...barData.map(d => d.count), 1);
       
       return (
-        <div className="h-full flex flex-col justify-between py-1">
+        <div className="h-full flex flex-col justify-between py-1 gap-1">
           {barData.map((item, index) => {
             const percentage = (item.count / maxCount) * 100;
             return (
-              <div key={index} className="flex items-center gap-2 flex-1 min-h-0">
-                {/* Bar - height adapts to available space */}
-                <div className="flex-1 bg-muted/50 rounded-xl overflow-hidden relative my-1" style={{ height: 'calc(100% - 8px)', minHeight: '32px' }}>
+              <div key={index} className="flex flex-col gap-1 flex-1 min-h-0 justify-center">
+                {/* Label row - always visible above bar */}
+                <div className="flex items-center justify-between px-1">
+                  <span className="text-xs font-medium text-foreground truncate max-w-[70%]">
+                    {item.name}
+                  </span>
+                  <span className="text-sm font-bold text-foreground shrink-0">
+                    {item.count}
+                  </span>
+                </div>
+                {/* Bar */}
+                <div className="w-full bg-muted/50 rounded-lg overflow-hidden" style={{ height: '12px' }}>
                   <div 
-                    className="h-full rounded-xl transition-all duration-700 ease-out"
+                    className="h-full rounded-lg transition-all duration-700 ease-out"
                     style={{ 
-                      width: `${percentage}%`,
+                      width: `${Math.max(percentage, 2)}%`,
                       background: `linear-gradient(90deg, ${MODERN_COLORS[index % MODERN_COLORS.length].gradient[1]}, ${MODERN_COLORS[index % MODERN_COLORS.length].gradient[0]})`,
                     }}
                   />
-                  {/* Label inside bar */}
-                  <div className="absolute inset-0 flex items-center px-4">
-                    <span className={cn(
-                      "text-sm font-semibold truncate",
-                      percentage > 30 ? "text-white" : "text-foreground"
-                    )}>
-                      {item.name}
-                    </span>
-                  </div>
                 </div>
-                
-                {/* Count */}
-                <span className="text-base font-bold text-foreground w-10 text-right shrink-0">
-                  {item.count}
-                </span>
               </div>
             );
           })}
