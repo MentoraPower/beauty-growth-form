@@ -696,7 +696,7 @@ export function OverviewView({ leads, pipelines, leadTags, subOriginId, onAddDia
   }
 
   return (
-    <div className="relative flex flex-col h-full overflow-hidden">
+    <div className="relative flex flex-col h-full overflow-hidden" style={{ backgroundColor: '#F8F8F8' }}>
       {/* Cards - Flex wrap layout with drag and drop */}
       <ScrollArea className="flex-1">
         <DndContext
