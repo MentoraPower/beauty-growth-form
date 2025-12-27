@@ -1,7 +1,8 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { PromptInputBox } from "@/components/ui/ai-prompt-box";
 import { motion } from "framer-motion";
+import { toast } from "sonner";
 
 interface DisparoViewProps {
   subOriginId: string | null;
@@ -14,12 +15,20 @@ interface Message {
   timestamp: Date;
 }
 
+const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/grok-chat`;
+
 export function DisparoView({ subOriginId }: DisparoViewProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  const handleSend = (message: string, files?: File[]) => {
-    console.log("Message sent:", message, files);
+  // Auto-scroll to bottom when messages change
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
+
+  const handleSend = async (message: string, files?: File[]) => {
+    if (!message.trim()) return;
     
     // Add user message
     const userMessage: Message = {
@@ -29,19 +38,121 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
       timestamp: new Date(),
     };
     setMessages((prev) => [...prev, userMessage]);
-    
     setIsLoading(true);
-    // Simulate API call
-    setTimeout(() => {
-      const assistantMessage: Message = {
-        id: crypto.randomUUID(),
-        content: "Esta é uma resposta simulada da IA.",
+
+    try {
+      const response = await fetch(CHAT_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+        },
+        body: JSON.stringify({
+          messages: [...messages, userMessage].map(m => ({
+            role: m.role,
+            content: m.content
+          }))
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Erro ao conectar com o Grok");
+      }
+
+      if (!response.body) {
+        throw new Error("Resposta sem corpo");
+      }
+
+      // Stream the response
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let textBuffer = "";
+      let assistantContent = "";
+      let assistantMessageId = crypto.randomUUID();
+
+      // Create initial assistant message
+      setMessages(prev => [...prev, {
+        id: assistantMessageId,
+        content: "",
         role: "assistant",
         timestamp: new Date(),
-      };
-      setMessages((prev) => [...prev, assistantMessage]);
+      }]);
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        
+        textBuffer += decoder.decode(value, { stream: true });
+
+        // Process line-by-line
+        let newlineIndex: number;
+        while ((newlineIndex = textBuffer.indexOf("\n")) !== -1) {
+          let line = textBuffer.slice(0, newlineIndex);
+          textBuffer = textBuffer.slice(newlineIndex + 1);
+
+          if (line.endsWith("\r")) line = line.slice(0, -1);
+          if (line.startsWith(":") || line.trim() === "") continue;
+          if (!line.startsWith("data: ")) continue;
+
+          const jsonStr = line.slice(6).trim();
+          if (jsonStr === "[DONE]") break;
+
+          try {
+            const parsed = JSON.parse(jsonStr);
+            const content = parsed.choices?.[0]?.delta?.content as string | undefined;
+            if (content) {
+              assistantContent += content;
+              setMessages(prev => 
+                prev.map(m => 
+                  m.id === assistantMessageId 
+                    ? { ...m, content: assistantContent }
+                    : m
+                )
+              );
+            }
+          } catch {
+            // Incomplete JSON, put it back
+            textBuffer = line + "\n" + textBuffer;
+            break;
+          }
+        }
+      }
+
+      // Final flush
+      if (textBuffer.trim()) {
+        for (let raw of textBuffer.split("\n")) {
+          if (!raw) continue;
+          if (raw.endsWith("\r")) raw = raw.slice(0, -1);
+          if (raw.startsWith(":") || raw.trim() === "") continue;
+          if (!raw.startsWith("data: ")) continue;
+          const jsonStr = raw.slice(6).trim();
+          if (jsonStr === "[DONE]") continue;
+          try {
+            const parsed = JSON.parse(jsonStr);
+            const content = parsed.choices?.[0]?.delta?.content as string | undefined;
+            if (content) {
+              assistantContent += content;
+              setMessages(prev => 
+                prev.map(m => 
+                  m.id === assistantMessageId 
+                    ? { ...m, content: assistantContent }
+                    : m
+                )
+              );
+            }
+          } catch { /* ignore */ }
+        }
+      }
+
+    } catch (error) {
+      console.error("Error calling Grok:", error);
+      toast.error(error instanceof Error ? error.message : "Erro ao conectar com o Grok");
+      // Remove the empty assistant message if there was an error
+      setMessages(prev => prev.filter(m => m.content.trim() !== ""));
+    } finally {
       setIsLoading(false);
-    }, 2000);
+    }
   };
 
   const hasMessages = messages.length > 0;
@@ -94,7 +205,7 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
                   )}
                 </motion.div>
               ))}
-              {isLoading && (
+              {isLoading && messages[messages.length - 1]?.role !== "assistant" && (
                 <motion.div
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
@@ -109,6 +220,7 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
                   </div>
                 </motion.div>
               )}
+              <div ref={messagesEndRef} />
             </div>
           </div>
 
