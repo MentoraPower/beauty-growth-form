@@ -115,7 +115,7 @@ export default function Equipe() {
           <Button
             onClick={() => setIsAddDialogOpen(true)}
             size="sm"
-            className="h-8 px-3 bg-slate-900 text-white hover:bg-slate-800 rounded-lg shadow-sm"
+            className="h-8 px-3 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white rounded-lg shadow-sm"
           >
             <Plus className="w-3.5 h-3.5 mr-1" />
             Novo
