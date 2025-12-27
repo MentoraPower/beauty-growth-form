@@ -40,9 +40,11 @@ function ContactContent({ email, phone, createdAt }: ContactBlockProps) {
 
 export function ContactBlock({ email, phone, createdAt }: ContactBlockProps) {
   return (
-    <div className="bg-gray-100 rounded-xl p-5 border border-gray-200/50">
+    <div className="rounded-xl p-5" style={{ backgroundColor: '#FFFFFF', border: '1px solid #00000010' }}>
       <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-4">Contato</h3>
-      <ContactContent email={email} phone={phone} createdAt={createdAt} />
+      <div className="rounded-xl p-3" style={{ backgroundColor: '#F8F8F8' }}>
+        <ContactContent email={email} phone={phone} createdAt={createdAt} />
+      </div>
     </div>
   );
 }
