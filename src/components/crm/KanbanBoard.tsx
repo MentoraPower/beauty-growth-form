@@ -1504,7 +1504,7 @@ export function KanbanBoard() {
             extraActions={activeView === "overview" ? (
               <button
                 onClick={() => setOverviewAddCardOpen(true)}
-                className="px-3 py-1.5 text-xs font-medium rounded-md bg-foreground/5 hover:bg-foreground/10 text-foreground transition-colors"
+                className="px-3 py-1.5 text-xs font-medium rounded-md bg-foreground text-background hover:bg-foreground/90 transition-colors"
               >
                 Adicionar cartão
               </button>
