@@ -232,6 +232,77 @@ export type Database = {
         }
         Relationships: []
       }
+      dispatch_jobs: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          current_lead_name: string | null
+          error_log: Json | null
+          failed_count: number
+          id: string
+          interval_seconds: number
+          message_template: string | null
+          origin_name: string | null
+          sent_count: number
+          started_at: string | null
+          status: string
+          sub_origin_id: string
+          sub_origin_name: string | null
+          total_leads: number
+          type: string
+          updated_at: string
+          valid_leads: number
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          current_lead_name?: string | null
+          error_log?: Json | null
+          failed_count?: number
+          id?: string
+          interval_seconds?: number
+          message_template?: string | null
+          origin_name?: string | null
+          sent_count?: number
+          started_at?: string | null
+          status?: string
+          sub_origin_id: string
+          sub_origin_name?: string | null
+          total_leads?: number
+          type: string
+          updated_at?: string
+          valid_leads?: number
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          current_lead_name?: string | null
+          error_log?: Json | null
+          failed_count?: number
+          id?: string
+          interval_seconds?: number
+          message_template?: string | null
+          origin_name?: string | null
+          sent_count?: number
+          started_at?: string | null
+          status?: string
+          sub_origin_id?: string
+          sub_origin_name?: string | null
+          total_leads?: number
+          type?: string
+          updated_at?: string
+          valid_leads?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dispatch_jobs_sub_origin_id_fkey"
+            columns: ["sub_origin_id"]
+            isOneToOne: false
+            referencedRelation: "crm_sub_origins"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       email_automations: {
         Row: {
           body_html: string

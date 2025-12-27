@@ -3,6 +3,7 @@ import { cn } from "@/lib/utils";
 import { PromptInputBox } from "@/components/ui/ai-prompt-box";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
+import { DispatchProgressTable } from "./DispatchProgressTable";
 
 interface DisparoViewProps {
   subOriginId: string | null;
@@ -13,19 +14,141 @@ interface Message {
   content: string;
   role: "user" | "assistant";
   timestamp: Date;
+  component?: React.ReactNode;
 }
 
-const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/grok-chat`;
+interface Origin {
+  id: string;
+  nome: string;
+  crm_sub_origins: { id: string; nome: string }[];
+}
+
+interface LeadsPreview {
+  subOriginId: string;
+  originName: string;
+  subOriginName: string;
+  dispatchType: string;
+  totalLeads: number;
+  validLeads: number;
+  invalidLeads: number;
+  intervalSeconds: number;
+  estimatedMinutes: number;
+  leads: { name: string; contact: string }[];
+}
+
+const CHAT_URL = `https://ytdfwkchsumgdvcroaqg.supabase.co/functions/v1/grok-chat`;
 
 export function DisparoView({ subOriginId }: DisparoViewProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
+  const [activeJobId, setActiveJobId] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Auto-scroll to bottom when messages change
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
+
+  // Process commands from Grok's response
+  const processCommands = async (content: string): Promise<{ cleanContent: string; components: React.ReactNode[] }> => {
+    const commandPattern = /\[COMMAND:([^\]]+)\]/g;
+    const commands: string[] = [];
+    let match;
+    
+    while ((match = commandPattern.exec(content)) !== null) {
+      commands.push(match[1]);
+    }
+
+    const components: React.ReactNode[] = [];
+    let cleanContent = content;
+
+    for (const command of commands) {
+      try {
+        const response = await fetch(CHAT_URL, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ command }),
+        });
+
+        if (!response.ok) throw new Error("Command failed");
+
+        const result = await response.json();
+        console.log("Command result:", result);
+
+        // Remove command from content
+        cleanContent = cleanContent.replace(`[COMMAND:${command}]`, '');
+
+        if (result.type === 'origins') {
+          // Add origins list component
+          const originsComponent = (
+            <OriginsListComponent 
+              key={`origins-${Date.now()}`}
+              origins={result.data} 
+            />
+          );
+          components.push(originsComponent);
+        }
+
+        if (result.type === 'leads_preview') {
+          const previewComponent = (
+            <LeadsPreviewComponent 
+              key={`preview-${Date.now()}`}
+              preview={result.data} 
+            />
+          );
+          components.push(previewComponent);
+        }
+
+        if (result.type === 'dispatch_started') {
+          setActiveJobId(result.data.jobId);
+          const progressComponent = (
+            <DispatchProgressTable
+              key={`dispatch-${result.data.jobId}`}
+              jobId={result.data.jobId}
+              onCommand={handleCommand}
+            />
+          );
+          components.push(progressComponent);
+        }
+
+        if (result.type === 'dispatch_updated') {
+          // Job was updated (paused/resumed/cancelled)
+          toast.success(`Disparo ${result.data.status === 'paused' ? 'pausado' : result.data.status === 'running' ? 'retomado' : 'cancelado'}`);
+        }
+
+      } catch (error) {
+        console.error("Error processing command:", command, error);
+      }
+    }
+
+    return { cleanContent: cleanContent.trim(), components };
+  };
+
+  const handleCommand = async (command: string) => {
+    try {
+      const response = await fetch(CHAT_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ command }),
+      });
+
+      if (!response.ok) throw new Error("Command failed");
+      
+      const result = await response.json();
+      console.log("Command result:", result);
+
+      if (result.type === 'dispatch_updated') {
+        toast.success(`Disparo ${result.data.status === 'paused' ? 'pausado' : result.data.status === 'running' ? 'retomado' : 'cancelado'}`);
+      }
+    } catch (error) {
+      console.error("Error executing command:", error);
+      toast.error("Erro ao executar comando");
+    }
+  };
 
   const handleSend = async (message: string, files?: File[]) => {
     if (!message.trim()) return;
@@ -45,7 +168,6 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "Authorization": `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
         },
         body: JSON.stringify({
           messages: [...messages, userMessage].map(m => ({
@@ -145,6 +267,27 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
         }
       }
 
+      // Process commands after streaming is complete
+      if (assistantContent) {
+        const { cleanContent, components } = await processCommands(assistantContent);
+        
+        setMessages(prev => 
+          prev.map(m => 
+            m.id === assistantMessageId 
+              ? { 
+                  ...m, 
+                  content: cleanContent,
+                  component: components.length > 0 ? (
+                    <div className="mt-4 space-y-4">
+                      {components}
+                    </div>
+                  ) : undefined
+                }
+              : m
+          )
+        );
+      }
+
     } catch (error) {
       console.error("Error calling Grok:", error);
       toast.error(error instanceof Error ? error.message : "Erro ao conectar com o Grok");
@@ -169,8 +312,11 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
           >
             <div className="text-center mb-8">
               <h2 className="text-2xl font-semibold text-foreground">
-                Eai, oque vamos disparar hoje?
+                Eai, o que vamos disparar hoje? 🚀
               </h2>
+              <p className="text-muted-foreground mt-2">
+                Email, WhatsApp Web ou Business API
+              </p>
             </div>
             <PromptInputBox
               onSend={handleSend}
@@ -190,8 +336,8 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   className={cn(
-                    "flex",
-                    msg.role === "user" ? "justify-end" : "justify-start"
+                    "flex flex-col",
+                    msg.role === "user" ? "items-end" : "items-start"
                   )}
                 >
                   {msg.role === "user" ? (
@@ -201,6 +347,7 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
                   ) : (
                     <div className="text-foreground max-w-[85%]">
                       <p className="text-[15px] leading-relaxed whitespace-pre-wrap">{msg.content}</p>
+                      {msg.component}
                     </div>
                   )}
                 </motion.div>
@@ -237,5 +384,115 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
         </>
       )}
     </div>
+  );
+}
+
+// Component to display origins list
+function OriginsListComponent({ origins }: { origins: Origin[] }) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="bg-card border border-border rounded-xl p-4 my-4"
+    >
+      <h3 className="font-medium text-foreground mb-3">📋 Listas disponíveis:</h3>
+      <div className="space-y-3">
+        {origins.map(origin => (
+          <div key={origin.id} className="space-y-1">
+            <div className="font-medium text-sm text-foreground">{origin.nome}</div>
+            <div className="pl-4 space-y-1">
+              {origin.crm_sub_origins.map(sub => (
+                <div 
+                  key={sub.id}
+                  className="text-sm text-muted-foreground hover:text-foreground cursor-pointer transition-colors"
+                >
+                  → {sub.nome}
+                </div>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+      <p className="text-xs text-muted-foreground mt-3">
+        Digite o nome da lista que deseja usar
+      </p>
+    </motion.div>
+  );
+}
+
+// Component to display leads preview
+function LeadsPreviewComponent({ preview }: { preview: LeadsPreview }) {
+  const getTypeIcon = () => {
+    switch (preview.dispatchType) {
+      case 'email': return '📧';
+      case 'whatsapp_web': return '📱';
+      default: return '📤';
+    }
+  };
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="bg-card border border-border rounded-xl p-4 my-4"
+    >
+      <h3 className="font-medium text-foreground mb-3">
+        {getTypeIcon()} Preview do Disparo
+      </h3>
+      
+      <div className="grid grid-cols-2 gap-4 mb-4">
+        <div className="bg-muted/50 rounded-lg p-3 text-center">
+          <div className="text-2xl font-bold text-foreground">{preview.totalLeads}</div>
+          <div className="text-xs text-muted-foreground">Total de leads</div>
+        </div>
+        <div className="bg-muted/50 rounded-lg p-3 text-center">
+          <div className="text-2xl font-bold text-green-500">{preview.validLeads}</div>
+          <div className="text-xs text-muted-foreground">Leads válidos</div>
+        </div>
+      </div>
+
+      {preview.invalidLeads > 0 && (
+        <div className="text-sm text-yellow-600 mb-3">
+          ⚠️ {preview.invalidLeads} leads sem {preview.dispatchType === 'email' ? 'email válido' : 'WhatsApp válido'}
+        </div>
+      )}
+
+      <div className="space-y-2 text-sm mb-4">
+        <div className="flex justify-between">
+          <span className="text-muted-foreground">Origem:</span>
+          <span className="text-foreground">{preview.originName}</span>
+        </div>
+        <div className="flex justify-between">
+          <span className="text-muted-foreground">Lista:</span>
+          <span className="text-foreground">{preview.subOriginName}</span>
+        </div>
+        <div className="flex justify-between">
+          <span className="text-muted-foreground">Intervalo:</span>
+          <span className="text-foreground">{preview.intervalSeconds}s entre envios</span>
+        </div>
+        <div className="flex justify-between">
+          <span className="text-muted-foreground">Tempo estimado:</span>
+          <span className="text-foreground">~{preview.estimatedMinutes} minutos</span>
+        </div>
+      </div>
+
+      {preview.leads.length > 0 && (
+        <div className="border-t border-border pt-3">
+          <div className="text-xs text-muted-foreground mb-2">Primeiros leads:</div>
+          <div className="space-y-1">
+            {preview.leads.map((lead, i) => (
+              <div key={i} className="text-sm text-foreground flex justify-between">
+                <span>{lead.name}</span>
+                <span className="text-muted-foreground text-xs">{lead.contact}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      <p className="text-xs text-muted-foreground mt-3">
+        Confirme para iniciar o disparo
+      </p>
+    </motion.div>
   );
 }
