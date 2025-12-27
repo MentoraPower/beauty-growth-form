@@ -396,7 +396,8 @@ export function KanbanBoard() {
           lead_tags (id, name, color)
         `)
         .eq("sub_origin_id", subOriginId)
-        .order("created_at", { ascending: false });
+        .order("created_at", { ascending: false })
+        .limit(5000); // Increase limit to load all leads
 
       if (error) throw error;
       return data as (Lead & { lead_tags: { id: string; name: string; color: string }[] })[];
@@ -406,6 +407,27 @@ export function KanbanBoard() {
     refetchOnWindowFocus: false,
     enabled: !!subOriginId,
   });
+
+  // Fetch team members for displaying assigned member info on cards
+  const { data: teamMembersData } = useQuery({
+    queryKey: ["team-members-for-cards"],
+    queryFn: async () => {
+      const { data, error } = await supabase.functions.invoke("list-team-members");
+      if (error) throw new Error(error.message);
+      return (data?.members || []) as { id: string; name: string | null; user_id: string; photo_url: string | null }[];
+    },
+    staleTime: 60000,
+    gcTime: 300000,
+  });
+
+  // Create a map of user_id -> member info for quick lookup
+  const teamMembersMap = useMemo(() => {
+    const map = new Map<string, { name: string | null; photo_url: string | null }>();
+    teamMembersData?.forEach(member => {
+      map.set(member.user_id, { name: member.name, photo_url: member.photo_url });
+    });
+    return map;
+  }, [teamMembersData]);
 
   // Extract leads and tags from combined query
   const leads = useMemo(() => 
@@ -1649,6 +1671,7 @@ export function KanbanBoard() {
                       dropIndicator={dropIndicator}
                       activePipelineId={activeLead?.pipeline_id}
                       tagsMap={tagsMap}
+                      teamMembersMap={teamMembersMap}
                     />
                   ))}
                 </div>
@@ -1658,7 +1681,12 @@ export function KanbanBoard() {
             <DragOverlay dropAnimation={null}>
               {activeLead ? (
                 <div className="rotate-2 scale-[1.02] opacity-95 cursor-grabbing pointer-events-none">
-                  <KanbanCard lead={activeLead} isDragging tags={tagsMap.get(activeLead.id) || []} />
+                  <KanbanCard 
+                    lead={activeLead} 
+                    isDragging 
+                    tags={tagsMap.get(activeLead.id) || []} 
+                    assignedMemberInfo={activeLead.assigned_to ? teamMembersMap.get(activeLead.assigned_to) : undefined}
+                  />
                 </div>
               ) : null}
             </DragOverlay>
