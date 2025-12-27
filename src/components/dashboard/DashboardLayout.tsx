@@ -487,19 +487,21 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
         <div
           style={{ 
             left: sidebarCollapsedWidth + 12,
-            width: submenuWidth,
-            transform: crmSubmenuOpen ? 'translateX(0)' : `translateX(-${submenuWidth + 20}px)`,
-            opacity: crmSubmenuOpen ? 1 : 0,
+            width: crmSubmenuOpen ? submenuWidth : 0,
             zIndex: 39,
             pointerEvents: crmSubmenuOpen ? 'auto' : 'none',
+            willChange: 'width',
           }}
-          className="hidden lg:block fixed top-[24px] bottom-[24px] rounded-r-2xl bg-zinc-900 overflow-hidden transition-all duration-300 ease-out"
+          className="hidden lg:block fixed top-[24px] bottom-[24px] rounded-r-2xl bg-zinc-900 overflow-hidden transition-[width] duration-300 ease-out"
         >
           <div 
-            className="h-full pl-4 pr-2" 
+            className="h-full pl-4 pr-2"
             style={{ 
               width: submenuWidth, 
               minWidth: submenuWidth,
+              opacity: crmSubmenuOpen ? 1 : 0,
+              transition: 'opacity 150ms ease-out',
+              transitionDelay: crmSubmenuOpen ? '100ms' : '0ms',
             }}
           >
             <CRMOriginsPanel 
