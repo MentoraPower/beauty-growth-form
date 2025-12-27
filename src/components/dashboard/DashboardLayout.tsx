@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect, memo, useRef } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { Menu, X, LogOut, LayoutGrid, Settings, ChevronDown, User, Inbox, ChevronsLeft, ChevronsRight } from "lucide-react";
+import { Menu, X, LogOut, LayoutGrid, Settings, ChevronDown, User, Inbox, ChevronsLeft, ChevronsRight, SquareUser } from "lucide-react";
 import { cn } from "@/lib/utils";
 import scaleLogo from "@/assets/scale-logo-menu.png";
 import scaleLogoFull from "@/assets/scale-logo-full.png";
@@ -294,6 +294,33 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
                     )}
                   >
                     Espaços
+                  </span>
+                </button>
+
+                {/* Equipe Button */}
+                <button
+                  onClick={() => {
+                    setActivePanel('settings');
+                    setCrmSubmenuOpen(false);
+                    navigate('/admin/settings?tab=team');
+                  }}
+                  className={cn(
+                    "relative flex items-center h-10 rounded-lg transition-all duration-200",
+                    location.pathname === '/admin/settings' && location.search.includes('tab=team')
+                      ? "bg-white/10 text-white before:absolute before:-left-3 before:top-1/2 before:-translate-y-1/2 before:h-[70%] before:w-1.5 before:rounded-r-full before:bg-gradient-to-b before:from-orange-500 before:to-amber-500"
+                      : "text-white/70 hover:bg-white/5 hover:text-white"
+                  )}
+                >
+                  <div className="w-10 flex items-center justify-center flex-shrink-0">
+                    <SquareUser className="h-5 w-5" strokeWidth={1.5} />
+                  </div>
+                  <span 
+                    className={cn(
+                      "text-sm font-medium whitespace-nowrap transition-all duration-200 overflow-hidden",
+                      sidebarExpanded ? "opacity-100 w-auto" : "opacity-0 w-0"
+                    )}
+                  >
+                    Equipe
                   </span>
                 </button>
 
