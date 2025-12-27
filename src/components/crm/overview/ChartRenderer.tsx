@@ -192,56 +192,154 @@ export function ChartRenderer({
       const total = pieData.reduce((acc, cur) => acc + cur.value, 0);
       
       // Dynamic radius based on height - smaller to make room for labels
-      const baseRadius = Math.min(height * 0.25, 80);
-      const outerRadius = Math.max(baseRadius, 30);
+      const baseRadius = Math.min(height * 0.2, 60);
+      const outerRadius = Math.max(baseRadius, 25);
       const innerRadius = outerRadius * 0.6;
       
       // Dynamic font sizes based on height
-      const totalFontSize = Math.max(Math.min(height * 0.09, 24), 12);
-      const labelFontSize = Math.max(Math.min(height * 0.032, 9), 7);
+      const totalFontSize = Math.max(Math.min(height * 0.08, 20), 10);
+      const labelFontSize = Math.max(Math.min(height * 0.028, 8), 6);
+      
+      // Minimum vertical spacing between labels
+      const minLabelSpacing = labelFontSize + 6;
 
-      // Custom label with leader line
-      const renderCustomLabel = ({ cx, cy, midAngle, outerRadius: oR, index, name, value }: any) => {
+      // Calculate label positions with collision avoidance
+      const calculateLabelPositions = (data: typeof pieData, cx: number, cy: number, oR: number) => {
         const RADIAN = Math.PI / 180;
-        const sin = Math.sin(-RADIAN * midAngle);
-        const cos = Math.cos(-RADIAN * midAngle);
+        let currentAngle = 0;
         
-        // Start point (on the pie edge)
-        const sx = cx + (oR + 6) * cos;
-        const sy = cy + (oR + 6) * sin;
+        // First pass: calculate initial positions
+        const labels = data.map((item, index) => {
+          const sliceAngle = (item.value / total) * 360;
+          const midAngle = currentAngle + sliceAngle / 2;
+          currentAngle += sliceAngle;
+          
+          const sin = Math.sin(-RADIAN * midAngle);
+          const cos = Math.cos(-RADIAN * midAngle);
+          
+          // Start point on pie edge
+          const sx = cx + (oR + 4) * cos;
+          const sy = cy + (oR + 4) * sin;
+          
+          // Initial end point for label
+          const labelDistance = oR + 25;
+          const initialY = cy + labelDistance * sin;
+          
+          return {
+            index,
+            name: item.name,
+            value: item.value,
+            midAngle,
+            cos,
+            sin,
+            sx,
+            sy,
+            side: cos >= 0 ? 'right' : 'left',
+            initialY,
+            finalY: initialY,
+            color: MODERN_COLORS[index % MODERN_COLORS.length].solid,
+          };
+        });
         
-        // Middle point
-        const mx = cx + (oR + 20) * cos;
-        const my = cy + (oR + 20) * sin;
+        // Separate labels by side
+        const rightLabels = labels.filter(l => l.side === 'right').sort((a, b) => a.initialY - b.initialY);
+        const leftLabels = labels.filter(l => l.side === 'left').sort((a, b) => a.initialY - b.initialY);
         
-        // End point (horizontal line)
-        const ex = mx + (cos >= 0 ? 1 : -1) * 18;
-        const ey = my;
+        // Resolve collisions for each side
+        const resolveCollisions = (sideLabels: typeof labels) => {
+          if (sideLabels.length <= 1) return;
+          
+          for (let i = 1; i < sideLabels.length; i++) {
+            const prev = sideLabels[i - 1];
+            const curr = sideLabels[i];
+            const minY = prev.finalY + minLabelSpacing;
+            
+            if (curr.finalY < minY) {
+              curr.finalY = minY;
+            }
+          }
+          
+          // Check if labels exceed container bounds and adjust
+          const containerHeight = height;
+          const maxY = cy + containerHeight * 0.4;
+          const minTopY = cy - containerHeight * 0.4;
+          
+          // Adjust if exceeding bottom
+          if (sideLabels.length > 0) {
+            const lastLabel = sideLabels[sideLabels.length - 1];
+            if (lastLabel.finalY > maxY) {
+              const overflow = lastLabel.finalY - maxY;
+              sideLabels.forEach(label => {
+                label.finalY -= overflow;
+              });
+            }
+          }
+          
+          // Ensure minimum top position
+          if (sideLabels.length > 0 && sideLabels[0].finalY < minTopY) {
+            const offset = minTopY - sideLabels[0].finalY;
+            sideLabels.forEach(label => {
+              label.finalY += offset;
+            });
+          }
+        };
         
-        const textAnchor = cos >= 0 ? 'start' : 'end';
-        const color = MODERN_COLORS[index % MODERN_COLORS.length].solid;
+        resolveCollisions(rightLabels);
+        resolveCollisions(leftLabels);
+        
+        return labels;
+      };
 
+      // Custom label renderer using pre-calculated positions
+      const renderCustomLabels = (props: any) => {
+        const { cx, cy } = props;
+        const labelPositions = calculateLabelPositions(pieData, cx, cy, outerRadius);
+        
         return (
           <g>
-            {/* Leader line */}
-            <path
-              d={`M${sx},${sy}L${mx},${my}L${ex},${ey}`}
-              stroke={color}
-              strokeWidth={1.5}
-              fill="none"
-              opacity={0.6}
-            />
-            {/* Label text - name and value on same line */}
-            <text
-              x={ex + (cos >= 0 ? 5 : -5)}
-              y={ey}
-              textAnchor={textAnchor}
-              dominantBaseline="central"
-              style={{ fontSize: labelFontSize }}
-            >
-              <tspan className="fill-muted-foreground">{name} </tspan>
-              <tspan className="fill-foreground font-semibold">{value}</tspan>
-            </text>
+            {labelPositions.map((label) => {
+              const labelX = label.side === 'right' 
+                ? cx + outerRadius + 35 
+                : cx - outerRadius - 35;
+              
+              // Middle point for the bend
+              const mx = cx + (outerRadius + 15) * label.cos;
+              const my = cy + (outerRadius + 15) * label.sin;
+              
+              const textAnchor = label.side === 'right' ? 'start' : 'end';
+              
+              return (
+                <g key={label.index}>
+                  {/* Leader line with bend */}
+                  <path
+                    d={`M${label.sx},${label.sy} L${mx},${my} L${labelX - (label.side === 'right' ? 5 : -5)},${label.finalY}`}
+                    stroke={label.color}
+                    strokeWidth={1}
+                    fill="none"
+                    opacity={0.5}
+                  />
+                  {/* Small dot at connection point */}
+                  <circle
+                    cx={label.sx}
+                    cy={label.sy}
+                    r={2}
+                    fill={label.color}
+                    opacity={0.7}
+                  />
+                  {/* Label text */}
+                  <text
+                    x={labelX}
+                    y={label.finalY}
+                    textAnchor={textAnchor}
+                    dominantBaseline="central"
+                    style={{ fontSize: labelFontSize }}
+                  >
+                    <tspan className="fill-muted-foreground">{label.name} </tspan>
+                    <tspan className="fill-foreground font-semibold">{label.value}</tspan>
+                  </text>
+                </g>
+              );
+            })}
           </g>
         );
       };
@@ -269,7 +367,6 @@ export function ChartRenderer({
                 strokeWidth={0}
                 animationBegin={0}
                 animationDuration={800}
-                label={renderCustomLabel}
                 labelLine={false}
               >
                 {pieData.map((entry, index) => (
@@ -280,6 +377,18 @@ export function ChartRenderer({
                   />
                 ))}
               </Pie>
+              {/* Custom labels layer */}
+              <Pie
+                data={pieData}
+                cx="50%"
+                cy="50%"
+                innerRadius={0}
+                outerRadius={0}
+                dataKey="value"
+                isAnimationActive={false}
+                label={renderCustomLabels}
+                labelLine={false}
+              />
               <Tooltip content={<CustomTooltip />} />
             </PieChart>
           </ResponsiveContainer>
