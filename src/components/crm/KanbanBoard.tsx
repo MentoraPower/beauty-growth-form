@@ -102,14 +102,14 @@ export function KanbanBoard() {
   const emailBuilderName = searchParams.get("emailName");
   const emailBuilderTriggerPipelineId = searchParams.get("emailTrigger");
   
-  // Get initial view from URL, then localStorage, then default to "quadro"
+  // Get initial view from URL, then localStorage, then default to "overview"
   const getInitialView = (): CRMView => {
     if (urlView) return urlView;
     const savedView = localStorage.getItem("crm-view-preference") as CRMView | null;
     if (savedView && ["overview", "quadro", "lista", "calendario", "email"].includes(savedView)) {
       return savedView;
     }
-    return "quadro";
+    return "overview";
   };
   
   const [activeView, setActiveView] = useState<CRMView>(getInitialView);
