@@ -16,6 +16,7 @@ import AdminShell from "./pages/AdminShell";
 import Settings from "./pages/Settings";
 import OnboardingForm from "./pages/OnboardingForm";
 import CalendarPage from "./pages/CalendarPage";
+import Analizer from "./pages/Analizer";
 
 const queryClient = new QueryClient();
 
@@ -43,6 +44,7 @@ const App = () => (
               <Route path="calendario" element={<CalendarPage />} />
               <Route path="agenda" element={<CalendarPage />} />
               <Route path="settings" element={<Settings />} />
+              <Route path="analizer" element={<Analizer />} />
             </Route>
 
             <Route path="*" element={<NotFound />} />
