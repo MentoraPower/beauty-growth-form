@@ -464,15 +464,49 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
       if (assistantContent) {
         const { cleanContent, components } = await processCommands(assistantContent);
         
+        // Check if user chose "Lista do CRM" - auto-show origins table
+        const userChoseCRM = messageContent.toLowerCase().includes('lista') && 
+          (messageContent.toLowerCase().includes('crm') || 
+           messageContent.toLowerCase().includes('cadastrada') ||
+           messageContent.toLowerCase().includes('sistema'));
+        
+        let finalComponents = components;
+        
+        if (userChoseCRM && components.length === 0) {
+          // Auto-fetch origins and show table
+          try {
+            const originsResponse = await fetch(CHAT_URL, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ command: 'LIST_ORIGINS' }),
+            });
+            
+            if (originsResponse.ok) {
+              const originsResult = await originsResponse.json();
+              if (originsResult.type === 'origins') {
+                finalComponents = [
+                  <OriginsListComponent 
+                    key={`origins-${Date.now()}`}
+                    origins={originsResult.data}
+                    onSelect={handleOriginSelect}
+                  />
+                ];
+              }
+            }
+          } catch (error) {
+            console.error("Error auto-fetching origins:", error);
+          }
+        }
+        
         setMessages(prev => 
           prev.map(m => 
             m.id === assistantMessageId 
               ? { 
                   ...m, 
                   content: cleanContent,
-                  component: components.length > 0 ? (
+                  component: finalComponents.length > 0 ? (
                     <div className="mt-4 space-y-4">
-                      {components}
+                      {finalComponents}
                     </div>
                   ) : undefined
                 }
