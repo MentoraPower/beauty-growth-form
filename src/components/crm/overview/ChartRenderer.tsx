@@ -9,17 +9,15 @@ import {
   XAxis, 
   YAxis, 
   Tooltip, 
-  BarChart, 
-  Bar,
   Funnel,
   FunnelChart,
-  LabelList,
-  Legend
+  LabelList
 } from "recharts";
 import { format, subDays, startOfDay, eachDayOfInterval } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { TrendingUp, TrendingDown, Users, BarChart3 } from "lucide-react";
+import { TrendingUp, TrendingDown, Users, BarChart3, Info } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Tooltip as UITooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Lead, Pipeline } from "@/types/crm";
 import { DataSource, ChartType } from "./types";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -62,24 +60,6 @@ const CustomTooltip = ({ active, payload, label }: any) => {
     );
   }
   return null;
-};
-
-// Custom legend component for pie chart
-const CustomLegend = ({ payload }: any) => {
-  if (!payload) return null;
-  return (
-    <div className="flex flex-wrap justify-center gap-3 mt-2">
-      {payload.map((entry: any, index: number) => (
-        <div key={index} className="flex items-center gap-1.5">
-          <div 
-            className="w-2.5 h-2.5 rounded-full" 
-            style={{ backgroundColor: entry.color }}
-          />
-          <span className="text-[11px] text-muted-foreground">{entry.value}</span>
-        </div>
-      ))}
-    </div>
-  );
 };
 
 export function ChartRenderer({
@@ -219,48 +199,66 @@ export function ChartRenderer({
       const total = pieData.reduce((acc, cur) => acc + cur.value, 0);
       
       return (
-        <div className="relative w-full h-full flex flex-col">
-          <ResponsiveContainer width="100%" height={isLarge ? "85%" : "100%"}>
-            <PieChart>
-              <defs>
-                {pieData.map((entry, index) => (
-                  <linearGradient key={`gradient-${index}`} id={`pieGradient-${cardId}-${index}`} x1="0" y1="0" x2="1" y2="1">
-                    <stop offset="0%" stopColor={MODERN_COLORS[index % MODERN_COLORS.length].gradient[0]} />
-                    <stop offset="100%" stopColor={MODERN_COLORS[index % MODERN_COLORS.length].gradient[1]} />
-                  </linearGradient>
-                ))}
-              </defs>
-              <Pie
-                data={pieData}
-                cx="50%"
-                cy="50%"
-                innerRadius={isLarge ? 55 : 35}
-                outerRadius={isLarge ? 85 : 55}
-                paddingAngle={3}
-                dataKey="value"
-                strokeWidth={0}
-                animationBegin={0}
-                animationDuration={800}
-              >
-                {pieData.map((entry, index) => (
-                  <Cell 
-                    key={`cell-${index}`} 
-                    fill={`url(#pieGradient-${cardId}-${index})`}
-                    className="drop-shadow-sm"
-                  />
-                ))}
-              </Pie>
-              <Tooltip content={<CustomTooltip />} />
-              {isLarge && <Legend content={<CustomLegend />} />}
-            </PieChart>
-          </ResponsiveContainer>
-          {/* Center total */}
-          <div className="absolute inset-0 flex items-center justify-center pointer-events-none" style={{ marginBottom: isLarge ? '15%' : 0 }}>
-            <div className="text-center">
-              <p className="text-2xl font-bold text-foreground">{total}</p>
-              <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Total</p>
+        <div className="relative w-full h-full flex">
+          {/* Chart */}
+          <div className="flex-1 relative">
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <defs>
+                  {pieData.map((entry, index) => (
+                    <linearGradient key={`gradient-${index}`} id={`pieGradient-${cardId}-${index}`} x1="0" y1="0" x2="1" y2="1">
+                      <stop offset="0%" stopColor={MODERN_COLORS[index % MODERN_COLORS.length].gradient[0]} />
+                      <stop offset="100%" stopColor={MODERN_COLORS[index % MODERN_COLORS.length].gradient[1]} />
+                    </linearGradient>
+                  ))}
+                </defs>
+                <Pie
+                  data={pieData}
+                  cx="50%"
+                  cy="50%"
+                  innerRadius={isLarge ? 45 : 30}
+                  outerRadius={isLarge ? 70 : 48}
+                  paddingAngle={2}
+                  dataKey="value"
+                  strokeWidth={0}
+                  animationBegin={0}
+                  animationDuration={800}
+                >
+                  {pieData.map((entry, index) => (
+                    <Cell 
+                      key={`cell-${index}`} 
+                      fill={`url(#pieGradient-${cardId}-${index})`}
+                      className="drop-shadow-sm"
+                    />
+                  ))}
+                </Pie>
+                <Tooltip content={<CustomTooltip />} />
+              </PieChart>
+            </ResponsiveContainer>
+            {/* Center total */}
+            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+              <div className="text-center">
+                <p className="text-xl font-bold text-foreground">{total}</p>
+                <p className="text-[9px] text-muted-foreground uppercase tracking-wide">Total</p>
+              </div>
             </div>
           </div>
+          
+          {/* Legend sidebar */}
+          {isLarge && (
+            <div className="w-[120px] flex flex-col justify-center gap-1.5 pl-2">
+              {pieData.map((entry, index) => (
+                <div key={index} className="flex items-center gap-2">
+                  <div 
+                    className="w-2.5 h-2.5 rounded-full shrink-0" 
+                    style={{ background: `linear-gradient(135deg, ${MODERN_COLORS[index % MODERN_COLORS.length].gradient[0]}, ${MODERN_COLORS[index % MODERN_COLORS.length].gradient[1]})` }}
+                  />
+                  <span className="text-[10px] text-muted-foreground truncate flex-1">{entry.name}</span>
+                  <span className="text-[10px] font-semibold text-foreground">{entry.value}</span>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       );
     }
@@ -324,51 +322,70 @@ export function ChartRenderer({
 
     case "bar": {
       const barData = chartData as Array<{ name: string; count: number; color: string }>;
+      const maxCount = Math.max(...barData.map(d => d.count), 1);
+      
       return (
-        <ResponsiveContainer width="100%" height="100%">
-          <BarChart data={barData} layout="vertical" margin={{ top: 5, right: 20, left: 5, bottom: 5 }}>
-            <defs>
-              {barData.map((entry, index) => (
-                <linearGradient key={`barGradient-${index}`} id={`barGradient-${cardId}-${index}`} x1="0" y1="0" x2="1" y2="0">
-                  <stop offset="0%" stopColor={MODERN_COLORS[index % MODERN_COLORS.length].gradient[1]} />
-                  <stop offset="100%" stopColor={MODERN_COLORS[index % MODERN_COLORS.length].gradient[0]} />
-                </linearGradient>
-              ))}
-            </defs>
-            <XAxis type="number" hide />
-            <YAxis 
-              dataKey="name" 
-              type="category" 
-              tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }}
-              tickLine={false}
-              axisLine={false}
-              width={90}
-            />
-            <Tooltip content={<CustomTooltip />} />
-            <Bar 
-              dataKey="count" 
-              radius={[0, 8, 8, 0]}
-              animationBegin={0}
-              animationDuration={800}
-              barSize={isLarge ? 28 : 20}
-            >
-              {barData.map((entry, index) => (
-                <Cell 
-                  key={`cell-${index}`} 
-                  fill={`url(#barGradient-${cardId}-${index})`}
-                  className="drop-shadow-sm"
-                />
-              ))}
-              <LabelList 
-                dataKey="count" 
-                position="right" 
-                fill="hsl(var(--muted-foreground))"
-                fontSize={11}
-                fontWeight={500}
-              />
-            </Bar>
-          </BarChart>
-        </ResponsiveContainer>
+        <TooltipProvider delayDuration={100}>
+          <div className="h-full flex flex-col gap-2 py-1">
+            {barData.map((item, index) => {
+              const percentage = (item.count / maxCount) * 100;
+              return (
+                <div key={index} className="flex items-center gap-3">
+                  {/* Info icon with tooltip */}
+                  <UITooltip>
+                    <TooltipTrigger asChild>
+                      <div className="w-5 h-5 rounded-full bg-muted flex items-center justify-center shrink-0 cursor-help hover:bg-muted-foreground/20 transition-colors">
+                        <Info className="w-3 h-3 text-muted-foreground" />
+                      </div>
+                    </TooltipTrigger>
+                    <TooltipContent side="right" className="max-w-[200px]">
+                      <p className="font-medium">{item.name}</p>
+                      <p className="text-xs text-muted-foreground">{item.count} leads</p>
+                    </TooltipContent>
+                  </UITooltip>
+                  
+                  {/* Bar */}
+                  <div className="flex-1 h-8 bg-muted/50 rounded-lg overflow-hidden relative">
+                    <div 
+                      className="h-full rounded-lg transition-all duration-700 ease-out"
+                      style={{ 
+                        width: `${percentage}%`,
+                        background: `linear-gradient(90deg, ${MODERN_COLORS[index % MODERN_COLORS.length].gradient[1]}, ${MODERN_COLORS[index % MODERN_COLORS.length].gradient[0]})`,
+                      }}
+                    />
+                    {/* Label inside bar */}
+                    <div className="absolute inset-0 flex items-center px-3">
+                      <span className={cn(
+                        "text-xs font-medium truncate",
+                        percentage > 30 ? "text-white" : "text-foreground"
+                      )}>
+                        {item.name}
+                      </span>
+                    </div>
+                  </div>
+                  
+                  {/* Count */}
+                  <span className="text-sm font-semibold text-foreground w-8 text-right shrink-0">
+                    {item.count}
+                  </span>
+                  
+                  {/* Info icon right side */}
+                  <UITooltip>
+                    <TooltipTrigger asChild>
+                      <div className="w-5 h-5 rounded-full bg-muted flex items-center justify-center shrink-0 cursor-help hover:bg-muted-foreground/20 transition-colors">
+                        <Info className="w-3 h-3 text-muted-foreground" />
+                      </div>
+                    </TooltipTrigger>
+                    <TooltipContent side="left" className="max-w-[200px]">
+                      <p className="font-medium">{item.name}</p>
+                      <p className="text-xs text-muted-foreground">{item.count} leads • {Math.round(percentage)}% do total</p>
+                    </TooltipContent>
+                  </UITooltip>
+                </div>
+              );
+            })}
+          </div>
+        </TooltipProvider>
       );
     }
 
