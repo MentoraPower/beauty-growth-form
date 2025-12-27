@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Menu, X, LogOut, LayoutGrid, Settings, ChevronDown, User, Inbox, ChevronsLeft, ChevronsRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import scaleLogo from "@/assets/scale-logo-menu.png";
+import scaleLogoFull from "@/assets/scale-logo-full.png";
 import { CRMOriginsPanel } from "./CRMOriginsPanel";
 import { PageTransition } from "./PageTransition";
 import { LoadingBar } from "@/components/LoadingBar";
@@ -231,16 +232,36 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
         >
           <div className="flex flex-col h-full relative">
             {/* Logo */}
-            <div className="h-14 flex items-center justify-center px-3">
-              <div className="w-10 h-10 flex items-center justify-center flex-shrink-0">
+            <div className="h-14 flex items-center px-3 relative overflow-hidden">
+              {/* Icon logo - visible when collapsed */}
+              <div 
+                className="absolute left-3 flex items-center justify-center transition-all duration-300 ease-out"
+                style={{
+                  opacity: sidebarExpanded ? 0 : 1,
+                  transform: sidebarExpanded ? 'scale(0.8)' : 'scale(1)',
+                }}
+              >
                 <img 
                   src={scaleLogo} 
                   alt="Scale Beauty" 
-                  className="object-contain transition-all duration-300 ease-out"
-                  style={{ 
-                    width: 28,
-                    height: 28,
-                  }}
+                  className="object-contain"
+                  style={{ width: 28, height: 28 }}
+                />
+              </div>
+              
+              {/* Full logo - visible when expanded */}
+              <div 
+                className="flex items-center transition-all duration-300 ease-out"
+                style={{
+                  opacity: sidebarExpanded ? 1 : 0,
+                  transform: sidebarExpanded ? 'translateX(0)' : 'translateX(-10px)',
+                }}
+              >
+                <img 
+                  src={scaleLogoFull} 
+                  alt="Scale Beauty" 
+                  className="object-contain"
+                  style={{ height: 28 }}
                 />
               </div>
             </div>
