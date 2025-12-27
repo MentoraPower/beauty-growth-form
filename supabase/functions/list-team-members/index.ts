@@ -84,6 +84,7 @@ Deno.serve(async (req) => {
       user_id: string;
       email: string | null;
       name: string | null;
+      phone: string | null;
       role: AppRole | null;
       permissions: {
         can_access_whatsapp: boolean;
@@ -106,7 +107,7 @@ Deno.serve(async (req) => {
       const ids = users.map((u: any) => u.id);
 
       const [{ data: profiles }, { data: roles }, { data: perms }] = await Promise.all([
-        supabaseAdmin.from("profiles").select("id, name, email").in("id", ids),
+        supabaseAdmin.from("profiles").select("id, name, email, phone").in("id", ids),
         supabaseAdmin.from("user_roles").select("user_id, role, created_at").in("user_id", ids),
         supabaseAdmin.from("user_permissions").select("user_id, can_access_whatsapp, can_create_origins, can_create_sub_origins, allowed_origin_ids, allowed_sub_origin_ids").in("user_id", ids),
       ]);
@@ -133,6 +134,7 @@ Deno.serve(async (req) => {
           user_id: u.id,
           email: profile?.email ?? u.email ?? null,
           name: profile?.name ?? (u.user_metadata as any)?.name ?? null,
+          phone: profile?.phone ?? null,
           role,
           permissions: perm
             ? {

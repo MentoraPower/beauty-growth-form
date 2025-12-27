@@ -84,10 +84,11 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { name, email, password, role } = await req.json();
+    const { name, email, phone, password, role } = await req.json();
 
     const trimmedName = String(name ?? "").trim();
     const trimmedEmail = String(email ?? "").trim().toLowerCase();
+    const trimmedPhone = String(phone ?? "").trim();
     const trimmedPassword = String(password ?? "").trim();
     const trimmedRole = String(role ?? "").trim() as AppRole;
 
@@ -166,7 +167,7 @@ Deno.serve(async (req) => {
     // Upsert profile
     const { error: profileError } = await supabaseAdmin
       .from("profiles")
-      .upsert({ id: userId, name: trimmedName, email: trimmedEmail });
+      .upsert({ id: userId, name: trimmedName, email: trimmedEmail, phone: trimmedPhone || null });
 
     if (profileError) {
       console.error("[create-team-member] Error upserting profile:", profileError);
