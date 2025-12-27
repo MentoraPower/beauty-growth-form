@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from "react";
+import { useSearchParams } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { PromptInputBox } from "@/components/ui/ai-prompt-box";
 import { motion } from "framer-motion";
@@ -89,6 +90,7 @@ const formatMessageContent = (content: string): React.ReactNode => {
 };
 
 export function DisparoView({ subOriginId }: DisparoViewProps) {
+  const [searchParams, setSearchParams] = useSearchParams();
   const [isLoading, setIsLoading] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [activeJobId, setActiveJobId] = useState<string | null>(null);
@@ -96,7 +98,64 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
   const [currentConversationId, setCurrentConversationId] = useState<string | null>(null);
   const [selectedOriginData, setSelectedOriginData] = useState<{ subOriginId: string; subOriginName: string; originName: string } | null>(null);
   const [dispatchType, setDispatchType] = useState<'email' | 'whatsapp_web' | null>(null);
+  const [initialLoadDone, setInitialLoadDone] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  // Load conversation from URL on mount
+  useEffect(() => {
+    const convId = searchParams.get('conv');
+    if (convId && !initialLoadDone) {
+      // Load the conversation from database
+      const loadConversation = async () => {
+        try {
+          const { data, error } = await supabase
+            .from("dispatch_conversations")
+            .select("*")
+            .eq("id", convId)
+            .single();
+
+          if (error) throw error;
+
+          const loadedMessages: Message[] = ((data.messages as any[]) || []).map((m: any) => ({
+            id: m.id,
+            content: m.content,
+            role: m.role as "user" | "assistant",
+            timestamp: new Date(m.timestamp),
+          }));
+
+          setCurrentConversationId(convId);
+          setMessages(loadedMessages);
+        } catch (error) {
+          console.error("Error loading conversation from URL:", error);
+          // Remove invalid conv param
+          searchParams.delete('conv');
+          setSearchParams(searchParams);
+        } finally {
+          setInitialLoadDone(true);
+        }
+      };
+      loadConversation();
+    } else {
+      setInitialLoadDone(true);
+    }
+  }, [searchParams, initialLoadDone]);
+
+  // Update URL when conversation changes
+  useEffect(() => {
+    if (!initialLoadDone) return;
+    
+    if (currentConversationId) {
+      if (searchParams.get('conv') !== currentConversationId) {
+        searchParams.set('conv', currentConversationId);
+        setSearchParams(searchParams, { replace: true });
+      }
+    } else {
+      if (searchParams.has('conv')) {
+        searchParams.delete('conv');
+        setSearchParams(searchParams, { replace: true });
+      }
+    }
+  }, [currentConversationId, initialLoadDone]);
 
   // Auto-scroll to bottom when messages change
   useEffect(() => {
