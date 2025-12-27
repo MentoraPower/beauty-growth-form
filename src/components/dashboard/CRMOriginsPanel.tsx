@@ -940,6 +940,15 @@ export function CRMOriginsPanel({ isOpen, onClose, sidebarWidth, embedded = fals
             </button>
           </div>
         )}
+
+        {/* Logo Banner */}
+        <div className="px-3 pb-4 pt-2">
+          <img 
+            src="/scale-logo-sidebar.png" 
+            alt="Scale Logo" 
+            className="w-full rounded-lg"
+          />
+        </div>
       </div>
 
       {/* Create/Edit Dialog */}
