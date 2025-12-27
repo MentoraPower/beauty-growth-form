@@ -476,56 +476,84 @@ export function ChartRenderer({
         return renderEmptyState();
       }
 
+      // Dynamic sizing based on height
+      const barRadius = Math.max(Math.min(height * 0.025, 8), 4);
+      const fontSize = Math.max(Math.min(height * 0.035, 12), 9);
+      const maxBarWidth = Math.max(Math.min(height * 0.2, 60), 30);
+
       return (
-        <ResponsiveContainer width="100%" height="100%">
-          <BarChart data={barData} margin={{ top: 20, right: 10, left: -15, bottom: 40 }}>
-            <defs>
-              {barData.map((entry, index) => (
-                <linearGradient key={`vbar-gradient-${index}`} id={`vbarGradient-${cardId}-${index}`} x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor={MODERN_COLORS[index % MODERN_COLORS.length].gradient[0]} />
-                  <stop offset="100%" stopColor={MODERN_COLORS[index % MODERN_COLORS.length].gradient[1]} />
-                </linearGradient>
-              ))}
-            </defs>
-            <CartesianGrid 
-              strokeDasharray="3 3" 
-              stroke="hsl(var(--border))" 
-              vertical={false}
-              opacity={0.5}
-            />
-            <XAxis 
-              dataKey="name" 
-              tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }} 
-              tickLine={false}
-              axisLine={false}
-              interval={0}
-              angle={-35}
-              textAnchor="end"
-              height={50}
-            />
-            <YAxis 
-              tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }} 
-              tickLine={false}
-              axisLine={false}
-            />
-            <Tooltip content={<CustomTooltip />} cursor={{ fill: 'hsl(var(--muted) / 0.3)' }} />
-            <Bar
-              dataKey="value"
-              radius={[6, 6, 0, 0]}
-              maxBarSize={50}
-              animationBegin={0}
-              animationDuration={800}
+        <div className="h-full w-full flex flex-col">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart 
+              data={barData} 
+              margin={{ top: 30, right: 20, left: 10, bottom: 20 }}
+              barCategoryGap="20%"
             >
-              {barData.map((entry, index) => (
-                <Cell 
-                  key={`cell-${index}`} 
-                  fill={`url(#vbarGradient-${cardId}-${index})`}
-                  className="drop-shadow-sm"
-                />
-              ))}
-            </Bar>
-          </BarChart>
-        </ResponsiveContainer>
+              <defs>
+                {barData.map((entry, index) => (
+                  <linearGradient key={`vbar-gradient-${index}`} id={`vbarGradient-${cardId}-${index}`} x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor={MODERN_COLORS[index % MODERN_COLORS.length].gradient[0]} stopOpacity={1} />
+                    <stop offset="100%" stopColor={MODERN_COLORS[index % MODERN_COLORS.length].gradient[1]} stopOpacity={0.9} />
+                  </linearGradient>
+                ))}
+                <filter id="barShadow" x="-20%" y="-20%" width="140%" height="140%">
+                  <feDropShadow dx="0" dy="2" stdDeviation="3" floodOpacity="0.15"/>
+                </filter>
+              </defs>
+              <CartesianGrid 
+                strokeDasharray="4 4" 
+                stroke="hsl(var(--border))" 
+                vertical={false}
+                opacity={0.4}
+              />
+              <XAxis 
+                dataKey="name" 
+                tick={{ fontSize, fill: 'hsl(var(--foreground))', fontWeight: 500 }} 
+                tickLine={false}
+                axisLine={false}
+                interval={0}
+                dy={8}
+              />
+              <YAxis 
+                tick={{ fontSize: fontSize - 1, fill: 'hsl(var(--muted-foreground))' }} 
+                tickLine={false}
+                axisLine={false}
+                width={35}
+              />
+              <Tooltip 
+                content={<CustomTooltip />} 
+                cursor={{ fill: 'hsl(var(--muted) / 0.2)', radius: 4 }} 
+              />
+              <Bar
+                dataKey="value"
+                radius={[barRadius, barRadius, 0, 0]}
+                maxBarSize={maxBarWidth}
+                animationBegin={0}
+                animationDuration={800}
+                filter="url(#barShadow)"
+                label={({ x, y, width, value }) => (
+                  <text
+                    x={x + width / 2}
+                    y={y - 8}
+                    fill="hsl(var(--foreground))"
+                    textAnchor="middle"
+                    fontSize={fontSize - 1}
+                    fontWeight="600"
+                  >
+                    {value}
+                  </text>
+                )}
+              >
+                {barData.map((entry, index) => (
+                  <Cell 
+                    key={`cell-${index}`} 
+                    fill={`url(#vbarGradient-${cardId}-${index})`}
+                  />
+                ))}
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
       );
     }
 
@@ -534,6 +562,11 @@ export function ChartRenderer({
       if (!Array.isArray(heatmapData) || heatmapData.length === 0) {
         return renderEmptyState();
       }
+
+      // Dynamic sizing based on height
+      const cellSize = Math.max(Math.min(height * 0.08, 18), 12);
+      const cellGap = Math.max(Math.min(height * 0.015, 4), 2);
+      const labelFontSize = Math.max(Math.min(height * 0.045, 11), 8);
 
       // Get last 12 weeks of data
       const today = new Date();
@@ -567,69 +600,98 @@ export function ChartRenderer({
         }
       });
 
-      const getColorIntensity = (count: number) => {
-        if (count === 0) return 'bg-muted/30';
+      const getColorStyle = (count: number) => {
+        if (count === 0) return { background: 'hsl(var(--muted) / 0.3)' };
         const ratio = count / maxCount;
-        if (ratio < 0.25) return 'bg-orange-200 dark:bg-orange-900/50';
-        if (ratio < 0.5) return 'bg-orange-400 dark:bg-orange-700';
-        if (ratio < 0.75) return 'bg-orange-500 dark:bg-orange-600';
-        return 'bg-orange-600 dark:bg-orange-500';
+        if (ratio < 0.25) return { background: 'linear-gradient(135deg, #fed7aa, #fdba74)' };
+        if (ratio < 0.5) return { background: 'linear-gradient(135deg, #fdba74, #fb923c)' };
+        if (ratio < 0.75) return { background: 'linear-gradient(135deg, #fb923c, #f97316)' };
+        return { background: 'linear-gradient(135deg, #f97316, #ea580c)' };
       };
 
-      const dayLabels = ['D', 'S', 'T', 'Q', 'Q', 'S', 'S'];
+      const dayLabels = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
 
       return (
-        <div className="h-full flex flex-col gap-2 p-2">
-          <div className="flex gap-1">
-            {/* Day labels */}
-            <div className="flex flex-col gap-[3px] pr-2">
-              {dayLabels.map((label, i) => (
-                <div key={i} className="h-[14px] w-4 flex items-center justify-center">
-                  <span className="text-[9px] text-muted-foreground">{i % 2 === 1 ? label : ''}</span>
-                </div>
-              ))}
+        <TooltipProvider>
+          <div className="h-full flex flex-col justify-between p-3">
+            <div className="flex flex-1 items-center">
+              {/* Day labels */}
+              <div className="flex flex-col pr-3" style={{ gap: cellGap }}>
+                {dayLabels.map((label, i) => (
+                  <div 
+                    key={i} 
+                    className="flex items-center justify-end"
+                    style={{ height: cellSize }}
+                  >
+                    <span 
+                      className="text-muted-foreground font-medium"
+                      style={{ fontSize: labelFontSize }}
+                    >
+                      {i % 2 === 0 ? label : ''}
+                    </span>
+                  </div>
+                ))}
+              </div>
+              {/* Weeks grid */}
+              <div className="flex flex-1 justify-center" style={{ gap: cellGap }}>
+                {weeks.map((week, weekIndex) => (
+                  <div key={weekIndex} className="flex flex-col" style={{ gap: cellGap }}>
+                    {Array.from({ length: 7 }).map((_, dayIndex) => {
+                      const dayData = week.find(d => d.dayOfWeek === dayIndex);
+                      return (
+                        <UITooltip key={dayIndex}>
+                          <TooltipTrigger asChild>
+                            <div 
+                              className="rounded-sm transition-all duration-200 hover:scale-110 hover:ring-2 hover:ring-primary/50 cursor-pointer"
+                              style={{ 
+                                width: cellSize, 
+                                height: cellSize,
+                                ...(dayData ? getColorStyle(dayData.count) : { background: 'transparent' })
+                              }}
+                            />
+                          </TooltipTrigger>
+                          {dayData && (
+                            <TooltipContent side="top" className="bg-background/95 backdrop-blur-sm border border-border/50">
+                              <p className="font-semibold text-foreground">{format(dayData.date, "dd MMM yyyy", { locale: ptBR })}</p>
+                              <p className="text-primary font-bold">{dayData.count} leads</p>
+                            </TooltipContent>
+                          )}
+                        </UITooltip>
+                      );
+                    })}
+                  </div>
+                ))}
+              </div>
             </div>
-            {/* Weeks grid */}
-            <div className="flex gap-[3px] flex-1 overflow-hidden">
-              {weeks.map((week, weekIndex) => (
-                <div key={weekIndex} className="flex flex-col gap-[3px]">
-                  {Array.from({ length: 7 }).map((_, dayIndex) => {
-                    const dayData = week.find(d => d.dayOfWeek === dayIndex);
-                    return (
-                      <UITooltip key={dayIndex}>
-                        <TooltipTrigger asChild>
-                          <div 
-                            className={`w-[14px] h-[14px] rounded-[3px] transition-colors ${
-                              dayData ? getColorIntensity(dayData.count) : 'bg-transparent'
-                            }`}
-                          />
-                        </TooltipTrigger>
-                        {dayData && (
-                          <TooltipContent side="top" className="text-xs">
-                            <p className="font-medium">{format(dayData.date, "dd MMM yyyy", { locale: ptBR })}</p>
-                            <p className="text-muted-foreground">{dayData.count} leads</p>
-                          </TooltipContent>
-                        )}
-                      </UITooltip>
-                    );
-                  })}
-                </div>
-              ))}
+            {/* Legend */}
+            <div className="flex items-center justify-center gap-3 pt-3 border-t border-border/30">
+              <span className="text-muted-foreground font-medium" style={{ fontSize: labelFontSize }}>Menos</span>
+              <div className="flex" style={{ gap: cellGap }}>
+                <div 
+                  className="rounded-sm" 
+                  style={{ width: cellSize * 0.7, height: cellSize * 0.7, background: 'hsl(var(--muted) / 0.3)' }} 
+                />
+                <div 
+                  className="rounded-sm" 
+                  style={{ width: cellSize * 0.7, height: cellSize * 0.7, background: 'linear-gradient(135deg, #fed7aa, #fdba74)' }} 
+                />
+                <div 
+                  className="rounded-sm" 
+                  style={{ width: cellSize * 0.7, height: cellSize * 0.7, background: 'linear-gradient(135deg, #fdba74, #fb923c)' }} 
+                />
+                <div 
+                  className="rounded-sm" 
+                  style={{ width: cellSize * 0.7, height: cellSize * 0.7, background: 'linear-gradient(135deg, #fb923c, #f97316)' }} 
+                />
+                <div 
+                  className="rounded-sm" 
+                  style={{ width: cellSize * 0.7, height: cellSize * 0.7, background: 'linear-gradient(135deg, #f97316, #ea580c)' }} 
+                />
+              </div>
+              <span className="text-muted-foreground font-medium" style={{ fontSize: labelFontSize }}>Mais</span>
             </div>
           </div>
-          {/* Legend */}
-          <div className="flex items-center justify-end gap-2 mt-1">
-            <span className="text-[10px] text-muted-foreground">Menos</span>
-            <div className="flex gap-[2px]">
-              <div className="w-3 h-3 rounded-[2px] bg-muted/30" />
-              <div className="w-3 h-3 rounded-[2px] bg-orange-200 dark:bg-orange-900/50" />
-              <div className="w-3 h-3 rounded-[2px] bg-orange-400 dark:bg-orange-700" />
-              <div className="w-3 h-3 rounded-[2px] bg-orange-500 dark:bg-orange-600" />
-              <div className="w-3 h-3 rounded-[2px] bg-orange-600 dark:bg-orange-500" />
-            </div>
-            <span className="text-[10px] text-muted-foreground">Mais</span>
-          </div>
-        </div>
+        </TooltipProvider>
       );
     }
 
