@@ -8,6 +8,7 @@ interface ViewTabsProps {
   onViewChange: (view: CRMView) => void;
   onSettingsClick: () => void;
   extraActions?: ReactNode;
+  onTabHover?: (view: CRMView) => void;
 }
 
 const tabs: { id: CRMView; label: string }[] = [
@@ -17,7 +18,7 @@ const tabs: { id: CRMView; label: string }[] = [
   { id: "calendario", label: "Calendário" },
 ];
 
-export const ViewTabs = memo(function ViewTabs({ activeView, onViewChange, onSettingsClick, extraActions }: ViewTabsProps) {
+export const ViewTabs = memo(function ViewTabs({ activeView, onViewChange, onSettingsClick, extraActions, onTabHover }: ViewTabsProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const tabRefs = useRef<Map<CRMView, HTMLButtonElement>>(new Map());
   const [indicator, setIndicator] = useState({ left: 0, width: 0 });
@@ -65,6 +66,7 @@ export const ViewTabs = memo(function ViewTabs({ activeView, onViewChange, onSet
               key={tab.id}
               ref={setTabRef(tab.id)}
               onClick={() => onViewChange(tab.id)}
+              onMouseEnter={() => onTabHover?.(tab.id)}
               className={cn(
                 "relative text-[13px] font-semibold tracking-wide transition-colors duration-150 pb-0.5",
                 activeView === tab.id 
@@ -82,6 +84,7 @@ export const ViewTabs = memo(function ViewTabs({ activeView, onViewChange, onSet
           <button
             ref={setTabRef("email")}
             onClick={() => onViewChange("email")}
+            onMouseEnter={() => onTabHover?.("email")}
             className={cn(
               "relative text-[13px] font-semibold tracking-wide transition-colors duration-150 pb-0.5",
               activeView === "email" 
