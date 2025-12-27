@@ -15,7 +15,7 @@ interface DashboardLayoutProps {
   children: React.ReactNode;
 }
 
-type ActivePanel = 'none' | 'crm' | 'atendimento' | 'settings' | 'analizer';
+type ActivePanel = 'none' | 'crm' | 'atendimento' | 'settings' | 'analizer' | 'equipe';
 
 // Load panel state from localStorage
 const getInitialPanelState = (): ActivePanel => {
@@ -46,6 +46,7 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
   const isAtendimentoActive = location.pathname.startsWith("/admin/atendimento");
   const isSettingsActive = location.pathname === "/admin/settings";
   const isAnalizerActive = location.pathname === "/admin/analizer";
+  const isEquipeActive = location.pathname === "/admin/equipe";
 
   // Initialize CRM submenu state from localStorage
   const [crmSubmenuOpen, setCrmSubmenuOpen] = useState(() => {
@@ -64,7 +65,9 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
 
   // Sync activePanel with current route (without forcing submenu open)
   useEffect(() => {
-    if (isAnalizerActive && activePanel !== 'analizer') {
+    if (isEquipeActive && activePanel !== 'equipe') {
+      setActivePanel('equipe');
+    } else if (isAnalizerActive && activePanel !== 'analizer') {
       setActivePanel('analizer');
     } else if (isAtendimentoActive && activePanel !== 'atendimento') {
       setActivePanel('atendimento');
@@ -73,7 +76,7 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
     } else if (isCRMActive && activePanel !== 'crm') {
       setActivePanel('crm');
     }
-  }, [location.pathname, isCRMActive, isAtendimentoActive, isSettingsActive, isAnalizerActive]);
+  }, [location.pathname, isCRMActive, isAtendimentoActive, isSettingsActive, isAnalizerActive, isEquipeActive]);
 
   // Fetch user permissions for WhatsApp access and user info
   useEffect(() => {
@@ -300,12 +303,13 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
                 {/* Equipe Button */}
                 <button
                   onClick={() => {
+                    setActivePanel('equipe');
                     setCrmSubmenuOpen(false);
                     navigate('/admin/equipe');
                   }}
                   className={cn(
                     "relative flex items-center h-10 rounded-lg transition-all duration-200",
-                    location.pathname === '/admin/equipe'
+                    activePanel === 'equipe'
                       ? "bg-white/10 text-white before:absolute before:-left-3 before:top-1/2 before:-translate-y-1/2 before:h-[70%] before:w-1.5 before:rounded-r-full before:bg-gradient-to-b before:from-orange-500 before:to-amber-500"
                       : "text-white/70 hover:bg-white/5 hover:text-white"
                   )}
