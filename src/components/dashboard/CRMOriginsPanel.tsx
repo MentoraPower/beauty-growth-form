@@ -928,10 +928,10 @@ export function CRMOriginsPanel({ isOpen, onClose, sidebarWidth, embedded = fals
 
         {/* Add Origin Button - only show for admins or users with permission */}
         {(userPermissions.isAdmin || userPermissions.canCreateOrigins) && (
-          <div className="flex justify-center pt-4 pb-2">
+          <div className="flex justify-center pt-4 pb-2 px-2">
             <button
               onClick={openCreateOriginDialog}
-              className="relative flex items-center justify-center gap-2 py-2.5 px-5 rounded-lg text-sm font-medium transition-all duration-200 hover:scale-105 group bg-transparent border-2 border-dashed border-orange-500/60 hover:border-orange-400"
+              className="relative flex items-center justify-center gap-2 py-2.5 px-8 w-full rounded-lg text-sm font-medium transition-all duration-200 hover:scale-[1.02] group bg-transparent border border-dashed border-orange-500/50 hover:border-orange-400/70"
             >
               <Plus className="h-4 w-4 text-orange-400 group-hover:text-orange-300 transition-colors" />
               <span className="bg-gradient-to-r from-orange-400 to-amber-400 bg-clip-text text-transparent group-hover:from-orange-300 group-hover:to-amber-300 transition-all">
