@@ -181,9 +181,9 @@ export default function Equipe() {
   return (
     <div className="flex gap-4 h-[calc(100vh-6rem)]">
       {/* Left Side - Members List */}
-      <div className="w-[260px] flex-shrink-0 flex flex-col bg-gradient-to-b from-slate-50 to-white rounded-xl border border-slate-100 overflow-hidden">
-        <div className="flex items-center justify-between p-4 bg-gradient-to-r from-slate-100/80 to-slate-50/50 border-b border-slate-100">
-          <h1 className="text-sm font-semibold text-slate-800">Equipe</h1>
+      <div className="w-[260px] flex-shrink-0 flex flex-col bg-gray-100 rounded-xl border border-gray-200/50 overflow-hidden">
+        <div className="flex items-center justify-between p-4 border-b border-gray-200/50">
+          <h1 className="text-sm font-semibold text-gray-700">Equipe</h1>
           <Button
             onClick={() => setIsAddDialogOpen(true)}
             size="sm"
