@@ -441,13 +441,14 @@ serve(async (req) => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "grok-4-latest",
+        model: "grok-3-fast",
         messages: [
           { role: "system", content: systemPrompt },
           ...messages,
         ],
         stream: true,
-        temperature: 0.7,
+        temperature: 0.5,
+        max_tokens: 500,
       }),
     });
 
