@@ -259,7 +259,7 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
               
               {/* Full logo - visible when expanded */}
               <div 
-                className="flex items-center transition-all duration-500 ease-in-out"
+                className="absolute inset-0 flex items-center pl-3 transition-all duration-500 ease-in-out"
                 style={{
                   opacity: sidebarExpanded ? 1 : 0,
                   visibility: sidebarExpanded ? 'visible' : 'hidden',
