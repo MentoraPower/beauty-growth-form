@@ -295,9 +295,6 @@ export function CardConfigPanel({
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-border">
           <h1 className="text-lg font-semibold">{card.title}</h1>
-          <Button variant="ghost" size="icon" onClick={onClose}>
-            <X className="h-5 w-5" />
-          </Button>
         </div>
 
         {/* Chart Area */}
@@ -311,22 +308,27 @@ export function CardConfigPanel({
       {/* Right side - Config Panel */}
       <div className="w-[380px] border-l border-border bg-background flex flex-col">
         <Tabs defaultValue="config" className="flex-1 flex flex-col">
-          <TabsList className="w-full justify-start rounded-none border-b border-border bg-transparent h-auto p-0">
-            <TabsTrigger 
-              value="config" 
-              className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-6 py-3"
-            >
-              <Settings2 className="h-4 w-4 mr-2" />
-              Configurações
-            </TabsTrigger>
-            <TabsTrigger 
-              value="data"
-              className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-6 py-3"
-            >
-              <Database className="h-4 w-4 mr-2" />
-              Dados
-            </TabsTrigger>
-          </TabsList>
+          <div className="flex items-center justify-between border-b border-border">
+            <TabsList className="w-auto justify-start rounded-none bg-transparent h-auto p-0">
+              <TabsTrigger 
+                value="config" 
+                className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-6 py-3"
+              >
+                <Settings2 className="h-4 w-4 mr-2" />
+                Configurações
+              </TabsTrigger>
+              <TabsTrigger 
+                value="data"
+                className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-6 py-3"
+              >
+                <Database className="h-4 w-4 mr-2" />
+                Dados
+              </TabsTrigger>
+            </TabsList>
+            <Button variant="ghost" size="sm" onClick={onClose} className="mr-2 h-7 w-7 p-0">
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
 
           <TabsContent value="config" className="flex-1 m-0">
             <ScrollArea className="h-full">
