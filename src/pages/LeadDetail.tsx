@@ -24,6 +24,7 @@ import { OnboardingSection, OnboardingBuilderData } from "@/components/onboardin
 import { OnboardingFormBuilder } from "@/components/onboarding/OnboardingFormBuilder";
 import { CalendarDropdown } from "@/components/crm/CalendarDropdown";
 import { WhatsAppChatDropdown } from "@/components/crm/WhatsAppChatDropdown";
+import { AssignMemberDropdown } from "@/components/crm/AssignMemberDropdown";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -75,6 +76,7 @@ interface LeadData {
   analysis_created_at: string | null;
   biggest_difficulty: string | null;
   photo_url: string | null;
+  assigned_to: string | null;
 }
 
 interface Pipeline {
@@ -425,13 +427,20 @@ export default function LeadDetail() {
               </div>
             </div>
             
-            {/* Three dots menu with nested move dropdown */}
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="icon" className="h-10 w-10">
-                  <MoreVertical className="h-4 w-4" />
-                </Button>
-              </DropdownMenuTrigger>
+            {/* Assign member dropdown + Three dots menu */}
+            <div className="flex items-center gap-2">
+              <AssignMemberDropdown 
+                leadId={lead.id} 
+                assignedTo={lead.assigned_to}
+                onAssign={(userId) => setLead({ ...lead, assigned_to: userId })}
+              />
+              
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="icon" className="h-10 w-10">
+                    <MoreVertical className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
                 <MoveLeadDropdown
                   leadId={lead.id}
@@ -464,8 +473,8 @@ export default function LeadDetail() {
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
+            </div>
           </div>
-
           {/* Tags Section - directly below name */}
           <div className="pl-[44px] mt-0.5">
             <LeadTagsManager leadId={lead.id} />
