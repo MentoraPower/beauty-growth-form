@@ -4,6 +4,7 @@ import { PromptInputBox } from "@/components/ui/ai-prompt-box";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
 import { DispatchProgressTable } from "./DispatchProgressTable";
+import disparoLogo from "@/assets/disparo-logo.png";
 
 interface DisparoViewProps {
   subOriginId: string | null;
@@ -311,9 +312,12 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
             className="w-full max-w-2xl"
           >
             <div className="text-center mb-8">
-              <h2 className="text-2xl font-semibold text-foreground">
-                Eai, o que vamos disparar hoje?
-              </h2>
+              <div className="flex items-center justify-center gap-3">
+                <img src={disparoLogo} alt="Logo" className="w-10 h-10" />
+                <h2 className="text-2xl font-semibold text-foreground">
+                  Eai, o que vamos disparar hoje?
+                </h2>
+              </div>
             </div>
             <PromptInputBox
               onSend={handleSend}
