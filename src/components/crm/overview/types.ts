@@ -9,11 +9,7 @@ export type ChartType =
   | "area" 
   | "gauge" 
   | "number" 
-  | "list"
-  | "donut"
-  | "radial"
-  | "progress"
-  | "sparkline";
+  | "list";
 
 export type DataSource = 
   | "leads_by_pipeline" 
@@ -56,26 +52,6 @@ export const CARD_TEMPLATES: CardTemplate[] = [
     category: "featured",
   },
   {
-    id: "donut_pipeline",
-    title: "Gráfico Donut - Leads por Pipeline",
-    description: "Visualização moderna em formato donut",
-    chartType: "donut",
-    dataSource: "leads_by_pipeline",
-    defaultSize: { widthPercent: 30, height: 360 },
-    icon: "CircleDot",
-    category: "featured",
-  },
-  {
-    id: "radial_mql",
-    title: "Gráfico Radial - Taxa MQL",
-    description: "Indicador radial de leads qualificados",
-    chartType: "radial",
-    dataSource: "leads_by_mql",
-    defaultSize: { widthPercent: 25, height: 280 },
-    icon: "Gauge",
-    category: "featured",
-  },
-  {
     id: "total_leads",
     title: "Cartão Numérico - Total de Leads",
     description: "Mostra o número total de leads no CRM",
@@ -96,16 +72,6 @@ export const CARD_TEMPLATES: CardTemplate[] = [
     category: "featured",
   },
   {
-    id: "sparkline_leads",
-    title: "Sparkline - Tendência de Leads",
-    description: "Mini gráfico de tendência compacto",
-    chartType: "sparkline",
-    dataSource: "leads_over_time",
-    defaultSize: { widthPercent: 25, height: 160 },
-    icon: "Activity",
-    category: "metrics",
-  },
-  {
     id: "leads_by_mql",
     title: "Gráfico de Pizza - MQL vs Não-MQL",
     description: "Proporção de leads qualificados",
@@ -113,16 +79,6 @@ export const CARD_TEMPLATES: CardTemplate[] = [
     dataSource: "leads_by_mql",
     defaultSize: { widthPercent: 30, height: 360 },
     icon: "Target",
-    category: "charts",
-  },
-  {
-    id: "progress_pipeline",
-    title: "Progress Bars - Pipeline",
-    description: "Barras de progresso animadas por pipeline",
-    chartType: "progress",
-    dataSource: "leads_by_pipeline",
-    defaultSize: { widthPercent: 35, height: 320 },
-    icon: "BarChart2",
     category: "charts",
   },
   {
