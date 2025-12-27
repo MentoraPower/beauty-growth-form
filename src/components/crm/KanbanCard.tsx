@@ -190,6 +190,7 @@ export const KanbanCard = memo(function KanbanCard({ lead, isDragging: isDraggin
         <div className="flex items-center justify-between">
           <TooltipProvider delayDuration={200}>
             <div className="flex items-center gap-2">
+              <AssignMemberDropdown leadId={lead.id} assignedTo={lead.assigned_to} size="sm" />
               {hasInstagram && (
                 <Tooltip>
                   <TooltipTrigger asChild>
@@ -261,12 +262,9 @@ export const KanbanCard = memo(function KanbanCard({ lead, isDragging: isDraggin
               )}
             </div>
           </TooltipProvider>
-          <div className="flex items-center gap-2">
-            <AssignMemberDropdown leadId={lead.id} assignedTo={lead.assigned_to} />
-            <span className="text-[10px] text-muted-foreground">
-              {formatTimeAgo(new Date(lead.created_at))}
-            </span>
-          </div>
+          <span className="text-[10px] text-muted-foreground">
+            {formatTimeAgo(new Date(lead.created_at))}
+          </span>
         </div>
       </CardContent>
     </Card>
