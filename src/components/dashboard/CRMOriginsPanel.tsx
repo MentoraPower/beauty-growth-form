@@ -887,8 +887,8 @@ export function CRMOriginsPanel({ isOpen, onClose, sidebarWidth, embedded = fals
         </div>
       </div>
 
-      {/* Content */}
-      <div className="flex-1 overflow-y-auto px-3 pl-0 pb-3 space-y-1 max-h-[calc(100vh-6rem)]">
+      {/* Scrollable Content */}
+      <div className="flex-1 overflow-y-auto px-3 pl-0 pb-3 space-y-1">
         <DndContext
           sensors={sensors}
           collisionDetection={closestCenter}
@@ -940,20 +940,20 @@ export function CRMOriginsPanel({ isOpen, onClose, sidebarWidth, embedded = fals
             </button>
           </div>
         )}
+      </div>
 
-        {/* Logo Banner */}
-        <div className="px-3 pb-4 pt-2">
-          <img 
-            src="/scale-logo-sidebar.png" 
-            alt="Scale Logo" 
-            className="w-full rounded-lg"
-          />
-          
-          {/* Vectar IA Bar */}
-          <div className="flex items-center gap-2 mt-3 px-1">
-            <div className="h-1 flex-1 rounded-full bg-gradient-to-r from-orange-500 to-amber-400" />
-            <span className="text-xs font-medium text-muted-foreground whitespace-nowrap">Vectar IA</span>
-          </div>
+      {/* Fixed Footer - Logo Banner */}
+      <div className="flex-shrink-0 px-3 pb-4 pt-2 border-t border-zinc-800/50">
+        <img 
+          src="/scale-logo-sidebar.png" 
+          alt="Scale Logo" 
+          className="w-full rounded-lg"
+        />
+        
+        {/* Vectar IA Bar */}
+        <div className="flex items-center gap-2 mt-3 px-1">
+          <div className="h-1 flex-1 rounded-full bg-gradient-to-r from-orange-500 to-amber-400" />
+          <span className="text-xs font-medium text-muted-foreground whitespace-nowrap">Vectar IA</span>
         </div>
       </div>
 
