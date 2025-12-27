@@ -282,7 +282,7 @@ const TriggerNode = ({ data, id, selected }: NodeProps & { data: {
         {/* Orange accent header */}
         <div 
           className="px-4 py-4 flex items-center gap-3 rounded-t-xl"
-          style={{ background: "linear-gradient(135deg, #9A3412 0%, #7C2D12 100%)" }}
+          style={{ background: "linear-gradient(135deg, #F97316 0%, #EA580C 100%)" }}
         >
           <div className="w-10 h-10 rounded-lg bg-white/20 flex items-center justify-center">
             <Zap className="w-5 h-5 text-white" />
@@ -716,7 +716,7 @@ const EmailNode = ({ id, data, selected }: NodeProps) => {
         {/* Orange gradient header with Gmail logo */}
         <div 
           className="px-4 py-2.5 flex items-center justify-between cursor-pointer hover:opacity-90 transition-opacity"
-          style={{ background: "linear-gradient(135deg, #9A3412 0%, #7C2D12 100%)" }}
+          style={{ background: "linear-gradient(135deg, #F97316 0%, #EA580C 100%)" }}
           onClick={handleOpen}
         >
           <div className="flex items-center gap-3">
@@ -1057,7 +1057,7 @@ const WhatsAppNode = ({ id, data, selected }: NodeProps) => {
         {/* Orange gradient header */}
         <div 
           className="px-4 py-2.5 flex items-center justify-between cursor-pointer hover:opacity-90 transition-opacity"
-          style={{ background: "linear-gradient(135deg, #9A3412 0%, #7C2D12 100%)" }}
+          style={{ background: "linear-gradient(135deg, #f97316 0%, #ea580c 100%)" }}
           onClick={handleOpen}
         >
           <div className="flex items-center gap-3">
