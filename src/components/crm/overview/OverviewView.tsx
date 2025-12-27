@@ -57,6 +57,8 @@ interface OverviewViewProps {
   pipelines: Pipeline[];
   leadTags: Array<{ lead_id: string; name: string; color: string }>;
   subOriginId: string | null;
+  onAddDialogOpenChange?: (open: boolean) => void;
+  addDialogOpen?: boolean;
 }
 
 // Ghost placeholder shown during drag - appears where the card will land
@@ -182,9 +184,19 @@ function SortableCard({
   );
 }
 
-export function OverviewView({ leads, pipelines, leadTags, subOriginId }: OverviewViewProps) {
+export function OverviewView({ leads, pipelines, leadTags, subOriginId, onAddDialogOpenChange, addDialogOpen }: OverviewViewProps) {
   const [cards, setCards] = useState<OverviewCard[]>([]);
-  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [internalAddDialogOpen, setInternalAddDialogOpen] = useState(false);
+  
+  // Use controlled or uncontrolled mode for dialog
+  const isAddDialogOpen = addDialogOpen !== undefined ? addDialogOpen : internalAddDialogOpen;
+  const setIsAddDialogOpen = (open: boolean) => {
+    if (onAddDialogOpenChange) {
+      onAddDialogOpenChange(open);
+    } else {
+      setInternalAddDialogOpen(open);
+    }
+  };
   const [configPanelCard, setConfigPanelCard] = useState<OverviewCard | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [activeId, setActiveId] = useState<string | null>(null);
@@ -685,15 +697,6 @@ export function OverviewView({ leads, pipelines, leadTags, subOriginId }: Overvi
 
   return (
     <div className="relative flex flex-col h-full overflow-hidden">
-      {/* Header */}
-      <div className="flex items-center justify-between pb-4 shrink-0">
-        <h2 className="text-lg font-semibold text-foreground">Visão Geral</h2>
-        <Button onClick={() => setIsAddDialogOpen(true)} size="sm">
-          <Plus className="h-4 w-4 mr-2" />
-          Adicionar cartão
-        </Button>
-      </div>
-
       {/* Cards - Flex wrap layout with drag and drop */}
       <ScrollArea className="flex-1">
         <DndContext
