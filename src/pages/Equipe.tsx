@@ -158,15 +158,15 @@ export default function Equipe() {
   }
 
   return (
-    <div className="flex h-[calc(100vh-6rem)]">
+    <div className="flex gap-0 h-[calc(100vh-6rem)]">
       {/* Main Content - Table */}
       <div 
         className={cn(
           "flex-1 transition-all duration-300 ease-out overflow-auto",
-          selectedMember ? "mr-[420px]" : ""
+          selectedMember ? "pr-0" : ""
         )}
       >
-        <div className="space-y-6 p-1">
+        <div className="space-y-4 p-1">
           {/* Header */}
           <div className="flex items-center justify-between">
             <div>
@@ -185,7 +185,7 @@ export default function Equipe() {
           </div>
 
           {/* Table */}
-          <div className="border border-border rounded-xl overflow-hidden bg-background">
+          <div className="border border-border rounded-lg overflow-hidden bg-background">
             {teamMembers?.length === 0 ? (
               <div className="text-center py-16 text-muted-foreground">
                 <Users className="w-12 h-12 mx-auto mb-3 opacity-40" />
@@ -195,11 +195,11 @@ export default function Equipe() {
             ) : (
               <Table>
                 <TableHeader>
-                  <TableRow className="bg-muted/30 hover:bg-muted/30">
-                    <TableHead className="font-semibold text-foreground">Nome</TableHead>
-                    <TableHead className="font-semibold text-foreground">E-mail</TableHead>
-                    <TableHead className="font-semibold text-foreground">Data de cadastro</TableHead>
-                    <TableHead className="font-semibold text-foreground text-right">Ações</TableHead>
+                  <TableRow className="bg-muted/30 hover:bg-muted/30 border-b border-border">
+                    <TableHead className="font-medium text-foreground text-xs uppercase tracking-wide">Nome</TableHead>
+                    <TableHead className="font-medium text-foreground text-xs uppercase tracking-wide">E-mail</TableHead>
+                    <TableHead className="font-medium text-foreground text-xs uppercase tracking-wide">Data de cadastro</TableHead>
+                    <TableHead className="font-medium text-foreground text-xs uppercase tracking-wide text-right">Ações</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -207,18 +207,20 @@ export default function Equipe() {
                     <TableRow 
                       key={member.user_id} 
                       className={cn(
-                        "group cursor-pointer transition-colors",
-                        selectedMember?.user_id === member.user_id && "bg-muted/50"
+                        "cursor-pointer transition-colors border-b border-border/50 last:border-0",
+                        selectedMember?.user_id === member.user_id 
+                          ? "bg-muted/60" 
+                          : "hover:bg-muted/30"
                       )}
                       onClick={() => setSelectedMember(member)}
                     >
-                      <TableCell>
+                      <TableCell className="py-3">
                         <div className="flex items-center gap-3">
-                          <div className="w-9 h-9 rounded-full bg-foreground text-background flex items-center justify-center text-sm font-medium">
+                          <div className="w-8 h-8 rounded-full bg-foreground text-background flex items-center justify-center text-xs font-medium">
                             {(member.name || member.email || "?").charAt(0).toUpperCase()}
                           </div>
                           <div>
-                            <span className="font-medium text-foreground block">
+                            <span className="font-medium text-foreground text-sm block">
                               {member.name || "—"}
                             </span>
                             <span className="text-xs text-muted-foreground">
@@ -227,16 +229,16 @@ export default function Equipe() {
                           </div>
                         </div>
                       </TableCell>
-                      <TableCell className="text-muted-foreground">
+                      <TableCell className="text-muted-foreground text-sm py-3">
                         {member.email || "—"}
                       </TableCell>
-                      <TableCell className="text-muted-foreground">
+                      <TableCell className="text-muted-foreground text-sm py-3">
                         {member.created_at 
                           ? format(new Date(member.created_at), "dd MMM yyyy", { locale: ptBR })
                           : "—"
                         }
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="py-3">
                         <div className="flex items-center justify-end">
                           <Button
                             variant="default"
@@ -245,7 +247,7 @@ export default function Equipe() {
                               e.stopPropagation();
                               setSelectedMember(member);
                             }}
-                            className="h-8 px-4 bg-foreground text-background hover:bg-foreground/90"
+                            className="h-7 px-3 text-xs bg-foreground text-background hover:bg-foreground/90"
                           >
                             Detalhes
                           </Button>
@@ -263,69 +265,59 @@ export default function Equipe() {
       {/* Side Panel - Member Details */}
       <div
         className={cn(
-          "fixed right-3 top-[4.5rem] bottom-3 w-[400px] bg-background border border-border rounded-2xl shadow-xl",
-          "transition-all duration-300 ease-out overflow-hidden",
+          "h-full bg-muted/30 border-l border-border",
+          "transition-all duration-300 ease-out overflow-hidden flex-shrink-0",
           selectedMember 
-            ? "translate-x-0 opacity-100" 
-            : "translate-x-full opacity-0 pointer-events-none"
+            ? "w-[380px] opacity-100" 
+            : "w-0 opacity-0"
         )}
       >
         {selectedMember && (
           <div className="h-full flex flex-col">
             {/* Panel Header */}
-            <div className="relative h-20 bg-gradient-to-br from-foreground/5 to-foreground/10 flex-shrink-0">
+            <div className="flex items-center justify-between p-4 border-b border-border/50 flex-shrink-0">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-lg bg-foreground flex items-center justify-center text-background text-sm font-semibold">
+                  {(selectedMember.name || selectedMember.email || "?")
+                    .split(" ")
+                    .map((word) => word.charAt(0).toUpperCase())
+                    .slice(0, 2)
+                    .join("")}
+                </div>
+                <div>
+                  <h2 className="font-semibold text-foreground text-sm leading-tight">
+                    {selectedMember.name || "Sem nome"}
+                  </h2>
+                  <span className="text-xs text-muted-foreground">
+                    {selectedMember.role ? roleLabels[selectedMember.role] || selectedMember.role : "Sem função"}
+                  </span>
+                </div>
+              </div>
               <Button
                 variant="ghost"
                 size="icon"
                 onClick={() => setSelectedMember(null)}
-                className="absolute top-3 right-3 h-8 w-8 bg-background/80 backdrop-blur-sm hover:bg-background"
+                className="h-8 w-8 hover:bg-background"
               >
                 <X className="h-4 w-4" />
               </Button>
             </div>
 
-            {/* Avatar - overlapping header */}
-            <div className="relative -mt-10 px-5 flex-shrink-0">
-              <div className="w-20 h-20 rounded-2xl bg-foreground flex items-center justify-center text-background text-2xl font-bold shadow-lg">
-                {(selectedMember.name || selectedMember.email || "?")
-                  .split(" ")
-                  .map((word) => word.charAt(0).toUpperCase())
-                  .slice(0, 2)
-                  .join("")}
-              </div>
-            </div>
-
             {/* Panel Content */}
-            <div className="flex-1 overflow-y-auto p-5 pt-4">
-              {/* Name and Role */}
-              <div className="mb-4">
-                <h2 className="font-bold text-foreground text-xl leading-tight">
-                  {selectedMember.name || "Sem nome"}
-                </h2>
-                <span className="inline-flex mt-2 px-3 py-1 rounded-full text-xs font-medium bg-foreground/10 text-foreground">
-                  {selectedMember.role ? roleLabels[selectedMember.role] || selectedMember.role : "Sem função"}
-                </span>
-              </div>
-
+            <div className="flex-1 overflow-y-auto p-4">
               {/* Contact Info */}
-              <div className="space-y-3 pb-5 border-b border-border/50">
-                <div className="flex items-center gap-3 text-sm">
-                  <div className="w-8 h-8 rounded-lg bg-muted/50 flex items-center justify-center">
-                    <Mail className="h-4 w-4 text-muted-foreground" />
-                  </div>
-                  <span className="text-foreground">{selectedMember.email || "—"}</span>
+              <div className="space-y-2 pb-4 border-b border-border/50">
+                <div className="flex items-center gap-2.5 text-sm">
+                  <Mail className="h-3.5 w-3.5 text-muted-foreground" />
+                  <span className="text-foreground text-sm">{selectedMember.email || "—"}</span>
                 </div>
-                <div className="flex items-center gap-3 text-sm">
-                  <div className="w-8 h-8 rounded-lg bg-muted/50 flex items-center justify-center">
-                    <Phone className="h-4 w-4 text-muted-foreground" />
-                  </div>
-                  <span className="text-foreground">{selectedMember.phone || "—"}</span>
+                <div className="flex items-center gap-2.5 text-sm">
+                  <Phone className="h-3.5 w-3.5 text-muted-foreground" />
+                  <span className="text-foreground text-sm">{selectedMember.phone || "—"}</span>
                 </div>
-                <div className="flex items-center gap-3 text-sm">
-                  <div className="w-8 h-8 rounded-lg bg-muted/50 flex items-center justify-center">
-                    <Calendar className="h-4 w-4 text-muted-foreground" />
-                  </div>
-                  <span className="text-foreground">
+                <div className="flex items-center gap-2.5 text-sm">
+                  <Calendar className="h-3.5 w-3.5 text-muted-foreground" />
+                  <span className="text-foreground text-sm">
                     {selectedMember.created_at 
                       ? format(new Date(selectedMember.created_at), "dd 'de' MMMM 'de' yyyy", { locale: ptBR })
                       : "—"
@@ -335,48 +327,34 @@ export default function Equipe() {
               </div>
 
               {/* Stats Section */}
-              <div className="py-5 border-b border-border/50">
-                <h3 className="text-sm font-semibold text-foreground mb-4">Análise de Atividades</h3>
+              <div className="py-4 border-b border-border/50">
+                <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-3">Atividades</h3>
                 
                 {/* Stats Grid */}
                 <div className="grid grid-cols-3 gap-2">
-                  {/* Cards Assigned */}
-                  <div className="bg-muted/40 rounded-xl p-3 text-center">
-                    <div className="flex items-center justify-center gap-1.5 mb-1">
-                      <LayoutGrid className="h-3.5 w-3.5 text-muted-foreground" />
-                    </div>
-                    <p className="text-xl font-bold text-foreground">{memberStats?.assignedCards || 0}</p>
-                    <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Cards</p>
+                  <div className="bg-background rounded-lg p-2.5 text-center">
+                    <p className="text-lg font-semibold text-foreground">{memberStats?.assignedCards || 0}</p>
+                    <p className="text-[10px] text-muted-foreground">Cards</p>
                   </div>
-
-                  {/* Completed */}
-                  <div className="bg-emerald-500/10 rounded-xl p-3 text-center">
-                    <div className="flex items-center justify-center gap-1.5 mb-1">
-                      <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" />
-                    </div>
-                    <p className="text-xl font-bold text-emerald-600">{memberStats?.completedActivities || 0}</p>
-                    <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Concluídas</p>
+                  <div className="bg-background rounded-lg p-2.5 text-center">
+                    <p className="text-lg font-semibold text-emerald-600">{memberStats?.completedActivities || 0}</p>
+                    <p className="text-[10px] text-muted-foreground">Concluídas</p>
                   </div>
-
-                  {/* Pending */}
-                  <div className="bg-amber-500/10 rounded-xl p-3 text-center">
-                    <div className="flex items-center justify-center gap-1.5 mb-1">
-                      <Clock className="h-3.5 w-3.5 text-amber-600" />
-                    </div>
-                    <p className="text-xl font-bold text-amber-600">{memberStats?.pendingActivities || 0}</p>
-                    <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Pendentes</p>
+                  <div className="bg-background rounded-lg p-2.5 text-center">
+                    <p className="text-lg font-semibold text-amber-600">{memberStats?.pendingActivities || 0}</p>
+                    <p className="text-[10px] text-muted-foreground">Pendentes</p>
                   </div>
                 </div>
 
                 {/* Completion Rate Bar */}
-                <div className="mt-4 space-y-2">
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-muted-foreground">Nível de conclusão</span>
-                    <span className="font-semibold text-foreground">{completionRate}%</span>
+                <div className="mt-3 space-y-1.5">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="text-muted-foreground">Conclusão</span>
+                    <span className="font-medium text-foreground">{completionRate}%</span>
                   </div>
-                  <div className="h-2.5 bg-muted rounded-full overflow-hidden">
+                  <div className="h-1.5 bg-background rounded-full overflow-hidden">
                     <div 
-                      className="h-full bg-gradient-to-r from-emerald-500 to-emerald-400 rounded-full transition-all duration-500"
+                      className="h-full bg-emerald-500 rounded-full transition-all duration-500"
                       style={{ width: `${completionRate}%` }}
                     />
                   </div>
@@ -384,68 +362,61 @@ export default function Equipe() {
               </div>
 
               {/* Responsibilities Section */}
-              <div className="py-5">
-                <h3 className="text-sm font-semibold text-foreground mb-4">Responsabilidades Recentes</h3>
+              <div className="py-4">
+                <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-3">Recentes</h3>
                 
                 {memberStats?.recentActivities && memberStats.recentActivities.length > 0 ? (
-                  <div className="space-y-2">
+                  <div className="space-y-1.5">
                     {memberStats.recentActivities.map((activity: any, index: number) => (
                       <div 
                         key={activity.id || index}
-                        className="flex items-center gap-3 p-3 bg-muted/30 rounded-xl"
+                        className="flex items-center gap-2.5 p-2 bg-background rounded-lg"
                       >
                         <div className={cn(
-                          "w-2 h-2 rounded-full flex-shrink-0",
+                          "w-1.5 h-1.5 rounded-full flex-shrink-0",
                           activity.concluida ? "bg-emerald-500" : "bg-amber-500"
                         )} />
                         <div className="flex-1 min-w-0">
-                          <p className="text-sm text-foreground truncate">
+                          <p className="text-xs text-foreground truncate">
                             Atividade #{index + 1}
                           </p>
-                          <p className="text-xs text-muted-foreground">
-                            {activity.created_at 
-                              ? format(new Date(activity.created_at), "dd/MM/yyyy", { locale: ptBR })
-                              : "—"
-                            }
-                          </p>
                         </div>
-                        <span className={cn(
-                          "text-xs font-medium px-2 py-0.5 rounded-full",
-                          activity.concluida 
-                            ? "bg-emerald-500/10 text-emerald-600" 
-                            : "bg-amber-500/10 text-amber-600"
-                        )}>
-                          {activity.concluida ? "Concluída" : "Pendente"}
+                        <span className="text-[10px] text-muted-foreground">
+                          {activity.created_at 
+                            ? format(new Date(activity.created_at), "dd/MM", { locale: ptBR })
+                            : "—"
+                          }
                         </span>
                       </div>
                     ))}
                   </div>
                 ) : (
-                  <div className="text-center py-8 text-muted-foreground">
-                    <Clock className="w-8 h-8 mx-auto mb-2 opacity-40" />
-                    <p className="text-sm">Nenhuma atividade recente</p>
+                  <div className="text-center py-6 text-muted-foreground">
+                    <p className="text-xs">Nenhuma atividade</p>
                   </div>
                 )}
               </div>
             </div>
 
             {/* Panel Footer - Actions */}
-            <div className="flex-shrink-0 p-5 border-t border-border/50 bg-muted/20">
+            <div className="flex-shrink-0 p-3 border-t border-border/50">
               <div className="flex gap-2">
                 <Button
                   variant="outline"
+                  size="sm"
                   onClick={() => setEditingMember(selectedMember)}
-                  className="flex-1 h-10"
+                  className="flex-1 h-8 text-xs"
                 >
-                  <Settings2 className="w-4 h-4 mr-2" />
-                  Editar permissões
+                  <Settings2 className="w-3.5 h-3.5 mr-1.5" />
+                  Permissões
                 </Button>
                 <Button
                   variant="outline"
+                  size="sm"
                   onClick={() => handleDeleteMember(selectedMember.user_id)}
-                  className="h-10 px-3 text-destructive hover:text-destructive hover:bg-destructive/10 hover:border-destructive/30"
+                  className="h-8 px-2.5 text-destructive hover:text-destructive hover:bg-destructive/10"
                 >
-                  <Trash2 className="w-4 h-4" />
+                  <Trash2 className="w-3.5 h-3.5" />
                 </Button>
               </div>
             </div>
