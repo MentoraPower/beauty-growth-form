@@ -313,7 +313,7 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
           >
             <div className="text-center mb-8">
               <div className="flex items-center justify-center gap-3">
-                <img src={disparoLogo} alt="Logo" className="w-10 h-10" />
+                <img src={disparoLogo} alt="Logo" className="w-6 h-6" />
                 <h2 className="text-2xl font-semibold text-foreground">
                   Eai, o que vamos disparar hoje?
                 </h2>
