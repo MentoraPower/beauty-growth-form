@@ -4,9 +4,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Plus, Users } from "lucide-react";
 import { toast } from "sonner";
-import { AddTeamMemberDialog } from "./AddTeamMemberDialog";
-import { EditPermissionsDialog } from "./EditPermissionsDialog";
-import { TeamMemberCard } from "./TeamMemberCard";
+import { AddTeamMemberDialog } from "@/components/settings/AddTeamMemberDialog";
+import { EditPermissionsDialog } from "@/components/settings/EditPermissionsDialog";
+import { TeamMemberCard } from "@/components/settings/TeamMemberCard";
 
 interface TeamMember {
   id: string;
@@ -32,8 +32,7 @@ const roleLabels: Record<string, string> = {
   sdr: "SDR",
 };
 
-
-export function TeamManagement() {
+export default function Equipe() {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [editingMember, setEditingMember] = useState<TeamMember | null>(null);
   const queryClient = useQueryClient();
@@ -117,8 +116,8 @@ export function TeamManagement() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-lg font-semibold">Equipe</h2>
-          <p className="text-sm text-muted-foreground">
+          <h1 className="text-2xl font-semibold text-foreground">Equipe</h1>
+          <p className="text-sm text-muted-foreground mt-1">
             Gerencie os membros da sua equipe e suas permissões
           </p>
         </div>
