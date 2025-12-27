@@ -4,20 +4,21 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { 
   Plus, 
-  Mail, 
-  Phone, 
   Settings2,
   Trash2,
-  Calendar,
   FolderOpen,
   UserCircle
 } from "lucide-react";
 import { toast } from "sonner";
-import { format } from "date-fns";
-import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import { AddTeamMemberDialog } from "@/components/settings/AddTeamMemberDialog";
 import { EditPermissionsDialog } from "@/components/settings/EditPermissionsDialog";
+import { 
+  ContactBlock, 
+  ActivitiesBlock, 
+  PerformanceBlock, 
+  ActivityHistoryBlock 
+} from "@/components/equipe";
 
 interface TeamMember {
   id: string;
@@ -211,70 +212,16 @@ export default function Equipe() {
 
             {/* Info and Stats Grid */}
             <div className="grid grid-cols-3 gap-4">
-              {/* Contact Block */}
-              <div className="bg-white rounded-xl p-5 border border-slate-100 shadow-sm">
-                <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-4">Contato</h3>
-                <div className="space-y-4">
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center">
-                      <Mail className="h-4 w-4 text-slate-500" />
-                    </div>
-                    <span className="text-sm text-slate-700 truncate">{selectedMember.email || "—"}</span>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center">
-                      <Phone className="h-4 w-4 text-slate-500" />
-                    </div>
-                    <span className="text-sm text-slate-700">{selectedMember.phone || "—"}</span>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center">
-                      <Calendar className="h-4 w-4 text-slate-500" />
-                    </div>
-                    <span className="text-sm text-slate-700">
-                      {selectedMember.created_at 
-                        ? format(new Date(selectedMember.created_at), "dd/MM/yyyy", { locale: ptBR })
-                        : "—"
-                      }
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Activities Chart Placeholder */}
-              <div className="bg-white rounded-xl p-5 border border-slate-100 shadow-sm">
-                <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-4">Atividades</h3>
-                <div className="flex flex-col items-center justify-center h-[calc(100%-32px)] text-slate-400">
-                  <div className="w-12 h-12 rounded-xl bg-slate-100 flex items-center justify-center mb-3">
-                    <FolderOpen className="w-6 h-6 text-slate-300" />
-                  </div>
-                  <p className="text-xs text-slate-400">Sem atividades</p>
-                </div>
-              </div>
-
-              {/* Performance Chart Placeholder */}
-              <div className="bg-white rounded-xl p-5 border border-slate-100 shadow-sm">
-                <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-4">Desempenho</h3>
-                <div className="flex flex-col items-center justify-center h-[calc(100%-32px)] text-slate-400">
-                  <div className="w-12 h-12 rounded-xl bg-slate-100 flex items-center justify-center mb-3">
-                    <FolderOpen className="w-6 h-6 text-slate-300" />
-                  </div>
-                  <p className="text-xs text-slate-400">Sem atividades</p>
-                </div>
-              </div>
+              <ContactBlock 
+                email={selectedMember.email} 
+                phone={selectedMember.phone} 
+                createdAt={selectedMember.created_at} 
+              />
+              <ActivitiesBlock />
+              <PerformanceBlock />
             </div>
 
-            {/* Timeline Chart */}
-            <div className="bg-white rounded-xl p-5 border border-slate-100 shadow-sm">
-              <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-4">Histórico de Atividades</h3>
-              <div className="flex flex-col items-center justify-center py-10 text-slate-400">
-                <div className="w-14 h-14 rounded-2xl bg-slate-100 flex items-center justify-center mb-4">
-                  <FolderOpen className="w-7 h-7 text-slate-300" />
-                </div>
-                <p className="text-sm font-medium text-slate-500">Sem atividades registradas</p>
-                <p className="text-xs mt-1 text-slate-400">As atividades do membro aparecerão aqui</p>
-              </div>
-            </div>
+            <ActivityHistoryBlock />
           </div>
         ) : (
           <div className="h-full flex flex-col items-center justify-center text-slate-400">
