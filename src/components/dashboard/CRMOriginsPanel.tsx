@@ -948,6 +948,12 @@ export function CRMOriginsPanel({ isOpen, onClose, sidebarWidth, embedded = fals
             alt="Scale Logo" 
             className="w-full rounded-lg"
           />
+          
+          {/* Vectar IA Bar */}
+          <div className="flex items-center gap-2 mt-3 px-1">
+            <div className="h-1 flex-1 rounded-full bg-gradient-to-r from-orange-500 to-amber-400" />
+            <span className="text-xs font-medium text-muted-foreground whitespace-nowrap">Vectar IA</span>
+          </div>
         </div>
       </div>
 
