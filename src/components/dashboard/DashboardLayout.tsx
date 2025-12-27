@@ -15,7 +15,7 @@ interface DashboardLayoutProps {
   children: React.ReactNode;
 }
 
-type ActivePanel = 'none' | 'crm' | 'atendimento' | 'settings';
+type ActivePanel = 'none' | 'crm' | 'atendimento' | 'settings' | 'analizer';
 
 // Load panel state from localStorage
 const getInitialPanelState = (): ActivePanel => {
@@ -45,6 +45,7 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
   const isCRMActive = location.pathname.startsWith("/admin/crm") || location.pathname === "/admin";
   const isAtendimentoActive = location.pathname.startsWith("/admin/atendimento");
   const isSettingsActive = location.pathname === "/admin/settings";
+  const isAnalizerActive = location.pathname === "/admin/analizer";
 
   // Initialize CRM submenu state from localStorage
   const [crmSubmenuOpen, setCrmSubmenuOpen] = useState(() => {
@@ -63,14 +64,16 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
 
   // Sync activePanel with current route (without forcing submenu open)
   useEffect(() => {
-    if (isAtendimentoActive && activePanel !== 'atendimento') {
+    if (isAnalizerActive && activePanel !== 'analizer') {
+      setActivePanel('analizer');
+    } else if (isAtendimentoActive && activePanel !== 'atendimento') {
       setActivePanel('atendimento');
     } else if (isSettingsActive && activePanel !== 'settings') {
       setActivePanel('settings');
     } else if (isCRMActive && activePanel !== 'crm') {
       setActivePanel('crm');
     }
-  }, [location.pathname, isCRMActive, isAtendimentoActive, isSettingsActive]);
+  }, [location.pathname, isCRMActive, isAtendimentoActive, isSettingsActive, isAnalizerActive]);
 
   // Fetch user permissions for WhatsApp access and user info
   useEffect(() => {
@@ -329,12 +332,13 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
                 {/* Analizer */}
                 <button
                   onClick={() => {
+                    setActivePanel('analizer');
                     setCrmSubmenuOpen(false);
                     navigate('/admin/analizer');
                   }}
                   className={cn(
                     "relative flex items-center h-10 rounded-lg transition-all duration-200",
-                    location.pathname === '/admin/analizer'
+                    activePanel === 'analizer'
                       ? "bg-white/10 text-white before:absolute before:-left-3 before:top-1/2 before:-translate-y-1/2 before:h-[70%] before:w-1.5 before:rounded-r-full before:bg-gradient-to-b before:from-orange-500 before:to-amber-500"
                       : "text-white/50 hover:bg-white/5 hover:text-white/70"
                   )}
@@ -344,7 +348,7 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
                       src={analizerLogo} 
                       alt="Analizer" 
                       className="w-5 h-5 object-contain"
-                      style={{ opacity: location.pathname === '/admin/analizer' ? 1 : 0.5 }}
+                      style={{ opacity: activePanel === 'analizer' ? 1 : 0.5 }}
                     />
                   </div>
                   <span 
