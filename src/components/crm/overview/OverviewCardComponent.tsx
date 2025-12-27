@@ -287,18 +287,18 @@ export function OverviewCardComponent({
     >
       {/* Header */}
       <div className="flex items-center justify-between mb-3">
-        <div className="flex items-center overflow-hidden">
+        <div className="flex items-center min-w-0">
           {/* Drag handle - hidden by default, slides in on hover */}
           <div
             {...dragHandleProps}
             className="cursor-grab active:cursor-grabbing p-1 text-muted-foreground hover:text-foreground 
-                       -ml-6 opacity-0 group-hover:ml-0 group-hover:opacity-100 
-                       transition-all duration-300 ease-out shrink-0"
+                       w-0 opacity-0 group-hover:w-6 group-hover:opacity-100 
+                       transition-all duration-300 ease-out shrink-0 overflow-hidden"
           >
             <GripVertical className="h-4 w-4" />
           </div>
           <h3 className="font-bold text-sm text-foreground truncate 
-                        -ml-4 group-hover:ml-1.5
+                        group-hover:ml-1
                         transition-all duration-300 ease-out">{card.title}</h3>
         </div>
         <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
