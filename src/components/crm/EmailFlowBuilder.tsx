@@ -1532,8 +1532,8 @@ const AnalyticsNode = ({ id, data, selected }: NodeProps) => {
           "bg-background border transition-all shadow-lg rounded-2xl w-[820px] overflow-hidden border-border"
         )}
       >
-        {/* Header - Dark/Neutral */}
-        <div className="px-4 py-3 flex items-center justify-between bg-foreground">
+        {/* Header - Dark Gray */}
+        <div className="px-4 py-3 flex items-center justify-between bg-zinc-700">
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 rounded-lg bg-background/10 backdrop-blur-sm flex items-center justify-center shadow-inner">
               <ChartPie className="w-5 h-5 text-background" />
