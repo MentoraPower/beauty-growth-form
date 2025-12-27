@@ -273,13 +273,14 @@ export function OverviewCardComponent({
     <div
       ref={cardRef}
       className={cn(
-        "relative rounded-xl border bg-card p-4 transition-shadow",
+        "relative rounded-xl bg-card p-4 transition-shadow",
         !isDragging && "w-full", // w-full only when NOT dragging (uses wrapper percentage)
         isDragging && "opacity-50",
         isResizing ? "shadow-lg" : "shadow-sm"
       )}
       style={{
         height: currentSize.height,
+        border: '1px solid #00000005',
         // When dragging (in DragOverlay), use fixed pixel width to maintain size
         ...(isDragging && dragPixelWidth ? { width: dragPixelWidth } : {}),
       }}
