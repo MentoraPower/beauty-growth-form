@@ -62,9 +62,6 @@ const EmailAutomationsView = lazy(() =>
   import("./EmailAutomationsView").then(m => ({ default: m.EmailAutomationsView }))
 );
 
-const DisparoView = lazy(() => 
-  import("./DisparoView").then(m => ({ default: m.DisparoView }))
-);
 
 const OverviewView = lazy(() => 
   import("./overview/OverviewView").then(m => ({ default: m.OverviewView }))
@@ -95,7 +92,7 @@ interface EmailBuilderState {
   };
 }
 
-type CRMView = "overview" | "quadro" | "lista" | "calendario" | "email" | "disparo";
+type CRMView = "overview" | "quadro" | "lista" | "calendario" | "email";
 
 export function KanbanBoard() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -111,7 +108,7 @@ export function KanbanBoard() {
   const getInitialView = (): CRMView => {
     if (urlView) return urlView;
     const savedView = localStorage.getItem("crm-view-preference") as CRMView | null;
-    if (savedView && ["overview", "quadro", "lista", "calendario", "email", "disparo"].includes(savedView)) {
+    if (savedView && ["overview", "quadro", "lista", "calendario", "email"].includes(savedView)) {
       return savedView;
     }
     return "overview";
@@ -172,7 +169,6 @@ export function KanbanBoard() {
       if (view === "overview") import("./overview/OverviewView");
       if (view === "calendario") import("@/pages/CalendarPage");
       if (view === "email") import("./EmailAutomationsView");
-      if (view === "disparo") import("./DisparoView");
       hoverTimeoutRef.current = null;
     }, 100); // 100ms debounce
   }, []);
@@ -1639,16 +1635,6 @@ export function KanbanBoard() {
         </Suspense>
       )}
 
-      {/* Disparo View */}
-      {subOriginId && activeView === "disparo" && (
-        <Suspense fallback={
-          <div className="flex-1 flex items-center justify-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
-          </div>
-        }>
-          <DisparoView subOriginId={subOriginId} />
-        </Suspense>
-      )}
 
       {/* Lista View - keep mounted when visited, hide with CSS for instant switching */}
       {subOriginId && (activeView === "lista" || activeView === "quadro") && (

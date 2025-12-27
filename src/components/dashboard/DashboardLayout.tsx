@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect, memo, useRef, useMemo } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { Menu, X, LogOut, LayoutGrid, Settings, ChevronDown, User, Inbox, ChevronsLeft, ChevronsRight, SquareUser } from "lucide-react";
+import { Menu, X, LogOut, LayoutGrid, Settings, ChevronDown, User, Inbox, ChevronsLeft, ChevronsRight, SquareUser, Send } from "lucide-react";
 import { cn } from "@/lib/utils";
 import scaleLogo from "@/assets/scale-logo-menu.png";
 import scaleLogoFull from "@/assets/scale-logo-full.png";
@@ -15,7 +15,7 @@ interface DashboardLayoutProps {
   children: React.ReactNode;
 }
 
-type ActivePanel = 'none' | 'crm' | 'atendimento' | 'settings' | 'analizer' | 'equipe';
+type ActivePanel = 'none' | 'crm' | 'atendimento' | 'settings' | 'analizer' | 'equipe' | 'disparo';
 
 // Load panel state from localStorage
 const getInitialPanelState = (): ActivePanel => {
@@ -54,6 +54,7 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
   const isSettingsActive = location.pathname === "/admin/settings";
   const isAnalizerActive = location.pathname === "/admin/analizer";
   const isEquipeActive = location.pathname === "/admin/equipe";
+  const isDisparoActive = location.pathname === "/admin/disparo";
 
   // Initialize CRM submenu state - always start closed to enable animation
   const [crmSubmenuOpen, setCrmSubmenuOpen] = useState(false);
@@ -89,7 +90,9 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
 
   // Sync activePanel with current route (without forcing submenu open)
   useEffect(() => {
-    if (isEquipeActive && activePanel !== 'equipe') {
+    if (isDisparoActive && activePanel !== 'disparo') {
+      setActivePanel('disparo');
+    } else if (isEquipeActive && activePanel !== 'equipe') {
       setActivePanel('equipe');
     } else if (isAnalizerActive && activePanel !== 'analizer') {
       setActivePanel('analizer');
@@ -100,7 +103,7 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
     } else if (isCRMActive && activePanel !== 'crm') {
       setActivePanel('crm');
     }
-  }, [location.pathname, isCRMActive, isAtendimentoActive, isSettingsActive, isAnalizerActive, isEquipeActive]);
+  }, [location.pathname, isCRMActive, isAtendimentoActive, isSettingsActive, isAnalizerActive, isEquipeActive, isDisparoActive]);
 
   // Fetch user permissions for WhatsApp access and user info
   useEffect(() => {
@@ -376,6 +379,28 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
                   </div>
                   <span className="text-sm font-medium whitespace-nowrap transition-all duration-200 overflow-hidden opacity-0 w-0 group-hover:opacity-100 group-hover:w-auto">
                     Analizer
+                  </span>
+                </button>
+
+                {/* Disparo */}
+                <button
+                  onClick={() => {
+                    setActivePanel('disparo');
+                    setCrmSubmenuOpen(false);
+                    navigate('/admin/disparo');
+                  }}
+                  className={cn(
+                    "relative flex items-center h-10 rounded-lg transition-all duration-200",
+                    activePanel === 'disparo'
+                      ? "bg-white/10 text-white before:absolute before:-left-3 before:top-1/2 before:-translate-y-1/2 before:h-[70%] before:w-1.5 before:rounded-r-full before:bg-gradient-to-b before:from-orange-500 before:to-amber-500"
+                      : "text-white/50 hover:bg-white/5 hover:text-white/70"
+                  )}
+                >
+                  <div className="w-10 flex items-center justify-center flex-shrink-0">
+                    <Send className="h-5 w-5" strokeWidth={1.5} style={{ opacity: activePanel === 'disparo' ? 1 : 0.5 }} />
+                  </div>
+                  <span className="text-sm font-medium whitespace-nowrap transition-all duration-200 overflow-hidden opacity-0 w-0 group-hover:opacity-100 group-hover:w-auto">
+                    Disparo
                   </span>
                 </button>
               </div>

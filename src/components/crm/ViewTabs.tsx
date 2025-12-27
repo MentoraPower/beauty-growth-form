@@ -1,7 +1,7 @@
 import { useRef, useLayoutEffect, useState, memo, ReactNode } from "react";
 import { cn } from "@/lib/utils";
 
-type CRMView = "overview" | "quadro" | "lista" | "calendario" | "email" | "disparo";
+type CRMView = "overview" | "quadro" | "lista" | "calendario" | "email";
 
 interface ViewTabsProps {
   activeView: CRMView;
@@ -93,20 +93,6 @@ export const ViewTabs = memo(function ViewTabs({ activeView, onViewChange, onSet
             )}
           >
             Automations
-          </button>
-          
-          <button
-            ref={setTabRef("disparo")}
-            onClick={() => onViewChange("disparo")}
-            onMouseEnter={() => onTabHover?.("disparo")}
-            className={cn(
-              "relative text-[13px] font-semibold tracking-wide transition-colors duration-150 pb-0.5",
-              activeView === "disparo" 
-                ? "text-foreground"
-                : "text-muted-foreground hover:text-foreground/80"
-            )}
-          >
-            Disparo
           </button>
         </div>
 
