@@ -394,7 +394,7 @@ export function OverviewView({ leads, pipelines, leadTags, subOriginId, onAddDia
       id: `card-${Date.now()}`,
       title: template.title,
       chartType: template.chartType,
-      dataSource: null,
+      dataSource: template.dataSource, // Auto-connect data source from template
       size: template.defaultSize,
       order: cards.length,
     };
