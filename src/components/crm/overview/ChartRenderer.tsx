@@ -245,15 +245,17 @@ export function ChartRenderer({
           
           {/* Legend sidebar */}
           {isLarge && (
-            <div className="w-[130px] flex flex-col justify-center gap-2 pl-3">
+            <div className="w-[140px] flex flex-col justify-center gap-3 pl-4">
               {pieData.map((entry, index) => (
-                <div key={index} className="flex items-center gap-2">
-                  <div 
-                    className="w-3 h-3 rounded-full shrink-0" 
-                    style={{ background: `linear-gradient(135deg, ${MODERN_COLORS[index % MODERN_COLORS.length].gradient[0]}, ${MODERN_COLORS[index % MODERN_COLORS.length].gradient[1]})` }}
-                  />
-                  <span className="text-xs text-muted-foreground truncate flex-1">{entry.name}</span>
-                  <span className="text-xs font-semibold text-foreground">{entry.value}</span>
+                <div key={index} className="flex flex-col gap-0.5">
+                  <div className="flex items-center gap-2">
+                    <div 
+                      className="w-2.5 h-2.5 rounded-full shrink-0" 
+                      style={{ background: `linear-gradient(135deg, ${MODERN_COLORS[index % MODERN_COLORS.length].gradient[0]}, ${MODERN_COLORS[index % MODERN_COLORS.length].gradient[1]})` }}
+                    />
+                    <span className="text-xs text-muted-foreground truncate">{entry.name}</span>
+                  </div>
+                  <span className="text-lg font-bold text-foreground pl-[18px]">{entry.value}</span>
                 </div>
               ))}
             </div>
