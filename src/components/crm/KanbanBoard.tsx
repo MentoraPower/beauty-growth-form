@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo, lazy, Suspense, useRef, startTransition } from "react";
+import { useState, useEffect, useCallback, useMemo, lazy, Suspense, useRef } from "react";
 import {
   DndContext,
   DragEndEvent,
@@ -137,32 +137,38 @@ export function KanbanBoard() {
   const queryClient = useQueryClient();
   const searchTimeoutRef = useRef<number | null>(null);
 
-  // Track which views have been mounted (for keep-alive pattern)
-  const [mountedViews, setMountedViews] = useState<Set<CRMView>>(() => new Set([getInitialView()]));
+  // Debounce ref for tab hover prefetch
+  const hoverTimeoutRef = useRef<number | null>(null);
 
-  // Handle view change and update URL + localStorage (non-blocking with startTransition)
+  // Handle view change - simple and fast, no keep-alive
   const handleViewChange = useCallback((view: CRMView) => {
-    startTransition(() => {
-      setActiveView(view);
-      // Mark this view as mounted (keep-alive)
-      setMountedViews(prev => {
-        if (prev.has(view)) return prev;
-        const next = new Set(prev);
-        next.add(view);
-        return next;
-      });
-    });
+    if (view === activeView) return; // Already on this view
+    
+    // Update state immediately (React 18 batches this)
+    setActiveView(view);
     localStorage.setItem("crm-view-preference", view);
-    const newParams = new URLSearchParams(searchParams);
-    newParams.set("view", view);
-    setSearchParams(newParams, { replace: true });
-  }, [searchParams, setSearchParams]);
+    
+    // Update URL in next frame to avoid blocking the UI
+    requestAnimationFrame(() => {
+      const newParams = new URLSearchParams(searchParams);
+      if (newParams.get("view") !== view) {
+        newParams.set("view", view);
+        setSearchParams(newParams, { replace: true });
+      }
+    });
+  }, [activeView, searchParams, setSearchParams]);
 
-  // Pre-load lazy components on tab hover for instant transitions
+  // Pre-load lazy components on tab hover with debounce (avoid loading on mouse sweep)
   const handleTabHover = useCallback((view: CRMView) => {
-    if (view === "overview") import("./overview/OverviewView");
-    if (view === "calendario") import("@/pages/CalendarPage");
-    if (view === "email") import("./EmailAutomationsView");
+    if (hoverTimeoutRef.current) {
+      window.clearTimeout(hoverTimeoutRef.current);
+    }
+    hoverTimeoutRef.current = window.setTimeout(() => {
+      if (view === "overview") import("./overview/OverviewView");
+      if (view === "calendario") import("@/pages/CalendarPage");
+      if (view === "email") import("./EmailAutomationsView");
+      hoverTimeoutRef.current = null;
+    }, 100); // 100ms debounce
   }, []);
 
   // Open email builder with URL param (and persist minimum state in URL for refresh/deep-link)
@@ -1659,110 +1665,62 @@ export function KanbanBoard() {
         </p>
       )}
 
-      {/* Keep-alive views with CSS transitions - Overview */}
-      {subOriginId && mountedViews.has("overview") && (
-        <div 
-          className={cn(
-            "transition-opacity duration-150 ease-out",
-            activeView === "overview" 
-              ? "opacity-100" 
-              : "opacity-0 pointer-events-none absolute inset-0 -z-10"
-          )}
-          style={{ display: activeView === "overview" ? "block" : "none" }}
-        >
-          <Suspense fallback={
-            <div className="flex-1 flex items-center justify-center">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
-            </div>
-          }>
-            <OverviewView
-              leads={leads}
-              pipelines={pipelines}
-              leadTags={leadTagsRaw}
-              subOriginId={subOriginId}
-              addDialogOpen={overviewAddCardOpen}
-              onAddDialogOpenChange={setOverviewAddCardOpen}
-            />
-          </Suspense>
-        </div>
-      )}
-
-      {/* Keep-alive views with CSS transitions - Calendário */}
-      {subOriginId && mountedViews.has("calendario") && (
-        <div 
-          className={cn(
-            "transition-opacity duration-150 ease-out",
-            activeView === "calendario" 
-              ? "opacity-100" 
-              : "opacity-0 pointer-events-none absolute inset-0 -z-10"
-          )}
-          style={{ display: activeView === "calendario" ? "block" : "none" }}
-        >
-          <Suspense fallback={
-            <div className="flex-1 flex items-center justify-center">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
-            </div>
-          }>
-            <CalendarPageLazy />
-          </Suspense>
-        </div>
-      )}
-
-      {/* Keep-alive views with CSS transitions - Email */}
-      {subOriginId && mountedViews.has("email") && (
-        <div 
-          className={cn(
-            "transition-opacity duration-150 ease-out",
-            activeView === "email" 
-              ? "opacity-100" 
-              : "opacity-0 pointer-events-none absolute inset-0 -z-10"
-          )}
-          style={{ display: activeView === "email" ? "block" : "none" }}
-        >
-          <Suspense fallback={
-            <div className="flex-1 flex items-center justify-center">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
-            </div>
-          }>
-            <EmailAutomationsView 
-              pipelines={pipelines} 
-              subOriginId={subOriginId}
-            />
-          </Suspense>
-        </div>
-      )}
-
-      {/* Keep-alive views with CSS transitions - Lista */}
-      {subOriginId && mountedViews.has("lista") && (
-        <div 
-          className={cn(
-            "transition-opacity duration-150 ease-out",
-            activeView === "lista" 
-              ? "opacity-100" 
-              : "opacity-0 pointer-events-none absolute inset-0 -z-10"
-          )}
-          style={{ display: activeView === "lista" ? "block" : "none" }}
-        >
-          <ListView
+      {/* Overview View */}
+      {subOriginId && activeView === "overview" && (
+        <Suspense fallback={
+          <div className="flex-1 flex items-center justify-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+          </div>
+        }>
+          <OverviewView
+            leads={leads}
             pipelines={pipelines}
-            leadsByPipeline={leadsByPipeline}
+            leadTags={leadTagsRaw}
             subOriginId={subOriginId}
-            tagsMap={tagsMap}
+            addDialogOpen={overviewAddCardOpen}
+            onAddDialogOpenChange={setOverviewAddCardOpen}
           />
-        </div>
+        </Suspense>
       )}
 
-      {/* Keep-alive views with CSS transitions - Quadro (Kanban) */}
-      {mountedViews.has("quadro") && (
-        <div 
-          className={cn(
-            "transition-opacity duration-150 ease-out flex-1 min-h-0",
-            activeView === "quadro" 
-              ? "opacity-100" 
-              : "opacity-0 pointer-events-none absolute inset-0 -z-10"
-          )}
-          style={{ display: activeView === "quadro" ? "flex" : "none", flexDirection: "column" }}
-        >
+      {/* Calendário View */}
+      {subOriginId && activeView === "calendario" && (
+        <Suspense fallback={
+          <div className="flex-1 flex items-center justify-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+          </div>
+        }>
+          <CalendarPageLazy />
+        </Suspense>
+      )}
+
+      {/* Email View */}
+      {subOriginId && activeView === "email" && (
+        <Suspense fallback={
+          <div className="flex-1 flex items-center justify-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+          </div>
+        }>
+          <EmailAutomationsView 
+            pipelines={pipelines} 
+            subOriginId={subOriginId}
+          />
+        </Suspense>
+      )}
+
+      {/* Lista View */}
+      {subOriginId && activeView === "lista" && (
+        <ListView
+          pipelines={pipelines}
+          leadsByPipeline={leadsByPipeline}
+          subOriginId={subOriginId}
+          tagsMap={tagsMap}
+        />
+      )}
+
+      {/* Quadro (Kanban) View */}
+      {activeView === "quadro" && (
+        <div className="flex-1 min-h-0 flex flex-col">
           <DndContext
             sensors={sensors}
             collisionDetection={collisionDetection}
@@ -1777,8 +1735,7 @@ export function KanbanBoard() {
             }}
           >
             {isLoading ? (
-              // Loading skeletons
-              <div className="flex gap-4 overflow-x-auto flex-1 pb-0 min-h-0 animate-in fade-in duration-300">
+              <div className="flex gap-4 overflow-x-auto flex-1 pb-0 min-h-0">
                 {[1, 2, 3, 4].map((i) => (
                   <div key={i} className="flex-shrink-0 w-72 bg-muted/40 rounded-xl p-3 min-h-0">
                     <Skeleton className="h-6 w-24 mb-4" />
@@ -1791,7 +1748,7 @@ export function KanbanBoard() {
                 ))}
               </div>
             ) : (
-              <div className="flex gap-4 overflow-x-auto flex-1 pb-0 min-h-0 animate-in fade-in duration-300">
+              <div className="flex gap-4 overflow-x-auto flex-1 pb-0 min-h-0">
                 {pipelines.map((pipeline) => (
                   <KanbanColumn
                     key={pipeline.id}
@@ -1809,9 +1766,7 @@ export function KanbanBoard() {
               </div>
             )}
 
-            <DragOverlay 
-              dropAnimation={null}
-            >
+            <DragOverlay dropAnimation={null}>
               {activeLead ? (
                 <div className="rotate-2 scale-[1.02] opacity-95 cursor-grabbing pointer-events-none">
                   <KanbanCard lead={activeLead} isDragging tags={tagsMap.get(activeLead.id) || []} />
