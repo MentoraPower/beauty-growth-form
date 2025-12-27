@@ -598,17 +598,18 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
           />
         )}
 
-        {/* Main Content - uses transform for smooth GPU-accelerated animation */}
+        {/* Main Content - uses left animation to push/resize content */}
         <main 
           style={{ 
-            left: sidebarCollapsedWidth + 12 + 4,
+            left: crmSubmenuOpen 
+              ? sidebarCollapsedWidth + 12 + 4 + submenuWidth 
+              : sidebarCollapsedWidth + 12 + 4,
             top: 12,
             right: 0,
             bottom: 12,
-            transform: crmSubmenuOpen ? `translateX(${submenuWidth}px)` : 'translateX(0)',
-            willChange: 'transform',
+            willChange: 'left',
           }}
-          className="hidden lg:block fixed transition-transform duration-300 ease-out"
+          className="hidden lg:block fixed transition-[left] duration-300 ease-out"
         >
           <div className="h-full overflow-hidden relative bg-card rounded-l-2xl py-4 px-6 shadow-sm flex flex-col">
             <PageTransition>
