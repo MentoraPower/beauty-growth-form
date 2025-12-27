@@ -1800,60 +1800,72 @@ const CustomEdge = ({
     targetX,
     targetY,
     targetPosition: targetPosition || Position.Left,
-    curvature: 0.5, // Smooth S-curve
+    curvature: 0.4,
   });
 
-  const filterId = `edge-glow-${id}`.replace(/[^a-zA-Z0-9_-]/g, "_");
-  const outerGlowId = `edge-outer-glow-${id}`.replace(/[^a-zA-Z0-9_-]/g, "_");
-  const gradientId = `edge-gradient-${id}`.replace(/[^a-zA-Z0-9_-]/g, "_");
-
-  // Calculate midpoint for radial glow at center
-  const midX = (sourceX + targetX) / 2;
-  const midY = (sourceY + targetY) / 2;
+  const blurFilterId = `edge-blur-${id}`.replace(/[^a-zA-Z0-9_-]/g, "_");
+  const heavyBlurId = `edge-heavy-blur-${id}`.replace(/[^a-zA-Z0-9_-]/g, "_");
+  const widthGradientId = `edge-width-gradient-${id}`.replace(/[^a-zA-Z0-9_-]/g, "_");
+  const opacityGradientId = `edge-opacity-gradient-${id}`.replace(/[^a-zA-Z0-9_-]/g, "_");
 
   return (
     <>
       <defs>
-        {/* Soft blur filter for ethereal glow */}
-        <filter id={filterId} x="-100%" y="-100%" width="300%" height="300%">
-          <feGaussianBlur stdDeviation="6" result="blur" />
-          <feComposite in="SourceGraphic" in2="blur" operator="over" />
+        {/* Soft blur for glow effect */}
+        <filter id={blurFilterId} x="-100%" y="-100%" width="300%" height="300%">
+          <feGaussianBlur stdDeviation="3" />
         </filter>
         
-        {/* Heavy blur for outer glow */}
-        <filter id={outerGlowId} x="-100%" y="-100%" width="300%" height="300%">
-          <feGaussianBlur stdDeviation="12" result="blur" />
+        {/* Heavy blur for outer ethereal glow */}
+        <filter id={heavyBlurId} x="-100%" y="-100%" width="300%" height="300%">
+          <feGaussianBlur stdDeviation="8" />
         </filter>
         
-        {/* Gradient that brightens in the middle for variable thickness illusion */}
+        {/* Gradient for variable width illusion - bright in middle, fade at ends */}
         <linearGradient
-          id={gradientId}
+          id={widthGradientId}
           gradientUnits="userSpaceOnUse"
           x1={sourceX}
           y1={sourceY}
           x2={targetX}
           y2={targetY}
         >
-          <stop offset="0%" stopColor="rgba(249, 115, 22, 0.2)" />
-          <stop offset="15%" stopColor="rgba(249, 115, 22, 0.5)" />
-          <stop offset="40%" stopColor="rgba(255, 180, 120, 0.9)" />
-          <stop offset="50%" stopColor="rgba(255, 220, 180, 1)" />
-          <stop offset="60%" stopColor="rgba(255, 180, 120, 0.9)" />
-          <stop offset="85%" stopColor="rgba(249, 115, 22, 0.5)" />
-          <stop offset="100%" stopColor="rgba(249, 115, 22, 0.2)" />
+          <stop offset="0%" stopColor="rgba(255, 255, 255, 0)" />
+          <stop offset="8%" stopColor="rgba(255, 255, 255, 0.3)" />
+          <stop offset="25%" stopColor="rgba(255, 255, 255, 0.7)" />
+          <stop offset="50%" stopColor="rgba(255, 255, 255, 1)" />
+          <stop offset="75%" stopColor="rgba(255, 255, 255, 0.7)" />
+          <stop offset="92%" stopColor="rgba(255, 255, 255, 0.3)" />
+          <stop offset="100%" stopColor="rgba(255, 255, 255, 0)" />
+        </linearGradient>
+        
+        {/* Gradient for opacity - creates the tapered effect */}
+        <linearGradient
+          id={opacityGradientId}
+          gradientUnits="userSpaceOnUse"
+          x1={sourceX}
+          y1={sourceY}
+          x2={targetX}
+          y2={targetY}
+        >
+          <stop offset="0%" stopColor="rgba(200, 200, 210, 0.1)" />
+          <stop offset="20%" stopColor="rgba(220, 220, 230, 0.4)" />
+          <stop offset="50%" stopColor="rgba(255, 255, 255, 0.8)" />
+          <stop offset="80%" stopColor="rgba(220, 220, 230, 0.4)" />
+          <stop offset="100%" stopColor="rgba(200, 200, 210, 0.1)" />
         </linearGradient>
       </defs>
       
-      {/* Layer 1: Outermost diffuse glow - creates the ethereal spread */}
+      {/* Layer 1: Outermost ethereal glow - very wide, very blurred */}
       <path
         d={edgePath}
         fill="none"
-        stroke="rgba(249, 115, 22, 0.08)"
-        strokeWidth={50}
+        stroke={`url(#${opacityGradientId})`}
+        strokeWidth={40}
         strokeLinecap="round"
-        filter={`url(#${outerGlowId})`}
+        filter={`url(#${heavyBlurId})`}
         style={{
-          animation: "breatheGlow 4s ease-in-out infinite",
+          opacity: 0.4,
         }}
       />
       
@@ -1861,96 +1873,106 @@ const CustomEdge = ({
       <path
         d={edgePath}
         fill="none"
-        stroke="rgba(249, 115, 22, 0.12)"
-        strokeWidth={30}
+        stroke={`url(#${opacityGradientId})`}
+        strokeWidth={24}
         strokeLinecap="round"
-        filter={`url(#${outerGlowId})`}
+        filter={`url(#${heavyBlurId})`}
         style={{
-          animation: "breatheGlow 4s ease-in-out infinite 0.5s",
+          opacity: 0.5,
         }}
       />
       
-      {/* Layer 3: Medium glow layer */}
+      {/* Layer 3: Medium glow - creates body */}
       <path
         d={edgePath}
         fill="none"
-        stroke="rgba(255, 150, 80, 0.2)"
-        strokeWidth={16}
+        stroke={`url(#${widthGradientId})`}
+        strokeWidth={14}
         strokeLinecap="round"
-        filter={`url(#${filterId})`}
+        filter={`url(#${blurFilterId})`}
+        style={{
+          opacity: 0.6,
+        }}
       />
       
-      {/* Layer 4: Core glow - brighter, narrower */}
+      {/* Layer 4: Inner glow - brighter core */}
       <path
         d={edgePath}
         fill="none"
-        stroke="rgba(255, 200, 150, 0.5)"
+        stroke={`url(#${widthGradientId})`}
         strokeWidth={8}
         strokeLinecap="round"
-        filter={`url(#${filterId})`}
-      />
-      
-      {/* Layer 5: Main bright core line with gradient */}
-      <path
-        d={edgePath}
-        fill="none"
-        stroke={`url(#${gradientId})`}
-        strokeWidth={4}
-        strokeLinecap="round"
+        filter={`url(#${blurFilterId})`}
         style={{
-          animation: "breatheGlow 4s ease-in-out infinite",
+          opacity: 0.8,
         }}
       />
       
-      {/* Layer 6: Bright white core for intensity */}
+      {/* Layer 5: Core line - brightest, thinnest */}
       <path
         d={edgePath}
         fill="none"
-        stroke="rgba(255, 240, 220, 0.9)"
-        strokeWidth={2}
+        stroke={`url(#${widthGradientId})`}
+        strokeWidth={3}
         strokeLinecap="round"
+      />
+      
+      {/* Layer 6: White hot center */}
+      <path
+        d={edgePath}
+        fill="none"
+        stroke={`url(#${widthGradientId})`}
+        strokeWidth={1.5}
+        strokeLinecap="round"
+        style={{
+          opacity: 0.95,
+        }}
       />
 
-      {/* Connection point glow - Source */}
+      {/* Connection point - Source: Luminous node with radial spread */}
       <circle
         cx={sourceX}
         cy={sourceY}
-        r={12}
-        fill="none"
-        stroke="rgba(249, 115, 22, 0.15)"
-        strokeWidth={8}
-        filter={`url(#${outerGlowId})`}
-        style={{
-          animation: "breatheGlow 4s ease-in-out infinite",
-        }}
+        r={18}
+        fill="rgba(255, 255, 255, 0.08)"
+        filter={`url(#${heavyBlurId})`}
       />
       <circle
         cx={sourceX}
         cy={sourceY}
-        r={6}
-        fill="rgba(255, 220, 180, 0.4)"
-        filter={`url(#${filterId})`}
+        r={10}
+        fill="rgba(255, 255, 255, 0.15)"
+        filter={`url(#${blurFilterId})`}
+      />
+      <circle
+        cx={sourceX}
+        cy={sourceY}
+        r={4}
+        fill="rgba(255, 255, 255, 0.6)"
+        filter={`url(#${blurFilterId})`}
       />
       
-      {/* Connection point glow - Target */}
+      {/* Connection point - Target: Luminous node with radial spread */}
       <circle
         cx={targetX}
         cy={targetY}
-        r={12}
-        fill="none"
-        stroke="rgba(249, 115, 22, 0.15)"
-        strokeWidth={8}
-        filter={`url(#${outerGlowId})`}
-        style={{
-          animation: "breatheGlow 4s ease-in-out infinite 2s",
-        }}
+        r={18}
+        fill="rgba(255, 255, 255, 0.08)"
+        filter={`url(#${heavyBlurId})`}
       />
       <circle
         cx={targetX}
         cy={targetY}
-        r={6}
-        fill="rgba(255, 220, 180, 0.4)"
-        filter={`url(#${filterId})`}
+        r={10}
+        fill="rgba(255, 255, 255, 0.15)"
+        filter={`url(#${blurFilterId})`}
+      />
+      <circle
+        cx={targetX}
+        cy={targetY}
+        r={4}
+        fill="rgba(255, 255, 255, 0.6)"
+        filter={`url(#${blurFilterId})`}
       />
       
       <EdgeLabelRenderer>
