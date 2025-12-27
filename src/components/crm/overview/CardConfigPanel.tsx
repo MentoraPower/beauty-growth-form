@@ -24,7 +24,6 @@ const DATA_SOURCES: Array<{ id: DataSource; title: string }> = [
   { id: "leads_by_mql", title: "MQL vs Não-MQL" },
   { id: "recent_leads", title: "Leads Recentes" },
   { id: "leads_by_tag", title: "Leads por Tag" },
-  { id: "conversion_rate", title: "Funil de Conversão" },
 ];
 
 export function CardConfigPanel({ 

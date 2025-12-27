@@ -9,15 +9,13 @@ export type ChartType =
   | "area" 
   | "gauge" 
   | "number" 
-  | "list" 
-  | "funnel";
+  | "list";
 
 export type DataSource = 
   | "leads_by_pipeline" 
   | "leads_by_mql" 
   | "leads_over_time" 
   | "total_leads"
-  | "conversion_rate"
   | "recent_leads"
   | "leads_by_tag";
 
@@ -102,16 +100,6 @@ export const CARD_TEMPLATES: CardTemplate[] = [
     defaultSize: { widthPercent: 40, height: 320 },
     icon: "Tag",
     category: "charts",
-  },
-  {
-    id: "conversion_funnel",
-    title: "Funil de Conversão",
-    description: "Visualize a progressão dos leads pelos pipelines",
-    chartType: "funnel",
-    dataSource: "conversion_rate",
-    defaultSize: { widthPercent: 40, height: 360 },
-    icon: "Filter",
-    category: "featured",
   },
 ];
 
