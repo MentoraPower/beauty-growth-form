@@ -109,6 +109,7 @@ function SortableCard({
   onDelete,
   onResize,
   onConnectDataSource,
+  onUpdateTitle,
   isBeingDragged,
   containerWidth,
   allCards,
@@ -120,6 +121,7 @@ function SortableCard({
   onDelete: (id: string) => void;
   onResize: (id: string, size: CardSize, resizeDirection?: string) => void;
   onConnectDataSource?: (card: OverviewCard) => void;
+  onUpdateTitle?: (id: string, title: string) => void;
   isBeingDragged: boolean;
   containerWidth: number;
   allCards: OverviewCard[];
@@ -178,6 +180,7 @@ function SortableCard({
         onDelete={onDelete}
         onResize={onResize}
         onConnectDataSource={onConnectDataSource}
+        onUpdateTitle={onUpdateTitle}
         dragHandleProps={{ ...attributes, ...listeners }}
       />
     </div>
@@ -443,6 +446,11 @@ export function OverviewView({ leads, pipelines, leadTags, subOriginId, onAddDia
       return newCards;
     });
   }, [saveCardToDb, configPanelCard]);
+
+  // Handle inline title update
+  const handleUpdateTitle = useCallback((cardId: string, newTitle: string) => {
+    handleUpdateCard(cardId, { title: newTitle });
+  }, [handleUpdateCard]);
 
   const handleDeleteCard = useCallback(async (id: string) => {
     if (!subOriginId) return;
@@ -717,6 +725,7 @@ export function OverviewView({ leads, pipelines, leadTags, subOriginId, onAddDia
                   onDelete={handleDeleteCard}
                   onResize={handleResizeCard}
                   onConnectDataSource={handleConnectDataSource}
+                  onUpdateTitle={handleUpdateTitle}
                   isBeingDragged={activeId === card.id}
                   containerWidth={containerWidth}
                   allCards={sortedCards}

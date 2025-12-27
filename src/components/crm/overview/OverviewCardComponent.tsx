@@ -30,6 +30,7 @@ interface OverviewCardComponentProps {
   onDelete: (id: string) => void;
   onResize: (id: string, size: CardSize, resizeDirection?: string) => void;
   onConnectDataSource?: (card: OverviewCard) => void;
+  onUpdateTitle?: (id: string, title: string) => void;
   isDragging?: boolean;
   dragHandleProps?: React.HTMLAttributes<HTMLDivElement>;
   containerWidth?: number;
@@ -44,6 +45,7 @@ export function OverviewCardComponent({
   onDelete,
   onResize,
   onConnectDataSource,
+  onUpdateTitle,
   isDragging,
   dragHandleProps,
   containerWidth: externalContainerWidth,
@@ -58,6 +60,11 @@ export function OverviewCardComponent({
     top: false,
     bottom: false,
   });
+  
+  // Inline title editing state
+  const [isEditingTitle, setIsEditingTitle] = useState(false);
+  const [editedTitle, setEditedTitle] = useState(card.title);
+  const titleInputRef = useRef<HTMLInputElement>(null);
 
   // Use external width if provided (for DragOverlay), otherwise use measured width
   const containerWidth = externalContainerWidth ?? measuredContainerWidth;
@@ -82,6 +89,39 @@ export function OverviewCardComponent({
     }
   }, [card.size, isResizing]);
 
+  // Sync title when card changes externally
+  useEffect(() => {
+    setEditedTitle(card.title);
+  }, [card.title]);
+
+  // Focus input when editing starts
+  useEffect(() => {
+    if (isEditingTitle && titleInputRef.current) {
+      titleInputRef.current.focus();
+      titleInputRef.current.select();
+    }
+  }, [isEditingTitle]);
+
+  // Handle title save
+  const handleTitleSave = useCallback(() => {
+    const trimmed = editedTitle.trim();
+    if (trimmed && trimmed !== card.title) {
+      onUpdateTitle?.(card.id, trimmed);
+    } else {
+      setEditedTitle(card.title); // Reset if empty
+    }
+    setIsEditingTitle(false);
+  }, [editedTitle, card.title, card.id, onUpdateTitle]);
+
+  const handleTitleKeyDown = useCallback((e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      handleTitleSave();
+    } else if (e.key === 'Escape') {
+      setEditedTitle(card.title);
+      setIsEditingTitle(false);
+    }
+  }, [handleTitleSave, card.title]);
   // Monitor parent container width with ResizeObserver + window resize listener
   // Skip if external width is provided
   useEffect(() => {
@@ -287,7 +327,7 @@ export function OverviewCardComponent({
     >
       {/* Header */}
       <div className="flex items-center justify-between mb-3">
-        <div className="flex items-center min-w-0">
+        <div className="flex items-center min-w-0 flex-1">
           {/* Drag handle - hidden by default, slides in on hover */}
           <div
             {...dragHandleProps}
@@ -297,9 +337,30 @@ export function OverviewCardComponent({
           >
             <GripVertical className="h-4 w-4" />
           </div>
-          <h3 className="font-bold text-sm text-foreground truncate 
-                        group-hover:ml-1
-                        transition-all duration-300 ease-out">{card.title}</h3>
+          {isEditingTitle ? (
+            <input
+              ref={titleInputRef}
+              type="text"
+              value={editedTitle}
+              onChange={(e) => setEditedTitle(e.target.value)}
+              onBlur={handleTitleSave}
+              onKeyDown={handleTitleKeyDown}
+              className="font-bold text-sm text-foreground bg-transparent border-none outline-none 
+                        focus:ring-0 p-0 m-0 w-full min-w-0
+                        group-hover:ml-1 transition-all duration-300 ease-out"
+              data-no-dnd="true"
+            />
+          ) : (
+            <h3 
+              className="font-bold text-sm text-foreground truncate cursor-text
+                        group-hover:ml-1 hover:text-primary/80
+                        transition-all duration-300 ease-out"
+              onClick={() => setIsEditingTitle(true)}
+              title="Clique para editar"
+            >
+              {card.title}
+            </h3>
+          )}
         </div>
         <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
           <Button 
