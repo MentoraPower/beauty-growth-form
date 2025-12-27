@@ -1792,189 +1792,46 @@ const CustomEdge = ({
   targetPosition,
   data,
 }: CustomEdgeProps) => {
-  // Use getBezierPath for smooth curved S-shape edges
-  const [edgePath, labelX, labelY] = getBezierPath({
+  // Use getSmoothStepPath for clean orthogonal (90°) edges
+  const [edgePath, labelX, labelY] = getSmoothStepPath({
     sourceX,
     sourceY,
     sourcePosition: sourcePosition || Position.Right,
     targetX,
     targetY,
     targetPosition: targetPosition || Position.Left,
-    curvature: 0.4,
+    borderRadius: 0, // Sharp 90° corners for straight lines
   });
 
-  const blurFilterId = `edge-blur-${id}`.replace(/[^a-zA-Z0-9_-]/g, "_");
-  const heavyBlurId = `edge-heavy-blur-${id}`.replace(/[^a-zA-Z0-9_-]/g, "_");
-  const widthGradientId = `edge-width-gradient-${id}`.replace(/[^a-zA-Z0-9_-]/g, "_");
-  const opacityGradientId = `edge-opacity-gradient-${id}`.replace(/[^a-zA-Z0-9_-]/g, "_");
+  const gradientId = `edge-gradient-${id}`.replace(/[^a-zA-Z0-9_-]/g, "_");
 
   return (
     <>
       <defs>
-        {/* Soft blur for glow effect */}
-        <filter id={blurFilterId} x="-100%" y="-100%" width="300%" height="300%">
-          <feGaussianBlur stdDeviation="3" />
-        </filter>
-        
-        {/* Heavy blur for outer ethereal glow */}
-        <filter id={heavyBlurId} x="-100%" y="-100%" width="300%" height="300%">
-          <feGaussianBlur stdDeviation="8" />
-        </filter>
-        
-        {/* Gradient for variable width illusion - bright in middle, fade at ends */}
         <linearGradient
-          id={widthGradientId}
+          id={gradientId}
           gradientUnits="userSpaceOnUse"
           x1={sourceX}
           y1={sourceY}
           x2={targetX}
           y2={targetY}
         >
-          <stop offset="0%" stopColor="rgba(255, 255, 255, 0)" />
-          <stop offset="8%" stopColor="rgba(255, 255, 255, 0.3)" />
-          <stop offset="25%" stopColor="rgba(255, 255, 255, 0.7)" />
-          <stop offset="50%" stopColor="rgba(255, 255, 255, 1)" />
-          <stop offset="75%" stopColor="rgba(255, 255, 255, 0.7)" />
-          <stop offset="92%" stopColor="rgba(255, 255, 255, 0.3)" />
-          <stop offset="100%" stopColor="rgba(255, 255, 255, 0)" />
-        </linearGradient>
-        
-        {/* Gradient for opacity - creates the tapered effect */}
-        <linearGradient
-          id={opacityGradientId}
-          gradientUnits="userSpaceOnUse"
-          x1={sourceX}
-          y1={sourceY}
-          x2={targetX}
-          y2={targetY}
-        >
-          <stop offset="0%" stopColor="rgba(200, 200, 210, 0.1)" />
-          <stop offset="20%" stopColor="rgba(220, 220, 230, 0.4)" />
-          <stop offset="50%" stopColor="rgba(255, 255, 255, 0.8)" />
-          <stop offset="80%" stopColor="rgba(220, 220, 230, 0.4)" />
-          <stop offset="100%" stopColor="rgba(200, 200, 210, 0.1)" />
+          <stop offset="0%" stopColor="#F97316" />
+          <stop offset="100%" stopColor="#EA580C" />
         </linearGradient>
       </defs>
-      
-      {/* Layer 1: Outermost ethereal glow - very wide, very blurred */}
       <path
         d={edgePath}
         fill="none"
-        stroke={`url(#${opacityGradientId})`}
-        strokeWidth={40}
-        strokeLinecap="round"
-        filter={`url(#${heavyBlurId})`}
-        style={{
-          opacity: 0.4,
-        }}
-      />
-      
-      {/* Layer 2: Wide soft glow */}
-      <path
-        d={edgePath}
-        fill="none"
-        stroke={`url(#${opacityGradientId})`}
-        strokeWidth={24}
-        strokeLinecap="round"
-        filter={`url(#${heavyBlurId})`}
-        style={{
-          opacity: 0.5,
-        }}
-      />
-      
-      {/* Layer 3: Medium glow - creates body */}
-      <path
-        d={edgePath}
-        fill="none"
-        stroke={`url(#${widthGradientId})`}
-        strokeWidth={14}
-        strokeLinecap="round"
-        filter={`url(#${blurFilterId})`}
-        style={{
-          opacity: 0.6,
-        }}
-      />
-      
-      {/* Layer 4: Inner glow - brighter core */}
-      <path
-        d={edgePath}
-        fill="none"
-        stroke={`url(#${widthGradientId})`}
-        strokeWidth={8}
-        strokeLinecap="round"
-        filter={`url(#${blurFilterId})`}
-        style={{
-          opacity: 0.8,
-        }}
-      />
-      
-      {/* Layer 5: Core line - brightest, thinnest */}
-      <path
-        d={edgePath}
-        fill="none"
-        stroke={`url(#${widthGradientId})`}
+        stroke={`url(#${gradientId})`}
         strokeWidth={3}
+        strokeDasharray="8 5"
         strokeLinecap="round"
-      />
-      
-      {/* Layer 6: White hot center */}
-      <path
-        d={edgePath}
-        fill="none"
-        stroke={`url(#${widthGradientId})`}
-        strokeWidth={1.5}
-        strokeLinecap="round"
+        strokeLinejoin="round"
         style={{
-          opacity: 0.95,
+          animation: "flowDash 1s linear infinite",
         }}
       />
-
-      {/* Connection point - Source: Luminous node with radial spread */}
-      <circle
-        cx={sourceX}
-        cy={sourceY}
-        r={18}
-        fill="rgba(255, 255, 255, 0.08)"
-        filter={`url(#${heavyBlurId})`}
-      />
-      <circle
-        cx={sourceX}
-        cy={sourceY}
-        r={10}
-        fill="rgba(255, 255, 255, 0.15)"
-        filter={`url(#${blurFilterId})`}
-      />
-      <circle
-        cx={sourceX}
-        cy={sourceY}
-        r={4}
-        fill="rgba(255, 255, 255, 0.6)"
-        filter={`url(#${blurFilterId})`}
-      />
-      
-      {/* Connection point - Target: Luminous node with radial spread */}
-      <circle
-        cx={targetX}
-        cy={targetY}
-        r={18}
-        fill="rgba(255, 255, 255, 0.08)"
-        filter={`url(#${heavyBlurId})`}
-      />
-      <circle
-        cx={targetX}
-        cy={targetY}
-        r={10}
-        fill="rgba(255, 255, 255, 0.15)"
-        filter={`url(#${blurFilterId})`}
-      />
-      <circle
-        cx={targetX}
-        cy={targetY}
-        r={4}
-        fill="rgba(255, 255, 255, 0.6)"
-        filter={`url(#${blurFilterId})`}
-      />
-      
       <EdgeLabelRenderer>
         <div
           style={{
