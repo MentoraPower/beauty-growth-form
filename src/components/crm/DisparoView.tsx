@@ -1800,7 +1800,7 @@ INSTRUÇÕES PARA VOCÊ (A IA):
                         <p className="text-[15px] leading-relaxed whitespace-pre-wrap">{msg.content}</p>
                       </div>
                     ) : (
-                      <div className="w-full">
+                      <div className="w-full group">
                         {msg.content && (
                           <div className="max-w-[85%]">
                             <p className="text-[15px] leading-relaxed whitespace-pre-wrap text-foreground">
