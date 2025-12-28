@@ -14,12 +14,18 @@ interface DisparoViewProps {
   subOriginId: string | null;
 }
 
+interface MessageComponentData {
+  type: 'leads_preview' | 'html_editor' | 'origins_list' | 'dispatch_progress' | 'csv_preview';
+  data?: any;
+}
+
 interface Message {
   id: string;
   content: string;
   role: "user" | "assistant";
   timestamp: Date;
   component?: React.ReactNode;
+  componentData?: MessageComponentData; // Serializable data for reconstruction
 }
 
 interface Origin {
@@ -101,6 +107,46 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
   const [initialLoadDone, setInitialLoadDone] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
+  // Function to reconstruct component from componentData
+  const reconstructComponent = useCallback((componentData: MessageComponentData, messageId: string): React.ReactNode => {
+    switch (componentData.type) {
+      case 'leads_preview':
+        return (
+          <div className="mt-4 space-y-4">
+            <LeadsPreviewComponent preview={componentData.data.preview} />
+            <HtmlEditorComponent 
+              onSubmit={(html) => handleHtmlSubmitFromReload(html, componentData.data.subOriginId, componentData.data.dispatchType)}
+            />
+          </div>
+        );
+      case 'dispatch_progress':
+        return (
+          <div className="mt-4">
+            <DispatchProgressTable
+              jobId={componentData.data.jobId}
+              onCommand={handleCommand}
+            />
+          </div>
+        );
+      case 'origins_list':
+        return (
+          <div className="mt-4 space-y-4">
+            <OriginsListComponent 
+              origins={componentData.data.origins}
+              onSelect={handleOriginSelect}
+            />
+          </div>
+        );
+      default:
+        return null;
+    }
+  }, []);
+
+  // Handle HTML submit from reloaded conversation
+  const handleHtmlSubmitFromReload = async (html: string, subOriginId: string, type: string) => {
+    handleHtmlSubmit(html, subOriginId, type);
+  };
+
   // Load conversation from URL on mount
   useEffect(() => {
     const convId = searchParams.get('conv');
@@ -116,12 +162,16 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
 
           if (error) throw error;
 
-          const loadedMessages: Message[] = ((data.messages as any[]) || []).map((m: any) => ({
-            id: m.id,
-            content: m.content,
-            role: m.role as "user" | "assistant",
-            timestamp: new Date(m.timestamp),
-          }));
+          const loadedMessages: Message[] = ((data.messages as any[]) || []).map((m: any) => {
+            const msg: Message = {
+              id: m.id,
+              content: m.content,
+              role: m.role as "user" | "assistant",
+              timestamp: new Date(m.timestamp),
+              componentData: m.componentData || undefined,
+            };
+            return msg;
+          });
 
           setCurrentConversationId(convId);
           setMessages(loadedMessages);
@@ -139,6 +189,24 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
       setInitialLoadDone(true);
     }
   }, [searchParams, initialLoadDone]);
+
+  // Reconstruct components after messages are loaded
+  useEffect(() => {
+    if (initialLoadDone && messages.length > 0) {
+      const needsReconstruction = messages.some(m => m.componentData && !m.component);
+      if (needsReconstruction) {
+        setMessages(prev => prev.map(m => {
+          if (m.componentData && !m.component) {
+            return {
+              ...m,
+              component: reconstructComponent(m.componentData, m.id)
+            };
+          }
+          return m;
+        }));
+      }
+    }
+  }, [initialLoadDone, messages, reconstructComponent]);
 
   // Update URL when conversation changes
   useEffect(() => {
@@ -209,6 +277,10 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
           content: `Encontrei ${result.data.validLeads} leads válidos na lista "${subOriginName}"`,
           role: "assistant",
           timestamp: new Date(),
+          componentData: {
+            type: 'leads_preview',
+            data: { preview: result.data, subOriginId, dispatchType: type }
+          },
           component: (
             <div className="mt-4 space-y-4">
               {previewComponent}
@@ -260,6 +332,10 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
           content: `Disparo iniciado. Enviando para ${result.data.validLeads} leads...`,
           role: "assistant",
           timestamp: new Date(),
+          componentData: {
+            type: 'dispatch_progress',
+            data: { jobId: result.data.jobId }
+          },
           component: (
             <div className="mt-4">
               <DispatchProgressTable
@@ -530,6 +606,7 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
            messageContent.toLowerCase().includes('sistema'));
         
         let finalComponents = components;
+        let originsData: any = null;
         
         if (userChoseCRM && components.length === 0) {
           // Auto-fetch origins and show table
@@ -543,6 +620,7 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
             if (originsResponse.ok) {
               const originsResult = await originsResponse.json();
               if (originsResult.type === 'origins') {
+                originsData = originsResult.data;
                 finalComponents = [
                   <OriginsListComponent 
                     key={`origins-${Date.now()}`}
@@ -557,12 +635,22 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
           }
         }
         
+        // Determine componentData based on what was shown
+        let componentData: MessageComponentData | undefined;
+        if (originsData) {
+          componentData = {
+            type: 'origins_list',
+            data: { origins: originsData }
+          };
+        }
+        
         setMessages(prev => 
           prev.map(m => 
             m.id === assistantMessageId 
               ? { 
                   ...m, 
                   content: cleanContent,
+                  componentData,
                   component: finalComponents.length > 0 ? (
                     <div className="mt-4 space-y-4">
                       {finalComponents}
