@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect, memo, useRef, useMemo } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { Menu, X, LogOut, LayoutGrid, Settings, ChevronDown, User, Inbox, ChevronsLeft, ChevronsRight, SquareUser, Send } from "lucide-react";
+import { Menu, X, LogOut, LayoutGrid, Settings, ChevronDown, ChevronRight, User, Inbox, ChevronsLeft, ChevronsRight, SquareUser, Send, Mail, MessageSquare } from "lucide-react";
 import { cn } from "@/lib/utils";
 import scaleLogo from "@/assets/scale-logo-menu.png";
 import scaleLogoFull from "@/assets/scale-logo-full.png";
@@ -58,21 +58,31 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
 
   // Initialize CRM submenu state - always start closed to enable animation
   const [crmSubmenuOpen, setCrmSubmenuOpen] = useState(false);
+  const [disparoSubmenuOpen, setDisparoSubmenuOpen] = useState(false);
   const hasInitialized = useRef(false);
 
-  // Open submenu with delay after mount to enable smooth animation
+  // Open submenus with delay after mount to enable smooth animation
   useEffect(() => {
     if (hasInitialized.current) return;
     hasInitialized.current = true;
 
-    const saved = localStorage.getItem('crm_submenu_open');
-    const shouldBeOpen = saved !== 'false' && 
+    const savedCrm = localStorage.getItem('crm_submenu_open');
+    const shouldCrmBeOpen = savedCrm !== 'false' && 
       (location.pathname.startsWith("/admin/crm") || location.pathname === "/admin");
     
-    if (shouldBeOpen) {
-      // Small delay to allow initial render, then animate open
+    const savedDisparo = localStorage.getItem('disparo_submenu_open');
+    const shouldDisparoBeOpen = savedDisparo === 'true' || isDisparoActive;
+    
+    if (shouldCrmBeOpen) {
       const timer = setTimeout(() => {
         setCrmSubmenuOpen(true);
+      }, 50);
+      return () => clearTimeout(timer);
+    }
+    
+    if (shouldDisparoBeOpen) {
+      const timer = setTimeout(() => {
+        setDisparoSubmenuOpen(true);
       }, 50);
       return () => clearTimeout(timer);
     }
@@ -83,10 +93,14 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
     setCrmSubmenuOpen(false);
   }, []);
 
-  // Persist submenu state to localStorage
+  // Persist submenu states to localStorage
   useEffect(() => {
     localStorage.setItem('crm_submenu_open', String(crmSubmenuOpen));
   }, [crmSubmenuOpen]);
+
+  useEffect(() => {
+    localStorage.setItem('disparo_submenu_open', String(disparoSubmenuOpen));
+  }, [disparoSubmenuOpen]);
 
   // Sync activePanel with current route (without forcing submenu open)
   useEffect(() => {
@@ -382,27 +396,69 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
                   </span>
                 </button>
 
-                {/* Disparo */}
-                <button
-                  onClick={() => {
-                    setActivePanel('disparo');
-                    setCrmSubmenuOpen(false);
-                    navigate('/admin/disparo');
-                  }}
-                  className={cn(
-                    "relative flex items-center h-10 rounded-lg transition-all duration-200",
-                    activePanel === 'disparo'
-                      ? "bg-white/10 text-white before:absolute before:-left-3 before:top-1/2 before:-translate-y-1/2 before:h-[70%] before:w-1.5 before:rounded-r-full before:bg-gradient-to-b before:from-orange-500 before:to-amber-500"
-                      : "text-white/50 hover:bg-white/5 hover:text-white/70"
-                  )}
-                >
-                  <div className="w-10 flex items-center justify-center flex-shrink-0">
-                    <Send className="h-5 w-5" strokeWidth={1.5} style={{ opacity: activePanel === 'disparo' ? 1 : 0.5 }} />
+                {/* Disparo with Submenu */}
+                <div className="flex flex-col">
+                  <button
+                    onClick={() => {
+                      setDisparoSubmenuOpen(!disparoSubmenuOpen);
+                      setActivePanel('disparo');
+                      setCrmSubmenuOpen(false);
+                      navigate('/admin/disparo');
+                    }}
+                    className={cn(
+                      "relative flex items-center h-10 rounded-lg transition-all duration-200",
+                      activePanel === 'disparo'
+                        ? "bg-white/10 text-white before:absolute before:-left-3 before:top-1/2 before:-translate-y-1/2 before:h-[70%] before:w-1.5 before:rounded-r-full before:bg-gradient-to-b before:from-orange-500 before:to-amber-500"
+                        : "text-white/50 hover:bg-white/5 hover:text-white/70"
+                    )}
+                  >
+                    <div className="w-10 flex items-center justify-center flex-shrink-0">
+                      <Send className="h-5 w-5" strokeWidth={1.5} style={{ opacity: activePanel === 'disparo' ? 1 : 0.5 }} />
+                    </div>
+                    <div className="flex-1 flex items-center justify-between transition-all duration-200 overflow-hidden opacity-0 w-0 group-hover:opacity-100 group-hover:w-auto pr-2">
+                      <span className="text-sm font-medium whitespace-nowrap">
+                        Disparo
+                      </span>
+                      <ChevronDown 
+                        className={cn(
+                          "h-4 w-4 transition-transform duration-200 flex-shrink-0 ml-2",
+                          disparoSubmenuOpen && "rotate-180"
+                        )} 
+                      />
+                    </div>
+                  </button>
+                  
+                  {/* Disparo Submenu - Collapsible */}
+                  <div 
+                    className={cn(
+                      "overflow-hidden transition-all duration-300 ease-out ml-3",
+                      disparoSubmenuOpen ? "max-h-32 opacity-100 mt-1" : "max-h-0 opacity-0"
+                    )}
+                  >
+                    <div className="bg-black/40 rounded-lg py-1 px-1">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          navigate('/admin/disparo?type=email');
+                        }}
+                        className="flex items-center gap-2 w-full px-3 py-2 text-xs text-white/70 hover:text-white hover:bg-white/10 rounded-md transition-colors"
+                      >
+                        <Mail className="h-3.5 w-3.5" strokeWidth={1.5} />
+                        <span className="opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">Email</span>
+                      </button>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          navigate('/admin/disparo?type=whatsapp');
+                        }}
+                        className="flex items-center gap-2 w-full px-3 py-2 text-xs text-white/70 hover:text-white hover:bg-white/10 rounded-md transition-colors"
+                      >
+                        <MessageSquare className="h-3.5 w-3.5" strokeWidth={1.5} />
+                        <span className="opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">WhatsApp</span>
+                      </button>
+                    </div>
                   </div>
-                  <span className="text-sm font-medium whitespace-nowrap transition-all duration-200 overflow-hidden opacity-0 w-0 group-hover:opacity-100 group-hover:w-auto">
-                    Disparo
-                  </span>
-                </button>
+                </div>
               </div>
             </nav>
 
