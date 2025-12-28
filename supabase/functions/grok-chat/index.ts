@@ -309,8 +309,11 @@ serve(async (req) => {
           }
         }) || [];
 
-        // Sistema paralelo: 2 emails a cada 150ms
-        const estimatedMinutes = Math.max(Math.ceil((validCount / 2) * 0.15 / 60), 2);
+        // Cálculo real: PARALLEL_EMAILS=2, INTERVAL_SECONDS=5
+        // Cada batch de 2 emails leva 5 segundos
+        const INTERVAL_SECONDS = 5;
+        const PARALLEL_EMAILS = 2;
+        const estimatedMinutes = Math.max(Math.ceil((validCount / PARALLEL_EMAILS) * INTERVAL_SECONDS / 60), 1);
 
         return new Response(JSON.stringify({
           type: 'leads_preview',
@@ -322,6 +325,7 @@ serve(async (req) => {
             totalLeads: totalCount,
             validLeads: validCount,
             invalidLeads: totalCount - validCount,
+            intervalSeconds: INTERVAL_SECONDS,
             estimatedMinutes,
             leads: validSamples.map(l => ({
               name: l.name,
@@ -383,6 +387,7 @@ serve(async (req) => {
             sub_origin_name: subOrigin?.nome,
             total_leads: totalCount || 0,
             valid_leads: validCount,
+            interval_seconds: 5, // Explícito: 5s entre batches de 2 emails
             status: 'running',
             started_at: new Date().toISOString(),
             message_template: templateContent || null,
