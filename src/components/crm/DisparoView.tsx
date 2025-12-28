@@ -106,6 +106,15 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
   const [initialLoadDone, setInitialLoadDone] = useState(false);
   const [pendingEmailContext, setPendingEmailContext] = useState<{ subOriginId: string; dispatchType: string } | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const chatScrollRef = useRef<HTMLDivElement>(null);
+  const shouldAutoScrollRef = useRef(true);
+
+  const handleChatScroll = useCallback(() => {
+    const el = chatScrollRef.current;
+    if (!el) return;
+    const distanceFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
+    shouldAutoScrollRef.current = distanceFromBottom < 80;
+  }, []);
 
   // Function to reconstruct component from componentData
   function reconstructMessageComponent(componentData: MessageComponentData, messageId: string): React.ReactNode {
@@ -396,9 +405,12 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
     lastSavedMessagesCount.current = messages.length;
   }, [currentConversationId]);
 
-  // Auto-scroll to bottom when messages change
+  // Auto-scroll to bottom when messages change (only if user is near the bottom)
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    const el = chatScrollRef.current;
+    if (!el) return;
+    if (!shouldAutoScrollRef.current) return;
+    el.scrollTop = el.scrollHeight;
   }, [messages]);
 
   // Handle origin selection from table
@@ -786,6 +798,7 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
 
   const handleSend = async (message: string, files?: File[]) => {
     if (!message.trim() && (!files || files.length === 0)) return;
+    shouldAutoScrollRef.current = true;
     
     // Check if there's a CSV file
     let csvContent = '';
@@ -1163,7 +1176,7 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
       ) : (
         <>
           {/* Chat messages area */}
-          <div className="flex-1 overflow-y-auto min-h-0 p-6">
+          <div ref={chatScrollRef} onScroll={handleChatScroll} className="flex-1 overflow-y-auto min-h-0 p-6">
             <div className="max-w-3xl mx-auto space-y-4">
               {messages.map((msg) => (
                 <div
