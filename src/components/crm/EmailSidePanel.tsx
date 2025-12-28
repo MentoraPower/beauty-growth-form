@@ -166,58 +166,123 @@ export function EmailSidePanel({
     };
 
     if (prevContent !== newContent && isEditing) {
-      const { startDiff, endDiffNew } = findDiff();
+      const { startDiff, endDiffOld, endDiffNew } = findDiff();
       const lineInfo = getLineInfo(newContent, startDiff);
+      const oldPart = prevContent.slice(startDiff, endDiffOld);
+      const newPart = newContent.slice(startDiff, endDiffNew);
+      const isDeleting = oldPart.length > newPart.length;
+      const isInserting = newPart.length > oldPart.length;
+      
+      // Determine action text
+      let actionText = 'Editando...';
+      if (isDeleting && newPart.length === 0) {
+        actionText = 'Removendo...';
+      } else if (isInserting && oldPart.length === 0) {
+        actionText = 'Inserindo...';
+      } else {
+        actionText = 'Substituindo...';
+      }
       
       // Show editing indicator
       setEditingIndicator({
         line: lineInfo.line,
-        action: endDiffNew > startDiff ? 'Editando...' : 'Removendo...'
+        action: actionText
       });
 
-      // Highlight the changed area
-      setHighlightRange({ start: startDiff, end: endDiffNew });
-
-      // Scroll to the edit position
+      // Scroll to the edit position smoothly
       if (preRef.current) {
-        const lineHeight = 18; // approximate line height in pixels
-        const scrollTarget = (lineInfo.line - 3) * lineHeight;
+        const lineHeight = 18;
+        const scrollTarget = (lineInfo.line - 5) * lineHeight;
         preRef.current.scrollTo({
           top: Math.max(0, scrollTarget),
           behavior: 'smooth'
         });
       }
 
-      // Animate the edit with typewriter effect
+      // Cancel any existing animation
       if (editAnimationRef.current) {
         cancelAnimationFrame(editAnimationRef.current);
       }
 
-      const oldDisplayed = prevContent.slice(0, startDiff);
-      const newPart = newContent.slice(startDiff, endDiffNew);
+      const beforePart = prevContent.slice(0, startDiff);
       const afterPart = newContent.slice(endDiffNew);
       
-      let charIndex = 0;
-      const animateEdit = () => {
-        if (charIndex <= newPart.length) {
-          setDisplayedContent(oldDisplayed + newPart.slice(0, charIndex) + afterPart);
-          charIndex += 2; // 2 chars at a time for speed
-          editAnimationRef.current = requestAnimationFrame(() => {
-            setTimeout(animateEdit, 8);
-          });
-        } else {
-          setDisplayedContent(newContent);
-          displayedIndexRef.current = newContent.length;
-          
-          // Clear highlight after a short delay
-          setTimeout(() => {
-            setHighlightRange(undefined);
-            setEditingIndicator(null);
-          }, 800);
-        }
-      };
+      // Phase 1: If deleting, show deletion animation first
+      if (isDeleting || (oldPart.length > 0 && newPart !== oldPart)) {
+        let deleteIndex = oldPart.length;
+        
+        const animateDelete = () => {
+          if (deleteIndex > 0) {
+            deleteIndex = Math.max(0, deleteIndex - 3); // Delete 3 chars at a time
+            const currentOldPart = oldPart.slice(0, deleteIndex);
+            setDisplayedContent(beforePart + currentOldPart + afterPart);
+            setHighlightRange({ 
+              start: startDiff, 
+              end: startDiff + deleteIndex 
+            });
+            editAnimationRef.current = requestAnimationFrame(() => {
+              setTimeout(animateDelete, 12);
+            });
+          } else {
+            // Phase 2: Now insert new content
+            if (newPart.length > 0) {
+              let insertIndex = 0;
+              const animateInsert = () => {
+                if (insertIndex <= newPart.length) {
+                  const currentNewPart = newPart.slice(0, insertIndex);
+                  setDisplayedContent(beforePart + currentNewPart + afterPart);
+                  setHighlightRange({ 
+                    start: startDiff, 
+                    end: startDiff + insertIndex 
+                  });
+                  insertIndex += 2; // Insert 2 chars at a time
+                  editAnimationRef.current = requestAnimationFrame(() => {
+                    setTimeout(animateInsert, 10);
+                  });
+                } else {
+                  finishAnimation();
+                }
+              };
+              animateInsert();
+            } else {
+              finishAnimation();
+            }
+          }
+        };
+        
+        animateDelete();
+      } else {
+        // Just inserting new content
+        let insertIndex = 0;
+        const animateInsert = () => {
+          if (insertIndex <= newPart.length) {
+            const currentNewPart = newPart.slice(0, insertIndex);
+            setDisplayedContent(beforePart + currentNewPart + afterPart);
+            setHighlightRange({ 
+              start: startDiff, 
+              end: startDiff + insertIndex 
+            });
+            insertIndex += 2;
+            editAnimationRef.current = requestAnimationFrame(() => {
+              setTimeout(animateInsert, 10);
+            });
+          } else {
+            finishAnimation();
+          }
+        };
+        animateInsert();
+      }
       
-      animateEdit();
+      const finishAnimation = () => {
+        setDisplayedContent(newContent);
+        displayedIndexRef.current = newContent.length;
+        
+        // Keep highlight visible briefly then fade out
+        setTimeout(() => {
+          setHighlightRange(undefined);
+          setEditingIndicator(null);
+        }, 1000);
+      };
     }
 
     previousContentRef.current = newContent;
