@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { ChevronDown, ChevronRight, Plus, MoreVertical, Trash2, Search, Pencil } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -123,77 +123,155 @@ export function DisparoConversationsMenu({
     fetchConversations();
   }, []);
 
-  // Subscribe to realtime updates for active dispatches with optimistic updates
+  // Check if there are any active dispatches
+  const hasActiveDispatches = useCallback(() => {
+    return conversations.some(c => c.hasActiveDispatch);
+  }, [conversations]);
+
+  // Polling fallback for active dispatches
+  const refreshActiveDispatches = useCallback(async () => {
+    console.log('[DisparoMenu] Polling for active dispatches');
+    const { data: activeJobs } = await supabase
+      .from('dispatch_jobs')
+      .select('id, conversation_id, status, sent_count, valid_leads')
+      .in('status', ['pending', 'running', 'paused']);
+
+    if (activeJobs && activeJobs.length > 0) {
+      setConversations(prev => prev.map(conv => {
+        const activeJob = activeJobs.find(j => j.conversation_id === conv.id);
+        if (activeJob) {
+          const progress = activeJob.valid_leads > 0
+            ? Math.round((activeJob.sent_count / activeJob.valid_leads) * 100)
+            : 0;
+          return {
+            ...conv,
+            hasActiveDispatch: true,
+            activeDispatchProgress: progress,
+            activeDispatchStatus: activeJob.status
+          };
+        }
+        return conv;
+      }));
+    }
+  }, []);
+
+  // Resilient realtime subscription with polling fallback
   useEffect(() => {
-    console.log('[DisparoMenu] Setting up realtime subscription');
+    console.log('[DisparoMenu] Setting up resilient realtime subscription');
     
-    const channel = supabase
-      .channel('dispatch-menu-updates')
-      .on('postgres_changes', {
-        event: 'UPDATE',
-        schema: 'public',
-        table: 'dispatch_jobs'
-      }, (payload) => {
-        const updatedJob = payload.new as any;
-        console.log('[DisparoMenu] Job UPDATE received:', {
-          jobId: updatedJob.id,
-          conversationId: updatedJob.conversation_id,
-          status: updatedJob.status,
-          sent: updatedJob.sent_count,
-          total: updatedJob.valid_leads,
-          currentLead: updatedJob.current_lead_name
+    let isSubscribed = false;
+    let reconnectAttempt = 0;
+    let reconnectTimeout: ReturnType<typeof setTimeout> | null = null;
+    let pollingInterval: ReturnType<typeof setInterval> | null = null;
+    let channel: ReturnType<typeof supabase.channel> | null = null;
+    
+    const RECONNECT_DELAYS = [1000, 2000, 4000, 8000, 16000, 30000];
+
+    const handleUpdate = (payload: any) => {
+      const updatedJob = payload.new;
+      console.log('[DisparoMenu] Job UPDATE:', updatedJob.id, 'sent:', updatedJob.sent_count, '/', updatedJob.valid_leads);
+      
+      setConversations(prev => prev.map(conv => {
+        if (conv.id === updatedJob.conversation_id) {
+          const isActive = ['pending', 'running', 'paused'].includes(updatedJob.status);
+          const progress = updatedJob.valid_leads > 0
+            ? Math.round((updatedJob.sent_count / updatedJob.valid_leads) * 100)
+            : 0;
+          return {
+            ...conv,
+            hasActiveDispatch: isActive,
+            activeDispatchProgress: progress,
+            activeDispatchStatus: updatedJob.status
+          };
+        }
+        return conv;
+      }));
+    };
+
+    const handleInsert = (payload: any) => {
+      const newJob = payload.new;
+      console.log('[DisparoMenu] Job INSERT:', newJob.id);
+      
+      setConversations(prev => prev.map(conv => {
+        if (conv.id === newJob.conversation_id) {
+          return {
+            ...conv,
+            hasActiveDispatch: true,
+            activeDispatchProgress: 0,
+            activeDispatchStatus: newJob.status
+          };
+        }
+        return conv;
+      }));
+    };
+
+    const subscribe = () => {
+      if (channel) {
+        supabase.removeChannel(channel);
+      }
+
+      channel = supabase
+        .channel('dispatch-menu-updates')
+        .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'dispatch_jobs' }, handleUpdate)
+        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'dispatch_jobs' }, handleInsert)
+        .subscribe((status) => {
+          console.log('[DisparoMenu] Channel status:', status);
+          
+          if (status === 'SUBSCRIBED') {
+            isSubscribed = true;
+            reconnectAttempt = 0;
+            if (reconnectTimeout) clearTimeout(reconnectTimeout);
+          } else if (status === 'CLOSED' || status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+            isSubscribed = false;
+            scheduleReconnect();
+          }
         });
-        
-        // Optimistic update - directly update state without refetching
-        setConversations(prev => prev.map(conv => {
-          if (conv.id === updatedJob.conversation_id) {
-            const isActive = ['pending', 'running', 'paused'].includes(updatedJob.status);
-            const progress = updatedJob.valid_leads > 0
-              ? Math.round((updatedJob.sent_count / updatedJob.valid_leads) * 100)
-              : 0;
-            
-            console.log('[DisparoMenu] Updating conversation:', conv.id, 'progress:', progress, '%');
-            
-            return {
-              ...conv,
-              hasActiveDispatch: isActive,
-              activeDispatchProgress: progress,
-              activeDispatchStatus: updatedJob.status
-            };
-          }
-          return conv;
-        }));
-      })
-      .on('postgres_changes', {
-        event: 'INSERT',
-        schema: 'public',
-        table: 'dispatch_jobs'
-      }, (payload) => {
-        const newJob = payload.new as any;
-        console.log('[DisparoMenu] Job INSERT received:', newJob.id, 'for conversation:', newJob.conversation_id);
-        
-        // Add dispatch info to matching conversation
-        setConversations(prev => prev.map(conv => {
-          if (conv.id === newJob.conversation_id) {
-            return {
-              ...conv,
-              hasActiveDispatch: true,
-              activeDispatchProgress: 0,
-              activeDispatchStatus: newJob.status
-            };
-          }
-          return conv;
-        }));
-      })
-      .subscribe((status) => {
-        console.log('[DisparoMenu] Subscription status:', status);
-      });
+    };
+
+    const scheduleReconnect = () => {
+      if (reconnectTimeout) return;
+      
+      const delay = RECONNECT_DELAYS[Math.min(reconnectAttempt, RECONNECT_DELAYS.length - 1)];
+      console.log(`[DisparoMenu] Reconnecting in ${delay}ms (attempt ${reconnectAttempt + 1})`);
+      
+      reconnectTimeout = setTimeout(() => {
+        reconnectTimeout = null;
+        reconnectAttempt++;
+        subscribe();
+      }, delay);
+    };
+
+    // Start polling every 5 seconds as fallback
+    pollingInterval = setInterval(() => {
+      if (!isSubscribed || hasActiveDispatches()) {
+        refreshActiveDispatches();
+      }
+    }, 5000);
+
+    // Handle visibility change
+    const handleVisibility = () => {
+      if (!document.hidden) {
+        console.log('[DisparoMenu] Tab visible - checking connection');
+        if (!isSubscribed) {
+          if (reconnectTimeout) clearTimeout(reconnectTimeout);
+          reconnectAttempt = 0;
+          subscribe();
+        }
+        refreshActiveDispatches();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibility);
+    subscribe();
 
     return () => {
-      console.log('[DisparoMenu] Cleaning up subscription');
-      supabase.removeChannel(channel);
+      console.log('[DisparoMenu] Cleaning up');
+      document.removeEventListener('visibilitychange', handleVisibility);
+      if (reconnectTimeout) clearTimeout(reconnectTimeout);
+      if (pollingInterval) clearInterval(pollingInterval);
+      if (channel) supabase.removeChannel(channel);
     };
-  }, []);
+  }, [hasActiveDispatches, refreshActiveDispatches]);
 
   // Update current title when conversation changes
   useEffect(() => {
