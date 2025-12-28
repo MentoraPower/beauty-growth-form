@@ -63,8 +63,8 @@ const handler = async (req: Request): Promise<Response> => {
       .limit(1)
       .single();
 
-    const fromName = settings?.from_name || "Scale Beauty";
-    const fromEmail = settings?.from_email || "contato@scalebeauty.com.br";
+    const fromName = settings?.from_name || "Emilly";
+    const fromEmail = settings?.from_email || "emilly@biteti.com.br";
 
     // Fetch all pending scheduled emails that are due
     const now = new Date().toISOString();
