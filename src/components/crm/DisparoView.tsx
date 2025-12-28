@@ -1196,39 +1196,18 @@ function EmailChoiceComponent({
       animate={{ opacity: 1, y: 0 }}
       className="w-full"
     >
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="flex flex-wrap gap-2">
         <button
           onClick={onChooseCode}
-          className="group p-6 rounded-xl border border-border/40 bg-background hover:bg-muted/50 hover:border-primary/30 transition-all text-left"
+          className="px-4 py-2 rounded-lg border border-border/40 bg-background hover:bg-muted/50 transition-all text-sm font-medium text-foreground"
         >
-          <div className="flex items-center gap-3 mb-3">
-            <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
-              <svg className="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
-              </svg>
-            </div>
-            <h3 className="font-semibold text-foreground">Já tenho o código HTML</h3>
-          </div>
-          <p className="text-sm text-muted-foreground">
-            Cole o código HTML do email que você já tem pronto
-          </p>
+          Já tenho o HTML
         </button>
-
         <button
           onClick={onChooseAI}
-          className="group p-6 rounded-xl border border-border/40 bg-background hover:bg-muted/50 hover:border-primary/30 transition-all text-left"
+          className="px-4 py-2 rounded-lg border border-border/40 bg-background hover:bg-muted/50 transition-all text-sm font-medium text-foreground"
         >
-          <div className="flex items-center gap-3 mb-3">
-            <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-violet-500/20 to-fuchsia-500/20 flex items-center justify-center">
-              <svg className="w-5 h-5 text-violet-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
-              </svg>
-            </div>
-            <h3 className="font-semibold text-foreground">Criar com IA</h3>
-          </div>
-          <p className="text-sm text-muted-foreground">
-            Deixe a IA criar um email profissional para você
-          </p>
+          Criar com IA
         </button>
       </div>
     </motion.div>
@@ -1249,39 +1228,18 @@ function CopyChoiceComponent({
       animate={{ opacity: 1, y: 0 }}
       className="w-full"
     >
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="flex flex-wrap gap-2">
         <button
           onClick={onHasCopy}
-          className="group p-6 rounded-xl border border-border/40 bg-background hover:bg-muted/50 hover:border-primary/30 transition-all text-left"
+          className="px-4 py-2 rounded-lg border border-border/40 bg-background hover:bg-muted/50 transition-all text-sm font-medium text-foreground"
         >
-          <div className="flex items-center gap-3 mb-3">
-            <div className="w-10 h-10 rounded-lg bg-emerald-500/10 flex items-center justify-center">
-              <svg className="w-5 h-5 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-              </svg>
-            </div>
-            <h3 className="font-semibold text-foreground">Já tenho a copy pronta</h3>
-          </div>
-          <p className="text-sm text-muted-foreground">
-            Cole o texto do email e a IA transforma em HTML profissional
-          </p>
+          Já tenho a copy
         </button>
-
         <button
           onClick={onCreateCopy}
-          className="group p-6 rounded-xl border border-border/40 bg-background hover:bg-muted/50 hover:border-primary/30 transition-all text-left"
+          className="px-4 py-2 rounded-lg border border-border/40 bg-background hover:bg-muted/50 transition-all text-sm font-medium text-foreground"
         >
-          <div className="flex items-center gap-3 mb-3">
-            <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-violet-500/20 to-fuchsia-500/20 flex items-center justify-center">
-              <svg className="w-5 h-5 text-violet-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
-              </svg>
-            </div>
-            <h3 className="font-semibold text-foreground">Criar copy com IA</h3>
-          </div>
-          <p className="text-sm text-muted-foreground">
-            A IA cria a copy e o HTML do zero baseado no seu objetivo
-          </p>
+          Criar copy com IA
         </button>
       </div>
     </motion.div>
@@ -1545,17 +1503,13 @@ function CopyToHtmlGenerator({
   );
 }
 
-// Component for AI email generation with streaming
+// Component for AI email generation with streaming - simplified version
 function EmailGeneratorComponent({ 
   onGenerated 
 }: { 
   onGenerated: (html: string) => void;
 }) {
-  const [objective, setObjective] = useState('');
-  const [tone, setTone] = useState('profissional');
-  const [companyName, setCompanyName] = useState('');
-  const [productService, setProductService] = useState('');
-  const [additionalInfo, setAdditionalInfo] = useState('');
+  const [description, setDescription] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedHtml, setGeneratedHtml] = useState('');
   const [showPreview, setShowPreview] = useState(false);
@@ -1563,8 +1517,8 @@ function EmailGeneratorComponent({
   const GENERATE_EMAIL_URL = `https://ytdfwkchsumgdvcroaqg.supabase.co/functions/v1/generate-email`;
 
   const handleGenerate = async () => {
-    if (!objective.trim()) {
-      toast.error("Por favor, descreva o objetivo do email");
+    if (!description.trim()) {
+      toast.error("Por favor, descreva o seu serviço/produto ou ideia");
       return;
     }
 
@@ -1577,11 +1531,11 @@ function EmailGeneratorComponent({
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          objective,
-          tone,
-          companyName,
-          productService,
-          additionalInfo
+          objective: description,
+          tone: 'profissional',
+          companyName: '',
+          productService: '',
+          additionalInfo: ''
         }),
       });
 
@@ -1659,90 +1613,23 @@ function EmailGeneratorComponent({
       className="w-full space-y-4"
     >
       {!showPreview ? (
-        <div className="space-y-4 p-5 rounded-xl border border-border/40 bg-muted/30">
-          <div>
-            <label className="text-sm font-medium text-foreground mb-1.5 block">
-              Objetivo do email *
-            </label>
-            <textarea
-              value={objective}
-              onChange={(e) => setObjective(e.target.value)}
-              placeholder="Ex: Promover uma oferta de Black Friday com 50% de desconto em todos os serviços..."
-              className="w-full min-h-[80px] p-3 rounded-lg border border-border/40 bg-background text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 resize-none"
-            />
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="text-sm font-medium text-foreground mb-1.5 block">
-                Tom do email
-              </label>
-              <select
-                value={tone}
-                onChange={(e) => setTone(e.target.value)}
-                className="w-full p-3 rounded-lg border border-border/40 bg-background text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20"
-              >
-                <option value="profissional">Profissional</option>
-                <option value="amigável">Amigável</option>
-                <option value="urgente">Urgente</option>
-                <option value="luxuoso">Luxuoso/Premium</option>
-                <option value="casual">Casual</option>
-                <option value="persuasivo">Persuasivo</option>
-              </select>
-            </div>
-
-            <div>
-              <label className="text-sm font-medium text-foreground mb-1.5 block">
-                Nome da empresa
-              </label>
-              <input
-                type="text"
-                value={companyName}
-                onChange={(e) => setCompanyName(e.target.value)}
-                placeholder="Ex: Scale Beauty"
-                className="w-full p-3 rounded-lg border border-border/40 bg-background text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20"
-              />
-            </div>
-          </div>
-
-          <div>
-            <label className="text-sm font-medium text-foreground mb-1.5 block">
-              Produto/Serviço
-            </label>
-            <input
-              type="text"
-              value={productService}
-              onChange={(e) => setProductService(e.target.value)}
-              placeholder="Ex: Tratamentos estéticos, harmonização facial..."
-              className="w-full p-3 rounded-lg border border-border/40 bg-background text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20"
-            />
-          </div>
-
-          <div>
-            <label className="text-sm font-medium text-foreground mb-1.5 block">
-              Informações adicionais
-            </label>
-            <textarea
-              value={additionalInfo}
-              onChange={(e) => setAdditionalInfo(e.target.value)}
-              placeholder="Ex: Incluir CTA para agendar consulta, mencionar que temos estacionamento gratuito..."
-              className="w-full min-h-[60px] p-3 rounded-lg border border-border/40 bg-background text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 resize-none"
-            />
-          </div>
-
+        <div className="space-y-3">
+          <textarea
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            placeholder="Descreva seu serviço, produto ou a ideia do email..."
+            className="w-full min-h-[100px] p-3 rounded-lg border border-border/40 bg-background text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 resize-none"
+          />
           <button
             onClick={handleGenerate}
-            disabled={!objective.trim() || isGenerating}
+            disabled={!description.trim() || isGenerating}
             className={cn(
-              "w-full px-5 py-3 rounded-xl text-sm font-medium transition-all flex items-center justify-center gap-2",
-              "bg-gradient-to-r from-violet-500 to-fuchsia-500 text-white hover:from-violet-600 hover:to-fuchsia-600",
+              "w-full px-5 py-2.5 rounded-lg text-sm font-medium transition-all",
+              "bg-foreground text-background hover:bg-foreground/90",
               "disabled:opacity-50 disabled:cursor-not-allowed"
             )}
           >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
-            </svg>
-            Gerar Email com IA
+            Gerar Email
           </button>
         </div>
       ) : (
@@ -1795,13 +1682,10 @@ function EmailGeneratorComponent({
               <button
                 onClick={handleUseEmail}
                 className={cn(
-                  "px-5 py-2.5 rounded-xl text-sm font-medium transition-colors flex items-center gap-2",
-                  "bg-black text-white hover:bg-gray-800"
+                  "px-5 py-2.5 rounded-lg text-sm font-medium transition-colors",
+                  "bg-foreground text-background hover:bg-foreground/90"
                 )}
               >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                </svg>
                 Usar este email
               </button>
             </div>
