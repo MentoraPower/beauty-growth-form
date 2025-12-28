@@ -127,11 +127,13 @@ export function EmailSidePanel({
   const [displayedContent, setDisplayedContent] = useState("");
   const [highlightRange, setHighlightRange] = useState<{ start: number; end: number } | undefined>();
   const [editingIndicator, setEditingIndicator] = useState<{ line: number; action: string } | null>(null);
+  const [showPreviewLoading, setShowPreviewLoading] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const preRef = useRef<HTMLPreElement>(null);
   const displayedIndexRef = useRef(0);
   const previousContentRef = useRef("");
   const editAnimationRef = useRef<number | null>(null);
+  const wasGeneratingRef = useRef(false);
 
   // Detect content changes and animate edits
   useEffect(() => {
@@ -254,12 +256,21 @@ export function EmailSidePanel({
     }
   }, [htmlContent, isGenerating, isEditing]);
 
-  // Switch to code tab when generating/editing
+  // Handle tab switching: code during generation, then preview with loading
   useEffect(() => {
     if (isGenerating || isEditing) {
       setActiveTab('code');
-    } else if (htmlContent && !isGenerating && !isEditing) {
+      wasGeneratingRef.current = true;
+    } else if (wasGeneratingRef.current && htmlContent) {
+      // Generation/editing just finished - switch to preview with loading
+      wasGeneratingRef.current = false;
+      setShowPreviewLoading(true);
       setActiveTab('preview');
+      
+      // Show loading for a brief moment then reveal
+      setTimeout(() => {
+        setShowPreviewLoading(false);
+      }, 800);
     }
   }, [isGenerating, isEditing, htmlContent]);
 
@@ -379,17 +390,39 @@ export function EmailSidePanel({
               placeholder=""
             />
             
-            {/* Status indicators */}
-            {isGenerating && !editingIndicator && (
-              <div className="absolute bottom-4 right-4 flex items-center gap-2 bg-primary/10 px-3 py-1.5 rounded-full">
-                <div className="w-2 h-2 bg-primary rounded-full animate-pulse" />
-                <span className="text-xs text-primary font-medium">Gerando...</span>
-              </div>
-            )}
           </div>
         ) : (
           <div className="h-full overflow-auto bg-white">
-            {htmlContent ? (
+            {showPreviewLoading ? (
+              // Skeleton loading state
+              <div className="p-6 space-y-4 animate-pulse">
+                <div className="text-center mb-6">
+                  <div className="inline-flex items-center gap-2 text-muted-foreground text-sm">
+                    <div className="w-2 h-2 bg-primary rounded-full animate-pulse" />
+                    Carregando preview...
+                  </div>
+                </div>
+                {/* Header skeleton */}
+                <div className="h-8 bg-muted rounded-md w-3/4 mx-auto" />
+                <div className="h-4 bg-muted rounded w-1/2 mx-auto" />
+                {/* Body skeleton */}
+                <div className="space-y-3 mt-8">
+                  <div className="h-4 bg-muted rounded w-full" />
+                  <div className="h-4 bg-muted rounded w-5/6" />
+                  <div className="h-4 bg-muted rounded w-4/5" />
+                  <div className="h-4 bg-muted rounded w-full" />
+                  <div className="h-4 bg-muted rounded w-3/4" />
+                </div>
+                {/* Button skeleton */}
+                <div className="flex justify-center mt-8">
+                  <div className="h-12 bg-muted rounded-lg w-48" />
+                </div>
+                {/* Footer skeleton */}
+                <div className="mt-8 pt-4 border-t border-muted">
+                  <div className="h-3 bg-muted rounded w-1/3 mx-auto" />
+                </div>
+              </div>
+            ) : htmlContent ? (
               <div
                 className="p-6 min-h-full"
                 dangerouslySetInnerHTML={{ __html: getSanitizedHtml() }}
