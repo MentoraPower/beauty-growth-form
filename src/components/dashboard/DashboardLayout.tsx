@@ -6,6 +6,7 @@ import scaleLogo from "@/assets/scale-logo-menu.png";
 import scaleLogoFull from "@/assets/scale-logo-full.png";
 import analizerLogo from "@/assets/analizer-logo.png";
 import { CRMOriginsPanel } from "./CRMOriginsPanel";
+import { DisparoSubmenuPanel } from "./DisparoSubmenuPanel";
 import { PageTransition } from "./PageTransition";
 import { LoadingBar } from "@/components/LoadingBar";
 import { ConnectionStatus } from "@/components/realtime/ConnectionStatus";
@@ -58,6 +59,7 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
 
   // Initialize CRM submenu state - always start closed to enable animation
   const [crmSubmenuOpen, setCrmSubmenuOpen] = useState(false);
+  const [disparoSubmenuOpen, setDisparoSubmenuOpen] = useState(false);
   const hasInitialized = useRef(false);
 
   // Open submenu with delay after mount to enable smooth animation
@@ -78,9 +80,13 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
     }
   }, []);
 
-  // Stable onClose callback to prevent re-renders
-  const handleCloseSubmenu = useCallback(() => {
+  // Stable onClose callbacks to prevent re-renders
+  const handleCloseCrmSubmenu = useCallback(() => {
     setCrmSubmenuOpen(false);
+  }, []);
+
+  const handleCloseDisparoSubmenu = useCallback(() => {
+    setDisparoSubmenuOpen(false);
   }, []);
 
   // Persist submenu state to localStorage
@@ -170,6 +176,7 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
 
     if (panelId === 'crm') {
       setCrmSubmenuOpen(true);
+      setDisparoSubmenuOpen(false);
 
       // Check if already on CRM with an origin
       const originParam = new URLSearchParams(location.search).get('origin');
@@ -216,6 +223,7 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
     }
 
     setCrmSubmenuOpen(false);
+    setDisparoSubmenuOpen(false);
   }, [location.pathname, location.search, navigate]);
 
   // Navigate when panel changes
@@ -387,6 +395,7 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
                   onClick={() => {
                     setActivePanel('disparo');
                     setCrmSubmenuOpen(false);
+                    setDisparoSubmenuOpen(true);
                     navigate('/admin/disparo');
                   }}
                   className={cn(
@@ -504,17 +513,59 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
           >
             <MemoizedCRMOriginsPanel
               isOpen={crmSubmenuOpen}
-              onClose={handleCloseSubmenu}
+              onClose={handleCloseCrmSubmenu}
               sidebarWidth={sidebarCollapsedWidth}
               embedded={true}
             />
           </div>
         </div>
 
-        {/* Floating button to reopen submenu when closed */}
+        {/* Disparo Submenu Panel - always mounted, animated via transform */}
+        <div
+          style={{
+            left: sidebarCollapsedWidth + 12,
+            width: submenuWidth,
+            transform: disparoSubmenuOpen ? 'translateX(0)' : `translateX(-${submenuWidth + 20}px)`,
+            zIndex: 39,
+            pointerEvents: disparoSubmenuOpen ? 'auto' : 'none',
+            willChange: 'transform',
+          }}
+          className="hidden lg:block fixed top-[24px] bottom-[24px] rounded-r-2xl bg-zinc-900 overflow-hidden transition-transform duration-300 ease-out"
+        >
+          <div
+            className="h-full pl-2 pr-2 transition-opacity duration-200"
+            style={{
+              width: submenuWidth,
+              minWidth: submenuWidth,
+              opacity: disparoSubmenuOpen ? 1 : 0,
+              transitionDelay: disparoSubmenuOpen ? '50ms' : '0ms',
+            }}
+          >
+            <DisparoSubmenuPanel
+              isOpen={disparoSubmenuOpen}
+              onClose={handleCloseDisparoSubmenu}
+            />
+          </div>
+        </div>
+
+        {/* Floating button to reopen CRM submenu when closed */}
         {isCRMActive && !crmSubmenuOpen && (
           <button
             onClick={() => setCrmSubmenuOpen(true)}
+            style={{ 
+              left: sidebarCollapsedWidth + 12 - 16,
+              zIndex: 40,
+            }}
+            className="hidden lg:flex fixed top-1/2 -translate-y-1/2 w-8 h-16 items-center justify-center bg-zinc-900 rounded-r-xl hover:bg-zinc-800 transition-colors shadow-lg"
+          >
+            <ChevronsRight className="w-4 h-4 text-white" />
+          </button>
+        )}
+
+        {/* Floating button to reopen Disparo submenu when closed */}
+        {isDisparoActive && !disparoSubmenuOpen && (
+          <button
+            onClick={() => setDisparoSubmenuOpen(true)}
             style={{ 
               left: sidebarCollapsedWidth + 12 - 16,
               zIndex: 40,
@@ -638,7 +689,7 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
         {/* Main Content - uses left animation to push/resize content */}
         <main 
           style={{ 
-            left: crmSubmenuOpen 
+            left: (crmSubmenuOpen || disparoSubmenuOpen)
               ? sidebarCollapsedWidth + 12 + 4 + submenuWidth 
               : sidebarCollapsedWidth + 12 + 4,
             top: 12,

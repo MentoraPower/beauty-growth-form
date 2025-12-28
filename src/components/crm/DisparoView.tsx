@@ -6,7 +6,6 @@ import { motion } from "framer-motion";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import { DispatchProgressTable } from "./DispatchProgressTable";
-import { DisparoConversationsMenu } from "./DisparoConversationsMenu";
 import { supabase } from "@/integrations/supabase/client";
 import disparoLogo from "@/assets/disparo-logo.png";
 
@@ -149,7 +148,7 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
 
   // Load conversation from URL on mount
   useEffect(() => {
-    const convId = searchParams.get('conv');
+    const convId = searchParams.get('conversation') || searchParams.get('conv');
     if (convId && !initialLoadDone) {
       // Load the conversation from database
       const loadConversation = async () => {
@@ -178,6 +177,7 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
         } catch (error) {
           console.error("Error loading conversation from URL:", error);
           // Remove invalid conv param
+          searchParams.delete('conversation');
           searchParams.delete('conv');
           setSearchParams(searchParams);
         } finally {
@@ -185,6 +185,11 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
         }
       };
       loadConversation();
+    } else if (!convId && currentConversationId && initialLoadDone) {
+      // URL cleared - start new conversation
+      setCurrentConversationId(null);
+      setMessages([]);
+      setCsvLeads(null);
     } else {
       setInitialLoadDone(true);
     }
@@ -208,22 +213,92 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
     }
   }, [initialLoadDone, messages, reconstructComponent]);
 
-  // Update URL when conversation changes
+  // Track last saved message count for auto-save
+  const lastSavedMessagesCount = useRef(0);
+
+  // Auto-save conversation
+  const saveConversation = useCallback(async (forceCreate = false) => {
+    if (messages.length === 0) return null;
+
+    try {
+      // Generate title from first user message
+      const firstUserMessage = messages.find(m => m.role === "user");
+      const title = firstUserMessage 
+        ? firstUserMessage.content.slice(0, 50) + (firstUserMessage.content.length > 50 ? "..." : "")
+        : "Nova conversa";
+
+      const messagesJson = messages.map(m => {
+        const msg: Record<string, any> = {
+          id: m.id,
+          content: m.content,
+          role: m.role,
+          timestamp: m.timestamp.toISOString(),
+        };
+        if (m.componentData) {
+          msg.componentData = m.componentData;
+        }
+        return msg;
+      });
+
+      if (currentConversationId && !forceCreate) {
+        // Update existing
+        const { error } = await supabase
+          .from("dispatch_conversations")
+          .update({ 
+            messages: messagesJson,
+            updated_at: new Date().toISOString()
+          })
+          .eq("id", currentConversationId);
+
+        if (error) throw error;
+        lastSavedMessagesCount.current = messages.length;
+        return currentConversationId;
+      } else {
+        // Create new
+        const { data, error } = await supabase
+          .from("dispatch_conversations")
+          .insert({ 
+            messages: messagesJson,
+            title 
+          })
+          .select()
+          .single();
+
+        if (error) throw error;
+        lastSavedMessagesCount.current = messages.length;
+        return data.id;
+      }
+    } catch (error) {
+      console.error("Error saving conversation:", error);
+      return null;
+    }
+  }, [messages, currentConversationId]);
+
+  // Auto-save when messages change
   useEffect(() => {
     if (!initialLoadDone) return;
     
-    if (currentConversationId) {
-      if (searchParams.get('conv') !== currentConversationId) {
-        searchParams.set('conv', currentConversationId);
-        setSearchParams(searchParams, { replace: true });
-      }
-    } else {
-      if (searchParams.has('conv')) {
-        searchParams.delete('conv');
-        setSearchParams(searchParams, { replace: true });
-      }
+    if (messages.length > 0 && !currentConversationId && messages.length > lastSavedMessagesCount.current) {
+      // First message - create new conversation
+      saveConversation(true).then((newId) => {
+        if (newId) {
+          setCurrentConversationId(newId);
+          setSearchParams({ conversation: newId }, { replace: true });
+        }
+      });
+    } else if (messages.length > 0 && currentConversationId && messages.length > lastSavedMessagesCount.current) {
+      // Subsequent messages - update existing
+      const timeout = setTimeout(() => {
+        saveConversation();
+      }, 1000);
+      return () => clearTimeout(timeout);
     }
-  }, [currentConversationId, initialLoadDone]);
+  }, [messages, currentConversationId, initialLoadDone, saveConversation]);
+
+  // Reset counter when conversation changes
+  useEffect(() => {
+    lastSavedMessagesCount.current = messages.length;
+  }, [currentConversationId]);
 
   // Auto-scroll to bottom when messages change
   useEffect(() => {
