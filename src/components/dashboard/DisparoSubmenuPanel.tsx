@@ -146,9 +146,18 @@ export function DisparoSubmenuPanel({ isOpen, onClose }: DisparoSubmenuPanelProp
           <h2 className="text-lg font-semibold text-white">Disparo</h2>
           <button
             onClick={onClose}
-            className="w-7 h-7 rounded-full bg-gradient-to-r from-primary to-accent flex items-center justify-center hover:opacity-90 transition-opacity"
+            className="w-7 h-7 rounded-full bg-white/10 flex items-center justify-center hover:bg-white/20 transition-colors"
           >
-            <ChevronsRight className="h-4 w-4 text-white" />
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="url(#gradient-chevrons)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <defs>
+                <linearGradient id="gradient-chevrons" x1="0%" y1="0%" x2="100%" y2="0%">
+                  <stop offset="0%" stopColor="hsl(var(--primary))" />
+                  <stop offset="100%" stopColor="hsl(var(--accent))" />
+                </linearGradient>
+              </defs>
+              <path d="m6 17 5-5-5-5" />
+              <path d="m13 17 5-5-5-5" />
+            </svg>
           </button>
         </div>
 
