@@ -162,13 +162,15 @@ export function DisparoSubmenuPanel({ isOpen, onClose }: DisparoSubmenuPanelProp
         </div>
 
         {/* New conversation button */}
-        <button
-          onClick={handleNewConversation}
-          className="flex items-center gap-2 mx-2 px-3 py-2 rounded-lg bg-white/10 hover:bg-white/15 text-white text-sm font-medium transition-colors mb-3"
-        >
-          <Plus className="h-4 w-4" />
-          Nova conversa
-        </button>
+        <div className="mx-2 mb-3 p-[1px] rounded-lg bg-gradient-to-r from-orange-500 to-orange-600">
+          <button
+            onClick={handleNewConversation}
+            className="flex items-center justify-center gap-2 w-full px-3 py-2 rounded-[7px] bg-[#1a1a1a] hover:bg-[#222] text-white text-sm font-medium transition-colors border border-dashed border-orange-500/50"
+          >
+            <Plus className="h-4 w-4" />
+            Nova conversa
+          </button>
+        </div>
 
         {/* Search */}
         {conversations.length > 0 && (
@@ -213,10 +215,9 @@ export function DisparoSubmenuPanel({ isOpen, onClose }: DisparoSubmenuPanelProp
               >
                 <button
                   onClick={() => handleSelectConversation(conv.id)}
-                  className="flex-1 text-left px-3 py-2 text-sm truncate flex items-center gap-2"
+                  className="flex-1 text-left px-3 py-2 text-sm"
                 >
-                  <span className="text-white/40">•</span>
-                  {conv.title}
+                  <span className="block truncate max-w-[140px]">{conv.title.replace(/^[\p{Emoji}\s]+/gu, '')}</span>
                 </button>
                 
                 <DropdownMenu>
