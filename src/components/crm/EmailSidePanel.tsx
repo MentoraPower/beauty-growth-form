@@ -140,7 +140,7 @@ export function EmailSidePanel({
   if (!isOpen) return null;
 
   return (
-    <div className="w-[500px] min-w-[400px] max-w-[50vw] h-full bg-background flex flex-col my-4 mr-4 rounded-2xl border border-border overflow-hidden">
+    <div className="w-[480px] flex-shrink-0 h-full bg-background flex flex-col my-4 mr-4 rounded-2xl border border-border overflow-hidden">
       {/* Tabs */}
       <div className="flex items-center justify-between px-5 py-3 border-b border-border bg-muted/20">
         <div className="flex items-center gap-1 bg-muted/50 rounded-lg p-1">
@@ -183,11 +183,11 @@ export function EmailSidePanel({
       {/* Content */}
       <div className="flex-1 overflow-hidden">
         {activeTab === 'code' ? (
-          <div className="relative h-full">
+          <div className="relative h-full w-full overflow-hidden">
             {/* Highlighted code display */}
             <pre
               ref={preRef}
-              className="absolute inset-0 p-5 font-mono text-sm pointer-events-none overflow-auto whitespace-pre-wrap break-words"
+              className="absolute inset-0 p-5 font-mono text-xs leading-relaxed pointer-events-none overflow-y-auto overflow-x-hidden whitespace-pre-wrap break-all"
               aria-hidden="true"
             >
               {htmlContent ? highlightHtml(htmlContent) : (
@@ -203,7 +203,7 @@ export function EmailSidePanel({
               value={htmlContent}
               onChange={(e) => onHtmlChange(e.target.value)}
               onScroll={handleScroll}
-              className="absolute inset-0 w-full h-full p-5 font-mono text-sm bg-transparent text-transparent caret-foreground resize-none focus:outline-none"
+              className="absolute inset-0 w-full h-full p-5 font-mono text-xs leading-relaxed bg-transparent text-transparent caret-foreground resize-none focus:outline-none overflow-y-auto overflow-x-hidden whitespace-pre-wrap break-all"
               spellCheck={false}
               placeholder=""
             />
