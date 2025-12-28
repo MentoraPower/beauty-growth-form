@@ -1046,11 +1046,12 @@ function HtmlEditorComponent({ onSubmit }: { onSubmit: (html: string) => void })
     <motion.div
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      className="w-full"
+      className="flex flex-col items-center w-full"
     >
-      <div className="text-xs text-muted-foreground mb-2 text-right">
-        Template do Email · Use <code className="bg-muted px-1 py-0.5 rounded text-xs text-foreground">{"{{name}}"}</code> para personalizar
-      </div>
+      <div className="w-full max-w-[85%]">
+        <div className="text-xs text-muted-foreground mb-2 text-right">
+          Template do Email · Use <code className="bg-muted px-1 py-0.5 rounded text-xs text-foreground">{"{{name}}"}</code> para personalizar
+        </div>
         
         {/* Code editor container */}
         <div className="rounded-xl overflow-hidden border border-border/40 shadow-sm bg-muted/50">
@@ -1133,6 +1134,7 @@ Cmd/Ctrl + Enter para enviar`}
             )}
           </button>
         </div>
+      </div>
     </motion.div>
   );
 }
