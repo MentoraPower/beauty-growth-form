@@ -1868,6 +1868,31 @@ INSTRUÇÕES PARA VOCÊ (A IA):
           }
         }
         
+        // Auto-detect dispatch confirmation from AI response
+        // When the AI says something like "Iniciando o disparo" and we have all data ready
+        const lowerAssistant = assistantContent.toLowerCase();
+        const aiIsStartingDispatch = (
+          (lowerAssistant.includes('iniciando') && (lowerAssistant.includes('disparo') || lowerAssistant.includes('envio'))) ||
+          (lowerAssistant.includes('começando') && lowerAssistant.includes('disparo')) ||
+          (lowerAssistant.includes('vou iniciar') && lowerAssistant.includes('disparo')) ||
+          (lowerAssistant.includes('disparo iniciado')) ||
+          lowerAssistant.includes('🚀') && (lowerAssistant.includes('disparo') || lowerAssistant.includes('enviando'))
+        );
+        
+        const hasAllDataForDispatch = selectedOriginData?.subOriginId && sidePanelHtml && sidePanelHtml.length > 100;
+        
+        console.log("[DEBUG] AI dispatch detection:", { aiIsStartingDispatch, hasAllDataForDispatch, subOriginId: selectedOriginData?.subOriginId, htmlLength: sidePanelHtml?.length });
+        
+        if (aiIsStartingDispatch && hasAllDataForDispatch && !activeJobId) {
+          console.log("[INFO] Auto-starting dispatch based on AI response");
+          // Build and execute dispatch command automatically
+          const type = dispatchType || 'email';
+          const autoCommand = `START_DISPATCH:${type}:${selectedOriginData.subOriginId}:html:${currentConversationId || ''}`;
+          
+          // Execute dispatch in background
+          executeDispatch(autoCommand);
+        }
+        
         // Determine componentData based on what was shown
         let componentData: MessageComponentData | undefined;
         if (originsData) {
