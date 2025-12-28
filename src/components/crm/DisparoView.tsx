@@ -9,6 +9,7 @@ import { DispatchProgressTable } from "./DispatchProgressTable";
 import { EmailSidePanel, SidePanelMode } from "./EmailSidePanel";
 import { DispatchData } from "./DispatchAnalysis";
 import { EmailGenerationIndicator } from "./EmailGenerationIndicator";
+import { AIWorkDetails, WorkStep, createLeadsAnalysisStep, createEmailGenerationStep, createDispatchStep } from "./AIWorkDetails";
 import { supabase } from "@/integrations/supabase/client";
 import { Clipboard, Check } from "lucide-react";
 import disparoLogo from "@/assets/disparo-logo.png";
@@ -18,7 +19,7 @@ interface DisparoViewProps {
 }
 
 interface MessageComponentData {
-  type: 'leads_preview' | 'html_editor' | 'origins_list' | 'dispatch_progress' | 'csv_preview' | 'email_choice' | 'email_generator' | 'copy_choice' | 'copy_input' | 'email_generator_streaming';
+  type: 'leads_preview' | 'html_editor' | 'origins_list' | 'dispatch_progress' | 'csv_preview' | 'email_choice' | 'email_generator' | 'copy_choice' | 'copy_input' | 'email_generator_streaming' | 'ai_work_details';
   data?: any;
 }
 
@@ -351,6 +352,15 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
           </div>
         );
       }
+      case 'ai_work_details': {
+        const { steps } = (componentData.data || {}) as any;
+        if (!steps || !Array.isArray(steps)) return null;
+        return (
+          <div className="mt-3 w-full max-w-md">
+            <AIWorkDetails steps={steps} />
+          </div>
+        );
+      }
       default:
         return null;
     }
@@ -667,12 +677,17 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
       const result = await response.json();
 
       if (result.type === 'leads_preview') {
-        const previewComponent = (
-          <LeadsPreviewComponent 
-            key={`preview-${Date.now()}`}
-            preview={result.data} 
-          />
-        );
+        // Create work steps for AI details
+        const workSteps: WorkStep[] = [
+          createLeadsAnalysisStep('completed', {
+            listName: subOriginName,
+            validCount: result.data.validLeads,
+            totalCount: result.data.totalLeads,
+            summary: `Identificamos ${result.data.validLeads} leads válidos com ${type === 'email' ? 'email' : 'WhatsApp'} na lista selecionada.`
+          }),
+          createEmailGenerationStep('pending'),
+          createDispatchStep('pending')
+        ];
 
         // For email, ask as plain text question
         if (type === 'email') {
@@ -682,12 +697,12 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
             role: "assistant",
             timestamp: new Date(),
             componentData: {
-              type: 'email_choice',
-              data: { preview: result.data, subOriginId, dispatchType: type }
+              type: 'ai_work_details',
+              data: { steps: workSteps, preview: result.data, subOriginId, dispatchType: type }
             },
             component: (
-              <div className="mt-4 w-full">
-                {previewComponent}
+              <div className="mt-3 w-full max-w-md">
+                <AIWorkDetails steps={workSteps} />
               </div>
             ),
           };
@@ -701,15 +716,12 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
             role: "assistant",
             timestamp: new Date(),
             componentData: {
-              type: 'leads_preview',
-              data: { preview: result.data, subOriginId, dispatchType: type }
+              type: 'ai_work_details',
+              data: { steps: workSteps, preview: result.data, subOriginId, dispatchType: type }
             },
             component: (
-              <div className="mt-4 space-y-4 w-full">
-                {previewComponent}
-                <HtmlEditorComponent 
-                  onSubmit={(html) => handleHtmlSubmit(html, subOriginId, type)}
-                />
+              <div className="mt-3 w-full max-w-md">
+                <AIWorkDetails steps={workSteps} />
               </div>
             ),
           };
@@ -746,17 +758,35 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
       if (result.type === 'dispatch_started') {
         setActiveJobId(result.data.jobId);
         logAction('system', `Disparo iniciado`, `Enviando para ${result.data.validLeads} leads`);
+        
+        // Create work steps showing dispatch in progress
+        const workSteps: WorkStep[] = [
+          createLeadsAnalysisStep('completed', {
+            validCount: result.data.validLeads,
+            summary: `${result.data.validLeads} leads prontos para envio.`
+          }),
+          createEmailGenerationStep('completed', {
+            summary: 'Email HTML preparado para disparo.'
+          }),
+          createDispatchStep('in_progress', {
+            current: 0,
+            total: result.data.validLeads,
+            summary: 'Enviando emails...'
+          })
+        ];
+        
         const assistantMessage: Message = {
           id: crypto.randomUUID(),
-          content: `Disparo iniciado. Enviando para ${result.data.validLeads} leads...`,
+          content: `Disparo iniciado! Enviando para ${result.data.validLeads} leads...`,
           role: "assistant",
           timestamp: new Date(),
           componentData: {
-            type: 'dispatch_progress',
-            data: { jobId: result.data.jobId }
+            type: 'ai_work_details',
+            data: { steps: workSteps, jobId: result.data.jobId }
           },
           component: (
-            <div className="mt-4">
+            <div className="mt-3 space-y-3 w-full">
+              <AIWorkDetails steps={workSteps} className="max-w-md" />
               <DispatchProgressTable
                 jobId={result.data.jobId}
                 onCommand={handleCommand}
@@ -835,11 +865,30 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
     setSidePanelGenerating(true);
     setSidePanelOpen(true);
     
+    // Create work steps for email generation in progress
+    const generatingSteps: WorkStep[] = [
+      createLeadsAnalysisStep('completed', {
+        summary: 'Leads prontos para o disparo.'
+      }),
+      createEmailGenerationStep('in_progress'),
+      createDispatchStep('pending')
+    ];
+    
+    const loadingMessageId = crypto.randomUUID();
     const loadingMessage: Message = {
-      id: crypto.randomUUID(),
-      content: `Gerando HTML do email... Você pode acompanhar a geração em tempo real na lateral.`,
+      id: loadingMessageId,
+      content: `Gerando HTML do email...`,
       role: "assistant",
       timestamp: new Date(),
+      componentData: {
+        type: 'ai_work_details',
+        data: { steps: generatingSteps }
+      },
+      component: (
+        <div className="mt-3 w-full max-w-md">
+          <AIWorkDetails steps={generatingSteps} />
+        </div>
+      ),
     };
     setMessages(prev => [...prev, loadingMessage]);
     
@@ -916,16 +965,36 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
       // Check if the email has a button_link placeholder
       const hasButtonPlaceholder = finalHtml.includes('{{button_link}}');
       
-      // Add completion message asking for button link if needed
-      const completionMessage: Message = {
-        id: crypto.randomUUID(),
-        content: hasButtonPlaceholder 
-          ? `Email gerado! Agora me diz: qual o link do botão? (Ex: https://seusite.com/oferta)`
-          : `Email gerado! Você pode revisar e editar na lateral. Quando estiver pronto, me avise que vou preparar o envio.`,
-        role: "assistant",
-        timestamp: new Date(),
-      };
-      setMessages(prev => [...prev, completionMessage]);
+      // Update loading message with completed steps
+      const completedSteps: WorkStep[] = [
+        createLeadsAnalysisStep('completed', {
+          summary: 'Leads prontos para o disparo.'
+        }),
+        createEmailGenerationStep('completed', {
+          summary: `Email gerado com ${finalHtml.length} caracteres.`
+        }),
+        createDispatchStep('pending')
+      ];
+      
+      // Update the loading message to show completed state
+      setMessages(prev => 
+        prev.map(m => 
+          m.id === loadingMessageId 
+            ? { 
+                ...m, 
+                content: hasButtonPlaceholder 
+                  ? `Email gerado! Agora me diz: qual o link do botão? (Ex: https://seusite.com/oferta)`
+                  : `Email gerado! Você pode revisar e editar na lateral.`,
+                componentData: { type: 'ai_work_details' as const, data: { steps: completedSteps } },
+                component: (
+                  <div className="mt-3 w-full max-w-md">
+                    <AIWorkDetails steps={completedSteps} />
+                  </div>
+                )
+              }
+            : m
+        )
+      );
       toast.success("Email gerado com sucesso!");
       
     } catch (error) {
