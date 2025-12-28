@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { cn } from "@/lib/utils";
-import { Code2, Eye, Copy, Check } from "lucide-react";
+import { Code2, Eye, Copy, Check, BarChart3 } from "lucide-react";
 import { toast } from "sonner";
+import { DispatchAnalysis, DispatchData } from "./DispatchAnalysis";
 
 interface EditOperation {
   type: 'insert' | 'delete' | 'replace';
@@ -9,6 +10,8 @@ interface EditOperation {
   endIndex?: number;
   newText?: string;
 }
+
+export type SidePanelMode = 'email' | 'dispatch_details';
 
 interface EmailSidePanelProps {
   isOpen: boolean;
@@ -19,6 +22,11 @@ interface EmailSidePanelProps {
   editOperation?: EditOperation | null;
   subject?: string;
   onSubjectChange?: (subject: string) => void;
+  // New props for dispatch details mode
+  mode?: SidePanelMode;
+  dispatchData?: DispatchData | null;
+  onNewDispatch?: () => void;
+  onViewEmail?: () => void;
 }
 
 // Syntax highlighting for HTML with dark purple for strings
@@ -122,7 +130,11 @@ export function EmailSidePanel({
   isEditing = false,
   editOperation = null,
   subject = "",
-  onSubjectChange
+  onSubjectChange,
+  mode = 'email',
+  dispatchData = null,
+  onNewDispatch,
+  onViewEmail
 }: EmailSidePanelProps) {
   const [activeTab, setActiveTab] = useState<'code' | 'preview'>('preview');
   const [copied, setCopied] = useState(false);
@@ -381,6 +393,19 @@ export function EmailSidePanel({
   };
 
   if (!isOpen) return null;
+
+  // Render Dispatch Details mode
+  if (mode === 'dispatch_details' && dispatchData) {
+    return (
+      <div className="w-[480px] flex-shrink-0 h-full bg-background flex flex-col my-4 mr-4 rounded-2xl border border-border overflow-hidden">
+        <DispatchAnalysis 
+          data={dispatchData}
+          onNewDispatch={onNewDispatch}
+          onViewEmail={onViewEmail}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="w-[480px] flex-shrink-0 h-full bg-background flex flex-col my-4 mr-4 rounded-2xl border border-border overflow-hidden">
