@@ -24,6 +24,9 @@ interface Conversation {
   title: string;
   created_at: string;
   updated_at: string;
+  hasActiveDispatch?: boolean;
+  activeDispatchProgress?: number;
+  activeDispatchStatus?: string;
 }
 
 interface MessageComponentData {
@@ -65,17 +68,50 @@ export function DisparoConversationsMenu({
   const [isExpanded, setIsExpanded] = useState(false);
   const lastSavedMessagesCount = useRef(0);
 
-  // Fetch conversations
+  // Fetch active dispatches for all conversations
+  const fetchActiveDispatches = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("dispatch_jobs")
+        .select("conversation_id, sent_count, valid_leads, status")
+        .in("status", ["pending", "running", "paused"]);
+      
+      if (error) throw error;
+      return data || [];
+    } catch (error) {
+      console.error("Error fetching active dispatches:", error);
+      return [];
+    }
+  };
+
+  // Fetch conversations and enrich with active dispatch info
   const fetchConversations = async () => {
     setIsLoading(true);
     try {
-      const { data, error } = await supabase
-        .from("dispatch_conversations")
-        .select("*")
-        .order("updated_at", { ascending: false });
+      const [conversationsResult, activeDispatches] = await Promise.all([
+        supabase
+          .from("dispatch_conversations")
+          .select("*")
+          .order("updated_at", { ascending: false }),
+        fetchActiveDispatches()
+      ]);
 
-      if (error) throw error;
-      setConversations(data || []);
+      if (conversationsResult.error) throw conversationsResult.error;
+      
+      // Enrich conversations with dispatch info
+      const enrichedConversations = (conversationsResult.data || []).map(conv => {
+        const activeJob = activeDispatches.find(d => d.conversation_id === conv.id);
+        return {
+          ...conv,
+          hasActiveDispatch: !!activeJob,
+          activeDispatchProgress: activeJob && activeJob.valid_leads > 0
+            ? Math.round((activeJob.sent_count / activeJob.valid_leads) * 100)
+            : 0,
+          activeDispatchStatus: activeJob?.status
+        };
+      });
+      
+      setConversations(enrichedConversations);
     } catch (error) {
       console.error("Error fetching conversations:", error);
     } finally {
@@ -85,6 +121,25 @@ export function DisparoConversationsMenu({
 
   useEffect(() => {
     fetchConversations();
+  }, []);
+
+  // Subscribe to realtime updates for active dispatches
+  useEffect(() => {
+    const channel = supabase
+      .channel('dispatch-menu-updates')
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'dispatch_jobs'
+      }, () => {
+        // Refresh conversations when dispatch jobs change
+        fetchConversations();
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   // Update current title when conversation changes
@@ -356,10 +411,35 @@ export function DisparoConversationsMenu({
                       >
                         <button
                           onClick={() => loadConversation(conv.id)}
-                          className="flex-1 text-left px-2 py-1.5 text-sm truncate max-w-[160px]"
+                          className="flex-1 text-left px-2 py-1.5 text-sm truncate max-w-[130px]"
                         >
                           <span className="block truncate">{conv.title}</span>
                         </button>
+                        
+                        {/* Active dispatch indicator */}
+                        {conv.hasActiveDispatch && (
+                          <div className="flex items-center gap-1.5 mr-1">
+                            <div className="relative flex items-center justify-center">
+                              <div className={cn(
+                                "w-2 h-2 rounded-full",
+                                conv.activeDispatchStatus === 'paused' 
+                                  ? "bg-yellow-500" 
+                                  : "bg-green-500 animate-pulse"
+                              )} />
+                              {conv.activeDispatchStatus !== 'paused' && (
+                                <div className="absolute inset-0 w-2 h-2 bg-green-500 rounded-full animate-ping opacity-50" />
+                              )}
+                            </div>
+                            <span className={cn(
+                              "text-[10px] font-medium tabular-nums",
+                              conv.activeDispatchStatus === 'paused'
+                                ? "text-yellow-500"
+                                : "text-green-500"
+                            )}>
+                              {conv.activeDispatchProgress}%
+                            </span>
+                          </div>
+                        )}
                         
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>

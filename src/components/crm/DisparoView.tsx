@@ -1151,8 +1151,8 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
           continue;
         }
         
-        // Build the corrected command with the actual UUID
-        const correctedCommand = `START_DISPATCH:${type}:${actualSubOriginId}:${templateType}`;
+        // Build the corrected command with the actual UUID and conversation ID
+        const correctedCommand = `START_DISPATCH:${type}:${actualSubOriginId}:${templateType}:${currentConversationId || ''}`;
         console.log("[INFO] Corrected command:", correctedCommand);
         
         await executeDispatch(correctedCommand);
