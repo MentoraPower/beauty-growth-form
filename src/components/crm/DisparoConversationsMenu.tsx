@@ -29,7 +29,7 @@ interface Conversation {
 }
 
 interface MessageComponentData {
-  type: 'leads_preview' | 'html_editor' | 'origins_list' | 'dispatch_progress' | 'csv_preview';
+  type: 'leads_preview' | 'html_editor' | 'origins_list' | 'dispatch_progress' | 'csv_preview' | 'email_choice' | 'email_generator';
   data?: any;
 }
 

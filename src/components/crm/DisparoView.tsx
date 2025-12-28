@@ -15,7 +15,7 @@ interface DisparoViewProps {
 }
 
 interface MessageComponentData {
-  type: 'leads_preview' | 'html_editor' | 'origins_list' | 'dispatch_progress' | 'csv_preview';
+  type: 'leads_preview' | 'html_editor' | 'origins_list' | 'dispatch_progress' | 'csv_preview' | 'email_choice' | 'email_generator';
   data?: any;
 }
 
@@ -272,25 +272,50 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
           />
         );
 
-        const assistantMessage: Message = {
-          id: crypto.randomUUID(),
-          content: `Encontrei ${result.data.validLeads} leads válidos na lista "${subOriginName}"`,
-          role: "assistant",
-          timestamp: new Date(),
-          componentData: {
-            type: 'leads_preview',
-            data: { preview: result.data, subOriginId, dispatchType: type }
-          },
-          component: (
-            <div className="mt-4 space-y-4 w-full">
-              {previewComponent}
-              <HtmlEditorComponent 
-                onSubmit={(html) => handleHtmlSubmit(html, subOriginId, type)}
-              />
-            </div>
-          ),
-        };
-        setMessages(prev => [...prev, assistantMessage]);
+        // For email, show choice component instead of editor directly
+        if (type === 'email') {
+          const assistantMessage: Message = {
+            id: crypto.randomUUID(),
+            content: `Encontrei ${result.data.validLeads} leads válidos na lista "${subOriginName}". Como você quer criar o email?`,
+            role: "assistant",
+            timestamp: new Date(),
+            componentData: {
+              type: 'email_choice',
+              data: { preview: result.data, subOriginId, dispatchType: type }
+            },
+            component: (
+              <div className="mt-4 space-y-4 w-full">
+                {previewComponent}
+                <EmailChoiceComponent 
+                  onChooseCode={() => handleEmailChoiceCode(subOriginId, type)}
+                  onChooseAI={() => handleEmailChoiceAI(subOriginId, type)}
+                />
+              </div>
+            ),
+          };
+          setMessages(prev => [...prev, assistantMessage]);
+        } else {
+          // For WhatsApp, show editor directly
+          const assistantMessage: Message = {
+            id: crypto.randomUUID(),
+            content: `Encontrei ${result.data.validLeads} leads válidos na lista "${subOriginName}"`,
+            role: "assistant",
+            timestamp: new Date(),
+            componentData: {
+              type: 'leads_preview',
+              data: { preview: result.data, subOriginId, dispatchType: type }
+            },
+            component: (
+              <div className="mt-4 space-y-4 w-full">
+                {previewComponent}
+                <HtmlEditorComponent 
+                  onSubmit={(html) => handleHtmlSubmit(html, subOriginId, type)}
+                />
+              </div>
+            ),
+          };
+          setMessages(prev => [...prev, assistantMessage]);
+        }
       }
     } catch (error) {
       console.error("Error fetching leads:", error);
@@ -348,6 +373,73 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
       setIsLoading(false);
     }
   };
+
+  // Handle email choice - user has code ready
+  const handleEmailChoiceCode = useCallback((subOriginId: string, type: string) => {
+    const assistantMessage: Message = {
+      id: crypto.randomUUID(),
+      content: `Ótimo! Cole o código HTML do seu email abaixo:`,
+      role: "assistant",
+      timestamp: new Date(),
+      componentData: {
+        type: 'html_editor',
+        data: { subOriginId, dispatchType: type }
+      },
+      component: (
+        <div className="mt-4 w-full">
+          <HtmlEditorComponent 
+            onSubmit={(html) => handleHtmlSubmit(html, subOriginId, type)}
+          />
+        </div>
+      ),
+    };
+    setMessages(prev => [...prev, assistantMessage]);
+  }, []);
+
+  // Handle email choice - create with AI
+  const handleEmailChoiceAI = useCallback((subOriginId: string, type: string) => {
+    const assistantMessage: Message = {
+      id: crypto.randomUUID(),
+      content: `Perfeito! Vou criar um email profissional para você. Me conte mais sobre o que você precisa:`,
+      role: "assistant",
+      timestamp: new Date(),
+      componentData: {
+        type: 'email_generator',
+        data: { subOriginId, dispatchType: type }
+      },
+      component: (
+        <div className="mt-4 w-full">
+          <EmailGeneratorComponent 
+            onGenerated={(html) => handleEmailGenerated(html, subOriginId, type)}
+          />
+        </div>
+      ),
+    };
+    setMessages(prev => [...prev, assistantMessage]);
+  }, []);
+
+  // Handle AI generated email
+  const handleEmailGenerated = useCallback((html: string, subOriginId: string, type: string) => {
+    const assistantMessage: Message = {
+      id: crypto.randomUUID(),
+      content: `Email criado! Você pode revisar e editar abaixo antes de enviar:`,
+      role: "assistant",
+      timestamp: new Date(),
+      componentData: {
+        type: 'html_editor',
+        data: { subOriginId, dispatchType: type }
+      },
+      component: (
+        <div className="mt-4 w-full">
+          <HtmlEditorComponent 
+            onSubmit={(finalHtml) => handleHtmlSubmit(finalHtml, subOriginId, type)}
+            initialContent={html}
+          />
+        </div>
+      ),
+    };
+    setMessages(prev => [...prev, assistantMessage]);
+  }, []);
 
   // Process commands from Grok's response
   const processCommands = async (content: string): Promise<{ cleanContent: string; components: React.ReactNode[] }> => {
@@ -1011,13 +1103,340 @@ function highlightHtml(code: string): React.ReactNode[] {
   });
 }
 
+// Component for choosing between code or AI generation
+function EmailChoiceComponent({ 
+  onChooseCode, 
+  onChooseAI 
+}: { 
+  onChooseCode: () => void; 
+  onChooseAI: () => void;
+}) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="w-full"
+    >
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <button
+          onClick={onChooseCode}
+          className="group p-6 rounded-xl border border-border/40 bg-background hover:bg-muted/50 hover:border-primary/30 transition-all text-left"
+        >
+          <div className="flex items-center gap-3 mb-3">
+            <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+              <svg className="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
+              </svg>
+            </div>
+            <h3 className="font-semibold text-foreground">Já tenho o código HTML</h3>
+          </div>
+          <p className="text-sm text-muted-foreground">
+            Cole o código HTML do email que você já tem pronto
+          </p>
+        </button>
+
+        <button
+          onClick={onChooseAI}
+          className="group p-6 rounded-xl border border-border/40 bg-background hover:bg-muted/50 hover:border-primary/30 transition-all text-left"
+        >
+          <div className="flex items-center gap-3 mb-3">
+            <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-violet-500/20 to-fuchsia-500/20 flex items-center justify-center">
+              <svg className="w-5 h-5 text-violet-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+              </svg>
+            </div>
+            <h3 className="font-semibold text-foreground">Criar com IA</h3>
+          </div>
+          <p className="text-sm text-muted-foreground">
+            Deixe a IA criar um email profissional para você
+          </p>
+        </button>
+      </div>
+    </motion.div>
+  );
+}
+
+// Component for AI email generation with streaming
+function EmailGeneratorComponent({ 
+  onGenerated 
+}: { 
+  onGenerated: (html: string) => void;
+}) {
+  const [objective, setObjective] = useState('');
+  const [tone, setTone] = useState('profissional');
+  const [companyName, setCompanyName] = useState('');
+  const [productService, setProductService] = useState('');
+  const [additionalInfo, setAdditionalInfo] = useState('');
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [generatedHtml, setGeneratedHtml] = useState('');
+  const [showPreview, setShowPreview] = useState(false);
+
+  const GENERATE_EMAIL_URL = `https://ytdfwkchsumgdvcroaqg.supabase.co/functions/v1/generate-email`;
+
+  const handleGenerate = async () => {
+    if (!objective.trim()) {
+      toast.error("Por favor, descreva o objetivo do email");
+      return;
+    }
+
+    setIsGenerating(true);
+    setGeneratedHtml('');
+    setShowPreview(true);
+
+    try {
+      const response = await fetch(GENERATE_EMAIL_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          objective,
+          tone,
+          companyName,
+          productService,
+          additionalInfo
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || "Erro ao gerar email");
+      }
+
+      if (!response.body) throw new Error("No response body");
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = "";
+      let fullContent = "";
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+
+        let newlineIndex: number;
+        while ((newlineIndex = buffer.indexOf("\n")) !== -1) {
+          let line = buffer.slice(0, newlineIndex);
+          buffer = buffer.slice(newlineIndex + 1);
+
+          if (line.endsWith("\r")) line = line.slice(0, -1);
+          if (line.startsWith(":") || line.trim() === "") continue;
+          if (!line.startsWith("data: ")) continue;
+
+          const jsonStr = line.slice(6).trim();
+          if (jsonStr === "[DONE]") break;
+
+          try {
+            const parsed = JSON.parse(jsonStr);
+            const content = parsed.choices?.[0]?.delta?.content as string | undefined;
+            if (content) {
+              fullContent += content;
+              setGeneratedHtml(fullContent);
+            }
+          } catch {
+            // Incomplete JSON, continue
+          }
+        }
+      }
+
+      // Clean up the HTML (remove markdown code blocks if present)
+      let cleanHtml = fullContent
+        .replace(/^```html\n?/i, '')
+        .replace(/^```\n?/, '')
+        .replace(/\n?```$/i, '')
+        .trim();
+
+      setGeneratedHtml(cleanHtml);
+      toast.success("Email gerado com sucesso!");
+
+    } catch (error) {
+      console.error("Error generating email:", error);
+      toast.error(error instanceof Error ? error.message : "Erro ao gerar email");
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  const handleUseEmail = () => {
+    if (generatedHtml.trim()) {
+      onGenerated(generatedHtml);
+    }
+  };
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="w-full space-y-4"
+    >
+      {!showPreview ? (
+        <div className="space-y-4 p-5 rounded-xl border border-border/40 bg-muted/30">
+          <div>
+            <label className="text-sm font-medium text-foreground mb-1.5 block">
+              Objetivo do email *
+            </label>
+            <textarea
+              value={objective}
+              onChange={(e) => setObjective(e.target.value)}
+              placeholder="Ex: Promover uma oferta de Black Friday com 50% de desconto em todos os serviços..."
+              className="w-full min-h-[80px] p-3 rounded-lg border border-border/40 bg-background text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 resize-none"
+            />
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="text-sm font-medium text-foreground mb-1.5 block">
+                Tom do email
+              </label>
+              <select
+                value={tone}
+                onChange={(e) => setTone(e.target.value)}
+                className="w-full p-3 rounded-lg border border-border/40 bg-background text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20"
+              >
+                <option value="profissional">Profissional</option>
+                <option value="amigável">Amigável</option>
+                <option value="urgente">Urgente</option>
+                <option value="luxuoso">Luxuoso/Premium</option>
+                <option value="casual">Casual</option>
+                <option value="persuasivo">Persuasivo</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="text-sm font-medium text-foreground mb-1.5 block">
+                Nome da empresa
+              </label>
+              <input
+                type="text"
+                value={companyName}
+                onChange={(e) => setCompanyName(e.target.value)}
+                placeholder="Ex: Scale Beauty"
+                className="w-full p-3 rounded-lg border border-border/40 bg-background text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="text-sm font-medium text-foreground mb-1.5 block">
+              Produto/Serviço
+            </label>
+            <input
+              type="text"
+              value={productService}
+              onChange={(e) => setProductService(e.target.value)}
+              placeholder="Ex: Tratamentos estéticos, harmonização facial..."
+              className="w-full p-3 rounded-lg border border-border/40 bg-background text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20"
+            />
+          </div>
+
+          <div>
+            <label className="text-sm font-medium text-foreground mb-1.5 block">
+              Informações adicionais
+            </label>
+            <textarea
+              value={additionalInfo}
+              onChange={(e) => setAdditionalInfo(e.target.value)}
+              placeholder="Ex: Incluir CTA para agendar consulta, mencionar que temos estacionamento gratuito..."
+              className="w-full min-h-[60px] p-3 rounded-lg border border-border/40 bg-background text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 resize-none"
+            />
+          </div>
+
+          <button
+            onClick={handleGenerate}
+            disabled={!objective.trim() || isGenerating}
+            className={cn(
+              "w-full px-5 py-3 rounded-xl text-sm font-medium transition-all flex items-center justify-center gap-2",
+              "bg-gradient-to-r from-violet-500 to-fuchsia-500 text-white hover:from-violet-600 hover:to-fuchsia-600",
+              "disabled:opacity-50 disabled:cursor-not-allowed"
+            )}
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+            </svg>
+            Gerar Email com IA
+          </button>
+        </div>
+      ) : (
+        <div className="space-y-4">
+          {/* Generation preview */}
+          <div className="rounded-xl border border-border/40 overflow-hidden">
+            <div className="px-4 py-2.5 bg-muted/80 border-b border-border/40 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                {isGenerating && (
+                  <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                )}
+                <span className="text-xs font-medium text-muted-foreground">
+                  {isGenerating ? 'Gerando email...' : 'Email gerado'}
+                </span>
+              </div>
+              {!isGenerating && generatedHtml && (
+                <button
+                  onClick={() => setShowPreview(false)}
+                  className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  Gerar novamente
+                </button>
+              )}
+            </div>
+            
+            <div className="min-h-[300px] max-h-[400px] overflow-auto bg-white p-4">
+              {generatedHtml ? (
+                <div 
+                  className="prose prose-sm max-w-none"
+                  dangerouslySetInnerHTML={{ 
+                    __html: generatedHtml
+                      .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
+                      .replace(/on\w+="[^"]*"/gi, '')
+                  }}
+                />
+              ) : (
+                <div className="flex items-center justify-center h-[280px] text-muted-foreground text-sm">
+                  <div className="flex items-center gap-2">
+                    <div className="w-1.5 h-1.5 rounded-full bg-violet-500 animate-pulse" />
+                    <span>Iniciando geração...</span>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Use email button */}
+          {!isGenerating && generatedHtml && (
+            <div className="flex justify-end">
+              <button
+                onClick={handleUseEmail}
+                className={cn(
+                  "px-5 py-2.5 rounded-xl text-sm font-medium transition-colors flex items-center gap-2",
+                  "bg-black text-white hover:bg-gray-800"
+                )}
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+                Usar este email
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+    </motion.div>
+  );
+}
+
 // Component for HTML/message input - Modern code editor with syntax highlighting and preview
-function HtmlEditorComponent({ onSubmit }: { onSubmit: (html: string) => void }) {
-  const [content, setContent] = useState('');
+function HtmlEditorComponent({ onSubmit, initialContent = '' }: { onSubmit: (html: string) => void; initialContent?: string }) {
+  const [content, setContent] = useState(initialContent);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [activeTab, setActiveTab] = useState<'code' | 'preview'>('code');
   const textareaRef = React.useRef<HTMLTextAreaElement>(null);
   const preRef = React.useRef<HTMLPreElement>(null);
+
+  // Update content when initialContent changes
+  React.useEffect(() => {
+    if (initialContent) {
+      setContent(initialContent);
+    }
+  }, [initialContent]);
 
   const handleSubmit = () => {
     if (!content.trim()) {
