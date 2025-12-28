@@ -773,41 +773,22 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
     }
   }, [messages]);
 
-  // Show dispatch confirmation button instead of starting directly
-  // This ensures dispatch ONLY starts when user explicitly clicks the button
+  // Show dispatch confirmation via chat (no button - user confirms with text)
   const handleHtmlSubmit = async (html: string, subOriginId: string, type: string) => {
     // Store the HTML in side panel for reference
     setSidePanelContext({ subOriginId, dispatchType: type });
     setSidePanelHtml(html);
     setSidePanelOpen(true);
     
-    // Create the dispatch command that will be executed on button click
-    const templateType = html.includes('<') ? 'html' : 'simple';
-    const dispatchCommand = `START_DISPATCH:${type}:${subOriginId}:${templateType}:${currentConversationId || ''}:${html}`;
-    
-    // Show confirmation message with button
+    // Show confirmation message via chat (no button!)
     const confirmMessage: Message = {
       id: crypto.randomUUID(),
-      content: `Email pronto! Revise o conteúdo no painel lateral e clique no botão abaixo para iniciar o disparo.`,
+      content: `Email pronto! Você pode revisar o conteúdo no painel lateral. 📧\n\n**Quer que eu inicie o disparo agora?** (responda sim, pode, manda, etc.)`,
       role: "assistant",
       timestamp: new Date(),
-      component: (
-        <div className="mt-4">
-          <button
-            onClick={() => executeDispatch(dispatchCommand)}
-            className="flex items-center gap-2 px-6 py-3 bg-primary text-primary-foreground rounded-lg font-medium hover:bg-primary/90 transition-colors shadow-lg"
-          >
-            <span className="text-lg">🚀</span>
-            <span>Iniciar Disparo de {type === 'email' ? 'Emails' : 'WhatsApp'}</span>
-          </button>
-          <p className="text-xs text-muted-foreground mt-2">
-            Clique no botão acima para confirmar e iniciar o disparo
-          </p>
-        </div>
-      ),
     };
     setMessages(prev => [...prev, confirmMessage]);
-    logAction('system', 'Email preparado para disparo', 'Aguardando confirmação do usuário');
+    logAction('system', 'Email preparado para disparo', 'Aguardando confirmação via chat');
   };
 
   // Handle email choice - user has code ready (open side panel)
@@ -1335,6 +1316,63 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
           return;
         }
       }
+    }
+
+    // Check if user is confirming dispatch via chat
+    const lowerUserMsg = message.toLowerCase().trim();
+    const isUserConfirming = (
+      lowerUserMsg === 'sim' ||
+      lowerUserMsg === 's' ||
+      lowerUserMsg === 'yes' ||
+      lowerUserMsg === 'ok' ||
+      lowerUserMsg.includes('pode') ||
+      lowerUserMsg.includes('manda') ||
+      lowerUserMsg.includes('vai') ||
+      lowerUserMsg.includes('confirmo') ||
+      lowerUserMsg.includes('inicia') ||
+      lowerUserMsg.includes('começa') ||
+      lowerUserMsg.includes('dispara') ||
+      lowerUserMsg.includes('envia') ||
+      (lowerUserMsg.includes('sim') && lowerUserMsg.length < 20)
+    );
+    
+    const hasEverythingReady = sidePanelHtml && 
+                               sidePanelHtml.length > 100 && 
+                               selectedOriginData?.subOriginId &&
+                               !activeJobId;
+    
+    // Check if the last AI message asked for confirmation
+    const lastAiMessage = messages.filter(m => m.role === 'assistant').pop();
+    const aiAskedToConfirm = lastAiMessage && (
+      lastAiMessage.content.toLowerCase().includes('posso iniciar') ||
+      lastAiMessage.content.toLowerCase().includes('quer que eu inicie') ||
+      lastAiMessage.content.toLowerCase().includes('pronto para enviar') ||
+      lastAiMessage.content.toLowerCase().includes('iniciar o disparo') ||
+      lastAiMessage.content.toLowerCase().includes('inicie o disparo')
+    );
+    
+    if (isUserConfirming && hasEverythingReady && aiAskedToConfirm) {
+      // Auto-execute dispatch - user confirmed via chat!
+      const type = dispatchType || 'email';
+      
+      // Encode HTML and subject for the command
+      const encodedHtml = sidePanelHtml ? btoa(encodeURIComponent(sidePanelHtml)) : '';
+      const encodedSubject = sidePanelSubject ? btoa(encodeURIComponent(sidePanelSubject)) : '';
+      
+      const autoCommand = `START_DISPATCH:${type}:${selectedOriginData.subOriginId}:html:${currentConversationId || ''}:${encodedSubject}:${encodedHtml}`;
+      
+      const confirmingMessage: Message = {
+        id: crypto.randomUUID(),
+        content: `Perfeito! Iniciando o disparo agora... 🚀`,
+        role: "assistant",
+        timestamp: new Date(),
+      };
+      setMessages(prev => [...prev, confirmingMessage]);
+      
+      logAction('user', 'Confirmou disparo via chat', `Tipo: ${type}`);
+      executeDispatch(autoCommand);
+      setIsLoading(false);
+      return;
     }
 
     // Check if we're waiting for email description - stream to side panel
