@@ -58,7 +58,19 @@ async function sendSingleEmail(
   supabase: any
 ): Promise<{ success: boolean; error?: string; resendId?: string }> {
   try {
-    const rawTemplate = templateContent || job.message_template || 'Olá {{name}}!';
+    // Parse message_template if it's JSON (new format with html + subject)
+    let parsedTemplate: { html?: string; subject?: string } | null = null;
+    if (job.message_template) {
+      try {
+        parsedTemplate = JSON.parse(job.message_template);
+      } catch {
+        // Not JSON, treat as raw template string (legacy format)
+        parsedTemplate = null;
+      }
+    }
+    
+    // Get the actual HTML content - priority: param > parsed JSON > raw template > default
+    const rawTemplate = templateContent || parsedTemplate?.html || job.message_template || 'Olá {{name}}!';
     const isHtmlTemplate = rawTemplate.trim().startsWith('<') || templateType === 'html';
     const personalizedContent = rawTemplate.replace(/\{\{name\}\}/g, lead.name);
     
@@ -73,8 +85,11 @@ async function sendSingleEmail(
       `;
     }
 
+    // Get subject - priority: param > parsed JSON > title tag > default
     const subjectMatch = personalizedContent.match(/<title>(.*?)<\/title>/i);
-    const finalSubject = emailSubject || job.message_template?.match(/<title>(.*?)<\/title>/i)?.[1] || subjectMatch?.[1] || `Mensagem para ${lead.name}`;
+    const finalSubject = emailSubject || parsedTemplate?.subject || subjectMatch?.[1] || `Mensagem para ${lead.name}`;
+    
+    console.log(`[DISPATCH] Sending email to ${lead.email} with subject: "${finalSubject.substring(0, 50)}..."`);
     
     // Send email with retry
     const emailResponse = await withRetry(async () => {

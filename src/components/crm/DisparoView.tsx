@@ -1151,9 +1151,20 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
           continue;
         }
         
-        // Build the corrected command with the actual UUID and conversation ID
-        const correctedCommand = `START_DISPATCH:${type}:${actualSubOriginId}:${templateType}:${currentConversationId || ''}`;
-        console.log("[INFO] Corrected command:", correctedCommand);
+        // Encode HTML and subject to avoid issues with special characters in the command
+        const encodedHtml = sidePanelHtml ? btoa(encodeURIComponent(sidePanelHtml)) : '';
+        const encodedSubject = sidePanelSubject ? btoa(encodeURIComponent(sidePanelSubject)) : '';
+        
+        // Build the corrected command with the actual UUID, conversation ID, subject and HTML
+        const correctedCommand = `START_DISPATCH:${type}:${actualSubOriginId}:${templateType}:${currentConversationId || ''}:${encodedSubject}:${encodedHtml}`;
+        console.log("[INFO] Corrected command with HTML/Subject:", { 
+          type, 
+          actualSubOriginId, 
+          templateType, 
+          hasSubject: !!sidePanelSubject, 
+          hasHtml: !!sidePanelHtml,
+          subjectPreview: sidePanelSubject?.substring(0, 50)
+        });
         
         await executeDispatch(correctedCommand);
         continue;
