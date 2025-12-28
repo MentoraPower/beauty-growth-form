@@ -112,7 +112,7 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
     switch (componentData.type) {
       case 'leads_preview':
         return (
-          <div className="mt-4 space-y-4 w-[calc(100vw-6rem)] max-w-3xl -ml-[15%]">
+          <div className="mt-4 space-y-4 w-full">
             <LeadsPreviewComponent preview={componentData.data.preview} />
             <HtmlEditorComponent 
               onSubmit={(html) => handleHtmlSubmitFromReload(html, componentData.data.subOriginId, componentData.data.dispatchType)}
@@ -282,7 +282,7 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
             data: { preview: result.data, subOriginId, dispatchType: type }
           },
           component: (
-            <div className="mt-4 space-y-4 w-[calc(100vw-6rem)] max-w-3xl -ml-[15%]">
+            <div className="mt-4 space-y-4 w-full">
               {previewComponent}
               <HtmlEditorComponent 
                 onSubmit={(html) => handleHtmlSubmit(html, subOriginId, type)}
