@@ -740,11 +740,17 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
                       <p className="text-[15px] leading-relaxed whitespace-pre-wrap">{msg.content}</p>
                     </div>
                   ) : (
-                    <div className="text-foreground max-w-[85%]">
-                      <p className="text-[15px] leading-relaxed whitespace-pre-wrap">
-                        {formatMessageContent(msg.content)}
-                      </p>
-                      {msg.component}
+                    <div className="w-full">
+                      <div className="max-w-[85%]">
+                        <p className="text-[15px] leading-relaxed whitespace-pre-wrap text-foreground">
+                          {formatMessageContent(msg.content)}
+                        </p>
+                      </div>
+                      {msg.component && (
+                        <div className="w-full mt-4">
+                          {msg.component}
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
