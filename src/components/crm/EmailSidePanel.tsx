@@ -132,10 +132,21 @@ export function EmailSidePanel({
   const [showPreviewLoading, setShowPreviewLoading] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const preRef = useRef<HTMLPreElement>(null);
+  const previewRef = useRef<HTMLDivElement>(null);
   const displayedIndexRef = useRef(0);
   const previousContentRef = useRef("");
   const editAnimationRef = useRef<number | null>(null);
   const wasGeneratingRef = useRef(false);
+
+  // Handle preview content edit
+  const handlePreviewBlur = useCallback(() => {
+    if (previewRef.current && !isGenerating && !isEditing) {
+      const newHtml = previewRef.current.innerHTML;
+      if (newHtml !== htmlContent) {
+        onHtmlChange(newHtml);
+      }
+    }
+  }, [htmlContent, isGenerating, isEditing, onHtmlChange]);
 
   // Detect content changes and animate edits
   useEffect(() => {
@@ -506,7 +517,11 @@ export function EmailSidePanel({
               </div>
             ) : htmlContent ? (
               <div
-                className="p-6 min-h-full"
+                ref={previewRef}
+                className="p-6 min-h-full focus:outline-none focus:ring-2 focus:ring-primary/20 focus:ring-inset cursor-text"
+                contentEditable={!isGenerating && !isEditing}
+                suppressContentEditableWarning
+                onBlur={handlePreviewBlur}
                 dangerouslySetInnerHTML={{ __html: getSanitizedHtml() }}
               />
             ) : (
@@ -528,7 +543,7 @@ export function EmailSidePanel({
       {/* Footer hint */}
       <div className="px-5 py-3 border-t border-border bg-muted/20">
         <p className="text-xs text-muted-foreground text-center">
-          Quando quiser enviar, é só falar no chat que vou preparar o envio
+          {activeTab === 'preview' ? 'Clique no texto para editar diretamente' : 'Edite o código HTML diretamente'}
         </p>
       </div>
     </div>
