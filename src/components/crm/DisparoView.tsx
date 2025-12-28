@@ -147,11 +147,12 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
     handleHtmlSubmit(html, subOriginId, type);
   };
 
-  // Load conversation from URL on mount
+  // Load conversation from URL on mount or when URL changes
   useEffect(() => {
     const convId = searchParams.get('conversation') || searchParams.get('conv');
-    if (convId && !initialLoadDone) {
-      // Load the conversation from database
+    
+    // If we have a convId and it's different from current, load it
+    if (convId && convId !== currentConversationId) {
       const loadConversation = async () => {
         try {
           const { data, error } = await supabase
@@ -175,26 +176,29 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
 
           setCurrentConversationId(convId);
           setMessages(loadedMessages);
+          setInitialLoadDone(true);
         } catch (error) {
           console.error("Error loading conversation from URL:", error);
           // Remove invalid conv param
-          searchParams.delete('conversation');
-          searchParams.delete('conv');
-          setSearchParams(searchParams);
-        } finally {
+          const newParams = new URLSearchParams(searchParams);
+          newParams.delete('conversation');
+          newParams.delete('conv');
+          setSearchParams(newParams);
           setInitialLoadDone(true);
         }
       };
       loadConversation();
-    } else if (!convId && currentConversationId && initialLoadDone) {
+    } else if (!convId && currentConversationId) {
       // URL cleared - start new conversation
       setCurrentConversationId(null);
       setMessages([]);
       setCsvLeads(null);
-    } else {
+      setPendingEmailContext(null);
+      setInitialLoadDone(true);
+    } else if (!convId && !initialLoadDone) {
       setInitialLoadDone(true);
     }
-  }, [searchParams, initialLoadDone]);
+  }, [searchParams]);
 
   // Reconstruct components after messages are loaded
   useEffect(() => {
