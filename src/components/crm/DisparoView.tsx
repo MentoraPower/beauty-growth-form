@@ -1048,22 +1048,22 @@ function HtmlEditorComponent({ onSubmit }: { onSubmit: (html: string) => void })
       animate={{ opacity: 1, y: 0 }}
       className="my-4 flex justify-end"
     >
-      <div className="w-full max-w-[85%]">
-        <div className="text-sm text-muted-foreground mb-2 text-right">
-          Template do Email · Use <code className="bg-muted px-1.5 py-0.5 rounded text-xs text-foreground">{"{{name}}"}</code> para personalizar
+      <div className="w-full">
+        <div className="text-xs text-muted-foreground mb-2 text-right">
+          Template do Email · Use <code className="bg-muted px-1 py-0.5 rounded text-xs text-foreground">{"{{name}}"}</code> para personalizar
         </div>
         
         {/* Code editor container */}
-        <div className="rounded-xl overflow-hidden border border-border/60 shadow-sm bg-[#1e1e1e]">
+        <div className="rounded-xl overflow-hidden border border-border/40 shadow-sm bg-muted/50">
           {/* Header bar */}
-          <div className="flex items-center justify-between px-4 py-2.5 bg-[#2d2d2d] border-b border-[#404040]">
-            <span className="text-xs text-gray-400 font-medium">
+          <div className="flex items-center justify-between px-4 py-2.5 bg-muted/80 border-b border-border/40">
+            <span className="text-xs text-muted-foreground font-medium">
               {content.includes('<') ? 'html' : 'texto'}
             </span>
             <div className="flex items-center gap-3">
               <button 
                 onClick={handleCopy}
-                className="text-xs text-gray-400 hover:text-gray-200 transition-colors flex items-center gap-1.5"
+                className="text-xs text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1.5"
               >
                 <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
@@ -1104,11 +1104,11 @@ function HtmlEditorComponent({ onSubmit }: { onSubmit: (html: string) => void })
             {/* Highlighted code display */}
             <pre
               ref={preRef}
-              className="absolute inset-0 p-5 font-mono text-sm text-gray-300 pointer-events-none overflow-auto whitespace-pre-wrap break-words"
+              className="absolute inset-0 p-5 font-mono text-sm text-foreground pointer-events-none overflow-auto whitespace-pre-wrap break-words"
               aria-hidden="true"
             >
               {content ? highlightHtml(content) : (
-                <span className="text-gray-500">
+                <span className="text-muted-foreground">
                   {`Cole aqui o HTML do email...
 
 Exemplo:
@@ -1127,8 +1127,7 @@ Cmd/Ctrl + Enter para enviar`}
               onChange={(e) => setContent(e.target.value)}
               onScroll={handleScroll}
               onKeyDown={handleKeyDown}
-              className="relative w-full min-h-[280px] p-5 bg-transparent font-mono text-sm text-transparent caret-white focus:outline-none resize-y"
-              style={{ caretColor: 'white' }}
+              className="relative w-full min-h-[280px] p-5 bg-transparent font-mono text-sm text-transparent caret-foreground focus:outline-none resize-y"
               spellCheck={false}
             />
           </div>
