@@ -273,7 +273,13 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
 
           if (error) throw error;
 
-          const loadedMessages: Message[] = ((data.messages as any[]) || []).map((m: any) => {
+          // Handle new format with sidePanelState or old format (just messages array)
+          const rawData = data.messages as any;
+          const isNewFormat = rawData && typeof rawData === 'object' && 'messages' in rawData && Array.isArray(rawData.messages);
+          
+          const messagesArray = isNewFormat ? rawData.messages : (Array.isArray(rawData) ? rawData : []);
+          
+          const loadedMessages: Message[] = messagesArray.map((m: any) => {
             const msg: Message = {
               id: m.id,
               content: m.content,
@@ -286,6 +292,25 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
 
           setCurrentConversationId(convId);
           setMessages(loadedMessages);
+          
+          // Restore side panel state if available
+          if (isNewFormat && rawData.sidePanelState) {
+            const { html, isOpen, context } = rawData.sidePanelState;
+            if (html) setSidePanelHtml(html);
+            if (isOpen) setSidePanelOpen(true);
+            if (context) setSidePanelContext(context);
+          }
+          
+          // Restore origin data if available
+          if (isNewFormat && rawData.selectedOriginData) {
+            setSelectedOriginData(rawData.selectedOriginData);
+          }
+          
+          // Restore dispatch type if available
+          if (isNewFormat && rawData.dispatchType) {
+            setDispatchType(rawData.dispatchType);
+          }
+          
           setInitialLoadDone(true);
         } catch (error) {
           console.error("Error loading conversation from URL:", error);
@@ -304,6 +329,11 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
       setMessages([]);
       setCsvLeads(null);
       setPendingEmailContext(null);
+      setSidePanelOpen(false);
+      setSidePanelHtml('');
+      setSidePanelContext(null);
+      setSelectedOriginData(null);
+      setDispatchType(null);
       setInitialLoadDone(true);
     } else if (!convId && !initialLoadDone) {
       setInitialLoadDone(true);
@@ -332,15 +362,38 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
   const lastSavedMessagesCount = useRef(0);
 
   // Auto-save conversation
-  const saveConversation = useCallback(async (forceCreate = false) => {
+  const saveConversation = useCallback(async (forceCreate = false, customTitle?: string) => {
     if (messages.length === 0) return null;
 
     try {
-      // Generate title from first user message
-      const firstUserMessage = messages.find(m => m.role === "user");
-      const title = firstUserMessage 
-        ? firstUserMessage.content.slice(0, 50) + (firstUserMessage.content.length > 50 ? "..." : "")
-        : "Nova conversa";
+      // Generate title: prefer custom title (email subject), then look for email context, then first user message
+      let title = customTitle || "Nova conversa";
+      
+      if (!customTitle) {
+        // Try to find email subject from HTML content in side panel
+        if (sidePanelHtml) {
+          const subjectMatch = sidePanelHtml.match(/<title[^>]*>([^<]+)<\/title>/i);
+          if (subjectMatch && subjectMatch[1]) {
+            title = `📧 ${subjectMatch[1].slice(0, 40)}${subjectMatch[1].length > 40 ? '...' : ''}`;
+          }
+        }
+        
+        // If no subject found, look for dispatch type context
+        if (title === "Nova conversa" && sidePanelContext?.dispatchType === 'email') {
+          const selectedName = selectedOriginData?.subOriginName || '';
+          if (selectedName) {
+            title = `📧 Email para ${selectedName.slice(0, 35)}${selectedName.length > 35 ? '...' : ''}`;
+          }
+        }
+        
+        // Fallback to first user message
+        if (title === "Nova conversa") {
+          const firstUserMessage = messages.find(m => m.role === "user");
+          if (firstUserMessage) {
+            title = firstUserMessage.content.slice(0, 50) + (firstUserMessage.content.length > 50 ? "..." : "");
+          }
+        }
+      }
 
       const messagesJson = messages.map(m => {
         const msg: Record<string, any> = {
@@ -355,12 +408,25 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
         return msg;
       });
 
+      // Include side panel state in the conversation data
+      const conversationData = {
+        messages: messagesJson,
+        sidePanelState: {
+          html: sidePanelHtml,
+          isOpen: sidePanelOpen,
+          context: sidePanelContext,
+        },
+        selectedOriginData,
+        dispatchType,
+      };
+
       if (currentConversationId && !forceCreate) {
         // Update existing
         const { error } = await supabase
           .from("dispatch_conversations")
           .update({ 
-            messages: messagesJson,
+            messages: conversationData as any,
+            title,
             updated_at: new Date().toISOString()
           })
           .eq("id", currentConversationId);
@@ -373,7 +439,7 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
         const { data, error } = await supabase
           .from("dispatch_conversations")
           .insert({ 
-            messages: messagesJson,
+            messages: conversationData as any,
             title 
           })
           .select()
@@ -387,7 +453,7 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
       console.error("Error saving conversation:", error);
       return null;
     }
-  }, [messages, currentConversationId]);
+  }, [messages, currentConversationId, sidePanelHtml, sidePanelOpen, sidePanelContext, selectedOriginData, dispatchType]);
 
   // Auto-save when messages change
   useEffect(() => {
@@ -409,6 +475,17 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
       return () => clearTimeout(timeout);
     }
   }, [messages, currentConversationId, initialLoadDone, saveConversation]);
+
+  // Auto-save when side panel content changes
+  useEffect(() => {
+    if (!initialLoadDone || !currentConversationId) return;
+    
+    // Debounced save when side panel HTML changes
+    const timeout = setTimeout(() => {
+      saveConversation();
+    }, 2000);
+    return () => clearTimeout(timeout);
+  }, [sidePanelHtml, sidePanelOpen, sidePanelContext, initialLoadDone, currentConversationId]);
 
   // Reset counter when conversation changes
   useEffect(() => {
