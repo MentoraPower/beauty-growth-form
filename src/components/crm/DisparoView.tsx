@@ -108,39 +108,130 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Function to reconstruct component from componentData
-  const reconstructComponent = useCallback((componentData: MessageComponentData, messageId: string): React.ReactNode => {
+  function reconstructMessageComponent(componentData: MessageComponentData, messageId: string): React.ReactNode {
     switch (componentData.type) {
-      case 'leads_preview':
+      case 'email_choice': {
+        const { preview, subOriginId, dispatchType } = (componentData.data || {}) as any;
+        if (!preview || !subOriginId || !dispatchType) return null;
         return (
           <div className="mt-4 space-y-4 w-full">
-            <LeadsPreviewComponent preview={componentData.data.preview} />
-            <HtmlEditorComponent 
-              onSubmit={(html) => handleHtmlSubmitFromReload(html, componentData.data.subOriginId, componentData.data.dispatchType)}
+            <LeadsPreviewComponent preview={preview} />
+            <EmailChoiceComponent
+              onChooseCode={() => handleEmailChoiceCode(subOriginId, dispatchType)}
+              onChooseAI={() => handleEmailChoiceAI(subOriginId, dispatchType)}
             />
           </div>
         );
-      case 'dispatch_progress':
+      }
+      case 'leads_preview': {
+        const { preview, subOriginId, dispatchType } = (componentData.data || {}) as any;
+        if (!preview || !subOriginId || !dispatchType) return null;
+        return (
+          <div className="mt-4 space-y-4 w-full">
+            <LeadsPreviewComponent preview={preview} />
+            <HtmlEditorComponent
+              onSubmit={(html) => handleHtmlSubmitFromReload(html, subOriginId, dispatchType)}
+            />
+          </div>
+        );
+      }
+      case 'html_editor': {
+        const { subOriginId, dispatchType, initialContent } = (componentData.data || {}) as any;
+        if (!subOriginId || !dispatchType) return null;
+        return (
+          <div className="mt-4 w-full">
+            <HtmlEditorComponent
+              onSubmit={(html) => handleHtmlSubmitFromReload(html, subOriginId, dispatchType)}
+              initialContent={initialContent || ''}
+            />
+          </div>
+        );
+      }
+      case 'copy_choice': {
+        const { subOriginId, dispatchType } = (componentData.data || {}) as any;
+        if (!subOriginId || !dispatchType) return null;
+        return (
+          <div className="mt-4 w-full">
+            <CopyChoiceComponent
+              onHasCopy={() => handleHasCopy(subOriginId, dispatchType)}
+              onCreateCopy={() => handleCreateCopy(subOriginId, dispatchType)}
+            />
+          </div>
+        );
+      }
+      case 'copy_input': {
+        const { subOriginId, dispatchType } = (componentData.data || {}) as any;
+        if (!subOriginId || !dispatchType) return null;
+        return (
+          <div className="mt-4 w-full">
+            <CopyInputComponent
+              onGenerate={(copyText, companyName, productService) =>
+                handleGenerateFromCopy(copyText, companyName, productService, subOriginId, dispatchType)
+              }
+            />
+          </div>
+        );
+      }
+      case 'email_generator_streaming': {
+        const { subOriginId, dispatchType, copyText, companyName, productService } = (componentData.data || {}) as any;
+        if (!subOriginId || !dispatchType) return null;
+        if (!copyText) {
+          return <div className="mt-4 text-sm text-muted-foreground">Geração em andamento…</div>;
+        }
+        return (
+          <div className="mt-4 w-full">
+            <CopyToHtmlGenerator
+              copyText={copyText}
+              companyName={companyName || ''}
+              productService={productService || ''}
+              onGenerated={(html) => handleEmailGenerated(html, subOriginId, dispatchType)}
+            />
+          </div>
+        );
+      }
+      case 'email_generator': {
+        const { subOriginId, dispatchType } = (componentData.data || {}) as any;
+        if (!subOriginId || !dispatchType) return null;
+        return (
+          <div className="mt-4 p-4 rounded-xl border border-border/40 bg-muted/30">
+            <p className="text-sm text-foreground">
+              Para continuar, descreva no chat abaixo o email que você quer criar.
+            </p>
+            <button
+              type="button"
+              onClick={() => {
+                setPendingEmailContext({ subOriginId, dispatchType });
+                toast.message("Ok! Agora digite a descrição no chat.");
+              }}
+              className="mt-3 px-4 py-2 rounded-lg bg-foreground text-background text-sm font-medium hover:bg-foreground/90 transition-colors"
+            >
+              Continuar
+            </button>
+          </div>
+        );
+      }
+      case 'dispatch_progress': {
+        const { jobId } = (componentData.data || {}) as any;
+        if (!jobId) return null;
         return (
           <div className="mt-4">
-            <DispatchProgressTable
-              jobId={componentData.data.jobId}
-              onCommand={handleCommand}
-            />
+            <DispatchProgressTable jobId={jobId} onCommand={handleCommand} />
           </div>
         );
-      case 'origins_list':
+      }
+      case 'origins_list': {
+        const { origins } = (componentData.data || {}) as any;
+        if (!origins) return null;
         return (
           <div className="mt-4 space-y-4">
-            <OriginsListComponent 
-              origins={componentData.data.origins}
-              onSelect={handleOriginSelect}
-            />
+            <OriginsListComponent origins={origins} onSelect={handleOriginSelect} />
           </div>
         );
+      }
       default:
         return null;
     }
-  }, []);
+  }
 
   // Handle HTML submit from reloaded conversation
   const handleHtmlSubmitFromReload = async (html: string, subOriginId: string, type: string) => {
@@ -209,14 +300,14 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
           if (m.componentData && !m.component) {
             return {
               ...m,
-              component: reconstructComponent(m.componentData, m.id)
+              component: reconstructMessageComponent(m.componentData, m.id)
             };
           }
           return m;
         }));
       }
     }
-  }, [initialLoadDone, messages, reconstructComponent]);
+  }, [initialLoadDone, messages]);
 
   // Track last saved message count for auto-save
   const lastSavedMessagesCount = useRef(0);
@@ -552,7 +643,7 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
       timestamp: new Date(),
       componentData: {
         type: 'email_generator_streaming',
-        data: { subOriginId, dispatchType: type }
+        data: { subOriginId, dispatchType: type, copyText, companyName, productService }
       },
       component: (
         <div className="mt-4 w-full">
@@ -577,7 +668,7 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
       timestamp: new Date(),
       componentData: {
         type: 'html_editor',
-        data: { subOriginId, dispatchType: type }
+        data: { subOriginId, dispatchType: type, initialContent: html }
       },
       component: (
         <div className="mt-4 w-full">
@@ -807,31 +898,22 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
           .replace(/\n?```$/i, '')
           .trim();
 
-        // Update message with editor component
+        // Update message with HTML editor component (persisted via componentData)
         setMessages(prev => 
           prev.map(m => 
             m.id === assistantMessageId 
               ? { 
                   ...m, 
-                  content: "Email gerado! Você pode editar e ajustar antes de usar:",
+                  content: "Email gerado! Você pode revisar e editar abaixo antes de enviar:",
+                  componentData: {
+                    type: 'html_editor',
+                    data: { subOriginId: ctx.subOriginId, dispatchType: ctx.dispatchType, initialContent: cleanHtml }
+                  },
                   component: (
                     <div className="mt-4 w-full">
-                      <EmailEditorWithTabs
-                        html={cleanHtml}
-                        isGenerating={false}
-                        onHtmlChange={() => {}}
-                        onRegenerate={() => {
-                          // Re-trigger email generation
-                          setPendingEmailContext(ctx);
-                          const retryMessage: Message = {
-                            id: crypto.randomUUID(),
-                            content: "Me conte novamente sobre o email que você quer criar:",
-                            role: "assistant",
-                            timestamp: new Date(),
-                          };
-                          setMessages(prev => [...prev, retryMessage]);
-                        }}
-                        onUse={() => handleEmailGenerated(cleanHtml, ctx.subOriginId, ctx.dispatchType)}
+                      <HtmlEditorComponent
+                        onSubmit={(finalHtml) => handleHtmlSubmit(finalHtml, ctx.subOriginId, ctx.dispatchType)}
+                        initialContent={cleanHtml}
                       />
                     </div>
                   )
