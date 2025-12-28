@@ -480,7 +480,7 @@ export function EmailSidePanel({
             {/* Highlighted code display */}
             <pre
               ref={preRef}
-              className="absolute inset-0 p-5 font-mono text-xs leading-relaxed pointer-events-none overflow-y-auto overflow-x-hidden whitespace-pre-wrap break-all"
+              className="absolute inset-0 p-5 font-mono text-xs leading-relaxed pointer-events-none overflow-y-auto overflow-x-hidden whitespace-pre-wrap break-all [word-break:break-all] [overflow-wrap:anywhere]"
               aria-hidden="true"
             >
               {displayedContent ? (
@@ -503,7 +503,7 @@ export function EmailSidePanel({
               value={htmlContent}
               onChange={(e) => onHtmlChange(e.target.value)}
               onScroll={handleScroll}
-              className="absolute inset-0 w-full h-full p-5 font-mono text-xs leading-relaxed bg-transparent text-transparent caret-foreground resize-none focus:outline-none overflow-y-auto overflow-x-hidden whitespace-pre-wrap break-all"
+              className="absolute inset-0 w-full h-full p-5 font-mono text-xs leading-relaxed bg-transparent text-transparent caret-foreground resize-none focus:outline-none overflow-y-auto overflow-x-hidden whitespace-pre-wrap break-all [word-break:break-all] [overflow-wrap:anywhere]"
               spellCheck={false}
               placeholder=""
             />
@@ -543,7 +543,7 @@ export function EmailSidePanel({
             ) : htmlContent ? (
               <div
                 ref={previewRef}
-                className="p-6 min-h-full focus:outline-none focus:ring-2 focus:ring-primary/20 focus:ring-inset cursor-text"
+                className="p-6 min-h-full focus:outline-none focus:ring-2 focus:ring-primary/20 focus:ring-inset cursor-text break-all [word-break:break-all] [overflow-wrap:anywhere]"
                 contentEditable={!isGenerating && !isEditing}
                 suppressContentEditableWarning
                 onBlur={handlePreviewBlur}
