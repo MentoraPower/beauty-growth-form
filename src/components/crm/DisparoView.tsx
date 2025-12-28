@@ -304,13 +304,7 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
   const handleHtmlSubmit = async (html: string, subOriginId: string, type: string) => {
     setIsLoading(true);
     
-    const userMessage: Message = {
-      id: crypto.randomUUID(),
-      content: "Iniciar disparo com o template fornecido",
-      role: "user",
-      timestamp: new Date(),
-    };
-    setMessages(prev => [...prev, userMessage]);
+    // Start dispatch directly without showing user message
 
     try {
       const templateType = html.includes('<') ? 'html' : 'simple';
@@ -1040,81 +1034,105 @@ function HtmlEditorComponent({ onSubmit }: { onSubmit: (html: string) => void })
     }
   };
 
+  // Handle keyboard shortcut to submit
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
+      e.preventDefault();
+      handleSubmit();
+    }
+  };
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      className="my-4"
+      className="my-4 flex justify-end"
     >
-      <div className="text-sm text-muted-foreground mb-2">
-        Template do Email · Use <code className="bg-muted px-1.5 py-0.5 rounded text-xs text-foreground">{"{{name}}"}</code> para personalizar
-      </div>
-      
-      {/* Code editor container */}
-      <div className="rounded-xl overflow-hidden border border-border/60 shadow-sm bg-[#1e1e1e]">
-        {/* Header bar */}
-        <div className="flex items-center justify-between px-4 py-2.5 bg-[#2d2d2d] border-b border-[#404040]">
-          <span className="text-xs text-gray-400 font-medium">
-            {content.includes('<') ? 'html' : 'texto'}
-          </span>
-          <button 
-            onClick={handleCopy}
-            className="text-xs text-gray-400 hover:text-gray-200 transition-colors flex items-center gap-1.5"
-          >
-            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-            </svg>
-            Copiar código
-          </button>
+      <div className="w-full max-w-[85%]">
+        <div className="text-sm text-muted-foreground mb-2 text-right">
+          Template do Email · Use <code className="bg-muted px-1.5 py-0.5 rounded text-xs text-foreground">{"{{name}}"}</code> para personalizar
         </div>
         
-        {/* Editor with syntax highlighting overlay */}
-        <div className="relative min-h-[320px]">
-          {/* Highlighted code display */}
-          <pre
-            ref={preRef}
-            className="absolute inset-0 p-5 font-mono text-sm text-gray-300 pointer-events-none overflow-auto whitespace-pre-wrap break-words"
-            aria-hidden="true"
-          >
-            {content ? highlightHtml(content) : (
-              <span className="text-gray-500">
-                {`Cole aqui o HTML do email ou mensagem simples...
+        {/* Code editor container */}
+        <div className="rounded-xl overflow-hidden border border-border/60 shadow-sm bg-[#1e1e1e]">
+          {/* Header bar */}
+          <div className="flex items-center justify-between px-4 py-2.5 bg-[#2d2d2d] border-b border-[#404040]">
+            <span className="text-xs text-gray-400 font-medium">
+              {content.includes('<') ? 'html' : 'texto'}
+            </span>
+            <div className="flex items-center gap-3">
+              <button 
+                onClick={handleCopy}
+                className="text-xs text-gray-400 hover:text-gray-200 transition-colors flex items-center gap-1.5"
+              >
+                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                </svg>
+                Copiar código
+              </button>
+              <button
+                onClick={handleSubmit}
+                disabled={isSubmitting || !content.trim()}
+                className={cn(
+                  "px-3 py-1 rounded-md text-xs font-medium transition-colors flex items-center gap-1.5",
+                  "bg-black text-white hover:bg-gray-800",
+                  "disabled:opacity-50 disabled:cursor-not-allowed"
+                )}
+              >
+                {isSubmitting ? (
+                  <>
+                    <svg className="w-3 h-3 animate-spin" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Iniciando...
+                  </>
+                ) : (
+                  <>
+                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                    </svg>
+                    Enviar
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+          
+          {/* Editor with syntax highlighting overlay */}
+          <div className="relative min-h-[280px]">
+            {/* Highlighted code display */}
+            <pre
+              ref={preRef}
+              className="absolute inset-0 p-5 font-mono text-sm text-gray-300 pointer-events-none overflow-auto whitespace-pre-wrap break-words"
+              aria-hidden="true"
+            >
+              {content ? highlightHtml(content) : (
+                <span className="text-gray-500">
+                  {`Cole aqui o HTML do email...
 
 Exemplo:
 <h1>Olá {{name}}!</h1>
-<p>Temos uma oferta especial para você.</p>
+<p>Temos uma oferta especial.</p>
 
-Ou texto simples:
-Olá {{name}}, temos uma oferta especial!`}
-              </span>
-            )}
-          </pre>
-          
-          {/* Actual textarea for input */}
-          <textarea
-            ref={textareaRef}
-            value={content}
-            onChange={(e) => setContent(e.target.value)}
-            onScroll={handleScroll}
-            className="relative w-full min-h-[320px] p-5 bg-transparent font-mono text-sm text-transparent caret-white focus:outline-none resize-y"
-            style={{ caretColor: 'white' }}
-            spellCheck={false}
-          />
+Cmd/Ctrl + Enter para enviar`}
+                </span>
+              )}
+            </pre>
+            
+            {/* Actual textarea for input */}
+            <textarea
+              ref={textareaRef}
+              value={content}
+              onChange={(e) => setContent(e.target.value)}
+              onScroll={handleScroll}
+              onKeyDown={handleKeyDown}
+              className="relative w-full min-h-[280px] p-5 bg-transparent font-mono text-sm text-transparent caret-white focus:outline-none resize-y"
+              style={{ caretColor: 'white' }}
+              spellCheck={false}
+            />
+          </div>
         </div>
-      </div>
-
-      <div className="flex items-center justify-end mt-4">
-        <button
-          onClick={handleSubmit}
-          disabled={isSubmitting || !content.trim()}
-          className={cn(
-            "px-5 py-2.5 rounded-lg text-sm font-medium transition-colors",
-            "bg-primary text-primary-foreground hover:bg-primary/90",
-            "disabled:opacity-50 disabled:cursor-not-allowed"
-          )}
-        >
-          {isSubmitting ? "Iniciando..." : "Iniciar Disparo"}
-        </button>
       </div>
     </motion.div>
   );
