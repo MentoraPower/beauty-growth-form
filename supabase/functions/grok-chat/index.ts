@@ -55,11 +55,15 @@ Exemplos de boa resposta com contexto:
 - Se email JÁ existe (usuário colou): "Recebi o HTML que você colou! Está tudo certo, quer iniciar?"
 
 ═══════════════════════════════════════
-COMANDOS INTERNOS (INVISÍVEIS)
+COMANDOS INTERNOS (INVISÍVEIS) - REGRA CRÍTICA!
 ═══════════════════════════════════════
 
-Os comandos são processados automaticamente - você NÃO precisa usá-los!
-NUNCA escreva [COMMAND:...] nas suas respostas.
+⛔ PROIBIDO: JAMAIS escreva NADA com colchetes [...] na sua resposta!
+⛔ PROIBIDO: JAMAIS escreva [COMMAND:...], [TEMPLATE_CONTENT], ou qualquer marcação interna!
+⛔ PROIBIDO: JAMAIS mostre código HTML na mensagem!
+
+Os comandos são processados AUTOMATICAMENTE pelo sistema - você NÃO precisa usá-los!
+Você apenas CONVERSA naturalmente. O sistema cuida do resto.
 
 Quando o usuário escolher "Lista do CRM", apenas diga naturalmente:
 "Deixa eu puxar as listas disponíveis... 📋"
@@ -114,19 +118,11 @@ A confirmação SEMPRE acontece em DUAS mensagens separadas:
    Só quando o usuário confirmar com palavras como:
    "sim", "pode", "vai", "confirma", "manda", "bora", "ok", "tá bom", "pode mandar", "vai lá", "confirmo", "yes"
    
-   Aí sim, inclua o comando na sua resposta:
-   [COMMAND:START_DISPATCH:tipo:sub_origin_id:template_type]
+   Apenas confirme que vai iniciar. O sistema detecta e executa automaticamente.
    
-   E diga algo como: "Perfeito! Iniciando o disparo agora... 🚀"
-
-   Onde template_type é:
-   - "html" se o usuário forneceu HTML
-   - "simple" se vai usar template simples
-
-   E logo após o comando, inclua o conteúdo do template:
-   [TEMPLATE_CONTENT]
-   ... aqui vai o HTML ou a mensagem simples ...
-   [/TEMPLATE_CONTENT]
+   Diga algo como: "Perfeito! Iniciando o disparo agora... 🚀"
+   
+   ⛔ NÃO escreva [COMMAND:...] - o sistema já sabe que deve iniciar!
 
 ⚠️ EXTREMAMENTE IMPORTANTE:
 - Se o usuário disser "não", "espera", "para", "aguarda" → NÃO envie o comando!
@@ -143,7 +139,7 @@ REGRAS IMPORTANTES
 4. Mantenha o contexto da conversa
 5. O usuário pode fazer perguntas a qualquer momento, mesmo durante um disparo
 6. Se o usuário perguntar algo fora do contexto de disparo, responda normalmente e depois retome o fluxo
-7. NUNCA escreva comandos como [COMMAND:...] na sua resposta visível - isso é interno do sistema
+7. ⛔ JAMAIS escreva [COMMAND:...], [TEMPLATE_CONTENT], colchetes ou código HTML - isso é PROIBIDO!
 8. O sistema cuida automaticamente de buscar origens, leads e iniciar disparos
 9. Sua função é apenas conversar de forma amigável e orientar o usuário
 10. Explique claramente os intervalos de segurança (para evitar bloqueios)
@@ -260,22 +256,52 @@ serve(async (req) => {
         const type = parts[1]; // email or whatsapp_web
         const subOriginId = parts[2];
 
-        const { data: leads, error } = await supabase
-          .from('leads')
-          .select('id, name, email, whatsapp, country_code')
-          .eq('sub_origin_id', subOriginId)
-          .range(0, 10000);
-
-        if (error) throw error;
-
-        // Get origin/sub-origin names
+        // Get origin/sub-origin names first
         const { data: subOrigin } = await supabase
           .from('crm_sub_origins')
           .select('nome, crm_origins(nome)')
           .eq('id', subOriginId)
           .single();
 
-        const validLeads = leads?.filter(l => {
+        // Use COUNT for accurate totals (no 1000 row limit)
+        let totalCount = 0;
+        let validCount = 0;
+
+        // Get total count
+        const { count: totalLeadsCount } = await supabase
+          .from('leads')
+          .select('id', { count: 'exact', head: true })
+          .eq('sub_origin_id', subOriginId);
+        
+        totalCount = totalLeadsCount || 0;
+
+        // Get valid leads count based on type
+        if (type === 'email') {
+          const { count: validEmailCount } = await supabase
+            .from('leads')
+            .select('id', { count: 'exact', head: true })
+            .eq('sub_origin_id', subOriginId)
+            .not('email', 'is', null)
+            .ilike('email', '%@%.%');
+          validCount = validEmailCount || 0;
+        } else {
+          const { count: validWhatsappCount } = await supabase
+            .from('leads')
+            .select('id', { count: 'exact', head: true })
+            .eq('sub_origin_id', subOriginId)
+            .not('whatsapp', 'is', null)
+            .gte('whatsapp', '10000000'); // At least 8 digits
+          validCount = validWhatsappCount || 0;
+        }
+
+        // Get sample leads for preview (just 5)
+        const { data: sampleLeads } = await supabase
+          .from('leads')
+          .select('id, name, email, whatsapp, country_code')
+          .eq('sub_origin_id', subOriginId)
+          .limit(5);
+
+        const validSamples = sampleLeads?.filter(l => {
           if (type === 'email') {
             return l.email && l.email.includes('@') && l.email.includes('.');
           } else {
@@ -284,7 +310,7 @@ serve(async (req) => {
         }) || [];
 
         // Sistema paralelo: 2 emails a cada 150ms
-        const estimatedMinutes = Math.max(Math.ceil((validLeads.length / 2) * 0.15 / 60), 2);
+        const estimatedMinutes = Math.max(Math.ceil((validCount / 2) * 0.15 / 60), 2);
 
         return new Response(JSON.stringify({
           type: 'leads_preview',
@@ -293,11 +319,11 @@ serve(async (req) => {
             originName: (subOrigin as any)?.crm_origins?.nome || 'Desconhecido',
             subOriginName: subOrigin?.nome || 'Desconhecido',
             dispatchType: type,
-            totalLeads: leads?.length || 0,
-            validLeads: validLeads.length,
-            invalidLeads: (leads?.length || 0) - validLeads.length,
+            totalLeads: totalCount,
+            validLeads: validCount,
+            invalidLeads: totalCount - validCount,
             estimatedMinutes,
-            leads: validLeads.slice(0, 5).map(l => ({
+            leads: validSamples.map(l => ({
               name: l.name,
               contact: type === 'email' ? l.email : `${l.country_code}${l.whatsapp}`
             }))
@@ -322,20 +348,30 @@ serve(async (req) => {
           .eq('id', subOriginId)
           .single();
 
-        // Count valid leads (até 10.000)
-        const { data: leads } = await supabase
+        // Use COUNT for accurate totals (no 1000 row limit)
+        const { count: totalCount } = await supabase
           .from('leads')
-          .select('id, name, email, whatsapp')
-          .eq('sub_origin_id', subOriginId)
-          .range(0, 10000);
+          .select('id', { count: 'exact', head: true })
+          .eq('sub_origin_id', subOriginId);
 
-        const validLeads = leads?.filter(l => {
-          if (type === 'email') {
-            return l.email && l.email.includes('@');
-          } else {
-            return l.whatsapp && l.whatsapp.length >= 8;
-          }
-        }) || [];
+        let validCount = 0;
+        if (type === 'email') {
+          const { count } = await supabase
+            .from('leads')
+            .select('id', { count: 'exact', head: true })
+            .eq('sub_origin_id', subOriginId)
+            .not('email', 'is', null)
+            .ilike('email', '%@%.%');
+          validCount = count || 0;
+        } else {
+          const { count } = await supabase
+            .from('leads')
+            .select('id', { count: 'exact', head: true })
+            .eq('sub_origin_id', subOriginId)
+            .not('whatsapp', 'is', null)
+            .gte('whatsapp', '10000000');
+          validCount = count || 0;
+        }
 
         // Create dispatch job with message template and conversation link
         const { data: job, error: jobError } = await supabase
@@ -345,8 +381,8 @@ serve(async (req) => {
             sub_origin_id: subOriginId,
             origin_name: (subOrigin as any)?.crm_origins?.nome,
             sub_origin_name: subOrigin?.nome,
-            total_leads: leads?.length || 0,
-            valid_leads: validLeads.length,
+            total_leads: totalCount || 0,
+            valid_leads: validCount,
             status: 'running',
             started_at: new Date().toISOString(),
             message_template: templateContent || null,
@@ -377,8 +413,8 @@ serve(async (req) => {
           data: {
             jobId: job.id,
             status: 'running',
-            totalLeads: leads?.length || 0,
-            validLeads: validLeads.length,
+            totalLeads: totalCount || 0,
+            validLeads: validCount,
             templateType
           }
         }), {
