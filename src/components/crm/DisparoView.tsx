@@ -1011,10 +1011,11 @@ function highlightHtml(code: string): React.ReactNode[] {
   });
 }
 
-// Component for HTML/message input - Modern code editor with syntax highlighting
+// Component for HTML/message input - Modern code editor with syntax highlighting and preview
 function HtmlEditorComponent({ onSubmit }: { onSubmit: (html: string) => void }) {
   const [content, setContent] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [activeTab, setActiveTab] = useState<'code' | 'preview'>('code');
   const textareaRef = React.useRef<HTMLTextAreaElement>(null);
   const preRef = React.useRef<HTMLPreElement>(null);
 
@@ -1048,6 +1049,14 @@ function HtmlEditorComponent({ onSubmit }: { onSubmit: (html: string) => void })
     }
   };
 
+  // Basic HTML sanitization for preview (removes script tags)
+  const getSanitizedHtml = () => {
+    return content
+      .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
+      .replace(/on\w+="[^"]*"/gi, '')
+      .replace(/on\w+='[^']*'/gi, '');
+  };
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 10 }}
@@ -1061,11 +1070,32 @@ function HtmlEditorComponent({ onSubmit }: { onSubmit: (html: string) => void })
         
         {/* Code editor container */}
         <div className="rounded-xl overflow-hidden border border-border/40 shadow-sm bg-muted/50">
-          {/* Header bar */}
+          {/* Header bar with tabs */}
           <div className="flex items-center justify-between px-4 py-2.5 bg-muted/80 border-b border-border/40">
-            <span className="text-xs text-muted-foreground font-medium">
-              {content.includes('<') ? 'html' : 'texto'}
-            </span>
+            <div className="flex items-center gap-1">
+              <button
+                onClick={() => setActiveTab('code')}
+                className={cn(
+                  "px-3 py-1.5 rounded-lg text-xs font-medium transition-colors",
+                  activeTab === 'code'
+                    ? "bg-background text-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground hover:bg-background/50"
+                )}
+              >
+                Código
+              </button>
+              <button
+                onClick={() => setActiveTab('preview')}
+                className={cn(
+                  "px-3 py-1.5 rounded-lg text-xs font-medium transition-colors",
+                  activeTab === 'preview'
+                    ? "bg-background text-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground hover:bg-background/50"
+                )}
+              >
+                Preview
+              </button>
+            </div>
             <button 
               onClick={handleCopy}
               className="text-xs text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1.5"
@@ -1073,42 +1103,59 @@ function HtmlEditorComponent({ onSubmit }: { onSubmit: (html: string) => void })
               <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
               </svg>
-              Copiar código
+              Copiar
             </button>
           </div>
           
-          {/* Editor with syntax highlighting overlay */}
-          <div className="relative min-h-[280px]">
-            {/* Highlighted code display */}
-            <pre
-              ref={preRef}
-              className="absolute inset-0 p-5 font-mono text-sm text-foreground pointer-events-none overflow-auto whitespace-pre-wrap break-words"
-              aria-hidden="true"
-            >
-              {content ? highlightHtml(content) : (
-                <span className="text-muted-foreground">
-                  {`Cole aqui o HTML do email...
+          {/* Content area */}
+          {activeTab === 'code' ? (
+            /* Editor with syntax highlighting overlay */
+            <div className="relative min-h-[280px]">
+              {/* Highlighted code display */}
+              <pre
+                ref={preRef}
+                className="absolute inset-0 p-5 font-mono text-sm text-foreground pointer-events-none overflow-auto whitespace-pre-wrap break-words"
+                aria-hidden="true"
+              >
+                {content ? highlightHtml(content) : (
+                  <span className="text-muted-foreground">
+                    {`Cole aqui o HTML do email...
 
 Exemplo:
 <h1>Olá {{name}}!</h1>
 <p>Temos uma oferta especial.</p>
 
 Cmd/Ctrl + Enter para enviar`}
-                </span>
+                  </span>
+                )}
+              </pre>
+              
+              {/* Actual textarea for input */}
+              <textarea
+                ref={textareaRef}
+                value={content}
+                onChange={(e) => setContent(e.target.value)}
+                onScroll={handleScroll}
+                onKeyDown={handleKeyDown}
+                className="relative w-full min-h-[280px] p-5 bg-transparent font-mono text-sm text-transparent caret-foreground focus:outline-none resize-y"
+                spellCheck={false}
+              />
+            </div>
+          ) : (
+            /* Preview area */
+            <div className="min-h-[280px] p-5 bg-white overflow-auto">
+              {content.trim() ? (
+                <div 
+                  className="prose prose-sm max-w-none"
+                  dangerouslySetInnerHTML={{ __html: getSanitizedHtml() }}
+                />
+              ) : (
+                <div className="flex items-center justify-center h-[240px] text-muted-foreground text-sm">
+                  Digite o HTML na aba "Código" para visualizar aqui
+                </div>
               )}
-            </pre>
-            
-            {/* Actual textarea for input */}
-            <textarea
-              ref={textareaRef}
-              value={content}
-              onChange={(e) => setContent(e.target.value)}
-              onScroll={handleScroll}
-              onKeyDown={handleKeyDown}
-              className="relative w-full min-h-[280px] p-5 bg-transparent font-mono text-sm text-transparent caret-foreground focus:outline-none resize-y"
-              spellCheck={false}
-            />
-          </div>
+            </div>
+          )}
         </div>
         
         {/* Submit button below - aligned right */}
