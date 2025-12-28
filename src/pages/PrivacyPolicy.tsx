@@ -205,7 +205,7 @@ const PrivacyPolicy = () => {
         </div>
 
         <footer className="mt-16 pt-8 border-t border-border text-center">
-          <p className="text-xs text-muted-foreground">© Copyright 2025 Scale Beauty - Desenvolvido por Scale Beauty</p>
+          <p className="text-xs text-muted-foreground">© Copyright {new Date().getFullYear()} Scale Beauty - Desenvolvido por Scale Beauty</p>
           <p className="text-xs text-muted-foreground mt-1">Todos os direitos reservados</p>
         </footer>
       </div>

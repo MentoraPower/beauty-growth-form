@@ -1136,7 +1136,7 @@ const Index = () => {
                 <p className="text-sm text-muted-foreground mt-6">
                   Em breve vamos entrar em contato pelo seu WhatsApp!
                 </p>
-                <p className="copyright">© Copyright 2025 Scale Beauty - Desenvolvido por Scale Beauty</p>
+                <p className="copyright">© Copyright {new Date().getFullYear()} Scale Beauty - Desenvolvido por Scale Beauty</p>
               </>}
           </div>;
       default:
@@ -1232,7 +1232,7 @@ const Index = () => {
                     </Link>
                   </p>
                   <div className="mt-4 flex items-center justify-center gap-2">
-                    <span className="text-xs text-white/80">© Copyright 2025 - Desenvolvido por</span>
+                    <span className="text-xs text-white/80">© Copyright {new Date().getFullYear()} - Desenvolvido por</span>
                     <span className="text-xs text-white font-bold">SCALE</span>
                   </div>
                 </div>
@@ -1315,7 +1315,7 @@ const Index = () => {
                   </Link>
                 </p>
                 <div className="mt-4 flex items-center justify-center gap-2">
-                  <span className="text-xs text-white/80">© Copyright 2025 - Desenvolvido por</span>
+                  <span className="text-xs text-white/80">© Copyright {new Date().getFullYear()} - Desenvolvido por</span>
                   <span className="text-xs text-white font-bold">SCALE</span>
                 </div>
               </div>
