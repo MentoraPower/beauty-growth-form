@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback } from "react";
+import React, { useState, useRef, useEffect, useCallback } from "react";
 import { useSearchParams } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { PromptInputBox } from "@/components/ui/ai-prompt-box";
@@ -932,10 +932,91 @@ function CsvLeadsPreviewComponent({ leads, type }: { leads: CsvLead[]; type: 'em
   );
 }
 
-// Component for HTML/message input - Modern light theme editor
+// Simple syntax highlighting for HTML
+function highlightHtml(code: string): React.ReactNode[] {
+  if (!code) return [];
+  
+  const result: React.ReactNode[] = [];
+  let remaining = code;
+  let key = 0;
+  
+  // Regex patterns for HTML syntax
+  const patterns = [
+    { regex: /(&lt;!--[\s\S]*?--&gt;|<!--[\s\S]*?-->)/g, className: 'text-muted-foreground italic' }, // Comments
+    { regex: /(&lt;\/?[a-zA-Z][a-zA-Z0-9]*|<\/?[a-zA-Z][a-zA-Z0-9]*)/g, className: 'text-orange-400' }, // Tags
+    { regex: /(&gt;|>)/g, className: 'text-orange-400' }, // Closing brackets
+    { regex: /(\{\{[^}]+\}\})/g, className: 'text-green-400 font-medium' }, // Template variables
+    { regex: /("[^"]*"|'[^']*')/g, className: 'text-green-400' }, // Strings
+    { regex: /(\s[a-zA-Z-]+)(?==)/g, className: 'text-yellow-400' }, // Attributes
+  ];
+  
+  // Simple approach: split by lines and apply highlighting
+  const lines = code.split('\n');
+  
+  return lines.map((line, lineIndex) => {
+    let processedLine = line;
+    const elements: React.ReactNode[] = [];
+    
+    // Process the line for each pattern
+    let lastIndex = 0;
+    const matches: { start: number; end: number; text: string; className: string }[] = [];
+    
+    patterns.forEach(({ regex, className }) => {
+      const lineRegex = new RegExp(regex.source, 'g');
+      let match;
+      while ((match = lineRegex.exec(line)) !== null) {
+        matches.push({
+          start: match.index,
+          end: match.index + match[0].length,
+          text: match[0],
+          className
+        });
+      }
+    });
+    
+    // Sort matches by start position
+    matches.sort((a, b) => a.start - b.start);
+    
+    // Remove overlapping matches
+    const filteredMatches: typeof matches = [];
+    for (const match of matches) {
+      if (filteredMatches.length === 0 || match.start >= filteredMatches[filteredMatches.length - 1].end) {
+        filteredMatches.push(match);
+      }
+    }
+    
+    // Build elements
+    let currentPos = 0;
+    filteredMatches.forEach((match, i) => {
+      if (match.start > currentPos) {
+        elements.push(<span key={`${lineIndex}-text-${i}`}>{line.slice(currentPos, match.start)}</span>);
+      }
+      elements.push(<span key={`${lineIndex}-match-${i}`} className={match.className}>{match.text}</span>);
+      currentPos = match.end;
+    });
+    
+    if (currentPos < line.length) {
+      elements.push(<span key={`${lineIndex}-end`}>{line.slice(currentPos)}</span>);
+    }
+    
+    if (elements.length === 0) {
+      elements.push(<span key={`${lineIndex}-empty`}>{line || ' '}</span>);
+    }
+    
+    return (
+      <div key={lineIndex} className="min-h-[1.5em]">
+        {elements}
+      </div>
+    );
+  });
+}
+
+// Component for HTML/message input - Modern code editor with syntax highlighting
 function HtmlEditorComponent({ onSubmit }: { onSubmit: (html: string) => void }) {
   const [content, setContent] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const textareaRef = React.useRef<HTMLTextAreaElement>(null);
+  const preRef = React.useRef<HTMLPreElement>(null);
 
   const handleSubmit = () => {
     if (!content.trim()) {
@@ -951,6 +1032,14 @@ function HtmlEditorComponent({ onSubmit }: { onSubmit: (html: string) => void })
     toast.success("Copiado!");
   };
 
+  // Sync scroll between textarea and pre
+  const handleScroll = (e: React.UIEvent<HTMLTextAreaElement>) => {
+    if (preRef.current) {
+      preRef.current.scrollTop = e.currentTarget.scrollTop;
+      preRef.current.scrollLeft = e.currentTarget.scrollLeft;
+    }
+  };
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 10 }}
@@ -961,29 +1050,35 @@ function HtmlEditorComponent({ onSubmit }: { onSubmit: (html: string) => void })
         Template do Email · Use <code className="bg-muted px-1.5 py-0.5 rounded text-xs text-foreground">{"{{name}}"}</code> para personalizar
       </div>
       
-      {/* Modern light editor container */}
-      <div className="rounded-xl overflow-hidden border border-border/60 bg-muted/30 shadow-sm">
+      {/* Code editor container */}
+      <div className="rounded-xl overflow-hidden border border-border/60 shadow-sm bg-[#1e1e1e]">
         {/* Header bar */}
-        <div className="flex items-center justify-between px-4 py-2.5 bg-muted/50 border-b border-border/40">
-          <span className="text-xs text-muted-foreground font-medium">
-            {content.includes('<') ? 'HTML' : 'Texto'}
+        <div className="flex items-center justify-between px-4 py-2.5 bg-[#2d2d2d] border-b border-[#404040]">
+          <span className="text-xs text-gray-400 font-medium">
+            {content.includes('<') ? 'html' : 'texto'}
           </span>
           <button 
             onClick={handleCopy}
-            className="text-xs text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1.5"
+            className="text-xs text-gray-400 hover:text-gray-200 transition-colors flex items-center gap-1.5"
           >
             <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
             </svg>
-            Copiar
+            Copiar código
           </button>
         </div>
         
-        {/* Editor textarea - larger with light background */}
-        <textarea
-          value={content}
-          onChange={(e) => setContent(e.target.value)}
-          placeholder={`Cole aqui o HTML do email ou mensagem simples...
+        {/* Editor with syntax highlighting overlay */}
+        <div className="relative min-h-[320px]">
+          {/* Highlighted code display */}
+          <pre
+            ref={preRef}
+            className="absolute inset-0 p-5 font-mono text-sm text-gray-300 pointer-events-none overflow-auto whitespace-pre-wrap break-words"
+            aria-hidden="true"
+          >
+            {content ? highlightHtml(content) : (
+              <span className="text-gray-500">
+                {`Cole aqui o HTML do email ou mensagem simples...
 
 Exemplo:
 <h1>Olá {{name}}!</h1>
@@ -991,9 +1086,21 @@ Exemplo:
 
 Ou texto simples:
 Olá {{name}}, temos uma oferta especial!`}
-          className="w-full min-h-[320px] p-5 bg-background font-mono text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none resize-y"
-          spellCheck={false}
-        />
+              </span>
+            )}
+          </pre>
+          
+          {/* Actual textarea for input */}
+          <textarea
+            ref={textareaRef}
+            value={content}
+            onChange={(e) => setContent(e.target.value)}
+            onScroll={handleScroll}
+            className="relative w-full min-h-[320px] p-5 bg-transparent font-mono text-sm text-transparent caret-white focus:outline-none resize-y"
+            style={{ caretColor: 'white' }}
+            spellCheck={false}
+          />
+        </div>
       </div>
 
       <div className="flex items-center justify-end mt-4">
