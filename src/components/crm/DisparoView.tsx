@@ -78,6 +78,36 @@ const parseCSV = (content: string): CsvLead[] => {
   }).filter(l => l.name);
 };
 
+// Extract subject and HTML from AI response
+const extractSubjectAndHtml = (content: string): { subject: string; html: string } => {
+  const lines = content.split('\n');
+  let subject = '';
+  let htmlStartIndex = 0;
+  
+  // Look for ASSUNTO: line at the start
+  for (let i = 0; i < Math.min(5, lines.length); i++) {
+    const line = lines[i].trim();
+    if (line.toUpperCase().startsWith('ASSUNTO:')) {
+      subject = line.substring(8).trim();
+      htmlStartIndex = i + 1;
+      // Skip empty lines after subject
+      while (htmlStartIndex < lines.length && lines[htmlStartIndex].trim() === '') {
+        htmlStartIndex++;
+      }
+      break;
+    }
+  }
+  
+  // Get HTML part (everything after subject)
+  const html = lines.slice(htmlStartIndex).join('\n')
+    .replace(/^```html\n?/i, '')
+    .replace(/^```\n?/, '')
+    .replace(/\n?```$/i, '')
+    .trim();
+  
+  return { subject, html };
+};
+
 // Parse markdown-like formatting: **bold** and _italic_
 const formatMessageContent = (content: string): React.ReactNode => {
   // Split by markdown patterns while preserving the delimiters
@@ -111,6 +141,7 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
   // Side panel state for email editor
   const [sidePanelOpen, setSidePanelOpen] = useState(false);
   const [sidePanelHtml, setSidePanelHtml] = useState('');
+  const [sidePanelSubject, setSidePanelSubject] = useState('');
   const [sidePanelGenerating, setSidePanelGenerating] = useState(false);
   const [sidePanelEditing, setSidePanelEditing] = useState(false);
   const [sidePanelContext, setSidePanelContext] = useState<{ subOriginId: string; dispatchType: string } | null>(null);
@@ -295,8 +326,9 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
           
           // Restore side panel state if available
           if (isNewFormat && rawData.sidePanelState) {
-            const { html, isOpen, context } = rawData.sidePanelState;
+            const { html, subject, isOpen, context } = rawData.sidePanelState;
             if (html) setSidePanelHtml(html);
+            if (subject) setSidePanelSubject(subject);
             if (isOpen) setSidePanelOpen(true);
             if (context) setSidePanelContext(context);
           }
@@ -331,6 +363,7 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
       setPendingEmailContext(null);
       setSidePanelOpen(false);
       setSidePanelHtml('');
+      setSidePanelSubject('');
       setSidePanelContext(null);
       setSelectedOriginData(null);
       setDispatchType(null);
@@ -413,6 +446,7 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
         messages: messagesJson,
         sidePanelState: {
           html: sidePanelHtml,
+          subject: sidePanelSubject,
           isOpen: sidePanelOpen,
           context: sidePanelContext,
         },
@@ -649,6 +683,7 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
     // Open side panel for HTML editing
     setSidePanelContext({ subOriginId, dispatchType: type });
     setSidePanelHtml('');
+    setSidePanelSubject('');
     setSidePanelGenerating(false);
     setSidePanelOpen(true);
     
@@ -732,6 +767,7 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
     // Open side panel with generating state
     setSidePanelContext({ subOriginId, dispatchType: type });
     setSidePanelHtml('');
+    setSidePanelSubject('');
     setSidePanelGenerating(true);
     setSidePanelOpen(true);
     
@@ -793,12 +829,10 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
             const content = parsed.choices?.[0]?.delta?.content as string | undefined;
             if (content) {
               generatedHtml += content;
-              // Update side panel HTML in real-time
-              const cleanHtml = generatedHtml
-                .replace(/^```html\n?/i, '')
-                .replace(/^```\n?/, '')
-                .replace(/\n?```$/i, '');
-              setSidePanelHtml(cleanHtml);
+              // Extract subject and HTML in real-time
+              const { subject, html } = extractSubjectAndHtml(generatedHtml);
+              if (subject) setSidePanelSubject(subject);
+              setSidePanelHtml(html);
             }
           } catch {
             // Incomplete JSON, continue
@@ -806,13 +840,10 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
         }
       }
 
-      // Final cleanup
-      const finalHtml = generatedHtml
-        .replace(/^```html\n?/i, '')
-        .replace(/^```\n?/, '')
-        .replace(/\n?```$/i, '')
-        .trim();
+      // Final extraction
+      const { subject: finalSubject, html: finalHtml } = extractSubjectAndHtml(generatedHtml);
       
+      setSidePanelSubject(finalSubject);
       setSidePanelHtml(finalHtml);
       setSidePanelGenerating(false);
       
@@ -1000,6 +1031,7 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
       // Open side panel with generating state
       setSidePanelContext({ subOriginId: ctx.subOriginId, dispatchType: ctx.dispatchType });
       setSidePanelHtml('');
+      setSidePanelSubject('');
       setSidePanelGenerating(true);
       setSidePanelOpen(true);
       
@@ -1064,12 +1096,10 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
               const content = parsed.choices?.[0]?.delta?.content as string | undefined;
               if (content) {
                 generatedHtml += content;
-                // Update side panel in real-time
-                const cleanHtml = generatedHtml
-                  .replace(/^```html\n?/i, '')
-                  .replace(/^```\n?/, '')
-                  .replace(/\n?```$/i, '');
-                setSidePanelHtml(cleanHtml);
+                // Extract subject and HTML in real-time
+                const { subject, html } = extractSubjectAndHtml(generatedHtml);
+                if (subject) setSidePanelSubject(subject);
+                setSidePanelHtml(html);
               }
             } catch {
               // Incomplete JSON, continue
@@ -1077,13 +1107,10 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
           }
         }
 
-        // Clean up the HTML
-        const cleanHtml = generatedHtml
-          .replace(/^```html\n?/i, '')
-          .replace(/^```\n?/, '')
-          .replace(/\n?```$/i, '')
-          .trim();
+        // Final extraction
+        const { subject: finalSubject, html: cleanHtml } = extractSubjectAndHtml(generatedHtml);
 
+        setSidePanelSubject(finalSubject);
         setSidePanelHtml(cleanHtml);
         setSidePanelGenerating(false);
 
@@ -1227,6 +1254,7 @@ Retorne APENAS o HTML modificado, sem explicações.`,
               const content = parsed.choices?.[0]?.delta?.content as string | undefined;
               if (content) {
                 newHtml += content;
+                // For edits, just clean the HTML (subject stays the same)
                 const cleanHtml = newHtml
                   .replace(/^```html\n?/i, '')
                   .replace(/^```\n?/, '')
@@ -1594,6 +1622,8 @@ Retorne APENAS o HTML modificado, sem explicações.`,
               isOpen={sidePanelOpen}
               htmlContent={sidePanelHtml}
               onHtmlChange={setSidePanelHtml}
+              subject={sidePanelSubject}
+              onSubjectChange={setSidePanelSubject}
               isGenerating={sidePanelGenerating}
               isEditing={sidePanelEditing}
             />

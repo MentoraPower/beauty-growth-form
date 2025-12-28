@@ -8,8 +8,14 @@ const corsHeaders = {
 
 const EMAIL_GENERATOR_PROMPT = `Você é um especialista em copywriting e design de emails de marketing. Sua função é criar emails HTML profissionais, bonitos e que convertem.
 
+FORMATO DE RESPOSTA OBRIGATÓRIO:
+Você DEVE começar sua resposta com o assunto do email na primeira linha, no formato:
+ASSUNTO: [assunto do email aqui]
+
+Depois de uma linha em branco, retorne o código HTML do email.
+
 REGRAS OBRIGATÓRIAS:
-1. SEMPRE retorne APENAS o código HTML do email, sem explicações antes ou depois
+1. Comece SEMPRE com "ASSUNTO: " seguido do assunto do email
 2. Use {{name}} como placeholder para o nome do destinatário
 3. O HTML deve ser responsivo e funcionar em todos os clientes de email
 4. Use estilos inline (não use <style> tags separadas)
@@ -33,12 +39,22 @@ ESTRUTURA DO EMAIL:
 - CTA (botão) destacado com href="{{button_link}}"
 - Footer simples (opcional)
 
-IMPORTANTE: Retorne APENAS o código HTML, começando com <!DOCTYPE html> ou <html>`;
+EXEMPLO DE RESPOSTA:
+ASSUNTO: {{name}}, sua oferta exclusiva te espera!
+
+<!DOCTYPE html>
+<html>...</html>`;
 
 const HTML_ONLY_PROMPT = `Você é um especialista em design de emails HTML. Sua função é transformar textos de email (copy) em HTML profissional e bonito.
 
+FORMATO DE RESPOSTA OBRIGATÓRIO:
+Você DEVE começar sua resposta com o assunto do email na primeira linha, no formato:
+ASSUNTO: [assunto do email aqui]
+
+Depois de uma linha em branco, retorne o código HTML do email.
+
 REGRAS OBRIGATÓRIAS:
-1. SEMPRE retorne APENAS o código HTML do email, sem explicações antes ou depois
+1. Comece SEMPRE com "ASSUNTO: " seguido do assunto do email
 2. MANTENHA o texto/copy exatamente como foi fornecido - NÃO modifique o conteúdo textual
 3. Preserve todos os placeholders como {{name}} no texto
 4. O HTML deve ser responsivo e funcionar em todos os clientes de email
@@ -62,7 +78,11 @@ ESTRUTURA DO EMAIL:
 - Botões destacados para links/CTAs com href="{{button_link}}"
 - Footer simples (se mencionado no texto)
 
-IMPORTANTE: Retorne APENAS o código HTML, começando com <!DOCTYPE html> ou <html>`;
+EXEMPLO DE RESPOSTA:
+ASSUNTO: Novidade especial para você, {{name}}!
+
+<!DOCTYPE html>
+<html>...</html>`;
 
 serve(async (req) => {
   // Handle CORS preflight requests
