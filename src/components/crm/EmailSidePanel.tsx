@@ -8,6 +8,7 @@ interface EmailSidePanelProps {
   htmlContent: string;
   onHtmlChange: (html: string) => void;
   isGenerating?: boolean;
+  isEditing?: boolean; // When true, show code tab during edits
   title?: string;
 }
 
@@ -88,6 +89,7 @@ export function EmailSidePanel({
   htmlContent, 
   onHtmlChange,
   isGenerating = false,
+  isEditing = false,
   title = "Editor de Email"
 }: EmailSidePanelProps) {
   const [activeTab, setActiveTab] = useState<'code' | 'preview'>('preview');
@@ -95,12 +97,14 @@ export function EmailSidePanel({
   const textareaRef = React.useRef<HTMLTextAreaElement>(null);
   const preRef = React.useRef<HTMLPreElement>(null);
 
-  // Switch to preview when content updates
+  // Switch to code tab when editing, preview when done
   useEffect(() => {
-    if (htmlContent && !isGenerating) {
+    if (isEditing) {
+      setActiveTab('code');
+    } else if (htmlContent && !isGenerating) {
       setActiveTab('preview');
     }
-  }, [htmlContent, isGenerating]);
+  }, [htmlContent, isGenerating, isEditing]);
 
   const handleCopy = () => {
     navigator.clipboard.writeText(htmlContent);
