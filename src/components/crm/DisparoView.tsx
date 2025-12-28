@@ -150,12 +150,39 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const chatScrollRef = useRef<HTMLDivElement>(null);
   const shouldAutoScrollRef = useRef(true);
+  const lastScrollTopRef = useRef(0);
+  const scrollRAFRef = useRef<number | null>(null);
+  const streamingBufferRef = useRef("");
+  const flushTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Optimized scroll to bottom using RAF
+  const scheduleScrollToBottom = useCallback(() => {
+    if (scrollRAFRef.current) return; // Already scheduled
+    scrollRAFRef.current = requestAnimationFrame(() => {
+      scrollRAFRef.current = null;
+      const el = chatScrollRef.current;
+      if (!el || !shouldAutoScrollRef.current) return;
+      el.scrollTop = el.scrollHeight;
+    });
+  }, []);
 
   const handleChatScroll = useCallback(() => {
     const el = chatScrollRef.current;
     if (!el) return;
-    const distanceFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
-    shouldAutoScrollRef.current = distanceFromBottom < 80;
+    
+    const currentScrollTop = el.scrollTop;
+    const distanceFromBottom = el.scrollHeight - currentScrollTop - el.clientHeight;
+    
+    // If user scrolled UP, disable auto-scroll immediately
+    if (currentScrollTop < lastScrollTopRef.current - 5) {
+      shouldAutoScrollRef.current = false;
+    }
+    // Only re-enable when user scrolls very close to bottom
+    else if (distanceFromBottom < 20) {
+      shouldAutoScrollRef.current = true;
+    }
+    
+    lastScrollTopRef.current = currentScrollTop;
   }, []);
 
   // Function to reconstruct component from componentData
@@ -527,13 +554,18 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
     lastSavedMessagesCount.current = messages.length;
   }, [currentConversationId]);
 
-  // Auto-scroll to bottom when messages change (only if user is near the bottom)
+  // Auto-scroll to bottom when messages change (using RAF, only if near bottom)
   useEffect(() => {
-    const el = chatScrollRef.current;
-    if (!el) return;
-    if (!shouldAutoScrollRef.current) return;
-    el.scrollTop = el.scrollHeight;
-  }, [messages]);
+    if (shouldAutoScrollRef.current) {
+      scheduleScrollToBottom();
+    }
+    // Cleanup RAF on unmount
+    return () => {
+      if (scrollRAFRef.current) {
+        cancelAnimationFrame(scrollRAFRef.current);
+      }
+    };
+  }, [messages, scheduleScrollToBottom]);
 
   // Handle origin selection from table
   const handleOriginSelect = useCallback(async (subOriginId: string, subOriginName: string, originName: string) => {
@@ -1322,12 +1354,15 @@ Retorne APENAS o HTML modificado, sem explicações.`,
         throw new Error("Resposta sem corpo");
       }
 
-      // Stream the response
+      // Stream the response with throttled updates
       const reader = response.body.getReader();
       const decoder = new TextDecoder();
       let textBuffer = "";
       let assistantContent = "";
       let assistantMessageId = crypto.randomUUID();
+      let pendingUpdate = false;
+      let lastUpdateTime = 0;
+      const UPDATE_INTERVAL = 50; // Update UI every 50ms max
 
       // Create initial assistant message
       setMessages(prev => [...prev, {
@@ -1336,6 +1371,35 @@ Retorne APENAS o HTML modificado, sem explicações.`,
         role: "assistant",
         timestamp: new Date(),
       }]);
+
+      // Throttled update function
+      const flushContentToUI = () => {
+        pendingUpdate = false;
+        setMessages(prev => 
+          prev.map(m => 
+            m.id === assistantMessageId 
+              ? { ...m, content: assistantContent }
+              : m
+          )
+        );
+      };
+
+      const scheduleUpdate = () => {
+        if (pendingUpdate) return;
+        const now = Date.now();
+        const timeSinceLastUpdate = now - lastUpdateTime;
+        
+        if (timeSinceLastUpdate >= UPDATE_INTERVAL) {
+          lastUpdateTime = now;
+          flushContentToUI();
+        } else {
+          pendingUpdate = true;
+          setTimeout(() => {
+            lastUpdateTime = Date.now();
+            flushContentToUI();
+          }, UPDATE_INTERVAL - timeSinceLastUpdate);
+        }
+      };
 
       while (true) {
         const { done, value } = await reader.read();
@@ -1361,13 +1425,7 @@ Retorne APENAS o HTML modificado, sem explicações.`,
             const content = parsed.choices?.[0]?.delta?.content as string | undefined;
             if (content) {
               assistantContent += content;
-              setMessages(prev => 
-                prev.map(m => 
-                  m.id === assistantMessageId 
-                    ? { ...m, content: assistantContent }
-                    : m
-                )
-              );
+              scheduleUpdate(); // Throttled update
             }
           } catch {
             // Incomplete JSON, put it back
@@ -1377,7 +1435,10 @@ Retorne APENAS o HTML modificado, sem explicações.`,
         }
       }
 
-      // Final flush
+      // Final flush - ensure all content is displayed
+      flushContentToUI();
+
+      // Handle any remaining buffer content
       if (textBuffer.trim()) {
         for (let raw of textBuffer.split("\n")) {
           if (!raw) continue;
@@ -1391,16 +1452,11 @@ Retorne APENAS o HTML modificado, sem explicações.`,
             const content = parsed.choices?.[0]?.delta?.content as string | undefined;
             if (content) {
               assistantContent += content;
-              setMessages(prev => 
-                prev.map(m => 
-                  m.id === assistantMessageId 
-                    ? { ...m, content: assistantContent }
-                    : m
-                )
-              );
             }
           } catch { /* ignore */ }
         }
+        // Final flush after processing remaining buffer
+        flushContentToUI();
       }
 
       // Process commands after streaming is complete
@@ -1545,7 +1601,12 @@ Retorne APENAS o HTML modificado, sem explicações.`,
               ref={chatScrollRef} 
               onScroll={handleChatScroll} 
               className="flex-1 overflow-y-auto min-h-0 p-6 overscroll-contain"
-              style={{ scrollBehavior: 'auto' }}
+              style={{ 
+                scrollBehavior: 'auto',
+                WebkitOverflowScrolling: 'touch',
+                scrollbarGutter: 'stable',
+                willChange: 'scroll-position'
+              }}
             >
               <div className="max-w-3xl mx-auto space-y-4">
                 {messages.map((msg) => (
