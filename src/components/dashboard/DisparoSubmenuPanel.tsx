@@ -187,7 +187,7 @@ export function DisparoSubmenuPanel({ isOpen, onClose }: DisparoSubmenuPanelProp
 
         {/* Label */}
         <div className="px-2 mb-2">
-          <span className="text-xs tracking-wide text-white/40 font-medium">Seus chats</span>
+          <span className="text-xs tracking-wide text-white/70 font-medium">Seus chats</span>
         </div>
 
         {/* Conversations list */}
