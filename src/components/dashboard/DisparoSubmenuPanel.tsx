@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Plus, MoreVertical, Trash2, Pencil, Search, X } from "lucide-react";
+import { Plus, MoreVertical, Trash2, Pencil, Search, ChevronsRight } from "lucide-react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -146,9 +146,9 @@ export function DisparoSubmenuPanel({ isOpen, onClose }: DisparoSubmenuPanelProp
           <h2 className="text-lg font-semibold text-white">Disparo</h2>
           <button
             onClick={onClose}
-            className="p-1.5 rounded-lg hover:bg-white/10 text-white/70 hover:text-white transition-colors"
+            className="w-7 h-7 rounded-full bg-gradient-to-r from-primary to-accent flex items-center justify-center hover:opacity-90 transition-opacity"
           >
-            <X className="h-4 w-4" />
+            <ChevronsRight className="h-4 w-4 text-white" />
           </button>
         </div>
 
@@ -193,8 +193,8 @@ export function DisparoSubmenuPanel({ isOpen, onClose }: DisparoSubmenuPanelProp
                 className={cn(
                   "flex items-center justify-between group rounded-lg transition-colors cursor-pointer",
                   currentConversationId === conv.id 
-                    ? "bg-white text-zinc-900" 
-                    : "hover:bg-white/10 text-white/80 hover:text-white"
+                    ? "bg-white/10 text-white" 
+                    : "hover:bg-white/5 text-white/80 hover:text-white"
                 )}
               >
                 <button
@@ -210,7 +210,7 @@ export function DisparoSubmenuPanel({ isOpen, onClose }: DisparoSubmenuPanelProp
                       className={cn(
                         "h-7 w-7 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity mr-1 rounded",
                         currentConversationId === conv.id 
-                          ? "hover:bg-zinc-200" 
+                          ? "hover:bg-white/20" 
                           : "hover:bg-white/20"
                       )}
                       onClick={(e) => e.stopPropagation()}
