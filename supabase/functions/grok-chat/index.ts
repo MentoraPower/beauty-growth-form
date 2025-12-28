@@ -128,12 +128,14 @@ REGRAS IMPORTANTES
 11. Se houver erro, explique de forma simples e ofereça soluções
 
 ═══════════════════════════════════════
-INFORMAÇÕES DE SEGURANÇA PARA EXPLICAR
+INFORMAÇÕES DE TEMPO DE ENVIO
 ═══════════════════════════════════════
 
-- Intervalo padrão entre envios: 5 segundos
-- Isso evita bloqueios por spam
-- Tempo estimado = (quantidade de leads × intervalo) / 60 minutos
+- Sistema de envio paralelo: 2 emails simultâneos a cada 150ms
+- Processamento em batches de 25 leads por execução
+- Tempo estimado REAL: ~2-3 minutos para 1000 emails
+- Fórmula: (quantidade de leads / 2) × 0.15 segundos / 60 = minutos
+- Exemplo: 1000 leads ≈ 1000/2 × 0.15 / 60 ≈ 1.25 minutos (arredonde para ~2-3 min)
 - O disparo acontece em segundo plano, o usuário pode continuar conversando
 
 ═══════════════════════════════════════
