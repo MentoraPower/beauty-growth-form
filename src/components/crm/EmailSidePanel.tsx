@@ -128,22 +128,7 @@ export function EmailSidePanel({
   if (!isOpen) return null;
 
   return (
-    <div className="w-[500px] min-w-[400px] max-w-[50vw] h-full border-l border-border bg-background flex flex-col">
-      {/* Header */}
-      <div className="flex items-center justify-between px-5 py-4 border-b border-border bg-muted/30">
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
-            <Code2 className="w-4 h-4 text-primary" />
-          </div>
-          <div>
-            <h3 className="font-semibold text-foreground">{title}</h3>
-            <p className="text-xs text-muted-foreground">
-              Use <code className="bg-muted px-1 py-0.5 rounded">{"{{name}}"}</code> para personalizar
-            </p>
-          </div>
-        </div>
-      </div>
-
+    <div className="w-[500px] min-w-[400px] max-w-[50vw] h-full bg-background flex flex-col my-4 mr-4 rounded-2xl border border-border overflow-hidden">
       {/* Tabs */}
       <div className="flex items-center justify-between px-5 py-3 border-b border-border bg-muted/20">
         <div className="flex items-center gap-1 bg-muted/50 rounded-lg p-1">
