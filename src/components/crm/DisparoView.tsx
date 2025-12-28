@@ -147,6 +147,7 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
   const [dispatchType, setDispatchType] = useState<'email' | 'whatsapp_web' | null>(null);
   const [initialLoadDone, setInitialLoadDone] = useState(false);
   const [pendingEmailContext, setPendingEmailContext] = useState<{ subOriginId: string; dispatchType: string } | null>(null);
+  const [pendingQuestion, setPendingQuestion] = useState<{ type: 'email_method' | 'has_copy'; subOriginId: string; dispatchType: string } | null>(null);
   
   // Side panel state for email editor
   const [sidePanelOpen, setSidePanelOpen] = useState(false);
@@ -250,14 +251,11 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
     switch (componentData.type) {
       case 'email_choice': {
         const { preview, subOriginId, dispatchType } = (componentData.data || {}) as any;
-        if (!preview || !subOriginId || !dispatchType) return null;
+        if (!preview) return null;
+        // Just show preview, questions are now plain text
         return (
-          <div className="mt-4 space-y-4 w-full">
+          <div className="mt-4 w-full">
             <LeadsPreviewComponent preview={preview} />
-            <EmailChoiceComponent
-              onChooseCode={() => handleEmailChoiceCode(subOriginId, dispatchType)}
-              onChooseAI={() => handleEmailChoiceAI(subOriginId, dispatchType)}
-            />
           </div>
         );
       }
@@ -286,29 +284,12 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
         );
       }
       case 'copy_choice': {
-        const { subOriginId, dispatchType } = (componentData.data || {}) as any;
-        if (!subOriginId || !dispatchType) return null;
-        return (
-          <div className="mt-4 w-full">
-            <CopyChoiceComponent
-              onHasCopy={() => handleHasCopy(subOriginId, dispatchType)}
-              onCreateCopy={() => handleCreateCopy(subOriginId, dispatchType)}
-            />
-          </div>
-        );
+        // Questions are now plain text, no component needed
+        return null;
       }
       case 'copy_input': {
-        const { subOriginId, dispatchType } = (componentData.data || {}) as any;
-        if (!subOriginId || !dispatchType) return null;
-        return (
-          <div className="mt-4 w-full">
-            <CopyInputComponent
-              onGenerate={(copyText, companyName, productService) =>
-                handleGenerateFromCopy(copyText, companyName, productService, subOriginId, dispatchType)
-              }
-            />
-          </div>
-        );
+        // User now sends copy directly in chat, no component needed
+        return null;
       }
       case 'email_generator_streaming': {
         const { subOriginId, dispatchType, copyText, companyName, productService } = (componentData.data || {}) as any;
@@ -473,6 +454,7 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
       setHtmlSource(null); // Clear htmlSource
       setSidePanelMode('email'); // Reset side panel mode
       setSidePanelDispatchData(null); // Clear dispatch data
+      setPendingQuestion(null); // Clear pending question
       setInitialLoadDone(true);
     } else if (!convId && !initialLoadDone) {
       setInitialLoadDone(true);
@@ -692,11 +674,11 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
           />
         );
 
-        // For email, show choice component instead of editor directly
+        // For email, ask as plain text question
         if (type === 'email') {
           const assistantMessage: Message = {
             id: crypto.randomUUID(),
-            content: `Encontrei ${result.data.validLeads} leads válidos na lista "${subOriginName}". Como você quer criar o email?`,
+            content: `Encontrei ${result.data.validLeads} leads válidos na lista "${subOriginName}".\n\nComo você quer criar o email?\n• Se já tiver o HTML pronto, me envie\n• Se quiser criar com IA, me diga`,
             role: "assistant",
             timestamp: new Date(),
             componentData: {
@@ -704,16 +686,13 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
               data: { preview: result.data, subOriginId, dispatchType: type }
             },
             component: (
-              <div className="mt-4 space-y-4 w-full">
+              <div className="mt-4 w-full">
                 {previewComponent}
-                <EmailChoiceComponent 
-                  onChooseCode={() => handleEmailChoiceCode(subOriginId, type)}
-                  onChooseAI={() => handleEmailChoiceAI(subOriginId, type)}
-                />
               </div>
             ),
           };
           setMessages(prev => [...prev, assistantMessage]);
+          setPendingQuestion({ type: 'email_method', subOriginId, dispatchType: type });
         } else {
           // For WhatsApp, show editor directly
           const assistantMessage: Message = {
@@ -814,53 +793,19 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
     setMessages(prev => [...prev, assistantMessage]);
   }, [logAction]);
 
-// Handle email choice - create with AI (show copy choice first)
+// Handle email choice - create with AI (show copy question as plain text)
   const handleEmailChoiceAI = useCallback((subOriginId: string, type: string) => {
     logAction('user', 'Escolheu criar email com a IA', 'Iniciando fluxo de criação');
     const assistantMessage: Message = {
       id: crypto.randomUUID(),
-      content: `Você já tem a copy (texto) do email pronta?`,
+      content: `Você já tem a copy (texto) do email pronta?\n• Se sim, cole a copy aqui\n• Se não, me descreva o que você quer no email`,
       role: "assistant",
       timestamp: new Date(),
-      componentData: {
-        type: 'copy_choice',
-        data: { subOriginId, dispatchType: type }
-      },
-      component: (
-        <div className="mt-4 w-full">
-          <CopyChoiceComponent 
-            onHasCopy={() => handleHasCopy(subOriginId, type)}
-            onCreateCopy={() => handleCreateCopy(subOriginId, type)}
-          />
-        </div>
-      ),
     };
     setMessages(prev => [...prev, assistantMessage]);
+    setPendingQuestion({ type: 'has_copy', subOriginId, dispatchType: type });
   }, [logAction]);
-
-  // Handle user has copy ready - show copy input form
-  const handleHasCopy = useCallback((subOriginId: string, type: string) => {
-    const assistantMessage: Message = {
-      id: crypto.randomUUID(),
-      content: `Ótimo! Cole sua copy abaixo e eu vou transformar em um email HTML profissional:`,
-      role: "assistant",
-      timestamp: new Date(),
-      componentData: {
-        type: 'copy_input',
-        data: { subOriginId, dispatchType: type }
-      },
-      component: (
-        <div className="mt-4 w-full">
-          <CopyInputComponent 
-            onGenerate={(copyText, companyName, productService) => 
-              handleGenerateFromCopy(copyText, companyName, productService, subOriginId, type)
-            }
-          />
-        </div>
-      ),
-    };
-    setMessages(prev => [...prev, assistantMessage]);
-  }, []);
+  // Note: handleHasCopy removed - user now sends copy directly in chat
 
   // Handle create copy from scratch - just ask in chat, no form
   const handleCreateCopy = useCallback((subOriginId: string, type: string) => {
@@ -1145,6 +1090,64 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
     };
     setMessages((prev) => [...prev, userMessage]);
     setIsLoading(true);
+
+    // Check if we're waiting for a question response
+    if (pendingQuestion) {
+      const q = pendingQuestion;
+      setPendingQuestion(null);
+      
+      const lowerMsg = message.toLowerCase().trim();
+      
+      if (q.type === 'email_method') {
+        // Check if user wants to use AI or has HTML ready
+        const wantsAI = lowerMsg.includes('ia') || lowerMsg.includes('criar') || lowerMsg.includes('gerar') || 
+                        lowerMsg.includes('ajuda') || lowerMsg.includes('criar com ia') || lowerMsg.includes('não tenho');
+        const hasHtml = lowerMsg.includes('html') || lowerMsg.includes('tenho') || lowerMsg.includes('pronto') ||
+                        message.includes('<!DOCTYPE') || message.includes('<html') || message.includes('<body');
+        
+        if (hasHtml && (message.includes('<') || lowerMsg.includes('tenho o html') || lowerMsg.includes('já tenho'))) {
+          // User has HTML - call the code handler
+          handleEmailChoiceCode(q.subOriginId, q.dispatchType);
+        } else {
+          // User wants AI - ask about copy
+          handleEmailChoiceAI(q.subOriginId, q.dispatchType);
+        }
+        setIsLoading(false);
+        return;
+      }
+      
+      if (q.type === 'has_copy') {
+        // Check if user has copy or wants to create from scratch
+        const hasCopyReady = lowerMsg.includes('sim') || lowerMsg.includes('tenho') || lowerMsg.includes('aqui') ||
+                             message.length > 100; // Long message likely is the copy itself
+        
+        if (hasCopyReady && message.length > 50) {
+          // User sent the copy directly - generate HTML from it
+          setPendingEmailContext({ subOriginId: q.subOriginId, dispatchType: q.dispatchType });
+          // Re-trigger with the copy text
+          setIsLoading(false);
+          handleGenerateFromCopy(message, '', '', q.subOriginId, q.dispatchType);
+          return;
+        } else if (hasCopyReady) {
+          // User said they have copy but didn't send it
+          const assistantMessage: Message = {
+            id: crypto.randomUUID(),
+            content: `Ótimo! Cole sua copy aqui e eu vou transformar em um email HTML profissional.`,
+            role: "assistant",
+            timestamp: new Date(),
+          };
+          setMessages(prev => [...prev, assistantMessage]);
+          setPendingQuestion({ type: 'has_copy', subOriginId: q.subOriginId, dispatchType: q.dispatchType });
+          setIsLoading(false);
+          return;
+        } else {
+          // User wants to create from scratch
+          handleCreateCopy(q.subOriginId, q.dispatchType);
+          setIsLoading(false);
+          return;
+        }
+      }
+    }
 
     // Check if we're waiting for email description - stream to side panel
     if (pendingEmailContext) {
@@ -2310,166 +2313,8 @@ function EmailEditorWithTabs({
   );
 }
 
-// Component for choosing between code or AI generation
-function EmailChoiceComponent({ 
-  onChooseCode, 
-  onChooseAI 
-}: { 
-  onChooseCode: () => void; 
-  onChooseAI: () => void;
-}) {
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      className="w-full"
-    >
-      <div className="flex flex-wrap gap-2">
-        <button
-          onClick={onChooseCode}
-          className="px-4 py-2 rounded-lg border border-border/40 bg-background hover:bg-muted/50 transition-all text-sm font-medium text-foreground"
-        >
-          Já tenho o HTML
-        </button>
-        <button
-          onClick={onChooseAI}
-          className="px-4 py-2 rounded-lg border border-border/40 bg-background hover:bg-muted/50 transition-all text-sm font-medium text-foreground"
-        >
-          Criar com IA
-        </button>
-      </div>
-    </motion.div>
-  );
-}
-
-// Component for choosing if user has copy ready or needs to create
-function CopyChoiceComponent({ 
-  onHasCopy, 
-  onCreateCopy 
-}: { 
-  onHasCopy: () => void; 
-  onCreateCopy: () => void;
-}) {
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      className="w-full"
-    >
-      <div className="flex flex-wrap gap-2">
-        <button
-          onClick={onHasCopy}
-          className="px-4 py-2 rounded-lg border border-border/40 bg-background hover:bg-muted/50 transition-all text-sm font-medium text-foreground"
-        >
-          Já tenho a copy
-        </button>
-        <button
-          onClick={onCreateCopy}
-          className="px-4 py-2 rounded-lg border border-border/40 bg-background hover:bg-muted/50 transition-all text-sm font-medium text-foreground"
-        >
-          Criar copy com IA
-        </button>
-      </div>
-    </motion.div>
-  );
-}
-
-// Component for inputting existing copy text
-function CopyInputComponent({ 
-  onGenerate 
-}: { 
-  onGenerate: (copyText: string, companyName: string, productService: string) => void;
-}) {
-  const [copyText, setCopyText] = useState('');
-  const [companyName, setCompanyName] = useState('');
-  const [productService, setProductService] = useState('');
-
-  const handleSubmit = () => {
-    if (!copyText.trim()) {
-      toast.error("Por favor, cole o texto do seu email");
-      return;
-    }
-    onGenerate(copyText, companyName, productService);
-  };
-
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      className="w-full"
-    >
-      <div className="space-y-4 p-5 rounded-xl border border-border/40 bg-muted/30">
-        <div>
-          <label className="text-sm font-medium text-foreground mb-1.5 block">
-            Texto do email (copy) *
-          </label>
-          <textarea
-            value={copyText}
-            onChange={(e) => setCopyText(e.target.value)}
-            placeholder="Cole aqui o texto completo do seu email...
-
-Ex:
-Olá {{name}},
-
-Tenho uma oferta especial para você! Por tempo limitado, todos os nossos serviços estão com 30% de desconto.
-
-Não perca essa oportunidade única...
-
-Abraços,
-Equipe XYZ"
-            className="w-full min-h-[180px] p-3 rounded-lg border border-border/40 bg-background text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 resize-none font-mono"
-          />
-          <p className="text-xs text-muted-foreground mt-1.5">
-            Use <code className="bg-muted px-1 py-0.5 rounded">{"{{name}}"}</code> para personalizar com o nome do lead
-          </p>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label className="text-sm font-medium text-foreground mb-1.5 block">
-              Nome da empresa (opcional)
-            </label>
-            <input
-              type="text"
-              value={companyName}
-              onChange={(e) => setCompanyName(e.target.value)}
-              placeholder="Ex: Scale Beauty"
-              className="w-full p-3 rounded-lg border border-border/40 bg-background text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20"
-            />
-          </div>
-
-          <div>
-            <label className="text-sm font-medium text-foreground mb-1.5 block">
-              Produto/Serviço (opcional)
-            </label>
-            <input
-              type="text"
-              value={productService}
-              onChange={(e) => setProductService(e.target.value)}
-              placeholder="Ex: Tratamentos estéticos"
-              className="w-full p-3 rounded-lg border border-border/40 bg-background text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20"
-            />
-          </div>
-        </div>
-
-        <button
-          onClick={handleSubmit}
-          disabled={!copyText.trim()}
-          className={cn(
-            "w-full px-5 py-3 rounded-xl text-sm font-medium transition-all flex items-center justify-center gap-2",
-            "bg-gradient-to-r from-emerald-500 to-teal-500 text-white hover:from-emerald-600 hover:to-teal-600",
-            "disabled:opacity-50 disabled:cursor-not-allowed"
-          )}
-        >
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
-          </svg>
-          Gerar HTML do Email
-        </button>
-      </div>
-    </motion.div>
-  );
-}
+// Note: EmailChoiceComponent, CopyChoiceComponent, and CopyInputComponent removed
+// Questions are now handled as plain text in the chat flow
 
 // Component for generating HTML from existing copy with streaming
 function CopyToHtmlGenerator({ 
