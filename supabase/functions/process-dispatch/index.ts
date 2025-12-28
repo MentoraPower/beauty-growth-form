@@ -56,8 +56,8 @@ serve(async (req) => {
       .limit(1)
       .single();
 
-    const fromName = emailSettings?.from_name || 'Scale Beauty';
-    const fromEmail = emailSettings?.from_email || 'onboarding@resend.dev';
+    const fromName = emailSettings?.from_name || 'Emilly';
+    const fromEmail = emailSettings?.from_email || 'emilly@biteti.com.br';
 
     // Get leads for this job
     const { data: leads, error: leadsError } = await supabase
