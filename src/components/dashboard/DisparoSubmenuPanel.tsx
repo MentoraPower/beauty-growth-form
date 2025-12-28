@@ -162,15 +162,18 @@ export function DisparoSubmenuPanel({ isOpen, onClose }: DisparoSubmenuPanelProp
         </div>
 
         {/* New conversation button */}
-        <div className="mx-2 mb-3 p-[1px] rounded-lg bg-gradient-to-r from-orange-500 to-orange-600">
-          <button
-            onClick={handleNewConversation}
-            className="flex items-center justify-center gap-2 w-full px-3 py-2 rounded-[7px] bg-[#1a1a1a] hover:bg-[#222] text-white text-sm font-medium transition-colors border border-dashed border-orange-500/50"
-          >
-            <Plus className="h-4 w-4" />
-            Nova conversa
-          </button>
-        </div>
+        <button
+          onClick={handleNewConversation}
+          className="flex items-center justify-center gap-2 mx-2 mb-3 px-3 py-2.5 rounded-lg text-orange-400 text-sm font-medium transition-all hover:text-orange-300 hover:bg-orange-500/5"
+          style={{
+            border: '1px dashed',
+            borderColor: 'rgba(249, 115, 22, 0.5)',
+            backgroundImage: 'none',
+          }}
+        >
+          <Plus className="h-4 w-4" />
+          Nova conversa
+        </button>
 
         {/* Search */}
         {conversations.length > 0 && (
