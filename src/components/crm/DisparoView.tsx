@@ -104,6 +104,7 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
   const [selectedOriginData, setSelectedOriginData] = useState<{ subOriginId: string; subOriginName: string; originName: string } | null>(null);
   const [dispatchType, setDispatchType] = useState<'email' | 'whatsapp_web' | null>(null);
   const [initialLoadDone, setInitialLoadDone] = useState(false);
+  const [pendingEmailContext, setPendingEmailContext] = useState<{ subOriginId: string; dispatchType: string } | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Function to reconstruct component from componentData
@@ -518,26 +519,17 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
     setMessages(prev => [...prev, assistantMessage]);
   }, []);
 
-  // Handle create copy from scratch - show full generator form
+  // Handle create copy from scratch - just ask in chat, no form
   const handleCreateCopy = useCallback((subOriginId: string, type: string) => {
     const assistantMessage: Message = {
       id: crypto.randomUUID(),
-      content: `Perfeito! Vou criar a copy e o HTML do email para você. Me conte mais sobre o que você precisa:`,
+      content: `Perfeito! Vou criar a copy e o HTML do email para você. Me conte mais sobre o que você precisa - descreva seu serviço, produto ou a ideia do email que você quer enviar.`,
       role: "assistant",
       timestamp: new Date(),
-      componentData: {
-        type: 'email_generator',
-        data: { subOriginId, dispatchType: type }
-      },
-      component: (
-        <div className="mt-4 w-full">
-          <EmailGeneratorComponent 
-            onGenerated={(html) => handleEmailGenerated(html, subOriginId, type)}
-          />
-        </div>
-      ),
     };
     setMessages(prev => [...prev, assistantMessage]);
+    // Store context for when user responds
+    setPendingEmailContext({ subOriginId, dispatchType: type });
   }, []);
 
   // Handle generate HTML from existing copy
@@ -730,6 +722,131 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
     };
     setMessages((prev) => [...prev, userMessage]);
     setIsLoading(true);
+
+    // Check if we're waiting for email description
+    if (pendingEmailContext) {
+      const ctx = pendingEmailContext;
+      setPendingEmailContext(null);
+      
+      try {
+        // Generate email directly from user's description
+        const GENERATE_EMAIL_URL = `https://ytdfwkchsumgdvcroaqg.supabase.co/functions/v1/generate-email`;
+        
+        const assistantMessageId = crypto.randomUUID();
+        let generatedHtml = '';
+        
+        // Create streaming assistant message
+        setMessages(prev => [...prev, {
+          id: assistantMessageId,
+          content: "Gerando seu email...",
+          role: "assistant",
+          timestamp: new Date(),
+        }]);
+        
+        const response = await fetch(GENERATE_EMAIL_URL, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            objective: message,
+            tone: 'profissional',
+            companyName: '',
+            productService: '',
+            additionalInfo: ''
+          }),
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}));
+          throw new Error(errorData.error || "Erro ao gerar email");
+        }
+
+        if (!response.body) throw new Error("No response body");
+
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = "";
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+
+          buffer += decoder.decode(value, { stream: true });
+
+          let newlineIndex: number;
+          while ((newlineIndex = buffer.indexOf("\n")) !== -1) {
+            let line = buffer.slice(0, newlineIndex);
+            buffer = buffer.slice(newlineIndex + 1);
+
+            if (line.endsWith("\r")) line = line.slice(0, -1);
+            if (line.startsWith(":") || line.trim() === "") continue;
+            if (!line.startsWith("data: ")) continue;
+
+            const jsonStr = line.slice(6).trim();
+            if (jsonStr === "[DONE]") break;
+
+            try {
+              const parsed = JSON.parse(jsonStr);
+              const content = parsed.choices?.[0]?.delta?.content as string | undefined;
+              if (content) {
+                generatedHtml += content;
+              }
+            } catch {
+              // Incomplete JSON, continue
+            }
+          }
+        }
+
+        // Clean up the HTML
+        let cleanHtml = generatedHtml
+          .replace(/^```html\n?/i, '')
+          .replace(/^```\n?/, '')
+          .replace(/\n?```$/i, '')
+          .trim();
+
+        // Update message with editor component
+        setMessages(prev => 
+          prev.map(m => 
+            m.id === assistantMessageId 
+              ? { 
+                  ...m, 
+                  content: "Email gerado! Você pode editar e ajustar antes de usar:",
+                  component: (
+                    <div className="mt-4 w-full">
+                      <EmailEditorWithTabs
+                        html={cleanHtml}
+                        isGenerating={false}
+                        onHtmlChange={() => {}}
+                        onRegenerate={() => {
+                          // Re-trigger email generation
+                          setPendingEmailContext(ctx);
+                          const retryMessage: Message = {
+                            id: crypto.randomUUID(),
+                            content: "Me conte novamente sobre o email que você quer criar:",
+                            role: "assistant",
+                            timestamp: new Date(),
+                          };
+                          setMessages(prev => [...prev, retryMessage]);
+                        }}
+                        onUse={() => handleEmailGenerated(cleanHtml, ctx.subOriginId, ctx.dispatchType)}
+                      />
+                    </div>
+                  )
+                }
+              : m
+          )
+        );
+        
+        toast.success("Email gerado com sucesso!");
+        
+      } catch (error) {
+        console.error("Error generating email:", error);
+        toast.error(error instanceof Error ? error.message : "Erro ao gerar email");
+        setMessages(prev => prev.filter(m => m.content !== "Gerando seu email..."));
+      } finally {
+        setIsLoading(false);
+      }
+      return;
+    }
 
     try {
       const response = await fetch(CHAT_URL, {
