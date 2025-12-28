@@ -110,14 +110,17 @@ O sistema vai mostrar uma prévia. Você deve interpretar e explicar:
 PASSO 7 - SOLICITAR HTML DO EMAIL (SOMENTE PARA EMAIL)
 ═══════════════════════════════════════
 
-IMPORTANTE! Antes de confirmar o disparo de EMAIL, você DEVE perguntar:
+REGRA CRÍTICA: Antes de perguntar sobre o HTML, VERIFIQUE se existe uma mensagem de sistema com "[EMAIL HTML JÁ CRIADO]" no contexto. Se existir, o HTML JÁ FOI FORNECIDO - NÃO pergunte novamente!
+
+Se NÃO houver HTML no contexto, pergunte:
 
 "Você tem o HTML do email que deseja enviar? 📝
 
 • **Sim, tenho o HTML** - Cole o código HTML aqui
-• **Não, usar template simples** - Vou usar um template básico com a mensagem
+• **Não, usar template simples** - Vou usar um template básico com a mensagem"
 
-Se você tiver o HTML, pode colar aqui que eu uso ele no disparo!"
+Se JÁ houver HTML no contexto, diga algo como:
+"Perfeito! Já temos o email pronto. Quer que eu inicie o disparo ou prefere revisar o conteúdo primeiro?"
 
 Se o usuário colar HTML:
 - Confirme: "Perfeito! Recebi o HTML do email. Vou usar esse template no disparo."

@@ -1332,17 +1332,39 @@ Retorne APENAS o HTML modificado, sem explicações.`,
     }
 
     try {
+      // Build context info to inject into the conversation
+      const contextInfo: string[] = [];
+      
+      if (sidePanelHtml && sidePanelHtml.length > 0) {
+        contextInfo.push(`[EMAIL HTML JÁ CRIADO: ${sidePanelHtml.length} caracteres]`);
+        contextInfo.push(`[ASSUNTO: ${sidePanelSubject || '(não definido)'}]`);
+        contextInfo.push(`[PREVIEW DO HTML:\n${sidePanelHtml.slice(0, 800)}${sidePanelHtml.length > 800 ? '...' : ''}]`);
+      }
+      
+      if (selectedOriginData) {
+        contextInfo.push(`[LISTA SELECIONADA: ${selectedOriginData.originName} > ${selectedOriginData.subOriginName}]`);
+      }
+      
+      if (dispatchType) {
+        contextInfo.push(`[TIPO DE DISPARO: ${dispatchType.toUpperCase()}]`);
+      }
+
+      // Create messages with context injected as system message
+      const messagesForAPI = [
+        ...(contextInfo.length > 0 ? [{
+          role: 'system' as const,
+          content: `CONTEXTO ATUAL DA CONVERSA (USE ESTAS INFORMAÇÕES):\n${contextInfo.join('\n')}\n\nIMPORTANTE: Se já existe um HTML de email criado, NÃO pergunte ao usuário se ele tem o HTML. Continue a conversa normalmente usando o contexto acima.`
+        }] : []),
+        ...messages.map(m => ({ role: m.role, content: m.content })),
+        { role: userMessage.role, content: userMessage.content }
+      ];
+
       const response = await fetch(CHAT_URL, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          messages: [...messages, userMessage].map(m => ({
-            role: m.role,
-            content: m.content
-          }))
-        }),
+        body: JSON.stringify({ messages: messagesForAPI }),
       });
 
       if (!response.ok) {
