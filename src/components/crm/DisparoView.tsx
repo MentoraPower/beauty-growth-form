@@ -859,100 +859,84 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
   const hasMessages = messages.length > 0;
 
   return (
-    <div className="flex h-full bg-background">
-      {/* Sidebar with conversations menu */}
-      <div className="w-64 bg-foreground text-background flex-shrink-0 flex flex-col">
-        <div className="p-4">
-          <DisparoConversationsMenu
-            currentConversationId={currentConversationId}
-            onSelectConversation={handleSelectConversation}
-            onNewConversation={handleNewConversation}
-            onConversationCreated={handleConversationCreated}
-            messages={messages}
-          />
-        </div>
-      </div>
-
-      {/* Main content area */}
-      <div className="flex-1 flex flex-col h-full">
-        {/* When no messages, center the input */}
-        {!hasMessages ? (
-          <div className="flex-1 flex items-center justify-center p-6">
-            <div className="w-full max-w-2xl">
-              <div className="text-center mb-8">
-                <div className="flex items-center justify-center gap-3">
-                  <img src={disparoLogo} alt="Logo" className="w-6 h-6" />
-                  <h2 className="text-2xl font-semibold text-foreground">
-                    Eai, o que vamos disparar hoje?
-                  </h2>
-                </div>
+    <div className="flex-1 flex flex-col h-full bg-background">
+      {/* When no messages, center the input */}
+      {!hasMessages ? (
+        <div className="flex-1 flex items-center justify-center p-6">
+          <div className="w-full max-w-2xl">
+            <div className="text-center mb-8">
+              <div className="flex items-center justify-center gap-3">
+                <img src={disparoLogo} alt="Logo" className="w-6 h-6" />
+                <h2 className="text-2xl font-semibold text-foreground">
+                  Eai, o que vamos disparar hoje?
+                </h2>
               </div>
+            </div>
+            <PromptInputBox
+              onSend={handleSend}
+              isLoading={isLoading}
+              placeholder="Digite sua mensagem aqui..."
+            />
+            <p className="text-xs text-muted-foreground text-center mt-3">
+              A Scale pode cometer erros. Confira informações importantes.
+            </p>
+          </div>
+        </div>
+      ) : (
+        <>
+          {/* Chat messages area */}
+          <div className="flex-1 overflow-auto p-6">
+            <div className="max-w-3xl mx-auto space-y-4">
+              {messages.map((msg) => (
+                <div
+                  key={msg.id}
+                  className={cn(
+                    "flex flex-col",
+                    msg.role === "user" ? "items-end" : "items-start"
+                  )}
+                >
+                  {msg.role === "user" ? (
+                    <div className="bg-[#E8E8E8] text-foreground px-5 py-4 rounded-2xl max-w-[70%]">
+                      <p className="text-[15px] leading-relaxed whitespace-pre-wrap">{msg.content}</p>
+                    </div>
+                  ) : (
+                    <div className="w-full">
+                      <div className="max-w-[85%]">
+                        <p className="text-[15px] leading-relaxed whitespace-pre-wrap text-foreground">
+                          {formatMessageContent(msg.content)}
+                        </p>
+                      </div>
+                      {msg.component && (
+                        <div className="w-full mt-4">
+                          {msg.component}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              ))}
+              {isLoading && messages[messages.length - 1]?.role !== "assistant" && (
+                <div className="flex items-center gap-2 text-muted-foreground text-sm">
+                  <div className="w-1.5 h-1.5 bg-muted-foreground/60 rounded-full animate-pulse" />
+                  <span>pensando...</span>
+                </div>
+              )}
+              <div ref={messagesEndRef} />
+            </div>
+          </div>
+
+          {/* AI Chat Input - fixed at bottom */}
+          <div className="p-6 pt-0">
+            <div className="max-w-3xl mx-auto">
               <PromptInputBox
                 onSend={handleSend}
                 isLoading={isLoading}
                 placeholder="Digite sua mensagem aqui..."
               />
-              <p className="text-xs text-muted-foreground text-center mt-3">
-                A Scale pode cometer erros. Confira informações importantes.
-              </p>
             </div>
           </div>
-        ) : (
-          <>
-            {/* Chat messages area */}
-            <div className="flex-1 overflow-auto p-6">
-              <div className="max-w-3xl mx-auto space-y-4">
-                {messages.map((msg) => (
-                  <div
-                    key={msg.id}
-                    className={cn(
-                      "flex flex-col",
-                      msg.role === "user" ? "items-end" : "items-start"
-                    )}
-                  >
-                    {msg.role === "user" ? (
-                      <div className="bg-[#E8E8E8] text-foreground px-5 py-4 rounded-2xl max-w-[70%]">
-                        <p className="text-[15px] leading-relaxed whitespace-pre-wrap">{msg.content}</p>
-                      </div>
-                    ) : (
-                      <div className="w-full">
-                        <div className="max-w-[85%]">
-                          <p className="text-[15px] leading-relaxed whitespace-pre-wrap text-foreground">
-                            {formatMessageContent(msg.content)}
-                          </p>
-                        </div>
-                        {msg.component && (
-                          <div className="w-full mt-4">
-                            {msg.component}
-                          </div>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                ))}
-                {isLoading && messages[messages.length - 1]?.role !== "assistant" && (
-                  <div className="flex items-center gap-2 text-muted-foreground text-sm">
-                    <div className="w-1.5 h-1.5 bg-muted-foreground/60 rounded-full animate-pulse" />
-                    <span>pensando...</span>
-                  </div>
-                )}
-                <div ref={messagesEndRef} />
-              </div>
-            </div>
-
-            {/* AI Chat Input - fixed at bottom */}
-            <div className="p-6 pt-0">
-              <div className="max-w-3xl mx-auto">
-                <PromptInputBox
-                  onSend={handleSend}
-                  isLoading={isLoading}
-                  placeholder="Digite sua mensagem aqui..."
-                />
-              </div>
-            </div>
-          </>
-        )}
-      </div>
+        </>
+      )}
     </div>
   );
 }
