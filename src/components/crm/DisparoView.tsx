@@ -6,6 +6,7 @@ import { motion } from "framer-motion";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import { DispatchProgressTable } from "./DispatchProgressTable";
+import { EmailSidePanel } from "./EmailSidePanel";
 import { supabase } from "@/integrations/supabase/client";
 import disparoLogo from "@/assets/disparo-logo.png";
 
@@ -105,6 +106,13 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
   const [dispatchType, setDispatchType] = useState<'email' | 'whatsapp_web' | null>(null);
   const [initialLoadDone, setInitialLoadDone] = useState(false);
   const [pendingEmailContext, setPendingEmailContext] = useState<{ subOriginId: string; dispatchType: string } | null>(null);
+  
+  // Side panel state for email editor
+  const [sidePanelOpen, setSidePanelOpen] = useState(false);
+  const [sidePanelHtml, setSidePanelHtml] = useState('');
+  const [sidePanelGenerating, setSidePanelGenerating] = useState(false);
+  const [sidePanelContext, setSidePanelContext] = useState<{ subOriginId: string; dispatchType: string } | null>(null);
+  
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const chatScrollRef = useRef<HTMLDivElement>(null);
   const shouldAutoScrollRef = useRef(true);
@@ -557,24 +565,19 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
     }
   };
 
-  // Handle email choice - user has code ready
+  // Handle email choice - user has code ready (open side panel)
   const handleEmailChoiceCode = useCallback((subOriginId: string, type: string) => {
+    // Open side panel for HTML editing
+    setSidePanelContext({ subOriginId, dispatchType: type });
+    setSidePanelHtml('');
+    setSidePanelGenerating(false);
+    setSidePanelOpen(true);
+    
     const assistantMessage: Message = {
       id: crypto.randomUUID(),
-      content: `Ótimo! Cole o código HTML do seu email abaixo:`,
+      content: `Ótimo! Abri o editor de email na lateral. Cole ou edite o código HTML do seu email lá. Quando terminar, me avise que vou preparar o envio.`,
       role: "assistant",
       timestamp: new Date(),
-      componentData: {
-        type: 'html_editor',
-        data: { subOriginId, dispatchType: type }
-      },
-      component: (
-        <div className="mt-4 w-full">
-          <HtmlEditorComponent 
-            onSubmit={(html) => handleHtmlSubmit(html, subOriginId, type)}
-          />
-        </div>
-      ),
     };
     setMessages(prev => [...prev, assistantMessage]);
   }, []);
@@ -639,7 +642,7 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
     setPendingEmailContext({ subOriginId, dispatchType: type });
   }, []);
 
-  // Handle generate HTML from existing copy
+  // Handle generate HTML from existing copy - stream directly to side panel
   const handleGenerateFromCopy = useCallback(async (
     copyText: string, 
     companyName: string, 
@@ -647,49 +650,123 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
     subOriginId: string, 
     type: string
   ) => {
-    // Add loading message with streaming preview
+    // Open side panel with generating state
+    setSidePanelContext({ subOriginId, dispatchType: type });
+    setSidePanelHtml('');
+    setSidePanelGenerating(true);
+    setSidePanelOpen(true);
+    
     const loadingMessage: Message = {
       id: crypto.randomUUID(),
-      content: `Gerando HTML do email...`,
+      content: `Gerando HTML do email... Você pode acompanhar a geração em tempo real na lateral.`,
       role: "assistant",
       timestamp: new Date(),
-      componentData: {
-        type: 'email_generator_streaming',
-        data: { subOriginId, dispatchType: type, copyText, companyName, productService }
-      },
-      component: (
-        <div className="mt-4 w-full">
-          <CopyToHtmlGenerator 
-            copyText={copyText}
-            companyName={companyName}
-            productService={productService}
-            onGenerated={(html) => handleEmailGenerated(html, subOriginId, type)}
-          />
-        </div>
-      ),
     };
     setMessages(prev => [...prev, loadingMessage]);
+    
+    // Stream generation to side panel
+    try {
+      const GENERATE_EMAIL_URL = `https://ytdfwkchsumgdvcroaqg.supabase.co/functions/v1/generate-email`;
+      
+      const response = await fetch(GENERATE_EMAIL_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          copyText,
+          companyName,
+          productService,
+          tone: 'profissional',
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || "Erro ao gerar email");
+      }
+
+      if (!response.body) throw new Error("No response body");
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = "";
+      let generatedHtml = "";
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+
+        let newlineIndex: number;
+        while ((newlineIndex = buffer.indexOf("\n")) !== -1) {
+          let line = buffer.slice(0, newlineIndex);
+          buffer = buffer.slice(newlineIndex + 1);
+
+          if (line.endsWith("\r")) line = line.slice(0, -1);
+          if (line.startsWith(":") || line.trim() === "") continue;
+          if (!line.startsWith("data: ")) continue;
+
+          const jsonStr = line.slice(6).trim();
+          if (jsonStr === "[DONE]") break;
+
+          try {
+            const parsed = JSON.parse(jsonStr);
+            const content = parsed.choices?.[0]?.delta?.content as string | undefined;
+            if (content) {
+              generatedHtml += content;
+              // Update side panel HTML in real-time
+              const cleanHtml = generatedHtml
+                .replace(/^```html\n?/i, '')
+                .replace(/^```\n?/, '')
+                .replace(/\n?```$/i, '');
+              setSidePanelHtml(cleanHtml);
+            }
+          } catch {
+            // Incomplete JSON, continue
+          }
+        }
+      }
+
+      // Final cleanup
+      const finalHtml = generatedHtml
+        .replace(/^```html\n?/i, '')
+        .replace(/^```\n?/, '')
+        .replace(/\n?```$/i, '')
+        .trim();
+      
+      setSidePanelHtml(finalHtml);
+      setSidePanelGenerating(false);
+      
+      // Add completion message
+      const completionMessage: Message = {
+        id: crypto.randomUUID(),
+        content: `Email gerado! Você pode revisar e editar na lateral. Quando estiver pronto, me avise que vou preparar o envio.`,
+        role: "assistant",
+        timestamp: new Date(),
+      };
+      setMessages(prev => [...prev, completionMessage]);
+      toast.success("Email gerado com sucesso!");
+      
+    } catch (error) {
+      console.error("Error generating email:", error);
+      toast.error(error instanceof Error ? error.message : "Erro ao gerar email");
+      setSidePanelGenerating(false);
+    }
   }, []);
 
-  // Handle AI generated email
+  // Handle AI generated email - open in side panel
   const handleEmailGenerated = useCallback((html: string, subOriginId: string, type: string) => {
+    // Update side panel with generated HTML
+    setSidePanelContext({ subOriginId, dispatchType: type });
+    setSidePanelHtml(html);
+    setSidePanelGenerating(false);
+    setSidePanelOpen(true);
+    
     const assistantMessage: Message = {
       id: crypto.randomUUID(),
-      content: `Email criado! Você pode revisar e editar abaixo antes de enviar:`,
+      content: `Email criado! Você pode revisar e editar na lateral. Quando estiver pronto, me avise que vou preparar o envio.`,
       role: "assistant",
       timestamp: new Date(),
-      componentData: {
-        type: 'html_editor',
-        data: { subOriginId, dispatchType: type, initialContent: html }
-      },
-      component: (
-        <div className="mt-4 w-full">
-          <HtmlEditorComponent 
-            onSubmit={(finalHtml) => handleHtmlSubmit(finalHtml, subOriginId, type)}
-            initialContent={html}
-          />
-        </div>
-      ),
     };
     setMessages(prev => [...prev, assistantMessage]);
   }, []);
@@ -831,13 +908,18 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
     setMessages((prev) => [...prev, userMessage]);
     setIsLoading(true);
 
-    // Check if we're waiting for email description
+    // Check if we're waiting for email description - stream to side panel
     if (pendingEmailContext) {
       const ctx = pendingEmailContext;
       setPendingEmailContext(null);
       
+      // Open side panel with generating state
+      setSidePanelContext({ subOriginId: ctx.subOriginId, dispatchType: ctx.dispatchType });
+      setSidePanelHtml('');
+      setSidePanelGenerating(true);
+      setSidePanelOpen(true);
+      
       try {
-        // Generate email directly from user's description
         const GENERATE_EMAIL_URL = `https://ytdfwkchsumgdvcroaqg.supabase.co/functions/v1/generate-email`;
         
         const assistantMessageId = crypto.randomUUID();
@@ -846,7 +928,7 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
         // Create streaming assistant message
         setMessages(prev => [...prev, {
           id: assistantMessageId,
-          content: "Gerando seu email...",
+          content: "Gerando seu email... Você pode acompanhar na lateral.",
           role: "assistant",
           timestamp: new Date(),
         }]);
@@ -897,6 +979,12 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
               const content = parsed.choices?.[0]?.delta?.content as string | undefined;
               if (content) {
                 generatedHtml += content;
+                // Update side panel in real-time
+                const cleanHtml = generatedHtml
+                  .replace(/^```html\n?/i, '')
+                  .replace(/^```\n?/, '')
+                  .replace(/\n?```$/i, '');
+                setSidePanelHtml(cleanHtml);
               }
             } catch {
               // Incomplete JSON, continue
@@ -905,32 +993,20 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
         }
 
         // Clean up the HTML
-        let cleanHtml = generatedHtml
+        const cleanHtml = generatedHtml
           .replace(/^```html\n?/i, '')
           .replace(/^```\n?/, '')
           .replace(/\n?```$/i, '')
           .trim();
 
-        // Update message with HTML editor component (persisted via componentData)
+        setSidePanelHtml(cleanHtml);
+        setSidePanelGenerating(false);
+
+        // Update message
         setMessages(prev => 
           prev.map(m => 
             m.id === assistantMessageId 
-              ? { 
-                  ...m, 
-                  content: "Email gerado! Você pode revisar e editar abaixo antes de enviar:",
-                  componentData: {
-                    type: 'html_editor',
-                    data: { subOriginId: ctx.subOriginId, dispatchType: ctx.dispatchType, initialContent: cleanHtml }
-                  },
-                  component: (
-                    <div className="mt-4 w-full">
-                      <HtmlEditorComponent
-                        onSubmit={(finalHtml) => handleHtmlSubmit(finalHtml, ctx.subOriginId, ctx.dispatchType)}
-                        initialContent={cleanHtml}
-                      />
-                    </div>
-                  )
-                }
+              ? { ...m, content: "Email gerado! Você pode revisar e editar na lateral. Quando estiver pronto, me avise que vou preparar o envio." }
               : m
           )
         );
@@ -940,7 +1016,8 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
       } catch (error) {
         console.error("Error generating email:", error);
         toast.error(error instanceof Error ? error.message : "Erro ao gerar email");
-        setMessages(prev => prev.filter(m => m.content !== "Gerando seu email..."));
+        setSidePanelGenerating(false);
+        setMessages(prev => prev.filter(m => m.content !== "Gerando seu email... Você pode acompanhar na lateral."));
       } finally {
         setIsLoading(false);
       }
@@ -1150,85 +1227,96 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
   const hasMessages = messages.length > 0;
 
   return (
-    <div className="flex-1 flex flex-col h-full bg-background overflow-hidden">
-      {/* When no messages, center the input */}
-      {!hasMessages ? (
-        <div className="flex-1 flex items-center justify-center p-6">
-          <div className="w-full max-w-2xl">
-            <div className="text-center mb-8">
-              <div className="flex items-center justify-center gap-3">
-                <img src={disparoLogo} alt="Logo" className="w-6 h-6" />
-                <h2 className="text-2xl font-semibold text-foreground">
-                  Eai, o que vamos disparar hoje?
-                </h2>
+    <>
+      <div className="flex-1 flex flex-col h-full bg-background overflow-hidden">
+        {/* When no messages, center the input */}
+        {!hasMessages ? (
+          <div className="flex-1 flex items-center justify-center p-6">
+            <div className="w-full max-w-2xl">
+              <div className="text-center mb-8">
+                <div className="flex items-center justify-center gap-3">
+                  <img src={disparoLogo} alt="Logo" className="w-6 h-6" />
+                  <h2 className="text-2xl font-semibold text-foreground">
+                    Eai, o que vamos disparar hoje?
+                  </h2>
+                </div>
               </div>
-            </div>
-            <PromptInputBox
-              onSend={handleSend}
-              isLoading={isLoading}
-              placeholder="Digite sua mensagem aqui..."
-            />
-            <p className="text-xs text-muted-foreground text-center mt-3">
-              A Scale pode cometer erros. Confira informações importantes.
-            </p>
-          </div>
-        </div>
-      ) : (
-        <>
-          {/* Chat messages area */}
-          <div ref={chatScrollRef} onScroll={handleChatScroll} className="flex-1 overflow-y-auto min-h-0 p-6">
-            <div className="max-w-3xl mx-auto space-y-4">
-              {messages.map((msg) => (
-                <div
-                  key={msg.id}
-                  className={cn(
-                    "flex flex-col",
-                    msg.role === "user" ? "items-end" : "items-start"
-                  )}
-                >
-                  {msg.role === "user" ? (
-                    <div className="bg-[#E8E8E8] text-foreground px-5 py-4 rounded-2xl max-w-[70%]">
-                      <p className="text-[15px] leading-relaxed whitespace-pre-wrap">{msg.content}</p>
-                    </div>
-                  ) : (
-                    <div className="w-full">
-                      <div className="max-w-[85%]">
-                        <p className="text-[15px] leading-relaxed whitespace-pre-wrap text-foreground">
-                          {formatMessageContent(msg.content)}
-                        </p>
-                      </div>
-                      {msg.component && (
-                        <div className="w-full mt-4">
-                          {msg.component}
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
-              ))}
-              {isLoading && messages[messages.length - 1]?.role !== "assistant" && (
-                <div className="flex items-center gap-2 text-muted-foreground text-sm">
-                  <div className="w-1.5 h-1.5 bg-muted-foreground/60 rounded-full animate-pulse" />
-                  <span>pensando...</span>
-                </div>
-              )}
-              <div ref={messagesEndRef} />
-            </div>
-          </div>
-
-          {/* AI Chat Input - fixed at bottom */}
-          <div className="p-6 pt-0">
-            <div className="max-w-3xl mx-auto">
               <PromptInputBox
                 onSend={handleSend}
                 isLoading={isLoading}
                 placeholder="Digite sua mensagem aqui..."
               />
+              <p className="text-xs text-muted-foreground text-center mt-3">
+                A Scale pode cometer erros. Confira informações importantes.
+              </p>
             </div>
           </div>
-        </>
-      )}
-    </div>
+        ) : (
+          <>
+            {/* Chat messages area */}
+            <div ref={chatScrollRef} onScroll={handleChatScroll} className="flex-1 overflow-y-auto min-h-0 p-6">
+              <div className="max-w-3xl mx-auto space-y-4">
+                {messages.map((msg) => (
+                  <div
+                    key={msg.id}
+                    className={cn(
+                      "flex flex-col",
+                      msg.role === "user" ? "items-end" : "items-start"
+                    )}
+                  >
+                    {msg.role === "user" ? (
+                      <div className="bg-[#E8E8E8] text-foreground px-5 py-4 rounded-2xl max-w-[70%]">
+                        <p className="text-[15px] leading-relaxed whitespace-pre-wrap">{msg.content}</p>
+                      </div>
+                    ) : (
+                      <div className="w-full">
+                        <div className="max-w-[85%]">
+                          <p className="text-[15px] leading-relaxed whitespace-pre-wrap text-foreground">
+                            {formatMessageContent(msg.content)}
+                          </p>
+                        </div>
+                        {msg.component && (
+                          <div className="w-full mt-4">
+                            {msg.component}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                ))}
+                {isLoading && messages[messages.length - 1]?.role !== "assistant" && (
+                  <div className="flex items-center gap-2 text-muted-foreground text-sm">
+                    <div className="w-1.5 h-1.5 bg-muted-foreground/60 rounded-full animate-pulse" />
+                    <span>pensando...</span>
+                  </div>
+                )}
+                <div ref={messagesEndRef} />
+              </div>
+            </div>
+
+            {/* AI Chat Input - fixed at bottom */}
+            <div className="p-6 pt-0">
+              <div className="max-w-3xl mx-auto">
+                <PromptInputBox
+                  onSend={handleSend}
+                  isLoading={isLoading}
+                  placeholder="Digite sua mensagem aqui..."
+                />
+              </div>
+            </div>
+          </>
+        )}
+      </div>
+      
+      {/* Email Side Panel */}
+      <EmailSidePanel
+        isOpen={sidePanelOpen}
+        onClose={() => setSidePanelOpen(false)}
+        htmlContent={sidePanelHtml}
+        onHtmlChange={setSidePanelHtml}
+        isGenerating={sidePanelGenerating}
+      />
+    </>
   );
 }
 
