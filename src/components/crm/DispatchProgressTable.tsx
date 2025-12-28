@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
-import { Pause, Play, X, CheckCircle, AlertCircle, Loader2, Mail, User } from "lucide-react";
+import { Pause, Play, X, CheckCircle, AlertCircle, Loader2, Mail, User, BarChart3 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface DispatchJob {
@@ -25,9 +25,10 @@ interface DispatchJob {
 interface DispatchProgressTableProps {
   jobId: string;
   onCommand: (command: string) => void;
+  onShowDetails?: (job: DispatchJob) => void;
 }
 
-export function DispatchProgressTable({ jobId, onCommand }: DispatchProgressTableProps) {
+export function DispatchProgressTable({ jobId, onCommand, onShowDetails }: DispatchProgressTableProps) {
   const [job, setJob] = useState<DispatchJob | null>(null);
   const [loading, setLoading] = useState(true);
   const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
@@ -211,15 +212,28 @@ export function DispatchProgressTable({ jobId, onCommand }: DispatchProgressTabl
           <motion.div 
             initial={{ opacity: 0, y: 5 }}
             animate={{ opacity: 1, y: 0 }}
-            className="flex items-center gap-4 text-xs pt-1 border-t border-border mt-2"
+            className="flex items-center justify-between text-xs pt-2 border-t border-border mt-2"
           >
-            <span className="text-green-600 dark:text-green-400">
-              <span className="font-semibold">{job.sent_count}</span> enviados
-            </span>
-            {job.failed_count > 0 && (
-              <span className="text-red-500">
-                <span className="font-semibold">{job.failed_count}</span> falhas
+            <div className="flex items-center gap-4">
+              <span className="text-green-600 dark:text-green-400">
+                <span className="font-semibold">{job.sent_count}</span> enviados
               </span>
+              {job.failed_count > 0 && (
+                <span className="text-red-500">
+                  <span className="font-semibold">{job.failed_count}</span> falhas
+                </span>
+              )}
+            </div>
+            {onShowDetails && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => onShowDetails(job)}
+                className="h-7 px-2 text-xs gap-1.5"
+              >
+                <BarChart3 className="w-3 h-3" />
+                Ver detalhes
+              </Button>
             )}
           </motion.div>
         )}

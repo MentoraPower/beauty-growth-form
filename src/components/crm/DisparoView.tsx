@@ -6,7 +6,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import { DispatchProgressTable } from "./DispatchProgressTable";
-import { EmailSidePanel } from "./EmailSidePanel";
+import { EmailSidePanel, SidePanelMode } from "./EmailSidePanel";
+import { DispatchData } from "./DispatchAnalysis";
 import { EmailGenerationIndicator } from "./EmailGenerationIndicator";
 import { supabase } from "@/integrations/supabase/client";
 import { Copy, ThumbsUp, ThumbsDown, RotateCcw } from "lucide-react";
@@ -154,6 +155,8 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
   const [sidePanelGenerating, setSidePanelGenerating] = useState(false);
   const [sidePanelEditing, setSidePanelEditing] = useState(false);
   const [sidePanelContext, setSidePanelContext] = useState<{ subOriginId: string; dispatchType: string } | null>(null);
+  const [sidePanelMode, setSidePanelMode] = useState<SidePanelMode>('email'); // Mode: email or dispatch_details
+  const [sidePanelDispatchData, setSidePanelDispatchData] = useState<DispatchData | null>(null); // Dispatch data for details view
   const [htmlSource, setHtmlSource] = useState<'ai' | 'user' | null>(null); // Track who created the HTML
   const [actionHistory, setActionHistory] = useState<ActionEntry[]>([]); // Complete action history for AI memory
   
@@ -205,6 +208,42 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
     
     lastScrollTopRef.current = currentScrollTop;
   }, []);
+
+  // Handle showing dispatch details in the side panel
+  const handleShowDispatchDetails = useCallback((job: {
+    id: string;
+    type: string;
+    origin_name: string | null;
+    sub_origin_name: string | null;
+    total_leads: number;
+    valid_leads: number;
+    sent_count: number;
+    failed_count: number;
+    status: string;
+    started_at: string | null;
+    completed_at: string | null;
+  }) => {
+    const dispatchData: DispatchData = {
+      id: job.id,
+      type: job.type,
+      originName: job.origin_name,
+      subOriginName: job.sub_origin_name,
+      totalLeads: job.total_leads,
+      validLeads: job.valid_leads,
+      sentCount: job.sent_count,
+      failedCount: job.failed_count,
+      status: job.status,
+      startedAt: job.started_at,
+      completedAt: job.completed_at,
+      subject: sidePanelSubject || undefined
+    };
+    
+    setSidePanelDispatchData(dispatchData);
+    setSidePanelMode('dispatch_details');
+    setSidePanelOpen(true);
+    
+    logAction('system', 'Disparo concluído', `${job.sent_count} emails enviados com sucesso`);
+  }, [sidePanelSubject, logAction]);
 
   // Function to reconstruct component from componentData
   function reconstructMessageComponent(componentData: MessageComponentData, messageId: string): React.ReactNode {
@@ -314,7 +353,11 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
         if (!jobId) return null;
         return (
           <div className="mt-4">
-            <DispatchProgressTable jobId={jobId} onCommand={handleCommand} />
+            <DispatchProgressTable 
+              jobId={jobId} 
+              onCommand={handleCommand} 
+              onShowDetails={handleShowDispatchDetails}
+            />
           </div>
         );
       }
@@ -428,6 +471,8 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
       setDispatchType(null);
       setActionHistory([]); // Clear action history
       setHtmlSource(null); // Clear htmlSource
+      setSidePanelMode('email'); // Reset side panel mode
+      setSidePanelDispatchData(null); // Clear dispatch data
       setInitialLoadDone(true);
     } else if (!convId && !initialLoadDone) {
       setInitialLoadDone(true);
@@ -1859,6 +1904,20 @@ INSTRUÇÕES PARA VOCÊ (A IA):
               onSubjectChange={setSidePanelSubject}
               isGenerating={sidePanelGenerating}
               isEditing={sidePanelEditing}
+              mode={sidePanelMode}
+              dispatchData={sidePanelDispatchData}
+              onNewDispatch={() => {
+                // Reset side panel to email mode and clear dispatch data
+                setSidePanelMode('email');
+                setSidePanelDispatchData(null);
+                setSidePanelHtml('');
+                setSidePanelSubject('');
+                setSidePanelOpen(false);
+              }}
+              onViewEmail={() => {
+                // Switch back to email view mode
+                setSidePanelMode('email');
+              }}
             />
           </motion.div>
         )}
