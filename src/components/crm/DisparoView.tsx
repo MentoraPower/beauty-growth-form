@@ -2,11 +2,12 @@ import React, { useState, useRef, useEffect, useCallback } from "react";
 import { useSearchParams } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { PromptInputBox } from "@/components/ui/ai-prompt-box";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import { DispatchProgressTable } from "./DispatchProgressTable";
 import { EmailSidePanel } from "./EmailSidePanel";
+import { EmailGenerationIndicator } from "./EmailGenerationIndicator";
 import { supabase } from "@/integrations/supabase/client";
 import disparoLogo from "@/assets/disparo-logo.png";
 
@@ -925,12 +926,13 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
         const assistantMessageId = crypto.randomUUID();
         let generatedHtml = '';
         
-        // Create streaming assistant message
+        // Create streaming assistant message with indicator component
         setMessages(prev => [...prev, {
           id: assistantMessageId,
-          content: "Gerando seu email... Você pode acompanhar na lateral.",
+          content: "",
           role: "assistant",
           timestamp: new Date(),
+          componentData: { type: 'email_generator_streaming' as const },
         }]);
         
         const response = await fetch(GENERATE_EMAIL_URL, {
@@ -1002,11 +1004,11 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
         setSidePanelHtml(cleanHtml);
         setSidePanelGenerating(false);
 
-        // Update message
+        // Update message - keep the indicator but mark as complete
         setMessages(prev => 
           prev.map(m => 
             m.id === assistantMessageId 
-              ? { ...m, content: "Email gerado! Você pode revisar e editar na lateral. Quando estiver pronto, me avise que vou preparar o envio." }
+              ? { ...m, content: "", componentData: { type: 'email_generator_streaming' as const, data: { isComplete: true } } }
               : m
           )
         );
@@ -1282,11 +1284,24 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
                       </div>
                     ) : (
                       <div className="w-full">
-                        <div className="max-w-[85%]">
-                          <p className="text-[15px] leading-relaxed whitespace-pre-wrap text-foreground">
-                            {formatMessageContent(msg.content)}
-                          </p>
-                        </div>
+                        {msg.content && (
+                          <div className="max-w-[85%]">
+                            <p className="text-[15px] leading-relaxed whitespace-pre-wrap text-foreground">
+                              {formatMessageContent(msg.content)}
+                            </p>
+                          </div>
+                        )}
+                        {/* Email generation indicator */}
+                        {msg.componentData?.type === 'email_generator_streaming' && (
+                          <div className="mt-2">
+                            <EmailGenerationIndicator
+                              isGenerating={sidePanelGenerating}
+                              isComplete={msg.componentData?.data?.isComplete || !sidePanelGenerating}
+                              onTogglePanel={() => setSidePanelOpen(!sidePanelOpen)}
+                              isPanelOpen={sidePanelOpen}
+                            />
+                          </div>
+                        )}
                         {msg.component && (
                           <div className="w-full mt-4">
                             {msg.component}
@@ -1320,13 +1335,25 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
         )}
       </div>
       
-      {/* Email Side Panel - fixed section alongside chat */}
-      <EmailSidePanel
-        isOpen={sidePanelOpen}
-        htmlContent={sidePanelHtml}
-        onHtmlChange={setSidePanelHtml}
-        isGenerating={sidePanelGenerating}
-      />
+      {/* Email Side Panel - animated section alongside chat */}
+      <AnimatePresence mode="wait">
+        {sidePanelOpen && (
+          <motion.div
+            initial={{ width: 0, opacity: 0 }}
+            animate={{ width: "auto", opacity: 1 }}
+            exit={{ width: 0, opacity: 0 }}
+            transition={{ type: "spring", damping: 25, stiffness: 200 }}
+            className="overflow-hidden"
+          >
+            <EmailSidePanel
+              isOpen={sidePanelOpen}
+              htmlContent={sidePanelHtml}
+              onHtmlChange={setSidePanelHtml}
+              isGenerating={sidePanelGenerating}
+            />
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
