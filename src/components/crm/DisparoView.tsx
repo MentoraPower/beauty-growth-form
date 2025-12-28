@@ -1046,9 +1046,9 @@ function HtmlEditorComponent({ onSubmit }: { onSubmit: (html: string) => void })
     <motion.div
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      className="flex flex-col items-center w-full"
+      className="w-full"
     >
-      <div className="w-full max-w-[85%]">
+      <div className="w-full">
         <div className="text-xs text-muted-foreground mb-2 text-right">
           Template do Email · Use <code className="bg-muted px-1 py-0.5 rounded text-xs text-foreground">{"{{name}}"}</code> para personalizar
         </div>
