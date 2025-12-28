@@ -1058,9 +1058,32 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
 
       // START_DISPATCH: Execute directly - user already confirmed verbally via chat
       // The AI only sends this command AFTER the user said "sim", "pode", etc.
+      // IMPORTANT: Use the local subOriginId state instead of trusting what the AI sends
+      // because the AI might send the list name instead of the UUID
       if (command.startsWith('START_DISPATCH:')) {
         console.log("[INFO] START_DISPATCH detected - executing (user confirmed via chat)");
-        await executeDispatch(command);
+        
+        // Parse the command parts
+        const parts = command.split(':');
+        const type = parts[1] || 'email';
+        const templateType = parts[3] || 'html';
+        
+        // Use the subOriginId from local state (guaranteed to be the correct UUID)
+        // selectedOriginData.subOriginId is set when user selects a list
+        // The prop subOriginId is a fallback
+        const actualSubOriginId = selectedOriginData?.subOriginId || subOriginId;
+        
+        if (!actualSubOriginId) {
+          console.error("[ERROR] No subOriginId available for dispatch");
+          toast.error("Erro: Nenhuma lista selecionada para o disparo.");
+          continue;
+        }
+        
+        // Build the corrected command with the actual UUID
+        const correctedCommand = `START_DISPATCH:${type}:${actualSubOriginId}:${templateType}`;
+        console.log("[INFO] Corrected command:", correctedCommand);
+        
+        await executeDispatch(correctedCommand);
         continue;
       }
 
