@@ -1,9 +1,17 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 import { Pause, Play, X, CheckCircle, AlertCircle, Loader2, Mail, User, BarChart3 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+
+interface ErrorLogEntry {
+  leadId: string;
+  leadName: string;
+  leadEmail: string;
+  error: string;
+  timestamp: string;
+}
 
 interface DispatchJob {
   id: string;
@@ -20,18 +28,25 @@ interface DispatchJob {
   started_at: string | null;
   completed_at: string | null;
   updated_at: string;
+  error_log: ErrorLogEntry[] | null;
 }
 
 interface DispatchProgressTableProps {
   jobId: string;
   onCommand: (command: string) => void;
   onShowDetails?: (job: DispatchJob) => void;
+  onError?: (error: { failedCount: number; lastError?: string; leadEmail?: string }) => void;
+  onComplete?: (result: { sent: number; failed: number; errorLog?: ErrorLogEntry[] }) => void;
 }
 
-export function DispatchProgressTable({ jobId, onCommand, onShowDetails }: DispatchProgressTableProps) {
+export function DispatchProgressTable({ jobId, onCommand, onShowDetails, onError, onComplete }: DispatchProgressTableProps) {
   const [job, setJob] = useState<DispatchJob | null>(null);
   const [loading, setLoading] = useState(true);
   const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
+  
+  // Track last notified values to avoid duplicate notifications
+  const lastFailedCountRef = useRef(0);
+  const hasNotifiedCompleteRef = useRef(false);
 
   useEffect(() => {
     // Initial fetch
@@ -43,8 +58,11 @@ export function DispatchProgressTable({ jobId, onCommand, onShowDetails }: Dispa
         .single();
 
       if (!error && data) {
-        setJob(data as DispatchJob);
+        const jobData = data as unknown as DispatchJob;
+        setJob(jobData);
         setLastUpdate(new Date());
+        // Initialize refs with current values
+        lastFailedCountRef.current = jobData.failed_count;
       }
       setLoading(false);
     };
@@ -76,6 +94,33 @@ export function DispatchProgressTable({ jobId, onCommand, onShowDetails }: Dispa
       supabase.removeChannel(channel);
     };
   }, [jobId]);
+
+  // Handle error and completion notifications
+  useEffect(() => {
+    if (!job) return;
+    
+    // Notify when there are NEW failures
+    if (job.failed_count > lastFailedCountRef.current && onError) {
+      const errorLog = job.error_log || [];
+      const lastError = errorLog[errorLog.length - 1];
+      onError({
+        failedCount: job.failed_count,
+        lastError: lastError?.error,
+        leadEmail: lastError?.leadEmail
+      });
+      lastFailedCountRef.current = job.failed_count;
+    }
+    
+    // Notify when job completes (only once)
+    if ((job.status === 'completed' || job.status === 'cancelled') && !hasNotifiedCompleteRef.current && onComplete) {
+      onComplete({
+        sent: job.sent_count,
+        failed: job.failed_count,
+        errorLog: job.error_log || undefined
+      });
+      hasNotifiedCompleteRef.current = true;
+    }
+  }, [job, onError, onComplete]);
 
   if (loading) {
     return (
