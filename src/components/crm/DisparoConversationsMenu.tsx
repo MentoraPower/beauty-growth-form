@@ -28,11 +28,18 @@ interface Conversation {
   updated_at: string;
 }
 
+interface MessageComponentData {
+  type: 'leads_preview' | 'html_editor' | 'origins_list' | 'dispatch_progress' | 'csv_preview';
+  data?: any;
+}
+
 interface Message {
   id: string;
   content: string;
   role: "user" | "assistant";
   timestamp: Date;
+  component?: React.ReactNode;
+  componentData?: MessageComponentData;
 }
 
 interface DisparoConversationsMenuProps {
@@ -104,12 +111,18 @@ export function DisparoConversationsMenu({
         ? firstUserMessage.content.slice(0, 50) + (firstUserMessage.content.length > 50 ? "..." : "")
         : "Nova conversa";
 
-      const messagesJson = messages.map(m => ({
-        id: m.id,
-        content: m.content,
-        role: m.role,
-        timestamp: m.timestamp.toISOString(),
-      }));
+      const messagesJson = messages.map(m => {
+        const msg: Record<string, any> = {
+          id: m.id,
+          content: m.content,
+          role: m.role,
+          timestamp: m.timestamp.toISOString(),
+        };
+        if (m.componentData) {
+          msg.componentData = m.componentData;
+        }
+        return msg;
+      });
 
       if (currentConversationId && !forceCreate) {
         // Update existing - don't update title if it was manually renamed
@@ -188,6 +201,7 @@ export function DisparoConversationsMenu({
         content: m.content,
         role: m.role as "user" | "assistant",
         timestamp: new Date(m.timestamp),
+        componentData: m.componentData || undefined,
       }));
 
       lastSavedMessagesCount.current = loadedMessages.length;
