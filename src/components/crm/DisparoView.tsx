@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import { DispatchProgressTable } from "./DispatchProgressTable";
+import { DispatchPreparingIndicator } from "./DispatchPreparingIndicator";
 import { EmailSidePanel, SidePanelMode } from "./EmailSidePanel";
 import { DispatchData } from "./DispatchAnalysis";
 import { EmailGenerationIndicator } from "./EmailGenerationIndicator";
@@ -994,6 +995,20 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
 
   // Execute a confirmed dispatch
   const executeDispatch = useCallback(async (command: string) => {
+    // Determine dispatch type from command
+    const isWhatsApp = command.includes('whatsapp');
+    
+    // STEP 1: Show preparing indicator immediately
+    const preparingMessageId = crypto.randomUUID();
+    const preparingMessage: Message = {
+      id: preparingMessageId,
+      content: "🔄 Preparando disparo...",
+      role: "assistant",
+      timestamp: new Date(),
+      component: <DispatchPreparingIndicator type={isWhatsApp ? 'whatsapp' : 'email'} />,
+    };
+    setMessages(prev => [...prev, preparingMessage]);
+    
     try {
       setIsLoading(true);
       const response = await fetch(CHAT_URL, {
@@ -1011,28 +1026,35 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
         setActiveJobId(result.data.jobId);
         logAction('system', `Disparo iniciado`, `Enviando para ${result.data.validLeads} leads`);
         
-        const progressMessage: Message = {
-          id: crypto.randomUUID(),
-          content: `🚀 Disparo iniciado! Enviando para ${result.data.validLeads} leads...`,
-          role: "assistant",
-          timestamp: new Date(),
-          componentData: {
-            type: 'dispatch_progress',
-            data: { jobId: result.data.jobId }
-          },
-          component: (
-            <DispatchProgressTable
-              key={`dispatch-${result.data.jobId}`}
-              jobId={result.data.jobId}
-              onCommand={handleCommand}
-            />
-          ),
-        };
-        setMessages(prev => [...prev, progressMessage]);
+        // STEP 2: Replace preparing message with progress table
+        setMessages(prev => prev.map(m => 
+          m.id === preparingMessageId 
+            ? {
+                ...m,
+                content: `🚀 Disparo iniciado! Enviando para ${result.data.validLeads} leads...`,
+                componentData: {
+                  type: 'dispatch_progress' as const,
+                  data: { jobId: result.data.jobId }
+                },
+                component: (
+                  <DispatchProgressTable
+                    key={`dispatch-${result.data.jobId}`}
+                    jobId={result.data.jobId}
+                    onCommand={handleCommand}
+                  />
+                ),
+              }
+            : m
+        ));
         toast.success("Disparo iniciado com sucesso!");
+      } else {
+        // If dispatch didn't start properly, remove preparing message
+        setMessages(prev => prev.filter(m => m.id !== preparingMessageId));
       }
     } catch (error) {
       console.error("Error starting dispatch:", error);
+      // Remove preparing message on error
+      setMessages(prev => prev.filter(m => m.id !== preparingMessageId));
       toast.error("Erro ao iniciar disparo");
     } finally {
       setIsLoading(false);
