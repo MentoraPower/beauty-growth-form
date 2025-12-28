@@ -213,8 +213,9 @@ export function DisparoSubmenuPanel({ isOpen, onClose }: DisparoSubmenuPanelProp
               >
                 <button
                   onClick={() => handleSelectConversation(conv.id)}
-                  className="flex-1 text-left px-3 py-2 text-sm truncate"
+                  className="flex-1 text-left px-3 py-2 text-sm truncate flex items-center gap-2"
                 >
+                  <span className="text-white/40">•</span>
                   {conv.title}
                 </button>
                 
