@@ -267,6 +267,7 @@ export type Database = {
           interval_seconds: number
           message_template: string | null
           origin_name: string | null
+          processing_lock_until: string | null
           sent_count: number
           started_at: string | null
           status: string
@@ -287,6 +288,7 @@ export type Database = {
           interval_seconds?: number
           message_template?: string | null
           origin_name?: string | null
+          processing_lock_until?: string | null
           sent_count?: number
           started_at?: string | null
           status?: string
@@ -307,6 +309,7 @@ export type Database = {
           interval_seconds?: number
           message_template?: string | null
           origin_name?: string | null
+          processing_lock_until?: string | null
           sent_count?: number
           started_at?: string | null
           status?: string

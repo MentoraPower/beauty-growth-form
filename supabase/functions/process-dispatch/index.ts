@@ -184,7 +184,7 @@ serve(async (req) => {
 
     console.log(`[DISPATCH-BATCH] Processing job: ${jobId}`);
 
-    // Get job details
+    // Get job details with lock check
     const job = await withRetry(async () => {
       const { data, error } = await supabase
         .from('dispatch_jobs')
@@ -203,6 +203,40 @@ serve(async (req) => {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
+
+    // Check if job is locked by another instance (60 second lock)
+    const LOCK_DURATION_MS = 60000;
+    if (job.processing_lock_until) {
+      const lockExpiry = new Date(job.processing_lock_until);
+      if (lockExpiry > new Date()) {
+        const remainingLock = Math.ceil((lockExpiry.getTime() - Date.now()) / 1000);
+        console.log(`[DISPATCH-BATCH] ⏳ Job ${jobId} is locked by another instance for ${remainingLock}s more, skipping...`);
+        return new Response(JSON.stringify({ 
+          message: 'Job locked by another instance', 
+          lockedFor: remainingLock 
+        }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+    }
+
+    // Acquire lock for this processing session
+    const lockUntil = new Date(Date.now() + LOCK_DURATION_MS).toISOString();
+    const { error: lockError } = await supabase
+      .from('dispatch_jobs')
+      .update({ processing_lock_until: lockUntil })
+      .eq('id', jobId)
+      .eq('status', 'running'); // Only lock if still running
+
+    if (lockError) {
+      console.error(`[DISPATCH-BATCH] Failed to acquire lock:`, lockError);
+      return new Response(JSON.stringify({ message: 'Failed to acquire lock' }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+    
+    console.log(`[DISPATCH-BATCH] 🔒 Lock acquired until ${lockUntil}`);
 
     // Get email settings
     const { data: emailSettings } = await supabase
@@ -317,8 +351,33 @@ serve(async (req) => {
         .eq('id', jobId);
 
       if (job.type === 'email') {
+        // Check which leads have already been sent emails (to avoid duplicates)
+        const leadIds = parallelGroup.map(l => l.id);
+        const { data: alreadySent } = await supabase
+          .from('sent_emails')
+          .select('lead_id')
+          .in('lead_id', leadIds)
+          .gte('created_at', job.started_at || job.created_at);
+
+        const alreadySentIds = new Set((alreadySent || []).map((s: any) => s.lead_id));
+        
+        // Filter out already sent leads
+        const leadsToSend = parallelGroup.filter(lead => {
+          if (alreadySentIds.has(lead.id)) {
+            console.log(`[DISPATCH-BATCH] ⏭️ Email already sent to ${lead.email}, skipping duplicate`);
+            sentCount++; // Count as sent
+            return false;
+          }
+          return true;
+        });
+
+        if (leadsToSend.length === 0) {
+          // All leads in this group were already processed
+          continue;
+        }
+
         // Send emails in parallel using Promise.allSettled
-        const emailPromises = parallelGroup.map(lead => 
+        const emailPromises = leadsToSend.map(lead => 
           sendSingleEmail(
             lead,
             job,
@@ -336,7 +395,7 @@ serve(async (req) => {
         // Process results
         for (let j = 0; j < results.length; j++) {
           const result = results[j];
-          const lead = parallelGroup[j];
+          const lead = leadsToSend[j];
 
           if (result.status === 'fulfilled' && result.value.success) {
             sentCount++;
@@ -409,11 +468,20 @@ serve(async (req) => {
           status: 'completed',
           completed_at: new Date().toISOString(),
           current_lead_name: null,
+          processing_lock_until: null, // Release lock
           updated_at: new Date().toISOString()
         })
         .eq('id', jobId);
     } else {
       console.log(`[DISPATCH-BATCH] Batch complete. Sent: ${sentCount}, Failed: ${failedCount}, Remaining: ${remaining}. Next batch will be processed by cron.`);
+      
+      // Release lock at end of batch processing
+      await supabase
+        .from('dispatch_jobs')
+        .update({ processing_lock_until: null })
+        .eq('id', jobId);
+      
+      console.log(`[DISPATCH-BATCH] 🔓 Lock released`);
     }
 
     return new Response(JSON.stringify({ 
