@@ -112,6 +112,7 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
   const [sidePanelOpen, setSidePanelOpen] = useState(false);
   const [sidePanelHtml, setSidePanelHtml] = useState('');
   const [sidePanelGenerating, setSidePanelGenerating] = useState(false);
+  const [sidePanelEditing, setSidePanelEditing] = useState(false);
   const [sidePanelContext, setSidePanelContext] = useState<{ subOriginId: string; dispatchType: string } | null>(null);
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -1026,6 +1027,141 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
       return;
     }
 
+    // Check if user is asking for email edits and we have HTML in the side panel
+    const lowerMessage = messageContent.toLowerCase();
+    const isAskingForEdit = sidePanelHtml && (
+      lowerMessage.includes('altera') ||
+      lowerMessage.includes('muda') ||
+      lowerMessage.includes('troca') ||
+      lowerMessage.includes('modifica') ||
+      lowerMessage.includes('ajusta') ||
+      lowerMessage.includes('corrige') ||
+      lowerMessage.includes('adiciona') ||
+      lowerMessage.includes('remove') ||
+      lowerMessage.includes('coloca') ||
+      lowerMessage.includes('tira') ||
+      lowerMessage.includes('melhora') ||
+      lowerMessage.includes('edita') ||
+      lowerMessage.includes('atualiza')
+    );
+
+    if (isAskingForEdit) {
+      // Open panel in edit mode and stream the changes
+      setSidePanelOpen(true);
+      setSidePanelEditing(true);
+      setSidePanelGenerating(true);
+
+      const assistantMessageId = crypto.randomUUID();
+      setMessages(prev => [...prev, {
+        id: assistantMessageId,
+        content: "",
+        role: "assistant",
+        timestamp: new Date(),
+        componentData: { type: 'email_generator_streaming' as const, data: { isEditing: true } },
+      }]);
+
+      try {
+        const GENERATE_EMAIL_URL = `https://ytdfwkchsumgdvcroaqg.supabase.co/functions/v1/generate-email`;
+        
+        const response = await fetch(GENERATE_EMAIL_URL, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            objective: `Modifique o seguinte HTML de email conforme a instrução do usuário. 
+            
+Instrução do usuário: ${messageContent}
+
+HTML atual:
+${sidePanelHtml}
+
+Retorne APENAS o HTML modificado, sem explicações.`,
+            tone: 'profissional',
+            companyName: '',
+            productService: '',
+            additionalInfo: ''
+          }),
+        });
+
+        if (!response.ok) {
+          throw new Error("Erro ao editar email");
+        }
+
+        if (!response.body) throw new Error("No response body");
+
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = "";
+        let newHtml = "";
+
+        // Clear HTML to show the streaming from scratch
+        setSidePanelHtml('');
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+
+          buffer += decoder.decode(value, { stream: true });
+
+          let newlineIndex: number;
+          while ((newlineIndex = buffer.indexOf("\n")) !== -1) {
+            let line = buffer.slice(0, newlineIndex);
+            buffer = buffer.slice(newlineIndex + 1);
+
+            if (line.endsWith("\r")) line = line.slice(0, -1);
+            if (line.startsWith(":") || line.trim() === "") continue;
+            if (!line.startsWith("data: ")) continue;
+
+            const jsonStr = line.slice(6).trim();
+            if (jsonStr === "[DONE]") break;
+
+            try {
+              const parsed = JSON.parse(jsonStr);
+              const content = parsed.choices?.[0]?.delta?.content as string | undefined;
+              if (content) {
+                newHtml += content;
+                const cleanHtml = newHtml
+                  .replace(/^```html\n?/i, '')
+                  .replace(/^```\n?/, '')
+                  .replace(/\n?```$/i, '');
+                setSidePanelHtml(cleanHtml);
+              }
+            } catch {
+              // Incomplete JSON
+            }
+          }
+        }
+
+        const finalHtml = newHtml
+          .replace(/^```html\n?/i, '')
+          .replace(/^```\n?/, '')
+          .replace(/\n?```$/i, '')
+          .trim();
+
+        setSidePanelHtml(finalHtml);
+        setSidePanelGenerating(false);
+        setSidePanelEditing(false);
+
+        setMessages(prev => 
+          prev.map(m => 
+            m.id === assistantMessageId 
+              ? { ...m, content: "", componentData: { type: 'email_generator_streaming' as const, data: { isComplete: true } } }
+              : m
+          )
+        );
+
+        toast.success("Email atualizado!");
+
+      } catch (error) {
+        console.error("Error editing email:", error);
+        toast.error("Erro ao editar email");
+        setSidePanelGenerating(false);
+        setSidePanelEditing(false);
+      } finally {
+        setIsLoading(false);
+      }
+      return;
+    }
+
     try {
       const response = await fetch(CHAT_URL, {
         method: "POST",
@@ -1297,6 +1433,7 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
                             <EmailGenerationIndicator
                               isGenerating={sidePanelGenerating}
                               isComplete={msg.componentData?.data?.isComplete || !sidePanelGenerating}
+                              isEditing={sidePanelEditing || msg.componentData?.data?.isEditing}
                               onTogglePanel={() => setSidePanelOpen(!sidePanelOpen)}
                               isPanelOpen={sidePanelOpen}
                             />
@@ -1350,6 +1487,7 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
               htmlContent={sidePanelHtml}
               onHtmlChange={setSidePanelHtml}
               isGenerating={sidePanelGenerating}
+              isEditing={sidePanelEditing}
             />
           </motion.div>
         )}

@@ -1,11 +1,12 @@
 import React from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Check, FileCode, ChevronUp, ChevronDown } from "lucide-react";
+import { Check, FileCode, ChevronUp, ChevronDown, Pencil } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface EmailGenerationIndicatorProps {
   isGenerating: boolean;
   isComplete: boolean;
+  isEditing?: boolean;
   onTogglePanel: () => void;
   isPanelOpen: boolean;
 }
@@ -13,10 +14,23 @@ interface EmailGenerationIndicatorProps {
 export function EmailGenerationIndicator({
   isGenerating,
   isComplete,
+  isEditing = false,
   onTogglePanel,
   isPanelOpen,
 }: EmailGenerationIndicatorProps) {
   const [isExpanded, setIsExpanded] = React.useState(true);
+
+  const getStatusText = () => {
+    if (isGenerating && isEditing) return "Editando email";
+    if (isGenerating) return "Criando email personalizado";
+    return "Email pronto";
+  };
+
+  const getFileText = () => {
+    if (isGenerating && isEditing) return "Editando";
+    if (isGenerating) return "Gerando";
+    return "Criado";
+  };
 
   return (
     <div className="w-full max-w-md">
@@ -32,12 +46,14 @@ export function EmailGenerationIndicator({
           )}>
             {isComplete ? (
               <Check className="w-3 h-3 text-primary" />
+            ) : isEditing ? (
+              <Pencil className="w-3 h-3 text-primary animate-pulse" />
             ) : (
               <div className="w-2 h-2 bg-primary rounded-full animate-pulse" />
             )}
           </div>
           <span className="flex-1 text-sm font-medium text-foreground">
-            {isGenerating ? "Criando email personalizado" : "Email criado com sucesso"}
+            {getStatusText()}
           </span>
           <button
             onClick={(e) => {
@@ -70,7 +86,7 @@ export function EmailGenerationIndicator({
                   <span className={cn(
                     isGenerating && "animate-pulse"
                   )}>
-                    {isGenerating ? "Gerando" : "Criado"} <code className="text-primary/80 font-mono">email_template.html</code>
+                    {getFileText()} <code className="text-primary/80 font-mono">email_template.html</code>
                   </span>
                 </div>
               </div>
