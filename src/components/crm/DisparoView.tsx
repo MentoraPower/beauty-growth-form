@@ -248,6 +248,40 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
     logAction('system', 'Disparo concluído', `${job.sent_count} emails enviados com sucesso`);
   }, [sidePanelSubject, logAction]);
 
+  // Handle dispatch errors - notify in chat when emails fail
+  const handleDispatchError = useCallback((error: { failedCount: number; lastError?: string; leadEmail?: string }) => {
+    const errorMessage: Message = {
+      id: crypto.randomUUID(),
+      content: `⚠️ **Falha no envio detectada!**\n\nO Resend retornou um erro: \`${error.lastError || 'Erro desconhecido'}\`${error.leadEmail ? `\nEmail: ${error.leadEmail}` : ''}\n\nTotal de falhas até agora: ${error.failedCount}\n\nO disparo continua para os outros leads.`,
+      role: "assistant",
+      timestamp: new Date()
+    };
+    setMessages(prev => [...prev, errorMessage]);
+    logAction('system', 'DISPATCH_ERROR', `Failed: ${error.failedCount}, Error: ${error.lastError}`);
+  }, [logAction]);
+
+  // Handle dispatch completion - show summary in chat
+  const handleDispatchComplete = useCallback((result: { sent: number; failed: number; errorLog?: Array<{ leadEmail: string; error: string }> }) => {
+    const hasErrors = result.failed > 0;
+    
+    let content: string;
+    if (hasErrors) {
+      const errorDetails = result.errorLog?.slice(0, 3).map(e => `• ${e.leadEmail}: ${e.error}`).join('\n') || 'Detalhes indisponíveis';
+      content = `📊 **Disparo concluído com falhas**\n\n✅ ${result.sent} emails enviados com sucesso\n❌ ${result.failed} emails falharam\n\n**Principais erros:**\n${errorDetails}`;
+    } else {
+      content = `🎉 **Disparo concluído com sucesso!**\n\nTodos os ${result.sent} emails foram enviados sem erros.`;
+    }
+    
+    const completeMessage: Message = {
+      id: crypto.randomUUID(),
+      content,
+      role: "assistant",
+      timestamp: new Date()
+    };
+    setMessages(prev => [...prev, completeMessage]);
+    logAction('system', 'DISPATCH_COMPLETE', `Sent: ${result.sent}, Failed: ${result.failed}`);
+  }, [logAction]);
+
   // Function to reconstruct component from componentData
   function reconstructMessageComponent(componentData: MessageComponentData, messageId: string): React.ReactNode {
     switch (componentData.type) {
@@ -340,6 +374,8 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
               jobId={jobId} 
               onCommand={handleCommand} 
               onShowDetails={handleShowDispatchDetails}
+              onError={handleDispatchError}
+              onComplete={handleDispatchComplete}
             />
           </div>
         );
@@ -1041,6 +1077,8 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
                     key={`dispatch-${result.data.jobId}`}
                     jobId={result.data.jobId}
                     onCommand={handleCommand}
+                    onError={handleDispatchError}
+                    onComplete={handleDispatchComplete}
                   />
                 ),
               }
