@@ -259,6 +259,7 @@ export type Database = {
       dispatch_jobs: {
         Row: {
           completed_at: string | null
+          conversation_id: string | null
           created_at: string
           current_lead_name: string | null
           error_log: Json | null
@@ -280,6 +281,7 @@ export type Database = {
         }
         Insert: {
           completed_at?: string | null
+          conversation_id?: string | null
           created_at?: string
           current_lead_name?: string | null
           error_log?: Json | null
@@ -301,6 +303,7 @@ export type Database = {
         }
         Update: {
           completed_at?: string | null
+          conversation_id?: string | null
           created_at?: string
           current_lead_name?: string | null
           error_log?: Json | null
@@ -321,6 +324,13 @@ export type Database = {
           valid_leads?: number
         }
         Relationships: [
+          {
+            foreignKeyName: "dispatch_jobs_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "dispatch_conversations"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "dispatch_jobs_sub_origin_id_fkey"
             columns: ["sub_origin_id"]

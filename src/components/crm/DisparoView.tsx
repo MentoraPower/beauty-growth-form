@@ -748,7 +748,7 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ 
-          command: `START_DISPATCH:${type}:${subOriginId}:${templateType}:${html}` 
+          command: `START_DISPATCH:${type}:${subOriginId}:${templateType}:${currentConversationId || ''}:${html}` 
         }),
       });
 

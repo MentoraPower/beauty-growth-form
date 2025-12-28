@@ -239,11 +239,27 @@ export function DisparoConversationsMenu({
     }
   };
 
-  // Delete conversation
+  // Delete conversation and cancel associated dispatch jobs
   const deleteConversation = async (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
     
     try {
+      // First, cancel any running/paused dispatch jobs linked to this conversation
+      const { error: cancelError } = await supabase
+        .from("dispatch_jobs")
+        .update({ 
+          status: 'cancelled', 
+          completed_at: new Date().toISOString() 
+        })
+        .eq("conversation_id", id)
+        .in("status", ['pending', 'running', 'paused']);
+
+      if (cancelError) {
+        console.error("Error cancelling dispatch jobs:", cancelError);
+        // Continue anyway - we still want to delete the conversation
+      }
+
+      // Now delete the conversation
       const { error } = await supabase
         .from("dispatch_conversations")
         .delete()
@@ -251,7 +267,7 @@ export function DisparoConversationsMenu({
 
       if (error) throw error;
       
-      toast.success("Conversa apagada");
+      toast.success("Conversa e disparos associados cancelados");
       
       // If deleting current conversation, start a new one
       if (id === currentConversationId) {

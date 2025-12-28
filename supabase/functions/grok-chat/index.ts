@@ -287,7 +287,8 @@ serve(async (req) => {
         const type = parts[1];
         const subOriginId = parts[2];
         const templateType = parts[3] || 'simple'; // 'html' or 'simple'
-        const templateContent = parts.slice(4).join(':') || ''; // Everything after template type
+        const conversationId = parts[4] || null; // Conversation ID to link the dispatch
+        const templateContent = parts.slice(5).join(':') || ''; // Everything after conversation id
 
         // Get sub-origin info
         const { data: subOrigin } = await supabase
@@ -310,7 +311,7 @@ serve(async (req) => {
           }
         }) || [];
 
-        // Create dispatch job with message template
+        // Create dispatch job with message template and conversation link
         const { data: job, error: jobError } = await supabase
           .from('dispatch_jobs')
           .insert({
@@ -322,7 +323,8 @@ serve(async (req) => {
             valid_leads: validLeads.length,
             status: 'running',
             started_at: new Date().toISOString(),
-            message_template: templateContent || null
+            message_template: templateContent || null,
+            conversation_id: conversationId || null
           })
           .select()
           .single();
