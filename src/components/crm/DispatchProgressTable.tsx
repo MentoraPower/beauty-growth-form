@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
-import { motion } from "framer-motion";
-import { Pause, Play, X, CheckCircle, AlertCircle, Loader2 } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Pause, Play, X, CheckCircle, AlertCircle, Loader2, Mail, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface DispatchJob {
@@ -19,6 +19,7 @@ interface DispatchJob {
   current_lead_name: string | null;
   started_at: string | null;
   completed_at: string | null;
+  updated_at: string;
 }
 
 interface DispatchProgressTableProps {
@@ -29,6 +30,7 @@ interface DispatchProgressTableProps {
 export function DispatchProgressTable({ jobId, onCommand }: DispatchProgressTableProps) {
   const [job, setJob] = useState<DispatchJob | null>(null);
   const [loading, setLoading] = useState(true);
+  const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
 
   useEffect(() => {
     // Initial fetch
@@ -41,6 +43,7 @@ export function DispatchProgressTable({ jobId, onCommand }: DispatchProgressTabl
 
       if (!error && data) {
         setJob(data as DispatchJob);
+        setLastUpdate(new Date());
       }
       setLoading(false);
     };
@@ -59,11 +62,14 @@ export function DispatchProgressTable({ jobId, onCommand }: DispatchProgressTabl
           filter: `id=eq.${jobId}`
         },
         (payload) => {
-          console.log('Dispatch job update:', payload.new);
+          console.log('Dispatch job realtime update:', payload.new);
           setJob(payload.new as DispatchJob);
+          setLastUpdate(new Date());
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        console.log('Realtime subscription status:', status);
+      });
 
     return () => {
       supabase.removeChannel(channel);
@@ -97,48 +103,61 @@ export function DispatchProgressTable({ jobId, onCommand }: DispatchProgressTabl
   const getStatusInfo = () => {
     switch (job.status) {
       case 'running':
-        return { icon: Loader2, color: 'text-blue-500', label: 'Enviando...', animate: true };
+        return { icon: Loader2, color: 'text-blue-500', bgColor: 'bg-blue-500', label: 'Enviando...', animate: true };
       case 'paused':
-        return { icon: Pause, color: 'text-yellow-500', label: 'Pausado', animate: false };
+        return { icon: Pause, color: 'text-yellow-500', bgColor: 'bg-yellow-500', label: 'Pausado', animate: false };
       case 'completed':
-        return { icon: CheckCircle, color: 'text-green-500', label: 'Concluído', animate: false };
+        return { icon: CheckCircle, color: 'text-green-500', bgColor: 'bg-green-500', label: 'Concluído', animate: false };
       case 'failed':
-        return { icon: AlertCircle, color: 'text-red-500', label: 'Falhou', animate: false };
+        return { icon: AlertCircle, color: 'text-red-500', bgColor: 'bg-red-500', label: 'Falhou', animate: false };
       case 'cancelled':
-        return { icon: X, color: 'text-gray-500', label: 'Cancelado', animate: false };
+        return { icon: X, color: 'text-gray-500', bgColor: 'bg-gray-500', label: 'Cancelado', animate: false };
       default:
-        return { icon: Loader2, color: 'text-muted-foreground', label: 'Pendente', animate: false };
+        return { icon: Loader2, color: 'text-muted-foreground', bgColor: 'bg-muted', label: 'Pendente', animate: false };
     }
   };
 
   const statusInfo = getStatusInfo();
   const StatusIcon = statusInfo.icon;
 
-  const getTypeLabel = () => {
-    switch (job.type) {
-      case 'email': return '📧 Email';
-      case 'whatsapp_web': return '📱 WhatsApp Web';
-      case 'whatsapp_business': return '💼 WhatsApp Business';
-      default: return job.type;
-    }
-  };
-
   return (
     <motion.div
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      className="my-4"
+      className="my-4 bg-muted/30 border border-border rounded-xl p-4"
     >
-      {/* Simple Progress Bar with percentage on the edge */}
-      <div className="space-y-1">
+      {/* Header with status */}
+      <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center gap-2">
+          <div className={cn(
+            "w-6 h-6 rounded-full flex items-center justify-center",
+            job.status === 'completed' ? "bg-green-500/20" : 
+            job.status === 'running' ? "bg-blue-500/20" : "bg-muted"
+          )}>
+            <StatusIcon className={cn(
+              "w-3.5 h-3.5",
+              statusInfo.color,
+              statusInfo.animate && "animate-spin"
+            )} />
+          </div>
+          <span className="text-sm font-medium text-foreground">{statusInfo.label}</span>
+        </div>
+        <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+          <Mail className="w-3 h-3" />
+          <span>{job.sent_count}/{job.valid_leads}</span>
+        </div>
+      </div>
+
+      {/* Progress bar */}
+      <div className="space-y-2">
         <div className="flex items-center gap-3">
-          <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
+          <div className="flex-1 h-2.5 bg-muted rounded-full overflow-hidden">
             <motion.div
               initial={{ width: 0 }}
               animate={{ width: `${progress}%` }}
-              transition={{ duration: 0.3 }}
+              transition={{ duration: 0.5, ease: "easeOut" }}
               className={cn(
-                "h-full rounded-full",
+                "h-full rounded-full transition-colors",
                 job.status === 'completed' ? "bg-green-500" :
                 job.status === 'failed' ? "bg-red-500" :
                 job.status === 'paused' ? "bg-yellow-500" :
@@ -146,36 +165,69 @@ export function DispatchProgressTable({ jobId, onCommand }: DispatchProgressTabl
               )}
             />
           </div>
-          <span className="text-sm font-medium text-foreground min-w-[40px] text-right">
+          <span className="text-sm font-semibold text-foreground min-w-[45px] text-right">
             {progress}%
           </span>
         </div>
         
-        {/* Minimal status text */}
+        {/* Current lead being processed */}
+        <AnimatePresence mode="wait">
+          {job.status === 'running' && job.current_lead_name && (
+            <motion.div
+              key={job.current_lead_name}
+              initial={{ opacity: 0, x: -10 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: 10 }}
+              className="flex items-center gap-2 text-xs text-muted-foreground"
+            >
+              <User className="w-3 h-3" />
+              <span>Enviando para <span className="text-foreground font-medium">{job.current_lead_name}</span></span>
+              <span className="animate-pulse">•</span>
+            </motion.div>
+          )}
+        </AnimatePresence>
+        
+        {/* Status details */}
         <div className="flex items-center justify-between text-xs text-muted-foreground">
-          {job.status === 'completed' ? (
-            <span>Enviado com sucesso</span>
-          ) : job.status === 'running' && remainingLeads > 0 ? (
-            <span>~{estimatedMinutes}min restantes</span>
-          ) : job.status === 'paused' ? (
-            <span>Pausado</span>
-          ) : null}
+          <div className="flex items-center gap-3">
+            {job.status === 'completed' ? (
+              <span className="text-green-600 dark:text-green-400 font-medium">✓ Todos os emails enviados</span>
+            ) : job.status === 'running' && remainingLeads > 0 ? (
+              <span>~{estimatedMinutes} min restantes</span>
+            ) : job.status === 'paused' ? (
+              <span className="text-yellow-600 dark:text-yellow-400">Disparo pausado</span>
+            ) : null}
+          </div>
+          
+          {job.failed_count > 0 && (
+            <span className="text-red-500">
+              {job.failed_count} falha{job.failed_count > 1 ? 's' : ''}
+            </span>
+          )}
         </div>
         
         {/* Results when completed */}
         {job.status === 'completed' && (
-          <div className="flex items-center gap-4 text-xs text-muted-foreground mt-1">
-            <span><span className="font-semibold">Enviados:</span> {job.sent_count}</span>
+          <motion.div 
+            initial={{ opacity: 0, y: 5 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="flex items-center gap-4 text-xs pt-1 border-t border-border mt-2"
+          >
+            <span className="text-green-600 dark:text-green-400">
+              <span className="font-semibold">{job.sent_count}</span> enviados
+            </span>
             {job.failed_count > 0 && (
-              <span><span className="font-semibold">Falhas:</span> {job.failed_count}</span>
+              <span className="text-red-500">
+                <span className="font-semibold">{job.failed_count}</span> falhas
+              </span>
             )}
-          </div>
+          </motion.div>
         )}
       </div>
 
-      {/* Compact action buttons */}
+      {/* Action buttons */}
       {(job.status === 'running' || job.status === 'paused') && (
-        <div className="flex items-center gap-2 mt-2">
+        <div className="flex items-center gap-2 mt-3 pt-3 border-t border-border">
           {job.status === 'running' ? (
             <Button
               variant="ghost"

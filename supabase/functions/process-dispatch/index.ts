@@ -14,6 +14,35 @@ const corsHeaders = {
 // Initialize Resend
 const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
 
+// Retry configuration
+const MAX_RETRIES = 3;
+const RETRY_DELAY_MS = 2000;
+
+// Helper function for retrying operations
+async function withRetry<T>(
+  operation: () => Promise<T>,
+  operationName: string,
+  maxRetries = MAX_RETRIES
+): Promise<T> {
+  let lastError: Error | null = null;
+  
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      return await operation();
+    } catch (error) {
+      lastError = error instanceof Error ? error : new Error(String(error));
+      console.error(`${operationName} - Attempt ${attempt}/${maxRetries} failed:`, lastError.message);
+      
+      if (attempt < maxRetries) {
+        console.log(`Waiting ${RETRY_DELAY_MS}ms before retry...`);
+        await new Promise(resolve => setTimeout(resolve, RETRY_DELAY_MS * attempt));
+      }
+    }
+  }
+  
+  throw lastError;
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -24,32 +53,30 @@ serve(async (req) => {
   const supabase = createClient(supabaseUrl, supabaseKey);
 
   try {
-    const { jobId, templateType, templateContent } = await req.json();
-    console.log(`Starting dispatch processing for job: ${jobId}, templateType: ${templateType}`);
+    const { jobId, templateType, templateContent, emailSubject } = await req.json();
+    console.log(`[DISPATCH] Starting job: ${jobId}, templateType: ${templateType}`);
 
-    // Get job details
-    const { data: job, error: jobError } = await supabase
-      .from('dispatch_jobs')
-      .select('*')
-      .eq('id', jobId)
-      .single();
-
-    if (jobError || !job) {
-      console.error('Job not found:', jobError);
-      return new Response(JSON.stringify({ error: 'Job not found' }), {
-        status: 404,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
+    // Get job details with retry
+    const job = await withRetry(async () => {
+      const { data, error } = await supabase
+        .from('dispatch_jobs')
+        .select('*')
+        .eq('id', jobId)
+        .single();
+      
+      if (error) throw error;
+      if (!data) throw new Error('Job not found');
+      return data;
+    }, 'Fetch job');
 
     if (job.status !== 'running') {
-      console.log(`Job ${jobId} is not running, status: ${job.status}`);
+      console.log(`[DISPATCH] Job ${jobId} is not running, status: ${job.status}`);
       return new Response(JSON.stringify({ message: 'Job is not running' }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
-    // Get email settings for sender info
+    // Get email settings
     const { data: emailSettings } = await supabase
       .from('email_settings')
       .select('*')
@@ -59,29 +86,38 @@ serve(async (req) => {
     const fromName = emailSettings?.from_name || 'Emilly';
     const fromEmail = emailSettings?.from_email || 'emilly@biteti.com.br';
 
-    // Get leads for this job
-    const { data: leads, error: leadsError } = await supabase
-      .from('leads')
-      .select('id, name, email, whatsapp, country_code')
-      .eq('sub_origin_id', job.sub_origin_id);
-
-    if (leadsError) {
-      console.error('Error fetching leads:', leadsError);
-      throw leadsError;
-    }
+    // Get leads with retry
+    const leads = await withRetry(async () => {
+      const { data, error } = await supabase
+        .from('leads')
+        .select('id, name, email, whatsapp, country_code')
+        .eq('sub_origin_id', job.sub_origin_id);
+      
+      if (error) throw error;
+      return data || [];
+    }, 'Fetch leads');
 
     // Filter valid leads
-    const validLeads = leads?.filter(l => {
+    const validLeads = leads.filter(l => {
       if (job.type === 'email') {
         return l.email && l.email.includes('@');
       } else {
         return l.whatsapp && l.whatsapp.length >= 8;
       }
-    }) || [];
+    });
 
-    console.log(`Found ${validLeads.length} valid leads for dispatch`);
+    console.log(`[DISPATCH] Found ${validLeads.length} valid leads for dispatch`);
 
-    // Process in background
+    // Update job with valid leads count
+    await supabase
+      .from('dispatch_jobs')
+      .update({ 
+        valid_leads: validLeads.length,
+        started_at: new Date().toISOString()
+      })
+      .eq('id', jobId);
+
+    // Process in background - this continues even if the client disconnects
     EdgeRuntime.waitUntil((async () => {
       let sentCount = job.sent_count || 0;
       let failedCount = job.failed_count || 0;
@@ -89,18 +125,25 @@ serve(async (req) => {
 
       // Skip already processed leads
       const leadsToProcess = validLeads.slice(sentCount + failedCount);
-      console.log(`Processing ${leadsToProcess.length} remaining leads`);
+      console.log(`[DISPATCH] Processing ${leadsToProcess.length} remaining leads`);
 
-      for (const lead of leadsToProcess) {
-        // Check if job is still running
-        const { data: currentJob } = await supabase
-          .from('dispatch_jobs')
-          .select('status')
-          .eq('id', jobId)
-          .single();
+      for (let i = 0; i < leadsToProcess.length; i++) {
+        const lead = leadsToProcess[i];
+        
+        // Check if job is still running (allows pause/cancel)
+        const currentStatus = await withRetry(async () => {
+          const { data, error } = await supabase
+            .from('dispatch_jobs')
+            .select('status')
+            .eq('id', jobId)
+            .single();
+          
+          if (error) throw error;
+          return data?.status;
+        }, 'Check job status');
 
-        if (currentJob?.status !== 'running') {
-          console.log(`Job ${jobId} is no longer running, stopping...`);
+        if (currentStatus !== 'running') {
+          console.log(`[DISPATCH] Job ${jobId} status changed to ${currentStatus}, stopping...`);
           break;
         }
 
@@ -112,10 +155,9 @@ serve(async (req) => {
             .eq('id', jobId);
 
           if (job.type === 'email') {
-            // Send email via Resend
-            console.log(`Sending email to ${lead.name} (${lead.email})`);
+            console.log(`[DISPATCH] Sending email to ${lead.name} (${lead.email}) - ${i + 1}/${leadsToProcess.length}`);
             
-            // Get the template content (from request or job)
+            // Get the template content
             const rawTemplate = templateContent || job.message_template || 'Olá {{name}}!';
             const isHtmlTemplate = rawTemplate.trim().startsWith('<') || templateType === 'html';
             
@@ -125,10 +167,8 @@ serve(async (req) => {
             // Build the final HTML
             let finalHtml: string;
             if (isHtmlTemplate) {
-              // Use the HTML directly (already formatted)
               finalHtml = personalizedContent;
             } else {
-              // Wrap simple text in a nice template
               finalHtml = `
                 <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
                   <p style="font-size: 16px; line-height: 1.6; color: #333;">${personalizedContent.replace(/\n/g, '<br>')}</p>
@@ -136,34 +176,39 @@ serve(async (req) => {
               `;
             }
 
-            // Extract subject from HTML if present, otherwise use default
+            // Extract subject from HTML if present, otherwise use provided or default
             const subjectMatch = personalizedContent.match(/<title>(.*?)<\/title>/i);
-            const emailSubject = subjectMatch ? subjectMatch[1] : `Mensagem para ${lead.name}`;
+            const finalSubject = emailSubject || subjectMatch?.[1] || `Mensagem para ${lead.name}`;
             
-            const emailResponse = await resend.emails.send({
-              from: `${fromName} <${fromEmail}>`,
-              to: [lead.email],
-              subject: emailSubject,
-              html: finalHtml,
-            });
+            // Send email with retry
+            const emailResponse = await withRetry(async () => {
+              const response = await resend.emails.send({
+                from: `${fromName} <${fromEmail}>`,
+                to: [lead.email],
+                subject: finalSubject,
+                html: finalHtml,
+              });
 
-            const resendError = (emailResponse as any)?.error;
-            if (resendError) {
-              throw new Error(
-                typeof resendError === "string"
-                  ? resendError
-                  : resendError?.message || "Erro ao enviar e-mail"
-              );
-            }
+              const resendError = (response as any)?.error;
+              if (resendError) {
+                throw new Error(
+                  typeof resendError === "string"
+                    ? resendError
+                    : resendError?.message || "Erro ao enviar e-mail"
+                );
+              }
+              
+              return response;
+            }, `Send email to ${lead.email}`);
 
-            console.log(`Email sent successfully to ${lead.email}:`, emailResponse);
+            console.log(`[DISPATCH] Email sent successfully to ${lead.email}`);
 
             // Record sent email in database
             await supabase.from("sent_emails").insert({
               lead_id: lead.id,
               lead_name: lead.name,
               lead_email: lead.email,
-              subject: emailSubject,
+              subject: finalSubject,
               body_html: finalHtml,
               status: "sent",
               resend_id: (emailResponse as any)?.data?.id ?? null,
@@ -171,79 +216,100 @@ serve(async (req) => {
             });
 
           } else {
-            // WhatsApp sending via wasender
-            console.log(`Sending WhatsApp to ${lead.name} (${lead.country_code}${lead.whatsapp})`);
+            // WhatsApp sending
+            console.log(`[DISPATCH] Sending WhatsApp to ${lead.name} (${lead.country_code}${lead.whatsapp})`);
             // TODO: Integrate with wasender-whatsapp function
             await new Promise(resolve => setTimeout(resolve, 500));
           }
 
           sentCount++;
           
-          // Update progress
-          await supabase
-            .from('dispatch_jobs')
-            .update({ 
-              sent_count: sentCount,
-              current_lead_name: lead.name
-            })
-            .eq('id', jobId);
+          // Update progress in real-time
+          await withRetry(async () => {
+            const { error } = await supabase
+              .from('dispatch_jobs')
+              .update({ 
+                sent_count: sentCount,
+                current_lead_name: lead.name,
+                updated_at: new Date().toISOString()
+              })
+              .eq('id', jobId);
+            
+            if (error) throw error;
+          }, 'Update progress');
 
-          console.log(`Successfully sent to ${lead.name}. Progress: ${sentCount}/${validLeads.length}`);
+          console.log(`[DISPATCH] Progress: ${sentCount}/${validLeads.length} (${Math.round((sentCount / validLeads.length) * 100)}%)`);
 
         } catch (error) {
           failedCount++;
           const errorEntry = {
             leadId: lead.id,
             leadName: lead.name,
+            leadEmail: lead.email,
             error: error instanceof Error ? error.message : 'Unknown error',
             timestamp: new Date().toISOString()
           };
           errorLog.push(errorEntry);
-          console.error(`Failed to send to ${lead.name}:`, error);
+          console.error(`[DISPATCH] Failed to send to ${lead.name}:`, error);
 
           await supabase
             .from('dispatch_jobs')
             .update({ 
               failed_count: failedCount,
-              error_log: errorLog
+              error_log: errorLog,
+              updated_at: new Date().toISOString()
             })
             .eq('id', jobId);
         }
 
-        // Wait for the interval between sends
-        await new Promise(resolve => setTimeout(resolve, job.interval_seconds * 1000));
+        // Wait for the interval between sends (except for the last one)
+        if (i < leadsToProcess.length - 1) {
+          await new Promise(resolve => setTimeout(resolve, job.interval_seconds * 1000));
+        }
       }
 
       // Check final status
-      const { data: finalJob } = await supabase
-        .from('dispatch_jobs')
-        .select('status')
-        .eq('id', jobId)
-        .single();
-
-      // Only mark as completed if still running (not paused/cancelled)
-      if (finalJob?.status === 'running') {
-        await supabase
+      const finalStatus = await withRetry(async () => {
+        const { data, error } = await supabase
           .from('dispatch_jobs')
-          .update({ 
-            status: 'completed',
-            completed_at: new Date().toISOString(),
-            current_lead_name: null
-          })
-          .eq('id', jobId);
-        console.log(`Job ${jobId} completed successfully!`);
+          .select('status')
+          .eq('id', jobId)
+          .single();
+        
+        if (error) throw error;
+        return data?.status;
+      }, 'Get final status');
+
+      // Only mark as completed if still running
+      if (finalStatus === 'running') {
+        await withRetry(async () => {
+          const { error } = await supabase
+            .from('dispatch_jobs')
+            .update({ 
+              status: 'completed',
+              completed_at: new Date().toISOString(),
+              current_lead_name: null,
+              updated_at: new Date().toISOString()
+            })
+            .eq('id', jobId);
+          
+          if (error) throw error;
+        }, 'Mark job completed');
+        
+        console.log(`[DISPATCH] Job ${jobId} completed! Sent: ${sentCount}, Failed: ${failedCount}`);
       }
     })());
 
     return new Response(JSON.stringify({ 
       message: 'Dispatch started in background',
-      jobId 
+      jobId,
+      totalLeads: validLeads.length
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
 
   } catch (error) {
-    console.error('Process dispatch error:', error);
+    console.error('[DISPATCH] Critical error:', error);
     return new Response(JSON.stringify({ 
       error: error instanceof Error ? error.message : 'Unknown error' 
     }), {
