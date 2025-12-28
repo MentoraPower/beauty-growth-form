@@ -1872,13 +1872,16 @@ INSTRUÇÕES PARA VOCÊ (A IA):
         
         // Check if user chose "Lista do CRM" - auto-show origins table
         const lowerMessage = messageContent.toLowerCase();
+        const mentionsList = lowerMessage.includes('lista') || lowerMessage.includes('list');
+        const mentionsCsv = lowerMessage.includes('csv') || lowerMessage.includes('arquivo');
+        const mentionsCRM = lowerMessage.includes('crm') || lowerMessage.includes('cadastrada') || lowerMessage.includes('sistema');
+
         const userChoseCRM = (
-          lowerMessage.includes('lista') && 
-          (lowerMessage.includes('crm') || 
-           lowerMessage.includes('cadastrada') ||
-           lowerMessage.includes('sistema'))
-        ) || lowerMessage.includes('lista do crm') || 
-           (lowerMessage.includes('lista') && !lowerMessage.includes('csv'));
+          (mentionsList && mentionsCRM) ||
+          lowerMessage.includes('lista do crm') ||
+          (mentionsList && !mentionsCsv) ||
+          lowerMessage.trim() === 'crm'
+        );
         
         console.log("User message:", messageContent);
         console.log("userChoseCRM detection:", userChoseCRM);
