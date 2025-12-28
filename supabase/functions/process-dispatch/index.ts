@@ -14,6 +14,10 @@ const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
 const BATCH_SIZE = 25; // Process 25 leads per batch
 const MAX_EXECUTION_TIME_MS = 45000; // 45 seconds max per execution (leave buffer for timeout)
 
+// PARALLEL CONFIGURATION - Send 2 emails simultaneously (safe with Resend Pro 2 req/s limit)
+const PARALLEL_EMAILS = 2;
+const PARALLEL_DELAY_MS = 150; // Small delay between parallel groups to respect rate limit
+
 // Retry configuration
 const MAX_RETRIES = 3;
 const RETRY_DELAY_MS = 1000;
@@ -40,6 +44,78 @@ async function withRetry<T>(
   }
   
   throw lastError;
+}
+
+// Helper function to send a single email
+async function sendSingleEmail(
+  lead: { id: string; name: string; email: string },
+  job: any,
+  templateContent: string | undefined,
+  templateType: string | undefined,
+  emailSubject: string | undefined,
+  fromName: string,
+  fromEmail: string,
+  supabase: any
+): Promise<{ success: boolean; error?: string; resendId?: string }> {
+  try {
+    const rawTemplate = templateContent || job.message_template || 'Olá {{name}}!';
+    const isHtmlTemplate = rawTemplate.trim().startsWith('<') || templateType === 'html';
+    const personalizedContent = rawTemplate.replace(/\{\{name\}\}/g, lead.name);
+    
+    let finalHtml: string;
+    if (isHtmlTemplate) {
+      finalHtml = personalizedContent;
+    } else {
+      finalHtml = `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+          <p style="font-size: 16px; line-height: 1.6; color: #333;">${personalizedContent.replace(/\n/g, '<br>')}</p>
+        </div>
+      `;
+    }
+
+    const subjectMatch = personalizedContent.match(/<title>(.*?)<\/title>/i);
+    const finalSubject = emailSubject || job.message_template?.match(/<title>(.*?)<\/title>/i)?.[1] || subjectMatch?.[1] || `Mensagem para ${lead.name}`;
+    
+    // Send email with retry
+    const emailResponse = await withRetry(async () => {
+      const response = await resend.emails.send({
+        from: `${fromName} <${fromEmail}>`,
+        to: [lead.email],
+        subject: finalSubject,
+        html: finalHtml,
+      });
+
+      const resendError = (response as any)?.error;
+      if (resendError) {
+        throw new Error(
+          typeof resendError === "string"
+            ? resendError
+            : resendError?.message || "Erro ao enviar e-mail"
+        );
+      }
+      
+      return response;
+    }, `Send email to ${lead.email}`);
+
+    // Record sent email
+    await supabase.from("sent_emails").insert({
+      lead_id: lead.id,
+      lead_name: lead.name,
+      lead_email: lead.email,
+      subject: finalSubject,
+      body_html: finalHtml,
+      status: "sent",
+      resend_id: (emailResponse as any)?.data?.id ?? null,
+      sent_at: new Date().toISOString(),
+    });
+
+    return { success: true, resendId: (emailResponse as any)?.data?.id };
+  } catch (error) {
+    return { 
+      success: false, 
+      error: error instanceof Error ? error.message : 'Unknown error' 
+    };
+  }
 }
 
 serve(async (req) => {
@@ -199,13 +275,14 @@ serve(async (req) => {
     // Get the batch of leads to process
     const leadsToProcess = validLeads.slice(processedCount, processedCount + BATCH_SIZE);
     console.log(`[DISPATCH-BATCH] Processing batch of ${leadsToProcess.length} leads (${processedCount + 1} to ${processedCount + leadsToProcess.length} of ${validLeads.length})`);
+    console.log(`[DISPATCH-BATCH] 🚀 Using PARALLEL sending: ${PARALLEL_EMAILS} emails simultaneously`);
 
     let sentCount = currentSent;
     let failedCount = currentFailed;
     const errorLog: any[] = Array.isArray(job.error_log) ? [...job.error_log] : [];
 
-    // Process the batch
-    for (let i = 0; i < leadsToProcess.length; i++) {
+    // Process the batch in parallel groups
+    for (let i = 0; i < leadsToProcess.length; i += PARALLEL_EMAILS) {
       // Check execution time to avoid timeout
       const elapsed = Date.now() - startTime;
       if (elapsed > MAX_EXECUTION_TIME_MS) {
@@ -213,92 +290,96 @@ serve(async (req) => {
         break;
       }
 
-      const lead = leadsToProcess[i];
-      
-      // Check if job is still running
-      const { data: statusCheck } = await supabase
-        .from('dispatch_jobs')
-        .select('status')
-        .eq('id', jobId)
-        .single();
+      // Check if job is still running (only check every few groups to reduce DB calls)
+      if (i % (PARALLEL_EMAILS * 3) === 0) {
+        const { data: statusCheck } = await supabase
+          .from('dispatch_jobs')
+          .select('status')
+          .eq('id', jobId)
+          .single();
 
-      if (statusCheck?.status !== 'running') {
-        console.log(`[DISPATCH-BATCH] Job ${jobId} status changed to ${statusCheck?.status}, stopping...`);
-        break;
+        if (statusCheck?.status !== 'running') {
+          console.log(`[DISPATCH-BATCH] Job ${jobId} status changed to ${statusCheck?.status}, stopping...`);
+          break;
+        }
       }
 
-      try {
-        // Update current lead being processed
-        await supabase
-          .from('dispatch_jobs')
-          .update({ current_lead_name: lead.name })
-          .eq('id', jobId);
+      // Get the parallel group of leads
+      const parallelGroup = leadsToProcess.slice(i, i + PARALLEL_EMAILS);
+      const leadNames = parallelGroup.map(l => l.name).join(', ');
+      
+      console.log(`[DISPATCH-BATCH] 📨 Sending ${parallelGroup.length} emails in parallel: ${leadNames}`);
 
-        if (job.type === 'email') {
-          console.log(`[DISPATCH-BATCH] Sending email to ${lead.name} (${lead.email})`);
-          
-          const rawTemplate = templateContent || job.message_template || 'Olá {{name}}!';
-          const isHtmlTemplate = rawTemplate.trim().startsWith('<') || templateType === 'html';
-          const personalizedContent = rawTemplate.replace(/\{\{name\}\}/g, lead.name);
-          
-          let finalHtml: string;
-          if (isHtmlTemplate) {
-            finalHtml = personalizedContent;
+      // Update current lead being processed
+      await supabase
+        .from('dispatch_jobs')
+        .update({ current_lead_name: leadNames })
+        .eq('id', jobId);
+
+      if (job.type === 'email') {
+        // Send emails in parallel using Promise.allSettled
+        const emailPromises = parallelGroup.map(lead => 
+          sendSingleEmail(
+            lead,
+            job,
+            templateContent,
+            templateType,
+            emailSubject,
+            fromName,
+            fromEmail,
+            supabase
+          )
+        );
+
+        const results = await Promise.allSettled(emailPromises);
+
+        // Process results
+        for (let j = 0; j < results.length; j++) {
+          const result = results[j];
+          const lead = parallelGroup[j];
+
+          if (result.status === 'fulfilled' && result.value.success) {
+            sentCount++;
+            console.log(`[DISPATCH-BATCH] ✅ Email sent to ${lead.email}`);
           } else {
-            finalHtml = `
-              <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-                <p style="font-size: 16px; line-height: 1.6; color: #333;">${personalizedContent.replace(/\n/g, '<br>')}</p>
-              </div>
-            `;
-          }
-
-          const subjectMatch = personalizedContent.match(/<title>(.*?)<\/title>/i);
-          const finalSubject = emailSubject || job.message_template?.match(/<title>(.*?)<\/title>/i)?.[1] || subjectMatch?.[1] || `Mensagem para ${lead.name}`;
-          
-          // Send email with retry
-          const emailResponse = await withRetry(async () => {
-            const response = await resend.emails.send({
-              from: `${fromName} <${fromEmail}>`,
-              to: [lead.email],
-              subject: finalSubject,
-              html: finalHtml,
-            });
-
-            const resendError = (response as any)?.error;
-            if (resendError) {
-              throw new Error(
-                typeof resendError === "string"
-                  ? resendError
-                  : resendError?.message || "Erro ao enviar e-mail"
-              );
-            }
+            failedCount++;
+            const errorMessage = result.status === 'rejected' 
+              ? (result.reason instanceof Error ? result.reason.message : 'Promise rejected')
+              : result.value.error || 'Unknown error';
             
-            return response;
-          }, `Send email to ${lead.email}`);
-
-          console.log(`[DISPATCH-BATCH] ✅ Email sent to ${lead.email}`);
-
-          // Record sent email
-          await supabase.from("sent_emails").insert({
-            lead_id: lead.id,
-            lead_name: lead.name,
-            lead_email: lead.email,
-            subject: finalSubject,
-            body_html: finalHtml,
-            status: "sent",
-            resend_id: (emailResponse as any)?.data?.id ?? null,
-            sent_at: new Date().toISOString(),
-          });
-
-        } else {
-          // WhatsApp sending
-          console.log(`[DISPATCH-BATCH] Sending WhatsApp to ${lead.name} (${lead.country_code}${lead.whatsapp})`);
-          await new Promise(resolve => setTimeout(resolve, 500));
+            const errorEntry = {
+              leadId: lead.id,
+              leadName: lead.name,
+              leadEmail: lead.email,
+              error: errorMessage,
+              timestamp: new Date().toISOString()
+            };
+            errorLog.push(errorEntry);
+            console.error(`[DISPATCH-BATCH] ❌ Failed to send to ${lead.name}: ${errorMessage}`);
+          }
         }
 
-        sentCount++;
-        
-        // Update progress
+        // Update progress after parallel group
+        await supabase
+          .from('dispatch_jobs')
+          .update({ 
+            sent_count: sentCount,
+            failed_count: failedCount,
+            error_log: errorLog.length > 0 ? errorLog : null,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', jobId);
+
+        console.log(`[DISPATCH-BATCH] Progress: ${sentCount + failedCount}/${validLeads.length} (${Math.round(((sentCount + failedCount) / validLeads.length) * 100)}%)`);
+
+      } else {
+        // WhatsApp sending (sequential for now)
+        for (const lead of parallelGroup) {
+          console.log(`[DISPATCH-BATCH] Sending WhatsApp to ${lead.name} (${lead.country_code}${lead.whatsapp})`);
+          await new Promise(resolve => setTimeout(resolve, 500));
+          sentCount++;
+        }
+
         await supabase
           .from('dispatch_jobs')
           .update({ 
@@ -306,35 +387,11 @@ serve(async (req) => {
             updated_at: new Date().toISOString()
           })
           .eq('id', jobId);
-
-        console.log(`[DISPATCH-BATCH] Progress: ${sentCount + failedCount}/${validLeads.length} (${Math.round(((sentCount + failedCount) / validLeads.length) * 100)}%)`);
-
-      } catch (error) {
-        failedCount++;
-        const errorEntry = {
-          leadId: lead.id,
-          leadName: lead.name,
-          leadEmail: lead.email,
-          error: error instanceof Error ? error.message : 'Unknown error',
-          timestamp: new Date().toISOString()
-        };
-        errorLog.push(errorEntry);
-        console.error(`[DISPATCH-BATCH] ❌ Failed to send to ${lead.name}:`, error);
-
-        await supabase
-          .from('dispatch_jobs')
-          .update({ 
-            failed_count: failedCount,
-            error_log: errorLog,
-            updated_at: new Date().toISOString()
-          })
-          .eq('id', jobId);
       }
 
-      // Small delay between sends (reduced for batch processing)
-      if (i < leadsToProcess.length - 1) {
-        const delay = Math.min(job.interval_seconds * 1000, 2000); // Max 2 seconds between emails in batch
-        await new Promise(resolve => setTimeout(resolve, delay));
+      // Small delay between parallel groups to respect rate limit
+      if (i + PARALLEL_EMAILS < leadsToProcess.length) {
+        await new Promise(resolve => setTimeout(resolve, PARALLEL_DELAY_MS));
       }
     }
 
@@ -366,7 +423,8 @@ serve(async (req) => {
       failed: failedCount,
       remaining,
       totalLeads: validLeads.length,
-      isComplete
+      isComplete,
+      parallelMode: PARALLEL_EMAILS
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
