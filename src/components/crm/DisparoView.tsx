@@ -1055,7 +1055,7 @@ function HtmlEditorComponent({ onSubmit }: { onSubmit: (html: string) => void })
       className="w-full"
     >
       <div className="w-full">
-        <div className="text-xs text-muted-foreground mb-2 text-right">
+        <div className="text-xs text-muted-foreground mb-2 text-left">
           Template do Email · Use <code className="bg-muted px-1 py-0.5 rounded text-xs text-foreground">{"{{name}}"}</code> para personalizar
         </div>
         
