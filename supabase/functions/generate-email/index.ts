@@ -16,16 +16,22 @@ REGRAS OBRIGATÓRIAS:
 5. Evite JavaScript - não funciona em emails
 6. Use tabelas para layout (compatibilidade com Outlook)
 7. Cores e fontes devem ser profissionais e elegantes
-8. Inclua call-to-action (CTA) claro e visível
+8. Inclua call-to-action (CTA) claro e visível com botão
 9. O design deve ser limpo, moderno e atraente
 10. Limite a largura máxima a 600px para compatibilidade
 
+REGRAS DE DESIGN:
+- NÃO inclua logo ou imagem de header - comece direto com o conteúdo
+- NÃO adicione imagens placeholder ou URLs de imagens fictícias
+- Use {{button_link}} como placeholder para o link do botão principal
+- Botões devem ser interativos com efeito hover (inline style)
+- Design minimalista e focado na mensagem
+
 ESTRUTURA DO EMAIL:
-- Header com logo/nome da empresa (opcional)
 - Saudação personalizada com {{name}}
 - Corpo principal com a mensagem
-- CTA (botão) destacado
-- Footer com informações de contato
+- CTA (botão) destacado com href="{{button_link}}"
+- Footer simples (opcional)
 
 IMPORTANTE: Retorne APENAS o código HTML, começando com <!DOCTYPE html> ou <html>`;
 
@@ -44,11 +50,17 @@ REGRAS OBRIGATÓRIAS:
 10. O design deve ser limpo, moderno e atraente
 11. Limite a largura máxima a 600px para compatibilidade
 
+REGRAS DE DESIGN:
+- NÃO inclua logo ou imagem de header - comece direto com o conteúdo
+- NÃO adicione imagens placeholder ou URLs de imagens fictícias
+- Use {{button_link}} como placeholder para links de botões
+- Botões devem ser interativos com efeito hover (inline style)
+- Design minimalista e focado na mensagem
+
 ESTRUTURA DO EMAIL:
-- Header com nome da empresa (se fornecido)
 - Corpo principal com o texto fornecido, formatado de forma atraente
-- Botões destacados para links/CTAs
-- Footer com informações de contato (se mencionado)
+- Botões destacados para links/CTAs com href="{{button_link}}"
+- Footer simples (se mencionado no texto)
 
 IMPORTANTE: Retorne APENAS o código HTML, começando com <!DOCTYPE html> ou <html>`;
 

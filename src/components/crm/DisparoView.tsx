@@ -816,10 +816,15 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
       setSidePanelHtml(finalHtml);
       setSidePanelGenerating(false);
       
-      // Add completion message
+      // Check if the email has a button_link placeholder
+      const hasButtonPlaceholder = finalHtml.includes('{{button_link}}');
+      
+      // Add completion message asking for button link if needed
       const completionMessage: Message = {
         id: crypto.randomUUID(),
-        content: `Email gerado! Você pode revisar e editar na lateral. Quando estiver pronto, me avise que vou preparar o envio.`,
+        content: hasButtonPlaceholder 
+          ? `Email gerado! Agora me diz: qual o link do botão? (Ex: https://seusite.com/oferta)`
+          : `Email gerado! Você pode revisar e editar na lateral. Quando estiver pronto, me avise que vou preparar o envio.`,
         role: "assistant",
         timestamp: new Date(),
       };
@@ -1101,6 +1106,32 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
       } finally {
         setIsLoading(false);
       }
+      return;
+    }
+
+    // Check if user is providing a button link
+    const urlPattern = /https?:\/\/[^\s]+/i;
+    const urlMatch = messageContent.match(urlPattern);
+    const hasButtonPlaceholder = sidePanelHtml && sidePanelHtml.includes('{{button_link}}');
+    
+    if (hasButtonPlaceholder && urlMatch) {
+      // Replace the placeholder with the actual URL
+      const newHtml = sidePanelHtml.replace(/\{\{button_link\}\}/g, urlMatch[0]);
+      setSidePanelHtml(newHtml);
+      setSidePanelEditing(true);
+      
+      setTimeout(() => {
+        setSidePanelEditing(false);
+      }, 1500);
+      
+      const confirmMessage: Message = {
+        id: crypto.randomUUID(),
+        content: `Link do botão atualizado para: ${urlMatch[0]}. Quando estiver pronto pra enviar, é só me avisar!`,
+        role: "assistant",
+        timestamp: new Date(),
+      };
+      setMessages(prev => [...prev, confirmMessage]);
+      setIsLoading(false);
       return;
     }
 
