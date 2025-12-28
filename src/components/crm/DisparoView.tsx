@@ -940,14 +940,14 @@ function highlightHtml(code: string): React.ReactNode[] {
   let remaining = code;
   let key = 0;
   
-  // Regex patterns for HTML syntax
+  // Regex patterns for HTML syntax with vibrant colors
   const patterns = [
-    { regex: /(&lt;!--[\s\S]*?--&gt;|<!--[\s\S]*?-->)/g, className: 'text-muted-foreground italic' }, // Comments
-    { regex: /(&lt;\/?[a-zA-Z][a-zA-Z0-9]*|<\/?[a-zA-Z][a-zA-Z0-9]*)/g, className: 'text-orange-400' }, // Tags
-    { regex: /(&gt;|>)/g, className: 'text-orange-400' }, // Closing brackets
-    { regex: /(\{\{[^}]+\}\})/g, className: 'text-green-400 font-medium' }, // Template variables
-    { regex: /("[^"]*"|'[^']*')/g, className: 'text-green-400' }, // Strings
-    { regex: /(\s[a-zA-Z-]+)(?==)/g, className: 'text-yellow-400' }, // Attributes
+    { regex: /(&lt;!--[\s\S]*?--&gt;|<!--[\s\S]*?-->)/g, className: 'text-gray-400 italic' }, // Comments
+    { regex: /(&lt;\/?[a-zA-Z][a-zA-Z0-9]*|<\/?[a-zA-Z][a-zA-Z0-9]*)/g, className: 'text-rose-500' }, // Tags
+    { regex: /(&gt;|>)/g, className: 'text-rose-500' }, // Closing brackets
+    { regex: /(\{\{[^}]+\}\})/g, className: 'text-emerald-500 font-semibold bg-emerald-500/10 px-0.5 rounded' }, // Template variables
+    { regex: /("[^"]*"|'[^']*')/g, className: 'text-sky-500' }, // Strings
+    { regex: /(\s[a-zA-Z-]+)(?==)/g, className: 'text-amber-500' }, // Attributes
   ];
   
   // Simple approach: split by lines and apply highlighting
