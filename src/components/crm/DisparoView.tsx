@@ -15,7 +15,7 @@ interface DisparoViewProps {
 }
 
 interface MessageComponentData {
-  type: 'leads_preview' | 'html_editor' | 'origins_list' | 'dispatch_progress' | 'csv_preview' | 'email_choice' | 'email_generator';
+  type: 'leads_preview' | 'html_editor' | 'origins_list' | 'dispatch_progress' | 'csv_preview' | 'email_choice' | 'email_generator' | 'copy_choice' | 'copy_input' | 'email_generator_streaming';
   data?: any;
 }
 
@@ -396,11 +396,58 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
     setMessages(prev => [...prev, assistantMessage]);
   }, []);
 
-  // Handle email choice - create with AI
+// Handle email choice - create with AI (show copy choice first)
   const handleEmailChoiceAI = useCallback((subOriginId: string, type: string) => {
     const assistantMessage: Message = {
       id: crypto.randomUUID(),
-      content: `Perfeito! Vou criar um email profissional para você. Me conte mais sobre o que você precisa:`,
+      content: `Você já tem a copy (texto) do email pronta?`,
+      role: "assistant",
+      timestamp: new Date(),
+      componentData: {
+        type: 'copy_choice',
+        data: { subOriginId, dispatchType: type }
+      },
+      component: (
+        <div className="mt-4 w-full">
+          <CopyChoiceComponent 
+            onHasCopy={() => handleHasCopy(subOriginId, type)}
+            onCreateCopy={() => handleCreateCopy(subOriginId, type)}
+          />
+        </div>
+      ),
+    };
+    setMessages(prev => [...prev, assistantMessage]);
+  }, []);
+
+  // Handle user has copy ready - show copy input form
+  const handleHasCopy = useCallback((subOriginId: string, type: string) => {
+    const assistantMessage: Message = {
+      id: crypto.randomUUID(),
+      content: `Ótimo! Cole sua copy abaixo e eu vou transformar em um email HTML profissional:`,
+      role: "assistant",
+      timestamp: new Date(),
+      componentData: {
+        type: 'copy_input',
+        data: { subOriginId, dispatchType: type }
+      },
+      component: (
+        <div className="mt-4 w-full">
+          <CopyInputComponent 
+            onGenerate={(copyText, companyName, productService) => 
+              handleGenerateFromCopy(copyText, companyName, productService, subOriginId, type)
+            }
+          />
+        </div>
+      ),
+    };
+    setMessages(prev => [...prev, assistantMessage]);
+  }, []);
+
+  // Handle create copy from scratch - show full generator form
+  const handleCreateCopy = useCallback((subOriginId: string, type: string) => {
+    const assistantMessage: Message = {
+      id: crypto.randomUUID(),
+      content: `Perfeito! Vou criar a copy e o HTML do email para você. Me conte mais sobre o que você precisa:`,
       role: "assistant",
       timestamp: new Date(),
       componentData: {
@@ -416,6 +463,38 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
       ),
     };
     setMessages(prev => [...prev, assistantMessage]);
+  }, []);
+
+  // Handle generate HTML from existing copy
+  const handleGenerateFromCopy = useCallback(async (
+    copyText: string, 
+    companyName: string, 
+    productService: string,
+    subOriginId: string, 
+    type: string
+  ) => {
+    // Add loading message with streaming preview
+    const loadingMessage: Message = {
+      id: crypto.randomUUID(),
+      content: `Gerando HTML do email...`,
+      role: "assistant",
+      timestamp: new Date(),
+      componentData: {
+        type: 'email_generator_streaming',
+        data: { subOriginId, dispatchType: type }
+      },
+      component: (
+        <div className="mt-4 w-full">
+          <CopyToHtmlGenerator 
+            copyText={copyText}
+            companyName={companyName}
+            productService={productService}
+            onGenerated={(html) => handleEmailGenerated(html, subOriginId, type)}
+          />
+        </div>
+      ),
+    };
+    setMessages(prev => [...prev, loadingMessage]);
   }, []);
 
   // Handle AI generated email
@@ -1152,6 +1231,316 @@ function EmailChoiceComponent({
           </p>
         </button>
       </div>
+    </motion.div>
+  );
+}
+
+// Component for choosing if user has copy ready or needs to create
+function CopyChoiceComponent({ 
+  onHasCopy, 
+  onCreateCopy 
+}: { 
+  onHasCopy: () => void; 
+  onCreateCopy: () => void;
+}) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="w-full"
+    >
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <button
+          onClick={onHasCopy}
+          className="group p-6 rounded-xl border border-border/40 bg-background hover:bg-muted/50 hover:border-primary/30 transition-all text-left"
+        >
+          <div className="flex items-center gap-3 mb-3">
+            <div className="w-10 h-10 rounded-lg bg-emerald-500/10 flex items-center justify-center">
+              <svg className="w-5 h-5 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+            </div>
+            <h3 className="font-semibold text-foreground">Já tenho a copy pronta</h3>
+          </div>
+          <p className="text-sm text-muted-foreground">
+            Cole o texto do email e a IA transforma em HTML profissional
+          </p>
+        </button>
+
+        <button
+          onClick={onCreateCopy}
+          className="group p-6 rounded-xl border border-border/40 bg-background hover:bg-muted/50 hover:border-primary/30 transition-all text-left"
+        >
+          <div className="flex items-center gap-3 mb-3">
+            <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-violet-500/20 to-fuchsia-500/20 flex items-center justify-center">
+              <svg className="w-5 h-5 text-violet-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+              </svg>
+            </div>
+            <h3 className="font-semibold text-foreground">Criar copy com IA</h3>
+          </div>
+          <p className="text-sm text-muted-foreground">
+            A IA cria a copy e o HTML do zero baseado no seu objetivo
+          </p>
+        </button>
+      </div>
+    </motion.div>
+  );
+}
+
+// Component for inputting existing copy text
+function CopyInputComponent({ 
+  onGenerate 
+}: { 
+  onGenerate: (copyText: string, companyName: string, productService: string) => void;
+}) {
+  const [copyText, setCopyText] = useState('');
+  const [companyName, setCompanyName] = useState('');
+  const [productService, setProductService] = useState('');
+
+  const handleSubmit = () => {
+    if (!copyText.trim()) {
+      toast.error("Por favor, cole o texto do seu email");
+      return;
+    }
+    onGenerate(copyText, companyName, productService);
+  };
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="w-full"
+    >
+      <div className="space-y-4 p-5 rounded-xl border border-border/40 bg-muted/30">
+        <div>
+          <label className="text-sm font-medium text-foreground mb-1.5 block">
+            Texto do email (copy) *
+          </label>
+          <textarea
+            value={copyText}
+            onChange={(e) => setCopyText(e.target.value)}
+            placeholder="Cole aqui o texto completo do seu email...
+
+Ex:
+Olá {{name}},
+
+Tenho uma oferta especial para você! Por tempo limitado, todos os nossos serviços estão com 30% de desconto.
+
+Não perca essa oportunidade única...
+
+Abraços,
+Equipe XYZ"
+            className="w-full min-h-[180px] p-3 rounded-lg border border-border/40 bg-background text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 resize-none font-mono"
+          />
+          <p className="text-xs text-muted-foreground mt-1.5">
+            Use <code className="bg-muted px-1 py-0.5 rounded">{"{{name}}"}</code> para personalizar com o nome do lead
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label className="text-sm font-medium text-foreground mb-1.5 block">
+              Nome da empresa (opcional)
+            </label>
+            <input
+              type="text"
+              value={companyName}
+              onChange={(e) => setCompanyName(e.target.value)}
+              placeholder="Ex: Scale Beauty"
+              className="w-full p-3 rounded-lg border border-border/40 bg-background text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20"
+            />
+          </div>
+
+          <div>
+            <label className="text-sm font-medium text-foreground mb-1.5 block">
+              Produto/Serviço (opcional)
+            </label>
+            <input
+              type="text"
+              value={productService}
+              onChange={(e) => setProductService(e.target.value)}
+              placeholder="Ex: Tratamentos estéticos"
+              className="w-full p-3 rounded-lg border border-border/40 bg-background text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20"
+            />
+          </div>
+        </div>
+
+        <button
+          onClick={handleSubmit}
+          disabled={!copyText.trim()}
+          className={cn(
+            "w-full px-5 py-3 rounded-xl text-sm font-medium transition-all flex items-center justify-center gap-2",
+            "bg-gradient-to-r from-emerald-500 to-teal-500 text-white hover:from-emerald-600 hover:to-teal-600",
+            "disabled:opacity-50 disabled:cursor-not-allowed"
+          )}
+        >
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
+          </svg>
+          Gerar HTML do Email
+        </button>
+      </div>
+    </motion.div>
+  );
+}
+
+// Component for generating HTML from existing copy with streaming
+function CopyToHtmlGenerator({ 
+  copyText,
+  companyName,
+  productService,
+  onGenerated 
+}: { 
+  copyText: string;
+  companyName: string;
+  productService: string;
+  onGenerated: (html: string) => void;
+}) {
+  const [generatedHtml, setGeneratedHtml] = useState('');
+  const [isGenerating, setIsGenerating] = useState(true);
+
+  const GENERATE_EMAIL_URL = `https://ytdfwkchsumgdvcroaqg.supabase.co/functions/v1/generate-email`;
+
+  useEffect(() => {
+    const generateHtml = async () => {
+      try {
+        const response = await fetch(GENERATE_EMAIL_URL, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            hasCopy: true,
+            copyText,
+            companyName,
+            productService
+          }),
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}));
+          throw new Error(errorData.error || "Erro ao gerar HTML");
+        }
+
+        if (!response.body) throw new Error("No response body");
+
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = "";
+        let fullContent = "";
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+
+          buffer += decoder.decode(value, { stream: true });
+
+          let newlineIndex: number;
+          while ((newlineIndex = buffer.indexOf("\n")) !== -1) {
+            let line = buffer.slice(0, newlineIndex);
+            buffer = buffer.slice(newlineIndex + 1);
+
+            if (line.endsWith("\r")) line = line.slice(0, -1);
+            if (line.startsWith(":") || line.trim() === "") continue;
+            if (!line.startsWith("data: ")) continue;
+
+            const jsonStr = line.slice(6).trim();
+            if (jsonStr === "[DONE]") break;
+
+            try {
+              const parsed = JSON.parse(jsonStr);
+              const content = parsed.choices?.[0]?.delta?.content as string | undefined;
+              if (content) {
+                fullContent += content;
+                setGeneratedHtml(fullContent);
+              }
+            } catch {
+              // Incomplete JSON, continue
+            }
+          }
+        }
+
+        // Clean up the HTML
+        let cleanHtml = fullContent
+          .replace(/^```html\n?/i, '')
+          .replace(/^```\n?/, '')
+          .replace(/\n?```$/i, '')
+          .trim();
+
+        setGeneratedHtml(cleanHtml);
+        setIsGenerating(false);
+        toast.success("HTML do email gerado!");
+
+      } catch (error) {
+        console.error("Error generating HTML:", error);
+        toast.error(error instanceof Error ? error.message : "Erro ao gerar HTML");
+        setIsGenerating(false);
+      }
+    };
+
+    generateHtml();
+  }, [copyText, companyName, productService]);
+
+  const handleUseEmail = () => {
+    if (generatedHtml.trim()) {
+      onGenerated(generatedHtml);
+    }
+  };
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="w-full space-y-4"
+    >
+      <div className="rounded-xl border border-border/40 overflow-hidden">
+        <div className="px-4 py-2.5 bg-muted/80 border-b border-border/40 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            {isGenerating && (
+              <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+            )}
+            <span className="text-xs font-medium text-muted-foreground">
+              {isGenerating ? 'Gerando HTML...' : 'HTML gerado'}
+            </span>
+          </div>
+        </div>
+        
+        <div className="min-h-[300px] max-h-[400px] overflow-auto bg-white p-4">
+          {generatedHtml ? (
+            <div 
+              className="prose prose-sm max-w-none"
+              dangerouslySetInnerHTML={{ 
+                __html: generatedHtml
+                  .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
+                  .replace(/on\w+="[^"]*"/gi, '')
+              }}
+            />
+          ) : (
+            <div className="flex items-center justify-center h-[280px] text-muted-foreground text-sm">
+              <div className="flex items-center gap-2">
+                <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                <span>Iniciando geração...</span>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {!isGenerating && generatedHtml && (
+        <div className="flex justify-end">
+          <button
+            onClick={handleUseEmail}
+            className={cn(
+              "px-5 py-2.5 rounded-xl text-sm font-medium transition-colors flex items-center gap-2",
+              "bg-black text-white hover:bg-gray-800"
+            )}
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+            </svg>
+            Usar este email
+          </button>
+        </div>
+      )}
     </motion.div>
   );
 }
