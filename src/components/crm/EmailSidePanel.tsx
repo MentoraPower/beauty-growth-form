@@ -1,12 +1,10 @@
 import React, { useState, useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
-import { X, Code2, Eye, Copy, Check } from "lucide-react";
+import { Code2, Eye, Copy, Check } from "lucide-react";
 import { toast } from "sonner";
 
 interface EmailSidePanelProps {
   isOpen: boolean;
-  onClose: () => void;
   htmlContent: string;
   onHtmlChange: (html: string) => void;
   isGenerating?: boolean;
@@ -20,14 +18,6 @@ const highlightHtml = (code: string): React.ReactNode => {
   const parts: React.ReactNode[] = [];
   let remaining = code;
   let keyIndex = 0;
-
-  const patterns: { regex: RegExp; className: string }[] = [
-    { regex: /^(<!--[\s\S]*?-->)/, className: 'text-muted-foreground italic' },
-    { regex: /^(<\/?)([\w-]+)/, className: '' },
-    { regex: /^(\s+)([\w-]+)(=)("([^"]*)")?/, className: '' },
-    { regex: /^(>)/, className: 'text-pink-500' },
-    { regex: /^([^<]+)/, className: 'text-foreground' },
-  ];
 
   while (remaining.length > 0) {
     let matched = false;
@@ -95,7 +85,6 @@ const highlightHtml = (code: string): React.ReactNode => {
 
 export function EmailSidePanel({ 
   isOpen, 
-  onClose, 
   htmlContent, 
   onHtmlChange,
   isGenerating = false,
@@ -136,155 +125,129 @@ export function EmailSidePanel({
       .replace(/on\w+='[^']*'/gi, '');
   };
 
+  if (!isOpen) return null;
+
   return (
-    <AnimatePresence>
-      {isOpen && (
-        <>
-          {/* Backdrop */}
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/20 z-40"
-            onClick={onClose}
-          />
-          
-          {/* Side Panel */}
-          <motion.div
-            initial={{ x: '100%' }}
-            animate={{ x: 0 }}
-            exit={{ x: '100%' }}
-            transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-            className="fixed top-0 right-0 h-full w-[600px] max-w-[90vw] bg-background border-l border-border shadow-2xl z-50 flex flex-col"
+    <div className="w-[500px] min-w-[400px] max-w-[50vw] h-full border-l border-border bg-background flex flex-col">
+      {/* Header */}
+      <div className="flex items-center justify-between px-5 py-4 border-b border-border bg-muted/30">
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
+            <Code2 className="w-4 h-4 text-primary" />
+          </div>
+          <div>
+            <h3 className="font-semibold text-foreground">{title}</h3>
+            <p className="text-xs text-muted-foreground">
+              Use <code className="bg-muted px-1 py-0.5 rounded">{"{{name}}"}</code> para personalizar
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Tabs */}
+      <div className="flex items-center justify-between px-5 py-3 border-b border-border bg-muted/20">
+        <div className="flex items-center gap-1 bg-muted/50 rounded-lg p-1">
+          <button
+            onClick={() => setActiveTab('preview')}
+            className={cn(
+              "flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-colors",
+              activeTab === 'preview'
+                ? "bg-background text-foreground shadow-sm"
+                : "text-muted-foreground hover:text-foreground"
+            )}
           >
-            {/* Header */}
-            <div className="flex items-center justify-between px-5 py-4 border-b border-border bg-muted/30">
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
-                  <Code2 className="w-4 h-4 text-primary" />
-                </div>
-                <div>
-                  <h3 className="font-semibold text-foreground">{title}</h3>
-                  <p className="text-xs text-muted-foreground">
-                    Use <code className="bg-muted px-1 py-0.5 rounded">{"{{name}}"}</code> para personalizar
-                  </p>
-                </div>
-              </div>
-              <button
-                onClick={onClose}
-                className="p-2 rounded-lg hover:bg-muted transition-colors"
-              >
-                <X className="w-5 h-5 text-muted-foreground" />
-              </button>
-            </div>
+            <Eye className="w-4 h-4" />
+            Preview
+          </button>
+          <button
+            onClick={() => setActiveTab('code')}
+            className={cn(
+              "flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-colors",
+              activeTab === 'code'
+                ? "bg-background text-foreground shadow-sm"
+                : "text-muted-foreground hover:text-foreground"
+            )}
+          >
+            <Code2 className="w-4 h-4" />
+            Código
+          </button>
+        </div>
+        
+        <button
+          onClick={handleCopy}
+          disabled={!htmlContent}
+          className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
+        >
+          {copied ? <Check className="w-4 h-4 text-green-500" /> : <Copy className="w-4 h-4" />}
+          {copied ? "Copiado" : "Copiar"}
+        </button>
+      </div>
 
-            {/* Tabs */}
-            <div className="flex items-center justify-between px-5 py-3 border-b border-border bg-muted/20">
-              <div className="flex items-center gap-1 bg-muted/50 rounded-lg p-1">
-                <button
-                  onClick={() => setActiveTab('preview')}
-                  className={cn(
-                    "flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-colors",
-                    activeTab === 'preview'
-                      ? "bg-background text-foreground shadow-sm"
-                      : "text-muted-foreground hover:text-foreground"
-                  )}
-                >
-                  <Eye className="w-4 h-4" />
-                  Preview
-                </button>
-                <button
-                  onClick={() => setActiveTab('code')}
-                  className={cn(
-                    "flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-colors",
-                    activeTab === 'code'
-                      ? "bg-background text-foreground shadow-sm"
-                      : "text-muted-foreground hover:text-foreground"
-                  )}
-                >
-                  <Code2 className="w-4 h-4" />
-                  Código
-                </button>
-              </div>
-              
-              <button
-                onClick={handleCopy}
-                disabled={!htmlContent}
-                className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
-              >
-                {copied ? <Check className="w-4 h-4 text-green-500" /> : <Copy className="w-4 h-4" />}
-                {copied ? "Copiado" : "Copiar"}
-              </button>
-            </div>
-
-            {/* Content */}
-            <div className="flex-1 overflow-hidden">
-              {activeTab === 'code' ? (
-                <div className="relative h-full">
-                  {/* Highlighted code display */}
-                  <pre
-                    ref={preRef}
-                    className="absolute inset-0 p-5 font-mono text-sm pointer-events-none overflow-auto whitespace-pre-wrap break-words"
-                    aria-hidden="true"
-                  >
-                    {htmlContent ? highlightHtml(htmlContent) : (
-                      <span className="text-muted-foreground">
-                        {isGenerating ? "Gerando HTML..." : "O HTML do email aparecerá aqui..."}
-                      </span>
-                    )}
-                  </pre>
-                  
-                  {/* Actual textarea */}
-                  <textarea
-                    ref={textareaRef}
-                    value={htmlContent}
-                    onChange={(e) => onHtmlChange(e.target.value)}
-                    onScroll={handleScroll}
-                    className="absolute inset-0 w-full h-full p-5 font-mono text-sm bg-transparent text-transparent caret-foreground resize-none focus:outline-none"
-                    spellCheck={false}
-                    placeholder=""
-                  />
-                  
-                  {/* Generating indicator */}
-                  {isGenerating && (
-                    <div className="absolute bottom-4 right-4 flex items-center gap-2 bg-primary/10 px-3 py-1.5 rounded-full">
-                      <div className="w-2 h-2 bg-primary rounded-full animate-pulse" />
-                      <span className="text-xs text-primary font-medium">Gerando...</span>
-                    </div>
-                  )}
-                </div>
-              ) : (
-                <div className="h-full overflow-auto bg-white">
-                  {htmlContent ? (
-                    <div
-                      className="p-6 min-h-full"
-                      dangerouslySetInnerHTML={{ __html: getSanitizedHtml() }}
-                    />
-                  ) : (
-                    <div className="flex items-center justify-center h-full text-muted-foreground text-sm">
-                      {isGenerating ? (
-                        <div className="flex items-center gap-2">
-                          <div className="w-2 h-2 bg-primary rounded-full animate-pulse" />
-                          <span>Gerando preview...</span>
-                        </div>
-                      ) : (
-                        "O preview do email aparecerá aqui"
-                      )}
-                    </div>
-                  )}
-                </div>
+      {/* Content */}
+      <div className="flex-1 overflow-hidden">
+        {activeTab === 'code' ? (
+          <div className="relative h-full">
+            {/* Highlighted code display */}
+            <pre
+              ref={preRef}
+              className="absolute inset-0 p-5 font-mono text-sm pointer-events-none overflow-auto whitespace-pre-wrap break-words"
+              aria-hidden="true"
+            >
+              {htmlContent ? highlightHtml(htmlContent) : (
+                <span className="text-muted-foreground">
+                  {isGenerating ? "Gerando HTML..." : "O HTML do email aparecerá aqui..."}
+                </span>
               )}
-            </div>
+            </pre>
+            
+            {/* Actual textarea */}
+            <textarea
+              ref={textareaRef}
+              value={htmlContent}
+              onChange={(e) => onHtmlChange(e.target.value)}
+              onScroll={handleScroll}
+              className="absolute inset-0 w-full h-full p-5 font-mono text-sm bg-transparent text-transparent caret-foreground resize-none focus:outline-none"
+              spellCheck={false}
+              placeholder=""
+            />
+            
+            {/* Generating indicator */}
+            {isGenerating && (
+              <div className="absolute bottom-4 right-4 flex items-center gap-2 bg-primary/10 px-3 py-1.5 rounded-full">
+                <div className="w-2 h-2 bg-primary rounded-full animate-pulse" />
+                <span className="text-xs text-primary font-medium">Gerando...</span>
+              </div>
+            )}
+          </div>
+        ) : (
+          <div className="h-full overflow-auto bg-white">
+            {htmlContent ? (
+              <div
+                className="p-6 min-h-full"
+                dangerouslySetInnerHTML={{ __html: getSanitizedHtml() }}
+              />
+            ) : (
+              <div className="flex items-center justify-center h-full text-muted-foreground text-sm">
+                {isGenerating ? (
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 bg-primary rounded-full animate-pulse" />
+                    <span>Gerando preview...</span>
+                  </div>
+                ) : (
+                  "O preview do email aparecerá aqui"
+                )}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
 
-            {/* Footer hint */}
-            <div className="px-5 py-3 border-t border-border bg-muted/20">
-              <p className="text-xs text-muted-foreground text-center">
-                Quando quiser enviar, é só falar no chat que vou preparar o envio
-              </p>
-            </div>
-          </motion.div>
-        </>
-      )}
-    </AnimatePresence>
+      {/* Footer hint */}
+      <div className="px-5 py-3 border-t border-border bg-muted/20">
+        <p className="text-xs text-muted-foreground text-center">
+          Quando quiser enviar, é só falar no chat que vou preparar o envio
+        </p>
+      </div>
+    </div>
   );
 }

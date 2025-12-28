@@ -1238,8 +1238,9 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
   const hasMessages = messages.length > 0;
 
   return (
-    <>
-      <div className="flex-1 flex flex-col h-full bg-background overflow-hidden">
+    <div className="flex-1 flex h-full bg-background overflow-hidden">
+      {/* Chat area */}
+      <div className="flex-1 flex flex-col h-full min-w-0">
         {/* When no messages, center the input */}
         {!hasMessages ? (
           <div className="flex-1 flex items-center justify-center p-6">
@@ -1319,15 +1320,14 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
         )}
       </div>
       
-      {/* Email Side Panel */}
+      {/* Email Side Panel - fixed section alongside chat */}
       <EmailSidePanel
         isOpen={sidePanelOpen}
-        onClose={() => setSidePanelOpen(false)}
         htmlContent={sidePanelHtml}
         onHtmlChange={setSidePanelHtml}
         isGenerating={sidePanelGenerating}
       />
-    </>
+    </div>
   );
 }
 
