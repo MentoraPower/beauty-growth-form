@@ -1056,34 +1056,12 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
       // Remove command from content FIRST
       cleanContent = cleanContent.replace(`[COMMAND:${command}]`, '');
 
-      // CRITICAL: START_DISPATCH requires explicit user confirmation via button
-      // Do NOT auto-execute - show confirmation button instead
+      // START_DISPATCH: Execute directly - user already confirmed verbally via chat
+      // The AI only sends this command AFTER the user said "sim", "pode", etc.
       if (command.startsWith('START_DISPATCH:')) {
-        console.log("[SECURITY] START_DISPATCH detected - showing confirmation button instead of auto-executing");
-        
-        // Parse the command to extract info for the button
-        const parts = command.split(':');
-        const dispatchType = parts[1] || 'email';
-        const subOriginId = parts[2] || '';
-        const templateType = parts[3] || 'html';
-        
-        // Create a confirmation button component
-        const confirmButton = (
-          <div key={`confirm-dispatch-${Date.now()}`} className="mt-4">
-            <button
-              onClick={() => executeDispatch(command)}
-              className="flex items-center gap-2 px-6 py-3 bg-primary text-primary-foreground rounded-lg font-medium hover:bg-primary/90 transition-colors shadow-lg"
-            >
-              <span className="text-lg">🚀</span>
-              <span>Iniciar Disparo de {dispatchType === 'email' ? 'Emails' : 'WhatsApp'}</span>
-            </button>
-            <p className="text-xs text-muted-foreground mt-2">
-              Clique no botão acima para confirmar e iniciar o disparo
-            </p>
-          </div>
-        );
-        components.push(confirmButton);
-        continue; // Don't process this command automatically
+        console.log("[INFO] START_DISPATCH detected - executing (user confirmed via chat)");
+        await executeDispatch(command);
+        continue;
       }
 
       // For other commands, process normally
