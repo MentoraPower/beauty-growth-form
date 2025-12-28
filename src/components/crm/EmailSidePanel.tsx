@@ -94,9 +94,42 @@ export function EmailSidePanel({
 }: EmailSidePanelProps) {
   const [activeTab, setActiveTab] = useState<'code' | 'preview'>('preview');
   const [copied, setCopied] = useState(false);
+  const [displayedContent, setDisplayedContent] = useState("");
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const preRef = useRef<HTMLPreElement>(null);
   const codeContainerRef = useRef<HTMLDivElement>(null);
+  const displayedIndexRef = useRef(0);
+
+  // Typewriter effect - show content character by character
+  useEffect(() => {
+    if (!isGenerating && !isEditing) {
+      // When not generating, show full content immediately
+      setDisplayedContent(htmlContent);
+      displayedIndexRef.current = htmlContent.length;
+      return;
+    }
+
+    // Typewriter animation during generation
+    const targetLength = htmlContent.length;
+    
+    if (displayedIndexRef.current >= targetLength) return;
+
+    const interval = setInterval(() => {
+      const currentIndex = displayedIndexRef.current;
+      const charsToAdd = Math.min(3, targetLength - currentIndex); // Add 3 chars at a time for speed
+      
+      if (charsToAdd > 0) {
+        displayedIndexRef.current = currentIndex + charsToAdd;
+        setDisplayedContent(htmlContent.slice(0, displayedIndexRef.current));
+      }
+      
+      if (displayedIndexRef.current >= targetLength) {
+        clearInterval(interval);
+      }
+    }, 10); // Fast but visible typing
+
+    return () => clearInterval(interval);
+  }, [htmlContent, isGenerating, isEditing]);
 
   // Switch to code tab when generating/editing, preview when done
   useEffect(() => {
@@ -112,7 +145,7 @@ export function EmailSidePanel({
     if ((isGenerating || isEditing) && preRef.current) {
       preRef.current.scrollTop = preRef.current.scrollHeight;
     }
-  }, [htmlContent, isGenerating, isEditing]);
+  }, [displayedContent, isGenerating, isEditing]);
 
   const handleCopy = () => {
     navigator.clipboard.writeText(htmlContent);
@@ -190,7 +223,14 @@ export function EmailSidePanel({
               className="absolute inset-0 p-5 font-mono text-xs leading-relaxed pointer-events-none overflow-y-auto overflow-x-hidden whitespace-pre-wrap break-all"
               aria-hidden="true"
             >
-              {htmlContent ? highlightHtml(htmlContent) : (
+              {displayedContent ? (
+                <>
+                  {highlightHtml(displayedContent)}
+                  {(isGenerating || isEditing) && (
+                    <span className="inline-block w-2 h-4 bg-primary animate-pulse ml-0.5 align-middle" />
+                  )}
+                </>
+              ) : (
                 <span className="text-muted-foreground">
                   {isGenerating ? "Gerando HTML..." : "O HTML do email aparecerá aqui..."}
                 </span>
