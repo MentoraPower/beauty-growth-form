@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { cn } from "@/lib/utils";
 import { Code2, Eye, Copy, Check } from "lucide-react";
 import { toast } from "sonner";
@@ -8,11 +8,11 @@ interface EmailSidePanelProps {
   htmlContent: string;
   onHtmlChange: (html: string) => void;
   isGenerating?: boolean;
-  isEditing?: boolean; // When true, show code tab during edits
+  isEditing?: boolean;
   title?: string;
 }
 
-// Syntax highlighting for HTML
+// Syntax highlighting for HTML with dark purple for strings
 const highlightHtml = (code: string): React.ReactNode => {
   if (!code) return null;
   
@@ -49,7 +49,7 @@ const highlightHtml = (code: string): React.ReactNode => {
       parts.push(<span key={keyIndex++} className="text-orange-400">{attrMatch[2]}</span>);
       parts.push(<span key={keyIndex++} className="text-foreground">{attrMatch[3]}</span>);
       if (attrMatch[4]) {
-        parts.push(<span key={keyIndex++} className="text-green-500">{attrMatch[4]}</span>);
+        parts.push(<span key={keyIndex++} className="text-purple-600 dark:text-purple-400">{attrMatch[4]}</span>);
       }
       remaining = remaining.slice(attrMatch[0].length);
       matched = true;
@@ -94,15 +94,23 @@ export function EmailSidePanel({
 }: EmailSidePanelProps) {
   const [activeTab, setActiveTab] = useState<'code' | 'preview'>('preview');
   const [copied, setCopied] = useState(false);
-  const textareaRef = React.useRef<HTMLTextAreaElement>(null);
-  const preRef = React.useRef<HTMLPreElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const preRef = useRef<HTMLPreElement>(null);
+  const codeContainerRef = useRef<HTMLDivElement>(null);
 
-  // Switch to code tab when editing, preview when done
+  // Switch to code tab when generating/editing, preview when done
   useEffect(() => {
-    if (isEditing) {
+    if (isGenerating || isEditing) {
       setActiveTab('code');
-    } else if (htmlContent && !isGenerating) {
+    } else if (htmlContent && !isGenerating && !isEditing) {
       setActiveTab('preview');
+    }
+  }, [isGenerating, isEditing]);
+
+  // Auto-scroll to bottom when content is being generated
+  useEffect(() => {
+    if ((isGenerating || isEditing) && preRef.current) {
+      preRef.current.scrollTop = preRef.current.scrollHeight;
     }
   }, [htmlContent, isGenerating, isEditing]);
 
