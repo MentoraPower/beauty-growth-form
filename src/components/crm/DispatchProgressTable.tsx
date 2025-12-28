@@ -153,20 +153,24 @@ export function DispatchProgressTable({ jobId, onCommand }: DispatchProgressTabl
         
         {/* Minimal status text */}
         <div className="flex items-center justify-between text-xs text-muted-foreground">
-          <span>
-            {job.sent_count}/{job.valid_leads} enviados
-            {job.failed_count > 0 && <span className="text-red-500"> • {job.failed_count} falhas</span>}
-          </span>
-          {job.status === 'running' && remainingLeads > 0 && (
+          {job.status === 'completed' ? (
+            <span>Enviado com sucesso</span>
+          ) : job.status === 'running' && remainingLeads > 0 ? (
             <span>~{estimatedMinutes}min restantes</span>
-          )}
-          {job.status === 'completed' && (
-            <span className="text-green-500">Concluído</span>
-          )}
-          {job.status === 'paused' && (
-            <span className="text-yellow-500">Pausado</span>
-          )}
+          ) : job.status === 'paused' ? (
+            <span>Pausado</span>
+          ) : null}
         </div>
+        
+        {/* Results when completed */}
+        {job.status === 'completed' && (
+          <div className="flex items-center gap-4 text-xs text-muted-foreground mt-1">
+            <span><span className="font-semibold">Enviados:</span> {job.sent_count}</span>
+            {job.failed_count > 0 && (
+              <span><span className="font-semibold">Falhas:</span> {job.failed_count}</span>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Compact action buttons */}
