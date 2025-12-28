@@ -296,17 +296,15 @@ export function DisparoConversationsMenu({
         {isExpanded && (
           <div className="ml-2 mt-1 border-l border-background/30 pl-3">
             {/* New conversation button */}
-            <button
-              onClick={onNewConversation}
-              className="flex items-center justify-center gap-2 w-full px-2 py-1.5 text-sm rounded-lg transition-colors border border-dashed border-transparent hover:border-primary/50"
-              style={{
-                borderImage: 'linear-gradient(135deg, #F97316, #EA580C) 1',
-                borderImageSlice: 1,
-              }}
-            >
-              <Plus className="h-4 w-4" />
-              Nova conversa
-            </button>
+            <div className="relative p-[1px] rounded-lg bg-gradient-to-r from-orange-500 to-orange-600">
+              <button
+                onClick={onNewConversation}
+                className="flex items-center justify-center gap-2 w-full px-2 py-1.5 text-sm rounded-[7px] transition-colors bg-transparent hover:bg-background/10"
+              >
+                <Plus className="h-4 w-4" />
+                Nova conversa
+              </button>
+            </div>
 
             {conversations.length > 0 && (
               <>
