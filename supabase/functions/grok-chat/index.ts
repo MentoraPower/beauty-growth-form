@@ -343,7 +343,25 @@ serve(async (req) => {
         const subOriginId = parts[2];
         const templateType = parts[3] || 'simple'; // 'html' or 'simple'
         const conversationId = parts[4] || null; // Conversation ID to link the dispatch
-        const templateContent = parts.slice(5).join(':') || ''; // Everything after conversation id
+        const encodedSubject = parts[5] || ''; // Base64 encoded subject
+        const encodedHtml = parts.slice(6).join(':') || ''; // Base64 encoded HTML (may contain colons)
+        
+        // Decode subject and HTML from base64 + URI encoding
+        let emailSubject = '';
+        let templateContent = '';
+        
+        try {
+          if (encodedSubject) {
+            emailSubject = decodeURIComponent(atob(encodedSubject));
+            console.log('[GROK] Decoded email subject:', emailSubject);
+          }
+          if (encodedHtml) {
+            templateContent = decodeURIComponent(atob(encodedHtml));
+            console.log('[GROK] Decoded HTML template, length:', templateContent.length);
+          }
+        } catch (e) {
+          console.error('[GROK] Error decoding template/subject:', e);
+        }
 
         // Get sub-origin info
         const { data: subOrigin } = await supabase
@@ -377,7 +395,18 @@ serve(async (req) => {
           validCount = count || 0;
         }
 
-        // Create dispatch job with message template and conversation link
+        // Create dispatch job with message template (JSON with html and subject) and conversation link
+        const messageTemplate = templateContent ? JSON.stringify({ 
+          html: templateContent, 
+          subject: emailSubject 
+        }) : null;
+        
+        console.log('[GROK] Creating dispatch job with template:', { 
+          hasHtml: !!templateContent, 
+          hasSubject: !!emailSubject,
+          subjectPreview: emailSubject?.substring(0, 50)
+        });
+        
         const { data: job, error: jobError } = await supabase
           .from('dispatch_jobs')
           .insert({
@@ -390,7 +419,7 @@ serve(async (req) => {
             interval_seconds: 5, // Explícito: 5s entre batches de 2 emails
             status: 'running',
             started_at: new Date().toISOString(),
-            message_template: templateContent || null,
+            message_template: messageTemplate,
             conversation_id: conversationId || null
           })
           .select()
@@ -398,7 +427,7 @@ serve(async (req) => {
 
         if (jobError) throw jobError;
 
-        // Trigger background dispatch with template info
+        // Trigger background dispatch with template info including subject
         const dispatchUrl = `${supabaseUrl}/functions/v1/process-dispatch`;
         fetch(dispatchUrl, {
           method: 'POST',
@@ -409,7 +438,8 @@ serve(async (req) => {
           body: JSON.stringify({ 
             jobId: job.id,
             templateType,
-            templateContent 
+            templateContent,
+            emailSubject  // Pass subject separately for clarity
           })
         }).catch(err => console.error('Error triggering dispatch:', err));
 
