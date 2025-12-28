@@ -736,72 +736,41 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
     }
   }, [messages]);
 
-  // Handle HTML submission
+  // Show dispatch confirmation button instead of starting directly
+  // This ensures dispatch ONLY starts when user explicitly clicks the button
   const handleHtmlSubmit = async (html: string, subOriginId: string, type: string) => {
-    setIsLoading(true);
+    // Store the HTML in side panel for reference
+    setSidePanelContext({ subOriginId, dispatchType: type });
+    setSidePanelHtml(html);
+    setSidePanelOpen(true);
     
-    // Start dispatch directly without showing user message
-
-    try {
-      const templateType = html.includes('<') ? 'html' : 'simple';
-      const response = await fetch(CHAT_URL, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ 
-          command: `START_DISPATCH:${type}:${subOriginId}:${templateType}:${currentConversationId || ''}:${html}` 
-        }),
-      });
-
-      if (!response.ok) throw new Error("Erro ao iniciar disparo");
-      const result = await response.json();
-
-      if (result.type === 'dispatch_started') {
-        setActiveJobId(result.data.jobId);
-        logAction('system', `Disparo iniciado`, `Enviando para ${result.data.validLeads} leads`);
-        
-        // Create work steps showing dispatch in progress
-        const workSteps: WorkStep[] = [
-          createLeadsAnalysisStep('completed', {
-            validCount: result.data.validLeads,
-            summary: `${result.data.validLeads} leads prontos para envio.`
-          }),
-          createEmailGenerationStep('completed', {
-            summary: 'Email HTML preparado para disparo.'
-          }),
-          createDispatchStep('in_progress', {
-            current: 0,
-            total: result.data.validLeads,
-            summary: 'Enviando emails...'
-          })
-        ];
-        
-        const assistantMessage: Message = {
-          id: crypto.randomUUID(),
-          content: `Disparo iniciado! Enviando para ${result.data.validLeads} leads...`,
-          role: "assistant",
-          timestamp: new Date(),
-          componentData: {
-            type: 'ai_work_details',
-            data: { steps: workSteps, jobId: result.data.jobId }
-          },
-          component: (
-            <div className="mt-3 space-y-3 w-full">
-              <AIWorkDetails steps={workSteps} className="max-w-md" />
-              <DispatchProgressTable
-                jobId={result.data.jobId}
-                onCommand={handleCommand}
-              />
-            </div>
-          ),
-        };
-        setMessages(prev => [...prev, assistantMessage]);
-      }
-    } catch (error) {
-      console.error("Error starting dispatch:", error);
-      toast.error("Erro ao iniciar disparo");
-    } finally {
-      setIsLoading(false);
-    }
+    // Create the dispatch command that will be executed on button click
+    const templateType = html.includes('<') ? 'html' : 'simple';
+    const dispatchCommand = `START_DISPATCH:${type}:${subOriginId}:${templateType}:${currentConversationId || ''}:${html}`;
+    
+    // Show confirmation message with button
+    const confirmMessage: Message = {
+      id: crypto.randomUUID(),
+      content: `Email pronto! Revise o conteúdo no painel lateral e clique no botão abaixo para iniciar o disparo.`,
+      role: "assistant",
+      timestamp: new Date(),
+      component: (
+        <div className="mt-4">
+          <button
+            onClick={() => executeDispatch(dispatchCommand)}
+            className="flex items-center gap-2 px-6 py-3 bg-primary text-primary-foreground rounded-lg font-medium hover:bg-primary/90 transition-colors shadow-lg"
+          >
+            <span className="text-lg">🚀</span>
+            <span>Iniciar Disparo de {type === 'email' ? 'Emails' : 'WhatsApp'}</span>
+          </button>
+          <p className="text-xs text-muted-foreground mt-2">
+            Clique no botão acima para confirmar e iniciar o disparo
+          </p>
+        </div>
+      ),
+    };
+    setMessages(prev => [...prev, confirmMessage]);
+    logAction('system', 'Email preparado para disparo', 'Aguardando confirmação do usuário');
   };
 
   // Handle email choice - user has code ready (open side panel)
@@ -1023,6 +992,53 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
     setMessages(prev => [...prev, assistantMessage]);
   }, [logAction]);
 
+  // Execute a confirmed dispatch
+  const executeDispatch = useCallback(async (command: string) => {
+    try {
+      setIsLoading(true);
+      const response = await fetch(CHAT_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ command }),
+      });
+
+      if (!response.ok) throw new Error("Command failed");
+
+      const result = await response.json();
+      console.log("Dispatch result:", result);
+
+      if (result.type === 'dispatch_started') {
+        setActiveJobId(result.data.jobId);
+        logAction('system', `Disparo iniciado`, `Enviando para ${result.data.validLeads} leads`);
+        
+        const progressMessage: Message = {
+          id: crypto.randomUUID(),
+          content: `🚀 Disparo iniciado! Enviando para ${result.data.validLeads} leads...`,
+          role: "assistant",
+          timestamp: new Date(),
+          componentData: {
+            type: 'dispatch_progress',
+            data: { jobId: result.data.jobId }
+          },
+          component: (
+            <DispatchProgressTable
+              key={`dispatch-${result.data.jobId}`}
+              jobId={result.data.jobId}
+              onCommand={handleCommand}
+            />
+          ),
+        };
+        setMessages(prev => [...prev, progressMessage]);
+        toast.success("Disparo iniciado com sucesso!");
+      }
+    } catch (error) {
+      console.error("Error starting dispatch:", error);
+      toast.error("Erro ao iniciar disparo");
+    } finally {
+      setIsLoading(false);
+    }
+  }, [logAction]);
+
   // Process commands from Grok's response
   const processCommands = async (content: string): Promise<{ cleanContent: string; components: React.ReactNode[] }> => {
     const commandPattern = /\[COMMAND:([^\]]+)\]/g;
@@ -1037,6 +1053,40 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
     let cleanContent = content;
 
     for (const command of commands) {
+      // Remove command from content FIRST
+      cleanContent = cleanContent.replace(`[COMMAND:${command}]`, '');
+
+      // CRITICAL: START_DISPATCH requires explicit user confirmation via button
+      // Do NOT auto-execute - show confirmation button instead
+      if (command.startsWith('START_DISPATCH:')) {
+        console.log("[SECURITY] START_DISPATCH detected - showing confirmation button instead of auto-executing");
+        
+        // Parse the command to extract info for the button
+        const parts = command.split(':');
+        const dispatchType = parts[1] || 'email';
+        const subOriginId = parts[2] || '';
+        const templateType = parts[3] || 'html';
+        
+        // Create a confirmation button component
+        const confirmButton = (
+          <div key={`confirm-dispatch-${Date.now()}`} className="mt-4">
+            <button
+              onClick={() => executeDispatch(command)}
+              className="flex items-center gap-2 px-6 py-3 bg-primary text-primary-foreground rounded-lg font-medium hover:bg-primary/90 transition-colors shadow-lg"
+            >
+              <span className="text-lg">🚀</span>
+              <span>Iniciar Disparo de {dispatchType === 'email' ? 'Emails' : 'WhatsApp'}</span>
+            </button>
+            <p className="text-xs text-muted-foreground mt-2">
+              Clique no botão acima para confirmar e iniciar o disparo
+            </p>
+          </div>
+        );
+        components.push(confirmButton);
+        continue; // Don't process this command automatically
+      }
+
+      // For other commands, process normally
       try {
         const response = await fetch(CHAT_URL, {
           method: "POST",
@@ -1050,9 +1100,6 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
 
         const result = await response.json();
         console.log("Command result:", result);
-
-        // Remove command from content
-        cleanContent = cleanContent.replace(`[COMMAND:${command}]`, '');
 
         if (result.type === 'origins') {
           // Add origins list component with selection handler
@@ -1074,18 +1121,6 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
             />
           );
           components.push(previewComponent);
-        }
-
-        if (result.type === 'dispatch_started') {
-          setActiveJobId(result.data.jobId);
-          const progressComponent = (
-            <DispatchProgressTable
-              key={`dispatch-${result.data.jobId}`}
-              jobId={result.data.jobId}
-              onCommand={handleCommand}
-            />
-          );
-          components.push(progressComponent);
         }
 
         if (result.type === 'dispatch_updated') {
