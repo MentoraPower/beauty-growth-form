@@ -30,6 +30,14 @@ interface Message {
   componentData?: MessageComponentData; // Serializable data for reconstruction
 }
 
+// Action history entry for complete AI memory
+interface ActionEntry {
+  timestamp: string;
+  actor: 'user' | 'ai' | 'system';
+  action: string;
+  details?: string;
+}
+
 interface Origin {
   id: string;
   nome: string;
@@ -147,6 +155,7 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
   const [sidePanelEditing, setSidePanelEditing] = useState(false);
   const [sidePanelContext, setSidePanelContext] = useState<{ subOriginId: string; dispatchType: string } | null>(null);
   const [htmlSource, setHtmlSource] = useState<'ai' | 'user' | null>(null); // Track who created the HTML
+  const [actionHistory, setActionHistory] = useState<ActionEntry[]>([]); // Complete action history for AI memory
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const chatScrollRef = useRef<HTMLDivElement>(null);
@@ -155,6 +164,17 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
   const scrollRAFRef = useRef<number | null>(null);
   const streamingBufferRef = useRef("");
   const flushTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  
+  // Helper to log actions with timestamp
+  const logAction = useCallback((actor: 'user' | 'ai' | 'system', action: string, details?: string) => {
+    const entry: ActionEntry = {
+      timestamp: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
+      actor,
+      action,
+      details
+    };
+    setActionHistory(prev => [...prev, entry]);
+  }, []);
 
   // Optimized scroll to bottom using RAF
   const scheduleScrollToBottom = useCallback(() => {
@@ -372,6 +392,16 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
             setDispatchType(rawData.dispatchType);
           }
           
+          // Restore action history if available
+          if (isNewFormat && rawData.actionHistory && Array.isArray(rawData.actionHistory)) {
+            setActionHistory(rawData.actionHistory);
+          }
+          
+          // Restore htmlSource if available
+          if (isNewFormat && rawData.htmlSource) {
+            setHtmlSource(rawData.htmlSource);
+          }
+          
           setInitialLoadDone(true);
         } catch (error) {
           console.error("Error loading conversation from URL:", error);
@@ -396,6 +426,8 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
       setSidePanelContext(null);
       setSelectedOriginData(null);
       setDispatchType(null);
+      setActionHistory([]); // Clear action history
+      setHtmlSource(null); // Clear htmlSource
       setInitialLoadDone(true);
     } else if (!convId && !initialLoadDone) {
       setInitialLoadDone(true);
@@ -481,6 +513,8 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
         },
         selectedOriginData,
         dispatchType,
+        actionHistory, // Persist action history for complete AI memory
+        htmlSource, // Persist who created the HTML
       };
 
       if (currentConversationId && !forceCreate) {
@@ -516,7 +550,7 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
       console.error("Error saving conversation:", error);
       return null;
     }
-  }, [messages, currentConversationId, sidePanelHtml, sidePanelOpen, sidePanelContext, selectedOriginData, dispatchType]);
+  }, [messages, currentConversationId, sidePanelHtml, sidePanelOpen, sidePanelContext, selectedOriginData, dispatchType, actionHistory, htmlSource]);
 
   // Auto-save when messages change
   useEffect(() => {
@@ -577,6 +611,9 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
     const hasEmail = lastMessages.some(m => m.content.toLowerCase().includes('email'));
     const type = hasEmail ? 'email' : 'whatsapp_web';
     setDispatchType(type);
+    
+    // Log this action
+    logAction('user', `Selecionou a lista "${subOriginName}" da origem "${originName}"`, `${type === 'email' ? 'Disparo por email' : 'Disparo por WhatsApp'}`);
     
     // Auto-send message to fetch leads
     const autoMessage = `Usar a lista "${subOriginName}" da origem "${originName}"`;
@@ -684,6 +721,7 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
 
       if (result.type === 'dispatch_started') {
         setActiveJobId(result.data.jobId);
+        logAction('system', `Disparo iniciado`, `Enviando para ${result.data.validLeads} leads`);
         const assistantMessage: Message = {
           id: crypto.randomUUID(),
           content: `Disparo iniciado. Enviando para ${result.data.validLeads} leads...`,
@@ -720,6 +758,7 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
     setSidePanelSubject('');
     setSidePanelGenerating(false);
     setSidePanelOpen(true);
+    logAction('user', 'Escolheu colar código HTML próprio', 'Painel de edição aberto');
     
     const assistantMessage: Message = {
       id: crypto.randomUUID(),
@@ -728,10 +767,11 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
       timestamp: new Date(),
     };
     setMessages(prev => [...prev, assistantMessage]);
-  }, []);
+  }, [logAction]);
 
 // Handle email choice - create with AI (show copy choice first)
   const handleEmailChoiceAI = useCallback((subOriginId: string, type: string) => {
+    logAction('user', 'Escolheu criar email com a IA', 'Iniciando fluxo de criação');
     const assistantMessage: Message = {
       id: crypto.randomUUID(),
       content: `Você já tem a copy (texto) do email pronta?`,
@@ -751,7 +791,7 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
       ),
     };
     setMessages(prev => [...prev, assistantMessage]);
-  }, []);
+  }, [logAction]);
 
   // Handle user has copy ready - show copy input form
   const handleHasCopy = useCallback((subOriginId: string, type: string) => {
@@ -881,6 +921,7 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
       setSidePanelHtml(finalHtml);
       setHtmlSource('ai'); // AI generated this email
       setSidePanelGenerating(false);
+      logAction('ai', 'Gerou email HTML a partir da copy', `Assunto: "${finalSubject}", ${finalHtml.length} caracteres`);
       
       // Check if the email has a button_link placeholder
       const hasButtonPlaceholder = finalHtml.includes('{{button_link}}');
@@ -902,7 +943,7 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
       toast.error(error instanceof Error ? error.message : "Erro ao gerar email");
       setSidePanelGenerating(false);
     }
-  }, []);
+  }, [logAction]);
 
   // Handle AI generated email - open in side panel
   const handleEmailGenerated = useCallback((html: string, subOriginId: string, type: string) => {
@@ -912,6 +953,7 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
     setHtmlSource('ai'); // AI generated this email
     setSidePanelGenerating(false);
     setSidePanelOpen(true);
+    logAction('ai', 'Email HTML criado', `${html.length} caracteres`);
     
     const assistantMessage: Message = {
       id: crypto.randomUUID(),
@@ -920,7 +962,7 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
       timestamp: new Date(),
     };
     setMessages(prev => [...prev, assistantMessage]);
-  }, []);
+  }, [logAction]);
 
   // Process commands from Grok's response
   const processCommands = async (content: string): Promise<{ cleanContent: string; components: React.ReactNode[] }> => {
@@ -1150,6 +1192,7 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
         setSidePanelHtml(cleanHtml);
         setHtmlSource('ai'); // AI generated this email
         setSidePanelGenerating(false);
+        logAction('ai', 'Gerou email a partir da descrição', `Assunto: "${finalSubject}", ${cleanHtml.length} caracteres`);
 
         // Update message - keep the indicator but mark as complete
         setMessages(prev => 
@@ -1313,6 +1356,7 @@ Retorne APENAS o HTML modificado, sem explicações.`,
         setSidePanelHtml(finalHtml);
         setSidePanelGenerating(false);
         setSidePanelEditing(false);
+        logAction('ai', 'Editou o email conforme instrução do usuário', `${finalHtml.length} caracteres`);
 
         setMessages(prev => 
           prev.map(m => 
@@ -1393,16 +1437,28 @@ Retorne APENAS o HTML modificado, sem explicações.`,
       
       contextInfo.push(`=== FIM DO ESTADO ===`);
       
+      // Include action history for complete AI memory
+      if (actionHistory.length > 0) {
+        contextInfo.push(`\n=== HISTÓRICO DE AÇÕES (MEMÓRIA COMPLETA) ===`);
+        contextInfo.push(`O que aconteceu nesta conversa, em ordem cronológica:`);
+        actionHistory.forEach((entry, i) => {
+          const actorLabel = entry.actor === 'ai' ? '🤖 Você (IA)' : entry.actor === 'user' ? '👤 Usuário' : '⚙️ Sistema';
+          contextInfo.push(`${i + 1}. [${entry.timestamp}] ${actorLabel}: ${entry.action}${entry.details ? ` - ${entry.details}` : ''}`);
+        });
+        contextInfo.push(`=== FIM DO HISTÓRICO ===`);
+      }
+      
       // Build instruction for AI behavior
       const aiInstructions = `
 INSTRUÇÕES PARA VOCÊ (A IA):
-1. Você tem TOTAL consciência do estado acima - USE essas informações!
-2. Se já existe um HTML de email, NÃO pergunte se o usuário tem HTML
-3. Se você gerou algo, LEMBRE que foi você que fez
-4. Seja natural e conversacional, como um colega de trabalho prestativo
-5. Reconheça o progresso: "já temos a lista, já temos o email..."
-6. Se algo estiver faltando, mencione de forma natural
-7. Evite repetir perguntas sobre coisas que já foram definidas`;
+1. Você tem TOTAL consciência do estado e histórico acima - USE essas informações!
+2. O HISTÓRICO DE AÇÕES mostra TUDO que aconteceu - você sabe exatamente o que você fez e o que o usuário fez
+3. Se você gerou algo (está no histórico), LEMBRE e mencione naturalmente: "o email que eu criei..."
+4. Se já existe um HTML de email, NÃO pergunte se o usuário tem HTML
+5. Seja natural e conversacional, como um colega de trabalho prestativo
+6. Reconheça o progresso: "já temos a lista, já temos o email que eu criei..."
+7. Se algo estiver faltando, mencione de forma natural
+8. Evite repetir perguntas sobre coisas que já foram definidas`;
 
       // Create messages with context injected as system message
       const messagesForAPI = [
