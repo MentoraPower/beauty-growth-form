@@ -1,9 +1,10 @@
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 import { Pause, Play, X, CheckCircle, AlertCircle, Loader2, Mail, User, BarChart3 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useResilientChannel } from "@/hooks/useResilientChannel";
 
 interface ErrorLogEntry {
   leadId: string;
@@ -48,52 +49,57 @@ export function DispatchProgressTable({ jobId, onCommand, onShowDetails, onError
   const lastFailedCountRef = useRef(0);
   const hasNotifiedCompleteRef = useRef(false);
 
-  useEffect(() => {
-    // Initial fetch
-    const fetchJob = async () => {
-      const { data, error } = await supabase
-        .from('dispatch_jobs')
-        .select('*')
-        .eq('id', jobId)
-        .single();
+  // Fetch job data
+  const fetchJob = useCallback(async () => {
+    const { data, error } = await supabase
+      .from('dispatch_jobs')
+      .select('*')
+      .eq('id', jobId)
+      .single();
 
-      if (!error && data) {
-        const jobData = data as unknown as DispatchJob;
-        setJob(jobData);
-        setLastUpdate(new Date());
-        // Initialize refs with current values
+    if (!error && data) {
+      const jobData = data as unknown as DispatchJob;
+      console.log('[DispatchProgress] Fetched job:', jobData.sent_count, '/', jobData.valid_leads, 'status:', jobData.status);
+      setJob(jobData);
+      setLastUpdate(new Date());
+      if (loading) {
         lastFailedCountRef.current = jobData.failed_count;
       }
-      setLoading(false);
-    };
+    }
+    setLoading(false);
+  }, [jobId, loading]);
 
+  // Initial fetch
+  useEffect(() => {
     fetchJob();
+  }, [fetchJob]);
 
-    // Subscribe to realtime updates
-    const channel = supabase
-      .channel(`dispatch-${jobId}`)
-      .on(
-        'postgres_changes',
-        {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'dispatch_jobs',
-          filter: `id=eq.${jobId}`
-        },
-        (payload) => {
-          console.log('Dispatch job realtime update:', payload.new);
-          setJob(payload.new as DispatchJob);
-          setLastUpdate(new Date());
-        }
-      )
-      .subscribe((status) => {
-        console.log('Realtime subscription status:', status);
-      });
+  // Check if job is still active (for polling control)
+  const isJobActive = useCallback(() => {
+    return job && ['pending', 'running', 'paused'].includes(job.status);
+  }, [job]);
 
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [jobId]);
+  // Use resilient channel with polling fallback
+  useResilientChannel({
+    channelName: `dispatch-progress-${jobId}`,
+    table: 'dispatch_jobs',
+    event: 'UPDATE',
+    filter: `id=eq.${jobId}`,
+    onPayload: (payload) => {
+      console.log('[DispatchProgress] Realtime update:', payload.new);
+      setJob(payload.new as DispatchJob);
+      setLastUpdate(new Date());
+    },
+    onStatusChange: (status) => {
+      console.log('[DispatchProgress] Channel status:', status);
+    },
+    pollingFallback: {
+      enabled: true,
+      intervalMs: 3000, // Poll every 3 seconds
+      fetchFn: fetchJob,
+      shouldPoll: isJobActive,
+    },
+  });
 
   // Handle error and completion notifications
   useEffect(() => {
