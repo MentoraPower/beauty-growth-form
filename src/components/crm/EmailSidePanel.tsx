@@ -1,7 +1,14 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { cn } from "@/lib/utils";
 import { Code2, Eye, Copy, Check } from "lucide-react";
 import { toast } from "sonner";
+
+interface EditOperation {
+  type: 'insert' | 'delete' | 'replace';
+  startIndex: number;
+  endIndex?: number;
+  newText?: string;
+}
 
 interface EmailSidePanelProps {
   isOpen: boolean;
@@ -9,24 +16,33 @@ interface EmailSidePanelProps {
   onHtmlChange: (html: string) => void;
   isGenerating?: boolean;
   isEditing?: boolean;
+  editOperation?: EditOperation | null;
   title?: string;
 }
 
 // Syntax highlighting for HTML with dark purple for strings
-const highlightHtml = (code: string): React.ReactNode => {
+const highlightHtml = (code: string, highlightRange?: { start: number; end: number }): React.ReactNode => {
   if (!code) return null;
   
   const parts: React.ReactNode[] = [];
   let remaining = code;
   let keyIndex = 0;
+  let currentIndex = 0;
 
   while (remaining.length > 0) {
     let matched = false;
 
+    // Check if we're in highlight range
+    const isInHighlight = highlightRange && 
+      currentIndex >= highlightRange.start && 
+      currentIndex < highlightRange.end;
+
     // Comments
     const commentMatch = remaining.match(/^(<!--[\s\S]*?-->)/);
     if (commentMatch) {
-      parts.push(<span key={keyIndex++} className="text-muted-foreground italic">{commentMatch[1]}</span>);
+      const content = <span key={keyIndex++} className={cn("text-muted-foreground italic", isInHighlight && "bg-primary/20 rounded")}>{commentMatch[1]}</span>;
+      parts.push(content);
+      currentIndex += commentMatch[1].length;
       remaining = remaining.slice(commentMatch[1].length);
       matched = true;
       continue;
@@ -35,8 +51,9 @@ const highlightHtml = (code: string): React.ReactNode => {
     // Opening/closing tags
     const tagMatch = remaining.match(/^(<\/?)([\w-]+)/);
     if (tagMatch) {
-      parts.push(<span key={keyIndex++} className="text-pink-500">{tagMatch[1]}</span>);
-      parts.push(<span key={keyIndex++} className="text-blue-500">{tagMatch[2]}</span>);
+      parts.push(<span key={keyIndex++} className={cn("text-pink-500", isInHighlight && "bg-primary/20 rounded")}>{tagMatch[1]}</span>);
+      parts.push(<span key={keyIndex++} className={cn("text-blue-500", isInHighlight && "bg-primary/20 rounded")}>{tagMatch[2]}</span>);
+      currentIndex += tagMatch[0].length;
       remaining = remaining.slice(tagMatch[0].length);
       matched = true;
       continue;
@@ -45,12 +62,13 @@ const highlightHtml = (code: string): React.ReactNode => {
     // Attributes
     const attrMatch = remaining.match(/^(\s+)([\w-]+)(=)("([^"]*)")?/);
     if (attrMatch) {
-      parts.push(<span key={keyIndex++}>{attrMatch[1]}</span>);
-      parts.push(<span key={keyIndex++} className="text-orange-400">{attrMatch[2]}</span>);
-      parts.push(<span key={keyIndex++} className="text-foreground">{attrMatch[3]}</span>);
+      parts.push(<span key={keyIndex++} className={isInHighlight ? "bg-primary/20 rounded" : ""}>{attrMatch[1]}</span>);
+      parts.push(<span key={keyIndex++} className={cn("text-orange-400", isInHighlight && "bg-primary/20 rounded")}>{attrMatch[2]}</span>);
+      parts.push(<span key={keyIndex++} className={cn("text-foreground", isInHighlight && "bg-primary/20 rounded")}>{attrMatch[3]}</span>);
       if (attrMatch[4]) {
-        parts.push(<span key={keyIndex++} className="text-purple-600 dark:text-purple-400">{attrMatch[4]}</span>);
+        parts.push(<span key={keyIndex++} className={cn("text-purple-600 dark:text-purple-400", isInHighlight && "bg-primary/20 rounded")}>{attrMatch[4]}</span>);
       }
+      currentIndex += attrMatch[0].length;
       remaining = remaining.slice(attrMatch[0].length);
       matched = true;
       continue;
@@ -59,7 +77,8 @@ const highlightHtml = (code: string): React.ReactNode => {
     // Closing bracket
     const closeBracket = remaining.match(/^(\/?>)/);
     if (closeBracket) {
-      parts.push(<span key={keyIndex++} className="text-pink-500">{closeBracket[1]}</span>);
+      parts.push(<span key={keyIndex++} className={cn("text-pink-500", isInHighlight && "bg-primary/20 rounded")}>{closeBracket[1]}</span>);
+      currentIndex += closeBracket[1].length;
       remaining = remaining.slice(closeBracket[1].length);
       matched = true;
       continue;
@@ -68,7 +87,8 @@ const highlightHtml = (code: string): React.ReactNode => {
     // Text content
     const textMatch = remaining.match(/^([^<]+)/);
     if (textMatch) {
-      parts.push(<span key={keyIndex++} className="text-foreground">{textMatch[1]}</span>);
+      parts.push(<span key={keyIndex++} className={cn("text-foreground", isInHighlight && "bg-primary/20 rounded")}>{textMatch[1]}</span>);
+      currentIndex += textMatch[1].length;
       remaining = remaining.slice(textMatch[1].length);
       matched = true;
       continue;
@@ -76,12 +96,21 @@ const highlightHtml = (code: string): React.ReactNode => {
 
     // Fallback: single character
     if (!matched) {
-      parts.push(<span key={keyIndex++}>{remaining[0]}</span>);
+      parts.push(<span key={keyIndex++} className={isInHighlight ? "bg-primary/20 rounded" : ""}>{remaining[0]}</span>);
+      currentIndex += 1;
       remaining = remaining.slice(1);
     }
   }
 
   return parts;
+};
+
+// Calculate line number and position from character index
+const getLineInfo = (text: string, charIndex: number): { line: number; lineStart: number } => {
+  const lines = text.slice(0, charIndex).split('\n');
+  const line = lines.length;
+  const lineStart = charIndex - (lines[lines.length - 1]?.length || 0);
+  return { line, lineStart };
 };
 
 export function EmailSidePanel({ 
@@ -90,59 +119,153 @@ export function EmailSidePanel({
   onHtmlChange,
   isGenerating = false,
   isEditing = false,
+  editOperation = null,
   title = "Editor de Email"
 }: EmailSidePanelProps) {
   const [activeTab, setActiveTab] = useState<'code' | 'preview'>('preview');
   const [copied, setCopied] = useState(false);
   const [displayedContent, setDisplayedContent] = useState("");
+  const [highlightRange, setHighlightRange] = useState<{ start: number; end: number } | undefined>();
+  const [editingIndicator, setEditingIndicator] = useState<{ line: number; action: string } | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const preRef = useRef<HTMLPreElement>(null);
-  const codeContainerRef = useRef<HTMLDivElement>(null);
   const displayedIndexRef = useRef(0);
+  const previousContentRef = useRef("");
+  const editAnimationRef = useRef<number | null>(null);
 
-  // Typewriter effect - show content character by character
+  // Detect content changes and animate edits
+  useEffect(() => {
+    const prevContent = previousContentRef.current;
+    const newContent = htmlContent;
+    
+    if (!prevContent || !newContent || isGenerating) {
+      previousContentRef.current = newContent;
+      return;
+    }
+
+    // Find the difference between old and new content
+    const findDiff = () => {
+      let startDiff = 0;
+      let endDiffOld = prevContent.length;
+      let endDiffNew = newContent.length;
+
+      // Find start of difference
+      while (startDiff < prevContent.length && startDiff < newContent.length && prevContent[startDiff] === newContent[startDiff]) {
+        startDiff++;
+      }
+
+      // Find end of difference (from the back)
+      while (endDiffOld > startDiff && endDiffNew > startDiff && prevContent[endDiffOld - 1] === newContent[endDiffNew - 1]) {
+        endDiffOld--;
+        endDiffNew--;
+      }
+
+      return { startDiff, endDiffOld, endDiffNew };
+    };
+
+    if (prevContent !== newContent && isEditing) {
+      const { startDiff, endDiffNew } = findDiff();
+      const lineInfo = getLineInfo(newContent, startDiff);
+      
+      // Show editing indicator
+      setEditingIndicator({
+        line: lineInfo.line,
+        action: endDiffNew > startDiff ? 'Editando...' : 'Removendo...'
+      });
+
+      // Highlight the changed area
+      setHighlightRange({ start: startDiff, end: endDiffNew });
+
+      // Scroll to the edit position
+      if (preRef.current) {
+        const lineHeight = 18; // approximate line height in pixels
+        const scrollTarget = (lineInfo.line - 3) * lineHeight;
+        preRef.current.scrollTo({
+          top: Math.max(0, scrollTarget),
+          behavior: 'smooth'
+        });
+      }
+
+      // Animate the edit with typewriter effect
+      if (editAnimationRef.current) {
+        cancelAnimationFrame(editAnimationRef.current);
+      }
+
+      const oldDisplayed = prevContent.slice(0, startDiff);
+      const newPart = newContent.slice(startDiff, endDiffNew);
+      const afterPart = newContent.slice(endDiffNew);
+      
+      let charIndex = 0;
+      const animateEdit = () => {
+        if (charIndex <= newPart.length) {
+          setDisplayedContent(oldDisplayed + newPart.slice(0, charIndex) + afterPart);
+          charIndex += 2; // 2 chars at a time for speed
+          editAnimationRef.current = requestAnimationFrame(() => {
+            setTimeout(animateEdit, 8);
+          });
+        } else {
+          setDisplayedContent(newContent);
+          displayedIndexRef.current = newContent.length;
+          
+          // Clear highlight after a short delay
+          setTimeout(() => {
+            setHighlightRange(undefined);
+            setEditingIndicator(null);
+          }, 800);
+        }
+      };
+      
+      animateEdit();
+    }
+
+    previousContentRef.current = newContent;
+  }, [htmlContent, isEditing, isGenerating]);
+
+  // Typewriter effect for initial generation
   useEffect(() => {
     if (!isGenerating && !isEditing) {
-      // When not generating, show full content immediately
+      // When not generating/editing, show full content immediately
       setDisplayedContent(htmlContent);
       displayedIndexRef.current = htmlContent.length;
       return;
     }
 
-    // Typewriter animation during generation
-    const targetLength = htmlContent.length;
-    
-    if (displayedIndexRef.current >= targetLength) return;
-
-    const interval = setInterval(() => {
-      const currentIndex = displayedIndexRef.current;
-      const charsToAdd = Math.min(3, targetLength - currentIndex); // Add 3 chars at a time for speed
+    if (isGenerating) {
+      // Typewriter animation during initial generation
+      const targetLength = htmlContent.length;
       
-      if (charsToAdd > 0) {
-        displayedIndexRef.current = currentIndex + charsToAdd;
-        setDisplayedContent(htmlContent.slice(0, displayedIndexRef.current));
-      }
-      
-      if (displayedIndexRef.current >= targetLength) {
-        clearInterval(interval);
-      }
-    }, 10); // Fast but visible typing
+      if (displayedIndexRef.current >= targetLength) return;
 
-    return () => clearInterval(interval);
+      const interval = setInterval(() => {
+        const currentIndex = displayedIndexRef.current;
+        const charsToAdd = Math.min(3, targetLength - currentIndex);
+        
+        if (charsToAdd > 0) {
+          displayedIndexRef.current = currentIndex + charsToAdd;
+          setDisplayedContent(htmlContent.slice(0, displayedIndexRef.current));
+        }
+        
+        if (displayedIndexRef.current >= targetLength) {
+          clearInterval(interval);
+        }
+      }, 10);
+
+      return () => clearInterval(interval);
+    }
   }, [htmlContent, isGenerating, isEditing]);
 
-  // Switch to code tab when generating/editing, preview when done
+  // Switch to code tab when generating/editing
   useEffect(() => {
     if (isGenerating || isEditing) {
       setActiveTab('code');
     } else if (htmlContent && !isGenerating && !isEditing) {
       setActiveTab('preview');
     }
-  }, [isGenerating, isEditing]);
+  }, [isGenerating, isEditing, htmlContent]);
 
-  // Auto-scroll to bottom when content is being generated
+  // Auto-scroll during generation
   useEffect(() => {
-    if ((isGenerating || isEditing) && preRef.current) {
+    if (isGenerating && preRef.current && !isEditing) {
       preRef.current.scrollTop = preRef.current.scrollHeight;
     }
   }, [displayedContent, isGenerating, isEditing]);
@@ -154,7 +277,6 @@ export function EmailSidePanel({
     setTimeout(() => setCopied(false), 2000);
   };
 
-  // Sync scroll between textarea and pre
   const handleScroll = (e: React.UIEvent<HTMLTextAreaElement>) => {
     if (preRef.current) {
       preRef.current.scrollTop = e.currentTarget.scrollTop;
@@ -162,7 +284,6 @@ export function EmailSidePanel({
     }
   };
 
-  // Basic HTML sanitization for preview
   const getSanitizedHtml = () => {
     return htmlContent
       .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
@@ -214,9 +335,19 @@ export function EmailSidePanel({
       </div>
 
       {/* Content */}
-      <div className="flex-1 overflow-hidden">
+      <div className="flex-1 overflow-hidden relative">
         {activeTab === 'code' ? (
           <div className="relative h-full w-full overflow-hidden">
+            {/* Editing indicator overlay */}
+            {editingIndicator && (
+              <div className="absolute top-2 left-1/2 -translate-x-1/2 z-20 flex items-center gap-2 bg-primary/90 text-primary-foreground px-4 py-2 rounded-full shadow-lg animate-fade-in">
+                <div className="w-2 h-2 bg-primary-foreground rounded-full animate-pulse" />
+                <span className="text-xs font-medium">
+                  Linha {editingIndicator.line}: {editingIndicator.action}
+                </span>
+              </div>
+            )}
+
             {/* Highlighted code display */}
             <pre
               ref={preRef}
@@ -225,7 +356,7 @@ export function EmailSidePanel({
             >
               {displayedContent ? (
                 <>
-                  {highlightHtml(displayedContent)}
+                  {highlightHtml(displayedContent, highlightRange)}
                   {(isGenerating || isEditing) && (
                     <span className="inline-block w-2 h-4 bg-primary animate-pulse ml-0.5 align-middle" />
                   )}
@@ -248,8 +379,8 @@ export function EmailSidePanel({
               placeholder=""
             />
             
-            {/* Generating indicator */}
-            {isGenerating && (
+            {/* Status indicators */}
+            {isGenerating && !editingIndicator && (
               <div className="absolute bottom-4 right-4 flex items-center gap-2 bg-primary/10 px-3 py-1.5 rounded-full">
                 <div className="w-2 h-2 bg-primary rounded-full animate-pulse" />
                 <span className="text-xs text-primary font-medium">Gerando...</span>
