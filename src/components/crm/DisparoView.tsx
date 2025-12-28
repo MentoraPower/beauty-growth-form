@@ -1133,16 +1133,24 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
         const { cleanContent, components } = await processCommands(assistantContent);
         
         // Check if user chose "Lista do CRM" - auto-show origins table
-        const userChoseCRM = messageContent.toLowerCase().includes('lista') && 
-          (messageContent.toLowerCase().includes('crm') || 
-           messageContent.toLowerCase().includes('cadastrada') ||
-           messageContent.toLowerCase().includes('sistema'));
+        const lowerMessage = messageContent.toLowerCase();
+        const userChoseCRM = (
+          lowerMessage.includes('lista') && 
+          (lowerMessage.includes('crm') || 
+           lowerMessage.includes('cadastrada') ||
+           lowerMessage.includes('sistema'))
+        ) || lowerMessage.includes('lista do crm') || 
+           (lowerMessage.includes('lista') && !lowerMessage.includes('csv'));
+        
+        console.log("User message:", messageContent);
+        console.log("userChoseCRM detection:", userChoseCRM);
         
         let finalComponents = components;
         let originsData: any = null;
         
         if (userChoseCRM && components.length === 0) {
           // Auto-fetch origins and show table
+          console.log("Auto-fetching origins...");
           try {
             const originsResponse = await fetch(CHAT_URL, {
               method: "POST",
@@ -1150,8 +1158,11 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
               body: JSON.stringify({ command: 'LIST_ORIGINS' }),
             });
             
+            console.log("Origins response status:", originsResponse.status);
+            
             if (originsResponse.ok) {
               const originsResult = await originsResponse.json();
+              console.log("Origins result:", originsResult);
               if (originsResult.type === 'origins') {
                 originsData = originsResult.data;
                 finalComponents = [
