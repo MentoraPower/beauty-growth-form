@@ -146,6 +146,7 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
   const [sidePanelGenerating, setSidePanelGenerating] = useState(false);
   const [sidePanelEditing, setSidePanelEditing] = useState(false);
   const [sidePanelContext, setSidePanelContext] = useState<{ subOriginId: string; dispatchType: string } | null>(null);
+  const [htmlSource, setHtmlSource] = useState<'ai' | 'user' | null>(null); // Track who created the HTML
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const chatScrollRef = useRef<HTMLDivElement>(null);
@@ -878,6 +879,7 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
       
       setSidePanelSubject(finalSubject);
       setSidePanelHtml(finalHtml);
+      setHtmlSource('ai'); // AI generated this email
       setSidePanelGenerating(false);
       
       // Check if the email has a button_link placeholder
@@ -907,6 +909,7 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
     // Update side panel with generated HTML
     setSidePanelContext({ subOriginId, dispatchType: type });
     setSidePanelHtml(html);
+    setHtmlSource('ai'); // AI generated this email
     setSidePanelGenerating(false);
     setSidePanelOpen(true);
     
@@ -1145,6 +1148,7 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
 
         setSidePanelSubject(finalSubject);
         setSidePanelHtml(cleanHtml);
+        setHtmlSource('ai'); // AI generated this email
         setSidePanelGenerating(false);
 
         // Update message - keep the indicator but mark as complete
@@ -1336,7 +1340,9 @@ Retorne APENAS o HTML modificado, sem explicações.`,
       const contextInfo: string[] = [];
       
       if (sidePanelHtml && sidePanelHtml.length > 0) {
-        contextInfo.push(`[EMAIL HTML JÁ CRIADO: ${sidePanelHtml.length} caracteres]`);
+        const sourceText = htmlSource === 'ai' ? 'VOCÊ (IA) criou este email' : 'O USUÁRIO colou/forneceu este email';
+        contextInfo.push(`[EMAIL HTML JÁ EXISTE - ${sourceText}]`);
+        contextInfo.push(`[TAMANHO: ${sidePanelHtml.length} caracteres]`);
         contextInfo.push(`[ASSUNTO: ${sidePanelSubject || '(não definido)'}]`);
         contextInfo.push(`[PREVIEW DO HTML:\n${sidePanelHtml.slice(0, 800)}${sidePanelHtml.length > 800 ? '...' : ''}]`);
       }
@@ -1743,7 +1749,7 @@ Retorne APENAS o HTML modificado, sem explicações.`,
             <EmailSidePanel
               isOpen={sidePanelOpen}
               htmlContent={sidePanelHtml}
-              onHtmlChange={setSidePanelHtml}
+              onHtmlChange={(html) => { setSidePanelHtml(html); setHtmlSource('user'); }}
               subject={sidePanelSubject}
               onSubjectChange={setSidePanelSubject}
               isGenerating={sidePanelGenerating}
