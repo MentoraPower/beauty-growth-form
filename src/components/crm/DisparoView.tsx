@@ -9,6 +9,7 @@ import { DispatchProgressTable } from "./DispatchProgressTable";
 import { EmailSidePanel } from "./EmailSidePanel";
 import { EmailGenerationIndicator } from "./EmailGenerationIndicator";
 import { supabase } from "@/integrations/supabase/client";
+import { Copy, ThumbsUp, ThumbsDown, RotateCcw } from "lucide-react";
 import disparoLogo from "@/assets/disparo-logo.png";
 
 interface DisparoViewProps {
@@ -1583,6 +1584,39 @@ Retorne APENAS o HTML modificado, sem explicações.`,
                         {msg.component && (
                           <div className="w-full mt-4">
                             {msg.component}
+                          </div>
+                        )}
+                        {/* Action icons for AI messages */}
+                        {msg.content && (
+                          <div className="flex items-center gap-1 mt-3">
+                            <button 
+                              onClick={() => {
+                                navigator.clipboard.writeText(msg.content);
+                                toast.success("Copiado!");
+                              }}
+                              className="p-1.5 rounded hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
+                              title="Copiar"
+                            >
+                              <Copy className="h-4 w-4" />
+                            </button>
+                            <button 
+                              className="p-1.5 rounded hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
+                              title="Útil"
+                            >
+                              <ThumbsUp className="h-4 w-4" />
+                            </button>
+                            <button 
+                              className="p-1.5 rounded hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
+                              title="Não útil"
+                            >
+                              <ThumbsDown className="h-4 w-4" />
+                            </button>
+                            <button 
+                              className="p-1.5 rounded hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
+                              title="Regenerar"
+                            >
+                              <RotateCcw className="h-4 w-4" />
+                            </button>
                           </div>
                         )}
                       </div>
