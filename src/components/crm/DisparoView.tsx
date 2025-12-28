@@ -855,21 +855,7 @@ function OriginsListComponent({ origins, onSelect }: { origins: Origin[]; onSele
 
 // Component to display leads preview - Clean compact format
 function LeadsPreviewComponent({ preview }: { preview: LeadsPreview }) {
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      className="my-3 text-sm text-muted-foreground"
-    >
-      <div className="flex flex-wrap gap-x-4 gap-y-1">
-        <span>{preview.validLeads} leads válidos</span>
-        <span>•</span>
-        <span>{preview.originName} → {preview.subOriginName}</span>
-        <span>•</span>
-        <span>~{preview.estimatedMinutes} min</span>
-      </div>
-    </motion.div>
-  );
+  return null;
 }
 
 // Component to display CSV leads preview
