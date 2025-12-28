@@ -239,6 +239,7 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
   // Sidebar dimensions
   const sidebarCollapsedWidth = 64;
   const submenuWidth = 256;
+  const disparoSubmenuWidth = 200;
 
   return (
     <div className="min-h-screen bg-[#F8F8F8] p-3">
@@ -524,8 +525,8 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
         <div
           style={{
             left: sidebarCollapsedWidth + 12,
-            width: submenuWidth,
-            transform: disparoSubmenuOpen ? 'translateX(0)' : `translateX(-${submenuWidth + 20}px)`,
+            width: disparoSubmenuWidth,
+            transform: disparoSubmenuOpen ? 'translateX(0)' : `translateX(-${disparoSubmenuWidth + 20}px)`,
             zIndex: 39,
             pointerEvents: disparoSubmenuOpen ? 'auto' : 'none',
             willChange: 'transform',
@@ -535,8 +536,8 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
           <div
             className="h-full pl-2 pr-2 transition-opacity duration-200"
             style={{
-              width: submenuWidth,
-              minWidth: submenuWidth,
+              width: disparoSubmenuWidth,
+              minWidth: disparoSubmenuWidth,
               opacity: disparoSubmenuOpen ? 1 : 0,
               transitionDelay: disparoSubmenuOpen ? '50ms' : '0ms',
             }}
@@ -689,9 +690,11 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
         {/* Main Content - uses left animation to push/resize content */}
         <main 
           style={{ 
-            left: (crmSubmenuOpen || disparoSubmenuOpen)
+            left: crmSubmenuOpen 
               ? sidebarCollapsedWidth + 12 + 4 + submenuWidth 
-              : sidebarCollapsedWidth + 12 + 4,
+              : disparoSubmenuOpen 
+                ? sidebarCollapsedWidth + 12 + 4 + disparoSubmenuWidth
+                : sidebarCollapsedWidth + 12 + 4,
             top: 12,
             right: 0,
             bottom: 12,
