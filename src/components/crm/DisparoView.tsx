@@ -934,7 +934,7 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
   const hasMessages = messages.length > 0;
 
   return (
-    <div className="flex-1 flex flex-col h-full bg-background">
+    <div className="flex-1 flex flex-col h-full bg-background overflow-hidden">
       {/* When no messages, center the input */}
       {!hasMessages ? (
         <div className="flex-1 flex items-center justify-center p-6">
@@ -960,7 +960,7 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
       ) : (
         <>
           {/* Chat messages area */}
-          <div className="flex-1 overflow-auto p-6">
+          <div className="flex-1 overflow-y-auto min-h-0 p-6">
             <div className="max-w-3xl mx-auto space-y-4">
               {messages.map((msg) => (
                 <div
