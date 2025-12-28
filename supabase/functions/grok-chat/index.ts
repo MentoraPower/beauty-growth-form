@@ -240,7 +240,8 @@ serve(async (req) => {
         const { data: leads, error } = await supabase
           .from('leads')
           .select('id, name, email, whatsapp, country_code')
-          .eq('sub_origin_id', subOriginId);
+          .eq('sub_origin_id', subOriginId)
+          .range(0, 10000);
 
         if (error) throw error;
 
@@ -259,8 +260,8 @@ serve(async (req) => {
           }
         }) || [];
 
-        const intervalSeconds = 5;
-        const estimatedMinutes = Math.ceil((validLeads.length * intervalSeconds) / 60);
+        // Sistema paralelo: 2 emails a cada 150ms
+        const estimatedMinutes = Math.max(Math.ceil((validLeads.length / 2) * 0.15 / 60), 2);
 
         return new Response(JSON.stringify({
           type: 'leads_preview',
@@ -272,7 +273,6 @@ serve(async (req) => {
             totalLeads: leads?.length || 0,
             validLeads: validLeads.length,
             invalidLeads: (leads?.length || 0) - validLeads.length,
-            intervalSeconds,
             estimatedMinutes,
             leads: validLeads.slice(0, 5).map(l => ({
               name: l.name,
@@ -299,11 +299,12 @@ serve(async (req) => {
           .eq('id', subOriginId)
           .single();
 
-        // Count valid leads
+        // Count valid leads (até 10.000)
         const { data: leads } = await supabase
           .from('leads')
           .select('id, name, email, whatsapp')
-          .eq('sub_origin_id', subOriginId);
+          .eq('sub_origin_id', subOriginId)
+          .range(0, 10000);
 
         const validLeads = leads?.filter(l => {
           if (type === 'email') {
