@@ -17,7 +17,8 @@ interface EmailSidePanelProps {
   isGenerating?: boolean;
   isEditing?: boolean;
   editOperation?: EditOperation | null;
-  title?: string;
+  subject?: string;
+  onSubjectChange?: (subject: string) => void;
 }
 
 // Syntax highlighting for HTML with dark purple for strings
@@ -120,7 +121,8 @@ export function EmailSidePanel({
   isGenerating = false,
   isEditing = false,
   editOperation = null,
-  title = "Editor de Email"
+  subject = "",
+  onSubjectChange
 }: EmailSidePanelProps) {
   const [activeTab, setActiveTab] = useState<'code' | 'preview'>('preview');
   const [copied, setCopied] = useState(false);
@@ -371,6 +373,21 @@ export function EmailSidePanel({
 
   return (
     <div className="w-[480px] flex-shrink-0 h-full bg-background flex flex-col my-4 mr-4 rounded-2xl border border-border overflow-hidden">
+      {/* Subject Header */}
+      <div className="px-5 py-3 border-b border-border bg-muted/30">
+        <label className="text-xs text-muted-foreground font-medium mb-1.5 block">Assunto</label>
+        <input
+          type="text"
+          value={subject}
+          onChange={(e) => onSubjectChange?.(e.target.value)}
+          placeholder={isGenerating ? "Gerando assunto..." : "Digite o assunto do email..."}
+          className={cn(
+            "w-full bg-transparent text-sm font-medium text-foreground placeholder:text-muted-foreground focus:outline-none",
+            isGenerating && "animate-pulse"
+          )}
+        />
+      </div>
+
       {/* Tabs */}
       <div className="flex items-center justify-between px-5 py-3 border-b border-border bg-muted/20">
         <div className="flex items-center gap-1 bg-muted/50 rounded-lg p-1">
