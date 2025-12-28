@@ -1051,9 +1051,21 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
 
     const components: React.ReactNode[] = [];
     let cleanContent = content;
+    
+    // ALWAYS clean technical patterns from visible content (safety layer)
+    // Even if the AI ignores instructions, we remove these patterns
+    cleanContent = cleanContent
+      .replace(/\[COMMAND:[^\]]+\]/g, '')
+      .replace(/\[TEMPLATE_CONTENT\][\s\S]*?\[\/TEMPLATE_CONTENT\]/g, '')
+      .replace(/\[\/TEMPLATE_CONTENT\]/g, '')
+      .replace(/\[TEMPLATE_CONTENT\]/g, '')
+      // Remove any leftover HTML code blocks that might appear
+      .replace(/```html[\s\S]*?```/g, '')
+      .replace(/<!DOCTYPE[\s\S]*?<\/html>/gi, '')
+      .trim();
 
     for (const command of commands) {
-      // Remove command from content FIRST
+      // Remove command from content (redundant but safe)
       cleanContent = cleanContent.replace(`[COMMAND:${command}]`, '');
 
       // START_DISPATCH: Execute directly - user already confirmed verbally via chat
