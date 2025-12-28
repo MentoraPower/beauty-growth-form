@@ -298,7 +298,11 @@ export function DisparoConversationsMenu({
             {/* New conversation button */}
             <button
               onClick={onNewConversation}
-              className="flex items-center gap-2 w-full px-2 py-1.5 text-sm hover:bg-background/10 rounded-lg transition-colors"
+              className="flex items-center justify-center gap-2 w-full px-2 py-1.5 text-sm rounded-lg transition-colors border border-dashed border-transparent hover:border-primary/50"
+              style={{
+                borderImage: 'linear-gradient(135deg, #F97316, #EA580C) 1',
+                borderImageSlice: 1,
+              }}
             >
               <Plus className="h-4 w-4" />
               Nova conversa
@@ -338,9 +342,9 @@ export function DisparoConversationsMenu({
                       >
                         <button
                           onClick={() => loadConversation(conv.id)}
-                          className="flex-1 text-left px-2 py-1.5 text-sm truncate"
+                          className="flex-1 text-left px-2 py-1.5 text-sm truncate max-w-[160px]"
                         >
-                          {conv.title}
+                          <span className="block truncate">{conv.title}</span>
                         </button>
                         
                         <DropdownMenu>
