@@ -1540,7 +1540,12 @@ Retorne APENAS o HTML modificado, sem explicações.`,
         ) : (
           <>
             {/* Chat messages area */}
-            <div ref={chatScrollRef} onScroll={handleChatScroll} className="flex-1 overflow-y-auto min-h-0 p-6">
+            <div 
+              ref={chatScrollRef} 
+              onScroll={handleChatScroll} 
+              className="flex-1 overflow-y-auto min-h-0 p-6 overscroll-contain"
+              style={{ scrollBehavior: 'auto' }}
+            >
               <div className="max-w-3xl mx-auto space-y-4">
                 {messages.map((msg) => (
                   <div
