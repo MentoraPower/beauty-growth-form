@@ -123,21 +123,74 @@ export function DisparoConversationsMenu({
     fetchConversations();
   }, []);
 
-  // Subscribe to realtime updates for active dispatches
+  // Subscribe to realtime updates for active dispatches with optimistic updates
   useEffect(() => {
+    console.log('[DisparoMenu] Setting up realtime subscription');
+    
     const channel = supabase
       .channel('dispatch-menu-updates')
       .on('postgres_changes', {
-        event: '*',
+        event: 'UPDATE',
         schema: 'public',
         table: 'dispatch_jobs'
-      }, () => {
-        // Refresh conversations when dispatch jobs change
-        fetchConversations();
+      }, (payload) => {
+        const updatedJob = payload.new as any;
+        console.log('[DisparoMenu] Job UPDATE received:', {
+          jobId: updatedJob.id,
+          conversationId: updatedJob.conversation_id,
+          status: updatedJob.status,
+          sent: updatedJob.sent_count,
+          total: updatedJob.valid_leads,
+          currentLead: updatedJob.current_lead_name
+        });
+        
+        // Optimistic update - directly update state without refetching
+        setConversations(prev => prev.map(conv => {
+          if (conv.id === updatedJob.conversation_id) {
+            const isActive = ['pending', 'running', 'paused'].includes(updatedJob.status);
+            const progress = updatedJob.valid_leads > 0
+              ? Math.round((updatedJob.sent_count / updatedJob.valid_leads) * 100)
+              : 0;
+            
+            console.log('[DisparoMenu] Updating conversation:', conv.id, 'progress:', progress, '%');
+            
+            return {
+              ...conv,
+              hasActiveDispatch: isActive,
+              activeDispatchProgress: progress,
+              activeDispatchStatus: updatedJob.status
+            };
+          }
+          return conv;
+        }));
       })
-      .subscribe();
+      .on('postgres_changes', {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'dispatch_jobs'
+      }, (payload) => {
+        const newJob = payload.new as any;
+        console.log('[DisparoMenu] Job INSERT received:', newJob.id, 'for conversation:', newJob.conversation_id);
+        
+        // Add dispatch info to matching conversation
+        setConversations(prev => prev.map(conv => {
+          if (conv.id === newJob.conversation_id) {
+            return {
+              ...conv,
+              hasActiveDispatch: true,
+              activeDispatchProgress: 0,
+              activeDispatchStatus: newJob.status
+            };
+          }
+          return conv;
+        }));
+      })
+      .subscribe((status) => {
+        console.log('[DisparoMenu] Subscription status:', status);
+      });
 
     return () => {
+      console.log('[DisparoMenu] Cleaning up subscription');
       supabase.removeChannel(channel);
     };
   }, []);
