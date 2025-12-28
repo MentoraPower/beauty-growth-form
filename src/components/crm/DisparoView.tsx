@@ -1997,7 +1997,7 @@ function EmailGeneratorComponent({
 function HtmlEditorComponent({ onSubmit, initialContent = '' }: { onSubmit: (html: string) => void; initialContent?: string }) {
   const [content, setContent] = useState(initialContent);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [activeTab, setActiveTab] = useState<'code' | 'preview'>('code');
+  const [activeTab, setActiveTab] = useState<'code' | 'preview'>(initialContent ? 'preview' : 'code');
   const textareaRef = React.useRef<HTMLTextAreaElement>(null);
   const preRef = React.useRef<HTMLPreElement>(null);
 
@@ -2005,6 +2005,7 @@ function HtmlEditorComponent({ onSubmit, initialContent = '' }: { onSubmit: (htm
   React.useEffect(() => {
     if (initialContent) {
       setContent(initialContent);
+      setActiveTab('preview');
     }
   }, [initialContent]);
 
