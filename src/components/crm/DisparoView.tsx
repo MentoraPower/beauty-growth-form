@@ -10,7 +10,7 @@ import { EmailSidePanel, SidePanelMode } from "./EmailSidePanel";
 import { DispatchData } from "./DispatchAnalysis";
 import { EmailGenerationIndicator } from "./EmailGenerationIndicator";
 import { supabase } from "@/integrations/supabase/client";
-import { Copy, ThumbsUp, ThumbsDown, RotateCcw } from "lucide-react";
+import { Clipboard, Check } from "lucide-react";
 import disparoLogo from "@/assets/disparo-logo.png";
 
 interface DisparoViewProps {
@@ -1827,35 +1827,16 @@ INSTRUÇÕES PARA VOCÊ (A IA):
                         )}
                         {/* Action icons for AI messages */}
                         {msg.content && (
-                          <div className="flex items-center gap-1 mt-3">
-                            <button 
+                          <div className="flex items-center gap-0.5 mt-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <FeedbackButton 
+                              icon="copy"
                               onClick={() => {
                                 navigator.clipboard.writeText(msg.content);
                                 toast.success("Copiado!");
                               }}
-                              className="p-1.5 rounded hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
-                              title="Copiar"
-                            >
-                              <Copy className="h-4 w-4" />
-                            </button>
-                            <button 
-                              className="p-1.5 rounded hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
-                              title="Útil"
-                            >
-                              <ThumbsUp className="h-4 w-4" />
-                            </button>
-                            <button 
-                              className="p-1.5 rounded hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
-                              title="Não útil"
-                            >
-                              <ThumbsDown className="h-4 w-4" />
-                            </button>
-                            <button 
-                              className="p-1.5 rounded hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
-                              title="Regenerar"
-                            >
-                              <RotateCcw className="h-4 w-4" />
-                            </button>
+                            />
+                            <FeedbackButton icon="like" />
+                            <FeedbackButton icon="dislike" />
                           </div>
                         )}
                       </div>
@@ -2074,6 +2055,62 @@ function CsvLeadsPreviewComponent({ leads, type }: { leads: CsvLead[]; type: 'em
         Confirme para iniciar o disparo
       </p>
     </motion.div>
+  );
+}
+
+// Compact feedback button with modern icons
+function FeedbackButton({ 
+  icon, 
+  onClick,
+  active = false 
+}: { 
+  icon: 'copy' | 'like' | 'dislike'; 
+  onClick?: () => void;
+  active?: boolean;
+}) {
+  const [copied, setCopied] = React.useState(false);
+
+  const handleClick = () => {
+    if (icon === 'copy') {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
+    onClick?.();
+  };
+
+  const iconMap = {
+    copy: copied ? (
+      <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+        <polyline points="20 6 9 17 4 12" />
+      </svg>
+    ) : (
+      <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+        <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+      </svg>
+    ),
+    like: (
+      <svg className="w-3 h-3" viewBox="0 0 24 24" fill={active ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3" />
+      </svg>
+    ),
+    dislike: (
+      <svg className="w-3 h-3" viewBox="0 0 24 24" fill={active ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M10 15v4a3 3 0 0 0 3 3l4-9V2H5.72a2 2 0 0 0-2 1.7l-1.38 9a2 2 0 0 0 2 2.3zm7-13h2.67A2.31 2.31 0 0 1 22 4v7a2.31 2.31 0 0 1-2.33 2H17" />
+      </svg>
+    )
+  };
+
+  return (
+    <button
+      onClick={handleClick}
+      className={cn(
+        "p-1 rounded transition-colors",
+        copied ? "text-green-500" : "text-muted-foreground/60 hover:text-muted-foreground hover:bg-muted/50"
+      )}
+    >
+      {iconMap[icon]}
+    </button>
   );
 }
 
