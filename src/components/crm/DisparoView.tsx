@@ -1336,31 +1336,80 @@ Retorne APENAS o HTML modificado, sem explicações.`,
     }
 
     try {
-      // Build context info to inject into the conversation
+      // Build comprehensive context for the AI to be fully aware
       const contextInfo: string[] = [];
       
-      if (sidePanelHtml && sidePanelHtml.length > 0) {
-        const sourceText = htmlSource === 'ai' ? 'VOCÊ (IA) criou este email' : 'O USUÁRIO colou/forneceu este email';
-        contextInfo.push(`[EMAIL HTML JÁ EXISTE - ${sourceText}]`);
-        contextInfo.push(`[TAMANHO: ${sidePanelHtml.length} caracteres]`);
-        contextInfo.push(`[ASSUNTO: ${sidePanelSubject || '(não definido)'}]`);
-        contextInfo.push(`[PREVIEW DO HTML:\n${sidePanelHtml.slice(0, 800)}${sidePanelHtml.length > 800 ? '...' : ''}]`);
-      }
+      // Current state summary
+      contextInfo.push(`=== ESTADO ATUAL DA CONVERSA ===`);
       
-      if (selectedOriginData) {
-        contextInfo.push(`[LISTA SELECIONADA: ${selectedOriginData.originName} > ${selectedOriginData.subOriginName}]`);
-      }
-      
+      // Dispatch type
       if (dispatchType) {
-        contextInfo.push(`[TIPO DE DISPARO: ${dispatchType.toUpperCase()}]`);
+        contextInfo.push(`• Tipo de disparo escolhido: ${dispatchType === 'email' ? 'EMAIL' : 'WHATSAPP WEB'}`);
+      } else {
+        contextInfo.push(`• Tipo de disparo: ainda não escolhido`);
       }
+      
+      // Selected list
+      if (selectedOriginData) {
+        contextInfo.push(`• Lista selecionada: "${selectedOriginData.originName} > ${selectedOriginData.subOriginName}"`);
+      } else {
+        contextInfo.push(`• Lista: nenhuma selecionada ainda`);
+      }
+      
+      // Email HTML status
+      if (sidePanelHtml && sidePanelHtml.length > 0) {
+        const sourceText = htmlSource === 'ai' 
+          ? 'VOCÊ (a IA) gerou este email durante a conversa' 
+          : 'O usuário colou/editou este HTML manualmente';
+        contextInfo.push(`• Email HTML: ✅ PRONTO (${sidePanelHtml.length} caracteres)`);
+        contextInfo.push(`• Quem criou: ${sourceText}`);
+        contextInfo.push(`• Assunto do email: "${sidePanelSubject || '(sem assunto definido)'}"`);
+        contextInfo.push(`• Preview do conteúdo:\n---\n${sidePanelHtml.slice(0, 600)}${sidePanelHtml.length > 600 ? '\n[...]' : ''}\n---`);
+      } else if (sidePanelGenerating) {
+        contextInfo.push(`• Email HTML: ⏳ Gerando agora...`);
+      } else if (dispatchType === 'email') {
+        contextInfo.push(`• Email HTML: ❌ Ainda não criado`);
+      }
+      
+      // Side panel state
+      if (sidePanelOpen) {
+        contextInfo.push(`• Painel de edição de email: aberto (usuário pode estar editando)`);
+      }
+      
+      // CSV leads
+      if (csvLeads && csvLeads.length > 0) {
+        contextInfo.push(`• Leads do CSV: ${csvLeads.length} contatos carregados`);
+      }
+      
+      // Active job
+      if (activeJobId) {
+        contextInfo.push(`• Disparo ativo: SIM (ID: ${activeJobId})`);
+      }
+      
+      // Pending context
+      if (pendingEmailContext) {
+        contextInfo.push(`• Contexto pendente de email: aguardando geração`);
+      }
+      
+      contextInfo.push(`=== FIM DO ESTADO ===`);
+      
+      // Build instruction for AI behavior
+      const aiInstructions = `
+INSTRUÇÕES PARA VOCÊ (A IA):
+1. Você tem TOTAL consciência do estado acima - USE essas informações!
+2. Se já existe um HTML de email, NÃO pergunte se o usuário tem HTML
+3. Se você gerou algo, LEMBRE que foi você que fez
+4. Seja natural e conversacional, como um colega de trabalho prestativo
+5. Reconheça o progresso: "já temos a lista, já temos o email..."
+6. Se algo estiver faltando, mencione de forma natural
+7. Evite repetir perguntas sobre coisas que já foram definidas`;
 
       // Create messages with context injected as system message
       const messagesForAPI = [
-        ...(contextInfo.length > 0 ? [{
+        {
           role: 'system' as const,
-          content: `CONTEXTO ATUAL DA CONVERSA (USE ESTAS INFORMAÇÕES):\n${contextInfo.join('\n')}\n\nIMPORTANTE: Se já existe um HTML de email criado, NÃO pergunte ao usuário se ele tem o HTML. Continue a conversa normalmente usando o contexto acima.`
-        }] : []),
+          content: `${contextInfo.join('\n')}\n${aiInstructions}`
+        },
         ...messages.map(m => ({ role: m.role, content: m.content })),
         { role: userMessage.role, content: userMessage.content }
       ];
