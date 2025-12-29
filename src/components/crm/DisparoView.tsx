@@ -2914,7 +2914,7 @@ ${hasName && hasEmail ? `Lista pronta! Guardei os ${leadsWithEmail} leads com em
           if (extractedSubject) {
             setSidePanelSubject(extractedSubject);
           }
-          setSidePanelOpen(cleanContent.length >= OPEN_PANEL_THRESHOLD);
+          // Don't auto-open panel - let user click on EmailChatCard to open it
           setSidePanelMode('email');
           
           setMessages(prev => 
@@ -2973,7 +2973,7 @@ ${hasName && hasEmail ? `Lista pronta! Guardei os ${leadsWithEmail} leads com em
             setSidePanelShowCodePreview(false);
             setSidePanelSubject('');
             setSidePanelPreheader('');
-            setSidePanelOpen(true);
+            // Don't auto-open panel - let user click on EmailChatCard to open it
             setSidePanelMode('email');
             
             // Log the copy generation so AI knows about it
