@@ -8,6 +8,8 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { useResilientChannel } from "@/hooks/useResilientChannel";
 import { DispatchAnalysis, DispatchData } from "./DispatchAnalysis";
 import { motion } from "framer-motion";
+import { useEditor, EditorContent } from '@tiptap/react';
+import StarterKit from '@tiptap/starter-kit';
 
 // Format text with markdown-like syntax: **bold**, _italic_, ~strikethrough~, `code`
 const formatTextContent = (text: string): string => {
@@ -205,6 +207,7 @@ export function EmailSidePanel({
   const [highlightRange, setHighlightRange] = useState<{ start: number; end: number } | undefined>();
   const [editingIndicator, setEditingIndicator] = useState<{ line: number; action: string } | null>(null);
   const [showPreviewLoading, setShowPreviewLoading] = useState(false);
+  const [isEditorOpen, setIsEditorOpen] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const preRef = useRef<HTMLPreElement>(null);
   const previewRef = useRef<HTMLDivElement>(null);
@@ -213,6 +216,28 @@ export function EmailSidePanel({
   const editAnimationRef = useRef<number | null>(null);
   const wasGeneratingRef = useRef(false);
   const prevHtmlLengthRef = useRef(0);
+
+  // TipTap Editor
+  const editor = useEditor({
+    extensions: [
+      StarterKit.configure({
+        heading: {
+          levels: [1, 2, 3, 4, 5, 6],
+        },
+      }),
+    ],
+    content: htmlContent || '<p>Escreva aqui...</p>',
+    onUpdate: ({ editor }) => {
+      onHtmlChange(editor.getHTML());
+    },
+  });
+
+  // Sync editor content when htmlContent changes externally
+  useEffect(() => {
+    if (editor && htmlContent !== editor.getHTML() && !editor.isFocused) {
+      editor.commands.setContent(htmlContent || '<p>Escreva aqui...</p>');
+    }
+  }, [htmlContent, editor]);
 
   // Dispatch leads mode state
   const [dispatchJob, setDispatchJob] = useState<DispatchJob | null>(null);
@@ -964,24 +989,45 @@ export function EmailSidePanel({
                     <div className="h-3 bg-muted rounded w-1/3 mx-auto" />
                   </div>
                 </div>
-              ) : htmlContent ? (
-                <div
-                  ref={previewRef}
-                  className="p-6 min-h-full focus:outline-none focus:ring-2 focus:ring-primary/20 focus:ring-inset cursor-text break-all [word-break:break-all] [overflow-wrap:anywhere]"
-                  contentEditable={!isGenerating && !isEditing}
-                  suppressContentEditableWarning
-                  onBlur={handlePreviewBlur}
-                  dangerouslySetInnerHTML={{ __html: getSanitizedHtml() }}
-                />
+              ) : htmlContent || isEditorOpen ? (
+                isEditorOpen ? (
+                  <div className="p-4 h-full">
+                    <div className="mb-2 flex items-center justify-between">
+                      <span className="text-xs text-muted-foreground">Editor de texto</span>
+                      <button
+                        onClick={() => setIsEditorOpen(false)}
+                        className="text-xs text-muted-foreground hover:text-foreground"
+                      >
+                        Fechar editor
+                      </button>
+                    </div>
+                    <div className="border border-border rounded-lg overflow-hidden h-[calc(100%-32px)]">
+                      <EditorContent 
+                        editor={editor} 
+                        className="prose prose-sm max-w-none p-4 h-full overflow-auto focus:outline-none [&_.ProseMirror]:outline-none [&_.ProseMirror]:min-h-full"
+                      />
+                    </div>
+                  </div>
+                ) : (
+                  <div
+                    ref={previewRef}
+                    className="p-6 min-h-full focus:outline-none cursor-pointer break-all [word-break:break-all] [overflow-wrap:anywhere] hover:bg-muted/10 transition-colors"
+                    onClick={() => !isGenerating && !isEditing && setIsEditorOpen(true)}
+                    dangerouslySetInnerHTML={{ __html: getSanitizedHtml() }}
+                  />
+                )
               ) : (
-                <div className="flex items-center justify-center h-full text-muted-foreground text-sm">
+                <div 
+                  className="flex items-center justify-center h-full text-muted-foreground text-sm cursor-pointer hover:bg-muted/10 transition-colors"
+                  onClick={() => !isGenerating && setIsEditorOpen(true)}
+                >
                   {isGenerating ? (
                     <div className="flex items-center gap-2">
                       <div className="w-2 h-2 bg-primary rounded-full animate-pulse" />
                       <span>Gerando preview...</span>
                     </div>
                   ) : (
-                    "O preview do email aparecerá aqui"
+                    "Clique para editar o conteúdo"
                   )}
                 </div>
               )}
@@ -990,24 +1036,43 @@ export function EmailSidePanel({
         ) : (
           // Text-only mode (for copy/content without code preview)
           <div className="h-full overflow-auto bg-card">
-            {htmlContent ? (
+            {isEditorOpen ? (
+              <div className="p-4 h-full">
+                <div className="mb-2 flex items-center justify-between">
+                  <span className="text-xs text-muted-foreground">Editor de texto</span>
+                  <button
+                    onClick={() => setIsEditorOpen(false)}
+                    className="text-xs text-muted-foreground hover:text-foreground"
+                  >
+                    Fechar editor
+                  </button>
+                </div>
+                <div className="border border-border rounded-lg overflow-hidden h-[calc(100%-32px)]">
+                  <EditorContent 
+                    editor={editor} 
+                    className="prose prose-sm max-w-none p-4 h-full overflow-auto focus:outline-none [&_.ProseMirror]:outline-none [&_.ProseMirror]:min-h-full"
+                  />
+                </div>
+              </div>
+            ) : htmlContent ? (
               <div
                 ref={previewRef}
-                className="p-6 min-h-full focus:outline-none focus:ring-2 focus:ring-primary/20 focus:ring-inset break-words [overflow-wrap:anywhere] text-sm text-foreground leading-relaxed"
-                contentEditable={!isGenerating && !isEditing}
-                suppressContentEditableWarning
-                onBlur={handlePreviewBlur}
+                className="p-6 min-h-full focus:outline-none cursor-pointer break-words [overflow-wrap:anywhere] text-sm text-foreground leading-relaxed hover:bg-muted/10 transition-colors"
+                onClick={() => !isGenerating && !isEditing && setIsEditorOpen(true)}
                 dangerouslySetInnerHTML={{ __html: getSanitizedHtml(true) }}
               />
             ) : (
-              <div className="flex items-center justify-center h-full text-muted-foreground text-sm">
+              <div 
+                className="flex items-center justify-center h-full text-muted-foreground text-sm cursor-pointer hover:bg-muted/10 transition-colors"
+                onClick={() => !isGenerating && setIsEditorOpen(true)}
+              >
                 {isGenerating ? (
                   <div className="flex items-center gap-2">
                     <div className="w-2 h-2 bg-primary rounded-full animate-pulse" />
                     <span>Gerando conteúdo...</span>
                   </div>
                 ) : (
-                  "O conteúdo aparecerá aqui"
+                  "Clique para editar o conteúdo"
                 )}
               </div>
             )}
