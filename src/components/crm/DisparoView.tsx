@@ -249,6 +249,7 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
   const [sidePanelTitle, setSidePanelTitle] = useState<string | undefined>(undefined); // Panel title
   const [htmlSource, setHtmlSource] = useState<'ai' | 'user' | null>(null); // Track who created the HTML
   const [actionHistory, setActionHistory] = useState<ActionEntry[]>([]); // Complete action history for AI memory
+  const [sidePanelRestoredFromDB, setSidePanelRestoredFromDB] = useState(false); // Skip animation when restored
   
   // CSV Side Panel state
   const [csvPanelOpen, setCsvPanelOpen] = useState(false);
@@ -587,6 +588,7 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
       setCsvMappedColumns({});
       setPendingEmailContext(null);
       setSidePanelOpen(false);
+      setSidePanelRestoredFromDB(false);
       setSidePanelHtml('');
       setSidePanelSubject('');
       setSidePanelPreheader('');
@@ -641,6 +643,7 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
         
         // FULL STATE RESET before loading new conversation
         setSidePanelOpen(false);
+        setSidePanelRestoredFromDB(false);
         setSidePanelHtml('');
         setSidePanelSubject('');
         setSidePanelPreheader('');
@@ -727,7 +730,10 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
             if (html) setSidePanelHtml(html);
             if (subject) setSidePanelSubject(subject);
             if (preheader) setSidePanelPreheader(preheader);
-            if (isOpen) setSidePanelOpen(true);
+            if (isOpen) {
+              setSidePanelRestoredFromDB(true); // Skip animation
+              setSidePanelOpen(true);
+            }
             if (context) setSidePanelContext(context);
             if (workflowSteps && Array.isArray(workflowSteps)) setSidePanelWorkflowSteps(workflowSteps);
             if (showCodePreview !== undefined) setSidePanelShowCodePreview(showCodePreview);
@@ -795,6 +801,7 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
             setActiveJobId(activeJob.id);
             setSidePanelMode('dispatch_leads');
             setSidePanelShowCodePreview(false);
+            setSidePanelRestoredFromDB(true); // Skip animation
             setSidePanelOpen(true);
           }
           
@@ -840,6 +847,7 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
       setCsvMappedColumns({});
       setPendingEmailContext(null);
       setSidePanelOpen(false);
+      setSidePanelRestoredFromDB(false);
       setSidePanelHtml('');
       setSidePanelSubject('');
       setSidePanelPreheader('');
@@ -3116,6 +3124,7 @@ ${hasName && hasEmail ? `Lista pronta! Guardei os ${leadsWithEmail} leads com em
     setCsvLeads(null);
     setActiveJobId(null);
     setSidePanelOpen(false);
+    setSidePanelRestoredFromDB(false);
     setSidePanelHtml('');
     setSidePanelSubject('');
     setSidePanelPreheader('');
@@ -3336,11 +3345,16 @@ ${hasName && hasEmail ? `Lista pronta! Guardei os ${leadsWithEmail} leads com em
       <AnimatePresence mode="wait">
         {sidePanelOpen && (
           <motion.div
-            initial={{ width: 0, opacity: 0 }}
+            key="email-panel"
+            initial={sidePanelRestoredFromDB ? false : { width: 0, opacity: 0 }}
             animate={{ width: "auto", opacity: 1 }}
             exit={{ width: 0, opacity: 0 }}
             transition={{ type: "spring", damping: 25, stiffness: 200 }}
             className="overflow-hidden h-full"
+            onAnimationComplete={() => {
+              // Reset restored flag after first animation so future opens animate
+              if (sidePanelRestoredFromDB) setSidePanelRestoredFromDB(false);
+            }}
           >
             <EmailSidePanel
               isOpen={sidePanelOpen}
