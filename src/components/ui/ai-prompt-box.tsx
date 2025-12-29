@@ -650,18 +650,15 @@ export const PromptInputBox = React.forwardRef((props: PromptInputBoxProps, ref:
               </button>
             </PromptInputAction>
 
-            {/* Copywriting component with border */}
+            {/* Model selector with border */}
             <div 
               className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md border cursor-pointer hover:bg-gray-50 transition-colors"
               style={{ borderColor: '#00000010' }}
               onClick={() => handleAgentToggle("copywriting")}
             >
-              <span className={cn("text-xs font-medium", showCopywriting ? "text-[#10B981]" : "text-gray-600")}>
-                Copywriting
+              <span className="text-xs font-medium text-gray-600">
+                {showCopywriting ? "Copywriting" : "Grok 4.1 Fast"}
               </span>
-              {showCopywriting && (
-                <div className="w-1.5 h-1.5 rounded-full bg-[#10B981]" />
-              )}
             </div>
           </div>
 
