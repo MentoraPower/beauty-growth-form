@@ -10,6 +10,7 @@ import { DispatchAnalysis, DispatchData } from "./DispatchAnalysis";
 import { motion } from "framer-motion";
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
+import Link from '@tiptap/extension-link';
 import { TiptapFloatingToolbar } from './TiptapFloatingToolbar';
 
 // Format text with markdown-like syntax: **bold**, _italic_, ~strikethrough~, `code`
@@ -224,6 +225,12 @@ export function EmailSidePanel({
       StarterKit.configure({
         heading: {
           levels: [1, 2, 3, 4, 5, 6],
+        },
+      }),
+      Link.configure({
+        openOnClick: false,
+        HTMLAttributes: {
+          class: 'text-primary underline cursor-pointer',
         },
       }),
     ],
