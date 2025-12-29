@@ -1435,6 +1435,7 @@ export type Database = {
           lead_email: string
           lead_id: string
           lead_name: string
+          preheader: string | null
           scheduled_for: string
           sent_at: string | null
           status: string
@@ -1450,6 +1451,7 @@ export type Database = {
           lead_email: string
           lead_id: string
           lead_name: string
+          preheader?: string | null
           scheduled_for: string
           sent_at?: string | null
           status?: string
@@ -1465,6 +1467,7 @@ export type Database = {
           lead_email?: string
           lead_id?: string
           lead_name?: string
+          preheader?: string | null
           scheduled_for?: string
           sent_at?: string | null
           status?: string
@@ -1496,6 +1499,7 @@ export type Database = {
           lead_email: string
           lead_id: string | null
           lead_name: string
+          preheader: string | null
           resend_id: string | null
           sent_at: string | null
           status: string
@@ -1509,6 +1513,7 @@ export type Database = {
           lead_email: string
           lead_id?: string | null
           lead_name: string
+          preheader?: string | null
           resend_id?: string | null
           sent_at?: string | null
           status?: string
@@ -1522,6 +1527,7 @@ export type Database = {
           lead_email?: string
           lead_id?: string | null
           lead_name?: string
+          preheader?: string | null
           resend_id?: string | null
           sent_at?: string | null
           status?: string
