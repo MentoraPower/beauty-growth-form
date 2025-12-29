@@ -31,7 +31,7 @@ const getRandomGreeting = (greeting: string): string => {
     `E aí! ${greeting}! Bora disparar algo hoje?`,
     `${greeting}! Qual vai ser o disparo de hoje?`,
     `Oi! ${greeting}! Me conta, o que vamos criar juntos?`,
-    `${greeting}! Tô aqui pra ajudar. Email ou WhatsApp?`,
+    `${greeting}! Tô aqui pra ajudar com seu disparo!`,
   ];
   return variations[Math.floor(Math.random() * variations.length)];
 };
@@ -44,7 +44,6 @@ const detectActiveAgent = (messages: any[]): string | null => {
       if (msg.content.includes('[Agente:Copywriting]')) return 'copywriting';
       if (msg.content.includes('[Agente:UX/UI]')) return 'uxui';
       if (msg.content.includes('[Agente:Bulk:Email]')) return 'bulk_email';
-      if (msg.content.includes('[Agente:Bulk:WhatsApp]')) return 'bulk_whatsapp';
       if (msg.content.includes('[Agente:Bulk]')) return 'bulk';
     }
   }
@@ -178,7 +177,6 @@ const detectCsvRequest = (messages: any[]): boolean => {
     /planilha/i,
     /csv/i,
     /emails?\s*(com|sem|válidos|inválidos)/i,
-    /whatsapp\s*(com|sem|válidos|inválidos)/i,
     /quantos/i,
     /contar/i,
     /total/i,
@@ -303,10 +301,9 @@ Quando o usuário pedir ajuda com design, seja proativo em sugerir:
 - Elementos visuais que convertem
 `;
   } else if (activeAgent?.startsWith('bulk')) {
-    const method = activeAgent === 'bulk_email' ? 'email' : activeAgent === 'bulk_whatsapp' ? 'WhatsApp' : 'disparo';
     agentPersonality = `
 ═══════════════════════════════════════
-AGENTE BULK ATIVO - MODO ${method.toUpperCase()}
+AGENTE BULK ATIVO - DISPARO DE EMAIL
 ═══════════════════════════════════════
 Você está no modo BULK DIRETO. Seja EXTREMAMENTE objetivo:
 - Pule conversas introdutórias longas
@@ -316,10 +313,9 @@ Você está no modo BULK DIRETO. Seja EXTREMAMENTE objetivo:
 - Foco total em eficiência
 
 Fluxo rápido:
-1. Confirmar método (${method})
-2. Pedir lista de leads
-3. Pedir conteúdo/template
-4. Confirmar e disparar
+1. Pedir lista de leads
+2. Pedir conteúdo/template do email
+3. Confirmar e disparar
 
 Respostas curtas e diretas. Sem enrolação.
 `;
@@ -379,27 +375,22 @@ Quando o usuário escolher "Lista do CRM", apenas diga naturalmente:
 FLUXO NATURAL DA CONVERSA
 ═══════════════════════════════════════
 
-1. SAUDAÇÃO: Cumprimente e pergunte o que quer disparar (email ou WhatsApp)
+1. SAUDAÇÃO: Cumprimente e pergunte sobre o disparo de email
 
-2. TIPO DE DISPARO:
-   • Email - disponível
-   • WhatsApp Web - disponível  
-   • WhatsApp Business API - em breve (avise gentilmente)
-
-3. FONTE DOS LEADS: Pergunte de onde vêm os contatos
+2. FONTE DOS LEADS: Pergunte de onde vêm os contatos
    • Lista do CRM
    • Arquivo CSV
 
-4. LISTA DO CRM: O sistema mostra automaticamente, usuário clica e pronto
+3. LISTA DO CRM: O sistema mostra automaticamente, usuário clica e pronto
 
-5. CSV: Peça arquivo com colunas nome + email (ou whatsapp)
+4. CSV: Peça arquivo com colunas nome + email
 
-6. EMAIL HTML: 
+5. EMAIL HTML: 
    - Verifique o ESTADO no início da conversa
    - Se já existe HTML: "Já temos o email pronto! Quer revisar ou disparar?"
    - Se não existe: pergunte se tem HTML ou quer que você crie
 
-7. CONFIRMAÇÃO: "Tudo certo! Posso iniciar o disparo?"
+6. CONFIRMAÇÃO: "Tudo certo! Posso iniciar o disparo?"
 
 ═══════════════════════════════════════
 SOLICITAÇÃO DE CÓDIGO HTML
