@@ -34,6 +34,11 @@ export function TiptapFloatingToolbar({ editor }: TiptapFloatingToolbarProps) {
   return (
     <BubbleMenu
       editor={editor}
+      shouldShow={({ editor, state }) => {
+        // Only show when there's an actual text selection (not just cursor)
+        const { from, to } = state.selection;
+        return from !== to && !editor.state.selection.empty;
+      }}
       tippyOptions={{ 
         duration: 100,
         placement: 'top',
