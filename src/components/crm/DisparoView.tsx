@@ -32,6 +32,7 @@ interface Message {
   timestamp: Date;
   component?: React.ReactNode;
   componentData?: MessageComponentData; // Serializable data for reconstruction
+  imageUrl?: string; // Base64 image URL for display
 }
 
 // Action history entry for complete AI memory
@@ -1246,10 +1247,14 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
     if (!message.trim() && (!files || files.length === 0)) return;
     shouldAutoScrollRef.current = true;
     
-    // Check if there's a CSV file
+    // Check if there's a CSV file or image
     let csvContent = '';
     let csvFileName = '';
+    let imageBase64 = '';
+    let imageFile: File | null = null;
+    
     if (files && files.length > 0) {
+      // Check for CSV file
       const csvFile = files.find(f => f.name.endsWith('.csv'));
       if (csvFile) {
         csvFileName = csvFile.name;
@@ -1262,19 +1267,36 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
           toast.success(`${parsedLeads.length} leads carregados na planilha`);
         }
       }
+      
+      // Check for image file
+      const imgFile = files.find(f => f.type.startsWith('image/'));
+      if (imgFile) {
+        imageFile = imgFile;
+        // Convert to base64
+        const reader = new FileReader();
+        imageBase64 = await new Promise<string>((resolve) => {
+          reader.onload = () => resolve(reader.result as string);
+          reader.readAsDataURL(imgFile);
+        });
+      }
     }
     
     // Build message content
-    const messageContent = csvFileName 
-      ? `${message}\n\n[Arquivo enviado: ${csvFileName} com ${csvLeads?.length || parseCSV(csvContent).length} leads]`
-      : message;
+    let messageContent = message;
+    if (csvFileName) {
+      messageContent = `${message}\n\n[Arquivo enviado: ${csvFileName} com ${csvLeads?.length || parseCSV(csvContent).length} leads]`;
+    }
+    if (imageFile) {
+      messageContent = message || 'Analise esta imagem';
+    }
     
-    // Add user message
+    // Add user message with image if present
     const userMessage: Message = {
       id: crypto.randomUUID(),
       content: messageContent,
       role: "user",
       timestamp: new Date(),
+      imageUrl: imageBase64 || undefined,
     };
     setMessages((prev) => [...prev, userMessage]);
     setIsLoading(true);
@@ -1754,13 +1776,35 @@ INSTRUÇÕES PARA VOCÊ (A IA):
 8. Evite repetir perguntas sobre coisas que já foram definidas`;
 
       // Create messages with context injected as system message
+      // For messages with images, use multimodal format
       const messagesForAPI = [
         {
           role: 'system' as const,
           content: `${contextInfo.join('\n')}\n${aiInstructions}`
         },
-        ...messages.map(m => ({ role: m.role, content: m.content })),
-        { role: userMessage.role, content: userMessage.content }
+        ...messages.map(m => {
+          if (m.imageUrl) {
+            // Multimodal message with image
+            return {
+              role: m.role,
+              content: [
+                { type: 'text', text: m.content },
+                { type: 'image_url', image_url: { url: m.imageUrl } }
+              ]
+            };
+          }
+          return { role: m.role, content: m.content };
+        }),
+        // Current user message
+        imageBase64 
+          ? {
+              role: userMessage.role,
+              content: [
+                { type: 'text', text: userMessage.content },
+                { type: 'image_url', image_url: { url: imageBase64 } }
+              ]
+            }
+          : { role: userMessage.role, content: userMessage.content }
       ];
 
       const response = await fetch(CHAT_URL, {
@@ -2073,6 +2117,16 @@ INSTRUÇÕES PARA VOCÊ (A IA):
                   >
                     {msg.role === "user" ? (
                       <div className="bg-white text-foreground px-5 py-4 rounded-2xl max-w-[70%] border border-[#00000010]">
+                        {/* Show image if present */}
+                        {msg.imageUrl && (
+                          <div className="mb-3">
+                            <img 
+                              src={msg.imageUrl} 
+                              alt="Imagem enviada" 
+                              className="max-w-full max-h-64 rounded-lg object-contain"
+                            />
+                          </div>
+                        )}
                         <p className="text-[15px] leading-relaxed whitespace-pre-wrap">{msg.content}</p>
                       </div>
                     ) : (

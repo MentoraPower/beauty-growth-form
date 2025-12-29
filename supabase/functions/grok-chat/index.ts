@@ -75,6 +75,18 @@ const detectImageInMessage = (messages: any[]): boolean => {
   return imagePatterns.some(pattern => pattern.test(content));
 };
 
+// Check any message in conversation for images
+const hasImageInConversation = (messages: any[]): boolean => {
+  return messages.some(msg => {
+    if (Array.isArray(msg.content)) {
+      return msg.content.some((part: any) => 
+        part.type === 'image_url' || part.type === 'image'
+      );
+    }
+    return false;
+  });
+};
+
 // Detectar se é pedido de alteração de código (sai do fluxo de disparo)
 const detectCodeRequest = (messages: any[]): boolean => {
   const lastMessage = messages[messages.length - 1];
@@ -754,14 +766,17 @@ serve(async (req) => {
     // Regular chat request
     const greeting = getSaoPauloGreeting();
     const activeAgent = detectActiveAgent(messages);
-    const hasImage = detectImageInMessage(messages);
+    const hasImage = detectImageInMessage(messages) || hasImageInConversation(messages);
     const isCodeRequest = detectCodeRequest(messages);
     const isCsvRequest = detectCsvRequest(messages);
     const systemPrompt = getSystemPrompt(greeting, activeAgent, hasImage, isCodeRequest, isCsvRequest);
 
     console.log("Chat mode:", { activeAgent, hasImage, isCodeRequest, isCsvRequest });
 
-    console.log("Calling Grok API with messages:", JSON.stringify(messages));
+    // Use vision model when there's an image
+    const model = hasImage ? "grok-2-vision-1212" : "grok-3-fast";
+    console.log("Using model:", model);
+    console.log("Calling Grok API with messages count:", messages.length);
 
     const response = await fetch("https://api.x.ai/v1/chat/completions", {
       method: "POST",
@@ -770,14 +785,14 @@ serve(async (req) => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "grok-3-fast",
+        model,
         messages: [
           { role: "system", content: systemPrompt },
           ...messages,
         ],
         stream: true,
         temperature: 0.5,
-        max_tokens: 500,
+        max_tokens: hasImage ? 1000 : 500, // More tokens for image analysis
       }),
     });
 
