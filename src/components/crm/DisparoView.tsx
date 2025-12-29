@@ -2175,8 +2175,10 @@ INSTRUÇÕES PARA VOCÊ (A IA):
                 ))}
                 {isLoading && messages[messages.length - 1]?.role !== "assistant" && (
                   <div className="flex items-center gap-2 text-muted-foreground text-sm">
-                    <div className="w-1.5 h-1.5 bg-muted-foreground/60 rounded-full animate-pulse" />
-                    <span>pensando...</span>
+                    <span className="relative overflow-hidden">
+                      <span className="relative z-10">Pensando...</span>
+                      <span className="absolute inset-0 bg-gradient-to-r from-transparent via-white/60 to-transparent animate-[shimmer_2s_infinite] -translate-x-full" style={{ animation: 'shimmer 2s infinite' }} />
+                    </span>
                   </div>
                 )}
                 <div ref={messagesEndRef} />
