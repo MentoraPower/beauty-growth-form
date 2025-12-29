@@ -1,13 +1,13 @@
-import React from "react";
+import React, { useState } from "react";
 import { cn } from "@/lib/utils";
-import { Table, ExternalLink, FileSpreadsheet } from "lucide-react";
+import { FileSpreadsheet, ChevronLeft, ChevronRight } from "lucide-react";
 
 interface CsvChatCardProps {
   fileName: string;
   totalRows: number;
   columns: string[];
   previewData: Array<Record<string, string>>;
-  onOpenPanel: () => void;
+  onOpenPanel?: () => void;
   mappedColumns?: {
     name?: string;
     email?: string;
@@ -15,46 +15,59 @@ interface CsvChatCardProps {
   };
 }
 
+const PAGE_SIZE = 10;
+
 export function CsvChatCard({
   fileName,
   totalRows,
   columns,
   previewData,
-  onOpenPanel,
   mappedColumns,
 }: CsvChatCardProps) {
-  // Show max 4 columns and 3 rows in preview
-  const displayColumns = columns.slice(0, 4);
-  const displayRows = previewData.slice(0, 3);
-  const hasMoreColumns = columns.length > 4;
-  const hasMoreRows = previewData.length > 3;
+  const [currentPage, setCurrentPage] = useState(0);
+  
+  const totalPages = Math.ceil(previewData.length / PAGE_SIZE);
+  const startIdx = currentPage * PAGE_SIZE;
+  const endIdx = Math.min(startIdx + PAGE_SIZE, previewData.length);
+  const displayRows = previewData.slice(startIdx, endIdx);
+
+  const handlePrevPage = () => {
+    setCurrentPage(prev => Math.max(0, prev - 1));
+  };
+
+  const handleNextPage = () => {
+    setCurrentPage(prev => Math.min(totalPages - 1, prev + 1));
+  };
 
   return (
-    <div className="rounded-xl border border-emerald-200 bg-gradient-to-br from-emerald-50 to-white overflow-hidden max-w-md">
+    <div className="rounded-xl border border-gray-200 bg-white overflow-hidden max-w-2xl shadow-sm">
       {/* Header */}
-      <div className="px-4 py-3 border-b border-emerald-100 flex items-center gap-3">
-        <div className="w-10 h-10 rounded-lg bg-emerald-100 flex items-center justify-center flex-shrink-0">
-          <FileSpreadsheet className="w-5 h-5 text-emerald-600" />
+      <div className="px-4 py-3 border-b border-gray-100 flex items-center gap-3 bg-gray-50/50">
+        <div className="w-9 h-9 rounded-lg bg-gray-100 flex items-center justify-center flex-shrink-0">
+          <FileSpreadsheet className="w-4.5 h-4.5 text-gray-500" />
         </div>
         <div className="flex-1 min-w-0">
-          <p className="font-medium text-gray-900 truncate text-sm">{fileName}</p>
+          <p className="font-medium text-gray-800 truncate text-sm">{fileName}</p>
           <p className="text-xs text-gray-500">{totalRows} leads • {columns.length} colunas</p>
         </div>
       </div>
 
-      {/* Mini spreadsheet preview */}
-      <div className="overflow-x-auto">
+      {/* Full spreadsheet with scroll */}
+      <div className="overflow-auto max-h-[300px]">
         <table className="w-full text-xs">
-          <thead>
-            <tr className="bg-emerald-50/50">
-              {displayColumns.map((col, i) => (
+          <thead className="sticky top-0 bg-gray-50 z-10">
+            <tr>
+              <th className="px-3 py-2 text-left font-medium text-gray-500 whitespace-nowrap border-r border-gray-100 w-8">
+                #
+              </th>
+              {columns.map((col, i) => (
                 <th 
                   key={i} 
                   className={cn(
-                    "px-3 py-2 text-left font-medium text-emerald-700 whitespace-nowrap border-r border-emerald-100 last:border-r-0",
-                    mappedColumns?.name === col && "bg-blue-50 text-blue-700",
-                    mappedColumns?.email === col && "bg-purple-50 text-purple-700",
-                    mappedColumns?.whatsapp === col && "bg-green-50 text-green-700"
+                    "px-3 py-2 text-left font-medium text-gray-600 whitespace-nowrap border-r border-gray-100 last:border-r-0",
+                    mappedColumns?.name === col && "bg-blue-50/70 text-blue-600",
+                    mappedColumns?.email === col && "bg-purple-50/70 text-purple-600",
+                    mappedColumns?.whatsapp === col && "bg-green-50/70 text-green-600"
                   )}
                 >
                   {col}
@@ -63,52 +76,56 @@ export function CsvChatCard({
                   {mappedColumns?.whatsapp === col && <span className="ml-1 text-[10px] opacity-60">(tel)</span>}
                 </th>
               ))}
-              {hasMoreColumns && (
-                <th className="px-3 py-2 text-center text-gray-400 whitespace-nowrap">
-                  +{columns.length - 4}
-                </th>
-              )}
             </tr>
           </thead>
           <tbody>
             {displayRows.map((row, rowIdx) => (
-              <tr key={rowIdx} className="border-t border-emerald-50">
-                {displayColumns.map((col, colIdx) => (
+              <tr key={rowIdx} className="border-t border-gray-50 hover:bg-gray-50/50 transition-colors">
+                <td className="px-3 py-1.5 text-gray-400 text-center border-r border-gray-100 font-mono text-[10px]">
+                  {startIdx + rowIdx + 1}
+                </td>
+                {columns.map((col, colIdx) => (
                   <td 
                     key={colIdx} 
-                    className="px-3 py-1.5 text-gray-600 whitespace-nowrap max-w-[120px] truncate border-r border-emerald-50 last:border-r-0"
+                    className="px-3 py-1.5 text-gray-700 whitespace-nowrap max-w-[180px] truncate border-r border-gray-50 last:border-r-0"
+                    title={row[col] || undefined}
                   >
                     {row[col] || '-'}
                   </td>
                 ))}
-                {hasMoreColumns && (
-                  <td className="px-3 py-1.5 text-center text-gray-300">...</td>
-                )}
               </tr>
             ))}
-            {hasMoreRows && (
-              <tr className="border-t border-emerald-50">
-                <td 
-                  colSpan={displayColumns.length + (hasMoreColumns ? 1 : 0)} 
-                  className="px-3 py-1.5 text-center text-gray-400 text-[10px]"
-                >
-                  +{totalRows - 3} leads
-                </td>
-              </tr>
-            )}
           </tbody>
         </table>
       </div>
 
-      {/* Footer action */}
-      <button
-        onClick={onOpenPanel}
-        className="w-full px-4 py-2.5 bg-emerald-50 hover:bg-emerald-100 transition-colors flex items-center justify-center gap-2 text-emerald-700 text-sm font-medium border-t border-emerald-100"
-      >
-        <Table className="w-4 h-4" />
-        Abrir planilha completa
-        <ExternalLink className="w-3.5 h-3.5 opacity-60" />
-      </button>
+      {/* Pagination footer */}
+      {totalPages > 1 && (
+        <div className="px-4 py-2 bg-gray-50/50 border-t border-gray-100 flex items-center justify-between">
+          <span className="text-xs text-gray-500">
+            {startIdx + 1}-{endIdx} de {previewData.length} leads
+          </span>
+          <div className="flex items-center gap-1">
+            <button
+              onClick={handlePrevPage}
+              disabled={currentPage === 0}
+              className="p-1 rounded hover:bg-gray-200 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+            >
+              <ChevronLeft className="w-4 h-4 text-gray-600" />
+            </button>
+            <span className="text-xs text-gray-600 min-w-[60px] text-center">
+              {currentPage + 1} / {totalPages}
+            </span>
+            <button
+              onClick={handleNextPage}
+              disabled={currentPage >= totalPages - 1}
+              className="p-1 rounded hover:bg-gray-200 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+            >
+              <ChevronRight className="w-4 h-4 text-gray-600" />
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
