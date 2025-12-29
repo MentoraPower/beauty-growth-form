@@ -37,23 +37,23 @@ const iconMap = {
 function StepStatusIcon({ status }: { status: WorkStep['status'] }) {
   if (status === 'completed') {
     return (
-      <div className="w-[18px] h-[18px] rounded-full bg-emerald-500 flex items-center justify-center flex-shrink-0">
-        <Check className="w-3 h-3 text-white" strokeWidth={3} />
+      <div className="w-[18px] h-[18px] rounded-full bg-muted-foreground/20 flex items-center justify-center flex-shrink-0">
+        <Check className="w-3 h-3 text-muted-foreground" strokeWidth={3} />
       </div>
     );
   }
   
   if (status === 'in_progress') {
     return (
-      <div className="w-[18px] h-[18px] rounded-full border-2 border-emerald-500 flex items-center justify-center flex-shrink-0">
-        <Loader2 className="w-2.5 h-2.5 text-emerald-500 animate-spin" />
+      <div className="w-[18px] h-[18px] rounded-full border-2 border-muted-foreground/30 flex items-center justify-center flex-shrink-0">
+        <Loader2 className="w-2.5 h-2.5 text-muted-foreground animate-spin" />
       </div>
     );
   }
   
   // Pending - empty circle
   return (
-    <div className="w-[18px] h-[18px] rounded-full border-2 border-muted-foreground/30 flex-shrink-0" />
+    <div className="w-[18px] h-[18px] rounded-full border-2 border-muted-foreground/20 flex-shrink-0" />
   );
 }
 
@@ -124,10 +124,11 @@ export function AIWorkDetails({ steps, className }: AIWorkDetailsProps) {
         className
       )}
     >
-      <div className="space-y-0">
-        {steps.map((step) => {
+      <div className="space-y-0 relative">
+        {steps.map((step, index) => {
           const isOpen = openSteps.has(step.id);
           const hasContent = (step.subItems && step.subItems.length > 0) || step.summary;
+          const isLast = index === steps.length - 1;
           
           return (
             <Collapsible
@@ -138,11 +139,18 @@ export function AIWorkDetails({ steps, className }: AIWorkDetailsProps) {
               <CollapsibleTrigger asChild disabled={!hasContent}>
                 <button
                   className={cn(
-                    "w-full py-2 flex items-center gap-2.5 text-left transition-colors",
+                    "w-full py-2 flex items-center gap-2.5 text-left transition-colors relative",
                     hasContent && "hover:opacity-80 cursor-pointer",
                     !hasContent && "cursor-default"
                   )}
                 >
+                  {/* Vertical dashed line connecting steps */}
+                  {!isLast && (
+                    <div 
+                      className="absolute left-[8px] top-[28px] w-[2px] h-[calc(100%-10px)] border-l-2 border-dashed border-muted-foreground/20"
+                      style={{ marginLeft: '0px' }}
+                    />
+                  )}
                   <StepStatusIcon status={step.status} />
                   
                   <span className={cn(
