@@ -3,6 +3,7 @@ import { cn } from "@/lib/utils";
 import { Code2, Eye, Copy, Check, BarChart3 } from "lucide-react";
 import { toast } from "sonner";
 import { DispatchAnalysis, DispatchData } from "./DispatchAnalysis";
+import { AIWorkDetails, WorkStep } from "./AIWorkDetails";
 
 interface EditOperation {
   type: 'insert' | 'delete' | 'replace';
@@ -11,7 +12,7 @@ interface EditOperation {
   newText?: string;
 }
 
-export type SidePanelMode = 'email' | 'dispatch_details';
+export type SidePanelMode = 'email' | 'dispatch_details' | 'workflow';
 
 interface EmailSidePanelProps {
   isOpen: boolean;
@@ -27,6 +28,8 @@ interface EmailSidePanelProps {
   dispatchData?: DispatchData | null;
   onNewDispatch?: () => void;
   onViewEmail?: () => void;
+  // Workflow steps for AI work visualization
+  workflowSteps?: WorkStep[];
 }
 
 // Syntax highlighting for HTML with dark purple for strings
@@ -134,7 +137,8 @@ export function EmailSidePanel({
   mode = 'email',
   dispatchData = null,
   onNewDispatch,
-  onViewEmail
+  onViewEmail,
+  workflowSteps = []
 }: EmailSidePanelProps) {
   const [activeTab, setActiveTab] = useState<'code' | 'preview'>('preview');
   const [copied, setCopied] = useState(false);
@@ -409,6 +413,13 @@ export function EmailSidePanel({
 
   return (
     <div className="w-[640px] flex-shrink-0 bg-background flex flex-col my-6 mr-6 rounded-3xl border border-border overflow-hidden shadow-sm">
+      {/* Workflow Steps - shown when there are steps */}
+      {workflowSteps && workflowSteps.length > 0 && (
+        <div className="px-6 py-5 border-b border-border">
+          <AIWorkDetails steps={workflowSteps} />
+        </div>
+      )}
+      
       {/* Subject Header */}
       <div className="px-5 py-3 border-b border-border bg-muted/30">
         <label className="text-xs text-muted-foreground font-medium mb-1.5 block">Assunto</label>

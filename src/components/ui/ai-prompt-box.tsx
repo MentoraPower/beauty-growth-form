@@ -528,13 +528,14 @@ export const PromptInputBox = React.forwardRef((props: PromptInputBoxProps, ref:
 
   const handleSubmit = () => {
     if (input.trim() || files.length > 0) {
-      let messagePrefix = "";
-      if (showSearch) messagePrefix = "[Search] ";
-      else if (showCopywriting) messagePrefix = "[Agente:Copywriting] ";
-      else if (showUxUi) messagePrefix = "[Agente:UX/UI] ";
-      else if (showBulk && bulkMethod) messagePrefix = `[Agente:Bulk:${bulkMethod === 'email' ? 'Email' : 'WhatsApp'}] `;
-      else if (showBulk) messagePrefix = "[Agente:Bulk] ";
-      const formattedInput = messagePrefix ? `${messagePrefix}${input}` : input;
+      // Build internal context prefix (not shown to user but sent to AI)
+      let internalContext = "";
+      if (showSearch) internalContext = "[CONTEXT:search] ";
+      else if (showCopywriting) internalContext = "[CONTEXT:copywriting] ";
+      else if (showUxUi) internalContext = "[CONTEXT:uxui] ";
+      else if (showBulk && bulkMethod) internalContext = `[CONTEXT:bulk:${bulkMethod}] `;
+      else if (showBulk) internalContext = "[CONTEXT:bulk] ";
+      const formattedInput = internalContext ? `${internalContext}${input}` : input;
       onSend(formattedInput, files);
       setInput("");
       setFiles([]);
