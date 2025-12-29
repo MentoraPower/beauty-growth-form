@@ -681,47 +681,73 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
   }, [messages, currentConversationId, sidePanelHtml, sidePanelSubject, sidePanelOpen, sidePanelContext, sidePanelWorkflowSteps, sidePanelShowCodePreview, sidePanelTitle, sidePanelMode, selectedOriginData, dispatchType, actionHistory, htmlSource]);
 
   // Auto-save with signature-based dirty check (saves on CONTENT changes, not just length)
+  // Goal: save user messages immediately; throttle while assistant is streaming / user is editing.
   useEffect(() => {
     if (!initialLoadDone) return;
     if (messages.length === 0) return;
-    
+    if (isHydratingRef.current) return;
+
     const currentSignature = generateStateSignature();
-    
+
     // Skip if nothing changed
     if (currentSignature === lastSavedSignatureRef.current) return;
-    
+
     // Clear any pending save
     if (saveDebounceRef.current) {
       clearTimeout(saveDebounceRef.current);
     }
-    
-    // First message - create new conversation immediately (but don't setSearchParams yet)
-    if (!currentConversationId && messages.length > 0) {
+
+    const lastMessage = messages[messages.length - 1];
+    const isUserJustSent = lastMessage?.role === 'user';
+
+    // First message - create new conversation immediately
+    if (!currentConversationId) {
       saveConversation(true).then((newId) => {
         if (newId) {
           setCurrentConversationId(newId);
-          // Don't set search params here - separate effect will handle it
           lastSavedSignatureRef.current = currentSignature;
         }
       });
       return;
     }
-    
-    // Existing conversation - debounced save (2s delay)
-    if (currentConversationId) {
-      saveDebounceRef.current = setTimeout(() => {
-        saveConversation().then(() => {
-          lastSavedSignatureRef.current = currentSignature;
-        });
-      }, 2000);
+
+    const doSave = () => {
+      saveConversation().then(() => {
+        lastSavedSignatureRef.current = currentSignature;
+      });
+    };
+
+    // Save immediately when:
+    // - user just sent a message
+    // - streaming finished (isLoading false)
+    // Otherwise, throttle to avoid saving on every streaming chunk / editor keystroke.
+    const shouldSaveImmediately = isUserJustSent || !isLoading;
+    const shouldThrottle = !shouldSaveImmediately || sidePanelGenerating || sidePanelEditing;
+
+    if (shouldThrottle) {
+      saveDebounceRef.current = setTimeout(doSave, 600);
+    } else {
+      doSave();
     }
-    
+
     return () => {
       if (saveDebounceRef.current) {
         clearTimeout(saveDebounceRef.current);
       }
     };
-  }, [messages, sidePanelHtml, sidePanelSubject, sidePanelOpen, currentConversationId, initialLoadDone, saveConversation, generateStateSignature, setSearchParams]);
+  }, [
+    messages,
+    sidePanelHtml,
+    sidePanelSubject,
+    sidePanelOpen,
+    currentConversationId,
+    initialLoadDone,
+    saveConversation,
+    generateStateSignature,
+    isLoading,
+    sidePanelGenerating,
+    sidePanelEditing,
+  ]);
 
   // Save on beforeunload (when user closes tab/refreshes)
   useEffect(() => {
