@@ -45,15 +45,15 @@ function StepStatusIcon({ status }: { status: WorkStep['status'] }) {
   
   if (status === 'in_progress') {
     return (
-      <div className="w-[18px] h-[18px] rounded-full bg-foreground/60 flex items-center justify-center flex-shrink-0 relative z-10">
-        <Loader2 className="w-2.5 h-2.5 text-background animate-spin" />
+      <div className="w-[18px] h-[18px] rounded-full border-2 border-foreground/40 bg-background flex items-center justify-center flex-shrink-0 relative z-10">
+        <Loader2 className="w-2.5 h-2.5 text-foreground/60 animate-spin" />
       </div>
     );
   }
   
-  // Pending - dark circle
+  // Pending - empty circle with border only
   return (
-    <div className="w-[18px] h-[18px] rounded-full bg-foreground/30 flex-shrink-0 relative z-10" />
+    <div className="w-[18px] h-[18px] rounded-full border-2 border-foreground/20 bg-background flex-shrink-0 relative z-10" />
   );
 }
 
@@ -135,7 +135,7 @@ export function AIWorkDetails({ steps, className }: AIWorkDetailsProps) {
               {/* Vertical dashed line connecting to next step */}
               {!isLast && (
                 <div 
-                  className="absolute left-[8px] top-[18px] bottom-[-8px] w-0 border-l border-dashed border-foreground/20"
+                  className="absolute left-[8px] top-[26px] bottom-[8px] w-0 border-l border-dashed border-foreground/20"
                 />
               )}
               
