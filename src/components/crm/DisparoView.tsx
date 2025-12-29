@@ -1990,15 +1990,8 @@ INSTRUÇÕES PARA VOCÊ (A IA):
         }),
       ];
       
-      // If copywriting mode, open side panel immediately with "thinking" state
-      if (isCopywritingMode) {
-        setSidePanelOpen(true);
-        setSidePanelMode('email');
-        setSidePanelHtml('');
-        setSidePanelShowCodePreview(false);
-        setSidePanelTitle('Gerando copy...');
-        setSidePanelGenerating(true);
-      }
+      // If copywriting mode, DON'T open side panel yet - wait until content is ready
+      // The panel will open automatically when content threshold is reached (after generation)
 
       // Create initial assistant message - include workflowSteps in componentData for persistence
       setMessages(prev => [...prev, {
@@ -2210,14 +2203,25 @@ INSTRUÇÕES PARA VOCÊ (A IA):
               }
               // Fallback: remove common agent greetings and questions
               let cleaned = text
-                .replace(/^(Opa|Olá|Oi|Ei|Hey|Bom dia|Boa tarde|Boa noite)[^.!?]*[.!?]\s*/gi, '')
-                .replace(/\s*(O que achou|Quer que eu|Posso ajustar|Se quiser|Qual tipo)[^?]*\?[^]*$/gi, '')
+                // Remove greetings at the start
+                .replace(/^(Opa|Olá|Oi|Ei|Hey|E aí|Eai|Bom dia|Boa tarde|Boa noite)[,!]?\s*[^.!?\n]*[.!?]?\s*/gi, '')
+                // Remove follow-up questions at the end
+                .replace(/\s*(O que achou|Quer que eu|Posso ajustar|Se quiser|Qual tipo|Bora disparar|Pronto pra)[^?]*\?[^]*$/gi, '')
+                // Remove "E aí!" style greetings
+                .replace(/^E aí[!,]?\s*/gi, '')
                 .trim();
               return cleaned || text;
             };
             
             const cleanCopy = extractCleanCopy(cleanContent);
-            setSidePanelHtml(`<div style="font-family: Arial, sans-serif; padding: 20px; line-height: 1.8; white-space: pre-wrap; font-size: 14px;">${cleanCopy.replace(/\n/g, '<br>')}</div>`);
+            
+            // Format with markdown support - convert **bold** and _italic_ to HTML
+            const formattedCopy = cleanCopy
+              .replace(/\*\*([^*]+)\*\*/g, '<strong style="font-weight: 700;">$1</strong>')
+              .replace(/_([^_]+)_/g, '<em style="font-style: italic;">$1</em>')
+              .replace(/\n/g, '<br>');
+            
+            setSidePanelHtml(`<div style="font-family: 'Inter', Arial, sans-serif; padding: 24px; line-height: 1.9; font-size: 15px; color: #1a1a1a;">${formattedCopy}</div>`);
             setSidePanelShowCodePreview(false);
             setSidePanelSubject('');
             setSidePanelOpen(true);

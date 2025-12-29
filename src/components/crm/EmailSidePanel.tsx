@@ -477,20 +477,39 @@ export function EmailSidePanel({
         </div>
       )}
       
-      {/* Subject Header - BELOW tabs, only show when showCodePreview is true AND subject has real content */}
-      {showCodePreview && subject && subject.trim() !== '' && subject !== 'Email' && subject !== 'Copy' && (
-        <div className="px-5 py-3 border-b border-border bg-muted/30">
-          <label className="text-xs text-muted-foreground font-medium mb-1.5 block">Assunto</label>
-          <input
-            type="text"
-            value={subject}
-            onChange={(e) => onSubjectChange?.(e.target.value)}
-            placeholder={isGenerating ? "Gerando assunto..." : "Digite o assunto do email..."}
-            className={cn(
-              "w-full bg-transparent text-sm font-medium text-foreground placeholder:text-muted-foreground focus:outline-none",
-              isGenerating && "animate-pulse"
-            )}
-          />
+      {/* Email Preview Header - inbox style notification */}
+      {showCodePreview && (
+        <div className="px-5 py-4 border-b border-border bg-gradient-to-r from-muted/40 to-muted/20">
+          <div className="flex items-start gap-3">
+            {/* Avatar circle */}
+            <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+              <span className="text-primary font-semibold text-sm">SB</span>
+            </div>
+            <div className="flex-1 min-w-0">
+              {/* From line */}
+              <div className="flex items-center gap-2 mb-1">
+                <span className="text-sm font-semibold text-foreground">Scale Beauty</span>
+                <span className="text-xs text-muted-foreground">agora</span>
+              </div>
+              {/* Subject - editable */}
+              <input
+                type="text"
+                value={subject || ''}
+                onChange={(e) => onSubjectChange?.(e.target.value)}
+                placeholder={isGenerating ? "Gerando assunto..." : "Assunto do email..."}
+                className={cn(
+                  "w-full bg-transparent text-sm font-medium text-foreground placeholder:text-muted-foreground focus:outline-none",
+                  isGenerating && "animate-pulse"
+                )}
+              />
+              {/* Preview snippet */}
+              {htmlContent && !isGenerating && (
+                <p className="text-xs text-muted-foreground mt-1 truncate">
+                  {htmlContent.replace(/<[^>]*>/g, '').slice(0, 80)}...
+                </p>
+              )}
+            </div>
+          </div>
         </div>
       )}
 
