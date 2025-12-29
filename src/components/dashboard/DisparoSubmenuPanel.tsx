@@ -110,22 +110,28 @@ export function DisparoSubmenuPanel({ isOpen, onClose }: DisparoSubmenuPanelProp
         },
         (payload) => {
           if (payload.eventType === 'INSERT') {
-            // Add new conversation at the top
             const newConv = payload.new as Conversation;
             setConversations(prev => {
-              // Avoid duplicates
               if (prev.some(c => c.id === newConv.id)) return prev;
-              return [newConv, ...prev];
+              // Insert and sort by updated_at DESC
+              const updated = [newConv, ...prev];
+              return updated.sort((a, b) => 
+                new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()
+              );
             });
           } else if (payload.eventType === 'UPDATE') {
-            // Update existing conversation and move to top
             const updatedConv = payload.new as Conversation;
             setConversations(prev => {
-              const filtered = prev.filter(c => c.id !== updatedConv.id);
-              return [updatedConv, ...filtered];
+              const index = prev.findIndex(c => c.id === updatedConv.id);
+              if (index === -1) return prev;
+              // Update in place and re-sort
+              const updated = [...prev];
+              updated[index] = updatedConv;
+              return updated.sort((a, b) => 
+                new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()
+              );
             });
           } else if (payload.eventType === 'DELETE') {
-            // Remove deleted conversation
             const deletedId = payload.old?.id;
             if (deletedId) {
               setConversations(prev => prev.filter(c => c.id !== deletedId));
