@@ -1,7 +1,7 @@
 import React from "react";
 import * as TooltipPrimitive from "@radix-ui/react-tooltip";
 import * as DialogPrimitive from "@radix-ui/react-dialog";
-import { ArrowUp, Paperclip, Square, X, StopCircle, Mic, Globe, Pen, Palette } from "lucide-react";
+import { ArrowUp, Paperclip, Square, X, StopCircle, Mic, Pen, Palette } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
 // Utility function for className merging
@@ -422,24 +422,17 @@ export const PromptInputBox = React.forwardRef((props: PromptInputBoxProps, ref:
   const [filePreviews, setFilePreviews] = React.useState<{ [key: string]: string }>({});
   const [selectedImage, setSelectedImage] = React.useState<string | null>(null);
   const [isRecording, setIsRecording] = React.useState(false);
-  const [showSearch, setShowSearch] = React.useState(false);
   const [showCopywriting, setShowCopywriting] = React.useState(false);
   const [showUxUi, setShowUxUi] = React.useState(false);
   const uploadInputRef = React.useRef<HTMLInputElement>(null);
   const promptBoxRef = React.useRef<HTMLDivElement>(null);
 
   const handleAgentToggle = (agent: string) => {
-    if (agent === "search") {
-      setShowSearch((prev) => !prev);
-      setShowCopywriting(false);
-      setShowUxUi(false);
-    } else if (agent === "copywriting") {
+    if (agent === "copywriting") {
       setShowCopywriting((prev) => !prev);
-      setShowSearch(false);
       setShowUxUi(false);
     } else if (agent === "uxui") {
       setShowUxUi((prev) => !prev);
-      setShowSearch(false);
       setShowCopywriting(false);
     }
   };
@@ -511,8 +504,7 @@ export const PromptInputBox = React.forwardRef((props: PromptInputBoxProps, ref:
     if (input.trim() || files.length > 0) {
       // Build internal context prefix (not shown to user but sent to AI)
       let internalContext = "";
-      if (showSearch) internalContext = "[CONTEXT:search] ";
-      else if (showCopywriting) internalContext = "[CONTEXT:copywriting] ";
+      if (showCopywriting) internalContext = "[CONTEXT:copywriting] ";
       else if (showUxUi) internalContext = "[CONTEXT:uxui] ";
       const formattedInput = internalContext ? `${internalContext}${input}` : input;
       onSend(formattedInput, files);
@@ -588,9 +580,7 @@ export const PromptInputBox = React.forwardRef((props: PromptInputBoxProps, ref:
         >
           <PromptInputTextarea
             placeholder={
-              showSearch
-                ? "Pesquisar na web..."
-                : showCopywriting
+              showCopywriting
                 ? "Criar copy persuasiva..."
                 : showUxUi
                 ? "Estruturar design e layout..."
@@ -636,42 +626,6 @@ export const PromptInputBox = React.forwardRef((props: PromptInputBoxProps, ref:
             </PromptInputAction>
 
             <div className="flex items-center gap-0.5 flex-wrap">
-              {/* Search */}
-              <button
-                type="button"
-                onClick={() => handleAgentToggle("search")}
-                className={cn(
-                  "rounded-full transition-all flex items-center gap-1 px-2 py-1 border h-8",
-                  showSearch
-                    ? "bg-[#1EAEDB]/15 border-[#1EAEDB] text-[#1EAEDB]"
-                    : "bg-transparent border-transparent text-gray-500 hover:text-gray-700"
-                )}
-              >
-                <div className="w-5 h-5 flex items-center justify-center flex-shrink-0">
-                  <motion.div
-                    animate={{ rotate: showSearch ? 360 : 0, scale: showSearch ? 1.1 : 1 }}
-                    whileHover={{ rotate: showSearch ? 360 : 15, scale: 1.1, transition: { type: "spring", stiffness: 300, damping: 10 } }}
-                    transition={{ type: "spring", stiffness: 260, damping: 25 }}
-                  >
-                    <Globe className={cn("w-4 h-4", showSearch ? "text-[#1EAEDB]" : "text-inherit")} />
-                  </motion.div>
-                </div>
-                <AnimatePresence>
-                  {showSearch && (
-                    <motion.span
-                      initial={{ width: 0, opacity: 0 }}
-                      animate={{ width: "auto", opacity: 1 }}
-                      exit={{ width: 0, opacity: 0 }}
-                      transition={{ duration: 0.2 }}
-                      className="text-xs overflow-hidden whitespace-nowrap text-[#1EAEDB] flex-shrink-0"
-                    >
-                      Search
-                    </motion.span>
-                  )}
-                </AnimatePresence>
-              </button>
-
-              <CustomDivider />
 
               {/* Copywriting Agent */}
               <button
