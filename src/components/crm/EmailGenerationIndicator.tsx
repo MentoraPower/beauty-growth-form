@@ -1,6 +1,6 @@
 import React from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { Check, FileCode, ChevronUp, ChevronDown, Pencil, ExternalLink } from "lucide-react";
+import { motion } from "framer-motion";
+import { Check, FileCode, ChevronRight, Pencil } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface EmailGenerationIndicatorProps {
@@ -9,7 +9,7 @@ interface EmailGenerationIndicatorProps {
   isEditing?: boolean;
   onTogglePanel: () => void;
   isPanelOpen: boolean;
-  previewHtml?: string; // HTML content for mini preview
+  previewHtml?: string;
 }
 
 export function EmailGenerationIndicator({
@@ -32,30 +32,46 @@ export function EmailGenerationIndicator({
     return "Click to view and edit in side panel";
   };
 
-  // Extract plain text preview from HTML
-  const getPreviewText = (html: string): string => {
-    if (!html) return "";
-    const div = document.createElement('div');
-    div.innerHTML = html;
-    const text = div.textContent || div.innerText || "";
-    return text.slice(0, 120).trim() + (text.length > 120 ? "..." : "");
-  };
-
   return (
-    <div className="w-full max-w-lg">
+    <div className="w-full max-w-xl">
       <motion.div 
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
         className={cn(
-          "relative bg-foreground/95 border border-foreground/20 rounded-2xl overflow-hidden cursor-pointer",
-          "hover:bg-foreground transition-all duration-200 shadow-lg"
+          "relative bg-foreground/95 rounded-2xl overflow-hidden cursor-pointer",
+          "hover:bg-foreground transition-all duration-200 shadow-xl"
         )}
         onClick={onTogglePanel}
       >
         {/* Main content area */}
         <div className="flex items-stretch">
-          {/* Left section - Status info */}
-          <div className="flex-1 p-4">
+          {/* Left section - Real Mini Preview */}
+          {previewHtml && (
+            <div className="w-36 h-32 bg-white/10 flex items-center justify-center p-2.5 border-r border-white/10">
+              <div className="w-full h-full bg-white rounded-xl overflow-hidden shadow-inner relative">
+                {/* Real HTML preview - scaled down */}
+                <div 
+                  className="absolute inset-0 origin-top-left overflow-hidden pointer-events-none"
+                  style={{ 
+                    transform: 'scale(0.15)', 
+                    transformOrigin: 'top left',
+                    width: '666%',
+                    height: '666%'
+                  }}
+                >
+                  <div 
+                    className="p-4"
+                    dangerouslySetInnerHTML={{ __html: previewHtml }}
+                  />
+                </div>
+                {/* Gradient overlay for polish */}
+                <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-white/20 pointer-events-none" />
+              </div>
+            </div>
+          )}
+
+          {/* Right section - Status info */}
+          <div className="flex-1 p-4 flex flex-col justify-center">
             {/* Status header */}
             <div className="flex items-center gap-2.5 mb-1">
               <div className={cn(
@@ -76,12 +92,12 @@ export function EmailGenerationIndicator({
             </div>
             
             {/* Description */}
-            <p className="text-xs text-white/50 italic ml-7.5 pl-0.5">
+            <p className="text-xs text-white/50 italic ml-7.5 pl-0.5 mb-3">
               {getStatusDescription()}
             </p>
 
             {/* File indicator */}
-            <div className="flex items-center gap-2 mt-3 ml-7.5 pl-0.5">
+            <div className="flex items-center gap-2 ml-7.5 pl-0.5">
               <div className="flex items-center gap-1.5 text-xs text-white/40 bg-white/5 rounded-lg px-2.5 py-1.5">
                 <FileCode className="w-3 h-3" />
                 <code className="font-mono text-white/60">template.html</code>
@@ -90,42 +106,17 @@ export function EmailGenerationIndicator({
                 )}
               </div>
             </div>
-          </div>
 
-          {/* Right section - Mini Preview */}
-          {previewHtml && isComplete && (
-            <div className="w-24 h-full bg-white/5 border-l border-white/10 flex items-center justify-center p-2">
-              <div className="w-full h-full bg-white/90 rounded-lg overflow-hidden relative">
-                {/* Mini preview content */}
-                <div 
-                  className="w-full h-full p-1.5 text-[4px] leading-tight text-gray-600 overflow-hidden pointer-events-none"
-                  style={{ transform: 'scale(1)', transformOrigin: 'top left' }}
-                >
-                  <div className="w-full h-1.5 bg-gray-200 rounded-sm mb-1" />
-                  <div className="w-3/4 h-1 bg-gray-100 rounded-sm mb-0.5" />
-                  <div className="w-full h-1 bg-gray-100 rounded-sm mb-0.5" />
-                  <div className="w-2/3 h-1 bg-gray-100 rounded-sm mb-1" />
-                  <div className="w-1/2 h-2 bg-orange-400/60 rounded-sm" />
-                </div>
-                {/* Hover overlay */}
-                <div className="absolute inset-0 bg-black/0 hover:bg-black/10 transition-colors flex items-center justify-center opacity-0 hover:opacity-100">
-                  <ExternalLink className="w-3 h-3 text-gray-600" />
-                </div>
-              </div>
+            {/* Action hint */}
+            <div className="flex items-center gap-1 mt-3 ml-7.5 pl-0.5">
+              <span className="text-[10px] text-white/30">
+                {isPanelOpen ? "Panel open" : "Open editor"}
+              </span>
+              <ChevronRight className={cn(
+                "w-3 h-3 text-white/30 transition-transform duration-200",
+                isPanelOpen && "rotate-90"
+              )} />
             </div>
-          )}
-        </div>
-
-        {/* Bottom action hint */}
-        <div className="px-4 pb-3 pt-0">
-          <div className="flex items-center justify-between">
-            <span className="text-[10px] text-white/30">
-              {isPanelOpen ? "Panel open" : "Click to preview"}
-            </span>
-            <ChevronUp className={cn(
-              "w-3 h-3 text-white/30 transition-transform duration-200",
-              !isPanelOpen && "rotate-180"
-            )} />
           </div>
         </div>
       </motion.div>
