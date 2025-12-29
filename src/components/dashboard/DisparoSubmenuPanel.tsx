@@ -268,7 +268,7 @@ export function DisparoSubmenuPanel({ isOpen, onClose }: DisparoSubmenuPanelProp
         </div>
 
         {/* Conversations list */}
-        <div className="flex-1 overflow-y-auto px-2 space-y-1">
+        <div className="flex-1 overflow-y-auto px-2 space-y-1 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
           {isLoading ? (
             <div className="flex items-center justify-center py-8">
               <div className="w-5 h-5 border-2 border-white/20 border-t-white/60 rounded-full animate-spin" />

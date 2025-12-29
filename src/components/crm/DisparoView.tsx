@@ -3139,7 +3139,7 @@ ${hasName && hasEmail ? `Lista pronta! Guardei os ${leadsWithEmail} leads com em
             <div 
               ref={chatScrollRef} 
               onScroll={handleChatScroll} 
-              className="flex-1 overflow-y-auto min-h-0 p-6 px-8 overscroll-contain scrollbar-none"
+              className="flex-1 overflow-y-auto min-h-0 p-6 px-8 overscroll-contain [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
               style={{ 
                 scrollBehavior: 'auto',
                 WebkitOverflowScrolling: 'touch',
