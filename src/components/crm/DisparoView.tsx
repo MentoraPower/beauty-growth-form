@@ -502,12 +502,30 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
           const messagesArray = isNewFormat ? rawData.messages : (Array.isArray(rawData) ? rawData : []);
           
           const loadedMessages: Message[] = messagesArray.map((m: any) => {
+            // Fix workflowSteps status when loading from DB - if saved, generation is complete
+            let componentData = m.componentData || undefined;
+            if (componentData?.data?.workflowSteps) {
+              componentData = {
+                ...componentData,
+                data: {
+                  ...componentData.data,
+                  workflowSteps: componentData.data.workflowSteps.map((step: any) => ({
+                    ...step,
+                    status: 'completed',
+                    // Fix titles that were saved mid-generation
+                    title: step.title
+                      .replace(/^Gerando/i, 'Gerado')
+                      .replace(/\.\.\.$/, '')
+                  }))
+                }
+              };
+            }
             const msg: Message = {
               id: m.id,
               content: m.content,
               role: m.role as "user" | "assistant",
               timestamp: new Date(m.timestamp),
-              componentData: m.componentData || undefined,
+              componentData,
             };
             return msg;
           });
@@ -656,11 +674,12 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
         if (title === "Nova conversa") {
           const firstUserMessage = currentMessages.find(m => m.role === "user");
           if (firstUserMessage) {
-            // Clean title: remove internal markers like CONTEXT, [Agente:...], etc.
+            // Clean title: remove internal markers like [CONTEXT:...], [Agente:...], etc.
             let cleanContent = firstUserMessage.content
-              .replace(/\[Agente:[^\]]*\]/gi, '')
+              .replace(/\[(Agente:[^\]]+|CONTEXT:[^\]]+|Search)\]\s*/gi, '')
               .replace(/^CONTEXT\s*/i, '')
               .replace(/^copy\s*/i, '')
+              .replace(/text-copyright/gi, '')
               .replace(/^\s*/, '')
               .trim();
             
