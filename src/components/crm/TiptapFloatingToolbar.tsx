@@ -77,7 +77,7 @@ export function TiptapFloatingToolbar({ editor }: TiptapFloatingToolbarProps) {
       return;
     }
 
-    // Keep focus on editor without collapsing the selection
+    // Keep focus on editor
     view.focus();
 
     const $from = state.doc.resolve(from);
@@ -91,41 +91,15 @@ export function TiptapFloatingToolbar({ editor }: TiptapFloatingToolbarProps) {
 
       const isFullBlockSelected = from <= blockStart && to >= blockEnd;
 
-      // If user selected only part of a paragraph, we split the block to isolate that selection
+      // Partial selection within a paragraph - need to isolate the selected text
       if (!isFullBlockSelected) {
-        let tr = state.tr;
-
-        // Split at end of selection first
-        if (to < blockEnd) {
-          tr = tr.split(to);
-        }
-
-        // Split at start of selection (mapped after previous split)
-        const mappedFrom = tr.mapping.map(from);
-        const mappedBlockStart = tr.mapping.map(blockStart);
-        if (mappedFrom > mappedBlockStart) {
-          tr = tr.split(mappedFrom);
-        }
-
-        // Restore selection on the isolated block
-        const finalFrom = tr.mapping.map(from);
-        const finalTo = tr.mapping.map(to);
-        tr = tr.setSelection(TextSelection.create(tr.doc, finalFrom, finalTo));
-
-        // Apply style on the isolated block
-        const $pos = tr.doc.resolve(finalFrom);
-        const rangeFrom = $pos.start($pos.depth);
-        const rangeTo = $pos.end($pos.depth);
-
-        if (value === 'blockquote') {
-          view.dispatch(tr);
-          editor.chain().focus().toggleBlockquote().run();
-          setShowDropdown(false);
-          return;
-        }
-
+        // Get the selected text content with marks preserved
+        const selectedSlice = state.doc.slice(from, to);
+        const selectedContent = selectedSlice.content;
+        
+        // Determine the node type to create
         const schema = state.schema;
-        let nodeType = null as any;
+        let nodeType = schema.nodes.paragraph;
         let attrs: Record<string, any> = {};
 
         switch (value) {
@@ -148,12 +122,71 @@ export function TiptapFloatingToolbar({ editor }: TiptapFloatingToolbarProps) {
             nodeType = schema.nodes.heading;
             attrs = { level: 4 };
             break;
+          case 'blockquote':
+            // Blockquote wraps, handle separately
+            break;
         }
 
-        if (nodeType) {
-          tr = tr.setBlockType(rangeFrom, rangeTo, nodeType, attrs);
-          // keep selection after setBlockType
-          tr = tr.setSelection(TextSelection.create(tr.doc, finalFrom, finalTo));
+        if (value === 'blockquote') {
+          // For blockquote, we need a different approach
+          // Just apply to the current block for now
+          editor.chain().focus().setTextSelection({ from, to }).toggleBlockquote().run();
+          setShowDropdown(false);
+          return;
+        }
+
+        // Build the transaction:
+        // 1. Delete the selected text
+        // 2. Split the paragraph at the cursor position
+        // 3. Insert a new node with the desired type containing the selected text
+        
+        let tr = state.tr;
+        
+        // Store positions
+        const hasTextBefore = from > blockStart;
+        const hasTextAfter = to < blockEnd;
+        
+        // Delete selected text first
+        tr = tr.delete(from, to);
+        
+        // Now we need to insert:
+        // - If there's text before AND after: split and insert middle block
+        // - If only text after: insert new block before
+        // - If only text before: insert new block after
+        // - If neither: just change block type
+
+        if (!hasTextBefore && !hasTextAfter) {
+          // Selected entire content of block - just change type
+          const mappedPos = tr.mapping.map(from);
+          const $pos = tr.doc.resolve(mappedPos);
+          const blockPos = $pos.before($pos.depth);
+          const blockNode = tr.doc.nodeAt(blockPos);
+          if (blockNode) {
+            tr = tr.setBlockType(blockPos, blockPos + blockNode.nodeSize, nodeType, attrs);
+          }
+        } else {
+          // Create the new node with selected content
+          const newNode = nodeType.create(attrs, selectedContent);
+          
+          if (hasTextBefore && hasTextAfter) {
+            // Text before AND after - split and insert in middle
+            const mappedFrom = tr.mapping.map(from);
+            tr = tr.split(mappedFrom);
+            const insertPos = tr.mapping.map(from) + 1;
+            tr = tr.insert(insertPos, newNode);
+          } else if (hasTextBefore) {
+            // Only text before - insert new block after current
+            const mappedFrom = tr.mapping.map(from);
+            const $pos = tr.doc.resolve(mappedFrom);
+            const afterPos = $pos.after($pos.depth);
+            tr = tr.insert(afterPos, newNode);
+          } else {
+            // Only text after - insert new block before
+            const mappedFrom = tr.mapping.map(from);
+            const $pos = tr.doc.resolve(mappedFrom);
+            const beforePos = $pos.before($pos.depth);
+            tr = tr.insert(beforePos, newNode);
+          }
         }
 
         view.dispatch(tr);
@@ -162,7 +195,7 @@ export function TiptapFloatingToolbar({ editor }: TiptapFloatingToolbarProps) {
       }
     }
 
-    // Otherwise: apply normally to selected blocks (but force the selection we captured)
+    // Full block selection or multi-block - apply style normally
     const chain = editor.chain().focus().setTextSelection({ from, to });
 
     switch (value) {
