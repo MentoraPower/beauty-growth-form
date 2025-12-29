@@ -124,7 +124,59 @@ const detectCodeRequest = (messages: any[]): boolean => {
   return codePatterns.some(pattern => pattern.test(content));
 };
 
-const getSystemPrompt = (greeting: string, activeAgent: string | null = null, hasImage: boolean = false, isCodeRequest: boolean = false) => {
+// Detectar se há CSV na conversa e pedido relacionado à lista
+const detectCsvRequest = (messages: any[]): boolean => {
+  const lastMessage = messages[messages.length - 1];
+  if (!lastMessage || lastMessage.role !== 'user') return false;
+  
+  const content = typeof lastMessage.content === 'string' 
+    ? lastMessage.content.toLowerCase() 
+    : '';
+  
+  // Check if CSV was uploaded in conversation
+  const hasCsvInConversation = messages.some(m => 
+    m.content?.includes('[Arquivo enviado:') && m.content?.includes('.csv')
+  );
+  
+  if (!hasCsvInConversation) return false;
+  
+  // Patterns that indicate user wants to do something with the list
+  const csvPatterns = [
+    /lista/i,
+    /leads/i,
+    /contatos/i,
+    /filtrar/i,
+    /remover/i,
+    /excluir/i,
+    /deletar/i,
+    /ordenar/i,
+    /organizar/i,
+    /limpar/i,
+    /duplicados/i,
+    /duplicatas/i,
+    /manter\s*(apenas|só)/i,
+    /tirar/i,
+    /separar/i,
+    /segmentar/i,
+    /agrupar/i,
+    /editar/i,
+    /alterar/i,
+    /modificar/i,
+    /atualizar/i,
+    /planilha/i,
+    /csv/i,
+    /emails?\s*(com|sem|válidos|inválidos)/i,
+    /whatsapp\s*(com|sem|válidos|inválidos)/i,
+    /quantos/i,
+    /contar/i,
+    /total/i,
+    /exportar/i
+  ];
+  
+  return csvPatterns.some(pattern => pattern.test(content));
+};
+
+const getSystemPrompt = (greeting: string, activeAgent: string | null = null, hasImage: boolean = false, isCodeRequest: boolean = false, isCsvRequest: boolean = false) => {
   const randomGreeting = getRandomGreeting(greeting);
   
   let specialMode = '';
@@ -163,6 +215,40 @@ O usuário está pedindo ALTERAÇÃO de código/template/design. Você DEVE:
 - Seja DIRETO e faça a alteração imediatamente
 
 Responda com a alteração feita, sem enrolação.
+`;
+  }
+  
+  // Modo CSV/Lista - manipulação de dados
+  if (isCsvRequest) {
+    specialMode += `
+═══════════════════════════════════════
+MODO LISTA/CSV ATIVO
+═══════════════════════════════════════
+O usuário enviou um arquivo CSV e quer fazer algo com a lista. Você PODE:
+
+**ANÁLISE:**
+- Contar leads, emails válidos, WhatsApps válidos
+- Identificar duplicados
+- Verificar dados faltantes
+- Segmentar por características
+
+**MANIPULAÇÃO:**
+- Filtrar (ex: "só emails com @gmail")
+- Remover duplicados
+- Ordenar por nome, email, etc.
+- Separar em grupos
+- Limpar dados inválidos
+
+**RESPONDER DIRETO:**
+- Se pedir contagem: dê o número
+- Se pedir filtro: descreva o que fazer
+- Se pedir remoção: confirme o que será removido
+- Se pedir análise: analise e responda
+
+O painel lateral está mostrando a planilha com os dados.
+O usuário pode editar diretamente na planilha ou pedir para você fazer.
+
+IGNORE o fluxo de disparo e foque 100% no pedido sobre a lista.
 `;
   }
   
@@ -670,9 +756,10 @@ serve(async (req) => {
     const activeAgent = detectActiveAgent(messages);
     const hasImage = detectImageInMessage(messages);
     const isCodeRequest = detectCodeRequest(messages);
-    const systemPrompt = getSystemPrompt(greeting, activeAgent, hasImage, isCodeRequest);
+    const isCsvRequest = detectCsvRequest(messages);
+    const systemPrompt = getSystemPrompt(greeting, activeAgent, hasImage, isCodeRequest, isCsvRequest);
 
-    console.log("Chat mode:", { activeAgent, hasImage, isCodeRequest });
+    console.log("Chat mode:", { activeAgent, hasImage, isCodeRequest, isCsvRequest });
 
     console.log("Calling Grok API with messages:", JSON.stringify(messages));
 
