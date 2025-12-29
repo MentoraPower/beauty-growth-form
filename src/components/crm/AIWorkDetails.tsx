@@ -37,23 +37,23 @@ const iconMap = {
 function StepStatusIcon({ status }: { status: WorkStep['status'] }) {
   if (status === 'completed') {
     return (
-      <div className="w-[18px] h-[18px] rounded-full bg-muted-foreground/20 flex items-center justify-center flex-shrink-0">
-        <Check className="w-3 h-3 text-muted-foreground" strokeWidth={3} />
+      <div className="w-[18px] h-[18px] rounded-full bg-foreground/80 flex items-center justify-center flex-shrink-0 relative z-10">
+        <Check className="w-2.5 h-2.5 text-background" strokeWidth={3} />
       </div>
     );
   }
   
   if (status === 'in_progress') {
     return (
-      <div className="w-[18px] h-[18px] rounded-full border-2 border-muted-foreground/30 flex items-center justify-center flex-shrink-0">
-        <Loader2 className="w-2.5 h-2.5 text-muted-foreground animate-spin" />
+      <div className="w-[18px] h-[18px] rounded-full bg-foreground/60 flex items-center justify-center flex-shrink-0 relative z-10">
+        <Loader2 className="w-2.5 h-2.5 text-background animate-spin" />
       </div>
     );
   }
   
-  // Pending - empty circle
+  // Pending - dark circle
   return (
-    <div className="w-[18px] h-[18px] rounded-full border-2 border-muted-foreground/20 flex-shrink-0" />
+    <div className="w-[18px] h-[18px] rounded-full bg-foreground/30 flex-shrink-0 relative z-10" />
   );
 }
 
@@ -135,7 +135,7 @@ export function AIWorkDetails({ steps, className }: AIWorkDetailsProps) {
               {/* Vertical dashed line connecting to next step */}
               {!isLast && (
                 <div 
-                  className="absolute left-[8px] top-[28px] bottom-0 w-0 border-l-2 border-dashed border-muted-foreground/20"
+                  className="absolute left-[8px] top-[18px] bottom-[-8px] w-0 border-l border-dashed border-foreground/20"
                 />
               )}
               
