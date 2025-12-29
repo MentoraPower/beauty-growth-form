@@ -10,7 +10,7 @@ import { DispatchPreparingIndicator } from "./DispatchPreparingIndicator";
 import { EmailSidePanel, SidePanelMode } from "./EmailSidePanel";
 import { CsvSidePanel, CsvLead as CsvLeadType } from "./CsvSidePanel";
 import { DispatchData } from "./DispatchAnalysis";
-import { EmailGenerationIndicator } from "./EmailGenerationIndicator";
+import { EmailChatCard } from "./EmailChatCard";
 import { AIWorkDetails, WorkStep, WorkSubItem, createLeadsAnalysisStep, createEmailGenerationStep, createDispatchStep, createCustomStep } from "./AIWorkDetails";
 import { supabase } from "@/integrations/supabase/client";
 import { Clipboard, Check, ExternalLink } from "lucide-react";
@@ -1718,6 +1718,15 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
           content: `Carreguei seu HTML no editor! 📧\n\nVocê pode ver o **preview** e o **código** no painel lateral à direita. Se precisar de ajustes, é só me pedir.\n\nQuando estiver pronto, me avise para iniciar o disparo.`,
           role: "assistant",
           timestamp: new Date(),
+          componentData: {
+            type: 'email_generator_streaming' as const,
+            data: {
+              isComplete: true,
+              generatedHtml: cleanedHtml,
+              subject: '',
+              mode: 'email' as const
+            }
+          }
         };
         setMessages(prev => [...prev, confirmMessage]);
         setIsLoading(false);
@@ -2866,27 +2875,26 @@ INSTRUÇÕES PARA VOCÊ (A IA):
                             <AIWorkDetails steps={msg.componentData.data.workflowSteps as WorkStep[]} />
                           </motion.div>
                         )}
-                        {/* Email generation indicator - only show when there's content */}
-                        {msg.componentData?.type === 'email_generator_streaming' && (msg.componentData?.data?.generatedHtml || sidePanelHtml) && (
+                        {/* Email card - shows when there's HTML content in this message */}
+                        {msg.componentData?.type === 'email_generator_streaming' && (msg.componentData?.data?.generatedHtml || (messages[messages.length - 1]?.id === msg.id && sidePanelHtml)) && (
                           <div className="mt-3">
-                            <EmailGenerationIndicator
-                              isGenerating={sidePanelGenerating && messages[messages.length - 1]?.id === msg.id}
-                              isComplete={msg.componentData?.data?.isComplete || !sidePanelGenerating}
-                              isEditing={sidePanelEditing || msg.componentData?.data?.isEditing}
-                              onTogglePanel={() => {
+                            <EmailChatCard
+                              subject={msg.componentData?.data?.subject || sidePanelSubject || "Email Template"}
+                              previewHtml={msg.componentData?.data?.generatedHtml || sidePanelHtml}
+                              onClick={() => {
                                 const data = msg.componentData?.data;
                                 if (data?.generatedHtml) {
                                   setSidePanelHtml(data.generatedHtml);
                                   setSidePanelSubject(data.subject || '');
-                                  setSidePanelMode(data.mode || 'email');
-                                  setSidePanelShowCodePreview(data.mode === 'email');
+                                  setSidePanelMode('email');
+                                  setSidePanelShowCodePreview(true);
                                   setSidePanelOpen(true);
                                 } else {
-                                  setSidePanelOpen(!sidePanelOpen);
+                                  setSidePanelMode('email');
+                                  setSidePanelShowCodePreview(true);
+                                  setSidePanelOpen(true);
                                 }
                               }}
-                              isPanelOpen={sidePanelOpen}
-                              previewHtml={msg.componentData?.data?.generatedHtml || sidePanelHtml}
                             />
                           </div>
                         )}
