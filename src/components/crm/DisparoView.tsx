@@ -631,6 +631,10 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
     // If we have a convId and it's different from current, load it
     if (convId && convId !== currentConversationId) {
       const loadConversation = async () => {
+        // Mark as loading so we don't show the "nova conversa" empty state while switching
+        setIsConversationLoading(true);
+        loadingConversationIdRef.current = convId;
+
         // Abort any active request from previous conversation
         if (activeAbortRef.current) {
           activeAbortRef.current.abort();
@@ -723,6 +727,12 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
 
           setCurrentConversationId(convId);
           setMessages(loadedMessages);
+
+          // Stop showing the loading state as soon as the core chat content is ready
+          if (loadingConversationIdRef.current === convId) {
+            setIsConversationLoading(false);
+            loadingConversationIdRef.current = null;
+          }
           
           // Restore side panel state if available
           if (isNewFormat && rawData.sidePanelState) {
@@ -816,6 +826,12 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
           setInitialLoadDone(true);
         } finally {
           isHydratingRef.current = false;
+
+          // Fallback: ensure loading is cleared even if we errored or returned early
+          if (loadingConversationIdRef.current === convId) {
+            setIsConversationLoading(false);
+            loadingConversationIdRef.current = null;
+          }
         }
       };
       loadConversation();
@@ -3157,6 +3173,8 @@ ${hasName && hasEmail ? `Lista pronta! Guardei os ${leadsWithEmail} leads com em
   }, []);
 
   const hasMessages = messages.length > 0;
+  const isBusy = isLoading || isConversationLoading;
+  const showConversationLoading = isConversationLoading && !hasMessages;
 
   return (
     <div className="flex-1 flex h-full bg-background overflow-hidden">
@@ -3164,26 +3182,44 @@ ${hasName && hasEmail ? `Lista pronta! Guardei os ${leadsWithEmail} leads com em
       <div className="flex-1 flex flex-col h-full min-w-0">
         {/* When no messages, center the input */}
         {!hasMessages ? (
-          <div className="flex-1 flex items-center justify-center p-6 px-8">
-            <div className="w-full max-w-3xl">
-              <div className="text-center mb-8">
-                <div className="flex items-center justify-center gap-3">
-                  <img src={disparoLogo} alt="Logo" className="w-6 h-6" />
-                  <h2 className="text-2xl font-semibold text-foreground">
-                    Eai, o que vamos disparar hoje?
-                  </h2>
+          showConversationLoading ? (
+            <div className="flex-1 flex items-center justify-center p-6 px-8">
+              <div className="w-full max-w-3xl">
+                <div className="text-center mb-8">
+                  <div className="flex items-center justify-center gap-3">
+                    <img src={disparoLogo} alt="Logo Scale Beauty Disparo" className="w-6 h-6" />
+                    <h2 className="text-2xl font-semibold text-foreground">Carregando conversa...</h2>
+                  </div>
+                </div>
+                <div className="space-y-3">
+                  <Skeleton className="h-10 w-2/3 mx-auto" />
+                  <Skeleton className="h-24 w-full" />
+                  <Skeleton className="h-24 w-11/12" />
                 </div>
               </div>
-              <PromptInputBox
-                onSend={handleSend}
-                isLoading={isLoading}
-                placeholder="Digite sua mensagem aqui..."
-              />
-              <p className="text-xs text-muted-foreground text-center mt-3">
-                A Scale pode cometer erros. Confira informações importantes.
-              </p>
             </div>
-          </div>
+          ) : (
+            <div className="flex-1 flex items-center justify-center p-6 px-8">
+              <div className="w-full max-w-3xl">
+                <div className="text-center mb-8">
+                  <div className="flex items-center justify-center gap-3">
+                    <img src={disparoLogo} alt="Logo" className="w-6 h-6" />
+                    <h2 className="text-2xl font-semibold text-foreground">
+                      Eai, o que vamos disparar hoje?
+                    </h2>
+                  </div>
+                </div>
+                <PromptInputBox
+                  onSend={handleSend}
+                  isLoading={isBusy}
+                  placeholder="Digite sua mensagem aqui..."
+                />
+                <p className="text-xs text-muted-foreground text-center mt-3">
+                  A Scale pode cometer erros. Confira informações importantes.
+                </p>
+              </div>
+            </div>
+          )
         ) : (
           <>
             {/* Chat messages area */}
@@ -3332,7 +3368,7 @@ ${hasName && hasEmail ? `Lista pronta! Guardei os ${leadsWithEmail} leads com em
               )}>
                 <PromptInputBox
                   onSend={handleSend}
-                  isLoading={isLoading}
+                  isLoading={isBusy}
                   placeholder="Digite sua mensagem aqui..."
                 />
               </div>
