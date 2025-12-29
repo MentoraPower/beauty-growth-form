@@ -43,6 +43,7 @@ export function TiptapFloatingToolbar({ editor }: TiptapFloatingToolbarProps) {
   const [showLinkInput, setShowLinkInput] = useState(false);
   const [linkUrl, setLinkUrl] = useState('');
   const savedSelectionRef = useRef<{ from: number; to: number } | null>(null);
+  const toolbarSelectionRef = useRef<{ from: number; to: number } | null>(null);
 
   if (!editor) return null;
 
@@ -57,56 +58,76 @@ export function TiptapFloatingToolbar({ editor }: TiptapFloatingToolbarProps) {
 
   const applyStyle = (value: string, e: React.MouseEvent) => {
     e.preventDefault();
-    e.stopPropagation();
-    
-    const { state, view } = editor;
-    const { from, to } = state.selection;
-    const { tr, schema } = state;
-    
-    // Resolve positions
+
+    const view = editor.view;
+    const state = view.state;
+
+    const selection = toolbarSelectionRef.current ?? {
+      from: state.selection.from,
+      to: state.selection.to,
+    };
+
+    const from = selection.from;
+    const to = selection.to;
+
+    console.log('[TiptapFloatingToolbar] applyStyle', { value, from, to });
+
+    if (from === to) {
+      setShowDropdown(false);
+      return;
+    }
+
+    // Keep focus on editor without collapsing the selection
+    view.focus();
+
     const $from = state.doc.resolve(from);
     const $to = state.doc.resolve(to);
-    
-    // Get the block boundaries
-    const blockStart = $from.start($from.depth);
-    const blockEnd = $to.end($to.depth);
-    
-    // Check if this is a partial selection within a single block
-    const isPartialSelection = from > blockStart && to < blockEnd;
     const sameBlock = $from.sameParent($to);
-    
-    if (isPartialSelection && sameBlock) {
-      // Use ProseMirror transaction to split and apply style
-      let newTr = tr;
-      
-      // Split at the end of selection first (so positions don't shift for the start split)
-      if (to < blockEnd) {
-        newTr = newTr.split(to);
-      }
-      
-      // Map the 'from' position after the first split
-      const mappedFrom = newTr.mapping.map(from);
-      const mappedBlockStart = newTr.mapping.map(blockStart);
-      
-      // Split at the start of selection
-      if (mappedFrom > mappedBlockStart + 1) {
-        newTr = newTr.split(mappedFrom);
-      }
-      
-      // Now find the middle block (the one with our selected text) and apply the style
-      // After splits, the selected text should be in its own block
-      const newMappedFrom = newTr.mapping.map(from);
-      const $newPos = newTr.doc.resolve(newMappedFrom);
-      
-      // Get the block node at the new position
-      const blockNodePos = $newPos.before($newPos.depth);
-      const blockNode = newTr.doc.nodeAt(blockNodePos);
-      
-      if (blockNode) {
-        // Determine the target node type
-        let nodeType;
-        let attrs = {};
-        
+
+    if (sameBlock) {
+      const depth = $from.depth;
+      const blockStart = $from.start(depth);
+      const blockEnd = $from.end(depth);
+
+      const isFullBlockSelected = from <= blockStart && to >= blockEnd;
+
+      // If user selected only part of a paragraph, we split the block to isolate that selection
+      if (!isFullBlockSelected) {
+        let tr = state.tr;
+
+        // Split at end of selection first
+        if (to < blockEnd) {
+          tr = tr.split(to);
+        }
+
+        // Split at start of selection (mapped after previous split)
+        const mappedFrom = tr.mapping.map(from);
+        const mappedBlockStart = tr.mapping.map(blockStart);
+        if (mappedFrom > mappedBlockStart) {
+          tr = tr.split(mappedFrom);
+        }
+
+        // Restore selection on the isolated block
+        const finalFrom = tr.mapping.map(from);
+        const finalTo = tr.mapping.map(to);
+        tr = tr.setSelection(TextSelection.create(tr.doc, finalFrom, finalTo));
+
+        // Apply style on the isolated block
+        const $pos = tr.doc.resolve(finalFrom);
+        const rangeFrom = $pos.start($pos.depth);
+        const rangeTo = $pos.end($pos.depth);
+
+        if (value === 'blockquote') {
+          view.dispatch(tr);
+          editor.chain().focus().toggleBlockquote().run();
+          setShowDropdown(false);
+          return;
+        }
+
+        const schema = state.schema;
+        let nodeType = null as any;
+        let attrs: Record<string, any> = {};
+
         switch (value) {
           case 'paragraph':
             nodeType = schema.nodes.paragraph;
@@ -127,51 +148,44 @@ export function TiptapFloatingToolbar({ editor }: TiptapFloatingToolbarProps) {
             nodeType = schema.nodes.heading;
             attrs = { level: 4 };
             break;
-          case 'blockquote':
-            // For blockquote, we'll handle it differently after dispatch
-            nodeType = null;
-            break;
         }
-        
+
         if (nodeType) {
-          // Apply the block type to the isolated block
-          newTr = newTr.setBlockType(blockNodePos, blockNodePos + blockNode.nodeSize, nodeType, attrs);
+          tr = tr.setBlockType(rangeFrom, rangeTo, nodeType, attrs);
+          // keep selection after setBlockType
+          tr = tr.setSelection(TextSelection.create(tr.doc, finalFrom, finalTo));
         }
-        
-        // Dispatch the transaction
-        view.dispatch(newTr);
-        
-        // Handle blockquote separately (it wraps rather than replaces)
-        if (value === 'blockquote') {
-          editor.chain().focus().toggleBlockquote().run();
-        }
-      } else {
-        view.dispatch(newTr);
-      }
-    } else {
-      // Full block selection or multi-block - apply style normally
-      switch (value) {
-        case 'paragraph':
-          editor.chain().focus().setParagraph().run();
-          break;
-        case 'h1':
-          editor.chain().focus().setHeading({ level: 1 }).run();
-          break;
-        case 'h2':
-          editor.chain().focus().setHeading({ level: 2 }).run();
-          break;
-        case 'h3':
-          editor.chain().focus().setHeading({ level: 3 }).run();
-          break;
-        case 'h4':
-          editor.chain().focus().setHeading({ level: 4 }).run();
-          break;
-        case 'blockquote':
-          editor.chain().focus().toggleBlockquote().run();
-          break;
+
+        view.dispatch(tr);
+        setShowDropdown(false);
+        return;
       }
     }
-    
+
+    // Otherwise: apply normally to selected blocks (but force the selection we captured)
+    const chain = editor.chain().focus().setTextSelection({ from, to });
+
+    switch (value) {
+      case 'paragraph':
+        chain.setParagraph().run();
+        break;
+      case 'h1':
+        chain.setHeading({ level: 1 }).run();
+        break;
+      case 'h2':
+        chain.setHeading({ level: 2 }).run();
+        break;
+      case 'h3':
+        chain.setHeading({ level: 3 }).run();
+        break;
+      case 'h4':
+        chain.setHeading({ level: 4 }).run();
+        break;
+      case 'blockquote':
+        chain.toggleBlockquote().run();
+        break;
+    }
+
     setShowDropdown(false);
   };
 
@@ -206,9 +220,12 @@ export function TiptapFloatingToolbar({ editor }: TiptapFloatingToolbarProps) {
   return (
     <BubbleMenu
       editor={editor}
-      shouldShow={({ editor, state }) => {
+      shouldShow={({ state }) => {
         const { from, to } = state.selection;
-        return from !== to && !editor.state.selection.empty;
+        if (from !== to) {
+          toolbarSelectionRef.current = { from, to };
+        }
+        return from !== to && !state.selection.empty;
       }}
       tippyOptions={{ 
         duration: 100,
