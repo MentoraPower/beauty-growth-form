@@ -2487,8 +2487,8 @@ INSTRUÇÕES PARA VOCÊ (A IA):
                       msg.role === "user" ? "items-end" : "items-start"
                     )}
                   >
-                    {msg.role === "user" ? (
-                      <div className="bg-white text-foreground px-5 py-4 rounded-2xl max-w-[85%] border border-[#00000010]">
+                  {msg.role === "user" ? (
+                      <div className="bg-white text-foreground px-5 py-4 rounded-2xl w-[85%] border border-[#00000010]">
                         {/* Show image if present */}
                         {msg.imageUrl && (
                           <div className="mb-3">
@@ -2502,10 +2502,10 @@ INSTRUÇÕES PARA VOCÊ (A IA):
                         <p className="text-[15px] leading-relaxed whitespace-pre-wrap">{removeAgentPrefix(msg.content)}</p>
                       </div>
                     ) : (
-                      <div className="w-full group">
+                      <div className="w-[85%] group">
                         {/* Message content first */}
                         {msg.content && (
-                          <div className="max-w-[85%]">
+                          <div>
                             <p className="text-[15px] leading-relaxed whitespace-pre-wrap text-foreground">
                               {formatMessageContent(msg.content)}
                             </p>
