@@ -43,7 +43,7 @@ interface EmailSidePanelProps {
   onViewEmail?: () => void;
   // Whether to show code/preview tabs (only for email visuals)
   showCodePreview?: boolean;
-  // Title for the panel when showing workflow/copy
+  // Title for the panel when showing workflow/copy (REMOVED - no longer used)
   panelTitle?: string;
 }
 
@@ -436,31 +436,7 @@ export function EmailSidePanel({
 
   return (
     <div className="w-[640px] h-full flex-shrink-0 bg-background flex flex-col my-6 mr-6 rounded-3xl border border-border overflow-hidden shadow-sm">
-      {/* Panel Title - shown when panelTitle is provided and no code preview */}
-      {panelTitle && !showCodePreview && (
-        <div className="px-6 pt-6 pb-2">
-          <h2 className="text-xl font-semibold text-foreground">{panelTitle}</h2>
-        </div>
-      )}
-      
-      {/* Subject Header - only show when we have code/preview tabs AND subject is set */}
-      {showCodePreview && subject && subject.trim() !== '' && subject !== 'Email' && subject !== 'Copy' && (
-        <div className="px-5 py-3 border-b border-border bg-muted/30">
-          <label className="text-xs text-muted-foreground font-medium mb-1.5 block">Assunto</label>
-          <input
-            type="text"
-            value={subject}
-            onChange={(e) => onSubjectChange?.(e.target.value)}
-            placeholder={isGenerating ? "Gerando assunto..." : "Digite o assunto do email..."}
-            className={cn(
-              "w-full bg-transparent text-sm font-medium text-foreground placeholder:text-muted-foreground focus:outline-none",
-              isGenerating && "animate-pulse"
-            )}
-          />
-        </div>
-      )}
-
-      {/* Tabs - only show when showCodePreview is true */}
+      {/* Tabs - always at the top when showCodePreview is true */}
       {showCodePreview && (
         <div className="flex items-center justify-between px-5 py-3 border-b border-border bg-muted/20">
           <div className="flex items-center gap-1 bg-muted/50 rounded-lg p-1">
@@ -498,6 +474,23 @@ export function EmailSidePanel({
             {copied ? <Check className="w-4 h-4 text-green-500" /> : <Copy className="w-4 h-4" />}
             {copied ? "Copiado" : "Copiar"}
           </button>
+        </div>
+      )}
+      
+      {/* Subject Header - BELOW tabs, only show when showCodePreview is true AND subject has real content */}
+      {showCodePreview && subject && subject.trim() !== '' && subject !== 'Email' && subject !== 'Copy' && (
+        <div className="px-5 py-3 border-b border-border bg-muted/30">
+          <label className="text-xs text-muted-foreground font-medium mb-1.5 block">Assunto</label>
+          <input
+            type="text"
+            value={subject}
+            onChange={(e) => onSubjectChange?.(e.target.value)}
+            placeholder={isGenerating ? "Gerando assunto..." : "Digite o assunto do email..."}
+            className={cn(
+              "w-full bg-transparent text-sm font-medium text-foreground placeholder:text-muted-foreground focus:outline-none",
+              isGenerating && "animate-pulse"
+            )}
+          />
         </div>
       )}
 
