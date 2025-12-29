@@ -568,6 +568,42 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
     // If we have a convId and it's different from current, load it
     if (convId && convId !== currentConversationId) {
       const loadConversation = async () => {
+        // Abort any active request from previous conversation
+        if (activeAbortRef.current) {
+          activeAbortRef.current.abort();
+          activeAbortRef.current = null;
+        }
+        activeRunIdRef.current = null;
+        activeRunConversationIdRef.current = null;
+        isProcessingMessageRef.current = false;
+        isCreatingConversationRef.current = false;
+        
+        // FULL STATE RESET before loading new conversation
+        setSidePanelOpen(false);
+        setSidePanelHtml('');
+        setSidePanelSubject('');
+        setSidePanelPreheader('');
+        setSidePanelContext(null);
+        setSidePanelWorkflowSteps([]);
+        setSidePanelShowCodePreview(true);
+        setSidePanelTitle(undefined);
+        setSidePanelMode('email');
+        setSidePanelDispatchData(null);
+        setCsvLeads(null);
+        setCsvListId(null);
+        setCsvFileName('lista.csv');
+        setCsvRawData([]);
+        setCsvHeaders([]);
+        setCsvMappedColumns({});
+        setSelectedOriginData(null);
+        setDispatchType(null);
+        setActionHistory([]);
+        setHtmlSource(null);
+        setPendingEmailContext(null);
+        setPendingQuestion(null);
+        setActiveJobId(null);
+        setMessages([]);
+        
         isHydratingRef.current = true;
         try {
           const { data, error } = await supabase
@@ -577,6 +613,13 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
             .single();
 
           if (error) throw error;
+
+          // Race condition protection: verify we still want this conversation
+          const currentUrlConvId = searchParams.get('conversation') || searchParams.get('conv');
+          if (currentUrlConvId !== convId) {
+            console.log('[DisparoView] Conversation changed during load, aborting');
+            return;
+          }
 
           // Handle new format with sidePanelState or old format (just messages array)
           const rawData = data.messages as any;
@@ -692,6 +735,8 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
             setSidePanelShowCodePreview(false);
             setSidePanelOpen(true);
           }
+          
+          setInitialLoadDone(true);
         } catch (error) {
           console.error("Error loading conversation from URL:", error);
           // Remove invalid conv param
@@ -2936,26 +2981,6 @@ ${hasName && hasEmail ? `Lista pronta! Guardei os ${leadsWithEmail} leads com em
       isProcessingMessageRef.current = false;
     }
   };
-
-  // Handle selecting a conversation from menu
-  const handleSelectConversation = useCallback((id: string, loadedMessages: Message[]) => {
-    // Abort any active request to prevent stale responses leaking into new conversation
-    if (activeAbortRef.current) {
-      activeAbortRef.current.abort();
-      activeAbortRef.current = null;
-    }
-    activeRunIdRef.current = null;
-    activeRunConversationIdRef.current = null;
-    isProcessingMessageRef.current = false;
-    
-    // Set flag to skip URL-triggered reload (we already have the messages)
-    skipNextUrlLoadRef.current = id;
-    conversationIdRef.current = id;
-    messagesRef.current = loadedMessages;
-    setCurrentConversationId(id);
-    setMessages(loadedMessages);
-    lastSavedSignatureRef.current = ''; // Reset signature so changes get saved
-  }, []);
 
   // Handle new conversation - reset ALL state
   const handleNewConversation = useCallback(() => {
