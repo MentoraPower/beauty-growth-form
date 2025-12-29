@@ -12,7 +12,6 @@ import { CsvSidePanel, CsvLead as CsvLeadType } from "./CsvSidePanel";
 import { DispatchData } from "./DispatchAnalysis";
 import { EmailGenerationIndicator } from "./EmailGenerationIndicator";
 import { AIWorkDetails, WorkStep, WorkSubItem, createLeadsAnalysisStep, createEmailGenerationStep, createDispatchStep, createCustomStep } from "./AIWorkDetails";
-import { VoiceChatButton } from "./VoiceChatButton";
 import { supabase } from "@/integrations/supabase/client";
 import { Clipboard, Check } from "lucide-react";
 import disparoLogo from "@/assets/disparo-logo.png";
@@ -170,7 +169,6 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
   // CSV Side Panel state
   const [csvPanelOpen, setCsvPanelOpen] = useState(false);
   const [csvFileName, setCsvFileName] = useState<string>('lista.csv');
-  
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const chatScrollRef = useRef<HTMLDivElement>(null);
@@ -2089,9 +2087,6 @@ INSTRUÇÕES PARA VOCÊ (A IA):
                 isLoading={isLoading}
                 placeholder="Digite sua mensagem aqui..."
               />
-              <div className="flex justify-center mt-4">
-                <VoiceChatButton onTranscript={(text) => handleSend(text)} />
-              </div>
               <p className="text-xs text-muted-foreground text-center mt-3">
                 A Scale pode cometer erros. Confira informações importantes.
               </p>
@@ -2190,15 +2185,12 @@ INSTRUÇÕES PARA VOCÊ (A IA):
 
             {/* AI Chat Input - fixed at bottom */}
             <div className="p-6 pt-0">
-              <div className="max-w-3xl mx-auto space-y-3">
+              <div className="max-w-3xl mx-auto">
                 <PromptInputBox
                   onSend={handleSend}
                   isLoading={isLoading}
                   placeholder="Digite sua mensagem aqui..."
                 />
-                <div className="flex justify-center">
-                  <VoiceChatButton onTranscript={(text) => handleSend(text)} />
-                </div>
               </div>
             </div>
           </>

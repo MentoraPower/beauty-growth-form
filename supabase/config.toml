@@ -62,6 +62,3 @@ verify_jwt = false
 
 [functions.continue-dispatch]
 verify_jwt = false
-
-[functions.grok-voice-realtime]
-verify_jwt = false

@@ -1,7 +1,7 @@
 import React from "react";
 import * as TooltipPrimitive from "@radix-ui/react-tooltip";
 import * as DialogPrimitive from "@radix-ui/react-dialog";
-import { ArrowUp, Paperclip, Square, X, StopCircle, Mic, Globe, Pen, Palette, Zap, Mail, MessageCircle, Phone, PhoneOff } from "lucide-react";
+import { ArrowUp, Paperclip, Square, X, StopCircle, Mic, Globe, Pen, Palette, Zap, Mail, MessageCircle } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
 // Utility function for className merging
@@ -409,20 +409,14 @@ const CustomDivider: React.FC = () => (
 );
 
 // Main PromptInputBox Component
-type VoiceState = "idle" | "connecting" | "listening" | "processing" | "speaking";
-
 interface PromptInputBoxProps {
   onSend?: (message: string, files?: File[]) => void;
   isLoading?: boolean;
   placeholder?: string;
   className?: string;
-  // Voice chat props
-  voiceState?: VoiceState;
-  isVoiceConnected?: boolean;
-  onVoiceToggle?: () => void;
 }
 export const PromptInputBox = React.forwardRef((props: PromptInputBoxProps, ref: React.Ref<HTMLDivElement>) => {
-  const { onSend = () => {}, isLoading = false, placeholder = "Digite sua mensagem aqui...", className, voiceState = "idle", isVoiceConnected = false, onVoiceToggle } = props;
+  const { onSend = () => {}, isLoading = false, placeholder = "Digite sua mensagem aqui...", className } = props;
   const [input, setInput] = React.useState("");
   const [files, setFiles] = React.useState<File[]>([]);
   const [filePreviews, setFilePreviews] = React.useState<{ [key: string]: string }>({});
@@ -856,79 +850,46 @@ export const PromptInputBox = React.forwardRef((props: PromptInputBoxProps, ref:
             </div>
           </div>
 
-          <div className="flex items-center gap-1">
-            {/* Voice Call Button */}
-            {onVoiceToggle && (
-              <PromptInputAction
-                tooltip={isVoiceConnected ? "Encerrar chamada de voz" : "Iniciar chamada de voz com IA"}
-              >
-                <Button
-                  variant="default"
-                  size="icon"
-                  className={cn(
-                    "h-8 w-8 rounded-full transition-all duration-200",
-                    isVoiceConnected
-                      ? "bg-red-500 hover:bg-red-600 text-white animate-pulse"
-                      : voiceState === "connecting"
-                      ? "bg-amber-500 hover:bg-amber-600 text-white"
-                      : "bg-transparent hover:bg-green-100 text-green-600 hover:text-green-700 border border-green-200"
-                  )}
-                  onClick={onVoiceToggle}
-                  disabled={isLoading}
-                >
-                  {isVoiceConnected ? (
-                    <PhoneOff className="h-4 w-4" />
-                  ) : voiceState === "connecting" ? (
-                    <Phone className="h-4 w-4 animate-pulse" />
-                  ) : (
-                    <Phone className="h-4 w-4" />
-                  )}
-                </Button>
-              </PromptInputAction>
-            )}
-
-            {/* Send/Record Button */}
-            <PromptInputAction
-              tooltip={
-                isLoading
-                  ? "Parar geração"
-                  : isRecording
-                  ? "Parar gravação"
+          <PromptInputAction
+            tooltip={
+              isLoading
+                ? "Parar geração"
+                : isRecording
+                ? "Parar gravação"
+                : hasContent
+                ? "Enviar mensagem"
+                : "Mensagem de voz"
+            }
+          >
+            <Button
+              variant="default"
+              size="icon"
+              className={cn(
+                "h-8 w-8 rounded-full transition-all duration-200",
+                isRecording
+                  ? "bg-transparent hover:bg-gray-100 text-red-500 hover:text-red-400"
                   : hasContent
-                  ? "Enviar mensagem"
-                  : "Mensagem de voz"
-              }
+                  ? "bg-gray-900 hover:bg-gray-800 text-white"
+                  : "bg-transparent hover:bg-gray-100 text-gray-500 hover:text-gray-700"
+              )}
+              onClick={() => {
+                if (isRecording) setIsRecording(false);
+                else if (hasContent) handleSubmit();
+                else setIsRecording(true);
+              }}
+              disabled={isLoading && !hasContent}
             >
-              <Button
-                variant="default"
-                size="icon"
-                className={cn(
-                  "h-8 w-8 rounded-full transition-all duration-200",
-                  isRecording
-                    ? "bg-transparent hover:bg-gray-100 text-red-500 hover:text-red-400"
-                    : hasContent
-                    ? "bg-gray-900 hover:bg-gray-800 text-white"
-                    : "bg-transparent hover:bg-gray-100 text-gray-500 hover:text-gray-700"
-                )}
-                onClick={() => {
-                  if (isRecording) setIsRecording(false);
-                  else if (hasContent) handleSubmit();
-                  else setIsRecording(true);
-                }}
-                disabled={isLoading && !hasContent}
-              >
-                {isLoading ? (
-                  <Square className="h-4 w-4 fill-white animate-pulse" />
-                ) : isRecording ? (
-                  <StopCircle className="h-5 w-5 text-red-500" />
-                ) : hasContent ? (
-                  <ArrowUp className="h-4 w-4" />
-                ) : (
-                  <Mic className="h-5 w-5 transition-colors" />
-                )}
-              </Button>
-            </PromptInputAction>
-          </div>
+              {isLoading ? (
+                <Square className="h-4 w-4 fill-white animate-pulse" />
+              ) : isRecording ? (
+                <StopCircle className="h-5 w-5 text-red-500" />
+              ) : hasContent ? (
+                <ArrowUp className="h-4 w-4" />
+              ) : (
+                <Mic className="h-5 w-5 transition-colors" />
+              )}
+            </Button>
+          </PromptInputAction>
         </PromptInputActions>
       </PromptInput>
 
