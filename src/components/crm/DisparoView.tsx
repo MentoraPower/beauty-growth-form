@@ -644,7 +644,17 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
         if (title === "Nova conversa") {
           const firstUserMessage = currentMessages.find(m => m.role === "user");
           if (firstUserMessage) {
-            title = firstUserMessage.content.slice(0, 50) + (firstUserMessage.content.length > 50 ? "..." : "");
+            // Clean title: remove internal markers like CONTEXT, [Agente:...], etc.
+            let cleanContent = firstUserMessage.content
+              .replace(/\[Agente:[^\]]*\]/gi, '')
+              .replace(/^CONTEXT\s*/i, '')
+              .replace(/^copy\s*/i, '')
+              .replace(/^\s*/, '')
+              .trim();
+            
+            if (cleanContent.length > 0) {
+              title = cleanContent.slice(0, 50) + (cleanContent.length > 50 ? "..." : "");
+            }
           }
         }
       }
