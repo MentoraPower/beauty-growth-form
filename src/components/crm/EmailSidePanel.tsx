@@ -609,7 +609,7 @@ export function EmailSidePanel({
     const isCompleted = dispatchJob?.status === 'completed';
 
     return (
-      <div className="w-[640px] h-full flex-shrink-0 bg-background flex flex-col mt-2 mb-2 mr-2 rounded-2xl overflow-hidden" style={{ border: '1px solid #00000010' }}>
+      <div className="w-[640px] h-full flex-shrink-0 bg-card flex flex-col mt-2 mb-2 mr-2 rounded-2xl overflow-hidden" style={{ border: '1px solid #00000010' }}>
         {/* Header with progress bar */}
         <div className="border-b border-border p-5 space-y-4">
           <div className="flex items-center justify-between">
@@ -783,7 +783,7 @@ export function EmailSidePanel({
   // Render Dispatch Details mode
   if (mode === 'dispatch_details' && dispatchData) {
     return (
-      <div className="w-[640px] h-full flex-shrink-0 bg-background flex flex-col mt-2 mb-2 mr-2 rounded-2xl overflow-hidden" style={{ border: '1px solid #00000010' }}>
+      <div className="w-[640px] h-full flex-shrink-0 bg-card flex flex-col mt-2 mb-2 mr-2 rounded-2xl overflow-hidden" style={{ border: '1px solid #00000010' }}>
         <DispatchAnalysis
           data={dispatchData}
           onNewDispatch={onNewDispatch}
@@ -794,30 +794,30 @@ export function EmailSidePanel({
   }
 
   return (
-    <div className="w-[640px] h-full flex-shrink-0 bg-background flex flex-col mt-2 mb-2 mr-2 rounded-2xl overflow-hidden" style={{ border: '1px solid #00000010' }}>
+    <div className="w-[640px] h-full flex-shrink-0 bg-card flex flex-col mt-2 mb-2 mr-2 rounded-2xl overflow-hidden" style={{ border: '1px solid #00000010' }}>
       {/* Tabs - always at the top when showCodePreview is true */}
       {showCodePreview && (
-        <div className="flex items-center justify-between px-5 py-3 border-b border-border bg-background">
+        <div className="flex items-center justify-between px-5 py-3 border-b border-border bg-card">
           <div className="flex items-center gap-3">
             {/* Close button - circle with >> icon */}
             {onClose && (
               <button
                 onClick={onClose}
-                className="w-8 h-8 rounded-full border border-border bg-background hover:bg-muted flex items-center justify-center transition-colors group"
+                className="w-8 h-8 rounded-full border border-border bg-card hover:bg-muted flex items-center justify-center transition-colors group"
                 title="Fechar painel"
               >
                 <ChevronsRight className="w-4 h-4 text-muted-foreground group-hover:text-foreground transition-colors" />
               </button>
             )}
             
-            <div className="flex items-center gap-1 bg-muted/50 rounded-lg p-1">
+            <div className="flex items-center gap-1 bg-card border border-border rounded-lg p-1">
               <button
                 onClick={() => setActiveTab('preview')}
                 className={cn(
                   "flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-colors",
                   activeTab === 'preview'
-                    ? "bg-background text-foreground shadow-sm"
-                    : "text-muted-foreground hover:text-foreground"
+                    ? "bg-card text-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground hover:bg-muted/30"
                 )}
               >
                 <Eye className="w-4 h-4" />
@@ -828,8 +828,8 @@ export function EmailSidePanel({
                 className={cn(
                   "flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-colors",
                   activeTab === 'code'
-                    ? "bg-background text-foreground shadow-sm"
-                    : "text-muted-foreground hover:text-foreground"
+                    ? "bg-card text-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground hover:bg-muted/30"
                 )}
               >
                 <Code2 className="w-4 h-4" />
@@ -853,7 +853,7 @@ export function EmailSidePanel({
       
       {/* Email Subject/Preheader Header */}
       {showCodePreview && (
-        <div className="px-5 py-4 border-b border-border bg-white">
+        <div className="px-5 py-4 border-b border-border bg-card">
           <div className="space-y-3">
             {/* Subject - editable */}
             <div>
@@ -934,7 +934,7 @@ export function EmailSidePanel({
               
             </div>
           ) : (
-            <div className="h-full overflow-auto bg-white">
+            <div className="h-full overflow-auto bg-card">
               {showPreviewLoading ? (
                 // Skeleton loading state
                 <div className="p-6 space-y-4 animate-pulse">
@@ -989,7 +989,7 @@ export function EmailSidePanel({
           )
         ) : (
           // Text-only mode (for copy/content without code preview)
-          <div className="h-full overflow-auto bg-white">
+          <div className="h-full overflow-auto bg-card">
             {htmlContent ? (
               <div
                 ref={previewRef}
