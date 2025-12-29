@@ -51,6 +51,10 @@ export function DispatchProgressTable({ jobId, onCommand, onShowDetails, onError
   
   // Track last notified values to avoid duplicate notifications
   const lastFailedCountRef = useRef(0);
+  
+  // Track if the job was already completed when we first loaded it
+  // If so, we should NOT notify (user is just viewing history)
+  const wasCompletedOnLoadRef = useRef<boolean | null>(null);
 
   // Fetch job data
   const fetchJob = useCallback(async () => {
@@ -67,6 +71,15 @@ export function DispatchProgressTable({ jobId, onCommand, onShowDetails, onError
       setLastUpdate(new Date());
       if (loading) {
         lastFailedCountRef.current = jobData.failed_count;
+        // Mark if job was already completed on initial load
+        if (wasCompletedOnLoadRef.current === null) {
+          const isAlreadyComplete = jobData.status === 'completed' || jobData.status === 'cancelled';
+          wasCompletedOnLoadRef.current = isAlreadyComplete;
+          // If already complete, add to notified set to prevent any future notifications
+          if (isAlreadyComplete) {
+            notifiedCompletedJobs.add(jobId);
+          }
+        }
       }
     }
     setLoading(false);
