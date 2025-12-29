@@ -1974,19 +1974,32 @@ INSTRUÇÕES PARA VOCÊ (A IA):
       // Check if copywriting mode to show panel during streaming
       const isCopywritingMode = messageContent.includes('[CONTEXT:copywriting]');
       
-      // Initial workflow steps for copywriting
+      // Extract a short summary from user prompt for workflow descriptions
+      const getPromptSummary = (prompt: string): string => {
+        // Remove context tags
+        const cleaned = prompt.replace(/\[CONTEXT:[^\]]+\]/g, '').trim();
+        // Get first 60 chars, end at word boundary
+        const truncated = cleaned.length > 60 
+          ? cleaned.substring(0, 60).replace(/\s+\S*$/, '') + '...'
+          : cleaned;
+        return truncated || 'user request';
+      };
+      const promptSummary = getPromptSummary(messageContent);
+      
+      // Initial workflow steps for copywriting with real descriptions
       const initialCopywritingSteps: WorkStep[] = [
         createCustomStep('analysis', 'Analisando contexto', 'in_progress', { 
           icon: 'search',
-          description: 'Reading user prompt and extracting key requirements'
+          description: `Parsing prompt: "${promptSummary}"`,
+          summary: 'Extracting key requirements, target audience, and desired tone from user input.'
         }),
         createCustomStep('generation', 'Geração da copy', 'pending', { 
           icon: 'sparkles',
-          description: 'Creating content based on analysis'
+          description: 'Waiting for context analysis to complete'
         }),
         createCustomStep('review', 'Pronto para revisão', 'pending', { 
           icon: 'edit',
-          description: 'Content ready for user review and editing'
+          description: 'Content will be available for editing'
         }),
       ];
       
@@ -2016,15 +2029,17 @@ INSTRUÇÕES PARA VOCÊ (A IA):
         const generatingSteps: WorkStep[] = [
           createCustomStep('analysis', 'Contexto analisado', 'completed', { 
             icon: 'search',
-            description: 'User requirements extracted successfully'
+            description: `Parsed: "${promptSummary}"`,
+            summary: 'Identified target audience, tone, and key selling points from user prompt.'
           }),
           createCustomStep('generation', 'Gerando copy...', 'in_progress', { 
             icon: 'sparkles',
-            description: 'AI is writing content based on context'
+            description: 'AI is crafting persuasive content with AIDA structure',
+            summary: 'Writing headline, emotional hooks, benefits, objections handling, and CTA.'
           }),
           createCustomStep('review', 'Pronto para revisão', 'pending', { 
             icon: 'edit',
-            description: 'Content ready for user review and editing'
+            description: 'Content will be available for editing'
           }),
         ];
         
@@ -2131,6 +2146,16 @@ INSTRUÇÕES PARA VOCÊ (A IA):
         // Check if the original message was from copywriting agent
         const isCopywritingMode = messageContent.includes('[CONTEXT:copywriting]');
         
+        // Re-extract prompt summary for final steps
+        const getPromptSummaryFinal = (prompt: string): string => {
+          const cleaned = prompt.replace(/\[CONTEXT:[^\]]+\]/g, '').trim();
+          const truncated = cleaned.length > 60 
+            ? cleaned.substring(0, 60).replace(/\s+\S*$/, '') + '...'
+            : cleaned;
+          return truncated || 'user request';
+        };
+        const promptSummary = getPromptSummaryFinal(messageContent);
+        
         // Check if content is large (important copy, emails, etc.)
         const isLargeContent = cleanContent.length > 300;
         
@@ -2145,19 +2170,23 @@ INSTRUÇÕES PARA VOCÊ (A IA):
            cleanContent.includes('<div') || cleanContent.includes('<p') || 
            cleanContent.includes('<h1') || cleanContent.includes('<table'));
         
-        // Final workflow steps for persistence
+        // Final workflow steps for persistence - with real descriptions
+        const wordCount = cleanContent.split(/\s+/).length;
         const completedWorkflowSteps: WorkStep[] = [
           createCustomStep('analysis', 'Análise do contexto', 'completed', { 
             icon: 'file',
-            description: 'User requirements extracted successfully'
+            description: `Parsed: "${promptSummary}"`,
+            summary: 'Extracted target audience, tone, and key messaging points from user input.'
           }),
           createCustomStep('generation', isCopywritingMode ? 'Copy gerada' : 'Conteúdo gerado', 'completed', { 
             icon: 'sparkles',
-            description: 'Content created and ready to use'
+            description: `Generated ${wordCount} words with persuasive structure`,
+            summary: 'Applied AIDA framework: Attention, Interest, Desire, Action. Included emotional hooks, benefits, and CTA.'
           }),
           createCustomStep('review', 'Pronto para revisão', 'completed', { 
             icon: 'edit',
-            description: 'Edit in side panel before sending'
+            description: 'Content available in side panel for editing',
+            summary: 'You can modify the text, adjust formatting, and refine the message before sending.'
           }),
         ];
         

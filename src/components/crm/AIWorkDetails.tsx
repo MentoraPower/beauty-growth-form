@@ -78,29 +78,10 @@ function FileReferenceItem({ label, status }: { label: string; status: WorkSubIt
 }
 
 export function AIWorkDetails({ steps, className }: AIWorkDetailsProps) {
-  const [openSteps, setOpenSteps] = useState<Set<string>>(() => {
-    // Auto-open in_progress or first completed step with content
-    const autoOpen = new Set<string>();
-    const inProgressStep = steps.find(s => s.status === 'in_progress');
-    if (inProgressStep) {
-      autoOpen.add(inProgressStep.id);
-    } else {
-      // Auto-open first completed step that has content
-      const firstWithContent = steps.find(s => s.status === 'completed' && ((s.subItems && s.subItems.length > 0) || s.summary));
-      if (firstWithContent) {
-        autoOpen.add(firstWithContent.id);
-      }
-    }
-    return autoOpen;
-  });
+  // All steps start collapsed by default
+  const [openSteps, setOpenSteps] = useState<Set<string>>(new Set());
 
-  // Auto-open steps when they become in_progress
-  useEffect(() => {
-    const inProgressStep = steps.find(s => s.status === 'in_progress');
-    if (inProgressStep && !openSteps.has(inProgressStep.id)) {
-      setOpenSteps(prev => new Set(prev).add(inProgressStep.id));
-    }
-  }, [steps]);
+  // No auto-opening - user must click to expand
 
   const toggleStep = (stepId: string) => {
     setOpenSteps(prev => {
