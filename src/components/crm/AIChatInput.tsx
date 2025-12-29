@@ -63,7 +63,7 @@ export function AIChatInput({
         className={cn(
           "w-full bg-transparent text-white placeholder:text-gray-400",
           "resize-none border-none outline-none focus:ring-0",
-          "text-base leading-relaxed min-h-[28px] max-h-[200px]",
+          "text-base leading-relaxed min-h-[44px] max-h-[200px]",
           "scrollbar-thin scrollbar-thumb-gray-600 scrollbar-track-transparent"
         )}
       />
