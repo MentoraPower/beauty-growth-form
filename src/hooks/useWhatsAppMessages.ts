@@ -164,7 +164,10 @@ export function useWhatsAppMessages({ selectedChat, onMarkAsRead }: UseWhatsAppM
 
   // Realtime subscription for messages
   useEffect(() => {
-    if (!selectedChat) return;
+    // Validate selectedChat.id before creating realtime channel
+    if (!selectedChat?.id || selectedChat.id === 'null' || selectedChat.id === 'undefined') {
+      return;
+    }
 
     const channel = supabase
       .channel(`whatsapp-messages-${selectedChat.id}`)

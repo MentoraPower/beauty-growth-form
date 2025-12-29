@@ -500,9 +500,12 @@ export function KanbanBoard() {
     }
   }, [dataUpdatedAt, subOriginId, leads]);
 
-  // Real-time subscription - only when subOriginId exists
+  // Real-time subscription - only when subOriginId exists and is valid
   useEffect(() => {
-    if (!subOriginId) return; // Don't subscribe to "all" changes
+    // Validate subOriginId before creating realtime channel
+    if (!subOriginId || subOriginId === 'null' || subOriginId === 'undefined') {
+      return; // Don't subscribe to "all" changes or invalid IDs
+    }
 
     const scheduleLeadsInvalidate = () => {
       if (invalidateLeadsTimeoutRef.current) {

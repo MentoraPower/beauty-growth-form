@@ -72,10 +72,15 @@ export function DispatchProgressTable({ jobId, onCommand, onShowDetails, onError
     setLoading(false);
   }, [jobId, loading]);
 
-  // Initial fetch
+  // Initial fetch - validate jobId first
   useEffect(() => {
+    if (!jobId || jobId === 'null' || jobId === 'undefined') {
+      console.warn('[DispatchProgress] Invalid jobId, skipping fetch');
+      setLoading(false);
+      return;
+    }
     fetchJob();
-  }, [fetchJob]);
+  }, [fetchJob, jobId]);
 
   // Check if job is still active (for polling control)
   const isJobActive = useCallback(() => {

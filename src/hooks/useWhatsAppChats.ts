@@ -315,7 +315,10 @@ export function useWhatsAppChats({ selectedAccountId, whatsappAccounts }: UseWha
     const selectedAccount = whatsappAccounts.find(acc => acc.id === selectedAccountId);
     const currentSessionId = selectedAccount?.api_key;
     
-    if (!currentSessionId) return;
+    // Validate sessionId before creating realtime channel
+    if (!currentSessionId || currentSessionId === 'null' || currentSessionId === 'undefined') {
+      return;
+    }
     
     const channelName = `whatsapp-chats-${currentSessionId.substring(0, 12)}`;
     
