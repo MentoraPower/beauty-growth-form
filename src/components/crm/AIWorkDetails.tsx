@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
@@ -7,6 +7,7 @@ import { Check, ChevronDown, Loader2, FileText, Zap, Send, Search, Sparkles } fr
 export interface WorkSubItem {
   id: string;
   label: string;
+  type?: 'file' | 'action' | 'text'; // 'file' shows as file reference with icon box
   status: 'pending' | 'in_progress' | 'done';
 }
 
@@ -33,10 +34,10 @@ const iconMap = {
   zap: Zap,
 };
 
-function StepIcon({ status, icon }: { status: WorkStep['status']; icon?: WorkStep['icon'] }) {
+function StepStatusIcon({ status }: { status: WorkStep['status'] }) {
   if (status === 'completed') {
     return (
-      <div className="w-5 h-5 rounded-full bg-emerald-500 flex items-center justify-center flex-shrink-0">
+      <div className="w-[18px] h-[18px] rounded-full bg-emerald-500 flex items-center justify-center flex-shrink-0">
         <Check className="w-3 h-3 text-white" strokeWidth={3} />
       </div>
     );
@@ -44,53 +45,73 @@ function StepIcon({ status, icon }: { status: WorkStep['status']; icon?: WorkSte
   
   if (status === 'in_progress') {
     return (
-      <div className="w-5 h-5 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0">
-        <Loader2 className="w-3 h-3 text-primary animate-spin" />
-      </div>
-    );
-  }
-  
-  // Pending
-  const IconComponent = icon ? iconMap[icon] : null;
-  return (
-    <div className="w-5 h-5 rounded-full border-2 border-muted-foreground/30 flex items-center justify-center flex-shrink-0">
-      {IconComponent && <IconComponent className="w-2.5 h-2.5 text-muted-foreground/50" />}
-    </div>
-  );
-}
-
-function SubItemIcon({ status }: { status: WorkSubItem['status'] }) {
-  if (status === 'done') {
-    return (
-      <div className="w-3.5 h-3.5 rounded-full bg-emerald-500/20 flex items-center justify-center flex-shrink-0">
-        <Check className="w-2 h-2 text-emerald-600" strokeWidth={3} />
-      </div>
-    );
-  }
-  
-  if (status === 'in_progress') {
-    return (
-      <div className="w-3.5 h-3.5 flex items-center justify-center flex-shrink-0">
+      <div className="w-[18px] h-[18px] rounded-full border-2 border-primary flex items-center justify-center flex-shrink-0">
         <Loader2 className="w-2.5 h-2.5 text-primary animate-spin" />
       </div>
     );
   }
   
+  // Pending - empty circle
   return (
-    <div className="w-3.5 h-3.5 rounded-full border border-muted-foreground/20 flex-shrink-0" />
+    <div className="w-[18px] h-[18px] rounded-full border-2 border-muted-foreground/30 flex-shrink-0" />
+  );
+}
+
+function FileReferenceItem({ label, status }: { label: string; status: WorkSubItem['status'] }) {
+  return (
+    <div className="flex items-center gap-2 py-1">
+      <div className={cn(
+        "w-5 h-5 rounded flex items-center justify-center flex-shrink-0 transition-colors",
+        status === 'done' && "bg-emerald-100 dark:bg-emerald-500/20",
+        status === 'in_progress' && "bg-primary/10",
+        status === 'pending' && "bg-muted"
+      )}>
+        <Zap className={cn(
+          "w-3 h-3",
+          status === 'done' && "text-emerald-600 dark:text-emerald-400",
+          status === 'in_progress' && "text-primary",
+          status === 'pending' && "text-muted-foreground/50"
+        )} />
+      </div>
+      <span className={cn(
+        "text-xs font-mono",
+        status === 'done' && "text-foreground",
+        status === 'in_progress' && "text-foreground",
+        status === 'pending' && "text-muted-foreground/60"
+      )}>
+        {label}
+      </span>
+      {status === 'in_progress' && (
+        <Loader2 className="w-3 h-3 text-primary animate-spin ml-auto" />
+      )}
+    </div>
   );
 }
 
 export function AIWorkDetails({ steps, className }: AIWorkDetailsProps) {
   const [openSteps, setOpenSteps] = useState<Set<string>>(() => {
-    // Auto-open in_progress or first completed step
+    // Auto-open in_progress or first completed step with content
     const autoOpen = new Set<string>();
     const inProgressStep = steps.find(s => s.status === 'in_progress');
     if (inProgressStep) {
       autoOpen.add(inProgressStep.id);
+    } else {
+      // Auto-open first completed step that has content
+      const firstWithContent = steps.find(s => s.status === 'completed' && ((s.subItems && s.subItems.length > 0) || s.summary));
+      if (firstWithContent) {
+        autoOpen.add(firstWithContent.id);
+      }
     }
     return autoOpen;
   });
+
+  // Auto-open steps when they become in_progress
+  useEffect(() => {
+    const inProgressStep = steps.find(s => s.status === 'in_progress');
+    if (inProgressStep && !openSteps.has(inProgressStep.id)) {
+      setOpenSteps(prev => new Set(prev).add(inProgressStep.id));
+    }
+  }, [steps]);
 
   const toggleStep = (stepId: string) => {
     setOpenSteps(prev => {
@@ -108,15 +129,15 @@ export function AIWorkDetails({ steps, className }: AIWorkDetailsProps) {
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 8 }}
+      initial={{ opacity: 0, y: 6 }}
       animate={{ opacity: 1, y: 0 }}
       className={cn(
-        "rounded-xl border border-border/50 bg-card/50 backdrop-blur-sm overflow-hidden",
+        "rounded-lg overflow-hidden bg-background",
         className
       )}
     >
-      <div className="divide-y divide-border/30">
-        {steps.map((step, index) => {
+      <div className="space-y-0">
+        {steps.map((step) => {
           const isOpen = openSteps.has(step.id);
           const hasContent = (step.subItems && step.subItems.length > 0) || step.summary;
           
@@ -129,17 +150,17 @@ export function AIWorkDetails({ steps, className }: AIWorkDetailsProps) {
               <CollapsibleTrigger asChild disabled={!hasContent}>
                 <button
                   className={cn(
-                    "w-full px-4 py-3 flex items-center gap-3 text-left transition-colors",
-                    hasContent && "hover:bg-muted/30 cursor-pointer",
+                    "w-full py-2 flex items-center gap-2.5 text-left transition-colors",
+                    hasContent && "hover:opacity-80 cursor-pointer",
                     !hasContent && "cursor-default"
                   )}
                 >
-                  <StepIcon status={step.status} icon={step.icon} />
+                  <StepStatusIcon status={step.status} />
                   
                   <span className={cn(
-                    "flex-1 text-sm font-medium",
-                    step.status === 'completed' && "text-foreground",
-                    step.status === 'in_progress' && "text-foreground",
+                    "flex-1 text-sm",
+                    step.status === 'completed' && "text-foreground font-medium",
+                    step.status === 'in_progress' && "text-foreground font-medium",
                     step.status === 'pending' && "text-muted-foreground"
                   )}>
                     {step.title}
@@ -170,33 +191,36 @@ export function AIWorkDetails({ steps, className }: AIWorkDetailsProps) {
                       transition={{ duration: 0.2, ease: "easeInOut" }}
                       className="overflow-hidden"
                     >
-                      <div className="px-4 pb-3 pl-12 space-y-2">
-                        {/* Sub-items */}
+                      <div className="pb-3 pl-7 space-y-1">
+                        {/* Sub-items - file references with icon boxes */}
                         {step.subItems && step.subItems.length > 0 && (
-                          <div className="space-y-1.5">
-                            {step.subItems.map(item => (
-                              <div key={item.id} className="flex items-center gap-2">
-                                <SubItemIcon status={item.status} />
-                                <span className={cn(
-                                  "text-xs",
-                                  item.status === 'done' && "text-muted-foreground",
-                                  item.status === 'in_progress' && "text-foreground",
-                                  item.status === 'pending' && "text-muted-foreground/60"
-                                )}>
-                                  {item.label}
-                                </span>
-                              </div>
-                            ))}
+                          <div className="space-y-0.5">
+                            {step.subItems.map(item => {
+                              if (item.type === 'file' || item.label.startsWith('Lendo ') || item.label.includes('arquivo')) {
+                                return <FileReferenceItem key={item.id} label={item.label} status={item.status} />;
+                              }
+                              // Regular text item
+                              return (
+                                <div key={item.id} className="flex items-center gap-2 py-0.5">
+                                  <span className={cn(
+                                    "text-xs",
+                                    item.status === 'done' && "text-muted-foreground",
+                                    item.status === 'in_progress' && "text-foreground",
+                                    item.status === 'pending' && "text-muted-foreground/60"
+                                  )}>
+                                    {item.label}
+                                  </span>
+                                </div>
+                              );
+                            })}
                           </div>
                         )}
                         
                         {/* Summary text */}
                         {step.summary && (
-                          <div className="mt-2 p-3 rounded-lg bg-muted/40 border border-border/30">
-                            <p className="text-xs text-muted-foreground leading-relaxed">
-                              {step.summary}
-                            </p>
-                          </div>
+                          <p className="text-sm text-muted-foreground leading-relaxed pt-2">
+                            {step.summary}
+                          </p>
                         )}
                       </div>
                     </motion.div>
@@ -219,23 +243,27 @@ export function createLeadsAnalysisStep(
     validCount?: number; 
     totalCount?: number;
     summary?: string;
+    files?: string[]; // List of files being read
   }
 ): WorkStep {
   const subItems: WorkSubItem[] = [];
   
-  if (options?.listName) {
+  // Add file references
+  if (options?.files && options.files.length > 0) {
+    options.files.forEach((file, i) => {
+      subItems.push({
+        id: `file_${i}`,
+        label: `Lendo arquivo ${file}`,
+        type: 'file',
+        status: status === 'pending' ? 'pending' : 'done'
+      });
+    });
+  } else if (options?.listName) {
     subItems.push({
       id: 'load',
-      label: `Carregando lista ${options.listName}...`,
+      label: `Lendo lista ${options.listName}`,
+      type: 'file',
       status: status === 'pending' ? 'pending' : 'done'
-    });
-  }
-  
-  if (options?.validCount !== undefined) {
-    subItems.push({
-      id: 'identify',
-      label: `Identificando ${options.validCount} leads válidos`,
-      status: status === 'completed' ? 'done' : status === 'in_progress' ? 'in_progress' : 'pending'
     });
   }
   
@@ -253,6 +281,7 @@ export function createEmailGenerationStep(
   status: WorkStep['status'],
   options?: { 
     summary?: string;
+    subItems?: WorkSubItem[];
   }
 ): WorkStep {
   return {
@@ -260,6 +289,7 @@ export function createEmailGenerationStep(
     title: 'Geração do email HTML',
     status,
     icon: 'sparkles',
+    subItems: options?.subItems,
     summary: options?.summary
   };
 }
@@ -281,5 +311,60 @@ export function createDispatchStep(
       ? { current: options.current, total: options.total }
       : undefined,
     summary: options?.summary
+  };
+}
+
+// Create a step for analyzing context/transcriptions like in the image
+export function createAnalysisStep(
+  status: WorkStep['status'],
+  options?: {
+    title?: string;
+    files?: { name: string; status: 'pending' | 'in_progress' | 'done' }[];
+    summary?: string;
+  }
+): WorkStep {
+  const subItems: WorkSubItem[] = [];
+  
+  if (options?.files) {
+    options.files.forEach((file, i) => {
+      subItems.push({
+        id: `file_${i}`,
+        label: `Lendo arquivo ${file.name}`,
+        type: 'file',
+        status: file.status
+      });
+    });
+  }
+  
+  return {
+    id: `analysis_${Date.now()}`,
+    title: options?.title || 'Leitura e análise dos arquivos',
+    status,
+    icon: 'file',
+    subItems: subItems.length > 0 ? subItems : undefined,
+    summary: options?.summary
+  };
+}
+
+// Create a generic step with custom title
+export function createCustomStep(
+  id: string,
+  title: string,
+  status: WorkStep['status'],
+  options?: {
+    icon?: WorkStep['icon'];
+    subItems?: WorkSubItem[];
+    summary?: string;
+    progress?: { current: number; total: number };
+  }
+): WorkStep {
+  return {
+    id,
+    title,
+    status,
+    icon: options?.icon || 'zap',
+    subItems: options?.subItems,
+    summary: options?.summary,
+    progress: options?.progress
   };
 }
