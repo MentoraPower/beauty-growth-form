@@ -24,17 +24,17 @@ export function EmailChatCard({
       )}
       onClick={onClick}
     >
-      {/* Preview on the left side */}
+      {/* Preview on the left side - sticking out from top */}
       {previewHtml && (
-        <div className="relative flex-shrink-0 p-2.5 pr-0">
-          <div className="w-20 h-24 bg-white rounded-lg overflow-hidden shadow-md border border-zinc-200/80 relative">
+        <div className="relative flex-shrink-0 pl-2.5 pb-2 pt-2.5">
+          <div className="w-16 h-20 bg-white rounded-lg overflow-hidden shadow-md border border-zinc-200/80 relative -mt-6">
             <div 
-              className="absolute inset-0 origin-top-left overflow-hidden pointer-events-none p-0.5"
+              className="absolute inset-0 origin-top-left overflow-hidden pointer-events-none"
               style={{ 
-                transform: 'scale(0.085)', 
+                transform: 'scale(0.07)', 
                 transformOrigin: 'top left',
-                width: '1176%',
-                height: '1176%'
+                width: '1428%',
+                height: '1428%'
               }}
             >
               <div 
@@ -47,12 +47,12 @@ export function EmailChatCard({
       )}
 
       {/* Content */}
-      <div className="flex-1 p-3 flex flex-col justify-center gap-1.5 min-w-0">
-        <div className="min-w-0">
+      <div className="flex-1 py-2 px-3 flex items-center gap-3 min-w-0">
+        <div className="min-w-0 flex-1">
           <span className="text-sm font-medium text-white truncate block">
             {subject || "Email Template"}
           </span>
-          <span className="text-[11px] text-zinc-500 mt-0.5 block">
+          <span className="text-[11px] text-zinc-500 block">
             Clique para editar
           </span>
         </div>
@@ -60,9 +60,9 @@ export function EmailChatCard({
         {/* Button */}
         <button
           type="button"
-          className="py-1.5 px-3 bg-zinc-800 hover:bg-zinc-700 text-white text-xs font-medium rounded-lg transition-colors w-fit"
+          className="py-1 px-2.5 bg-zinc-800 hover:bg-zinc-700 text-white text-[11px] font-medium rounded-md transition-colors flex-shrink-0"
         >
-          View
+          Ver
         </button>
       </div>
     </motion.div>
