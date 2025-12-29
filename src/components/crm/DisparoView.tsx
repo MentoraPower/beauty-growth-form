@@ -2490,13 +2490,14 @@ INSTRUÇÕES PARA VOCÊ (A IA):
                         )}
                         {/* Email generation indicator */}
                         {msg.componentData?.type === 'email_generator_streaming' && (
-                          <div className="mt-2">
+                          <div className="mt-3">
                             <EmailGenerationIndicator
                               isGenerating={sidePanelGenerating}
                               isComplete={msg.componentData?.data?.isComplete || !sidePanelGenerating}
                               isEditing={sidePanelEditing || msg.componentData?.data?.isEditing}
                               onTogglePanel={() => setSidePanelOpen(!sidePanelOpen)}
                               isPanelOpen={sidePanelOpen}
+                              previewHtml={sidePanelHtml}
                             />
                           </div>
                         )}
