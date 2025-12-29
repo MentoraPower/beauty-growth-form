@@ -1,23 +1,24 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { BubbleMenu, Editor } from '@tiptap/react';
 import { Bold, Italic, Strikethrough, Code, ChevronDown, Type, Link, Unlink } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { TextSelection } from '@tiptap/pm/state';
 
 interface TiptapFloatingToolbarProps {
   editor: Editor | null;
 }
 
 interface ToolbarButtonProps {
-  onClick: () => void;
+  onMouseDown: (e: React.MouseEvent) => void;
   isActive?: boolean;
   children: React.ReactNode;
   title: string;
 }
 
-const ToolbarButton = ({ onClick, isActive, children, title }: ToolbarButtonProps) => (
+const ToolbarButton = ({ onMouseDown, isActive, children, title }: ToolbarButtonProps) => (
   <button
     type="button"
-    onClick={onClick}
+    onMouseDown={onMouseDown}
     title={title}
     className={cn(
       "p-1.5 rounded hover:bg-white/20 transition-colors",
@@ -41,6 +42,7 @@ export function TiptapFloatingToolbar({ editor }: TiptapFloatingToolbarProps) {
   const [showDropdown, setShowDropdown] = useState(false);
   const [showLinkInput, setShowLinkInput] = useState(false);
   const [linkUrl, setLinkUrl] = useState('');
+  const savedSelectionRef = useRef<{ from: number; to: number } | null>(null);
 
   if (!editor) return null;
 
@@ -53,79 +55,152 @@ export function TiptapFloatingToolbar({ editor }: TiptapFloatingToolbarProps) {
     return 'Parágrafo';
   };
 
-  const applyStyle = (value: string) => {
-    const { from, to } = editor.state.selection;
-    const $from = editor.state.doc.resolve(from);
-    const $to = editor.state.doc.resolve(to);
+  const applyStyle = (value: string, e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
     
-    // Get block boundaries
+    const { state, view } = editor;
+    const { from, to } = state.selection;
+    const { tr, schema } = state;
+    
+    // Resolve positions
+    const $from = state.doc.resolve(from);
+    const $to = state.doc.resolve(to);
+    
+    // Get the block boundaries
     const blockStart = $from.start($from.depth);
     const blockEnd = $to.end($to.depth);
     
-    // Check if selection covers the full block
-    const isFullBlockSelected = from <= blockStart + 1 && to >= blockEnd - 1;
+    // Check if this is a partial selection within a single block
+    const isPartialSelection = from > blockStart && to < blockEnd;
+    const sameBlock = $from.sameParent($to);
     
-    // Check if selection spans multiple blocks
-    const sameBlock = $from.parent === $to.parent || $from.depth === $to.depth;
-    
-    if (!isFullBlockSelected && sameBlock && $from.parent.type.name !== 'doc') {
-      // Need to split the block to isolate the selected text
-      let chain = editor.chain().focus();
+    if (isPartialSelection && sameBlock) {
+      // Use ProseMirror transaction to split and apply style
+      let newTr = tr;
       
-      // If there's content after the selection, split there first
-      if (to < blockEnd - 1) {
-        chain = chain.setTextSelection(to).splitBlock();
+      // Split at the end of selection first (so positions don't shift for the start split)
+      if (to < blockEnd) {
+        newTr = newTr.split(to);
       }
       
-      // If there's content before the selection, split there
-      if (from > blockStart + 1) {
-        chain = chain.setTextSelection(from).splitBlock();
+      // Map the 'from' position after the first split
+      const mappedFrom = newTr.mapping.map(from);
+      const mappedBlockStart = newTr.mapping.map(blockStart);
+      
+      // Split at the start of selection
+      if (mappedFrom > mappedBlockStart + 1) {
+        newTr = newTr.split(mappedFrom);
       }
       
-      chain.run();
+      // Now find the middle block (the one with our selected text) and apply the style
+      // After splits, the selected text should be in its own block
+      const newMappedFrom = newTr.mapping.map(from);
+      const $newPos = newTr.doc.resolve(newMappedFrom);
       
-      // Now apply the style - the cursor should be in the isolated block
-      // We need to select the text that was originally selected
-      const newFrom = from > blockStart + 1 ? from + 1 : from;
-      const newTo = from > blockStart + 1 ? to + 1 : to;
+      // Get the block node at the new position
+      const blockNodePos = $newPos.before($newPos.depth);
+      const blockNode = newTr.doc.nodeAt(blockNodePos);
       
-      editor.chain().focus().setTextSelection({ from: newFrom, to: newTo });
+      if (blockNode) {
+        // Determine the target node type
+        let nodeType;
+        let attrs = {};
+        
+        switch (value) {
+          case 'paragraph':
+            nodeType = schema.nodes.paragraph;
+            break;
+          case 'h1':
+            nodeType = schema.nodes.heading;
+            attrs = { level: 1 };
+            break;
+          case 'h2':
+            nodeType = schema.nodes.heading;
+            attrs = { level: 2 };
+            break;
+          case 'h3':
+            nodeType = schema.nodes.heading;
+            attrs = { level: 3 };
+            break;
+          case 'h4':
+            nodeType = schema.nodes.heading;
+            attrs = { level: 4 };
+            break;
+          case 'blockquote':
+            // For blockquote, we'll handle it differently after dispatch
+            nodeType = null;
+            break;
+        }
+        
+        if (nodeType) {
+          // Apply the block type to the isolated block
+          newTr = newTr.setBlockType(blockNodePos, blockNodePos + blockNode.nodeSize, nodeType, attrs);
+        }
+        
+        // Dispatch the transaction
+        view.dispatch(newTr);
+        
+        // Handle blockquote separately (it wraps rather than replaces)
+        if (value === 'blockquote') {
+          editor.chain().focus().toggleBlockquote().run();
+        }
+      } else {
+        view.dispatch(newTr);
+      }
+    } else {
+      // Full block selection or multi-block - apply style normally
+      switch (value) {
+        case 'paragraph':
+          editor.chain().focus().setParagraph().run();
+          break;
+        case 'h1':
+          editor.chain().focus().setHeading({ level: 1 }).run();
+          break;
+        case 'h2':
+          editor.chain().focus().setHeading({ level: 2 }).run();
+          break;
+        case 'h3':
+          editor.chain().focus().setHeading({ level: 3 }).run();
+          break;
+        case 'h4':
+          editor.chain().focus().setHeading({ level: 4 }).run();
+          break;
+        case 'blockquote':
+          editor.chain().focus().toggleBlockquote().run();
+          break;
+      }
     }
     
-    // Apply the style
-    switch (value) {
-      case 'paragraph':
-        editor.chain().focus().setParagraph().run();
-        break;
-      case 'h1':
-        editor.chain().focus().setHeading({ level: 1 }).run();
-        break;
-      case 'h2':
-        editor.chain().focus().setHeading({ level: 2 }).run();
-        break;
-      case 'h3':
-        editor.chain().focus().setHeading({ level: 3 }).run();
-        break;
-      case 'h4':
-        editor.chain().focus().setHeading({ level: 4 }).run();
-        break;
-      case 'blockquote':
-        editor.chain().focus().toggleBlockquote().run();
-        break;
-    }
     setShowDropdown(false);
   };
 
   const handleSetLink = () => {
-    if (linkUrl) {
-      editor.chain().focus().extendMarkRange('link').setLink({ href: linkUrl }).run();
+    if (linkUrl && savedSelectionRef.current) {
+      const { from, to } = savedSelectionRef.current;
+      editor.chain()
+        .focus()
+        .setTextSelection({ from, to })
+        .setLink({ href: linkUrl })
+        .run();
       setLinkUrl('');
       setShowLinkInput(false);
+      savedSelectionRef.current = null;
     }
   };
 
-  const handleRemoveLink = () => {
+  const handleRemoveLink = (e: React.MouseEvent) => {
+    e.preventDefault();
     editor.chain().focus().unsetLink().run();
+  };
+
+  const handleOpenLinkInput = (e: React.MouseEvent) => {
+    e.preventDefault();
+    // Save selection before opening input
+    const { from, to } = editor.state.selection;
+    savedSelectionRef.current = { from, to };
+    setShowLinkInput(!showLinkInput);
+    setShowDropdown(false);
   };
 
   return (
@@ -147,7 +222,8 @@ export function TiptapFloatingToolbar({ editor }: TiptapFloatingToolbarProps) {
       <div className="relative">
         <button
           type="button"
-          onClick={() => {
+          onMouseDown={(e) => {
+            e.preventDefault();
             setShowDropdown(!showDropdown);
             setShowLinkInput(false);
           }}
@@ -164,7 +240,7 @@ export function TiptapFloatingToolbar({ editor }: TiptapFloatingToolbarProps) {
               <button
                 key={style.value}
                 type="button"
-                onClick={() => applyStyle(style.value)}
+                onMouseDown={(e) => applyStyle(style.value, e)}
                 className={cn(
                   "w-full text-left px-3 py-1.5 text-xs hover:bg-white/20 transition-colors",
                   getCurrentStyle() === style.label && "bg-white/10"
@@ -180,7 +256,10 @@ export function TiptapFloatingToolbar({ editor }: TiptapFloatingToolbarProps) {
       <div className="w-px h-5 bg-white/20 mx-1" />
 
       <ToolbarButton
-        onClick={() => editor.chain().focus().toggleBold().run()}
+        onMouseDown={(e) => {
+          e.preventDefault();
+          editor.chain().focus().toggleBold().run();
+        }}
         isActive={editor.isActive('bold')}
         title="Negrito"
       >
@@ -188,7 +267,10 @@ export function TiptapFloatingToolbar({ editor }: TiptapFloatingToolbarProps) {
       </ToolbarButton>
 
       <ToolbarButton
-        onClick={() => editor.chain().focus().toggleItalic().run()}
+        onMouseDown={(e) => {
+          e.preventDefault();
+          editor.chain().focus().toggleItalic().run();
+        }}
         isActive={editor.isActive('italic')}
         title="Itálico"
       >
@@ -196,7 +278,10 @@ export function TiptapFloatingToolbar({ editor }: TiptapFloatingToolbarProps) {
       </ToolbarButton>
 
       <ToolbarButton
-        onClick={() => editor.chain().focus().toggleStrike().run()}
+        onMouseDown={(e) => {
+          e.preventDefault();
+          editor.chain().focus().toggleStrike().run();
+        }}
         isActive={editor.isActive('strike')}
         title="Riscado"
       >
@@ -204,7 +289,10 @@ export function TiptapFloatingToolbar({ editor }: TiptapFloatingToolbarProps) {
       </ToolbarButton>
 
       <ToolbarButton
-        onClick={() => editor.chain().focus().toggleCode().run()}
+        onMouseDown={(e) => {
+          e.preventDefault();
+          editor.chain().focus().toggleCode().run();
+        }}
         isActive={editor.isActive('code')}
         title="Código"
       >
@@ -217,7 +305,7 @@ export function TiptapFloatingToolbar({ editor }: TiptapFloatingToolbarProps) {
       <div className="relative">
         {editor.isActive('link') ? (
           <ToolbarButton
-            onClick={handleRemoveLink}
+            onMouseDown={handleRemoveLink}
             isActive={true}
             title="Remover link"
           >
@@ -225,10 +313,7 @@ export function TiptapFloatingToolbar({ editor }: TiptapFloatingToolbarProps) {
           </ToolbarButton>
         ) : (
           <ToolbarButton
-            onClick={() => {
-              setShowLinkInput(!showLinkInput);
-              setShowDropdown(false);
-            }}
+            onMouseDown={handleOpenLinkInput}
             isActive={showLinkInput}
             title="Adicionar link"
           >
@@ -254,7 +339,10 @@ export function TiptapFloatingToolbar({ editor }: TiptapFloatingToolbarProps) {
             />
             <button
               type="button"
-              onClick={handleSetLink}
+              onMouseDown={(e) => {
+                e.preventDefault();
+                handleSetLink();
+              }}
               className="w-full mt-2 bg-primary text-primary-foreground text-xs px-2 py-1.5 rounded hover:bg-primary/90 transition-colors"
             >
               Inserir
