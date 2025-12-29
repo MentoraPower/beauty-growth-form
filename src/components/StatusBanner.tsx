@@ -63,11 +63,11 @@ export const StatusBanner = memo(function StatusBanner({ className }: StatusBann
       }
     };
 
-    // Initial check after a delay
-    const initialTimeout = setTimeout(checkConnection, 3000);
+    // Initial check after a delay (increased to 5s)
+    const initialTimeout = setTimeout(checkConnection, 5000);
     
-    // Check every 30 seconds
-    checkInterval = setInterval(checkConnection, 30000);
+    // Check every 60 seconds (reduced from 30s)
+    checkInterval = setInterval(checkConnection, 60000);
 
     return () => {
       isMounted = false;

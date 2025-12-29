@@ -47,6 +47,18 @@ export class WebSocketManager {
   subscribe(config: ChannelConfig): void {
     const channelName = `realtime_${config.table}`;
     
+    // Validate channel name to prevent invalid UUID errors
+    if (channelName.includes('null') || channelName.includes('undefined')) {
+      console.warn(`[WSManager] Invalid channel name: ${channelName}, skipping subscription`);
+      return;
+    }
+    
+    // Also validate filter if present
+    if (config.filter && (config.filter.includes('=null') || config.filter.includes('=undefined'))) {
+      console.warn(`[WSManager] Invalid filter: ${config.filter}, skipping subscription`);
+      return;
+    }
+    
     if (this.channels.has(channelName)) {
       console.log(`[WSManager] Channel ${channelName} already subscribed`);
       return;

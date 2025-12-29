@@ -105,6 +105,12 @@ export function LeadTrackingTimeline({ leadId, utmData, leadEmail, leadWhatsapp 
   const [expandedEvent, setExpandedEvent] = useState<string | null>(null);
 
   useEffect(() => {
+    // Validate leadId before creating realtime channel
+    if (!leadId || leadId === 'null' || leadId === 'undefined') {
+      console.warn('[LeadTracking] Invalid leadId, skipping subscription');
+      return;
+    }
+
     fetchEvents();
     fetchOtherOriginLeads();
 
