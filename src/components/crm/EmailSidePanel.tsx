@@ -1,8 +1,13 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { cn } from "@/lib/utils";
-import { Code2, Eye, Copy, Check, BarChart3 } from "lucide-react";
+import { Code2, Eye, Copy, Check, BarChart3, Mail, X, Pause, Play, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
+import { Button } from "@/components/ui/button";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { useResilientChannel } from "@/hooks/useResilientChannel";
 import { DispatchAnalysis, DispatchData } from "./DispatchAnalysis";
+import { motion } from "framer-motion";
 
 // Format text with markdown-like syntax: **bold**, _italic_, ~strikethrough~, `code`
 const formatTextContent = (text: string): string => {
@@ -25,7 +30,27 @@ interface EditOperation {
   newText?: string;
 }
 
-export type SidePanelMode = 'email' | 'dispatch_details' | 'workflow';
+interface DispatchLead {
+  id: string;
+  name: string;
+  email: string;
+}
+
+interface DispatchJob {
+  id: string;
+  type: string;
+  sub_origin_id: string;
+  origin_name: string | null;
+  sub_origin_name: string | null;
+  total_leads: number;
+  valid_leads: number;
+  sent_count: number;
+  failed_count: number;
+  status: string;
+  current_lead_name: string | null;
+}
+
+export type SidePanelMode = 'email' | 'dispatch_details' | 'workflow' | 'dispatch_leads';
 
 interface EmailSidePanelProps {
   isOpen: boolean;
@@ -49,6 +74,9 @@ interface EmailSidePanelProps {
   panelTitle?: string;
   // Force initial tab when content is loaded externally
   forcePreviewTab?: boolean;
+  // Props for dispatch_leads mode
+  dispatchJobId?: string | null;
+  onDispatchCommand?: (command: string) => void;
 }
 
 // Syntax highlighting for HTML with dark purple for strings
@@ -161,7 +189,9 @@ export function EmailSidePanel({
   onViewEmail,
   showCodePreview = true,
   panelTitle,
-  forcePreviewTab = false
+  forcePreviewTab = false,
+  dispatchJobId = null,
+  onDispatchCommand
 }: EmailSidePanelProps) {
   const [activeTab, setActiveTab] = useState<'code' | 'preview'>('preview');
   const [copied, setCopied] = useState(false);
@@ -177,6 +207,95 @@ export function EmailSidePanel({
   const editAnimationRef = useRef<number | null>(null);
   const wasGeneratingRef = useRef(false);
   const prevHtmlLengthRef = useRef(0);
+
+  // Dispatch leads mode state
+  const [dispatchJob, setDispatchJob] = useState<DispatchJob | null>(null);
+  const [dispatchLeads, setDispatchLeads] = useState<DispatchLead[]>([]);
+  const [sentLeadIds, setSentLeadIds] = useState<Set<string>>(new Set());
+  const [dispatchLoading, setDispatchLoading] = useState(true);
+
+  // Fetch dispatch job data
+  const fetchDispatchData = useCallback(async () => {
+    if (!dispatchJobId) return;
+
+    const { data: jobData } = await supabase
+      .from('dispatch_jobs')
+      .select('*')
+      .eq('id', dispatchJobId)
+      .single();
+
+    if (jobData) {
+      setDispatchJob(jobData as unknown as DispatchJob);
+
+      // Fetch leads for this sub_origin
+      const { data: leadsData } = await supabase
+        .from('leads')
+        .select('id, name, email')
+        .eq('sub_origin_id', jobData.sub_origin_id)
+        .not('email', 'is', null)
+        .order('name');
+
+      if (leadsData) {
+        setDispatchLeads(leadsData.filter(l => l.email && l.email.includes('@')).map(l => ({
+          id: l.id,
+          name: l.name,
+          email: l.email
+        })));
+      }
+
+      // Fetch sent emails for this job
+      const { data: sentEmails } = await supabase
+        .from('sent_emails')
+        .select('lead_id')
+        .eq('dispatch_job_id', dispatchJobId)
+        .eq('status', 'sent');
+
+      if (sentEmails) {
+        setSentLeadIds(new Set(sentEmails.map(e => e.lead_id)));
+      }
+    }
+
+    setDispatchLoading(false);
+  }, [dispatchJobId]);
+
+  // Load dispatch data when mode changes to dispatch_leads
+  useEffect(() => {
+    if (mode === 'dispatch_leads' && dispatchJobId) {
+      setDispatchLoading(true);
+      fetchDispatchData();
+    }
+  }, [mode, dispatchJobId, fetchDispatchData]);
+
+  // Real-time updates for the job
+  useResilientChannel({
+    channelName: `dispatch-panel-${dispatchJobId}`,
+    table: 'dispatch_jobs',
+    event: 'UPDATE',
+    filter: dispatchJobId ? `id=eq.${dispatchJobId}` : undefined,
+    onPayload: (payload) => {
+      setDispatchJob(payload.new as DispatchJob);
+    },
+    pollingFallback: {
+      enabled: mode === 'dispatch_leads',
+      intervalMs: 2000,
+      fetchFn: fetchDispatchData,
+      shouldPoll: () => dispatchJob?.status === 'running',
+    },
+  });
+
+  // Real-time updates for sent emails
+  useResilientChannel({
+    channelName: `dispatch-emails-${dispatchJobId}`,
+    table: 'sent_emails',
+    event: 'INSERT',
+    filter: dispatchJobId ? `dispatch_job_id=eq.${dispatchJobId}` : undefined,
+    onPayload: (payload) => {
+      const newEmail = payload.new as { lead_id: string; status: string };
+      if (newEmail.status === 'sent') {
+        setSentLeadIds(prev => new Set([...prev, newEmail.lead_id]));
+      }
+    },
+  });
   
   // Force preview tab when content is loaded externally (e.g., user pasted HTML)
   useEffect(() => {
@@ -436,6 +555,176 @@ export function EmailSidePanel({
   };
 
   if (!isOpen) return null;
+
+  // Render Dispatch Leads mode (spreadsheet-style list)
+  if (mode === 'dispatch_leads' && dispatchJobId) {
+    const progress = dispatchJob && dispatchJob.valid_leads > 0 
+      ? Math.round(((dispatchJob.sent_count + dispatchJob.failed_count) / dispatchJob.valid_leads) * 100) 
+      : 0;
+
+    const isRunning = dispatchJob?.status === 'running';
+    const isPaused = dispatchJob?.status === 'paused';
+    const isCompleted = dispatchJob?.status === 'completed';
+
+    return (
+      <div className="w-[640px] h-full flex-shrink-0 bg-background flex flex-col my-6 mr-6 rounded-3xl border border-border overflow-hidden shadow-sm">
+        {/* Header with progress bar */}
+        <div className="border-b border-border p-5 space-y-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Mail className="w-4 h-4 text-primary" />
+              <span className="font-medium">Disparo de Emails</span>
+            </div>
+            {isCompleted && (
+              <div className="flex items-center gap-1.5 text-sm text-green-600 dark:text-green-400">
+                <Check className="w-4 h-4" />
+                <span>Concluído</span>
+              </div>
+            )}
+          </div>
+
+          {/* Progress bar */}
+          <div className="space-y-2">
+            <div className="flex items-center justify-between text-sm text-muted-foreground">
+              <span>{dispatchJob?.sent_count || 0} de {dispatchJob?.valid_leads || 0} enviados</span>
+              <span className="font-semibold text-foreground">{progress}%</span>
+            </div>
+            <div className="h-2.5 bg-muted rounded-full overflow-hidden">
+              <motion.div
+                initial={{ width: 0 }}
+                animate={{ width: `${progress}%` }}
+                transition={{ duration: 0.3 }}
+                className={cn(
+                  "h-full rounded-full",
+                  isCompleted ? "bg-green-500" : "bg-primary"
+                )}
+              />
+            </div>
+          </div>
+
+          {/* Controls */}
+          {dispatchJob && (isRunning || isPaused) && (
+            <div className="flex items-center gap-2">
+              {isRunning ? (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => onDispatchCommand?.(`PAUSE_DISPATCH:${dispatchJob.id}`)}
+                  className="h-8 text-xs gap-1.5"
+                >
+                  <Pause className="w-3 h-3" />
+                  Pausar
+                </Button>
+              ) : (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => onDispatchCommand?.(`RESUME_DISPATCH:${dispatchJob.id}`)}
+                  className="h-8 text-xs gap-1.5"
+                >
+                  <Play className="w-3 h-3" />
+                  Retomar
+                </Button>
+              )}
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => onDispatchCommand?.(`CANCEL_DISPATCH:${dispatchJob.id}`)}
+                className="h-8 text-xs gap-1.5 text-destructive hover:text-destructive"
+              >
+                <X className="w-3 h-3" />
+                Cancelar
+              </Button>
+            </div>
+          )}
+        </div>
+
+        {/* Leads table */}
+        <ScrollArea className="flex-1">
+          {dispatchLoading ? (
+            <div className="flex items-center justify-center h-32">
+              <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
+            </div>
+          ) : (
+            <div className="divide-y divide-border">
+              {/* Header */}
+              <div className="grid grid-cols-[40px_1fr_1.5fr] gap-3 px-5 py-2.5 bg-muted/50 text-xs font-medium text-muted-foreground sticky top-0">
+                <div></div>
+                <div>Nome</div>
+                <div>Email</div>
+              </div>
+
+              {/* Rows */}
+              {dispatchLeads.map((lead) => {
+                const isSent = sentLeadIds.has(lead.id);
+                const isCurrentlySending = isRunning && dispatchJob?.current_lead_name?.includes(lead.name);
+                
+                return (
+                  <motion.div
+                    key={lead.id}
+                    initial={false}
+                    animate={{ 
+                      backgroundColor: isSent ? 'hsl(var(--muted) / 0.3)' : 'transparent'
+                    }}
+                    className={cn(
+                      "grid grid-cols-[40px_1fr_1.5fr] gap-3 px-5 py-3 items-center text-sm",
+                      isCurrentlySending && "bg-primary/5"
+                    )}
+                  >
+                    {/* Checkbox */}
+                    <div className="flex items-center justify-center">
+                      <motion.div
+                        initial={false}
+                        animate={{ 
+                          scale: isSent ? 1 : 0.8,
+                          opacity: isSent ? 1 : 0.3
+                        }}
+                        className={cn(
+                          "w-5 h-5 rounded border-2 flex items-center justify-center",
+                          isSent 
+                            ? "bg-green-500 border-green-500" 
+                            : isCurrentlySending 
+                              ? "border-primary animate-pulse" 
+                              : "border-muted-foreground/30"
+                        )}
+                      >
+                        {isSent && <Check className="w-3 h-3 text-white" />}
+                        {isCurrentlySending && !isSent && (
+                          <Loader2 className="w-3 h-3 text-primary animate-spin" />
+                        )}
+                      </motion.div>
+                    </div>
+
+                    {/* Name */}
+                    <div className={cn(
+                      "truncate font-medium",
+                      isSent ? "text-muted-foreground" : "text-foreground"
+                    )}>
+                      {lead.name}
+                    </div>
+
+                    {/* Email */}
+                    <div className={cn(
+                      "truncate text-xs font-mono",
+                      isSent ? "text-muted-foreground" : "text-muted-foreground"
+                    )}>
+                      {lead.email}
+                    </div>
+                  </motion.div>
+                );
+              })}
+
+              {dispatchLeads.length === 0 && !dispatchLoading && (
+                <div className="p-8 text-center text-muted-foreground text-sm">
+                  Nenhum lead encontrado
+                </div>
+              )}
+            </div>
+          )}
+        </ScrollArea>
+      </div>
+    );
+  }
 
   // Render Dispatch Details mode
   if (mode === 'dispatch_details' && dispatchData) {

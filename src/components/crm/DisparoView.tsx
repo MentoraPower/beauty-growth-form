@@ -5,7 +5,7 @@ import { PromptInputBox } from "@/components/ui/ai-prompt-box";
 import { motion, AnimatePresence } from "framer-motion";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
-import { DispatchLeadsPanel } from "./DispatchLeadsPanel";
+
 import { DispatchPreparingIndicator } from "./DispatchPreparingIndicator";
 import { EmailSidePanel, SidePanelMode } from "./EmailSidePanel";
 import { CsvSidePanel, CsvLead as CsvLeadType } from "./CsvSidePanel";
@@ -199,9 +199,6 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
   const [csvPanelOpen, setCsvPanelOpen] = useState(false);
   const [csvFileName, setCsvFileName] = useState<string>('lista.csv');
   
-  // Dispatch Leads Panel state
-  const [dispatchPanelOpen, setDispatchPanelOpen] = useState(false);
-  
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const chatScrollRef = useRef<HTMLDivElement>(null);
   const shouldAutoScrollRef = useRef(true);
@@ -259,6 +256,14 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
       details
     };
     setActionHistory(prev => [...prev, entry]);
+  }, []);
+
+  // Helper to open dispatch leads panel inside the side panel
+  const openDispatchLeadsPanel = useCallback((jobId: string) => {
+    setActiveJobId(jobId);
+    setSidePanelMode('dispatch_leads');
+    setSidePanelShowCodePreview(false);
+    setSidePanelOpen(true);
   }, []);
 
   // Optimized scroll to bottom using RAF
@@ -453,10 +458,7 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
             <Button
               variant="outline"
               size="sm"
-              onClick={() => {
-                setActiveJobId(jobId);
-                setDispatchPanelOpen(true);
-              }}
+              onClick={() => openDispatchLeadsPanel(jobId)}
               className="gap-2"
             >
               <ExternalLink className="w-4 h-4" />
@@ -1281,8 +1283,7 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
       console.log("Dispatch result:", result);
 
       if (result.type === 'dispatch_started') {
-        setActiveJobId(result.data.jobId);
-        setDispatchPanelOpen(true); // Open the dispatch panel
+        openDispatchLeadsPanel(result.data.jobId);
         logAction('system', `Disparo iniciado`, `Enviando para ${result.data.validLeads} leads`);
         
         // STEP 2: Replace preparing message with button to open panel
@@ -1300,10 +1301,7 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => {
-                        setActiveJobId(result.data.jobId);
-                        setDispatchPanelOpen(true);
-                      }}
+                      onClick={() => openDispatchLeadsPanel(result.data.jobId)}
                       className="gap-2"
                     >
                       <ExternalLink className="w-4 h-4" />
@@ -2763,7 +2761,6 @@ INSTRUÇÕES PARA VOCÊ (A IA):
     setPendingEmailContext(null);
     setPendingQuestion(null);
     setCsvPanelOpen(false);
-    setDispatchPanelOpen(false);
     setIsLoading(false);
     setInitialLoadDone(true);
     
@@ -2970,6 +2967,8 @@ INSTRUÇÕES PARA VOCÊ (A IA):
               showCodePreview={sidePanelShowCodePreview}
               panelTitle={sidePanelTitle}
               forcePreviewTab={!sidePanelGenerating && !sidePanelEditing && sidePanelHtml.length > 0}
+              dispatchJobId={activeJobId}
+              onDispatchCommand={handleCommand}
               onNewDispatch={() => {
                 // Reset side panel to email mode and clear dispatch data
                 setSidePanelMode('email');
@@ -3011,17 +3010,6 @@ INSTRUÇÕES PARA VOCÊ (A IA):
         )}
       </AnimatePresence>
       
-      {/* Dispatch Leads Panel - overlays everything */}
-      <AnimatePresence>
-        {dispatchPanelOpen && activeJobId && (
-          <DispatchLeadsPanel
-            isOpen={dispatchPanelOpen}
-            onClose={() => setDispatchPanelOpen(false)}
-            jobId={activeJobId}
-            onCommand={handleCommand}
-          />
-        )}
-      </AnimatePresence>
     </div>
   );
 }
