@@ -1024,6 +1024,7 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
     setSidePanelHtml('');
     setSidePanelSubject('');
     setSidePanelGenerating(true);
+    setSidePanelShowCodePreview(true); // Ensure header shows for email
     setSidePanelOpen(true);
     
     // Create work steps for email generation in progress
@@ -1181,6 +1182,7 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
     setSidePanelHtml(html);
     setHtmlSource('ai'); // AI generated this email
     setSidePanelGenerating(false);
+    setSidePanelShowCodePreview(true); // Ensure header shows for email
     setSidePanelOpen(true);
     logAction('ai', 'Email HTML criado', `${html.length} caracteres`);
     
