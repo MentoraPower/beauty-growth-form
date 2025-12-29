@@ -5,7 +5,7 @@ import { PromptInputBox } from "@/components/ui/ai-prompt-box";
 import { motion, AnimatePresence } from "framer-motion";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
-import { DispatchProgressTable } from "./DispatchProgressTable";
+import { DispatchLeadsPanel } from "./DispatchLeadsPanel";
 import { DispatchPreparingIndicator } from "./DispatchPreparingIndicator";
 import { EmailSidePanel, SidePanelMode } from "./EmailSidePanel";
 import { CsvSidePanel, CsvLead as CsvLeadType } from "./CsvSidePanel";
@@ -13,7 +13,8 @@ import { DispatchData } from "./DispatchAnalysis";
 import { EmailGenerationIndicator } from "./EmailGenerationIndicator";
 import { AIWorkDetails, WorkStep, WorkSubItem, createLeadsAnalysisStep, createEmailGenerationStep, createDispatchStep, createCustomStep } from "./AIWorkDetails";
 import { supabase } from "@/integrations/supabase/client";
-import { Clipboard, Check } from "lucide-react";
+import { Clipboard, Check, ExternalLink } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import disparoLogo from "@/assets/disparo-logo.png";
 
 interface DisparoViewProps {
@@ -197,6 +198,9 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
   // CSV Side Panel state
   const [csvPanelOpen, setCsvPanelOpen] = useState(false);
   const [csvFileName, setCsvFileName] = useState<string>('lista.csv');
+  
+  // Dispatch Leads Panel state
+  const [dispatchPanelOpen, setDispatchPanelOpen] = useState(false);
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const chatScrollRef = useRef<HTMLDivElement>(null);
@@ -443,15 +447,21 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
       case 'dispatch_progress': {
         const { jobId } = (componentData.data || {}) as any;
         if (!jobId) return null;
+        // Show a button to open the dispatch panel instead of inline progress
         return (
           <div className="mt-4">
-            <DispatchProgressTable 
-              jobId={jobId} 
-              onCommand={handleCommand} 
-              onShowDetails={handleShowDispatchDetails}
-              onError={handleDispatchError}
-              onComplete={handleDispatchComplete}
-            />
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                setActiveJobId(jobId);
+                setDispatchPanelOpen(true);
+              }}
+              className="gap-2"
+            >
+              <ExternalLink className="w-4 h-4" />
+              Acompanhar disparo
+            </Button>
           </div>
         );
       }
@@ -1272,9 +1282,10 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
 
       if (result.type === 'dispatch_started') {
         setActiveJobId(result.data.jobId);
+        setDispatchPanelOpen(true); // Open the dispatch panel
         logAction('system', `Disparo iniciado`, `Enviando para ${result.data.validLeads} leads`);
         
-        // STEP 2: Replace preparing message with progress table
+        // STEP 2: Replace preparing message with button to open panel
         setMessages(prev => prev.map(m => 
           m.id === preparingMessageId 
             ? {
@@ -1285,13 +1296,20 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
                   data: { jobId: result.data.jobId }
                 },
                 component: (
-                  <DispatchProgressTable
-                    key={`dispatch-${result.data.jobId}`}
-                    jobId={result.data.jobId}
-                    onCommand={handleCommand}
-                    onError={handleDispatchError}
-                    onComplete={handleDispatchComplete}
-                  />
+                  <div className="mt-4">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setActiveJobId(result.data.jobId);
+                        setDispatchPanelOpen(true);
+                      }}
+                      className="gap-2"
+                    >
+                      <ExternalLink className="w-4 h-4" />
+                      Acompanhar disparo
+                    </Button>
+                  </div>
                 ),
               }
             : m
@@ -2745,6 +2763,7 @@ INSTRUÇÕES PARA VOCÊ (A IA):
     setPendingEmailContext(null);
     setPendingQuestion(null);
     setCsvPanelOpen(false);
+    setDispatchPanelOpen(false);
     setIsLoading(false);
     setInitialLoadDone(true);
     
@@ -2989,6 +3008,18 @@ INSTRUÇÕES PARA VOCÊ (A IA):
               fileName={csvFileName}
             />
           </motion.div>
+        )}
+      </AnimatePresence>
+      
+      {/* Dispatch Leads Panel - overlays everything */}
+      <AnimatePresence>
+        {dispatchPanelOpen && activeJobId && (
+          <DispatchLeadsPanel
+            isOpen={dispatchPanelOpen}
+            onClose={() => setDispatchPanelOpen(false)}
+            jobId={activeJobId}
+            onCommand={handleCommand}
+          />
         )}
       </AnimatePresence>
     </div>
