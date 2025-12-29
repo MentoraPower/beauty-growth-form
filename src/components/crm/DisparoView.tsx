@@ -2261,7 +2261,13 @@ INSTRUÇÕES PARA VOCÊ (A IA):
                     content: 'Email gerado! Visualize e edite na lateral.',
                     componentData: { 
                       type: 'email_generator_streaming' as const, 
-                      data: { isComplete: true, workflowSteps: completedWorkflowSteps } 
+                      data: { 
+                        isComplete: true, 
+                        workflowSteps: completedWorkflowSteps,
+                        generatedHtml: cleanContent,
+                        subject: extractedSubject || '',
+                        mode: 'email' as const
+                      } 
                     }
                   }
                 : m
@@ -2311,6 +2317,10 @@ INSTRUÇÕES PARA VOCÊ (A IA):
           }
           
           // Always show full content in chat for copy
+          const copyHtmlForPanel = shouldOpenPanel 
+            ? `<div style="font-family: 'Inter', Arial, sans-serif; padding: 24px; line-height: 1.9; font-size: 15px; color: #1a1a1a;">${cleanContent.replace(/\*\*([^*]+)\*\*/g, '<strong style="font-weight: 700;">$1</strong>').replace(/_([^_]+)_/g, '<em style="font-style: italic;">$1</em>').replace(/\n/g, '<br>')}</div>`
+            : '';
+          
           setMessages(prev => 
             prev.map(m => 
               m.id === assistantMessageId 
@@ -2319,7 +2329,13 @@ INSTRUÇÕES PARA VOCÊ (A IA):
                     content: cleanContent,
                     componentData: { 
                       type: 'email_generator_streaming' as const, 
-                      data: { isComplete: true, workflowSteps: completedWorkflowSteps } 
+                      data: { 
+                        isComplete: true, 
+                        workflowSteps: completedWorkflowSteps,
+                        generatedHtml: copyHtmlForPanel,
+                        subject: '',
+                        mode: 'copy' as const
+                      } 
                     }
                   }
                 : m
@@ -2576,15 +2592,26 @@ INSTRUÇÕES PARA VOCÊ (A IA):
                           </motion.div>
                         )}
                         {/* Email generation indicator - only show when there's content */}
-                        {msg.componentData?.type === 'email_generator_streaming' && sidePanelHtml && (
+                        {msg.componentData?.type === 'email_generator_streaming' && (msg.componentData?.data?.generatedHtml || sidePanelHtml) && (
                           <div className="mt-3">
                             <EmailGenerationIndicator
-                              isGenerating={sidePanelGenerating}
+                              isGenerating={sidePanelGenerating && messages[messages.length - 1]?.id === msg.id}
                               isComplete={msg.componentData?.data?.isComplete || !sidePanelGenerating}
                               isEditing={sidePanelEditing || msg.componentData?.data?.isEditing}
-                              onTogglePanel={() => setSidePanelOpen(!sidePanelOpen)}
+                              onTogglePanel={() => {
+                                const data = msg.componentData?.data;
+                                if (data?.generatedHtml) {
+                                  setSidePanelHtml(data.generatedHtml);
+                                  setSidePanelSubject(data.subject || '');
+                                  setSidePanelMode(data.mode || 'email');
+                                  setSidePanelShowCodePreview(data.mode === 'email');
+                                  setSidePanelOpen(true);
+                                } else {
+                                  setSidePanelOpen(!sidePanelOpen);
+                                }
+                              }}
                               isPanelOpen={sidePanelOpen}
-                              previewHtml={sidePanelHtml}
+                              previewHtml={msg.componentData?.data?.generatedHtml || sidePanelHtml}
                             />
                           </div>
                         )}
