@@ -622,6 +622,7 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
       setSidePanelOpen(false);
       setSidePanelHtml('');
       setSidePanelSubject('');
+      setSidePanelPreheader('');
       setSidePanelContext(null);
       setSelectedOriginData(null);
       setDispatchType(null);
@@ -1012,6 +1013,7 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
     setSidePanelContext({ subOriginId, dispatchType: type });
     setSidePanelHtml('');
     setSidePanelSubject('');
+    setSidePanelPreheader('');
     setSidePanelGenerating(false);
     setSidePanelOpen(true);
     logAction('user', 'Escolheu colar código HTML próprio', 'Painel de edição aberto');
@@ -1064,6 +1066,7 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
     setSidePanelContext({ subOriginId, dispatchType: type });
     setSidePanelHtml('');
     setSidePanelSubject('');
+    setSidePanelPreheader('');
     setSidePanelGenerating(true);
     setSidePanelShowCodePreview(true); // Ensure header shows for email
     setSidePanelOpen(true);
@@ -1682,6 +1685,7 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
         // Load directly into side panel
         setSidePanelHtml(cleanedHtml);
         setSidePanelSubject(''); // User can add subject later
+        setSidePanelPreheader(''); // User can add preheader later
         setHtmlSource('user'); // User pasted this HTML
         setSidePanelOpen(true);
         setSidePanelShowCodePreview(true);
@@ -1770,6 +1774,7 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
       setSidePanelContext({ subOriginId: ctx.subOriginId, dispatchType: ctx.dispatchType });
       setSidePanelHtml('');
       setSidePanelSubject('');
+      setSidePanelPreheader('');
       setSidePanelGenerating(true);
       setSidePanelOpen(true);
       
@@ -2536,6 +2541,7 @@ INSTRUÇÕES PARA VOCÊ (A IA):
             setSidePanelHtml(`<div style="font-family: 'Inter', Arial, sans-serif; padding: 24px; line-height: 1.9; font-size: 15px; color: #1a1a1a;">${formattedCopy}</div>`);
             setSidePanelShowCodePreview(false);
             setSidePanelSubject('');
+            setSidePanelPreheader('');
             setSidePanelOpen(true);
             setSidePanelMode('email');
             
@@ -2721,6 +2727,7 @@ INSTRUÇÕES PARA VOCÊ (A IA):
     setSidePanelOpen(false);
     setSidePanelHtml('');
     setSidePanelSubject('');
+    setSidePanelPreheader('');
     setSidePanelContext(null);
     setSidePanelGenerating(false);
     setSidePanelEditing(false);

@@ -154,8 +154,8 @@ const handler = async (req: Request): Promise<Response> => {
 
         console.log(`[ProcessScheduledEmails] Sending email to ${email.lead_email}`);
 
-        // Inject tracking into the email HTML
-        const trackedHtml = injectEmailTracking(email.body_html, email.id);
+        // Inject tracking and preheader into the email HTML
+        const trackedHtml = injectEmailTracking(email.body_html, email.id, email.preheader);
         console.log(`[ProcessScheduledEmails] Tracking injected for email ${email.id}`);
 
         // Send email via Resend
