@@ -12,9 +12,11 @@ import { CsvSidePanel, CsvLead as CsvLeadType } from "./CsvSidePanel";
 import { DispatchData } from "./DispatchAnalysis";
 import { EmailGenerationIndicator } from "./EmailGenerationIndicator";
 import { AIWorkDetails, WorkStep, WorkSubItem, createLeadsAnalysisStep, createEmailGenerationStep, createDispatchStep, createCustomStep } from "./AIWorkDetails";
+import { VoiceWaveform } from "./VoiceWaveform";
 import { supabase } from "@/integrations/supabase/client";
 import { Clipboard, Check } from "lucide-react";
 import disparoLogo from "@/assets/disparo-logo.png";
+import { useGrokVoice, VoiceState } from "@/hooks/useGrokVoice";
 
 interface DisparoViewProps {
   subOriginId: string | null;
@@ -169,6 +171,32 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
   // CSV Side Panel state
   const [csvPanelOpen, setCsvPanelOpen] = useState(false);
   const [csvFileName, setCsvFileName] = useState<string>('lista.csv');
+  
+  // Voice chat integration
+  const handleVoiceTranscript = useCallback((text: string, isFinal: boolean, role: "user" | "assistant") => {
+    if (isFinal && role === "user" && text.trim()) {
+      // Add user voice message to chat
+      const userMessage: Message = {
+        id: `voice-user-${Date.now()}`,
+        content: `🎤 ${text}`,
+        role: "user",
+        timestamp: new Date()
+      };
+      setMessages(prev => [...prev, userMessage]);
+    }
+  }, []);
+
+  const { 
+    voiceState, 
+    isConnected: isVoiceConnected, 
+    toggle: toggleVoice,
+    userTranscript,
+    assistantTranscript 
+  } = useGrokVoice({
+    systemPrompt: "Você é a Scale, uma assistente de IA especializada em disparos de email e WhatsApp em massa. Você ajuda profissionais da área estética a gerenciar seus leads e campanhas. Seja amigável, concisa e profissional. Responda sempre em português brasileiro.",
+    voice: "Cove",
+    onTranscript: handleVoiceTranscript
+  });
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const chatScrollRef = useRef<HTMLDivElement>(null);
@@ -2086,6 +2114,9 @@ INSTRUÇÕES PARA VOCÊ (A IA):
                 onSend={handleSend}
                 isLoading={isLoading}
                 placeholder="Digite sua mensagem aqui..."
+                voiceState={voiceState}
+                isVoiceConnected={isVoiceConnected}
+                onVoiceToggle={toggleVoice}
               />
               <p className="text-xs text-muted-foreground text-center mt-3">
                 A Scale pode cometer erros. Confira informações importantes.
@@ -2183,6 +2214,15 @@ INSTRUÇÕES PARA VOCÊ (A IA):
               </div>
             </div>
 
+            {/* Voice indicator when active */}
+            <AnimatePresence>
+              {isVoiceConnected && (
+                <div className="flex justify-center pb-2">
+                  <VoiceWaveform state={voiceState} />
+                </div>
+              )}
+            </AnimatePresence>
+
             {/* AI Chat Input - fixed at bottom */}
             <div className="p-6 pt-0">
               <div className="max-w-3xl mx-auto">
@@ -2190,6 +2230,9 @@ INSTRUÇÕES PARA VOCÊ (A IA):
                   onSend={handleSend}
                   isLoading={isLoading}
                   placeholder="Digite sua mensagem aqui..."
+                  voiceState={voiceState}
+                  isVoiceConnected={isVoiceConnected}
+                  onVoiceToggle={toggleVoice}
                 />
               </div>
             </div>
