@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import { DispatchProgressTable } from "./DispatchProgressTable";
 import { DispatchPreparingIndicator } from "./DispatchPreparingIndicator";
 import { EmailSidePanel, SidePanelMode } from "./EmailSidePanel";
+import { CsvSidePanel, CsvLead as CsvLeadType } from "./CsvSidePanel";
 import { DispatchData } from "./DispatchAnalysis";
 import { EmailGenerationIndicator } from "./EmailGenerationIndicator";
 import { AIWorkDetails, WorkStep, WorkSubItem, createLeadsAnalysisStep, createEmailGenerationStep, createDispatchStep, createCustomStep } from "./AIWorkDetails";
@@ -64,6 +65,7 @@ interface CsvLead {
   name: string;
   email?: string;
   whatsapp?: string;
+  [key: string]: string | undefined;
 }
 
 const CHAT_URL = `https://ytdfwkchsumgdvcroaqg.supabase.co/functions/v1/grok-chat`;
@@ -162,6 +164,10 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
   const [sidePanelDispatchData, setSidePanelDispatchData] = useState<DispatchData | null>(null); // Dispatch data for details view
   const [htmlSource, setHtmlSource] = useState<'ai' | 'user' | null>(null); // Track who created the HTML
   const [actionHistory, setActionHistory] = useState<ActionEntry[]>([]); // Complete action history for AI memory
+  
+  // CSV Side Panel state
+  const [csvPanelOpen, setCsvPanelOpen] = useState(false);
+  const [csvFileName, setCsvFileName] = useState<string>('lista.csv');
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const chatScrollRef = useRef<HTMLDivElement>(null);
@@ -1251,7 +1257,9 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
         const parsedLeads = parseCSV(csvContent);
         if (parsedLeads.length > 0) {
           setCsvLeads(parsedLeads);
-          toast.success(`${parsedLeads.length} leads encontrados no arquivo`);
+          setCsvFileName(csvFile.name);
+          setCsvPanelOpen(true); // Open CSV panel to show the data
+          toast.success(`${parsedLeads.length} leads carregados na planilha`);
         }
       }
     }
@@ -2167,6 +2175,26 @@ INSTRUÇÕES PARA VOCÊ (A IA):
                 // Switch back to email view mode
                 setSidePanelMode('email');
               }}
+            />
+          </motion.div>
+        )}
+        
+        {/* CSV Side Panel */}
+        {csvPanelOpen && csvLeads && csvLeads.length > 0 && (
+          <motion.div
+            key="csv-panel"
+            initial={{ width: 0, opacity: 0 }}
+            animate={{ width: "auto", opacity: 1 }}
+            exit={{ width: 0, opacity: 0 }}
+            transition={{ type: "spring", damping: 25, stiffness: 200 }}
+            className="overflow-hidden"
+          >
+            <CsvSidePanel
+              isOpen={csvPanelOpen}
+              leads={csvLeads}
+              onLeadsChange={(newLeads) => setCsvLeads(newLeads)}
+              onClose={() => setCsvPanelOpen(false)}
+              fileName={csvFileName}
             />
           </motion.div>
         )}
