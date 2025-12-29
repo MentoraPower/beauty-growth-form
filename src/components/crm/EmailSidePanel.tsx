@@ -797,7 +797,7 @@ export function EmailSidePanel({
     <div className="w-[640px] h-full flex-shrink-0 bg-background flex flex-col mt-2 mb-2 mr-2 rounded-2xl overflow-hidden" style={{ border: '1px solid #00000010' }}>
       {/* Tabs - always at the top when showCodePreview is true */}
       {showCodePreview && (
-        <div className="flex items-center justify-between px-5 py-3 border-b border-border bg-muted/20">
+        <div className="flex items-center justify-between px-5 py-3 border-b border-border bg-background">
           <div className="flex items-center gap-3">
             {/* Close button - circle with >> icon */}
             {onClose && (
