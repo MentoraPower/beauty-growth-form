@@ -54,30 +54,63 @@ export function TiptapFloatingToolbar({ editor }: TiptapFloatingToolbarProps) {
   };
 
   const applyStyle = (value: string) => {
-    // Get current selection to apply only to selected block
     const { from, to } = editor.state.selection;
+    const $from = editor.state.doc.resolve(from);
+    const $to = editor.state.doc.resolve(to);
     
-    // Store selection before applying
-    editor.chain().focus().setTextSelection({ from, to });
+    // Get block boundaries
+    const blockStart = $from.start($from.depth);
+    const blockEnd = $to.end($to.depth);
     
+    // Check if selection covers the full block
+    const isFullBlockSelected = from <= blockStart + 1 && to >= blockEnd - 1;
+    
+    // Check if selection spans multiple blocks
+    const sameBlock = $from.parent === $to.parent || $from.depth === $to.depth;
+    
+    if (!isFullBlockSelected && sameBlock && $from.parent.type.name !== 'doc') {
+      // Need to split the block to isolate the selected text
+      let chain = editor.chain().focus();
+      
+      // If there's content after the selection, split there first
+      if (to < blockEnd - 1) {
+        chain = chain.setTextSelection(to).splitBlock();
+      }
+      
+      // If there's content before the selection, split there
+      if (from > blockStart + 1) {
+        chain = chain.setTextSelection(from).splitBlock();
+      }
+      
+      chain.run();
+      
+      // Now apply the style - the cursor should be in the isolated block
+      // We need to select the text that was originally selected
+      const newFrom = from > blockStart + 1 ? from + 1 : from;
+      const newTo = from > blockStart + 1 ? to + 1 : to;
+      
+      editor.chain().focus().setTextSelection({ from: newFrom, to: newTo });
+    }
+    
+    // Apply the style
     switch (value) {
       case 'paragraph':
-        editor.chain().focus().setTextSelection({ from, to }).setParagraph().run();
+        editor.chain().focus().setParagraph().run();
         break;
       case 'h1':
-        editor.chain().focus().setTextSelection({ from, to }).setHeading({ level: 1 }).run();
+        editor.chain().focus().setHeading({ level: 1 }).run();
         break;
       case 'h2':
-        editor.chain().focus().setTextSelection({ from, to }).setHeading({ level: 2 }).run();
+        editor.chain().focus().setHeading({ level: 2 }).run();
         break;
       case 'h3':
-        editor.chain().focus().setTextSelection({ from, to }).setHeading({ level: 3 }).run();
+        editor.chain().focus().setHeading({ level: 3 }).run();
         break;
       case 'h4':
-        editor.chain().focus().setTextSelection({ from, to }).setHeading({ level: 4 }).run();
+        editor.chain().focus().setHeading({ level: 4 }).run();
         break;
       case 'blockquote':
-        editor.chain().focus().setTextSelection({ from, to }).toggleBlockquote().run();
+        editor.chain().focus().toggleBlockquote().run();
         break;
     }
     setShowDropdown(false);
