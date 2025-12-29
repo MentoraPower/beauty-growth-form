@@ -133,6 +133,16 @@ const removeAgentPrefix = (content: string): string => {
     .trim();
 };
 
+// Strip internal context tags from user messages before saving/displaying
+// These tags are added by PromptInputBox for AI routing but shouldn't be persisted
+const stripInternalContext = (content: string): string => {
+  return content
+    .replace(/^\[CONTEXT:copywriting\]\s*/i, '')
+    .replace(/^\[CONTEXT:uxui\]\s*/i, '')
+    .replace(/^\[CONTEXT:[^\]]+\]\s*/gi, '')
+    .trim();
+};
+
 // Parse markdown-like formatting: **bold** and _italic_
 const formatMessageContent = (content: string): React.ReactNode => {
   // First remove any agent prefix
@@ -205,6 +215,11 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
   const conversationIdRef = useRef<string | null>(null);
   const isCreatingConversationRef = useRef(false);
   const isProcessingMessageRef = useRef(false); // Prevent duplicate handleSend calls
+  
+  // Active request control - cancel stale responses when switching conversations
+  const activeAbortRef = useRef<AbortController | null>(null);
+  const activeRunIdRef = useRef<string | null>(null);
+  const activeRunConversationIdRef = useRef<string | null>(null);
 
   const setConversationId = useCallback((id: string | null) => {
     conversationIdRef.current = id;
@@ -583,6 +598,18 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
       loadConversation();
     } else if (!convId && currentConversationId) {
       // URL cleared - start new conversation
+      // Abort any active request
+      if (activeAbortRef.current) {
+        activeAbortRef.current.abort();
+        activeAbortRef.current = null;
+      }
+      activeRunIdRef.current = null;
+      activeRunConversationIdRef.current = null;
+      
+      // Reset processing locks
+      isProcessingMessageRef.current = false;
+      isCreatingConversationRef.current = false;
+      
       // Suppress URL sync to prevent race condition where old ID gets rewritten to URL
       suppressUrlSyncRef.current = true;
       setCurrentConversationId(null);
@@ -602,6 +629,7 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
       setSidePanelMode('email'); // Reset side panel mode
       setSidePanelDispatchData(null); // Clear dispatch data
       setPendingQuestion(null); // Clear pending question
+      setIsLoading(false);
       setInitialLoadDone(true);
       // Clear suppression after state is reset
       setTimeout(() => { suppressUrlSyncRef.current = false; }, 100);
@@ -1425,182 +1453,199 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
       console.log('[DisparoView] Already processing message, ignoring duplicate');
       return;
     }
+    
+    // Abort any previous request
+    if (activeAbortRef.current) {
+      activeAbortRef.current.abort();
+    }
+    
+    // Create new AbortController for this request
+    const abortController = new AbortController();
+    activeAbortRef.current = abortController;
+    const runId = crypto.randomUUID();
+    activeRunIdRef.current = runId;
+    activeRunConversationIdRef.current = conversationIdRef.current;
+    
+    // Set processing flag - MUST be reset before any return
     isProcessingMessageRef.current = true;
     
     shouldAutoScrollRef.current = true;
-    
-    // Check if there's a CSV file or image
-    let csvContent = '';
-    let csvFileName = '';
-    let imageBase64 = '';
-    let imageFile: File | null = null;
-    
-    if (files && files.length > 0) {
-      // Check for CSV file
-      const csvFile = files.find(f => f.name.endsWith('.csv'));
-      if (csvFile) {
-        csvFileName = csvFile.name;
-        csvContent = await csvFile.text();
-        const parsedLeads = parseCSV(csvContent);
-        if (parsedLeads.length > 0) {
-          setCsvLeads(parsedLeads);
-          setCsvFileName(csvFile.name);
-          setCsvPanelOpen(true); // Open CSV panel to show the data
-          toast.success(`${parsedLeads.length} leads carregados na planilha`);
+      
+      // Check if there's a CSV file or image
+      let csvContent = '';
+      let csvFileName = '';
+      let imageBase64 = '';
+      let imageFile: File | null = null;
+      
+      if (files && files.length > 0) {
+        // Check for CSV file
+        const csvFile = files.find(f => f.name.endsWith('.csv'));
+        if (csvFile) {
+          csvFileName = csvFile.name;
+          csvContent = await csvFile.text();
+          const parsedLeads = parseCSV(csvContent);
+          if (parsedLeads.length > 0) {
+            setCsvLeads(parsedLeads);
+            setCsvFileName(csvFile.name);
+            setCsvPanelOpen(true); // Open CSV panel to show the data
+            toast.success(`${parsedLeads.length} leads carregados na planilha`);
+          }
         }
-      }
-      
-      // Check for image file
-      const imgFile = files.find(f => f.type.startsWith('image/'));
-      if (imgFile) {
-        imageFile = imgFile;
-        // Convert to base64
-        const reader = new FileReader();
-        imageBase64 = await new Promise<string>((resolve) => {
-          reader.onload = () => resolve(reader.result as string);
-          reader.readAsDataURL(imgFile);
-        });
-      }
-    }
-    
-    // Build message content
-    let messageContent = message;
-    if (csvFileName) {
-      messageContent = `${message}\n\n[Arquivo enviado: ${csvFileName} com ${csvLeads?.length || parseCSV(csvContent).length} leads]`;
-    }
-    if (imageFile) {
-      messageContent = message || 'Analise esta imagem';
-    }
-    
-    // Add user message with image if present
-    const userMessage: Message = {
-      id: crypto.randomUUID(),
-      content: messageContent,
-      role: "user",
-      timestamp: new Date(),
-      imageUrl: imageBase64 || undefined,
-    };
-    setMessages((prev) => [...prev, userMessage]);
-    setIsLoading(true);
-
-    // Check if we're waiting for a question response
-    if (pendingQuestion) {
-      const q = pendingQuestion;
-      setPendingQuestion(null);
-      
-      const lowerMsg = message.toLowerCase().trim();
-      
-      if (q.type === 'email_method') {
-        // Check if user wants to use AI or has HTML ready
-        const wantsAI = lowerMsg.includes('ia') || lowerMsg.includes('criar') || lowerMsg.includes('gerar') || 
-                        lowerMsg.includes('ajuda') || lowerMsg.includes('criar com ia') || lowerMsg.includes('não tenho');
-        const hasHtml = lowerMsg.includes('html') || lowerMsg.includes('tenho') || lowerMsg.includes('pronto') ||
-                        message.includes('<!DOCTYPE') || message.includes('<html') || message.includes('<body');
         
-        if (hasHtml && (message.includes('<') || lowerMsg.includes('tenho o html') || lowerMsg.includes('já tenho'))) {
-          // User has HTML - call the code handler
-          handleEmailChoiceCode(q.subOriginId, q.dispatchType);
-        } else {
-          // User wants AI - ask about copy
-          handleEmailChoiceAI(q.subOriginId, q.dispatchType);
+        // Check for image file
+        const imgFile = files.find(f => f.type.startsWith('image/'));
+        if (imgFile) {
+          imageFile = imgFile;
+          // Convert to base64
+          const reader = new FileReader();
+          imageBase64 = await new Promise<string>((resolve) => {
+            reader.onload = () => resolve(reader.result as string);
+            reader.readAsDataURL(imgFile);
+          });
         }
+      }
+      
+      // Build message content - strip internal context for display/storage
+      const rawMessageContent = message; // Keep original for AI routing
+      const displayMessageContent = stripInternalContext(message); // Clean version for display
+      
+      let messageContent = displayMessageContent;
+      if (csvFileName) {
+        messageContent = `${displayMessageContent}\n\n[Arquivo enviado: ${csvFileName} com ${csvLeads?.length || parseCSV(csvContent).length} leads]`;
+      }
+      if (imageFile) {
+        messageContent = displayMessageContent || 'Analise esta imagem';
+      }
+      
+      // Add user message with image if present (using clean display content)
+      const userMessage: Message = {
+        id: crypto.randomUUID(),
+        content: messageContent,
+        role: "user",
+        timestamp: new Date(),
+        imageUrl: imageBase64 || undefined,
+      };
+      setMessages((prev) => [...prev, userMessage]);
+      setIsLoading(true);
+
+      // Check if we're waiting for a question response
+      if (pendingQuestion) {
+        const q = pendingQuestion;
+        setPendingQuestion(null);
+        
+        const lowerMsg = rawMessageContent.toLowerCase().trim();
+        
+        if (q.type === 'email_method') {
+          // Check if user wants to use AI or has HTML ready
+          const wantsAI = lowerMsg.includes('ia') || lowerMsg.includes('criar') || lowerMsg.includes('gerar') || 
+                          lowerMsg.includes('ajuda') || lowerMsg.includes('criar com ia') || lowerMsg.includes('não tenho');
+          const hasHtml = lowerMsg.includes('html') || lowerMsg.includes('tenho') || lowerMsg.includes('pronto') ||
+                          rawMessageContent.includes('<!DOCTYPE') || rawMessageContent.includes('<html') || rawMessageContent.includes('<body');
+          
+          if (hasHtml && (rawMessageContent.includes('<') || lowerMsg.includes('tenho o html') || lowerMsg.includes('já tenho'))) {
+            // User has HTML - call the code handler
+            handleEmailChoiceCode(q.subOriginId, q.dispatchType);
+          } else {
+            // User wants AI - ask about copy
+            handleEmailChoiceAI(q.subOriginId, q.dispatchType);
+          }
+          setIsLoading(false);
+          isProcessingMessageRef.current = false;
+          return;
+        }
+      
+        if (q.type === 'has_copy') {
+          // Check if user has copy or wants to create from scratch
+          const hasCopyReady = lowerMsg.includes('sim') || lowerMsg.includes('tenho') || lowerMsg.includes('aqui') ||
+                               rawMessageContent.length > 100; // Long message likely is the copy itself
+          
+          if (hasCopyReady && rawMessageContent.length > 50) {
+            // User sent the copy directly - generate HTML from it
+            setPendingEmailContext({ subOriginId: q.subOriginId, dispatchType: q.dispatchType });
+            // Re-trigger with the copy text
+            setIsLoading(false);
+            handleGenerateFromCopy(rawMessageContent, '', '', q.subOriginId, q.dispatchType);
+            return; // finally will reset isProcessingMessageRef
+          } else if (hasCopyReady) {
+            // User said they have copy but didn't send it
+            const assistantMessage: Message = {
+              id: crypto.randomUUID(),
+              content: `Ótimo! Cole sua copy aqui e eu vou transformar em um email HTML profissional.`,
+              role: "assistant",
+              timestamp: new Date(),
+            };
+            setMessages(prev => [...prev, assistantMessage]);
+            setPendingQuestion({ type: 'has_copy', subOriginId: q.subOriginId, dispatchType: q.dispatchType });
+            setIsLoading(false);
+            isProcessingMessageRef.current = false;
+            return;
+          } else {
+            // User wants to create from scratch
+            handleCreateCopy(q.subOriginId, q.dispatchType);
+            setIsLoading(false);
+            isProcessingMessageRef.current = false;
+            return;
+          }
+        }
+      }
+
+      // Check if user is confirming dispatch via chat
+      const lowerUserMsg = rawMessageContent.toLowerCase().trim();
+      const isUserConfirming = (
+        lowerUserMsg === 'sim' ||
+        lowerUserMsg === 's' ||
+        lowerUserMsg === 'yes' ||
+        lowerUserMsg === 'ok' ||
+        lowerUserMsg.includes('pode') ||
+        lowerUserMsg.includes('manda') ||
+        lowerUserMsg.includes('vai') ||
+        lowerUserMsg.includes('confirmo') ||
+        lowerUserMsg.includes('inicia') ||
+        lowerUserMsg.includes('começa') ||
+        lowerUserMsg.includes('dispara') ||
+        lowerUserMsg.includes('envia') ||
+        (lowerUserMsg.includes('sim') && lowerUserMsg.length < 20)
+      );
+      
+      const hasEverythingReady = sidePanelHtml && 
+                                 sidePanelHtml.length > 100 && 
+                                 selectedOriginData?.subOriginId &&
+                                 !activeJobId;
+      
+      // Check if the last AI message asked for confirmation
+      const lastAiMessage = messages.filter(m => m.role === 'assistant').pop();
+      const aiAskedToConfirm = lastAiMessage && (
+        lastAiMessage.content.toLowerCase().includes('posso iniciar') ||
+        lastAiMessage.content.toLowerCase().includes('quer que eu inicie') ||
+        lastAiMessage.content.toLowerCase().includes('pronto para enviar') ||
+        lastAiMessage.content.toLowerCase().includes('iniciar o disparo') ||
+        lastAiMessage.content.toLowerCase().includes('inicie o disparo')
+      );
+      
+      if (isUserConfirming && hasEverythingReady && aiAskedToConfirm) {
+        // Auto-execute dispatch - user confirmed via chat!
+        const type = dispatchType || 'email';
+        
+        // Encode HTML and subject for the command
+        const encodedHtml = sidePanelHtml ? btoa(encodeURIComponent(sidePanelHtml)) : '';
+        const encodedSubject = sidePanelSubject ? btoa(encodeURIComponent(sidePanelSubject)) : '';
+        
+        const autoCommand = `START_DISPATCH:${type}:${selectedOriginData.subOriginId}:html:${currentConversationId || ''}:${encodedSubject}:${encodedHtml}`;
+        
+        const confirmingMessage: Message = {
+          id: crypto.randomUUID(),
+          content: `Perfeito! Iniciando o disparo agora... 🚀`,
+          role: "assistant",
+          timestamp: new Date(),
+        };
+        setMessages(prev => [...prev, confirmingMessage]);
+        
+        logAction('user', 'Confirmou disparo via chat', `Tipo: ${type}`);
+        executeDispatch(autoCommand);
         setIsLoading(false);
         isProcessingMessageRef.current = false;
         return;
       }
-      
-      if (q.type === 'has_copy') {
-        // Check if user has copy or wants to create from scratch
-        const hasCopyReady = lowerMsg.includes('sim') || lowerMsg.includes('tenho') || lowerMsg.includes('aqui') ||
-                             message.length > 100; // Long message likely is the copy itself
-        
-        if (hasCopyReady && message.length > 50) {
-          // User sent the copy directly - generate HTML from it
-          setPendingEmailContext({ subOriginId: q.subOriginId, dispatchType: q.dispatchType });
-          // Re-trigger with the copy text
-          setIsLoading(false);
-          handleGenerateFromCopy(message, '', '', q.subOriginId, q.dispatchType);
-          isProcessingMessageRef.current = false;
-          return;
-        } else if (hasCopyReady) {
-          // User said they have copy but didn't send it
-          const assistantMessage: Message = {
-            id: crypto.randomUUID(),
-            content: `Ótimo! Cole sua copy aqui e eu vou transformar em um email HTML profissional.`,
-            role: "assistant",
-            timestamp: new Date(),
-          };
-          setMessages(prev => [...prev, assistantMessage]);
-          setPendingQuestion({ type: 'has_copy', subOriginId: q.subOriginId, dispatchType: q.dispatchType });
-          setIsLoading(false);
-          isProcessingMessageRef.current = false;
-          return;
-        } else {
-          // User wants to create from scratch
-          handleCreateCopy(q.subOriginId, q.dispatchType);
-          setIsLoading(false);
-          isProcessingMessageRef.current = false;
-          return;
-        }
-      }
-    }
-
-    // Check if user is confirming dispatch via chat
-    const lowerUserMsg = message.toLowerCase().trim();
-    const isUserConfirming = (
-      lowerUserMsg === 'sim' ||
-      lowerUserMsg === 's' ||
-      lowerUserMsg === 'yes' ||
-      lowerUserMsg === 'ok' ||
-      lowerUserMsg.includes('pode') ||
-      lowerUserMsg.includes('manda') ||
-      lowerUserMsg.includes('vai') ||
-      lowerUserMsg.includes('confirmo') ||
-      lowerUserMsg.includes('inicia') ||
-      lowerUserMsg.includes('começa') ||
-      lowerUserMsg.includes('dispara') ||
-      lowerUserMsg.includes('envia') ||
-      (lowerUserMsg.includes('sim') && lowerUserMsg.length < 20)
-    );
-    
-    const hasEverythingReady = sidePanelHtml && 
-                               sidePanelHtml.length > 100 && 
-                               selectedOriginData?.subOriginId &&
-                               !activeJobId;
-    
-    // Check if the last AI message asked for confirmation
-    const lastAiMessage = messages.filter(m => m.role === 'assistant').pop();
-    const aiAskedToConfirm = lastAiMessage && (
-      lastAiMessage.content.toLowerCase().includes('posso iniciar') ||
-      lastAiMessage.content.toLowerCase().includes('quer que eu inicie') ||
-      lastAiMessage.content.toLowerCase().includes('pronto para enviar') ||
-      lastAiMessage.content.toLowerCase().includes('iniciar o disparo') ||
-      lastAiMessage.content.toLowerCase().includes('inicie o disparo')
-    );
-    
-    if (isUserConfirming && hasEverythingReady && aiAskedToConfirm) {
-      // Auto-execute dispatch - user confirmed via chat!
-      const type = dispatchType || 'email';
-      
-      // Encode HTML and subject for the command
-      const encodedHtml = sidePanelHtml ? btoa(encodeURIComponent(sidePanelHtml)) : '';
-      const encodedSubject = sidePanelSubject ? btoa(encodeURIComponent(sidePanelSubject)) : '';
-      
-      const autoCommand = `START_DISPATCH:${type}:${selectedOriginData.subOriginId}:html:${currentConversationId || ''}:${encodedSubject}:${encodedHtml}`;
-      
-      const confirmingMessage: Message = {
-        id: crypto.randomUUID(),
-        content: `Perfeito! Iniciando o disparo agora... 🚀`,
-        role: "assistant",
-        timestamp: new Date(),
-      };
-      setMessages(prev => [...prev, confirmingMessage]);
-      
-      logAction('user', 'Confirmou disparo via chat', `Tipo: ${type}`);
-      executeDispatch(autoCommand);
-      setIsLoading(false);
-      return;
-    }
 
     // Check if we're waiting for email description - stream to side panel
     if (pendingEmailContext) {
@@ -2477,10 +2522,21 @@ INSTRUÇÕES PARA VOCÊ (A IA):
 
   // Handle new conversation - reset ALL state
   const handleNewConversation = useCallback(() => {
+    // Abort any active request to prevent stale responses
+    if (activeAbortRef.current) {
+      activeAbortRef.current.abort();
+      activeAbortRef.current = null;
+    }
+    activeRunIdRef.current = null;
+    activeRunConversationIdRef.current = null;
+    
+    // Clear processing locks
+    isProcessingMessageRef.current = false;
+    isCreatingConversationRef.current = false;
+    
     // Clear refs
     conversationIdRef.current = null;
     messagesRef.current = [];
-    isCreatingConversationRef.current = false;
     lastSavedSignatureRef.current = '';
     skipNextUrlLoadRef.current = null;
     
@@ -2507,6 +2563,7 @@ INSTRUÇÕES PARA VOCÊ (A IA):
     setPendingEmailContext(null);
     setPendingQuestion(null);
     setCsvPanelOpen(false);
+    setIsLoading(false);
     setInitialLoadDone(true);
     
     // Navigate to disparo without conversation param - use navigate for reliable navigation
