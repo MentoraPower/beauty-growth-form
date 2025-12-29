@@ -397,8 +397,8 @@ export function EmailSidePanel({
   // Render Dispatch Details mode
   if (mode === 'dispatch_details' && dispatchData) {
     return (
-      <div className="w-[480px] flex-shrink-0 h-full bg-background flex flex-col my-4 mr-4 rounded-2xl border border-border overflow-hidden">
-        <DispatchAnalysis 
+      <div className="w-[640px] flex-shrink-0 bg-background flex flex-col my-6 mr-6 rounded-3xl border border-border overflow-hidden shadow-sm">
+        <DispatchAnalysis
           data={dispatchData}
           onNewDispatch={onNewDispatch}
           onViewEmail={onViewEmail}
@@ -408,7 +408,7 @@ export function EmailSidePanel({
   }
 
   return (
-    <div className="w-[480px] flex-shrink-0 h-full bg-background flex flex-col my-4 mr-4 rounded-2xl border border-border overflow-hidden">
+    <div className="w-[640px] flex-shrink-0 bg-background flex flex-col my-6 mr-6 rounded-3xl border border-border overflow-hidden shadow-sm">
       {/* Subject Header */}
       <div className="px-5 py-3 border-b border-border bg-muted/30">
         <label className="text-xs text-muted-foreground font-medium mb-1.5 block">Assunto</label>
