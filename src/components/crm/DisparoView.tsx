@@ -1867,8 +1867,41 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
       return;
     }
 
-    // Check if user is asking for email edits and we have HTML in the side panel
+    // Check if user is asking to open/view the editor panel
     const lowerMessage = messageContent.toLowerCase();
+    const isAskingToOpenPanel = sidePanelHtml && (
+      lowerMessage.includes('editor') ||
+      lowerMessage.includes('preview') ||
+      lowerMessage.includes('código') ||
+      lowerMessage.includes('codigo') ||
+      lowerMessage.includes('painel') ||
+      lowerMessage.includes('lateral') ||
+      lowerMessage.includes('abrir') ||
+      lowerMessage.includes('ver email') ||
+      lowerMessage.includes('mostrar email') ||
+      lowerMessage.includes('ver o email') ||
+      lowerMessage.includes('mostrar o email') ||
+      lowerMessage.includes('visualizar')
+    );
+
+    // If user just wants to open the panel, do it immediately
+    if (isAskingToOpenPanel && !sidePanelOpen) {
+      setSidePanelOpen(true);
+      setSidePanelShowCodePreview(true);
+      setSidePanelMode('email');
+      
+      const confirmMessage: Message = {
+        id: crypto.randomUUID(),
+        content: `Abri o editor de email na lateral! Você pode visualizar o código e o preview lá.`,
+        role: "assistant",
+        timestamp: new Date(),
+      };
+      setMessages(prev => [...prev, confirmMessage]);
+      setIsLoading(false);
+      return;
+    }
+
+    // Check if user is asking for email edits and we have HTML in the side panel
     const isAskingForEdit = sidePanelHtml && (
       lowerMessage.includes('altera') ||
       lowerMessage.includes('muda') ||
