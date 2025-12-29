@@ -54,24 +54,30 @@ export function TiptapFloatingToolbar({ editor }: TiptapFloatingToolbarProps) {
   };
 
   const applyStyle = (value: string) => {
+    // Get current selection to apply only to selected block
+    const { from, to } = editor.state.selection;
+    
+    // Store selection before applying
+    editor.chain().focus().setTextSelection({ from, to });
+    
     switch (value) {
       case 'paragraph':
-        editor.chain().focus().setParagraph().run();
+        editor.chain().focus().setTextSelection({ from, to }).setParagraph().run();
         break;
       case 'h1':
-        editor.chain().focus().toggleHeading({ level: 1 }).run();
+        editor.chain().focus().setTextSelection({ from, to }).setHeading({ level: 1 }).run();
         break;
       case 'h2':
-        editor.chain().focus().toggleHeading({ level: 2 }).run();
+        editor.chain().focus().setTextSelection({ from, to }).setHeading({ level: 2 }).run();
         break;
       case 'h3':
-        editor.chain().focus().toggleHeading({ level: 3 }).run();
+        editor.chain().focus().setTextSelection({ from, to }).setHeading({ level: 3 }).run();
         break;
       case 'h4':
-        editor.chain().focus().toggleHeading({ level: 4 }).run();
+        editor.chain().focus().setTextSelection({ from, to }).setHeading({ level: 4 }).run();
         break;
       case 'blockquote':
-        editor.chain().focus().toggleBlockquote().run();
+        editor.chain().focus().setTextSelection({ from, to }).toggleBlockquote().run();
         break;
     }
     setShowDropdown(false);
@@ -120,7 +126,7 @@ export function TiptapFloatingToolbar({ editor }: TiptapFloatingToolbarProps) {
         </button>
         
         {showDropdown && (
-          <div className="absolute bottom-full left-0 mb-1 bg-zinc-800 border border-white/10 rounded-lg shadow-xl py-1 min-w-[120px] z-[10000]">
+          <div className="absolute top-full left-0 mt-1 bg-zinc-800 border border-white/10 rounded-lg shadow-xl py-1 min-w-[120px] z-[10000]">
             {paragraphStyles.map((style) => (
               <button
                 key={style.value}
@@ -198,7 +204,7 @@ export function TiptapFloatingToolbar({ editor }: TiptapFloatingToolbarProps) {
         )}
 
         {showLinkInput && (
-          <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 bg-zinc-800 border border-white/10 rounded-lg shadow-xl p-2 z-[10000] min-w-[200px]">
+          <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 bg-zinc-800 border border-white/10 rounded-lg shadow-xl p-2 z-[10000] min-w-[200px]">
             <input
               type="url"
               value={linkUrl}
