@@ -5,6 +5,20 @@ import { toast } from "sonner";
 import { DispatchAnalysis, DispatchData } from "./DispatchAnalysis";
 import { AIWorkDetails, WorkStep } from "./AIWorkDetails";
 
+// Format text with markdown-like syntax: **bold**, _italic_, ~strikethrough~, `code`
+const formatTextContent = (text: string): string => {
+  return text
+    // Bold: **text** or *text*
+    .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+    .replace(/\*([^*]+)\*/g, '<strong>$1</strong>')
+    // Italic: _text_
+    .replace(/_([^_]+)_/g, '<em>$1</em>')
+    // Strikethrough: ~text~
+    .replace(/~([^~]+)~/g, '<s>$1</s>')
+    // Inline code: `text`
+    .replace(/`([^`]+)`/g, '<code class="bg-muted px-1 py-0.5 rounded text-xs font-mono">$1</code>');
+};
+
 interface EditOperation {
   type: 'insert' | 'delete' | 'replace';
   startIndex: number;
@@ -395,11 +409,18 @@ export function EmailSidePanel({
     }
   };
 
-  const getSanitizedHtml = () => {
-    return htmlContent
+  const getSanitizedHtml = (applyFormatting = false) => {
+    let content = htmlContent
       .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
       .replace(/on\w+="[^"]*"/gi, '')
       .replace(/on\w+='[^']*'/gi, '');
+    
+    // Apply text formatting if requested (for text-only mode)
+    if (applyFormatting) {
+      content = formatTextContent(content);
+    }
+    
+    return content;
   };
 
   if (!isOpen) return null;
@@ -419,12 +440,16 @@ export function EmailSidePanel({
 
   return (
     <div className="w-[640px] flex-shrink-0 bg-background flex flex-col my-6 mr-6 rounded-3xl border border-border overflow-hidden shadow-sm">
+      {/* Panel Title - shown when panelTitle is provided and no code preview */}
+      {panelTitle && !showCodePreview && (
+        <div className="px-6 pt-6 pb-2">
+          <h2 className="text-xl font-semibold text-foreground">{panelTitle}</h2>
+        </div>
+      )}
+      
       {/* Workflow Steps - shown when there are steps */}
       {workflowSteps && workflowSteps.length > 0 && (
-        <div className="px-6 py-5 border-b border-border">
-          {panelTitle && (
-            <h3 className="text-sm font-medium text-foreground mb-3">{panelTitle}</h3>
-          )}
+        <div className={cn("px-6 py-5 border-b border-border", !panelTitle && "pt-6")}>
           <AIWorkDetails steps={workflowSteps} />
         </div>
       )}
@@ -595,11 +620,11 @@ export function EmailSidePanel({
             {htmlContent ? (
               <div
                 ref={previewRef}
-                className="p-6 min-h-full focus:outline-none focus:ring-2 focus:ring-primary/20 focus:ring-inset break-all [word-break:break-all] [overflow-wrap:anywhere] text-sm text-foreground leading-relaxed"
+                className="p-6 min-h-full focus:outline-none focus:ring-2 focus:ring-primary/20 focus:ring-inset break-words [overflow-wrap:anywhere] text-sm text-foreground leading-relaxed"
                 contentEditable={!isGenerating && !isEditing}
                 suppressContentEditableWarning
                 onBlur={handlePreviewBlur}
-                dangerouslySetInnerHTML={{ __html: getSanitizedHtml() }}
+                dangerouslySetInnerHTML={{ __html: getSanitizedHtml(true) }}
               />
             ) : (
               <div className="flex items-center justify-center h-full text-muted-foreground text-sm">
