@@ -465,11 +465,15 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
           
           // Restore side panel state if available
           if (isNewFormat && rawData.sidePanelState) {
-            const { html, subject, isOpen, context } = rawData.sidePanelState;
+            const { html, subject, isOpen, context, workflowSteps, showCodePreview, title, mode } = rawData.sidePanelState;
             if (html) setSidePanelHtml(html);
             if (subject) setSidePanelSubject(subject);
             if (isOpen) setSidePanelOpen(true);
             if (context) setSidePanelContext(context);
+            if (workflowSteps && Array.isArray(workflowSteps)) setSidePanelWorkflowSteps(workflowSteps);
+            if (showCodePreview !== undefined) setSidePanelShowCodePreview(showCodePreview);
+            if (title) setSidePanelTitle(title);
+            if (mode) setSidePanelMode(mode);
           }
           
           // Restore origin data if available
@@ -603,6 +607,10 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
           subject: sidePanelSubject,
           isOpen: sidePanelOpen,
           context: sidePanelContext,
+          workflowSteps: sidePanelWorkflowSteps, // Persist workflow steps
+          showCodePreview: sidePanelShowCodePreview,
+          title: sidePanelTitle,
+          mode: sidePanelMode,
         },
         selectedOriginData,
         dispatchType,
@@ -643,7 +651,7 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
       console.error("Error saving conversation:", error);
       return null;
     }
-  }, [messages, currentConversationId, sidePanelHtml, sidePanelOpen, sidePanelContext, selectedOriginData, dispatchType, actionHistory, htmlSource]);
+  }, [messages, currentConversationId, sidePanelHtml, sidePanelSubject, sidePanelOpen, sidePanelContext, sidePanelWorkflowSteps, sidePanelShowCodePreview, sidePanelTitle, sidePanelMode, selectedOriginData, dispatchType, actionHistory, htmlSource]);
 
   // Auto-save when messages change
   useEffect(() => {
@@ -675,7 +683,7 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
       saveConversation();
     }, 2000);
     return () => clearTimeout(timeout);
-  }, [sidePanelHtml, sidePanelOpen, sidePanelContext, initialLoadDone, currentConversationId]);
+  }, [sidePanelHtml, sidePanelSubject, sidePanelOpen, sidePanelContext, sidePanelWorkflowSteps, sidePanelShowCodePreview, sidePanelTitle, initialLoadDone, currentConversationId, saveConversation]);
 
   // Reset counter when conversation changes
   useEffect(() => {
@@ -2214,18 +2222,24 @@ INSTRUÇÕES PARA VOCÊ (A IA):
                       </div>
                     ) : (
                       <div className="w-full group">
-                        {/* AI Work Details - show workflow steps in chat */}
-                        {msg.componentData?.type === 'email_generator_streaming' && sidePanelWorkflowSteps.length > 0 && (
-                          <div className="mb-3">
-                            <AIWorkDetails steps={sidePanelWorkflowSteps} />
-                          </div>
-                        )}
+                        {/* Message content first */}
                         {msg.content && (
                           <div className="max-w-[90%]">
                             <p className="text-[15px] leading-relaxed whitespace-pre-wrap text-foreground">
                               {formatMessageContent(msg.content)}
                             </p>
                           </div>
+                        )}
+                        {/* AI Work Details - show workflow steps BELOW text, animated */}
+                        {msg.componentData?.type === 'email_generator_streaming' && sidePanelWorkflowSteps.length > 0 && (
+                          <motion.div 
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ duration: 0.3, delay: 0.1 }}
+                            className="mt-3"
+                          >
+                            <AIWorkDetails steps={sidePanelWorkflowSteps} />
+                          </motion.div>
                         )}
                         {/* Email generation indicator */}
                         {msg.componentData?.type === 'email_generator_streaming' && (
