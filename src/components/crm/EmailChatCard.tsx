@@ -24,21 +24,21 @@ export function EmailChatCard({
       )}
       onClick={onClick}
     >
-      {/* Preview on the left side - sticking out from top */}
+      {/* Preview on the left side */}
       {previewHtml && (
-        <div className="relative flex-shrink-0 p-3 pr-0">
-          <div className="w-28 h-36 bg-white rounded-xl overflow-hidden shadow-lg border border-zinc-200 relative -mt-5">
+        <div className="relative flex-shrink-0 p-2.5 pr-0">
+          <div className="w-20 h-24 bg-white rounded-lg overflow-hidden shadow-md border border-zinc-200/80 relative">
             <div 
-              className="absolute inset-0 origin-top-left overflow-hidden pointer-events-none p-1"
+              className="absolute inset-0 origin-top-left overflow-hidden pointer-events-none p-0.5"
               style={{ 
-                transform: 'scale(0.12)', 
+                transform: 'scale(0.085)', 
                 transformOrigin: 'top left',
-                width: '833%',
-                height: '833%'
+                width: '1176%',
+                height: '1176%'
               }}
             >
               <div 
-                className="p-4"
+                className="p-3"
                 dangerouslySetInnerHTML={{ __html: previewHtml }}
               />
             </div>
@@ -47,13 +47,13 @@ export function EmailChatCard({
       )}
 
       {/* Content */}
-      <div className="flex-1 p-4 flex flex-col justify-center gap-2 min-w-0">
+      <div className="flex-1 p-3 flex flex-col justify-center gap-1.5 min-w-0">
         <div className="min-w-0">
           <span className="text-sm font-medium text-white truncate block">
             {subject || "Email Template"}
           </span>
-          <span className="text-xs text-zinc-400 mt-0.5 block">
-            Click to edit
+          <span className="text-[11px] text-zinc-500 mt-0.5 block">
+            Clique para editar
           </span>
         </div>
 
