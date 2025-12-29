@@ -1976,9 +1976,18 @@ INSTRUÇÕES PARA VOCÊ (A IA):
       
       // Initial workflow steps for copywriting
       const initialCopywritingSteps: WorkStep[] = [
-        createCustomStep('analysis', 'Analisando contexto', 'in_progress', { icon: 'search' }),
-        createCustomStep('generation', 'Geração da copy', 'pending', { icon: 'sparkles' }),
-        createCustomStep('review', 'Revisão', 'pending', { icon: 'edit' }),
+        createCustomStep('analysis', 'Analisando contexto', 'in_progress', { 
+          icon: 'search',
+          description: 'Reading user prompt and extracting key requirements'
+        }),
+        createCustomStep('generation', 'Geração da copy', 'pending', { 
+          icon: 'sparkles',
+          description: 'Creating content based on analysis'
+        }),
+        createCustomStep('review', 'Pronto para revisão', 'pending', { 
+          icon: 'edit',
+          description: 'Content ready for user review and editing'
+        }),
       ];
       
       // If copywriting mode, open side panel immediately with "thinking" state
@@ -2012,9 +2021,18 @@ INSTRUÇÕES PARA VOCÊ (A IA):
         
         // Updated workflow steps once content starts
         const generatingSteps: WorkStep[] = [
-          createCustomStep('analysis', 'Contexto analisado', 'completed', { icon: 'search' }),
-          createCustomStep('generation', 'Gerando copy...', 'in_progress', { icon: 'sparkles' }),
-          createCustomStep('review', 'Revisão', 'pending', { icon: 'edit' }),
+          createCustomStep('analysis', 'Contexto analisado', 'completed', { 
+            icon: 'search',
+            description: 'User requirements extracted successfully'
+          }),
+          createCustomStep('generation', 'Gerando copy...', 'in_progress', { 
+            icon: 'sparkles',
+            description: 'AI is writing content based on context'
+          }),
+          createCustomStep('review', 'Pronto para revisão', 'pending', { 
+            icon: 'edit',
+            description: 'Content ready for user review and editing'
+          }),
         ];
         
         setMessages(prev => 
@@ -2136,9 +2154,18 @@ INSTRUÇÕES PARA VOCÊ (A IA):
         
         // Final workflow steps for persistence
         const completedWorkflowSteps: WorkStep[] = [
-          createCustomStep('analysis', 'Análise do contexto', 'completed', { icon: 'file' }),
-          createCustomStep('generation', isCopywritingMode ? 'Geração da copy' : 'Geração do conteúdo', 'completed', { icon: 'sparkles' }),
-          createCustomStep('review', 'Pronto para revisão', 'completed', { icon: 'edit' }),
+          createCustomStep('analysis', 'Análise do contexto', 'completed', { 
+            icon: 'file',
+            description: 'User requirements extracted successfully'
+          }),
+          createCustomStep('generation', isCopywritingMode ? 'Copy gerada' : 'Conteúdo gerado', 'completed', { 
+            icon: 'sparkles',
+            description: 'Content created and ready to use'
+          }),
+          createCustomStep('review', 'Pronto para revisão', 'completed', { 
+            icon: 'edit',
+            description: 'Edit in side panel before sending'
+          }),
         ];
         
         // For HTML content - show in panel
