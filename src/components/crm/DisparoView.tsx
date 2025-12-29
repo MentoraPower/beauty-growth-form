@@ -3,7 +3,7 @@ import { useSearchParams, useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { PromptInputBox } from "@/components/ui/ai-prompt-box";
 import { motion, AnimatePresence } from "framer-motion";
-import { Skeleton } from "@/components/ui/skeleton";
+
 import { toast } from "sonner";
 
 import { DispatchPreparingIndicator } from "./DispatchPreparingIndicator";
@@ -250,6 +250,7 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
   const [htmlSource, setHtmlSource] = useState<'ai' | 'user' | null>(null); // Track who created the HTML
   const [actionHistory, setActionHistory] = useState<ActionEntry[]>([]); // Complete action history for AI memory
   const [sidePanelRestoredFromDB, setSidePanelRestoredFromDB] = useState(false); // Skip animation when restored
+  const isInitialPageLoadRef = useRef(true); // Track initial page load vs user navigation
   
   // CSV Side Panel state
   const [csvPanelOpen, setCsvPanelOpen] = useState(false);
@@ -741,7 +742,10 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
             if (subject) setSidePanelSubject(subject);
             if (preheader) setSidePanelPreheader(preheader);
             if (isOpen) {
-              setSidePanelRestoredFromDB(true); // Skip animation
+              // Only skip animation on initial page load (refresh), not on user navigation
+              if (isInitialPageLoadRef.current) {
+                setSidePanelRestoredFromDB(true);
+              }
               setSidePanelOpen(true);
             }
             if (context) setSidePanelContext(context);
@@ -811,10 +815,15 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
             setActiveJobId(activeJob.id);
             setSidePanelMode('dispatch_leads');
             setSidePanelShowCodePreview(false);
-            setSidePanelRestoredFromDB(true); // Skip animation
+            // Only skip animation on initial page load (refresh), not on user navigation
+            if (isInitialPageLoadRef.current) {
+              setSidePanelRestoredFromDB(true);
+            }
             setSidePanelOpen(true);
           }
           
+          // Mark initial page load as complete - future navigations will animate
+          isInitialPageLoadRef.current = false;
           setInitialLoadDone(true);
         } catch (error) {
           console.error("Error loading conversation from URL:", error);
@@ -878,6 +887,7 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
       // Clear suppression after state is reset
       setTimeout(() => { suppressUrlSyncRef.current = false; }, 100);
     } else if (!convId && !initialLoadDone) {
+      isInitialPageLoadRef.current = false;
       setInitialLoadDone(true);
     }
   }, [searchParams, currentConversationId, isLoading, sidePanelGenerating]);
@@ -3183,20 +3193,9 @@ ${hasName && hasEmail ? `Lista pronta! Guardei os ${leadsWithEmail} leads com em
         {/* When no messages, center the input */}
         {!hasMessages ? (
           showConversationLoading ? (
-            <div className="flex-1 flex items-center justify-center p-6 px-8">
-              <div className="w-full max-w-3xl">
-                <div className="text-center mb-8">
-                  <div className="flex items-center justify-center gap-3">
-                    <img src={disparoLogo} alt="Logo Scale Beauty Disparo" className="w-6 h-6" />
-                    <h2 className="text-2xl font-semibold text-foreground">Carregando conversa...</h2>
-                  </div>
-                </div>
-                <div className="space-y-3">
-                  <Skeleton className="h-10 w-2/3 mx-auto" />
-                  <Skeleton className="h-24 w-full" />
-                  <Skeleton className="h-24 w-11/12" />
-                </div>
-              </div>
+            <div className="flex-1 flex flex-col items-center justify-center p-6 px-8">
+              <img src={disparoLogo} alt="Logo" className="w-10 h-10 mb-3" />
+              <span className="text-sm text-muted-foreground">Instante...</span>
             </div>
           ) : (
             <div className="flex-1 flex items-center justify-center p-6 px-8">
