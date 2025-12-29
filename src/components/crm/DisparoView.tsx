@@ -2080,10 +2080,6 @@ INSTRUÇÕES PARA VOCÊ (A IA):
             )
           );
         }
-                  }
-                : m
-            )
-          );
           
           // Turn off generating state
           setSidePanelGenerating(false);
