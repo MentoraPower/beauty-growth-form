@@ -247,7 +247,7 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
         <LoadingBar />
         
         {/* Mobile Header */}
-        <header className="lg:hidden fixed top-0 left-0 right-0 h-14 bg-card border-b border-border z-50 flex items-center justify-between px-4">
+        <header className="lg:hidden fixed top-12 left-0 right-0 h-14 bg-card border-b border-border z-50 flex items-center justify-between px-4">
           <button
             onClick={() => setSidebarOpen(!sidebarOpen)}
             className="p-2 hover:bg-muted rounded-xl transition-colors"
@@ -501,7 +501,7 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
             pointerEvents: crmSubmenuOpen ? 'auto' : 'none',
             willChange: 'transform',
           }}
-          className="hidden lg:block fixed top-[24px] bottom-[24px] rounded-r-2xl bg-zinc-900 overflow-hidden transition-transform duration-300 ease-out"
+          className="hidden lg:block fixed top-[60px] bottom-[12px] rounded-r-2xl bg-zinc-900 overflow-hidden transition-transform duration-300 ease-out"
         >
           <div
             className="h-full pl-4 pr-2 transition-opacity duration-200"
@@ -531,7 +531,7 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
             pointerEvents: disparoSubmenuOpen ? 'auto' : 'none',
             willChange: 'transform',
           }}
-          className="hidden lg:block fixed top-[24px] bottom-[24px] rounded-r-2xl bg-zinc-900 overflow-hidden transition-transform duration-300 ease-out"
+          className="hidden lg:block fixed top-[60px] bottom-[12px] rounded-r-2xl bg-zinc-900 overflow-hidden transition-transform duration-300 ease-out"
         >
           <div
             className="h-full pl-2 pr-2 transition-opacity duration-200"
@@ -580,7 +580,7 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
         {/* Mobile Sidebar */}
         <aside
           className={cn(
-            "lg:hidden fixed top-14 left-0 bottom-0 w-64 bg-[#0f0f12] border-r border-white/10 z-40 transform transition-transform duration-300 ease-in-out",
+            "lg:hidden fixed top-[60px] left-0 bottom-0 w-64 bg-[#0f0f12] border-r border-white/10 z-40 transform transition-transform duration-300 ease-in-out",
             sidebarOpen ? "translate-x-0" : "-translate-x-full"
           )}
         >
@@ -695,7 +695,7 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
               : disparoSubmenuOpen 
                 ? sidebarCollapsedWidth + 12 + 4 + disparoSubmenuWidth
                 : sidebarCollapsedWidth + 12 + 4,
-            top: 12,
+            top: 60,
             right: 0,
             bottom: 12,
             willChange: 'left',
@@ -712,7 +712,7 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
         </main>
         
         {/* Mobile Main Content */}
-        <main className="lg:hidden pt-14 min-h-screen p-4">
+        <main className="lg:hidden pt-[104px] min-h-screen p-4">
           <PageTransition>
             {children}
           </PageTransition>
