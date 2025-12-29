@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { cn } from "@/lib/utils";
-import { Code2, Eye, Copy, Check, BarChart3, Mail, X, Pause, Play, Loader2, ChevronsRight, Save } from "lucide-react";
+import { Code2, Eye, Copy, Check, BarChart3, Mail, X, Pause, Play, Loader2, ChevronsRight } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -839,20 +839,6 @@ export function EmailSidePanel({
           </div>
           
           <div className="flex items-center gap-2">
-            {/* Save button */}
-            {onSave && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={onSave}
-                disabled={!htmlContent}
-                className="h-8 gap-1.5"
-              >
-                <Save className="w-3.5 h-3.5" />
-                Salvar
-              </Button>
-            )}
-            
             <button
               onClick={handleCopy}
               disabled={!htmlContent}
@@ -867,7 +853,7 @@ export function EmailSidePanel({
       
       {/* Email Subject/Preheader Header */}
       {showCodePreview && (
-        <div className="px-5 py-4 border-b border-border bg-muted/20">
+        <div className="px-5 py-4 border-b border-border bg-white">
           <div className="space-y-3">
             {/* Subject - editable */}
             <div>
