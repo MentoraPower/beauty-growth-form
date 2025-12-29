@@ -10,6 +10,7 @@ import { DispatchAnalysis, DispatchData } from "./DispatchAnalysis";
 import { motion } from "framer-motion";
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
+import { TiptapFloatingToolbar } from './TiptapFloatingToolbar';
 
 // Format text with markdown-like syntax: **bold**, _italic_, ~strikethrough~, `code`
 const formatTextContent = (text: string): string => {
@@ -990,7 +991,8 @@ export function EmailSidePanel({
                   </div>
                 </div>
               ) : (
-                <div className="p-4 h-full">
+                <div className="p-4 h-full relative">
+                  <TiptapFloatingToolbar editor={editor} />
                   <EditorContent 
                     editor={editor} 
                     className="prose prose-sm max-w-none p-4 h-full overflow-auto focus:outline-none [&_.ProseMirror]:outline-none [&_.ProseMirror]:min-h-full"
@@ -1002,7 +1004,8 @@ export function EmailSidePanel({
         ) : (
           // Text-only mode (for copy/content without code preview)
           <div className="h-full overflow-auto bg-card">
-            <div className="p-4 h-full">
+            <div className="p-4 h-full relative">
+              <TiptapFloatingToolbar editor={editor} />
               <EditorContent 
                 editor={editor} 
                 className="prose prose-sm max-w-none p-4 h-full overflow-auto focus:outline-none [&_.ProseMirror]:outline-none [&_.ProseMirror]:min-h-full"
