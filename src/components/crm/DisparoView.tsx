@@ -1580,7 +1580,7 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
             setCsvRawData(csvParseResult.rawData);
             setCsvHeaders(csvParseResult.headers);
             setCsvMappedColumns(csvParseResult.mappedColumns);
-            setCsvPanelOpen(true); // Open CSV panel to show the data
+            // Don't auto-open panel - AI will analyze and respond in chat
           }
         }
         
@@ -2328,9 +2328,22 @@ INSTRUÇÕES PARA VOCÊ (A IA):
           // Build the message content
           let content = userMessage.content;
           
-          // If CSV was just uploaded, add context to the message
+          // If CSV was just uploaded, provide natural context for AI
           if (csvParseResult && csvParseResult.leads.length > 0) {
-            const csvContext = `[O usuário acabou de enviar uma lista CSV chamada "${csvFileNameLocal}" com ${csvParseResult.leads.length} leads. Colunas: ${csvParseResult.headers.join(', ')}. Mapeamento: Nome=${csvParseResult.mappedColumns.name || 'não encontrada'}, Email=${csvParseResult.mappedColumns.email || 'não encontrada'}, WhatsApp=${csvParseResult.mappedColumns.whatsapp || 'não encontrada'}. ${!csvParseResult.mappedColumns.email ? 'ATENÇÃO: Não foi possível identificar a coluna de email automaticamente - pergunte ao usuário qual coluna contém os emails.' : ''} Analise a lista e pergunte o que está faltando para iniciar o disparo.]`;
+            const leadsWithEmail = csvParseResult.leads.filter(l => l.email && l.email.includes('@')).length;
+            const hasName = !!csvParseResult.mappedColumns.name;
+            const hasEmail = !!csvParseResult.mappedColumns.email;
+            
+            const csvContext = `[NOVA LISTA CSV RECEBIDA]
+Arquivo: "${csvFileNameLocal}"
+Total de leads: ${csvParseResult.leads.length}
+Colunas encontradas: ${csvParseResult.headers.join(', ')}
+
+Análise automática:
+- Coluna de NOME: ${hasName ? `✅ "${csvParseResult.mappedColumns.name}"` : '❌ Não identificada'}
+- Coluna de EMAIL: ${hasEmail ? `✅ "${csvParseResult.mappedColumns.email}" (${leadsWithEmail} emails válidos)` : '❌ Não identificada'}
+
+${hasName && hasEmail ? `Lista pronta! Guardei os ${leadsWithEmail} leads com email válido para o disparo. Agora seja natural: pergunte se o usuário já tem um email pronto (HTML), quer criar com você, ou precisa de ajuda com a copy. NÃO force etapas, seja conversacional.` : `ATENÇÃO: ${!hasName ? 'Não encontrei a coluna de nome. ' : ''}${!hasEmail ? 'Não encontrei a coluna de email. ' : ''}Pergunte ao usuário qual coluna contém esses dados.`}`;
             content = csvContext;
           }
           
