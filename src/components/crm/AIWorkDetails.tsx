@@ -14,6 +14,7 @@ export interface WorkSubItem {
 export interface WorkStep {
   id: string;
   title: string;
+  description?: string; // English italic description
   status: 'pending' | 'in_progress' | 'completed';
   progress?: { current: number; total: number };
   subItems?: WorkSubItem[];
@@ -153,14 +154,21 @@ export function AIWorkDetails({ steps, className }: AIWorkDetailsProps) {
                   >
                     <StepStatusIcon status={step.status} />
                     
-                    <span className={cn(
-                      "flex-1 text-sm",
-                      step.status === 'completed' && "text-foreground font-medium",
-                      step.status === 'in_progress' && "text-foreground font-medium",
-                      step.status === 'pending' && "text-muted-foreground"
-                    )}>
-                      {step.title}
-                    </span>
+                    <div className="flex-1 min-w-0">
+                      <span className={cn(
+                        "text-sm block",
+                        step.status === 'completed' && "text-foreground font-medium",
+                        step.status === 'in_progress' && "text-foreground font-medium",
+                        step.status === 'pending' && "text-muted-foreground"
+                      )}>
+                        {step.title}
+                      </span>
+                      {step.description && (
+                        <span className="text-xs text-muted-foreground/70 italic block mt-0.5">
+                          {step.description}
+                        </span>
+                      )}
+                    </div>
                     
                     {step.progress && (
                       <span className="text-xs text-muted-foreground tabular-nums">
@@ -350,6 +358,7 @@ export function createCustomStep(
   status: WorkStep['status'],
   options?: {
     icon?: WorkStep['icon'];
+    description?: string; // English italic description
     subItems?: WorkSubItem[];
     summary?: string;
     progress?: { current: number; total: number };
@@ -358,6 +367,7 @@ export function createCustomStep(
   return {
     id,
     title,
+    description: options?.description,
     status,
     icon: options?.icon || 'edit',
     subItems: options?.subItems,
