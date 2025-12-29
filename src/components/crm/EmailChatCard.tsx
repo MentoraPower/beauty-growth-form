@@ -1,6 +1,5 @@
 import React from "react";
 import { motion } from "framer-motion";
-import { Mail } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface EmailChatCardProps {
@@ -49,21 +48,25 @@ export function EmailChatCard({
 
       {/* Content - with top padding to account for preview */}
       <div className={cn("p-4", previewHtml ? "pt-36" : "pt-4")}>
-        {/* Header */}
-        <div className="flex items-center gap-2 mb-3">
-          <Mail className="w-4 h-4 text-orange-400 flex-shrink-0" />
-          <span className="text-sm font-medium text-white truncate">
-            {subject || "Email Template"}
-          </span>
-        </div>
+        {/* Header and button row */}
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex-1 min-w-0">
+            <span className="text-sm font-medium text-white truncate block">
+              {subject || "Email Template"}
+            </span>
+            <span className="text-xs text-zinc-400 mt-0.5 block">
+              Click to edit
+            </span>
+          </div>
 
-        {/* Button */}
-        <button
-          type="button"
-          className="w-full py-2.5 px-4 bg-zinc-800 hover:bg-zinc-700 text-white text-sm font-medium rounded-lg transition-colors"
-        >
-          Ver Email
-        </button>
+          {/* Button - smaller and to the side */}
+          <button
+            type="button"
+            className="py-1.5 px-3 bg-zinc-800 hover:bg-zinc-700 text-white text-xs font-medium rounded-lg transition-colors flex-shrink-0"
+          >
+            View
+          </button>
+        </div>
       </div>
     </motion.div>
   );
