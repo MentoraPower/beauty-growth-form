@@ -2170,11 +2170,27 @@ INSTRUÇÕES PARA VOCÊ (A IA):
             )
           );
         } else {
-          // For plain copy/text - SHOW IN CHAT and optionally open panel for large content
+        // For plain copy/text - SHOW IN CHAT and optionally open panel for large content
           const shouldOpenPanel = cleanContent.length >= OPEN_PANEL_THRESHOLD;
           
           if (shouldOpenPanel) {
-            setSidePanelHtml(`<div style="font-family: Arial, sans-serif; padding: 20px; line-height: 1.8; white-space: pre-wrap; font-size: 14px;">${cleanContent.replace(/\n/g, '<br>')}</div>`);
+            // Extract only the clean copy (content between --- delimiters)
+            const extractCleanCopy = (text: string): string => {
+              // Try to find content between --- delimiters
+              const delimiterMatch = text.match(/---\s*([\s\S]*?)\s*---/);
+              if (delimiterMatch && delimiterMatch[1].trim().length > 20) {
+                return delimiterMatch[1].trim();
+              }
+              // Fallback: remove common agent greetings and questions
+              let cleaned = text
+                .replace(/^(Opa|Olá|Oi|Ei|Hey|Bom dia|Boa tarde|Boa noite)[^.!?]*[.!?]\s*/gi, '')
+                .replace(/\s*(O que achou|Quer que eu|Posso ajustar|Se quiser|Qual tipo)[^?]*\?[^]*$/gi, '')
+                .trim();
+              return cleaned || text;
+            };
+            
+            const cleanCopy = extractCleanCopy(cleanContent);
+            setSidePanelHtml(`<div style="font-family: Arial, sans-serif; padding: 20px; line-height: 1.8; white-space: pre-wrap; font-size: 14px;">${cleanCopy.replace(/\n/g, '<br>')}</div>`);
             setSidePanelShowCodePreview(false);
             setSidePanelSubject('');
             setSidePanelOpen(true);
