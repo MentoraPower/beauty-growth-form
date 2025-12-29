@@ -2620,8 +2620,8 @@ ${hasName && hasEmail ? `Lista pronta! Guardei os ${leadsWithEmail} leads com em
       };
       const promptSummary = getPromptSummary(messageContent);
       
-      // Initial workflow steps for copywriting with real descriptions
-      const initialCopywritingSteps: WorkStep[] = [
+      // Initial workflow steps for ALL responses (with real descriptions)
+      const initialWorkflowSteps: WorkStep[] = isCopywritingMode ? [
         createCustomStep('analysis', 'Analisando contexto', 'in_progress', { 
           icon: 'search',
           description: `Parsing prompt: "${promptSummary}"`,
@@ -2635,21 +2635,26 @@ ${hasName && hasEmail ? `Lista pronta! Guardei os ${leadsWithEmail} leads com em
           icon: 'edit',
           description: 'Content will be available for editing'
         }),
+      ] : [
+        createCustomStep('analysis', 'Processando', 'in_progress', { 
+          icon: 'search',
+          description: `Parsed: "${promptSummary}"`
+        }),
       ];
       
       // If copywriting mode, DON'T open side panel yet - wait until content is ready
       // The panel will open automatically when content threshold is reached (after generation)
 
-      // Create initial assistant message - include workflowSteps in componentData for persistence
+      // Create initial assistant message - ALWAYS include workflowSteps for ALL messages
       setMessages(prev => [...prev, {
         id: assistantMessageId,
         content: "",
         role: "assistant",
         timestamp: new Date(),
-        componentData: isCopywritingMode ? { 
+        componentData: { 
           type: 'email_generator_streaming' as const, 
-          data: { workflowSteps: initialCopywritingSteps } 
-        } : undefined,
+          data: { workflowSteps: initialWorkflowSteps } 
+        },
       }]);
 
       // Track if we've started receiving content (for workflow updates)
@@ -2671,7 +2676,7 @@ ${hasName && hasEmail ? `Lista pronta! Guardei os ${leadsWithEmail} leads com em
         }
         
         // Updated workflow steps once content starts
-        const generatingSteps: WorkStep[] = [
+        const generatingSteps: WorkStep[] = isCopywritingMode ? [
           createCustomStep('analysis', 'Contexto analisado', 'completed', { 
             icon: 'search',
             description: `Parsed: "${promptSummary}"`,
@@ -2686,7 +2691,24 @@ ${hasName && hasEmail ? `Lista pronta! Guardei os ${leadsWithEmail} leads com em
             icon: 'edit',
             description: 'Content will be available for editing'
           }),
+        ] : [
+          createCustomStep('analysis', 'Processando', 'in_progress', { 
+            icon: 'search',
+            description: `Parsed: "${promptSummary}"`
+          }),
         ];
+        
+        // Steps for when content has completed
+        const completedSimpleSteps: WorkStep[] = [
+          createCustomStep('analysis', 'Resposta gerada', 'completed', { 
+            icon: 'sparkles',
+            description: `Parsed: "${promptSummary}"`
+          }),
+        ];
+        
+        // Determine which steps to show based on content length and mode
+        const shouldShowCompleted = !isCopywritingMode && assistantContent.length > 20;
+        const currentSteps = shouldShowCompleted ? completedSimpleSteps : generatingSteps;
         
         setMessages(prev => 
           prev.map(m => 
@@ -2695,8 +2717,8 @@ ${hasName && hasEmail ? `Lista pronta! Guardei os ${leadsWithEmail} leads com em
                   ...m, 
                   content: assistantContent,
                   // Update workflowSteps in componentData when content starts
-                  componentData: isCopywritingMode && assistantContent.length > 20 
-                    ? { type: 'email_generator_streaming' as const, data: { workflowSteps: generatingSteps } }
+                  componentData: assistantContent.length > 20 
+                    ? { type: 'email_generator_streaming' as const, data: { workflowSteps: currentSteps } }
                     : m.componentData
                 }
               : m
@@ -3011,11 +3033,25 @@ ${hasName && hasEmail ? `Lista pronta! Guardei os ${leadsWithEmail} leads com em
         // The dispatch flow requires the user to explicitly ask to send
         
         // Determine componentData based on what was shown
+        // For non-copywriting messages, include completed workflow steps
+        const simpleCompletedSteps: WorkStep[] = [
+          createCustomStep('analysis', 'Resposta gerada', 'completed', { 
+            icon: 'sparkles',
+            description: `Parsed: "${promptSummary}"`
+          }),
+        ];
+        
         let componentData: MessageComponentData | undefined;
         if (originsData) {
           componentData = {
             type: 'origins_list',
-            data: { origins: originsData }
+            data: { origins: originsData, workflowSteps: simpleCompletedSteps }
+          };
+        } else {
+          // For regular messages, preserve workflowSteps as completed
+          componentData = {
+            type: 'email_generator_streaming',
+            data: { isComplete: true, workflowSteps: simpleCompletedSteps }
           };
         }
         
