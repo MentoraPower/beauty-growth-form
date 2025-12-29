@@ -47,8 +47,8 @@ export function EmailChatCard({
       )}
 
       {/* Content */}
-      <div className="flex-1 p-4 flex items-center justify-between gap-3 min-w-0">
-        <div className="flex-1 min-w-0">
+      <div className="flex-1 p-4 flex flex-col justify-center gap-2 min-w-0">
+        <div className="min-w-0">
           <span className="text-sm font-medium text-white truncate block">
             {subject || "Email Template"}
           </span>
@@ -60,7 +60,7 @@ export function EmailChatCard({
         {/* Button */}
         <button
           type="button"
-          className="py-1.5 px-3 bg-zinc-800 hover:bg-zinc-700 text-white text-xs font-medium rounded-lg transition-colors flex-shrink-0"
+          className="py-1.5 px-3 bg-zinc-800 hover:bg-zinc-700 text-white text-xs font-medium rounded-lg transition-colors w-fit"
         >
           View
         </button>
