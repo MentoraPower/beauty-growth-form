@@ -1728,7 +1728,7 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
             fileName: csvFileNameLocal,
             totalRows: csvParseResult.leads.length,
             columns: csvParseResult.headers,
-            previewData: csvParseResult.rawData.slice(0, 5),
+            previewData: csvParseResult.rawData, // All data for inline navigation
             mappedColumns: csvParseResult.mappedColumns
           }
         } : undefined,
