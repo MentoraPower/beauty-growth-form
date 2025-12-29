@@ -40,6 +40,10 @@ interface DispatchProgressTableProps {
   onComplete?: (result: { sent: number; failed: number; errorLog?: ErrorLogEntry[] }) => void;
 }
 
+// Global set to track which jobs have already been notified as complete
+// This persists across component remounts to prevent duplicate notifications
+const notifiedCompletedJobs = new Set<string>();
+
 export function DispatchProgressTable({ jobId, onCommand, onShowDetails, onError, onComplete }: DispatchProgressTableProps) {
   const [job, setJob] = useState<DispatchJob | null>(null);
   const [loading, setLoading] = useState(true);
@@ -47,7 +51,6 @@ export function DispatchProgressTable({ jobId, onCommand, onShowDetails, onError
   
   // Track last notified values to avoid duplicate notifications
   const lastFailedCountRef = useRef(0);
-  const hasNotifiedCompleteRef = useRef(false);
 
   // Fetch job data
   const fetchJob = useCallback(async () => {
@@ -117,16 +120,19 @@ export function DispatchProgressTable({ jobId, onCommand, onShowDetails, onError
       lastFailedCountRef.current = job.failed_count;
     }
     
-    // Notify when job completes (only once)
-    if ((job.status === 'completed' || job.status === 'cancelled') && !hasNotifiedCompleteRef.current && onComplete) {
+    // Notify when job completes (only once - using global set to survive remounts)
+    const isCompleted = job.status === 'completed' || job.status === 'cancelled';
+    const alreadyNotified = notifiedCompletedJobs.has(jobId);
+    
+    if (isCompleted && !alreadyNotified && onComplete) {
+      notifiedCompletedJobs.add(jobId);
       onComplete({
         sent: job.sent_count,
         failed: job.failed_count,
         errorLog: job.error_log || undefined
       });
-      hasNotifiedCompleteRef.current = true;
     }
-  }, [job, onError, onComplete]);
+  }, [job, jobId, onError, onComplete]);
 
   if (loading) {
     return (
