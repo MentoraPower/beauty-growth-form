@@ -438,10 +438,12 @@ export const PromptInputBox = React.forwardRef((props: PromptInputBoxProps, ref:
   };
 
   const isImageFile = (file: File) => file.type.startsWith("image/");
+  const isCsvFile = (file: File) => file.type === "text/csv" || file.name.toLowerCase().endsWith(".csv");
+  const isAllowedFile = (file: File) => isImageFile(file) || isCsvFile(file);
 
   const processFile = (file: File) => {
-    if (!isImageFile(file)) {
-      console.log("Only image files are allowed");
+    if (!isAllowedFile(file)) {
+      console.log("Only image and CSV files are allowed");
       return;
     }
     if (file.size > 10 * 1024 * 1024) {
@@ -449,9 +451,14 @@ export const PromptInputBox = React.forwardRef((props: PromptInputBoxProps, ref:
       return;
     }
     setFiles([file]);
-    const reader = new FileReader();
-    reader.onload = (e) => setFilePreviews({ [file.name]: e.target?.result as string });
-    reader.readAsDataURL(file);
+    if (isImageFile(file)) {
+      const reader = new FileReader();
+      reader.onload = (e) => setFilePreviews({ [file.name]: e.target?.result as string });
+      reader.readAsDataURL(file);
+    } else {
+      // For CSV files, just store the file name as preview indicator
+      setFilePreviews({ [file.name]: 'csv' });
+    }
   };
 
   const handleDragOver = React.useCallback((e: React.DragEvent) => {
@@ -468,8 +475,8 @@ export const PromptInputBox = React.forwardRef((props: PromptInputBoxProps, ref:
     e.preventDefault();
     e.stopPropagation();
     const droppedFiles = Array.from(e.dataTransfer.files);
-    const imageFiles = droppedFiles.filter((file) => isImageFile(file));
-    if (imageFiles.length > 0) processFile(imageFiles[0]);
+    const allowedFiles = droppedFiles.filter((file) => isAllowedFile(file));
+    if (allowedFiles.length > 0) processFile(allowedFiles[0]);
   }, []);
 
   const handleRemoveFile = (index: number) => {
@@ -546,7 +553,7 @@ export const PromptInputBox = React.forwardRef((props: PromptInputBoxProps, ref:
           <div className="flex flex-wrap gap-2 p-0 pb-1 transition-all duration-300">
             {files.map((file, index) => (
               <div key={index} className="relative group">
-                {file.type.startsWith("image/") && filePreviews[file.name] && (
+                {file.type.startsWith("image/") && filePreviews[file.name] && filePreviews[file.name] !== 'csv' ? (
                   <div
                     className="w-16 h-16 rounded-xl overflow-hidden cursor-pointer transition-all duration-300"
                     onClick={() => openImageModal(filePreviews[file.name])}
@@ -566,7 +573,25 @@ export const PromptInputBox = React.forwardRef((props: PromptInputBoxProps, ref:
                       <X className="h-3 w-3 text-white" />
                     </button>
                   </div>
-                )}
+                ) : isCsvFile(file) ? (
+                  <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-emerald-50 border border-emerald-200">
+                    <div className="w-8 h-8 rounded-md bg-emerald-100 flex items-center justify-center">
+                      <svg className="w-4 h-4 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                      </svg>
+                    </div>
+                    <span className="text-sm text-emerald-700 font-medium max-w-[120px] truncate">{file.name}</span>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleRemoveFile(index);
+                      }}
+                      className="ml-1 rounded-full bg-emerald-200 p-1 hover:bg-emerald-300 transition-colors"
+                    >
+                      <X className="h-3 w-3 text-emerald-700" />
+                    </button>
+                  </div>
+                ) : null}
               </div>
             ))}
           </div>
@@ -605,7 +630,7 @@ export const PromptInputBox = React.forwardRef((props: PromptInputBoxProps, ref:
               isRecording ? "opacity-0 invisible h-0" : "opacity-100 visible"
             )}
           >
-            <PromptInputAction tooltip="Enviar imagem">
+            <PromptInputAction tooltip="Enviar imagem ou CSV">
               <button
                 onClick={() => uploadInputRef.current?.click()}
                 className="flex h-8 w-8 text-gray-500 cursor-pointer items-center justify-center rounded-full transition-colors hover:bg-gray-100 hover:text-gray-700"
@@ -620,7 +645,7 @@ export const PromptInputBox = React.forwardRef((props: PromptInputBoxProps, ref:
                     if (e.target.files && e.target.files.length > 0) processFile(e.target.files[0]);
                     if (e.target) e.target.value = "";
                   }}
-                  accept="image/*"
+                  accept="image/*,.csv,text/csv"
                 />
               </button>
             </PromptInputAction>
