@@ -204,6 +204,7 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
   const messagesRef = useRef<Message[]>([]);
   const conversationIdRef = useRef<string | null>(null);
   const isCreatingConversationRef = useRef(false);
+  const isProcessingMessageRef = useRef(false); // Prevent duplicate handleSend calls
 
   const setConversationId = useCallback((id: string | null) => {
     conversationIdRef.current = id;
@@ -646,12 +647,8 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
     const convId = conversationIdRef.current;
     
     if (currentMessages.length === 0) return null;
-    if (isCreatingConversationRef.current && forceCreate) return null; // Prevent double-create
 
     try {
-      if (forceCreate) {
-        isCreatingConversationRef.current = true;
-      }
 
       // Generate title
       let title = customTitle || "Nova conversa";
@@ -782,12 +779,22 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
 
     // First message - create new conversation immediately
     if (!currentConversationId) {
+      // Prevent duplicate creation - check synchronously before async call
+      if (isCreatingConversationRef.current) {
+        console.log('[DisparoView] Skipping - already creating conversation');
+        return;
+      }
+      isCreatingConversationRef.current = true;
+      
       saveConversationNow(true).then((newId) => {
         if (newId) {
           setCurrentConversationId(newId);
           conversationIdRef.current = newId;
           lastSavedSignatureRef.current = currentSignature;
         }
+      }).finally(() => {
+        // Reset flag after creation attempt
+        isCreatingConversationRef.current = false;
       });
       return;
     }
@@ -1412,6 +1419,14 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
 
   const handleSend = async (message: string, files?: File[]) => {
     if (!message.trim() && (!files || files.length === 0)) return;
+    
+    // Prevent duplicate calls while processing
+    if (isProcessingMessageRef.current) {
+      console.log('[DisparoView] Already processing message, ignoring duplicate');
+      return;
+    }
+    isProcessingMessageRef.current = true;
+    
     shouldAutoScrollRef.current = true;
     
     // Check if there's a CSV file or image
@@ -1490,6 +1505,7 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
           handleEmailChoiceAI(q.subOriginId, q.dispatchType);
         }
         setIsLoading(false);
+        isProcessingMessageRef.current = false;
         return;
       }
       
@@ -1504,6 +1520,7 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
           // Re-trigger with the copy text
           setIsLoading(false);
           handleGenerateFromCopy(message, '', '', q.subOriginId, q.dispatchType);
+          isProcessingMessageRef.current = false;
           return;
         } else if (hasCopyReady) {
           // User said they have copy but didn't send it
@@ -1516,11 +1533,13 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
           setMessages(prev => [...prev, assistantMessage]);
           setPendingQuestion({ type: 'has_copy', subOriginId: q.subOriginId, dispatchType: q.dispatchType });
           setIsLoading(false);
+          isProcessingMessageRef.current = false;
           return;
         } else {
           // User wants to create from scratch
           handleCreateCopy(q.subOriginId, q.dispatchType);
           setIsLoading(false);
+          isProcessingMessageRef.current = false;
           return;
         }
       }
@@ -2210,8 +2229,8 @@ INSTRUÇÕES PARA VOCÊ (A IA):
         
         // If copywriting mode OR large content, show in side panel (not in chat)
         if ((isCopywritingMode || isLargeContent) && cleanContent.length > 50) {
-        // Threshold for auto-opening side panel
-        const OPEN_PANEL_THRESHOLD = 400;
+          // Threshold for auto-opening side panel
+          const OPEN_PANEL_THRESHOLD = 400;
         
         // Detect if it's HTML email content
         const isHtmlContent = cleanContent.includes('<') && cleanContent.includes('>') && 
@@ -2342,17 +2361,17 @@ INSTRUÇÕES PARA VOCÊ (A IA):
             )
           );
         }
-          
-          // Turn off generating state
-          setSidePanelGenerating(false);
-          setIsLoading(false);
-          
-          // Force immediate save after streaming completes
-          setTimeout(() => {
-            saveConversationNow();
-          }, 100);
-          return;
-        }
+        
+        // Turn off generating state
+        setSidePanelGenerating(false);
+        setIsLoading(false);
+        
+        // Force immediate save after streaming completes
+        setTimeout(() => {
+          saveConversationNow();
+        }, 100);
+        return;
+      }
         
         // Check if user chose "Lista do CRM" - auto-show origins table
         const lowerMessage = messageContent.toLowerCase();
@@ -2441,6 +2460,7 @@ INSTRUÇÕES PARA VOCÊ (A IA):
       setMessages(prev => prev.filter(m => m.content.trim() !== ""));
     } finally {
       setIsLoading(false);
+      isProcessingMessageRef.current = false;
     }
   };
 
