@@ -40,11 +40,11 @@ export function CsvChatCard({
   };
 
   return (
-    <div className="rounded-xl border border-gray-200 bg-white overflow-hidden max-w-2xl shadow-sm">
+    <div className="rounded-xl border border-gray-200/50 bg-white overflow-hidden max-w-2xl shadow-sm">
       {/* Header */}
-      <div className="px-4 py-3 border-b border-gray-100 flex items-center gap-3 bg-gray-50/50">
-        <div className="w-9 h-9 rounded-lg bg-gray-100 flex items-center justify-center flex-shrink-0">
-          <FileSpreadsheet className="w-4.5 h-4.5 text-gray-500" />
+      <div className="px-4 py-3 border-b border-gray-100 flex items-center gap-3 bg-black/5">
+        <div className="w-9 h-9 rounded-lg bg-black/10 flex items-center justify-center flex-shrink-0">
+          <FileSpreadsheet className="w-4.5 h-4.5 text-gray-600" />
         </div>
         <div className="flex-1 min-w-0">
           <p className="font-medium text-gray-800 truncate text-sm">{fileName}</p>
@@ -52,27 +52,19 @@ export function CsvChatCard({
       </div>
 
       {/* Full spreadsheet with scroll */}
-      <div className="overflow-auto max-h-[300px]">
+      <div className="overflow-auto max-h-[400px]">
         <table className="w-full text-xs">
-          <thead className="sticky top-0 bg-gray-50 z-10">
+          <thead className="sticky top-0 bg-black/5 z-10">
             <tr>
-              <th className="px-3 py-2 text-left font-medium text-gray-500 whitespace-nowrap border-r border-gray-100 w-8">
+              <th className="px-3 py-2 text-left font-medium text-gray-600 whitespace-nowrap border-r border-gray-100 w-8">
                 #
               </th>
               {columns.map((col, i) => (
                 <th 
                   key={i} 
-                  className={cn(
-                    "px-3 py-2 text-left font-medium text-gray-600 whitespace-nowrap border-r border-gray-100 last:border-r-0",
-                    mappedColumns?.name === col && "bg-blue-50/70 text-blue-600",
-                    mappedColumns?.email === col && "bg-purple-50/70 text-purple-600",
-                    mappedColumns?.whatsapp === col && "bg-green-50/70 text-green-600"
-                  )}
+                  className="px-3 py-2 text-left font-medium text-gray-600 whitespace-nowrap border-r border-gray-100 last:border-r-0"
                 >
                   {col}
-                  {mappedColumns?.name === col && <span className="ml-1 text-[10px] opacity-60">(nome)</span>}
-                  {mappedColumns?.email === col && <span className="ml-1 text-[10px] opacity-60">(email)</span>}
-                  {mappedColumns?.whatsapp === col && <span className="ml-1 text-[10px] opacity-60">(tel)</span>}
                 </th>
               ))}
             </tr>
