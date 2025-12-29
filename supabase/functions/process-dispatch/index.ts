@@ -343,16 +343,59 @@ serve(async (req) => {
 
     let validLeads: { id: string; name: string; email: string; whatsapp?: string; country_code?: string }[] = [];
 
-    if (isCsvDispatch) {
-      // Fetch recipients from CSV list
-      const csvLeads = await withRetry(async () => {
-        const { data, error } = await supabase
-          .from('dispatch_csv_list_recipients')
-          .select('id, name, email, whatsapp')
-          .eq('list_id', job.csv_list_id);
-        
+    // Helper function to fetch all records with pagination (bypass 1000 limit)
+    async function fetchAllRecords<T>(
+      query: () => Promise<{ data: T[] | null; error: any; count?: number | null }>,
+      tableName: string
+    ): Promise<T[]> {
+      const PAGE_SIZE = 1000;
+      let allRecords: T[] = [];
+      let offset = 0;
+      let hasMore = true;
+
+      while (hasMore) {
+        const { data, error } = await query();
         if (error) throw error;
-        return data || [];
+        
+        const records = data || [];
+        allRecords = [...allRecords, ...records];
+        
+        // If we got less than PAGE_SIZE, we've reached the end
+        hasMore = records.length === PAGE_SIZE;
+        offset += PAGE_SIZE;
+        
+        if (hasMore) {
+          console.log(`[DISPATCH-BATCH] Fetched ${allRecords.length} ${tableName} so far, continuing...`);
+        }
+      }
+
+      return allRecords;
+    }
+
+    if (isCsvDispatch) {
+      // Fetch ALL recipients from CSV list (no 1000 limit)
+      const csvLeads = await withRetry(async () => {
+        const PAGE_SIZE = 1000;
+        let allRecipients: any[] = [];
+        let offset = 0;
+        let hasMore = true;
+
+        while (hasMore) {
+          const { data, error } = await supabase
+            .from('dispatch_csv_list_recipients')
+            .select('id, name, email, whatsapp')
+            .eq('list_id', job.csv_list_id)
+            .range(offset, offset + PAGE_SIZE - 1);
+          
+          if (error) throw error;
+          
+          const records = data || [];
+          allRecipients = [...allRecipients, ...records];
+          hasMore = records.length === PAGE_SIZE;
+          offset += PAGE_SIZE;
+        }
+
+        return allRecipients;
       }, 'Fetch CSV recipients');
 
       // For CSV, all recipients are considered valid (already filtered on upload)
@@ -364,17 +407,31 @@ serve(async (req) => {
         country_code: '+55'
       }));
 
-      console.log(`[DISPATCH-BATCH] CSV dispatch: ${validLeads.length} valid recipients`);
+      console.log(`[DISPATCH-BATCH] CSV dispatch: ${validLeads.length} valid recipients (no limit)`);
     } else {
-      // Fetch from CRM leads table (original flow)
+      // Fetch ALL CRM leads (no 1000 limit)
       const leads = await withRetry(async () => {
-        const { data, error } = await supabase
-          .from('leads')
-          .select('id, name, email, whatsapp, country_code')
-          .eq('sub_origin_id', job.sub_origin_id);
-        
-        if (error) throw error;
-        return data || [];
+        const PAGE_SIZE = 1000;
+        let allLeads: any[] = [];
+        let offset = 0;
+        let hasMore = true;
+
+        while (hasMore) {
+          const { data, error } = await supabase
+            .from('leads')
+            .select('id, name, email, whatsapp, country_code')
+            .eq('sub_origin_id', job.sub_origin_id)
+            .range(offset, offset + PAGE_SIZE - 1);
+          
+          if (error) throw error;
+          
+          const records = data || [];
+          allLeads = [...allLeads, ...records];
+          hasMore = records.length === PAGE_SIZE;
+          offset += PAGE_SIZE;
+        }
+
+        return allLeads;
       }, 'Fetch leads');
 
       // Filter valid leads
@@ -386,7 +443,7 @@ serve(async (req) => {
         }
       });
 
-      console.log(`[DISPATCH-BATCH] CRM dispatch: ${validLeads.length} valid leads`);
+      console.log(`[DISPATCH-BATCH] CRM dispatch: ${validLeads.length} valid leads (no limit)`);
     }
 
     // Update valid leads count if not set
