@@ -189,11 +189,40 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
   const scrollRAFRef = useRef<number | null>(null);
   const streamingBufferRef = useRef("");
   const flushTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  
+
   // Refs for hydration control - prevent race conditions
   const isHydratingRef = useRef(false); // True when loading from DB
   const skipNextUrlLoadRef = useRef<string | null>(null); // Skip URL load for this conv ID
-  
+
+  // Snapshot refs (avoid stale closures during streaming/autosave)
+  const messagesRef = useRef<Message[]>([]);
+  const conversationIdRef = useRef<string | null>(null);
+  const isCreatingConversationRef = useRef(false);
+
+  const setConversationId = useCallback((id: string | null) => {
+    conversationIdRef.current = id;
+    setCurrentConversationId(id);
+  }, []);
+
+  const setMessagesSnapshot = useCallback((next: Message[]) => {
+    messagesRef.current = next;
+    setMessages(next);
+  }, []);
+
+  const updateMessages = useCallback((updater: (prev: Message[]) => Message[]) => {
+    const next = updater(messagesRef.current);
+    messagesRef.current = next;
+    setMessages(next);
+  }, []);
+  // Keep refs in sync even for code paths still using setState directly
+  useEffect(() => {
+    messagesRef.current = messages;
+  }, [messages]);
+
+  useEffect(() => {
+    conversationIdRef.current = currentConversationId;
+  }, [currentConversationId]);
+
   // Helper to log actions with timestamp
   const logAction = useCallback((actor: 'user' | 'ai' | 'system', action: string, details?: string) => {
     const entry: ActionEntry = {
