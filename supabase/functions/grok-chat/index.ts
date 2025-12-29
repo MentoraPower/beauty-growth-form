@@ -221,7 +221,38 @@ const detectCsvRequest = (messages: any[]): boolean => {
   return csvPatterns.some(pattern => pattern.test(content));
 };
 
-const getSystemPrompt = (greeting: string, activeAgent: string | null = null, hasImage: boolean = false, isCodeRequest: boolean = false, isCsvRequest: boolean = false) => {
+// Detectar se é uma pergunta sobre métricas de email
+const detectMetricsRequest = (messages: any[]): boolean => {
+  const lastMessage = messages[messages.length - 1];
+  if (!lastMessage || lastMessage.role !== 'user') return false;
+  
+  const content = typeof lastMessage.content === 'string' 
+    ? lastMessage.content.toLowerCase() 
+    : '';
+  
+  const metricsPatterns = [
+    /taxa\s*(de\s*)?(abertura|aberturas)/i,
+    /quantas?\s*(pessoas?)?\s*(abriram|abriu|aberto)/i,
+    /quantas?\s*(pessoas?)?\s*(clicaram|clicou|cliques?)/i,
+    /métricas?\s*(do|de|dos)?\s*(e-?mails?|disparo|disparos|campanha)/i,
+    /estatísticas?\s*(do|de|dos)?\s*(e-?mails?|disparo|disparos)/i,
+    /performance\s*(do|de|dos)?\s*(e-?mails?|disparo)/i,
+    /resultados?\s*(do|de|dos)?\s*(e-?mails?|disparo|último)/i,
+    /open\s*rate/i,
+    /click\s*rate/i,
+    /aberturas?\s*(do|de|dos)?\s*(e-?mails?)/i,
+    /cliques?\s*(no|nos|do|dos)?\s*(e-?mails?|link|links)/i,
+    /como\s*(foi|foram|está|estão)\s*(o|os|a|as)?\s*(e-?mails?|disparo|disparos)/i,
+    /relatório\s*(de|do|dos)?\s*(e-?mails?|disparo)/i,
+    /analytics/i,
+    /conversão\s*(do|de|dos)?\s*(e-?mails?|disparo)/i,
+    /engajamento/i
+  ];
+  
+  return metricsPatterns.some(pattern => pattern.test(content));
+};
+
+const getSystemPrompt = (greeting: string, activeAgent: string | null = null, hasImage: boolean = false, isCodeRequest: boolean = false, isCsvRequest: boolean = false, isMetricsRequest: boolean = false, metricsData: any = null) => {
   const randomGreeting = getRandomGreeting(greeting);
   
   let specialMode = '';
@@ -294,6 +325,50 @@ O painel lateral está mostrando a planilha com os dados.
 O usuário pode editar diretamente na planilha ou pedir para você fazer.
 
 IGNORE o fluxo de disparo e foque 100% no pedido sobre a lista.
+`;
+  }
+
+  // Modo Métricas - análise de performance de emails
+  if (isMetricsRequest && metricsData) {
+    const openRate = metricsData.totalSent > 0 
+      ? ((metricsData.uniqueOpens / metricsData.totalSent) * 100).toFixed(1)
+      : 0;
+    const clickRate = metricsData.totalSent > 0 
+      ? ((metricsData.totalClicks / metricsData.totalSent) * 100).toFixed(1)
+      : 0;
+    
+    specialMode += `
+═══════════════════════════════════════
+MODO MÉTRICAS DE EMAIL ATIVO
+═══════════════════════════════════════
+O usuário está perguntando sobre métricas/performance dos emails enviados.
+
+**DADOS ATUAIS DO SISTEMA:**
+- Emails enviados: ${metricsData.totalSent}
+- Aberturas únicas: ${metricsData.uniqueOpens} (${openRate}% de taxa de abertura)
+- Cliques totais: ${metricsData.totalClicks} (${clickRate}% de taxa de cliques)
+${metricsData.recentDispatches?.length > 0 ? `
+**ÚLTIMOS DISPAROS:**
+${metricsData.recentDispatches.map((d: any, i: number) => 
+  `${i + 1}. ${d.subject || 'Sem assunto'} - ${d.sent} enviados, ${d.opens} aberturas (${d.openRate}%), ${d.clicks} cliques`
+).join('\n')}
+` : ''}
+
+**BENCHMARKS DO MERCADO (para comparação):**
+- Taxa de abertura boa: 20-25%
+- Taxa de abertura excelente: acima de 30%
+- Taxa de cliques boa: 2-5%
+- Taxa de cliques excelente: acima de 5%
+
+**COMO RESPONDER:**
+- Apresente os dados de forma clara e natural
+- Compare com benchmarks do mercado
+- Se a taxa está acima da média, parabenize!
+- Se está abaixo, sugira melhorias (assunto mais chamativo, horário diferente, etc)
+- Se perguntar sobre disparo específico, use os dados disponíveis
+- Seja objetivo e informativo
+
+IGNORE o fluxo de disparo e foque 100% em responder sobre métricas.
 `;
   }
   
@@ -830,9 +905,99 @@ serve(async (req) => {
     const hasImage = detectImageInMessage(messages) || hasImageInConversation(messages);
     const isCodeRequest = detectCodeRequest(messages);
     const isCsvRequest = detectCsvRequest(messages);
-    const systemPrompt = getSystemPrompt(greeting, activeAgent, hasImage, isCodeRequest, isCsvRequest);
+    const isMetricsRequest = detectMetricsRequest(messages);
 
-    console.log("Chat mode:", { activeAgent, hasImage, isCodeRequest, isCsvRequest });
+    // Fetch metrics data if user is asking about email metrics
+    let metricsData = null;
+    if (isMetricsRequest) {
+      const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+      const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+      const supabase = createClient(supabaseUrl, supabaseKey);
+
+      // Get overall metrics
+      const { count: totalSent } = await supabase
+        .from('scheduled_emails')
+        .select('id', { count: 'exact', head: true })
+        .eq('status', 'sent');
+
+      const { count: uniqueOpens } = await supabase
+        .from('email_tracking_events')
+        .select('scheduled_email_id', { count: 'exact', head: true })
+        .eq('event_type', 'open');
+
+      const { count: totalClicks } = await supabase
+        .from('email_tracking_events')
+        .select('id', { count: 'exact', head: true })
+        .eq('event_type', 'click');
+
+      // Get recent dispatches with their metrics
+      const { data: recentEmails } = await supabase
+        .from('scheduled_emails')
+        .select(`
+          id,
+          subject,
+          sent_at,
+          automation_id
+        `)
+        .eq('status', 'sent')
+        .order('sent_at', { ascending: false })
+        .limit(50);
+
+      // Aggregate by automation/subject for recent dispatches
+      const dispatchMap = new Map();
+      if (recentEmails) {
+        for (const email of recentEmails) {
+          const key = email.subject || 'Sem assunto';
+          if (!dispatchMap.has(key)) {
+            dispatchMap.set(key, { subject: key, emailIds: [], sent: 0, opens: 0, clicks: 0 });
+          }
+          dispatchMap.get(key).emailIds.push(email.id);
+          dispatchMap.get(key).sent++;
+        }
+
+        // Get tracking events for these emails
+        const allEmailIds = recentEmails.map(e => e.id);
+        const { data: trackingEvents } = await supabase
+          .from('email_tracking_events')
+          .select('scheduled_email_id, event_type')
+          .in('scheduled_email_id', allEmailIds);
+
+        if (trackingEvents) {
+          for (const event of trackingEvents) {
+            for (const [key, dispatch] of dispatchMap) {
+              if (dispatch.emailIds.includes(event.scheduled_email_id)) {
+                if (event.event_type === 'open') dispatch.opens++;
+                if (event.event_type === 'click') dispatch.clicks++;
+                break;
+              }
+            }
+          }
+        }
+      }
+
+      const recentDispatches = Array.from(dispatchMap.values())
+        .slice(0, 5)
+        .map(d => ({
+          subject: d.subject,
+          sent: d.sent,
+          opens: d.opens,
+          clicks: d.clicks,
+          openRate: d.sent > 0 ? ((d.opens / d.sent) * 100).toFixed(1) : '0'
+        }));
+
+      metricsData = {
+        totalSent: totalSent || 0,
+        uniqueOpens: uniqueOpens || 0,
+        totalClicks: totalClicks || 0,
+        recentDispatches
+      };
+
+      console.log('[GROK] Metrics data fetched:', metricsData);
+    }
+
+    const systemPrompt = getSystemPrompt(greeting, activeAgent, hasImage, isCodeRequest, isCsvRequest, isMetricsRequest, metricsData);
+
+    console.log("Chat mode:", { activeAgent, hasImage, isCodeRequest, isCsvRequest, isMetricsRequest });
 
     // Use vision model when there's an image
     const model = hasImage ? "grok-2-vision-1212" : "grok-3-fast";
