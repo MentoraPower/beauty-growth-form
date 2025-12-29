@@ -1662,6 +1662,45 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
           }
         }
       }
+      
+      // DETECT HTML PASTED DIRECTLY IN CHAT - auto-load into side panel
+      const isDirectHtmlPaste = 
+        (rawMessageContent.includes('<!DOCTYPE') || rawMessageContent.includes('<!doctype') ||
+         (rawMessageContent.includes('<html') && rawMessageContent.includes('</html>')) ||
+         (rawMessageContent.includes('<body') && rawMessageContent.includes('</body>')) ||
+         (rawMessageContent.includes('<table') && rawMessageContent.includes('</table>') && rawMessageContent.length > 200));
+      
+      if (isDirectHtmlPaste) {
+        // Clean the HTML
+        const cleanedHtml = rawMessageContent
+          .replace(/^```html\n?/i, '')
+          .replace(/^```\n?/, '')
+          .replace(/\n?```$/i, '')
+          .trim();
+        
+        // Load directly into side panel
+        setSidePanelHtml(cleanedHtml);
+        setSidePanelSubject(''); // User can add subject later
+        setHtmlSource('user'); // User pasted this HTML
+        setSidePanelOpen(true);
+        setSidePanelShowCodePreview(true);
+        setSidePanelMode('email');
+        setSidePanelGenerating(false);
+        setSidePanelEditing(false);
+        
+        logAction('user', 'Colou HTML diretamente no chat', `${cleanedHtml.length} caracteres`);
+        
+        const confirmMessage: Message = {
+          id: crypto.randomUUID(),
+          content: `Carreguei seu HTML no editor! 📧\n\nVocê pode ver o **preview** e o **código** no painel lateral à direita. Se precisar de ajustes, é só me pedir.\n\nQuando estiver pronto, me avise para iniciar o disparo.`,
+          role: "assistant",
+          timestamp: new Date(),
+        };
+        setMessages(prev => [...prev, confirmMessage]);
+        setIsLoading(false);
+        isProcessingMessageRef.current = false;
+        return;
+      }
 
       // Check if user is confirming dispatch via chat
       const lowerUserMsg = rawMessageContent.toLowerCase().trim();
@@ -2899,6 +2938,7 @@ INSTRUÇÕES PARA VOCÊ (A IA):
               dispatchData={sidePanelDispatchData}
               showCodePreview={sidePanelShowCodePreview}
               panelTitle={sidePanelTitle}
+              forcePreviewTab={!sidePanelGenerating && !sidePanelEditing && sidePanelHtml.length > 0}
               onNewDispatch={() => {
                 // Reset side panel to email mode and clear dispatch data
                 setSidePanelMode('email');
