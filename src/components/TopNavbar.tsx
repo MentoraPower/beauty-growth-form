@@ -26,7 +26,7 @@ export function TopNavbar() {
   };
 
   return (
-    <nav className="h-12 bg-background border-b flex items-center justify-between px-4" style={{ borderColor: '#00000010' }}>
+    <nav className="h-12 bg-background border-b flex items-center justify-between px-4 fixed top-0 left-0 right-0 z-[100]" style={{ borderColor: '#00000010' }}>
       {/* Left side - Ask IA button */}
       <button className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-gradient-to-r from-orange-500 to-amber-500 text-white text-sm font-medium hover:opacity-90 transition-opacity">
         <Diamond className="h-4 w-4" />
