@@ -2,12 +2,12 @@ import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { Check, ChevronDown, Loader2, FileText, Zap, Send, Search, Sparkles } from "lucide-react";
+import { Check, ChevronDown, Loader2, FileText, Send, Search, Sparkles, Edit3 } from "lucide-react";
 
 export interface WorkSubItem {
   id: string;
   label: string;
-  type?: 'file' | 'action' | 'text'; // 'file' shows as file reference with icon box
+  type?: 'file' | 'action' | 'text';
   status: 'pending' | 'in_progress' | 'done';
 }
 
@@ -18,7 +18,7 @@ export interface WorkStep {
   progress?: { current: number; total: number };
   subItems?: WorkSubItem[];
   summary?: string;
-  icon?: 'file' | 'search' | 'sparkles' | 'send' | 'zap';
+  icon?: 'file' | 'search' | 'sparkles' | 'send' | 'edit';
 }
 
 interface AIWorkDetailsProps {
@@ -31,7 +31,7 @@ const iconMap = {
   search: Search,
   sparkles: Sparkles,
   send: Send,
-  zap: Zap,
+  edit: Edit3,
 };
 
 function StepStatusIcon({ status }: { status: WorkStep['status'] }) {
@@ -45,8 +45,8 @@ function StepStatusIcon({ status }: { status: WorkStep['status'] }) {
   
   if (status === 'in_progress') {
     return (
-      <div className="w-[18px] h-[18px] rounded-full border-2 border-primary flex items-center justify-center flex-shrink-0">
-        <Loader2 className="w-2.5 h-2.5 text-primary animate-spin" />
+      <div className="w-[18px] h-[18px] rounded-full border-2 border-emerald-500 flex items-center justify-center flex-shrink-0">
+        <Loader2 className="w-2.5 h-2.5 text-emerald-500 animate-spin" />
       </div>
     );
   }
@@ -61,28 +61,16 @@ function FileReferenceItem({ label, status }: { label: string; status: WorkSubIt
   return (
     <div className="flex items-center gap-2 py-1">
       <div className={cn(
-        "w-5 h-5 rounded flex items-center justify-center flex-shrink-0 transition-colors",
-        status === 'done' && "bg-emerald-100 dark:bg-emerald-500/20",
-        status === 'in_progress' && "bg-primary/10",
-        status === 'pending' && "bg-muted"
+        "w-5 h-5 rounded flex items-center justify-center flex-shrink-0",
+        "bg-muted"
       )}>
-        <Zap className={cn(
-          "w-3 h-3",
-          status === 'done' && "text-emerald-600 dark:text-emerald-400",
-          status === 'in_progress' && "text-primary",
-          status === 'pending' && "text-muted-foreground/50"
-        )} />
+        <Edit3 className="w-3 h-3 text-muted-foreground" />
       </div>
-      <span className={cn(
-        "text-xs font-mono",
-        status === 'done' && "text-foreground",
-        status === 'in_progress' && "text-foreground",
-        status === 'pending' && "text-muted-foreground/60"
-      )}>
+      <span className="text-xs text-muted-foreground">
         {label}
       </span>
       {status === 'in_progress' && (
-        <Loader2 className="w-3 h-3 text-primary animate-spin ml-auto" />
+        <Loader2 className="w-3 h-3 text-muted-foreground animate-spin ml-auto" />
       )}
     </div>
   );
@@ -362,7 +350,7 @@ export function createCustomStep(
     id,
     title,
     status,
-    icon: options?.icon || 'zap',
+    icon: options?.icon || 'edit',
     subItems: options?.subItems,
     summary: options?.summary,
     progress: options?.progress
