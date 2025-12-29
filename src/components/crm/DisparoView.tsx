@@ -190,6 +190,10 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
   const streamingBufferRef = useRef("");
   const flushTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   
+  // Refs for hydration control - prevent race conditions
+  const isHydratingRef = useRef(false); // True when loading from DB
+  const skipNextUrlLoadRef = useRef<string | null>(null); // Skip URL load for this conv ID
+  
   // Helper to log actions with timestamp
   const logAction = useCallback((actor: 'user' | 'ai' | 'system', action: string, details?: string) => {
     const entry: ActionEntry = {
@@ -431,9 +435,22 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
   useEffect(() => {
     const convId = searchParams.get('conversation') || searchParams.get('conv');
     
+    // Skip if this ID was just set by menu selection (already have messages loaded)
+    if (convId && skipNextUrlLoadRef.current === convId) {
+      skipNextUrlLoadRef.current = null;
+      setInitialLoadDone(true);
+      return;
+    }
+    
+    // Don't load from DB if we're actively generating/streaming (prevents race condition)
+    if (convId && convId === currentConversationId && (isLoading || sidePanelGenerating)) {
+      return;
+    }
+    
     // If we have a convId and it's different from current, load it
     if (convId && convId !== currentConversationId) {
       const loadConversation = async () => {
+        isHydratingRef.current = true;
         try {
           const { data, error } = await supabase
             .from("dispatch_conversations")
@@ -505,6 +522,8 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
           newParams.delete('conv');
           setSearchParams(newParams);
           setInitialLoadDone(true);
+        } finally {
+          isHydratingRef.current = false;
         }
       };
       loadConversation();
@@ -529,7 +548,7 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
     } else if (!convId && !initialLoadDone) {
       setInitialLoadDone(true);
     }
-  }, [searchParams]);
+  }, [searchParams, currentConversationId, isLoading, sidePanelGenerating]);
 
   // Reconstruct components after messages are loaded
   useEffect(() => {
@@ -676,12 +695,12 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
       clearTimeout(saveDebounceRef.current);
     }
     
-    // First message - create new conversation immediately
+    // First message - create new conversation immediately (but don't setSearchParams yet)
     if (!currentConversationId && messages.length > 0) {
       saveConversation(true).then((newId) => {
         if (newId) {
           setCurrentConversationId(newId);
-          setSearchParams({ conversation: newId }, { replace: true });
+          // Don't set search params here - separate effect will handle it
           lastSavedSignatureRef.current = currentSignature;
         }
       });
@@ -724,6 +743,16 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
   useEffect(() => {
     lastSavedSignatureRef.current = '';
   }, [currentConversationId]);
+
+  // Sync URL when conversation ID changes (separated from creation to avoid race condition)
+  useEffect(() => {
+    if (!currentConversationId) return;
+    
+    const currentUrlConvId = searchParams.get('conversation');
+    if (currentUrlConvId !== currentConversationId) {
+      setSearchParams({ conversation: currentConversationId }, { replace: true });
+    }
+  }, [currentConversationId, searchParams, setSearchParams]);
 
   // Auto-scroll to bottom when messages change (using RAF, only if near bottom)
   useEffect(() => {
@@ -1027,6 +1056,11 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
         )
       );
       toast.success("Email gerado com sucesso!");
+      
+      // Force immediate save after generation completes
+      setTimeout(() => {
+        saveConversation();
+      }, 100);
       
     } catch (error) {
       console.error("Error generating email:", error);
@@ -1545,6 +1579,11 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
         );
         
         toast.success("Email gerado com sucesso!");
+        
+        // Force immediate save after generation completes
+        setTimeout(() => {
+          saveConversation();
+        }, 100);
         
       } catch (error) {
         console.error("Error generating email:", error);
@@ -2084,6 +2123,11 @@ INSTRUÇÕES PARA VOCÊ (A IA):
           // Turn off generating state
           setSidePanelGenerating(false);
           setIsLoading(false);
+          
+          // Force immediate save after streaming completes
+          setTimeout(() => {
+            saveConversation();
+          }, 100);
           return;
         }
         
@@ -2179,8 +2223,11 @@ INSTRUÇÕES PARA VOCÊ (A IA):
 
   // Handle selecting a conversation from menu
   const handleSelectConversation = useCallback((id: string, loadedMessages: Message[]) => {
+    // Set flag to skip URL-triggered reload (we already have the messages)
+    skipNextUrlLoadRef.current = id;
     setCurrentConversationId(id);
     setMessages(loadedMessages);
+    // URL will be synced by the separate effect
   }, []);
 
   // Handle new conversation
