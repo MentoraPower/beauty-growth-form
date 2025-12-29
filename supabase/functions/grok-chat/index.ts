@@ -170,23 +170,30 @@ const detectCodeRequest = (messages: any[]): boolean => {
   return codePatterns.some(pattern => pattern.test(content));
 };
 
-// Detectar se há CSV na conversa e pedido relacionado à lista
+// Detectar se há CSV na conversa - detecta quando lista foi enviada
 const detectCsvRequest = (messages: any[]): boolean => {
   const lastMessage = messages[messages.length - 1];
   if (!lastMessage || lastMessage.role !== 'user') return false;
   
   const content = typeof lastMessage.content === 'string' 
-    ? lastMessage.content.toLowerCase() 
+    ? lastMessage.content 
     : '';
   
-  // Check if CSV was uploaded in conversation
-  const hasCsvInConversation = messages.some(m => 
-    m.content?.includes('[Arquivo enviado:') && m.content?.includes('.csv')
-  );
+  // Check if this message IS a CSV upload (new format with context)
+  if (content.includes('[NOVA LISTA CSV RECEBIDA]')) {
+    return true;
+  }
+  
+  // Check if CSV was uploaded in any previous message
+  const hasCsvInConversation = messages.some(m => {
+    const msgContent = typeof m.content === 'string' ? m.content : '';
+    return msgContent.includes('[NOVA LISTA CSV RECEBIDA]') || 
+           (msgContent.includes('[Arquivo enviado:') && msgContent.includes('.csv'));
+  });
   
   if (!hasCsvInConversation) return false;
   
-  // Patterns that indicate user wants to do something with the list
+  // If CSV exists, check if user wants to do something with the list
   const csvPatterns = [
     /lista/i,
     /leads/i,
@@ -218,7 +225,7 @@ const detectCsvRequest = (messages: any[]): boolean => {
     /exportar/i
   ];
   
-  return csvPatterns.some(pattern => pattern.test(content));
+  return csvPatterns.some(pattern => pattern.test(content.toLowerCase()));
 };
 
 // Detectar se é uma pergunta sobre métricas de email
