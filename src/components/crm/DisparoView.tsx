@@ -2492,8 +2492,8 @@ INSTRUÇÕES PARA VOCÊ (A IA):
                             <AIWorkDetails steps={msg.componentData.data.workflowSteps as WorkStep[]} />
                           </motion.div>
                         )}
-                        {/* Email generation indicator */}
-                        {msg.componentData?.type === 'email_generator_streaming' && (
+                        {/* Email generation indicator - only show when there's content */}
+                        {msg.componentData?.type === 'email_generator_streaming' && sidePanelHtml && (
                           <div className="mt-3">
                             <EmailGenerationIndicator
                               isGenerating={sidePanelGenerating}
