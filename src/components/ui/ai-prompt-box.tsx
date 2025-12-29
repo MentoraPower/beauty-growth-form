@@ -1,7 +1,7 @@
 import React from "react";
 import * as TooltipPrimitive from "@radix-ui/react-tooltip";
 import * as DialogPrimitive from "@radix-ui/react-dialog";
-import { ArrowUp, Paperclip, Square, X, StopCircle, Mic, Globe, BrainCog, FolderCode } from "lucide-react";
+import { ArrowUp, Paperclip, Square, X, StopCircle, Mic, Globe, Pen, Palette, Zap, Mail, MessageCircle } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
 // Utility function for className merging
@@ -423,22 +423,45 @@ export const PromptInputBox = React.forwardRef((props: PromptInputBoxProps, ref:
   const [selectedImage, setSelectedImage] = React.useState<string | null>(null);
   const [isRecording, setIsRecording] = React.useState(false);
   const [showSearch, setShowSearch] = React.useState(false);
-  const [showThink, setShowThink] = React.useState(false);
-  const [showCanvas, setShowCanvas] = React.useState(false);
+  const [showCopywriting, setShowCopywriting] = React.useState(false);
+  const [showUxUi, setShowUxUi] = React.useState(false);
+  const [showBulk, setShowBulk] = React.useState(false);
+  const [bulkMethod, setBulkMethod] = React.useState<'email' | 'whatsapp' | null>(null);
   const uploadInputRef = React.useRef<HTMLInputElement>(null);
   const promptBoxRef = React.useRef<HTMLDivElement>(null);
 
-  const handleToggleChange = (value: string) => {
-    if (value === "search") {
+  const handleAgentToggle = (agent: string) => {
+    if (agent === "search") {
       setShowSearch((prev) => !prev);
-      setShowThink(false);
-    } else if (value === "think") {
-      setShowThink((prev) => !prev);
+      setShowCopywriting(false);
+      setShowUxUi(false);
+      setShowBulk(false);
+      setBulkMethod(null);
+    } else if (agent === "copywriting") {
+      setShowCopywriting((prev) => !prev);
       setShowSearch(false);
+      setShowUxUi(false);
+      setShowBulk(false);
+      setBulkMethod(null);
+    } else if (agent === "uxui") {
+      setShowUxUi((prev) => !prev);
+      setShowSearch(false);
+      setShowCopywriting(false);
+      setShowBulk(false);
+      setBulkMethod(null);
+    } else if (agent === "bulk") {
+      const wasActive = showBulk;
+      setShowBulk((prev) => !prev);
+      setShowSearch(false);
+      setShowCopywriting(false);
+      setShowUxUi(false);
+      if (wasActive) setBulkMethod(null);
     }
   };
 
-  const handleCanvasToggle = () => setShowCanvas((prev) => !prev);
+  const handleBulkMethodSelect = (method: 'email' | 'whatsapp') => {
+    setBulkMethod(method);
+  };
 
   const isImageFile = (file: File) => file.type.startsWith("image/");
 
@@ -506,10 +529,12 @@ export const PromptInputBox = React.forwardRef((props: PromptInputBoxProps, ref:
   const handleSubmit = () => {
     if (input.trim() || files.length > 0) {
       let messagePrefix = "";
-      if (showSearch) messagePrefix = "[Search: ";
-      else if (showThink) messagePrefix = "[Think: ";
-      else if (showCanvas) messagePrefix = "[Canvas: ";
-      const formattedInput = messagePrefix ? `${messagePrefix}${input}]` : input;
+      if (showSearch) messagePrefix = "[Search] ";
+      else if (showCopywriting) messagePrefix = "[Agente:Copywriting] ";
+      else if (showUxUi) messagePrefix = "[Agente:UX/UI] ";
+      else if (showBulk && bulkMethod) messagePrefix = `[Agente:Bulk:${bulkMethod === 'email' ? 'Email' : 'WhatsApp'}] `;
+      else if (showBulk) messagePrefix = "[Agente:Bulk] ";
+      const formattedInput = messagePrefix ? `${messagePrefix}${input}` : input;
       onSend(formattedInput, files);
       setInput("");
       setFiles([]);
@@ -585,10 +610,16 @@ export const PromptInputBox = React.forwardRef((props: PromptInputBoxProps, ref:
             placeholder={
               showSearch
                 ? "Pesquisar na web..."
-                : showThink
-                ? "Pensar profundamente..."
-                : showCanvas
-                ? "Criar no canvas..."
+                : showCopywriting
+                ? "Criar copy persuasiva..."
+                : showUxUi
+                ? "Estruturar design e layout..."
+                : showBulk
+                ? bulkMethod === 'email' 
+                  ? "Vamos disparar por email..."
+                  : bulkMethod === 'whatsapp'
+                  ? "Vamos disparar por WhatsApp..."
+                  : "Selecione o método de disparo abaixo..."
                 : placeholder
             }
             className="text-base"
@@ -630,10 +661,11 @@ export const PromptInputBox = React.forwardRef((props: PromptInputBoxProps, ref:
               </button>
             </PromptInputAction>
 
-            <div className="flex items-center">
+            <div className="flex items-center gap-0.5 flex-wrap">
+              {/* Search */}
               <button
                 type="button"
-                onClick={() => handleToggleChange("search")}
+                onClick={() => handleAgentToggle("search")}
                 className={cn(
                   "rounded-full transition-all flex items-center gap-1 px-2 py-1 border h-8",
                   showSearch
@@ -667,35 +699,36 @@ export const PromptInputBox = React.forwardRef((props: PromptInputBoxProps, ref:
 
               <CustomDivider />
 
+              {/* Copywriting Agent */}
               <button
                 type="button"
-                onClick={() => handleToggleChange("think")}
+                onClick={() => handleAgentToggle("copywriting")}
                 className={cn(
                   "rounded-full transition-all flex items-center gap-1 px-2 py-1 border h-8",
-                  showThink
-                    ? "bg-[#8B5CF6]/15 border-[#8B5CF6] text-[#8B5CF6]"
+                  showCopywriting
+                    ? "bg-[#10B981]/15 border-[#10B981] text-[#10B981]"
                     : "bg-transparent border-transparent text-gray-500 hover:text-gray-700"
                 )}
               >
                 <div className="w-5 h-5 flex items-center justify-center flex-shrink-0">
                   <motion.div
-                    animate={{ rotate: showThink ? 360 : 0, scale: showThink ? 1.1 : 1 }}
-                    whileHover={{ rotate: showThink ? 360 : 15, scale: 1.1, transition: { type: "spring", stiffness: 300, damping: 10 } }}
+                    animate={{ rotate: showCopywriting ? 360 : 0, scale: showCopywriting ? 1.1 : 1 }}
+                    whileHover={{ rotate: showCopywriting ? 360 : 15, scale: 1.1, transition: { type: "spring", stiffness: 300, damping: 10 } }}
                     transition={{ type: "spring", stiffness: 260, damping: 25 }}
                   >
-                    <BrainCog className={cn("w-4 h-4", showThink ? "text-[#8B5CF6]" : "text-inherit")} />
+                    <Pen className={cn("w-4 h-4", showCopywriting ? "text-[#10B981]" : "text-inherit")} />
                   </motion.div>
                 </div>
                 <AnimatePresence>
-                  {showThink && (
+                  {showCopywriting && (
                     <motion.span
                       initial={{ width: 0, opacity: 0 }}
                       animate={{ width: "auto", opacity: 1 }}
                       exit={{ width: 0, opacity: 0 }}
                       transition={{ duration: 0.2 }}
-                      className="text-xs overflow-hidden whitespace-nowrap text-[#8B5CF6] flex-shrink-0"
+                      className="text-xs overflow-hidden whitespace-nowrap text-[#10B981] flex-shrink-0"
                     >
-                      Think
+                      Copywriting
                     </motion.span>
                   )}
                 </AnimatePresence>
@@ -703,27 +736,65 @@ export const PromptInputBox = React.forwardRef((props: PromptInputBoxProps, ref:
 
               <CustomDivider />
 
+              {/* UX/UI Agent */}
               <button
                 type="button"
-                onClick={handleCanvasToggle}
+                onClick={() => handleAgentToggle("uxui")}
                 className={cn(
                   "rounded-full transition-all flex items-center gap-1 px-2 py-1 border h-8",
-                  showCanvas
+                  showUxUi
+                    ? "bg-[#8B5CF6]/15 border-[#8B5CF6] text-[#8B5CF6]"
+                    : "bg-transparent border-transparent text-gray-500 hover:text-gray-700"
+                )}
+              >
+                <div className="w-5 h-5 flex items-center justify-center flex-shrink-0">
+                  <motion.div
+                    animate={{ rotate: showUxUi ? 360 : 0, scale: showUxUi ? 1.1 : 1 }}
+                    whileHover={{ rotate: showUxUi ? 360 : 15, scale: 1.1, transition: { type: "spring", stiffness: 300, damping: 10 } }}
+                    transition={{ type: "spring", stiffness: 260, damping: 25 }}
+                  >
+                    <Palette className={cn("w-4 h-4", showUxUi ? "text-[#8B5CF6]" : "text-inherit")} />
+                  </motion.div>
+                </div>
+                <AnimatePresence>
+                  {showUxUi && (
+                    <motion.span
+                      initial={{ width: 0, opacity: 0 }}
+                      animate={{ width: "auto", opacity: 1 }}
+                      exit={{ width: 0, opacity: 0 }}
+                      transition={{ duration: 0.2 }}
+                      className="text-xs overflow-hidden whitespace-nowrap text-[#8B5CF6] flex-shrink-0"
+                    >
+                      UX/UI
+                    </motion.span>
+                  )}
+                </AnimatePresence>
+              </button>
+
+              <CustomDivider />
+
+              {/* Bulk Agent */}
+              <button
+                type="button"
+                onClick={() => handleAgentToggle("bulk")}
+                className={cn(
+                  "rounded-full transition-all flex items-center gap-1 px-2 py-1 border h-8",
+                  showBulk
                     ? "bg-[#F97316]/15 border-[#F97316] text-[#F97316]"
                     : "bg-transparent border-transparent text-gray-500 hover:text-gray-700"
                 )}
               >
                 <div className="w-5 h-5 flex items-center justify-center flex-shrink-0">
                   <motion.div
-                    animate={{ rotate: showCanvas ? 360 : 0, scale: showCanvas ? 1.1 : 1 }}
-                    whileHover={{ rotate: showCanvas ? 360 : 15, scale: 1.1, transition: { type: "spring", stiffness: 300, damping: 10 } }}
+                    animate={{ rotate: showBulk ? 360 : 0, scale: showBulk ? 1.1 : 1 }}
+                    whileHover={{ rotate: showBulk ? 360 : 15, scale: 1.1, transition: { type: "spring", stiffness: 300, damping: 10 } }}
                     transition={{ type: "spring", stiffness: 260, damping: 25 }}
                   >
-                    <FolderCode className={cn("w-4 h-4", showCanvas ? "text-[#F97316]" : "text-inherit")} />
+                    <Zap className={cn("w-4 h-4", showBulk ? "text-[#F97316]" : "text-inherit")} />
                   </motion.div>
                 </div>
                 <AnimatePresence>
-                  {showCanvas && (
+                  {showBulk && (
                     <motion.span
                       initial={{ width: 0, opacity: 0 }}
                       animate={{ width: "auto", opacity: 1 }}
@@ -731,11 +802,51 @@ export const PromptInputBox = React.forwardRef((props: PromptInputBoxProps, ref:
                       transition={{ duration: 0.2 }}
                       className="text-xs overflow-hidden whitespace-nowrap text-[#F97316] flex-shrink-0"
                     >
-                      Canvas
+                      Bulk
                     </motion.span>
                   )}
                 </AnimatePresence>
               </button>
+
+              {/* Bulk Method Selector */}
+              <AnimatePresence>
+                {showBulk && (
+                  <motion.div
+                    initial={{ width: 0, opacity: 0 }}
+                    animate={{ width: "auto", opacity: 1 }}
+                    exit={{ width: 0, opacity: 0 }}
+                    transition={{ duration: 0.2 }}
+                    className="flex items-center gap-1 ml-1 overflow-hidden"
+                  >
+                    <button
+                      type="button"
+                      onClick={() => handleBulkMethodSelect('email')}
+                      className={cn(
+                        "rounded-full transition-all flex items-center gap-1 px-2 py-1 border h-7 text-xs",
+                        bulkMethod === 'email'
+                          ? "bg-[#F97316]/20 border-[#F97316] text-[#F97316]"
+                          : "bg-gray-100 border-gray-200 text-gray-600 hover:bg-gray-200"
+                      )}
+                    >
+                      <Mail className="w-3 h-3" />
+                      Email
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleBulkMethodSelect('whatsapp')}
+                      className={cn(
+                        "rounded-full transition-all flex items-center gap-1 px-2 py-1 border h-7 text-xs",
+                        bulkMethod === 'whatsapp'
+                          ? "bg-[#25D366]/20 border-[#25D366] text-[#25D366]"
+                          : "bg-gray-100 border-gray-200 text-gray-600 hover:bg-gray-200"
+                      )}
+                    >
+                      <MessageCircle className="w-3 h-3" />
+                      WhatsApp
+                    </button>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
           </div>
 
