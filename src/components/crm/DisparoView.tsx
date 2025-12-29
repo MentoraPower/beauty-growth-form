@@ -901,14 +901,9 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
       role: "assistant",
       timestamp: new Date(),
       componentData: {
-        type: 'ai_work_details',
-        data: { steps: generatingSteps }
+        type: 'email_generator_streaming',
+        data: { workflowSteps: generatingSteps }
       },
-      component: (
-        <div className="mt-3 w-full max-w-md">
-          <AIWorkDetails steps={generatingSteps} />
-        </div>
-      ),
     };
     setMessages(prev => [...prev, loadingMessage]);
     
@@ -1001,7 +996,7 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
         createDispatchStep('pending')
       ];
       
-      // Update the loading message to show completed state
+      // Update the loading message to show completed state - save workflowSteps in componentData
       setMessages(prev => 
         prev.map(m => 
           m.id === loadingMessageId 
@@ -1010,12 +1005,10 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
                 content: hasButtonPlaceholder 
                   ? `Email gerado! Agora me diz: qual o link do botão? (Ex: https://seusite.com/oferta)`
                   : `Email gerado! Você pode revisar e editar na lateral.`,
-                componentData: { type: 'ai_work_details' as const, data: { steps: completedSteps } },
-                component: (
-                  <div className="mt-3 w-full max-w-md">
-                    <AIWorkDetails steps={completedSteps} />
-                  </div>
-                )
+                componentData: { 
+                  type: 'email_generator_streaming' as const, 
+                  data: { workflowSteps: completedSteps, isComplete: true } 
+                },
               }
             : m
         )
@@ -1857,6 +1850,13 @@ INSTRUÇÕES PARA VOCÊ (A IA):
       // Check if copywriting mode to show panel during streaming
       const isCopywritingMode = messageContent.includes('[CONTEXT:copywriting]');
       
+      // Initial workflow steps for copywriting
+      const initialCopywritingSteps: WorkStep[] = [
+        createCustomStep('analysis', 'Analisando contexto', 'in_progress', { icon: 'search' }),
+        createCustomStep('generation', 'Geração da copy', 'pending', { icon: 'sparkles' }),
+        createCustomStep('review', 'Revisão', 'pending', { icon: 'edit' }),
+      ];
+      
       // If copywriting mode, open side panel immediately with "thinking" state
       if (isCopywritingMode) {
         setSidePanelOpen(true);
@@ -1865,19 +1865,18 @@ INSTRUÇÕES PARA VOCÊ (A IA):
         setSidePanelShowCodePreview(false);
         setSidePanelTitle('Gerando copy...');
         setSidePanelGenerating(true);
-        setSidePanelWorkflowSteps([
-          createCustomStep('analysis', 'Analisando contexto', 'in_progress', { icon: 'search' }),
-          createCustomStep('generation', 'Geração da copy', 'pending', { icon: 'sparkles' }),
-          createCustomStep('review', 'Revisão', 'pending', { icon: 'edit' }),
-        ]);
       }
 
-      // Create initial assistant message
+      // Create initial assistant message - include workflowSteps in componentData for persistence
       setMessages(prev => [...prev, {
         id: assistantMessageId,
         content: "",
         role: "assistant",
         timestamp: new Date(),
+        componentData: isCopywritingMode ? { 
+          type: 'email_generator_streaming' as const, 
+          data: { workflowSteps: initialCopywritingSteps } 
+        } : undefined,
       }]);
 
       // Track if we've started receiving content (for workflow updates)
@@ -1886,22 +1885,32 @@ INSTRUÇÕES PARA VOCÊ (A IA):
       // Throttled update function
       const flushContentToUI = () => {
         pendingUpdate = false;
+        
+        // Updated workflow steps once content starts
+        const generatingSteps: WorkStep[] = [
+          createCustomStep('analysis', 'Contexto analisado', 'completed', { icon: 'search' }),
+          createCustomStep('generation', 'Gerando copy...', 'in_progress', { icon: 'sparkles' }),
+          createCustomStep('review', 'Revisão', 'pending', { icon: 'edit' }),
+        ];
+        
         setMessages(prev => 
           prev.map(m => 
             m.id === assistantMessageId 
-              ? { ...m, content: assistantContent }
+              ? { 
+                  ...m, 
+                  content: assistantContent,
+                  // Update workflowSteps in componentData when content starts
+                  componentData: isCopywritingMode && assistantContent.length > 20 
+                    ? { type: 'email_generator_streaming' as const, data: { workflowSteps: generatingSteps } }
+                    : m.componentData
+                }
               : m
           )
         );
         
-        // Update workflow to "generating" once we start receiving content
+        // Update workflow to "generating" once we start receiving content (for visual in side panel)
         if (isCopywritingMode && assistantContent.length > 20 && !hasStartedContent) {
           hasStartedContent = true;
-          setSidePanelWorkflowSteps([
-            createCustomStep('analysis', 'Contexto analisado', 'completed', { icon: 'search' }),
-            createCustomStep('generation', 'Gerando copy...', 'in_progress', { icon: 'sparkles' }),
-            createCustomStep('review', 'Revisão', 'pending', { icon: 'edit' }),
-          ]);
         }
       };
 
@@ -2011,18 +2020,24 @@ INSTRUÇÕES PARA VOCÊ (A IA):
             setSidePanelTitle('Copy gerada');
           }
           
-          setSidePanelSubject(isHtmlContent ? 'Email' : 'Copy');
+          // For copy mode, don't set a subject (so header doesn't show)
+          if (!isHtmlContent) {
+            setSidePanelSubject(''); // No subject for copy
+          } else {
+            setSidePanelSubject('Email');
+          }
           setSidePanelOpen(true);
           setSidePanelMode('email');
           
-          // Update workflow steps to show generation complete
-          setSidePanelWorkflowSteps([
+          // Final workflow steps for persistence in message
+          const completedWorkflowSteps: WorkStep[] = [
             createCustomStep('analysis', 'Análise do contexto', 'completed', { icon: 'file' }),
             createCustomStep('generation', isCopywritingMode ? 'Geração da copy' : 'Geração do conteúdo', 'completed', { icon: 'sparkles' }),
             createCustomStep('review', 'Pronto para revisão', 'in_progress', { icon: 'edit' }),
-          ]);
+          ];
           
           // Show a brief message in chat, the full content is in the panel
+          // NEVER show the copy content in chat - only short notification
           setMessages(prev => 
             prev.map(m => 
               m.id === assistantMessageId 
@@ -2031,7 +2046,10 @@ INSTRUÇÕES PARA VOCÊ (A IA):
                     content: isCopywritingMode 
                       ? 'Copy pronta! Visualize e edite na lateral.' 
                       : 'Conteúdo gerado! Visualize na lateral.',
-                    componentData: { type: 'email_generator_streaming' as const, data: { isComplete: true } }
+                    componentData: { 
+                      type: 'email_generator_streaming' as const, 
+                      data: { isComplete: true, workflowSteps: completedWorkflowSteps } 
+                    }
                   }
                 : m
             )
@@ -2230,15 +2248,18 @@ INSTRUÇÕES PARA VOCÊ (A IA):
                             </p>
                           </div>
                         )}
-                        {/* AI Work Details - show workflow steps BELOW text, animated */}
-                        {msg.componentData?.type === 'email_generator_streaming' && sidePanelWorkflowSteps.length > 0 && (
+                        {/* AI Work Details - show workflow steps from msg.componentData (persisted) */}
+                        {msg.componentData?.type === 'email_generator_streaming' && 
+                         msg.componentData?.data?.workflowSteps && 
+                         Array.isArray(msg.componentData.data.workflowSteps) &&
+                         msg.componentData.data.workflowSteps.length > 0 && (
                           <motion.div 
                             initial={{ opacity: 0, y: 10 }}
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ duration: 0.3, delay: 0.1 }}
                             className="mt-3"
                           >
-                            <AIWorkDetails steps={sidePanelWorkflowSteps} />
+                            <AIWorkDetails steps={msg.componentData.data.workflowSteps as WorkStep[]} />
                           </motion.div>
                         )}
                         {/* Email generation indicator */}
