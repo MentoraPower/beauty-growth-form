@@ -422,20 +422,24 @@ export const PromptInputBox = React.forwardRef((props: PromptInputBoxProps, ref:
   const [filePreviews, setFilePreviews] = React.useState<{ [key: string]: string }>({});
   const [selectedImage, setSelectedImage] = React.useState<string | null>(null);
   const [isRecording, setIsRecording] = React.useState(false);
-  const [showCopywriting, setShowCopywriting] = React.useState(false);
-  const [showUxUi, setShowUxUi] = React.useState(false);
+  const [selectedModel, setSelectedModel] = React.useState<'grok' | 'copywriting'>('grok');
+  const [modelDropdownOpen, setModelDropdownOpen] = React.useState(false);
   const uploadInputRef = React.useRef<HTMLInputElement>(null);
   const promptBoxRef = React.useRef<HTMLDivElement>(null);
+  const dropdownRef = React.useRef<HTMLDivElement>(null);
 
-  const handleAgentToggle = (agent: string) => {
-    if (agent === "copywriting") {
-      setShowCopywriting((prev) => !prev);
-      setShowUxUi(false);
-    } else if (agent === "uxui") {
-      setShowUxUi((prev) => !prev);
-      setShowCopywriting(false);
+  // Close dropdown when clicking outside
+  React.useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setModelDropdownOpen(false);
+      }
+    };
+    if (modelDropdownOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
     }
-  };
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [modelDropdownOpen]);
 
   const isImageFile = (file: File) => file.type.startsWith("image/");
   const isCsvFile = (file: File) => file.type === "text/csv" || file.name.toLowerCase().endsWith(".csv");
@@ -511,8 +515,7 @@ export const PromptInputBox = React.forwardRef((props: PromptInputBoxProps, ref:
     if (input.trim() || files.length > 0) {
       // Build internal context prefix (not shown to user but sent to AI)
       let internalContext = "";
-      if (showCopywriting) internalContext = "[CONTEXT:copywriting] ";
-      else if (showUxUi) internalContext = "[CONTEXT:uxui] ";
+      if (selectedModel === 'copywriting') internalContext = "[CONTEXT:copywriting] ";
       const formattedInput = internalContext ? `${internalContext}${input}` : input;
       onSend(formattedInput, files);
       setInput("");
@@ -605,10 +608,8 @@ export const PromptInputBox = React.forwardRef((props: PromptInputBoxProps, ref:
         >
           <PromptInputTextarea
             placeholder={
-              showCopywriting
+              selectedModel === 'copywriting'
                 ? "Criar copy persuasiva..."
-                : showUxUi
-                ? "Estruturar design e layout..."
                 : placeholder
             }
             className="text-base"
@@ -650,15 +651,44 @@ export const PromptInputBox = React.forwardRef((props: PromptInputBoxProps, ref:
               </button>
             </PromptInputAction>
 
-            {/* Model selector with border */}
-            <div 
-              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md border cursor-pointer hover:bg-gray-50 transition-colors"
-              style={{ borderColor: '#00000010' }}
-              onClick={() => handleAgentToggle("copywriting")}
-            >
-              <span className="text-xs font-medium text-gray-600">
-                {showCopywriting ? "Copywriting" : "Grok 4.1 Fast"}
-              </span>
+            {/* Model selector dropdown */}
+            <div ref={dropdownRef} className="relative">
+              <div 
+                className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-none border cursor-pointer hover:bg-gray-50"
+                style={{ borderColor: '#00000010' }}
+                onClick={() => setModelDropdownOpen(!modelDropdownOpen)}
+              >
+                <span className="text-xs font-medium text-gray-600">
+                  {selectedModel === 'copywriting' ? "Copywriting" : "Grok 4.1 Fast"}
+                </span>
+                <ChevronDown className="w-3 h-3 text-gray-400" />
+              </div>
+              
+              {modelDropdownOpen && (
+                <div 
+                  className="absolute bottom-full left-0 mb-1 bg-white border rounded-none shadow-lg z-50 min-w-[140px]"
+                  style={{ borderColor: '#00000010' }}
+                >
+                  <div 
+                    className={cn(
+                      "px-3 py-2 text-xs cursor-pointer hover:bg-gray-50",
+                      selectedModel === 'grok' && "bg-gray-50"
+                    )}
+                    onClick={() => { setSelectedModel('grok'); setModelDropdownOpen(false); }}
+                  >
+                    Grok 4.1 Fast
+                  </div>
+                  <div 
+                    className={cn(
+                      "px-3 py-2 text-xs cursor-pointer hover:bg-gray-50",
+                      selectedModel === 'copywriting' && "bg-gray-50"
+                    )}
+                    onClick={() => { setSelectedModel('copywriting'); setModelDropdownOpen(false); }}
+                  >
+                    Copywriting
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 
