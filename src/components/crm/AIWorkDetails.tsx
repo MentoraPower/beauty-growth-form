@@ -131,11 +131,11 @@ export function AIWorkDetails({ steps, className }: AIWorkDetailsProps) {
           const isLast = index === steps.length - 1;
           
           return (
-            <div key={step.id} className="relative">
+            <div key={step.id} className="relative pb-1">
               {/* Vertical dashed line connecting to next step */}
               {!isLast && (
                 <div 
-                  className="absolute left-[8px] top-[26px] bottom-[8px] w-0 border-l border-dashed border-foreground/20"
+                  className="absolute left-[8px] top-[26px] h-[calc(100%-18px)] w-0 border-l border-dashed border-foreground/20"
                 />
               )}
               
