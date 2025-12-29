@@ -182,6 +182,7 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
   const [sidePanelOpen, setSidePanelOpen] = useState(false);
   const [sidePanelHtml, setSidePanelHtml] = useState('');
   const [sidePanelSubject, setSidePanelSubject] = useState('');
+  const [sidePanelPreheader, setSidePanelPreheader] = useState('');
   const [sidePanelGenerating, setSidePanelGenerating] = useState(false);
   const [sidePanelEditing, setSidePanelEditing] = useState(false);
   const [sidePanelContext, setSidePanelContext] = useState<{ subOriginId: string; dispatchType: string } | null>(null);
@@ -2932,6 +2933,8 @@ INSTRUÇÕES PARA VOCÊ (A IA):
               onHtmlChange={(html) => { setSidePanelHtml(html); setHtmlSource('user'); }}
               subject={sidePanelSubject}
               onSubjectChange={setSidePanelSubject}
+              preheader={sidePanelPreheader}
+              onPreheaderChange={setSidePanelPreheader}
               isGenerating={sidePanelGenerating}
               isEditing={sidePanelEditing}
               mode={sidePanelMode}
@@ -2946,6 +2949,7 @@ INSTRUÇÕES PARA VOCÊ (A IA):
                 setSidePanelWorkflowSteps([]);
                 setSidePanelHtml('');
                 setSidePanelSubject('');
+                setSidePanelPreheader('');
                 setSidePanelOpen(false);
                 setSidePanelShowCodePreview(true);
                 setSidePanelTitle(undefined);

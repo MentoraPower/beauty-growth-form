@@ -36,6 +36,8 @@ interface EmailSidePanelProps {
   editOperation?: EditOperation | null;
   subject?: string;
   onSubjectChange?: (subject: string) => void;
+  preheader?: string;
+  onPreheaderChange?: (preheader: string) => void;
   // New props for dispatch details mode
   mode?: SidePanelMode;
   dispatchData?: DispatchData | null;
@@ -151,6 +153,8 @@ export function EmailSidePanel({
   editOperation = null,
   subject = "",
   onSubjectChange,
+  preheader = "",
+  onPreheaderChange,
   mode = 'email',
   dispatchData = null,
   onNewDispatch,
@@ -514,12 +518,15 @@ export function EmailSidePanel({
                   isGenerating && "animate-pulse"
                 )}
               />
-              {/* Preview snippet */}
-              {htmlContent && !isGenerating && (
-                <p className="text-xs text-muted-foreground mt-1 truncate">
-                  {htmlContent.replace(/<[^>]*>/g, '').slice(0, 80)}...
-                </p>
-              )}
+              {/* Preheader - editable */}
+              <input
+                type="text"
+                value={preheader || ''}
+                onChange={(e) => onPreheaderChange?.(e.target.value)}
+                placeholder="Preheader (texto de preview na caixa de entrada)..."
+                className="w-full bg-transparent text-xs text-muted-foreground placeholder:text-muted-foreground/60 focus:outline-none mt-1"
+                maxLength={150}
+              />
             </div>
           </div>
         </div>

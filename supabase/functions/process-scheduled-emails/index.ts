@@ -11,14 +11,27 @@ const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
 const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const resendApiKey = Deno.env.get("RESEND_API_KEY")!;
 
-// Function to inject tracking into email HTML
-function injectEmailTracking(html: string, scheduledEmailId: string): string {
+// Function to inject tracking and preheader into email HTML
+function injectEmailTracking(html: string, scheduledEmailId: string, preheader?: string): string {
   const trackingBaseUrl = `${supabaseUrl}/functions/v1/email-tracking`;
   
-  // 1. Inject tracking pixel before closing </body> tag
+  let trackedHtml = html;
+  
+  // 1. Inject preheader at the start of <body> if provided
+  if (preheader && preheader.trim()) {
+    const preheaderHtml = `<div style="display:none;font-size:1px;color:#ffffff;line-height:1px;max-height:0px;max-width:0px;opacity:0;overflow:hidden;">${preheader}</div>`;
+    if (trackedHtml.includes("<body")) {
+      // Insert after <body> tag
+      trackedHtml = trackedHtml.replace(/(<body[^>]*>)/i, `$1${preheaderHtml}`);
+    } else {
+      // Prepend if no body tag
+      trackedHtml = preheaderHtml + trackedHtml;
+    }
+  }
+  
+  // 2. Inject tracking pixel before closing </body> tag
   const trackingPixel = `<img src="${trackingBaseUrl}/open/${scheduledEmailId}" width="1" height="1" style="display:none;visibility:hidden;" alt="" />`;
   
-  let trackedHtml = html;
   if (trackedHtml.includes("</body>")) {
     trackedHtml = trackedHtml.replace("</body>", `${trackingPixel}</body>`);
   } else {
@@ -26,7 +39,7 @@ function injectEmailTracking(html: string, scheduledEmailId: string): string {
     trackedHtml += trackingPixel;
   }
   
-  // 2. Wrap all links with tracking redirect
+  // 3. Wrap all links with tracking redirect
   // Match href="..." patterns and wrap the URL
   const linkRegex = /href=["']([^"']+)["']/gi;
   trackedHtml = trackedHtml.replace(linkRegex, (match, url) => {
