@@ -493,38 +493,33 @@ export function EmailSidePanel({
         </div>
       )}
       
-      {/* Email Preview Header - inbox style notification */}
+      {/* Email Subject/Preheader Header */}
       {showCodePreview && (
-        <div className="px-5 py-4 border-b border-border bg-gradient-to-r from-muted/40 to-muted/20">
-          <div className="flex items-start gap-3">
-            {/* Avatar circle */}
-            <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
-              <span className="text-primary font-semibold text-sm">SB</span>
-            </div>
-            <div className="flex-1 min-w-0">
-              {/* From line */}
-              <div className="flex items-center gap-2 mb-1">
-                <span className="text-sm font-semibold text-foreground">Scale Beauty</span>
-                <span className="text-xs text-muted-foreground">agora</span>
-              </div>
-              {/* Subject - editable */}
+        <div className="px-5 py-4 border-b border-border bg-muted/20">
+          <div className="space-y-3">
+            {/* Subject - editable */}
+            <div>
+              <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1 block">Assunto</label>
               <input
                 type="text"
                 value={subject || ''}
                 onChange={(e) => onSubjectChange?.(e.target.value)}
                 placeholder={isGenerating ? "Gerando assunto..." : "Assunto do email..."}
                 className={cn(
-                  "w-full bg-transparent text-sm font-medium text-foreground placeholder:text-muted-foreground focus:outline-none",
+                  "w-full bg-transparent text-sm font-medium text-foreground placeholder:text-muted-foreground focus:outline-none border-b border-border/50 pb-2",
                   isGenerating && "animate-pulse"
                 )}
               />
-              {/* Preheader - editable */}
+            </div>
+            {/* Preheader - editable */}
+            <div>
+              <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1 block">Preheader</label>
               <input
                 type="text"
                 value={preheader || ''}
                 onChange={(e) => onPreheaderChange?.(e.target.value)}
-                placeholder="Preheader (texto de preview na caixa de entrada)..."
-                className="w-full bg-transparent text-xs text-muted-foreground placeholder:text-muted-foreground/60 focus:outline-none mt-1"
+                placeholder="Texto de preview na caixa de entrada..."
+                className="w-full bg-transparent text-xs text-foreground placeholder:text-muted-foreground/60 focus:outline-none"
                 maxLength={150}
               />
             </div>
