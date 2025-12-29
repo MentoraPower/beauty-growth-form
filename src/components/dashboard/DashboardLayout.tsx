@@ -267,8 +267,8 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
           ref={sidebarRef}
           style={{ 
             left: 12,
-            top: 12,
-            height: 'calc(100vh - 1.5rem)',
+            top: 60,
+            height: 'calc(100vh - 60px - 0.75rem)',
             borderRight: '1px solid rgba(255, 255, 255, 0.125)',
           }}
           className="group hidden lg:flex flex-col fixed bg-[#0f0f12] overflow-hidden z-50 rounded-2xl w-16 hover:w-[180px] transition-[width] duration-200 ease-out"
