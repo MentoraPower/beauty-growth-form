@@ -11,11 +11,135 @@ const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
 const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const resendApiKey = Deno.env.get("RESEND_API_KEY")!;
 
+// Function to inline CSS from <style> tags into elements
+function inlineCSS(html: string): string {
+  // Extract all <style> blocks
+  const styleRegex = /<style[^>]*>([\s\S]*?)<\/style>/gi;
+  const styles: { [selector: string]: string } = {};
+  
+  let match;
+  while ((match = styleRegex.exec(html)) !== null) {
+    const cssContent = match[1];
+    // Parse CSS rules (simplified parser for common patterns)
+    const ruleRegex = /([^{]+)\{([^}]+)\}/g;
+    let ruleMatch;
+    while ((ruleMatch = ruleRegex.exec(cssContent)) !== null) {
+      const selector = ruleMatch[1].trim();
+      const declarations = ruleMatch[2].trim();
+      // Handle simple selectors (class, element, id)
+      if (!selector.includes(':') && !selector.includes('@') && !selector.includes(' ')) {
+        styles[selector] = declarations;
+      }
+    }
+  }
+  
+  let result = html;
+  
+  // Apply class styles inline
+  for (const [selector, declarations] of Object.entries(styles)) {
+    if (selector.startsWith('.')) {
+      const className = selector.slice(1);
+      // Match elements with this class
+      const classRegex = new RegExp(`class=["']([^"']*\\b${className}\\b[^"']*)["']`, 'gi');
+      result = result.replace(classRegex, (match, classes) => {
+        return `${match} style="${declarations.replace(/"/g, "'")}"`;
+      });
+    } else if (selector.startsWith('#')) {
+      const idName = selector.slice(1);
+      const idRegex = new RegExp(`id=["']${idName}["']`, 'gi');
+      result = result.replace(idRegex, (match) => {
+        return `${match} style="${declarations.replace(/"/g, "'")}"`;
+      });
+    }
+  }
+  
+  // Merge duplicate style attributes
+  result = result.replace(/style="([^"]+)"\s+style="([^"]+)"/gi, (_, s1, s2) => {
+    return `style="${s1}; ${s2}"`;
+  });
+  
+  return result;
+}
+
+// Function to ensure HTML has proper document structure
+function ensureCompleteHtmlStructure(html: string): string {
+  let result = html.trim();
+  
+  // Check if already has doctype
+  const hasDoctype = /^<!DOCTYPE/i.test(result);
+  const hasHtmlTag = /<html[\s>]/i.test(result);
+  const hasHeadTag = /<head[\s>]/i.test(result);
+  const hasBodyTag = /<body[\s>]/i.test(result);
+  
+  // If it's already a complete HTML document, just return it
+  if (hasDoctype && hasHtmlTag && hasBodyTag) {
+    return result;
+  }
+  
+  // Extract existing head content if any
+  let headContent = '';
+  const headMatch = result.match(/<head[^>]*>([\s\S]*?)<\/head>/i);
+  if (headMatch) {
+    headContent = headMatch[1];
+    result = result.replace(/<head[^>]*>[\s\S]*?<\/head>/i, '');
+  }
+  
+  // Extract style tags to preserve them in head
+  const styleBlocks: string[] = [];
+  result = result.replace(/<style[^>]*>[\s\S]*?<\/style>/gi, (match) => {
+    styleBlocks.push(match);
+    return '';
+  });
+  
+  // Extract body content if body tag exists
+  let bodyContent = result;
+  const bodyMatch = result.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
+  if (bodyMatch) {
+    bodyContent = bodyMatch[1];
+  }
+  
+  // Remove any remaining html/body wrapper tags
+  bodyContent = bodyContent
+    .replace(/<\/?html[^>]*>/gi, '')
+    .replace(/<\/?body[^>]*>/gi, '')
+    .trim();
+  
+  // Build complete HTML structure
+  const completeHtml = `<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <!--[if mso]>
+  <noscript>
+    <xml>
+      <o:OfficeDocumentSettings>
+        <o:PixelsPerInch>96</o:PixelsPerInch>
+      </o:OfficeDocumentSettings>
+    </xml>
+  </noscript>
+  <![endif]-->
+  ${styleBlocks.join('\n  ')}
+  ${headContent}
+</head>
+<body style="margin: 0; padding: 0; -webkit-text-size-adjust: 100%; -ms-text-size-adjust: 100%;">
+  ${bodyContent}
+</body>
+</html>`;
+  
+  return completeHtml;
+}
+
 // Function to inject tracking and preheader into email HTML
 function injectEmailTracking(html: string, scheduledEmailId: string, preheader?: string): string {
   const trackingBaseUrl = `${supabaseUrl}/functions/v1/email-tracking`;
   
-  let trackedHtml = html;
+  // First, ensure complete HTML structure
+  let trackedHtml = ensureCompleteHtmlStructure(html);
+  
+  // Then inline CSS for email client compatibility
+  trackedHtml = inlineCSS(trackedHtml);
   
   // 1. Inject preheader at the start of <body> if provided
   if (preheader && preheader.trim()) {
