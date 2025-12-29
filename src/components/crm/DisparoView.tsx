@@ -2455,7 +2455,7 @@ INSTRUÇÕES PARA VOCÊ (A IA):
                     )}
                   >
                     {msg.role === "user" ? (
-                      <div className="bg-white text-foreground px-5 py-4 rounded-2xl max-w-[80%] border border-[#00000010]">
+                      <div className="bg-white text-foreground px-5 py-4 rounded-2xl max-w-[85%] border border-[#00000010]">
                         {/* Show image if present */}
                         {msg.imageUrl && (
                           <div className="mb-3">
@@ -2472,7 +2472,7 @@ INSTRUÇÕES PARA VOCÊ (A IA):
                       <div className="w-full group">
                         {/* Message content first */}
                         {msg.content && (
-                          <div className="max-w-[90%]">
+                          <div className="max-w-[85%]">
                             <p className="text-[15px] leading-relaxed whitespace-pre-wrap text-foreground">
                               {formatMessageContent(msg.content)}
                             </p>
