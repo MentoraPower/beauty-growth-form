@@ -45,6 +45,8 @@ interface EmailSidePanelProps {
   showCodePreview?: boolean;
   // Title for the panel when showing workflow/copy (REMOVED - no longer used)
   panelTitle?: string;
+  // Force initial tab when content is loaded externally
+  forcePreviewTab?: boolean;
 }
 
 // Syntax highlighting for HTML with dark purple for strings
@@ -154,7 +156,8 @@ export function EmailSidePanel({
   onNewDispatch,
   onViewEmail,
   showCodePreview = true,
-  panelTitle
+  panelTitle,
+  forcePreviewTab = false
 }: EmailSidePanelProps) {
   const [activeTab, setActiveTab] = useState<'code' | 'preview'>('preview');
   const [copied, setCopied] = useState(false);
@@ -169,6 +172,15 @@ export function EmailSidePanel({
   const previousContentRef = useRef("");
   const editAnimationRef = useRef<number | null>(null);
   const wasGeneratingRef = useRef(false);
+  const prevHtmlLengthRef = useRef(0);
+  
+  // Force preview tab when content is loaded externally (e.g., user pasted HTML)
+  useEffect(() => {
+    if (forcePreviewTab && htmlContent && htmlContent.length > 0 && prevHtmlLengthRef.current === 0) {
+      setActiveTab('preview');
+    }
+    prevHtmlLengthRef.current = htmlContent.length;
+  }, [htmlContent, forcePreviewTab]);
 
   // Handle preview content edit
   const handlePreviewBlur = useCallback(() => {
