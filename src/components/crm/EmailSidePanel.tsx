@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { cn } from "@/lib/utils";
-import { Code2, Eye, Copy, Check, BarChart3, Mail, X, Pause, Play, Loader2 } from "lucide-react";
+import { Code2, Eye, Copy, Check, BarChart3, Mail, X, Pause, Play, Loader2, ChevronsRight, Save } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -77,6 +77,10 @@ interface EmailSidePanelProps {
   // Props for dispatch_leads mode
   dispatchJobId?: string | null;
   onDispatchCommand?: (command: string) => void;
+  // Close panel callback
+  onClose?: () => void;
+  // Save callback - persists content
+  onSave?: () => void;
 }
 
 // Syntax highlighting for HTML with dark purple for strings
@@ -191,7 +195,9 @@ export function EmailSidePanel({
   panelTitle,
   forcePreviewTab = false,
   dispatchJobId = null,
-  onDispatchCommand
+  onDispatchCommand,
+  onClose,
+  onSave
 }: EmailSidePanelProps) {
   const [activeTab, setActiveTab] = useState<'code' | 'preview'>('preview');
   const [copied, setCopied] = useState(false);
@@ -781,41 +787,70 @@ export function EmailSidePanel({
       {/* Tabs - always at the top when showCodePreview is true */}
       {showCodePreview && (
         <div className="flex items-center justify-between px-5 py-3 border-b border-border bg-muted/20">
-          <div className="flex items-center gap-1 bg-muted/50 rounded-lg p-1">
-            <button
-              onClick={() => setActiveTab('preview')}
-              className={cn(
-                "flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-colors",
-                activeTab === 'preview'
-                  ? "bg-background text-foreground shadow-sm"
-                  : "text-muted-foreground hover:text-foreground"
-              )}
-            >
-              <Eye className="w-4 h-4" />
-              Preview
-            </button>
-            <button
-              onClick={() => setActiveTab('code')}
-              className={cn(
-                "flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-colors",
-                activeTab === 'code'
-                  ? "bg-background text-foreground shadow-sm"
-                  : "text-muted-foreground hover:text-foreground"
-              )}
-            >
-              <Code2 className="w-4 h-4" />
-              Código
-            </button>
+          <div className="flex items-center gap-3">
+            {/* Close button - circle with >> icon */}
+            {onClose && (
+              <button
+                onClick={onClose}
+                className="w-8 h-8 rounded-full border border-border bg-background hover:bg-muted flex items-center justify-center transition-colors group"
+                title="Fechar painel"
+              >
+                <ChevronsRight className="w-4 h-4 text-muted-foreground group-hover:text-foreground transition-colors" />
+              </button>
+            )}
+            
+            <div className="flex items-center gap-1 bg-muted/50 rounded-lg p-1">
+              <button
+                onClick={() => setActiveTab('preview')}
+                className={cn(
+                  "flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-colors",
+                  activeTab === 'preview'
+                    ? "bg-background text-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground"
+                )}
+              >
+                <Eye className="w-4 h-4" />
+                Preview
+              </button>
+              <button
+                onClick={() => setActiveTab('code')}
+                className={cn(
+                  "flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-colors",
+                  activeTab === 'code'
+                    ? "bg-background text-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground"
+                )}
+              >
+                <Code2 className="w-4 h-4" />
+                Código
+              </button>
+            </div>
           </div>
           
-          <button
-            onClick={handleCopy}
-            disabled={!htmlContent}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
-          >
-            {copied ? <Check className="w-4 h-4 text-green-500" /> : <Copy className="w-4 h-4" />}
-            {copied ? "Copiado" : "Copiar"}
-          </button>
+          <div className="flex items-center gap-2">
+            {/* Save button */}
+            {onSave && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={onSave}
+                disabled={!htmlContent}
+                className="h-8 gap-1.5"
+              >
+                <Save className="w-3.5 h-3.5" />
+                Salvar
+              </Button>
+            )}
+            
+            <button
+              onClick={handleCopy}
+              disabled={!htmlContent}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
+            >
+              {copied ? <Check className="w-4 h-4 text-green-500" /> : <Copy className="w-4 h-4" />}
+              {copied ? "Copiado" : "Copiar"}
+            </button>
+          </div>
         </div>
       )}
       
