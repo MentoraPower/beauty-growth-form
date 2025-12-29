@@ -18,23 +18,23 @@ export function EmailChatCard({
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       className={cn(
-        "w-full max-w-sm rounded-2xl overflow-visible cursor-pointer relative",
+        "w-full max-w-md rounded-2xl overflow-visible cursor-pointer relative",
         "bg-zinc-900 border border-zinc-800 hover:border-zinc-700 transition-all duration-200",
-        "hover:shadow-lg group mt-4"
+        "hover:shadow-lg group flex items-stretch"
       )}
       onClick={onClick}
     >
-      {/* Preview sticking out at the top */}
+      {/* Preview on the left side - sticking out from top */}
       {previewHtml && (
-        <div className="absolute -top-3 left-4 right-4">
-          <div className="w-full h-32 bg-white rounded-xl overflow-hidden shadow-lg border border-zinc-200 relative">
+        <div className="relative flex-shrink-0 p-3 pr-0">
+          <div className="w-28 h-36 bg-white rounded-xl overflow-hidden shadow-lg border border-zinc-200 relative -mt-5">
             <div 
-              className="absolute inset-0 origin-top-left overflow-hidden pointer-events-none p-2"
+              className="absolute inset-0 origin-top-left overflow-hidden pointer-events-none p-1"
               style={{ 
-                transform: 'scale(0.15)', 
+                transform: 'scale(0.12)', 
                 transformOrigin: 'top left',
-                width: '666%',
-                height: '666%'
+                width: '833%',
+                height: '833%'
               }}
             >
               <div 
@@ -46,27 +46,24 @@ export function EmailChatCard({
         </div>
       )}
 
-      {/* Content - with top padding to account for preview */}
-      <div className={cn("p-4", previewHtml ? "pt-36" : "pt-4")}>
-        {/* Header and button row */}
-        <div className="flex items-center justify-between gap-3">
-          <div className="flex-1 min-w-0">
-            <span className="text-sm font-medium text-white truncate block">
-              {subject || "Email Template"}
-            </span>
-            <span className="text-xs text-zinc-400 mt-0.5 block">
-              Click to edit
-            </span>
-          </div>
-
-          {/* Button - smaller and to the side */}
-          <button
-            type="button"
-            className="py-1.5 px-3 bg-zinc-800 hover:bg-zinc-700 text-white text-xs font-medium rounded-lg transition-colors flex-shrink-0"
-          >
-            View
-          </button>
+      {/* Content */}
+      <div className="flex-1 p-4 flex items-center justify-between gap-3 min-w-0">
+        <div className="flex-1 min-w-0">
+          <span className="text-sm font-medium text-white truncate block">
+            {subject || "Email Template"}
+          </span>
+          <span className="text-xs text-zinc-400 mt-0.5 block">
+            Click to edit
+          </span>
         </div>
+
+        {/* Button */}
+        <button
+          type="button"
+          className="py-1.5 px-3 bg-zinc-800 hover:bg-zinc-700 text-white text-xs font-medium rounded-lg transition-colors flex-shrink-0"
+        >
+          View
+        </button>
       </div>
     </motion.div>
   );
