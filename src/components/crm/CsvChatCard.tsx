@@ -48,7 +48,6 @@ export function CsvChatCard({
         </div>
         <div className="flex-1 min-w-0">
           <p className="font-medium text-gray-800 truncate text-sm">{fileName}</p>
-          <p className="text-xs text-gray-500">{totalRows} leads • {columns.length} colunas</p>
         </div>
       </div>
 
