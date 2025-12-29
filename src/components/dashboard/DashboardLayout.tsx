@@ -57,34 +57,32 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
   const isEquipeActive = location.pathname === "/admin/equipe";
   const isDisparoActive = location.pathname === "/admin/disparo";
 
-  // Initialize CRM submenu state - always start closed to enable animation
-  const [crmSubmenuOpen, setCrmSubmenuOpen] = useState(false);
-  const [disparoSubmenuOpen, setDisparoSubmenuOpen] = useState(false);
-  const hasInitialized = useRef(false);
-
-  // Open submenus with delay after mount to enable smooth animation
-  useEffect(() => {
-    if (hasInitialized.current) return;
-    hasInitialized.current = true;
-
-    // CRM submenu persistence
+  // Initialize submenu states directly from localStorage (no animation on refresh)
+  const getInitialCrmSubmenuState = () => {
+    if (typeof window === 'undefined') return false;
     const savedCrm = localStorage.getItem('crm_submenu_open');
-    const shouldCrmBeOpen = savedCrm !== 'false' && 
-      (location.pathname.startsWith("/admin/crm") || location.pathname === "/admin");
-    
-    // Disparo submenu persistence
+    return savedCrm !== 'false' && 
+      (window.location.pathname.startsWith("/admin/crm") || window.location.pathname === "/admin");
+  };
+  
+  const getInitialDisparoSubmenuState = () => {
+    if (typeof window === 'undefined') return false;
     const savedDisparo = localStorage.getItem('disparo_submenu_open');
-    const shouldDisparoBeOpen = savedDisparo === 'true' && 
-      location.pathname.startsWith("/admin/disparo");
-    
-    if (shouldCrmBeOpen || shouldDisparoBeOpen) {
-      // Small delay to allow initial render, then animate open
-      const timer = setTimeout(() => {
-        if (shouldCrmBeOpen) setCrmSubmenuOpen(true);
-        if (shouldDisparoBeOpen) setDisparoSubmenuOpen(true);
-      }, 50);
-      return () => clearTimeout(timer);
-    }
+    return savedDisparo === 'true' && window.location.pathname.startsWith("/admin/disparo");
+  };
+
+  const [crmSubmenuOpen, setCrmSubmenuOpen] = useState(getInitialCrmSubmenuState);
+  const [disparoSubmenuOpen, setDisparoSubmenuOpen] = useState(getInitialDisparoSubmenuState);
+  
+  // Track if submenus were restored from storage (skip animation)
+  const [crmSubmenuRestored] = useState(getInitialCrmSubmenuState);
+  const [disparoSubmenuRestored] = useState(getInitialDisparoSubmenuState);
+  const [animationsEnabled, setAnimationsEnabled] = useState(false);
+  
+  // Enable animations after first render
+  useEffect(() => {
+    const timer = requestAnimationFrame(() => setAnimationsEnabled(true));
+    return () => cancelAnimationFrame(timer);
   }, []);
 
   // Stable onClose callbacks to prevent re-renders
@@ -510,17 +508,23 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
             transform: crmSubmenuOpen ? 'translateX(0)' : `translateX(-${submenuWidth + 20}px)`,
             zIndex: 39,
             pointerEvents: crmSubmenuOpen ? 'auto' : 'none',
-            willChange: 'transform',
+            willChange: animationsEnabled ? 'transform' : 'auto',
           }}
-          className="hidden lg:block fixed top-[24px] bottom-[24px] rounded-r-2xl bg-zinc-900 overflow-hidden transition-transform duration-300 ease-out"
+          className={cn(
+            "hidden lg:block fixed top-[24px] bottom-[24px] rounded-r-2xl bg-zinc-900 overflow-hidden",
+            animationsEnabled && "transition-transform duration-300 ease-out"
+          )}
         >
           <div
-            className="h-full pl-4 pr-2 transition-opacity duration-200"
+            className={cn(
+              "h-full pl-4 pr-2",
+              animationsEnabled && "transition-opacity duration-200"
+            )}
             style={{
               width: submenuWidth,
               minWidth: submenuWidth,
               opacity: crmSubmenuOpen ? 1 : 0,
-              transitionDelay: crmSubmenuOpen ? '50ms' : '0ms',
+              transitionDelay: (animationsEnabled && crmSubmenuOpen) ? '50ms' : '0ms',
             }}
           >
             <MemoizedCRMOriginsPanel
@@ -540,17 +544,23 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
             transform: disparoSubmenuOpen ? 'translateX(0)' : `translateX(-${disparoSubmenuWidth + 20}px)`,
             zIndex: 39,
             pointerEvents: disparoSubmenuOpen ? 'auto' : 'none',
-            willChange: 'transform',
+            willChange: animationsEnabled ? 'transform' : 'auto',
           }}
-          className="hidden lg:block fixed top-[24px] bottom-[24px] rounded-r-2xl bg-zinc-900 overflow-hidden transition-transform duration-300 ease-out"
+          className={cn(
+            "hidden lg:block fixed top-[24px] bottom-[24px] rounded-r-2xl bg-zinc-900 overflow-hidden",
+            animationsEnabled && "transition-transform duration-300 ease-out"
+          )}
         >
           <div
-            className="h-full pl-2 pr-2 transition-opacity duration-200"
+            className={cn(
+              "h-full pl-2 pr-2",
+              animationsEnabled && "transition-opacity duration-200"
+            )}
             style={{
               width: disparoSubmenuWidth,
               minWidth: disparoSubmenuWidth,
               opacity: disparoSubmenuOpen ? 1 : 0,
-              transitionDelay: disparoSubmenuOpen ? '50ms' : '0ms',
+              transitionDelay: (animationsEnabled && disparoSubmenuOpen) ? '50ms' : '0ms',
             }}
           >
             <DisparoSubmenuPanel
