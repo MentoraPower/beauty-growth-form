@@ -185,9 +185,21 @@ export function DisparoSubmenuPanel({ isOpen, onClose }: DisparoSubmenuPanelProp
     }
   };
 
-  // Delete conversation
+  // Delete conversation - optimistic UI update
   const deleteConversation = async (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
+    
+    // Store previous state for rollback
+    const previousConversations = [...conversations];
+    
+    // Optimistically remove from UI immediately
+    setConversations(prev => prev.filter(c => c.id !== id));
+    
+    // If deleting current conversation, navigate to new immediately
+    const wasCurrentConversation = id === currentConversationId;
+    if (wasCurrentConversation) {
+      navigate('/admin/disparo?new=1', { replace: true });
+    }
     
     try {
       const { error } = await supabase
@@ -198,16 +210,17 @@ export function DisparoSubmenuPanel({ isOpen, onClose }: DisparoSubmenuPanelProp
       if (error) throw error;
       
       toast.success("Conversa apagada");
-      
-      // If deleting current conversation, navigate to new
-      if (id === currentConversationId) {
-        navigate('/admin/disparo?new=1', { replace: true });
-      }
-      
-      // Realtime subscription will update the list automatically
     } catch (error) {
       console.error("Error deleting conversation:", error);
       toast.error("Erro ao apagar conversa");
+      
+      // Rollback on error - restore the conversation
+      setConversations(previousConversations);
+      
+      // If we navigated away, go back to the conversation
+      if (wasCurrentConversation) {
+        navigate(`/admin/disparo?conversation=${id}`, { replace: true });
+      }
     }
   };
 
