@@ -805,25 +805,30 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
     const lastMessage = messages[messages.length - 1];
     const isUserJustSent = lastMessage?.role === 'user';
 
-    // First message - create new conversation immediately
+    // First message - conversation should already be created in handleSend
+    // This useEffect now only handles UPDATES, not creation
     if (!currentConversationId) {
-      // Prevent duplicate creation - check synchronously before async call
-      if (isCreatingConversationRef.current) {
-        console.log('[DisparoView] Skipping - already creating conversation');
+      // If we're here without a conversation ID and we're processing a message,
+      // the handleSend is creating the conversation - don't interfere
+      if (isProcessingMessageRef.current || isCreatingConversationRef.current) {
+        console.log('[DisparoView] Skipping auto-save - handleSend is managing conversation creation');
         return;
       }
-      isCreatingConversationRef.current = true;
       
-      saveConversationNow(true).then((newId) => {
-        if (newId) {
-          setCurrentConversationId(newId);
-          conversationIdRef.current = newId;
-          lastSavedSignatureRef.current = currentSignature;
-        }
-      }).finally(() => {
-        // Reset flag after creation attempt
-        isCreatingConversationRef.current = false;
-      });
+      // Edge case: messages exist but no conversation ID and not processing
+      // This shouldn't happen normally, but create conversation as fallback
+      if (messages.length > 0) {
+        isCreatingConversationRef.current = true;
+        saveConversationNow(true).then((newId) => {
+          if (newId) {
+            setCurrentConversationId(newId);
+            conversationIdRef.current = newId;
+            lastSavedSignatureRef.current = currentSignature;
+          }
+        }).finally(() => {
+          isCreatingConversationRef.current = false;
+        });
+      }
       return;
     }
 
@@ -1525,6 +1530,75 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
         timestamp: new Date(),
         imageUrl: imageBase64 || undefined,
       };
+      
+      // CRITICAL: Create conversation IMMEDIATELY on first message to prevent duplicates
+      // This must happen BEFORE streaming starts so all updates go to the same conversation
+      const isFirstMessage = !currentConversationId && !conversationIdRef.current;
+      let targetConversationId = conversationIdRef.current;
+      
+      if (isFirstMessage) {
+        // Prevent duplicate creation
+        if (isCreatingConversationRef.current) {
+          console.log('[DisparoView] Already creating conversation, blocking duplicate');
+          isProcessingMessageRef.current = false;
+          return;
+        }
+        
+        isCreatingConversationRef.current = true;
+        
+        // Create conversation synchronously with just the user message
+        try {
+          const title = messageContent.length > 50 
+            ? messageContent.substring(0, 50).trim() + '...' 
+            : messageContent || "Nova conversa";
+          
+          const conversationData = {
+            messages: [{ 
+              id: userMessage.id, 
+              content: userMessage.content, 
+              role: userMessage.role, 
+              timestamp: userMessage.timestamp.toISOString() 
+            }],
+            sidePanelState: {},
+            selectedOriginData: null,
+            dispatchType: null,
+            actionHistory: [],
+            htmlSource: null
+          };
+          
+          const { data, error } = await supabase
+            .from("dispatch_conversations")
+            .insert({ 
+              messages: conversationData as any,
+              title 
+            })
+            .select()
+            .single();
+          
+          if (error) throw error;
+          
+          targetConversationId = data.id;
+          conversationIdRef.current = data.id;
+          setCurrentConversationId(data.id);
+          
+          // Update URL with new conversation ID
+          setSearchParams({ conversation: data.id }, { replace: true });
+          
+          console.log('[DisparoView] Created conversation immediately:', data.id);
+        } catch (error) {
+          console.error('[DisparoView] Error creating conversation:', error);
+          isProcessingMessageRef.current = false;
+          isCreatingConversationRef.current = false;
+          toast.error('Erro ao criar conversa');
+          return;
+        } finally {
+          isCreatingConversationRef.current = false;
+        }
+      }
+      
+      // Store conversation ID for this run
+      activeRunConversationIdRef.current = targetConversationId;
+      
       setMessages((prev) => [...prev, userMessage]);
       setIsLoading(true);
 
@@ -2134,9 +2208,20 @@ INSTRUÇÕES PARA VOCÊ (A IA):
       // Track if we've started receiving content (for workflow updates)
       let hasStartedContent = false;
       
-      // Throttled update function
+      // Throttled update function with conversation guard
       const flushContentToUI = () => {
         pendingUpdate = false;
+        
+        // CRITICAL: Check if this run is still active and for the correct conversation
+        if (activeRunIdRef.current !== runId || conversationIdRef.current !== targetConversationId) {
+          console.log('[DisparoView] Skipping UI update - run/conversation changed', {
+            expectedRunId: runId,
+            currentRunId: activeRunIdRef.current,
+            expectedConvId: targetConversationId,
+            currentConvId: conversationIdRef.current
+          });
+          return;
+        }
         
         // Updated workflow steps once content starts
         const generatingSteps: WorkStep[] = [
@@ -2254,6 +2339,12 @@ INSTRUÇÕES PARA VOCÊ (A IA):
 
       // Process commands after streaming is complete
       if (assistantContent) {
+        // CRITICAL: Final check - ensure this run is still active for the correct conversation
+        if (activeRunIdRef.current !== runId || conversationIdRef.current !== targetConversationId) {
+          console.log('[DisparoView] Aborting post-stream processing - run/conversation changed');
+          return;
+        }
+        
         const { cleanContent, components } = await processCommands(assistantContent);
         
         // Check if the original message was from copywriting agent
@@ -2511,6 +2602,15 @@ INSTRUÇÕES PARA VOCÊ (A IA):
 
   // Handle selecting a conversation from menu
   const handleSelectConversation = useCallback((id: string, loadedMessages: Message[]) => {
+    // Abort any active request to prevent stale responses leaking into new conversation
+    if (activeAbortRef.current) {
+      activeAbortRef.current.abort();
+      activeAbortRef.current = null;
+    }
+    activeRunIdRef.current = null;
+    activeRunConversationIdRef.current = null;
+    isProcessingMessageRef.current = false;
+    
     // Set flag to skip URL-triggered reload (we already have the messages)
     skipNextUrlLoadRef.current = id;
     conversationIdRef.current = id;
