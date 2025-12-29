@@ -1885,6 +1885,20 @@ Retorne APENAS o HTML modificado, sem explicações.`,
         contextInfo.push(`• Lista: nenhuma selecionada ainda`);
       }
       
+      // Check for generated copy (text content before HTML conversion)
+      const lastCopyMessage = [...messages].reverse().find(m => 
+        m.role === 'assistant' && 
+        m.componentData?.type === 'email_generator_streaming' &&
+        m.componentData?.data?.isComplete &&
+        m.content.length > 100
+      );
+      
+      if (lastCopyMessage) {
+        contextInfo.push(`• COPY CRIADA: ✅ SIM - você (IA) criou uma copy nesta conversa`);
+        contextInfo.push(`• Preview da copy:\n---\n${lastCopyMessage.content.slice(0, 400)}${lastCopyMessage.content.length > 400 ? '\n[...]' : ''}\n---`);
+        contextInfo.push(`• IMPORTANTE: Use esta copy para criar o email HTML - NÃO pergunte se tem copy pronta!`);
+      }
+      
       // Email HTML status
       if (sidePanelHtml && sidePanelHtml.length > 0) {
         const sourceText = htmlSource === 'ai' 
@@ -2288,6 +2302,10 @@ INSTRUÇÕES PARA VOCÊ (A IA):
             setSidePanelSubject('');
             setSidePanelOpen(true);
             setSidePanelMode('email');
+            
+            // Log the copy generation so AI knows about it
+            const wordCount = cleanCopy.split(/\s+/).length;
+            logAction('ai', 'Criou copy de texto', `${wordCount} palavras geradas`);
           }
           
           // Always show full content in chat for copy
