@@ -74,9 +74,10 @@ export function DisparoSubmenuPanel({ isOpen, onClose }: DisparoSubmenuPanelProp
     navigate('/admin/disparo');
   };
 
-  // Load conversation
-  const handleSelectConversation = (id: string) => {
-    setSearchParams({ conversation: id });
+  // Load conversation - navigate with conversation ID
+  const handleSelectConversation = (convId: string) => {
+    // Navigate explicitly with the conversation ID to ensure correct routing
+    navigate(`/admin/disparo?conversation=${convId}`);
   };
 
   // Rename conversation
