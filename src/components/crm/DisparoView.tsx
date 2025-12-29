@@ -126,8 +126,10 @@ const extractSubjectAndHtml = (content: string): { subject: string; html: string
 // Remove agent/context prefixes from message content - removes ALL occurrences
 const removeAgentPrefix = (content: string): string => {
   // Remove prefixes like [Agente:Copywriting], [CONTEXT:...], [Search], etc. - globally
+  // Also remove "text-copyright" which may appear in HTML/copy content
   return content
     .replace(/\[(Agente:[^\]]+|CONTEXT:[^\]]+|Search)\]\s*/gi, '')
+    .replace(/text-copyright/gi, '')
     .trim();
 };
 
@@ -196,6 +198,7 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
   // Refs for hydration control - prevent race conditions
   const isHydratingRef = useRef(false); // True when loading from DB
   const skipNextUrlLoadRef = useRef<string | null>(null); // Skip URL load for this conv ID
+  const suppressUrlSyncRef = useRef(false); // Suppress URL sync when starting new conversation
 
   // Snapshot refs (avoid stale closures during streaming/autosave)
   const messagesRef = useRef<Message[]>([]);
@@ -561,8 +564,12 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
       loadConversation();
     } else if (!convId && currentConversationId) {
       // URL cleared - start new conversation
+      // Suppress URL sync to prevent race condition where old ID gets rewritten to URL
+      suppressUrlSyncRef.current = true;
       setCurrentConversationId(null);
+      conversationIdRef.current = null;
       setMessages([]);
+      messagesRef.current = [];
       setCsvLeads(null);
       setPendingEmailContext(null);
       setSidePanelOpen(false);
@@ -577,6 +584,8 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
       setSidePanelDispatchData(null); // Clear dispatch data
       setPendingQuestion(null); // Clear pending question
       setInitialLoadDone(true);
+      // Clear suppression after state is reset
+      setTimeout(() => { suppressUrlSyncRef.current = false; }, 100);
     } else if (!convId && !initialLoadDone) {
       setInitialLoadDone(true);
     }
@@ -821,6 +830,8 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
 
   // Sync URL when conversation ID changes (separated from creation to avoid race condition)
   useEffect(() => {
+    // Skip sync if suppressed (user just started new conversation)
+    if (suppressUrlSyncRef.current) return;
     if (!currentConversationId) return;
     
     const currentUrlConvId = searchParams.get('conversation');
