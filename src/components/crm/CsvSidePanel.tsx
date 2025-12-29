@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from "react";
 import { cn } from "@/lib/utils";
-import { Table, Search, Filter, Download, Trash2, Edit2, Check, X, ChevronLeft, ChevronRight } from "lucide-react";
+import { Table, Search, Filter, Download, Trash2, Edit2, Check, X, ChevronLeft, ChevronRight, ChevronsRight } from "lucide-react";
 import { toast } from "sonner";
 
 export interface CsvLead {
@@ -167,10 +167,19 @@ export function CsvSidePanel({
             <Table className="w-5 h-5 text-primary" />
             <h3 className="text-sm font-semibold text-foreground">{fileName}</h3>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-3">
             <span className="text-xs text-muted-foreground">
               {filteredLeads.length} de {leads.length} leads
             </span>
+            {onClose && (
+              <button
+                onClick={onClose}
+                className="flex items-center justify-center w-7 h-7 rounded-full border border-border bg-background hover:bg-muted transition-colors"
+                title="Fechar painel"
+              >
+                <ChevronsRight className="w-4 h-4 text-muted-foreground" />
+              </button>
+            )}
           </div>
         </div>
         
