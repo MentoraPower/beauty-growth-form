@@ -291,7 +291,12 @@ export function DisparoConversationsMenu({
 
       if (error) throw error;
 
-      const loadedMessages: Message[] = ((data.messages as any[]) || []).map((m: any) => ({
+      // Handle new format (object with messages array) or old format (just array)
+      const rawData = data.messages as any;
+      const isNewFormat = rawData && typeof rawData === 'object' && 'messages' in rawData && Array.isArray(rawData.messages);
+      const messagesArray = isNewFormat ? rawData.messages : (Array.isArray(rawData) ? rawData : []);
+
+      const loadedMessages: Message[] = messagesArray.map((m: any) => ({
         id: m.id,
         content: m.content,
         role: m.role as "user" | "assistant",
@@ -299,7 +304,6 @@ export function DisparoConversationsMenu({
         componentData: m.componentData || undefined,
       }));
 
-      lastSavedMessagesCount.current = loadedMessages.length;
       onSelectConversation(id, loadedMessages);
     } catch (error) {
       console.error("Error loading conversation:", error);
