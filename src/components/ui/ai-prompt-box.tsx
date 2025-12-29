@@ -1,7 +1,7 @@
 import React from "react";
 import * as TooltipPrimitive from "@radix-ui/react-tooltip";
 import * as DialogPrimitive from "@radix-ui/react-dialog";
-import { ArrowUp, Paperclip, Square, X, StopCircle, Mic, Pen, Palette } from "lucide-react";
+import { ArrowUp, Paperclip, Square, X, StopCircle, Mic, Pen, Palette, ChevronDown } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
 // Utility function for className merging
@@ -650,79 +650,19 @@ export const PromptInputBox = React.forwardRef((props: PromptInputBoxProps, ref:
               </button>
             </PromptInputAction>
 
-            <div className="flex items-center gap-0.5 flex-wrap">
-
-              {/* Copywriting Agent */}
-              <button
-                type="button"
-                onClick={() => handleAgentToggle("copywriting")}
-                className={cn(
-                  "rounded-full transition-all flex items-center gap-1 px-2 py-1 border h-8",
-                  showCopywriting
-                    ? "bg-[#10B981]/15 border-[#10B981] text-[#10B981]"
-                    : "bg-transparent border-transparent text-gray-500 hover:text-gray-700"
-                )}
-              >
-                <div className="w-5 h-5 flex items-center justify-center flex-shrink-0">
-                  <motion.div
-                    animate={{ rotate: showCopywriting ? 360 : 0, scale: showCopywriting ? 1.1 : 1 }}
-                    whileHover={{ rotate: showCopywriting ? 360 : 15, scale: 1.1, transition: { type: "spring", stiffness: 300, damping: 10 } }}
-                    transition={{ type: "spring", stiffness: 260, damping: 25 }}
-                  >
-                    <Pen className={cn("w-4 h-4", showCopywriting ? "text-[#10B981]" : "text-inherit")} />
-                  </motion.div>
-                </div>
-                <AnimatePresence>
-                  {showCopywriting && (
-                    <motion.span
-                      initial={{ width: 0, opacity: 0 }}
-                      animate={{ width: "auto", opacity: 1 }}
-                      exit={{ width: 0, opacity: 0 }}
-                      transition={{ duration: 0.2 }}
-                      className="text-xs overflow-hidden whitespace-nowrap text-[#10B981] flex-shrink-0"
-                    >
-                      Copywriting
-                    </motion.span>
-                  )}
-                </AnimatePresence>
-              </button>
-
-              <CustomDivider />
-
-              {/* UX/UI Agent */}
-              <button
-                type="button"
-                onClick={() => handleAgentToggle("uxui")}
-                className={cn(
-                  "rounded-full transition-all flex items-center gap-1 px-2 py-1 border h-8",
-                  showUxUi
-                    ? "bg-[#8B5CF6]/15 border-[#8B5CF6] text-[#8B5CF6]"
-                    : "bg-transparent border-transparent text-gray-500 hover:text-gray-700"
-                )}
-              >
-                <div className="w-5 h-5 flex items-center justify-center flex-shrink-0">
-                  <motion.div
-                    animate={{ rotate: showUxUi ? 360 : 0, scale: showUxUi ? 1.1 : 1 }}
-                    whileHover={{ rotate: showUxUi ? 360 : 15, scale: 1.1, transition: { type: "spring", stiffness: 300, damping: 10 } }}
-                    transition={{ type: "spring", stiffness: 260, damping: 25 }}
-                  >
-                    <Palette className={cn("w-4 h-4", showUxUi ? "text-[#8B5CF6]" : "text-inherit")} />
-                  </motion.div>
-                </div>
-                <AnimatePresence>
-                  {showUxUi && (
-                    <motion.span
-                      initial={{ width: 0, opacity: 0 }}
-                      animate={{ width: "auto", opacity: 1 }}
-                      exit={{ width: 0, opacity: 0 }}
-                      transition={{ duration: 0.2 }}
-                      className="text-xs overflow-hidden whitespace-nowrap text-[#8B5CF6] flex-shrink-0"
-                    >
-                      UX/UI
-                    </motion.span>
-                  )}
-                </AnimatePresence>
-              </button>
+            {/* Copywriting component with border */}
+            <div 
+              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md border cursor-pointer hover:bg-gray-50 transition-colors"
+              style={{ borderColor: '#00000010' }}
+              onClick={() => handleAgentToggle("copywriting")}
+            >
+              <Pen className={cn("w-3.5 h-3.5", showCopywriting ? "text-[#10B981]" : "text-gray-500")} />
+              <span className={cn("text-xs font-medium", showCopywriting ? "text-[#10B981]" : "text-gray-600")}>
+                Copywriting
+              </span>
+              {showCopywriting && (
+                <div className="w-1.5 h-1.5 rounded-full bg-[#10B981]" />
+              )}
             </div>
           </div>
 
