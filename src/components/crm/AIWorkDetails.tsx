@@ -131,99 +131,100 @@ export function AIWorkDetails({ steps, className }: AIWorkDetailsProps) {
           const isLast = index === steps.length - 1;
           
           return (
-            <Collapsible
-              key={step.id}
-              open={isOpen}
-              onOpenChange={() => hasContent && toggleStep(step.id)}
-            >
-              <CollapsibleTrigger asChild disabled={!hasContent}>
-                <button
-                  className={cn(
-                    "w-full py-2 flex items-center gap-2.5 text-left transition-colors relative",
-                    hasContent && "hover:opacity-80 cursor-pointer",
-                    !hasContent && "cursor-default"
-                  )}
-                >
-                  {/* Vertical dashed line connecting steps */}
-                  {!isLast && (
-                    <div 
-                      className="absolute left-[8px] top-[28px] w-[2px] h-[calc(100%-10px)] border-l-2 border-dashed border-muted-foreground/20"
-                      style={{ marginLeft: '0px' }}
-                    />
-                  )}
-                  <StepStatusIcon status={step.status} />
-                  
-                  <span className={cn(
-                    "flex-1 text-sm",
-                    step.status === 'completed' && "text-foreground font-medium",
-                    step.status === 'in_progress' && "text-foreground font-medium",
-                    step.status === 'pending' && "text-muted-foreground"
-                  )}>
-                    {step.title}
-                  </span>
-                  
-                  {step.progress && (
-                    <span className="text-xs text-muted-foreground tabular-nums">
-                      {step.progress.current}/{step.progress.total}
-                    </span>
-                  )}
-                  
-                  {hasContent && (
-                    <ChevronDown className={cn(
-                      "w-4 h-4 text-muted-foreground transition-transform duration-200",
-                      isOpen && "rotate-180"
-                    )} />
-                  )}
-                </button>
-              </CollapsibleTrigger>
+            <div key={step.id} className="relative">
+              {/* Vertical dashed line connecting to next step */}
+              {!isLast && (
+                <div 
+                  className="absolute left-[8px] top-[28px] bottom-0 w-0 border-l-2 border-dashed border-muted-foreground/20"
+                />
+              )}
               
-              <AnimatePresence>
-                {hasContent && (
-                  <CollapsibleContent forceMount>
-                    <motion.div
-                      initial={{ height: 0, opacity: 0 }}
-                      animate={isOpen ? { height: "auto", opacity: 1 } : { height: 0, opacity: 0 }}
-                      exit={{ height: 0, opacity: 0 }}
-                      transition={{ duration: 0.2, ease: "easeInOut" }}
-                      className="overflow-hidden"
-                    >
-                      <div className="pb-3 pl-7 space-y-1">
-                        {/* Sub-items - file references with icon boxes */}
-                        {step.subItems && step.subItems.length > 0 && (
-                          <div className="space-y-0.5">
-                            {step.subItems.map(item => {
-                              if (item.type === 'file' || item.label.startsWith('Lendo ') || item.label.includes('arquivo')) {
-                                return <FileReferenceItem key={item.id} label={item.label} status={item.status} />;
-                              }
-                              // Regular text item
-                              return (
-                                <div key={item.id} className="flex items-center gap-2 py-0.5">
-                                  <span className={cn(
-                                    "text-xs",
-                                    item.status === 'done' && "text-muted-foreground",
-                                    item.status === 'in_progress' && "text-foreground",
-                                    item.status === 'pending' && "text-muted-foreground/60"
-                                  )}>
-                                    {item.label}
-                                  </span>
-                                </div>
-                              );
-                            })}
-                          </div>
-                        )}
-                        
-                        {/* Summary text */}
-                        {step.summary && (
-                          <p className="text-sm text-muted-foreground leading-relaxed pt-2">
-                            {step.summary}
-                          </p>
-                        )}
-                      </div>
-                    </motion.div>
-                  </CollapsibleContent>
-                )}
-              </AnimatePresence>
-            </Collapsible>
+              <Collapsible
+                open={isOpen}
+                onOpenChange={() => hasContent && toggleStep(step.id)}
+              >
+                <CollapsibleTrigger asChild disabled={!hasContent}>
+                  <button
+                    className={cn(
+                      "w-full py-2 flex items-center gap-2.5 text-left transition-colors relative z-10",
+                      hasContent && "hover:opacity-80 cursor-pointer",
+                      !hasContent && "cursor-default"
+                    )}
+                  >
+                    <StepStatusIcon status={step.status} />
+                    
+                    <span className={cn(
+                      "flex-1 text-sm",
+                      step.status === 'completed' && "text-foreground font-medium",
+                      step.status === 'in_progress' && "text-foreground font-medium",
+                      step.status === 'pending' && "text-muted-foreground"
+                    )}>
+                      {step.title}
+                    </span>
+                    
+                    {step.progress && (
+                      <span className="text-xs text-muted-foreground tabular-nums">
+                        {step.progress.current}/{step.progress.total}
+                      </span>
+                    )}
+                    
+                    {hasContent && (
+                      <ChevronDown className={cn(
+                        "w-4 h-4 text-muted-foreground transition-transform duration-200",
+                        isOpen && "rotate-180"
+                      )} />
+                    )}
+                  </button>
+                </CollapsibleTrigger>
+                
+                <AnimatePresence>
+                  {hasContent && (
+                    <CollapsibleContent forceMount>
+                      <motion.div
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={isOpen ? { height: "auto", opacity: 1 } : { height: 0, opacity: 0 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        transition={{ duration: 0.2, ease: "easeInOut" }}
+                        className="overflow-hidden"
+                      >
+                        <div className="pb-3 pl-7 space-y-1">
+                          {/* Sub-items - file references with icon boxes */}
+                          {step.subItems && step.subItems.length > 0 && (
+                            <div className="space-y-0.5">
+                              {step.subItems.map(item => {
+                                if (item.type === 'file' || item.label.startsWith('Lendo ') || item.label.includes('arquivo')) {
+                                  return <FileReferenceItem key={item.id} label={item.label} status={item.status} />;
+                                }
+                                // Regular text item
+                                return (
+                                  <div key={item.id} className="flex items-center gap-2 py-0.5">
+                                    <span className={cn(
+                                      "text-xs",
+                                      item.status === 'done' && "text-muted-foreground",
+                                      item.status === 'in_progress' && "text-foreground",
+                                      item.status === 'pending' && "text-muted-foreground/60"
+                                    )}>
+                                      {item.label}
+                                    </span>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          )}
+                          
+                          {/* Summary text */}
+                          {step.summary && (
+                            <p className="text-sm text-muted-foreground leading-relaxed pt-2">
+                              {step.summary}
+                            </p>
+                          )}
+                        </div>
+                      </motion.div>
+                    </CollapsibleContent>
+                  )}
+                </AnimatePresence>
+              </Collapsible>
+            </div>
           );
         })}
       </div>
