@@ -33,42 +33,49 @@ export function EmailGenerationIndicator({
   };
 
   return (
-    <div className="w-full max-w-xl">
+    <div className="w-full max-w-xl relative">
+      {/* Floating preview - extends outside the card */}
+      {previewHtml && (
+        <div className="absolute -top-6 left-4 z-10">
+          <motion.div 
+            initial={{ opacity: 0, y: 10, rotate: -2 }}
+            animate={{ opacity: 1, y: 0, rotate: -3 }}
+            transition={{ delay: 0.1 }}
+            className="w-28 h-36 bg-white rounded-xl shadow-2xl overflow-hidden border border-black/10"
+            style={{ transform: 'rotate(-3deg)' }}
+          >
+            {/* Real HTML preview - scaled down */}
+            <div 
+              className="absolute inset-0 origin-top-left overflow-hidden pointer-events-none"
+              style={{ 
+                transform: 'scale(0.12)', 
+                transformOrigin: 'top left',
+                width: '833%',
+                height: '833%'
+              }}
+            >
+              <div 
+                className="p-4"
+                dangerouslySetInnerHTML={{ __html: previewHtml }}
+              />
+            </div>
+          </motion.div>
+        </div>
+      )}
+
       <motion.div 
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
         className={cn(
-          "relative bg-foreground/95 rounded-2xl overflow-hidden cursor-pointer",
-          "hover:bg-foreground transition-all duration-200 shadow-xl"
+          "relative rounded-2xl overflow-hidden cursor-pointer mt-8",
+          "bg-foreground/95 hover:bg-foreground transition-all duration-200 shadow-xl"
         )}
         onClick={onTogglePanel}
       >
         {/* Main content area */}
         <div className="flex items-stretch">
-          {/* Left section - Real Mini Preview */}
-          {previewHtml && (
-            <div className="w-36 h-32 bg-white/10 flex items-center justify-center p-2.5 border-r border-white/10">
-              <div className="w-full h-full bg-white rounded-xl overflow-hidden shadow-inner relative">
-                {/* Real HTML preview - scaled down */}
-                <div 
-                  className="absolute inset-0 origin-top-left overflow-hidden pointer-events-none"
-                  style={{ 
-                    transform: 'scale(0.15)', 
-                    transformOrigin: 'top left',
-                    width: '666%',
-                    height: '666%'
-                  }}
-                >
-                  <div 
-                    className="p-4"
-                    dangerouslySetInnerHTML={{ __html: previewHtml }}
-                  />
-                </div>
-                {/* Gradient overlay for polish */}
-                <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-white/20 pointer-events-none" />
-              </div>
-            </div>
-          )}
+          {/* Spacer for floating preview */}
+          {previewHtml && <div className="w-32" />}
 
           {/* Right section - Status info */}
           <div className="flex-1 p-4 flex flex-col justify-center">
