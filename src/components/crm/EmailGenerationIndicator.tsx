@@ -37,13 +37,12 @@ export function EmailGenerationIndicator({
       {/* Floating preview - extends outside the card */}
       {previewHtml && (
         <div className="absolute -top-6 left-4 z-10">
-          <motion.div 
-            initial={{ opacity: 0, y: 10, rotate: -2 }}
-            animate={{ opacity: 1, y: 0, rotate: -3 }}
-            transition={{ delay: 0.1 }}
-            className="w-28 h-36 bg-white rounded-xl shadow-2xl overflow-hidden border border-black/10"
-            style={{ transform: 'rotate(-3deg)' }}
-          >
+        <motion.div 
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+          className="w-28 h-36 bg-white rounded-xl shadow-2xl overflow-hidden border border-black/10"
+        >
             {/* Real HTML preview - scaled down */}
             <div 
               className="absolute inset-0 origin-top-left overflow-hidden pointer-events-none"
