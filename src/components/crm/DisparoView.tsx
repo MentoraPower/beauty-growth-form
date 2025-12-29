@@ -664,6 +664,41 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
             if (cs.csvListId !== undefined) setCsvListId(cs.csvListId || null);
             if (cs.csvFileName) setCsvFileName(cs.csvFileName);
             if (cs.csvMappedColumns) setCsvMappedColumns(cs.csvMappedColumns);
+            
+            // Restore csvLeads from database if we have a csvListId
+            if (cs.csvListId) {
+              const { data: recipients } = await supabase
+                .from('dispatch_csv_list_recipients')
+                .select('id, name, email, whatsapp')
+                .eq('list_id', cs.csvListId)
+                .limit(100); // Load first 100 for preview
+              
+              if (recipients && recipients.length > 0) {
+                setCsvLeads(recipients.map(r => ({
+                  name: r.name || '',
+                  email: r.email,
+                  whatsapp: r.whatsapp || undefined
+                })));
+              }
+            }
+          }
+
+          // Check for active dispatch job and auto-open panel
+          const { data: activeJob } = await supabase
+            .from('dispatch_jobs')
+            .select('id, status')
+            .eq('conversation_id', convId)
+            .in('status', ['pending', 'running'])
+            .order('created_at', { ascending: false })
+            .limit(1)
+            .maybeSingle();
+
+          if (activeJob) {
+            console.log('[DISPARO] Found active dispatch job:', activeJob.id);
+            setActiveJobId(activeJob.id);
+            setSidePanelMode('dispatch_leads');
+            setSidePanelShowCodePreview(false);
+            setSidePanelOpen(true);
           }
         } catch (error) {
           console.error("Error loading conversation from URL:", error);
