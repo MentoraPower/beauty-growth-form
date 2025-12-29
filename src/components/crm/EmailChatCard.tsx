@@ -18,7 +18,7 @@ export function EmailChatCard({
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       className={cn(
-        "w-full max-w-md rounded-2xl overflow-visible cursor-pointer relative",
+        "w-full max-w-xs rounded-2xl overflow-visible cursor-pointer relative",
         "bg-zinc-900 border border-zinc-800 hover:border-zinc-700 transition-all duration-200",
         "hover:shadow-lg group flex items-stretch"
       )}
