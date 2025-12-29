@@ -2287,7 +2287,7 @@ INSTRUÇÕES PARA VOCÊ (A IA):
             animate={{ width: "auto", opacity: 1 }}
             exit={{ width: 0, opacity: 0 }}
             transition={{ type: "spring", damping: 25, stiffness: 200 }}
-            className="overflow-hidden"
+            className="overflow-hidden h-full"
           >
             <EmailSidePanel
               isOpen={sidePanelOpen}
