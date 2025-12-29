@@ -51,8 +51,120 @@ const detectActiveAgent = (messages: any[]): string | null => {
   return null;
 };
 
-const getSystemPrompt = (greeting: string, activeAgent: string | null = null) => {
+// Detectar se a mensagem contém imagem
+const detectImageInMessage = (messages: any[]): boolean => {
+  const lastMessage = messages[messages.length - 1];
+  if (!lastMessage || lastMessage.role !== 'user') return false;
+  
+  // Check if content is array (multimodal) with image
+  if (Array.isArray(lastMessage.content)) {
+    return lastMessage.content.some((part: any) => 
+      part.type === 'image_url' || part.type === 'image'
+    );
+  }
+  
+  // Check for image URL patterns in text
+  const content = typeof lastMessage.content === 'string' ? lastMessage.content : '';
+  const imagePatterns = [
+    /\.(jpg|jpeg|png|gif|webp|svg|bmp)(\?|$)/i,
+    /data:image\//i,
+    /\[imagem\]/i,
+    /\[image\]/i
+  ];
+  
+  return imagePatterns.some(pattern => pattern.test(content));
+};
+
+// Detectar se é pedido de alteração de código (sai do fluxo de disparo)
+const detectCodeRequest = (messages: any[]): boolean => {
+  const lastMessage = messages[messages.length - 1];
+  if (!lastMessage || lastMessage.role !== 'user') return false;
+  
+  const content = typeof lastMessage.content === 'string' 
+    ? lastMessage.content.toLowerCase() 
+    : '';
+  
+  const codePatterns = [
+    // Alteração de código
+    /alterar?\s*(o\s*)?(código|html|css|template)/i,
+    /mudar?\s*(o\s*)?(código|html|css|template)/i,
+    /modificar?\s*(o\s*)?(código|html|css|template)/i,
+    /editar?\s*(o\s*)?(código|html|css|template)/i,
+    /corrigir?\s*(o\s*)?(código|html|css|template)/i,
+    /arrumar?\s*(o\s*)?(código|html|css|template)/i,
+    /ajustar?\s*(o\s*)?(código|html|css|template)/i,
+    // Adicionar código
+    /adicionar?\s*(no\s*)?(código|html|css|template)/i,
+    /inserir?\s*(no\s*)?(código|html|css|template)/i,
+    /colocar?\s*(no\s*)?(código|html|css|template)/i,
+    /incluir?\s*(no\s*)?(código|html|css|template)/i,
+    // Remover código
+    /remover?\s*(do\s*)?(código|html|css|template)/i,
+    /tirar?\s*(do\s*)?(código|html|css|template)/i,
+    /excluir?\s*(do\s*)?(código|html|css|template)/i,
+    // Pedidos diretos de código
+    /muda\s*(isso|aqui|lá|ali)/i,
+    /troca\s*(isso|aqui|lá|ali|esse|essa)/i,
+    /tira\s*(isso|aqui|lá|ali|esse|essa)/i,
+    /coloca\s*(isso|aqui|lá|ali|um|uma)/i,
+    // Referência a elementos visuais
+    /cor\s*(do|da|de)/i,
+    /tamanho\s*(do|da|de)/i,
+    /fonte\s*(do|da|de)/i,
+    /botão/i,
+    /imagem\s*(do|da|de)/i,
+    /logo/i,
+    /banner/i,
+    /header/i,
+    /footer/i,
+    /título/i,
+    /texto\s*(do|da|de)/i
+  ];
+  
+  return codePatterns.some(pattern => pattern.test(content));
+};
+
+const getSystemPrompt = (greeting: string, activeAgent: string | null = null, hasImage: boolean = false, isCodeRequest: boolean = false) => {
   const randomGreeting = getRandomGreeting(greeting);
+  
+  let specialMode = '';
+  
+  // Modo imagem - prioridade máxima
+  if (hasImage) {
+    specialMode = `
+═══════════════════════════════════════
+MODO IMAGEM ATIVO
+═══════════════════════════════════════
+O usuário enviou uma IMAGEM. Você DEVE:
+- Analisar a imagem com atenção
+- Fazer EXATAMENTE o que o usuário pediu sobre a imagem
+- Se pedir para usar no email: descreva como incorporar
+- Se pedir análise: descreva o que vê
+- Se pedir edição: sugira as alterações
+- Se pedir para criar algo baseado na imagem: crie
+
+IGNORE o fluxo de disparo e foque 100% no pedido relacionado à imagem.
+`;
+  }
+  
+  // Modo código - prioridade alta
+  if (isCodeRequest) {
+    specialMode += `
+═══════════════════════════════════════
+MODO CÓDIGO/ALTERAÇÃO ATIVO
+═══════════════════════════════════════
+O usuário está pedindo ALTERAÇÃO de código/template/design. Você DEVE:
+- IR DIRETO no código e fazer a alteração pedida
+- NÃO seguir o fluxo de disparo
+- NÃO perguntar sobre listas, leads ou tipo de disparo
+- Focar 100% na alteração solicitada
+- Se for HTML: mostre o código alterado
+- Se for visual: descreva exatamente o que mudar
+- Seja DIRETO e faça a alteração imediatamente
+
+Responda com a alteração feita, sem enrolação.
+`;
+  }
   
   let agentPersonality = '';
   
@@ -117,6 +229,8 @@ Respostas curtas e diretas. Sem enrolação.
 
   return `
 Você é a assistente virtual de disparo da Scale Beauty. Seu nome é Scale e você é como uma colega de trabalho super prestativa e esperta.
+
+${specialMode}
 
 PERSONALIDADE:
 - Você é amigável, direta e eficiente
@@ -554,7 +668,11 @@ serve(async (req) => {
     // Regular chat request
     const greeting = getSaoPauloGreeting();
     const activeAgent = detectActiveAgent(messages);
-    const systemPrompt = getSystemPrompt(greeting, activeAgent);
+    const hasImage = detectImageInMessage(messages);
+    const isCodeRequest = detectCodeRequest(messages);
+    const systemPrompt = getSystemPrompt(greeting, activeAgent, hasImage, isCodeRequest);
+
+    console.log("Chat mode:", { activeAgent, hasImage, isCodeRequest });
 
     console.log("Calling Grok API with messages:", JSON.stringify(messages));
 
