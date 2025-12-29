@@ -610,16 +610,23 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
     return `${msgSignature}::${panelSignature}`;
   }, [messages, sidePanelHtml, sidePanelSubject, sidePanelOpen]);
 
-  // Auto-save conversation
-  const saveConversation = useCallback(async (forceCreate = false, customTitle?: string) => {
-    if (messages.length === 0) return null;
+  // Auto-save conversation - uses refs to avoid stale closures
+  const saveConversationNow = useCallback(async (forceCreate = false, customTitle?: string): Promise<string | null> => {
+    const currentMessages = messagesRef.current;
+    const convId = conversationIdRef.current;
+    
+    if (currentMessages.length === 0) return null;
+    if (isCreatingConversationRef.current && forceCreate) return null; // Prevent double-create
 
     try {
-      // Generate title: prefer custom title (email subject), then look for email context, then first user message
+      if (forceCreate) {
+        isCreatingConversationRef.current = true;
+      }
+
+      // Generate title
       let title = customTitle || "Nova conversa";
       
       if (!customTitle) {
-        // Try to find email subject from HTML content in side panel
         if (sidePanelHtml) {
           const subjectMatch = sidePanelHtml.match(/<title[^>]*>([^<]+)<\/title>/i);
           if (subjectMatch && subjectMatch[1]) {
@@ -627,7 +634,6 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
           }
         }
         
-        // If no subject found, look for dispatch type context
         if (title === "Nova conversa" && sidePanelContext?.dispatchType === 'email') {
           const selectedName = selectedOriginData?.subOriginName || '';
           if (selectedName) {
@@ -635,16 +641,15 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
           }
         }
         
-        // Fallback to first user message
         if (title === "Nova conversa") {
-          const firstUserMessage = messages.find(m => m.role === "user");
+          const firstUserMessage = currentMessages.find(m => m.role === "user");
           if (firstUserMessage) {
             title = firstUserMessage.content.slice(0, 50) + (firstUserMessage.content.length > 50 ? "..." : "");
           }
         }
       }
 
-      const messagesJson = messages.map(m => {
+      const messagesJson = currentMessages.map(m => {
         const msg: Record<string, any> = {
           id: m.id,
           content: m.content,
@@ -657,7 +662,6 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
         return msg;
       });
 
-      // Include side panel state in the conversation data
       const conversationData = {
         messages: messagesJson,
         sidePanelState: {
@@ -665,18 +669,18 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
           subject: sidePanelSubject,
           isOpen: sidePanelOpen,
           context: sidePanelContext,
-          workflowSteps: sidePanelWorkflowSteps, // Persist workflow steps
+          workflowSteps: sidePanelWorkflowSteps,
           showCodePreview: sidePanelShowCodePreview,
           title: sidePanelTitle,
           mode: sidePanelMode,
         },
         selectedOriginData,
         dispatchType,
-        actionHistory, // Persist action history for complete AI memory
-        htmlSource, // Persist who created the HTML
+        actionHistory,
+        htmlSource,
       };
 
-      if (currentConversationId && !forceCreate) {
+      if (convId && !forceCreate) {
         // Update existing
         const { error } = await supabase
           .from("dispatch_conversations")
@@ -685,10 +689,11 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
             title,
             updated_at: new Date().toISOString()
           })
-          .eq("id", currentConversationId);
+          .eq("id", convId);
 
         if (error) throw error;
-        return currentConversationId;
+        console.log('[DisparoView] Saved conversation', convId, 'with', currentMessages.length, 'messages');
+        return convId;
       } else {
         // Create new
         const { data, error } = await supabase
@@ -701,13 +706,18 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
           .single();
 
         if (error) throw error;
+        console.log('[DisparoView] Created conversation', data.id, 'with', currentMessages.length, 'messages');
         return data.id;
       }
     } catch (error) {
       console.error("Error saving conversation:", error);
       return null;
+    } finally {
+      if (forceCreate) {
+        isCreatingConversationRef.current = false;
+      }
     }
-  }, [messages, currentConversationId, sidePanelHtml, sidePanelSubject, sidePanelOpen, sidePanelContext, sidePanelWorkflowSteps, sidePanelShowCodePreview, sidePanelTitle, sidePanelMode, selectedOriginData, dispatchType, actionHistory, htmlSource]);
+  }, [sidePanelHtml, sidePanelSubject, sidePanelOpen, sidePanelContext, sidePanelWorkflowSteps, sidePanelShowCodePreview, sidePanelTitle, sidePanelMode, selectedOriginData, dispatchType, actionHistory, htmlSource]);
 
   // Auto-save with signature-based dirty check (saves on CONTENT changes, not just length)
   // Goal: save user messages immediately; throttle while assistant is streaming / user is editing.
@@ -731,9 +741,10 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
 
     // First message - create new conversation immediately
     if (!currentConversationId) {
-      saveConversation(true).then((newId) => {
+      saveConversationNow(true).then((newId) => {
         if (newId) {
           setCurrentConversationId(newId);
+          conversationIdRef.current = newId;
           lastSavedSignatureRef.current = currentSignature;
         }
       });
@@ -741,7 +752,7 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
     }
 
     const doSave = () => {
-      saveConversation().then(() => {
+      saveConversationNow().then(() => {
         lastSavedSignatureRef.current = currentSignature;
       });
     };
@@ -771,7 +782,7 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
     sidePanelOpen,
     currentConversationId,
     initialLoadDone,
-    saveConversation,
+    saveConversationNow,
     generateStateSignature,
     isLoading,
     sidePanelGenerating,
@@ -781,18 +792,14 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
   // Save on beforeunload (when user closes tab/refreshes)
   useEffect(() => {
     const handleBeforeUnload = () => {
-      if (currentConversationId && messages.length > 0) {
-        // Sync save before unload
-        const currentSignature = generateStateSignature();
-        if (currentSignature !== lastSavedSignatureRef.current) {
-          saveConversation();
-        }
+      if (conversationIdRef.current && messagesRef.current.length > 0) {
+        saveConversationNow();
       }
     };
     
     window.addEventListener('beforeunload', handleBeforeUnload);
     return () => window.removeEventListener('beforeunload', handleBeforeUnload);
-  }, [currentConversationId, messages, saveConversation, generateStateSignature]);
+  }, [saveConversationNow]);
 
   // Reset signature when conversation changes
   useEffect(() => {
@@ -1114,7 +1121,7 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
       
       // Force immediate save after generation completes
       setTimeout(() => {
-        saveConversation();
+        saveConversationNow();
       }, 100);
       
     } catch (error) {
@@ -1637,7 +1644,7 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
         
         // Force immediate save after generation completes
         setTimeout(() => {
-          saveConversation();
+          saveConversationNow();
         }, 100);
         
       } catch (error) {
@@ -2181,7 +2188,7 @@ INSTRUÇÕES PARA VOCÊ (A IA):
           
           // Force immediate save after streaming completes
           setTimeout(() => {
-            saveConversation();
+            saveConversationNow();
           }, 100);
           return;
         }
@@ -2280,21 +2287,53 @@ INSTRUÇÕES PARA VOCÊ (A IA):
   const handleSelectConversation = useCallback((id: string, loadedMessages: Message[]) => {
     // Set flag to skip URL-triggered reload (we already have the messages)
     skipNextUrlLoadRef.current = id;
+    conversationIdRef.current = id;
+    messagesRef.current = loadedMessages;
     setCurrentConversationId(id);
     setMessages(loadedMessages);
-    // URL will be synced by the separate effect
+    lastSavedSignatureRef.current = ''; // Reset signature so changes get saved
   }, []);
 
-  // Handle new conversation
+  // Handle new conversation - reset ALL state
   const handleNewConversation = useCallback(() => {
+    // Clear refs
+    conversationIdRef.current = null;
+    messagesRef.current = [];
+    isCreatingConversationRef.current = false;
+    lastSavedSignatureRef.current = '';
+    skipNextUrlLoadRef.current = null;
+    
+    // Clear state
     setCurrentConversationId(null);
     setMessages([]);
     setCsvLeads(null);
     setActiveJobId(null);
-  }, []);
+    setSidePanelOpen(false);
+    setSidePanelHtml('');
+    setSidePanelSubject('');
+    setSidePanelContext(null);
+    setSidePanelGenerating(false);
+    setSidePanelEditing(false);
+    setSidePanelWorkflowSteps([]);
+    setSidePanelShowCodePreview(true);
+    setSidePanelTitle(undefined);
+    setSidePanelMode('email');
+    setSidePanelDispatchData(null);
+    setSelectedOriginData(null);
+    setDispatchType(null);
+    setActionHistory([]);
+    setHtmlSource(null);
+    setPendingEmailContext(null);
+    setPendingQuestion(null);
+    setCsvPanelOpen(false);
+    
+    // Clear URL param
+    setSearchParams({}, { replace: true });
+  }, [setSearchParams]);
 
   // Handle conversation created (auto-save)
   const handleConversationCreated = useCallback((id: string) => {
+    conversationIdRef.current = id;
     setCurrentConversationId(id);
   }, []);
 
