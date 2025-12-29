@@ -603,7 +603,7 @@ export function EmailSidePanel({
     const isCompleted = dispatchJob?.status === 'completed';
 
     return (
-      <div className="w-[640px] h-full flex-shrink-0 bg-background flex flex-col my-6 mr-6 rounded-3xl border border-border overflow-hidden shadow-sm">
+      <div className="w-[640px] h-full flex-shrink-0 bg-background flex flex-col mt-2 mb-2 mr-2 rounded-2xl overflow-hidden" style={{ border: '1px solid #00000010' }}>
         {/* Header with progress bar */}
         <div className="border-b border-border p-5 space-y-4">
           <div className="flex items-center justify-between">
@@ -766,7 +766,7 @@ export function EmailSidePanel({
   // Render Dispatch Details mode
   if (mode === 'dispatch_details' && dispatchData) {
     return (
-      <div className="w-[640px] flex-shrink-0 bg-background flex flex-col my-6 mr-6 rounded-3xl border border-border overflow-hidden shadow-sm">
+      <div className="w-[640px] h-full flex-shrink-0 bg-background flex flex-col mt-2 mb-2 mr-2 rounded-2xl overflow-hidden" style={{ border: '1px solid #00000010' }}>
         <DispatchAnalysis
           data={dispatchData}
           onNewDispatch={onNewDispatch}
@@ -777,7 +777,7 @@ export function EmailSidePanel({
   }
 
   return (
-    <div className="w-[640px] h-full flex-shrink-0 bg-background flex flex-col my-6 mr-6 rounded-3xl border border-border overflow-hidden shadow-sm">
+    <div className="w-[640px] h-full flex-shrink-0 bg-background flex flex-col mt-2 mb-2 mr-2 rounded-2xl overflow-hidden" style={{ border: '1px solid #00000010' }}>
       {/* Tabs - always at the top when showCodePreview is true */}
       {showCodePreview && (
         <div className="flex items-center justify-between px-5 py-3 border-b border-border bg-muted/20">
