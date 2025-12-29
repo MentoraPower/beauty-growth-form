@@ -891,6 +891,121 @@ serve(async (req) => {
         });
       }
 
+      // NEW: Handle CSV dispatch command
+      if (command.startsWith('START_DISPATCH_CSV:')) {
+        const parts = command.split(':');
+        const type = parts[1]; // email
+        const csvListId = parts[2]; // CSV list ID
+        const templateType = parts[3] || 'html';
+        const conversationId = parts[4] || null;
+        const encodedSubject = parts[5] || '';
+        const encodedHtml = parts.slice(6).join(':') || '';
+        
+        console.log('[GROK] START_DISPATCH_CSV:', { type, csvListId, conversationId });
+        
+        // Decode subject and HTML
+        let emailSubject = '';
+        let templateContent = '';
+        
+        try {
+          if (encodedSubject) {
+            emailSubject = decodeURIComponent(atob(encodedSubject));
+          }
+          if (encodedHtml) {
+            templateContent = decodeURIComponent(atob(encodedHtml));
+          }
+        } catch (e) {
+          console.error('[GROK] Error decoding template/subject for CSV dispatch:', e);
+        }
+        
+        // Get CSV list info
+        const { data: csvList, error: csvListError } = await supabase
+          .from('dispatch_csv_lists')
+          .select('id, file_name, total_rows, valid_emails')
+          .eq('id', csvListId)
+          .single();
+        
+        if (csvListError || !csvList) {
+          console.error('[GROK] CSV list not found:', csvListError);
+          return new Response(JSON.stringify({
+            type: 'error',
+            message: 'Lista CSV não encontrada'
+          }), {
+            status: 400,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+        
+        const messageTemplate = templateContent ? JSON.stringify({ 
+          html: templateContent, 
+          subject: emailSubject 
+        }) : null;
+        
+        console.log('[GROK] Creating CSV dispatch job:', {
+          csvListId,
+          fileName: csvList.file_name,
+          validEmails: csvList.valid_emails,
+          hasTemplate: !!templateContent
+        });
+        
+        // Create dispatch job linked to CSV list (NOT sub_origin)
+        const { data: job, error: jobError } = await supabase
+          .from('dispatch_jobs')
+          .insert({
+            type,
+            csv_list_id: csvListId,
+            sub_origin_id: null, // CSV dispatch doesn't use sub_origin
+            origin_name: 'CSV',
+            sub_origin_name: csvList.file_name,
+            total_leads: csvList.total_rows,
+            valid_leads: csvList.valid_emails,
+            interval_seconds: 5,
+            status: 'running',
+            started_at: new Date().toISOString(),
+            message_template: messageTemplate,
+            conversation_id: conversationId || null
+          })
+          .select()
+          .single();
+        
+        if (jobError) {
+          console.error('[GROK] Error creating CSV dispatch job:', jobError);
+          throw jobError;
+        }
+        
+        console.log('[GROK] CSV dispatch job created:', job.id);
+        
+        // Trigger background dispatch
+        const dispatchUrl = `${supabaseUrl}/functions/v1/process-dispatch`;
+        fetch(dispatchUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${supabaseKey}`
+          },
+          body: JSON.stringify({ 
+            jobId: job.id,
+            templateType,
+            templateContent,
+            emailSubject
+          })
+        }).catch(err => console.error('Error triggering CSV dispatch:', err));
+        
+        return new Response(JSON.stringify({
+          type: 'dispatch_started',
+          data: {
+            jobId: job.id,
+            status: 'running',
+            totalLeads: csvList.total_rows,
+            validLeads: csvList.valid_emails,
+            templateType,
+            source: 'csv'
+          }
+        }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
       if (command.startsWith('PAUSE_DISPATCH:') || command.startsWith('RESUME_DISPATCH:') || command.startsWith('CANCEL_DISPATCH:')) {
         const [action, jobId] = command.split(':');
         const newStatus = action === 'PAUSE_DISPATCH' ? 'paused' : 

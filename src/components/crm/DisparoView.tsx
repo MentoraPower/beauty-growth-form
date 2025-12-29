@@ -258,6 +258,7 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
   const [csvFileName, setCsvFileName] = useState<string>('lista.csv');
   const [csvRawData, setCsvRawData] = useState<Array<Record<string, string>>>([]);
   const [csvHeaders, setCsvHeaders] = useState<string[]>([]);
+  const [csvListId, setCsvListId] = useState<string | null>(null); // Persisted CSV list ID for dispatch
   const [csvMappedColumns, setCsvMappedColumns] = useState<{ name?: string; email?: string; whatsapp?: string }>({});
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -1429,13 +1430,33 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
         const type = parts[1] || 'email';
         const templateType = parts[3] || 'html';
         
+        // Check if we have a CSV list (takes priority over CRM list)
+        if (csvListId) {
+          console.log("[INFO] Using CSV list for dispatch:", csvListId);
+          const encodedHtml = sidePanelHtml ? btoa(encodeURIComponent(sidePanelHtml)) : '';
+          const encodedSubject = sidePanelSubject ? btoa(encodeURIComponent(sidePanelSubject)) : '';
+          
+          // Build CSV dispatch command
+          const csvCommand = `START_DISPATCH_CSV:${type}:${csvListId}:${templateType}:${currentConversationId || ''}:${encodedSubject}:${encodedHtml}`;
+          console.log("[INFO] CSV dispatch command:", { 
+            type, 
+            csvListId, 
+            templateType, 
+            hasSubject: !!sidePanelSubject, 
+            hasHtml: !!sidePanelHtml 
+          });
+          
+          await executeDispatch(csvCommand);
+          continue;
+        }
+        
         // Use the subOriginId from local state (guaranteed to be the correct UUID)
         // selectedOriginData.subOriginId is set when user selects a list
         // The prop subOriginId is a fallback
         const actualSubOriginId = selectedOriginData?.subOriginId || subOriginId;
         
         if (!actualSubOriginId) {
-          console.error("[ERROR] No subOriginId available for dispatch");
+          console.error("[ERROR] No subOriginId or csvListId available for dispatch");
           toast.error("Erro: Nenhuma lista selecionada para o disparo.");
           continue;
         }
@@ -1581,6 +1602,7 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
             setCsvHeaders(csvParseResult.headers);
             setCsvMappedColumns(csvParseResult.mappedColumns);
             // Don't auto-open panel - AI will analyze and respond in chat
+            // CSV will be persisted to DB after conversation is created
           }
         }
         
@@ -1684,6 +1706,37 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
           setSearchParams({ conversation: data.id }, { replace: true });
           
           console.log('[DisparoView] Created conversation immediately:', data.id);
+          
+          // If CSV was uploaded, persist it to DB now that we have a conversation ID
+          if (csvParseResult && csvParseResult.leads.length > 0) {
+            try {
+              const recipients = csvParseResult.leads
+                .filter(l => l.email && l.email.includes('@'))
+                .map(l => ({
+                  name: l.name || '',
+                  email: l.email!,
+                  whatsapp: l.whatsapp
+                }));
+              
+              const { data: csvSaveResult, error: csvError } = await supabase.functions.invoke('save-csv-dispatch-list', {
+                body: {
+                  conversationId: data.id,
+                  fileName: csvFileNameLocal,
+                  mappedColumns: csvParseResult.mappedColumns,
+                  recipients
+                }
+              });
+              
+              if (csvError) {
+                console.error('[DisparoView] Error saving CSV list:', csvError);
+              } else if (csvSaveResult?.listId) {
+                setCsvListId(csvSaveResult.listId);
+                console.log('[DisparoView] CSV list saved:', csvSaveResult.listId, 'with', csvSaveResult.validEmails, 'valid emails');
+              }
+            } catch (csvSaveError) {
+              console.error('[DisparoView] Error calling save-csv-dispatch-list:', csvSaveError);
+            }
+          }
         } catch (error) {
           console.error('[DisparoView] Error creating conversation:', error);
           isProcessingMessageRef.current = false;

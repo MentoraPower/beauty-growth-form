@@ -135,10 +135,11 @@ async function sendSingleEmail(
     console.log(`[DISPATCH] Preparing email for ${lead.email} with subject: "${finalSubject.substring(0, 50)}..."`);
     
     // STEP 1: Insert sent_emails record FIRST to get the ID for tracking
+    // For CSV dispatches, lead_id will be the CSV recipient ID (not a real lead)
     const { data: sentEmailRecord, error: insertError } = await supabase
       .from("sent_emails")
       .insert({
-        lead_id: lead.id,
+        lead_id: null, // CSV recipients don't have lead_id in the leads table
         lead_name: lead.name,
         lead_email: lead.email,
         subject: finalSubject,
@@ -336,25 +337,57 @@ serve(async (req) => {
     const fromName = emailSettings?.from_name || 'Emilly';
     const fromEmail = emailSettings?.from_email || 'emilly@biteti.com.br';
 
-    // Get all leads
-    const leads = await withRetry(async () => {
-      const { data, error } = await supabase
-        .from('leads')
-        .select('id, name, email, whatsapp, country_code')
-        .eq('sub_origin_id', job.sub_origin_id);
-      
-      if (error) throw error;
-      return data || [];
-    }, 'Fetch leads');
+    // Determine if this is a CSV dispatch or CRM dispatch
+    const isCsvDispatch = !!job.csv_list_id;
+    console.log(`[DISPATCH-BATCH] Dispatch source: ${isCsvDispatch ? 'CSV' : 'CRM'}`);
 
-    // Filter valid leads
-    const validLeads = leads.filter(l => {
-      if (job.type === 'email') {
-        return l.email && l.email.includes('@');
-      } else {
-        return l.whatsapp && l.whatsapp.length >= 8;
-      }
-    });
+    let validLeads: { id: string; name: string; email: string; whatsapp?: string; country_code?: string }[] = [];
+
+    if (isCsvDispatch) {
+      // Fetch recipients from CSV list
+      const csvLeads = await withRetry(async () => {
+        const { data, error } = await supabase
+          .from('dispatch_csv_list_recipients')
+          .select('id, name, email, whatsapp')
+          .eq('list_id', job.csv_list_id);
+        
+        if (error) throw error;
+        return data || [];
+      }, 'Fetch CSV recipients');
+
+      // For CSV, all recipients are considered valid (already filtered on upload)
+      validLeads = csvLeads.map(l => ({
+        id: l.id,
+        name: l.name || 'Lead',
+        email: l.email,
+        whatsapp: l.whatsapp || undefined,
+        country_code: '+55'
+      }));
+
+      console.log(`[DISPATCH-BATCH] CSV dispatch: ${validLeads.length} valid recipients`);
+    } else {
+      // Fetch from CRM leads table (original flow)
+      const leads = await withRetry(async () => {
+        const { data, error } = await supabase
+          .from('leads')
+          .select('id, name, email, whatsapp, country_code')
+          .eq('sub_origin_id', job.sub_origin_id);
+        
+        if (error) throw error;
+        return data || [];
+      }, 'Fetch leads');
+
+      // Filter valid leads
+      validLeads = leads.filter(l => {
+        if (job.type === 'email') {
+          return l.email && l.email.includes('@');
+        } else {
+          return l.whatsapp && l.whatsapp.length >= 8;
+        }
+      });
+
+      console.log(`[DISPATCH-BATCH] CRM dispatch: ${validLeads.length} valid leads`);
+    }
 
     // Update valid leads count if not set
     if (job.valid_leads !== validLeads.length) {

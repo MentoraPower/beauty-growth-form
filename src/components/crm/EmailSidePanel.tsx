@@ -212,6 +212,7 @@ export function EmailSidePanel({
   const [dispatchJob, setDispatchJob] = useState<DispatchJob | null>(null);
   const [dispatchLeads, setDispatchLeads] = useState<DispatchLead[]>([]);
   const [sentLeadIds, setSentLeadIds] = useState<Set<string>>(new Set());
+  const [sentEmails, setSentEmails] = useState<Set<string>>(new Set()); // For CSV: track by email
   const [dispatchLoading, setDispatchLoading] = useState(true);
 
   // Fetch dispatch job data
@@ -227,31 +228,62 @@ export function EmailSidePanel({
     if (jobData) {
       setDispatchJob(jobData as unknown as DispatchJob);
 
-      // Fetch leads for this sub_origin
-      const { data: leadsData } = await supabase
-        .from('leads')
-        .select('id, name, email')
-        .eq('sub_origin_id', jobData.sub_origin_id)
-        .not('email', 'is', null)
-        .order('name');
+      // Check if this is a CSV dispatch (has csv_list_id)
+      const isCsvDispatch = !!(jobData as any).csv_list_id;
 
-      if (leadsData) {
-        setDispatchLeads(leadsData.filter(l => l.email && l.email.includes('@')).map(l => ({
-          id: l.id,
-          name: l.name,
-          email: l.email
-        })));
-      }
+      if (isCsvDispatch) {
+        // Fetch recipients from CSV list
+        const { data: csvRecipients } = await supabase
+          .from('dispatch_csv_list_recipients')
+          .select('id, name, email')
+          .eq('list_id', (jobData as any).csv_list_id)
+          .order('name');
 
-      // Fetch sent emails for this job
-      const { data: sentEmails } = await supabase
-        .from('sent_emails')
-        .select('lead_id')
-        .eq('dispatch_job_id', dispatchJobId)
-        .eq('status', 'sent');
+        if (csvRecipients) {
+          setDispatchLeads(csvRecipients.map(r => ({
+            id: r.id,
+            name: r.name || 'Lead',
+            email: r.email
+          })));
+        }
 
-      if (sentEmails) {
-        setSentLeadIds(new Set(sentEmails.map(e => e.lead_id)));
+        // For CSV: fetch sent emails by email address
+        const { data: sentEmailsData } = await supabase
+          .from('sent_emails')
+          .select('lead_email')
+          .eq('dispatch_job_id', dispatchJobId)
+          .eq('status', 'sent');
+
+        if (sentEmailsData) {
+          setSentEmails(new Set(sentEmailsData.map(e => e.lead_email)));
+        }
+      } else {
+        // CRM dispatch - original flow
+        const { data: leadsData } = await supabase
+          .from('leads')
+          .select('id, name, email')
+          .eq('sub_origin_id', jobData.sub_origin_id)
+          .not('email', 'is', null)
+          .order('name');
+
+        if (leadsData) {
+          setDispatchLeads(leadsData.filter(l => l.email && l.email.includes('@')).map(l => ({
+            id: l.id,
+            name: l.name,
+            email: l.email
+          })));
+        }
+
+        // Fetch sent emails for this job
+        const { data: sentEmailsData } = await supabase
+          .from('sent_emails')
+          .select('lead_id')
+          .eq('dispatch_job_id', dispatchJobId)
+          .eq('status', 'sent');
+
+        if (sentEmailsData) {
+          setSentLeadIds(new Set(sentEmailsData.map(e => e.lead_id).filter(Boolean)));
+        }
       }
     }
 
@@ -290,9 +322,13 @@ export function EmailSidePanel({
     event: 'INSERT',
     filter: dispatchJobId ? `dispatch_job_id=eq.${dispatchJobId}` : undefined,
     onPayload: (payload) => {
-      const newEmail = payload.new as { lead_id: string; status: string };
+      const newEmail = payload.new as { lead_id: string | null; lead_email: string; status: string };
       if (newEmail.status === 'sent') {
-        setSentLeadIds(prev => new Set([...prev, newEmail.lead_id]));
+        // Support both CRM (lead_id) and CSV (lead_email) tracking
+        if (newEmail.lead_id) {
+          setSentLeadIds(prev => new Set([...prev, newEmail.lead_id!]));
+        }
+        setSentEmails(prev => new Set([...prev, newEmail.lead_email]));
       }
     },
   });
@@ -656,7 +692,8 @@ export function EmailSidePanel({
 
               {/* Rows */}
               {dispatchLeads.map((lead) => {
-                const isSent = sentLeadIds.has(lead.id);
+                // Check if sent by lead_id (CRM) or email (CSV)
+                const isSent = sentLeadIds.has(lead.id) || sentEmails.has(lead.email);
                 const isCurrentlySending = isRunning && dispatchJob?.current_lead_name?.includes(lead.name);
                 
                 return (
