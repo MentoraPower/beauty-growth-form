@@ -2152,8 +2152,11 @@ INSTRUÇÕES PARA VOCÊ (A IA):
       <div className="flex-1 flex flex-col h-full min-w-0">
         {/* When no messages, center the input */}
         {!hasMessages ? (
-          <div className="flex-1 flex items-center justify-center p-6">
-            <div className="w-full max-w-2xl">
+          <div className="flex-1 flex items-center justify-center p-6 px-8">
+            <div className={cn(
+              "w-full transition-all duration-300",
+              sidePanelOpen ? "max-w-2xl" : "max-w-4xl"
+            )}>
               <div className="text-center mb-8">
                 <div className="flex items-center justify-center gap-3">
                   <img src={disparoLogo} alt="Logo" className="w-6 h-6" />
@@ -2178,7 +2181,7 @@ INSTRUÇÕES PARA VOCÊ (A IA):
             <div 
               ref={chatScrollRef} 
               onScroll={handleChatScroll} 
-              className="flex-1 overflow-y-auto min-h-0 p-6 overscroll-contain [&::-webkit-scrollbar]:w-[3px] [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-foreground/10 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:min-h-[30px] [&::-webkit-scrollbar-thumb]:max-h-[50px]"
+              className="flex-1 overflow-y-auto min-h-0 p-6 px-8 overscroll-contain [&::-webkit-scrollbar]:w-[3px] [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-foreground/10 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:min-h-[30px] [&::-webkit-scrollbar-thumb]:max-h-[50px]"
               style={{ 
                 scrollBehavior: 'auto',
                 WebkitOverflowScrolling: 'touch',
@@ -2186,7 +2189,10 @@ INSTRUÇÕES PARA VOCÊ (A IA):
                 willChange: 'scroll-position'
               }}
             >
-              <div className="max-w-3xl mx-auto space-y-4">
+              <div className={cn(
+                "mx-auto space-y-4 transition-all duration-300",
+                sidePanelOpen ? "max-w-3xl" : "max-w-5xl"
+              )}>
                 {messages.map((msg) => (
                   <div
                     key={msg.id}
@@ -2196,7 +2202,7 @@ INSTRUÇÕES PARA VOCÊ (A IA):
                     )}
                   >
                     {msg.role === "user" ? (
-                      <div className="bg-white text-foreground px-5 py-4 rounded-2xl max-w-[70%] border border-[#00000010]">
+                      <div className="bg-white text-foreground px-5 py-4 rounded-2xl max-w-[80%] border border-[#00000010]">
                         {/* Show image if present */}
                         {msg.imageUrl && (
                           <div className="mb-3">
@@ -2212,7 +2218,7 @@ INSTRUÇÕES PARA VOCÊ (A IA):
                     ) : (
                       <div className="w-full group">
                         {msg.content && (
-                          <div className="max-w-[85%]">
+                          <div className="max-w-[90%]">
                             <p className="text-[15px] leading-relaxed whitespace-pre-wrap text-foreground">
                               {formatMessageContent(msg.content)}
                             </p>
@@ -2266,8 +2272,11 @@ INSTRUÇÕES PARA VOCÊ (A IA):
             </div>
 
             {/* AI Chat Input - fixed at bottom */}
-            <div className="p-6 pt-0">
-              <div className="max-w-3xl mx-auto">
+            <div className="p-6 px-8 pt-0">
+              <div className={cn(
+                "mx-auto transition-all duration-300",
+                sidePanelOpen ? "max-w-3xl" : "max-w-5xl"
+              )}>
                 <PromptInputBox
                   onSend={handleSend}
                   isLoading={isLoading}
