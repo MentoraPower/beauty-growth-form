@@ -10,7 +10,7 @@ import { DispatchPreparingIndicator } from "./DispatchPreparingIndicator";
 import { EmailSidePanel, SidePanelMode } from "./EmailSidePanel";
 import { DispatchData } from "./DispatchAnalysis";
 import { EmailGenerationIndicator } from "./EmailGenerationIndicator";
-import { AIWorkDetails, WorkStep, createLeadsAnalysisStep, createEmailGenerationStep, createDispatchStep } from "./AIWorkDetails";
+import { AIWorkDetails, WorkStep, WorkSubItem, createLeadsAnalysisStep, createEmailGenerationStep, createDispatchStep, createCustomStep } from "./AIWorkDetails";
 import { supabase } from "@/integrations/supabase/client";
 import { Clipboard, Check } from "lucide-react";
 import disparoLogo from "@/assets/disparo-logo.png";
@@ -855,9 +855,15 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
     // Create work steps for email generation in progress
     const generatingSteps: WorkStep[] = [
       createLeadsAnalysisStep('completed', {
+        listName: selectedOriginData?.subOriginName || 'lista',
         summary: 'Leads prontos para o disparo.'
       }),
-      createEmailGenerationStep('in_progress'),
+      createEmailGenerationStep('in_progress', {
+        subItems: [
+          { id: 'copy', label: `Lendo copy fornecida pelo usuário`, type: 'file', status: 'done' },
+          { id: 'generate', label: `Gerando estrutura HTML...`, type: 'action', status: 'in_progress' },
+        ]
+      }),
       createDispatchStep('pending')
     ];
     
@@ -955,9 +961,14 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
       // Update loading message with completed steps
       const completedSteps: WorkStep[] = [
         createLeadsAnalysisStep('completed', {
+          listName: selectedOriginData?.subOriginName || 'lista',
           summary: 'Leads prontos para o disparo.'
         }),
         createEmailGenerationStep('completed', {
+          subItems: [
+            { id: 'copy', label: `Lendo copy fornecida pelo usuário`, type: 'file', status: 'done' },
+            { id: 'generate', label: `Gerando estrutura HTML`, type: 'action', status: 'done' },
+          ],
           summary: `Email gerado com ${finalHtml.length} caracteres.`
         }),
         createDispatchStep('pending')
