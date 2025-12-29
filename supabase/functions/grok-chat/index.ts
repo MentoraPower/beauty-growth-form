@@ -36,8 +36,37 @@ const getRandomGreeting = (greeting: string): string => {
   return variations[Math.floor(Math.random() * variations.length)];
 };
 
+// Detectar se é um pedido de copy/copywriting baseado no conteúdo
+const detectCopywritingRequest = (messages: any[]): boolean => {
+  const lastMessage = messages[messages.length - 1];
+  if (!lastMessage || lastMessage.role !== 'user') return false;
+  
+  const content = typeof lastMessage.content === 'string' 
+    ? lastMessage.content.toLowerCase() 
+    : '';
+  
+  const copyPatterns = [
+    /criar?\s*(uma\s*)?(a\s*)?copy/i,
+    /cria\s*(uma\s*)?(a\s*)?copy/i,
+    /faz(er)?\s*(uma\s*)?(a\s*)?copy/i,
+    /escreve(r)?\s*(uma\s*)?(a\s*)?copy/i,
+    /gera(r)?\s*(uma\s*)?(a\s*)?copy/i,
+    /monte?\s*(uma\s*)?(a\s*)?copy/i,
+    /preciso\s*(de\s*)?(uma\s*)?copy/i,
+    /quero\s*(uma\s*)?copy/i,
+    /elabor(e|ar)\s*(uma\s*)?copy/i,
+    /produz(ir|a)\s*(uma\s*)?copy/i,
+    /desenvolv(er|a)\s*(uma\s*)?copy/i,
+    /vamos\s*criar\s*(uma\s*)?copy/i,
+    /crie\s*(uma\s*)?copy/i,
+  ];
+  
+  return copyPatterns.some(pattern => pattern.test(content));
+};
+
 // Detectar agente ativo na mensagem
 const detectActiveAgent = (messages: any[]): string | null => {
+  // First check for explicit agent tags
   for (let i = messages.length - 1; i >= 0; i--) {
     const msg = messages[i];
     if (msg.role === 'user' && msg.content) {
@@ -47,6 +76,12 @@ const detectActiveAgent = (messages: any[]): string | null => {
       if (msg.content.includes('[Agente:Bulk]')) return 'bulk';
     }
   }
+  
+  // Auto-detect copywriting request even without explicit tag
+  if (detectCopywritingRequest(messages)) {
+    return 'copywriting';
+  }
+  
   return null;
 };
 
@@ -819,6 +854,10 @@ serve(async (req) => {
     console.log("Using model:", model);
     console.log("Calling Grok API with messages count:", messages.length);
 
+    // Determine max tokens based on mode
+    const isCopywritingMode = activeAgent === 'copywriting';
+    const maxTokens = hasImage ? 1000 : (isCopywritingMode ? 2000 : 500);
+
     const response = await fetch("https://api.x.ai/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -832,8 +871,8 @@ serve(async (req) => {
           ...messages,
         ],
         stream: true,
-        temperature: 0.5,
-        max_tokens: hasImage ? 1000 : 500, // More tokens for image analysis
+        temperature: isCopywritingMode ? 0.7 : 0.5, // More creativity for copywriting
+        max_tokens: maxTokens,
       }),
     });
 
