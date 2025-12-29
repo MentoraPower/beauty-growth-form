@@ -1,7 +1,7 @@
 import React from "react";
 import * as TooltipPrimitive from "@radix-ui/react-tooltip";
 import * as DialogPrimitive from "@radix-ui/react-dialog";
-import { ArrowUp, Paperclip, Square, X, StopCircle, Mic, Pen, Palette, ChevronDown } from "lucide-react";
+import { ArrowUp, Paperclip, Square, X, StopCircle, Mic, Palette, ChevronDown } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
 // Utility function for className merging
@@ -656,7 +656,6 @@ export const PromptInputBox = React.forwardRef((props: PromptInputBoxProps, ref:
               style={{ borderColor: '#00000010' }}
               onClick={() => handleAgentToggle("copywriting")}
             >
-              <Pen className={cn("w-3.5 h-3.5", showCopywriting ? "text-[#10B981]" : "text-gray-500")} />
               <span className={cn("text-xs font-medium", showCopywriting ? "text-[#10B981]" : "text-gray-600")}>
                 Copywriting
               </span>
