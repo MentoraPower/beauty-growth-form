@@ -552,6 +552,61 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
   // Load conversation from URL on mount or when URL changes
   useEffect(() => {
     const convId = searchParams.get('conversation') || searchParams.get('conv');
+    const isNewConversationSignal = searchParams.get('new') === '1';
+    
+    // Handle explicit "new conversation" signal from submenu
+    if (isNewConversationSignal) {
+      // Clear the ?new=1 param immediately
+      setSearchParams({}, { replace: true });
+      
+      // Abort any active request
+      if (activeAbortRef.current) {
+        activeAbortRef.current.abort();
+        activeAbortRef.current = null;
+      }
+      activeRunIdRef.current = null;
+      activeRunConversationIdRef.current = null;
+      
+      // Reset processing locks
+      isProcessingMessageRef.current = false;
+      isCreatingConversationRef.current = false;
+      
+      // Full state reset
+      suppressUrlSyncRef.current = true;
+      setCurrentConversationId(null);
+      conversationIdRef.current = null;
+      setMessages([]);
+      messagesRef.current = [];
+      setCsvLeads(null);
+      setCsvListId(null);
+      setCsvFileName('lista.csv');
+      setCsvRawData([]);
+      setCsvHeaders([]);
+      setCsvMappedColumns({});
+      setPendingEmailContext(null);
+      setSidePanelOpen(false);
+      setSidePanelHtml('');
+      setSidePanelSubject('');
+      setSidePanelPreheader('');
+      setSidePanelContext(null);
+      setSelectedOriginData(null);
+      setDispatchType(null);
+      setActionHistory([]);
+      setSidePanelDispatchData(null);
+      setPendingQuestion(null);
+      setIsLoading(false);
+      setActiveJobId(null);
+      setSidePanelMode('email');
+      setSidePanelWorkflowSteps([]);
+      setSidePanelShowCodePreview(true);
+      setSidePanelTitle(undefined);
+      setHtmlSource(null);
+      setInitialLoadDone(true);
+      
+      // Clear suppression after state is reset
+      setTimeout(() => { suppressUrlSyncRef.current = false; }, 100);
+      return;
+    }
     
     // Skip if this ID was just set by menu selection (already have messages loaded)
     if (convId && skipNextUrlLoadRef.current === convId) {
@@ -614,10 +669,11 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
 
           if (error) throw error;
 
-          // Race condition protection: verify we still want this conversation
-          const currentUrlConvId = searchParams.get('conversation') || searchParams.get('conv');
-          if (currentUrlConvId !== convId) {
-            console.log('[DisparoView] Conversation changed during load, aborting');
+          // Race condition protection: use FRESH URL value, not stale closure
+          const freshParams = new URLSearchParams(window.location.search);
+          const freshUrlConvId = freshParams.get('conversation') || freshParams.get('conv');
+          if (freshUrlConvId !== convId) {
+            console.log('[DisparoView] Conversation changed during load, aborting. Expected:', convId, 'Current:', freshUrlConvId);
             return;
           }
 
@@ -1057,8 +1113,18 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
     if (suppressUrlSyncRef.current) return;
     if (!currentConversationId) return;
     
-    const currentUrlConvId = searchParams.get('conversation');
-    if (currentUrlConvId !== currentConversationId) {
+    // Get fresh URL value to avoid stale closure issues
+    const urlConvId = searchParams.get('conversation') || searchParams.get('conv');
+    
+    // CRITICAL FIX: If URL points to a DIFFERENT conversation, user navigated away
+    // Do NOT rewrite the URL - let the URL loader handle the switch
+    if (urlConvId && urlConvId !== currentConversationId) {
+      // URL is the source of truth for navigation - don't overwrite
+      return;
+    }
+    
+    // Only set URL if it's empty or already matches (first creation case)
+    if (!urlConvId) {
       setSearchParams({ conversation: currentConversationId }, { replace: true });
     }
   }, [currentConversationId, searchParams, setSearchParams]);

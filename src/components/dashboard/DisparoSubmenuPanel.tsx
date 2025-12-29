@@ -77,9 +77,9 @@ export function DisparoSubmenuPanel({ isOpen, onClose }: DisparoSubmenuPanelProp
     }
   }, [isOpen]);
 
-  // Handle new conversation - use single navigation to avoid race conditions
+  // Handle new conversation - use explicit ?new=1 signal to trigger reset
   const handleNewConversation = () => {
-    navigate('/admin/disparo', { replace: true });
+    navigate('/admin/disparo?new=1', { replace: true });
   };
 
   // Load conversation - navigate with conversation ID
