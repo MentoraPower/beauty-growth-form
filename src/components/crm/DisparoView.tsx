@@ -158,7 +158,7 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
   const [csvLeads, setCsvLeads] = useState<CsvLead[] | null>(null);
   const [currentConversationId, setCurrentConversationId] = useState<string | null>(null);
   const [selectedOriginData, setSelectedOriginData] = useState<{ subOriginId: string; subOriginName: string; originName: string } | null>(null);
-  const [dispatchType, setDispatchType] = useState<'email' | 'whatsapp_web' | null>(null);
+  const [dispatchType, setDispatchType] = useState<'email' | null>(null);
   const [initialLoadDone, setInitialLoadDone] = useState(false);
   const [pendingEmailContext, setPendingEmailContext] = useState<{ subOriginId: string; dispatchType: string } | null>(null);
   const [pendingQuestion, setPendingQuestion] = useState<{ type: 'email_method' | 'has_copy'; subOriginId: string; dispatchType: string } | null>(null);
@@ -549,8 +549,18 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
     }
   }, [initialLoadDone, messages]);
 
-  // Track last saved message count for auto-save
-  const lastSavedMessagesCount = useRef(0);
+  // Track last saved signature for content-based dirty checking
+  const lastSavedSignatureRef = useRef<string>('');
+  const saveDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Generate a signature from current state for dirty checking
+  const generateStateSignature = useCallback(() => {
+    const msgSignature = messages.map(m => 
+      `${m.id}:${m.role}:${m.content.length}:${m.componentData ? JSON.stringify(m.componentData).length : 0}`
+    ).join('|');
+    const panelSignature = `${sidePanelHtml.length}:${sidePanelSubject}:${sidePanelOpen}`;
+    return `${msgSignature}::${panelSignature}`;
+  }, [messages, sidePanelHtml, sidePanelSubject, sidePanelOpen]);
 
   // Auto-save conversation
   const saveConversation = useCallback(async (forceCreate = false, customTitle?: string) => {
@@ -630,7 +640,6 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
           .eq("id", currentConversationId);
 
         if (error) throw error;
-        lastSavedMessagesCount.current = messages.length;
         return currentConversationId;
       } else {
         // Create new
@@ -644,7 +653,6 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
           .single();
 
         if (error) throw error;
-        lastSavedMessagesCount.current = messages.length;
         return data.id;
       }
     } catch (error) {
@@ -653,41 +661,68 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
     }
   }, [messages, currentConversationId, sidePanelHtml, sidePanelSubject, sidePanelOpen, sidePanelContext, sidePanelWorkflowSteps, sidePanelShowCodePreview, sidePanelTitle, sidePanelMode, selectedOriginData, dispatchType, actionHistory, htmlSource]);
 
-  // Auto-save when messages change
+  // Auto-save with signature-based dirty check (saves on CONTENT changes, not just length)
   useEffect(() => {
     if (!initialLoadDone) return;
+    if (messages.length === 0) return;
     
-    if (messages.length > 0 && !currentConversationId && messages.length > lastSavedMessagesCount.current) {
-      // First message - create new conversation
+    const currentSignature = generateStateSignature();
+    
+    // Skip if nothing changed
+    if (currentSignature === lastSavedSignatureRef.current) return;
+    
+    // Clear any pending save
+    if (saveDebounceRef.current) {
+      clearTimeout(saveDebounceRef.current);
+    }
+    
+    // First message - create new conversation immediately
+    if (!currentConversationId && messages.length > 0) {
       saveConversation(true).then((newId) => {
         if (newId) {
           setCurrentConversationId(newId);
           setSearchParams({ conversation: newId }, { replace: true });
+          lastSavedSignatureRef.current = currentSignature;
         }
       });
-    } else if (messages.length > 0 && currentConversationId && messages.length > lastSavedMessagesCount.current) {
-      // Subsequent messages - update existing
-      const timeout = setTimeout(() => {
-        saveConversation();
-      }, 1000);
-      return () => clearTimeout(timeout);
+      return;
     }
-  }, [messages, currentConversationId, initialLoadDone, saveConversation]);
-
-  // Auto-save when side panel content changes
-  useEffect(() => {
-    if (!initialLoadDone || !currentConversationId) return;
     
-    // Debounced save when side panel HTML changes
-    const timeout = setTimeout(() => {
-      saveConversation();
-    }, 2000);
-    return () => clearTimeout(timeout);
-  }, [sidePanelHtml, sidePanelSubject, sidePanelOpen, sidePanelContext, sidePanelWorkflowSteps, sidePanelShowCodePreview, sidePanelTitle, initialLoadDone, currentConversationId, saveConversation]);
+    // Existing conversation - debounced save (2s delay)
+    if (currentConversationId) {
+      saveDebounceRef.current = setTimeout(() => {
+        saveConversation().then(() => {
+          lastSavedSignatureRef.current = currentSignature;
+        });
+      }, 2000);
+    }
+    
+    return () => {
+      if (saveDebounceRef.current) {
+        clearTimeout(saveDebounceRef.current);
+      }
+    };
+  }, [messages, sidePanelHtml, sidePanelSubject, sidePanelOpen, currentConversationId, initialLoadDone, saveConversation, generateStateSignature, setSearchParams]);
 
-  // Reset counter when conversation changes
+  // Save on beforeunload (when user closes tab/refreshes)
   useEffect(() => {
-    lastSavedMessagesCount.current = messages.length;
+    const handleBeforeUnload = () => {
+      if (currentConversationId && messages.length > 0) {
+        // Sync save before unload
+        const currentSignature = generateStateSignature();
+        if (currentSignature !== lastSavedSignatureRef.current) {
+          saveConversation();
+        }
+      }
+    };
+    
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [currentConversationId, messages, saveConversation, generateStateSignature]);
+
+  // Reset signature when conversation changes
+  useEffect(() => {
+    lastSavedSignatureRef.current = '';
   }, [currentConversationId]);
 
   // Auto-scroll to bottom when messages change (using RAF, only if near bottom)
@@ -707,14 +742,12 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
   const handleOriginSelect = useCallback(async (subOriginId: string, subOriginName: string, originName: string) => {
     setSelectedOriginData({ subOriginId, subOriginName, originName });
     
-    // Determine dispatch type from conversation context
-    const lastMessages = messages.slice(-10);
-    const hasEmail = lastMessages.some(m => m.content.toLowerCase().includes('email'));
-    const type = hasEmail ? 'email' : 'whatsapp_web';
+    // Always use email (WhatsApp removed)
+    const type = 'email';
     setDispatchType(type);
     
     // Log this action
-    logAction('user', `Selecionou a lista "${subOriginName}" da origem "${originName}"`, `${type === 'email' ? 'Disparo por email' : 'Disparo por WhatsApp'}`);
+    logAction('user', `Selecionou a lista "${subOriginName}" da origem "${originName}"`, 'Disparo por email');
     
     // Auto-send message to fetch leads
     const autoMessage = `Usar a lista "${subOriginName}" da origem "${originName}"`;
@@ -747,50 +780,30 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
             listName: subOriginName,
             validCount: result.data.validLeads,
             totalCount: result.data.totalLeads,
-            summary: `Identificamos ${result.data.validLeads} leads válidos com ${type === 'email' ? 'email' : 'WhatsApp'} na lista selecionada.`
+            summary: `Identificamos ${result.data.validLeads} leads válidos com email na lista selecionada.`
           }),
           createEmailGenerationStep('pending'),
           createDispatchStep('pending')
         ];
 
-        // For email, ask as plain text question
-        if (type === 'email') {
-          const assistantMessage: Message = {
-            id: crypto.randomUUID(),
-            content: `Encontrei ${result.data.validLeads} leads válidos na lista "${subOriginName}".\n\nComo você quer criar o email?\n• Se já tiver o HTML pronto, me envie\n• Se quiser criar com IA, me diga`,
-            role: "assistant",
-            timestamp: new Date(),
-            componentData: {
-              type: 'ai_work_details',
-              data: { steps: workSteps, preview: result.data, subOriginId, dispatchType: type }
-            },
-            component: (
-              <div className="mt-3 w-full max-w-md">
-                <AIWorkDetails steps={workSteps} />
-              </div>
-            ),
-          };
-          setMessages(prev => [...prev, assistantMessage]);
-          setPendingQuestion({ type: 'email_method', subOriginId, dispatchType: type });
-        } else {
-          // For WhatsApp, show editor directly
-          const assistantMessage: Message = {
-            id: crypto.randomUUID(),
-            content: `Encontrei ${result.data.validLeads} leads válidos na lista "${subOriginName}"`,
-            role: "assistant",
-            timestamp: new Date(),
-            componentData: {
-              type: 'ai_work_details',
-              data: { steps: workSteps, preview: result.data, subOriginId, dispatchType: type }
-            },
-            component: (
-              <div className="mt-3 w-full max-w-md">
-                <AIWorkDetails steps={workSteps} />
-              </div>
-            ),
-          };
-          setMessages(prev => [...prev, assistantMessage]);
-        }
+        // Show email creation question
+        const assistantMessage: Message = {
+          id: crypto.randomUUID(),
+          content: `Encontrei ${result.data.validLeads} leads válidos na lista "${subOriginName}".\n\nComo você quer criar o email?\n• Se já tiver o HTML pronto, me envie\n• Se quiser criar com IA, me diga`,
+          role: "assistant",
+          timestamp: new Date(),
+          componentData: {
+            type: 'ai_work_details',
+            data: { steps: workSteps, preview: result.data, subOriginId, dispatchType: type }
+          },
+          component: (
+            <div className="mt-3 w-full max-w-md">
+              <AIWorkDetails steps={workSteps} />
+            </div>
+          ),
+        };
+        setMessages(prev => [...prev, assistantMessage]);
+        setPendingQuestion({ type: 'email_method', subOriginId, dispatchType: type });
       }
     } catch (error) {
       console.error("Error fetching leads:", error);
@@ -2001,55 +2014,72 @@ INSTRUÇÕES PARA VOCÊ (A IA):
         
         // If copywriting mode OR large content, show in side panel (not in chat)
         if ((isCopywritingMode || isLargeContent) && cleanContent.length > 50) {
-          // Detect if it's HTML email content
-          const isHtmlContent = cleanContent.includes('<') && cleanContent.includes('>') && 
-            (cleanContent.includes('<html') || cleanContent.includes('<body') || 
-             cleanContent.includes('<div') || cleanContent.includes('<p') || 
-             cleanContent.includes('<h1') || cleanContent.includes('<table'));
-          
-          // Open side panel with the generated content
-          if (isHtmlContent) {
-            // HTML email - show with code/preview tabs
-            setSidePanelHtml(cleanContent);
-            setSidePanelShowCodePreview(true);
-            setSidePanelTitle(undefined);
-          } else {
-            // Plain copy - show without code/preview tabs
-            setSidePanelHtml(`<div style="font-family: Arial, sans-serif; padding: 20px; line-height: 1.8; white-space: pre-wrap; font-size: 14px;">${cleanContent.replace(/\n/g, '<br>')}</div>`);
-            setSidePanelShowCodePreview(false);
-            setSidePanelTitle('Copy gerada');
-          }
-          
-          // For copy mode, don't set a subject (so header doesn't show)
-          if (!isHtmlContent) {
-            setSidePanelSubject(''); // No subject for copy
-          } else {
-            setSidePanelSubject('Email');
-          }
-          setSidePanelOpen(true);
+        // Threshold for auto-opening side panel
+        const OPEN_PANEL_THRESHOLD = 400;
+        
+        // Detect if it's HTML email content
+        const isHtmlContent = cleanContent.includes('<') && cleanContent.includes('>') && 
+          (cleanContent.includes('<html') || cleanContent.includes('<body') || 
+           cleanContent.includes('<div') || cleanContent.includes('<p') || 
+           cleanContent.includes('<h1') || cleanContent.includes('<table'));
+        
+        // Final workflow steps for persistence
+        const completedWorkflowSteps: WorkStep[] = [
+          createCustomStep('analysis', 'Análise do contexto', 'completed', { icon: 'file' }),
+          createCustomStep('generation', isCopywritingMode ? 'Geração da copy' : 'Geração do conteúdo', 'completed', { icon: 'sparkles' }),
+          createCustomStep('review', 'Pronto para revisão', 'completed', { icon: 'edit' }),
+        ];
+        
+        // For HTML content - show in panel
+        if (isHtmlContent) {
+          setSidePanelHtml(cleanContent);
+          setSidePanelShowCodePreview(true);
+          setSidePanelSubject('');
+          setSidePanelOpen(cleanContent.length >= OPEN_PANEL_THRESHOLD);
           setSidePanelMode('email');
           
-          // Final workflow steps for persistence in message
-          const completedWorkflowSteps: WorkStep[] = [
-            createCustomStep('analysis', 'Análise do contexto', 'completed', { icon: 'file' }),
-            createCustomStep('generation', isCopywritingMode ? 'Geração da copy' : 'Geração do conteúdo', 'completed', { icon: 'sparkles' }),
-            createCustomStep('review', 'Pronto para revisão', 'in_progress', { icon: 'edit' }),
-          ];
-          
-          // Show a brief message in chat, the full content is in the panel
-          // NEVER show the copy content in chat - only short notification
           setMessages(prev => 
             prev.map(m => 
               m.id === assistantMessageId 
                 ? { 
                     ...m, 
-                    content: isCopywritingMode 
-                      ? 'Copy pronta! Visualize e edite na lateral.' 
-                      : 'Conteúdo gerado! Visualize na lateral.',
+                    content: 'Email gerado! Visualize e edite na lateral.',
                     componentData: { 
                       type: 'email_generator_streaming' as const, 
                       data: { isComplete: true, workflowSteps: completedWorkflowSteps } 
                     }
+                  }
+                : m
+            )
+          );
+        } else {
+          // For plain copy/text - SHOW IN CHAT and optionally open panel for large content
+          const shouldOpenPanel = cleanContent.length >= OPEN_PANEL_THRESHOLD;
+          
+          if (shouldOpenPanel) {
+            setSidePanelHtml(`<div style="font-family: Arial, sans-serif; padding: 20px; line-height: 1.8; white-space: pre-wrap; font-size: 14px;">${cleanContent.replace(/\n/g, '<br>')}</div>`);
+            setSidePanelShowCodePreview(false);
+            setSidePanelSubject('');
+            setSidePanelOpen(true);
+            setSidePanelMode('email');
+          }
+          
+          // Always show full content in chat for copy
+          setMessages(prev => 
+            prev.map(m => 
+              m.id === assistantMessageId 
+                ? { 
+                    ...m, 
+                    content: cleanContent,
+                    componentData: { 
+                      type: 'email_generator_streaming' as const, 
+                      data: { isComplete: true, workflowSteps: completedWorkflowSteps } 
+                    }
+                  }
+                : m
+            )
+          );
+        }
                   }
                 : m
             )
