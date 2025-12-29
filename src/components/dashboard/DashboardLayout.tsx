@@ -62,19 +62,26 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
   const [disparoSubmenuOpen, setDisparoSubmenuOpen] = useState(false);
   const hasInitialized = useRef(false);
 
-  // Open submenu with delay after mount to enable smooth animation
+  // Open submenus with delay after mount to enable smooth animation
   useEffect(() => {
     if (hasInitialized.current) return;
     hasInitialized.current = true;
 
-    const saved = localStorage.getItem('crm_submenu_open');
-    const shouldBeOpen = saved !== 'false' && 
+    // CRM submenu persistence
+    const savedCrm = localStorage.getItem('crm_submenu_open');
+    const shouldCrmBeOpen = savedCrm !== 'false' && 
       (location.pathname.startsWith("/admin/crm") || location.pathname === "/admin");
     
-    if (shouldBeOpen) {
+    // Disparo submenu persistence
+    const savedDisparo = localStorage.getItem('disparo_submenu_open');
+    const shouldDisparoBeOpen = savedDisparo === 'true' && 
+      location.pathname.startsWith("/admin/disparo");
+    
+    if (shouldCrmBeOpen || shouldDisparoBeOpen) {
       // Small delay to allow initial render, then animate open
       const timer = setTimeout(() => {
-        setCrmSubmenuOpen(true);
+        if (shouldCrmBeOpen) setCrmSubmenuOpen(true);
+        if (shouldDisparoBeOpen) setDisparoSubmenuOpen(true);
       }, 50);
       return () => clearTimeout(timer);
     }
@@ -89,10 +96,14 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
     setDisparoSubmenuOpen(false);
   }, []);
 
-  // Persist submenu state to localStorage
+  // Persist submenu states to localStorage
   useEffect(() => {
     localStorage.setItem('crm_submenu_open', String(crmSubmenuOpen));
   }, [crmSubmenuOpen]);
+
+  useEffect(() => {
+    localStorage.setItem('disparo_submenu_open', String(disparoSubmenuOpen));
+  }, [disparoSubmenuOpen]);
 
   // Sync activePanel with current route (without forcing submenu open)
   useEffect(() => {
