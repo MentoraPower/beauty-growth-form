@@ -11,6 +11,7 @@ import { EmailSidePanel, SidePanelMode } from "./EmailSidePanel";
 import { CsvSidePanel, CsvLead as CsvLeadType } from "./CsvSidePanel";
 import { DispatchData } from "./DispatchAnalysis";
 import { EmailChatCard } from "./EmailChatCard";
+import { CsvChatCard } from "./CsvChatCard";
 import { AIWorkDetails, WorkStep, WorkSubItem, createLeadsAnalysisStep, createEmailGenerationStep, createDispatchStep, createCustomStep } from "./AIWorkDetails";
 import { supabase } from "@/integrations/supabase/client";
 import { Clipboard, Check, ExternalLink } from "lucide-react";
@@ -70,28 +71,85 @@ interface CsvLead {
   [key: string]: string | undefined;
 }
 
+interface CsvParseResult {
+  leads: CsvLead[];
+  rawData: Array<Record<string, string>>;
+  headers: string[];
+  mappedColumns: {
+    name?: string;
+    email?: string;
+    whatsapp?: string;
+  };
+}
+
 const CHAT_URL = `https://ytdfwkchsumgdvcroaqg.supabase.co/functions/v1/grok-chat`;
 
-// Parse CSV file
-const parseCSV = (content: string): CsvLead[] => {
+// Parse CSV file with smart column detection
+const parseCSVAdvanced = (content: string): CsvParseResult => {
   const lines = content.trim().split('\n');
-  if (lines.length < 2) return [];
+  if (lines.length < 2) return { leads: [], rawData: [], headers: [], mappedColumns: {} };
   
-  const headers = lines[0].toLowerCase().split(/[,;]/).map(h => h.trim().replace(/"/g, ''));
-  const nameIdx = headers.findIndex(h => h === 'nome' || h === 'name');
-  const emailIdx = headers.findIndex(h => h === 'email' || h === 'e-mail');
-  const whatsappIdx = headers.findIndex(h => h === 'whatsapp' || h === 'telefone' || h === 'phone' || h === 'celular');
+  const headers = lines[0].split(/[,;]/).map(h => h.trim().replace(/"/g, ''));
+  const headersLower = headers.map(h => h.toLowerCase());
   
-  if (nameIdx === -1) return [];
+  // Smart column detection with fuzzy matching
+  const namePatterns = ['nome', 'name', 'aluna', 'aluno', 'cliente', 'pessoa', 'contato', 'lead'];
+  const emailPatterns = ['email', 'e-mail', 'mail', 'correio', 'gmail'];
+  const whatsappPatterns = ['whatsapp', 'telefone', 'phone', 'celular', 'tel', 'fone', 'numero', 'número', 'zap', 'wpp'];
   
-  return lines.slice(1).map(line => {
+  const findColumnIndex = (patterns: string[]): number => {
+    for (const pattern of patterns) {
+      const idx = headersLower.findIndex(h => h.includes(pattern));
+      if (idx !== -1) return idx;
+    }
+    return -1;
+  };
+  
+  const nameIdx = findColumnIndex(namePatterns);
+  const emailIdx = findColumnIndex(emailPatterns);
+  const whatsappIdx = findColumnIndex(whatsappPatterns);
+  
+  // Parse all raw data preserving original headers
+  const rawData = lines.slice(1).map(line => {
     const values = line.split(/[,;]/).map(v => v.trim().replace(/"/g, ''));
-    return {
-      name: values[nameIdx] || '',
-      email: emailIdx >= 0 ? values[emailIdx] : undefined,
-      whatsapp: whatsappIdx >= 0 ? values[whatsappIdx]?.replace(/\D/g, '') : undefined,
+    const row: Record<string, string> = {};
+    headers.forEach((header, i) => {
+      row[header] = values[i] || '';
+    });
+    return row;
+  }).filter(row => Object.values(row).some(v => v.trim()));
+  
+  // Build leads with mapped columns
+  const leads = rawData.map(row => {
+    const lead: CsvLead = {
+      name: nameIdx >= 0 ? row[headers[nameIdx]] || '' : '',
+      email: emailIdx >= 0 ? row[headers[emailIdx]] : undefined,
+      whatsapp: whatsappIdx >= 0 ? row[headers[whatsappIdx]]?.replace(/\D/g, '') : undefined,
     };
-  }).filter(l => l.name);
+    // Also preserve all original data
+    headers.forEach(header => {
+      if (!['name', 'email', 'whatsapp'].includes(header.toLowerCase())) {
+        lead[header] = row[header];
+      }
+    });
+    return lead;
+  }).filter(l => l.name || l.email);
+  
+  return {
+    leads,
+    rawData,
+    headers,
+    mappedColumns: {
+      name: nameIdx >= 0 ? headers[nameIdx] : undefined,
+      email: emailIdx >= 0 ? headers[emailIdx] : undefined,
+      whatsapp: whatsappIdx >= 0 ? headers[whatsappIdx] : undefined,
+    }
+  };
+};
+
+// Keep old function for backwards compatibility
+const parseCSV = (content: string): CsvLead[] => {
+  return parseCSVAdvanced(content).leads;
 };
 
 // Extract subject and HTML from AI response
@@ -198,6 +256,9 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
   // CSV Side Panel state
   const [csvPanelOpen, setCsvPanelOpen] = useState(false);
   const [csvFileName, setCsvFileName] = useState<string>('lista.csv');
+  const [csvRawData, setCsvRawData] = useState<Array<Record<string, string>>>([]);
+  const [csvHeaders, setCsvHeaders] = useState<string[]>([]);
+  const [csvMappedColumns, setCsvMappedColumns] = useState<{ name?: string; email?: string; whatsapp?: string }>({});
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const chatScrollRef = useRef<HTMLDivElement>(null);
@@ -1500,22 +1561,26 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
       
       // Check if there's a CSV file or image
       let csvContent = '';
-      let csvFileName = '';
+      let csvFileNameLocal = '';
       let imageBase64 = '';
       let imageFile: File | null = null;
+      let csvParseResult: CsvParseResult | null = null;
       
       if (files && files.length > 0) {
         // Check for CSV file
         const csvFile = files.find(f => f.name.endsWith('.csv'));
         if (csvFile) {
-          csvFileName = csvFile.name;
+          csvFileNameLocal = csvFile.name;
           csvContent = await csvFile.text();
-          const parsedLeads = parseCSV(csvContent);
-          if (parsedLeads.length > 0) {
-            setCsvLeads(parsedLeads);
+          csvParseResult = parseCSVAdvanced(csvContent);
+          
+          if (csvParseResult.leads.length > 0) {
+            setCsvLeads(csvParseResult.leads);
             setCsvFileName(csvFile.name);
+            setCsvRawData(csvParseResult.rawData);
+            setCsvHeaders(csvParseResult.headers);
+            setCsvMappedColumns(csvParseResult.mappedColumns);
             setCsvPanelOpen(true); // Open CSV panel to show the data
-            toast.success(`${parsedLeads.length} leads carregados na planilha`);
           }
         }
         
@@ -1536,21 +1601,29 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
       const rawMessageContent = message; // Keep original for AI routing
       const displayMessageContent = stripInternalContext(message); // Clean version for display
       
+      // For CSV, we don't show text, we show the card component
       let messageContent = displayMessageContent;
-      if (csvFileName) {
-        messageContent = `${displayMessageContent}\n\n[Arquivo enviado: ${csvFileName} com ${csvLeads?.length || parseCSV(csvContent).length} leads]`;
-      }
       if (imageFile) {
         messageContent = displayMessageContent || 'Analise esta imagem';
       }
       
-      // Add user message with image if present (using clean display content)
+      // Add user message with CSV card component data if applicable
       const userMessage: Message = {
         id: crypto.randomUUID(),
-        content: messageContent,
+        content: csvParseResult ? '' : messageContent, // Empty content for CSV - card will display
         role: "user",
         timestamp: new Date(),
         imageUrl: imageBase64 || undefined,
+        componentData: csvParseResult ? {
+          type: 'csv_preview' as const,
+          data: {
+            fileName: csvFileNameLocal,
+            totalRows: csvParseResult.leads.length,
+            columns: csvParseResult.headers,
+            previewData: csvParseResult.rawData.slice(0, 5),
+            mappedColumns: csvParseResult.mappedColumns
+          }
+        } : undefined,
       };
       
       // CRITICAL: Create conversation IMMEDIATELY on first message to prevent duplicates
@@ -1570,9 +1643,13 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
         
         // Create conversation synchronously with just the user message
         try {
-          const title = messageContent.length > 50 
-            ? messageContent.substring(0, 50).trim() + '...' 
-            : messageContent || "Nova conversa";
+          // For CSV uploads, use the file name as title
+          const titleBase = csvParseResult 
+            ? `📊 ${csvFileNameLocal} (${csvParseResult.leads.length} leads)`
+            : messageContent;
+          const title = titleBase.length > 50 
+            ? titleBase.substring(0, 50).trim() + '...' 
+            : titleBase || "Nova conversa";
           
           const conversationData = {
             messages: [{ 
@@ -2164,9 +2241,31 @@ Retorne APENAS o HTML modificado, sem explicações.`,
         contextInfo.push(`• Painel de edição de email: aberto (usuário pode estar editando)`);
       }
       
-      // CSV leads
+      // CSV leads - provide detailed analysis for AI
       if (csvLeads && csvLeads.length > 0) {
-        contextInfo.push(`• Leads do CSV: ${csvLeads.length} contatos carregados`);
+        contextInfo.push(`\n=== LISTA CSV CARREGADA ===`);
+        contextInfo.push(`• Total de leads: ${csvLeads.length}`);
+        contextInfo.push(`• Arquivo: ${csvFileName}`);
+        contextInfo.push(`• Colunas detectadas: ${csvHeaders.join(', ')}`);
+        
+        // Column mapping status
+        contextInfo.push(`• Mapeamento automático:`);
+        contextInfo.push(`  - Coluna de NOME: ${csvMappedColumns.name || '❌ NÃO ENCONTRADA'}`);
+        contextInfo.push(`  - Coluna de EMAIL: ${csvMappedColumns.email || '❌ NÃO ENCONTRADA'}`);
+        contextInfo.push(`  - Coluna de WHATSAPP: ${csvMappedColumns.whatsapp || '❌ NÃO ENCONTRADA'}`);
+        
+        // Count valid contacts
+        const leadsWithEmail = csvLeads.filter(l => l.email && l.email.includes('@')).length;
+        const leadsWithWhatsapp = csvLeads.filter(l => l.whatsapp && l.whatsapp.length >= 8).length;
+        contextInfo.push(`• Leads com email válido: ${leadsWithEmail}`);
+        contextInfo.push(`• Leads com WhatsApp válido: ${leadsWithWhatsapp}`);
+        
+        // Show sample data
+        contextInfo.push(`• Amostra dos primeiros 3 leads:`);
+        csvLeads.slice(0, 3).forEach((lead, i) => {
+          contextInfo.push(`  ${i + 1}. ${lead.name || '(sem nome)'} | ${lead.email || '(sem email)'} | ${lead.whatsapp || '(sem tel)'}`);
+        });
+        contextInfo.push(`=== FIM DA LISTA CSV ===`);
       }
       
       // Active job
@@ -2224,16 +2323,28 @@ INSTRUÇÕES PARA VOCÊ (A IA):
           }
           return { role: m.role, content: m.content };
         }),
-        // Current user message
-        imageBase64 
-          ? {
+        // Current user message - include CSV context if available
+        (() => {
+          // Build the message content
+          let content = userMessage.content;
+          
+          // If CSV was just uploaded, add context to the message
+          if (csvParseResult && csvParseResult.leads.length > 0) {
+            const csvContext = `[O usuário acabou de enviar uma lista CSV chamada "${csvFileNameLocal}" com ${csvParseResult.leads.length} leads. Colunas: ${csvParseResult.headers.join(', ')}. Mapeamento: Nome=${csvParseResult.mappedColumns.name || 'não encontrada'}, Email=${csvParseResult.mappedColumns.email || 'não encontrada'}, WhatsApp=${csvParseResult.mappedColumns.whatsapp || 'não encontrada'}. ${!csvParseResult.mappedColumns.email ? 'ATENÇÃO: Não foi possível identificar a coluna de email automaticamente - pergunte ao usuário qual coluna contém os emails.' : ''} Analise a lista e pergunte o que está faltando para iniciar o disparo.]`;
+            content = csvContext;
+          }
+          
+          if (imageBase64) {
+            return {
               role: userMessage.role,
               content: [
-                { type: 'text', text: userMessage.content },
+                { type: 'text', text: content },
                 { type: 'image_url', image_url: { url: imageBase64 } }
               ]
-            }
-          : { role: userMessage.role, content: userMessage.content }
+            };
+          }
+          return { role: userMessage.role, content };
+        })()
       ];
 
       const response = await fetch(CHAT_URL, {
@@ -2841,18 +2952,36 @@ INSTRUÇÕES PARA VOCÊ (A IA):
                     )}
                   >
                   {msg.role === "user" ? (
-                      <div className="bg-white text-foreground px-5 py-4 rounded-2xl max-w-[85%] border border-[#00000010]">
-                        {/* Show image if present */}
-                        {msg.imageUrl && (
-                          <div className="mb-3">
-                            <img 
-                              src={msg.imageUrl} 
-                              alt="Imagem enviada" 
-                              className="max-w-full max-h-64 rounded-lg object-contain"
-                            />
+                      <div className="max-w-[85%]">
+                        {/* CSV Preview Card */}
+                        {msg.componentData?.type === 'csv_preview' && (
+                          <CsvChatCard
+                            fileName={msg.componentData.data.fileName}
+                            totalRows={msg.componentData.data.totalRows}
+                            columns={msg.componentData.data.columns}
+                            previewData={msg.componentData.data.previewData}
+                            mappedColumns={msg.componentData.data.mappedColumns}
+                            onOpenPanel={() => setCsvPanelOpen(true)}
+                          />
+                        )}
+                        {/* Regular user message */}
+                        {(!msg.componentData || msg.componentData.type !== 'csv_preview' || msg.content) && (
+                          <div className="bg-white text-foreground px-5 py-4 rounded-2xl border border-[#00000010]">
+                            {/* Show image if present */}
+                            {msg.imageUrl && (
+                              <div className="mb-3">
+                                <img 
+                                  src={msg.imageUrl} 
+                                  alt="Imagem enviada" 
+                                  className="max-w-full max-h-64 rounded-lg object-contain"
+                                />
+                              </div>
+                            )}
+                            {msg.content && (
+                              <p className="text-[15px] leading-relaxed whitespace-pre-wrap">{removeAgentPrefix(msg.content)}</p>
+                            )}
                           </div>
                         )}
-                        <p className="text-[15px] leading-relaxed whitespace-pre-wrap">{removeAgentPrefix(msg.content)}</p>
                       </div>
                     ) : (
                       <div className="max-w-[85%] group">
