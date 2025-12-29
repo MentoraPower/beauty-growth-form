@@ -223,6 +223,7 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
+  const [isConversationLoading, setIsConversationLoading] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [activeJobId, setActiveJobId] = useState<string | null>(null);
   const [csvLeads, setCsvLeads] = useState<CsvLead[] | null>(null);
@@ -267,6 +268,7 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
 
   // Refs for hydration control - prevent race conditions
   const isHydratingRef = useRef(false); // True when loading from DB
+  const loadingConversationIdRef = useRef<string | null>(null);
   const skipNextUrlLoadRef = useRef<string | null>(null); // Skip URL load for this conv ID
   const suppressUrlSyncRef = useRef(false); // Suppress URL sync when starting new conversation
 
@@ -595,6 +597,8 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
       setSidePanelDispatchData(null);
       setPendingQuestion(null);
       setIsLoading(false);
+      setIsConversationLoading(false);
+      loadingConversationIdRef.current = null;
       setActiveJobId(null);
       setSidePanelMode('email');
       setSidePanelWorkflowSteps([]);
@@ -602,7 +606,7 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
       setSidePanelTitle(undefined);
       setHtmlSource(null);
       setInitialLoadDone(true);
-      
+
       // Clear suppression after state is reset
       setTimeout(() => { suppressUrlSyncRef.current = false; }, 100);
       return;
@@ -611,10 +615,12 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
     // Skip if this ID was just set by menu selection (already have messages loaded)
     if (convId && skipNextUrlLoadRef.current === convId) {
       skipNextUrlLoadRef.current = null;
+      setIsConversationLoading(false);
+      loadingConversationIdRef.current = null;
       setInitialLoadDone(true);
       return;
     }
-    
+
     // Don't load from DB if we're actively generating/streaming (prevents race condition)
     if (convId && convId === currentConversationId && (isLoading || sidePanelGenerating)) {
       return;
@@ -663,7 +669,7 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
         try {
           const { data, error } = await supabase
             .from("dispatch_conversations")
-            .select("*")
+            .select("id, messages")
             .eq("id", convId)
             .single();
 
