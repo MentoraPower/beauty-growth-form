@@ -983,14 +983,6 @@ export function EmailSidePanel({
         )}
       </div>
 
-      {/* Footer hint - only show when code preview is enabled */}
-      {showCodePreview && (
-        <div className="px-5 py-3 border-t border-border bg-muted/20">
-          <p className="text-xs text-muted-foreground text-center">
-            {activeTab === 'preview' ? 'Clique no texto para editar diretamente' : 'Edite o código HTML diretamente'}
-          </p>
-        </div>
-      )}
     </div>
   );
 }
