@@ -1943,6 +1943,41 @@ INSTRUÇÕES PARA VOCÊ (A IA):
       if (assistantContent) {
         const { cleanContent, components } = await processCommands(assistantContent);
         
+        // Check if the original message was from copywriting agent
+        const isCopywritingMode = messageContent.includes('[CONTEXT:copywriting]');
+        
+        // If copywriting mode and we have substantial content, show in side panel
+        if (isCopywritingMode && cleanContent.length > 50) {
+          // Open side panel with the generated copy
+          setSidePanelHtml(`<div style="font-family: Arial, sans-serif; padding: 20px; line-height: 1.6; white-space: pre-wrap;">${cleanContent.replace(/\n/g, '<br>')}</div>`);
+          setSidePanelSubject('Copy gerada');
+          setSidePanelOpen(true);
+          setSidePanelMode('email');
+          
+          // Update workflow steps to show copy generation
+          setSidePanelWorkflowSteps([
+            createCustomStep('copy_analysis', 'Leitura e análise dos leads', 'completed', { icon: 'file' }),
+            createCustomStep('copy_generation', 'Geração do email HTML', 'completed', { icon: 'sparkles' }),
+            createCustomStep('dispatch', 'Envio do disparo', 'pending', { icon: 'send' }),
+          ]);
+          
+          // Show a brief message in chat, the full copy is in the panel
+          setMessages(prev => 
+            prev.map(m => 
+              m.id === assistantMessageId 
+                ? { 
+                    ...m, 
+                    content: 'Copy gerada com sucesso! Você pode visualizar e editar na lateral.',
+                    componentData: { type: 'email_generator_streaming' as const, data: { isComplete: true } }
+                  }
+                : m
+            )
+          );
+          
+          setIsLoading(false);
+          return;
+        }
+        
         // Check if user chose "Lista do CRM" - auto-show origins table
         const lowerMessage = messageContent.toLowerCase();
         const mentionsList = lowerMessage.includes('lista') || lowerMessage.includes('list');
