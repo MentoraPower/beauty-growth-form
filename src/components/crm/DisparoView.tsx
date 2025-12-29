@@ -1274,7 +1274,7 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
       const response = await fetch(CHAT_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ command }),
+        body: JSON.stringify({ command, conversationId: conversationIdRef.current }),
       });
 
       if (!response.ok) throw new Error("Command failed");
@@ -1405,7 +1405,7 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({ command }),
+          body: JSON.stringify({ command, conversationId: conversationIdRef.current }),
         });
 
         if (!response.ok) throw new Error("Command failed");
@@ -1455,7 +1455,7 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ command }),
+        body: JSON.stringify({ command, conversationId: conversationIdRef.current }),
       });
 
       if (!response.ok) throw new Error("Command failed");
@@ -2241,7 +2241,10 @@ INSTRUÇÕES PARA VOCÊ (A IA):
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ messages: messagesForAPI }),
+        body: JSON.stringify({ 
+          messages: messagesForAPI,
+          conversationId: conversationIdRef.current 
+        }),
       });
 
       if (!response.ok) {
