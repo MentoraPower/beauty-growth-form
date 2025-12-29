@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { Plus, MoreVertical, Trash2, Pencil, Search, ChevronsRight } from "lucide-react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -50,31 +50,94 @@ export function DisparoSubmenuPanel({ isOpen, onClose }: DisparoSubmenuPanelProp
   const [renameDialogOpen, setRenameDialogOpen] = useState(false);
   const [renameConvId, setRenameConvId] = useState<string | null>(null);
   const [renameValue, setRenameValue] = useState("");
+  
+  // Ref to track if we've done initial load
+  const hasLoadedRef = useRef(false);
 
   const currentConversationId = searchParams.get('conversation');
 
-  // Fetch conversations
-  const fetchConversations = async () => {
-    setIsLoading(true);
+  // Fetch conversations - only show loading on first fetch
+  const fetchConversations = useCallback(async (showLoading = true) => {
+    if (showLoading && !hasLoadedRef.current) {
+      setIsLoading(true);
+    }
     try {
       const { data, error } = await supabase
         .from("dispatch_conversations")
-        .select("*")
+        .select("id, title, created_at, updated_at")
         .order("updated_at", { ascending: false });
 
       if (error) throw error;
-      setConversations(data || []);
+      
+      // Update conversations without flickering
+      setConversations(prev => {
+        const newData = data || [];
+        // Only update if data actually changed
+        if (JSON.stringify(prev.map(c => c.id + c.title + c.updated_at)) === 
+            JSON.stringify(newData.map(c => c.id + c.title + c.updated_at))) {
+          return prev;
+        }
+        return newData;
+      });
+      
+      hasLoadedRef.current = true;
     } catch (error) {
       console.error("Error fetching conversations:", error);
     } finally {
       setIsLoading(false);
     }
-  };
+  }, []);
 
+  // Initial fetch when panel opens
   useEffect(() => {
     if (isOpen) {
-      fetchConversations();
+      fetchConversations(!hasLoadedRef.current);
     }
+  }, [isOpen, fetchConversations]);
+
+  // Realtime subscription for conversation changes
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const channel = supabase
+      .channel('disparo-conversations-realtime')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'dispatch_conversations'
+        },
+        (payload) => {
+          if (payload.eventType === 'INSERT') {
+            // Add new conversation at the top
+            const newConv = payload.new as Conversation;
+            setConversations(prev => {
+              // Avoid duplicates
+              if (prev.some(c => c.id === newConv.id)) return prev;
+              return [newConv, ...prev];
+            });
+          } else if (payload.eventType === 'UPDATE') {
+            // Update existing conversation and move to top
+            const updatedConv = payload.new as Conversation;
+            setConversations(prev => {
+              const filtered = prev.filter(c => c.id !== updatedConv.id);
+              return [updatedConv, ...filtered];
+            });
+          } else if (payload.eventType === 'DELETE') {
+            // Remove deleted conversation
+            const deletedId = payload.old?.id;
+            if (deletedId) {
+              setConversations(prev => prev.filter(c => c.id !== deletedId));
+            }
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [isOpen]);
 
   // Handle new conversation - use explicit ?new=1 signal to trigger reset
@@ -108,7 +171,7 @@ export function DisparoSubmenuPanel({ isOpen, onClose }: DisparoSubmenuPanelProp
       if (error) throw error;
       
       toast.success("Conversa renomeada");
-      fetchConversations();
+      // Realtime subscription will update the list automatically
       setRenameDialogOpen(false);
     } catch (error) {
       console.error("Error renaming conversation:", error);
@@ -130,12 +193,12 @@ export function DisparoSubmenuPanel({ isOpen, onClose }: DisparoSubmenuPanelProp
       
       toast.success("Conversa apagada");
       
-      // If deleting current conversation, clear params
+      // If deleting current conversation, navigate to new
       if (id === currentConversationId) {
-        setSearchParams({});
+        navigate('/admin/disparo?new=1', { replace: true });
       }
       
-      fetchConversations();
+      // Realtime subscription will update the list automatically
     } catch (error) {
       console.error("Error deleting conversation:", error);
       toast.error("Erro ao apagar conversa");
