@@ -3353,6 +3353,12 @@ ${hasName && hasEmail ? `Lista pronta! Guardei os ${leadsWithEmail} leads com em
               forcePreviewTab={!sidePanelGenerating && !sidePanelEditing && sidePanelHtml.length > 0}
               dispatchJobId={activeJobId}
               onDispatchCommand={handleCommand}
+              onClose={() => setSidePanelOpen(false)}
+              onSave={() => {
+                // Persist by triggering a save and showing toast
+                saveConversationNow();
+                toast.success('Email salvo!');
+              }}
               onNewDispatch={() => {
                 // Reset side panel to email mode and clear dispatch data
                 setSidePanelMode('email');
