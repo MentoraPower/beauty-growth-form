@@ -2508,7 +2508,7 @@ INSTRUÇÕES PARA VOCÊ (A IA):
         {/* When no messages, center the input */}
         {!hasMessages ? (
           <div className="flex-1 flex items-center justify-center p-6 px-8">
-            <div className="w-full max-w-2xl">
+            <div className="w-full max-w-3xl">
               <div className="text-center mb-8">
                 <div className="flex items-center justify-center gap-3">
                   <img src={disparoLogo} alt="Logo" className="w-6 h-6" />
@@ -2654,7 +2654,7 @@ INSTRUÇÕES PARA VOCÊ (A IA):
             <div className="p-6 px-8 pt-0">
               <div className={cn(
                 "mx-auto transition-all duration-300",
-                sidePanelOpen ? "max-w-3xl" : "max-w-4xl"
+                sidePanelOpen ? "max-w-4xl" : "max-w-5xl"
               )}>
                 <PromptInputBox
                   onSend={handleSend}
