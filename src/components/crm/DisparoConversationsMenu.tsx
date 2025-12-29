@@ -51,6 +51,13 @@ interface DisparoConversationsMenuProps {
   messages: Message[];
 }
 
+// Sanitize title - remove [CONTEXT:...], [Agente:...], etc.
+const sanitizeTitle = (title: string): string => {
+  return title
+    .replace(/\[(Agente:[^\]]+|CONTEXT:[^\]]+|Search)\]\s*/gi, '')
+    .trim() || 'Nova conversa';
+};
+
 export function DisparoConversationsMenu({
   currentConversationId,
   onSelectConversation,
@@ -402,7 +409,7 @@ export function DisparoConversationsMenu({
             isExpanded && "rotate-90"
           )} />
           {isInConversation ? (
-            <span className="max-w-[180px] truncate">{currentTitle}</span>
+            <span className="max-w-[180px] truncate">{sanitizeTitle(currentTitle)}</span>
           ) : (
             <span>Disparo</span>
           )}
@@ -458,7 +465,7 @@ export function DisparoConversationsMenu({
                           onClick={() => loadConversation(conv.id)}
                           className="flex-1 text-left px-2 py-1.5 text-sm truncate max-w-[130px]"
                         >
-                          <span className="block truncate">{conv.title}</span>
+                          <span className="block truncate">{sanitizeTitle(conv.title)}</span>
                         </button>
                         
                         {/* Active dispatch indicator */}
