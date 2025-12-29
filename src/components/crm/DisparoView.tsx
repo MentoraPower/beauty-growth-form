@@ -552,9 +552,10 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
           
           // Restore side panel state if available
           if (isNewFormat && rawData.sidePanelState) {
-            const { html, subject, isOpen, context, workflowSteps, showCodePreview, title, mode } = rawData.sidePanelState;
+            const { html, subject, preheader, isOpen, context, workflowSteps, showCodePreview, title, mode } = rawData.sidePanelState;
             if (html) setSidePanelHtml(html);
             if (subject) setSidePanelSubject(subject);
+            if (preheader) setSidePanelPreheader(preheader);
             if (isOpen) setSidePanelOpen(true);
             if (context) setSidePanelContext(context);
             if (workflowSteps && Array.isArray(workflowSteps)) setSidePanelWorkflowSteps(workflowSteps);
@@ -735,6 +736,7 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
         sidePanelState: {
           html: sidePanelHtml,
           subject: sidePanelSubject,
+          preheader: sidePanelPreheader,
           isOpen: sidePanelOpen,
           context: sidePanelContext,
           workflowSteps: sidePanelWorkflowSteps,
