@@ -3,7 +3,6 @@ import { cn } from "@/lib/utils";
 import { Code2, Eye, Copy, Check, BarChart3 } from "lucide-react";
 import { toast } from "sonner";
 import { DispatchAnalysis, DispatchData } from "./DispatchAnalysis";
-import { AIWorkDetails, WorkStep } from "./AIWorkDetails";
 
 // Format text with markdown-like syntax: **bold**, _italic_, ~strikethrough~, `code`
 const formatTextContent = (text: string): string => {
@@ -42,8 +41,6 @@ interface EmailSidePanelProps {
   dispatchData?: DispatchData | null;
   onNewDispatch?: () => void;
   onViewEmail?: () => void;
-  // Workflow steps for AI work visualization
-  workflowSteps?: WorkStep[];
   // Whether to show code/preview tabs (only for email visuals)
   showCodePreview?: boolean;
   // Title for the panel when showing workflow/copy
@@ -156,7 +153,6 @@ export function EmailSidePanel({
   dispatchData = null,
   onNewDispatch,
   onViewEmail,
-  workflowSteps = [],
   showCodePreview = true,
   panelTitle
 }: EmailSidePanelProps) {
@@ -447,15 +443,8 @@ export function EmailSidePanel({
         </div>
       )}
       
-      {/* Workflow Steps - shown when there are steps */}
-      {workflowSteps && workflowSteps.length > 0 && (
-        <div className={cn("px-6 py-5 border-b border-border", !panelTitle && "pt-6")}>
-          <AIWorkDetails steps={workflowSteps} />
-        </div>
-      )}
-      
-      {/* Subject Header - only show when we have code/preview tabs */}
-      {showCodePreview && (
+      {/* Subject Header - only show when we have code/preview tabs AND subject is set */}
+      {showCodePreview && subject && subject.trim() !== '' && subject !== 'Email' && subject !== 'Copy' && (
         <div className="px-5 py-3 border-b border-border bg-muted/30">
           <label className="text-xs text-muted-foreground font-medium mb-1.5 block">Assunto</label>
           <input
