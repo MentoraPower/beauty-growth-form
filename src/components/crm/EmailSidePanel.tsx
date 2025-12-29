@@ -617,12 +617,23 @@ export function EmailSidePanel({
               <Mail className="w-4 h-4 text-primary" />
               <span className="font-medium">Disparo de Emails</span>
             </div>
-            {isCompleted && (
-              <div className="flex items-center gap-1.5 text-sm text-green-600 dark:text-green-400">
-                <Check className="w-4 h-4" />
-                <span>Concluído</span>
-              </div>
-            )}
+            <div className="flex items-center gap-3">
+              {isCompleted && (
+                <div className="flex items-center gap-1.5 text-sm text-green-600 dark:text-green-400">
+                  <Check className="w-4 h-4" />
+                  <span>Concluído</span>
+                </div>
+              )}
+              {onClose && (
+                <button
+                  onClick={onClose}
+                  className="w-8 h-8 rounded-full border border-border bg-background hover:bg-muted flex items-center justify-center transition-colors group"
+                  title="Fechar painel"
+                >
+                  <ChevronsRight className="w-4 h-4 text-muted-foreground group-hover:text-foreground transition-colors" />
+                </button>
+              )}
+            </div>
           </div>
 
           {/* Progress bar */}
