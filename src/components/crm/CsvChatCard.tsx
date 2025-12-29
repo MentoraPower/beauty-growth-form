@@ -40,11 +40,11 @@ export function CsvChatCard({
   };
 
   return (
-    <div className="rounded-xl border border-gray-200/50 bg-white overflow-hidden max-w-2xl shadow-sm">
+    <div className="rounded-xl border border-gray-200 bg-white overflow-hidden max-w-2xl shadow-sm">
       {/* Header */}
-      <div className="px-4 py-3 border-b border-gray-100 flex items-center gap-3 bg-black/5">
-        <div className="w-9 h-9 rounded-lg bg-black/10 flex items-center justify-center flex-shrink-0">
-          <FileSpreadsheet className="w-4.5 h-4.5 text-gray-600" />
+      <div className="px-4 py-3 border-b border-gray-100 flex items-center gap-3 bg-white">
+        <div className="w-9 h-9 rounded-lg bg-gray-100 flex items-center justify-center flex-shrink-0">
+          <FileSpreadsheet className="w-4.5 h-4.5 text-gray-500" />
         </div>
         <div className="flex-1 min-w-0">
           <p className="font-medium text-gray-800 truncate text-sm">{fileName}</p>
@@ -54,7 +54,7 @@ export function CsvChatCard({
       {/* Full spreadsheet with scroll */}
       <div className="overflow-auto max-h-[400px]">
         <table className="w-full text-xs">
-          <thead className="sticky top-0 bg-black/5 z-10">
+          <thead className="sticky top-0 bg-white z-10 border-b border-gray-100">
             <tr>
               <th className="px-3 py-2 text-left font-medium text-gray-600 whitespace-nowrap border-r border-gray-100 w-8">
                 #
@@ -92,7 +92,7 @@ export function CsvChatCard({
 
       {/* Pagination footer */}
       {totalPages > 1 && (
-        <div className="px-4 py-2 bg-gray-50/50 border-t border-gray-100 flex items-center justify-between">
+        <div className="px-4 py-2 bg-white border-t border-gray-100 flex items-center justify-between">
           <span className="text-xs text-gray-500">
             {startIdx + 1}-{endIdx} de {previewData.length} leads
           </span>
