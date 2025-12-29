@@ -123,10 +123,19 @@ const extractSubjectAndHtml = (content: string): { subject: string; html: string
   return { subject, html };
 };
 
+// Remove agent/context prefixes from message content
+const removeAgentPrefix = (content: string): string => {
+  // Remove prefixes like [Agente:Copywriting], [CONTEXT:...], [Search], etc.
+  return content.replace(/^\[(Agente:[^\]]+|CONTEXT:[^\]]+|Search)\]\s*/i, '');
+};
+
 // Parse markdown-like formatting: **bold** and _italic_
 const formatMessageContent = (content: string): React.ReactNode => {
+  // First remove any agent prefix
+  const cleanContent = removeAgentPrefix(content);
+  
   // Split by markdown patterns while preserving the delimiters
-  const parts = content.split(/(\*\*[^*]+\*\*|_[^_]+_)/g);
+  const parts = cleanContent.split(/(\*\*[^*]+\*\*|_[^_]+_)/g);
   
   return parts.map((part, index) => {
     // Bold: **text**
@@ -163,6 +172,7 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
   const [sidePanelContext, setSidePanelContext] = useState<{ subOriginId: string; dispatchType: string } | null>(null);
   const [sidePanelMode, setSidePanelMode] = useState<SidePanelMode>('email'); // Mode: email or dispatch_details
   const [sidePanelDispatchData, setSidePanelDispatchData] = useState<DispatchData | null>(null); // Dispatch data for details view
+  const [sidePanelWorkflowSteps, setSidePanelWorkflowSteps] = useState<WorkStep[]>([]); // Workflow steps for AI visualization
   const [htmlSource, setHtmlSource] = useState<'ai' | 'user' | null>(null); // Track who created the HTML
   const [actionHistory, setActionHistory] = useState<ActionEntry[]>([]); // Complete action history for AI memory
   
@@ -2127,7 +2137,7 @@ INSTRUÇÕES PARA VOCÊ (A IA):
                             />
                           </div>
                         )}
-                        <p className="text-[15px] leading-relaxed whitespace-pre-wrap">{msg.content}</p>
+                        <p className="text-[15px] leading-relaxed whitespace-pre-wrap">{removeAgentPrefix(msg.content)}</p>
                       </div>
                     ) : (
                       <div className="w-full group">
@@ -2219,10 +2229,12 @@ INSTRUÇÕES PARA VOCÊ (A IA):
               isEditing={sidePanelEditing}
               mode={sidePanelMode}
               dispatchData={sidePanelDispatchData}
+              workflowSteps={sidePanelWorkflowSteps}
               onNewDispatch={() => {
                 // Reset side panel to email mode and clear dispatch data
                 setSidePanelMode('email');
                 setSidePanelDispatchData(null);
+                setSidePanelWorkflowSteps([]);
                 setSidePanelHtml('');
                 setSidePanelSubject('');
                 setSidePanelOpen(false);
