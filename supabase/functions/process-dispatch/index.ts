@@ -22,6 +22,10 @@ const PARALLEL_DELAY_MS = 150; // Small delay between parallel groups to respect
 const MAX_RETRIES = 3;
 const RETRY_DELAY_MS = 1000;
 
+// Get the base URL for email tracking
+const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
+const TRACKING_BASE_URL = `${SUPABASE_URL}/functions/v1/email-tracking`;
+
 // Helper function for retrying operations
 async function withRetry<T>(
   operation: () => Promise<T>,
@@ -46,7 +50,46 @@ async function withRetry<T>(
   throw lastError;
 }
 
-// Helper function to send a single email
+// Inject email tracking into HTML
+function injectEmailTracking(html: string, sentEmailId: string): string {
+  // Inject open tracking pixel before </body>
+  const trackingPixel = `<img src="${TRACKING_BASE_URL}/open/${sentEmailId}" width="1" height="1" style="display:none" alt="" />`;
+  
+  let trackedHtml = html;
+  
+  // Add tracking pixel before </body>
+  if (trackedHtml.toLowerCase().includes('</body>')) {
+    trackedHtml = trackedHtml.replace(
+      /<\/body>/i,
+      `${trackingPixel}</body>`
+    );
+  } else {
+    // No </body> tag, append at end
+    trackedHtml = trackedHtml + trackingPixel;
+  }
+  
+  // Rewrite links for click tracking
+  const linkRegex = /<a\s+([^>]*?)href=["']([^"']+)["']([^>]*)>/gi;
+  trackedHtml = trackedHtml.replace(linkRegex, (match, before, url, after) => {
+    // Skip tracking for special links (mailto, tel, etc)
+    if (url.startsWith('mailto:') || url.startsWith('tel:') || url.startsWith('#')) {
+      return match;
+    }
+    
+    // Skip if already a tracking URL
+    if (url.includes('email-tracking/click')) {
+      return match;
+    }
+    
+    const encodedUrl = encodeURIComponent(url);
+    const trackingUrl = `${TRACKING_BASE_URL}/click/${sentEmailId}?url=${encodedUrl}`;
+    return `<a ${before}href="${trackingUrl}"${after}>`;
+  });
+  
+  return trackedHtml;
+}
+
+// Helper function to send a single email with tracking
 async function sendSingleEmail(
   lead: { id: string; name: string; email: string },
   job: any,
@@ -89,15 +132,42 @@ async function sendSingleEmail(
     const subjectMatch = personalizedContent.match(/<title>(.*?)<\/title>/i);
     const finalSubject = emailSubject || parsedTemplate?.subject || subjectMatch?.[1] || `Mensagem para ${lead.name}`;
     
-    console.log(`[DISPATCH] Sending email to ${lead.email} with subject: "${finalSubject.substring(0, 50)}..."`);
+    console.log(`[DISPATCH] Preparing email for ${lead.email} with subject: "${finalSubject.substring(0, 50)}..."`);
     
-    // Send email with retry
+    // STEP 1: Insert sent_emails record FIRST to get the ID for tracking
+    const { data: sentEmailRecord, error: insertError } = await supabase
+      .from("sent_emails")
+      .insert({
+        lead_id: lead.id,
+        lead_name: lead.name,
+        lead_email: lead.email,
+        subject: finalSubject,
+        body_html: finalHtml, // Original HTML without tracking (will be updated)
+        status: "pending",
+        dispatch_job_id: job.id, // Link to the dispatch job
+      })
+      .select('id')
+      .single();
+
+    if (insertError || !sentEmailRecord) {
+      console.error(`[DISPATCH] Failed to create sent_emails record:`, insertError);
+      throw new Error('Failed to create email record');
+    }
+
+    const sentEmailId = sentEmailRecord.id;
+    console.log(`[DISPATCH] Created sent_emails record: ${sentEmailId}`);
+
+    // STEP 2: Inject tracking into HTML using the sentEmailId
+    const trackedHtml = injectEmailTracking(finalHtml, sentEmailId);
+    console.log(`[DISPATCH] Injected tracking for ${sentEmailId}`);
+
+    // STEP 3: Send email with retry
     const emailResponse = await withRetry(async () => {
       const response = await resend.emails.send({
         from: `${fromName} <${fromEmail}>`,
         to: [lead.email],
         subject: finalSubject,
-        html: finalHtml,
+        html: trackedHtml, // Use tracked HTML
       });
 
       const resendError = (response as any)?.error;
@@ -112,19 +182,22 @@ async function sendSingleEmail(
       return response;
     }, `Send email to ${lead.email}`);
 
-    // Record sent email
-    await supabase.from("sent_emails").insert({
-      lead_id: lead.id,
-      lead_name: lead.name,
-      lead_email: lead.email,
-      subject: finalSubject,
-      body_html: finalHtml,
-      status: "sent",
-      resend_id: (emailResponse as any)?.data?.id ?? null,
-      sent_at: new Date().toISOString(),
-    });
+    const resendId = (emailResponse as any)?.data?.id ?? null;
 
-    return { success: true, resendId: (emailResponse as any)?.data?.id };
+    // STEP 4: Update sent_emails record with success status and tracked HTML
+    await supabase
+      .from("sent_emails")
+      .update({
+        status: "sent",
+        resend_id: resendId,
+        sent_at: new Date().toISOString(),
+        body_html: trackedHtml, // Store the tracked HTML
+      })
+      .eq('id', sentEmailId);
+
+    console.log(`[DISPATCH] ✅ Email sent to ${lead.email}, resend_id: ${resendId}`);
+
+    return { success: true, resendId };
   } catch (error) {
     return { 
       success: false, 
@@ -324,7 +397,7 @@ serve(async (req) => {
     // Get the batch of leads to process
     const leadsToProcess = validLeads.slice(processedCount, processedCount + BATCH_SIZE);
     console.log(`[DISPATCH-BATCH] Processing batch of ${leadsToProcess.length} leads (${processedCount + 1} to ${processedCount + leadsToProcess.length} of ${validLeads.length})`);
-    console.log(`[DISPATCH-BATCH] 🚀 Using PARALLEL sending: ${PARALLEL_EMAILS} emails simultaneously`);
+    console.log(`[DISPATCH-BATCH] 🚀 Using PARALLEL sending: ${PARALLEL_EMAILS} emails simultaneously with TRACKING enabled`);
 
     let sentCount = currentSent;
     let failedCount = currentFailed;
@@ -372,14 +445,14 @@ serve(async (req) => {
           .from('sent_emails')
           .select('lead_id')
           .in('lead_id', leadIds)
-          .gte('created_at', job.started_at || job.created_at);
+          .eq('dispatch_job_id', job.id); // Check only for THIS dispatch job
 
         const alreadySentIds = new Set((alreadySent || []).map((s: any) => s.lead_id));
         
         // Filter out already sent leads
         const leadsToSend = parallelGroup.filter(lead => {
           if (alreadySentIds.has(lead.id)) {
-            console.log(`[DISPATCH-BATCH] ⏭️ Email already sent to ${lead.email}, skipping duplicate`);
+            console.log(`[DISPATCH-BATCH] ⏭️ Email already sent to ${lead.email} for this dispatch, skipping duplicate`);
             sentCount++; // Count as sent
             return false;
           }
@@ -507,7 +580,8 @@ serve(async (req) => {
       remaining,
       totalLeads: validLeads.length,
       isComplete,
-      parallelMode: PARALLEL_EMAILS
+      parallelMode: PARALLEL_EMAILS,
+      trackingEnabled: true
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });

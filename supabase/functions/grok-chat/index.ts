@@ -337,39 +337,66 @@ IGNORE o fluxo de disparo e foque 100% no pedido sobre a lista.
       ? ((metricsData.totalClicks / metricsData.totalSent) * 100).toFixed(1)
       : 0;
     
-    specialMode += `
+    if (metricsData.conversationSpecific) {
+      // Métricas específicas desta conversa/disparo
+      specialMode += `
 ═══════════════════════════════════════
-MODO MÉTRICAS DE EMAIL ATIVO
+MODO MÉTRICAS DE EMAIL ATIVO (CONVERSA ESPECÍFICA)
 ═══════════════════════════════════════
-O usuário está perguntando sobre métricas/performance dos emails enviados.
+O usuário está perguntando sobre métricas DESTE disparo/conversa.
 
-**DADOS ATUAIS DO SISTEMA:**
+**DADOS DESTA CONVERSA:**
 - Emails enviados: ${metricsData.totalSent}
-- Aberturas únicas: ${metricsData.uniqueOpens} (${openRate}% de taxa de abertura)
-- Cliques totais: ${metricsData.totalClicks} (${clickRate}% de taxa de cliques)
-${metricsData.recentDispatches?.length > 0 ? `
-**ÚLTIMOS DISPAROS:**
-${metricsData.recentDispatches.map((d: any, i: number) => 
-  `${i + 1}. ${d.subject || 'Sem assunto'} - ${d.sent} enviados, ${d.opens} aberturas (${d.openRate}%), ${d.clicks} cliques`
+- Aberturas: ${metricsData.uniqueOpens} (${openRate}% de taxa de abertura)
+- Cliques: ${metricsData.totalClicks} (${clickRate}% de taxa de cliques)
+${metricsData.dispatchJobs?.length > 0 ? `
+**DISPAROS DESTA CONVERSA:**
+${metricsData.dispatchJobs.map((j: any, i: number) => 
+  `${i + 1}. ${j.subOrigin || j.origin || 'Disparo'} - ${j.sent} enviados, ${j.failed} falharam (status: ${j.status})`
 ).join('\n')}
-` : ''}
+` : metricsData.message || ''}
 
-**BENCHMARKS DO MERCADO (para comparação):**
+**BENCHMARKS DO MERCADO:**
 - Taxa de abertura boa: 20-25%
 - Taxa de abertura excelente: acima de 30%
 - Taxa de cliques boa: 2-5%
-- Taxa de cliques excelente: acima de 5%
 
 **COMO RESPONDER:**
 - Apresente os dados de forma clara e natural
 - Compare com benchmarks do mercado
 - Se a taxa está acima da média, parabenize!
-- Se está abaixo, sugira melhorias (assunto mais chamativo, horário diferente, etc)
-- Se perguntar sobre disparo específico, use os dados disponíveis
-- Seja objetivo e informativo
-
-IGNORE o fluxo de disparo e foque 100% em responder sobre métricas.
+- Se está abaixo, sugira melhorias
+- IMPORTANTE: Estes são os dados APENAS desta conversa, não de todos os disparos
 `;
+    } else {
+      // Métricas gerais de todos os disparos
+      specialMode += `
+═══════════════════════════════════════
+MODO MÉTRICAS DE EMAIL ATIVO (VISÃO GERAL)
+═══════════════════════════════════════
+O usuário está perguntando sobre métricas gerais de todos os emails.
+
+**DADOS GERAIS DO SISTEMA:**
+- Total de emails enviados: ${metricsData.totalSent}
+- Aberturas: ${metricsData.uniqueOpens} (${openRate}% de taxa de abertura)
+- Cliques: ${metricsData.totalClicks} (${clickRate}% de taxa de cliques)
+${metricsData.breakdown ? `
+**DETALHAMENTO:**
+- Automações: ${metricsData.breakdown.automations.sent} emails, ${metricsData.breakdown.automations.opens} aberturas, ${metricsData.breakdown.automations.clicks} cliques
+- Disparos manuais: ${metricsData.breakdown.dispatches.sent} emails, ${metricsData.breakdown.dispatches.opens} aberturas, ${metricsData.breakdown.dispatches.clicks} cliques
+` : ''}
+
+**BENCHMARKS DO MERCADO:**
+- Taxa de abertura boa: 20-25%
+- Taxa de abertura excelente: acima de 30%
+- Taxa de cliques boa: 2-5%
+
+**COMO RESPONDER:**
+- Apresente os dados de forma clara
+- Compare com benchmarks do mercado
+- Se quiser métricas de um disparo específico, peça para o usuário estar na conversa daquele disparo
+`;
+    }
   }
   
   let agentPersonality = '';
@@ -623,7 +650,7 @@ serve(async (req) => {
   }
 
   try {
-    const { messages, command } = await req.json();
+    const { messages, command, conversationId } = await req.json();
     const XAI_API_KEY = Deno.env.get('XAI_API_KEY');
     
     if (!XAI_API_KEY) {
@@ -914,85 +941,135 @@ serve(async (req) => {
       const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
       const supabase = createClient(supabaseUrl, supabaseKey);
 
-      // Get overall metrics
-      const { count: totalSent } = await supabase
-        .from('scheduled_emails')
-        .select('id', { count: 'exact', head: true })
-        .eq('status', 'sent');
+      // If we have a conversationId, get metrics SPECIFICALLY for this conversation's dispatches
+      if (conversationId) {
+        console.log('[GROK] Fetching metrics for conversation:', conversationId);
+        
+        // Get dispatch jobs for this conversation
+        const { data: dispatchJobs } = await supabase
+          .from('dispatch_jobs')
+          .select('id, type, origin_name, sub_origin_name, sent_count, failed_count, status, created_at, completed_at')
+          .eq('conversation_id', conversationId)
+          .order('created_at', { ascending: false });
 
-      const { count: uniqueOpens } = await supabase
-        .from('email_tracking_events')
-        .select('scheduled_email_id', { count: 'exact', head: true })
-        .eq('event_type', 'open');
+        if (dispatchJobs && dispatchJobs.length > 0) {
+          const jobIds = dispatchJobs.map(j => j.id);
+          
+          // Get sent_emails linked to these dispatch jobs
+          const { data: sentEmails } = await supabase
+            .from('sent_emails')
+            .select('id, subject, status')
+            .in('dispatch_job_id', jobIds);
 
-      const { count: totalClicks } = await supabase
-        .from('email_tracking_events')
-        .select('id', { count: 'exact', head: true })
-        .eq('event_type', 'click');
+          const sentEmailIds = sentEmails?.map(e => e.id) || [];
+          
+          // Get tracking events for these emails
+          let opens = 0;
+          let clicks = 0;
+          
+          if (sentEmailIds.length > 0) {
+            const { data: trackingEvents } = await supabase
+              .from('email_tracking_events')
+              .select('event_type, sent_email_id')
+              .in('sent_email_id', sentEmailIds);
 
-      // Get recent dispatches with their metrics
-      const { data: recentEmails } = await supabase
-        .from('scheduled_emails')
-        .select(`
-          id,
-          subject,
-          sent_at,
-          automation_id
-        `)
-        .eq('status', 'sent')
-        .order('sent_at', { ascending: false })
-        .limit(50);
-
-      // Aggregate by automation/subject for recent dispatches
-      const dispatchMap = new Map();
-      if (recentEmails) {
-        for (const email of recentEmails) {
-          const key = email.subject || 'Sem assunto';
-          if (!dispatchMap.has(key)) {
-            dispatchMap.set(key, { subject: key, emailIds: [], sent: 0, opens: 0, clicks: 0 });
-          }
-          dispatchMap.get(key).emailIds.push(email.id);
-          dispatchMap.get(key).sent++;
-        }
-
-        // Get tracking events for these emails
-        const allEmailIds = recentEmails.map(e => e.id);
-        const { data: trackingEvents } = await supabase
-          .from('email_tracking_events')
-          .select('scheduled_email_id, event_type')
-          .in('scheduled_email_id', allEmailIds);
-
-        if (trackingEvents) {
-          for (const event of trackingEvents) {
-            for (const [key, dispatch] of dispatchMap) {
-              if (dispatch.emailIds.includes(event.scheduled_email_id)) {
-                if (event.event_type === 'open') dispatch.opens++;
-                if (event.event_type === 'click') dispatch.clicks++;
-                break;
-              }
+            if (trackingEvents) {
+              opens = trackingEvents.filter(e => e.event_type === 'open').length;
+              clicks = trackingEvents.filter(e => e.event_type === 'click').length;
             }
           }
+
+          const totalSent = sentEmails?.filter(e => e.status === 'sent').length || 0;
+          
+          metricsData = {
+            conversationSpecific: true,
+            totalSent,
+            uniqueOpens: opens,
+            totalClicks: clicks,
+            dispatchJobs: dispatchJobs.map(j => ({
+              id: j.id,
+              origin: j.origin_name,
+              subOrigin: j.sub_origin_name,
+              sent: j.sent_count,
+              failed: j.failed_count,
+              status: j.status,
+              createdAt: j.created_at,
+              completedAt: j.completed_at
+            }))
+          };
+
+          console.log('[GROK] Conversation-specific metrics:', metricsData);
+        } else {
+          // No dispatches found for this conversation yet
+          metricsData = {
+            conversationSpecific: true,
+            totalSent: 0,
+            uniqueOpens: 0,
+            totalClicks: 0,
+            dispatchJobs: [],
+            message: 'Nenhum disparo encontrado para esta conversa ainda.'
+          };
         }
+      } else {
+        // No conversationId - get overall metrics from both tables
+        // Count from scheduled_emails (automations)
+        const { count: scheduledSent } = await supabase
+          .from('scheduled_emails')
+          .select('id', { count: 'exact', head: true })
+          .eq('status', 'sent');
+
+        // Count from sent_emails (dispatches)
+        const { count: dispatchSent } = await supabase
+          .from('sent_emails')
+          .select('id', { count: 'exact', head: true })
+          .eq('status', 'sent');
+
+        // Get tracking events counts
+        const { count: scheduledOpens } = await supabase
+          .from('email_tracking_events')
+          .select('id', { count: 'exact', head: true })
+          .eq('event_type', 'open')
+          .not('scheduled_email_id', 'is', null);
+
+        const { count: dispatchOpens } = await supabase
+          .from('email_tracking_events')
+          .select('id', { count: 'exact', head: true })
+          .eq('event_type', 'open')
+          .not('sent_email_id', 'is', null);
+
+        const { count: scheduledClicks } = await supabase
+          .from('email_tracking_events')
+          .select('id', { count: 'exact', head: true })
+          .eq('event_type', 'click')
+          .not('scheduled_email_id', 'is', null);
+
+        const { count: dispatchClicks } = await supabase
+          .from('email_tracking_events')
+          .select('id', { count: 'exact', head: true })
+          .eq('event_type', 'click')
+          .not('sent_email_id', 'is', null);
+
+        metricsData = {
+          conversationSpecific: false,
+          totalSent: (scheduledSent || 0) + (dispatchSent || 0),
+          uniqueOpens: (scheduledOpens || 0) + (dispatchOpens || 0),
+          totalClicks: (scheduledClicks || 0) + (dispatchClicks || 0),
+          breakdown: {
+            automations: {
+              sent: scheduledSent || 0,
+              opens: scheduledOpens || 0,
+              clicks: scheduledClicks || 0
+            },
+            dispatches: {
+              sent: dispatchSent || 0,
+              opens: dispatchOpens || 0,
+              clicks: dispatchClicks || 0
+            }
+          }
+        };
+
+        console.log('[GROK] Overall metrics:', metricsData);
       }
-
-      const recentDispatches = Array.from(dispatchMap.values())
-        .slice(0, 5)
-        .map(d => ({
-          subject: d.subject,
-          sent: d.sent,
-          opens: d.opens,
-          clicks: d.clicks,
-          openRate: d.sent > 0 ? ((d.opens / d.sent) * 100).toFixed(1) : '0'
-        }));
-
-      metricsData = {
-        totalSent: totalSent || 0,
-        uniqueOpens: uniqueOpens || 0,
-        totalClicks: totalClicks || 0,
-        recentDispatches
-      };
-
-      console.log('[GROK] Metrics data fetched:', metricsData);
     }
 
     const systemPrompt = getSystemPrompt(greeting, activeAgent, hasImage, isCodeRequest, isCsvRequest, isMetricsRequest, metricsData);

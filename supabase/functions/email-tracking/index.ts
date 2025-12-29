@@ -17,16 +17,16 @@ const handler = async (req: Request): Promise<Response> => {
   const pathParts = url.pathname.split("/").filter(Boolean);
   
   // Expected paths:
-  // /email-tracking/open/{scheduledEmailId}
-  // /email-tracking/click/{scheduledEmailId}?url={encodedUrl}
+  // /email-tracking/open/{emailId}
+  // /email-tracking/click/{emailId}?url={encodedUrl}
   
   const action = pathParts[1]; // "open" or "click"
-  const scheduledEmailId = pathParts[2];
+  const emailId = pathParts[2];
 
-  console.log(`[EmailTracking] Action: ${action}, EmailId: ${scheduledEmailId}`);
+  console.log(`[EmailTracking] Action: ${action}, EmailId: ${emailId}`);
 
-  if (!scheduledEmailId) {
-    console.error("[EmailTracking] Missing scheduledEmailId");
+  if (!emailId) {
+    console.error("[EmailTracking] Missing emailId");
     return new Response("Missing email ID", { status: 400 });
   }
 
@@ -38,25 +38,70 @@ const handler = async (req: Request): Promise<Response> => {
     const forwardedFor = req.headers.get("x-forwarded-for");
     const ipAddress = forwardedFor ? forwardedFor.split(",")[0].trim() : null;
 
+    // Determine which table the email belongs to
+    // First, check if it's from scheduled_emails
+    const { data: scheduledEmail } = await supabase
+      .from("scheduled_emails")
+      .select("id")
+      .eq("id", emailId)
+      .maybeSingle();
+
+    const isScheduledEmail = !!scheduledEmail;
+    
+    // If not scheduled, check sent_emails
+    let isSentEmail = false;
+    if (!isScheduledEmail) {
+      const { data: sentEmail } = await supabase
+        .from("sent_emails")
+        .select("id")
+        .eq("id", emailId)
+        .maybeSingle();
+      isSentEmail = !!sentEmail;
+    }
+
+    console.log(`[EmailTracking] Email source: ${isScheduledEmail ? 'scheduled_emails' : isSentEmail ? 'sent_emails' : 'unknown'}`);
+
     if (action === "open") {
       // Record open event (only first open per email)
-      const { data: existingOpen } = await supabase
-        .from("email_tracking_events")
-        .select("id")
-        .eq("scheduled_email_id", scheduledEmailId)
-        .eq("event_type", "open")
-        .limit(1);
+      // Check for existing open event using the appropriate column
+      let existingOpen = null;
+      
+      if (isScheduledEmail) {
+        const { data } = await supabase
+          .from("email_tracking_events")
+          .select("id")
+          .eq("scheduled_email_id", emailId)
+          .eq("event_type", "open")
+          .limit(1);
+        existingOpen = data;
+      } else if (isSentEmail) {
+        const { data } = await supabase
+          .from("email_tracking_events")
+          .select("id")
+          .eq("sent_email_id", emailId)
+          .eq("event_type", "open")
+          .limit(1);
+        existingOpen = data;
+      }
 
       if (!existingOpen || existingOpen.length === 0) {
-        await supabase.from("email_tracking_events").insert({
-          scheduled_email_id: scheduledEmailId,
+        // Insert tracking event with the appropriate column
+        const insertData: any = {
           event_type: "open",
           user_agent: userAgent,
           ip_address: ipAddress,
-        });
-        console.log(`[EmailTracking] ✅ Recorded open for ${scheduledEmailId}`);
+        };
+        
+        if (isScheduledEmail) {
+          insertData.scheduled_email_id = emailId;
+        } else if (isSentEmail) {
+          insertData.sent_email_id = emailId;
+        }
+        
+        await supabase.from("email_tracking_events").insert(insertData);
+        console.log(`[EmailTracking] ✅ Recorded open for ${emailId} (${isScheduledEmail ? 'scheduled' : 'sent'})`);
       } else {
-        console.log(`[EmailTracking] ⏭️ Open already recorded for ${scheduledEmailId}`);
+        console.log(`[EmailTracking] ⏭️ Open already recorded for ${emailId}`);
       }
 
       // Return tracking pixel
@@ -77,15 +122,22 @@ const handler = async (req: Request): Promise<Response> => {
         return new Response("Missing URL", { status: 400 });
       }
 
-      // Record click event
-      await supabase.from("email_tracking_events").insert({
-        scheduled_email_id: scheduledEmailId,
+      // Record click event with the appropriate column
+      const insertData: any = {
         event_type: "click",
         link_url: redirectUrl,
         user_agent: userAgent,
         ip_address: ipAddress,
-      });
-      console.log(`[EmailTracking] ✅ Recorded click for ${scheduledEmailId} -> ${redirectUrl}`);
+      };
+      
+      if (isScheduledEmail) {
+        insertData.scheduled_email_id = emailId;
+      } else if (isSentEmail) {
+        insertData.sent_email_id = emailId;
+      }
+      
+      await supabase.from("email_tracking_events").insert(insertData);
+      console.log(`[EmailTracking] ✅ Recorded click for ${emailId} -> ${redirectUrl}`);
 
       // Redirect to the actual URL
       return new Response(null, {

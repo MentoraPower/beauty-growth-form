@@ -456,6 +456,7 @@ export type Database = {
           ip_address: string | null
           link_url: string | null
           scheduled_email_id: string | null
+          sent_email_id: string | null
           user_agent: string | null
         }
         Insert: {
@@ -465,6 +466,7 @@ export type Database = {
           ip_address?: string | null
           link_url?: string | null
           scheduled_email_id?: string | null
+          sent_email_id?: string | null
           user_agent?: string | null
         }
         Update: {
@@ -474,6 +476,7 @@ export type Database = {
           ip_address?: string | null
           link_url?: string | null
           scheduled_email_id?: string | null
+          sent_email_id?: string | null
           user_agent?: string | null
         }
         Relationships: [
@@ -482,6 +485,13 @@ export type Database = {
             columns: ["scheduled_email_id"]
             isOneToOne: false
             referencedRelation: "scheduled_emails"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "email_tracking_events_sent_email_id_fkey"
+            columns: ["sent_email_id"]
+            isOneToOne: false
+            referencedRelation: "sent_emails"
             referencedColumns: ["id"]
           },
         ]
@@ -1494,6 +1504,7 @@ export type Database = {
         Row: {
           body_html: string
           created_at: string
+          dispatch_job_id: string | null
           error_message: string | null
           id: string
           lead_email: string
@@ -1508,6 +1519,7 @@ export type Database = {
         Insert: {
           body_html: string
           created_at?: string
+          dispatch_job_id?: string | null
           error_message?: string | null
           id?: string
           lead_email: string
@@ -1522,6 +1534,7 @@ export type Database = {
         Update: {
           body_html?: string
           created_at?: string
+          dispatch_job_id?: string | null
           error_message?: string | null
           id?: string
           lead_email?: string
@@ -1534,6 +1547,13 @@ export type Database = {
           subject?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "sent_emails_dispatch_job_id_fkey"
+            columns: ["dispatch_job_id"]
+            isOneToOne: false
+            referencedRelation: "dispatch_jobs"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "sent_emails_lead_id_fkey"
             columns: ["lead_id"]
