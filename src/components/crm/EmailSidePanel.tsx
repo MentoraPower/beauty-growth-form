@@ -30,6 +30,10 @@ interface EmailSidePanelProps {
   onViewEmail?: () => void;
   // Workflow steps for AI work visualization
   workflowSteps?: WorkStep[];
+  // Whether to show code/preview tabs (only for email visuals)
+  showCodePreview?: boolean;
+  // Title for the panel when showing workflow/copy
+  panelTitle?: string;
 }
 
 // Syntax highlighting for HTML with dark purple for strings
@@ -138,7 +142,9 @@ export function EmailSidePanel({
   dispatchData = null,
   onNewDispatch,
   onViewEmail,
-  workflowSteps = []
+  workflowSteps = [],
+  showCodePreview = true,
+  panelTitle
 }: EmailSidePanelProps) {
   const [activeTab, setActiveTab] = useState<'code' | 'preview'>('preview');
   const [copied, setCopied] = useState(false);
@@ -416,145 +422,180 @@ export function EmailSidePanel({
       {/* Workflow Steps - shown when there are steps */}
       {workflowSteps && workflowSteps.length > 0 && (
         <div className="px-6 py-5 border-b border-border">
+          {panelTitle && (
+            <h3 className="text-sm font-medium text-foreground mb-3">{panelTitle}</h3>
+          )}
           <AIWorkDetails steps={workflowSteps} />
         </div>
       )}
       
-      {/* Subject Header */}
-      <div className="px-5 py-3 border-b border-border bg-muted/30">
-        <label className="text-xs text-muted-foreground font-medium mb-1.5 block">Assunto</label>
-        <input
-          type="text"
-          value={subject}
-          onChange={(e) => onSubjectChange?.(e.target.value)}
-          placeholder={isGenerating ? "Gerando assunto..." : "Digite o assunto do email..."}
-          className={cn(
-            "w-full bg-transparent text-sm font-medium text-foreground placeholder:text-muted-foreground focus:outline-none",
-            isGenerating && "animate-pulse"
-          )}
-        />
-      </div>
+      {/* Subject Header - only show when we have code/preview tabs */}
+      {showCodePreview && (
+        <div className="px-5 py-3 border-b border-border bg-muted/30">
+          <label className="text-xs text-muted-foreground font-medium mb-1.5 block">Assunto</label>
+          <input
+            type="text"
+            value={subject}
+            onChange={(e) => onSubjectChange?.(e.target.value)}
+            placeholder={isGenerating ? "Gerando assunto..." : "Digite o assunto do email..."}
+            className={cn(
+              "w-full bg-transparent text-sm font-medium text-foreground placeholder:text-muted-foreground focus:outline-none",
+              isGenerating && "animate-pulse"
+            )}
+          />
+        </div>
+      )}
 
-      {/* Tabs */}
-      <div className="flex items-center justify-between px-5 py-3 border-b border-border bg-muted/20">
-        <div className="flex items-center gap-1 bg-muted/50 rounded-lg p-1">
+      {/* Tabs - only show when showCodePreview is true */}
+      {showCodePreview && (
+        <div className="flex items-center justify-between px-5 py-3 border-b border-border bg-muted/20">
+          <div className="flex items-center gap-1 bg-muted/50 rounded-lg p-1">
+            <button
+              onClick={() => setActiveTab('preview')}
+              className={cn(
+                "flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-colors",
+                activeTab === 'preview'
+                  ? "bg-background text-foreground shadow-sm"
+                  : "text-muted-foreground hover:text-foreground"
+              )}
+            >
+              <Eye className="w-4 h-4" />
+              Preview
+            </button>
+            <button
+              onClick={() => setActiveTab('code')}
+              className={cn(
+                "flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-colors",
+                activeTab === 'code'
+                  ? "bg-background text-foreground shadow-sm"
+                  : "text-muted-foreground hover:text-foreground"
+              )}
+            >
+              <Code2 className="w-4 h-4" />
+              Código
+            </button>
+          </div>
+          
           <button
-            onClick={() => setActiveTab('preview')}
-            className={cn(
-              "flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-colors",
-              activeTab === 'preview'
-                ? "bg-background text-foreground shadow-sm"
-                : "text-muted-foreground hover:text-foreground"
-            )}
+            onClick={handleCopy}
+            disabled={!htmlContent}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
           >
-            <Eye className="w-4 h-4" />
-            Preview
-          </button>
-          <button
-            onClick={() => setActiveTab('code')}
-            className={cn(
-              "flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-colors",
-              activeTab === 'code'
-                ? "bg-background text-foreground shadow-sm"
-                : "text-muted-foreground hover:text-foreground"
-            )}
-          >
-            <Code2 className="w-4 h-4" />
-            Código
+            {copied ? <Check className="w-4 h-4 text-green-500" /> : <Copy className="w-4 h-4" />}
+            {copied ? "Copiado" : "Copiar"}
           </button>
         </div>
-        
-        <button
-          onClick={handleCopy}
-          disabled={!htmlContent}
-          className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
-        >
-          {copied ? <Check className="w-4 h-4 text-green-500" /> : <Copy className="w-4 h-4" />}
-          {copied ? "Copiado" : "Copiar"}
-        </button>
-      </div>
+      )}
 
       {/* Content */}
       <div className="flex-1 overflow-hidden relative">
-        {activeTab === 'code' ? (
-          <div className="relative h-full w-full overflow-hidden">
-            {/* Editing indicator overlay */}
-            {editingIndicator && (
-              <div className="absolute top-2 left-1/2 -translate-x-1/2 z-20 flex items-center gap-2 bg-primary/90 text-primary-foreground px-4 py-2 rounded-full shadow-lg animate-fade-in">
-                <div className="w-2 h-2 bg-primary-foreground rounded-full animate-pulse" />
-                <span className="text-xs font-medium">
-                  Linha {editingIndicator.line}: {editingIndicator.action}
-                </span>
-              </div>
-            )}
-
-            {/* Highlighted code display */}
-            <pre
-              ref={preRef}
-              className="absolute inset-0 p-5 font-mono text-xs leading-relaxed pointer-events-none overflow-y-auto overflow-x-hidden whitespace-pre-wrap break-all [word-break:break-all] [overflow-wrap:anywhere]"
-              aria-hidden="true"
-            >
-              {displayedContent ? (
-                <>
-                  {highlightHtml(displayedContent, highlightRange)}
-                  {(isGenerating || isEditing) && (
-                    <span className="inline-block w-2 h-4 bg-primary animate-pulse ml-0.5 align-middle" />
-                  )}
-                </>
-              ) : (
-                <span className="text-muted-foreground">
-                  {isGenerating ? "Gerando HTML..." : "O HTML do email aparecerá aqui..."}
-                </span>
+        {showCodePreview ? (
+          // Code/Preview mode with tabs
+          activeTab === 'code' ? (
+            <div className="relative h-full w-full overflow-hidden">
+              {/* Editing indicator overlay */}
+              {editingIndicator && (
+                <div className="absolute top-2 left-1/2 -translate-x-1/2 z-20 flex items-center gap-2 bg-primary/90 text-primary-foreground px-4 py-2 rounded-full shadow-lg animate-fade-in">
+                  <div className="w-2 h-2 bg-primary-foreground rounded-full animate-pulse" />
+                  <span className="text-xs font-medium">
+                    Linha {editingIndicator.line}: {editingIndicator.action}
+                  </span>
+                </div>
               )}
-            </pre>
-            
-            {/* Actual textarea */}
-            <textarea
-              ref={textareaRef}
-              value={htmlContent}
-              onChange={(e) => onHtmlChange(e.target.value)}
-              onScroll={handleScroll}
-              className="absolute inset-0 w-full h-full p-5 font-mono text-xs leading-relaxed bg-transparent text-transparent caret-foreground resize-none focus:outline-none overflow-y-auto overflow-x-hidden whitespace-pre-wrap break-all [word-break:break-all] [overflow-wrap:anywhere]"
-              spellCheck={false}
-              placeholder=""
-            />
-            
-          </div>
-        ) : (
-          <div className="h-full overflow-auto bg-white">
-            {showPreviewLoading ? (
-              // Skeleton loading state
-              <div className="p-6 space-y-4 animate-pulse">
-                <div className="text-center mb-6">
-                  <div className="inline-flex items-center gap-2 text-muted-foreground text-sm">
-                    <div className="w-2 h-2 bg-primary rounded-full animate-pulse" />
-                    Carregando preview...
+
+              {/* Highlighted code display */}
+              <pre
+                ref={preRef}
+                className="absolute inset-0 p-5 font-mono text-xs leading-relaxed pointer-events-none overflow-y-auto overflow-x-hidden whitespace-pre-wrap break-all [word-break:break-all] [overflow-wrap:anywhere]"
+                aria-hidden="true"
+              >
+                {displayedContent ? (
+                  <>
+                    {highlightHtml(displayedContent, highlightRange)}
+                    {(isGenerating || isEditing) && (
+                      <span className="inline-block w-2 h-4 bg-primary animate-pulse ml-0.5 align-middle" />
+                    )}
+                  </>
+                ) : (
+                  <span className="text-muted-foreground">
+                    {isGenerating ? "Gerando HTML..." : "O HTML do email aparecerá aqui..."}
+                  </span>
+                )}
+              </pre>
+              
+              {/* Actual textarea */}
+              <textarea
+                ref={textareaRef}
+                value={htmlContent}
+                onChange={(e) => onHtmlChange(e.target.value)}
+                onScroll={handleScroll}
+                className="absolute inset-0 w-full h-full p-5 font-mono text-xs leading-relaxed bg-transparent text-transparent caret-foreground resize-none focus:outline-none overflow-y-auto overflow-x-hidden whitespace-pre-wrap break-all [word-break:break-all] [overflow-wrap:anywhere]"
+                spellCheck={false}
+                placeholder=""
+              />
+              
+            </div>
+          ) : (
+            <div className="h-full overflow-auto bg-white">
+              {showPreviewLoading ? (
+                // Skeleton loading state
+                <div className="p-6 space-y-4 animate-pulse">
+                  <div className="text-center mb-6">
+                    <div className="inline-flex items-center gap-2 text-muted-foreground text-sm">
+                      <div className="w-2 h-2 bg-primary rounded-full animate-pulse" />
+                      Carregando preview...
+                    </div>
+                  </div>
+                  {/* Header skeleton */}
+                  <div className="h-8 bg-muted rounded-md w-3/4 mx-auto" />
+                  <div className="h-4 bg-muted rounded w-1/2 mx-auto" />
+                  {/* Body skeleton */}
+                  <div className="space-y-3 mt-8">
+                    <div className="h-4 bg-muted rounded w-full" />
+                    <div className="h-4 bg-muted rounded w-5/6" />
+                    <div className="h-4 bg-muted rounded w-4/5" />
+                    <div className="h-4 bg-muted rounded w-full" />
+                    <div className="h-4 bg-muted rounded w-3/4" />
+                  </div>
+                  {/* Button skeleton */}
+                  <div className="flex justify-center mt-8">
+                    <div className="h-12 bg-muted rounded-lg w-48" />
+                  </div>
+                  {/* Footer skeleton */}
+                  <div className="mt-8 pt-4 border-t border-muted">
+                    <div className="h-3 bg-muted rounded w-1/3 mx-auto" />
                   </div>
                 </div>
-                {/* Header skeleton */}
-                <div className="h-8 bg-muted rounded-md w-3/4 mx-auto" />
-                <div className="h-4 bg-muted rounded w-1/2 mx-auto" />
-                {/* Body skeleton */}
-                <div className="space-y-3 mt-8">
-                  <div className="h-4 bg-muted rounded w-full" />
-                  <div className="h-4 bg-muted rounded w-5/6" />
-                  <div className="h-4 bg-muted rounded w-4/5" />
-                  <div className="h-4 bg-muted rounded w-full" />
-                  <div className="h-4 bg-muted rounded w-3/4" />
+              ) : htmlContent ? (
+                <div
+                  ref={previewRef}
+                  className="p-6 min-h-full focus:outline-none focus:ring-2 focus:ring-primary/20 focus:ring-inset cursor-text break-all [word-break:break-all] [overflow-wrap:anywhere]"
+                  contentEditable={!isGenerating && !isEditing}
+                  suppressContentEditableWarning
+                  onBlur={handlePreviewBlur}
+                  dangerouslySetInnerHTML={{ __html: getSanitizedHtml() }}
+                />
+              ) : (
+                <div className="flex items-center justify-center h-full text-muted-foreground text-sm">
+                  {isGenerating ? (
+                    <div className="flex items-center gap-2">
+                      <div className="w-2 h-2 bg-primary rounded-full animate-pulse" />
+                      <span>Gerando preview...</span>
+                    </div>
+                  ) : (
+                    "O preview do email aparecerá aqui"
+                  )}
                 </div>
-                {/* Button skeleton */}
-                <div className="flex justify-center mt-8">
-                  <div className="h-12 bg-muted rounded-lg w-48" />
-                </div>
-                {/* Footer skeleton */}
-                <div className="mt-8 pt-4 border-t border-muted">
-                  <div className="h-3 bg-muted rounded w-1/3 mx-auto" />
-                </div>
-              </div>
-            ) : htmlContent ? (
+              )}
+            </div>
+          )
+        ) : (
+          // Text-only mode (for copy/content without code preview)
+          <div className="h-full overflow-auto bg-white">
+            {htmlContent ? (
               <div
                 ref={previewRef}
-                className="p-6 min-h-full focus:outline-none focus:ring-2 focus:ring-primary/20 focus:ring-inset cursor-text break-all [word-break:break-all] [overflow-wrap:anywhere]"
+                className="p-6 min-h-full focus:outline-none focus:ring-2 focus:ring-primary/20 focus:ring-inset break-all [word-break:break-all] [overflow-wrap:anywhere] text-sm text-foreground leading-relaxed"
                 contentEditable={!isGenerating && !isEditing}
                 suppressContentEditableWarning
                 onBlur={handlePreviewBlur}
@@ -565,10 +606,10 @@ export function EmailSidePanel({
                 {isGenerating ? (
                   <div className="flex items-center gap-2">
                     <div className="w-2 h-2 bg-primary rounded-full animate-pulse" />
-                    <span>Gerando preview...</span>
+                    <span>Gerando conteúdo...</span>
                   </div>
                 ) : (
-                  "O preview do email aparecerá aqui"
+                  "O conteúdo aparecerá aqui"
                 )}
               </div>
             )}
@@ -576,12 +617,14 @@ export function EmailSidePanel({
         )}
       </div>
 
-      {/* Footer hint */}
-      <div className="px-5 py-3 border-t border-border bg-muted/20">
-        <p className="text-xs text-muted-foreground text-center">
-          {activeTab === 'preview' ? 'Clique no texto para editar diretamente' : 'Edite o código HTML diretamente'}
-        </p>
-      </div>
+      {/* Footer hint - only show when code preview is enabled */}
+      {showCodePreview && (
+        <div className="px-5 py-3 border-t border-border bg-muted/20">
+          <p className="text-xs text-muted-foreground text-center">
+            {activeTab === 'preview' ? 'Clique no texto para editar diretamente' : 'Edite o código HTML diretamente'}
+          </p>
+        </div>
+      )}
     </div>
   );
 }

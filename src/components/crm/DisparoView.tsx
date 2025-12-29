@@ -173,6 +173,8 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
   const [sidePanelMode, setSidePanelMode] = useState<SidePanelMode>('email'); // Mode: email or dispatch_details
   const [sidePanelDispatchData, setSidePanelDispatchData] = useState<DispatchData | null>(null); // Dispatch data for details view
   const [sidePanelWorkflowSteps, setSidePanelWorkflowSteps] = useState<WorkStep[]>([]); // Workflow steps for AI visualization
+  const [sidePanelShowCodePreview, setSidePanelShowCodePreview] = useState(true); // Whether to show code/preview tabs
+  const [sidePanelTitle, setSidePanelTitle] = useState<string | undefined>(undefined); // Panel title
   const [htmlSource, setHtmlSource] = useState<'ai' | 'user' | null>(null); // Track who created the HTML
   const [actionHistory, setActionHistory] = useState<ActionEntry[]>([]); // Complete action history for AI memory
   
@@ -1844,6 +1846,24 @@ INSTRUÇÕES PARA VOCÊ (A IA):
       let lastUpdateTime = 0;
       const UPDATE_INTERVAL = 50; // Update UI every 50ms max
 
+      // Check if copywriting mode to show panel during streaming
+      const isCopywritingMode = messageContent.includes('[CONTEXT:copywriting]');
+      
+      // If copywriting mode, open side panel immediately with "thinking" state
+      if (isCopywritingMode) {
+        setSidePanelOpen(true);
+        setSidePanelMode('email');
+        setSidePanelHtml('');
+        setSidePanelShowCodePreview(false);
+        setSidePanelTitle('Gerando copy...');
+        setSidePanelGenerating(true);
+        setSidePanelWorkflowSteps([
+          createCustomStep('analysis', 'Analisando contexto', 'in_progress', { icon: 'search' }),
+          createCustomStep('generation', 'Geração da copy', 'pending', { icon: 'sparkles' }),
+          createCustomStep('review', 'Revisão', 'pending', { icon: 'edit' }),
+        ]);
+      }
+
       // Create initial assistant message
       setMessages(prev => [...prev, {
         id: assistantMessageId,
@@ -1852,6 +1872,9 @@ INSTRUÇÕES PARA VOCÊ (A IA):
         timestamp: new Date(),
       }]);
 
+      // Track if we've started receiving content (for workflow updates)
+      let hasStartedContent = false;
+      
       // Throttled update function
       const flushContentToUI = () => {
         pendingUpdate = false;
@@ -1862,6 +1885,16 @@ INSTRUÇÕES PARA VOCÊ (A IA):
               : m
           )
         );
+        
+        // Update workflow to "generating" once we start receiving content
+        if (isCopywritingMode && assistantContent.length > 20 && !hasStartedContent) {
+          hasStartedContent = true;
+          setSidePanelWorkflowSteps([
+            createCustomStep('analysis', 'Contexto analisado', 'completed', { icon: 'search' }),
+            createCustomStep('generation', 'Gerando copy...', 'in_progress', { icon: 'sparkles' }),
+            createCustomStep('review', 'Revisão', 'pending', { icon: 'edit' }),
+          ]);
+        }
       };
 
       const scheduleUpdate = () => {
@@ -1946,34 +1979,58 @@ INSTRUÇÕES PARA VOCÊ (A IA):
         // Check if the original message was from copywriting agent
         const isCopywritingMode = messageContent.includes('[CONTEXT:copywriting]');
         
-        // If copywriting mode and we have substantial content, show in side panel
-        if (isCopywritingMode && cleanContent.length > 50) {
-          // Open side panel with the generated copy
-          setSidePanelHtml(`<div style="font-family: Arial, sans-serif; padding: 20px; line-height: 1.6; white-space: pre-wrap;">${cleanContent.replace(/\n/g, '<br>')}</div>`);
-          setSidePanelSubject('Copy gerada');
+        // Check if content is large (important copy, emails, etc.)
+        const isLargeContent = cleanContent.length > 300;
+        
+        // If copywriting mode OR large content, show in side panel (not in chat)
+        if ((isCopywritingMode || isLargeContent) && cleanContent.length > 50) {
+          // Detect if it's HTML email content
+          const isHtmlContent = cleanContent.includes('<') && cleanContent.includes('>') && 
+            (cleanContent.includes('<html') || cleanContent.includes('<body') || 
+             cleanContent.includes('<div') || cleanContent.includes('<p') || 
+             cleanContent.includes('<h1') || cleanContent.includes('<table'));
+          
+          // Open side panel with the generated content
+          if (isHtmlContent) {
+            // HTML email - show with code/preview tabs
+            setSidePanelHtml(cleanContent);
+            setSidePanelShowCodePreview(true);
+            setSidePanelTitle(undefined);
+          } else {
+            // Plain copy - show without code/preview tabs
+            setSidePanelHtml(`<div style="font-family: Arial, sans-serif; padding: 20px; line-height: 1.8; white-space: pre-wrap; font-size: 14px;">${cleanContent.replace(/\n/g, '<br>')}</div>`);
+            setSidePanelShowCodePreview(false);
+            setSidePanelTitle('Copy gerada');
+          }
+          
+          setSidePanelSubject(isHtmlContent ? 'Email' : 'Copy');
           setSidePanelOpen(true);
           setSidePanelMode('email');
           
-          // Update workflow steps to show copy generation
+          // Update workflow steps to show generation complete
           setSidePanelWorkflowSteps([
-            createCustomStep('copy_analysis', 'Leitura e análise dos leads', 'completed', { icon: 'file' }),
-            createCustomStep('copy_generation', 'Geração do email HTML', 'completed', { icon: 'sparkles' }),
-            createCustomStep('dispatch', 'Envio do disparo', 'pending', { icon: 'send' }),
+            createCustomStep('analysis', 'Análise do contexto', 'completed', { icon: 'file' }),
+            createCustomStep('generation', isCopywritingMode ? 'Geração da copy' : 'Geração do conteúdo', 'completed', { icon: 'sparkles' }),
+            createCustomStep('review', 'Pronto para revisão', 'in_progress', { icon: 'edit' }),
           ]);
           
-          // Show a brief message in chat, the full copy is in the panel
+          // Show a brief message in chat, the full content is in the panel
           setMessages(prev => 
             prev.map(m => 
               m.id === assistantMessageId 
                 ? { 
                     ...m, 
-                    content: 'Copy gerada com sucesso! Você pode visualizar e editar na lateral.',
+                    content: isCopywritingMode 
+                      ? 'Copy pronta! Visualize e edite na lateral.' 
+                      : 'Conteúdo gerado! Visualize na lateral.',
                     componentData: { type: 'email_generator_streaming' as const, data: { isComplete: true } }
                   }
                 : m
             )
           );
           
+          // Turn off generating state
+          setSidePanelGenerating(false);
           setIsLoading(false);
           return;
         }
@@ -2243,6 +2300,8 @@ INSTRUÇÕES PARA VOCÊ (A IA):
               mode={sidePanelMode}
               dispatchData={sidePanelDispatchData}
               workflowSteps={sidePanelWorkflowSteps}
+              showCodePreview={sidePanelShowCodePreview}
+              panelTitle={sidePanelTitle}
               onNewDispatch={() => {
                 // Reset side panel to email mode and clear dispatch data
                 setSidePanelMode('email');
@@ -2251,6 +2310,8 @@ INSTRUÇÕES PARA VOCÊ (A IA):
                 setSidePanelHtml('');
                 setSidePanelSubject('');
                 setSidePanelOpen(false);
+                setSidePanelShowCodePreview(true);
+                setSidePanelTitle(undefined);
               }}
               onViewEmail={() => {
                 // Switch back to email view mode
