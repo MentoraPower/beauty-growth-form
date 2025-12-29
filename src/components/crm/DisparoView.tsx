@@ -2143,9 +2143,15 @@ INSTRUÇÕES PARA VOCÊ (A IA):
         
         // For HTML content - show in panel
         if (isHtmlContent) {
-          setSidePanelHtml(cleanContent);
+          // Extract subject from HTML if present
+          const { subject: extractedSubject, html: extractedHtml } = extractSubjectAndHtml(cleanContent);
+          
+          setSidePanelHtml(extractedHtml || cleanContent);
           setSidePanelShowCodePreview(true);
-          setSidePanelSubject('');
+          // Preserve existing subject if we have one, otherwise use extracted
+          if (extractedSubject) {
+            setSidePanelSubject(extractedSubject);
+          }
           setSidePanelOpen(cleanContent.length >= OPEN_PANEL_THRESHOLD);
           setSidePanelMode('email');
           
