@@ -14,7 +14,7 @@ import { EmailChatCard } from "./EmailChatCard";
 import { CsvChatCard } from "./CsvChatCard";
 import { AIWorkDetails, WorkStep, WorkSubItem, createLeadsAnalysisStep, createEmailGenerationStep, createDispatchStep, createCustomStep } from "./AIWorkDetails";
 import { supabase } from "@/integrations/supabase/client";
-import { Clipboard, Check, ExternalLink } from "lucide-react";
+import { Check, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import disparoLogo from "@/assets/disparo-logo.png";
 
@@ -147,10 +147,6 @@ const parseCSVAdvanced = (content: string): CsvParseResult => {
   };
 };
 
-// Keep old function for backwards compatibility
-const parseCSV = (content: string): CsvLead[] => {
-  return parseCSVAdvanced(content).leads;
-};
 
 // Extract subject and HTML from AI response
 const extractSubjectAndHtml = (content: string): { subject: string; html: string } => {
@@ -465,14 +461,10 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
           </div>
         );
       }
-      case 'copy_choice': {
-        // Questions are now plain text, no component needed
+      case 'copy_choice':
+      case 'copy_input':
+        // Legacy cases - questions now handled as plain text
         return null;
-      }
-      case 'copy_input': {
-        // User now sends copy directly in chat, no component needed
-        return null;
-      }
       case 'email_generator_streaming': {
         const { subOriginId, dispatchType, copyText, companyName, productService } = (componentData.data || {}) as any;
         if (!subOriginId || !dispatchType) return null;
@@ -3421,79 +3413,6 @@ function LeadsPreviewComponent({ preview }: { preview: LeadsPreview }) {
   );
 }
 
-// Component to display CSV leads preview
-function CsvLeadsPreviewComponent({ leads, type }: { leads: CsvLead[]; type: 'email' | 'whatsapp' }) {
-  const validLeads = leads.filter(l => 
-    type === 'email' ? l.email && l.email.includes('@') : l.whatsapp && l.whatsapp.length >= 8
-  );
-  const invalidLeads = leads.length - validLeads.length;
-  const intervalSeconds = 5;
-  const estimatedMinutes = Math.ceil((validLeads.length * intervalSeconds) / 60);
-
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      className="bg-card border border-border rounded-xl p-4 my-4"
-    >
-      <h3 className="font-medium text-foreground mb-3">
-        📄 Preview do Arquivo CSV
-      </h3>
-      
-      <div className="grid grid-cols-2 gap-4 mb-4">
-        <div className="bg-muted/50 rounded-lg p-3 text-center">
-          <div className="text-2xl font-bold text-foreground">{leads.length}</div>
-          <div className="text-xs text-muted-foreground">Total de leads</div>
-        </div>
-        <div className="bg-muted/50 rounded-lg p-3 text-center">
-          <div className="text-2xl font-bold text-green-500">{validLeads.length}</div>
-          <div className="text-xs text-muted-foreground">Leads válidos</div>
-        </div>
-      </div>
-
-      {invalidLeads > 0 && (
-        <div className="text-sm text-yellow-600 mb-3">
-          ⚠️ {invalidLeads} leads sem {type === 'email' ? 'email válido' : 'WhatsApp válido'}
-        </div>
-      )}
-
-      <div className="space-y-2 text-sm mb-4">
-        <div className="flex justify-between">
-          <span className="text-muted-foreground">Fonte:</span>
-          <span className="text-foreground">Arquivo CSV</span>
-        </div>
-        <div className="flex justify-between">
-          <span className="text-muted-foreground">Intervalo:</span>
-          <span className="text-foreground">{intervalSeconds}s entre envios</span>
-        </div>
-        <div className="flex justify-between">
-          <span className="text-muted-foreground">Tempo estimado:</span>
-          <span className="text-foreground">~{estimatedMinutes} minutos</span>
-        </div>
-      </div>
-
-      {validLeads.length > 0 && (
-        <div className="border-t border-border pt-3">
-          <div className="text-xs text-muted-foreground mb-2">Primeiros leads:</div>
-          <div className="space-y-1">
-            {validLeads.slice(0, 5).map((lead, i) => (
-              <div key={i} className="text-sm text-foreground flex justify-between">
-                <span>{lead.name}</span>
-                <span className="text-muted-foreground text-xs">
-                  {type === 'email' ? lead.email : lead.whatsapp}
-                </span>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      <p className="text-xs text-muted-foreground mt-3">
-        Confirme para iniciar o disparo
-      </p>
-    </motion.div>
-  );
-}
 
 // Compact feedback button with modern icons
 function FeedbackButton({ 
@@ -3858,148 +3777,6 @@ function CopyToHtmlGenerator({
       onHtmlChange={setGeneratedHtml}
       onUse={handleUseEmail}
     />
-  );
-}
-
-// Component for AI email generation with streaming - simplified version
-function EmailGeneratorComponent({ 
-  onGenerated 
-}: { 
-  onGenerated: (html: string) => void;
-}) {
-  const [description, setDescription] = useState('');
-  const [isGenerating, setIsGenerating] = useState(false);
-  const [generatedHtml, setGeneratedHtml] = useState('');
-  const [showPreview, setShowPreview] = useState(false);
-
-  const GENERATE_EMAIL_URL = `https://ytdfwkchsumgdvcroaqg.supabase.co/functions/v1/generate-email`;
-
-  const handleGenerate = async () => {
-    if (!description.trim()) {
-      toast.error("Por favor, descreva o seu serviço/produto ou ideia");
-      return;
-    }
-
-    setIsGenerating(true);
-    setGeneratedHtml('');
-    setShowPreview(true);
-
-    try {
-      const response = await fetch(GENERATE_EMAIL_URL, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          objective: description,
-          tone: 'profissional',
-          companyName: '',
-          productService: '',
-          additionalInfo: ''
-        }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error || "Erro ao gerar email");
-      }
-
-      if (!response.body) throw new Error("No response body");
-
-      const reader = response.body.getReader();
-      const decoder = new TextDecoder();
-      let buffer = "";
-      let fullContent = "";
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-
-        buffer += decoder.decode(value, { stream: true });
-
-        let newlineIndex: number;
-        while ((newlineIndex = buffer.indexOf("\n")) !== -1) {
-          let line = buffer.slice(0, newlineIndex);
-          buffer = buffer.slice(newlineIndex + 1);
-
-          if (line.endsWith("\r")) line = line.slice(0, -1);
-          if (line.startsWith(":") || line.trim() === "") continue;
-          if (!line.startsWith("data: ")) continue;
-
-          const jsonStr = line.slice(6).trim();
-          if (jsonStr === "[DONE]") break;
-
-          try {
-            const parsed = JSON.parse(jsonStr);
-            const content = parsed.choices?.[0]?.delta?.content as string | undefined;
-            if (content) {
-              fullContent += content;
-              setGeneratedHtml(fullContent);
-            }
-          } catch {
-            // Incomplete JSON, continue
-          }
-        }
-      }
-
-      // Clean up the HTML (remove markdown code blocks if present)
-      let cleanHtml = fullContent
-        .replace(/^```html\n?/i, '')
-        .replace(/^```\n?/, '')
-        .replace(/\n?```$/i, '')
-        .trim();
-
-      setGeneratedHtml(cleanHtml);
-      toast.success("Email gerado com sucesso!");
-
-    } catch (error) {
-      console.error("Error generating email:", error);
-      toast.error(error instanceof Error ? error.message : "Erro ao gerar email");
-    } finally {
-      setIsGenerating(false);
-    }
-  };
-
-  const handleUseEmail = () => {
-    if (generatedHtml.trim()) {
-      onGenerated(generatedHtml);
-    }
-  };
-
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      className="w-full space-y-4"
-    >
-      {!showPreview ? (
-        <div className="space-y-3">
-          <textarea
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            placeholder="Descreva seu serviço, produto ou a ideia do email..."
-            className="w-full min-h-[100px] p-3 rounded-lg border border-border/40 bg-background text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 resize-none"
-          />
-          <button
-            onClick={handleGenerate}
-            disabled={!description.trim() || isGenerating}
-            className={cn(
-              "w-full px-5 py-2.5 rounded-lg text-sm font-medium transition-all",
-              "bg-foreground text-background hover:bg-foreground/90",
-              "disabled:opacity-50 disabled:cursor-not-allowed"
-            )}
-          >
-            Gerar Email
-          </button>
-        </div>
-      ) : (
-        <EmailEditorWithTabs
-          html={generatedHtml}
-          isGenerating={isGenerating}
-          onHtmlChange={setGeneratedHtml}
-          onRegenerate={() => setShowPreview(false)}
-          onUse={handleUseEmail}
-        />
-      )}
-    </motion.div>
   );
 }
 
