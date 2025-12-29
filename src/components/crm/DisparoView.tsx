@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams, useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { PromptInputBox } from "@/components/ui/ai-prompt-box";
 import { motion, AnimatePresence } from "framer-motion";
@@ -123,10 +123,12 @@ const extractSubjectAndHtml = (content: string): { subject: string; html: string
   return { subject, html };
 };
 
-// Remove agent/context prefixes from message content
+// Remove agent/context prefixes from message content - removes ALL occurrences
 const removeAgentPrefix = (content: string): string => {
-  // Remove prefixes like [Agente:Copywriting], [CONTEXT:...], [Search], etc.
-  return content.replace(/^\[(Agente:[^\]]+|CONTEXT:[^\]]+|Search)\]\s*/i, '');
+  // Remove prefixes like [Agente:Copywriting], [CONTEXT:...], [Search], etc. - globally
+  return content
+    .replace(/\[(Agente:[^\]]+|CONTEXT:[^\]]+|Search)\]\s*/gi, '')
+    .trim();
 };
 
 // Parse markdown-like formatting: **bold** and _italic_
@@ -152,6 +154,7 @@ const formatMessageContent = (content: string): React.ReactNode => {
 
 export function DisparoView({ subOriginId }: DisparoViewProps) {
   const [searchParams, setSearchParams] = useSearchParams();
+  const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [activeJobId, setActiveJobId] = useState<string | null>(null);
@@ -2418,10 +2421,11 @@ INSTRUÇÕES PARA VOCÊ (A IA):
     setPendingEmailContext(null);
     setPendingQuestion(null);
     setCsvPanelOpen(false);
+    setInitialLoadDone(true);
     
-    // Clear URL param
-    setSearchParams({}, { replace: true });
-  }, [setSearchParams]);
+    // Navigate to disparo without conversation param - use navigate for reliable navigation
+    navigate('/admin/disparo', { replace: true });
+  }, [navigate]);
 
   // Handle conversation created (auto-save)
   const handleConversationCreated = useCallback((id: string) => {
