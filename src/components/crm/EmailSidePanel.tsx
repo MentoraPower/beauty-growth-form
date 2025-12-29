@@ -439,7 +439,7 @@ export function EmailSidePanel({
   }
 
   return (
-    <div className="w-[640px] flex-shrink-0 bg-background flex flex-col my-6 mr-6 rounded-3xl border border-border overflow-hidden shadow-sm">
+    <div className="w-[640px] h-full flex-shrink-0 bg-background flex flex-col my-6 mr-6 rounded-3xl border border-border overflow-hidden shadow-sm">
       {/* Panel Title - shown when panelTitle is provided and no code preview */}
       {panelTitle && !showCodePreview && (
         <div className="px-6 pt-6 pb-2">
