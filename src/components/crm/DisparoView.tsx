@@ -2046,7 +2046,7 @@ INSTRUÇÕES PARA VOCÊ (A IA):
             <div 
               ref={chatScrollRef} 
               onScroll={handleChatScroll} 
-              className="flex-1 overflow-y-auto min-h-0 p-6 overscroll-contain [&::-webkit-scrollbar]:w-[3px] [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-foreground/10 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:min-h-[30px] [&::-webkit-scrollbar-thumb]:max-h-[50px]"
+              className="flex-1 overflow-y-auto min-h-0 p-6 overscroll-contain [&::-webkit-scrollbar]:w-[2px] [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-foreground/8 [&::-webkit-scrollbar-thumb]:rounded-full"
               style={{ 
                 scrollBehavior: 'auto',
                 WebkitOverflowScrolling: 'touch',
