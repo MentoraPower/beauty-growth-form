@@ -408,15 +408,33 @@ serve(async (req) => {
     if (processedCount >= validLeads.length) {
       console.log(`[DISPATCH-BATCH] Job ${jobId} is complete: ${currentSent} sent, ${currentFailed} failed`);
       
+      const csvListToDelete = isCsvDispatch ? job.csv_list_id : null;
+
       await supabase
         .from('dispatch_jobs')
         .update({ 
           status: 'completed',
           completed_at: new Date().toISOString(),
           current_lead_name: null,
-          updated_at: new Date().toISOString()
+          updated_at: new Date().toISOString(),
+          // CSV requirement: after finishing, detach list so we can delete it
+          ...(csvListToDelete ? { csv_list_id: null } : {})
         })
         .eq('id', jobId);
+
+      // CSV requirement: delete the list (recipients cascade) after completion
+      if (csvListToDelete) {
+        const { error: deleteListError } = await supabase
+          .from('dispatch_csv_lists')
+          .delete()
+          .eq('id', csvListToDelete);
+
+        if (deleteListError) {
+          console.error('[DISPATCH-BATCH] Failed to delete CSV list after completion:', deleteListError);
+        } else {
+          console.log('[DISPATCH-BATCH] 🧹 Deleted CSV list after completion:', csvListToDelete);
+        }
+      }
 
       return new Response(JSON.stringify({ 
         message: 'Job completed',

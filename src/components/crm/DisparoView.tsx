@@ -657,8 +657,14 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
           if (isNewFormat && rawData.htmlSource) {
             setHtmlSource(rawData.htmlSource);
           }
-          
-          setInitialLoadDone(true);
+
+          // Restore CSV state if available
+          if (isNewFormat && rawData.csvState) {
+            const cs = rawData.csvState as any;
+            if (cs.csvListId !== undefined) setCsvListId(cs.csvListId || null);
+            if (cs.csvFileName) setCsvFileName(cs.csvFileName);
+            if (cs.csvMappedColumns) setCsvMappedColumns(cs.csvMappedColumns);
+          }
         } catch (error) {
           console.error("Error loading conversation from URL:", error);
           // Remove invalid conv param
@@ -693,6 +699,11 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
       setMessages([]);
       messagesRef.current = [];
       setCsvLeads(null);
+      setCsvListId(null);
+      setCsvFileName('lista.csv');
+      setCsvRawData([]);
+      setCsvHeaders([]);
+      setCsvMappedColumns({});
       setPendingEmailContext(null);
       setSidePanelOpen(false);
       setSidePanelHtml('');
@@ -702,8 +713,6 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
       setSelectedOriginData(null);
       setDispatchType(null);
       setActionHistory([]); // Clear action history
-      setHtmlSource(null); // Clear htmlSource
-      setSidePanelMode('email'); // Reset side panel mode
       setSidePanelDispatchData(null); // Clear dispatch data
       setPendingQuestion(null); // Clear pending question
       setIsLoading(false);
@@ -822,6 +831,11 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
         dispatchType,
         actionHistory,
         htmlSource,
+        csvState: {
+          csvListId,
+          csvFileName,
+          csvMappedColumns,
+        },
       };
 
       if (convId && !forceCreate) {
@@ -861,7 +875,7 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
         isCreatingConversationRef.current = false;
       }
     }
-  }, [sidePanelHtml, sidePanelSubject, sidePanelOpen, sidePanelContext, sidePanelWorkflowSteps, sidePanelShowCodePreview, sidePanelTitle, sidePanelMode, selectedOriginData, dispatchType, actionHistory, htmlSource]);
+  }, [sidePanelHtml, sidePanelSubject, sidePanelOpen, sidePanelContext, sidePanelWorkflowSteps, sidePanelShowCodePreview, sidePanelTitle, sidePanelMode, selectedOriginData, dispatchType, actionHistory, htmlSource, csvListId, csvFileName, csvMappedColumns]);
 
   // Auto-save with signature-based dirty check (saves on CONTENT changes, not just length)
   // Goal: save user messages immediately; throttle while assistant is streaming / user is editing.
@@ -1706,37 +1720,6 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
           setSearchParams({ conversation: data.id }, { replace: true });
           
           console.log('[DisparoView] Created conversation immediately:', data.id);
-          
-          // If CSV was uploaded, persist it to DB now that we have a conversation ID
-          if (csvParseResult && csvParseResult.leads.length > 0) {
-            try {
-              const recipients = csvParseResult.leads
-                .filter(l => l.email && l.email.includes('@'))
-                .map(l => ({
-                  name: l.name || '',
-                  email: l.email!,
-                  whatsapp: l.whatsapp
-                }));
-              
-              const { data: csvSaveResult, error: csvError } = await supabase.functions.invoke('save-csv-dispatch-list', {
-                body: {
-                  conversationId: data.id,
-                  fileName: csvFileNameLocal,
-                  mappedColumns: csvParseResult.mappedColumns,
-                  recipients
-                }
-              });
-              
-              if (csvError) {
-                console.error('[DisparoView] Error saving CSV list:', csvError);
-              } else if (csvSaveResult?.listId) {
-                setCsvListId(csvSaveResult.listId);
-                console.log('[DisparoView] CSV list saved:', csvSaveResult.listId, 'with', csvSaveResult.validEmails, 'valid emails');
-              }
-            } catch (csvSaveError) {
-              console.error('[DisparoView] Error calling save-csv-dispatch-list:', csvSaveError);
-            }
-          }
         } catch (error) {
           console.error('[DisparoView] Error creating conversation:', error);
           isProcessingMessageRef.current = false;
@@ -1745,6 +1728,41 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
           return;
         } finally {
           isCreatingConversationRef.current = false;
+        }
+      }
+
+      // Persist CSV list whenever a CSV is uploaded (first message OR later messages)
+      if (csvParseResult && csvParseResult.leads.length > 0 && targetConversationId) {
+        try {
+          const recipients = csvParseResult.leads
+            .filter(l => l.email && l.email.includes('@'))
+            .map(l => ({
+              name: l.name || '',
+              email: l.email!,
+              whatsapp: l.whatsapp
+            }));
+
+          const { data: csvSaveResult, error: csvError } = await supabase.functions.invoke('save-csv-dispatch-list', {
+            body: {
+              conversationId: targetConversationId,
+              fileName: csvFileNameLocal,
+              mappedColumns: csvParseResult.mappedColumns,
+              recipients
+            }
+          });
+
+          if (csvError) {
+            console.error('[DisparoView] Error saving CSV list:', csvError);
+          } else if (csvSaveResult?.listId) {
+            setCsvListId(csvSaveResult.listId);
+            console.log('[DisparoView] CSV list saved:', csvSaveResult.listId, 'with', csvSaveResult.validEmails, 'valid emails');
+            // Ensure it persists on reload
+            setTimeout(() => {
+              saveConversationNow();
+            }, 50);
+          }
+        } catch (csvSaveError) {
+          console.error('[DisparoView] Error calling save-csv-dispatch-list:', csvSaveError);
         }
       }
       
@@ -1882,10 +1900,9 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
         (lowerUserMsg.includes('sim') && lowerUserMsg.length < 20)
       );
       
-      const hasEverythingReady = sidePanelHtml && 
-                                 sidePanelHtml.length > 100 && 
-                                 selectedOriginData?.subOriginId &&
-                                 !activeJobId;
+      const hasEmailReady = !!sidePanelHtml && sidePanelHtml.length > 100;
+      const hasListReady = (!!csvListId || !!selectedOriginData?.subOriginId) && !activeJobId;
+      const hasEverythingReady = hasEmailReady && hasListReady;
       
       // Check if the last AI message asked for confirmation
       const lastAiMessage = messages.filter(m => m.role === 'assistant').pop();
@@ -1894,18 +1911,25 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
         lastAiMessage.content.toLowerCase().includes('quer que eu inicie') ||
         lastAiMessage.content.toLowerCase().includes('pronto para enviar') ||
         lastAiMessage.content.toLowerCase().includes('iniciar o disparo') ||
-        lastAiMessage.content.toLowerCase().includes('inicie o disparo')
+        lastAiMessage.content.toLowerCase().includes('inicie o disparo') ||
+        lastAiMessage.content.toLowerCase().includes('preparar o envio')
       );
+
+      const strongConfirm =
+        lowerUserMsg.includes('pode enviar') ||
+        (lowerUserMsg.includes('pode') && (lowerUserMsg.includes('envio') || lowerUserMsg.includes('enviar') || lowerUserMsg.includes('disparo')));
       
-      if (isUserConfirming && hasEverythingReady && aiAskedToConfirm) {
+      if (isUserConfirming && hasEverythingReady && (aiAskedToConfirm || strongConfirm)) {
         // Auto-execute dispatch - user confirmed via chat!
         const type = dispatchType || 'email';
         
         // Encode HTML and subject for the command
         const encodedHtml = sidePanelHtml ? btoa(encodeURIComponent(sidePanelHtml)) : '';
         const encodedSubject = sidePanelSubject ? btoa(encodeURIComponent(sidePanelSubject)) : '';
-        
-        const autoCommand = `START_DISPATCH:${type}:${selectedOriginData.subOriginId}:html:${currentConversationId || ''}:${encodedSubject}:${encodedHtml}`;
+
+        const autoCommand = csvListId
+          ? `START_DISPATCH_CSV:${type}:${csvListId}:html:${currentConversationId || ''}:${encodedSubject}:${encodedHtml}`
+          : `START_DISPATCH:${type}:${selectedOriginData!.subOriginId}:html:${currentConversationId || ''}:${encodedSubject}:${encodedHtml}`;
         
         const confirmingMessage: Message = {
           id: crypto.randomUUID(),
@@ -1915,7 +1939,7 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
         };
         setMessages(prev => [...prev, confirmingMessage]);
         
-        logAction('user', 'Confirmou disparo via chat', `Tipo: ${type}`);
+        logAction('user', 'Confirmou disparo via chat', `Tipo: ${type}${csvListId ? ' (CSV)' : ''}`);
         executeDispatch(autoCommand);
         setIsLoading(false);
         isProcessingMessageRef.current = false;
