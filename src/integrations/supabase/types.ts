@@ -256,11 +256,85 @@ export type Database = {
         }
         Relationships: []
       }
+      dispatch_csv_list_recipients: {
+        Row: {
+          created_at: string
+          email: string
+          id: string
+          list_id: string
+          name: string | null
+          whatsapp: string | null
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          id?: string
+          list_id: string
+          name?: string | null
+          whatsapp?: string | null
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          id?: string
+          list_id?: string
+          name?: string | null
+          whatsapp?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dispatch_csv_list_recipients_list_id_fkey"
+            columns: ["list_id"]
+            isOneToOne: false
+            referencedRelation: "dispatch_csv_lists"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      dispatch_csv_lists: {
+        Row: {
+          conversation_id: string
+          created_at: string
+          file_name: string
+          id: string
+          mapped_columns: Json
+          total_rows: number
+          valid_emails: number
+        }
+        Insert: {
+          conversation_id: string
+          created_at?: string
+          file_name: string
+          id?: string
+          mapped_columns?: Json
+          total_rows?: number
+          valid_emails?: number
+        }
+        Update: {
+          conversation_id?: string
+          created_at?: string
+          file_name?: string
+          id?: string
+          mapped_columns?: Json
+          total_rows?: number
+          valid_emails?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dispatch_csv_lists_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "dispatch_conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       dispatch_jobs: {
         Row: {
           completed_at: string | null
           conversation_id: string | null
           created_at: string
+          csv_list_id: string | null
           current_lead_name: string | null
           error_log: Json | null
           failed_count: number
@@ -272,7 +346,7 @@ export type Database = {
           sent_count: number
           started_at: string | null
           status: string
-          sub_origin_id: string
+          sub_origin_id: string | null
           sub_origin_name: string | null
           total_leads: number
           type: string
@@ -283,6 +357,7 @@ export type Database = {
           completed_at?: string | null
           conversation_id?: string | null
           created_at?: string
+          csv_list_id?: string | null
           current_lead_name?: string | null
           error_log?: Json | null
           failed_count?: number
@@ -294,7 +369,7 @@ export type Database = {
           sent_count?: number
           started_at?: string | null
           status?: string
-          sub_origin_id: string
+          sub_origin_id?: string | null
           sub_origin_name?: string | null
           total_leads?: number
           type: string
@@ -305,6 +380,7 @@ export type Database = {
           completed_at?: string | null
           conversation_id?: string | null
           created_at?: string
+          csv_list_id?: string | null
           current_lead_name?: string | null
           error_log?: Json | null
           failed_count?: number
@@ -316,7 +392,7 @@ export type Database = {
           sent_count?: number
           started_at?: string | null
           status?: string
-          sub_origin_id?: string
+          sub_origin_id?: string | null
           sub_origin_name?: string | null
           total_leads?: number
           type?: string
@@ -329,6 +405,13 @@ export type Database = {
             columns: ["conversation_id"]
             isOneToOne: false
             referencedRelation: "dispatch_conversations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dispatch_jobs_csv_list_id_fkey"
+            columns: ["csv_list_id"]
+            isOneToOne: false
+            referencedRelation: "dispatch_csv_lists"
             referencedColumns: ["id"]
           },
           {
