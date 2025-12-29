@@ -726,43 +726,32 @@ export const PromptInputBox = React.forwardRef((props: PromptInputBoxProps, ref:
             </div>
           </div>
 
-          <PromptInputAction
-            tooltip={
-              isLoading
-                ? "Parar geração"
-                : isRecording
-                ? "Parar gravação"
-                : hasContent
-                ? "Enviar mensagem"
-                : "Mensagem de voz"
-            }
-          >
+          <PromptInputAction tooltip={isLoading ? "Gerando..." : "Enviar mensagem"}>
             <Button
               variant="default"
               size="icon"
               className={cn(
                 "h-8 w-8 rounded-full transition-all duration-200",
-                isRecording
-                  ? "bg-transparent hover:bg-gray-100 text-red-500 hover:text-red-400"
-                  : hasContent
+                hasContent && !isLoading
                   ? "bg-gray-900 hover:bg-gray-800 text-white"
-                  : "bg-transparent hover:bg-gray-100 text-gray-500 hover:text-gray-700"
+                  : "bg-gray-200 text-gray-400 cursor-not-allowed"
               )}
               onClick={() => {
-                if (isRecording) setIsRecording(false);
-                else if (hasContent) handleSubmit();
-                else setIsRecording(true);
+                if (hasContent && !isLoading) handleSubmit();
               }}
-              disabled={isLoading && !hasContent}
+              disabled={!hasContent || isLoading}
             >
               {isLoading ? (
-                <Square className="h-4 w-4 fill-white animate-pulse" />
-              ) : isRecording ? (
-                <StopCircle className="h-5 w-5 text-red-500" />
-              ) : hasContent ? (
-                <ArrowUp className="h-4 w-4" />
+                <div className="relative flex items-center justify-center">
+                  {/* Spinning circle border */}
+                  <div className="absolute inset-0 rounded-full border-2 border-transparent border-t-gray-600 animate-spin" />
+                  {/* Square with dot in the middle */}
+                  <div className="w-3 h-3 bg-gray-600 rounded-sm flex items-center justify-center">
+                    <div className="w-1.5 h-1.5 bg-white rounded-full" />
+                  </div>
+                </div>
               ) : (
-                <Mic className="h-5 w-5 transition-colors" />
+                <ArrowUp className="h-4 w-4" />
               )}
             </Button>
           </PromptInputAction>
