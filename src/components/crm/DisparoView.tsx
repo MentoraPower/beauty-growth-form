@@ -2214,6 +2214,12 @@ INSTRUÇÕES PARA VOCÊ (A IA):
                       </div>
                     ) : (
                       <div className="w-full group">
+                        {/* AI Work Details - show workflow steps in chat */}
+                        {msg.componentData?.type === 'email_generator_streaming' && sidePanelWorkflowSteps.length > 0 && (
+                          <div className="mb-3">
+                            <AIWorkDetails steps={sidePanelWorkflowSteps} />
+                          </div>
+                        )}
                         {msg.content && (
                           <div className="max-w-[90%]">
                             <p className="text-[15px] leading-relaxed whitespace-pre-wrap text-foreground">
@@ -2305,7 +2311,6 @@ INSTRUÇÕES PARA VOCÊ (A IA):
               isEditing={sidePanelEditing}
               mode={sidePanelMode}
               dispatchData={sidePanelDispatchData}
-              workflowSteps={sidePanelWorkflowSteps}
               showCodePreview={sidePanelShowCodePreview}
               panelTitle={sidePanelTitle}
               onNewDispatch={() => {
