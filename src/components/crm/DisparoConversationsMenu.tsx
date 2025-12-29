@@ -51,10 +51,11 @@ interface DisparoConversationsMenuProps {
   messages: Message[];
 }
 
-// Sanitize title - remove [CONTEXT:...], [Agente:...], etc.
+// Sanitize title - remove [CONTEXT:...], [Agente:...], text-copyright, etc.
 const sanitizeTitle = (title: string): string => {
   return title
     .replace(/\[(Agente:[^\]]+|CONTEXT:[^\]]+|Search)\]\s*/gi, '')
+    .replace(/text-copyright/gi, '')
     .trim() || 'Nova conversa';
 };
 

@@ -32,6 +32,15 @@ interface DisparoSubmenuPanelProps {
   onClose: () => void;
 }
 
+// Sanitize title - remove internal markers and text-copyright
+const sanitizeTitle = (title: string): string => {
+  return title
+    .replace(/\[(Agente:[^\]]+|CONTEXT:[^\]]+|Search)\]\s*/gi, '')
+    .replace(/text-copyright/gi, '')
+    .replace(/^[\p{Emoji}\s]+/gu, '')
+    .trim() || 'Nova conversa';
+};
+
 export function DisparoSubmenuPanel({ isOpen, onClose }: DisparoSubmenuPanelProps) {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -68,10 +77,9 @@ export function DisparoSubmenuPanel({ isOpen, onClose }: DisparoSubmenuPanelProp
     }
   }, [isOpen]);
 
-  // Handle new conversation
+  // Handle new conversation - use single navigation to avoid race conditions
   const handleNewConversation = () => {
-    setSearchParams({});
-    navigate('/admin/disparo');
+    navigate('/admin/disparo', { replace: true });
   };
 
   // Load conversation - navigate with conversation ID
@@ -221,7 +229,7 @@ export function DisparoSubmenuPanel({ isOpen, onClose }: DisparoSubmenuPanelProp
                   onClick={() => handleSelectConversation(conv.id)}
                   className="flex-1 text-left px-3 py-2 text-sm"
                 >
-                  <span className="block truncate max-w-[140px]">{conv.title.replace(/^[\p{Emoji}\s]+/gu, '')}</span>
+                  <span className="block truncate max-w-[140px]">{sanitizeTitle(conv.title)}</span>
                 </button>
                 
                 <DropdownMenu>
