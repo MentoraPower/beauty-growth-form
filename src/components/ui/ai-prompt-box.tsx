@@ -552,9 +552,9 @@ export const PromptInputBox = React.forwardRef((props: PromptInputBoxProps, ref:
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
       >
-        {/* Top text label */}
-        <div className="-mx-2 -mt-2 px-4 pt-3 pb-2 mb-1">
-          <span className="text-xs font-medium text-gray-400 tracking-wide">Ask Scale to create</span>
+        {/* Top header bar with border */}
+        <div className="-mx-2 -mt-2 mb-3 px-4 py-2.5 border-b border-gray-200/80 bg-gray-50/50 rounded-t-3xl">
+          <span className="text-xs font-medium text-gray-500 tracking-wide">Ask Scale to create</span>
         </div>
         {files.length > 0 && !isRecording && (
           <div className="flex flex-wrap gap-2 p-0 pb-1 transition-all duration-300">
