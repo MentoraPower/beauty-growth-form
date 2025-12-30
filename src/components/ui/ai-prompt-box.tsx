@@ -639,10 +639,18 @@ export const PromptInputBox = React.forwardRef((props: PromptInputBoxProps, ref:
             <PromptInputAction tooltip="Enviar imagem ou CSV">
               <button
                 onClick={() => uploadInputRef.current?.click()}
-                className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-full bg-gradient-to-br from-orange-500 to-orange-600 shadow-md transition-all hover:shadow-lg hover:scale-105"
+                className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-full bg-black/10 transition-all hover:bg-black/20 hover:scale-105"
                 disabled={isRecording}
               >
-                <Plus className="h-4 w-4 text-white stroke-[2.5]" />
+                <Plus className="h-4 w-4 stroke-[2.5]" style={{ stroke: 'url(#orange-gradient)' }} />
+                <svg width="0" height="0" className="absolute">
+                  <defs>
+                    <linearGradient id="orange-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                      <stop offset="0%" stopColor="#f97316" />
+                      <stop offset="100%" stopColor="#fb923c" />
+                    </linearGradient>
+                  </defs>
+                </svg>
                 <input
                   ref={uploadInputRef}
                   type="file"
