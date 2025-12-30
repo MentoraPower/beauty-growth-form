@@ -2993,9 +2993,14 @@ ${hasName && hasEmail ? `Lista pronta! Guardei os ${leadsWithEmail} leads com em
           }
           
           // Always show full content in chat for copy
-          const copyHtmlForPanel = shouldOpenPanel 
-            ? `<div style="font-family: 'Inter', Arial, sans-serif; padding: 24px; line-height: 1.9; font-size: 15px; color: #1a1a1a;">${cleanContent.replace(/\*\*([^*]+)\*\*/g, '<strong style="font-weight: 700;">$1</strong>').replace(/_([^_]+)_/g, '<em style="font-style: italic;">$1</em>').replace(/\n/g, '<br>')}</div>`
-            : '';
+          const formattedCopyHtml = `<div style="font-family: 'Inter', Arial, sans-serif; padding: 24px; line-height: 1.9; font-size: 15px; color: #1a1a1a;">${cleanContent
+            .replace(/\*\*([^*]+)\*\*/g, '<strong style="font-weight: 700;">$1</strong>')
+            .replace(/_([^_]+)_/g, '<em style="font-style: italic;">$1</em>')
+            .replace(/\n/g, '<br>')}</div>`;
+
+          // In copywriting mode, always create a card so the user can open/edit in the side panel.
+          const copyHtmlForPanel = (isCopywritingMode || shouldOpenPanel) ? formattedCopyHtml : '';
+          const cardTitle = isCopywritingMode ? 'Copy gerada' : '';
           
           setMessages(prev => 
             prev.map(m => 
@@ -3009,7 +3014,7 @@ ${hasName && hasEmail ? `Lista pronta! Guardei os ${leadsWithEmail} leads com em
                         isComplete: true, 
                         workflowSteps: completedWorkflowSteps,
                         generatedHtml: copyHtmlForPanel,
-                        subject: '',
+                        subject: cardTitle,
                         mode: 'copy' as const
                       } 
                     }
