@@ -849,8 +849,8 @@ export function EmailSidePanel({
                 className={cn(
                   "flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-all",
                   activeTab === 'preview'
-                    ? "bg-primary text-primary-foreground shadow-sm"
-                    : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                    ? "bg-card text-foreground shadow-sm border border-border/30"
+                    : "text-muted-foreground hover:text-foreground"
                 )}
               >
                 <Eye className="w-4 h-4" />
@@ -861,8 +861,8 @@ export function EmailSidePanel({
                 className={cn(
                   "flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-all",
                   activeTab === 'code'
-                    ? "bg-zinc-800 text-white shadow-sm"
-                    : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                    ? "bg-card text-foreground shadow-sm border border-border/30"
+                    : "text-muted-foreground hover:text-foreground"
                 )}
               >
                 <Code2 className="w-4 h-4" />
