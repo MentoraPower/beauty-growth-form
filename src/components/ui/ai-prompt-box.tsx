@@ -610,14 +610,16 @@ export const PromptInputBox = React.forwardRef((props: PromptInputBoxProps, ref:
             isRecording ? "h-0 overflow-hidden opacity-0" : "opacity-100"
           )}
         >
-          <PromptInputTextarea
-            placeholder={
-              selectedModel === 'copywriting'
-                ? "Criar copy persuasiva..."
-                : placeholder
-            }
-            className="text-base"
-          />
+          <div className="bg-gray-50/80 border border-gray-200/60 rounded-2xl px-4 py-3">
+            <PromptInputTextarea
+              placeholder={
+                selectedModel === 'copywriting'
+                  ? "Criar copy persuasiva..."
+                  : placeholder
+              }
+              className="text-base bg-transparent"
+            />
+          </div>
         </div>
 
         {isRecording && (
