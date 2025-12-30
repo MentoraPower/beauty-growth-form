@@ -31,7 +31,6 @@ const getRandomGreeting = (greeting: string): string => {
     `E aí! ${greeting}! Bora disparar algo hoje?`,
     `${greeting}! Qual vai ser o disparo de hoje?`,
     `Oi! ${greeting}! Me conta, o que vamos criar juntos?`,
-    `${greeting}! Tô aqui pra ajudar com seu disparo!`,
   ];
   return variations[Math.floor(Math.random() * variations.length)];
 };
