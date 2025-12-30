@@ -642,7 +642,7 @@ export function EmailSidePanel({
     const isCompleted = dispatchJob?.status === 'completed';
 
     return (
-      <div className="w-[640px] h-full flex-shrink-0 bg-card flex flex-col mt-2 mb-2 mr-2 rounded-2xl overflow-hidden" style={{ border: '1px solid #00000010' }}>
+      <div className="w-[640px] h-full flex-shrink-0 bg-white flex flex-col mt-2 mb-2 mr-2 rounded-2xl overflow-hidden" style={{ border: '1px solid #00000010' }}>
         {/* Header with progress bar */}
         <div className="border-b border-border p-5 space-y-4">
           <div className="flex items-center justify-between">
@@ -816,7 +816,7 @@ export function EmailSidePanel({
   // Render Dispatch Details mode
   if (mode === 'dispatch_details' && dispatchData) {
     return (
-      <div className="w-[640px] h-full flex-shrink-0 bg-card flex flex-col mt-2 mb-2 mr-2 rounded-2xl overflow-hidden" style={{ border: '1px solid #00000010' }}>
+      <div className="w-[640px] h-full flex-shrink-0 bg-white flex flex-col mt-2 mb-2 mr-2 rounded-2xl overflow-hidden" style={{ border: '1px solid #00000010' }}>
         <DispatchAnalysis
           data={dispatchData}
           onNewDispatch={onNewDispatch}
@@ -827,16 +827,16 @@ export function EmailSidePanel({
   }
 
   return (
-    <div className="w-[640px] h-full flex-shrink-0 bg-card flex flex-col mt-2 mb-2 mr-2 rounded-2xl overflow-hidden" style={{ border: '1px solid #00000010' }}>
+    <div className="w-[640px] h-full flex-shrink-0 bg-white flex flex-col mt-2 mb-2 mr-2 rounded-2xl overflow-hidden" style={{ border: '1px solid #00000010' }}>
       {/* Tabs - always at the top when showCodePreview is true */}
       {showCodePreview && (
-        <div className="flex items-center justify-between px-5 py-3 border-b border-border/30 bg-card">
+        <div className="flex items-center justify-between px-5 py-3 border-b border-border/30 bg-white">
           <div className="flex items-center gap-3">
             {/* Close button - circle with >> icon */}
             {onClose && (
               <button
                 onClick={onClose}
-                className="w-8 h-8 rounded-full border border-border/30 bg-card hover:bg-muted flex items-center justify-center transition-colors group"
+                className="w-8 h-8 rounded-full border border-border/30 bg-white hover:bg-muted flex items-center justify-center transition-colors group"
                 title="Fechar painel"
               >
                 <ChevronsRight className="w-4 h-4 text-muted-foreground group-hover:text-foreground transition-colors" />
@@ -849,7 +849,7 @@ export function EmailSidePanel({
                 className={cn(
                   "flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-all",
                   activeTab === 'preview'
-                    ? "bg-card text-foreground shadow-sm border border-border/30"
+                    ? "bg-white text-foreground shadow-sm border border-border/30"
                     : "text-muted-foreground hover:text-foreground"
                 )}
               >
@@ -861,7 +861,7 @@ export function EmailSidePanel({
                 className={cn(
                   "flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-all",
                   activeTab === 'code'
-                    ? "bg-card text-foreground shadow-sm border border-border/30"
+                    ? "bg-white text-foreground shadow-sm border border-border/30"
                     : "text-muted-foreground hover:text-foreground"
                 )}
               >
@@ -886,7 +886,7 @@ export function EmailSidePanel({
       
       {/* Email Subject/Preheader Header */}
       {showCodePreview && (
-        <div className="px-5 py-4 border-b border-border/20 bg-card">
+        <div className="px-5 py-4 border-b border-border/20 bg-white">
           <div className="space-y-3">
             {/* Subject - editable */}
             <div>
@@ -1050,7 +1050,7 @@ export function EmailSidePanel({
           )
         ) : (
           // Text-only mode (for copy/content without code preview)
-          <div className="h-full overflow-auto bg-card">
+          <div className="h-full overflow-auto bg-white">
             <div className="p-4 h-full relative">
               <TiptapFloatingToolbar editor={editor} />
               <EditorContent 
