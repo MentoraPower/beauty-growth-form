@@ -552,8 +552,8 @@ export const PromptInputBox = React.forwardRef((props: PromptInputBoxProps, ref:
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
       >
-        {/* Top bar with blur effect */}
-        <div className="border-t-2 border-white/60 rounded-t-3xl -mx-2 -mt-2 px-4 py-2 mb-2 bg-white/40 backdrop-blur-md">
+        {/* Top text label */}
+        <div className="-mx-2 -mt-2 px-4 pt-3 pb-2 mb-1">
           <span className="text-xs font-medium text-gray-400 tracking-wide">Ask Scale to create</span>
         </div>
         {files.length > 0 && !isRecording && (
