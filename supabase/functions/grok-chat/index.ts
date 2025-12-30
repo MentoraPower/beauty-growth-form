@@ -258,7 +258,44 @@ const detectMetricsRequest = (messages: any[]): boolean => {
   return metricsPatterns.some(pattern => pattern.test(content));
 };
 
-const getSystemPrompt = (greeting: string, activeAgent: string | null = null, hasImage: boolean = false, isCodeRequest: boolean = false, isCsvRequest: boolean = false, isMetricsRequest: boolean = false, metricsData: any = null) => {
+// Detectar se é um pedido de CRIAÇÃO de conteúdo (email, copy, texto)
+// PRIORIDADE: Se o usuário pede para criar, vai direto criar - sem perguntar lista
+const detectContentCreationRequest = (messages: any[]): boolean => {
+  const lastMessage = messages[messages.length - 1];
+  if (!lastMessage || lastMessage.role !== 'user') return false;
+  
+  const content = typeof lastMessage.content === 'string' 
+    ? lastMessage.content.toLowerCase() 
+    : '';
+  
+  const creationPatterns = [
+    // Verbos de criação + email/copy/texto
+    /crie?\s*(um|uma|o|a)?\s*(email|e-mail|copy|texto|mensagem)/i,
+    /criar?\s*(um|uma|o|a)?\s*(email|e-mail|copy|texto|mensagem)/i,
+    /quero\s*(um|uma)?\s*(email|e-mail|copy|texto)/i,
+    /preciso\s*(de)?\s*(um|uma)?\s*(email|e-mail|copy)/i,
+    /faça?\s*(um|uma)?\s*(email|e-mail|copy|texto)/i,
+    /fazer?\s*(um|uma)?\s*(email|e-mail|copy|texto)/i,
+    /escreva?\s*(um|uma)?\s*(email|e-mail|copy|texto)/i,
+    /escrever?\s*(um|uma)?\s*(email|e-mail|copy|texto)/i,
+    /gere?\s*(um|uma)?\s*(email|e-mail|copy|texto)/i,
+    /gerar?\s*(um|uma)?\s*(email|e-mail|copy|texto)/i,
+    /monte?\s*(um|uma)?\s*(email|e-mail|copy|texto)/i,
+    /elabore?\s*(um|uma)?\s*(email|e-mail|copy|texto)/i,
+    /prepare?\s*(um|uma)?\s*(email|e-mail|copy|texto)/i,
+    /produza?\s*(um|uma)?\s*(email|e-mail|copy|texto)/i,
+    // Pedidos diretos de conteúdo específico
+    /email\s*(de)?\s*(aquecimento|boas-vindas|welcome|convite|convocação|lançamento|vendas?|promoção|desconto)/i,
+    /copy\s*(de|para)?\s*(venda|lançamento|aquecimento|promoção)/i,
+    // Referência a tipo de email específico
+    /crie?\s*(um|uma)?\s*(email|e-mail)\s*(de|para|sobre)/i,
+    /quero\s*(enviar|mandar|disparar)\s*(um|uma)?\s*(email|e-mail)\s*(de|para|sobre)/i,
+  ];
+  
+  return creationPatterns.some(pattern => pattern.test(content));
+};
+
+const getSystemPrompt = (greeting: string, activeAgent: string | null = null, hasImage: boolean = false, isCodeRequest: boolean = false, isCsvRequest: boolean = false, isMetricsRequest: boolean = false, metricsData: any = null, isContentCreation: boolean = false) => {
   const randomGreeting = getRandomGreeting(greeting);
   
   let specialMode = '';
@@ -300,6 +337,38 @@ Responda com a alteração feita, sem enrolação.
 `;
   }
   
+  // Modo Criação de Conteúdo - PRIORIDADE SOBRE FLUXO DE DISPARO
+  if (isContentCreation) {
+    specialMode += `
+═══════════════════════════════════════
+MODO CRIAÇÃO DE CONTEÚDO ATIVO
+═══════════════════════════════════════
+O usuário está pedindo para CRIAR um email/copy/texto. Você DEVE:
+
+1. CRIAR IMEDIATAMENTE o conteúdo pedido - NÃO pergunte nada antes
+2. NÃO perguntar sobre listas, leads, ou tipo de disparo AGORA
+3. NÃO seguir o fluxo de disparo
+4. FOCAR 100% na criação do conteúdo
+
+**SE FOR EMAIL:**
+- Crie o HTML profissional completo
+- Use design moderno e responsivo
+- Inclua CTAs claros e persuasivos
+- Adicione preheader otimizado
+
+**SE FOR COPY/TEXTO:**
+- Crie o texto persuasivo completo
+- Use técnicas de copywriting (AIDA, PAS, etc)
+- Seja envolvente e direcionado ao público
+
+**DEPOIS DE CRIAR:**
+Somente APÓS mostrar o email/copy criado, você pode perguntar:
+"Gostou? Agora, para qual lista você quer disparar esse email?"
+
+IMPORTANTE: A CRIAÇÃO VEM PRIMEIRO. Lista/disparo vem DEPOIS.
+`;
+  }
+
   // Modo CSV/Lista - manipulação de dados
   if (isCsvRequest) {
     specialMode += `
@@ -1255,9 +1324,10 @@ serve(async (req) => {
       }
     }
 
-    const systemPrompt = getSystemPrompt(greeting, activeAgent, hasImage, isCodeRequest, isCsvRequest, isMetricsRequest, metricsData);
+    const isContentCreation = detectContentCreationRequest(messages);
+    const systemPrompt = getSystemPrompt(greeting, activeAgent, hasImage, isCodeRequest, isCsvRequest, isMetricsRequest, metricsData, isContentCreation);
 
-    console.log("Chat mode:", { activeAgent, hasImage, isCodeRequest, isCsvRequest, isMetricsRequest });
+    console.log("Chat mode:", { activeAgent, hasImage, isCodeRequest, isCsvRequest, isMetricsRequest, isContentCreation });
 
     // Use vision model when there's an image
     const model = hasImage ? "grok-2-vision-1212" : "grok-3-fast";
@@ -1266,7 +1336,7 @@ serve(async (req) => {
 
     // Determine max tokens based on mode
     const isCopywritingMode = activeAgent === 'copywriting';
-    const maxTokens = hasImage ? 1000 : (isCopywritingMode ? 2000 : 500);
+    const maxTokens = hasImage ? 1000 : (isCopywritingMode || isContentCreation ? 2000 : 500);
 
     const response = await fetch("https://api.x.ai/v1/chat/completions", {
       method: "POST",
