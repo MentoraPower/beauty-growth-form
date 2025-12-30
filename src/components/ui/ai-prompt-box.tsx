@@ -607,7 +607,7 @@ export const PromptInputBox = React.forwardRef((props: PromptInputBoxProps, ref:
 
         <div
           className={cn(
-            "transition-all duration-300 flex-1 flex flex-col justify-end",
+            "transition-all duration-300 flex-1 flex flex-col justify-start pt-2",
             isRecording ? "h-0 overflow-hidden opacity-0" : "opacity-100"
           )}
         >
