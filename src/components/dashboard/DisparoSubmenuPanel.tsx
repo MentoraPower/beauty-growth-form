@@ -95,10 +95,9 @@ export function DisparoSubmenuPanel({ isOpen, onClose }: DisparoSubmenuPanelProp
     }
   }, [isOpen, fetchConversations]);
 
-  // Realtime subscription for conversation changes
+  // Realtime subscription for conversation changes - always active to catch new conversations
   useEffect(() => {
-    if (!isOpen) return;
-
+    // Always subscribe to realtime updates, even when panel is closed
     const channel = supabase
       .channel('disparo-conversations-realtime')
       .on(
@@ -144,7 +143,7 @@ export function DisparoSubmenuPanel({ isOpen, onClose }: DisparoSubmenuPanelProp
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [isOpen]);
+  }, []);
 
   // Handle new conversation - use explicit ?new=1 signal to trigger reset
   const handleNewConversation = () => {
