@@ -1,7 +1,6 @@
 import React from "react";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
-import { AnimatedCircle } from "@/components/AnimatedCircle";
 
 interface EmailChatCardProps {
   subject?: string;
@@ -35,12 +34,7 @@ export function EmailChatCard({
   const timeAgo = createdAt ? getRelativeTime(createdAt) : "";
 
   return (
-    <div className="flex flex-col items-start pl-4 pt-6">
-      {/* AnimatedCircle */}
-      <div className="mb-2">
-        <AnimatedCircle className="w-4 h-4" />
-      </div>
-      
+    <div className="pl-4 pt-3">
       <motion.div
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
