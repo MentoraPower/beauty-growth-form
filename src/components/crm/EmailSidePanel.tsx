@@ -923,7 +923,7 @@ export function EmailSidePanel({
         {showCodePreview ? (
           // Code/Preview mode with tabs
           activeTab === 'code' ? (
-            <div className="relative h-full w-full overflow-hidden">
+            <div className="relative h-full w-full overflow-hidden bg-white">
               {/* Editing indicator overlay */}
               {editingIndicator && (
                 <div className="absolute top-2 left-1/2 -translate-x-1/2 z-20 flex items-center gap-2 bg-primary/90 text-primary-foreground px-4 py-2 rounded-full shadow-lg animate-fade-in">
