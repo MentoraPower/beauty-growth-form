@@ -2279,6 +2279,10 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
           // Update URL with new conversation ID
           setSearchParams({ conversation: data.id }, { replace: true });
           
+          // Signal to open the disparo submenu automatically
+          localStorage.setItem('disparo-submenu-should-open', 'true');
+          window.dispatchEvent(new Event('disparo-submenu-open'));
+          
           console.log('[DisparoView] Created conversation:', data.id);
         } catch (error) {
           console.error('[DisparoView] Error creating conversation:', error);
