@@ -4264,20 +4264,6 @@ ${structuredEmail.body}
                       </div>
                     ) : (
                       <div className="w-full group">
-                        {/* Data Intelligence - rich CSV analysis with visual cards (appears FIRST like in the reference) */}
-                        {msg.componentData?.type === 'data_intelligence' && 
-                         msg.componentData?.data?.insightSteps && 
-                         Array.isArray(msg.componentData.data.insightSteps) &&
-                         msg.componentData.data.insightSteps.length > 0 && (
-                          <motion.div 
-                            initial={{ opacity: 0, y: 10 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ duration: 0.3, delay: 0.1 }}
-                            className="mb-3"
-                          >
-                            <DataIntelligence steps={msg.componentData.data.insightSteps as InsightStep[]} />
-                          </motion.div>
-                        )}
                         {/* AI Work Details - show workflow steps from msg.componentData (persisted) */}
                         {msg.componentData?.type === 'email_generator_streaming' && 
                          msg.componentData?.data?.workflowSteps && 
@@ -4292,13 +4278,27 @@ ${structuredEmail.body}
                             <AIWorkDetails steps={msg.componentData.data.workflowSteps as WorkStep[]} />
                           </motion.div>
                         )}
-                        {/* Message content after the steps */}
+                        {/* Message content first */}
                         {msg.content && (
                           <div>
                             <p className="text-[15px] leading-relaxed whitespace-pre-wrap text-foreground">
                               {formatMessageContent(msg.content)}
                             </p>
                           </div>
+                        )}
+                        {/* Data Intelligence - appears BELOW message content */}
+                        {msg.componentData?.type === 'data_intelligence' && 
+                         msg.componentData?.data?.insightSteps && 
+                         Array.isArray(msg.componentData.data.insightSteps) &&
+                         msg.componentData.data.insightSteps.length > 0 && (
+                          <motion.div 
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ duration: 0.3, delay: 0.1 }}
+                            className="mt-3"
+                          >
+                            <DataIntelligence steps={msg.componentData.data.insightSteps as InsightStep[]} />
+                          </motion.div>
                         )}
                         {/* Email card - shows when there's HTML content in this message */}
                         {msg.componentData?.type === 'email_generator_streaming' && msg.componentData?.data?.generatedHtml && (
