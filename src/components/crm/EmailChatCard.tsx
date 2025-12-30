@@ -76,10 +76,10 @@ export function EmailChatCard({
         {/* Content */}
         <div className="flex-1 py-3 px-3 flex flex-col gap-2.5 min-w-0">
           {/* Header with icon and SCALE EMAIL AGENT */}
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-1">
             {/* Custom icon - square with inner square */}
-            <div className="w-3.5 h-3.5 border-[1.5px] border-zinc-400 rounded-[2px] flex items-center justify-center flex-shrink-0">
-              <div className="w-1.5 h-1.5 bg-zinc-400 rounded-[1px]" />
+            <div className="w-3 h-3 border border-zinc-400 rounded-[1.5px] flex items-center justify-center flex-shrink-0">
+              <div className="w-1 h-1 bg-zinc-400 rounded-[0.5px]" />
             </div>
             <span className="text-[11px] font-semibold text-zinc-400 uppercase tracking-wide">
               Scale Email Agent
