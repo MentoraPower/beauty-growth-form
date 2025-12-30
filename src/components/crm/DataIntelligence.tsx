@@ -176,9 +176,13 @@ export function DataIntelligence({ steps, className }: DataIntelligenceProps) {
               <motion.div 
                 key={step.id} 
                 className="relative"
-                initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.25, delay: index * 0.08 }}
+                initial={{ opacity: 0, y: 12, scale: 0.97 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                transition={{ 
+                  duration: 0.4, 
+                  delay: index * 0.3,
+                  ease: [0.25, 0.46, 0.45, 0.94]
+                }}
               >
                 {/* Vertical dashed line connecting to next step */}
                 {!isLast && (
