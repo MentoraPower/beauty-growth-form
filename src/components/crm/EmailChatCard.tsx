@@ -1,6 +1,7 @@
 import React from "react";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
+import { AnimatedCircle } from "@/components/AnimatedCircle";
 
 interface EmailChatCardProps {
   subject?: string;
@@ -34,15 +35,22 @@ export function EmailChatCard({
   const timeAgo = createdAt ? getRelativeTime(createdAt) : "";
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 8 }}
-      animate={{ opacity: 1, y: 0 }}
-      className="w-full max-w-sm cursor-pointer relative p-[1px] rounded-[10px] overflow-visible"
-      style={{
-        background: 'linear-gradient(135deg, #ec4899, #ef4444, #8b5cf6)',
-      }}
-      onClick={onClick}
-    >
+    <div className="flex flex-col items-start pl-4">
+      {/* Vertical line + AnimatedCircle */}
+      <div className="flex flex-col items-center mb-2 mt-4">
+        <div className="w-px h-8 bg-gradient-to-b from-transparent via-zinc-600 to-zinc-500" />
+        <AnimatedCircle className="w-5 h-5" />
+      </div>
+      
+      <motion.div
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="w-full max-w-sm cursor-pointer relative p-[1px] rounded-[10px] overflow-visible"
+        style={{
+          background: 'linear-gradient(135deg, #ec4899, #ef4444, #8b5cf6)',
+        }}
+        onClick={onClick}
+      >
       {/* Inner container */}
       <div
         className={cn(
@@ -109,6 +117,7 @@ export function EmailChatCard({
           </button>
         </div>
       </div>
-    </motion.div>
+      </motion.div>
+    </div>
   );
 }
