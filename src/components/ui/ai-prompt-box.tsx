@@ -542,7 +542,7 @@ export const PromptInputBox = React.forwardRef((props: PromptInputBoxProps, ref:
         isLoading={isLoading}
         onSubmit={handleSubmit}
         className={cn(
-          "w-full bg-white border-gray-200 shadow-lg transition-all duration-300 ease-in-out",
+          "w-full bg-white/80 backdrop-blur-xl border-gray-200 shadow-lg transition-all duration-300 ease-in-out min-h-[180px]",
           isRecording && "border-red-500/70",
           className
         )}
@@ -552,6 +552,10 @@ export const PromptInputBox = React.forwardRef((props: PromptInputBoxProps, ref:
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
       >
+        {/* Top bar with blur effect */}
+        <div className="border-t-2 border-white/60 rounded-t-3xl -mx-2 -mt-2 px-4 py-2 mb-2 bg-white/40 backdrop-blur-md">
+          <span className="text-xs font-medium text-gray-400 tracking-wide">Ask Scale to create</span>
+        </div>
         {files.length > 0 && !isRecording && (
           <div className="flex flex-wrap gap-2 p-0 pb-1 transition-all duration-300">
             {files.map((file, index) => (
