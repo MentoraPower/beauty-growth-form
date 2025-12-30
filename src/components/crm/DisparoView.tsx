@@ -3628,41 +3628,43 @@ ${hasName && hasEmail ? `Lista pronta! Guardei os ${leadsWithEmail} leads com em
           ) : (
             <div className="flex-1 flex items-center justify-center p-6 px-8">
               <div className="w-full max-w-3xl relative">
-                {/* Animated header: logo starts from input area, spins up, text appears as it passes */}
+                {/* Animated header: logo rises from center, moves to side passing over text area */}
                 <div className="text-center mb-8">
-                  <div className="flex items-center justify-center gap-3">
+                  <div className="flex items-center justify-center gap-3 relative">
                     <motion.img 
                       src={disparoLogo} 
                       alt="Logo" 
                       className="w-10 h-10"
-                      initial={{ y: 180, opacity: 0, rotate: -360 }}
-                      animate={{ y: 0, opacity: 1, rotate: 0 }}
+                      initial={{ y: 150, x: 140, opacity: 0, rotate: -360 }}
+                      animate={{ y: 0, x: 0, opacity: 1, rotate: 0 }}
                       transition={{ 
-                        duration: 1.2,
-                        ease: [0.22, 1, 0.36, 1]
+                        y: { duration: 0.6, ease: [0.22, 1, 0.36, 1] },
+                        x: { duration: 0.5, delay: 0.5, ease: [0.22, 1, 0.36, 1] },
+                        opacity: { duration: 0.3 },
+                        rotate: { duration: 1, ease: [0.22, 1, 0.36, 1] }
                       }}
                     />
                     <motion.h2 
                       className="text-3xl font-semibold text-foreground whitespace-nowrap"
-                      initial={{ opacity: 0, x: -10 }}
-                      animate={{ opacity: 1, x: 0 }}
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
                       transition={{ 
-                        delay: 0.4,
-                        duration: 0.6,
-                        ease: [0.22, 1, 0.36, 1]
+                        delay: 0.85,
+                        duration: 0.4,
+                        ease: "easeOut"
                       }}
                     >
                       Hey, ready to get started?
                     </motion.h2>
                   </div>
                 </div>
-                {/* Input starts appearing 1s before logo settles (at 0.2s since logo takes 1.2s) */}
+                {/* Input appears smoothly */}
                 <motion.div
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ 
-                    delay: 0.2,
-                    duration: 0.8,
+                    delay: 0.3,
+                    duration: 0.6,
                     ease: [0.22, 1, 0.36, 1]
                   }}
                 >
@@ -3675,7 +3677,7 @@ ${hasName && hasEmail ? `Lista pronta! Guardei os ${leadsWithEmail} leads com em
                     className="text-xs text-muted-foreground text-center mt-3"
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
-                    transition={{ delay: 0.8, duration: 0.4 }}
+                    transition={{ delay: 0.7, duration: 0.4 }}
                   >
                     A Scale pode cometer erros. Confira informações importantes.
                   </motion.p>
