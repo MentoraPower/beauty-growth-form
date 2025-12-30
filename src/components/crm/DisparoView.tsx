@@ -3646,12 +3646,12 @@ ${hasName && hasEmail ? `Lista pronta! Guardei os ${leadsWithEmail} leads com em
                     />
                     <motion.h2 
                       className="text-3xl font-semibold text-foreground whitespace-nowrap"
-                      initial={{ opacity: 0, x: -30 }}
-                      animate={{ opacity: 1, x: 0 }}
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
                       transition={{ 
                         delay: 0.85,
-                        duration: 0.5,
-                        ease: [0.22, 1, 0.36, 1]
+                        duration: 0.4,
+                        ease: "easeOut"
                       }}
                     >
                       Hey, ready to get started?
