@@ -642,15 +642,7 @@ export const PromptInputBox = React.forwardRef((props: PromptInputBoxProps, ref:
                 className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-full bg-black/10 transition-all hover:bg-black/20 hover:scale-105"
                 disabled={isRecording}
               >
-                <Plus className="h-4 w-4 stroke-[2.5]" style={{ stroke: 'url(#orange-gradient)' }} />
-                <svg width="0" height="0" className="absolute">
-                  <defs>
-                    <linearGradient id="orange-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                      <stop offset="0%" stopColor="#f97316" />
-                      <stop offset="100%" stopColor="#fb923c" />
-                    </linearGradient>
-                  </defs>
-                </svg>
+                <Plus className="h-4 w-4 stroke-[2.5] text-orange-500" />
                 <input
                   ref={uploadInputRef}
                   type="file"
