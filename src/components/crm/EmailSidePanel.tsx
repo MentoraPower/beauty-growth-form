@@ -967,7 +967,7 @@ export function EmailSidePanel({
               
             </div>
           ) : (
-            <div className="h-full overflow-auto bg-card">
+            <div className="h-full overflow-hidden bg-white">
               {showPreviewLoading ? (
                 // Skeleton loading state
                 <div className="p-6 space-y-4 animate-pulse">
@@ -998,13 +998,28 @@ export function EmailSidePanel({
                   </div>
                 </div>
               ) : (
-                <div className="p-4 h-full relative">
-                  <TiptapFloatingToolbar editor={editor} />
-                  <EditorContent 
-                    editor={editor} 
-                    className="prose prose-xs max-w-none p-4 h-full overflow-auto focus:outline-none [&_.ProseMirror]:outline-none [&_.ProseMirror]:min-h-full [&_.ProseMirror]:text-sm"
-                  />
-                </div>
+                <iframe
+                  srcDoc={`<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    body { 
+      margin: 0; 
+      padding: 16px; 
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: white;
+      -webkit-font-smoothing: antialiased;
+    }
+  </style>
+</head>
+<body>${htmlContent || ''}</body>
+</html>`}
+                  className="w-full h-full border-0"
+                  title="Email Preview"
+                  sandbox="allow-same-origin"
+                />
               )}
             </div>
           )
