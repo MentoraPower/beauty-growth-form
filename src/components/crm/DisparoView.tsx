@@ -3888,26 +3888,28 @@ ${structuredEmail.body}
         // For plain copy/text - SHOW IN CHAT and optionally open panel for large content
           const shouldOpenPanel = cleanContent.length >= OPEN_PANEL_THRESHOLD;
           
+          // Extract only the clean copy (content between --- delimiters) - DEFINED OUTSIDE to use everywhere
+          const extractCleanCopy = (text: string): string => {
+            // Try to find content between --- delimiters
+            const delimiterMatch = text.match(/---\s*([\s\S]*?)\s*---/);
+            if (delimiterMatch && delimiterMatch[1].trim().length > 20) {
+              return delimiterMatch[1].trim();
+            }
+            // Fallback: remove common agent greetings and questions
+            let cleaned = text
+              // Remove greetings at the start
+              .replace(/^(Opa|Olá|Oi|Ei|Hey|E aí|Eai|Bom dia|Boa tarde|Boa noite)[,!]?\s*[^.!?\n]*[.!?]?\s*/gi, '')
+              // Remove "Beleza!", "Bora!", "Aqui está!", etc at the start
+              .replace(/^(Beleza|Bora|Aqui está|Perfeito|Pronto|Vamos lá|Feito)[,!]?\s*[^.!?\n]*[.!?]?\s*/gi, '')
+              // Remove follow-up questions at the end
+              .replace(/\s*(O que achou|Quer que eu|Posso ajustar|Se quiser|Qual tipo|Bora disparar|Pronto pra|Alguma alteração|Ficou bom)[^?]*\?[^]*$/gi, '')
+              // Remove "E aí!" style greetings
+              .replace(/^E aí[!,]?\s*/gi, '')
+              .trim();
+            return cleaned || text;
+          };
+          
           if (shouldOpenPanel) {
-            // Extract only the clean copy (content between --- delimiters)
-            const extractCleanCopy = (text: string): string => {
-              // Try to find content between --- delimiters
-              const delimiterMatch = text.match(/---\s*([\s\S]*?)\s*---/);
-              if (delimiterMatch && delimiterMatch[1].trim().length > 20) {
-                return delimiterMatch[1].trim();
-              }
-              // Fallback: remove common agent greetings and questions
-              let cleaned = text
-                // Remove greetings at the start
-                .replace(/^(Opa|Olá|Oi|Ei|Hey|E aí|Eai|Bom dia|Boa tarde|Boa noite)[,!]?\s*[^.!?\n]*[.!?]?\s*/gi, '')
-                // Remove follow-up questions at the end
-                .replace(/\s*(O que achou|Quer que eu|Posso ajustar|Se quiser|Qual tipo|Bora disparar|Pronto pra)[^?]*\?[^]*$/gi, '')
-                // Remove "E aí!" style greetings
-                .replace(/^E aí[!,]?\s*/gi, '')
-                .trim();
-              return cleaned || text;
-            };
-            
             const cleanCopy = extractCleanCopy(cleanContent);
             
             // Format with markdown support - convert **bold** and _italic_ to HTML
@@ -3928,11 +3930,13 @@ ${structuredEmail.body}
             logAction('ai', 'Criou copy de texto', `${wordCount} palavras geradas`);
           }
           
-          // Always show full content in chat for copy
-          const formattedCopyHtml = `<div style="font-family: 'Inter', Arial, sans-serif; padding: 24px; line-height: 1.9; font-size: 15px; color: #1a1a1a;">${cleanContent
+          // ALWAYS apply extractCleanCopy filter for panel content (fixes persistence issue)
+          const cleanCopyForPanel = extractCleanCopy(cleanContent);
+          const formattedCopyForPanel = cleanCopyForPanel
             .replace(/\*\*([^*]+)\*\*/g, '<strong style="font-weight: 700;">$1</strong>')
             .replace(/_([^_]+)_/g, '<em style="font-style: italic;">$1</em>')
-            .replace(/\n/g, '<br>')}</div>`;
+            .replace(/\n/g, '<br>');
+          const copyHtmlForPanel = `<div style="font-family: 'Inter', Arial, sans-serif; padding: 24px; line-height: 1.9; font-size: 15px; color: #1a1a1a;">${formattedCopyForPanel}</div>`;
 
           // Detect if content looks like a copy (sales page, email, persuasive text, etc.)
           const looksLikeCopy = /\b(copy|headline|cta|oferta|venda|benefício|urgência|escassez|gatilho|persuasivo|landing\s*page|página\s*de\s*(vendas?|captura)|headline|subheadline|call.to.action)\b/i.test(userMessage.content || '') ||
@@ -3940,7 +3944,7 @@ ${structuredEmail.body}
 
           // Create card when in copywriting mode, when content looks like copy, or when large content
           const shouldShowCard = isCopywritingMode || looksLikeCopy || shouldOpenPanel;
-          const copyHtmlForPanel = shouldShowCard ? formattedCopyHtml : '';
+          const finalCopyHtmlForPanel = shouldShowCard ? copyHtmlForPanel : '';
           const cardTitle = shouldShowCard ? 'Copy gerada' : '';
           
           setMessages(prev => 
@@ -3963,7 +3967,7 @@ ${structuredEmail.body}
                   data: { 
                     isComplete: true, 
                     workflowSteps: completedWorkflowSteps,
-                    generatedHtml: copyHtmlForPanel,
+                    generatedHtml: finalCopyHtmlForPanel,
                     subject: cardTitle,
                     mode: 'copy' as const
                   } 
