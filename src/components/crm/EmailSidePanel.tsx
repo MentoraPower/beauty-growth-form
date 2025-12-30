@@ -843,7 +843,7 @@ export function EmailSidePanel({
               </button>
             )}
             
-            <div className="flex items-center gap-1 bg-muted/30 rounded-lg p-1">
+            <div className="flex items-center gap-1 bg-black/5 rounded-lg p-1">
               <button
                 onClick={() => setActiveTab('preview')}
                 className={cn(
