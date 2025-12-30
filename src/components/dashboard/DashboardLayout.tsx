@@ -103,6 +103,25 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
     localStorage.setItem('disparo_submenu_open', String(disparoSubmenuOpen));
   }, [disparoSubmenuOpen]);
 
+  // Listen for signal to open disparo submenu when new conversation is created
+  useEffect(() => {
+    const handleOpenSubmenu = () => {
+      const shouldOpen = localStorage.getItem('disparo-submenu-should-open');
+      if (shouldOpen === 'true') {
+        setDisparoSubmenuOpen(true);
+        localStorage.removeItem('disparo-submenu-should-open');
+      }
+    };
+
+    // Check on mount and listen for events
+    handleOpenSubmenu();
+    window.addEventListener('disparo-submenu-open', handleOpenSubmenu);
+    
+    return () => {
+      window.removeEventListener('disparo-submenu-open', handleOpenSubmenu);
+    };
+  }, []);
+
   // Sync activePanel with current route (without forcing submenu open)
   useEffect(() => {
     if (isDisparoActive && activePanel !== 'disparo') {
