@@ -697,14 +697,12 @@ export const PromptInputBox = React.forwardRef((props: PromptInputBoxProps, ref:
           </div>
 
           <PromptInputAction tooltip={isLoading ? "Gerando..." : "Enviar mensagem"}>
-            <Button
-              variant="default"
-              size="icon"
+            <button
               className={cn(
-                "h-8 w-8 rounded-full transition-all duration-200",
+                "h-9 w-9 rounded-full flex items-center justify-center transition-all duration-300 shadow-md",
                 hasContent && !isLoading
-                  ? "bg-gray-900 hover:bg-gray-800 text-white"
-                  : "bg-gray-200 text-gray-400 cursor-not-allowed"
+                  ? "bg-gradient-to-br from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white shadow-orange-500/30 hover:shadow-lg hover:shadow-orange-500/40 hover:scale-105"
+                  : "bg-gray-100 text-gray-300 cursor-not-allowed"
               )}
               onClick={() => {
                 if (hasContent && !isLoading) handleSubmit();
@@ -713,17 +711,13 @@ export const PromptInputBox = React.forwardRef((props: PromptInputBoxProps, ref:
             >
               {isLoading ? (
                 <div className="relative flex items-center justify-center">
-                  {/* Spinning circle border */}
-                  <div className="absolute inset-0 rounded-full border-2 border-transparent border-t-gray-600 animate-spin" />
-                  {/* Square with dot in the middle */}
-                  <div className="w-3 h-3 bg-gray-600 rounded-sm flex items-center justify-center">
-                    <div className="w-1.5 h-1.5 bg-white rounded-full" />
-                  </div>
+                  <div className="absolute inset-0 rounded-full border-2 border-transparent border-t-white animate-spin" />
+                  <div className="w-2.5 h-2.5 bg-white rounded-sm" />
                 </div>
               ) : (
-                <ArrowUp className="h-4 w-4" />
+                <ArrowUp className="h-4 w-4 stroke-[2.5]" />
               )}
-            </Button>
+            </button>
           </PromptInputAction>
         </PromptInputActions>
       </PromptInput>
