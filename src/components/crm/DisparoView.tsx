@@ -18,6 +18,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { Check, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import disparoLogo from "@/assets/disparo-logo.png";
+import { useTypewriter } from "@/hooks/useTypewriter";
+import { useProgressiveSteps } from "@/hooks/useProgressiveSteps";
 
 interface DisparoViewProps {
   subOriginId: string | null;
@@ -600,6 +602,23 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
   const [csvListId, setCsvListId] = useState<string | null>(null); // Persisted CSV list ID for dispatch
   const [csvMappedColumns, setCsvMappedColumns] = useState<{ name?: string; email?: string; whatsapp?: string }>({});
   
+  // Typewriter hook for smooth text streaming
+  const typewriter = useTypewriter({ 
+    charsPerTick: 12, 
+    tickInterval: 16, 
+    catchUpThreshold: 150,
+    catchUpMultiplier: 5 
+  });
+  
+  // Progressive steps hook for Data Intelligence animation
+  const progressiveSteps = useProgressiveSteps({
+    stepDelay: 350,
+    minStepDuration: 500,
+  });
+  
+  // Track which message is currently streaming (for typewriter)
+  const streamingMessageIdRef = useRef<string | null>(null);
+  
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const chatScrollRef = useRef<HTMLDivElement>(null);
   const shouldAutoScrollRef = useRef(true);
@@ -653,6 +672,18 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
   useEffect(() => {
     conversationIdRef.current = currentConversationId;
   }, [currentConversationId]);
+
+  // TYPEWRITER SYNC: Update message content as typewriter animates
+  useEffect(() => {
+    const messageId = streamingMessageIdRef.current;
+    if (!messageId || !typewriter.displayedContent) return;
+    
+    setMessages(prev => 
+      prev.map(m => 
+        m.id === messageId ? { ...m, content: typewriter.displayedContent } : m
+      )
+    );
+  }, [typewriter.displayedContent]);
 
   // Helper to log actions with timestamp
   const logAction = useCallback((actor: 'user' | 'ai' | 'system', action: string, details?: string) => {
@@ -3268,13 +3299,22 @@ INSTRUÇÕES PARA VOCÊ (IA):
         timestamp: new Date(),
         componentData: isCsvUpload ? { 
           type: 'data_intelligence' as const, 
-          data: { insightSteps: dataIntelligenceSteps } 
+          data: { insightSteps: [] } // Will be populated progressively
         } : { 
           type: 'email_generator_streaming' as const, 
           data: { workflowSteps: initialWorkflowSteps } 
         },
       };
       setMessages(prev => [...prev, initialAssistantMessage]);
+      
+      // SETUP TYPEWRITER: Reset and prepare for streaming
+      typewriter.reset();
+      streamingMessageIdRef.current = assistantMessageId;
+      
+      // SETUP PROGRESSIVE STEPS: Start animation for Data Intelligence if CSV upload
+      if (isCsvUpload) {
+        progressiveSteps.startAnimation(dataIntelligenceSteps);
+      }
       
       // CRITICAL: Save immediately when AI response starts to ensure message exists in DB
       setTimeout(() => {
@@ -3287,6 +3327,9 @@ INSTRUÇÕES PARA VOCÊ (IA):
       
       // Track if content is being suppressed (HTML/code detection)
       let isContentSuppressed = false;
+      
+      // Raw content buffer (separate from typewriter display)
+      let rawAssistantContent = "";
       
       // Detect if content contains technical/HTML code that should be suppressed
       const isTechnicalContent = (content: string): boolean => {
@@ -3348,95 +3391,60 @@ INSTRUÇÕES PARA VOCÊ (IA):
         return displayContent;
       };
       
-      // Throttled update function with conversation guard
+      // Throttled update function with conversation guard - NOW USES TYPEWRITER
       const flushContentToUI = () => {
         pendingUpdate = false;
         
         // CRITICAL: Check if this run is still active and for the correct conversation
         if (activeRunIdRef.current !== runId || conversationIdRef.current !== targetConversationId) {
-          console.log('[DisparoView] Skipping UI update - run/conversation changed', {
-            expectedRunId: runId,
-            currentRunId: activeRunIdRef.current,
-            expectedConvId: targetConversationId,
-            currentConvId: conversationIdRef.current
-          });
+          console.log('[DisparoView] Skipping UI update - run/conversation changed');
           return;
         }
         
-        // Get content to display (may be placeholder if technical)
-        const displayContent = getDisplayContent(assistantContent);
+        // Get raw content for processing (check if technical)
+        const isTech = isTechnicalContent(rawAssistantContent);
         
-        // Updated workflow steps once content starts
-        const generatingSteps: WorkStep[] = isCopywritingMode ? [
-          createCustomStep('analysis', 'Contexto analisado', 'completed', { 
-            icon: 'search',
-            description: `Parsed: "${promptSummary}"`,
-            summary: 'Identified target audience, tone, and key selling points from user prompt.'
-          }),
-          createCustomStep('generation', 'Gerando copy...', 'in_progress', { 
-            icon: 'sparkles',
-            description: 'AI is crafting persuasive content with AIDA structure',
-            summary: 'Writing headline, emotional hooks, benefits, objections handling, and CTA.'
-          }),
-          createCustomStep('review', 'Pronto para revisão', 'pending', { 
-            icon: 'edit',
-            description: 'Content will be available for editing'
-          }),
-        ] : [
-          createCustomStep('analysis', 'Processando', 'in_progress', { 
-            icon: 'search',
-            description: `Parsed: "${promptSummary}"`
-          }),
-        ];
+        if (isTech && !isContentSuppressed) {
+          isContentSuppressed = true;
+          // For technical content, show placeholder instead of typewriter
+          typewriter.reset();
+          setMessages(prev => 
+            prev.map(m => m.id === assistantMessageId 
+              ? { ...m, content: 'Gerando email...' }
+              : m
+            )
+          );
+        } else if (!isTech) {
+          // Feed content to typewriter for smooth display
+          const displayContent = getDisplayContent(rawAssistantContent);
+          typewriter.setFullContent(displayContent);
+        }
         
-        // Steps for when content has completed
-        const completedSimpleSteps: WorkStep[] = [
-          createCustomStep('analysis', 'Resposta gerada', 'completed', { 
-            icon: 'sparkles',
-            description: `Parsed: "${promptSummary}"`
-          }),
-        ];
-        
-        // Determine which steps to show based on content length and mode
-        const shouldShowCompleted = !isCopywritingMode && assistantContent.length > 20;
-        const currentSteps = shouldShowCompleted ? completedSimpleSteps : generatingSteps;
-        
-        setMessages(prev => 
-          prev.map(m => {
-            if (m.id !== assistantMessageId) return m;
-            
-            // CRITICAL: Preserve data_intelligence type and all its data - never overwrite
-            if (m.componentData?.type === 'data_intelligence') {
+        // Update Data Intelligence steps progressively
+        if (isCsvUpload && progressiveSteps.visibleSteps.length > 0) {
+          setMessages(prev => 
+            prev.map(m => {
+              if (m.id !== assistantMessageId) return m;
+              if (m.componentData?.type !== 'data_intelligence') return m;
               return { 
                 ...m, 
-                content: displayContent,
                 componentData: {
                   ...m.componentData,
-                  data: { ...m.componentData.data }
+                  data: { 
+                    ...m.componentData.data,
+                    insightSteps: progressiveSteps.visibleSteps 
+                  }
                 }
               };
-            }
-            
-            return { 
-              ...m, 
-              content: displayContent,
-              // Update workflowSteps in componentData when content starts
-              componentData: assistantContent.length > 20 
-                ? { type: 'email_generator_streaming' as const, data: { workflowSteps: currentSteps } }
-                : m.componentData
-            };
-          })
-        );
-        
-        // Update workflow to "generating" once we start receiving content (for visual in side panel)
-        if (isCopywritingMode && assistantContent.length > 20 && !hasStartedContent) {
-          hasStartedContent = true;
+            })
+          );
         }
         
         // INCREMENTAL SAVE: Save every 3 seconds during streaming to persist partial content
         const now = Date.now();
-        if (assistantContent.length > 50 && now - lastStreamSaveTimeRef.current >= STREAM_SAVE_INTERVAL) {
+        if (rawAssistantContent.length > 50 && now - lastStreamSaveTimeRef.current >= STREAM_SAVE_INTERVAL) {
           lastStreamSaveTimeRef.current = now;
+          // Use raw content for saving (not displayed content)
           saveConversationNow();
         }
       };
@@ -3481,7 +3489,7 @@ INSTRUÇÕES PARA VOCÊ (IA):
             const parsed = JSON.parse(jsonStr);
             const content = parsed.choices?.[0]?.delta?.content as string | undefined;
             if (content) {
-              assistantContent += content;
+              rawAssistantContent += content;
               scheduleUpdate(); // Throttled update
             }
           } catch {
@@ -3490,6 +3498,32 @@ INSTRUÇÕES PARA VOCÊ (IA):
             break;
           }
         }
+      }
+
+      // Mark streaming complete - typewriter will catch up smoothly
+      typewriter.completeStreaming();
+      
+      // Complete progressive steps animation for Data Intelligence
+      if (isCsvUpload) {
+        progressiveSteps.completeAllSteps();
+        // Update message with final completed steps
+        const finalSteps = progressiveSteps.getFinalSteps();
+        setMessages(prev => 
+          prev.map(m => {
+            if (m.id !== assistantMessageId) return m;
+            if (m.componentData?.type !== 'data_intelligence') return m;
+            return { 
+              ...m, 
+              componentData: {
+                ...m.componentData,
+                data: { 
+                  ...m.componentData.data,
+                  insightSteps: finalSteps.length > 0 ? finalSteps : dataIntelligenceSteps
+                }
+              }
+            };
+          })
+        );
       }
 
       // Final flush - ensure all content is displayed
@@ -3508,23 +3542,26 @@ INSTRUÇÕES PARA VOCÊ (IA):
             const parsed = JSON.parse(jsonStr);
             const content = parsed.choices?.[0]?.delta?.content as string | undefined;
             if (content) {
-              assistantContent += content;
+              rawAssistantContent += content;
             }
           } catch { /* ignore */ }
         }
         // Final flush after processing remaining buffer
         flushContentToUI();
       }
+      
+      // Clean up streaming state
+      streamingMessageIdRef.current = null;
 
       // Process commands after streaming is complete
-      if (assistantContent) {
+      if (rawAssistantContent) {
         // CRITICAL: Final check - ensure this run is still active for the correct conversation
         if (activeRunIdRef.current !== runId || conversationIdRef.current !== targetConversationId) {
           console.log('[DisparoView] Aborting post-stream processing - run/conversation changed');
           return;
         }
         
-        const { cleanContent, components, csvChanged } = await processCommands(assistantContent);
+        const { cleanContent, components, csvChanged } = await processCommands(rawAssistantContent);
         
         // If CSV was changed, trigger immediate save
         if (csvChanged) {
