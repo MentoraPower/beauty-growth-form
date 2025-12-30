@@ -3655,7 +3655,7 @@ ${hasName && hasEmail ? `Lista pronta! Guardei os ${leadsWithEmail} leads com em
                         opacity: 1
                       }}
                       transition={{ 
-                        delay: 0.55,
+                        delay: 0.75,
                         duration: 0.5,
                         ease: [0.22, 1, 0.36, 1]
                       }}
