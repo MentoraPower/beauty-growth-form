@@ -700,10 +700,10 @@ export const PromptInputBox = React.forwardRef((props: PromptInputBoxProps, ref:
           <PromptInputAction tooltip={isLoading ? "Gerando..." : "Enviar mensagem"}>
             <button
               className={cn(
-                "h-9 w-9 rounded-full flex items-center justify-center transition-all duration-300 shadow-md",
+                "h-9 w-9 rounded-full flex items-center justify-center transition-all duration-300 shadow-md bg-gray-900 text-white",
                 hasContent && !isLoading
-                  ? "bg-gray-900 hover:bg-gray-800 text-white shadow-gray-500/30 hover:shadow-lg hover:scale-105"
-                  : "bg-gray-100 text-gray-300 cursor-not-allowed"
+                  ? "hover:bg-gray-800 shadow-gray-500/30 hover:shadow-lg hover:scale-105"
+                  : "opacity-60"
               )}
               onClick={() => {
                 if (hasContent && !isLoading) handleSubmit();
