@@ -2218,11 +2218,22 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
         setSidePanelGenerating(false);
         logAction('ai', 'Gerou email a partir da descrição', `Assunto: "${finalSubject}", ${cleanHtml.length} caracteres`);
 
-        // Update message - keep the indicator but mark as complete
+        // Update message with generated HTML so EmailChatCard appears
         setMessages(prev => 
           prev.map(m => 
             m.id === assistantMessageId 
-              ? { ...m, content: "", componentData: { type: 'email_generator_streaming' as const, data: { isComplete: true } } }
+              ? { 
+                  ...m, 
+                  content: "Email criado! Clique no card para visualizar e editar.", 
+                  componentData: { 
+                    type: 'email_generator_streaming' as const, 
+                    data: { 
+                      isComplete: true,
+                      generatedHtml: cleanHtml,
+                      subject: finalSubject
+                    } 
+                  } 
+                }
               : m
           )
         );
