@@ -4278,15 +4278,7 @@ ${structuredEmail.body}
                             <AIWorkDetails steps={msg.componentData.data.workflowSteps as WorkStep[]} />
                           </motion.div>
                         )}
-                        {/* Message content first */}
-                        {msg.content && (
-                          <div>
-                            <p className="text-[15px] leading-relaxed whitespace-pre-wrap text-foreground">
-                              {formatMessageContent(msg.content)}
-                            </p>
-                          </div>
-                        )}
-                        {/* Data Intelligence - appears BELOW message content */}
+                        {/* Data Intelligence - appears ABOVE message content */}
                         {msg.componentData?.type === 'data_intelligence' && 
                          msg.componentData?.data?.insightSteps && 
                          Array.isArray(msg.componentData.data.insightSteps) &&
@@ -4295,10 +4287,18 @@ ${structuredEmail.body}
                             initial={{ opacity: 0, y: 10 }}
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ duration: 0.3, delay: 0.1 }}
-                            className="mt-3"
+                            className="mb-3"
                           >
                             <DataIntelligence steps={msg.componentData.data.insightSteps as InsightStep[]} />
                           </motion.div>
+                        )}
+                        {/* Message content below */}
+                        {msg.content && (
+                          <div>
+                            <p className="text-[15px] leading-relaxed whitespace-pre-wrap text-foreground">
+                              {formatMessageContent(msg.content)}
+                            </p>
+                          </div>
                         )}
                         {/* Email card - shows when there's HTML content in this message */}
                         {msg.componentData?.type === 'email_generator_streaming' && msg.componentData?.data?.generatedHtml && (
