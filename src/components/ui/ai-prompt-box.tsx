@@ -535,12 +535,10 @@ export const PromptInputBox = React.forwardRef((props: PromptInputBoxProps, ref:
   const hasContent = input.trim() !== "" || files.length > 0;
 
   return (
-    <div className="relative">
-      {/* Top floating header */}
-      <div className="absolute -top-3 left-1/2 -translate-x-1/2 z-10">
-        <div className="px-4 py-1.5 bg-gradient-to-r from-gray-100 to-gray-50 border border-gray-200/80 rounded-full shadow-sm">
-          <span className="text-xs font-medium text-gray-500 tracking-wide">Ask Scale to create</span>
-        </div>
+    <div className="relative flex flex-col">
+      {/* Top header bar with gray background */}
+      <div className="px-4 py-3 bg-gray-200/80 rounded-t-3xl">
+        <span className="text-sm font-medium text-gray-700">Ask Scale to create</span>
       </div>
 
       <PromptInput
@@ -549,7 +547,7 @@ export const PromptInputBox = React.forwardRef((props: PromptInputBoxProps, ref:
         isLoading={isLoading}
         onSubmit={handleSubmit}
         className={cn(
-          "w-full bg-white/80 backdrop-blur-xl border-gray-200 shadow-lg transition-all duration-300 ease-in-out min-h-[180px] flex flex-col pt-4",
+          "w-full bg-white backdrop-blur-xl border-gray-200 shadow-lg transition-all duration-300 ease-in-out min-h-[160px] flex flex-col rounded-t-none border-t-0",
           isRecording && "border-red-500/70",
           className
         )}
