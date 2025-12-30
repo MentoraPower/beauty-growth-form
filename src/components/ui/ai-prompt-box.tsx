@@ -552,10 +552,6 @@ export const PromptInputBox = React.forwardRef((props: PromptInputBoxProps, ref:
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
       >
-        {/* Top header bar with border */}
-        <div className="-mx-2 -mt-2 mb-3 px-4 py-2.5 border-b border-gray-200/80 bg-gray-50/50 rounded-t-3xl">
-          <span className="text-xs font-medium text-gray-500 tracking-wide">Ask Scale to create</span>
-        </div>
         {files.length > 0 && !isRecording && (
           <div className="flex flex-wrap gap-2 p-0 pb-1 transition-all duration-300">
             {files.map((file, index) => (
@@ -721,6 +717,11 @@ export const PromptInputBox = React.forwardRef((props: PromptInputBoxProps, ref:
           </PromptInputAction>
         </PromptInputActions>
       </PromptInput>
+
+      {/* Bottom footer bar */}
+      <div className="-mx-2 -mb-2 mt-3 px-4 py-2.5 border-t border-gray-200/80 bg-gray-50/50 rounded-b-3xl">
+        <span className="text-xs font-medium text-gray-500 tracking-wide">Ask Scale to create</span>
+      </div>
 
       <ImageViewDialog imageUrl={selectedImage} onClose={() => setSelectedImage(null)} />
     </>
