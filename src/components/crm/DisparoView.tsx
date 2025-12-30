@@ -1005,8 +1005,55 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
             return msg;
           });
 
+          // BACKFILL: Auto-repair old conversations where data_intelligence was lost
+          let didBackfill = false;
+          for (let i = 0; i < loadedMessages.length - 1; i++) {
+            const userMsg = loadedMessages[i];
+            const assistantMsg = loadedMessages[i + 1];
+            
+            // If user message has csv_preview and next assistant message doesn't have data_intelligence
+            if (
+              userMsg.role === 'user' &&
+              userMsg.componentData?.type === 'csv_preview' &&
+              assistantMsg.role === 'assistant' &&
+              assistantMsg.componentData?.type !== 'data_intelligence'
+            ) {
+              const csvData = userMsg.componentData.data;
+              if (csvData) {
+                // Regenerate insight steps from CSV data
+                const insightSteps = createCsvAnalysisSteps({
+                  fileName: csvData.fileName || 'lista.csv',
+                  headers: csvData.columns || csvData.headers || [],
+                  rawData: csvData.previewData || csvData.rawData || [],
+                  mappedColumns: csvData.mappedColumns || {}
+                });
+                
+                // Update assistant message with data_intelligence
+                loadedMessages[i + 1] = {
+                  ...assistantMsg,
+                  componentData: {
+                    type: 'data_intelligence' as const,
+                    data: { insightSteps }
+                  }
+                };
+                didBackfill = true;
+                console.log('[DisparoView] Backfill: Restored data_intelligence for message', assistantMsg.id);
+              }
+            }
+          }
+
           setCurrentConversationId(convId);
           setMessages(loadedMessages);
+
+          // If we did backfill, save the corrected messages to DB
+          if (didBackfill) {
+            console.log('[DisparoView] Backfill complete, scheduling save...');
+            // Use a small delay to ensure state is settled
+            setTimeout(() => {
+              // Manually trigger save by updating the signature
+              lastSavedSignatureRef.current = '';
+            }, 300);
+          }
 
           // Stop showing the loading state as soon as the core chat content is ready
           if (loadingConversationIdRef.current === convId) {
@@ -3566,20 +3613,33 @@ ${hasName && hasEmail ? `Lista pronta! Guardei os ${leadsWithEmail} leads com em
         }
         
         setMessages(prev => 
-          prev.map(m => 
-            m.id === assistantMessageId 
-              ? { 
-                  ...m, 
-                  content: cleanContent,
-                  componentData,
-                  component: finalComponents.length > 0 ? (
-                    <div className="mt-4 space-y-4">
-                      {finalComponents}
-                    </div>
-                  ) : undefined
-                }
-              : m
-          )
+          prev.map(m => {
+            if (m.id !== assistantMessageId) return m;
+            
+            // CRITICAL: Preserve data_intelligence - never overwrite it
+            if (m.componentData?.type === 'data_intelligence') {
+              return { 
+                ...m, 
+                content: cleanContent,
+                component: finalComponents.length > 0 ? (
+                  <div className="mt-4 space-y-4">
+                    {finalComponents}
+                  </div>
+                ) : undefined
+              };
+            }
+            
+            return { 
+              ...m, 
+              content: cleanContent,
+              componentData,
+              component: finalComponents.length > 0 ? (
+                <div className="mt-4 space-y-4">
+                  {finalComponents}
+                </div>
+              ) : undefined
+            };
+          })
         );
         
         // Force immediate save after streaming completes for ALL messages
