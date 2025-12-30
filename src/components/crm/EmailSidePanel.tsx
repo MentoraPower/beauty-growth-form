@@ -660,7 +660,7 @@ export function EmailSidePanel({
               {onClose && (
                 <button
                   onClick={onClose}
-                  className="w-8 h-8 rounded-full border border-border bg-background hover:bg-muted flex items-center justify-center transition-colors group"
+                  className="w-8 h-8 rounded-full border border-border/30 bg-white hover:bg-zinc-50 flex items-center justify-center transition-colors group"
                   title="Fechar painel"
                 >
                   <ChevronsRight className="w-4 h-4 text-muted-foreground group-hover:text-foreground transition-colors" />
@@ -675,7 +675,7 @@ export function EmailSidePanel({
               <span>{dispatchJob?.sent_count || 0} de {dispatchJob?.valid_leads || 0} enviados</span>
               <span className="font-semibold text-foreground">{progress}%</span>
             </div>
-            <div className="h-2.5 bg-muted rounded-full overflow-hidden">
+            <div className="h-2.5 bg-zinc-100 rounded-full overflow-hidden">
               <motion.div
                 initial={{ width: 0 }}
                 animate={{ width: `${progress}%` }}
@@ -836,14 +836,14 @@ export function EmailSidePanel({
             {onClose && (
               <button
                 onClick={onClose}
-                className="w-8 h-8 rounded-full border border-border/30 bg-white hover:bg-muted flex items-center justify-center transition-colors group"
+                className="w-8 h-8 rounded-full border border-border/30 bg-white hover:bg-zinc-50 flex items-center justify-center transition-colors group"
                 title="Fechar painel"
               >
                 <ChevronsRight className="w-4 h-4 text-muted-foreground group-hover:text-foreground transition-colors" />
               </button>
             )}
             
-            <div className="flex items-center gap-1 bg-black/5 rounded-lg p-1">
+            <div className="flex items-center gap-1 bg-zinc-100 rounded-lg p-1">
               <button
                 onClick={() => setActiveTab('preview')}
                 className={cn(
