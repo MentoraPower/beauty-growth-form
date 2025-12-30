@@ -3307,6 +3307,8 @@ ${hasName && hasEmail ? `Lista pronta! Guardei os ${leadsWithEmail} leads com em
                             <EmailChatCard
                               subject={msg.componentData?.data?.subject || sidePanelSubject || "Email Template"}
                               previewHtml={msg.componentData?.data?.generatedHtml || sidePanelHtml}
+                              chatName={msg.componentData?.data?.subject || sidePanelSubject || "Email gerado"}
+                              createdAt={msg.timestamp instanceof Date ? msg.timestamp : undefined}
                               onClick={() => {
                                 const data = msg.componentData?.data;
                                 if (data?.generatedHtml) {
