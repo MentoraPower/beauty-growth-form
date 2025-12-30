@@ -3628,28 +3628,27 @@ ${hasName && hasEmail ? `Lista pronta! Guardei os ${leadsWithEmail} leads com em
           ) : (
             <div className="flex-1 flex items-center justify-center p-6 px-8">
               <div className="w-full max-w-3xl">
-                {/* Animated header with logo rising and spinning */}
+                {/* Animated header: logo rises spinning, then text reveals, then input appears */}
                 <div className="text-center mb-8">
                   <div className="flex items-center justify-center gap-3">
                     <motion.img 
                       src={disparoLogo} 
                       alt="Logo" 
                       className="w-10 h-10"
-                      initial={{ y: 80, opacity: 0, rotate: 0 }}
-                      animate={{ y: 0, opacity: 1, rotate: 360 }}
+                      initial={{ y: 100, opacity: 0, rotate: -180 }}
+                      animate={{ y: 0, opacity: 1, rotate: 0 }}
                       transition={{ 
-                        y: { duration: 0.8, ease: [0.16, 1, 0.3, 1] },
-                        opacity: { duration: 0.5 },
-                        rotate: { duration: 0.8, ease: "easeOut" }
+                        duration: 1,
+                        ease: [0.16, 1, 0.3, 1]
                       }}
                     />
                     <motion.h2 
                       className="text-3xl font-semibold text-foreground whitespace-nowrap"
-                      initial={{ opacity: 0, x: -20 }}
+                      initial={{ opacity: 0, x: -10 }}
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ 
-                        delay: 0.5,
-                        duration: 0.5,
+                        delay: 0.7,
+                        duration: 0.6,
                         ease: [0.16, 1, 0.3, 1]
                       }}
                     >
@@ -3657,12 +3656,12 @@ ${hasName && hasEmail ? `Lista pronta! Guardei os ${leadsWithEmail} leads com em
                     </motion.h2>
                   </div>
                 </div>
-                {/* Input appearing with fade-in from bottom */}
+                {/* Input appearing after text */}
                 <motion.div
-                  initial={{ opacity: 0, y: 20 }}
+                  initial={{ opacity: 0, y: 15 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ 
-                    delay: 0.3,
+                    delay: 1.1,
                     duration: 0.5,
                     ease: [0.16, 1, 0.3, 1]
                   }}
@@ -3676,7 +3675,7 @@ ${hasName && hasEmail ? `Lista pronta! Guardei os ${leadsWithEmail} leads com em
                     className="text-xs text-muted-foreground text-center mt-3"
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
-                    transition={{ delay: 0.7, duration: 0.4 }}
+                    transition={{ delay: 1.4, duration: 0.4 }}
                   >
                     A Scale pode cometer erros. Confira informações importantes.
                   </motion.p>
