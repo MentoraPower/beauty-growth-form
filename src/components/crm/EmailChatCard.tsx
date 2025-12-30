@@ -35,11 +35,10 @@ export function EmailChatCard({
   const timeAgo = createdAt ? getRelativeTime(createdAt) : "";
 
   return (
-    <div className="flex flex-col items-start pl-4">
-      {/* Vertical line + AnimatedCircle */}
-      <div className="flex flex-col items-center mb-2 mt-4">
-        <div className="w-px h-8 bg-gradient-to-b from-transparent via-zinc-600 to-zinc-500" />
-        <AnimatedCircle className="w-5 h-5" />
+    <div className="flex flex-col items-start pl-4 pt-6">
+      {/* AnimatedCircle */}
+      <div className="mb-2">
+        <AnimatedCircle className="w-4 h-4" />
       </div>
       
       <motion.div
