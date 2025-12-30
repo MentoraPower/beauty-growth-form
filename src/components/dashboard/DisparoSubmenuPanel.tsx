@@ -268,14 +268,14 @@ export function DisparoSubmenuPanel({ isOpen, onClose }: DisparoSubmenuPanelProp
 
         {/* Search */}
         {conversations.length > 0 && (
-          <div className="px-2 mb-2">
+          <div className="px-2 py-3">
             <div className="relative">
-              <Search className="absolute left-0 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-white/40" />
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-white/40" />
               <Input 
                 placeholder="Buscar..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-6 h-8 text-xs bg-transparent border-0 border-b border-white/20 rounded-none text-white placeholder:text-white/40 focus-visible:ring-0 focus-visible:border-white/40"
+                className="pl-8 h-8 text-xs bg-white/5 border-white/10 rounded-md text-white placeholder:text-white/40 focus-visible:ring-1 focus-visible:ring-white/20 focus-visible:border-white/20"
               />
             </div>
           </div>
