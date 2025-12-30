@@ -432,33 +432,89 @@ const stripCsvOperations = (content: string): string => {
 };
 
 
-// Extract subject and HTML from AI response
-const extractSubjectAndHtml = (content: string): { subject: string; html: string } => {
+// Extract structured email data from AI response (NOME/ASSUNTO/PREHEADER/CORPO format)
+interface ExtractedEmailData {
+  emailName: string;
+  subject: string;
+  preheader: string;
+  body: string;
+  isStructuredEmail: boolean;
+}
+
+const extractStructuredEmail = (content: string): ExtractedEmailData => {
+  const result: ExtractedEmailData = {
+    emailName: '',
+    subject: '',
+    preheader: '',
+    body: '',
+    isStructuredEmail: false
+  };
+  
+  // Check if it's the structured format
+  const hasEmailFormat = content.includes('---INÍCIO DO EMAIL---') || 
+    (content.includes('NOME DO EMAIL:') && content.includes('ASSUNTO:') && content.includes('CORPO:'));
+  
+  if (!hasEmailFormat) {
+    return result;
+  }
+  
+  result.isStructuredEmail = true;
+  
+  // Extract NOME DO EMAIL
+  const nameMatch = content.match(/NOME DO EMAIL:\s*([^\n]+)/i);
+  if (nameMatch) result.emailName = nameMatch[1].trim();
+  
+  // Extract ASSUNTO
+  const subjectMatch = content.match(/ASSUNTO:\s*([^\n]+)/i);
+  if (subjectMatch) result.subject = subjectMatch[1].trim();
+  
+  // Extract PREHEADER
+  const preheaderMatch = content.match(/PREHEADER:\s*([^\n]+)/i);
+  if (preheaderMatch) result.preheader = preheaderMatch[1].trim();
+  
+  // Extract CORPO (everything after CORPO: until ---FIM DO EMAIL--- or end)
+  const bodyMatch = content.match(/CORPO:\s*([\s\S]*?)(?:---FIM DO EMAIL---|$)/i);
+  if (bodyMatch) result.body = bodyMatch[1].trim();
+  
+  return result;
+};
+
+// Extract subject, preheader, and HTML from AI response (for generate-email function)
+const extractSubjectPreheaderAndHtml = (content: string): { subject: string; preheader: string; html: string } => {
   const lines = content.split('\n');
   let subject = '';
+  let preheader = '';
   let htmlStartIndex = 0;
   
-  // Look for ASSUNTO: line at the start
-  for (let i = 0; i < Math.min(5, lines.length); i++) {
+  // Look for ASSUNTO: and PREHEADER: lines at the start
+  for (let i = 0; i < Math.min(10, lines.length); i++) {
     const line = lines[i].trim();
     if (line.toUpperCase().startsWith('ASSUNTO:')) {
       subject = line.substring(8).trim();
       htmlStartIndex = i + 1;
-      // Skip empty lines after subject
-      while (htmlStartIndex < lines.length && lines[htmlStartIndex].trim() === '') {
-        htmlStartIndex++;
-      }
-      break;
+    } else if (line.toUpperCase().startsWith('PREHEADER:')) {
+      preheader = line.substring(10).trim();
+      htmlStartIndex = i + 1;
+    }
+    // Skip empty lines after metadata
+    if (htmlStartIndex > 0 && lines[htmlStartIndex]?.trim() === '') {
+      htmlStartIndex++;
     }
   }
   
-  // Get HTML part (everything after subject)
+  // Get HTML part (everything after subject/preheader)
   const html = lines.slice(htmlStartIndex).join('\n')
     .replace(/^```html\n?/i, '')
     .replace(/^```\n?/, '')
     .replace(/\n?```$/i, '')
     .trim();
   
+  return { subject, preheader, html };
+};
+
+// Legacy function for backwards compatibility
+const extractSubjectAndHtml = (content: string): { subject: string; html: string } => {
+  const { subject, html } = extractSubjectPreheaderAndHtml(content);
   return { subject, html };
 };
 
@@ -3229,6 +3285,58 @@ INSTRUÇÕES PARA VOCÊ (IA):
       // Track if we've started receiving content (for workflow updates)
       let hasStartedContent = false;
       
+      // Track if content is being suppressed (HTML/code detection)
+      let isContentSuppressed = false;
+      
+      // Detect if content contains technical/HTML code that should be suppressed
+      const isTechnicalContent = (content: string): boolean => {
+        // Check for HTML patterns
+        const htmlPatterns = [
+          /<!DOCTYPE/i,
+          /<html/i,
+          /<body/i,
+          /<table/i,
+          /<div\s/i,
+          /<style/i,
+          /<head/i,
+          /---INÍCIO DO EMAIL---/i, // Our structured email format
+        ];
+        
+        // Check for code fence
+        if (content.includes('```html') || content.includes('```')) {
+          return true;
+        }
+        
+        // Check for high density of HTML tags
+        const tagCount = (content.match(/<[a-z]/gi) || []).length;
+        if (tagCount > 5 && content.length < 1000) {
+          return true;
+        }
+        
+        return htmlPatterns.some(p => p.test(content));
+      };
+      
+      // Get display content - either actual content or placeholder
+      const getDisplayContent = (content: string): string => {
+        // Check if this is a structured email format
+        if (content.includes('---INÍCIO DO EMAIL---') || 
+            (content.includes('NOME DO EMAIL:') && content.includes('ASSUNTO:'))) {
+          // Extract just the visible parts for display
+          const emailData = extractStructuredEmail(content);
+          if (emailData.isStructuredEmail && emailData.body) {
+            return `**${emailData.emailName || 'Email'}**\n\n**Assunto:** ${emailData.subject}\n\n${emailData.body.substring(0, 300)}${emailData.body.length > 300 ? '...' : ''}`;
+          }
+          return 'Criando email...';
+        }
+        
+        if (isTechnicalContent(content)) {
+          isContentSuppressed = true;
+          return 'Gerando email...';
+        }
+        
+        return content;
+      };
+      
       // Throttled update function with conversation guard
       const flushContentToUI = () => {
         pendingUpdate = false;
@@ -3243,6 +3351,9 @@ INSTRUÇÕES PARA VOCÊ (IA):
           });
           return;
         }
+        
+        // Get content to display (may be placeholder if technical)
+        const displayContent = getDisplayContent(assistantContent);
         
         // Updated workflow steps once content starts
         const generatingSteps: WorkStep[] = isCopywritingMode ? [
@@ -3285,12 +3396,12 @@ INSTRUÇÕES PARA VOCÊ (IA):
             
             // CRITICAL: Preserve data_intelligence type - never overwrite with email_generator_streaming
             if (m.componentData?.type === 'data_intelligence') {
-              return { ...m, content: assistantContent };
+              return { ...m, content: displayContent };
             }
             
             return { 
               ...m, 
-              content: assistantContent,
+              content: displayContent,
               // Update workflowSteps in componentData when content starts
               componentData: assistantContent.length > 20 
                 ? { type: 'email_generator_streaming' as const, data: { workflowSteps: currentSteps } }
@@ -3414,6 +3525,200 @@ INSTRUÇÕES PARA VOCÊ (IA):
           return truncated || 'user request';
         };
         const promptSummary = getPromptSummaryFinal(messageContent);
+        
+        // ===== NEW: Check for structured email format (NOME/ASSUNTO/PREHEADER/CORPO) =====
+        const structuredEmail = extractStructuredEmail(cleanContent);
+        
+        if (structuredEmail.isStructuredEmail && structuredEmail.body) {
+          console.log('[DisparoView] Detected structured email format, converting to HTML...', {
+            emailName: structuredEmail.emailName,
+            subject: structuredEmail.subject,
+            preheader: structuredEmail.preheader,
+            bodyLength: structuredEmail.body.length
+          });
+          
+          // Set the side panel metadata immediately
+          setSidePanelSubject(structuredEmail.subject);
+          setSidePanelPreheader(structuredEmail.preheader);
+          
+          // Final workflow steps for persistence
+          const wordCount = structuredEmail.body.split(/\s+/).length;
+          const completedWorkflowSteps: WorkStep[] = [
+            createCustomStep('analysis', 'Análise do contexto', 'completed', { 
+              icon: 'file',
+              description: `Parsed: "${promptSummary}"`,
+              summary: 'Extracted target audience, tone, and key messaging points from user input.'
+            }),
+            createCustomStep('generation', 'Copy criada', 'completed', { 
+              icon: 'sparkles',
+              description: `Generated ${wordCount} words`,
+              summary: 'Created persuasive email copy with AIDA structure.'
+            }),
+            createCustomStep('html', 'Convertendo para HTML...', 'in_progress', { 
+              icon: 'file',
+              description: 'Transforming copy into responsive email template'
+            }),
+          ];
+          
+          // Show a clean message in chat with the copy content (not HTML)
+          const chatDisplayContent = `**${structuredEmail.emailName || 'Email criado'}**
+
+**Assunto:** ${structuredEmail.subject}
+
+${structuredEmail.body}
+
+---
+*Gostou? Clique no card abaixo para revisar o email visual.*`;
+          
+          // Update message to show copy while HTML generates
+          setMessages(prev => 
+            prev.map(m => {
+              if (m.id !== assistantMessageId) return m;
+              return { 
+                ...m, 
+                content: chatDisplayContent,
+                componentData: { 
+                  type: 'email_generator_streaming' as const, 
+                  data: { 
+                    isComplete: false, 
+                    workflowSteps: completedWorkflowSteps,
+                    emailName: structuredEmail.emailName,
+                    subject: structuredEmail.subject,
+                    preheader: structuredEmail.preheader,
+                  } 
+                }
+              };
+            })
+          );
+          
+          // Now generate HTML from the copy using generate-email function
+          try {
+            setSidePanelGenerating(true);
+            const GENERATE_EMAIL_URL = `https://ytdfwkchsumgdvcroaqg.supabase.co/functions/v1/generate-email`;
+            
+            const response = await fetch(GENERATE_EMAIL_URL, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                hasCopy: true,
+                copyText: structuredEmail.body,
+                companyName: '',
+                productService: '',
+                tone: 'profissional',
+              }),
+            });
+
+            if (!response.ok) {
+              throw new Error("Erro ao gerar HTML do email");
+            }
+
+            if (!response.body) throw new Error("No response body");
+
+            const reader = response.body.getReader();
+            const decoder = new TextDecoder();
+            let buffer = "";
+            let generatedContent = "";
+
+            while (true) {
+              const { done, value } = await reader.read();
+              if (done) break;
+
+              buffer += decoder.decode(value, { stream: true });
+
+              let newlineIndex: number;
+              while ((newlineIndex = buffer.indexOf("\n")) !== -1) {
+                let line = buffer.slice(0, newlineIndex);
+                buffer = buffer.slice(newlineIndex + 1);
+
+                if (line.endsWith("\r")) line = line.slice(0, -1);
+                if (line.startsWith(":") || line.trim() === "") continue;
+                if (!line.startsWith("data: ")) continue;
+
+                const jsonStr = line.slice(6).trim();
+                if (jsonStr === "[DONE]") break;
+
+                try {
+                  const parsed = JSON.parse(jsonStr);
+                  const content = parsed.choices?.[0]?.delta?.content as string | undefined;
+                  if (content) {
+                    generatedContent += content;
+                    // Update side panel in real-time
+                    const { subject: subj, preheader: preh, html } = extractSubjectPreheaderAndHtml(generatedContent);
+                    if (html) setSidePanelHtml(html);
+                    // Keep our original subject/preheader from structured format (more accurate)
+                  }
+                } catch {
+                  // Incomplete JSON, continue
+                }
+              }
+            }
+
+            // Final extraction
+            const { html: finalHtml } = extractSubjectPreheaderAndHtml(generatedContent);
+            
+            setSidePanelHtml(finalHtml);
+            setHtmlSource('ai');
+            setSidePanelGenerating(false);
+            setSidePanelShowCodePreview(true);
+            setSidePanelMode('email');
+            
+            // Update completed workflow steps
+            const finalWorkflowSteps: WorkStep[] = [
+              createCustomStep('analysis', 'Análise do contexto', 'completed', { 
+                icon: 'file',
+                description: `Parsed: "${promptSummary}"`,
+                summary: 'Extracted target audience, tone, and key messaging points from user input.'
+              }),
+              createCustomStep('generation', 'Copy criada', 'completed', { 
+                icon: 'sparkles',
+                description: `Generated ${wordCount} words`,
+                summary: 'Created persuasive email copy with AIDA structure.'
+              }),
+              createCustomStep('html', 'HTML gerado', 'completed', { 
+                icon: 'file',
+                description: `${finalHtml.length} caracteres`,
+                summary: 'Responsive email template ready for review.'
+              }),
+            ];
+            
+            // Update message with completed state and generated HTML
+            setMessages(prev => 
+              prev.map(m => {
+                if (m.id !== assistantMessageId) return m;
+                return { 
+                  ...m, 
+                  content: chatDisplayContent,
+                  componentData: { 
+                    type: 'email_generator_streaming' as const, 
+                    data: { 
+                      isComplete: true, 
+                      workflowSteps: finalWorkflowSteps,
+                      generatedHtml: finalHtml,
+                      subject: structuredEmail.subject,
+                      preheader: structuredEmail.preheader,
+                      emailName: structuredEmail.emailName,
+                      mode: 'email' as const
+                    } 
+                  }
+                };
+              })
+            );
+            
+            logAction('ai', 'Converteu copy para HTML', `${wordCount} palavras → ${finalHtml.length} caracteres HTML`);
+            toast.success("Email HTML gerado!");
+            
+          } catch (error) {
+            console.error("[DisparoView] Error generating HTML from structured email:", error);
+            setSidePanelGenerating(false);
+            toast.error("Erro ao converter email para HTML");
+          }
+          
+          // Force save and return early - we handled the structured email
+          setTimeout(() => saveConversationNow(), 100);
+          setIsLoading(false);
+          return;
+        }
+        // ===== END: Structured email handling =====
         
         // Check if content is large (important copy, emails, etc.)
         const isLargeContent = cleanContent.length > 300;
