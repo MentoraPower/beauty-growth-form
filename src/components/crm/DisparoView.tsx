@@ -3246,7 +3246,7 @@ ${hasName && hasEmail ? `Lista pronta! Guardei os ${leadsWithEmail} leads com em
                     )}
                   >
                   {msg.role === "user" ? (
-                      <div className="max-w-[85%]">
+                      <div className="w-full">
                         {/* CSV Preview Card */}
                         {msg.componentData?.type === 'csv_preview' && (
                           <CsvChatCard
@@ -3278,7 +3278,7 @@ ${hasName && hasEmail ? `Lista pronta! Guardei os ${leadsWithEmail} leads com em
                         )}
                       </div>
                     ) : (
-                      <div className="max-w-[85%] group">
+                      <div className="w-full group">
                         {/* Message content first */}
                         {msg.content && (
                           <div>
