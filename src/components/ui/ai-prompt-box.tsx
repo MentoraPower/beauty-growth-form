@@ -542,7 +542,7 @@ export const PromptInputBox = React.forwardRef((props: PromptInputBoxProps, ref:
         isLoading={isLoading}
         onSubmit={handleSubmit}
         className={cn(
-          "w-full bg-white/80 backdrop-blur-xl border-gray-200 shadow-lg transition-all duration-300 ease-in-out min-h-[180px]",
+          "w-full bg-white/80 backdrop-blur-xl border-gray-200 shadow-lg transition-all duration-300 ease-in-out min-h-[180px] flex flex-col",
           isRecording && "border-red-500/70",
           className
         )}
@@ -628,7 +628,7 @@ export const PromptInputBox = React.forwardRef((props: PromptInputBoxProps, ref:
           />
         )}
 
-        <PromptInputActions className="flex items-center justify-between gap-1.5 p-0 pt-1">
+        <PromptInputActions className="flex items-center justify-between gap-1.5 p-0 mt-auto">
           <div
             className={cn(
               "flex items-center gap-1 transition-opacity duration-300",
