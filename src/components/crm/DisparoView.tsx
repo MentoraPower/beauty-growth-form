@@ -3645,13 +3645,19 @@ ${hasName && hasEmail ? `Lista pronta! Guardei os ${leadsWithEmail} leads com em
                       }}
                     />
                     <motion.h2 
-                      className="text-3xl font-semibold text-foreground whitespace-nowrap"
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
+                      className="text-3xl font-semibold text-foreground whitespace-nowrap overflow-hidden"
+                      initial={{ 
+                        clipPath: "inset(0 100% 0 0)",
+                        opacity: 0
+                      }}
+                      animate={{ 
+                        clipPath: "inset(0 0% 0 0)",
+                        opacity: 1
+                      }}
                       transition={{ 
                         delay: 0.85,
-                        duration: 0.4,
-                        ease: "easeOut"
+                        duration: 0.5,
+                        ease: [0.22, 1, 0.36, 1]
                       }}
                     >
                       Hey, ready to get started?
