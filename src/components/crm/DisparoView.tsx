@@ -284,6 +284,11 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
   const activeAbortRef = useRef<AbortController | null>(null);
   const activeRunIdRef = useRef<string | null>(null);
   const activeRunConversationIdRef = useRef<string | null>(null);
+  
+  // Prevent duplicate saves and track streaming saves
+  const isSavingRef = useRef(false);
+  const lastStreamSaveTimeRef = useRef(0);
+  const STREAM_SAVE_INTERVAL = 3000; // Save every 3 seconds during streaming
 
   const setConversationId = useCallback((id: string | null) => {
     conversationIdRef.current = id;
@@ -929,6 +934,14 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
     const convId = conversationIdRef.current;
     
     if (currentMessages.length === 0) return null;
+    
+    // Prevent duplicate saves while one is in progress
+    if (isSavingRef.current) {
+      console.log('[DisparoView] Save already in progress, skipping duplicate');
+      return null;
+    }
+    
+    isSavingRef.current = true;
 
     try {
 
@@ -1039,6 +1052,7 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
       console.error("Error saving conversation:", error);
       return null;
     } finally {
+      isSavingRef.current = false; // Always reset saving flag
       if (forceCreate) {
         isCreatingConversationRef.current = false;
       }
@@ -1132,15 +1146,45 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
 
   // Save on beforeunload (when user closes tab/refreshes)
   useEffect(() => {
-    const handleBeforeUnload = () => {
+    const handleBeforeUnload = (event: BeforeUnloadEvent) => {
       if (conversationIdRef.current && messagesRef.current.length > 0) {
+        // Attempt synchronous save using sendBeacon for reliability
+        try {
+          const conversationData = {
+            messages: messagesRef.current.map(m => ({
+              id: m.id,
+              content: m.content,
+              role: m.role,
+              timestamp: m.timestamp instanceof Date ? m.timestamp.toISOString() : m.timestamp,
+              componentData: m.componentData,
+            })),
+            sidePanelState: {
+              html: sidePanelHtml,
+              subject: sidePanelSubject,
+              isOpen: sidePanelOpen,
+            },
+          };
+          
+          // Use sendBeacon for reliable delivery during page unload
+          const url = `https://ytdfwkchsumgdvcroaqg.supabase.co/rest/v1/dispatch_conversations?id=eq.${conversationIdRef.current}`;
+          const payload = JSON.stringify({
+            messages: conversationData,
+            updated_at: new Date().toISOString()
+          });
+          
+          navigator.sendBeacon(url, new Blob([payload], { type: 'application/json' }));
+        } catch (error) {
+          console.error('[DisparoView] beforeunload save error:', error);
+        }
+        
+        // Also try async save as fallback
         saveConversationNow();
       }
     };
     
     window.addEventListener('beforeunload', handleBeforeUnload);
     return () => window.removeEventListener('beforeunload', handleBeforeUnload);
-  }, [saveConversationNow]);
+  }, [saveConversationNow, sidePanelHtml, sidePanelSubject, sidePanelOpen]);
 
   // Reset signature when conversation changes
   useEffect(() => {
@@ -2697,16 +2741,23 @@ ${hasName && hasEmail ? `Lista pronta! Guardei os ${leadsWithEmail} leads com em
       // The panel will open automatically when content threshold is reached (after generation)
 
       // Create initial assistant message - ALWAYS include workflowSteps for ALL messages
-      setMessages(prev => [...prev, {
+      const initialAssistantMessage = {
         id: assistantMessageId,
         content: "",
-        role: "assistant",
+        role: "assistant" as const,
         timestamp: new Date(),
         componentData: { 
           type: 'email_generator_streaming' as const, 
           data: { workflowSteps: initialWorkflowSteps } 
         },
-      }]);
+      };
+      setMessages(prev => [...prev, initialAssistantMessage]);
+      
+      // CRITICAL: Save immediately when AI response starts to ensure message exists in DB
+      setTimeout(() => {
+        saveConversationNow();
+        lastStreamSaveTimeRef.current = Date.now();
+      }, 100);
 
       // Track if we've started receiving content (for workflow updates)
       let hasStartedContent = false;
@@ -2779,6 +2830,13 @@ ${hasName && hasEmail ? `Lista pronta! Guardei os ${leadsWithEmail} leads com em
         // Update workflow to "generating" once we start receiving content (for visual in side panel)
         if (isCopywritingMode && assistantContent.length > 20 && !hasStartedContent) {
           hasStartedContent = true;
+        }
+        
+        // INCREMENTAL SAVE: Save every 3 seconds during streaming to persist partial content
+        const now = Date.now();
+        if (assistantContent.length > 50 && now - lastStreamSaveTimeRef.current >= STREAM_SAVE_INTERVAL) {
+          lastStreamSaveTimeRef.current = now;
+          saveConversationNow();
         }
       };
 
@@ -3132,6 +3190,11 @@ ${hasName && hasEmail ? `Lista pronta! Guardei os ${leadsWithEmail} leads com em
               : m
           )
         );
+        
+        // Force immediate save after streaming completes for ALL messages
+        setTimeout(() => {
+          saveConversationNow();
+        }, 150);
       }
 
     } catch (error) {
@@ -3158,6 +3221,8 @@ ${hasName && hasEmail ? `Lista pronta! Guardei os ${leadsWithEmail} leads com em
     // Clear processing locks
     isProcessingMessageRef.current = false;
     isCreatingConversationRef.current = false;
+    isSavingRef.current = false;
+    lastStreamSaveTimeRef.current = 0;
     
     // Clear refs
     conversationIdRef.current = null;
