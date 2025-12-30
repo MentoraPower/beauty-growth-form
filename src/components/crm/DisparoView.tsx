@@ -81,6 +81,16 @@ interface CsvParseResult {
     email?: string;
     whatsapp?: string;
   };
+  detailedStats?: {
+    totalLeads: number;
+    validEmails: number;
+    duplicatesRemoved: number;
+    withWhatsApp: number;
+    withoutWhatsApp: number;
+    emptyNames: number;
+    withNames: number;
+    topDomains: Array<{ domain: string; count: number; percent: string }>;
+  };
 }
 
 const CHAT_URL = `https://ytdfwkchsumgdvcroaqg.supabase.co/functions/v1/grok-chat`;
@@ -3027,22 +3037,78 @@ INSTRUÇÕES PARA VOCÊ (A IA):
           // Build the message content
           let content = userMessage.content;
           
-          // If CSV was just uploaded, provide natural context for AI
+          // If CSV was just uploaded, provide COMPLETE context for AI with ALL data
           if (csvParseResult && csvParseResult.leads.length > 0) {
-            const leadsWithEmail = csvParseResult.leads.filter(l => l.email && l.email.includes('@')).length;
+            const stats = csvParseResult.detailedStats;
+            const totalLeads = stats?.totalLeads ?? csvParseResult.leads.length;
+            const validEmails = stats?.validEmails ?? csvParseResult.leads.filter(l => l.email && l.email.includes('@')).length;
             const hasName = !!csvParseResult.mappedColumns.name;
             const hasEmail = !!csvParseResult.mappedColumns.email;
             
-            const csvContext = `[NOVA LISTA CSV RECEBIDA]
+            // Calculate local stats if not from server
+            const duplicatesRemoved = stats?.duplicatesRemoved ?? 0;
+            const withWhatsApp = stats?.withWhatsApp ?? csvParseResult.leads.filter(l => l.whatsapp && l.whatsapp.length >= 8).length;
+            const withoutWhatsApp = stats?.withoutWhatsApp ?? (validEmails - withWhatsApp);
+            const emptyNames = stats?.emptyNames ?? csvParseResult.leads.filter(l => !l.name?.trim()).length;
+            const withNames = stats?.withNames ?? (validEmails - emptyNames);
+            
+            // Build domain distribution text
+            let domainText = '';
+            if (stats?.topDomains && stats.topDomains.length > 0) {
+              domainText = stats.topDomains.map(d => 
+                `  - ${d.domain}: ${d.count} (${d.percent}%)`
+              ).join('\n');
+            } else {
+              // Calculate locally if not from server
+              const domainCounts: Record<string, number> = {};
+              csvParseResult.leads.forEach(l => {
+                if (l.email && l.email.includes('@')) {
+                  const domain = l.email.split('@')[1]?.toLowerCase() || 'outros';
+                  domainCounts[domain] = (domainCounts[domain] || 0) + 1;
+                }
+              });
+              const topDomains = Object.entries(domainCounts)
+                .sort((a, b) => b[1] - a[1])
+                .slice(0, 5);
+              domainText = topDomains.map(([domain, count]) => 
+                `  - ${domain}: ${count} (${((count / validEmails) * 100).toFixed(1)}%)`
+              ).join('\n');
+            }
+            
+            const csvContext = `[NOVA LISTA CSV RECEBIDA - DADOS COMPLETOS]
 Arquivo: "${csvFileNameLocal}"
-Total de leads: ${csvParseResult.leads.length}
-Colunas encontradas: ${csvParseResult.headers.join(', ')}
 
-Análise automática:
+═══════════════════════════════════════
+ESTATÍSTICAS COMPLETAS DA LISTA (VOCÊ TEM ACESSO A TODOS OS DADOS!)
+═══════════════════════════════════════
+📊 **TOTAIS:**
+- Total de linhas no arquivo: ${totalLeads}
+- Emails válidos (únicos): ${validEmails}
+- Duplicados removidos: ${duplicatesRemoved}
+
+📱 **WHATSAPP:**
+- Com WhatsApp: ${withWhatsApp}
+- Sem WhatsApp: ${withoutWhatsApp}
+
+👤 **NOMES:**
+- Com nome preenchido: ${withNames}
+- Sem nome (vazios): ${emptyNames}
+
+📧 **DISTRIBUIÇÃO POR DOMÍNIO DE EMAIL:**
+${domainText || '(não calculado)'}
+
+🔗 **COLUNAS MAPEADAS:**
 - Coluna de NOME: ${hasName ? `✅ "${csvParseResult.mappedColumns.name}"` : '❌ Não identificada'}
-- Coluna de EMAIL: ${hasEmail ? `✅ "${csvParseResult.mappedColumns.email}" (${leadsWithEmail} emails válidos)` : '❌ Não identificada'}
+- Coluna de EMAIL: ${hasEmail ? `✅ "${csvParseResult.mappedColumns.email}"` : '❌ Não identificada'}
+- Coluna de WHATSAPP: ${csvParseResult.mappedColumns.whatsapp ? `✅ "${csvParseResult.mappedColumns.whatsapp}"` : '❌ Não identificada'}
 
-${hasName && hasEmail ? `Lista pronta! Guardei os ${leadsWithEmail} leads com email válido para o disparo. Agora seja natural: pergunte se o usuário já tem um email pronto (HTML), quer criar com você, ou precisa de ajuda com a copy. NÃO force etapas, seja conversacional.` : `ATENÇÃO: ${!hasName ? 'Não encontrei a coluna de nome. ' : ''}${!hasEmail ? 'Não encontrei a coluna de email. ' : ''}Pergunte ao usuário qual coluna contém esses dados.`}`;
+═══════════════════════════════════════
+INSTRUÇÕES PARA VOCÊ (IA):
+- Você tem ACESSO TOTAL a esses dados - use-os nas suas respostas!
+- Quando o usuário pedir análise, forneça os números REAIS acima
+- Não invente dados - use EXATAMENTE o que está aqui
+- ${hasName && hasEmail ? `Lista pronta para disparo! Pergunte naturalmente se quer criar o email.` : `PROBLEMA: ${!hasName ? 'Coluna de nome não encontrada. ' : ''}${!hasEmail ? 'Coluna de email não encontrada. ' : ''}Pergunte ao usuário.`}
+═══════════════════════════════════════`;
             content = csvContext;
           }
           

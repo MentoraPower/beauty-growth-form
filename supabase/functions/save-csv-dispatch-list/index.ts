@@ -78,9 +78,32 @@ serve(async (req) => {
     const dedupedRecipients = Array.from(emailMap.values());
     const validEmailCount = dedupedRecipients.length;
 
+    // Calculate detailed statistics for AI context
+    const duplicateCount = recipients.length - validEmailCount;
+    const withWhatsApp = dedupedRecipients.filter(r => r.whatsapp && r.whatsapp.length >= 8).length;
+    const emptyNames = dedupedRecipients.filter(r => !r.name?.trim()).length;
+    
+    // Calculate email domain distribution
+    const domainCounts: Record<string, number> = {};
+    for (const r of dedupedRecipients) {
+      if (r.email) {
+        const domain = r.email.split('@')[1]?.toLowerCase() || 'outros';
+        domainCounts[domain] = (domainCounts[domain] || 0) + 1;
+      }
+    }
+    
+    // Get top 5 domains
+    const topDomains = Object.entries(domainCounts)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 5)
+      .map(([domain, count]) => ({ domain, count, percent: ((count / validEmailCount) * 100).toFixed(1) }));
+
     console.log('[SAVE-CSV] After dedup:', { 
       original: recipients.length, 
-      deduped: validEmailCount 
+      deduped: validEmailCount,
+      duplicates: duplicateCount,
+      withWhatsApp,
+      emptyNames
     });
 
     // Check if list already exists for this conversation (replace it)
@@ -148,12 +171,25 @@ serve(async (req) => {
       validEmails: validEmailCount
     });
 
+    // Build comprehensive stats for AI context
+    const detailedStats = {
+      totalLeads: recipients.length,
+      validEmails: validEmailCount,
+      duplicatesRemoved: duplicateCount,
+      withWhatsApp,
+      withoutWhatsApp: validEmailCount - withWhatsApp,
+      emptyNames,
+      withNames: validEmailCount - emptyNames,
+      topDomains
+    };
+
     return new Response(JSON.stringify({
       success: true,
       listId: csvList.id,
       totalRows: recipients.length,
       validEmails: validEmailCount,
-      mappedColumns
+      mappedColumns,
+      detailedStats
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
