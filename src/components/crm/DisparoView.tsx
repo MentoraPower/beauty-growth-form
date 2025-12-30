@@ -3393,6 +3393,9 @@ ${hasName && hasEmail ? `Lista pronta! Guardei os ${leadsWithEmail} leads com em
                   isLoading={isBusy}
                   placeholder="Digite sua mensagem aqui..."
                 />
+                <p className="text-center text-xs text-gray-400 mt-2">
+                  A Scale pode cometer erros. Confira informações importantes.
+                </p>
               </div>
             </div>
           </>
