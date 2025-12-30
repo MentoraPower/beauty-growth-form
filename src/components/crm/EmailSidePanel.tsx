@@ -1002,7 +1002,7 @@ export function EmailSidePanel({
                   <TiptapFloatingToolbar editor={editor} />
                   <EditorContent 
                     editor={editor} 
-                    className="prose prose-sm max-w-none p-4 h-full overflow-auto focus:outline-none [&_.ProseMirror]:outline-none [&_.ProseMirror]:min-h-full"
+                    className="prose prose-xs max-w-none p-4 h-full overflow-auto focus:outline-none [&_.ProseMirror]:outline-none [&_.ProseMirror]:min-h-full [&_.ProseMirror]:text-sm"
                   />
                 </div>
               )}
@@ -1015,7 +1015,7 @@ export function EmailSidePanel({
               <TiptapFloatingToolbar editor={editor} />
               <EditorContent 
                 editor={editor} 
-                className="prose prose-sm max-w-none p-4 h-full overflow-auto focus:outline-none [&_.ProseMirror]:outline-none [&_.ProseMirror]:min-h-full"
+                className="prose prose-xs max-w-none p-4 h-full overflow-auto focus:outline-none [&_.ProseMirror]:outline-none [&_.ProseMirror]:min-h-full [&_.ProseMirror]:text-sm"
               />
             </div>
           </div>
