@@ -4338,11 +4338,12 @@ ${structuredEmail.body}
                             </p>
                           </div>
                         )}
-                        {/* Data Intelligence - appears BELOW message content */}
+                        {/* Data Intelligence - appears BELOW message content, only when there's visible text */}
                         {msg.componentData?.type === 'data_intelligence' && 
                          msg.componentData?.data?.insightSteps && 
                          Array.isArray(msg.componentData.data.insightSteps) &&
-                         msg.componentData.data.insightSteps.length > 0 && (
+                         msg.componentData.data.insightSteps.length > 0 && 
+                         msg.content && msg.content.replace(/\s/g, '').length > 0 && (
                           <motion.div 
                             initial={{ opacity: 0, y: 10 }}
                             animate={{ opacity: 1, y: 0 }}
