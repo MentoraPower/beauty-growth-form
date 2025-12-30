@@ -582,21 +582,24 @@ export const PromptInputBox = React.forwardRef((props: PromptInputBoxProps, ref:
                     </button>
                   </div>
                 ) : isCsvFile(file) ? (
-                  <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-emerald-50 border border-emerald-200">
-                    <div className="w-8 h-8 rounded-md bg-emerald-100 flex items-center justify-center">
-                      <svg className="w-4 h-4 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  <div className="flex items-center gap-3 px-4 py-3 rounded-full bg-gray-100 border border-gray-200">
+                    <div className="w-10 h-10 rounded-xl bg-green-500 flex items-center justify-center">
+                      <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 10h16M4 14h16M4 18h16" />
                       </svg>
                     </div>
-                    <span className="text-sm text-emerald-700 font-medium max-w-[120px] truncate">{file.name}</span>
+                    <div className="flex flex-col">
+                      <span className="text-sm text-gray-800 font-medium max-w-[200px] truncate">{file.name}</span>
+                      <span className="text-xs text-gray-500">Planilha</span>
+                    </div>
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
                         handleRemoveFile(index);
                       }}
-                      className="ml-1 rounded-full bg-emerald-200 p-1 hover:bg-emerald-300 transition-colors"
+                      className="ml-1 rounded-full bg-gray-300 p-0.5 hover:bg-gray-400 transition-colors"
                     >
-                      <X className="h-3 w-3 text-emerald-700" />
+                      <X className="h-3 w-3 text-gray-600" />
                     </button>
                   </div>
                 ) : null}
