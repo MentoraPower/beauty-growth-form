@@ -3628,22 +3628,65 @@ ${hasName && hasEmail ? `Lista pronta! Guardei os ${leadsWithEmail} leads com em
           ) : (
             <div className="flex-1 flex items-center justify-center p-6 px-8">
               <div className="w-full max-w-3xl">
+                {/* Animated header with logo rising and spinning */}
                 <div className="text-center mb-8">
                   <div className="flex items-center justify-center gap-3">
-                    <img src={disparoLogo} alt="Logo" className="w-10 h-10" />
-                    <h2 className="text-3xl font-semibold text-foreground">
-                      Hey, ready to get started?
-                    </h2>
+                    <motion.img 
+                      src={disparoLogo} 
+                      alt="Logo" 
+                      className="w-10 h-10"
+                      initial={{ y: 80, opacity: 0, rotate: 0 }}
+                      animate={{ y: 0, opacity: 1, rotate: 360 }}
+                      transition={{ 
+                        y: { duration: 0.8, ease: [0.16, 1, 0.3, 1] },
+                        opacity: { duration: 0.5 },
+                        rotate: { duration: 0.8, ease: "easeOut" }
+                      }}
+                    />
+                    <motion.h2 
+                      className="text-3xl font-semibold text-foreground overflow-hidden"
+                      initial={{ opacity: 0, width: 0 }}
+                      animate={{ opacity: 1, width: "auto" }}
+                      transition={{ 
+                        delay: 0.5,
+                        duration: 0.5,
+                        ease: [0.16, 1, 0.3, 1]
+                      }}
+                    >
+                      <motion.span
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ delay: 0.6, duration: 0.4 }}
+                      >
+                        Hey, ready to get started?
+                      </motion.span>
+                    </motion.h2>
                   </div>
                 </div>
-                <PromptInputBox
-                  onSend={handleSend}
-                  isLoading={isBusy}
-                  placeholder="Digite sua mensagem aqui..."
-                />
-                <p className="text-xs text-muted-foreground text-center mt-3">
-                  A Scale pode cometer erros. Confira informações importantes.
-                </p>
+                {/* Input appearing with fade-in from bottom */}
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ 
+                    delay: 0.3,
+                    duration: 0.5,
+                    ease: [0.16, 1, 0.3, 1]
+                  }}
+                >
+                  <PromptInputBox
+                    onSend={handleSend}
+                    isLoading={isBusy}
+                    placeholder="Digite sua mensagem aqui..."
+                  />
+                  <motion.p 
+                    className="text-xs text-muted-foreground text-center mt-3"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: 0.7, duration: 0.4 }}
+                  >
+                    A Scale pode cometer erros. Confira informações importantes.
+                  </motion.p>
+                </motion.div>
               </div>
             </div>
           )
