@@ -3290,6 +3290,12 @@ INSTRUÇÕES PARA VOCÊ (IA):
       
       // Detect if content contains technical/HTML code that should be suppressed
       const isTechnicalContent = (content: string): boolean => {
+        // IMPORTANT: Structured email format is NOT technical content
+        // It's readable text that should be shown to the user progressively
+        if (content.includes('NOME DO EMAIL:') || content.includes('---INÍCIO DO EMAIL---')) {
+          return false;
+        }
+        
         // Check for HTML patterns
         const htmlPatterns = [
           /<!DOCTYPE/i,
@@ -3299,7 +3305,6 @@ INSTRUÇÕES PARA VOCÊ (IA):
           /<div\s/i,
           /<style/i,
           /<head/i,
-          /---INÍCIO DO EMAIL---/i, // Our structured email format
         ];
         
         // Check for code fence
@@ -3316,25 +3321,31 @@ INSTRUÇÕES PARA VOCÊ (IA):
         return htmlPatterns.some(p => p.test(content));
       };
       
-      // Get display content - either actual content or placeholder
+      // Get display content - show structured email progressively
       const getDisplayContent = (content: string): string => {
-        // Check if this is a structured email format
-        if (content.includes('---INÍCIO DO EMAIL---') || 
-            (content.includes('NOME DO EMAIL:') && content.includes('ASSUNTO:'))) {
-          // Extract just the visible parts for display
-          const emailData = extractStructuredEmail(content);
-          if (emailData.isStructuredEmail && emailData.body) {
-            return `**${emailData.emailName || 'Email'}**\n\n**Assunto:** ${emailData.subject}\n\n${emailData.body.substring(0, 300)}${emailData.body.length > 300 ? '...' : ''}`;
-          }
-          return 'Criando email...';
-        }
-        
+        // Check for raw HTML that should be suppressed (but NOT structured email format)
         if (isTechnicalContent(content)) {
           isContentSuppressed = true;
           return 'Gerando email...';
         }
         
-        return content;
+        // For structured email format, show content progressively as it arrives
+        // Clean up markers but keep the content visible
+        let displayContent = content
+          .replace(/---INÍCIO DO EMAIL---/g, '')
+          .replace(/---FIM DO EMAIL---/g, '')
+          .trim();
+        
+        // Format nicely if we have the labels
+        if (displayContent.includes('NOME DO EMAIL:')) {
+          displayContent = displayContent
+            .replace(/NOME DO EMAIL:\s*/gi, '**Nome:** ')
+            .replace(/ASSUNTO:\s*/gi, '\n**Assunto:** ')
+            .replace(/PREHEADER:\s*/gi, '\n**Preheader:** ')
+            .replace(/CORPO:\s*/gi, '\n\n');
+        }
+        
+        return displayContent;
       };
       
       // Throttled update function with conversation guard
