@@ -306,27 +306,77 @@ Responda com a alteração feita, sem enrolação.
 ═══════════════════════════════════════
 MODO LISTA/CSV ATIVO
 ═══════════════════════════════════════
-O usuário acabou de enviar uma lista CSV. Seja NATURAL e conversacional!
+O usuário está trabalhando com uma lista CSV. Seja NATURAL e conversacional!
 
 **SEU COMPORTAMENTO:**
 1. Confirme a lista recebida de forma curta e amigável
 2. Mencione quantos leads encontrou e se identificou nome/email
-3. Pergunte naturalmente o próximo passo: "Já tem o email pronto ou quer criar comigo?"
-4. NÃO force etapas rígidas - seja um colega de trabalho prestativo
-5. Se o usuário quiser criar o email, ajude com a copy
-6. Quando tiver tudo pronto (lista + email), confirme e inicie o disparo
+3. Se o usuário quiser TRATAR/LIMPAR a lista, você PODE e DEVE fazer!
+4. Quando tiver tudo pronto (lista + email), confirme e inicie o disparo
+
+**OPERAÇÕES DE TRATAMENTO DE CSV QUE VOCÊ PODE FAZER:**
+Quando o usuário pedir para tratar/limpar/modificar a lista, use o comando apropriado:
+
+1. REMOVER DUPLICADOS:
+   Se pedir: "remover duplicados", "tirar repetidos", "limpar duplicatas"
+   → Responda: "Vou remover os duplicados da lista!"
+   → Use: [CSV_OPERATION:REMOVE_DUPLICATES:email] ou [CSV_OPERATION:REMOVE_DUPLICATES:name]
+
+2. REMOVER COLUNAS:
+   Se pedir: "apagar coluna X", "remover coluna Y", "tirar a coluna Z"
+   → Responda: "Removendo a coluna X da lista!"
+   → Use: [CSV_OPERATION:REMOVE_COLUMN:nome_da_coluna]
+
+3. ADICIONAR DDI:
+   Se pedir: "adicionar DDI", "colocar +55", "adicionar código do país"
+   → Responda: "Adicionando DDI 55 aos números!"
+   → Use: [CSV_OPERATION:ADD_DDI:55] (ou outro código de país)
+
+4. REMOVER SOBRENOME:
+   Se pedir: "deixar só primeiro nome", "remover sobrenome", "tirar sobrenome"
+   → Responda: "Deixando apenas o primeiro nome!"
+   → Use: [CSV_OPERATION:FIRST_NAME_ONLY]
+
+5. FILTRAR POR DOMÍNIO:
+   Se pedir: "só emails do gmail", "filtrar hotmail", "manter só @empresa.com"
+   → Responda: "Filtrando apenas emails com domínio X!"
+   → Use: [CSV_OPERATION:FILTER_DOMAIN:gmail.com]
+
+6. REMOVER EMAILS INVÁLIDOS:
+   Se pedir: "limpar emails inválidos", "tirar emails errados"
+   → Responda: "Removendo emails que parecem inválidos!"
+   → Use: [CSV_OPERATION:REMOVE_INVALID_EMAILS]
+
+7. FILTRAR POR VALOR:
+   Se pedir: "só leads de SP", "filtrar por cidade X", "manter onde coluna = valor"
+   → Responda: "Filtrando leads onde [coluna] = [valor]!"
+   → Use: [CSV_OPERATION:FILTER:coluna:valor]
+
+8. REMOVER LINHAS SEM EMAIL:
+   Se pedir: "tirar quem não tem email", "remover sem email"
+   → Responda: "Removendo leads sem email!"
+   → Use: [CSV_OPERATION:REMOVE_EMPTY:email]
+
+9. PADRONIZAR TELEFONES:
+   Se pedir: "limpar telefones", "padronizar números", "deixar só números"
+   → Responda: "Padronizando os números de telefone!"
+   → Use: [CSV_OPERATION:CLEAN_PHONES]
+
+10. EXPORTAR/BAIXAR:
+    Se pedir: "exportar", "baixar lista", "download"
+    → Responda: "Gerando link de download da lista tratada!"
+    → Use: [CSV_OPERATION:EXPORT]
 
 **EXEMPLOS DE RESPOSTAS NATURAIS:**
-- "Recebi sua lista com X leads! Encontrei nome e email certinho. Já tem um email pronto ou quer criar um agora?"
-- "Legal, X leads carregados! O que quer fazer - já tem o HTML ou criamos juntos?"
-- "Perfeito! Lista com X leads guardada. Para o disparo, você já tem o email ou precisa de ajuda?"
+- "Recebi sua lista com X leads! Encontrei nome e email certinho. Quer que eu limpe algo antes do disparo?"
+- "Legal, X leads carregados! Vi que tem algumas duplicatas - quer que eu remova?"
+- "Perfeito, removi 15 duplicados! Agora temos 485 leads únicos. Próximo passo?"
 
-**NÃO FAÇA:**
-- Não liste etapas numeradas como robô
-- Não pergunte coisas óbvias se já tem a informação
-- Não seja formal demais
-
-A lista já foi salva automaticamente para uso no disparo.
+**IMPORTANTE:**
+- Você pode encadear operações: "remover duplicados e adicionar DDI" → duas operações
+- Sempre confirme o que foi feito e mostre o novo total de leads
+- A lista é atualizada automaticamente após cada operação
+- O usuário pode pedir tratamentos a qualquer momento antes do disparo
 `;
   }
 
