@@ -54,7 +54,7 @@ export function EmailChatCard({
         {/* Preview on the left side - sticking out from top */}
         {previewHtml && (
           <div className="relative flex-shrink-0 pl-3 pb-3 pt-3">
-            <div className="w-20 h-32 bg-white rounded-[5px] overflow-hidden shadow-md border border-zinc-200/80 relative -mt-8">
+            <div className="w-20 h-40 bg-white rounded-[5px] overflow-hidden shadow-md border border-zinc-200/80 relative -mt-8">
               <div 
                 className="absolute inset-0 origin-top-left overflow-hidden pointer-events-none"
                 style={{ 
