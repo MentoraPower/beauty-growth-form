@@ -3302,12 +3302,12 @@ ${hasName && hasEmail ? `Lista pronta! Guardei os ${leadsWithEmail} leads com em
                           </motion.div>
                         )}
                         {/* Email card - shows when there's HTML content in this message */}
-                        {msg.componentData?.type === 'email_generator_streaming' && (msg.componentData?.data?.generatedHtml || (messages[messages.length - 1]?.id === msg.id && sidePanelHtml)) && (
+                        {msg.componentData?.type === 'email_generator_streaming' && msg.componentData?.data?.generatedHtml && (
                           <div className="mt-3">
                             <EmailChatCard
-                              subject={msg.componentData?.data?.subject || sidePanelSubject || "Email Template"}
-                              previewHtml={msg.componentData?.data?.generatedHtml || sidePanelHtml}
-                              chatName={msg.componentData?.data?.subject || sidePanelSubject || "Email gerado"}
+                              subject={msg.componentData?.data?.subject || "Email Template"}
+                              previewHtml={msg.componentData?.data?.generatedHtml}
+                              chatName={msg.componentData?.data?.subject || "Email gerado"}
                               createdAt={msg.timestamp instanceof Date ? msg.timestamp : undefined}
                               onClick={() => {
                                 const data = msg.componentData?.data;
