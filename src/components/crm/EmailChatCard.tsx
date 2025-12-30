@@ -34,7 +34,7 @@ export function EmailChatCard({
   const timeAgo = createdAt ? getRelativeTime(createdAt) : "";
 
   return (
-    <div className="pl-4 pt-3">
+    <div className="pt-2">
       <motion.div
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
