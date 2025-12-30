@@ -147,6 +147,279 @@ const parseCSVAdvanced = (content: string): CsvParseResult => {
   };
 };
 
+// CSV Operation Types
+type CsvOperation = 
+  | { type: 'REMOVE_DUPLICATES'; field: string }
+  | { type: 'REMOVE_COLUMN'; column: string }
+  | { type: 'ADD_DDI'; ddi: string }
+  | { type: 'FIRST_NAME_ONLY' }
+  | { type: 'FILTER_DOMAIN'; domain: string }
+  | { type: 'REMOVE_INVALID_EMAILS' }
+  | { type: 'FILTER'; column: string; value: string }
+  | { type: 'REMOVE_EMPTY'; field: string }
+  | { type: 'CLEAN_PHONES' }
+  | { type: 'EXPORT' };
+
+// Parse CSV operations from AI response
+const parseCsvOperations = (content: string): CsvOperation[] => {
+  const operations: CsvOperation[] = [];
+  const operationPattern = /\[CSV_OPERATION:([^\]]+)\]/g;
+  let match;
+  
+  while ((match = operationPattern.exec(content)) !== null) {
+    const parts = match[1].split(':');
+    const opType = parts[0];
+    
+    switch (opType) {
+      case 'REMOVE_DUPLICATES':
+        operations.push({ type: 'REMOVE_DUPLICATES', field: parts[1] || 'email' });
+        break;
+      case 'REMOVE_COLUMN':
+        if (parts[1]) operations.push({ type: 'REMOVE_COLUMN', column: parts[1] });
+        break;
+      case 'ADD_DDI':
+        operations.push({ type: 'ADD_DDI', ddi: parts[1] || '55' });
+        break;
+      case 'FIRST_NAME_ONLY':
+        operations.push({ type: 'FIRST_NAME_ONLY' });
+        break;
+      case 'FILTER_DOMAIN':
+        if (parts[1]) operations.push({ type: 'FILTER_DOMAIN', domain: parts[1] });
+        break;
+      case 'REMOVE_INVALID_EMAILS':
+        operations.push({ type: 'REMOVE_INVALID_EMAILS' });
+        break;
+      case 'FILTER':
+        if (parts[1] && parts[2]) operations.push({ type: 'FILTER', column: parts[1], value: parts[2] });
+        break;
+      case 'REMOVE_EMPTY':
+        operations.push({ type: 'REMOVE_EMPTY', field: parts[1] || 'email' });
+        break;
+      case 'CLEAN_PHONES':
+        operations.push({ type: 'CLEAN_PHONES' });
+        break;
+      case 'EXPORT':
+        operations.push({ type: 'EXPORT' });
+        break;
+    }
+  }
+  
+  return operations;
+};
+
+// Execute CSV operations on leads data
+const executeCsvOperations = (
+  leads: CsvLead[], 
+  rawData: Array<Record<string, string>>,
+  headers: string[],
+  mappedColumns: { name?: string; email?: string; whatsapp?: string },
+  operations: CsvOperation[]
+): { 
+  leads: CsvLead[]; 
+  rawData: Array<Record<string, string>>; 
+  headers: string[];
+  changes: string[];
+} => {
+  let processedLeads = [...leads];
+  let processedRawData = [...rawData];
+  let processedHeaders = [...headers];
+  const changes: string[] = [];
+  const originalCount = leads.length;
+  
+  for (const op of operations) {
+    const countBefore = processedLeads.length;
+    
+    switch (op.type) {
+      case 'REMOVE_DUPLICATES': {
+        const seen = new Set<string>();
+        const field = op.field.toLowerCase();
+        processedLeads = processedLeads.filter(lead => {
+          const value = field === 'email' ? lead.email?.toLowerCase() : 
+                        field === 'name' ? lead.name?.toLowerCase() : 
+                        lead[field]?.toLowerCase();
+          if (!value || seen.has(value)) return false;
+          seen.add(value);
+          return true;
+        });
+        // Also update rawData
+        const seenRaw = new Set<string>();
+        const rawField = field === 'email' ? mappedColumns.email : 
+                         field === 'name' ? mappedColumns.name : field;
+        if (rawField) {
+          processedRawData = processedRawData.filter(row => {
+            const value = row[rawField]?.toLowerCase();
+            if (!value || seenRaw.has(value)) return false;
+            seenRaw.add(value);
+            return true;
+          });
+        }
+        const removed = countBefore - processedLeads.length;
+        changes.push(`Removidos ${removed} duplicados por ${field}`);
+        break;
+      }
+      
+      case 'REMOVE_COLUMN': {
+        processedHeaders = processedHeaders.filter(h => h.toLowerCase() !== op.column.toLowerCase());
+        processedRawData = processedRawData.map(row => {
+          const newRow = { ...row };
+          const keyToRemove = Object.keys(newRow).find(k => k.toLowerCase() === op.column.toLowerCase());
+          if (keyToRemove) delete newRow[keyToRemove];
+          return newRow;
+        });
+        processedLeads = processedLeads.map(lead => {
+          const newLead = { ...lead };
+          const keyToRemove = Object.keys(newLead).find(k => k.toLowerCase() === op.column.toLowerCase());
+          if (keyToRemove && keyToRemove !== 'name' && keyToRemove !== 'email' && keyToRemove !== 'whatsapp') {
+            delete newLead[keyToRemove];
+          }
+          return newLead;
+        });
+        changes.push(`Coluna "${op.column}" removida`);
+        break;
+      }
+      
+      case 'ADD_DDI': {
+        processedLeads = processedLeads.map(lead => {
+          if (lead.whatsapp && !lead.whatsapp.startsWith(op.ddi)) {
+            return { ...lead, whatsapp: op.ddi + lead.whatsapp.replace(/^\+/, '') };
+          }
+          return lead;
+        });
+        if (mappedColumns.whatsapp) {
+          processedRawData = processedRawData.map(row => {
+            const phone = row[mappedColumns.whatsapp!];
+            if (phone && !phone.startsWith(op.ddi)) {
+              return { ...row, [mappedColumns.whatsapp!]: op.ddi + phone.replace(/^\+/, '') };
+            }
+            return row;
+          });
+        }
+        changes.push(`DDI ${op.ddi} adicionado aos telefones`);
+        break;
+      }
+      
+      case 'FIRST_NAME_ONLY': {
+        processedLeads = processedLeads.map(lead => ({
+          ...lead,
+          name: lead.name?.split(' ')[0] || lead.name
+        }));
+        if (mappedColumns.name) {
+          processedRawData = processedRawData.map(row => ({
+            ...row,
+            [mappedColumns.name!]: row[mappedColumns.name!]?.split(' ')[0] || row[mappedColumns.name!]
+          }));
+        }
+        changes.push('Mantido apenas primeiro nome');
+        break;
+      }
+      
+      case 'FILTER_DOMAIN': {
+        const domain = op.domain.toLowerCase();
+        processedLeads = processedLeads.filter(lead => 
+          lead.email?.toLowerCase().includes(`@${domain}`) || lead.email?.toLowerCase().endsWith(domain)
+        );
+        if (mappedColumns.email) {
+          processedRawData = processedRawData.filter(row => 
+            row[mappedColumns.email!]?.toLowerCase().includes(`@${domain}`) || 
+            row[mappedColumns.email!]?.toLowerCase().endsWith(domain)
+          );
+        }
+        const removed = countBefore - processedLeads.length;
+        changes.push(`Filtrado por domínio ${domain}: ${removed} removidos`);
+        break;
+      }
+      
+      case 'REMOVE_INVALID_EMAILS': {
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        processedLeads = processedLeads.filter(lead => 
+          lead.email && emailRegex.test(lead.email)
+        );
+        if (mappedColumns.email) {
+          processedRawData = processedRawData.filter(row => 
+            row[mappedColumns.email!] && emailRegex.test(row[mappedColumns.email!])
+          );
+        }
+        const removed = countBefore - processedLeads.length;
+        changes.push(`${removed} emails inválidos removidos`);
+        break;
+      }
+      
+      case 'FILTER': {
+        const columnKey = Object.keys(processedRawData[0] || {}).find(
+          k => k.toLowerCase() === op.column.toLowerCase()
+        );
+        if (columnKey) {
+          processedRawData = processedRawData.filter(row => 
+            row[columnKey]?.toLowerCase().includes(op.value.toLowerCase())
+          );
+          // Rebuild leads from filtered rawData
+          processedLeads = processedRawData.map(row => ({
+            name: mappedColumns.name ? row[mappedColumns.name] || '' : '',
+            email: mappedColumns.email ? row[mappedColumns.email] : undefined,
+            whatsapp: mappedColumns.whatsapp ? row[mappedColumns.whatsapp]?.replace(/\D/g, '') : undefined,
+          })).filter(l => l.name || l.email);
+          const removed = countBefore - processedLeads.length;
+          changes.push(`Filtrado ${op.column}="${op.value}": ${removed} removidos`);
+        }
+        break;
+      }
+      
+      case 'REMOVE_EMPTY': {
+        const field = op.field.toLowerCase();
+        processedLeads = processedLeads.filter(lead => {
+          const value = field === 'email' ? lead.email : 
+                        field === 'whatsapp' ? lead.whatsapp : 
+                        field === 'name' ? lead.name : lead[field];
+          return value && value.trim().length > 0;
+        });
+        const rawField = field === 'email' ? mappedColumns.email : 
+                         field === 'whatsapp' ? mappedColumns.whatsapp : 
+                         field === 'name' ? mappedColumns.name : field;
+        if (rawField) {
+          processedRawData = processedRawData.filter(row => 
+            row[rawField] && row[rawField].trim().length > 0
+          );
+        }
+        const removed = countBefore - processedLeads.length;
+        changes.push(`${removed} linhas sem ${field} removidas`);
+        break;
+      }
+      
+      case 'CLEAN_PHONES': {
+        processedLeads = processedLeads.map(lead => ({
+          ...lead,
+          whatsapp: lead.whatsapp?.replace(/\D/g, '')
+        }));
+        if (mappedColumns.whatsapp) {
+          processedRawData = processedRawData.map(row => ({
+            ...row,
+            [mappedColumns.whatsapp!]: row[mappedColumns.whatsapp!]?.replace(/\D/g, '')
+          }));
+        }
+        changes.push('Telefones padronizados (apenas números)');
+        break;
+      }
+      
+      case 'EXPORT': {
+        // Export will be handled separately
+        changes.push('Lista pronta para download');
+        break;
+      }
+    }
+  }
+  
+  if (processedLeads.length !== originalCount) {
+    changes.push(`Total: ${originalCount} → ${processedLeads.length} leads`);
+  }
+  
+  return { leads: processedLeads, rawData: processedRawData, headers: processedHeaders, changes };
+};
+
+// Strip CSV operation commands from content
+const stripCsvOperations = (content: string): string => {
+  return content.replace(/\[CSV_OPERATION:[^\]]+\]/g, '').trim();
+};
+
 
 // Extract subject and HTML from AI response
 const extractSubjectAndHtml = (content: string): { subject: string; html: string } => {
@@ -1626,7 +1899,7 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
   }, [logAction]);
 
   // Process commands from Grok's response
-  const processCommands = async (content: string): Promise<{ cleanContent: string; components: React.ReactNode[] }> => {
+  const processCommands = async (content: string): Promise<{ cleanContent: string; components: React.ReactNode[]; csvChanged: boolean }> => {
     const commandPattern = /\[COMMAND:([^\]]+)\]/g;
     const commands: string[] = [];
     let match;
@@ -1637,6 +1910,67 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
 
     const components: React.ReactNode[] = [];
     let cleanContent = content;
+    let csvChanged = false;
+    
+    // Process CSV operations if present
+    const csvOperations = parseCsvOperations(content);
+    if (csvOperations.length > 0 && csvLeads && csvLeads.length > 0) {
+      console.log('[DisparoView] Processing CSV operations:', csvOperations);
+      
+      const result = executeCsvOperations(
+        csvLeads, 
+        csvRawData, 
+        csvHeaders, 
+        csvMappedColumns, 
+        csvOperations
+      );
+      
+      // Update state with processed data
+      setCsvLeads(result.leads);
+      setCsvRawData(result.rawData);
+      setCsvHeaders(result.headers);
+      csvChanged = true;
+      
+      // Log the changes
+      result.changes.forEach(change => {
+        logAction('system', 'CSV tratado', change);
+      });
+      
+      // Update CSV in database if we have a csvListId
+      if (csvListId) {
+        try {
+          // Delete old recipients and insert new ones
+          await supabase
+            .from('dispatch_csv_list_recipients')
+            .delete()
+            .eq('list_id', csvListId);
+          
+          const recipients = result.leads
+            .filter(l => l.email && l.email.includes('@'))
+            .map(l => ({
+              list_id: csvListId,
+              name: l.name || '',
+              email: l.email!,
+              whatsapp: l.whatsapp
+            }));
+          
+          if (recipients.length > 0) {
+            await supabase
+              .from('dispatch_csv_list_recipients')
+              .insert(recipients);
+          }
+          
+          console.log('[DisparoView] CSV list updated in database:', csvListId, 'with', recipients.length, 'leads');
+        } catch (error) {
+          console.error('[DisparoView] Error updating CSV in database:', error);
+        }
+      }
+      
+      toast.success(`Lista tratada! ${result.leads.length} leads restantes`);
+    }
+    
+    // Strip CSV operation commands from visible content
+    cleanContent = stripCsvOperations(cleanContent);
     
     // ALWAYS clean technical patterns from visible content (safety layer)
     // Even if the AI ignores instructions, we remove these patterns
@@ -1763,7 +2097,7 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
       }
     }
 
-    return { cleanContent: cleanContent.trim(), components };
+    return { cleanContent: cleanContent.trim(), components, csvChanged };
   };
 
   const handleCommand = async (command: string) => {
@@ -2923,7 +3257,12 @@ ${hasName && hasEmail ? `Lista pronta! Guardei os ${leadsWithEmail} leads com em
           return;
         }
         
-        const { cleanContent, components } = await processCommands(assistantContent);
+        const { cleanContent, components, csvChanged } = await processCommands(assistantContent);
+        
+        // If CSV was changed, trigger immediate save
+        if (csvChanged) {
+          setTimeout(() => saveConversationNow(), 100);
+        }
         
         // Check if the original message was from copywriting agent
         const isCopywritingMode = messageContent.includes('[CONTEXT:copywriting]');
