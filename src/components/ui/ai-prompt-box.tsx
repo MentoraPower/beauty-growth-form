@@ -702,7 +702,7 @@ export const PromptInputBox = React.forwardRef((props: PromptInputBoxProps, ref:
               className={cn(
                 "h-9 w-9 rounded-full flex items-center justify-center transition-all duration-300 shadow-md",
                 hasContent && !isLoading
-                  ? "bg-gradient-to-br from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white shadow-orange-500/30 hover:shadow-lg hover:shadow-orange-500/40 hover:scale-105"
+                  ? "bg-gray-900 hover:bg-gray-800 text-white shadow-gray-500/30 hover:shadow-lg hover:scale-105"
                   : "bg-gray-100 text-gray-300 cursor-not-allowed"
               )}
               onClick={() => {
