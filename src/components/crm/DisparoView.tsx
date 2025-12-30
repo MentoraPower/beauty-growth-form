@@ -4180,9 +4180,9 @@ ${structuredEmail.body}
   const showConversationLoading = isConversationLoading && !hasMessages;
 
   return (
-    <div className="flex-1 flex h-full bg-background overflow-hidden">
-      {/* Chat area */}
-      <div className="flex-1 flex flex-col h-full min-w-0">
+    <div className="flex-1 flex h-full bg-background overflow-hidden p-3 gap-3">
+      {/* Chat area - styled as a block */}
+      <div className="flex-1 flex flex-col h-full min-w-0 bg-white rounded-2xl border border-[#00000010] overflow-hidden">
         {/* When no messages, center the input */}
         {!hasMessages ? (
           showConversationLoading ? (
