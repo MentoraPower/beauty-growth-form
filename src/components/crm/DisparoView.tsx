@@ -3167,18 +3167,23 @@ ${hasName && hasEmail ? `Lista pronta! Guardei os ${leadsWithEmail} leads com em
         const currentSteps = shouldShowCompleted ? completedSimpleSteps : generatingSteps;
         
         setMessages(prev => 
-          prev.map(m => 
-            m.id === assistantMessageId 
-              ? { 
-                  ...m, 
-                  content: assistantContent,
-                  // Update workflowSteps in componentData when content starts
-                  componentData: assistantContent.length > 20 
-                    ? { type: 'email_generator_streaming' as const, data: { workflowSteps: currentSteps } }
-                    : m.componentData
-                }
-              : m
-          )
+          prev.map(m => {
+            if (m.id !== assistantMessageId) return m;
+            
+            // CRITICAL: Preserve data_intelligence type - never overwrite with email_generator_streaming
+            if (m.componentData?.type === 'data_intelligence') {
+              return { ...m, content: assistantContent };
+            }
+            
+            return { 
+              ...m, 
+              content: assistantContent,
+              // Update workflowSteps in componentData when content starts
+              componentData: assistantContent.length > 20 
+                ? { type: 'email_generator_streaming' as const, data: { workflowSteps: currentSteps } }
+                : m.componentData
+            };
+          })
         );
         
         // Update workflow to "generating" once we start receiving content (for visual in side panel)
@@ -3346,24 +3351,43 @@ ${hasName && hasEmail ? `Lista pronta! Guardei os ${leadsWithEmail} leads com em
           setSidePanelMode('email');
           
           setMessages(prev => 
-            prev.map(m => 
-              m.id === assistantMessageId 
-                ? { 
-                    ...m, 
-                    content: 'Email gerado! Visualize e edite na lateral.',
-                    componentData: { 
-                      type: 'email_generator_streaming' as const, 
-                      data: { 
-                        isComplete: true, 
-                        workflowSteps: completedWorkflowSteps,
+            prev.map(m => {
+              if (m.id !== assistantMessageId) return m;
+              
+              // CRITICAL: Preserve data_intelligence - add email card data but keep insight steps
+              if (m.componentData?.type === 'data_intelligence') {
+                return { 
+                  ...m, 
+                  content: 'Email gerado! Visualize e edite na lateral.',
+                  componentData: {
+                    ...m.componentData,
+                    data: {
+                      ...m.componentData.data,
+                      emailCard: {
                         generatedHtml: cleanContent,
                         subject: extractedSubject || '',
                         mode: 'email' as const
-                      } 
+                      }
                     }
                   }
-                : m
-            )
+                };
+              }
+              
+              return { 
+                ...m, 
+                content: 'Email gerado! Visualize e edite na lateral.',
+                componentData: { 
+                  type: 'email_generator_streaming' as const, 
+                  data: { 
+                    isComplete: true, 
+                    workflowSteps: completedWorkflowSteps,
+                    generatedHtml: cleanContent,
+                    subject: extractedSubject || '',
+                    mode: 'email' as const
+                  } 
+                }
+              };
+            })
           );
         } else {
         // For plain copy/text - SHOW IN CHAT and optionally open panel for large content
@@ -3425,24 +3449,32 @@ ${hasName && hasEmail ? `Lista pronta! Guardei os ${leadsWithEmail} leads com em
           const cardTitle = shouldShowCard ? 'Copy gerada' : '';
           
           setMessages(prev => 
-            prev.map(m => 
-              m.id === assistantMessageId 
-                ? { 
-                    ...m, 
-                    content: cleanContent,
-                    componentData: { 
-                      type: 'email_generator_streaming' as const, 
-                      data: { 
-                        isComplete: true, 
-                        workflowSteps: completedWorkflowSteps,
-                        generatedHtml: copyHtmlForPanel,
-                        subject: cardTitle,
-                        mode: 'copy' as const
-                      } 
-                    }
-                  }
-                : m
-            )
+            prev.map(m => {
+              if (m.id !== assistantMessageId) return m;
+              
+              // CRITICAL: Preserve data_intelligence - don't overwrite with copy data
+              if (m.componentData?.type === 'data_intelligence') {
+                return { 
+                  ...m, 
+                  content: cleanContent
+                };
+              }
+              
+              return { 
+                ...m, 
+                content: cleanContent,
+                componentData: { 
+                  type: 'email_generator_streaming' as const, 
+                  data: { 
+                    isComplete: true, 
+                    workflowSteps: completedWorkflowSteps,
+                    generatedHtml: copyHtmlForPanel,
+                    subject: cardTitle,
+                    mode: 'copy' as const
+                  } 
+                }
+              };
+            })
           );
         }
         
