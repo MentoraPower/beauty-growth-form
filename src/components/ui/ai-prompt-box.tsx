@@ -535,14 +535,21 @@ export const PromptInputBox = React.forwardRef((props: PromptInputBoxProps, ref:
   const hasContent = input.trim() !== "" || files.length > 0;
 
   return (
-    <>
+    <div className="relative">
+      {/* Top floating header */}
+      <div className="absolute -top-3 left-1/2 -translate-x-1/2 z-10">
+        <div className="px-4 py-1.5 bg-gradient-to-r from-gray-100 to-gray-50 border border-gray-200/80 rounded-full shadow-sm">
+          <span className="text-xs font-medium text-gray-500 tracking-wide">Ask Scale to create</span>
+        </div>
+      </div>
+
       <PromptInput
         value={input}
         onValueChange={setInput}
         isLoading={isLoading}
         onSubmit={handleSubmit}
         className={cn(
-          "w-full bg-white/80 backdrop-blur-xl border-gray-200 shadow-lg transition-all duration-300 ease-in-out min-h-[180px] flex flex-col",
+          "w-full bg-white/80 backdrop-blur-xl border-gray-200 shadow-lg transition-all duration-300 ease-in-out min-h-[180px] flex flex-col pt-4",
           isRecording && "border-red-500/70",
           className
         )}
@@ -718,13 +725,8 @@ export const PromptInputBox = React.forwardRef((props: PromptInputBoxProps, ref:
         </PromptInputActions>
       </PromptInput>
 
-      {/* Bottom footer bar */}
-      <div className="-mx-2 -mb-2 mt-3 px-4 py-2.5 border-t border-gray-200/80 bg-gray-50/50 rounded-b-3xl">
-        <span className="text-xs font-medium text-gray-500 tracking-wide">Ask Scale to create</span>
-      </div>
-
       <ImageViewDialog imageUrl={selectedImage} onClose={() => setSelectedImage(null)} />
-    </>
+    </div>
   );
 });
 PromptInputBox.displayName = "PromptInputBox";
