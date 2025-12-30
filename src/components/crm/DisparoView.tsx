@@ -2218,22 +2218,26 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
         } : undefined,
       };
       
-      // CRITICAL: Create conversation IMMEDIATELY on first message to prevent duplicates
-      // This must happen BEFORE streaming starts so all updates go to the same conversation
+      // ========== OPTIMISTIC UI: Show message IMMEDIATELY ==========
+      setMessages((prev) => [...prev, userMessage]);
+      setIsLoading(true);
+      
+      // Check if this is the first message (need to create conversation)
       const isFirstMessage = !currentConversationId && !conversationIdRef.current;
       let targetConversationId = conversationIdRef.current;
       
+      // Create conversation in background (non-blocking for UI)
       if (isFirstMessage) {
         // Prevent duplicate creation
         if (isCreatingConversationRef.current) {
           console.log('[DisparoView] Already creating conversation, blocking duplicate');
           isProcessingMessageRef.current = false;
+          setIsLoading(false);
           return;
         }
         
         isCreatingConversationRef.current = true;
         
-        // Create conversation synchronously with just the user message
         try {
           // For CSV uploads, use the file name as title
           const titleBase = csvParseResult 
@@ -2275,11 +2279,12 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
           // Update URL with new conversation ID
           setSearchParams({ conversation: data.id }, { replace: true });
           
-          console.log('[DisparoView] Created conversation immediately:', data.id);
+          console.log('[DisparoView] Created conversation:', data.id);
         } catch (error) {
           console.error('[DisparoView] Error creating conversation:', error);
           isProcessingMessageRef.current = false;
           isCreatingConversationRef.current = false;
+          setIsLoading(false);
           toast.error('Erro ao criar conversa');
           return;
         } finally {
@@ -2287,46 +2292,44 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
         }
       }
 
-      // Persist CSV list whenever a CSV is uploaded (first message OR later messages)
+      // Persist CSV list in background (don't block UI)
       if (csvParseResult && csvParseResult.leads.length > 0 && targetConversationId) {
-        try {
-          const recipients = csvParseResult.leads
-            .filter(l => l.email && l.email.includes('@'))
-            .map(l => ({
-              name: l.name || '',
-              email: l.email!,
-              whatsapp: l.whatsapp
-            }));
+        // Fire and forget - don't await
+        (async () => {
+          try {
+            const recipients = csvParseResult.leads
+              .filter(l => l.email && l.email.includes('@'))
+              .map(l => ({
+                name: l.name || '',
+                email: l.email!,
+                whatsapp: l.whatsapp
+              }));
 
-          const { data: csvSaveResult, error: csvError } = await supabase.functions.invoke('save-csv-dispatch-list', {
-            body: {
-              conversationId: targetConversationId,
-              fileName: csvFileNameLocal,
-              mappedColumns: csvParseResult.mappedColumns,
-              recipients
+            const { data: csvSaveResult, error: csvError } = await supabase.functions.invoke('save-csv-dispatch-list', {
+              body: {
+                conversationId: targetConversationId,
+                fileName: csvFileNameLocal,
+                mappedColumns: csvParseResult.mappedColumns,
+                recipients
+              }
+            });
+
+            if (csvError) {
+              console.error('[DisparoView] Error saving CSV list:', csvError);
+            } else if (csvSaveResult?.listId) {
+              setCsvListId(csvSaveResult.listId);
+              console.log('[DisparoView] CSV list saved:', csvSaveResult.listId, 'with', csvSaveResult.validEmails, 'valid emails');
+              setTimeout(() => saveConversationNow(), 50);
             }
-          });
-
-          if (csvError) {
-            console.error('[DisparoView] Error saving CSV list:', csvError);
-          } else if (csvSaveResult?.listId) {
-            setCsvListId(csvSaveResult.listId);
-            console.log('[DisparoView] CSV list saved:', csvSaveResult.listId, 'with', csvSaveResult.validEmails, 'valid emails');
-            // Ensure it persists on reload
-            setTimeout(() => {
-              saveConversationNow();
-            }, 50);
+          } catch (csvSaveError) {
+            console.error('[DisparoView] Error calling save-csv-dispatch-list:', csvSaveError);
           }
-        } catch (csvSaveError) {
-          console.error('[DisparoView] Error calling save-csv-dispatch-list:', csvSaveError);
-        }
+        })();
       }
       
       // Store conversation ID for this run
       activeRunConversationIdRef.current = targetConversationId;
-      
-      setMessages((prev) => [...prev, userMessage]);
-      setIsLoading(true);
+      // isLoading already set above in optimistic UI section
 
       // Check if we're waiting for a question response
       if (pendingQuestion) {
