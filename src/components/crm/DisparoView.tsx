@@ -3225,7 +3225,7 @@ ${hasName && hasEmail ? `Lista pronta! Guardei os ${leadsWithEmail} leads com em
                   <div className="flex items-center justify-center gap-3">
                     <img src={disparoLogo} alt="Logo" className="w-6 h-6" />
                     <h2 className="text-2xl font-semibold text-foreground">
-                      Ei, tudo pronto para começar?
+                      Hey, ready to get started?
                     </h2>
                   </div>
                 </div>
