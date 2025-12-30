@@ -537,8 +537,8 @@ export const PromptInputBox = React.forwardRef((props: PromptInputBoxProps, ref:
   return (
     <div className="relative flex flex-col rounded-3xl bg-gray-200/80 overflow-hidden">
       {/* Top header bar with gray background */}
-      <div className="px-4 py-3">
-        <span className="text-sm font-medium text-gray-500">Ask Scale to create</span>
+      <div className="px-3 py-2">
+        <span className="text-xs font-medium text-gray-500">Ask Scale to create</span>
       </div>
 
       <PromptInput
