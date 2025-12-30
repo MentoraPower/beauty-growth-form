@@ -159,7 +159,7 @@ export function CsvSidePanel({
   if (!isOpen) return null;
 
   return (
-    <div className="w-[45%] min-w-[500px] max-w-[1000px] flex-shrink-0 h-full bg-white flex flex-col rounded-2xl border border-[#00000010] overflow-hidden">
+    <div className="w-[55%] min-w-[600px] max-w-[1200px] flex-shrink-0 h-full bg-white flex flex-col rounded-2xl border border-[#00000010] overflow-hidden">
       {/* Header */}
       <div className="px-5 py-4 border-b border-border bg-muted/30">
         <div className="flex items-center justify-between mb-3">
