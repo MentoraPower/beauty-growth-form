@@ -3644,22 +3644,16 @@ ${hasName && hasEmail ? `Lista pronta! Guardei os ${leadsWithEmail} leads com em
                       }}
                     />
                     <motion.h2 
-                      className="text-3xl font-semibold text-foreground overflow-hidden"
-                      initial={{ opacity: 0, width: 0 }}
-                      animate={{ opacity: 1, width: "auto" }}
+                      className="text-3xl font-semibold text-foreground whitespace-nowrap"
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
                       transition={{ 
                         delay: 0.5,
                         duration: 0.5,
                         ease: [0.16, 1, 0.3, 1]
                       }}
                     >
-                      <motion.span
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        transition={{ delay: 0.6, duration: 0.4 }}
-                      >
-                        Hey, ready to get started?
-                      </motion.span>
+                      Hey, ready to get started?
                     </motion.h2>
                   </div>
                 </div>
