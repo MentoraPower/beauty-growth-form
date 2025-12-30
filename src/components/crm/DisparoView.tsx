@@ -13,6 +13,7 @@ import { DispatchData } from "./DispatchAnalysis";
 import { EmailChatCard } from "./EmailChatCard";
 import { CsvChatCard } from "./CsvChatCard";
 import { AIWorkDetails, WorkStep, WorkSubItem, createLeadsAnalysisStep, createEmailGenerationStep, createDispatchStep, createCustomStep } from "./AIWorkDetails";
+import { DataIntelligence, InsightStep, createCsvAnalysisSteps } from "./DataIntelligence";
 import { supabase } from "@/integrations/supabase/client";
 import { Check, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -23,7 +24,7 @@ interface DisparoViewProps {
 }
 
 interface MessageComponentData {
-  type: 'leads_preview' | 'html_editor' | 'origins_list' | 'dispatch_progress' | 'csv_preview' | 'email_choice' | 'email_generator' | 'copy_choice' | 'copy_input' | 'email_generator_streaming' | 'ai_work_details';
+  type: 'leads_preview' | 'html_editor' | 'origins_list' | 'dispatch_progress' | 'csv_preview' | 'email_choice' | 'email_generator' | 'copy_choice' | 'copy_input' | 'email_generator_streaming' | 'ai_work_details' | 'data_intelligence';
   data?: any;
 }
 
@@ -3078,6 +3079,15 @@ ${hasName && hasEmail ? `Lista pronta! Guardei os ${leadsWithEmail} leads com em
         }),
       ];
       
+      // Check if this is a CSV upload - create Data Intelligence steps
+      const isCsvUpload = csvParseResult && csvParseResult.leads.length > 0;
+      const dataIntelligenceSteps: InsightStep[] = isCsvUpload ? createCsvAnalysisSteps({
+        fileName: csvFileNameLocal,
+        headers: csvParseResult.headers,
+        rawData: csvParseResult.rawData,
+        mappedColumns: csvParseResult.mappedColumns,
+      }) : [];
+      
       // If copywriting mode, DON'T open side panel yet - wait until content is ready
       // The panel will open automatically when content threshold is reached (after generation)
 
@@ -3087,7 +3097,10 @@ ${hasName && hasEmail ? `Lista pronta! Guardei os ${leadsWithEmail} leads com em
         content: "",
         role: "assistant" as const,
         timestamp: new Date(),
-        componentData: { 
+        componentData: isCsvUpload ? { 
+          type: 'data_intelligence' as const, 
+          data: { insightSteps: dataIntelligenceSteps } 
+        } : { 
           type: 'email_generator_streaming' as const, 
           data: { workflowSteps: initialWorkflowSteps } 
         },
@@ -3775,6 +3788,20 @@ ${hasName && hasEmail ? `Lista pronta! Guardei os ${leadsWithEmail} leads com em
                             className="mt-3"
                           >
                             <AIWorkDetails steps={msg.componentData.data.workflowSteps as WorkStep[]} />
+                          </motion.div>
+                        )}
+                        {/* Data Intelligence - rich CSV analysis with visual cards */}
+                        {msg.componentData?.type === 'data_intelligence' && 
+                         msg.componentData?.data?.insightSteps && 
+                         Array.isArray(msg.componentData.data.insightSteps) &&
+                         msg.componentData.data.insightSteps.length > 0 && (
+                          <motion.div 
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ duration: 0.3, delay: 0.1 }}
+                            className="mt-3"
+                          >
+                            <DataIntelligence steps={msg.componentData.data.insightSteps as InsightStep[]} />
                           </motion.div>
                         )}
                         {/* Email card - shows when there's HTML content in this message */}
