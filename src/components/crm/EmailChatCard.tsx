@@ -54,8 +54,8 @@ export function EmailChatCard({
       >
         {/* Preview on the left side - sticking out from top */}
         {previewHtml && (
-          <div className="relative flex-shrink-0 pl-3 pb-3 pt-3">
-            <div className="w-28 h-44 bg-white rounded-[5px] overflow-hidden shadow-md border border-zinc-200/80 relative -mt-8">
+          <div className="relative flex-shrink-0 pl-3 pb-2 pt-2">
+            <div className="w-24 h-32 bg-white rounded-[5px] overflow-hidden shadow-md border border-zinc-200/80 relative -mt-6">
               <div 
                 className="absolute inset-0 origin-top-left overflow-hidden pointer-events-none"
                 style={{ 
@@ -75,7 +75,7 @@ export function EmailChatCard({
         )}
 
         {/* Content */}
-        <div className="flex-1 py-3 px-3 flex flex-col gap-2.5 min-w-0">
+        <div className="flex-1 py-2 px-3 flex flex-col gap-1.5 min-w-0">
           {/* Header with icon and SCALE EMAIL AGENT */}
           <div className="flex items-center gap-1">
             {/* Custom icon - square with inner square */}
@@ -102,7 +102,7 @@ export function EmailChatCard({
           {/* Button */}
           <button
             type="button"
-            className="mt-1 py-1.5 px-3 bg-zinc-800 hover:bg-zinc-700 text-white text-xs font-medium rounded-[4px] transition-colors self-start"
+            className="py-1 px-2.5 bg-zinc-800 hover:bg-zinc-700 text-white text-xs font-medium rounded-[4px] transition-colors self-start"
           >
             Review Email
           </button>
