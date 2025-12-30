@@ -3693,9 +3693,35 @@ ${structuredEmail.body}
             ];
             
             // Update message with completed state and generated HTML
+            // CRITICAL: Preserve data_intelligence type - merge email data into it
             setMessages(prev => 
               prev.map(m => {
                 if (m.id !== assistantMessageId) return m;
+                
+                const emailCardData = {
+                  generatedHtml: finalHtml,
+                  subject: structuredEmail.subject,
+                  preheader: structuredEmail.preheader,
+                  emailName: structuredEmail.emailName,
+                  mode: 'email' as const
+                };
+                
+                // If current type is data_intelligence, preserve it and add email inside
+                if (m.componentData?.type === 'data_intelligence') {
+                  return { 
+                    ...m, 
+                    content: chatDisplayContent,
+                    componentData: {
+                      ...m.componentData,
+                      data: {
+                        ...m.componentData.data,
+                        emailCard: emailCardData
+                      }
+                    }
+                  };
+                }
+                
+                // Otherwise, use email_generator_streaming type
                 return { 
                   ...m, 
                   content: chatDisplayContent,
@@ -3704,11 +3730,7 @@ ${structuredEmail.body}
                     data: { 
                       isComplete: true, 
                       workflowSteps: finalWorkflowSteps,
-                      generatedHtml: finalHtml,
-                      subject: structuredEmail.subject,
-                      preheader: structuredEmail.preheader,
-                      emailName: structuredEmail.emailName,
-                      mode: 'email' as const
+                      ...emailCardData
                     } 
                   }
                 };
@@ -4295,6 +4317,29 @@ ${structuredEmail.body}
                                   setSidePanelShowCodePreview(true);
                                   setSidePanelOpen(true);
                                 } else {
+                                  setSidePanelMode('email');
+                                  setSidePanelShowCodePreview(true);
+                                  setSidePanelOpen(true);
+                                }
+                              }}
+                            />
+                          </div>
+                        )}
+                        {/* Email card for data_intelligence type (CSV upload + email generation) */}
+                        {msg.componentData?.type === 'data_intelligence' && 
+                         msg.componentData?.data?.emailCard?.generatedHtml && (
+                          <div className="mt-3">
+                            <EmailChatCard
+                              subject={msg.componentData?.data?.emailCard?.subject || "Email Template"}
+                              previewHtml={msg.componentData?.data?.emailCard?.generatedHtml}
+                              chatName={msg.componentData?.data?.emailCard?.emailName || msg.componentData?.data?.emailCard?.subject || "Email gerado"}
+                              createdAt={msg.timestamp instanceof Date ? msg.timestamp : undefined}
+                              onClick={() => {
+                                const emailData = msg.componentData?.data?.emailCard;
+                                if (emailData?.generatedHtml) {
+                                  setSidePanelHtml(emailData.generatedHtml);
+                                  setSidePanelSubject(emailData.subject || '');
+                                  setSidePanelPreheader(emailData.preheader || '');
                                   setSidePanelMode('email');
                                   setSidePanelShowCodePreview(true);
                                   setSidePanelOpen(true);
