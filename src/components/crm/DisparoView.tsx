@@ -3257,7 +3257,7 @@ ${hasName && hasEmail ? `Lista pronta! Guardei os ${leadsWithEmail} leads com em
                     )}
                   >
                   {msg.role === "user" ? (
-                      <div className="w-full">
+                      <div className="w-fit max-w-full">
                         {/* CSV Preview Card */}
                         {msg.componentData?.type === 'csv_preview' && (
                           <CsvChatCard
