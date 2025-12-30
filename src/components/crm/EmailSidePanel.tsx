@@ -919,7 +919,7 @@ export function EmailSidePanel({
       )}
 
       {/* Content */}
-      <div className="flex-1 overflow-hidden relative">
+      <div className="flex-1 overflow-hidden relative bg-white">
         {showCodePreview ? (
           // Code/Preview mode with tabs
           activeTab === 'code' ? (
@@ -967,7 +967,7 @@ export function EmailSidePanel({
               
             </div>
           ) : (
-            <div className="h-full overflow-hidden bg-white">
+            <div className="h-full w-full bg-white flex flex-col">
               {showPreviewLoading ? (
                 // Skeleton loading state
                 <div className="p-6 space-y-4 animate-pulse">
@@ -1000,25 +1000,50 @@ export function EmailSidePanel({
               ) : (
                 <iframe
                   srcDoc={`<!DOCTYPE html>
-<html>
+<html lang="pt-BR">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
-    body { 
-      margin: 0; 
-      padding: 16px; 
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      background: white;
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    html, body {
+      width: 100%;
+      height: 100%;
+      background-color: #ffffff;
+    }
+    body {
+      padding: 24px;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      font-size: 14px;
+      line-height: 1.5;
+      color: #1a1a1a;
       -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+    table {
+      border-collapse: collapse;
+      border-spacing: 0;
+    }
+    img {
+      max-width: 100%;
+      height: auto;
+      display: block;
+    }
+    a {
+      color: inherit;
     }
   </style>
 </head>
-<body>${htmlContent || ''}</body>
+<body>${htmlContent || '<p style="color: #999; text-align: center; padding: 40px;">Nenhum conteúdo para exibir</p>'}</body>
 </html>`}
-                  className="w-full h-full border-0"
+                  className="w-full flex-1 border-0 bg-white"
                   title="Email Preview"
                   sandbox="allow-same-origin"
+                  style={{ minHeight: '100%' }}
                 />
               )}
             </div>
