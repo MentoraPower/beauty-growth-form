@@ -255,14 +255,14 @@ export function DisparoSubmenuPanel({ isOpen, onClose }: DisparoSubmenuPanelProp
         {/* New conversation button */}
         <button
           onClick={handleNewConversation}
-          className="flex items-center justify-center gap-2 mx-2 mb-3 px-3 py-2.5 rounded-lg text-orange-400 text-sm font-medium transition-all hover:text-orange-300 hover:bg-orange-500/5"
+          className="flex items-center justify-center gap-1.5 mx-2 mb-3 px-2 py-1.5 rounded-md text-orange-400 text-xs font-medium transition-all hover:text-orange-300 hover:bg-orange-500/5"
           style={{
             border: '1px dashed',
-            borderColor: 'rgba(249, 115, 22, 0.5)',
+            borderColor: 'rgba(249, 115, 22, 0.4)',
             backgroundImage: 'none',
           }}
         >
-          <Plus className="h-4 w-4" />
+          <Plus className="h-3.5 w-3.5" />
           Nova conversa
         </button>
 
