@@ -4344,14 +4344,9 @@ ${structuredEmail.body}
                          Array.isArray(msg.componentData.data.insightSteps) &&
                          msg.componentData.data.insightSteps.length > 0 && 
                          msg.content && msg.content.replace(/\s/g, '').length > 0 && (
-                          <motion.div 
-                            initial={{ opacity: 0, y: 10 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ duration: 0.3, delay: 0.15 }}
-                            className="mt-3"
-                          >
+                          <div className="mt-3">
                             <DataIntelligence steps={msg.componentData.data.insightSteps as InsightStep[]} />
-                          </motion.div>
+                          </div>
                         )}
                         {/* Email card - shows when there's HTML content in this message */}
                         {msg.componentData?.type === 'email_generator_streaming' && msg.componentData?.data?.generatedHtml && (
