@@ -1,7 +1,7 @@
 import React from "react";
 import * as TooltipPrimitive from "@radix-ui/react-tooltip";
 import * as DialogPrimitive from "@radix-ui/react-dialog";
-import { ArrowUp, Paperclip, Square, X, StopCircle, Mic, Palette, ChevronDown } from "lucide-react";
+import { ArrowUp, Plus, Square, X, StopCircle, Mic, Palette, ChevronDown } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
 // Utility function for className merging
@@ -639,10 +639,10 @@ export const PromptInputBox = React.forwardRef((props: PromptInputBoxProps, ref:
             <PromptInputAction tooltip="Enviar imagem ou CSV">
               <button
                 onClick={() => uploadInputRef.current?.click()}
-                className="flex h-8 w-8 text-gray-500 cursor-pointer items-center justify-center rounded-full transition-colors hover:bg-gray-100 hover:text-gray-700"
+                className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-full bg-gradient-to-br from-orange-500 to-orange-600 shadow-md transition-all hover:shadow-lg hover:scale-105"
                 disabled={isRecording}
               >
-                <Paperclip className="h-5 w-5 transition-colors" />
+                <Plus className="h-4 w-4 text-white stroke-[2.5]" />
                 <input
                   ref={uploadInputRef}
                   type="file"
