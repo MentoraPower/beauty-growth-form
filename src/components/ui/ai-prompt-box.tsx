@@ -606,7 +606,7 @@ export const PromptInputBox = React.forwardRef((props: PromptInputBoxProps, ref:
 
         <div
           className={cn(
-            "transition-all duration-300",
+            "transition-all duration-300 flex-1",
             isRecording ? "h-0 overflow-hidden opacity-0" : "opacity-100"
           )}
         >
@@ -616,7 +616,7 @@ export const PromptInputBox = React.forwardRef((props: PromptInputBoxProps, ref:
                 ? "Criar copy persuasiva..."
                 : placeholder
             }
-            className="text-base"
+            className="text-base h-full"
           />
         </div>
 
