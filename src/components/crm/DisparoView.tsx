@@ -3405,9 +3405,16 @@ INSTRUÇÕES PARA VOCÊ (IA):
           prev.map(m => {
             if (m.id !== assistantMessageId) return m;
             
-            // CRITICAL: Preserve data_intelligence type - never overwrite with email_generator_streaming
+            // CRITICAL: Preserve data_intelligence type and all its data - never overwrite
             if (m.componentData?.type === 'data_intelligence') {
-              return { ...m, content: displayContent };
+              return { 
+                ...m, 
+                content: displayContent,
+                componentData: {
+                  ...m.componentData,
+                  data: { ...m.componentData.data }
+                }
+              };
             }
             
             return { 
@@ -4020,11 +4027,15 @@ ${structuredEmail.body}
           prev.map(m => {
             if (m.id !== assistantMessageId) return m;
             
-            // CRITICAL: Preserve data_intelligence - never overwrite it
+            // CRITICAL: Preserve data_intelligence - never overwrite it, keep all data including insightSteps
             if (m.componentData?.type === 'data_intelligence') {
               return { 
                 ...m, 
                 content: cleanContent,
+                componentData: {
+                  ...m.componentData,
+                  data: { ...m.componentData.data }
+                },
                 component: finalComponents.length > 0 ? (
                   <div className="mt-4 space-y-4">
                     {finalComponents}
