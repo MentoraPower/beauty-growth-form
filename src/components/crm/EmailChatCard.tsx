@@ -38,7 +38,7 @@ export function EmailChatCard({
       <motion.div
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
-        className="w-full max-w-sm cursor-pointer relative p-[1px] rounded-[10px] overflow-visible"
+        className="w-full max-w-md cursor-pointer relative p-[1px] rounded-[10px] overflow-visible"
         style={{
           background: 'linear-gradient(135deg, #ec4899, #ef4444, #8b5cf6)',
         }}
@@ -55,7 +55,7 @@ export function EmailChatCard({
         {/* Preview on the left side - sticking out from top */}
         {previewHtml && (
           <div className="relative flex-shrink-0 pl-3 pb-3 pt-3">
-            <div className="w-20 h-40 bg-white rounded-[5px] overflow-hidden shadow-md border border-zinc-200/80 relative -mt-8">
+            <div className="w-28 h-44 bg-white rounded-[5px] overflow-hidden shadow-md border border-zinc-200/80 relative -mt-8">
               <div 
                 className="absolute inset-0 origin-top-left overflow-hidden pointer-events-none"
                 style={{ 
@@ -87,19 +87,17 @@ export function EmailChatCard({
             </span>
           </div>
 
-          {/* Chat name */}
-          <div className="min-w-0">
-            <span className="text-sm font-medium text-white truncate block">
+          {/* Chat name with time inline */}
+          <div className="min-w-0 flex items-center gap-2">
+            <span className="text-sm font-medium text-white truncate">
               {chatName}
             </span>
+            {timeAgo && (
+              <span className="text-[11px] text-zinc-500 flex-shrink-0">
+                {timeAgo} atrás
+              </span>
+            )}
           </div>
-
-          {/* Time ago */}
-          {timeAgo && (
-            <span className="text-[11px] text-zinc-500">
-              {timeAgo} atrás
-            </span>
-          )}
 
           {/* Button */}
           <button
