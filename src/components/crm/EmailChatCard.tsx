@@ -58,10 +58,10 @@ export function EmailChatCard({
               <div 
                 className="absolute inset-0 origin-top-left overflow-hidden pointer-events-none"
                 style={{ 
-                  transform: 'scale(0.07)', 
+                  transform: 'scale(0.12)', 
                   transformOrigin: 'top left',
-                  width: '1428%',
-                  height: '1428%'
+                  width: '833%',
+                  height: '833%'
                 }}
               >
                 <div 
