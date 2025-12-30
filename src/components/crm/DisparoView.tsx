@@ -2998,9 +2998,14 @@ ${hasName && hasEmail ? `Lista pronta! Guardei os ${leadsWithEmail} leads com em
             .replace(/_([^_]+)_/g, '<em style="font-style: italic;">$1</em>')
             .replace(/\n/g, '<br>')}</div>`;
 
-          // In copywriting mode, always create a card so the user can open/edit in the side panel.
-          const copyHtmlForPanel = (isCopywritingMode || shouldOpenPanel) ? formattedCopyHtml : '';
-          const cardTitle = isCopywritingMode ? 'Copy gerada' : '';
+          // Detect if content looks like a copy (sales page, email, persuasive text, etc.)
+          const looksLikeCopy = /\b(copy|headline|cta|oferta|venda|benefício|urgência|escassez|gatilho|persuasivo|landing\s*page|página\s*de\s*(vendas?|captura)|headline|subheadline|call.to.action)\b/i.test(userMessage.content || '') ||
+            cleanContent.length >= 200;
+
+          // Create card when in copywriting mode, when content looks like copy, or when large content
+          const shouldShowCard = isCopywritingMode || looksLikeCopy || shouldOpenPanel;
+          const copyHtmlForPanel = shouldShowCard ? formattedCopyHtml : '';
+          const cardTitle = shouldShowCard ? 'Copy gerada' : '';
           
           setMessages(prev => 
             prev.map(m => 
