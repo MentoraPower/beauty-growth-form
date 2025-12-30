@@ -1337,7 +1337,7 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
     setSidePanelPreheader('');
     setSidePanelGenerating(true);
     setSidePanelShowCodePreview(true); // Ensure header shows for email
-    setSidePanelOpen(true);
+    // Don't auto-open panel - user clicks EmailChatCard to open
     
     // Create work steps for email generation in progress
     const generatingSteps: WorkStep[] = [
@@ -1495,7 +1495,7 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
     setHtmlSource('ai'); // AI generated this email
     setSidePanelGenerating(false);
     setSidePanelShowCodePreview(true); // Ensure header shows for email
-    setSidePanelOpen(true);
+    // Don't auto-open panel - user clicks EmailChatCard to open
     logAction('ai', 'Email HTML criado', `${html.length} caracteres`);
     
     const assistantMessage: Message = {
@@ -2135,7 +2135,7 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
       setSidePanelSubject('');
       setSidePanelPreheader('');
       setSidePanelGenerating(true);
-      setSidePanelOpen(true);
+      // Don't auto-open panel - user clicks EmailChatCard to open
       
       try {
         const GENERATE_EMAIL_URL = `https://ytdfwkchsumgdvcroaqg.supabase.co/functions/v1/generate-email`;
