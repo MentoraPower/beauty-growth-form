@@ -484,7 +484,7 @@ const LeadInfoPanel = ({ phone, photoUrl, contactName, onClose, onNameUpdate }: 
             <Mail className="w-3.5 h-3.5" />
           </button>
           <button 
-            onClick={() => navigate(`/admin/crm/${lead.id}`)}
+            onClick={() => navigate(`/crm/${lead.id}`)}
             className="w-7 h-7 rounded-md bg-background/60 hover:bg-background flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
           >
             <User className="w-3.5 h-3.5" />

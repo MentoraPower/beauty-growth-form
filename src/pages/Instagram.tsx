@@ -87,7 +87,7 @@ export default function InstagramPage() {
     saveSentMessageToCache,
   } = useInstagramCache();
 
-  const REDIRECT_URI = `${window.location.origin}/admin/instagram`;
+  const REDIRECT_URI = `${window.location.origin}/instagram`;
   const myInstagramUserId = accountInfo?.userId;
 
   // Check for cached connection FIRST (instant load)

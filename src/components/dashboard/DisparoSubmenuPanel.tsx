@@ -147,13 +147,13 @@ export function DisparoSubmenuPanel({ isOpen, onClose }: DisparoSubmenuPanelProp
 
   // Handle new conversation - use explicit ?new=1 signal to trigger reset
   const handleNewConversation = () => {
-    navigate('/admin/disparo?new=1', { replace: true });
+    navigate('/disparo?new=1', { replace: true });
   };
 
   // Load conversation - navigate with conversation ID
   const handleSelectConversation = (convId: string) => {
     // Navigate explicitly with the conversation ID to ensure correct routing
-    navigate(`/admin/disparo?conversation=${convId}`);
+    navigate(`/disparo?conversation=${convId}`);
   };
 
   // Rename conversation
@@ -197,7 +197,7 @@ export function DisparoSubmenuPanel({ isOpen, onClose }: DisparoSubmenuPanelProp
     // If deleting current conversation, navigate to new immediately
     const wasCurrentConversation = id === currentConversationId;
     if (wasCurrentConversation) {
-      navigate('/admin/disparo?new=1', { replace: true });
+      navigate('/disparo?new=1', { replace: true });
     }
     
     try {
@@ -218,7 +218,7 @@ export function DisparoSubmenuPanel({ isOpen, onClose }: DisparoSubmenuPanelProp
       
       // If we navigated away, go back to the conversation
       if (wasCurrentConversation) {
-        navigate(`/admin/disparo?conversation=${id}`, { replace: true });
+        navigate(`/disparo?conversation=${id}`, { replace: true });
       }
     }
   };

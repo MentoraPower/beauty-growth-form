@@ -602,7 +602,7 @@ export function ListView({ pipelines, leadsByPipeline, subOriginId, tagsMap }: L
     if (searchQuery) params.set("search", searchQuery);
     params.set("view", "lista");
     const queryString = params.toString();
-    const url = `/admin/crm/${lead.id}${queryString ? `?${queryString}` : ''}`;
+    const url = `/crm/${lead.id}${queryString ? `?${queryString}` : ''}`;
     navigate(url);
   };
 

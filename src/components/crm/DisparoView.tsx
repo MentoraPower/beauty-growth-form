@@ -4166,7 +4166,7 @@ ${structuredEmail.body}
     setInitialLoadDone(true);
     
     // Navigate to disparo without conversation param - use navigate for reliable navigation
-    navigate('/admin/disparo', { replace: true });
+    navigate('/disparo', { replace: true });
   }, [navigate]);
 
   // Handle conversation created (auto-save)

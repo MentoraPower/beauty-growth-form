@@ -742,7 +742,7 @@ export function WhatsAppChatDropdown({ phone, countryCode, contactName, sessionI
                 <button 
                   onClick={() => {
                     setIsOpen(false);
-                    navigate(`/admin/whatsapp?phone=${currentChatPhone}`);
+                    navigate(`/whatsapp?phone=${currentChatPhone}`);
                   }}
                   className="p-1.5 rounded-full hover:bg-muted transition-colors"
                   title="Expandir conversa"

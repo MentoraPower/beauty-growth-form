@@ -124,7 +124,7 @@ export const KanbanCard = memo(function KanbanCard({ lead, isDragging: isDraggin
       if (searchQuery) params.set("search", searchQuery);
       params.set("view", "quadro");
       const queryString = params.toString();
-      const url = `/admin/crm/${lead.id}${queryString ? `?${queryString}` : ''}`;
+      const url = `/crm/${lead.id}${queryString ? `?${queryString}` : ''}`;
       navigate(url);
     }
     dragStartPos.current = null;

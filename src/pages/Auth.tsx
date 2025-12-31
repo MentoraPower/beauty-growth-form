@@ -28,7 +28,7 @@ const Auth = () => {
         }
       } = await supabase.auth.getSession();
       if (session) {
-        navigate("/admin");
+        navigate("/");
       }
       setIsCheckingAuth(false);
     };
@@ -41,7 +41,7 @@ const Auth = () => {
       }
     } = supabase.auth.onAuthStateChange((event, session) => {
       if (session) {
-        navigate("/admin");
+        navigate("/");
       }
     });
     return () => subscription.unsubscribe();
@@ -77,7 +77,7 @@ const Auth = () => {
         return;
       }
       toast.success("Login realizado com sucesso!");
-      navigate("/admin");
+      navigate("/");
     } catch (err) {
       toast.error("Erro inesperado. Tente novamente.");
     } finally {

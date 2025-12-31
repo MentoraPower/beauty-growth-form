@@ -118,7 +118,7 @@ export default function LeadDetail() {
     const viewParam = searchParams.get("view");
     if (viewParam) params.set("view", viewParam);
     const queryString = params.toString();
-    return `/admin/crm${queryString ? `?${queryString}` : ''}`;
+    return `/crm${queryString ? `?${queryString}` : ''}`;
   };
   
   // Use URL param for tab persistence, default to "atividades"
