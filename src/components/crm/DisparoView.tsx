@@ -2228,7 +2228,7 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
                 {/* Empty state with animated entrance */}
                 {messages.length === 0 && (
                   <motion.div 
-                    className="flex flex-col items-center justify-center h-[calc(100vh-300px)] text-center gap-4"
+                    className="flex flex-col items-center justify-center min-h-[calc(100vh-280px)] text-center gap-6"
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     transition={{ duration: 0.3 }}
@@ -2237,12 +2237,12 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
                       src={disparoLogo} 
                       alt="Disparo" 
                       className="w-12 h-12"
-                      initial={{ opacity: 0, scale: 0.5, rotate: -360 }}
-                      animate={{ opacity: 1, scale: 1, rotate: 0 }}
+                      initial={{ opacity: 0, scale: 0.5, rotate: -360, y: 60 }}
+                      animate={{ opacity: 1, scale: 1, rotate: 0, y: 0 }}
                       transition={{ 
-                        duration: 1, 
+                        duration: 1.2, 
                         ease: [0.16, 1, 0.3, 1],
-                        rotate: { duration: 1, ease: "easeOut" }
+                        rotate: { duration: 1.2, ease: "easeOut" }
                       }}
                     />
                     <motion.h2 
@@ -2251,12 +2251,31 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ 
                         duration: 0.6, 
-                        delay: 0.6,
+                        delay: 0.7,
                         ease: [0.16, 1, 0.3, 1]
                       }}
                     >
                       Hey, ready to get started?
                     </motion.h2>
+                    <motion.div 
+                      className="w-full max-w-2xl"
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ 
+                        duration: 0.6, 
+                        delay: 0.9,
+                        ease: [0.16, 1, 0.3, 1]
+                      }}
+                    >
+                      <PromptInputBox
+                        onSend={handleSend}
+                        isLoading={isBusy}
+                        placeholder="Digite sua mensagem aqui..."
+                      />
+                      <p className="text-center text-xs text-gray-400 mt-2">
+                        A Scale pode cometer erros. Confira informações importantes.
+                      </p>
+                    </motion.div>
                   </motion.div>
                 )}
                 
@@ -2394,29 +2413,29 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
               </div>
             </div>
 
-            {/* Input area - centered when empty */}
-            <div className={cn(
-              "px-8 transition-all duration-300",
-              messages.length === 0 
-                ? "absolute inset-0 flex items-center justify-center pointer-events-none" 
-                : "p-6 pt-0"
-            )}>
-              <div className={cn(
-                "mx-auto transition-all duration-300 pointer-events-auto",
-                messages.length === 0 
-                  ? "w-full max-w-2xl mt-32" 
-                  : sidePanelOpen ? "max-w-4xl" : "max-w-5xl"
-              )}>
-                <PromptInputBox
-                  onSend={handleSend}
-                  isLoading={isBusy}
-                  placeholder="Digite sua mensagem aqui..."
-                />
-                <p className="text-center text-xs text-gray-400 mt-2">
-                  A Scale pode cometer erros. Confira informações importantes.
-                </p>
-              </div>
-            </div>
+            {/* Input area - only show when there are messages */}
+            {messages.length > 0 && (
+              <motion.div 
+                className="px-8 p-6 pt-0"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ type: "spring", damping: 25, stiffness: 200 }}
+              >
+                <div className={cn(
+                  "mx-auto transition-all duration-300",
+                  sidePanelOpen ? "max-w-4xl" : "max-w-5xl"
+                )}>
+                  <PromptInputBox
+                    onSend={handleSend}
+                    isLoading={isBusy}
+                    placeholder="Digite sua mensagem aqui..."
+                  />
+                  <p className="text-center text-xs text-gray-400 mt-2">
+                    A Scale pode cometer erros. Confira informações importantes.
+                  </p>
+                </div>
+              </motion.div>
+            )}
           </>
         )}
       </div>
