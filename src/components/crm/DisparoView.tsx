@@ -1700,9 +1700,11 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
         if (error) throw error;
         
         targetConversationId = data.id;
-        conversationIdRef.current = data.id;
-        setCurrentConversationId(data.id);
-        
+
+        // Avoid immediate re-hydration from URL right after creation (keeps optimistic UI stable)
+        skipNextUrlLoadRef.current = data.id;
+        setConversationId(data.id);
+
         setSearchParams({ conversation: data.id }, { replace: true });
         
         localStorage.setItem('disparo-submenu-should-open', 'true');
