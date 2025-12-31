@@ -788,10 +788,52 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
   // Load conversation from URL
   useEffect(() => {
     const convId = searchParams.get('conversation') || searchParams.get('conv');
+    const isNewConversation = searchParams.get('new') === '1';
 
     // Guard only when we actually have a conversation id to skip
     if (skipNextUrlLoadRef.current && skipNextUrlLoadRef.current === convId) {
       skipNextUrlLoadRef.current = null;
+      return;
+    }
+
+    // Handle explicit ?new=1 signal - always reset to fresh state
+    if (isNewConversation) {
+      if (activeAbortRef.current) {
+        activeAbortRef.current.abort();
+        activeAbortRef.current = null;
+      }
+      activeRunIdRef.current = null;
+      activeRunConversationIdRef.current = null;
+      isProcessingMessageRef.current = false;
+      isCreatingConversationRef.current = false;
+      
+      suppressUrlSyncRef.current = true;
+      setCurrentConversationId(null);
+      conversationIdRef.current = null;
+      setMessages([]);
+      messagesRef.current = [];
+      setCsvLeads(null);
+      setCsvListId(null);
+      setCsvFileName('lista.csv');
+      setCsvRawData([]);
+      setCsvHeaders([]);
+      setCsvMappedColumns({});
+      setPendingEmailContext(null);
+      setSidePanelOpen(false);
+      setSidePanelRestoredFromDB(false);
+      setSidePanelHtml('');
+      setSidePanelSubject('');
+      setSidePanelPreheader('');
+      setSidePanelContext(null);
+      setSelectedOriginData(null);
+      setDispatchType(null);
+      setActionHistory([]);
+      setSidePanelDispatchData(null);
+      setPendingQuestion(null);
+      setIsLoading(false);
+      setInitialLoadDone(true);
+      isInitialPageLoadRef.current = false;
+      setTimeout(() => { suppressUrlSyncRef.current = false; }, 100);
       return;
     }
     
