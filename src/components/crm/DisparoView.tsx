@@ -2404,7 +2404,7 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
               <div className={cn(
                 "mx-auto transition-all duration-300 pointer-events-auto",
                 messages.length === 0 
-                  ? "w-full max-w-xl mt-32" 
+                  ? "w-full max-w-2xl mt-32" 
                   : sidePanelOpen ? "max-w-4xl" : "max-w-5xl"
               )}>
                 <PromptInputBox
