@@ -422,8 +422,17 @@ export const PromptInputBox = React.forwardRef((props: PromptInputBoxProps, ref:
   const [filePreviews, setFilePreviews] = React.useState<{ [key: string]: string }>({});
   const [selectedImage, setSelectedImage] = React.useState<string | null>(null);
   const [isRecording, setIsRecording] = React.useState(false);
-  const [selectedModel, setSelectedModel] = React.useState<'grok' | 'copywriting'>('grok');
+  // Persist model selection - default to gpt
+  const [selectedModel, setSelectedModel] = React.useState<'gpt' | 'copywriting'>(() => {
+    const saved = localStorage.getItem('disparo-selected-model');
+    return saved === 'copywriting' ? 'copywriting' : 'gpt';
+  });
   const [modelDropdownOpen, setModelDropdownOpen] = React.useState(false);
+
+  // Persist model selection
+  React.useEffect(() => {
+    localStorage.setItem('disparo-selected-model', selectedModel);
+  }, [selectedModel]);
   const uploadInputRef = React.useRef<HTMLInputElement>(null);
   const promptBoxRef = React.useRef<HTMLDivElement>(null);
   const dropdownRef = React.useRef<HTMLDivElement>(null);
@@ -667,7 +676,7 @@ export const PromptInputBox = React.forwardRef((props: PromptInputBoxProps, ref:
                 onClick={() => setModelDropdownOpen(!modelDropdownOpen)}
               >
                 <span className="text-xs font-medium text-gray-600">
-                  {selectedModel === 'copywriting' ? "Copywriting" : "Grok 4.1 Fast"}
+                  {selectedModel === 'copywriting' ? "GPT (Copywriting)" : "ChatGPT 5.1"}
                 </span>
                 <ChevronDown className="w-3 h-3 text-gray-400" />
               </div>
@@ -680,11 +689,11 @@ export const PromptInputBox = React.forwardRef((props: PromptInputBoxProps, ref:
                   <div 
                     className={cn(
                       "px-3 py-2 text-xs cursor-pointer hover:bg-gray-50",
-                      selectedModel === 'grok' && "bg-gray-50"
+                      selectedModel === 'gpt' && "bg-gray-50"
                     )}
-                    onClick={() => { setSelectedModel('grok'); setModelDropdownOpen(false); }}
+                    onClick={() => { setSelectedModel('gpt'); setModelDropdownOpen(false); }}
                   >
-                    Grok 4.1 Fast
+                    ChatGPT 5.1
                   </div>
                   <div 
                     className={cn(
@@ -693,7 +702,7 @@ export const PromptInputBox = React.forwardRef((props: PromptInputBoxProps, ref:
                     )}
                     onClick={() => { setSelectedModel('copywriting'); setModelDropdownOpen(false); }}
                   >
-                    Copywriting
+                    GPT (Copywriting)
                   </div>
                 </div>
               )}
