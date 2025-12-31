@@ -72,7 +72,7 @@ export function CalendarDropdown({ leadName, leadEmail, subOriginId }: CalendarD
     params.set("prefill_name", leadName);
     params.set("prefill_email", leadEmail);
     
-    navigate(`/admin/calendario?${params.toString()}`);
+    navigate(`/calendario?${params.toString()}`);
     setIsLoading(false);
   };
 

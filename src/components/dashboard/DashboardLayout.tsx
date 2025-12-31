@@ -50,25 +50,25 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
   const navigate = useNavigate();
   const sidebarRef = useRef<HTMLElement>(null);
 
-  const isCRMActive = location.pathname.startsWith("/admin/crm") || location.pathname === "/admin";
-  const isAtendimentoActive = location.pathname.startsWith("/admin/atendimento");
-  const isSettingsActive = location.pathname === "/admin/settings";
-  const isAnalizerActive = location.pathname === "/admin/analizer";
-  const isEquipeActive = location.pathname === "/admin/equipe";
-  const isDisparoActive = location.pathname === "/admin/disparo";
+  const isCRMActive = location.pathname.startsWith("/crm") || location.pathname === "/";
+  const isAtendimentoActive = location.pathname.startsWith("/atendimento");
+  const isSettingsActive = location.pathname === "/settings";
+  const isAnalizerActive = location.pathname === "/analizer";
+  const isEquipeActive = location.pathname === "/equipe";
+  const isDisparoActive = location.pathname === "/disparo";
 
   // Initialize submenu states directly from localStorage (no animation on refresh)
   const getInitialCrmSubmenuState = () => {
     if (typeof window === 'undefined') return false;
     const savedCrm = localStorage.getItem('crm_submenu_open');
     return savedCrm !== 'false' && 
-      (window.location.pathname.startsWith("/admin/crm") || window.location.pathname === "/admin");
+      (window.location.pathname.startsWith("/crm") || window.location.pathname === "/");
   };
   
   const getInitialDisparoSubmenuState = () => {
     if (typeof window === 'undefined') return false;
     const savedDisparo = localStorage.getItem('disparo_submenu_open');
-    return savedDisparo === 'true' && window.location.pathname.startsWith("/admin/disparo");
+    return savedDisparo === 'true' && window.location.pathname.startsWith("/disparo");
   };
 
   const [crmSubmenuOpen, setCrmSubmenuOpen] = useState(getInitialCrmSubmenuState);
@@ -186,7 +186,7 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
   const navItems = [
     ...(canAccessWhatsapp ? [{ 
       id: 'atendimento' as ActivePanel, 
-      href: "/admin/atendimento", 
+      href: "/atendimento", 
       icon: Inbox, 
       label: "Atendimento",
     }] : []),
@@ -208,20 +208,20 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
 
       // Check if already on CRM with an origin
       const originParam = new URLSearchParams(location.search).get('origin');
-      if (location.pathname.startsWith('/admin/crm') && originParam) {
+      if (location.pathname.startsWith('/crm') && originParam) {
         return; // Already on CRM with origin, nothing to do
       }
 
       // Try to use last saved origin for instant navigation - always open in overview
       const lastOrigin = localStorage.getItem('crm_last_sub_origin');
       if (lastOrigin) {
-        navigate(`/admin/crm?origin=${lastOrigin}&view=overview`, { replace: true });
+        navigate(`/crm?origin=${lastOrigin}&view=overview`, { replace: true });
         return;
       }
 
       // No last origin - navigate to CRM with overview (will show skeleton) and fetch default async
-      if (!location.pathname.startsWith('/admin/crm')) {
-        navigate('/admin/crm?view=overview');
+      if (!location.pathname.startsWith('/crm')) {
+        navigate('/crm?view=overview');
       }
 
       // Fetch default origin in background
@@ -242,7 +242,7 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
           .limit(1);
 
         if (subOrigins && subOrigins.length > 0) {
-          navigate(`/admin/crm?origin=${subOrigins[0].id}&view=overview`, { replace: true });
+          navigate(`/crm?origin=${subOrigins[0].id}&view=overview`, { replace: true });
         }
       })();
 
@@ -256,11 +256,11 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
 
   // Navigate when panel changes
   useEffect(() => {
-    if (activePanel === 'atendimento' && !location.pathname.startsWith('/admin/atendimento')) {
-      navigate('/admin/atendimento');
+    if (activePanel === 'atendimento' && !location.pathname.startsWith('/atendimento')) {
+      navigate('/atendimento');
     }
-    if (activePanel === 'settings' && location.pathname !== '/admin/settings') {
-      navigate('/admin/settings');
+    if (activePanel === 'settings' && location.pathname !== '/settings') {
+      navigate('/settings');
     }
   }, [activePanel, location.pathname, navigate]);
 
@@ -348,7 +348,7 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
                   onClick={() => {
                     setActivePanel('equipe');
                     setCrmSubmenuOpen(false);
-                    navigate('/admin/equipe');
+                    navigate('/equipe');
                   }}
                   className={cn(
                     "relative flex items-center h-10 rounded-lg transition-all duration-200",
@@ -397,7 +397,7 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
                   onClick={() => {
                     setActivePanel('analizer');
                     setCrmSubmenuOpen(false);
-                    navigate('/admin/analizer');
+                    navigate('/analizer');
                   }}
                   className={cn(
                     "relative flex items-center h-10 rounded-lg transition-all duration-200",
@@ -425,7 +425,7 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
                     setActivePanel('disparo');
                     setCrmSubmenuOpen(false);
                     setDisparoSubmenuOpen(true);
-                    navigate('/admin/disparo');
+                    navigate('/disparo');
                   }}
                   className={cn(
                     "relative flex items-center h-10 rounded-lg transition-all duration-200",
@@ -487,7 +487,7 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
                   <button
                     onClick={() => {
                       setProfileMenuOpen(false);
-                      navigate('/admin/settings');
+                      navigate('/settings');
                     }}
                     className="flex items-center w-full h-10 rounded-lg transition-all duration-200 bg-white/5 text-white/70 hover:bg-white/15 hover:text-white mb-1"
                   >
@@ -688,7 +688,7 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
               </div>
               
               <Link
-                to="/admin/settings"
+                to="/settings"
                 onClick={() => setSidebarOpen(false)}
                 className={cn(
                   "relative flex items-center w-full rounded-xl transition-colors duration-200 px-4 py-3 gap-3",

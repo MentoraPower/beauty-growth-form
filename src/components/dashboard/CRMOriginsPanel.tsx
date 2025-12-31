@@ -882,14 +882,14 @@ export function CRMOriginsPanel({ isOpen, onClose, sidebarWidth, embedded = fals
     window.dispatchEvent(new CustomEvent('suborigin-change'));
     
     if (tipo === 'calendario') {
-      navigate(`/admin/calendario?origin=${subOriginId}`);
+      navigate(`/calendario?origin=${subOriginId}`);
     } else {
-      navigate(`/admin/crm?origin=${subOriginId}`);
+      navigate(`/crm?origin=${subOriginId}`);
     }
   };
 
   const currentSubOriginId = new URLSearchParams(location.search).get('origin');
-  const currentCalendarOriginId = location.pathname === '/admin/calendario' 
+  const currentCalendarOriginId = location.pathname === '/calendario' 
     ? new URLSearchParams(location.search).get('origin') 
     : null;
   // Embedded content for unified submenu
