@@ -547,59 +547,10 @@ export const PromptInputBox = React.forwardRef((props: PromptInputBoxProps, ref:
   const hasContent = input.trim() !== "" || files.length > 0;
 
   return (
-    <div className="relative flex flex-col rounded-3xl bg-gray-200/80 overflow-visible">
+    <div className="relative flex flex-col rounded-3xl bg-gray-200/80 overflow-hidden">
       {/* Top header bar with gray background */}
-      <div className="px-3 py-2 flex items-center justify-between">
+      <div className="px-3 py-2">
         <span className="text-xs font-medium text-gray-500">Ask Scale to create</span>
-        
-        {/* Model selector dropdown - positioned at corner */}
-        <div ref={dropdownRef} className="relative">
-          <div 
-            className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-white/80 border cursor-pointer hover:bg-white transition-colors"
-            style={{ borderColor: '#00000015' }}
-            onClick={() => setModelDropdownOpen(!modelDropdownOpen)}
-          >
-            <span className="text-xs font-medium text-gray-600">
-              {selectedModel === 'copywriting' ? "Copywriting" : selectedModel === 'grok' ? "Grok" : "ChatGPT 5.1"}
-            </span>
-            <ChevronDown className="w-3 h-3 text-gray-400" />
-          </div>
-          
-          {modelDropdownOpen && (
-            <div 
-              className="absolute top-full right-0 mt-1 bg-white border rounded-lg shadow-lg z-50 min-w-[140px] overflow-hidden"
-              style={{ borderColor: '#00000015' }}
-            >
-              <div 
-                className={cn(
-                  "px-3 py-2 text-xs cursor-pointer hover:bg-gray-50 transition-colors",
-                  selectedModel === 'gpt' && "bg-gray-50 font-medium"
-                )}
-                onClick={() => { setSelectedModel('gpt'); setModelDropdownOpen(false); }}
-              >
-                ChatGPT 5.1
-              </div>
-              <div 
-                className={cn(
-                  "px-3 py-2 text-xs cursor-pointer hover:bg-gray-50 transition-colors",
-                  selectedModel === 'grok' && "bg-gray-50 font-medium"
-                )}
-                onClick={() => { setSelectedModel('grok'); setModelDropdownOpen(false); }}
-              >
-                Grok
-              </div>
-              <div 
-                className={cn(
-                  "px-3 py-2 text-xs cursor-pointer hover:bg-gray-50 transition-colors",
-                  selectedModel === 'copywriting' && "bg-gray-50 font-medium"
-                )}
-                onClick={() => { setSelectedModel('copywriting'); setModelDropdownOpen(false); }}
-              >
-                Copywriting
-              </div>
-            </div>
-          )}
-        </div>
       </div>
 
       <PromptInput
@@ -719,6 +670,55 @@ export const PromptInputBox = React.forwardRef((props: PromptInputBoxProps, ref:
                 />
               </button>
             </PromptInputAction>
+
+            {/* Model selector dropdown - aligned to corner */}
+            <div ref={dropdownRef} className="relative ml-auto">
+              <div 
+                className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md border cursor-pointer hover:bg-gray-50"
+                style={{ borderColor: '#00000010' }}
+                onClick={() => setModelDropdownOpen(!modelDropdownOpen)}
+              >
+                <span className="text-xs font-medium text-gray-600">
+                  {selectedModel === 'copywriting' ? "Copywriting" : selectedModel === 'grok' ? "Grok" : "ChatGPT 5.1"}
+                </span>
+                <ChevronDown className="w-3 h-3 text-gray-400" />
+              </div>
+              
+              {modelDropdownOpen && (
+                <div 
+                  className="absolute bottom-full left-0 mb-1 bg-white border rounded-none shadow-lg z-50 min-w-[140px]"
+                  style={{ borderColor: '#00000010' }}
+                >
+                  <div 
+                    className={cn(
+                      "px-3 py-2 text-xs cursor-pointer hover:bg-gray-50",
+                      selectedModel === 'gpt' && "bg-gray-50"
+                    )}
+                    onClick={() => { setSelectedModel('gpt'); setModelDropdownOpen(false); }}
+                  >
+                    ChatGPT 5.1
+                  </div>
+                  <div 
+                    className={cn(
+                      "px-3 py-2 text-xs cursor-pointer hover:bg-gray-50",
+                      selectedModel === 'grok' && "bg-gray-50"
+                    )}
+                    onClick={() => { setSelectedModel('grok'); setModelDropdownOpen(false); }}
+                  >
+                    Grok
+                  </div>
+                  <div 
+                    className={cn(
+                      "px-3 py-2 text-xs cursor-pointer hover:bg-gray-50",
+                      selectedModel === 'copywriting' && "bg-gray-50"
+                    )}
+                    onClick={() => { setSelectedModel('copywriting'); setModelDropdownOpen(false); }}
+                  >
+                    Copywriting
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
 
           <PromptInputAction tooltip={isLoading ? "Gerando..." : "Enviar mensagem"}>
