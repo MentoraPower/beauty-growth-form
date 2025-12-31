@@ -21,6 +21,39 @@ import disparoLogo from "@/assets/disparo-logo.png";
 import { useTypewriter } from "@/hooks/useTypewriter";
 import { useProgressiveSteps } from "@/hooks/useProgressiveSteps";
 
+// Import extracted components
+import { 
+  OriginsListComponent, 
+  LeadsPreviewComponent, 
+  FeedbackButton,
+  EmailEditorWithTabs,
+  CopyToHtmlGenerator,
+  HtmlEditorComponent
+} from "./disparo";
+
+// Import extracted utilities
+import {
+  parseCSVAdvanced,
+  extractSubjectPreheaderAndHtml,
+  extractSubjectAndHtml,
+  extractStructuredEmail,
+  removeAgentPrefix,
+  stripInternalContext,
+  parseCsvOperations,
+  stripCsvOperations,
+  CsvParseResult,
+  CsvLead,
+  CsvOperation
+} from "@/lib/disparo/parsing";
+
+import {
+  highlightHtml,
+  formatMessageContent,
+  sanitizeHtml,
+  extractCleanCopy,
+  getPromptSummary
+} from "@/lib/disparo/formatting";
+
 interface DisparoViewProps {
   subOriginId: string | null;
 }
@@ -36,11 +69,10 @@ interface Message {
   role: "user" | "assistant";
   timestamp: Date;
   component?: React.ReactNode;
-  componentData?: MessageComponentData; // Serializable data for reconstruction
-  imageUrl?: string; // Base64 image URL for display
+  componentData?: MessageComponentData;
+  imageUrl?: string;
 }
 
-// Action history entry for complete AI memory
 interface ActionEntry {
   timestamp: string;
   actor: 'user' | 'ai' | 'system';
@@ -67,158 +99,7 @@ interface LeadsPreview {
   leads: { name: string; contact: string }[];
 }
 
-interface CsvLead {
-  name: string;
-  email?: string;
-  whatsapp?: string;
-  [key: string]: string | undefined;
-}
-
-interface CsvParseResult {
-  leads: CsvLead[];
-  rawData: Array<Record<string, string>>;
-  headers: string[];
-  mappedColumns: {
-    name?: string;
-    email?: string;
-    whatsapp?: string;
-  };
-  detailedStats?: {
-    totalLeads: number;
-    validEmails: number;
-    duplicatesRemoved: number;
-    withWhatsApp: number;
-    withoutWhatsApp: number;
-    emptyNames: number;
-    withNames: number;
-    topDomains: Array<{ domain: string; count: number; percent: string }>;
-  };
-}
-
 const CHAT_URL = `https://ytdfwkchsumgdvcroaqg.supabase.co/functions/v1/grok-chat`;
-
-// Parse CSV file with smart column detection
-const parseCSVAdvanced = (content: string): CsvParseResult => {
-  const lines = content.trim().split('\n');
-  if (lines.length < 2) return { leads: [], rawData: [], headers: [], mappedColumns: {} };
-  
-  const headers = lines[0].split(/[,;]/).map(h => h.trim().replace(/"/g, ''));
-  const headersLower = headers.map(h => h.toLowerCase());
-  
-  // Smart column detection with fuzzy matching
-  const namePatterns = ['nome', 'name', 'aluna', 'aluno', 'cliente', 'pessoa', 'contato', 'lead'];
-  const emailPatterns = ['email', 'e-mail', 'mail', 'correio', 'gmail'];
-  const whatsappPatterns = ['whatsapp', 'telefone', 'phone', 'celular', 'tel', 'fone', 'numero', 'número', 'zap', 'wpp'];
-  
-  const findColumnIndex = (patterns: string[]): number => {
-    for (const pattern of patterns) {
-      const idx = headersLower.findIndex(h => h.includes(pattern));
-      if (idx !== -1) return idx;
-    }
-    return -1;
-  };
-  
-  const nameIdx = findColumnIndex(namePatterns);
-  const emailIdx = findColumnIndex(emailPatterns);
-  const whatsappIdx = findColumnIndex(whatsappPatterns);
-  
-  // Parse all raw data preserving original headers
-  const rawData = lines.slice(1).map(line => {
-    const values = line.split(/[,;]/).map(v => v.trim().replace(/"/g, ''));
-    const row: Record<string, string> = {};
-    headers.forEach((header, i) => {
-      row[header] = values[i] || '';
-    });
-    return row;
-  }).filter(row => Object.values(row).some(v => v.trim()));
-  
-  // Build leads with mapped columns
-  const leads = rawData.map(row => {
-    const lead: CsvLead = {
-      name: nameIdx >= 0 ? row[headers[nameIdx]] || '' : '',
-      email: emailIdx >= 0 ? row[headers[emailIdx]] : undefined,
-      whatsapp: whatsappIdx >= 0 ? row[headers[whatsappIdx]]?.replace(/\D/g, '') : undefined,
-    };
-    // Also preserve all original data
-    headers.forEach(header => {
-      if (!['name', 'email', 'whatsapp'].includes(header.toLowerCase())) {
-        lead[header] = row[header];
-      }
-    });
-    return lead;
-  }).filter(l => l.name || l.email);
-  
-  return {
-    leads,
-    rawData,
-    headers,
-    mappedColumns: {
-      name: nameIdx >= 0 ? headers[nameIdx] : undefined,
-      email: emailIdx >= 0 ? headers[emailIdx] : undefined,
-      whatsapp: whatsappIdx >= 0 ? headers[whatsappIdx] : undefined,
-    }
-  };
-};
-
-// CSV Operation Types
-type CsvOperation = 
-  | { type: 'REMOVE_DUPLICATES'; field: string }
-  | { type: 'REMOVE_COLUMN'; column: string }
-  | { type: 'ADD_DDI'; ddi: string }
-  | { type: 'FIRST_NAME_ONLY' }
-  | { type: 'FILTER_DOMAIN'; domain: string }
-  | { type: 'REMOVE_INVALID_EMAILS' }
-  | { type: 'FILTER'; column: string; value: string }
-  | { type: 'REMOVE_EMPTY'; field: string }
-  | { type: 'CLEAN_PHONES' }
-  | { type: 'EXPORT' };
-
-// Parse CSV operations from AI response
-const parseCsvOperations = (content: string): CsvOperation[] => {
-  const operations: CsvOperation[] = [];
-  const operationPattern = /\[CSV_OPERATION:([^\]]+)\]/g;
-  let match;
-  
-  while ((match = operationPattern.exec(content)) !== null) {
-    const parts = match[1].split(':');
-    const opType = parts[0];
-    
-    switch (opType) {
-      case 'REMOVE_DUPLICATES':
-        operations.push({ type: 'REMOVE_DUPLICATES', field: parts[1] || 'email' });
-        break;
-      case 'REMOVE_COLUMN':
-        if (parts[1]) operations.push({ type: 'REMOVE_COLUMN', column: parts[1] });
-        break;
-      case 'ADD_DDI':
-        operations.push({ type: 'ADD_DDI', ddi: parts[1] || '55' });
-        break;
-      case 'FIRST_NAME_ONLY':
-        operations.push({ type: 'FIRST_NAME_ONLY' });
-        break;
-      case 'FILTER_DOMAIN':
-        if (parts[1]) operations.push({ type: 'FILTER_DOMAIN', domain: parts[1] });
-        break;
-      case 'REMOVE_INVALID_EMAILS':
-        operations.push({ type: 'REMOVE_INVALID_EMAILS' });
-        break;
-      case 'FILTER':
-        if (parts[1] && parts[2]) operations.push({ type: 'FILTER', column: parts[1], value: parts[2] });
-        break;
-      case 'REMOVE_EMPTY':
-        operations.push({ type: 'REMOVE_EMPTY', field: parts[1] || 'email' });
-        break;
-      case 'CLEAN_PHONES':
-        operations.push({ type: 'CLEAN_PHONES' });
-        break;
-      case 'EXPORT':
-        operations.push({ type: 'EXPORT' });
-        break;
-    }
-  }
-  
-  return operations;
-};
 
 // Execute CSV operations on leads data
 const executeCsvOperations = (
@@ -254,7 +135,6 @@ const executeCsvOperations = (
           seen.add(value);
           return true;
         });
-        // Also update rawData
         const seenRaw = new Set<string>();
         const rawField = field === 'email' ? mappedColumns.email : 
                          field === 'name' ? mappedColumns.name : field;
@@ -365,7 +245,6 @@ const executeCsvOperations = (
           processedRawData = processedRawData.filter(row => 
             row[columnKey]?.toLowerCase().includes(op.value.toLowerCase())
           );
-          // Rebuild leads from filtered rawData
           processedLeads = processedRawData.map(row => ({
             name: mappedColumns.name ? row[mappedColumns.name] || '' : '',
             email: mappedColumns.email ? row[mappedColumns.email] : undefined,
@@ -414,7 +293,6 @@ const executeCsvOperations = (
       }
       
       case 'EXPORT': {
-        // Export will be handled separately
         changes.push('Lista pronta para download');
         break;
       }
@@ -426,139 +304,6 @@ const executeCsvOperations = (
   }
   
   return { leads: processedLeads, rawData: processedRawData, headers: processedHeaders, changes };
-};
-
-// Strip CSV operation commands from content
-const stripCsvOperations = (content: string): string => {
-  return content.replace(/\[CSV_OPERATION:[^\]]+\]/g, '').trim();
-};
-
-
-// Extract structured email data from AI response (NOME/ASSUNTO/PREHEADER/CORPO format)
-interface ExtractedEmailData {
-  emailName: string;
-  subject: string;
-  preheader: string;
-  body: string;
-  isStructuredEmail: boolean;
-}
-
-const extractStructuredEmail = (content: string): ExtractedEmailData => {
-  const result: ExtractedEmailData = {
-    emailName: '',
-    subject: '',
-    preheader: '',
-    body: '',
-    isStructuredEmail: false
-  };
-  
-  // Check if it's the structured format
-  const hasEmailFormat = content.includes('---INÍCIO DO EMAIL---') || 
-    (content.includes('NOME DO EMAIL:') && content.includes('ASSUNTO:') && content.includes('CORPO:'));
-  
-  if (!hasEmailFormat) {
-    return result;
-  }
-  
-  result.isStructuredEmail = true;
-  
-  // Extract NOME DO EMAIL
-  const nameMatch = content.match(/NOME DO EMAIL:\s*([^\n]+)/i);
-  if (nameMatch) result.emailName = nameMatch[1].trim();
-  
-  // Extract ASSUNTO
-  const subjectMatch = content.match(/ASSUNTO:\s*([^\n]+)/i);
-  if (subjectMatch) result.subject = subjectMatch[1].trim();
-  
-  // Extract PREHEADER
-  const preheaderMatch = content.match(/PREHEADER:\s*([^\n]+)/i);
-  if (preheaderMatch) result.preheader = preheaderMatch[1].trim();
-  
-  // Extract CORPO (everything after CORPO: until ---FIM DO EMAIL--- or end)
-  const bodyMatch = content.match(/CORPO:\s*([\s\S]*?)(?:---FIM DO EMAIL---|$)/i);
-  if (bodyMatch) result.body = bodyMatch[1].trim();
-  
-  return result;
-};
-
-// Extract subject, preheader, and HTML from AI response (for generate-email function)
-const extractSubjectPreheaderAndHtml = (content: string): { subject: string; preheader: string; html: string } => {
-  const lines = content.split('\n');
-  let subject = '';
-  let preheader = '';
-  let htmlStartIndex = 0;
-  
-  // Look for ASSUNTO: and PREHEADER: lines at the start
-  for (let i = 0; i < Math.min(10, lines.length); i++) {
-    const line = lines[i].trim();
-    if (line.toUpperCase().startsWith('ASSUNTO:')) {
-      subject = line.substring(8).trim();
-      htmlStartIndex = i + 1;
-    } else if (line.toUpperCase().startsWith('PREHEADER:')) {
-      preheader = line.substring(10).trim();
-      htmlStartIndex = i + 1;
-    }
-    // Skip empty lines after metadata
-    if (htmlStartIndex > 0 && lines[htmlStartIndex]?.trim() === '') {
-      htmlStartIndex++;
-    }
-  }
-  
-  // Get HTML part (everything after subject/preheader)
-  const html = lines.slice(htmlStartIndex).join('\n')
-    .replace(/^```html\n?/i, '')
-    .replace(/^```\n?/, '')
-    .replace(/\n?```$/i, '')
-    .trim();
-  
-  return { subject, preheader, html };
-};
-
-// Legacy function for backwards compatibility
-const extractSubjectAndHtml = (content: string): { subject: string; html: string } => {
-  const { subject, html } = extractSubjectPreheaderAndHtml(content);
-  return { subject, html };
-};
-
-// Remove agent/context prefixes from message content - removes ALL occurrences
-const removeAgentPrefix = (content: string): string => {
-  // Remove prefixes like [Agente:Copywriting], [CONTEXT:...], [Search], etc. - globally
-  // Also remove "text-copyright" which may appear in HTML/copy content
-  return content
-    .replace(/\[(Agente:[^\]]+|CONTEXT:[^\]]+|Search)\]\s*/gi, '')
-    .replace(/text-copyright/gi, '')
-    .trim();
-};
-
-// Strip internal context tags from user messages before saving/displaying
-// These tags are added by PromptInputBox for AI routing but shouldn't be persisted
-const stripInternalContext = (content: string): string => {
-  return content
-    .replace(/^\[CONTEXT:copywriting\]\s*/i, '')
-    .replace(/^\[CONTEXT:uxui\]\s*/i, '')
-    .replace(/^\[CONTEXT:[^\]]+\]\s*/gi, '')
-    .trim();
-};
-
-// Parse markdown-like formatting: **bold** and _italic_
-const formatMessageContent = (content: string): React.ReactNode => {
-  // First remove any agent prefix
-  const cleanContent = removeAgentPrefix(content);
-  
-  // Split by markdown patterns while preserving the delimiters
-  const parts = cleanContent.split(/(\*\*[^*]+\*\*|_[^_]+_)/g);
-  
-  return parts.map((part, index) => {
-    // Bold: **text**
-    if (part.startsWith('**') && part.endsWith('**')) {
-      return <strong key={index} className="font-semibold">{part.slice(2, -2)}</strong>;
-    }
-    // Italic: _text_
-    if (part.startsWith('_') && part.endsWith('_') && part.length > 2) {
-      return <em key={index}>{part.slice(1, -1)}</em>;
-    }
-    return part;
-  });
 };
 
 export function DisparoView({ subOriginId }: DisparoViewProps) {
@@ -584,22 +329,22 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
   const [sidePanelGenerating, setSidePanelGenerating] = useState(false);
   const [sidePanelEditing, setSidePanelEditing] = useState(false);
   const [sidePanelContext, setSidePanelContext] = useState<{ subOriginId: string; dispatchType: string } | null>(null);
-  const [sidePanelMode, setSidePanelMode] = useState<SidePanelMode>('email'); // Mode: email or dispatch_details
-  const [sidePanelDispatchData, setSidePanelDispatchData] = useState<DispatchData | null>(null); // Dispatch data for details view
-  const [sidePanelWorkflowSteps, setSidePanelWorkflowSteps] = useState<WorkStep[]>([]); // Workflow steps for AI visualization
-  const [sidePanelShowCodePreview, setSidePanelShowCodePreview] = useState(true); // Whether to show code/preview tabs
-  const [sidePanelTitle, setSidePanelTitle] = useState<string | undefined>(undefined); // Panel title
-  const [htmlSource, setHtmlSource] = useState<'ai' | 'user' | null>(null); // Track who created the HTML
-  const [actionHistory, setActionHistory] = useState<ActionEntry[]>([]); // Complete action history for AI memory
-  const [sidePanelRestoredFromDB, setSidePanelRestoredFromDB] = useState(false); // Skip animation when restored
-  const isInitialPageLoadRef = useRef(true); // Track initial page load vs user navigation
+  const [sidePanelMode, setSidePanelMode] = useState<SidePanelMode>('email');
+  const [sidePanelDispatchData, setSidePanelDispatchData] = useState<DispatchData | null>(null);
+  const [sidePanelWorkflowSteps, setSidePanelWorkflowSteps] = useState<WorkStep[]>([]);
+  const [sidePanelShowCodePreview, setSidePanelShowCodePreview] = useState(true);
+  const [sidePanelTitle, setSidePanelTitle] = useState<string | undefined>(undefined);
+  const [htmlSource, setHtmlSource] = useState<'ai' | 'user' | null>(null);
+  const [actionHistory, setActionHistory] = useState<ActionEntry[]>([]);
+  const [sidePanelRestoredFromDB, setSidePanelRestoredFromDB] = useState(false);
+  const isInitialPageLoadRef = useRef(true);
   
   // CSV Side Panel state
   const [csvPanelOpen, setCsvPanelOpen] = useState(false);
   const [csvFileName, setCsvFileName] = useState<string>('lista.csv');
   const [csvRawData, setCsvRawData] = useState<Array<Record<string, string>>>([]);
   const [csvHeaders, setCsvHeaders] = useState<string[]>([]);
-  const [csvListId, setCsvListId] = useState<string | null>(null); // Persisted CSV list ID for dispatch
+  const [csvListId, setCsvListId] = useState<string | null>(null);
   const [csvMappedColumns, setCsvMappedColumns] = useState<{ name?: string; email?: string; whatsapp?: string }>({});
   
   // Typewriter hook for smooth text streaming
@@ -627,27 +372,27 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
   const streamingBufferRef = useRef("");
   const flushTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Refs for hydration control - prevent race conditions
-  const isHydratingRef = useRef(false); // True when loading from DB
+  // Refs for hydration control
+  const isHydratingRef = useRef(false);
   const loadingConversationIdRef = useRef<string | null>(null);
-  const skipNextUrlLoadRef = useRef<string | null>(null); // Skip URL load for this conv ID
-  const suppressUrlSyncRef = useRef(false); // Suppress URL sync when starting new conversation
+  const skipNextUrlLoadRef = useRef<string | null>(null);
+  const suppressUrlSyncRef = useRef(false);
 
-  // Snapshot refs (avoid stale closures during streaming/autosave)
+  // Snapshot refs
   const messagesRef = useRef<Message[]>([]);
   const conversationIdRef = useRef<string | null>(null);
   const isCreatingConversationRef = useRef(false);
-  const isProcessingMessageRef = useRef(false); // Prevent duplicate handleSend calls
+  const isProcessingMessageRef = useRef(false);
   
-  // Active request control - cancel stale responses when switching conversations
+  // Active request control
   const activeAbortRef = useRef<AbortController | null>(null);
   const activeRunIdRef = useRef<string | null>(null);
   const activeRunConversationIdRef = useRef<string | null>(null);
   
-  // Prevent duplicate saves and track streaming saves
+  // Prevent duplicate saves
   const isSavingRef = useRef(false);
   const lastStreamSaveTimeRef = useRef(0);
-  const STREAM_SAVE_INTERVAL = 3000; // Save every 3 seconds during streaming
+  const STREAM_SAVE_INTERVAL = 3000;
 
   const setConversationId = useCallback((id: string | null) => {
     conversationIdRef.current = id;
@@ -664,7 +409,7 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
     messagesRef.current = next;
     setMessages(next);
   }, []);
-  // Keep refs in sync even for code paths still using setState directly
+
   useEffect(() => {
     messagesRef.current = messages;
   }, [messages]);
@@ -673,7 +418,7 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
     conversationIdRef.current = currentConversationId;
   }, [currentConversationId]);
 
-  // TYPEWRITER SYNC: Update message content as typewriter animates
+  // TYPEWRITER SYNC
   useEffect(() => {
     const messageId = streamingMessageIdRef.current;
     if (!messageId || !typewriter.displayedContent) return;
@@ -685,7 +430,7 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
     );
   }, [typewriter.displayedContent]);
 
-  // Helper to log actions with timestamp
+  // Helper to log actions
   const logAction = useCallback((actor: 'user' | 'ai' | 'system', action: string, details?: string) => {
     const entry: ActionEntry = {
       timestamp: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
@@ -696,7 +441,7 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
     setActionHistory(prev => [...prev, entry]);
   }, []);
 
-  // Helper to open dispatch leads panel inside the side panel
+  // Helper to open dispatch leads panel
   const openDispatchLeadsPanel = useCallback((jobId: string) => {
     setActiveJobId(jobId);
     setSidePanelMode('dispatch_leads');
@@ -704,9 +449,9 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
     setSidePanelOpen(true);
   }, []);
 
-  // Optimized scroll to bottom using RAF
+  // Optimized scroll to bottom
   const scheduleScrollToBottom = useCallback(() => {
-    if (scrollRAFRef.current) return; // Already scheduled
+    if (scrollRAFRef.current) return;
     scrollRAFRef.current = requestAnimationFrame(() => {
       scrollRAFRef.current = null;
       const el = chatScrollRef.current;
@@ -722,19 +467,16 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
     const currentScrollTop = el.scrollTop;
     const distanceFromBottom = el.scrollHeight - currentScrollTop - el.clientHeight;
     
-    // If user scrolled UP, disable auto-scroll immediately
     if (currentScrollTop < lastScrollTopRef.current - 5) {
       shouldAutoScrollRef.current = false;
-    }
-    // Only re-enable when user scrolls very close to bottom
-    else if (distanceFromBottom < 20) {
+    } else if (distanceFromBottom < 20) {
       shouldAutoScrollRef.current = true;
     }
     
     lastScrollTopRef.current = currentScrollTop;
   }, []);
 
-  // Handle showing dispatch details in the side panel
+  // Handle showing dispatch details
   const handleShowDispatchDetails = useCallback((job: {
     id: string;
     type: string;
@@ -770,7 +512,7 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
     logAction('system', 'Disparo concluído', `${job.sent_count} emails enviados com sucesso`);
   }, [sidePanelSubject, logAction]);
 
-  // Handle dispatch errors - notify in chat when emails fail
+  // Handle dispatch errors
   const handleDispatchError = useCallback((error: { failedCount: number; lastError?: string; leadEmail?: string }) => {
     const errorMessage: Message = {
       id: crypto.randomUUID(),
@@ -782,7 +524,7 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
     logAction('system', 'DISPATCH_ERROR', `Failed: ${error.failedCount}, Error: ${error.lastError}`);
   }, [logAction]);
 
-  // Handle dispatch completion - show summary in chat
+  // Handle dispatch completion
   const handleDispatchComplete = useCallback((result: { sent: number; failed: number; errorLog?: Array<{ leadEmail: string; error: string }> }) => {
     const hasErrors = result.failed > 0;
     
@@ -804,13 +546,30 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
     logAction('system', 'DISPATCH_COMPLETE', `Sent: ${result.sent}, Failed: ${result.failed}`);
   }, [logAction]);
 
+  // Handler for HTML submit from reload
+  const handleHtmlSubmitFromReload = useCallback((html: string, subOriginId: string, dispatchType: string) => {
+    setSidePanelHtml(html);
+    setSidePanelContext({ subOriginId, dispatchType });
+    setSidePanelOpen(true);
+    setHtmlSource('user');
+    logAction('user', 'Colou HTML do email', `${html.length} caracteres`);
+  }, [logAction]);
+
+  // Handler for email generated
+  const handleEmailGenerated = useCallback((html: string, subOriginId: string, dispatchType: string) => {
+    setSidePanelHtml(html);
+    setSidePanelContext({ subOriginId, dispatchType });
+    setSidePanelOpen(true);
+    setHtmlSource('ai');
+    logAction('ai', 'Gerou HTML do email', `${html.length} caracteres`);
+  }, [logAction]);
+
   // Function to reconstruct component from componentData
   function reconstructMessageComponent(componentData: MessageComponentData, messageId: string): React.ReactNode {
     switch (componentData.type) {
       case 'email_choice': {
-        const { preview, subOriginId, dispatchType } = (componentData.data || {}) as any;
+        const { preview } = (componentData.data || {}) as any;
         if (!preview) return null;
-        // Just show preview, questions are now plain text
         return (
           <div className="mt-4 w-full">
             <LeadsPreviewComponent preview={preview} />
@@ -818,24 +577,24 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
         );
       }
       case 'leads_preview': {
-        const { preview, subOriginId, dispatchType } = (componentData.data || {}) as any;
-        if (!preview || !subOriginId || !dispatchType) return null;
+        const { preview, subOriginId: soId, dispatchType: dt } = (componentData.data || {}) as any;
+        if (!preview || !soId || !dt) return null;
         return (
           <div className="mt-4 space-y-4 w-full">
             <LeadsPreviewComponent preview={preview} />
             <HtmlEditorComponent
-              onSubmit={(html) => handleHtmlSubmitFromReload(html, subOriginId, dispatchType)}
+              onSubmit={(html) => handleHtmlSubmitFromReload(html, soId, dt)}
             />
           </div>
         );
       }
       case 'html_editor': {
-        const { subOriginId, dispatchType, initialContent } = (componentData.data || {}) as any;
-        if (!subOriginId || !dispatchType) return null;
+        const { subOriginId: soId, dispatchType: dt, initialContent } = (componentData.data || {}) as any;
+        if (!soId || !dt) return null;
         return (
           <div className="mt-4 w-full">
             <HtmlEditorComponent
-              onSubmit={(html) => handleHtmlSubmitFromReload(html, subOriginId, dispatchType)}
+              onSubmit={(html) => handleHtmlSubmitFromReload(html, soId, dt)}
               initialContent={initialContent || ''}
             />
           </div>
@@ -843,11 +602,10 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
       }
       case 'copy_choice':
       case 'copy_input':
-        // Legacy cases - questions now handled as plain text
         return null;
       case 'email_generator_streaming': {
-        const { subOriginId, dispatchType, copyText, companyName, productService } = (componentData.data || {}) as any;
-        if (!subOriginId || !dispatchType) return null;
+        const { subOriginId: soId, dispatchType: dt, copyText, companyName, productService } = (componentData.data || {}) as any;
+        if (!soId || !dt) return null;
         if (!copyText) {
           return <div className="mt-4 text-sm text-muted-foreground">Geração em andamento…</div>;
         }
@@ -857,14 +615,14 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
               copyText={copyText}
               companyName={companyName || ''}
               productService={productService || ''}
-              onGenerated={(html) => handleEmailGenerated(html, subOriginId, dispatchType)}
+              onGenerated={(html) => handleEmailGenerated(html, soId, dt)}
             />
           </div>
         );
       }
       case 'email_generator': {
-        const { subOriginId, dispatchType } = (componentData.data || {}) as any;
-        if (!subOriginId || !dispatchType) return null;
+        const { subOriginId: soId, dispatchType: dt } = (componentData.data || {}) as any;
+        if (!soId || !dt) return null;
         return (
           <div className="mt-4 p-4 rounded-xl border border-border/40 bg-muted/30">
             <p className="text-sm text-foreground">
@@ -873,7 +631,7 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
             <button
               type="button"
               onClick={() => {
-                setPendingEmailContext({ subOriginId, dispatchType });
+                setPendingEmailContext({ subOriginId: soId, dispatchType: dt });
                 toast.message("Ok! Agora digite a descrição no chat.");
               }}
               className="mt-3 px-4 py-2 rounded-lg bg-foreground text-background text-sm font-medium hover:bg-foreground/90 transition-colors"
@@ -886,7 +644,6 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
       case 'dispatch_progress': {
         const { jobId } = (componentData.data || {}) as any;
         if (!jobId) return null;
-        // Show a button to open the dispatch panel instead of inline progress
         return (
           <div className="mt-4">
             <Button
@@ -912,10 +669,48 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
       }
       case 'ai_work_details': {
         const { steps } = (componentData.data || {}) as any;
-        if (!steps || !Array.isArray(steps)) return null;
+        if (!steps) return null;
         return (
-          <div className="mt-3 w-full max-w-md">
+          <div className="mt-4">
             <AIWorkDetails steps={steps} />
+          </div>
+        );
+      }
+      case 'data_intelligence': {
+        const { insightSteps, emailCard } = (componentData.data || {}) as any;
+        return (
+          <div className="mt-4 space-y-4 w-full">
+            {insightSteps && <DataIntelligence steps={insightSteps} />}
+            {emailCard && emailCard.generatedHtml && (
+              <EmailChatCard
+                title={emailCard.emailName || emailCard.subject || 'Email gerado'}
+                subtitle={emailCard.subject ? `Assunto: ${emailCard.subject}` : 'Clique para revisar'}
+                onClick={() => {
+                  const cleanCopy = extractCleanCopy(emailCard.generatedHtml);
+                  setSidePanelHtml(cleanCopy);
+                  setSidePanelSubject(emailCard.subject || '');
+                  setSidePanelPreheader(emailCard.preheader || '');
+                  setSidePanelMode(emailCard.mode || 'email');
+                  setSidePanelShowCodePreview(true);
+                  setSidePanelOpen(true);
+                }}
+              />
+            )}
+          </div>
+        );
+      }
+      case 'csv_preview': {
+        const { fileName, totalRows, columns, previewData, mappedColumns: mc } = (componentData.data || {}) as any;
+        if (!fileName) return null;
+        return (
+          <div className="w-full">
+            <CsvChatCard
+              fileName={fileName}
+              totalRows={totalRows}
+              columns={columns}
+              previewData={previewData}
+              mappedColumns={mc}
+            />
           </div>
         );
       }
@@ -924,34 +719,230 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
     }
   }
 
-  // Handle HTML submit from reloaded conversation
-  const handleHtmlSubmitFromReload = async (html: string, subOriginId: string, type: string) => {
-    handleHtmlSubmit(html, subOriginId, type);
-  };
+  // Handle origin selection
+  const handleOriginSelect = useCallback(async (subOriginId: string, subOriginName: string, originName: string) => {
+    setSelectedOriginData({ subOriginId, subOriginName, originName });
+    setDispatchType('email');
+    
+    logAction('user', `Selecionou a lista "${subOriginName}" da origem "${originName}"`, 'Disparo por email');
+    
+    const autoMessage = `Usar a lista "${subOriginName}" da origem "${originName}"`;
+    
+    const userMessage: Message = {
+      id: crypto.randomUUID(),
+      content: autoMessage,
+      role: "user",
+      timestamp: new Date()
+    };
+    
+    setMessages(prev => [...prev, userMessage]);
+    setIsLoading(true);
+    
+    try {
+      const response = await fetch(CHAT_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          command: `LIST_LEADS:email:${subOriginId}`,
+          conversationId: conversationIdRef.current
+        }),
+      });
+      
+      if (!response.ok) throw new Error("Failed to list leads");
+      
+      const result = await response.json();
+      
+      if (result.type === 'leads_preview') {
+        const componentData: MessageComponentData = {
+          type: 'leads_preview',
+          data: { preview: result.data, subOriginId, dispatchType: 'email' }
+        };
+        
+        const assistantMessage: Message = {
+          id: crypto.randomUUID(),
+          content: `Encontrei **${result.data.totalLeads}** leads na lista "${subOriginName}".\n\n📧 **${result.data.validLeads}** têm email válido para disparo.\n\nAgora me envie o HTML do email ou descreva o que você quer que eu crie!`,
+          role: "assistant",
+          timestamp: new Date(),
+          componentData,
+          component: reconstructMessageComponent(componentData, '')
+        };
+        
+        setMessages(prev => [...prev, assistantMessage]);
+        logAction('system', 'Leads carregados', `${result.data.validLeads} válidos de ${result.data.totalLeads} total`);
+      }
+    } catch (error) {
+      console.error("Error listing leads:", error);
+      toast.error("Erro ao carregar leads");
+    } finally {
+      setIsLoading(false);
+    }
+  }, [logAction]);
 
-  // Load conversation from URL on mount or when URL changes
+  // Load conversation from URL
   useEffect(() => {
     const convId = searchParams.get('conversation') || searchParams.get('conv');
-    const isNewConversationSignal = searchParams.get('new') === '1';
     
-    // Handle explicit "new conversation" signal from submenu
-    if (isNewConversationSignal) {
-      // Clear the ?new=1 param immediately
-      setSearchParams({}, { replace: true });
-      
-      // Abort any active request
+    if (skipNextUrlLoadRef.current === convId) {
+      skipNextUrlLoadRef.current = null;
+      return;
+    }
+    
+    if (convId && convId !== currentConversationId) {
       if (activeAbortRef.current) {
         activeAbortRef.current.abort();
         activeAbortRef.current = null;
       }
       activeRunIdRef.current = null;
       activeRunConversationIdRef.current = null;
-      
-      // Reset processing locks
       isProcessingMessageRef.current = false;
       isCreatingConversationRef.current = false;
       
-      // Full state reset
+      if (isLoading) setIsLoading(false);
+      if (sidePanelGenerating) setSidePanelGenerating(false);
+      
+      if (loadingConversationIdRef.current === convId) return;
+      loadingConversationIdRef.current = convId;
+      isHydratingRef.current = true;
+      setIsConversationLoading(true);
+      
+      const loadConversation = async () => {
+        try {
+          const { data, error } = await supabase
+            .from("dispatch_conversations")
+            .select("*")
+            .eq("id", convId)
+            .single();
+          
+          if (error || !data) {
+            console.error("Conversation not found:", convId);
+            const newParams = new URLSearchParams(searchParams);
+            newParams.delete('conversation');
+            newParams.delete('conv');
+            setSearchParams(newParams);
+            setInitialLoadDone(true);
+            isHydratingRef.current = false;
+            setIsConversationLoading(false);
+            loadingConversationIdRef.current = null;
+            return;
+          }
+          
+          const rawData = data.messages as any;
+          const isNewFormat = rawData && typeof rawData === 'object' && 'messages' in rawData;
+          
+          const messagesArray = isNewFormat 
+            ? (rawData.messages || [])
+            : (Array.isArray(rawData) ? rawData : []);
+          
+          const loadedMessages: Message[] = messagesArray.map((m: any) => ({
+            id: m.id,
+            content: m.content,
+            role: m.role,
+            timestamp: new Date(m.timestamp),
+            componentData: m.componentData,
+          }));
+          
+          setMessagesSnapshot(loadedMessages);
+          setConversationId(convId);
+          
+          if (isNewFormat && rawData.sidePanelState) {
+            const sp = rawData.sidePanelState;
+            if (sp.html) {
+              const cleanHtml = extractCleanCopy(sp.html);
+              setSidePanelHtml(cleanHtml);
+            }
+            if (sp.subject) setSidePanelSubject(sp.subject);
+            if (sp.preheader) setSidePanelPreheader(sp.preheader);
+            if (sp.context) setSidePanelContext(sp.context);
+            if (sp.workflowSteps) setSidePanelWorkflowSteps(sp.workflowSteps);
+            if (sp.showCodePreview !== undefined) setSidePanelShowCodePreview(sp.showCodePreview);
+            if (sp.title) setSidePanelTitle(sp.title);
+            if (sp.mode) setSidePanelMode(sp.mode);
+          }
+          
+          if (isNewFormat && rawData.selectedOriginData) {
+            setSelectedOriginData(rawData.selectedOriginData);
+          }
+          if (isNewFormat && rawData.dispatchType) {
+            setDispatchType(rawData.dispatchType);
+          }
+          if (isNewFormat && rawData.actionHistory) {
+            setActionHistory(rawData.actionHistory);
+          }
+          if (isNewFormat && rawData.htmlSource) {
+            setHtmlSource(rawData.htmlSource);
+          }
+          
+          if (isNewFormat && rawData.csvState) {
+            const cs = rawData.csvState as any;
+            if (cs.csvListId !== undefined) setCsvListId(cs.csvListId || null);
+            if (cs.csvFileName) setCsvFileName(cs.csvFileName);
+            if (cs.csvMappedColumns) setCsvMappedColumns(cs.csvMappedColumns);
+            
+            if (cs.csvListId) {
+              const { data: recipients } = await supabase
+                .from('dispatch_csv_list_recipients')
+                .select('id, name, email, whatsapp')
+                .eq('list_id', cs.csvListId)
+                .limit(100);
+              
+              if (recipients && recipients.length > 0) {
+                setCsvLeads(recipients.map(r => ({
+                  name: r.name || '',
+                  email: r.email,
+                  whatsapp: r.whatsapp || undefined
+                })));
+              }
+            }
+          }
+
+          const { data: activeJob } = await supabase
+            .from('dispatch_jobs')
+            .select('id, status')
+            .eq('conversation_id', convId)
+            .in('status', ['pending', 'running'])
+            .order('created_at', { ascending: false })
+            .limit(1)
+            .maybeSingle();
+
+          if (activeJob) {
+            console.log('[DISPARO] Found active dispatch job:', activeJob.id);
+            setActiveJobId(activeJob.id);
+            setSidePanelMode('dispatch_leads');
+            setSidePanelShowCodePreview(false);
+            if (isInitialPageLoadRef.current) {
+              setSidePanelRestoredFromDB(true);
+            }
+            setSidePanelOpen(true);
+          }
+          
+          isInitialPageLoadRef.current = false;
+          setInitialLoadDone(true);
+        } catch (error) {
+          console.error("Error loading conversation from URL:", error);
+          const newParams = new URLSearchParams(searchParams);
+          newParams.delete('conversation');
+          newParams.delete('conv');
+          setSearchParams(newParams);
+          setInitialLoadDone(true);
+        } finally {
+          isHydratingRef.current = false;
+          if (loadingConversationIdRef.current === convId) {
+            setIsConversationLoading(false);
+            loadingConversationIdRef.current = null;
+          }
+        }
+      };
+      loadConversation();
+    } else if (!convId && currentConversationId) {
+      if (activeAbortRef.current) {
+        activeAbortRef.current.abort();
+        activeAbortRef.current = null;
+      }
+      activeRunIdRef.current = null;
+      activeRunConversationIdRef.current = null;
+      isProcessingMessageRef.current = false;
+      isCreatingConversationRef.current = false;
+      
       suppressUrlSyncRef.current = true;
       setCurrentConversationId(null);
       conversationIdRef.current = null;
@@ -976,338 +967,7 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
       setSidePanelDispatchData(null);
       setPendingQuestion(null);
       setIsLoading(false);
-      setIsConversationLoading(false);
-      loadingConversationIdRef.current = null;
-      setActiveJobId(null);
-      setSidePanelMode('email');
-      setSidePanelWorkflowSteps([]);
-      setSidePanelShowCodePreview(true);
-      setSidePanelTitle(undefined);
-      setHtmlSource(null);
       setInitialLoadDone(true);
-
-      // Clear suppression after state is reset
-      setTimeout(() => { suppressUrlSyncRef.current = false; }, 100);
-      return;
-    }
-    
-    // Skip if this ID was just set by menu selection (already have messages loaded)
-    if (convId && skipNextUrlLoadRef.current === convId) {
-      skipNextUrlLoadRef.current = null;
-      setIsConversationLoading(false);
-      loadingConversationIdRef.current = null;
-      setInitialLoadDone(true);
-      return;
-    }
-
-    // Don't load from DB if we're actively generating/streaming (prevents race condition)
-    if (convId && convId === currentConversationId && (isLoading || sidePanelGenerating)) {
-      return;
-    }
-    
-    // If we have a convId and it's different from current, load it
-    if (convId && convId !== currentConversationId) {
-      const loadConversation = async () => {
-        // Mark as loading so we don't show the "nova conversa" empty state while switching
-        setIsConversationLoading(true);
-        loadingConversationIdRef.current = convId;
-
-        // Abort any active request from previous conversation
-        if (activeAbortRef.current) {
-          activeAbortRef.current.abort();
-          activeAbortRef.current = null;
-        }
-        activeRunIdRef.current = null;
-        activeRunConversationIdRef.current = null;
-        isProcessingMessageRef.current = false;
-        isCreatingConversationRef.current = false;
-        
-        // FULL STATE RESET before loading new conversation
-        setSidePanelOpen(false);
-        setSidePanelRestoredFromDB(false);
-        setSidePanelHtml('');
-        setSidePanelSubject('');
-        setSidePanelPreheader('');
-        setSidePanelContext(null);
-        setSidePanelWorkflowSteps([]);
-        setSidePanelShowCodePreview(true);
-        setSidePanelTitle(undefined);
-        setSidePanelMode('email');
-        setSidePanelDispatchData(null);
-        setCsvLeads(null);
-        setCsvListId(null);
-        setCsvFileName('lista.csv');
-        setCsvRawData([]);
-        setCsvHeaders([]);
-        setCsvMappedColumns({});
-        setSelectedOriginData(null);
-        setDispatchType(null);
-        setActionHistory([]);
-        setHtmlSource(null);
-        setPendingEmailContext(null);
-        setPendingQuestion(null);
-        setActiveJobId(null);
-        setMessages([]);
-        
-        isHydratingRef.current = true;
-        try {
-          const { data, error } = await supabase
-            .from("dispatch_conversations")
-            .select("id, messages")
-            .eq("id", convId)
-            .single();
-
-          if (error) throw error;
-
-          // Race condition protection: use FRESH URL value, not stale closure
-          const freshParams = new URLSearchParams(window.location.search);
-          const freshUrlConvId = freshParams.get('conversation') || freshParams.get('conv');
-          if (freshUrlConvId !== convId) {
-            console.log('[DisparoView] Conversation changed during load, aborting. Expected:', convId, 'Current:', freshUrlConvId);
-            return;
-          }
-
-          // Handle new format with sidePanelState or old format (just messages array)
-          const rawData = data.messages as any;
-          const isNewFormat = rawData && typeof rawData === 'object' && 'messages' in rawData && Array.isArray(rawData.messages);
-          
-          const messagesArray = isNewFormat ? rawData.messages : (Array.isArray(rawData) ? rawData : []);
-          
-          const loadedMessages: Message[] = messagesArray.map((m: any) => {
-            // Fix workflowSteps status when loading from DB - if saved, generation is complete
-            let componentData = m.componentData || undefined;
-            if (componentData?.data?.workflowSteps) {
-              componentData = {
-                ...componentData,
-                data: {
-                  ...componentData.data,
-                  workflowSteps: componentData.data.workflowSteps.map((step: any) => ({
-                    ...step,
-                    status: 'completed',
-                    // Fix titles that were saved mid-generation
-                    title: step.title
-                      .replace(/^Gerando/i, 'Gerado')
-                      .replace(/\.\.\.$/, '')
-                  }))
-                }
-              };
-            }
-            const msg: Message = {
-              id: m.id,
-              content: m.content,
-              role: m.role as "user" | "assistant",
-              timestamp: new Date(m.timestamp),
-              componentData,
-            };
-            return msg;
-          });
-
-          // BACKFILL: Auto-repair old conversations where data_intelligence was lost
-          let didBackfill = false;
-          for (let i = 0; i < loadedMessages.length - 1; i++) {
-            const userMsg = loadedMessages[i];
-            const assistantMsg = loadedMessages[i + 1];
-            
-            // If user message has csv_preview and next assistant message doesn't have data_intelligence
-            if (
-              userMsg.role === 'user' &&
-              userMsg.componentData?.type === 'csv_preview' &&
-              assistantMsg.role === 'assistant' &&
-              assistantMsg.componentData?.type !== 'data_intelligence'
-            ) {
-              const csvData = userMsg.componentData.data;
-              if (csvData) {
-                // Regenerate insight steps from CSV data
-                const insightSteps = createCsvAnalysisSteps({
-                  fileName: csvData.fileName || 'lista.csv',
-                  headers: csvData.columns || csvData.headers || [],
-                  rawData: csvData.previewData || csvData.rawData || [],
-                  mappedColumns: csvData.mappedColumns || {}
-                });
-                
-                // Update assistant message with data_intelligence
-                loadedMessages[i + 1] = {
-                  ...assistantMsg,
-                  componentData: {
-                    type: 'data_intelligence' as const,
-                    data: { insightSteps }
-                  }
-                };
-                didBackfill = true;
-                console.log('[DisparoView] Backfill: Restored data_intelligence for message', assistantMsg.id);
-              }
-            }
-          }
-
-          setCurrentConversationId(convId);
-          setMessages(loadedMessages);
-
-          // If we did backfill, save the corrected messages to DB
-          if (didBackfill) {
-            console.log('[DisparoView] Backfill complete, scheduling save...');
-            // Use a small delay to ensure state is settled
-            setTimeout(() => {
-              // Manually trigger save by updating the signature
-              lastSavedSignatureRef.current = '';
-            }, 300);
-          }
-
-          // Stop showing the loading state as soon as the core chat content is ready
-          if (loadingConversationIdRef.current === convId) {
-            setIsConversationLoading(false);
-            loadingConversationIdRef.current = null;
-          }
-          
-          // Restore side panel state if available
-          if (isNewFormat && rawData.sidePanelState) {
-            const { html, subject, preheader, isOpen, context, workflowSteps, showCodePreview, title, mode } = rawData.sidePanelState;
-            if (html) setSidePanelHtml(html);
-            if (subject) setSidePanelSubject(subject);
-            if (preheader) setSidePanelPreheader(preheader);
-            if (isOpen) {
-              // Only skip animation on initial page load (refresh), not on user navigation
-              if (isInitialPageLoadRef.current) {
-                setSidePanelRestoredFromDB(true);
-              }
-              setSidePanelOpen(true);
-            }
-            if (context) setSidePanelContext(context);
-            if (workflowSteps && Array.isArray(workflowSteps)) setSidePanelWorkflowSteps(workflowSteps);
-            if (showCodePreview !== undefined) setSidePanelShowCodePreview(showCodePreview);
-            if (title) setSidePanelTitle(title);
-            if (mode) setSidePanelMode(mode);
-          }
-          
-          // Restore origin data if available
-          if (isNewFormat && rawData.selectedOriginData) {
-            setSelectedOriginData(rawData.selectedOriginData);
-          }
-          
-          // Restore dispatch type if available
-          if (isNewFormat && rawData.dispatchType) {
-            setDispatchType(rawData.dispatchType);
-          }
-          
-          // Restore action history if available
-          if (isNewFormat && rawData.actionHistory && Array.isArray(rawData.actionHistory)) {
-            setActionHistory(rawData.actionHistory);
-          }
-          
-          // Restore htmlSource if available
-          if (isNewFormat && rawData.htmlSource) {
-            setHtmlSource(rawData.htmlSource);
-          }
-
-          // Restore CSV state if available
-          if (isNewFormat && rawData.csvState) {
-            const cs = rawData.csvState as any;
-            if (cs.csvListId !== undefined) setCsvListId(cs.csvListId || null);
-            if (cs.csvFileName) setCsvFileName(cs.csvFileName);
-            if (cs.csvMappedColumns) setCsvMappedColumns(cs.csvMappedColumns);
-            
-            // Restore csvLeads from database if we have a csvListId
-            if (cs.csvListId) {
-              const { data: recipients } = await supabase
-                .from('dispatch_csv_list_recipients')
-                .select('id, name, email, whatsapp')
-                .eq('list_id', cs.csvListId)
-                .limit(100); // Load first 100 for preview
-              
-              if (recipients && recipients.length > 0) {
-                setCsvLeads(recipients.map(r => ({
-                  name: r.name || '',
-                  email: r.email,
-                  whatsapp: r.whatsapp || undefined
-                })));
-              }
-            }
-          }
-
-          // Check for active dispatch job and auto-open panel
-          const { data: activeJob } = await supabase
-            .from('dispatch_jobs')
-            .select('id, status')
-            .eq('conversation_id', convId)
-            .in('status', ['pending', 'running'])
-            .order('created_at', { ascending: false })
-            .limit(1)
-            .maybeSingle();
-
-          if (activeJob) {
-            console.log('[DISPARO] Found active dispatch job:', activeJob.id);
-            setActiveJobId(activeJob.id);
-            setSidePanelMode('dispatch_leads');
-            setSidePanelShowCodePreview(false);
-            // Only skip animation on initial page load (refresh), not on user navigation
-            if (isInitialPageLoadRef.current) {
-              setSidePanelRestoredFromDB(true);
-            }
-            setSidePanelOpen(true);
-          }
-          
-          // Mark initial page load as complete - future navigations will animate
-          isInitialPageLoadRef.current = false;
-          setInitialLoadDone(true);
-        } catch (error) {
-          console.error("Error loading conversation from URL:", error);
-          // Remove invalid conv param
-          const newParams = new URLSearchParams(searchParams);
-          newParams.delete('conversation');
-          newParams.delete('conv');
-          setSearchParams(newParams);
-          setInitialLoadDone(true);
-        } finally {
-          isHydratingRef.current = false;
-
-          // Fallback: ensure loading is cleared even if we errored or returned early
-          if (loadingConversationIdRef.current === convId) {
-            setIsConversationLoading(false);
-            loadingConversationIdRef.current = null;
-          }
-        }
-      };
-      loadConversation();
-    } else if (!convId && currentConversationId) {
-      // URL cleared - start new conversation
-      // Abort any active request
-      if (activeAbortRef.current) {
-        activeAbortRef.current.abort();
-        activeAbortRef.current = null;
-      }
-      activeRunIdRef.current = null;
-      activeRunConversationIdRef.current = null;
-      
-      // Reset processing locks
-      isProcessingMessageRef.current = false;
-      isCreatingConversationRef.current = false;
-      
-      // Suppress URL sync to prevent race condition where old ID gets rewritten to URL
-      suppressUrlSyncRef.current = true;
-      setCurrentConversationId(null);
-      conversationIdRef.current = null;
-      setMessages([]);
-      messagesRef.current = [];
-      setCsvLeads(null);
-      setCsvListId(null);
-      setCsvFileName('lista.csv');
-      setCsvRawData([]);
-      setCsvHeaders([]);
-      setCsvMappedColumns({});
-      setPendingEmailContext(null);
-      setSidePanelOpen(false);
-      setSidePanelRestoredFromDB(false);
-      setSidePanelHtml('');
-      setSidePanelSubject('');
-      setSidePanelPreheader('');
-      setSidePanelContext(null);
-      setSelectedOriginData(null);
-      setDispatchType(null);
-      setActionHistory([]); // Clear action history
-      setSidePanelDispatchData(null); // Clear dispatch data
-      setPendingQuestion(null); // Clear pending question
-      setIsLoading(false);
-      setInitialLoadDone(true);
-      // Clear suppression after state is reset
       setTimeout(() => { suppressUrlSyncRef.current = false; }, 100);
     } else if (!convId && !initialLoadDone) {
       isInitialPageLoadRef.current = false;
@@ -1333,11 +993,11 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
     }
   }, [initialLoadDone, messages]);
 
-  // Track last saved signature for content-based dirty checking
+  // Track last saved signature
   const lastSavedSignatureRef = useRef<string>('');
   const saveDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Generate a signature from current state for dirty checking
+  // Generate state signature for dirty checking
   const generateStateSignature = useCallback(() => {
     const msgSignature = messages.map(m => 
       `${m.id}:${m.role}:${m.content.length}:${m.componentData ? JSON.stringify(m.componentData).length : 0}`
@@ -1346,14 +1006,13 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
     return `${msgSignature}::${panelSignature}`;
   }, [messages, sidePanelHtml, sidePanelSubject, sidePanelOpen]);
 
-  // Auto-save conversation - uses refs to avoid stale closures
+  // Auto-save conversation
   const saveConversationNow = useCallback(async (forceCreate = false, customTitle?: string): Promise<string | null> => {
     const currentMessages = messagesRef.current;
     const convId = conversationIdRef.current;
     
     if (currentMessages.length === 0) return null;
     
-    // Prevent duplicate saves while one is in progress
     if (isSavingRef.current) {
       console.log('[DisparoView] Save already in progress, skipping duplicate');
       return null;
@@ -1362,8 +1021,6 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
     isSavingRef.current = true;
 
     try {
-
-      // Generate title
       let title = customTitle || "Nova conversa";
       
       if (!customTitle) {
@@ -1384,7 +1041,6 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
         if (title === "Nova conversa") {
           const firstUserMessage = currentMessages.find(m => m.role === "user");
           if (firstUserMessage) {
-            // Clean title: remove internal markers like [CONTEXT:...], [Agente:...], etc.
             let cleanContent = firstUserMessage.content
               .replace(/\[(Agente:[^\]]+|CONTEXT:[^\]]+|Search)\]\s*/gi, '')
               .replace(/^CONTEXT\s*/i, '')
@@ -1438,7 +1094,6 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
       };
 
       if (convId && !forceCreate) {
-        // Update existing
         const { error } = await supabase
           .from("dispatch_conversations")
           .update({ 
@@ -1452,7 +1107,6 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
         console.log('[DisparoView] Saved conversation', convId, 'with', currentMessages.length, 'messages');
         return convId;
       } else {
-        // Create new
         const { data, error } = await supabase
           .from("dispatch_conversations")
           .insert({ 
@@ -1470,15 +1124,14 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
       console.error("Error saving conversation:", error);
       return null;
     } finally {
-      isSavingRef.current = false; // Always reset saving flag
+      isSavingRef.current = false;
       if (forceCreate) {
         isCreatingConversationRef.current = false;
       }
     }
-  }, [sidePanelHtml, sidePanelSubject, sidePanelOpen, sidePanelContext, sidePanelWorkflowSteps, sidePanelShowCodePreview, sidePanelTitle, sidePanelMode, selectedOriginData, dispatchType, actionHistory, htmlSource, csvListId, csvFileName, csvMappedColumns]);
+  }, [sidePanelHtml, sidePanelSubject, sidePanelOpen, sidePanelContext, sidePanelWorkflowSteps, sidePanelShowCodePreview, sidePanelTitle, sidePanelMode, selectedOriginData, dispatchType, actionHistory, htmlSource, csvListId, csvFileName, csvMappedColumns, sidePanelPreheader]);
 
-  // Auto-save with signature-based dirty check (saves on CONTENT changes, not just length)
-  // Goal: save user messages immediately; throttle while assistant is streaming / user is editing.
+  // Auto-save effect
   useEffect(() => {
     if (!initialLoadDone) return;
     if (messages.length === 0) return;
@@ -1486,10 +1139,8 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
 
     const currentSignature = generateStateSignature();
 
-    // Skip if nothing changed
     if (currentSignature === lastSavedSignatureRef.current) return;
 
-    // Clear any pending save
     if (saveDebounceRef.current) {
       clearTimeout(saveDebounceRef.current);
     }
@@ -1497,18 +1148,12 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
     const lastMessage = messages[messages.length - 1];
     const isUserJustSent = lastMessage?.role === 'user';
 
-    // First message - conversation should already be created in handleSend
-    // This useEffect now only handles UPDATES, not creation
     if (!currentConversationId) {
-      // If we're here without a conversation ID and we're processing a message,
-      // the handleSend is creating the conversation - don't interfere
       if (isProcessingMessageRef.current || isCreatingConversationRef.current) {
         console.log('[DisparoView] Skipping auto-save - handleSend is managing conversation creation');
         return;
       }
       
-      // Edge case: messages exist but no conversation ID and not processing
-      // This shouldn't happen normally, but create conversation as fallback
       if (messages.length > 0) {
         isCreatingConversationRef.current = true;
         saveConversationNow(true).then((newId) => {
@@ -1530,10 +1175,6 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
       });
     };
 
-    // Save immediately when:
-    // - user just sent a message
-    // - streaming finished (isLoading false)
-    // Otherwise, throttle to avoid saving on every streaming chunk / editor keystroke.
     const shouldSaveImmediately = isUserJustSent || !isLoading;
     const shouldThrottle = !shouldSaveImmediately || sidePanelGenerating || sidePanelEditing;
 
@@ -1562,11 +1203,10 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
     sidePanelEditing,
   ]);
 
-  // Save on beforeunload (when user closes tab/refreshes)
+  // Save on beforeunload
   useEffect(() => {
-    const handleBeforeUnload = (event: BeforeUnloadEvent) => {
+    const handleBeforeUnload = () => {
       if (conversationIdRef.current && messagesRef.current.length > 0) {
-        // Attempt synchronous save using sendBeacon for reliability
         try {
           const conversationData = {
             messages: messagesRef.current.map(m => ({
@@ -1583,7 +1223,6 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
             },
           };
           
-          // Use sendBeacon for reliable delivery during page unload
           const url = `https://ytdfwkchsumgdvcroaqg.supabase.co/rest/v1/dispatch_conversations?id=eq.${conversationIdRef.current}`;
           const payload = JSON.stringify({
             messages: conversationData,
@@ -1595,7 +1234,6 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
           console.error('[DisparoView] beforeunload save error:', error);
         }
         
-        // Also try async save as fallback
         saveConversationNow();
       }
     };
@@ -1609,34 +1247,27 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
     lastSavedSignatureRef.current = '';
   }, [currentConversationId]);
 
-  // Sync URL when conversation ID changes (separated from creation to avoid race condition)
+  // Sync URL when conversation ID changes
   useEffect(() => {
-    // Skip sync if suppressed (user just started new conversation)
     if (suppressUrlSyncRef.current) return;
     if (!currentConversationId) return;
     
-    // Get fresh URL value to avoid stale closure issues
     const urlConvId = searchParams.get('conversation') || searchParams.get('conv');
     
-    // CRITICAL FIX: If URL points to a DIFFERENT conversation, user navigated away
-    // Do NOT rewrite the URL - let the URL loader handle the switch
     if (urlConvId && urlConvId !== currentConversationId) {
-      // URL is the source of truth for navigation - don't overwrite
       return;
     }
     
-    // Only set URL if it's empty or already matches (first creation case)
     if (!urlConvId) {
       setSearchParams({ conversation: currentConversationId }, { replace: true });
     }
   }, [currentConversationId, searchParams, setSearchParams]);
 
-  // Auto-scroll to bottom when messages change (using RAF, only if near bottom)
+  // Auto-scroll effect
   useEffect(() => {
     if (shouldAutoScrollRef.current) {
       scheduleScrollToBottom();
     }
-    // Cleanup RAF on unmount
     return () => {
       if (scrollRAFRef.current) {
         cancelAnimationFrame(scrollRAFRef.current);
@@ -1644,356 +1275,28 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
     };
   }, [messages, scheduleScrollToBottom]);
 
-  // Handle origin selection from table
-  const handleOriginSelect = useCallback(async (subOriginId: string, subOriginName: string, originName: string) => {
-    setSelectedOriginData({ subOriginId, subOriginName, originName });
-    
-    // Always use email (WhatsApp removed)
-    const type = 'email';
-    setDispatchType(type);
-    
-    // Log this action
-    logAction('user', `Selecionou a lista "${subOriginName}" da origem "${originName}"`, 'Disparo por email');
-    
-    // Auto-send message to fetch leads
-    const autoMessage = `Usar a lista "${subOriginName}" da origem "${originName}"`;
-    
-    // Add user message
-    const userMessage: Message = {
-      id: crypto.randomUUID(),
-      content: autoMessage,
-      role: "user",
-      timestamp: new Date(),
-    };
-    setMessages(prev => [...prev, userMessage]);
-    setIsLoading(true);
-
-    try {
-      // Fetch leads for this sub-origin
-      const response = await fetch(CHAT_URL, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ command: `FETCH_LEADS:${type}:${subOriginId}` }),
-      });
-
-      if (!response.ok) throw new Error("Erro ao buscar leads");
-      const result = await response.json();
-
-      if (result.type === 'leads_preview') {
-        // Create work steps for AI details
-        const workSteps: WorkStep[] = [
-          createLeadsAnalysisStep('completed', {
-            listName: subOriginName,
-            validCount: result.data.validLeads,
-            totalCount: result.data.totalLeads,
-            summary: `Identificamos ${result.data.validLeads} leads válidos com email na lista selecionada.`
-          }),
-          createEmailGenerationStep('pending'),
-          createDispatchStep('pending')
-        ];
-
-        // Show email creation question
-        const assistantMessage: Message = {
-          id: crypto.randomUUID(),
-          content: `Encontrei ${result.data.validLeads} leads válidos na lista "${subOriginName}".\n\nComo você quer criar o email?\n• Se já tiver o HTML pronto, me envie\n• Se quiser criar com IA, me diga`,
-          role: "assistant",
-          timestamp: new Date(),
-          componentData: {
-            type: 'ai_work_details',
-            data: { steps: workSteps, preview: result.data, subOriginId, dispatchType: type }
-          },
-          component: (
-            <div className="mt-3 w-full max-w-md">
-              <AIWorkDetails steps={workSteps} />
-            </div>
-          ),
-        };
-        setMessages(prev => [...prev, assistantMessage]);
-        setPendingQuestion({ type: 'email_method', subOriginId, dispatchType: type });
-      }
-    } catch (error) {
-      console.error("Error fetching leads:", error);
-      toast.error("Erro ao buscar leads");
-    } finally {
-      setIsLoading(false);
-    }
-  }, [messages]);
-
-  // Show dispatch confirmation via chat (no button - user confirms with text)
-  const handleHtmlSubmit = async (html: string, subOriginId: string, type: string) => {
-    // Store the HTML in side panel for reference
-    setSidePanelContext({ subOriginId, dispatchType: type });
-    setSidePanelHtml(html);
-    setSidePanelOpen(true);
-    
-    // Show confirmation message via chat (no button!)
-    const confirmMessage: Message = {
-      id: crypto.randomUUID(),
-      content: `Email pronto! Você pode revisar o conteúdo no painel lateral. 📧\n\n**Quer que eu inicie o disparo agora?** (responda sim, pode, manda, etc.)`,
-      role: "assistant",
-      timestamp: new Date(),
-    };
-    setMessages(prev => [...prev, confirmMessage]);
-    logAction('system', 'Email preparado para disparo', 'Aguardando confirmação via chat');
-  };
-
-  // Handle email choice - user has code ready (open side panel)
-  const handleEmailChoiceCode = useCallback((subOriginId: string, type: string) => {
-    // Open side panel for HTML editing
-    setSidePanelContext({ subOriginId, dispatchType: type });
-    setSidePanelHtml('');
-    setSidePanelSubject('');
-    setSidePanelPreheader('');
-    setSidePanelGenerating(false);
-    setSidePanelOpen(true);
-    logAction('user', 'Escolheu colar código HTML próprio', 'Painel de edição aberto');
-    
-    const assistantMessage: Message = {
-      id: crypto.randomUUID(),
-      content: `Ótimo! Abri o editor de email na lateral. Cole ou edite o código HTML do seu email lá. Quando terminar, me avise que vou preparar o envio.`,
-      role: "assistant",
-      timestamp: new Date(),
-    };
-    setMessages(prev => [...prev, assistantMessage]);
-  }, [logAction]);
-
-// Handle email choice - create with AI (show copy question as plain text)
-  const handleEmailChoiceAI = useCallback((subOriginId: string, type: string) => {
-    logAction('user', 'Escolheu criar email com a IA', 'Iniciando fluxo de criação');
-    const assistantMessage: Message = {
-      id: crypto.randomUUID(),
-      content: `Você já tem a copy (texto) do email pronta?\n• Se sim, cole a copy aqui\n• Se não, me descreva o que você quer no email`,
-      role: "assistant",
-      timestamp: new Date(),
-    };
-    setMessages(prev => [...prev, assistantMessage]);
-    setPendingQuestion({ type: 'has_copy', subOriginId, dispatchType: type });
-  }, [logAction]);
-  // Note: handleHasCopy removed - user now sends copy directly in chat
-
-  // Handle create copy from scratch - just ask in chat, no form
-  const handleCreateCopy = useCallback((subOriginId: string, type: string) => {
-    const assistantMessage: Message = {
-      id: crypto.randomUUID(),
-      content: `Perfeito! Vou criar a copy e o HTML do email para você. Me conte mais sobre o que você precisa - descreva seu serviço, produto ou a ideia do email que você quer enviar.`,
-      role: "assistant",
-      timestamp: new Date(),
-    };
-    setMessages(prev => [...prev, assistantMessage]);
-    // Store context for when user responds
-    setPendingEmailContext({ subOriginId, dispatchType: type });
-  }, []);
-
-  // Handle generate HTML from existing copy - stream directly to side panel
-  const handleGenerateFromCopy = useCallback(async (
-    copyText: string, 
-    companyName: string, 
-    productService: string,
-    subOriginId: string, 
-    type: string
-  ) => {
-    // Open side panel with generating state
-    setSidePanelContext({ subOriginId, dispatchType: type });
-    setSidePanelHtml('');
-    setSidePanelSubject('');
-    setSidePanelPreheader('');
-    setSidePanelGenerating(true);
-    setSidePanelShowCodePreview(true); // Ensure header shows for email
-    // Don't auto-open panel - user clicks EmailChatCard to open
-    
-    // Create work steps for email generation in progress
-    const generatingSteps: WorkStep[] = [
-      createLeadsAnalysisStep('completed', {
-        listName: selectedOriginData?.subOriginName || 'lista',
-        summary: 'Leads prontos para o disparo.'
-      }),
-      createEmailGenerationStep('in_progress', {
-        subItems: [
-          { id: 'copy', label: `Lendo copy fornecida pelo usuário`, type: 'file', status: 'done' },
-          { id: 'generate', label: `Gerando estrutura HTML...`, type: 'action', status: 'in_progress' },
-        ]
-      }),
-      createDispatchStep('pending')
-    ];
-    
-    const loadingMessageId = crypto.randomUUID();
-    const loadingMessage: Message = {
-      id: loadingMessageId,
-      content: `Gerando HTML do email...`,
-      role: "assistant",
-      timestamp: new Date(),
-      componentData: {
-        type: 'email_generator_streaming',
-        data: { workflowSteps: generatingSteps }
-      },
-    };
-    setMessages(prev => [...prev, loadingMessage]);
-    
-    // Stream generation to side panel
-    try {
-      const GENERATE_EMAIL_URL = `https://ytdfwkchsumgdvcroaqg.supabase.co/functions/v1/generate-email`;
-      
-      const response = await fetch(GENERATE_EMAIL_URL, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          copyText,
-          companyName,
-          productService,
-          tone: 'profissional',
-        }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error || "Erro ao gerar email");
-      }
-
-      if (!response.body) throw new Error("No response body");
-
-      const reader = response.body.getReader();
-      const decoder = new TextDecoder();
-      let buffer = "";
-      let generatedHtml = "";
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-
-        buffer += decoder.decode(value, { stream: true });
-
-        let newlineIndex: number;
-        while ((newlineIndex = buffer.indexOf("\n")) !== -1) {
-          let line = buffer.slice(0, newlineIndex);
-          buffer = buffer.slice(newlineIndex + 1);
-
-          if (line.endsWith("\r")) line = line.slice(0, -1);
-          if (line.startsWith(":") || line.trim() === "") continue;
-          if (!line.startsWith("data: ")) continue;
-
-          const jsonStr = line.slice(6).trim();
-          if (jsonStr === "[DONE]") break;
-
-          try {
-            const parsed = JSON.parse(jsonStr);
-            const content = parsed.choices?.[0]?.delta?.content as string | undefined;
-            if (content) {
-              generatedHtml += content;
-              // Extract subject and HTML in real-time
-              const { subject, html } = extractSubjectAndHtml(generatedHtml);
-              if (subject) setSidePanelSubject(subject);
-              setSidePanelHtml(html);
-            }
-          } catch {
-            // Incomplete JSON, continue
-          }
-        }
-      }
-
-      // Final extraction
-      const { subject: finalSubject, html: finalHtml } = extractSubjectAndHtml(generatedHtml);
-      
-      setSidePanelSubject(finalSubject);
-      setSidePanelHtml(finalHtml);
-      setHtmlSource('ai'); // AI generated this email
-      setSidePanelGenerating(false);
-      logAction('ai', 'Gerou email HTML a partir da copy', `Assunto: "${finalSubject}", ${finalHtml.length} caracteres`);
-      
-      // Check if the email has a button_link placeholder
-      const hasButtonPlaceholder = finalHtml.includes('{{button_link}}');
-      
-      // Update loading message with completed steps
-      const completedSteps: WorkStep[] = [
-        createLeadsAnalysisStep('completed', {
-          listName: selectedOriginData?.subOriginName || 'lista',
-          summary: 'Leads prontos para o disparo.'
-        }),
-        createEmailGenerationStep('completed', {
-          subItems: [
-            { id: 'copy', label: `Lendo copy fornecida pelo usuário`, type: 'file', status: 'done' },
-            { id: 'generate', label: `Gerando estrutura HTML`, type: 'action', status: 'done' },
-          ],
-          summary: `Email gerado com ${finalHtml.length} caracteres.`
-        }),
-        createDispatchStep('pending')
-      ];
-      
-      // Update the loading message to show completed state - save workflowSteps in componentData
-      setMessages(prev => 
-        prev.map(m => 
-          m.id === loadingMessageId 
-            ? { 
-                ...m, 
-                content: hasButtonPlaceholder 
-                  ? `Email gerado! Agora me diz: qual o link do botão? (Ex: https://seusite.com/oferta)`
-                  : `Email gerado! Você pode revisar e editar na lateral.`,
-                componentData: { 
-                  type: 'email_generator_streaming' as const, 
-                  data: { workflowSteps: completedSteps, isComplete: true } 
-                },
-              }
-            : m
-        )
-      );
-      toast.success("Email gerado com sucesso!");
-      
-      // Force immediate save after generation completes
-      setTimeout(() => {
-        saveConversationNow();
-      }, 100);
-      
-    } catch (error) {
-      console.error("Error generating email:", error);
-      toast.error(error instanceof Error ? error.message : "Erro ao gerar email");
-      setSidePanelGenerating(false);
-    }
-  }, [logAction]);
-
-  // Handle AI generated email - open in side panel
-  const handleEmailGenerated = useCallback((html: string, subOriginId: string, type: string) => {
-    // Update side panel with generated HTML
-    setSidePanelContext({ subOriginId, dispatchType: type });
-    setSidePanelHtml(html);
-    setHtmlSource('ai'); // AI generated this email
-    setSidePanelGenerating(false);
-    setSidePanelShowCodePreview(true); // Ensure header shows for email
-    // Don't auto-open panel - user clicks EmailChatCard to open
-    logAction('ai', 'Email HTML criado', `${html.length} caracteres`);
-    
-    const assistantMessage: Message = {
-      id: crypto.randomUUID(),
-      content: `Email criado! Você pode revisar e editar na lateral. Quando estiver pronto, me avise que vou preparar o envio.`,
-      role: "assistant",
-      timestamp: new Date(),
-    };
-    setMessages(prev => [...prev, assistantMessage]);
-  }, [logAction]);
-
-  // Execute a confirmed dispatch
+  // Execute dispatch command
   const executeDispatch = useCallback(async (command: string) => {
-    // Determine dispatch type from command
-    const isWhatsApp = command.includes('whatsapp');
-    
-    // STEP 1: Show preparing indicator immediately
     const preparingMessageId = crypto.randomUUID();
     const preparingMessage: Message = {
       id: preparingMessageId,
-      content: "🔄 Preparando disparo...",
+      content: "⏳ Preparando disparo...",
       role: "assistant",
       timestamp: new Date(),
-      component: <DispatchPreparingIndicator type={isWhatsApp ? 'whatsapp' : 'email'} />,
+      component: <DispatchPreparingIndicator />,
     };
     setMessages(prev => [...prev, preparingMessage]);
     
+    setIsLoading(true);
+
     try {
-      setIsLoading(true);
       const response = await fetch(CHAT_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ command, conversationId: conversationIdRef.current }),
       });
 
-      if (!response.ok) throw new Error("Command failed");
+      if (!response.ok) throw new Error("Dispatch failed");
 
       const result = await response.json();
       console.log("Dispatch result:", result);
@@ -2002,7 +1305,6 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
         openDispatchLeadsPanel(result.data.jobId);
         logAction('system', `Disparo iniciado`, `Enviando para ${result.data.validLeads} leads`);
         
-        // STEP 2: Replace preparing message with button to open panel
         setMessages(prev => prev.map(m => 
           m.id === preparingMessageId 
             ? {
@@ -2030,18 +1332,16 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
         ));
         toast.success("Disparo iniciado com sucesso!");
       } else {
-        // If dispatch didn't start properly, remove preparing message
         setMessages(prev => prev.filter(m => m.id !== preparingMessageId));
       }
     } catch (error) {
       console.error("Error starting dispatch:", error);
-      // Remove preparing message on error
       setMessages(prev => prev.filter(m => m.id !== preparingMessageId));
       toast.error("Erro ao iniciar disparo");
     } finally {
       setIsLoading(false);
     }
-  }, [logAction]);
+  }, [logAction, openDispatchLeadsPanel]);
 
   // Process commands from Grok's response
   const processCommands = async (content: string): Promise<{ cleanContent: string; components: React.ReactNode[]; csvChanged: boolean }> => {
@@ -2070,21 +1370,17 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
         csvOperations
       );
       
-      // Update state with processed data
       setCsvLeads(result.leads);
       setCsvRawData(result.rawData);
       setCsvHeaders(result.headers);
       csvChanged = true;
       
-      // Log the changes
       result.changes.forEach(change => {
         logAction('system', 'CSV tratado', change);
       });
       
-      // Update CSV in database if we have a csvListId
       if (csvListId) {
         try {
-          // Delete old recipients and insert new ones
           await supabase
             .from('dispatch_csv_list_recipients')
             .delete()
@@ -2114,44 +1410,32 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
       toast.success(`Lista tratada! ${result.leads.length} leads restantes`);
     }
     
-    // Strip CSV operation commands from visible content
     cleanContent = stripCsvOperations(cleanContent);
     
-    // ALWAYS clean technical patterns from visible content (safety layer)
-    // Even if the AI ignores instructions, we remove these patterns
     cleanContent = cleanContent
       .replace(/\[COMMAND:[^\]]+\]/g, '')
       .replace(/\[TEMPLATE_CONTENT\][\s\S]*?\[\/TEMPLATE_CONTENT\]/g, '')
       .replace(/\[\/TEMPLATE_CONTENT\]/g, '')
       .replace(/\[TEMPLATE_CONTENT\]/g, '')
-      // Remove any leftover HTML code blocks that might appear
       .replace(/```html[\s\S]*?```/g, '')
-      .replace(/<!DOCTYPE[\s\S]*?<\/html>/gi, '')
+      .replace(/<!DOCTYPE[\s\S]*?<\//gi, '')
       .trim();
 
     for (const command of commands) {
-      // Remove command from content (redundant but safe)
       cleanContent = cleanContent.replace(`[COMMAND:${command}]`, '');
 
-      // START_DISPATCH: Execute directly - user already confirmed verbally via chat
-      // The AI only sends this command AFTER the user said "sim", "pode", etc.
-      // IMPORTANT: Use the local subOriginId state instead of trusting what the AI sends
-      // because the AI might send the list name instead of the UUID
       if (command.startsWith('START_DISPATCH:')) {
         console.log("[INFO] START_DISPATCH detected - executing (user confirmed via chat)");
         
-        // Parse the command parts
         const parts = command.split(':');
         const type = parts[1] || 'email';
         const templateType = parts[3] || 'html';
         
-        // Check if we have a CSV list (takes priority over CRM list)
         if (csvListId) {
           console.log("[INFO] Using CSV list for dispatch:", csvListId);
           const encodedHtml = sidePanelHtml ? btoa(encodeURIComponent(sidePanelHtml)) : '';
           const encodedSubject = sidePanelSubject ? btoa(encodeURIComponent(sidePanelSubject)) : '';
           
-          // Build CSV dispatch command
           const csvCommand = `START_DISPATCH_CSV:${type}:${csvListId}:${templateType}:${currentConversationId || ''}:${encodedSubject}:${encodedHtml}`;
           console.log("[INFO] CSV dispatch command:", { 
             type, 
@@ -2165,9 +1449,6 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
           continue;
         }
         
-        // Use the subOriginId from local state (guaranteed to be the correct UUID)
-        // selectedOriginData.subOriginId is set when user selects a list
-        // The prop subOriginId is a fallback
         const actualSubOriginId = selectedOriginData?.subOriginId || subOriginId;
         
         if (!actualSubOriginId) {
@@ -2176,11 +1457,9 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
           continue;
         }
         
-        // Encode HTML and subject to avoid issues with special characters in the command
         const encodedHtml = sidePanelHtml ? btoa(encodeURIComponent(sidePanelHtml)) : '';
         const encodedSubject = sidePanelSubject ? btoa(encodeURIComponent(sidePanelSubject)) : '';
         
-        // Build the corrected command with the actual UUID, conversation ID, subject and HTML
         const correctedCommand = `START_DISPATCH:${type}:${actualSubOriginId}:${templateType}:${currentConversationId || ''}:${encodedSubject}:${encodedHtml}`;
         console.log("[INFO] Corrected command with HTML/Subject:", { 
           type, 
@@ -2195,13 +1474,10 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
         continue;
       }
 
-      // For other commands, process normally
       try {
         const response = await fetch(CHAT_URL, {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ command, conversationId: conversationIdRef.current }),
         });
 
@@ -2211,7 +1487,6 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
         console.log("Command result:", result);
 
         if (result.type === 'origins') {
-          // Add origins list component with selection handler
           const originsComponent = (
             <OriginsListComponent 
               key={`origins-${Date.now()}`}
@@ -2233,7 +1508,6 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
         }
 
         if (result.type === 'dispatch_updated') {
-          // Job was updated (paused/resumed/cancelled)
           toast.success(`Disparo ${result.data.status === 'paused' ? 'pausado' : result.data.status === 'running' ? 'retomado' : 'cancelado'}`);
         }
 
@@ -2245,779 +1519,215 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
     return { cleanContent: cleanContent.trim(), components, csvChanged };
   };
 
-  const handleCommand = async (command: string) => {
-    try {
-      const response = await fetch(CHAT_URL, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ command, conversationId: conversationIdRef.current }),
-      });
-
-      if (!response.ok) throw new Error("Command failed");
-      
-      const result = await response.json();
-      console.log("Command result:", result);
-
-      if (result.type === 'dispatch_updated') {
-        toast.success(`Disparo ${result.data.status === 'paused' ? 'pausado' : result.data.status === 'running' ? 'retomado' : 'cancelado'}`);
-      }
-    } catch (error) {
-      console.error("Error executing command:", error);
-      toast.error("Erro ao executar comando");
-    }
-  };
-
+  // Handle sending messages - main function (large, continues with chat logic)
   const handleSend = async (message: string, files?: File[]) => {
     if (!message.trim() && (!files || files.length === 0)) return;
     
-    // Prevent duplicate calls while processing
     if (isProcessingMessageRef.current) {
       console.log('[DisparoView] Already processing message, ignoring duplicate');
       return;
     }
     
-    // Abort any previous request
     if (activeAbortRef.current) {
       activeAbortRef.current.abort();
     }
     
-    // Create new AbortController for this request
     const abortController = new AbortController();
     activeAbortRef.current = abortController;
     const runId = crypto.randomUUID();
     activeRunIdRef.current = runId;
     activeRunConversationIdRef.current = conversationIdRef.current;
     
-    // Set processing flag - MUST be reset before any return
     isProcessingMessageRef.current = true;
     
     shouldAutoScrollRef.current = true;
       
-      // Check if there's a CSV file or image
-      let csvContent = '';
-      let csvFileNameLocal = '';
-      let imageBase64 = '';
-      let imageFile: File | null = null;
-      let csvParseResult: CsvParseResult | null = null;
-      
-      if (files && files.length > 0) {
-        // Check for CSV file
-        const csvFile = files.find(f => f.name.endsWith('.csv'));
-        if (csvFile) {
-          csvFileNameLocal = csvFile.name;
-          csvContent = await csvFile.text();
-          csvParseResult = parseCSVAdvanced(csvContent);
-          
-          if (csvParseResult.leads.length > 0) {
-            setCsvLeads(csvParseResult.leads);
-            setCsvFileName(csvFile.name);
-            setCsvRawData(csvParseResult.rawData);
-            setCsvHeaders(csvParseResult.headers);
-            setCsvMappedColumns(csvParseResult.mappedColumns);
-            // Don't auto-open panel - AI will analyze and respond in chat
-            // CSV will be persisted to DB after conversation is created
-          }
-        }
-        
-        // Check for image file
-        const imgFile = files.find(f => f.type.startsWith('image/'));
-        if (imgFile) {
-          imageFile = imgFile;
-          // Convert to base64
-          const reader = new FileReader();
-          imageBase64 = await new Promise<string>((resolve) => {
-            reader.onload = () => resolve(reader.result as string);
-            reader.readAsDataURL(imgFile);
-          });
-        }
-      }
-      
-      // Build message content - strip internal context for display/storage
-      const rawMessageContent = message; // Keep original for AI routing
-      const displayMessageContent = stripInternalContext(message); // Clean version for display
-      
-      // For CSV, we don't show text, we show the card component
-      let messageContent = displayMessageContent;
-      if (imageFile) {
-        messageContent = displayMessageContent || 'Analise esta imagem';
-      }
-      
-      // Add user message with CSV card component data if applicable
-      const userMessage: Message = {
-        id: crypto.randomUUID(),
-        content: csvParseResult ? '' : messageContent, // Empty content for CSV - card will display
-        role: "user",
-        timestamp: new Date(),
-        imageUrl: imageBase64 || undefined,
-        componentData: csvParseResult ? {
-          type: 'csv_preview' as const,
-          data: {
-            fileName: csvFileNameLocal,
-            totalRows: csvParseResult.leads.length,
-            columns: csvParseResult.headers,
-            previewData: csvParseResult.rawData, // All data for inline navigation
-            mappedColumns: csvParseResult.mappedColumns
-          }
-        } : undefined,
-      };
-      
-      // ========== OPTIMISTIC UI: Show message IMMEDIATELY ==========
-      setMessages((prev) => [...prev, userMessage]);
-      setIsLoading(true);
-      
-      // Check if this is the first message (need to create conversation)
-      const isFirstMessage = !currentConversationId && !conversationIdRef.current;
-      let targetConversationId = conversationIdRef.current;
-      
-      // Create conversation in background (non-blocking for UI)
-      if (isFirstMessage) {
-        // Prevent duplicate creation
-        if (isCreatingConversationRef.current) {
-          console.log('[DisparoView] Already creating conversation, blocking duplicate');
-          isProcessingMessageRef.current = false;
-          setIsLoading(false);
-          return;
-        }
-        
-        isCreatingConversationRef.current = true;
-        
-        try {
-          // For CSV uploads, use the file name as title
-          const titleBase = csvParseResult 
-            ? `📊 ${csvFileNameLocal} (${csvParseResult.leads.length} leads)`
-            : messageContent;
-          const title = titleBase.length > 50 
-            ? titleBase.substring(0, 50).trim() + '...' 
-            : titleBase || "Nova conversa";
-          
-          const conversationData = {
-            messages: [{ 
-              id: userMessage.id, 
-              content: userMessage.content, 
-              role: userMessage.role, 
-              timestamp: userMessage.timestamp.toISOString() 
-            }],
-            sidePanelState: {},
-            selectedOriginData: null,
-            dispatchType: null,
-            actionHistory: [],
-            htmlSource: null
-          };
-          
-          const { data, error } = await supabase
-            .from("dispatch_conversations")
-            .insert({ 
-              messages: conversationData as any,
-              title 
-            })
-            .select()
-            .single();
-          
-          if (error) throw error;
-          
-          targetConversationId = data.id;
-          conversationIdRef.current = data.id;
-          setCurrentConversationId(data.id);
-          
-          // Update URL with new conversation ID
-          setSearchParams({ conversation: data.id }, { replace: true });
-          
-          // Signal to open the disparo submenu automatically
-          localStorage.setItem('disparo-submenu-should-open', 'true');
-          window.dispatchEvent(new Event('disparo-submenu-open'));
-          
-          console.log('[DisparoView] Created conversation:', data.id);
-        } catch (error) {
-          console.error('[DisparoView] Error creating conversation:', error);
-          isProcessingMessageRef.current = false;
-          isCreatingConversationRef.current = false;
-          setIsLoading(false);
-          toast.error('Erro ao criar conversa');
-          return;
-        } finally {
-          isCreatingConversationRef.current = false;
-        }
-      }
-
-      // Persist CSV list in background (don't block UI)
-      if (csvParseResult && csvParseResult.leads.length > 0 && targetConversationId) {
-        // Fire and forget - don't await
-        (async () => {
-          try {
-            const recipients = csvParseResult.leads
-              .filter(l => l.email && l.email.includes('@'))
-              .map(l => ({
-                name: l.name || '',
-                email: l.email!,
-                whatsapp: l.whatsapp
-              }));
-
-            const { data: csvSaveResult, error: csvError } = await supabase.functions.invoke('save-csv-dispatch-list', {
-              body: {
-                conversationId: targetConversationId,
-                fileName: csvFileNameLocal,
-                mappedColumns: csvParseResult.mappedColumns,
-                recipients
-              }
-            });
-
-            if (csvError) {
-              console.error('[DisparoView] Error saving CSV list:', csvError);
-            } else if (csvSaveResult?.listId) {
-              setCsvListId(csvSaveResult.listId);
-              console.log('[DisparoView] CSV list saved:', csvSaveResult.listId, 'with', csvSaveResult.validEmails, 'valid emails');
-              setTimeout(() => saveConversationNow(), 50);
-            }
-          } catch (csvSaveError) {
-            console.error('[DisparoView] Error calling save-csv-dispatch-list:', csvSaveError);
-          }
-        })();
-      }
-      
-      // Store conversation ID for this run
-      activeRunConversationIdRef.current = targetConversationId;
-      // isLoading already set above in optimistic UI section
-
-      // Check if we're waiting for a question response
-      if (pendingQuestion) {
-        const q = pendingQuestion;
-        setPendingQuestion(null);
-        
-        const lowerMsg = rawMessageContent.toLowerCase().trim();
-        
-        if (q.type === 'email_method') {
-          // Check if user wants to use AI or has HTML ready
-          const wantsAI = lowerMsg.includes('ia') || lowerMsg.includes('criar') || lowerMsg.includes('gerar') || 
-                          lowerMsg.includes('ajuda') || lowerMsg.includes('criar com ia') || lowerMsg.includes('não tenho');
-          const hasHtml = lowerMsg.includes('html') || lowerMsg.includes('tenho') || lowerMsg.includes('pronto') ||
-                          rawMessageContent.includes('<!DOCTYPE') || rawMessageContent.includes('<html') || rawMessageContent.includes('<body');
-          
-          if (hasHtml && (rawMessageContent.includes('<') || lowerMsg.includes('tenho o html') || lowerMsg.includes('já tenho'))) {
-            // User has HTML - call the code handler
-            handleEmailChoiceCode(q.subOriginId, q.dispatchType);
-          } else {
-            // User wants AI - ask about copy
-            handleEmailChoiceAI(q.subOriginId, q.dispatchType);
-          }
-          setIsLoading(false);
-          isProcessingMessageRef.current = false;
-          return;
-        }
-      
-        if (q.type === 'has_copy') {
-          // Check if user has copy or wants to create from scratch
-          const hasCopyReady = lowerMsg.includes('sim') || lowerMsg.includes('tenho') || lowerMsg.includes('aqui') ||
-                               rawMessageContent.length > 100; // Long message likely is the copy itself
-          
-          if (hasCopyReady && rawMessageContent.length > 50) {
-            // User sent the copy directly - generate HTML from it
-            setPendingEmailContext({ subOriginId: q.subOriginId, dispatchType: q.dispatchType });
-            // Re-trigger with the copy text
-            setIsLoading(false);
-            handleGenerateFromCopy(rawMessageContent, '', '', q.subOriginId, q.dispatchType);
-            return; // finally will reset isProcessingMessageRef
-          } else if (hasCopyReady) {
-            // User said they have copy but didn't send it
-            const assistantMessage: Message = {
-              id: crypto.randomUUID(),
-              content: `Ótimo! Cole sua copy aqui e eu vou transformar em um email HTML profissional.`,
-              role: "assistant",
-              timestamp: new Date(),
-            };
-            setMessages(prev => [...prev, assistantMessage]);
-            setPendingQuestion({ type: 'has_copy', subOriginId: q.subOriginId, dispatchType: q.dispatchType });
-            setIsLoading(false);
-            isProcessingMessageRef.current = false;
-            return;
-          } else {
-            // User wants to create from scratch
-            handleCreateCopy(q.subOriginId, q.dispatchType);
-            setIsLoading(false);
-            isProcessingMessageRef.current = false;
-            return;
-          }
-        }
-      }
-      
-      // DETECT HTML PASTED DIRECTLY IN CHAT - auto-load into side panel
-      const isDirectHtmlPaste = 
-        (rawMessageContent.includes('<!DOCTYPE') || rawMessageContent.includes('<!doctype') ||
-         (rawMessageContent.includes('<html') && rawMessageContent.includes('</html>')) ||
-         (rawMessageContent.includes('<body') && rawMessageContent.includes('</body>')) ||
-         (rawMessageContent.includes('<table') && rawMessageContent.includes('</table>') && rawMessageContent.length > 200));
-      
-      if (isDirectHtmlPaste) {
-        // Clean the HTML
-        const cleanedHtml = rawMessageContent
-          .replace(/^```html\n?/i, '')
-          .replace(/^```\n?/, '')
-          .replace(/\n?```$/i, '')
-          .trim();
-        
-        // Load directly into side panel
-        setSidePanelHtml(cleanedHtml);
-        setSidePanelSubject(''); // User can add subject later
-        setSidePanelPreheader(''); // User can add preheader later
-        setHtmlSource('user'); // User pasted this HTML
-        setSidePanelOpen(true);
-        setSidePanelShowCodePreview(true);
-        setSidePanelMode('email');
-        setSidePanelGenerating(false);
-        setSidePanelEditing(false);
-        
-        logAction('user', 'Colou HTML diretamente no chat', `${cleanedHtml.length} caracteres`);
-        
-        const confirmMessage: Message = {
-          id: crypto.randomUUID(),
-          content: `Carreguei seu HTML no editor! 📧\n\nVocê pode ver o **preview** e o **código** no painel lateral à direita. Se precisar de ajustes, é só me pedir.\n\nQuando estiver pronto, me avise para iniciar o disparo.`,
-          role: "assistant",
-          timestamp: new Date(),
-          componentData: {
-            type: 'email_generator_streaming' as const,
-            data: {
-              isComplete: true,
-              generatedHtml: cleanedHtml,
-              subject: '',
-              mode: 'email' as const
-            }
-          }
-        };
-        setMessages(prev => [...prev, confirmMessage]);
-        setIsLoading(false);
-        isProcessingMessageRef.current = false;
-        return;
-      }
-
-      // Check if user is confirming dispatch via chat
-      const lowerUserMsg = rawMessageContent.toLowerCase().trim();
-      const isUserConfirming = (
-        lowerUserMsg === 'sim' ||
-        lowerUserMsg === 's' ||
-        lowerUserMsg === 'yes' ||
-        lowerUserMsg === 'ok' ||
-        lowerUserMsg.includes('pode') ||
-        lowerUserMsg.includes('manda') ||
-        lowerUserMsg.includes('vai') ||
-        lowerUserMsg.includes('confirmo') ||
-        lowerUserMsg.includes('inicia') ||
-        lowerUserMsg.includes('começa') ||
-        lowerUserMsg.includes('dispara') ||
-        lowerUserMsg.includes('envia') ||
-        (lowerUserMsg.includes('sim') && lowerUserMsg.length < 20)
-      );
-      
-      const hasEmailReady = !!sidePanelHtml && sidePanelHtml.length > 100;
-      const hasListReady = (!!csvListId || !!selectedOriginData?.subOriginId) && !activeJobId;
-      const hasEverythingReady = hasEmailReady && hasListReady;
-      
-      // Check if the last AI message asked for confirmation
-      const lastAiMessage = messages.filter(m => m.role === 'assistant').pop();
-      const aiAskedToConfirm = lastAiMessage && (
-        lastAiMessage.content.toLowerCase().includes('posso iniciar') ||
-        lastAiMessage.content.toLowerCase().includes('quer que eu inicie') ||
-        lastAiMessage.content.toLowerCase().includes('pronto para enviar') ||
-        lastAiMessage.content.toLowerCase().includes('iniciar o disparo') ||
-        lastAiMessage.content.toLowerCase().includes('inicie o disparo') ||
-        lastAiMessage.content.toLowerCase().includes('preparar o envio')
-      );
-
-      const strongConfirm =
-        lowerUserMsg.includes('pode enviar') ||
-        (lowerUserMsg.includes('pode') && (lowerUserMsg.includes('envio') || lowerUserMsg.includes('enviar') || lowerUserMsg.includes('disparo')));
-      
-      if (isUserConfirming && hasEverythingReady && (aiAskedToConfirm || strongConfirm)) {
-        // Auto-execute dispatch - user confirmed via chat!
-        const type = dispatchType || 'email';
-        
-        // Encode HTML and subject for the command
-        const encodedHtml = sidePanelHtml ? btoa(encodeURIComponent(sidePanelHtml)) : '';
-        const encodedSubject = sidePanelSubject ? btoa(encodeURIComponent(sidePanelSubject)) : '';
-
-        const autoCommand = csvListId
-          ? `START_DISPATCH_CSV:${type}:${csvListId}:html:${currentConversationId || ''}:${encodedSubject}:${encodedHtml}`
-          : `START_DISPATCH:${type}:${selectedOriginData!.subOriginId}:html:${currentConversationId || ''}:${encodedSubject}:${encodedHtml}`;
-        
-        const confirmingMessage: Message = {
-          id: crypto.randomUUID(),
-          content: `Perfeito! Iniciando o disparo agora... 🚀`,
-          role: "assistant",
-          timestamp: new Date(),
-        };
-        setMessages(prev => [...prev, confirmingMessage]);
-        
-        logAction('user', 'Confirmou disparo via chat', `Tipo: ${type}${csvListId ? ' (CSV)' : ''}`);
-        executeDispatch(autoCommand);
-        setIsLoading(false);
-        isProcessingMessageRef.current = false;
-        return;
-      }
-
-    // Check if we're waiting for email description - stream to side panel
-    if (pendingEmailContext) {
-      const ctx = pendingEmailContext;
-      setPendingEmailContext(null);
-      
-      // Open side panel with generating state
-      setSidePanelContext({ subOriginId: ctx.subOriginId, dispatchType: ctx.dispatchType });
-      setSidePanelHtml('');
-      setSidePanelSubject('');
-      setSidePanelPreheader('');
-      setSidePanelGenerating(true);
-      // Don't auto-open panel - user clicks EmailChatCard to open
-      
-      try {
-        const GENERATE_EMAIL_URL = `https://ytdfwkchsumgdvcroaqg.supabase.co/functions/v1/generate-email`;
-        
-        const assistantMessageId = crypto.randomUUID();
-        let generatedHtml = '';
-        
-        // Create streaming assistant message with indicator component
-        setMessages(prev => [...prev, {
-          id: assistantMessageId,
-          content: "",
-          role: "assistant",
-          timestamp: new Date(),
-          componentData: { type: 'email_generator_streaming' as const },
-        }]);
-        
-        const response = await fetch(GENERATE_EMAIL_URL, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            objective: message,
-            tone: 'profissional',
-            companyName: '',
-            productService: '',
-            additionalInfo: ''
-          }),
-        });
-
-        if (!response.ok) {
-          const errorData = await response.json().catch(() => ({}));
-          throw new Error(errorData.error || "Erro ao gerar email");
-        }
-
-        if (!response.body) throw new Error("No response body");
-
-        const reader = response.body.getReader();
-        const decoder = new TextDecoder();
-        let buffer = "";
-
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-
-          buffer += decoder.decode(value, { stream: true });
-
-          let newlineIndex: number;
-          while ((newlineIndex = buffer.indexOf("\n")) !== -1) {
-            let line = buffer.slice(0, newlineIndex);
-            buffer = buffer.slice(newlineIndex + 1);
-
-            if (line.endsWith("\r")) line = line.slice(0, -1);
-            if (line.startsWith(":") || line.trim() === "") continue;
-            if (!line.startsWith("data: ")) continue;
-
-            const jsonStr = line.slice(6).trim();
-            if (jsonStr === "[DONE]") break;
-
-            try {
-              const parsed = JSON.parse(jsonStr);
-              const content = parsed.choices?.[0]?.delta?.content as string | undefined;
-              if (content) {
-                generatedHtml += content;
-                // Extract subject and HTML in real-time
-                const { subject, html } = extractSubjectAndHtml(generatedHtml);
-                if (subject) setSidePanelSubject(subject);
-                setSidePanelHtml(html);
-              }
-            } catch {
-              // Incomplete JSON, continue
-            }
-          }
-        }
-
-        // Final extraction
-        const { subject: finalSubject, html: cleanHtml } = extractSubjectAndHtml(generatedHtml);
-
-        setSidePanelSubject(finalSubject);
-        setSidePanelHtml(cleanHtml);
-        setHtmlSource('ai'); // AI generated this email
-        setSidePanelGenerating(false);
-        logAction('ai', 'Gerou email a partir da descrição', `Assunto: "${finalSubject}", ${cleanHtml.length} caracteres`);
-
-        // Update message with generated HTML so EmailChatCard appears
-        setMessages(prev => 
-          prev.map(m => 
-            m.id === assistantMessageId 
-              ? { 
-                  ...m, 
-                  content: "Email criado! Clique no card para visualizar e editar.", 
-                  componentData: { 
-                    type: 'email_generator_streaming' as const, 
-                    data: { 
-                      isComplete: true,
-                      generatedHtml: cleanHtml,
-                      subject: finalSubject
-                    } 
-                  } 
-                }
-              : m
-          )
-        );
-        
-        toast.success("Email gerado com sucesso!");
-        
-        // Force immediate save after generation completes
-        setTimeout(() => {
-          saveConversationNow();
-        }, 100);
-        
-      } catch (error) {
-        console.error("Error generating email:", error);
-        toast.error(error instanceof Error ? error.message : "Erro ao gerar email");
-        setSidePanelGenerating(false);
-        setMessages(prev => prev.filter(m => m.content !== "Gerando seu email... Você pode acompanhar na lateral."));
-      } finally {
-        setIsLoading(false);
-      }
-      return;
-    }
-
-    // Check if user is providing a button link
-    const urlPattern = /https?:\/\/[^\s]+/i;
-    const urlMatch = messageContent.match(urlPattern);
-    const hasButtonPlaceholder = sidePanelHtml && sidePanelHtml.includes('{{button_link}}');
+    let csvContent = '';
+    let csvFileNameLocal = '';
+    let imageBase64 = '';
+    let imageFile: File | null = null;
+    let csvParseResult: CsvParseResult | null = null;
     
-    if (hasButtonPlaceholder && urlMatch) {
-      // Replace the placeholder with the actual URL
-      const newHtml = sidePanelHtml.replace(/\{\{button_link\}\}/g, urlMatch[0]);
-      setSidePanelHtml(newHtml);
-      setSidePanelEditing(true);
-      
-      setTimeout(() => {
-        setSidePanelEditing(false);
-      }, 1500);
-      
-      const confirmMessage: Message = {
-        id: crypto.randomUUID(),
-        content: `Link do botão atualizado para: ${urlMatch[0]}. Quando estiver pronto pra enviar, é só me avisar!`,
-        role: "assistant",
-        timestamp: new Date(),
-      };
-      setMessages(prev => [...prev, confirmMessage]);
-      setIsLoading(false);
-      return;
-    }
-
-    // Check if user is asking to open/view the editor panel
-    const lowerMessage = messageContent.toLowerCase();
-    const isAskingToOpenPanel = sidePanelHtml && (
-      lowerMessage.includes('editor') ||
-      lowerMessage.includes('preview') ||
-      lowerMessage.includes('código') ||
-      lowerMessage.includes('codigo') ||
-      lowerMessage.includes('painel') ||
-      lowerMessage.includes('lateral') ||
-      lowerMessage.includes('abrir') ||
-      lowerMessage.includes('ver email') ||
-      lowerMessage.includes('mostrar email') ||
-      lowerMessage.includes('ver o email') ||
-      lowerMessage.includes('mostrar o email') ||
-      lowerMessage.includes('visualizar')
-    );
-
-    // If user just wants to open the panel, do it immediately
-    if (isAskingToOpenPanel && !sidePanelOpen) {
-      setSidePanelOpen(true);
-      setSidePanelShowCodePreview(true);
-      setSidePanelMode('email');
-      
-      const confirmMessage: Message = {
-        id: crypto.randomUUID(),
-        content: `Abri o editor de email na lateral! Você pode visualizar o código e o preview lá.`,
-        role: "assistant",
-        timestamp: new Date(),
-      };
-      setMessages(prev => [...prev, confirmMessage]);
-      setIsLoading(false);
-      return;
-    }
-
-    // Check if user is asking for email edits and we have HTML in the side panel
-    const isAskingForEdit = sidePanelHtml && (
-      lowerMessage.includes('altera') ||
-      lowerMessage.includes('muda') ||
-      lowerMessage.includes('troca') ||
-      lowerMessage.includes('modifica') ||
-      lowerMessage.includes('ajusta') ||
-      lowerMessage.includes('corrige') ||
-      lowerMessage.includes('adiciona') ||
-      lowerMessage.includes('remove') ||
-      lowerMessage.includes('coloca') ||
-      lowerMessage.includes('tira') ||
-      lowerMessage.includes('melhora') ||
-      lowerMessage.includes('edita') ||
-      lowerMessage.includes('atualiza')
-    );
-
-    if (isAskingForEdit) {
-      // Open panel in edit mode and stream the changes
-      setSidePanelOpen(true);
-      setSidePanelEditing(true);
-      setSidePanelGenerating(true);
-
-      const assistantMessageId = crypto.randomUUID();
-      setMessages(prev => [...prev, {
-        id: assistantMessageId,
-        content: "",
-        role: "assistant",
-        timestamp: new Date(),
-        componentData: { type: 'email_generator_streaming' as const, data: { isEditing: true } },
-      }]);
-
-      try {
-        const GENERATE_EMAIL_URL = `https://ytdfwkchsumgdvcroaqg.supabase.co/functions/v1/generate-email`;
+    if (files && files.length > 0) {
+      const csvFile = files.find(f => f.name.endsWith('.csv'));
+      if (csvFile) {
+        csvFileNameLocal = csvFile.name;
+        csvContent = await csvFile.text();
+        csvParseResult = parseCSVAdvanced(csvContent);
         
-        const response = await fetch(GENERATE_EMAIL_URL, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            objective: `Modifique o seguinte HTML de email conforme a instrução do usuário. 
-            
-Instrução do usuário: ${messageContent}
-
-HTML atual:
-${sidePanelHtml}
-
-Retorne APENAS o HTML modificado, sem explicações.`,
-            tone: 'profissional',
-            companyName: '',
-            productService: '',
-            additionalInfo: ''
-          }),
-        });
-
-        if (!response.ok) {
-          throw new Error("Erro ao editar email");
+        if (csvParseResult.leads.length > 0) {
+          setCsvLeads(csvParseResult.leads);
+          setCsvFileName(csvFile.name);
+          setCsvRawData(csvParseResult.rawData);
+          setCsvHeaders(csvParseResult.headers);
+          setCsvMappedColumns(csvParseResult.mappedColumns);
         }
-
-        if (!response.body) throw new Error("No response body");
-
-        const reader = response.body.getReader();
-        const decoder = new TextDecoder();
-        let buffer = "";
-        let newHtml = "";
-
-        // Clear HTML to show the streaming from scratch
-        setSidePanelHtml('');
-
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-
-          buffer += decoder.decode(value, { stream: true });
-
-          let newlineIndex: number;
-          while ((newlineIndex = buffer.indexOf("\n")) !== -1) {
-            let line = buffer.slice(0, newlineIndex);
-            buffer = buffer.slice(newlineIndex + 1);
-
-            if (line.endsWith("\r")) line = line.slice(0, -1);
-            if (line.startsWith(":") || line.trim() === "") continue;
-            if (!line.startsWith("data: ")) continue;
-
-            const jsonStr = line.slice(6).trim();
-            if (jsonStr === "[DONE]") break;
-
-            try {
-              const parsed = JSON.parse(jsonStr);
-              const content = parsed.choices?.[0]?.delta?.content as string | undefined;
-              if (content) {
-                newHtml += content;
-                // For edits, just clean the HTML (subject stays the same)
-                const cleanHtml = newHtml
-                  .replace(/^```html\n?/i, '')
-                  .replace(/^```\n?/, '')
-                  .replace(/\n?```$/i, '');
-                setSidePanelHtml(cleanHtml);
-              }
-            } catch {
-              // Incomplete JSON
-            }
-          }
-        }
-
-        const finalHtml = newHtml
-          .replace(/^```html\n?/i, '')
-          .replace(/^```\n?/, '')
-          .replace(/\n?```$/i, '')
-          .trim();
-
-        setSidePanelHtml(finalHtml);
-        setSidePanelGenerating(false);
-        setSidePanelEditing(false);
-        logAction('ai', 'Editou o email conforme instrução do usuário', `${finalHtml.length} caracteres`);
-
-        setMessages(prev => 
-          prev.map(m => 
-            m.id === assistantMessageId 
-              ? { ...m, content: "", componentData: { type: 'email_generator_streaming' as const, data: { isComplete: true } } }
-              : m
-          )
-        );
-
-        toast.success("Email atualizado!");
-
-      } catch (error) {
-        console.error("Error editing email:", error);
-        toast.error("Erro ao editar email");
-        setSidePanelGenerating(false);
-        setSidePanelEditing(false);
-      } finally {
-        setIsLoading(false);
       }
-      return;
+      
+      const imgFile = files.find(f => f.type.startsWith('image/'));
+      if (imgFile) {
+        imageFile = imgFile;
+        const reader = new FileReader();
+        imageBase64 = await new Promise<string>((resolve) => {
+          reader.onload = () => resolve(reader.result as string);
+          reader.readAsDataURL(imgFile);
+        });
+      }
+    }
+    
+    const displayMessageContent = stripInternalContext(message);
+    
+    let messageContent = displayMessageContent;
+    if (imageFile) {
+      messageContent = displayMessageContent || 'Analise esta imagem';
+    }
+    
+    const userMessage: Message = {
+      id: crypto.randomUUID(),
+      content: csvParseResult ? '' : messageContent,
+      role: "user",
+      timestamp: new Date(),
+      imageUrl: imageBase64 || undefined,
+      componentData: csvParseResult ? {
+        type: 'csv_preview' as const,
+        data: {
+          fileName: csvFileNameLocal,
+          totalRows: csvParseResult.leads.length,
+          columns: csvParseResult.headers,
+          previewData: csvParseResult.rawData,
+          mappedColumns: csvParseResult.mappedColumns
+        }
+      } : undefined,
+    };
+    
+    setMessages((prev) => [...prev, userMessage]);
+    setIsLoading(true);
+    
+    const isFirstMessage = !currentConversationId && !conversationIdRef.current;
+    let targetConversationId = conversationIdRef.current;
+    
+    if (isFirstMessage) {
+      if (isCreatingConversationRef.current) {
+        console.log('[DisparoView] Already creating conversation, blocking duplicate');
+        isProcessingMessageRef.current = false;
+        setIsLoading(false);
+        return;
+      }
+      
+      isCreatingConversationRef.current = true;
+      
+      try {
+        const titleBase = csvParseResult 
+          ? `📊 ${csvFileNameLocal} (${csvParseResult.leads.length} leads)`
+          : messageContent;
+        const title = titleBase.length > 50 
+          ? titleBase.substring(0, 50).trim() + '...' 
+          : titleBase || "Nova conversa";
+        
+        const conversationData = {
+          messages: [{ 
+            id: userMessage.id, 
+            content: userMessage.content, 
+            role: userMessage.role, 
+            timestamp: userMessage.timestamp.toISOString() 
+          }],
+          sidePanelState: {},
+          selectedOriginData: null,
+          dispatchType: null,
+          actionHistory: [],
+          htmlSource: null
+        };
+        
+        const { data, error } = await supabase
+          .from("dispatch_conversations")
+          .insert({ 
+            messages: conversationData as any,
+            title 
+          })
+          .select()
+          .single();
+        
+        if (error) throw error;
+        
+        targetConversationId = data.id;
+        conversationIdRef.current = data.id;
+        setCurrentConversationId(data.id);
+        
+        setSearchParams({ conversation: data.id }, { replace: true });
+        
+        localStorage.setItem('disparo-submenu-should-open', 'true');
+        window.dispatchEvent(new Event('disparo-submenu-open'));
+        
+        console.log('[DisparoView] Created conversation:', data.id);
+      } catch (error) {
+        console.error('[DisparoView] Error creating conversation:', error);
+        isProcessingMessageRef.current = false;
+        isCreatingConversationRef.current = false;
+        setIsLoading(false);
+        toast.error('Erro ao criar conversa');
+        return;
+      } finally {
+        isCreatingConversationRef.current = false;
+      }
     }
 
+    // Persist CSV list in background
+    if (csvParseResult && csvParseResult.leads.length > 0 && targetConversationId) {
+      (async () => {
+        try {
+          const recipients = csvParseResult.leads
+            .filter(l => l.email && l.email.includes('@'))
+            .map(l => ({
+              name: l.name || '',
+              email: l.email!,
+              whatsapp: l.whatsapp
+            }));
+          
+          if (recipients.length === 0) {
+            console.log('[DisparoView] No valid recipients to persist');
+            return;
+          }
+          
+          const response = await supabase.functions.invoke('save-csv-dispatch-list', {
+            body: {
+              conversationId: targetConversationId,
+              fileName: csvFileNameLocal,
+              mappedColumns: csvParseResult.mappedColumns,
+              recipients
+            }
+          });
+          
+          if (response.error) throw response.error;
+          
+          const listId = response.data?.listId;
+          if (listId) {
+            setCsvListId(listId);
+            console.log('[DisparoView] CSV list persisted with ID:', listId);
+          }
+        } catch (error) {
+          console.error('[DisparoView] Error persisting CSV list:', error);
+        }
+      })();
+    }
+
+    // Continue with chat logic - sending to Grok
     try {
-      // Build comprehensive context for the AI to be fully aware
+      // Build context for AI
       const contextInfo: string[] = [];
-      
-      // Current state summary
       contextInfo.push(`=== ESTADO ATUAL DA CONVERSA ===`);
       
-      // Dispatch type
       if (dispatchType) {
         contextInfo.push(`• Tipo de disparo escolhido: ${dispatchType === 'email' ? 'EMAIL' : 'WHATSAPP WEB'}`);
       } else {
         contextInfo.push(`• Tipo de disparo: ainda não escolhido`);
       }
       
-      // Selected list
       if (selectedOriginData) {
         contextInfo.push(`• Lista selecionada: "${selectedOriginData.originName} > ${selectedOriginData.subOriginName}"`);
       } else {
         contextInfo.push(`• Lista: nenhuma selecionada ainda`);
       }
       
-      // Check for generated copy (text content before HTML conversion)
-      const lastCopyMessage = [...messages].reverse().find(m => 
-        m.role === 'assistant' && 
-        m.componentData?.type === 'email_generator_streaming' &&
-        m.componentData?.data?.isComplete &&
-        m.content.length > 100
-      );
-      
-      if (lastCopyMessage) {
-        contextInfo.push(`• COPY CRIADA: ✅ SIM - você (IA) criou uma copy nesta conversa`);
-        contextInfo.push(`• Preview da copy:\n---\n${lastCopyMessage.content.slice(0, 400)}${lastCopyMessage.content.length > 400 ? '\n[...]' : ''}\n---`);
-        contextInfo.push(`• IMPORTANTE: Use esta copy para criar o email HTML - NÃO pergunte se tem copy pronta!`);
-      }
-      
-      // Email HTML status
       if (sidePanelHtml && sidePanelHtml.length > 0) {
         const sourceText = htmlSource === 'ai' 
           ? 'VOCÊ (a IA) gerou este email durante a conversa' 
@@ -3025,90 +1735,44 @@ Retorne APENAS o HTML modificado, sem explicações.`,
         contextInfo.push(`• Email HTML: ✅ PRONTO (${sidePanelHtml.length} caracteres)`);
         contextInfo.push(`• Quem criou: ${sourceText}`);
         contextInfo.push(`• Assunto do email: "${sidePanelSubject || '(sem assunto definido)'}"`);
-        contextInfo.push(`• Preview do conteúdo:\n---\n${sidePanelHtml.slice(0, 600)}${sidePanelHtml.length > 600 ? '\n[...]' : ''}\n---`);
       } else if (sidePanelGenerating) {
         contextInfo.push(`• Email HTML: ⏳ Gerando agora...`);
       } else if (dispatchType === 'email') {
         contextInfo.push(`• Email HTML: ❌ Ainda não criado`);
       }
       
-      // Side panel state
-      if (sidePanelOpen) {
-        contextInfo.push(`• Painel de edição de email: aberto (usuário pode estar editando)`);
-      }
-      
-      // CSV leads - provide detailed analysis for AI
       if (csvLeads && csvLeads.length > 0) {
         contextInfo.push(`\n=== LISTA CSV CARREGADA ===`);
         contextInfo.push(`• Total de leads: ${csvLeads.length}`);
         contextInfo.push(`• Arquivo: ${csvFileName}`);
-        contextInfo.push(`• Colunas detectadas: ${csvHeaders.join(', ')}`);
         
-        // Column mapping status
-        contextInfo.push(`• Mapeamento automático:`);
-        contextInfo.push(`  - Coluna de NOME: ${csvMappedColumns.name || '❌ NÃO ENCONTRADA'}`);
-        contextInfo.push(`  - Coluna de EMAIL: ${csvMappedColumns.email || '❌ NÃO ENCONTRADA'}`);
-        contextInfo.push(`  - Coluna de WHATSAPP: ${csvMappedColumns.whatsapp || '❌ NÃO ENCONTRADA'}`);
-        
-        // Count valid contacts
         const leadsWithEmail = csvLeads.filter(l => l.email && l.email.includes('@')).length;
-        const leadsWithWhatsapp = csvLeads.filter(l => l.whatsapp && l.whatsapp.length >= 8).length;
         contextInfo.push(`• Leads com email válido: ${leadsWithEmail}`);
-        contextInfo.push(`• Leads com WhatsApp válido: ${leadsWithWhatsapp}`);
-        
-        // Show sample data
-        contextInfo.push(`• Amostra dos primeiros 3 leads:`);
-        csvLeads.slice(0, 3).forEach((lead, i) => {
-          contextInfo.push(`  ${i + 1}. ${lead.name || '(sem nome)'} | ${lead.email || '(sem email)'} | ${lead.whatsapp || '(sem tel)'}`);
-        });
-        contextInfo.push(`=== FIM DA LISTA CSV ===`);
       }
       
-      // Active job
       if (activeJobId) {
         contextInfo.push(`• Disparo ativo: SIM (ID: ${activeJobId})`);
       }
       
-      // Pending context
-      if (pendingEmailContext) {
-        contextInfo.push(`• Contexto pendente de email: aguardando geração`);
-      }
-      
       contextInfo.push(`=== FIM DO ESTADO ===`);
       
-      // Include action history for complete AI memory
       if (actionHistory.length > 0) {
-        contextInfo.push(`\n=== HISTÓRICO DE AÇÕES (MEMÓRIA COMPLETA) ===`);
-        contextInfo.push(`O que aconteceu nesta conversa, em ordem cronológica:`);
-        actionHistory.forEach((entry, i) => {
-          const actorLabel = entry.actor === 'ai' ? '🤖 Você (IA)' : entry.actor === 'user' ? '👤 Usuário' : '⚙️ Sistema';
+        contextInfo.push(`\n=== HISTÓRICO DE AÇÕES ===`);
+        actionHistory.slice(-10).forEach((entry, i) => {
+          const actorLabel = entry.actor === 'ai' ? '🤖 IA' : entry.actor === 'user' ? '👤 Usuário' : '⚙️ Sistema';
           contextInfo.push(`${i + 1}. [${entry.timestamp}] ${actorLabel}: ${entry.action}${entry.details ? ` - ${entry.details}` : ''}`);
         });
         contextInfo.push(`=== FIM DO HISTÓRICO ===`);
       }
-      
-      // Build instruction for AI behavior
-      const aiInstructions = `
-INSTRUÇÕES PARA VOCÊ (A IA):
-1. Você tem TOTAL consciência do estado e histórico acima - USE essas informações!
-2. O HISTÓRICO DE AÇÕES mostra TUDO que aconteceu - você sabe exatamente o que você fez e o que o usuário fez
-3. Se você gerou algo (está no histórico), LEMBRE e mencione naturalmente: "o email que eu criei..."
-4. Se já existe um HTML de email, NÃO pergunte se o usuário tem HTML
-5. Seja natural e conversacional, como um colega de trabalho prestativo
-6. Reconheça o progresso: "já temos a lista, já temos o email que eu criei..."
-7. Se algo estiver faltando, mencione de forma natural
-8. Evite repetir perguntas sobre coisas que já foram definidas`;
 
-      // Create messages with context injected as system message
-      // For messages with images, use multimodal format
+      // Build messages for API
       const messagesForAPI = [
         {
           role: 'system' as const,
-          content: `${contextInfo.join('\n')}\n${aiInstructions}`
+          content: contextInfo.join('\n')
         },
         ...messages.map(m => {
           if (m.imageUrl) {
-            // Multimodal message with image
             return {
               role: m.role,
               content: [
@@ -3119,12 +1783,9 @@ INSTRUÇÕES PARA VOCÊ (A IA):
           }
           return { role: m.role, content: m.content };
         }),
-        // Current user message - include CSV context if available
         (() => {
-          // Build the message content
           let content = userMessage.content;
           
-          // If CSV was just uploaded, provide COMPLETE context for AI with ALL data
           if (csvParseResult && csvParseResult.leads.length > 0) {
             const stats = csvParseResult.detailedStats;
             const totalLeads = stats?.totalLeads ?? csvParseResult.leads.length;
@@ -3132,70 +1793,7 @@ INSTRUÇÕES PARA VOCÊ (A IA):
             const hasName = !!csvParseResult.mappedColumns.name;
             const hasEmail = !!csvParseResult.mappedColumns.email;
             
-            // Calculate local stats if not from server
-            const duplicatesRemoved = stats?.duplicatesRemoved ?? 0;
-            const withWhatsApp = stats?.withWhatsApp ?? csvParseResult.leads.filter(l => l.whatsapp && l.whatsapp.length >= 8).length;
-            const withoutWhatsApp = stats?.withoutWhatsApp ?? (validEmails - withWhatsApp);
-            const emptyNames = stats?.emptyNames ?? csvParseResult.leads.filter(l => !l.name?.trim()).length;
-            const withNames = stats?.withNames ?? (validEmails - emptyNames);
-            
-            // Build domain distribution text
-            let domainText = '';
-            if (stats?.topDomains && stats.topDomains.length > 0) {
-              domainText = stats.topDomains.map(d => 
-                `  - ${d.domain}: ${d.count} (${d.percent}%)`
-              ).join('\n');
-            } else {
-              // Calculate locally if not from server
-              const domainCounts: Record<string, number> = {};
-              csvParseResult.leads.forEach(l => {
-                if (l.email && l.email.includes('@')) {
-                  const domain = l.email.split('@')[1]?.toLowerCase() || 'outros';
-                  domainCounts[domain] = (domainCounts[domain] || 0) + 1;
-                }
-              });
-              const topDomains = Object.entries(domainCounts)
-                .sort((a, b) => b[1] - a[1])
-                .slice(0, 5);
-              domainText = topDomains.map(([domain, count]) => 
-                `  - ${domain}: ${count} (${((count / validEmails) * 100).toFixed(1)}%)`
-              ).join('\n');
-            }
-            
-            const csvContext = `[NOVA LISTA CSV RECEBIDA - DADOS COMPLETOS]
-Arquivo: "${csvFileNameLocal}"
-
-═══════════════════════════════════════
-ESTATÍSTICAS COMPLETAS DA LISTA (VOCÊ TEM ACESSO A TODOS OS DADOS!)
-═══════════════════════════════════════
-📊 **TOTAIS:**
-- Total de linhas no arquivo: ${totalLeads}
-- Emails válidos (únicos): ${validEmails}
-- Duplicados removidos: ${duplicatesRemoved}
-
-📱 **WHATSAPP:**
-- Com WhatsApp: ${withWhatsApp}
-- Sem WhatsApp: ${withoutWhatsApp}
-
-👤 **NOMES:**
-- Com nome preenchido: ${withNames}
-- Sem nome (vazios): ${emptyNames}
-
-📧 **DISTRIBUIÇÃO POR DOMÍNIO DE EMAIL:**
-${domainText || '(não calculado)'}
-
-🔗 **COLUNAS MAPEADAS:**
-- Coluna de NOME: ${hasName ? `✅ "${csvParseResult.mappedColumns.name}"` : '❌ Não identificada'}
-- Coluna de EMAIL: ${hasEmail ? `✅ "${csvParseResult.mappedColumns.email}"` : '❌ Não identificada'}
-- Coluna de WHATSAPP: ${csvParseResult.mappedColumns.whatsapp ? `✅ "${csvParseResult.mappedColumns.whatsapp}"` : '❌ Não identificada'}
-
-═══════════════════════════════════════
-INSTRUÇÕES PARA VOCÊ (IA):
-- Você tem ACESSO TOTAL a esses dados - use-os nas suas respostas!
-- Quando o usuário pedir análise, forneça os números REAIS acima
-- Não invente dados - use EXATAMENTE o que está aqui
-- ${hasName && hasEmail ? `Lista pronta para disparo! Pergunte naturalmente se quer criar o email.` : `PROBLEMA: ${!hasName ? 'Coluna de nome não encontrada. ' : ''}${!hasEmail ? 'Coluna de email não encontrada. ' : ''}Pergunte ao usuário.`}
-═══════════════════════════════════════`;
+            const csvContext = `[NOVA LISTA CSV RECEBIDA]\nArquivo: "${csvFileNameLocal}"\nTotal de leads: ${totalLeads}\nEmails válidos: ${validEmails}\nColuna de NOME: ${hasName ? `✅ "${csvParseResult.mappedColumns.name}"` : '❌ Não identificada'}\nColuna de EMAIL: ${hasEmail ? `✅ "${csvParseResult.mappedColumns.email}"` : '❌ Não identificada'}`;
             content = csvContext;
           }
           
@@ -3212,271 +1810,84 @@ INSTRUÇÕES PARA VOCÊ (IA):
         })()
       ];
 
+      // Check mode from message
+      const isCopywritingMode = message.includes('[CONTEXT:copywriting]') || message.includes('[Agente:Copywriting]');
+      
       const response = await fetch(CHAT_URL, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ 
-          messages: messagesForAPI,
-          conversationId: conversationIdRef.current 
+          messages: messagesForAPI, 
+          conversationId: targetConversationId,
+          stream: true,
+          mode: isCopywritingMode ? 'copywriting' : 'default'
         }),
+        signal: abortController.signal
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || "Erro ao conectar com o Grok");
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || "Erro na resposta do servidor");
       }
 
-      if (!response.body) {
-        throw new Error("Resposta sem corpo");
-      }
+      if (!response.body) throw new Error("No response body");
 
-      // Stream the response with throttled updates
+      // Setup streaming
       const reader = response.body.getReader();
       const decoder = new TextDecoder();
-      let textBuffer = "";
-      let assistantContent = "";
-      let assistantMessageId = crypto.randomUUID();
-      let pendingUpdate = false;
-      let lastUpdateTime = 0;
-      const UPDATE_INTERVAL = 50; // Update UI every 50ms max
-
-      // Check if copywriting mode to show panel during streaming
-      const isCopywritingMode = messageContent.includes('[CONTEXT:copywriting]');
+      let buffer = "";
+      let fullContent = "";
       
-      // Extract a short summary from user prompt for workflow descriptions
-      const getPromptSummary = (prompt: string): string => {
-        // Remove context tags
-        const cleaned = prompt.replace(/\[CONTEXT:[^\]]+\]/g, '').trim();
-        // Get first 60 chars, end at word boundary
-        const truncated = cleaned.length > 60 
-          ? cleaned.substring(0, 60).replace(/\s+\S*$/, '') + '...'
-          : cleaned;
-        return truncated || 'user request';
-      };
-      const promptSummary = getPromptSummary(messageContent);
-      
-      // Initial workflow steps for ALL responses (with real descriptions)
-      const initialWorkflowSteps: WorkStep[] = isCopywritingMode ? [
-        createCustomStep('analysis', 'Analisando contexto', 'in_progress', { 
-          icon: 'search',
-          description: `Parsing prompt: "${promptSummary}"`,
-          summary: 'Extracting key requirements, target audience, and desired tone from user input.'
-        }),
-        createCustomStep('generation', 'Geração da copy', 'pending', { 
-          icon: 'sparkles',
-          description: 'Waiting for context analysis to complete'
-        }),
-        createCustomStep('review', 'Pronto para revisão', 'pending', { 
-          icon: 'edit',
-          description: 'Content will be available for editing'
-        }),
-      ] : [
-        createCustomStep('analysis', 'Processando', 'in_progress', { 
-          icon: 'search',
-          description: `Parsed: "${promptSummary}"`
-        }),
-      ];
-      
-      // Check if this is a CSV upload - create Data Intelligence steps
-      const isCsvUpload = csvParseResult && csvParseResult.leads.length > 0;
-      const dataIntelligenceSteps: InsightStep[] = isCsvUpload ? createCsvAnalysisSteps({
-        fileName: csvFileNameLocal,
-        headers: csvParseResult.headers,
-        rawData: csvParseResult.rawData,
-        mappedColumns: csvParseResult.mappedColumns,
-      }) : [];
-      
-      // If copywriting mode, DON'T open side panel yet - wait until content is ready
-      // The panel will open automatically when content threshold is reached (after generation)
-
-      // Create initial assistant message - ALWAYS include workflowSteps for ALL messages
-      const initialAssistantMessage = {
-        id: assistantMessageId,
-        content: "",
-        role: "assistant" as const,
-        timestamp: new Date(),
-        componentData: isCsvUpload ? { 
-          type: 'data_intelligence' as const, 
-          data: { insightSteps: [] } // Will be populated progressively
-        } : { 
-          type: 'email_generator_streaming' as const, 
-          data: { workflowSteps: initialWorkflowSteps } 
-        },
-      };
-      setMessages(prev => [...prev, initialAssistantMessage]);
-      
-      // SETUP TYPEWRITER: Reset and prepare for streaming
-      typewriter.reset();
+      const assistantMessageId = crypto.randomUUID();
       streamingMessageIdRef.current = assistantMessageId;
       
-      // SETUP PROGRESSIVE STEPS: Start animation for Data Intelligence if CSV upload
-      if (isCsvUpload) {
-        progressiveSteps.startAnimation(dataIntelligenceSteps);
+      // Show data intelligence for CSV analysis
+      const isCsvAnalysis = csvParseResult && csvParseResult.leads.length > 0;
+      
+      let initialComponentData: MessageComponentData | undefined;
+      if (isCsvAnalysis) {
+        const csvAnalysisSteps = createCsvAnalysisSteps(csvFileNameLocal, csvParseResult.leads.length);
+        initialComponentData = {
+          type: 'data_intelligence' as const,
+          data: { insightSteps: csvAnalysisSteps }
+        };
+        progressiveSteps.start(csvAnalysisSteps);
       }
       
-      // CRITICAL: Save immediately when AI response starts to ensure message exists in DB
-      setTimeout(() => {
-        saveConversationNow();
-        lastStreamSaveTimeRef.current = Date.now();
-      }, 100);
+      setMessages(prev => [...prev, {
+        id: assistantMessageId,
+        content: "",
+        role: "assistant",
+        timestamp: new Date(),
+        componentData: initialComponentData,
+        component: initialComponentData ? (
+          <div className="mt-4 w-full">
+            <DataIntelligence steps={progressiveSteps.visibleSteps} />
+          </div>
+        ) : undefined
+      }]);
 
-      // Track if we've started receiving content (for workflow updates)
-      let hasStartedContent = false;
-      
-      // Track if content is being suppressed (HTML/code detection)
-      let isContentSuppressed = false;
-      
-      // Raw content buffer (separate from typewriter display)
-      let rawAssistantContent = "";
-      
-      // Detect if content contains technical/HTML code that should be suppressed
-      const isTechnicalContent = (content: string): boolean => {
-        // IMPORTANT: Structured email format is NOT technical content
-        // It's readable text that should be shown to the user progressively
-        if (content.includes('NOME DO EMAIL:') || content.includes('---INÍCIO DO EMAIL---')) {
-          return false;
-        }
-        
-        // Check for HTML patterns
-        const htmlPatterns = [
-          /<!DOCTYPE/i,
-          /<html/i,
-          /<body/i,
-          /<table/i,
-          /<div\s/i,
-          /<style/i,
-          /<head/i,
-        ];
-        
-        // Check for code fence
-        if (content.includes('```html') || content.includes('```')) {
-          return true;
-        }
-        
-        // Check for high density of HTML tags
-        const tagCount = (content.match(/<[a-z]/gi) || []).length;
-        if (tagCount > 5 && content.length < 1000) {
-          return true;
-        }
-        
-        return htmlPatterns.some(p => p.test(content));
-      };
-      
-      // Get display content - show structured email progressively
-      const getDisplayContent = (content: string): string => {
-        // Check for raw HTML that should be suppressed (but NOT structured email format)
-        if (isTechnicalContent(content)) {
-          isContentSuppressed = true;
-          return 'Gerando email...';
-        }
-        
-        // For structured email format, show content progressively as it arrives
-        // Clean up markers but keep the content visible
-        let displayContent = content
-          .replace(/---INÍCIO DO EMAIL---/g, '')
-          .replace(/---FIM DO EMAIL---/g, '')
-          .trim();
-        
-        // Format nicely if we have the labels
-        if (displayContent.includes('NOME DO EMAIL:')) {
-          displayContent = displayContent
-            .replace(/NOME DO EMAIL:\s*/gi, '**Nome:** ')
-            .replace(/ASSUNTO:\s*/gi, '\n**Assunto:** ')
-            .replace(/PREHEADER:\s*/gi, '\n**Preheader:** ')
-            .replace(/CORPO:\s*/gi, '\n\n');
-        }
-        
-        return displayContent;
-      };
-      
-      // Throttled update function with conversation guard - NOW USES TYPEWRITER
-      const flushContentToUI = () => {
-        pendingUpdate = false;
-        
-        // CRITICAL: Check if this run is still active and for the correct conversation
-        if (activeRunIdRef.current !== runId || conversationIdRef.current !== targetConversationId) {
-          console.log('[DisparoView] Skipping UI update - run/conversation changed');
-          return;
-        }
-        
-        // Get raw content for processing (check if technical)
-        const isTech = isTechnicalContent(rawAssistantContent);
-        
-        if (isTech && !isContentSuppressed) {
-          isContentSuppressed = true;
-          // For technical content, show placeholder instead of typewriter
-          typewriter.reset();
-          setMessages(prev => 
-            prev.map(m => m.id === assistantMessageId 
-              ? { ...m, content: 'Gerando email...' }
-              : m
-            )
-          );
-        } else if (!isTech) {
-          // Feed content to typewriter for smooth display
-          const displayContent = getDisplayContent(rawAssistantContent);
-          typewriter.setFullContent(displayContent);
-        }
-        
-        // Update Data Intelligence steps progressively
-        if (isCsvUpload && progressiveSteps.visibleSteps.length > 0) {
-          setMessages(prev => 
-            prev.map(m => {
-              if (m.id !== assistantMessageId) return m;
-              if (m.componentData?.type !== 'data_intelligence') return m;
-              return { 
-                ...m, 
-                componentData: {
-                  ...m.componentData,
-                  data: { 
-                    ...m.componentData.data,
-                    insightSteps: progressiveSteps.visibleSteps 
-                  }
-                }
-              };
-            })
-          );
-        }
-        
-        // INCREMENTAL SAVE: Save every 3 seconds during streaming to persist partial content
-        const now = Date.now();
-        if (rawAssistantContent.length > 50 && now - lastStreamSaveTimeRef.current >= STREAM_SAVE_INTERVAL) {
-          lastStreamSaveTimeRef.current = now;
-          // Use raw content for saving (not displayed content)
-          saveConversationNow();
-        }
-      };
-
-      const scheduleUpdate = () => {
-        if (pendingUpdate) return;
-        const now = Date.now();
-        const timeSinceLastUpdate = now - lastUpdateTime;
-        
-        if (timeSinceLastUpdate >= UPDATE_INTERVAL) {
-          lastUpdateTime = now;
-          flushContentToUI();
-        } else {
-          pendingUpdate = true;
-          setTimeout(() => {
-            lastUpdateTime = Date.now();
-            flushContentToUI();
-          }, UPDATE_INTERVAL - timeSinceLastUpdate);
-        }
-      };
-
+      // Read stream
       while (true) {
+        if (abortController.signal.aborted) {
+          console.log('[DisparoView] Stream aborted - cleaning up');
+          break;
+        }
+        
+        if (activeRunIdRef.current !== runId) {
+          console.log('[DisparoView] Run ID mismatch - stopping stream');
+          break;
+        }
+        
         const { done, value } = await reader.read();
         if (done) break;
-        
-        textBuffer += decoder.decode(value, { stream: true });
 
-        // Process line-by-line
+        buffer += decoder.decode(value, { stream: true });
+
         let newlineIndex: number;
-        while ((newlineIndex = textBuffer.indexOf("\n")) !== -1) {
-          let line = textBuffer.slice(0, newlineIndex);
-          textBuffer = textBuffer.slice(newlineIndex + 1);
+        while ((newlineIndex = buffer.indexOf("\n")) !== -1) {
+          let line = buffer.slice(0, newlineIndex);
+          buffer = buffer.slice(newlineIndex + 1);
 
           if (line.endsWith("\r")) line = line.slice(0, -1);
           if (line.startsWith(":") || line.trim() === "") continue;
@@ -3489,883 +1900,370 @@ INSTRUÇÕES PARA VOCÊ (IA):
             const parsed = JSON.parse(jsonStr);
             const content = parsed.choices?.[0]?.delta?.content as string | undefined;
             if (content) {
-              rawAssistantContent += content;
-              scheduleUpdate(); // Throttled update
+              fullContent += content;
+              typewriter.feed(removeAgentPrefix(fullContent));
             }
           } catch {
-            // Incomplete JSON, put it back
-            textBuffer = line + "\n" + textBuffer;
-            break;
+            // Incomplete JSON
           }
         }
       }
 
-      // Mark streaming complete - typewriter will catch up smoothly
-      typewriter.completeStreaming();
-      
-      // Complete progressive steps animation for Data Intelligence
-      if (isCsvUpload) {
-        progressiveSteps.completeAllSteps();
-        // Update message with final completed steps
-        const finalSteps = progressiveSteps.getFinalSteps();
-        setMessages(prev => 
-          prev.map(m => {
-            if (m.id !== assistantMessageId) return m;
-            if (m.componentData?.type !== 'data_intelligence') return m;
-            return { 
-              ...m, 
-              componentData: {
-                ...m.componentData,
-                data: { 
-                  ...m.componentData.data,
-                  insightSteps: finalSteps.length > 0 ? finalSteps : dataIntelligenceSteps
-                }
-              }
-            };
-          })
-        );
-      }
-
-      // Final flush - ensure all content is displayed
-      flushContentToUI();
-
-      // Handle any remaining buffer content
-      if (textBuffer.trim()) {
-        for (let raw of textBuffer.split("\n")) {
-          if (!raw) continue;
-          if (raw.endsWith("\r")) raw = raw.slice(0, -1);
-          if (raw.startsWith(":") || raw.trim() === "") continue;
-          if (!raw.startsWith("data: ")) continue;
-          const jsonStr = raw.slice(6).trim();
-          if (jsonStr === "[DONE]") continue;
-          try {
-            const parsed = JSON.parse(jsonStr);
-            const content = parsed.choices?.[0]?.delta?.content as string | undefined;
-            if (content) {
-              rawAssistantContent += content;
-            }
-          } catch { /* ignore */ }
-        }
-        // Final flush after processing remaining buffer
-        flushContentToUI();
-      }
-      
-      // Clean up streaming state
+      // Process complete response
       streamingMessageIdRef.current = null;
+      typewriter.reset();
+      
+      if (activeRunIdRef.current !== runId) {
+        console.log('[DisparoView] Discarding stale stream result');
+        isProcessingMessageRef.current = false;
+        return;
+      }
 
-      // Process commands after streaming is complete
-      if (rawAssistantContent) {
-        // CRITICAL: Final check - ensure this run is still active for the correct conversation
-        if (activeRunIdRef.current !== runId || conversationIdRef.current !== targetConversationId) {
-          console.log('[DisparoView] Aborting post-stream processing - run/conversation changed');
-          return;
-        }
+      // Process commands and clean content
+      const { cleanContent, components, csvChanged } = await processCommands(fullContent);
+      
+      // Check for structured email format
+      const structuredEmail = extractStructuredEmail(cleanContent);
+      const promptSummary = getPromptSummary(messageContent);
+      
+      if (structuredEmail.isStructuredEmail) {
+        // Handle structured email - convert to HTML
+        setSidePanelSubject(structuredEmail.subject);
+        setSidePanelPreheader(structuredEmail.preheader);
         
-        const { cleanContent, components, csvChanged } = await processCommands(rawAssistantContent);
+        const wordCount = structuredEmail.body.split(/\s+/).length;
         
-        // If CSV was changed, trigger immediate save
-        if (csvChanged) {
-          setTimeout(() => saveConversationNow(), 100);
-        }
+        const chatDisplayContent = `**${structuredEmail.emailName || 'Email criado'}**\n\n**Assunto:** ${structuredEmail.subject}\n\n${structuredEmail.body}\n\n---\n*Gostou? Clique no card abaixo para revisar o email visual.*`;
         
-        // Check if the original message was from copywriting agent
-        const isCopywritingMode = messageContent.includes('[CONTEXT:copywriting]');
-        
-        // Re-extract prompt summary for final steps
-        const getPromptSummaryFinal = (prompt: string): string => {
-          const cleaned = prompt.replace(/\[CONTEXT:[^\]]+\]/g, '').trim();
-          const truncated = cleaned.length > 60 
-            ? cleaned.substring(0, 60).replace(/\s+\S*$/, '') + '...'
-            : cleaned;
-          return truncated || 'user request';
-        };
-        const promptSummary = getPromptSummaryFinal(messageContent);
-        
-        // ===== NEW: Check for structured email format (NOME/ASSUNTO/PREHEADER/CORPO) =====
-        const structuredEmail = extractStructuredEmail(cleanContent);
-        
-        if (structuredEmail.isStructuredEmail && structuredEmail.body) {
-          console.log('[DisparoView] Detected structured email format, converting to HTML...', {
-            emailName: structuredEmail.emailName,
+        // Generate HTML from copy
+        try {
+          setSidePanelGenerating(true);
+          const GENERATE_EMAIL_URL = `https://ytdfwkchsumgdvcroaqg.supabase.co/functions/v1/generate-email`;
+          
+          const htmlResponse = await fetch(GENERATE_EMAIL_URL, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              hasCopy: true,
+              copyText: structuredEmail.body,
+              companyName: '',
+              productService: '',
+              tone: 'profissional',
+            }),
+          });
+
+          if (!htmlResponse.ok) throw new Error("Erro ao gerar HTML do email");
+          if (!htmlResponse.body) throw new Error("No response body");
+
+          const htmlReader = htmlResponse.body.getReader();
+          const htmlDecoder = new TextDecoder();
+          let htmlBuffer = "";
+          let generatedContent = "";
+
+          while (true) {
+            const { done, value } = await htmlReader.read();
+            if (done) break;
+
+            htmlBuffer += htmlDecoder.decode(value, { stream: true });
+
+            let nlIndex: number;
+            while ((nlIndex = htmlBuffer.indexOf("\n")) !== -1) {
+              let hLine = htmlBuffer.slice(0, nlIndex);
+              htmlBuffer = htmlBuffer.slice(nlIndex + 1);
+
+              if (hLine.endsWith("\r")) hLine = hLine.slice(0, -1);
+              if (hLine.startsWith(":") || hLine.trim() === "") continue;
+              if (!hLine.startsWith("data: ")) continue;
+
+              const hJsonStr = hLine.slice(6).trim();
+              if (hJsonStr === "[DONE]") break;
+
+              try {
+                const hParsed = JSON.parse(hJsonStr);
+                const hContent = hParsed.choices?.[0]?.delta?.content as string | undefined;
+                if (hContent) {
+                  generatedContent += hContent;
+                  const { html } = extractSubjectPreheaderAndHtml(generatedContent);
+                  if (html) setSidePanelHtml(html);
+                }
+              } catch {
+                // Incomplete JSON
+              }
+            }
+          }
+
+          const { html: finalHtml } = extractSubjectPreheaderAndHtml(generatedContent);
+          
+          setSidePanelHtml(finalHtml);
+          setHtmlSource('ai');
+          setSidePanelGenerating(false);
+          setSidePanelShowCodePreview(true);
+          setSidePanelMode('email');
+          
+          // Update message with completed state
+          const emailCardData = {
+            generatedHtml: finalHtml,
             subject: structuredEmail.subject,
             preheader: structuredEmail.preheader,
-            bodyLength: structuredEmail.body.length
-          });
+            emailName: structuredEmail.emailName,
+            mode: 'email' as const
+          };
           
-          // Set the side panel metadata immediately
-          setSidePanelSubject(structuredEmail.subject);
-          setSidePanelPreheader(structuredEmail.preheader);
-          
-          // Final workflow steps for persistence
-          const wordCount = structuredEmail.body.split(/\s+/).length;
-          const completedWorkflowSteps: WorkStep[] = [
-            createCustomStep('analysis', 'Análise do contexto', 'completed', { 
-              icon: 'file',
-              description: `Parsed: "${promptSummary}"`,
-              summary: 'Extracted target audience, tone, and key messaging points from user input.'
-            }),
-            createCustomStep('generation', 'Copy criada', 'completed', { 
-              icon: 'sparkles',
-              description: `Generated ${wordCount} words`,
-              summary: 'Created persuasive email copy with AIDA structure.'
-            }),
-            createCustomStep('html', 'Convertendo para HTML...', 'in_progress', { 
-              icon: 'file',
-              description: 'Transforming copy into responsive email template'
-            }),
-          ];
-          
-          // Show a clean message in chat with the copy content (not HTML)
-          const chatDisplayContent = `**${structuredEmail.emailName || 'Email criado'}**
-
-**Assunto:** ${structuredEmail.subject}
-
-${structuredEmail.body}
-
----
-*Gostou? Clique no card abaixo para revisar o email visual.*`;
-          
-          // Update message to show copy while HTML generates
           setMessages(prev => 
             prev.map(m => {
               if (m.id !== assistantMessageId) return m;
+              
+              if (m.componentData?.type === 'data_intelligence') {
+                return { 
+                  ...m, 
+                  content: chatDisplayContent,
+                  componentData: {
+                    ...m.componentData,
+                    data: {
+                      ...m.componentData.data,
+                      emailCard: emailCardData
+                    }
+                  }
+                };
+              }
+              
               return { 
                 ...m, 
                 content: chatDisplayContent,
                 componentData: { 
                   type: 'email_generator_streaming' as const, 
                   data: { 
-                    isComplete: false, 
-                    workflowSteps: completedWorkflowSteps,
-                    emailName: structuredEmail.emailName,
-                    subject: structuredEmail.subject,
-                    preheader: structuredEmail.preheader,
-                  } 
-                }
-              };
-            })
-          );
-          
-          // Now generate HTML from the copy using generate-email function
-          try {
-            setSidePanelGenerating(true);
-            const GENERATE_EMAIL_URL = `https://ytdfwkchsumgdvcroaqg.supabase.co/functions/v1/generate-email`;
-            
-            const response = await fetch(GENERATE_EMAIL_URL, {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                hasCopy: true,
-                copyText: structuredEmail.body,
-                companyName: '',
-                productService: '',
-                tone: 'profissional',
-              }),
-            });
-
-            if (!response.ok) {
-              throw new Error("Erro ao gerar HTML do email");
-            }
-
-            if (!response.body) throw new Error("No response body");
-
-            const reader = response.body.getReader();
-            const decoder = new TextDecoder();
-            let buffer = "";
-            let generatedContent = "";
-
-            while (true) {
-              const { done, value } = await reader.read();
-              if (done) break;
-
-              buffer += decoder.decode(value, { stream: true });
-
-              let newlineIndex: number;
-              while ((newlineIndex = buffer.indexOf("\n")) !== -1) {
-                let line = buffer.slice(0, newlineIndex);
-                buffer = buffer.slice(newlineIndex + 1);
-
-                if (line.endsWith("\r")) line = line.slice(0, -1);
-                if (line.startsWith(":") || line.trim() === "") continue;
-                if (!line.startsWith("data: ")) continue;
-
-                const jsonStr = line.slice(6).trim();
-                if (jsonStr === "[DONE]") break;
-
-                try {
-                  const parsed = JSON.parse(jsonStr);
-                  const content = parsed.choices?.[0]?.delta?.content as string | undefined;
-                  if (content) {
-                    generatedContent += content;
-                    // Update side panel in real-time
-                    const { subject: subj, preheader: preh, html } = extractSubjectPreheaderAndHtml(generatedContent);
-                    if (html) setSidePanelHtml(html);
-                    // Keep our original subject/preheader from structured format (more accurate)
-                  }
-                } catch {
-                  // Incomplete JSON, continue
-                }
-              }
-            }
-
-            // Final extraction
-            const { html: finalHtml } = extractSubjectPreheaderAndHtml(generatedContent);
-            
-            setSidePanelHtml(finalHtml);
-            setHtmlSource('ai');
-            setSidePanelGenerating(false);
-            setSidePanelShowCodePreview(true);
-            setSidePanelMode('email');
-            
-            // Update completed workflow steps
-            const finalWorkflowSteps: WorkStep[] = [
-              createCustomStep('analysis', 'Análise do contexto', 'completed', { 
-                icon: 'file',
-                description: `Parsed: "${promptSummary}"`,
-                summary: 'Extracted target audience, tone, and key messaging points from user input.'
-              }),
-              createCustomStep('generation', 'Copy criada', 'completed', { 
-                icon: 'sparkles',
-                description: `Generated ${wordCount} words`,
-                summary: 'Created persuasive email copy with AIDA structure.'
-              }),
-              createCustomStep('html', 'HTML gerado', 'completed', { 
-                icon: 'file',
-                description: `${finalHtml.length} caracteres`,
-                summary: 'Responsive email template ready for review.'
-              }),
-            ];
-            
-            // Update message with completed state and generated HTML
-            // CRITICAL: Preserve data_intelligence type - merge email data into it
-            setMessages(prev => 
-              prev.map(m => {
-                if (m.id !== assistantMessageId) return m;
-                
-                const emailCardData = {
-                  generatedHtml: finalHtml,
-                  subject: structuredEmail.subject,
-                  preheader: structuredEmail.preheader,
-                  emailName: structuredEmail.emailName,
-                  mode: 'email' as const
-                };
-                
-                // If current type is data_intelligence, preserve it and add email inside
-                if (m.componentData?.type === 'data_intelligence') {
-                  return { 
-                    ...m, 
-                    content: chatDisplayContent,
-                    componentData: {
-                      ...m.componentData,
-                      data: {
-                        ...m.componentData.data,
-                        emailCard: emailCardData
-                      }
-                    }
-                  };
-                }
-                
-                // Otherwise, use email_generator_streaming type
-                return { 
-                  ...m, 
-                  content: chatDisplayContent,
-                  componentData: { 
-                    type: 'email_generator_streaming' as const, 
-                    data: { 
-                      isComplete: true, 
-                      workflowSteps: finalWorkflowSteps,
-                      ...emailCardData
-                    } 
-                  }
-                };
-              })
-            );
-            
-            logAction('ai', 'Converteu copy para HTML', `${wordCount} palavras → ${finalHtml.length} caracteres HTML`);
-            toast.success("Email HTML gerado!");
-            
-          } catch (error) {
-            console.error("[DisparoView] Error generating HTML from structured email:", error);
-            setSidePanelGenerating(false);
-            toast.error("Erro ao converter email para HTML");
-          }
-          
-          // Force save and return early - we handled the structured email
-          setTimeout(() => saveConversationNow(), 100);
-          setIsLoading(false);
-          return;
-        }
-        // ===== END: Structured email handling =====
-        
-        // Check if content is large (important copy, emails, etc.)
-        const isLargeContent = cleanContent.length > 300;
-        
-        // If copywriting mode OR large content, show in side panel (not in chat)
-        if ((isCopywritingMode || isLargeContent) && cleanContent.length > 50) {
-          // Threshold for auto-opening side panel
-          const OPEN_PANEL_THRESHOLD = 400;
-        
-        // Detect if it's HTML email content
-        const isHtmlContent = cleanContent.includes('<') && cleanContent.includes('>') && 
-          (cleanContent.includes('<html') || cleanContent.includes('<body') || 
-           cleanContent.includes('<div') || cleanContent.includes('<p') || 
-           cleanContent.includes('<h1') || cleanContent.includes('<table'));
-        
-        // Final workflow steps for persistence - with real descriptions
-        const wordCount = cleanContent.split(/\s+/).length;
-        const completedWorkflowSteps: WorkStep[] = [
-          createCustomStep('analysis', 'Análise do contexto', 'completed', { 
-            icon: 'file',
-            description: `Parsed: "${promptSummary}"`,
-            summary: 'Extracted target audience, tone, and key messaging points from user input.'
-          }),
-          createCustomStep('generation', isCopywritingMode ? 'Copy gerada' : 'Conteúdo gerado', 'completed', { 
-            icon: 'sparkles',
-            description: `Generated ${wordCount} words with persuasive structure`,
-            summary: 'Applied AIDA framework: Attention, Interest, Desire, Action. Included emotional hooks, benefits, and CTA.'
-          }),
-          createCustomStep('review', 'Pronto para revisão', 'completed', { 
-            icon: 'edit',
-            description: 'Content available in side panel for editing',
-            summary: 'You can modify the text, adjust formatting, and refine the message before sending.'
-          }),
-        ];
-        
-        // For HTML content - show in panel
-        if (isHtmlContent) {
-          // Extract subject from HTML if present
-          const { subject: extractedSubject, html: extractedHtml } = extractSubjectAndHtml(cleanContent);
-          
-          setSidePanelHtml(extractedHtml || cleanContent);
-          setSidePanelShowCodePreview(true);
-          // Preserve existing subject if we have one, otherwise use extracted
-          if (extractedSubject) {
-            setSidePanelSubject(extractedSubject);
-          }
-          // Don't auto-open panel - let user click on EmailChatCard to open it
-          setSidePanelMode('email');
-          
-          setMessages(prev => 
-            prev.map(m => {
-              if (m.id !== assistantMessageId) return m;
-              
-              // CRITICAL: Preserve data_intelligence - add email card data but keep insight steps
-              if (m.componentData?.type === 'data_intelligence') {
-                return { 
-                  ...m, 
-                  content: 'Email gerado! Visualize e edite na lateral.',
-                  componentData: {
-                    ...m.componentData,
-                    data: {
-                      ...m.componentData.data,
-                      emailCard: {
-                        generatedHtml: cleanContent,
-                        subject: extractedSubject || '',
-                        mode: 'email' as const
-                      }
-                    }
-                  }
-                };
-              }
-              
-              return { 
-                ...m, 
-                content: 'Email gerado! Visualize e edite na lateral.',
-                componentData: { 
-                  type: 'email_generator_streaming' as const, 
-                  data: { 
                     isComplete: true, 
-                    workflowSteps: completedWorkflowSteps,
-                    generatedHtml: cleanContent,
-                    subject: extractedSubject || '',
-                    mode: 'email' as const
+                    ...emailCardData
                   } 
                 }
               };
             })
           );
-        } else {
-        // For plain copy/text - SHOW IN CHAT and optionally open panel for large content
-          const shouldOpenPanel = cleanContent.length >= OPEN_PANEL_THRESHOLD;
           
-          // Extract only the clean copy (content between --- delimiters) - DEFINED OUTSIDE to use everywhere
-          const extractCleanCopy = (text: string): string => {
-            // Try to find content between --- delimiters
-            const delimiterMatch = text.match(/---\s*([\s\S]*?)\s*---/);
-            if (delimiterMatch && delimiterMatch[1].trim().length > 20) {
-              return delimiterMatch[1].trim();
-            }
-            // Fallback: remove common agent greetings and questions
-            let cleaned = text
-              // Remove greetings at the start
-              .replace(/^(Opa|Olá|Oi|Ei|Hey|E aí|Eai|Bom dia|Boa tarde|Boa noite)[,!]?\s*[^.!?\n]*[.!?]?\s*/gi, '')
-              // Remove "Beleza!", "Bora!", "Aqui está!", etc at the start
-              .replace(/^(Beleza|Bora|Aqui está|Perfeito|Pronto|Vamos lá|Feito)[,!]?\s*[^.!?\n]*[.!?]?\s*/gi, '')
-              // Remove follow-up questions at the end
-              .replace(/\s*(O que achou|Quer que eu|Posso ajustar|Se quiser|Qual tipo|Bora disparar|Pronto pra|Alguma alteração|Ficou bom)[^?]*\?[^]*$/gi, '')
-              // Remove "E aí!" style greetings
-              .replace(/^E aí[!,]?\s*/gi, '')
-              .trim();
-            return cleaned || text;
-          };
+          logAction('ai', 'Converteu copy para HTML', `${wordCount} palavras → ${finalHtml.length} caracteres HTML`);
+          toast.success("Email HTML gerado!");
           
-          if (shouldOpenPanel) {
-            const cleanCopy = extractCleanCopy(cleanContent);
-            
-            // Format with markdown support - convert **bold** and _italic_ to HTML
+        } catch (error) {
+          console.error("[DisparoView] Error generating HTML from structured email:", error);
+          setSidePanelGenerating(false);
+          toast.error("Erro ao converter email para HTML");
+        }
+        
+        setTimeout(() => saveConversationNow(), 100);
+        setIsLoading(false);
+        isProcessingMessageRef.current = false;
+        return;
+      }
+
+      // Regular content - update message
+      const finalCleanContent = removeAgentPrefix(cleanContent);
+      
+      // Check if content looks like copy/email
+      const isLargeContent = finalCleanContent.length > 300;
+      const looksLikeCopy = /\b(copy|headline|cta|oferta|venda|benefício)\b/i.test(messageContent) || finalCleanContent.length >= 200;
+      const shouldShowCard = isCopywritingMode || looksLikeCopy || isLargeContent;
+      
+      setMessages(prev => 
+        prev.map(m => {
+          if (m.id !== assistantMessageId) return m;
+          
+          if (m.componentData?.type === 'data_intelligence') {
+            return { 
+              ...m, 
+              content: finalCleanContent
+            };
+          }
+          
+          if (shouldShowCard && finalCleanContent.length > 50) {
+            const cleanCopy = extractCleanCopy(finalCleanContent);
             const formattedCopy = cleanCopy
               .replace(/\*\*([^*]+)\*\*/g, '<strong style="font-weight: 700;">$1</strong>')
               .replace(/_([^_]+)_/g, '<em style="font-style: italic;">$1</em>')
               .replace(/\n/g, '<br>');
-            
-            setSidePanelHtml(`<div style="font-family: 'Inter', Arial, sans-serif; padding: 24px; line-height: 1.9; font-size: 15px; color: #1a1a1a;">${formattedCopy}</div>`);
-            setSidePanelShowCodePreview(false);
-            setSidePanelSubject('');
-            setSidePanelPreheader('');
-            // Don't auto-open panel - let user click on EmailChatCard to open it
-            setSidePanelMode('email');
-            
-            // Log the copy generation so AI knows about it
-            const wordCount = cleanCopy.split(/\s+/).length;
-            logAction('ai', 'Criou copy de texto', `${wordCount} palavras geradas`);
-          }
-          
-          // ALWAYS apply extractCleanCopy filter for panel content (fixes persistence issue)
-          const cleanCopyForPanel = extractCleanCopy(cleanContent);
-          const formattedCopyForPanel = cleanCopyForPanel
-            .replace(/\*\*([^*]+)\*\*/g, '<strong style="font-weight: 700;">$1</strong>')
-            .replace(/_([^_]+)_/g, '<em style="font-style: italic;">$1</em>')
-            .replace(/\n/g, '<br>');
-          const copyHtmlForPanel = `<div style="font-family: 'Inter', Arial, sans-serif; padding: 24px; line-height: 1.9; font-size: 15px; color: #1a1a1a;">${formattedCopyForPanel}</div>`;
-
-          // Detect if content looks like a copy (sales page, email, persuasive text, etc.)
-          const looksLikeCopy = /\b(copy|headline|cta|oferta|venda|benefício|urgência|escassez|gatilho|persuasivo|landing\s*page|página\s*de\s*(vendas?|captura)|headline|subheadline|call.to.action)\b/i.test(userMessage.content || '') ||
-            cleanContent.length >= 200;
-
-          // Create card when in copywriting mode, when content looks like copy, or when large content
-          const shouldShowCard = isCopywritingMode || looksLikeCopy || shouldOpenPanel;
-          const finalCopyHtmlForPanel = shouldShowCard ? copyHtmlForPanel : '';
-          const cardTitle = shouldShowCard ? 'Copy gerada' : '';
-          
-          setMessages(prev => 
-            prev.map(m => {
-              if (m.id !== assistantMessageId) return m;
-              
-              // CRITICAL: Preserve data_intelligence - don't overwrite with copy data
-              if (m.componentData?.type === 'data_intelligence') {
-                return { 
-                  ...m, 
-                  content: cleanContent
-                };
-              }
-              
-              return { 
-                ...m, 
-                content: cleanContent,
-                componentData: { 
-                  type: 'email_generator_streaming' as const, 
-                  data: { 
-                    isComplete: true, 
-                    workflowSteps: completedWorkflowSteps,
-                    generatedHtml: finalCopyHtmlForPanel,
-                    subject: cardTitle,
-                    mode: 'copy' as const
-                  } 
-                }
-              };
-            })
-          );
-        }
-        
-        // Turn off generating state
-        setSidePanelGenerating(false);
-        setIsLoading(false);
-        
-        // Force immediate save after streaming completes
-        setTimeout(() => {
-          saveConversationNow();
-        }, 100);
-        return;
-      }
-        
-        // Check if user chose "Lista do CRM" - auto-show origins table
-        const lowerMessage = messageContent.toLowerCase();
-        const mentionsList = lowerMessage.includes('lista') || lowerMessage.includes('list');
-        const mentionsCsv = lowerMessage.includes('csv') || lowerMessage.includes('arquivo');
-        const mentionsCRM = lowerMessage.includes('crm') || lowerMessage.includes('cadastrada') || lowerMessage.includes('sistema');
-
-        const userChoseCRM = (
-          (mentionsList && mentionsCRM) ||
-          lowerMessage.includes('lista do crm') ||
-          (mentionsList && !mentionsCsv) ||
-          lowerMessage.trim() === 'crm'
-        );
-        
-        console.log("User message:", messageContent);
-        console.log("userChoseCRM detection:", userChoseCRM);
-        
-        let finalComponents = components;
-        let originsData: any = null;
-        
-        if (userChoseCRM && components.length === 0) {
-          // Auto-fetch origins and show table
-          console.log("Auto-fetching origins...");
-          try {
-            const originsResponse = await fetch(CHAT_URL, {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ command: 'LIST_ORIGINS' }),
-            });
-            
-            console.log("Origins response status:", originsResponse.status);
-            
-            if (originsResponse.ok) {
-              const originsResult = await originsResponse.json();
-              console.log("Origins result:", originsResult);
-              if (originsResult.type === 'origins') {
-                originsData = originsResult.data;
-                finalComponents = [
-                  <OriginsListComponent 
-                    key={`origins-${Date.now()}`}
-                    origins={originsResult.data}
-                    onSelect={handleOriginSelect}
-                  />
-                ];
-              }
-            }
-          } catch (error) {
-            console.error("Error auto-fetching origins:", error);
-          }
-        }
-        
-        // NOTE: Auto-dispatch detection removed - dispatch only happens when user explicitly confirms
-        // The dispatch flow requires the user to explicitly ask to send
-        
-        // Determine componentData based on what was shown
-        // For non-copywriting messages, include completed workflow steps
-        const simpleCompletedSteps: WorkStep[] = [
-          createCustomStep('analysis', 'Resposta gerada', 'completed', { 
-            icon: 'sparkles',
-            description: `Parsed: "${promptSummary}"`
-          }),
-        ];
-        
-        let componentData: MessageComponentData | undefined;
-        if (originsData) {
-          componentData = {
-            type: 'origins_list',
-            data: { origins: originsData, workflowSteps: simpleCompletedSteps }
-          };
-        } else {
-          // For regular messages, preserve workflowSteps as completed
-          componentData = {
-            type: 'email_generator_streaming',
-            data: { isComplete: true, workflowSteps: simpleCompletedSteps }
-          };
-        }
-        
-        setMessages(prev => 
-          prev.map(m => {
-            if (m.id !== assistantMessageId) return m;
-            
-            // CRITICAL: Preserve data_intelligence - never overwrite it, keep all data including insightSteps
-            if (m.componentData?.type === 'data_intelligence') {
-              return { 
-                ...m, 
-                content: cleanContent,
-                componentData: {
-                  ...m.componentData,
-                  data: { ...m.componentData.data }
-                },
-                component: finalComponents.length > 0 ? (
-                  <div className="mt-4 space-y-4">
-                    {finalComponents}
-                  </div>
-                ) : undefined
-              };
-            }
+            const copyHtml = `<div style="font-family: 'Inter', Arial, sans-serif; padding: 24px; line-height: 1.9; font-size: 15px; color: #1a1a1a;">${formattedCopy}</div>`;
             
             return { 
               ...m, 
-              content: cleanContent,
-              componentData,
-              component: finalComponents.length > 0 ? (
-                <div className="mt-4 space-y-4">
-                  {finalComponents}
-                </div>
-              ) : undefined
+              content: finalCleanContent,
+              componentData: { 
+                type: 'email_generator_streaming' as const, 
+                data: { 
+                  isComplete: true, 
+                  generatedHtml: copyHtml,
+                  subject: 'Copy gerada',
+                  mode: 'copy' as const
+                } 
+              }
             };
-          })
-        );
-        
-        // Force immediate save after streaming completes for ALL messages
-        setTimeout(() => {
-          saveConversationNow();
-        }, 150);
+          }
+          
+          return { ...m, content: finalCleanContent };
+        })
+      );
+      
+      // Add any command components
+      if (components.length > 0) {
+        setMessages(prev => {
+          const lastMsg = prev[prev.length - 1];
+          if (lastMsg?.id === assistantMessageId) {
+            return prev.map(m => 
+              m.id === assistantMessageId 
+                ? { ...m, component: <>{components}</> }
+                : m
+            );
+          }
+          return prev;
+        });
       }
-
-    } catch (error) {
-      console.error("Error calling Grok:", error);
-      toast.error(error instanceof Error ? error.message : "Erro ao conectar com o Grok");
-      // Remove the empty assistant message if there was an error
-      setMessages(prev => prev.filter(m => m.content.trim() !== ""));
-    } finally {
+      
+      progressiveSteps.stop();
+      setSidePanelGenerating(false);
       setIsLoading(false);
       isProcessingMessageRef.current = false;
+      
+      setTimeout(() => saveConversationNow(), 100);
+
+    } catch (error: any) {
+      if (error.name === 'AbortError') {
+        console.log('[DisparoView] Request aborted');
+      } else {
+        console.error("Error sending message:", error);
+        toast.error(error.message || "Erro ao enviar mensagem");
+      }
+      setIsLoading(false);
+      isProcessingMessageRef.current = false;
+      progressiveSteps.stop();
     }
   };
 
-  // Handle new conversation - reset ALL state
-  const handleNewConversation = useCallback(() => {
-    // Abort any active request to prevent stale responses
-    if (activeAbortRef.current) {
-      activeAbortRef.current.abort();
-      activeAbortRef.current = null;
-    }
-    activeRunIdRef.current = null;
-    activeRunConversationIdRef.current = null;
-    
-    // Clear processing locks
-    isProcessingMessageRef.current = false;
-    isCreatingConversationRef.current = false;
-    isSavingRef.current = false;
-    lastStreamSaveTimeRef.current = 0;
-    
-    // Clear refs
-    conversationIdRef.current = null;
-    messagesRef.current = [];
-    lastSavedSignatureRef.current = '';
-    skipNextUrlLoadRef.current = null;
-    
-    // Clear state
-    setCurrentConversationId(null);
-    setMessages([]);
-    setCsvLeads(null);
-    setActiveJobId(null);
-    setSidePanelOpen(false);
-    setSidePanelRestoredFromDB(false);
-    setSidePanelHtml('');
-    setSidePanelSubject('');
-    setSidePanelPreheader('');
-    setSidePanelContext(null);
-    setSidePanelGenerating(false);
-    setSidePanelEditing(false);
-    setSidePanelWorkflowSteps([]);
-    setSidePanelShowCodePreview(true);
-    setSidePanelTitle(undefined);
-    setSidePanelMode('email');
-    setSidePanelDispatchData(null);
-    setSelectedOriginData(null);
-    setDispatchType(null);
-    setActionHistory([]);
-    setHtmlSource(null);
-    setPendingEmailContext(null);
-    setPendingQuestion(null);
-    setCsvPanelOpen(false);
-    setIsLoading(false);
-    setInitialLoadDone(true);
-    
-    // Navigate to disparo without conversation param - use navigate for reliable navigation
-    navigate('/disparo', { replace: true });
-  }, [navigate]);
+  // Computed busy state
+  const isBusy = isLoading || sidePanelGenerating;
 
-  // Handle conversation created (auto-save)
-  const handleConversationCreated = useCallback((id: string) => {
-    conversationIdRef.current = id;
-    setCurrentConversationId(id);
-  }, []);
-
-  const hasMessages = messages.length > 0;
-  const isBusy = isLoading || isConversationLoading;
-  const showConversationLoading = isConversationLoading && !hasMessages;
-
+  // Render
   return (
-    <div className="flex-1 flex h-full bg-background overflow-hidden p-3 gap-3">
-      {/* Chat area - styled as a block */}
-      <div className="flex-1 flex flex-col h-full min-w-0 bg-white rounded-2xl border border-[#00000010] overflow-hidden">
-        {/* When no messages, center the input */}
-        {!hasMessages ? (
-          showConversationLoading ? (
-            <div className="flex-1 flex flex-col items-center justify-center p-6 px-8">
-              <img src={disparoLogo} alt="Logo" className="w-10 h-10 mb-3" />
-              <span className="text-sm text-muted-foreground">Instante...</span>
+    <div className="flex h-full bg-background p-3 gap-3">
+      {/* Chat Area */}
+      <div className={cn(
+        "flex flex-col bg-white rounded-2xl border border-[#00000010] overflow-hidden transition-all duration-300",
+        sidePanelOpen || csvPanelOpen ? "flex-1 min-w-0" : "flex-1"
+      )}>
+        {/* Loading state */}
+        {isConversationLoading ? (
+          <div className="flex-1 flex items-center justify-center">
+            <div className="flex items-center gap-3 text-muted-foreground">
+              <img src={disparoLogo} alt="" className="w-5 h-5 animate-pulse" />
+              <span className="text-sm">Instante...</span>
             </div>
-          ) : (
-            <div className="flex-1 flex items-center justify-center p-6 px-8">
-              <div className="w-full max-w-3xl relative">
-                {/* Animated header: logo rises from center, moves to side passing over text area */}
-                <div className="text-center mb-8">
-                  <div className="flex items-center justify-center gap-3 relative">
-                    <motion.img 
-                      src={disparoLogo} 
-                      alt="Logo" 
-                      className="w-10 h-10"
-                      initial={{ y: 150, x: 140, opacity: 0, rotate: -360 }}
-                      animate={{ y: 0, x: 0, opacity: 1, rotate: 0 }}
-                      transition={{ 
-                        y: { duration: 0.6, ease: [0.22, 1, 0.36, 1] },
-                        x: { duration: 0.5, delay: 0.5, ease: [0.22, 1, 0.36, 1] },
-                        opacity: { duration: 0.3 },
-                        rotate: { duration: 1, ease: [0.22, 1, 0.36, 1] }
-                      }}
-                    />
-                    <motion.h2 
-                      className="text-3xl font-semibold text-foreground whitespace-nowrap overflow-hidden"
-                      initial={{ 
-                        clipPath: "inset(0 100% 0 0)",
-                        opacity: 0
-                      }}
-                      animate={{ 
-                        clipPath: "inset(0 0% 0 0)",
-                        opacity: 1
-                      }}
-                      transition={{ 
-                        delay: 0.75,
-                        duration: 0.5,
-                        ease: [0.22, 1, 0.36, 1]
-                      }}
-                    >
-                      Hey, ready to get started?
-                    </motion.h2>
-                  </div>
-                </div>
-                {/* Input appears smoothly */}
-                <motion.div
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ 
-                    delay: 0.3,
-                    duration: 0.6,
-                    ease: [0.22, 1, 0.36, 1]
-                  }}
-                >
-                  <PromptInputBox
-                    onSend={handleSend}
-                    isLoading={isBusy}
-                    placeholder="Digite sua mensagem aqui..."
-                  />
-                  <motion.p 
-                    className="text-xs text-muted-foreground text-center mt-3"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ delay: 0.7, duration: 0.4 }}
-                  >
-                    A Scale pode cometer erros. Confira informações importantes.
-                  </motion.p>
-                </motion.div>
-              </div>
-            </div>
-          )
+          </div>
         ) : (
           <>
-            {/* Chat messages area */}
+            {/* Messages area */}
             <div 
-              ref={chatScrollRef} 
-              onScroll={handleChatScroll} 
-              className="flex-1 overflow-y-auto min-h-0 p-6 px-8 overscroll-contain [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
-              style={{ 
-                scrollBehavior: 'auto',
-                WebkitOverflowScrolling: 'touch',
-                scrollbarGutter: 'stable',
-                willChange: 'scroll-position'
-              }}
+              ref={chatScrollRef}
+              onScroll={handleChatScroll}
+              className="flex-1 overflow-y-auto px-8 py-6 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
             >
               <div className={cn(
-                "mx-auto space-y-4 transition-all duration-300",
-                sidePanelOpen ? "max-w-3xl" : "max-w-5xl"
+                "mx-auto space-y-6 transition-all duration-300",
+                sidePanelOpen ? "max-w-4xl" : "max-w-5xl"
               )}>
+                {/* Empty state */}
+                {messages.length === 0 && (
+                  <div className="flex flex-col items-center justify-center h-[calc(100vh-300px)] text-center">
+                    <img src={disparoLogo} alt="Disparo" className="w-12 h-12 mb-4 opacity-60" />
+                    <h2 className="text-lg font-medium text-foreground mb-2">Central de Disparo</h2>
+                    <p className="text-sm text-muted-foreground max-w-md">
+                      Envie emails em massa com facilidade. Faça upload de um CSV ou selecione uma lista do CRM para começar.
+                    </p>
+                  </div>
+                )}
+                
+                {/* Messages */}
                 {messages.map((msg) => (
                   <div
                     key={msg.id}
                     className={cn(
-                      "flex flex-col",
+                      "flex flex-col w-full",
                       msg.role === "user" ? "items-end" : "items-start"
                     )}
                   >
-                  {msg.role === "user" ? (
-                      <div className="w-fit max-w-full">
-                        {/* CSV Preview Card */}
-                        {msg.componentData?.type === 'csv_preview' && (
-                          <CsvChatCard
-                            fileName={msg.componentData.data.fileName}
-                            totalRows={msg.componentData.data.totalRows}
-                            columns={msg.componentData.data.columns}
-                            previewData={msg.componentData.data.previewData}
-                            mappedColumns={msg.componentData.data.mappedColumns}
-                            onOpenPanel={() => setCsvPanelOpen(true)}
+                    {msg.role === "user" ? (
+                      <div className="flex flex-col items-end gap-2 w-full">
+                        {msg.imageUrl && (
+                          <img 
+                            src={msg.imageUrl} 
+                            alt="Uploaded" 
+                            className="max-w-xs rounded-lg shadow-sm"
                           />
                         )}
-                        {/* Regular user message */}
-                        {(!msg.componentData || msg.componentData.type !== 'csv_preview' || msg.content) && (
-                          <div className="bg-white text-foreground px-5 py-4 rounded-2xl border border-[#00000010]">
-                            {/* Show image if present */}
-                            {msg.imageUrl && (
-                              <div className="mb-3">
-                                <img 
-                                  src={msg.imageUrl} 
-                                  alt="Imagem enviada" 
-                                  className="max-w-full max-h-64 rounded-lg object-contain"
-                                />
-                              </div>
-                            )}
-                            {msg.content && (
-                              <p className="text-[15px] leading-relaxed whitespace-pre-wrap">{removeAgentPrefix(msg.content)}</p>
-                            )}
+                        {msg.componentData?.type === 'csv_preview' ? (
+                          <div className="w-full max-w-md">
+                            {reconstructMessageComponent(msg.componentData, msg.id)}
+                          </div>
+                        ) : msg.content && (
+                          <div className="bg-foreground text-background px-4 py-2.5 rounded-2xl rounded-tr-md max-w-[85%]">
+                            <p className="text-sm whitespace-pre-wrap">{stripInternalContext(msg.content)}</p>
                           </div>
                         )}
                       </div>
                     ) : (
-                      <div className="w-full group">
-                        {/* AI Work Details - show workflow steps from msg.componentData (persisted) */}
-                        {msg.componentData?.type === 'email_generator_streaming' && 
-                         msg.componentData?.data?.workflowSteps && 
-                         Array.isArray(msg.componentData.data.workflowSteps) &&
-                         msg.componentData.data.workflowSteps.length > 0 && (
-                          <motion.div 
-                            initial={{ opacity: 0, y: 10 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ duration: 0.3, delay: 0.1 }}
-                            className="mb-3"
-                          >
-                            <AIWorkDetails steps={msg.componentData.data.workflowSteps as WorkStep[]} />
-                          </motion.div>
+                      <div className="flex flex-col items-start gap-1 w-full">
+                        {/* Data Intelligence component */}
+                        {msg.componentData?.type === 'data_intelligence' && msg.componentData.data?.insightSteps && (
+                          <div className="w-full mb-3">
+                            <DataIntelligence 
+                              steps={streamingMessageIdRef.current === msg.id 
+                                ? progressiveSteps.visibleSteps 
+                                : msg.componentData.data.insightSteps
+                              } 
+                            />
+                          </div>
                         )}
-                        {/* Message content first */}
+                        
+                        {/* Message content */}
                         {msg.content && (
-                          <div>
-                            <p className="text-[15px] leading-relaxed whitespace-pre-wrap text-foreground">
-                              {formatMessageContent(msg.content)}
-                            </p>
+                          <div className="text-foreground text-sm whitespace-pre-wrap">
+                            {formatMessageContent(msg.content)}
                           </div>
                         )}
-                        {/* Data Intelligence - appears BELOW message content, only when there's visible text */}
-                        {msg.componentData?.type === 'data_intelligence' && 
-                         msg.componentData?.data?.insightSteps && 
-                         Array.isArray(msg.componentData.data.insightSteps) &&
-                         msg.componentData.data.insightSteps.length > 0 && 
-                         msg.content && msg.content.replace(/\s/g, '').length > 0 && (
-                          <div className="mt-3">
-                            <DataIntelligence steps={msg.componentData.data.insightSteps as InsightStep[]} />
-                          </div>
-                        )}
-                        {/* Email card - shows when there's HTML content in this message */}
-                        {msg.componentData?.type === 'email_generator_streaming' && msg.componentData?.data?.generatedHtml && (
-                          <div className="mt-3">
+                        
+                        {/* Email card */}
+                        {msg.componentData?.type === 'data_intelligence' && msg.componentData.data?.emailCard?.generatedHtml && (
+                          <div className="mt-3 w-full">
                             <EmailChatCard
-                              subject={msg.componentData?.data?.subject || "Email Template"}
-                              previewHtml={msg.componentData?.data?.generatedHtml}
-                              chatName={msg.componentData?.data?.subject || "Email gerado"}
-                              createdAt={msg.timestamp instanceof Date ? msg.timestamp : undefined}
+                              title={msg.componentData.data.emailCard.emailName || msg.componentData.data.emailCard.subject || 'Email gerado'}
+                              subtitle={msg.componentData.data.emailCard.subject ? `Assunto: ${msg.componentData.data.emailCard.subject}` : 'Clique para revisar'}
+                              onClick={() => {
+                                const data = msg.componentData?.data?.emailCard;
+                                if (data) {
+                                  const cleanHtml = extractCleanCopy(data.generatedHtml);
+                                  setSidePanelHtml(cleanHtml);
+                                  setSidePanelSubject(data.subject || '');
+                                  setSidePanelPreheader(data.preheader || '');
+                                  setSidePanelMode(data.mode || 'email');
+                                  setSidePanelShowCodePreview(true);
+                                  setSidePanelOpen(true);
+                                }
+                              }}
+                            />
+                          </div>
+                        )}
+                        
+                        {/* Streaming email card */}
+                        {msg.componentData?.type === 'email_generator_streaming' && msg.componentData.data?.generatedHtml && msg.componentData.data?.isComplete && (
+                          <div className="mt-3 w-full">
+                            <EmailChatCard
+                              title={msg.componentData.data.emailName || msg.componentData.data.subject || 'Copy gerada'}
+                              subtitle={msg.componentData.data.subject ? `Assunto: ${msg.componentData.data.subject}` : 'Clique para revisar'}
                               onClick={() => {
                                 const data = msg.componentData?.data;
-                                if (data?.generatedHtml) {
-                                  setSidePanelHtml(data.generatedHtml);
+                                if (data) {
+                                  const cleanHtml = extractCleanCopy(data.generatedHtml);
+                                  setSidePanelHtml(cleanHtml);
                                   setSidePanelSubject(data.subject || '');
-                                  setSidePanelMode('email');
-                                  setSidePanelShowCodePreview(true);
-                                  setSidePanelOpen(true);
-                                } else {
-                                  setSidePanelMode('email');
+                                  setSidePanelPreheader(data.preheader || '');
+                                  setSidePanelMode(data.mode || 'email');
                                   setSidePanelShowCodePreview(true);
                                   setSidePanelOpen(true);
                                 }
@@ -4373,35 +2271,15 @@ ${structuredEmail.body}
                             />
                           </div>
                         )}
-                        {/* Email card for data_intelligence type (CSV upload + email generation) */}
-                        {msg.componentData?.type === 'data_intelligence' && 
-                         msg.componentData?.data?.emailCard?.generatedHtml && (
-                          <div className="mt-3">
-                            <EmailChatCard
-                              subject={msg.componentData?.data?.emailCard?.subject || "Email Template"}
-                              previewHtml={msg.componentData?.data?.emailCard?.generatedHtml}
-                              chatName={msg.componentData?.data?.emailCard?.emailName || msg.componentData?.data?.emailCard?.subject || "Email gerado"}
-                              createdAt={msg.timestamp instanceof Date ? msg.timestamp : undefined}
-                              onClick={() => {
-                                const emailData = msg.componentData?.data?.emailCard;
-                                if (emailData?.generatedHtml) {
-                                  setSidePanelHtml(emailData.generatedHtml);
-                                  setSidePanelSubject(emailData.subject || '');
-                                  setSidePanelPreheader(emailData.preheader || '');
-                                  setSidePanelMode('email');
-                                  setSidePanelShowCodePreview(true);
-                                  setSidePanelOpen(true);
-                                }
-                              }}
-                            />
-                          </div>
-                        )}
+                        
+                        {/* Other components */}
                         {msg.component && (
-                          <div className="w-full mt-4">
+                          <div className="w-full">
                             {msg.component}
                           </div>
                         )}
-                        {/* Action icons for AI messages */}
+                        
+                        {/* Action icons */}
                         {msg.content && (
                           <div className="flex items-center gap-0.5 mt-2">
                             <FeedbackButton 
@@ -4419,6 +2297,8 @@ ${structuredEmail.body}
                     )}
                   </div>
                 ))}
+                
+                {/* Loading indicator */}
                 {isLoading && messages[messages.length - 1]?.role !== "assistant" && (
                   <div className="flex items-center gap-2 text-muted-foreground text-sm">
                     <span className="relative overflow-hidden">
@@ -4431,7 +2311,7 @@ ${structuredEmail.body}
               </div>
             </div>
 
-            {/* AI Chat Input - fixed at bottom */}
+            {/* Input area */}
             <div className="p-6 px-8 pt-0">
               <div className={cn(
                 "mx-auto transition-all duration-300",
@@ -4451,7 +2331,7 @@ ${structuredEmail.body}
         )}
       </div>
       
-      {/* Email Side Panel - animated section alongside chat */}
+      {/* Side Panels */}
       <AnimatePresence mode="wait">
         {sidePanelOpen && (
           <motion.div
@@ -4462,7 +2342,6 @@ ${structuredEmail.body}
             transition={{ type: "spring", damping: 25, stiffness: 200 }}
             className="overflow-hidden h-full"
             onAnimationComplete={() => {
-              // Reset restored flag after first animation so future opens animate
               if (sidePanelRestoredFromDB) setSidePanelRestoredFromDB(false);
             }}
           >
@@ -4482,15 +2361,29 @@ ${structuredEmail.body}
               panelTitle={sidePanelTitle}
               forcePreviewTab={!sidePanelGenerating && !sidePanelEditing && sidePanelHtml.length > 0}
               dispatchJobId={activeJobId}
-              onDispatchCommand={handleCommand}
+              onDispatchCommand={async (command: string) => {
+                try {
+                  const response = await fetch(CHAT_URL, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ command, conversationId: conversationIdRef.current }),
+                  });
+                  if (!response.ok) throw new Error("Command failed");
+                  const result = await response.json();
+                  if (result.type === 'dispatch_updated') {
+                    toast.success(`Disparo ${result.data.status === 'paused' ? 'pausado' : result.data.status === 'running' ? 'retomado' : 'cancelado'}`);
+                  }
+                } catch (error) {
+                  console.error("Error executing command:", error);
+                  toast.error("Erro ao executar comando");
+                }
+              }}
               onClose={() => setSidePanelOpen(false)}
               onSave={() => {
-                // Persist by triggering a save and showing toast
                 saveConversationNow();
                 toast.success('Email salvo!');
               }}
               onNewDispatch={() => {
-                // Reset side panel to email mode and clear dispatch data
                 setSidePanelMode('email');
                 setSidePanelDispatchData(null);
                 setSidePanelWorkflowSteps([]);
@@ -4502,14 +2395,12 @@ ${structuredEmail.body}
                 setSidePanelTitle(undefined);
               }}
               onViewEmail={() => {
-                // Switch back to email view mode
                 setSidePanelMode('email');
               }}
             />
           </motion.div>
         )}
         
-        {/* CSV Side Panel */}
         {csvPanelOpen && csvLeads && csvLeads.length > 0 && (
           <motion.div
             key="csv-panel"
@@ -4529,680 +2420,6 @@ ${structuredEmail.body}
           </motion.div>
         )}
       </AnimatePresence>
-      
     </div>
-  );
-}
-
-// Component to display origins list with grouped selection
-function OriginsListComponent({ origins, onSelect }: { origins: Origin[]; onSelect?: (subOriginId: string, subOriginName: string, originName: string) => void }) {
-  const [selectedOriginId, setSelectedOriginId] = useState<string | null>(null);
-  const [selectedSubOriginId, setSelectedSubOriginId] = useState<string | null>(null);
-
-  const selectedOrigin = origins.find(o => o.id === selectedOriginId);
-
-  const handleOriginSelect = (originId: string) => {
-    setSelectedOriginId(originId);
-    setSelectedSubOriginId(null);
-  };
-
-  const handleSubOriginSelect = (subOrigin: { id: string; nome: string }, originName: string) => {
-    setSelectedSubOriginId(subOrigin.id);
-    onSelect?.(subOrigin.id, subOrigin.nome, originName);
-  };
-
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      className="my-4 space-y-3"
-    >
-      {/* Step 1: Select Origin */}
-      <div className="text-sm text-muted-foreground mb-2">Selecione a origem:</div>
-      <div className="flex flex-wrap gap-2">
-        {origins.map(origin => (
-          <button
-            key={origin.id}
-            onClick={() => handleOriginSelect(origin.id)}
-            className={cn(
-              "px-3 py-1.5 rounded-lg text-sm transition-colors",
-              selectedOriginId === origin.id
-                ? "bg-primary text-primary-foreground"
-                : "bg-muted hover:bg-muted/80 text-foreground"
-            )}
-          >
-            {origin.nome}
-          </button>
-        ))}
-      </div>
-
-      {/* Step 2: Select Sub-Origin */}
-      {selectedOrigin && (
-        <motion.div
-          initial={{ opacity: 0, height: 0 }}
-          animate={{ opacity: 1, height: 'auto' }}
-          className="mt-3"
-        >
-          <div className="text-sm text-muted-foreground mb-2">Selecione a lista:</div>
-          <div className="flex flex-wrap gap-2">
-            {selectedOrigin.crm_sub_origins.map(sub => (
-              <button
-                key={sub.id}
-                onClick={() => handleSubOriginSelect(sub, selectedOrigin.nome)}
-                className={cn(
-                  "px-3 py-1.5 rounded-lg text-sm transition-colors",
-                  selectedSubOriginId === sub.id
-                    ? "bg-green-500 text-white"
-                    : "bg-muted hover:bg-muted/80 text-foreground"
-                )}
-              >
-                {sub.nome}
-              </button>
-            ))}
-          </div>
-        </motion.div>
-      )}
-    </motion.div>
-  );
-}
-
-// Component to display leads preview - Clean compact format
-function LeadsPreviewComponent({ preview }: { preview: LeadsPreview }) {
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      className="bg-card border border-border rounded-xl p-4 my-4"
-    >
-      <h3 className="font-medium text-foreground mb-3">
-        📊 Leads para Disparo
-      </h3>
-      
-      <div className="grid grid-cols-2 gap-4 mb-4">
-        <div className="bg-muted/50 rounded-lg p-3 text-center">
-          <div className="text-2xl font-bold text-foreground">{preview.totalLeads}</div>
-          <div className="text-xs text-muted-foreground">Total de leads</div>
-        </div>
-        <div className="bg-muted/50 rounded-lg p-3 text-center">
-          <div className="text-2xl font-bold text-green-500">{preview.validLeads}</div>
-          <div className="text-xs text-muted-foreground">
-            {preview.dispatchType === 'email' ? 'Com email válido' : 'Com WhatsApp válido'}
-          </div>
-        </div>
-      </div>
-
-      {preview.invalidLeads > 0 && (
-        <div className="text-sm text-yellow-600 mb-3">
-          ⚠️ {preview.invalidLeads} leads sem {preview.dispatchType === 'email' ? 'email válido' : 'WhatsApp válido'}
-        </div>
-      )}
-
-      <div className="space-y-2 text-sm mb-4">
-        <div className="flex justify-between">
-          <span className="text-muted-foreground">Lista:</span>
-          <span className="text-foreground font-medium">{preview.originName} → {preview.subOriginName}</span>
-        </div>
-        <div className="flex justify-between">
-          <span className="text-muted-foreground">Tipo:</span>
-          <span className="text-foreground">{preview.dispatchType === 'email' ? '📧 Email' : '📱 WhatsApp'}</span>
-        </div>
-        <div className="flex justify-between">
-          <span className="text-muted-foreground">Intervalo:</span>
-          <span className="text-foreground">{preview.intervalSeconds}s entre envios</span>
-        </div>
-        <div className="flex justify-between">
-          <span className="text-muted-foreground">Tempo estimado:</span>
-          <span className="text-foreground">~{preview.estimatedMinutes} min</span>
-        </div>
-      </div>
-
-      {/* Sample of first leads */}
-      {preview.leads && preview.leads.length > 0 && (
-        <div className="border-t border-border pt-3">
-          <div className="text-xs text-muted-foreground mb-2">
-            Primeiros leads ({Math.min(5, preview.leads.length)} de {preview.validLeads}):
-          </div>
-          <div className="space-y-1.5">
-            {preview.leads.slice(0, 5).map((lead, i) => (
-              <div key={i} className="flex items-center justify-between text-sm bg-muted/30 px-2 py-1.5 rounded">
-                <span className="font-medium text-foreground truncate max-w-[140px]">{lead.name}</span>
-                <span className="text-muted-foreground text-xs truncate max-w-[160px]">{lead.contact}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-    </motion.div>
-  );
-}
-
-
-// Compact feedback button with modern icons
-function FeedbackButton({ 
-  icon, 
-  onClick,
-  active = false 
-}: { 
-  icon: 'copy' | 'like' | 'dislike'; 
-  onClick?: () => void;
-  active?: boolean;
-}) {
-  const [copied, setCopied] = React.useState(false);
-
-  const handleClick = () => {
-    if (icon === 'copy') {
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    }
-    onClick?.();
-  };
-
-  const iconMap = {
-    copy: copied ? (
-      <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-        <polyline points="20 6 9 17 4 12" />
-      </svg>
-    ) : (
-      <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
-        <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
-      </svg>
-    ),
-    like: (
-      <svg className="w-3 h-3" viewBox="0 0 24 24" fill={active ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3" />
-      </svg>
-    ),
-    dislike: (
-      <svg className="w-3 h-3" viewBox="0 0 24 24" fill={active ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M10 15v4a3 3 0 0 0 3 3l4-9V2H5.72a2 2 0 0 0-2 1.7l-1.38 9a2 2 0 0 0 2 2.3zm7-13h2.67A2.31 2.31 0 0 1 22 4v7a2.31 2.31 0 0 1-2.33 2H17" />
-      </svg>
-    )
-  };
-
-  return (
-    <button
-      onClick={handleClick}
-      className={cn(
-        "p-1 rounded transition-colors",
-        copied ? "text-green-500" : "text-muted-foreground/60 hover:text-muted-foreground hover:bg-muted/50"
-      )}
-    >
-      {iconMap[icon]}
-    </button>
-  );
-}
-
-// Simple syntax highlighting for HTML
-function highlightHtml(code: string): React.ReactNode[] {
-  if (!code) return [];
-  
-  const result: React.ReactNode[] = [];
-  let remaining = code;
-  let key = 0;
-  
-  // Regex patterns for HTML syntax with vibrant colors
-  const patterns = [
-    { regex: /(&lt;!--[\s\S]*?--&gt;|<!--[\s\S]*?-->)/g, className: 'text-gray-400 italic' }, // Comments
-    { regex: /(&lt;\/?[a-zA-Z][a-zA-Z0-9]*|<\/?[a-zA-Z][a-zA-Z0-9]*)/g, className: 'text-rose-500' }, // Tags
-    { regex: /(&gt;|>)/g, className: 'text-rose-500' }, // Closing brackets
-    { regex: /(\{\{[^}]+\}\})/g, className: 'text-emerald-500 font-semibold bg-emerald-500/10 px-0.5 rounded' }, // Template variables
-    { regex: /("[^"]*"|'[^']*')/g, className: 'text-sky-500' }, // Strings
-    { regex: /(\s[a-zA-Z-]+)(?==)/g, className: 'text-amber-500' }, // Attributes
-  ];
-  
-  // Simple approach: split by lines and apply highlighting
-  const lines = code.split('\n');
-  
-  return lines.map((line, lineIndex) => {
-    let processedLine = line;
-    const elements: React.ReactNode[] = [];
-    
-    // Process the line for each pattern
-    let lastIndex = 0;
-    const matches: { start: number; end: number; text: string; className: string }[] = [];
-    
-    patterns.forEach(({ regex, className }) => {
-      const lineRegex = new RegExp(regex.source, 'g');
-      let match;
-      while ((match = lineRegex.exec(line)) !== null) {
-        matches.push({
-          start: match.index,
-          end: match.index + match[0].length,
-          text: match[0],
-          className
-        });
-      }
-    });
-    
-    // Sort matches by start position
-    matches.sort((a, b) => a.start - b.start);
-    
-    // Remove overlapping matches
-    const filteredMatches: typeof matches = [];
-    for (const match of matches) {
-      if (filteredMatches.length === 0 || match.start >= filteredMatches[filteredMatches.length - 1].end) {
-        filteredMatches.push(match);
-      }
-    }
-    
-    // Build elements
-    let currentPos = 0;
-    filteredMatches.forEach((match, i) => {
-      if (match.start > currentPos) {
-        elements.push(<span key={`${lineIndex}-text-${i}`}>{line.slice(currentPos, match.start)}</span>);
-      }
-      elements.push(<span key={`${lineIndex}-match-${i}`} className={match.className}>{match.text}</span>);
-      currentPos = match.end;
-    });
-    
-    if (currentPos < line.length) {
-      elements.push(<span key={`${lineIndex}-end`}>{line.slice(currentPos)}</span>);
-    }
-    
-    if (elements.length === 0) {
-      elements.push(<span key={`${lineIndex}-empty`}>{line || ' '}</span>);
-    }
-    
-    return (
-      <div key={lineIndex} className="min-h-[1.5em]">
-        {elements}
-      </div>
-    );
-  });
-}
-
-// Shared component for editing generated HTML with tabs
-function EmailEditorWithTabs({
-  html,
-  isGenerating,
-  onHtmlChange,
-  onRegenerate,
-  onUse
-}: {
-  html: string;
-  isGenerating: boolean;
-  onHtmlChange: (html: string) => void;
-  onRegenerate?: () => void;
-  onUse: () => void;
-}) {
-  const [activeTab, setActiveTab] = useState<'code' | 'preview'>('preview');
-
-  const getSanitizedHtml = () => {
-    return html
-      .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
-      .replace(/on\w+="[^"]*"/gi, '')
-      .replace(/on\w+='[^']*'/gi, '');
-  };
-
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      className="w-full space-y-4"
-    >
-      <div className="rounded-xl border border-border/40 overflow-hidden">
-        {/* Header with tabs */}
-        <div className="px-4 py-2.5 bg-muted/80 border-b border-border/40 flex items-center justify-between">
-          <div className="flex items-center gap-1">
-            {isGenerating && (
-              <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse mr-2" />
-            )}
-            <button
-              onClick={() => setActiveTab('code')}
-              className={cn(
-                "px-3 py-1.5 rounded-lg text-xs font-medium transition-colors",
-                activeTab === 'code'
-                  ? "bg-background text-foreground shadow-sm"
-                  : "text-muted-foreground hover:text-foreground hover:bg-background/50"
-              )}
-            >
-              Código
-            </button>
-            <button
-              onClick={() => setActiveTab('preview')}
-              className={cn(
-                "px-3 py-1.5 rounded-lg text-xs font-medium transition-colors",
-                activeTab === 'preview'
-                  ? "bg-background text-foreground shadow-sm"
-                  : "text-muted-foreground hover:text-foreground hover:bg-background/50"
-              )}
-            >
-              Preview
-            </button>
-          </div>
-          {!isGenerating && html && onRegenerate && (
-            <button
-              onClick={onRegenerate}
-              className="text-xs text-muted-foreground hover:text-foreground transition-colors"
-            >
-              Gerar novamente
-            </button>
-          )}
-        </div>
-        
-        {/* Content area */}
-        <div className="min-h-[300px] max-h-[400px] overflow-auto">
-          {activeTab === 'code' ? (
-            <textarea
-              value={html}
-              onChange={(e) => onHtmlChange(e.target.value)}
-              className="w-full h-full min-h-[300px] p-4 bg-background text-sm font-mono text-foreground resize-none focus:outline-none"
-              placeholder="HTML do email..."
-              disabled={isGenerating}
-            />
-          ) : (
-            <div className="bg-white p-4">
-              {html ? (
-                <div 
-                  className="prose prose-sm max-w-none"
-                  dangerouslySetInnerHTML={{ __html: getSanitizedHtml() }}
-                />
-              ) : (
-                <div className="flex items-center justify-center h-[280px] text-muted-foreground text-sm">
-                  <div className="flex items-center gap-2">
-                    <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                    <span>Iniciando geração...</span>
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Use email button */}
-      {!isGenerating && html && (
-        <div className="flex justify-end">
-          <button
-            onClick={onUse}
-            className={cn(
-              "px-5 py-2.5 rounded-lg text-sm font-medium transition-colors",
-              "bg-foreground text-background hover:bg-foreground/90"
-            )}
-          >
-            Usar este email
-          </button>
-        </div>
-      )}
-    </motion.div>
-  );
-}
-
-// Note: EmailChoiceComponent, CopyChoiceComponent, and CopyInputComponent removed
-// Questions are now handled as plain text in the chat flow
-
-// Component for generating HTML from existing copy with streaming
-function CopyToHtmlGenerator({ 
-  copyText,
-  companyName,
-  productService,
-  onGenerated 
-}: { 
-  copyText: string;
-  companyName: string;
-  productService: string;
-  onGenerated: (html: string) => void;
-}) {
-  const [generatedHtml, setGeneratedHtml] = useState('');
-  const [isGenerating, setIsGenerating] = useState(true);
-
-  const GENERATE_EMAIL_URL = `https://ytdfwkchsumgdvcroaqg.supabase.co/functions/v1/generate-email`;
-
-  useEffect(() => {
-    const generateHtml = async () => {
-      try {
-        const response = await fetch(GENERATE_EMAIL_URL, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            hasCopy: true,
-            copyText,
-            companyName,
-            productService
-          }),
-        });
-
-        if (!response.ok) {
-          const errorData = await response.json().catch(() => ({}));
-          throw new Error(errorData.error || "Erro ao gerar HTML");
-        }
-
-        if (!response.body) throw new Error("No response body");
-
-        const reader = response.body.getReader();
-        const decoder = new TextDecoder();
-        let buffer = "";
-        let fullContent = "";
-
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-
-          buffer += decoder.decode(value, { stream: true });
-
-          let newlineIndex: number;
-          while ((newlineIndex = buffer.indexOf("\n")) !== -1) {
-            let line = buffer.slice(0, newlineIndex);
-            buffer = buffer.slice(newlineIndex + 1);
-
-            if (line.endsWith("\r")) line = line.slice(0, -1);
-            if (line.startsWith(":") || line.trim() === "") continue;
-            if (!line.startsWith("data: ")) continue;
-
-            const jsonStr = line.slice(6).trim();
-            if (jsonStr === "[DONE]") break;
-
-            try {
-              const parsed = JSON.parse(jsonStr);
-              const content = parsed.choices?.[0]?.delta?.content as string | undefined;
-              if (content) {
-                fullContent += content;
-                setGeneratedHtml(fullContent);
-              }
-            } catch {
-              // Incomplete JSON, continue
-            }
-          }
-        }
-
-        // Clean up the HTML
-        let cleanHtml = fullContent
-          .replace(/^```html\n?/i, '')
-          .replace(/^```\n?/, '')
-          .replace(/\n?```$/i, '')
-          .trim();
-
-        setGeneratedHtml(cleanHtml);
-        setIsGenerating(false);
-        toast.success("HTML do email gerado!");
-
-      } catch (error) {
-        console.error("Error generating HTML:", error);
-        toast.error(error instanceof Error ? error.message : "Erro ao gerar HTML");
-        setIsGenerating(false);
-      }
-    };
-
-    generateHtml();
-  }, [copyText, companyName, productService]);
-
-  const handleUseEmail = () => {
-    if (generatedHtml.trim()) {
-      onGenerated(generatedHtml);
-    }
-  };
-
-  return (
-    <EmailEditorWithTabs
-      html={generatedHtml}
-      isGenerating={isGenerating}
-      onHtmlChange={setGeneratedHtml}
-      onUse={handleUseEmail}
-    />
-  );
-}
-
-// Component for HTML/message input - Modern code editor with syntax highlighting and preview
-function HtmlEditorComponent({ onSubmit, initialContent = '' }: { onSubmit: (html: string) => void; initialContent?: string }) {
-  const [content, setContent] = useState(initialContent);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [activeTab, setActiveTab] = useState<'code' | 'preview'>(initialContent ? 'preview' : 'code');
-  const textareaRef = React.useRef<HTMLTextAreaElement>(null);
-  const preRef = React.useRef<HTMLPreElement>(null);
-
-  // Update content when initialContent changes
-  React.useEffect(() => {
-    if (initialContent) {
-      setContent(initialContent);
-      setActiveTab('preview');
-    }
-  }, [initialContent]);
-
-  const handleSubmit = () => {
-    if (!content.trim()) {
-      toast.error("Por favor, insira o conteúdo do email");
-      return;
-    }
-    setIsSubmitting(true);
-    onSubmit(content);
-  };
-
-  const handleCopy = () => {
-    navigator.clipboard.writeText(content);
-    toast.success("Copiado!");
-  };
-
-  // Sync scroll between textarea and pre
-  const handleScroll = (e: React.UIEvent<HTMLTextAreaElement>) => {
-    if (preRef.current) {
-      preRef.current.scrollTop = e.currentTarget.scrollTop;
-      preRef.current.scrollLeft = e.currentTarget.scrollLeft;
-    }
-  };
-
-  // Handle keyboard shortcut to submit
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
-      e.preventDefault();
-      handleSubmit();
-    }
-  };
-
-  // Basic HTML sanitization for preview (removes script tags)
-  const getSanitizedHtml = () => {
-    return content
-      .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
-      .replace(/on\w+="[^"]*"/gi, '')
-      .replace(/on\w+='[^']*'/gi, '');
-  };
-
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      className="w-full"
-    >
-      <div className="w-full">
-        <div className="text-xs text-muted-foreground mb-2 text-left">
-          Template do Email · Use <code className="bg-muted px-1 py-0.5 rounded text-xs text-foreground">{"{{name}}"}</code> para personalizar
-        </div>
-        
-        {/* Code editor container */}
-        <div className="rounded-xl overflow-hidden border border-border/40 shadow-sm bg-muted/50">
-          {/* Header bar with tabs */}
-          <div className="flex items-center justify-between px-4 py-2.5 bg-muted/80 border-b border-border/40">
-            <div className="flex items-center gap-1">
-              <button
-                onClick={() => setActiveTab('code')}
-                className={cn(
-                  "px-3 py-1.5 rounded-lg text-xs font-medium transition-colors",
-                  activeTab === 'code'
-                    ? "bg-background text-foreground shadow-sm"
-                    : "text-muted-foreground hover:text-foreground hover:bg-background/50"
-                )}
-              >
-                Código
-              </button>
-              <button
-                onClick={() => setActiveTab('preview')}
-                className={cn(
-                  "px-3 py-1.5 rounded-lg text-xs font-medium transition-colors",
-                  activeTab === 'preview'
-                    ? "bg-background text-foreground shadow-sm"
-                    : "text-muted-foreground hover:text-foreground hover:bg-background/50"
-                )}
-              >
-                Preview
-              </button>
-            </div>
-            <button 
-              onClick={handleCopy}
-              className="text-xs text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1.5"
-            >
-              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-              </svg>
-              Copiar
-            </button>
-          </div>
-          
-          {/* Content area */}
-          {activeTab === 'code' ? (
-            /* Editor with syntax highlighting overlay */
-            <div className="relative min-h-[280px]">
-              {/* Highlighted code display */}
-              <pre
-                ref={preRef}
-                className="absolute inset-0 p-5 font-mono text-sm text-foreground pointer-events-none overflow-auto whitespace-pre-wrap break-words"
-                aria-hidden="true"
-              >
-                {content ? highlightHtml(content) : (
-                  <span className="text-muted-foreground">
-                    {`Cole aqui o HTML do email...
-
-Exemplo:
-<h1>Olá {{name}}!</h1>
-<p>Temos uma oferta especial.</p>
-
-Cmd/Ctrl + Enter para enviar`}
-                  </span>
-                )}
-              </pre>
-              
-              {/* Actual textarea for input */}
-              <textarea
-                ref={textareaRef}
-                value={content}
-                onChange={(e) => setContent(e.target.value)}
-                onScroll={handleScroll}
-                onKeyDown={handleKeyDown}
-                className="relative w-full min-h-[280px] p-5 bg-transparent font-mono text-sm text-transparent caret-foreground focus:outline-none resize-y"
-                spellCheck={false}
-              />
-            </div>
-          ) : (
-            /* Preview area */
-            <div className="min-h-[280px] p-5 bg-white overflow-auto">
-              {content.trim() ? (
-                <div 
-                  className="prose prose-sm max-w-none"
-                  dangerouslySetInnerHTML={{ __html: getSanitizedHtml() }}
-                />
-              ) : (
-                <div className="flex items-center justify-center h-[240px] text-muted-foreground text-sm">
-                  Digite o HTML na aba "Código" para visualizar aqui
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-        
-        {/* Info message */}
-        <p className="text-xs text-muted-foreground mt-3 text-center">
-          Quando quiser enviar, é só falar que vou preparar o envio
-        </p>
-      </div>
-    </motion.div>
   );
 }
