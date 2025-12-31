@@ -1207,6 +1207,9 @@ serve(async (req) => {
     const isCodeRequest = detectCodeRequest(messages);
     const isCsvRequest = detectCsvRequest(messages);
     const isMetricsRequest = detectMetricsRequest(messages);
+    
+    // Use OpenAI API key
+    const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY');
 
     // Fetch metrics data if user is asking about email metrics
     let metricsData = null;
@@ -1351,19 +1354,19 @@ serve(async (req) => {
 
     console.log("Chat mode:", { activeAgent, hasImage, isCodeRequest, isCsvRequest, isMetricsRequest, isContentCreation });
 
-    // Use vision model when there's an image
-    const model = hasImage ? "grok-2-vision-1212" : "grok-3-fast";
-    console.log("Using model:", model);
-    console.log("Calling Grok API with messages count:", messages.length);
+    // Use GPT-5 model - gpt-5-2025-08-07 for vision (supports images) and gpt-5-mini for regular chat
+    const model = hasImage ? "gpt-5-2025-08-07" : "gpt-5-mini-2025-08-07";
+    console.log("Using OpenAI model:", model);
+    console.log("Calling OpenAI API with messages count:", messages.length);
 
     // Determine max tokens based on mode
     const isCopywritingMode = activeAgent === 'copywriting';
-    const maxTokens = hasImage ? 1000 : (isCopywritingMode || isContentCreation ? 2000 : 500);
+    const maxCompletionTokens = hasImage ? 1000 : (isCopywritingMode || isContentCreation ? 2000 : 500);
 
-    const response = await fetch("https://api.x.ai/v1/chat/completions", {
+    const response = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
       headers: {
-        "Authorization": `Bearer ${XAI_API_KEY}`,
+        "Authorization": `Bearer ${OPENAI_API_KEY}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
@@ -1373,14 +1376,13 @@ serve(async (req) => {
           ...messages,
         ],
         stream: true,
-        temperature: isCopywritingMode ? 0.7 : 0.5, // More creativity for copywriting
-        max_tokens: maxTokens,
+        max_completion_tokens: maxCompletionTokens,
       }),
     });
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error("Grok API error:", response.status, errorText);
+      console.error("OpenAI API error:", response.status, errorText);
       
       if (response.status === 429) {
         return new Response(JSON.stringify({ error: "Limite de requisições excedido. Tente novamente mais tarde." }), {
@@ -1390,13 +1392,13 @@ serve(async (req) => {
       }
       
       if (response.status === 402) {
-        return new Response(JSON.stringify({ error: "Créditos insuficientes na API do Grok." }), {
+        return new Response(JSON.stringify({ error: "Créditos insuficientes na API do OpenAI." }), {
           status: 402,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
       
-      return new Response(JSON.stringify({ error: "Erro ao conectar com o Grok" }), {
+      return new Response(JSON.stringify({ error: "Erro ao conectar com o OpenAI" }), {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
