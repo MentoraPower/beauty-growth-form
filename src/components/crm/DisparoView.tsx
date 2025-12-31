@@ -2394,11 +2394,18 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
               </div>
             </div>
 
-            {/* Input area */}
-            <div className="p-6 px-8 pt-0">
+            {/* Input area - centered when empty */}
+            <div className={cn(
+              "px-8 transition-all duration-300",
+              messages.length === 0 
+                ? "absolute inset-0 flex items-center justify-center pointer-events-none" 
+                : "p-6 pt-0"
+            )}>
               <div className={cn(
-                "mx-auto transition-all duration-300",
-                sidePanelOpen ? "max-w-4xl" : "max-w-5xl"
+                "mx-auto transition-all duration-300 pointer-events-auto",
+                messages.length === 0 
+                  ? "w-full max-w-xl mt-32" 
+                  : sidePanelOpen ? "max-w-4xl" : "max-w-5xl"
               )}>
                 <PromptInputBox
                   onSend={handleSend}
