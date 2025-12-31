@@ -418,14 +418,20 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
     conversationIdRef.current = currentConversationId;
   }, [currentConversationId]);
 
-  // TYPEWRITER SYNC
+  // TYPEWRITER SYNC - update message content from typewriter
+  const lastTypewriterContentRef = useRef('');
   useEffect(() => {
     const messageId = streamingMessageIdRef.current;
-    if (!messageId || !typewriter.displayedContent) return;
+    if (!messageId) return;
+    
+    const newContent = typewriter.displayedContent;
+    // Only update if content actually changed
+    if (newContent === lastTypewriterContentRef.current) return;
+    lastTypewriterContentRef.current = newContent;
     
     setMessages(prev => 
       prev.map(m => 
-        m.id === messageId ? { ...m, content: typewriter.displayedContent } : m
+        m.id === messageId ? { ...m, content: newContent } : m
       )
     );
   }, [typewriter.displayedContent]);
@@ -1907,7 +1913,8 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
             const content = parsed.choices?.[0]?.delta?.content as string | undefined;
             if (content) {
               fullContent += content;
-              typewriter.appendContent(content);
+              // Apply cleanup and use setFullContent with the entire cleaned content
+              typewriter.setFullContent(removeAgentPrefix(fullContent));
             }
           } catch {
             // Incomplete JSON
@@ -1917,6 +1924,7 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
 
       // Process complete response
       streamingMessageIdRef.current = null;
+      lastTypewriterContentRef.current = '';
       typewriter.reset();
       
       if (activeRunIdRef.current !== runId) {
