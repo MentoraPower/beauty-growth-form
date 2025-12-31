@@ -17,6 +17,8 @@ const REALTIME_TABLES = [
   'calendar_appointments',
   'lead_activities',
   'pipelines',
+  'dispatch_conversations',
+  'dispatch_jobs',
 ];
 
 class RealtimeService {
