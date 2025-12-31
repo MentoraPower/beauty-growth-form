@@ -2227,60 +2227,37 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
               )}>
                 {/* Empty state with animated entrance */}
                 {messages.length === 0 && (
-                  <>
-                    {/* Full-screen logo splash */}
-                    <motion.div
-                      className="fixed inset-0 z-50 flex items-center justify-center pointer-events-none"
-                      initial={{ opacity: 1 }}
-                      animate={{ opacity: 0 }}
-                      transition={{ duration: 0.4, delay: 1.2 }}
+                  <motion.div 
+                    className="flex flex-col items-center justify-center h-[calc(100vh-300px)] text-center gap-4"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ duration: 0.3 }}
+                  >
+                    <motion.img 
+                      src={disparoLogo} 
+                      alt="Disparo" 
+                      className="w-12 h-12"
+                      initial={{ opacity: 0, scale: 0.5, rotate: -360 }}
+                      animate={{ opacity: 1, scale: 1, rotate: 0 }}
+                      transition={{ 
+                        duration: 1, 
+                        ease: [0.16, 1, 0.3, 1],
+                        rotate: { duration: 1, ease: "easeOut" }
+                      }}
+                    />
+                    <motion.h2 
+                      className="text-3xl font-medium text-foreground"
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ 
+                        duration: 0.6, 
+                        delay: 0.6,
+                        ease: [0.16, 1, 0.3, 1]
+                      }}
                     >
-                      <motion.img 
-                        src={disparoLogo} 
-                        alt="Disparo" 
-                        className="w-32 h-32"
-                        initial={{ scale: 3, rotate: -360, opacity: 1 }}
-                        animate={{ scale: 1, rotate: 0, opacity: 1 }}
-                        transition={{ 
-                          duration: 1.2, 
-                          ease: [0.16, 1, 0.3, 1],
-                        }}
-                      />
-                    </motion.div>
-                    
-                    {/* Content that appears after splash */}
-                    <motion.div 
-                      className="flex flex-col items-center justify-center h-[calc(100vh-300px)] text-center gap-4"
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      transition={{ duration: 0.5, delay: 1.2 }}
-                    >
-                      <motion.img 
-                        src={disparoLogo} 
-                        alt="Disparo" 
-                        className="w-12 h-12"
-                        initial={{ opacity: 0, scale: 0.8 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        transition={{ 
-                          duration: 0.4, 
-                          delay: 1.2,
-                          ease: [0.16, 1, 0.3, 1]
-                        }}
-                      />
-                      <motion.h2 
-                        className="text-3xl font-medium text-foreground"
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ 
-                          duration: 0.6, 
-                          delay: 1.4,
-                          ease: [0.16, 1, 0.3, 1]
-                        }}
-                      >
-                        Hey, ready to get started?
-                      </motion.h2>
-                    </motion.div>
-                  </>
+                      Hey, ready to get started?
+                    </motion.h2>
+                  </motion.div>
                 )}
                 
                 {/* Messages */}
