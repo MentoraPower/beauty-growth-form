@@ -671,10 +671,10 @@ export const PromptInputBox = React.forwardRef((props: PromptInputBoxProps, ref:
               </button>
             </PromptInputAction>
 
-            {/* Model selector dropdown */}
-            <div ref={dropdownRef} className="relative">
+            {/* Model selector dropdown - aligned to corner */}
+            <div ref={dropdownRef} className="relative ml-auto">
               <div 
-                className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-none border cursor-pointer hover:bg-gray-50"
+                className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md border cursor-pointer hover:bg-gray-50"
                 style={{ borderColor: '#00000010' }}
                 onClick={() => setModelDropdownOpen(!modelDropdownOpen)}
               >
