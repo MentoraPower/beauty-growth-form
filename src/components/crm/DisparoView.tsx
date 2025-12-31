@@ -2225,15 +2225,39 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
                 "mx-auto space-y-6 transition-all duration-300",
                 sidePanelOpen ? "max-w-4xl" : "max-w-5xl"
               )}>
-                {/* Empty state */}
+                {/* Empty state with animated entrance */}
                 {messages.length === 0 && (
-                  <div className="flex flex-col items-center justify-center h-[calc(100vh-300px)] text-center">
-                    <img src={disparoLogo} alt="Disparo" className="w-12 h-12 mb-4 opacity-60" />
-                    <h2 className="text-lg font-medium text-foreground mb-2">Central de Disparo</h2>
-                    <p className="text-sm text-muted-foreground max-w-md">
-                      Envie emails em massa com facilidade. Faça upload de um CSV ou selecione uma lista do CRM para começar.
-                    </p>
-                  </div>
+                  <motion.div 
+                    className="flex flex-col items-center justify-center h-[calc(100vh-300px)] text-center gap-3"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ duration: 0.3 }}
+                  >
+                    <motion.img 
+                      src={disparoLogo} 
+                      alt="Disparo" 
+                      className="w-10 h-10"
+                      initial={{ opacity: 0, y: 150, x: 140, rotate: -360 }}
+                      animate={{ opacity: 1, y: 0, x: 0, rotate: 0 }}
+                      transition={{ 
+                        duration: 1.2, 
+                        ease: [0.16, 1, 0.3, 1],
+                        rotate: { duration: 1.2, ease: "easeOut" }
+                      }}
+                    />
+                    <motion.h2 
+                      className="text-3xl font-medium text-foreground"
+                      initial={{ opacity: 0, clipPath: "inset(0 100% 0 0)" }}
+                      animate={{ opacity: 1, clipPath: "inset(0 0% 0 0)" }}
+                      transition={{ 
+                        duration: 0.8, 
+                        delay: 0.75,
+                        ease: [0.16, 1, 0.3, 1]
+                      }}
+                    >
+                      Hey, ready to get started?
+                    </motion.h2>
+                  </motion.div>
                 )}
                 
                 {/* Messages */}
