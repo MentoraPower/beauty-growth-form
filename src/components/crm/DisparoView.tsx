@@ -683,8 +683,9 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
             {insightSteps && <DataIntelligence steps={insightSteps} />}
             {emailCard && emailCard.generatedHtml && (
               <EmailChatCard
-                title={emailCard.emailName || emailCard.subject || 'Email gerado'}
-                subtitle={emailCard.subject ? `Assunto: ${emailCard.subject}` : 'Clique para revisar'}
+                subject={emailCard.subject || 'Email gerado'}
+                chatName={emailCard.emailName || 'Email'}
+                previewHtml={emailCard.generatedHtml}
                 onClick={() => {
                   const cleanCopy = extractCleanCopy(emailCard.generatedHtml);
                   setSidePanelHtml(cleanCopy);
@@ -1846,12 +1847,17 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
       
       let initialComponentData: MessageComponentData | undefined;
       if (isCsvAnalysis) {
-        const csvAnalysisSteps = createCsvAnalysisSteps(csvFileNameLocal, csvParseResult.leads.length);
+        const csvAnalysisSteps = createCsvAnalysisSteps({
+          fileName: csvFileNameLocal,
+          headers: csvParseResult.headers,
+          rawData: csvParseResult.rawData,
+          mappedColumns: csvParseResult.mappedColumns
+        });
         initialComponentData = {
           type: 'data_intelligence' as const,
           data: { insightSteps: csvAnalysisSteps }
         };
-        progressiveSteps.start(csvAnalysisSteps);
+        progressiveSteps.startAnimation(csvAnalysisSteps);
       }
       
       setMessages(prev => [...prev, {
@@ -1901,7 +1907,7 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
             const content = parsed.choices?.[0]?.delta?.content as string | undefined;
             if (content) {
               fullContent += content;
-              typewriter.feed(removeAgentPrefix(fullContent));
+              typewriter.appendContent(content);
             }
           } catch {
             // Incomplete JSON
@@ -2117,7 +2123,7 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
         });
       }
       
-      progressiveSteps.stop();
+      progressiveSteps.completeAllSteps();
       setSidePanelGenerating(false);
       setIsLoading(false);
       isProcessingMessageRef.current = false;
@@ -2133,7 +2139,7 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
       }
       setIsLoading(false);
       isProcessingMessageRef.current = false;
-      progressiveSteps.stop();
+      progressiveSteps.completeAllSteps();
     }
   };
 
@@ -2232,8 +2238,9 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
                         {msg.componentData?.type === 'data_intelligence' && msg.componentData.data?.emailCard?.generatedHtml && (
                           <div className="mt-3 w-full">
                             <EmailChatCard
-                              title={msg.componentData.data.emailCard.emailName || msg.componentData.data.emailCard.subject || 'Email gerado'}
-                              subtitle={msg.componentData.data.emailCard.subject ? `Assunto: ${msg.componentData.data.emailCard.subject}` : 'Clique para revisar'}
+                              subject={msg.componentData.data.emailCard.subject || 'Email gerado'}
+                              chatName={msg.componentData.data.emailCard.emailName || 'Email'}
+                              previewHtml={msg.componentData.data.emailCard.generatedHtml}
                               onClick={() => {
                                 const data = msg.componentData?.data?.emailCard;
                                 if (data) {
@@ -2254,8 +2261,9 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
                         {msg.componentData?.type === 'email_generator_streaming' && msg.componentData.data?.generatedHtml && msg.componentData.data?.isComplete && (
                           <div className="mt-3 w-full">
                             <EmailChatCard
-                              title={msg.componentData.data.emailName || msg.componentData.data.subject || 'Copy gerada'}
-                              subtitle={msg.componentData.data.subject ? `Assunto: ${msg.componentData.data.subject}` : 'Clique para revisar'}
+                              subject={msg.componentData.data.subject || 'Copy gerada'}
+                              chatName={msg.componentData.data.emailName || 'Copy'}
+                              previewHtml={msg.componentData.data.generatedHtml}
                               onClick={() => {
                                 const data = msg.componentData?.data;
                                 if (data) {
