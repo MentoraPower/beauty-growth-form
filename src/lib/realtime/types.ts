@@ -13,7 +13,9 @@ export type RealtimeDomain =
   | 'calendar'
   | 'presence'
   | 'activities'
-  | 'pipelines';
+  | 'pipelines'
+  | 'dispatchConversations'
+  | 'dispatchJobs';
 
 // Event priority levels
 export type EventPriority = 'critical' | 'high' | 'normal' | 'low';
@@ -137,6 +139,38 @@ export interface UserPresence {
   currentPage?: string;
 }
 
+// Dispatch-specific types
+export interface DispatchConversation {
+  id: string;
+  title: string;
+  messages: unknown;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface DispatchJob {
+  id: string;
+  type: string;
+  status: string;
+  total_leads: number;
+  valid_leads: number;
+  sent_count: number;
+  failed_count: number;
+  current_lead_name: string | null;
+  conversation_id: string | null;
+  csv_list_id: string | null;
+  sub_origin_id: string | null;
+  origin_name: string | null;
+  sub_origin_name: string | null;
+  message_template: string | null;
+  interval_seconds: number;
+  started_at: string | null;
+  completed_at: string | null;
+  error_log: unknown;
+  created_at: string;
+  updated_at: string;
+}
+
 // Store slice types
 export interface MessagesSlice {
   byId: Record<string, WhatsAppMessage>;
@@ -177,6 +211,20 @@ export interface MetricsSlice {
   data: Record<string, unknown>;
 }
 
+// Dispatch slices
+export interface DispatchConversationsSlice {
+  byId: Record<string, DispatchConversation>;
+  allIds: string[];
+  sortedIds: string[]; // Sorted by updated_at
+}
+
+export interface DispatchJobsSlice {
+  byId: Record<string, DispatchJob>;
+  byConversationId: Record<string, string[]>; // conversation_id -> job ids
+  allIds: string[];
+  activeJobIds: string[]; // Jobs with status 'processing' or 'pending'
+}
+
 // Global real-time store state
 export interface RealtimeStoreState {
   // Connection state
@@ -196,6 +244,10 @@ export interface RealtimeStoreState {
   activities: ActivitiesSlice;
   presence: PresenceSlice;
   metrics: MetricsSlice;
+  
+  // Dispatch slices
+  dispatchConversations: DispatchConversationsSlice;
+  dispatchJobs: DispatchJobsSlice;
 }
 
 // Store actions
@@ -235,6 +287,15 @@ export interface RealtimeStoreActions {
   
   updatePresence: (presence: UserPresence) => void;
   removePresence: (userId: string) => void;
+  
+  // Dispatch actions
+  setDispatchConversations: (conversations: DispatchConversation[]) => void;
+  upsertDispatchConversation: (conversation: DispatchConversation) => void;
+  deleteDispatchConversation: (id: string) => void;
+  
+  setDispatchJobs: (jobs: DispatchJob[]) => void;
+  upsertDispatchJob: (job: DispatchJob) => void;
+  deleteDispatchJob: (id: string) => void;
   
   // Reset
   reset: () => void;

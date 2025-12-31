@@ -13,6 +13,8 @@ import type {
   Lead,
   CalendarAppointment,
   LeadActivity,
+  DispatchConversation,
+  DispatchJob,
 } from './types';
 
 // Table to domain mapping
@@ -24,6 +26,8 @@ const TABLE_DOMAIN_MAP: Record<string, RealtimeDomain> = {
   lead_activities: 'activities',
   pipelines: 'pipelines',
   lead_tracking: 'activities',
+  dispatch_conversations: 'dispatchConversations',
+  dispatch_jobs: 'dispatchJobs',
 };
 
 // Table to priority mapping
@@ -34,13 +38,8 @@ const TABLE_PRIORITY_MAP: Record<string, EventPriority> = {
   calendar_appointments: 'normal',
   lead_activities: 'normal',
   pipelines: 'low',
-};
-
-/**
- * Generate unique event ID
- */
-const generateEventId = (table: string, entityId: string, eventType: string): string => {
-  return `${table}_${entityId}_${eventType}_${Date.now()}`;
+  dispatch_conversations: 'normal',
+  dispatch_jobs: 'high', // High priority for job status updates
 };
 
 /**
@@ -99,6 +98,11 @@ const getBatchKey = (payload: SupabaseRealtimePayload): string | undefined => {
   // Group leads by pipeline_id
   if (payload.table === 'leads') {
     return `pipeline_${(data as Lead)?.pipeline_id}`;
+  }
+  
+  // Group dispatch jobs by conversation_id
+  if (payload.table === 'dispatch_jobs') {
+    return `dispatch_conv_${(data as DispatchJob)?.conversation_id}`;
   }
   
   return undefined;
@@ -225,6 +229,59 @@ export const normalizeActivity = (data: unknown): LeadActivity | null => {
     pipeline_id: act.pipeline_id ? String(act.pipeline_id) : null,
     created_at: String(act.created_at || new Date().toISOString()),
     updated_at: String(act.updated_at || new Date().toISOString()),
+  };
+};
+
+/**
+ * Validate and type-check dispatch conversation payload
+ */
+export const normalizeDispatchConversation = (data: unknown): DispatchConversation | null => {
+  if (!data || typeof data !== 'object') return null;
+  
+  const conv = data as Record<string, unknown>;
+  
+  if (!conv.id) return null;
+  
+  return {
+    id: String(conv.id),
+    title: String(conv.title || 'Nova conversa'),
+    messages: conv.messages || [],
+    created_at: String(conv.created_at || new Date().toISOString()),
+    updated_at: String(conv.updated_at || new Date().toISOString()),
+  };
+};
+
+/**
+ * Validate and type-check dispatch job payload
+ */
+export const normalizeDispatchJob = (data: unknown): DispatchJob | null => {
+  if (!data || typeof data !== 'object') return null;
+  
+  const job = data as Record<string, unknown>;
+  
+  if (!job.id) return null;
+  
+  return {
+    id: String(job.id),
+    type: String(job.type || 'email'),
+    status: String(job.status || 'pending'),
+    total_leads: typeof job.total_leads === 'number' ? job.total_leads : 0,
+    valid_leads: typeof job.valid_leads === 'number' ? job.valid_leads : 0,
+    sent_count: typeof job.sent_count === 'number' ? job.sent_count : 0,
+    failed_count: typeof job.failed_count === 'number' ? job.failed_count : 0,
+    current_lead_name: job.current_lead_name ? String(job.current_lead_name) : null,
+    conversation_id: job.conversation_id ? String(job.conversation_id) : null,
+    csv_list_id: job.csv_list_id ? String(job.csv_list_id) : null,
+    sub_origin_id: job.sub_origin_id ? String(job.sub_origin_id) : null,
+    origin_name: job.origin_name ? String(job.origin_name) : null,
+    sub_origin_name: job.sub_origin_name ? String(job.sub_origin_name) : null,
+    message_template: job.message_template ? String(job.message_template) : null,
+    interval_seconds: typeof job.interval_seconds === 'number' ? job.interval_seconds : 5,
+    started_at: job.started_at ? String(job.started_at) : null,
+    completed_at: job.completed_at ? String(job.completed_at) : null,
+    error_log: job.error_log || [],
+    created_at: String(job.created_at || new Date().toISOString()),
+    updated_at: String(job.updated_at || new Date().toISOString()),
   };
 };
 
