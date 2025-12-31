@@ -806,7 +806,8 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
       activeRunConversationIdRef.current = null;
       isProcessingMessageRef.current = false;
       isCreatingConversationRef.current = false;
-      
+
+      // Reset UI/state
       suppressUrlSyncRef.current = true;
       setCurrentConversationId(null);
       conversationIdRef.current = null;
@@ -830,10 +831,18 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
       setActionHistory([]);
       setSidePanelDispatchData(null);
       setPendingQuestion(null);
+      setSidePanelGenerating(false);
+      setSidePanelEditing(false);
       setIsLoading(false);
       setInitialLoadDone(true);
       isInitialPageLoadRef.current = false;
-      setTimeout(() => { suppressUrlSyncRef.current = false; }, 100);
+
+      // IMPORTANT: remove ?new=1 right away, so sending the first message doesn't trigger another reset
+      setSearchParams({}, { replace: true });
+
+      setTimeout(() => {
+        suppressUrlSyncRef.current = false;
+      }, 100);
       return;
     }
     
