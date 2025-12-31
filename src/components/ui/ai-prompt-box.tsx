@@ -423,9 +423,10 @@ export const PromptInputBox = React.forwardRef((props: PromptInputBoxProps, ref:
   const [selectedImage, setSelectedImage] = React.useState<string | null>(null);
   const [isRecording, setIsRecording] = React.useState(false);
   // Persist model selection - default to gpt
-  const [selectedModel, setSelectedModel] = React.useState<'gpt' | 'copywriting'>(() => {
+  const [selectedModel, setSelectedModel] = React.useState<'gpt' | 'grok' | 'copywriting'>(() => {
     const saved = localStorage.getItem('disparo-selected-model');
-    return saved === 'copywriting' ? 'copywriting' : 'gpt';
+    if (saved === 'copywriting' || saved === 'grok' || saved === 'gpt') return saved;
+    return 'gpt';
   });
   const [modelDropdownOpen, setModelDropdownOpen] = React.useState(false);
 
@@ -525,6 +526,8 @@ export const PromptInputBox = React.forwardRef((props: PromptInputBoxProps, ref:
       // Build internal context prefix (not shown to user but sent to AI)
       let internalContext = "";
       if (selectedModel === 'copywriting') internalContext = "[CONTEXT:copywriting] ";
+      else if (selectedModel === 'grok') internalContext = "[MODEL:grok] ";
+      else internalContext = "[MODEL:gpt] ";
       const formattedInput = internalContext ? `${internalContext}${input}` : input;
       onSend(formattedInput, files);
       setInput("");
@@ -676,7 +679,7 @@ export const PromptInputBox = React.forwardRef((props: PromptInputBoxProps, ref:
                 onClick={() => setModelDropdownOpen(!modelDropdownOpen)}
               >
                 <span className="text-xs font-medium text-gray-600">
-                  {selectedModel === 'copywriting' ? "GPT (Copywriting)" : "ChatGPT 5.1"}
+                  {selectedModel === 'copywriting' ? "Copywriting" : selectedModel === 'grok' ? "Grok" : "ChatGPT 5.1"}
                 </span>
                 <ChevronDown className="w-3 h-3 text-gray-400" />
               </div>
@@ -698,11 +701,20 @@ export const PromptInputBox = React.forwardRef((props: PromptInputBoxProps, ref:
                   <div 
                     className={cn(
                       "px-3 py-2 text-xs cursor-pointer hover:bg-gray-50",
+                      selectedModel === 'grok' && "bg-gray-50"
+                    )}
+                    onClick={() => { setSelectedModel('grok'); setModelDropdownOpen(false); }}
+                  >
+                    Grok
+                  </div>
+                  <div 
+                    className={cn(
+                      "px-3 py-2 text-xs cursor-pointer hover:bg-gray-50",
                       selectedModel === 'copywriting' && "bg-gray-50"
                     )}
                     onClick={() => { setSelectedModel('copywriting'); setModelDropdownOpen(false); }}
                   >
-                    GPT (Copywriting)
+                    Copywriting
                   </div>
                 </div>
               )}
