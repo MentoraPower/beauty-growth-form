@@ -1352,16 +1352,76 @@ serve(async (req) => {
     const isContentCreation = detectContentCreationRequest(messages);
     const systemPrompt = getSystemPrompt(greeting, activeAgent, hasImage, isCodeRequest, isCsvRequest, isMetricsRequest, metricsData, isContentCreation);
 
-    console.log("Chat mode:", { activeAgent, hasImage, isCodeRequest, isCsvRequest, isMetricsRequest, isContentCreation });
-
-    // Use GPT-5 model - gpt-5-2025-08-07 for vision (supports images) and gpt-5-mini for regular chat
-    const model = hasImage ? "gpt-5-2025-08-07" : "gpt-5-mini-2025-08-07";
-    console.log("Using OpenAI model:", model);
-    console.log("Calling OpenAI API with messages count:", messages.length);
+    // Detect model selection from message content
+    const lastUserMessage = messages[messages.length - 1];
+    const messageContent = typeof lastUserMessage?.content === 'string' ? lastUserMessage.content : '';
+    const useGrok = messageContent.includes('[MODEL:grok]');
+    const useGpt = messageContent.includes('[MODEL:gpt]') || messageContent.includes('[CONTEXT:copywriting]');
+    
+    console.log("Chat mode:", { activeAgent, hasImage, isCodeRequest, isCsvRequest, isMetricsRequest, isContentCreation, useGrok, useGpt });
 
     // Determine max tokens based on mode
     const isCopywritingMode = activeAgent === 'copywriting';
-    const maxCompletionTokens = hasImage ? 1000 : (isCopywritingMode || isContentCreation ? 2000 : 500);
+    const maxTokens = hasImage ? 1000 : (isCopywritingMode || isContentCreation ? 2000 : 500);
+
+    // Use Grok API if user selected Grok model
+    if (useGrok) {
+      const XAI_API_KEY = Deno.env.get('XAI_API_KEY') || Deno.env.get('GROK_API_KEY');
+      if (!XAI_API_KEY) {
+        console.error("XAI_API_KEY not found");
+        return new Response(JSON.stringify({ error: "API key do Grok não configurada" }), {
+          status: 500,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      const grokModel = hasImage ? "grok-2-vision-1212" : "grok-3-fast";
+      console.log("Using Grok model:", grokModel);
+
+      const response = await fetch("https://api.x.ai/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${XAI_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: grokModel,
+          messages: [
+            { role: "system", content: systemPrompt },
+            ...messages,
+          ],
+          stream: true,
+          temperature: isCopywritingMode ? 0.7 : 0.5,
+          max_tokens: maxTokens,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error("Grok API error:", response.status, errorText);
+        
+        if (response.status === 429) {
+          return new Response(JSON.stringify({ error: "Limite de requisições excedido. Tente novamente mais tarde." }), {
+            status: 429,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+        
+        return new Response(JSON.stringify({ error: "Erro ao conectar com o Grok" }), {
+          status: 500,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      return new Response(response.body, {
+        headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
+      });
+    }
+
+    // Use OpenAI GPT-5 (default)
+    const gptModel = hasImage ? "gpt-5-2025-08-07" : "gpt-5-mini-2025-08-07";
+    console.log("Using OpenAI model:", gptModel);
+    console.log("Calling OpenAI API with messages count:", messages.length);
 
     const response = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
@@ -1370,13 +1430,13 @@ serve(async (req) => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model,
+        model: gptModel,
         messages: [
           { role: "system", content: systemPrompt },
           ...messages,
         ],
         stream: true,
-        max_completion_tokens: maxCompletionTokens,
+        max_completion_tokens: maxTokens,
       }),
     });
 
