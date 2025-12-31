@@ -788,8 +788,9 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
   // Load conversation from URL
   useEffect(() => {
     const convId = searchParams.get('conversation') || searchParams.get('conv');
-    
-    if (skipNextUrlLoadRef.current === convId) {
+
+    // Guard only when we actually have a conversation id to skip
+    if (skipNextUrlLoadRef.current && skipNextUrlLoadRef.current === convId) {
       skipNextUrlLoadRef.current = null;
       return;
     }
