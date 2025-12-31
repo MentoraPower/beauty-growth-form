@@ -206,6 +206,7 @@ export const stripInternalContext = (content: string): string => {
     .replace(/^\[CONTEXT:copywriting\]\s*/i, '')
     .replace(/^\[CONTEXT:uxui\]\s*/i, '')
     .replace(/^\[CONTEXT:[^\]]+\]\s*/gi, '')
+    .replace(/^\[MODEL:[^\]]+\]\s*/gi, '')
     .trim();
 };
 
