@@ -2228,7 +2228,7 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
                 {/* Empty state with animated entrance */}
                 {messages.length === 0 && (
                   <motion.div 
-                    className="flex flex-col items-center justify-center h-[calc(100vh-300px)] text-center gap-3"
+                    className="flex flex-col items-center justify-center h-[calc(100vh-300px)] text-center gap-4"
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     transition={{ duration: 0.3 }}
@@ -2236,22 +2236,22 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
                     <motion.img 
                       src={disparoLogo} 
                       alt="Disparo" 
-                      className="w-10 h-10"
-                      initial={{ opacity: 0, y: 150, x: 140, rotate: -360 }}
-                      animate={{ opacity: 1, y: 0, x: 0, rotate: 0 }}
+                      className="w-12 h-12"
+                      initial={{ opacity: 0, scale: 0.5, rotate: -360 }}
+                      animate={{ opacity: 1, scale: 1, rotate: 0 }}
                       transition={{ 
-                        duration: 1.2, 
+                        duration: 1, 
                         ease: [0.16, 1, 0.3, 1],
-                        rotate: { duration: 1.2, ease: "easeOut" }
+                        rotate: { duration: 1, ease: "easeOut" }
                       }}
                     />
                     <motion.h2 
                       className="text-3xl font-medium text-foreground"
-                      initial={{ opacity: 0, clipPath: "inset(0 100% 0 0)" }}
-                      animate={{ opacity: 1, clipPath: "inset(0 0% 0 0)" }}
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
                       transition={{ 
-                        duration: 0.8, 
-                        delay: 0.75,
+                        duration: 0.6, 
+                        delay: 0.6,
                         ease: [0.16, 1, 0.3, 1]
                       }}
                     >
