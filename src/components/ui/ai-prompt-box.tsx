@@ -679,7 +679,7 @@ export const PromptInputBox = React.forwardRef((props: PromptInputBoxProps, ref:
                 onClick={() => setModelDropdownOpen(!modelDropdownOpen)}
               >
                 <span className="text-xs font-medium text-gray-600">
-                  {selectedModel === 'copywriting' ? "Copywriting" : selectedModel === 'grok' ? "Grok" : "ChatGPT 5.1"}
+                  {selectedModel === 'copywriting' ? "Agente Copywriting" : selectedModel === 'grok' ? "Agente Grok" : "Agente ChatGPT"}
                 </span>
                 <ChevronDown className="w-3 h-3 text-gray-400" />
               </div>
@@ -696,7 +696,7 @@ export const PromptInputBox = React.forwardRef((props: PromptInputBoxProps, ref:
                     )}
                     onClick={() => { setSelectedModel('gpt'); setModelDropdownOpen(false); }}
                   >
-                    ChatGPT 5.1
+                    Agente ChatGPT
                   </div>
                   <div 
                     className={cn(
@@ -705,7 +705,7 @@ export const PromptInputBox = React.forwardRef((props: PromptInputBoxProps, ref:
                     )}
                     onClick={() => { setSelectedModel('grok'); setModelDropdownOpen(false); }}
                   >
-                    Grok
+                    Agente Grok
                   </div>
                   <div 
                     className={cn(
@@ -714,7 +714,7 @@ export const PromptInputBox = React.forwardRef((props: PromptInputBoxProps, ref:
                     )}
                     onClick={() => { setSelectedModel('copywriting'); setModelDropdownOpen(false); }}
                   >
-                    Copywriting
+                    Agente Copywriting
                   </div>
                 </div>
               )}
