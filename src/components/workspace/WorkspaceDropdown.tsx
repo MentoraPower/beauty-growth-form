@@ -21,6 +21,7 @@ import { Input } from '@/components/ui/input';
 export function WorkspaceDropdown() {
   const { workspaces, currentWorkspace, switchWorkspace, createWorkspace, isLoading } = useWorkspace();
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [newWorkspaceName, setNewWorkspaceName] = useState('');
   const [isCreating, setIsCreating] = useState(false);
 
@@ -53,7 +54,7 @@ export function WorkspaceDropdown() {
 
   return (
     <>
-      <DropdownMenu>
+      <DropdownMenu open={isDropdownOpen} onOpenChange={setIsDropdownOpen}>
         <DropdownMenuTrigger asChild>
           <button className="h-8 flex items-center gap-2 px-2 ml-3 rounded-lg border border-border/50 bg-muted/30 hover:bg-muted/50 transition-colors outline-none">
             <div className="h-5 w-5 rounded-[4px] bg-gradient-to-br from-orange-500 to-orange-400 flex items-center justify-center">
@@ -62,7 +63,7 @@ export function WorkspaceDropdown() {
               </span>
             </div>
             <span className="text-sm font-medium">{currentWorkspace?.name || 'Selecionar workspace'}</span>
-            <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
+            <ChevronDown className={`h-3.5 w-3.5 text-muted-foreground transition-transform duration-200 ${isDropdownOpen ? 'rotate-180' : ''}`} />
           </button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="start" className="w-56">
