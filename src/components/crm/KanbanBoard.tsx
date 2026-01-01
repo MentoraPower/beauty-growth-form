@@ -28,7 +28,7 @@ import { KanbanCard } from "./KanbanCard";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Settings, Search, Filter, X, CalendarIcon, Zap, Webhook, GitBranch } from "lucide-react";
+import { Settings, Search, Filter, X, CalendarIcon, Zap, Webhook, GitBranch, LayoutGrid } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -1192,10 +1192,27 @@ export function KanbanBoard() {
     );
   }
 
+  // Check if no sub-origin selected and workspace has no origins (empty workspace)
+  if (!subOriginId && !isLoadingSubOrigin && !isLoadingPipelines) {
+    return (
+      <div className="flex flex-col items-center justify-center h-[calc(100vh-8rem)] gap-4">
+        <div className="text-center space-y-2">
+          <div className="w-16 h-16 mx-auto rounded-2xl bg-gradient-to-br from-orange-500 to-orange-400 flex items-center justify-center mb-4">
+            <LayoutGrid className="w-8 h-8 text-white" />
+          </div>
+          <h2 className="text-xl font-semibold text-foreground">Bem-vindo ao seu CRM</h2>
+          <p className="text-muted-foreground max-w-sm">
+            Comece a criar suas origens do negócio para organizar seus leads e pipelines.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   // Build title based on current sub-origin
   const pageTitle = currentSubOrigin 
     ? currentSubOrigin.nome
-    : "Selecione uma sub-origem";
+    : "Carregando...";
 
   // If email builder is open, show only EmailFlowBuilder
   if (isEmailBuilderOpen && emailBuilderProps) {
