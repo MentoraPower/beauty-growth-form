@@ -59,6 +59,8 @@ interface OverviewViewProps {
   subOriginId: string | null;
   onAddDialogOpenChange?: (open: boolean) => void;
   addDialogOpen?: boolean;
+  pipelineCounts?: Record<string, number>;
+  totalLeadCount?: number;
 }
 
 // Ghost placeholder shown during drag - appears where the card will land
@@ -113,6 +115,8 @@ function SortableCard({
   isBeingDragged,
   containerWidth,
   allCards,
+  pipelineCounts,
+  totalLeadCount,
 }: {
   card: OverviewCard;
   leads: Lead[];
@@ -125,6 +129,8 @@ function SortableCard({
   isBeingDragged: boolean;
   containerWidth: number;
   allCards: OverviewCard[];
+  pipelineCounts?: Record<string, number>;
+  totalLeadCount?: number;
 }) {
   const {
     attributes,
@@ -182,12 +188,14 @@ function SortableCard({
         onConnectDataSource={onConnectDataSource}
         onUpdateTitle={onUpdateTitle}
         dragHandleProps={{ ...attributes, ...listeners }}
+        pipelineCounts={pipelineCounts}
+        totalLeadCount={totalLeadCount}
       />
     </div>
   );
 }
 
-export function OverviewView({ leads, pipelines, leadTags, subOriginId, onAddDialogOpenChange, addDialogOpen }: OverviewViewProps) {
+export function OverviewView({ leads, pipelines, leadTags, subOriginId, onAddDialogOpenChange, addDialogOpen, pipelineCounts, totalLeadCount }: OverviewViewProps) {
   const [cards, setCards] = useState<OverviewCard[]>([]);
   const [internalAddDialogOpen, setInternalAddDialogOpen] = useState(false);
   
@@ -729,6 +737,8 @@ export function OverviewView({ leads, pipelines, leadTags, subOriginId, onAddDia
                   isBeingDragged={activeId === card.id}
                   containerWidth={containerWidth}
                   allCards={sortedCards}
+                  pipelineCounts={pipelineCounts}
+                  totalLeadCount={totalLeadCount}
                 />
               ))}
             </div>
@@ -755,6 +765,8 @@ export function OverviewView({ leads, pipelines, leadTags, subOriginId, onAddDia
                     onResize={() => {}}
                     containerWidth={containerWidth}
                     isDragging
+                    pipelineCounts={pipelineCounts}
+                    totalLeadCount={totalLeadCount}
                   />
                 </div>
               );

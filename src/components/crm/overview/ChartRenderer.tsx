@@ -43,6 +43,8 @@ interface ChartRendererProps {
   leadTags: Array<{ lead_id: string; name: string; color: string }>;
   height?: number;
   showEmptyState?: boolean;
+  pipelineCounts?: Record<string, number>;
+  totalLeadCount?: number;
 }
 
 // Custom tooltip component
@@ -71,6 +73,8 @@ export function ChartRenderer({
   leadTags,
   height = 280,
   showEmptyState = true,
+  pipelineCounts,
+  totalLeadCount,
 }: ChartRendererProps) {
   // Calculate data based on dataSource
   const chartData = useMemo(() => {
@@ -80,7 +84,8 @@ export function ChartRenderer({
       case "leads_by_pipeline": {
         return pipelines.map((pipeline, index) => ({
           name: pipeline.nome,
-          value: leads.filter((l) => l.pipeline_id === pipeline.id).length,
+          // Use exact count from pipelineCounts if available, otherwise fallback to filtering
+          value: pipelineCounts?.[pipeline.id] ?? leads.filter((l) => l.pipeline_id === pipeline.id).length,
           color: MODERN_COLORS[index % MODERN_COLORS.length].solid,
         }));
       }
@@ -110,7 +115,8 @@ export function ChartRenderer({
         });
       }
       case "total_leads": {
-        return { total: leads.length };
+        // Use exact count if available, otherwise fallback to leads.length
+        return { total: totalLeadCount ?? leads.length };
       }
       case "recent_leads": {
         return leads
@@ -134,7 +140,7 @@ export function ChartRenderer({
       default:
         return null;
     }
-  }, [dataSource, leads, pipelines, leadTags]);
+  }, [dataSource, leads, pipelines, leadTags, pipelineCounts, totalLeadCount]);
 
   // Get previous period for comparison (for number cards)
   const previousPeriodChange = useMemo(() => {

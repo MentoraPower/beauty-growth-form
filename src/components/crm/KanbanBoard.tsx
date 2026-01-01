@@ -409,6 +409,22 @@ export function KanbanBoard() {
     enabled: !!subOriginId,
   });
 
+  // Fetch exact total count of leads for sub-origin (bypasses row limit)
+  const { data: totalLeadCount = 0 } = useQuery({
+    queryKey: ["total-leads-count", subOriginId],
+    queryFn: async () => {
+      const { count, error } = await supabase
+        .from("leads")
+        .select("*", { count: "exact", head: true })
+        .eq("sub_origin_id", subOriginId);
+      
+      if (error) throw error;
+      return count || 0;
+    },
+    staleTime: 10000,
+    enabled: !!subOriginId,
+  });
+
   // Fetch team members for displaying assigned member info on cards
   const { data: teamMembersData } = useQuery({
     queryKey: ["team-members-for-cards"],
@@ -1610,6 +1626,8 @@ export function KanbanBoard() {
             subOriginId={subOriginId}
             addDialogOpen={overviewAddCardOpen}
             onAddDialogOpenChange={setOverviewAddCardOpen}
+            pipelineCounts={pipelineCounts}
+            totalLeadCount={totalLeadCount}
           />
         </Suspense>
       )}

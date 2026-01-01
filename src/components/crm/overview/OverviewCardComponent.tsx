@@ -34,6 +34,8 @@ interface OverviewCardComponentProps {
   isDragging?: boolean;
   dragHandleProps?: React.HTMLAttributes<HTMLDivElement>;
   containerWidth?: number;
+  pipelineCounts?: Record<string, number>;
+  totalLeadCount?: number;
 }
 
 
@@ -49,6 +51,8 @@ export function OverviewCardComponent({
   isDragging,
   dragHandleProps,
   containerWidth: externalContainerWidth,
+  pipelineCounts,
+  totalLeadCount,
 }: OverviewCardComponentProps) {
   const [isResizing, setIsResizing] = useState(false);
   const [resizeDirection, setResizeDirection] = useState<ResizeDirection | null>(null);
@@ -403,6 +407,8 @@ export function OverviewCardComponent({
             pipelines={pipelines}
             leadTags={leadTags}
             height={currentSize.height - 70}
+            pipelineCounts={pipelineCounts}
+            totalLeadCount={totalLeadCount}
           />
         ) : (
           <button
