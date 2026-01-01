@@ -22,6 +22,7 @@ import {
   MembersListSkeleton,
   MemberDetailsSkeleton
 } from "@/components/equipe";
+import { useWorkspace } from "@/contexts/WorkspaceContext";
 
 interface TeamMember {
   id: string;
@@ -50,6 +51,7 @@ const roleLabels: Record<string, string> = {
 };
 
 export default function Equipe() {
+  const { currentWorkspace } = useWorkspace();
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [editingMember, setEditingMember] = useState<TeamMember | null>(null);
   const [selectedMember, setSelectedMember] = useState<TeamMember | null>(null);
@@ -58,16 +60,35 @@ export default function Equipe() {
   const queryClient = useQueryClient();
 
   const { data: teamMembers, isLoading } = useQuery({
-    queryKey: ["team-members"],
+    queryKey: ["team-members", currentWorkspace?.id],
     queryFn: async () => {
-      const { data, error } = await supabase.functions.invoke("list-team-members");
+      if (!currentWorkspace?.id) return [];
+      
+      const { data, error } = await supabase.functions.invoke("list-team-members", {
+        body: null,
+        headers: {},
+      });
 
-      if (error) {
-        throw new Error(error.message);
+      // Pass workspace_id as query param via URL
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL || 'https://tsjwzivnoffmjpyjpmrp.supabase.co'}/functions/v1/list-team-members?workspace_id=${currentWorkspace.id}`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`,
+          },
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch team members');
       }
 
-      return (data?.members || []) as TeamMember[];
+      const result = await response.json();
+      return (result?.members || []) as TeamMember[];
     },
+    enabled: !!currentWorkspace?.id,
   });
 
   // Auto-select first member when data loads
