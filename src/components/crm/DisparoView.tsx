@@ -2256,8 +2256,8 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
                         rotate: { duration: 1.2, ease: "easeOut" }
                       }}
                     />
-                    <motion.h2 
-                      className="text-3xl font-medium text-foreground"
+                    <motion.div 
+                      className="flex items-center gap-3"
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ 
@@ -2266,8 +2266,11 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
                         ease: [0.16, 1, 0.3, 1]
                       }}
                     >
-                      Hey, ready to get started?
-                    </motion.h2>
+                      <img src={disparoLogo} alt="Scale" className="w-8 h-8" />
+                      <h2 className="text-3xl font-medium text-foreground">
+                        Hey, ready to get started?
+                      </h2>
+                    </motion.div>
                     <motion.div 
                       className="w-full max-w-2xl"
                       initial={{ opacity: 0, y: 20 }}
