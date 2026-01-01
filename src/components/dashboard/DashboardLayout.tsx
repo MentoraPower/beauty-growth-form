@@ -274,8 +274,8 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
       <div className="min-h-[calc(100vh-1.5rem)] relative">
         <LoadingBar />
         
-        {/* Mobile Header */}
-        <header className="lg:hidden fixed top-0 left-0 right-0 h-14 bg-card border-b border-border z-50 flex items-center justify-between px-4">
+        {/* Mobile Header - positioned below top navbar */}
+        <header className="lg:hidden fixed top-[70px] left-0 right-0 h-14 bg-card border-b border-border z-50 flex items-center justify-between px-4">
           <button
             onClick={() => setSidebarOpen(!sidebarOpen)}
             className="p-2 hover:bg-muted rounded-xl transition-colors"
@@ -290,13 +290,13 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
           <div className="w-9" />
         </header>
 
-        {/* Desktop Sidebar - Black background, CSS-only hover expansion */}
+        {/* Desktop Sidebar - Black background, CSS-only hover expansion, positioned below top navbar */}
         <aside
           ref={sidebarRef}
           style={{ 
             left: 12,
-            top: 12,
-            height: 'calc(100vh - 1.5rem)',
+            top: 82,
+            height: 'calc(100vh - 94px)',
             borderRight: '1px solid rgba(255, 255, 255, 0.125)',
           }}
           className="group hidden lg:flex flex-col fixed bg-[#0f0f12] overflow-hidden z-50 rounded-2xl w-16 hover:w-[180px] transition-[width] duration-200 ease-out"
