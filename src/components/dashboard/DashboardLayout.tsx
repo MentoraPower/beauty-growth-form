@@ -11,6 +11,7 @@ import { PageTransition } from "./PageTransition";
 import { LoadingBar } from "@/components/LoadingBar";
 import { ConnectionStatus } from "@/components/realtime/ConnectionStatus";
 import { supabase } from "@/integrations/supabase/client";
+import { useWorkspace } from "@/contexts/WorkspaceContext";
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -40,6 +41,7 @@ const RouteContentMemo = memo(function RouteContentMemo({ children }: { children
 const MemoizedCRMOriginsPanel = memo(CRMOriginsPanel);
 
 const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLayoutProps) {
+  const { currentWorkspace } = useWorkspace();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [activePanel, setActivePanel] = useState<ActivePanel>(globalActivePanel);
   const [canAccessWhatsapp, setCanAccessWhatsapp] = useState(false);
@@ -226,9 +228,12 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
 
       // Fetch default origin in background
       void (async () => {
+        if (!currentWorkspace?.id) return;
+        
         const { data: origins } = await supabase
           .from('crm_origins')
           .select('id')
+          .eq('workspace_id', currentWorkspace.id)
           .order('ordem')
           .limit(1);
 
@@ -252,7 +257,7 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
 
     setCrmSubmenuOpen(false);
     setDisparoSubmenuOpen(false);
-  }, [location.pathname, location.search, navigate]);
+  }, [location.pathname, location.search, navigate, currentWorkspace?.id]);
 
   // Navigate when panel changes
   useEffect(() => {

@@ -15,6 +15,7 @@ import { CsvChatCard } from "./CsvChatCard";
 import { AIWorkDetails, WorkStep, WorkSubItem, createLeadsAnalysisStep, createEmailGenerationStep, createDispatchStep, createCustomStep } from "./AIWorkDetails";
 import { DataIntelligence, InsightStep, createCsvAnalysisSteps } from "./DataIntelligence";
 import { supabase } from "@/integrations/supabase/client";
+import { useWorkspace } from "@/contexts/WorkspaceContext";
 import { Check, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import disparoLogo from "@/assets/disparo-logo.png";
@@ -309,6 +310,7 @@ const executeCsvOperations = (
 export function DisparoView({ subOriginId }: DisparoViewProps) {
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
+  const { currentWorkspace } = useWorkspace();
   const [isLoading, setIsLoading] = useState(false);
   const [isConversationLoading, setIsConversationLoading] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -1170,7 +1172,8 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
           .from("dispatch_conversations")
           .insert({ 
             messages: conversationData as any,
-            title 
+            title,
+            workspace_id: currentWorkspace?.id
           })
           .select()
           .single();
@@ -1701,7 +1704,8 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
           .from("dispatch_conversations")
           .insert({ 
             messages: conversationData as any,
-            title 
+            title,
+            workspace_id: currentWorkspace?.id
           })
           .select()
           .single();
