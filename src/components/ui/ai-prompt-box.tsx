@@ -691,7 +691,7 @@ export const PromptInputBox = React.forwardRef((props: PromptInputBoxProps, ref:
                 >
                   <div 
                     className={cn(
-                      "px-3 py-2 text-xs cursor-pointer hover:bg-gray-50 text-right",
+                      "px-3 py-2 text-xs cursor-pointer hover:bg-gray-50 text-left",
                       selectedModel === 'gpt' && "bg-gray-50"
                     )}
                     onClick={() => { setSelectedModel('gpt'); setModelDropdownOpen(false); }}
@@ -700,7 +700,7 @@ export const PromptInputBox = React.forwardRef((props: PromptInputBoxProps, ref:
                   </div>
                   <div 
                     className={cn(
-                      "px-3 py-2 text-xs cursor-pointer hover:bg-gray-50 text-right",
+                      "px-3 py-2 text-xs cursor-pointer hover:bg-gray-50 text-left",
                       selectedModel === 'grok' && "bg-gray-50"
                     )}
                     onClick={() => { setSelectedModel('grok'); setModelDropdownOpen(false); }}
@@ -709,7 +709,7 @@ export const PromptInputBox = React.forwardRef((props: PromptInputBoxProps, ref:
                   </div>
                   <div 
                     className={cn(
-                      "px-3 py-2 text-xs cursor-pointer hover:bg-gray-50 text-right",
+                      "px-3 py-2 text-xs cursor-pointer hover:bg-gray-50 text-left",
                       selectedModel === 'copywriting' && "bg-gray-50"
                     )}
                     onClick={() => { setSelectedModel('copywriting'); setModelDropdownOpen(false); }}
