@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import scaleLogoRed from '@/assets/scale-logo-red.png';
+import scaleLogoSidebar from '@/assets/scale-logo-sidebar.png';
 
 export function WorkspaceLoadingOverlay() {
   return (
@@ -10,7 +10,7 @@ export function WorkspaceLoadingOverlay() {
       className="fixed inset-0 z-[100] flex items-center justify-center bg-background"
     >
       <motion.img
-        src={scaleLogoRed}
+        src={scaleLogoSidebar}
         alt="Loading"
         className="h-16 w-16"
         animate={{
