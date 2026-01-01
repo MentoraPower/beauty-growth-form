@@ -1196,14 +1196,20 @@ export function KanbanBoard() {
   if (!subOriginId && !isLoadingSubOrigin && !isLoadingPipelines) {
     return (
       <div className="flex flex-col items-center justify-center h-[calc(100vh-8rem)] gap-4">
-        <div className="text-center space-y-2">
-          <div className="w-16 h-16 mx-auto rounded-2xl bg-gradient-to-br from-orange-500 to-orange-400 flex items-center justify-center mb-4">
-            <LayoutGrid className="w-8 h-8 text-white" />
-          </div>
-          <h2 className="text-xl font-semibold text-foreground">Bem-vindo ao seu CRM</h2>
+        <div className="text-center space-y-4">
           <p className="text-muted-foreground max-w-sm">
-            Comece a criar suas origens do negócio para organizar seus leads e pipelines.
+            Comece a criar suas origens do <span className="font-bold text-foreground">negócio para organizar seus leads e pipelines.</span>
           </p>
+          <button 
+            onClick={() => {
+              // Trigger origin creation - dispatch custom event or use existing mechanism
+              const event = new CustomEvent('createOrigin');
+              window.dispatchEvent(event);
+            }}
+            className="px-4 py-2 bg-black text-white rounded-lg text-sm font-medium hover:bg-black/90 transition-colors"
+          >
+            Criar Origem
+          </button>
         </div>
       </div>
     );
