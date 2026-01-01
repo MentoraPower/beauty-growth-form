@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { Kanban, ChevronRight, ChevronsRight, Folder, FolderOpen, MoreVertical, Plus, Pencil, Trash2, GripVertical, CalendarDays, ListTodo, Search, LayoutGrid } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
+import { useWorkspace } from "@/contexts/WorkspaceContext";
 import {
   DndContext,
   closestCenter,
@@ -458,6 +459,7 @@ interface UserPermissions {
 export function CRMOriginsPanel({ isOpen, onClose, sidebarWidth, embedded = false }: CRMOriginsPanelProps) {
   const location = useLocation();
   const navigate = useNavigate();
+  const { currentWorkspace } = useWorkspace();
   const [origins, setOrigins] = useState<Origin[]>([]);
   const [subOrigins, setSubOrigins] = useState<SubOrigin[]>([]);
   const [leadCounts, setLeadCounts] = useState<LeadCount[]>([]);
@@ -575,11 +577,13 @@ export function CRMOriginsPanel({ isOpen, onClose, sidebarWidth, embedded = fals
   }, []);
 
   const fetchData = useCallback(async () => {
+    if (!currentWorkspace?.id) return;
+    
     try {
       // Fetch only structure first (origins + sub-origins) - this is fast
       const [originsRes, subOriginsRes] = await Promise.all([
-        supabase.from("crm_origins").select("*").order("ordem"),
-        supabase.from("crm_sub_origins").select("*").order("ordem"),
+        supabase.from("crm_origins").select("*").eq("workspace_id", currentWorkspace.id).order("ordem"),
+        supabase.from("crm_sub_origins").select("*, crm_origins!inner(workspace_id)").eq("crm_origins.workspace_id", currentWorkspace.id).order("ordem"),
       ]);
 
       if (originsRes.data) {
@@ -609,15 +613,14 @@ export function CRMOriginsPanel({ isOpen, onClose, sidebarWidth, embedded = fals
     } catch (error) {
       console.error('Error fetching CRM data:', error);
     }
-  }, [fetchLeadCounts]);
+  }, [fetchLeadCounts, currentWorkspace?.id]);
 
-  // Fetch data and permissions on first mount
+  // Fetch data and permissions on first mount or workspace change
   useEffect(() => {
     fetchUserPermissions();
-    if (!hasInitialized.current) {
-      fetchData();
-    }
-  }, [fetchData, fetchUserPermissions]);
+    hasInitialized.current = false;
+    fetchData();
+  }, [fetchData, fetchUserPermissions, currentWorkspace?.id]);
 
   // Auto-expand origin of currently selected sub-origin (from URL) or first origin
   useEffect(() => {
@@ -805,9 +808,13 @@ export function CRMOriginsPanel({ isOpen, onClose, sidebarWidth, embedded = fals
       return;
     }
 
-    if (dialogType === 'origin') {
+  if (dialogType === 'origin') {
       if (dialogMode === 'create') {
-        const { error } = await supabase.from("crm_origins").insert({ nome: inputValue.trim(), ordem: origins.length });
+        const { error } = await supabase.from("crm_origins").insert({ 
+          nome: inputValue.trim(), 
+          ordem: origins.length,
+          workspace_id: currentWorkspace?.id
+        });
         if (error) {
           toast.error("Erro ao criar origem");
           return;

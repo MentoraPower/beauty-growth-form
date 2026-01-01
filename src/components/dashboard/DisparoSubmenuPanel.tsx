@@ -4,6 +4,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { useWorkspace } from "@/contexts/WorkspaceContext";
 import { Input } from "@/components/ui/input";
 import {
   DropdownMenu,
@@ -44,6 +45,7 @@ const sanitizeTitle = (title: string): string => {
 export function DisparoSubmenuPanel({ isOpen, onClose }: DisparoSubmenuPanelProps) {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
+  const { currentWorkspace } = useWorkspace();
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -53,11 +55,15 @@ export function DisparoSubmenuPanel({ isOpen, onClose }: DisparoSubmenuPanelProp
   
   // Ref to track if we've done initial load
   const hasLoadedRef = useRef(false);
+  // Track last workspace to detect changes
+  const lastWorkspaceIdRef = useRef<string | null>(null);
 
   const currentConversationId = searchParams.get('conversation');
 
   // Fetch conversations - only show loading on first fetch
   const fetchConversations = useCallback(async (showLoading = true) => {
+    if (!currentWorkspace?.id) return;
+    
     if (showLoading && !hasLoadedRef.current) {
       setIsLoading(true);
     }
@@ -65,6 +71,7 @@ export function DisparoSubmenuPanel({ isOpen, onClose }: DisparoSubmenuPanelProp
       const { data, error } = await supabase
         .from("dispatch_conversations")
         .select("id, title, created_at, updated_at")
+        .eq("workspace_id", currentWorkspace.id)
         .order("updated_at", { ascending: false });
 
       if (error) throw error;
@@ -86,14 +93,20 @@ export function DisparoSubmenuPanel({ isOpen, onClose }: DisparoSubmenuPanelProp
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [currentWorkspace?.id]);
 
-  // Initial fetch when panel opens
+  // Initial fetch when panel opens or workspace changes
   useEffect(() => {
+    // Detect workspace change
+    if (lastWorkspaceIdRef.current !== currentWorkspace?.id) {
+      hasLoadedRef.current = false;
+      lastWorkspaceIdRef.current = currentWorkspace?.id || null;
+    }
+    
     if (isOpen) {
       fetchConversations(!hasLoadedRef.current);
     }
-  }, [isOpen, fetchConversations]);
+  }, [isOpen, fetchConversations, currentWorkspace?.id]);
 
   // Realtime subscription for conversation changes - always active to catch new conversations
   useEffect(() => {
