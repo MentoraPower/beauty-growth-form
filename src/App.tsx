@@ -4,6 +4,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { RealtimeProvider } from "@/components/realtime/RealtimeProvider";
+import { WorkspaceProvider } from "@/contexts/WorkspaceContext";
 import TermsOfUse from "./pages/TermsOfUse";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import NotFound from "./pages/NotFound";
@@ -24,34 +25,36 @@ const queryClient = new QueryClient();
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <RealtimeProvider>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
-          <Routes>
-            <Route path="/" element={<AdminShell />}>
-              <Route index element={<Navigate to="/crm" replace />} />
-              <Route path="crm" element={<CRM />} />
-              <Route path="crm/:id" element={<LeadDetail />} />
-              <Route path="atendimento" element={<Atendimento />} />
-              <Route path="whatsapp" element={<Navigate to="/atendimento?tab=whatsapp" replace />} />
-              <Route path="instagram" element={<Navigate to="/atendimento?tab=instagram" replace />} />
-              <Route path="calendario" element={<CalendarPage />} />
-              <Route path="agenda" element={<CalendarPage />} />
-              <Route path="settings" element={<Settings />} />
-              <Route path="equipe" element={<Equipe />} />
-              <Route path="analizer" element={<Analizer />} />
-              <Route path="disparo" element={<Disparo />} />
-            </Route>
-            <Route path="/termos" element={<TermsOfUse />} />
-            <Route path="/privacidade" element={<PrivacyPolicy />} />
-            <Route path="/form/:slug" element={<OnboardingForm />} />
-            <Route path="/auth" element={<Auth />} />
+      <WorkspaceProvider>
+        <TooltipProvider>
+          <Toaster />
+          <Sonner />
+          <BrowserRouter>
+            <Routes>
+              <Route path="/" element={<AdminShell />}>
+                <Route index element={<Navigate to="/crm" replace />} />
+                <Route path="crm" element={<CRM />} />
+                <Route path="crm/:id" element={<LeadDetail />} />
+                <Route path="atendimento" element={<Atendimento />} />
+                <Route path="whatsapp" element={<Navigate to="/atendimento?tab=whatsapp" replace />} />
+                <Route path="instagram" element={<Navigate to="/atendimento?tab=instagram" replace />} />
+                <Route path="calendario" element={<CalendarPage />} />
+                <Route path="agenda" element={<CalendarPage />} />
+                <Route path="settings" element={<Settings />} />
+                <Route path="equipe" element={<Equipe />} />
+                <Route path="analizer" element={<Analizer />} />
+                <Route path="disparo" element={<Disparo />} />
+              </Route>
+              <Route path="/termos" element={<TermsOfUse />} />
+              <Route path="/privacidade" element={<PrivacyPolicy />} />
+              <Route path="/form/:slug" element={<OnboardingForm />} />
+              <Route path="/auth" element={<Auth />} />
 
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </BrowserRouter>
-      </TooltipProvider>
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </BrowserRouter>
+        </TooltipProvider>
+      </WorkspaceProvider>
     </RealtimeProvider>
   </QueryClientProvider>
 );
