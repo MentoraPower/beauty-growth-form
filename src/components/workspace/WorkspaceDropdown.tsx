@@ -57,13 +57,8 @@ export function WorkspaceDropdown() {
       <DropdownMenu open={isDropdownOpen} onOpenChange={setIsDropdownOpen}>
         <DropdownMenuTrigger asChild>
           <button className="h-8 flex items-center gap-2 ml-3 transition-colors outline-none">
-            <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-sidebar-accent">
-              <div className="h-5 w-5 rounded-[4px] bg-gradient-to-br from-orange-500 to-orange-400 flex items-center justify-center">
-                <span className="text-[9px] font-semibold text-white">
-                  {currentWorkspace ? getInitials(currentWorkspace.name) : 'WS'}
-                </span>
-              </div>
-              <span className="text-sm font-medium">{currentWorkspace?.name || 'Selecionar workspace'}</span>
+            <div className="flex items-center px-3 py-1.5 rounded-lg bg-black border border-[#00000010]">
+              <span className="text-sm font-medium text-white">{currentWorkspace?.name || 'Selecionar workspace'}</span>
             </div>
             <ChevronDown className={`h-3.5 w-3.5 text-muted-foreground transition-transform duration-200 ${isDropdownOpen ? 'rotate-180' : ''}`} />
           </button>
