@@ -1,5 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { AnimatePresence } from 'framer-motion';
+import { WorkspaceLoadingOverlay } from '@/components/workspace/WorkspaceLoadingOverlay';
 
 interface Workspace {
   id: string;
@@ -11,6 +13,7 @@ interface WorkspaceContextType {
   workspaces: Workspace[];
   currentWorkspace: Workspace | null;
   isLoading: boolean;
+  isSwitching: boolean;
   switchWorkspace: (workspaceId: string) => void;
   createWorkspace: (name: string) => Promise<Workspace | null>;
   refetchWorkspaces: () => Promise<void>;
@@ -24,6 +27,7 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
   const [workspaces, setWorkspaces] = useState<Workspace[]>([]);
   const [currentWorkspace, setCurrentWorkspace] = useState<Workspace | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isSwitching, setIsSwitching] = useState(false);
 
   const fetchWorkspaces = useCallback(async () => {
     try {
@@ -108,13 +112,16 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
 
   const switchWorkspace = useCallback((workspaceId: string) => {
     const workspace = workspaces.find(w => w.id === workspaceId);
-    if (workspace) {
+    if (workspace && workspace.id !== currentWorkspace?.id) {
+      setIsSwitching(true);
       setCurrentWorkspace(workspace);
       localStorage.setItem(WORKSPACE_STORAGE_KEY, workspaceId);
-      // Reload page to reset all data for new workspace
-      window.location.href = '/crm';
+      // Small delay to show the loading overlay before reload
+      setTimeout(() => {
+        window.location.href = '/crm';
+      }, 300);
     }
-  }, [workspaces]);
+  }, [workspaces, currentWorkspace]);
 
   const createWorkspace = useCallback(async (name: string): Promise<Workspace | null> => {
     try {
@@ -149,13 +156,16 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
         return null;
       }
 
-      // Switch to new workspace
+      // Add to list and select immediately
       setWorkspaces(prev => [...prev, newWorkspace]);
       setCurrentWorkspace(newWorkspace);
       localStorage.setItem(WORKSPACE_STORAGE_KEY, newWorkspace.id);
       
-      // Reload to reset data
-      window.location.href = '/crm';
+      // Show loading and reload
+      setIsSwitching(true);
+      setTimeout(() => {
+        window.location.href = '/crm';
+      }, 300);
       
       return newWorkspace;
     } catch (error) {
@@ -173,10 +183,14 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
       workspaces,
       currentWorkspace,
       isLoading,
+      isSwitching,
       switchWorkspace,
       createWorkspace,
       refetchWorkspaces
     }}>
+      <AnimatePresence>
+        {isSwitching && <WorkspaceLoadingOverlay />}
+      </AnimatePresence>
       {children}
     </WorkspaceContext.Provider>
   );
