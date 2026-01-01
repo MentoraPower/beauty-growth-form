@@ -96,6 +96,7 @@ interface EmailBuilderState {
 type CRMView = "overview" | "quadro" | "lista" | "calendario" | "email";
 
 export function KanbanBoard() {
+  const { currentWorkspace } = useWorkspace();
   const [searchParams, setSearchParams] = useSearchParams();
   const subOriginId = searchParams.get("origin");
   const urlSearchQuery = searchParams.get("search") || "";
@@ -601,15 +602,31 @@ export function KanbanBoard() {
     };
   }, [queryClient, subOriginId]);
 
-  // Auto-navigate to first sub-origin if none selected
+  // Auto-navigate to first sub-origin if none selected OR if selected belongs to different workspace
   useEffect(() => {
     const autoSelectFirstSubOrigin = async () => {
-      if (subOriginId) return; // Already have a sub-origin selected
+      if (!currentWorkspace?.id) return;
       
-      // Get first origin ordered by 'ordem'
+      // If we have a subOriginId, validate it belongs to current workspace
+      if (subOriginId) {
+        const { data: subOrigin } = await supabase
+          .from('crm_sub_origins')
+          .select('id, crm_origins!inner(workspace_id)')
+          .eq('id', subOriginId)
+          .maybeSingle();
+        
+        // If sub-origin exists and belongs to current workspace, we're good
+        if (subOrigin && (subOrigin.crm_origins as any)?.workspace_id === currentWorkspace.id) {
+          return;
+        }
+        // Otherwise, clear and select first from current workspace
+      }
+      
+      // Get first origin from CURRENT workspace
       const { data: origins } = await supabase
         .from('crm_origins')
         .select('id')
+        .eq('workspace_id', currentWorkspace.id)
         .order('ordem')
         .limit(1);
       
@@ -626,12 +643,22 @@ export function KanbanBoard() {
           const newParams = new URLSearchParams(searchParams);
           newParams.set('origin', subOrigins[0].id);
           setSearchParams(newParams, { replace: true });
+        } else {
+          // No sub-origins - clear the param
+          const newParams = new URLSearchParams(searchParams);
+          newParams.delete('origin');
+          setSearchParams(newParams, { replace: true });
         }
+      } else {
+        // No origins in this workspace - clear the param
+        const newParams = new URLSearchParams(searchParams);
+        newParams.delete('origin');
+        setSearchParams(newParams, { replace: true });
       }
     };
 
     autoSelectFirstSubOrigin();
-  }, [subOriginId, searchParams, setSearchParams]);
+  }, [subOriginId, searchParams, setSearchParams, currentWorkspace?.id]);
 
   const handleDragStart = useCallback((event: DragStartEvent) => {
     setActiveId(event.active.id as string);
