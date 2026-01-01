@@ -615,6 +615,18 @@ export function CRMOriginsPanel({ isOpen, onClose, sidebarWidth, embedded = fals
     }
   }, [fetchLeadCounts, currentWorkspace?.id]);
 
+  // Listen for createOrigin event from other components (e.g., KanbanBoard empty state)
+  useEffect(() => {
+    const handleCreateOriginEvent = () => {
+      if (userPermissions.isAdmin || userPermissions.canCreateOrigins) {
+        openCreateOriginDialog();
+      }
+    };
+    
+    window.addEventListener('createOrigin', handleCreateOriginEvent);
+    return () => window.removeEventListener('createOrigin', handleCreateOriginEvent);
+  }, [userPermissions.isAdmin, userPermissions.canCreateOrigins]);
+
   // Fetch data and permissions on first mount or workspace change
   useEffect(() => {
     fetchUserPermissions();
