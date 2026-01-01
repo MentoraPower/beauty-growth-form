@@ -56,8 +56,8 @@ export function WorkspaceDropdown() {
     <>
       <DropdownMenu open={isDropdownOpen} onOpenChange={setIsDropdownOpen}>
         <DropdownMenuTrigger asChild>
-          <button className="h-8 flex items-center gap-2 px-2 ml-3 rounded-lg hover:bg-muted/30 transition-colors outline-none">
-            <div className="flex items-center gap-2 px-2.5 py-1 rounded-md bg-sidebar">
+          <button className="h-8 flex items-center gap-2 ml-3 transition-colors outline-none">
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-sidebar-accent">
               <div className="h-5 w-5 rounded-[4px] bg-gradient-to-br from-orange-500 to-orange-400 flex items-center justify-center">
                 <span className="text-[9px] font-semibold text-white">
                   {currentWorkspace ? getInitials(currentWorkspace.name) : 'WS'}
