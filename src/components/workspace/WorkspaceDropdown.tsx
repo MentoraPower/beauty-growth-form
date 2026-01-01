@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ChevronDown, Plus, Check, Building2 } from 'lucide-react';
+import { ChevronDown, Plus, Check } from 'lucide-react';
 import { useWorkspace } from '@/contexts/WorkspaceContext';
 import {
   DropdownMenu,
@@ -46,8 +46,7 @@ export function WorkspaceDropdown() {
     <>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <button className="h-[45px] flex items-center gap-2 px-4 hover:bg-muted/50 transition-colors outline-none">
-            <Building2 className="h-4 w-4 text-muted-foreground" />
+          <button className="h-8 flex items-center gap-2 px-3 ml-3 rounded-lg border border-border/50 bg-muted/30 hover:bg-muted/50 transition-colors outline-none">
             <span className="text-sm font-medium">{currentWorkspace?.name || 'Selecionar workspace'}</span>
             <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
           </button>
