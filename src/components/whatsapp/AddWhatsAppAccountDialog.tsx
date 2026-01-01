@@ -7,12 +7,14 @@ import { Loader2, CheckCircle2, XCircle, RefreshCw, Smartphone } from "lucide-re
 import { QRCodeSVG } from "qrcode.react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useWorkspace } from "@/contexts/WorkspaceContext";
 
 interface ExistingAccount {
   id: string;
   name: string;
   phone_number?: string;
   status: string;
+  api_key?: string;
 }
 
 interface AddWhatsAppAccountDialogProps {
@@ -26,11 +28,13 @@ type ConnectionStatus = "idle" | "creating" | "waiting_scan" | "connected" | "er
 
 export function AddWhatsAppAccountDialog({ open, onOpenChange, onSuccess, existingAccount }: AddWhatsAppAccountDialogProps) {
   const { toast } = useToast();
+  const { currentWorkspace } = useWorkspace();
   const [sessionName, setSessionName] = useState("");
   const [phoneNumber, setPhoneNumber] = useState("");
   const [status, setStatus] = useState<ConnectionStatus>("idle");
   const [qrCode, setQrCode] = useState<string | null>(null);
   const [sessionId, setSessionId] = useState<string | null>(null);
+  const [sessionApiKey, setSessionApiKey] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [hasInitialized, setHasInitialized] = useState(false);
 
@@ -41,6 +45,7 @@ export function AddWhatsAppAccountDialog({ open, onOpenChange, onSuccess, existi
       setSessionId(existingAccount.id);
       setSessionName(existingAccount.name);
       setPhoneNumber(existingAccount.phone_number || "");
+      setSessionApiKey(existingAccount.api_key || null);
       // Automatically try to connect and get QR code
       connectExistingSession(existingAccount.id);
     }
@@ -68,6 +73,7 @@ export function AddWhatsAppAccountDialog({ open, onOpenChange, onSuccess, existi
     setStatus("idle");
     setQrCode(null);
     setSessionId(null);
+    setSessionApiKey(null);
     setErrorMessage(null);
     setHasInitialized(false);
   };
@@ -75,6 +81,32 @@ export function AddWhatsAppAccountDialog({ open, onOpenChange, onSuccess, existi
   const handleClose = () => {
     resetState();
     onOpenChange(false);
+  };
+
+  // Link account to current workspace
+  const linkAccountToWorkspace = async (apiKey: string, name: string) => {
+    if (!currentWorkspace?.id) {
+      console.warn("No workspace to link account to");
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from("workspace_whatsapp_accounts")
+        .upsert({
+          workspace_id: currentWorkspace.id,
+          session_id: apiKey,
+          session_name: name,
+        }, { onConflict: "workspace_id,session_id" });
+
+      if (error) {
+        console.error("Error linking account to workspace:", error);
+      } else {
+        console.log("Account linked to workspace:", currentWorkspace.id);
+      }
+    } catch (err) {
+      console.error("Error linking account:", err);
+    }
   };
 
   const createSession = async () => {
@@ -106,11 +138,14 @@ export function AddWhatsAppAccountDialog({ open, onOpenChange, onSuccess, existi
       }
 
       const newSessionId = data.data?.id;
+      const newApiKey = data.data?.api_key || data.data?.apiKey;
+      
       if (!newSessionId) {
         throw new Error("ID da sessão não retornado");
       }
 
       setSessionId(newSessionId);
+      setSessionApiKey(newApiKey);
       
       // Now connect the session to get QR code
       await connectSession(newSessionId);
@@ -144,6 +179,11 @@ export function AddWhatsAppAccountDialog({ open, onOpenChange, onSuccess, existi
         // Start polling for connection status
         pollConnectionStatus(id);
       } else if (sessionStatus === "CONNECTED" || sessionStatus === "connected") {
+        // Link account to workspace before calling success
+        const apiKey = data.data?.api_key || data.data?.apiKey || sessionApiKey || existingAccount?.api_key;
+        if (apiKey) {
+          await linkAccountToWorkspace(apiKey, sessionName || existingAccount?.name || "WhatsApp");
+        }
         setStatus("connected");
         toast({
           title: "Conectado!",
@@ -210,6 +250,11 @@ export function AddWhatsAppAccountDialog({ open, onOpenChange, onSuccess, existi
         const sessionStatus = data?.data?.status?.toLowerCase();
 
         if (sessionStatus === "connected") {
+          // Link account to workspace on successful connection
+          const apiKey = data?.data?.api_key || data?.data?.apiKey || sessionApiKey || existingAccount?.api_key;
+          if (apiKey) {
+            await linkAccountToWorkspace(apiKey, sessionName || existingAccount?.name || "WhatsApp");
+          }
           setStatus("connected");
           toast({
             title: "Conectado!",

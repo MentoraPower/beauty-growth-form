@@ -1,5 +1,5 @@
 import { useSearchParams } from "react-router-dom";
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { cn } from "@/lib/utils";
 import { Smartphone, ChevronDown, Check, RefreshCw, Plus } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
@@ -9,6 +9,7 @@ import WhatsApp from "./WhatsApp";
 import InstagramPage from "./Instagram";
 import { supabase } from "@/integrations/supabase/client";
 import { motion, AnimatePresence } from "framer-motion";
+import { useWorkspace } from "@/contexts/WorkspaceContext";
 
 type TabType = 'whatsapp' | 'instagram';
 
@@ -20,45 +21,60 @@ interface WhatsAppAccount {
   api_key?: string;
 }
 
-// Persistent state outside component to survive tab switches
-let cachedWhatsappAccounts: WhatsAppAccount[] = [];
-let cachedSelectedAccountId: string | null = localStorage.getItem('whatsapp_selected_account_id');
-let hasLoadedAccounts = false;
-
 export default function Atendimento() {
   const [searchParams, setSearchParams] = useSearchParams();
   const tabParam = searchParams.get('tab');
   const activeTab: TabType = tabParam === 'instagram' ? 'instagram' : 'whatsapp';
+  const { currentWorkspace } = useWorkspace();
 
-  // WhatsApp account state - use cached values as initial state
-  const [whatsappAccounts, setWhatsappAccounts] = useState<WhatsAppAccount[]>(cachedWhatsappAccounts);
-  const [selectedAccountId, setSelectedAccountId] = useState<string | null>(cachedSelectedAccountId);
+  // WhatsApp account state
+  const [whatsappAccounts, setWhatsappAccounts] = useState<WhatsAppAccount[]>([]);
+  const [selectedAccountId, setSelectedAccountId] = useState<string | null>(null);
   const [isLoadingAccounts, setIsLoadingAccounts] = useState(false);
   const [showAddAccountDialog, setShowAddAccountDialog] = useState(false);
   const [accountToConnect, setAccountToConnect] = useState<WhatsAppAccount | null>(null);
 
-  // Sync state with cache
-  useEffect(() => {
-    cachedWhatsappAccounts = whatsappAccounts;
-  }, [whatsappAccounts]);
+  // Store selected account per workspace
+  const getStorageKey = useCallback(() => {
+    return currentWorkspace?.id 
+      ? `whatsapp_selected_account_${currentWorkspace.id}` 
+      : 'whatsapp_selected_account_id';
+  }, [currentWorkspace?.id]);
 
+  // Load saved selection on workspace change
   useEffect(() => {
-    cachedSelectedAccountId = selectedAccountId;
-    if (selectedAccountId) {
-      localStorage.setItem('whatsapp_selected_account_id', selectedAccountId);
+    if (currentWorkspace?.id) {
+      const saved = localStorage.getItem(getStorageKey());
+      if (saved) {
+        setSelectedAccountId(saved);
+      } else {
+        setSelectedAccountId(null);
+      }
     }
-  }, [selectedAccountId]);
+  }, [currentWorkspace?.id, getStorageKey]);
 
-  // Fetch WhatsApp accounts - only if not already loaded
+  // Save selection to localStorage
+  useEffect(() => {
+    if (selectedAccountId && currentWorkspace?.id) {
+      localStorage.setItem(getStorageKey(), selectedAccountId);
+    }
+  }, [selectedAccountId, currentWorkspace?.id, getStorageKey]);
+
+  // Fetch WhatsApp accounts filtered by workspace
   const fetchWhatsAppAccounts = useCallback(async () => {
-    // Skip if already loaded and have accounts
-    if (hasLoadedAccounts && cachedWhatsappAccounts.length > 0) {
-      console.log(`[Atendimento] Using cached accounts: ${cachedWhatsappAccounts.length}`);
-      return;
-    }
+    if (!currentWorkspace?.id) return;
     
     setIsLoadingAccounts(true);
     try {
+      // Get linked accounts for this workspace
+      const { data: linkedAccounts } = await supabase
+        .from("workspace_whatsapp_accounts")
+        .select("session_id, session_name")
+        .eq("workspace_id", currentWorkspace.id);
+
+      const linkedSessionIds = new Set(linkedAccounts?.map(a => a.session_id) || []);
+
+      // Get all sessions from WasenderAPI
       const { data, error } = await supabase.functions.invoke("wasender-whatsapp", {
         body: { action: "list-sessions" },
       });
@@ -66,22 +82,27 @@ export default function Atendimento() {
       if (error) throw error;
 
       if (data?.success && Array.isArray(data.data)) {
-        console.log(`[Atendimento] Fetched ${data.data.length} accounts`);
-        setWhatsappAccounts(data.data);
-        hasLoadedAccounts = true;
+        // Filter to only show accounts linked to this workspace
+        const filteredAccounts = data.data.filter((acc: WhatsAppAccount) => 
+          linkedSessionIds.has(acc.api_key || String(acc.id))
+        );
+
+        setWhatsappAccounts(filteredAccounts);
         
-        const savedAccountId = localStorage.getItem('whatsapp_selected_account_id');
-        const savedAccount = savedAccountId ? data.data.find((acc: WhatsAppAccount) => String(acc.id) === savedAccountId) : null;
+        // Auto-select first connected account if none selected
+        const savedAccountId = localStorage.getItem(getStorageKey());
+        const savedAccount = savedAccountId 
+          ? filteredAccounts.find((acc: WhatsAppAccount) => String(acc.id) === savedAccountId) 
+          : null;
         
         if (savedAccount && savedAccount.status?.toLowerCase() === "connected") {
           if (selectedAccountId !== savedAccount.id) {
             setSelectedAccountId(savedAccount.id);
           }
-        } else if (!selectedAccountId && data.data.length > 0) {
-          const connectedAccount = data.data.find((acc: WhatsAppAccount) => acc.status?.toLowerCase() === "connected");
+        } else if (!selectedAccountId && filteredAccounts.length > 0) {
+          const connectedAccount = filteredAccounts.find((acc: WhatsAppAccount) => acc.status?.toLowerCase() === "connected");
           if (connectedAccount) {
             setSelectedAccountId(connectedAccount.id);
-            localStorage.setItem('whatsapp_selected_account_id', String(connectedAccount.id));
           }
         }
       }
@@ -90,11 +111,11 @@ export default function Atendimento() {
     } finally {
       setIsLoadingAccounts(false);
     }
-  }, [selectedAccountId]);
+  }, [currentWorkspace?.id, selectedAccountId, getStorageKey]);
 
   useEffect(() => {
     fetchWhatsAppAccounts();
-  }, []);
+  }, [fetchWhatsAppAccounts]);
 
   const handleTabChange = (tab: TabType) => {
     setSearchParams({ tab }, { replace: true });

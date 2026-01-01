@@ -52,7 +52,7 @@ serve(async (req) => {
 
       case 'exchange-code': {
         // Exchange authorization code for access token using Instagram API
-        const { code, redirectUri } = params;
+        const { code, redirectUri, workspaceId } = params;
         
         if (!code) {
           return new Response(
@@ -61,7 +61,7 @@ serve(async (req) => {
           );
         }
 
-        console.log('Exchanging code for Instagram token with redirectUri:', redirectUri);
+        console.log('Exchanging code for Instagram token with redirectUri:', redirectUri, 'workspaceId:', workspaceId);
         
         // Get short-lived token from Instagram API
         const tokenFormData = new URLSearchParams();
@@ -126,11 +126,19 @@ serve(async (req) => {
           ? new Date(Date.now() + expiresIn * 1000).toISOString()
           : null;
         
-        // Delete existing connections and insert new one
-        await supabase
-          .from('instagram_connections')
-          .delete()
-          .neq('id', '00000000-0000-0000-0000-000000000000');
+        // Delete existing connections for this workspace only (if workspace provided)
+        if (workspaceId) {
+          await supabase
+            .from('instagram_connections')
+            .delete()
+            .eq('workspace_id', workspaceId);
+        } else {
+          // Legacy: delete all if no workspace (backwards compat)
+          await supabase
+            .from('instagram_connections')
+            .delete()
+            .neq('id', '00000000-0000-0000-0000-000000000000');
+        }
         
         const connectionData = {
           instagram_user_id: finalInstagramUserId,
@@ -139,6 +147,7 @@ serve(async (req) => {
           token_expires_at: tokenExpiresAt,
           page_id: null,
           page_access_token: null,
+          workspace_id: workspaceId || null,
         };
         
         console.log('Saving connection data:', JSON.stringify(connectionData));

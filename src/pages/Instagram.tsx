@@ -25,6 +25,7 @@ import { cn } from "@/lib/utils";
 import Instagram from "@/components/icons/Instagram";
 import { supabase } from "@/integrations/supabase/client";
 import { useInstagramCache } from "@/hooks/useInstagramCache";
+import { useWorkspace } from "@/contexts/WorkspaceContext";
 
 interface Chat {
   id: string; // This is the conversation_id from Instagram
@@ -71,6 +72,7 @@ export default function InstagramPage() {
   const audioChunksRef = useRef<Blob[]>([]);
   const recordingIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const { currentWorkspace } = useWorkspace();
 
   // Use the cache hook for instant loading
   const {
@@ -90,13 +92,19 @@ export default function InstagramPage() {
   const REDIRECT_URI = `${window.location.origin}/instagram`;
   const myInstagramUserId = accountInfo?.userId;
 
-  // Check for cached connection FIRST (instant load)
+  // Check for cached connection FIRST - filtered by workspace
   useEffect(() => {
     const checkCachedConnection = async () => {
-      // First check if we have cached connection info in the database
+      if (!currentWorkspace?.id) {
+        setIsConnected(false);
+        return;
+      }
+      
+      // First check if we have cached connection info in the database for this workspace
       const { data: connection } = await supabase
         .from('instagram_connections')
         .select('instagram_user_id, instagram_username')
+        .eq('workspace_id', currentWorkspace.id)
         .limit(1)
         .maybeSingle();
 
@@ -129,7 +137,7 @@ export default function InstagramPage() {
     };
 
     checkCachedConnection();
-  }, []);
+  }, [currentWorkspace?.id]);
 
   // Background check to validate token (doesn't block UI)
   const checkConnectionInBackground = async () => {
@@ -165,7 +173,11 @@ export default function InstagramPage() {
       const { data, error } = await supabase.functions.invoke('instagram-api', {
         body: {
           action: 'exchange-code',
-          params: { code, redirectUri },
+          params: { 
+            code, 
+            redirectUri,
+            workspaceId: sessionStorage.getItem('instagram_oauth_workspace_id') || currentWorkspace?.id
+          },
         },
       });
 
@@ -236,6 +248,15 @@ export default function InstagramPage() {
   };
 
   const handleConnect = async () => {
+    if (!currentWorkspace?.id) {
+      toast({
+        title: "Erro",
+        description: "Selecione um workspace primeiro",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     setIsConnecting(true);
     setConnectionError(null);
     
@@ -243,9 +264,11 @@ export default function InstagramPage() {
       // Persist the exact redirectUri used to generate the OAuth URL.
       // This prevents redirect_uri mismatch when the app enforces canonical domain redirects (www/non-www).
       sessionStorage.setItem('instagram_oauth_redirect_uri', REDIRECT_URI);
+      // Store workspace ID to link connection after OAuth
+      sessionStorage.setItem('instagram_oauth_workspace_id', currentWorkspace.id);
 
       const { data, error } = await supabase.functions.invoke('instagram-api', {
-        body: { action: 'get-oauth-url', params: { redirectUri: REDIRECT_URI } }
+        body: { action: 'get-oauth-url', params: { redirectUri: REDIRECT_URI, workspaceId: currentWorkspace.id } }
       });
 
       if (error) throw error;
