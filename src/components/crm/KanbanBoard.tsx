@@ -478,7 +478,6 @@ export function KanbanBoard() {
   // Track previous values to prevent unnecessary updates
   const prevDataUpdatedAtRef = useRef(dataUpdatedAt);
   const prevSubOriginIdRef = useRef(subOriginId);
-  const invalidateLeadsTimeoutRef = useRef<number | null>(null);
 
   // Sync local state with fetched data - only when data actually changes
   useEffect(() => {
@@ -507,58 +506,56 @@ export function KanbanBoard() {
       return; // Don't subscribe to "all" changes or invalid IDs
     }
 
-    const scheduleLeadsInvalidate = () => {
-      if (invalidateLeadsTimeoutRef.current) {
-        window.clearTimeout(invalidateLeadsTimeoutRef.current);
-      }
-      invalidateLeadsTimeoutRef.current = window.setTimeout(() => {
-        // Use the correct queryKey that matches the data fetch
-        queryClient.invalidateQueries({ queryKey: ["crm-leads-with-tags", subOriginId] });
-        // Also invalidate pipeline counts to keep them in sync
-        queryClient.invalidateQueries({ queryKey: ["pipeline-counts", subOriginId] });
-        invalidateLeadsTimeoutRef.current = null;
-      }, 250);
+    // Immediate invalidation for instant UI updates (no debounce)
+    const invalidateLeadsImmediate = () => {
+      queryClient.invalidateQueries({ queryKey: ["crm-leads-with-tags", subOriginId] });
+      queryClient.invalidateQueries({ queryKey: ["pipeline-counts", subOriginId] });
     };
 
     const channel = supabase
-      .channel(`crm-realtime-${subOriginId || "all"}`)
+      .channel(`crm-realtime-${subOriginId}`)
       .on(
         "postgres_changes",
-        { event: "*", schema: "public", table: "leads" },
+        { 
+          event: "*", 
+          schema: "public", 
+          table: "leads",
+          filter: `sub_origin_id=eq.${subOriginId}` // Filter at DB level for performance
+        },
         (payload) => {
           // Ignore real-time updates during reordering to prevent conflicts
           if (isReorderingRef.current) return;
 
           if (payload.eventType === "INSERT") {
             const newLead = payload.new as Lead;
-            // Only add if matches current sub_origin filter
-            if (subOriginId && newLead.sub_origin_id !== subOriginId) return;
             setLocalLeads((prev) => {
               if (prev.some((l) => l.id === newLead.id)) return prev;
               return [newLead, ...prev];
             });
+            // Immediate invalidation for counts and tags
+            invalidateLeadsImmediate();
           } else if (payload.eventType === "UPDATE") {
             const updatedLead = payload.new as Lead;
             // If sub_origin changed and doesn't match current filter, remove it
-            if (subOriginId && updatedLead.sub_origin_id !== subOriginId) {
+            if (updatedLead.sub_origin_id !== subOriginId) {
               setLocalLeads((prev) => prev.filter((l) => l.id !== updatedLead.id));
             } else {
               setLocalLeads((prev) =>
                 prev.map((l) => (l.id === updatedLead.id ? updatedLead : l))
               );
             }
+            invalidateLeadsImmediate();
           } else if (payload.eventType === "DELETE") {
             const deletedId = (payload.old as any).id;
             setLocalLeads((prev) => prev.filter((l) => l.id !== deletedId));
+            // Immediate invalidation for counts
+            invalidateLeadsImmediate();
           }
-
-          // Debounce invalidation to avoid UI freezes during batch updates/moves
-          scheduleLeadsInvalidate();
         }
       )
       .on(
         "postgres_changes",
-        { event: "*", schema: "public", table: "pipelines" },
+        { event: "*", schema: "public", table: "pipelines", filter: `sub_origin_id=eq.${subOriginId}` },
         () => {
           queryClient.invalidateQueries({ queryKey: ["pipelines", subOriginId] });
         }
@@ -568,6 +565,7 @@ export function KanbanBoard() {
         { event: "*", schema: "public", table: "lead_tags" },
         () => {
           // Invalidate tags query to update cards in real-time
+          queryClient.invalidateQueries({ queryKey: ["crm-leads-with-tags", subOriginId] });
           queryClient.invalidateQueries({ queryKey: ["lead-tags-full-related"] });
           queryClient.invalidateQueries({ queryKey: ["all-tags"] });
         }
@@ -575,10 +573,6 @@ export function KanbanBoard() {
       .subscribe();
 
     return () => {
-      if (invalidateLeadsTimeoutRef.current) {
-        window.clearTimeout(invalidateLeadsTimeoutRef.current);
-        invalidateLeadsTimeoutRef.current = null;
-      }
       supabase.removeChannel(channel);
     };
   }, [queryClient, subOriginId]);
