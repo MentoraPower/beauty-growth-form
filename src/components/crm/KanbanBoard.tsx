@@ -18,6 +18,7 @@ import { arrayMove } from "@dnd-kit/sortable";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { useWorkspace } from "@/contexts/WorkspaceContext";
 import { Lead, Pipeline } from "@/types/crm";
 import { triggerWebhook } from "@/lib/webhooks";
 import { trackPipelineMove, trackPositionChange } from "@/lib/leadTracking";
