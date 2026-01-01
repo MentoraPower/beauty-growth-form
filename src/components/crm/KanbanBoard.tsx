@@ -540,9 +540,16 @@ export function KanbanBoard() {
             if (updatedLead.sub_origin_id !== subOriginId) {
               setLocalLeads((prev) => prev.filter((l) => l.id !== updatedLead.id));
             } else {
-              setLocalLeads((prev) =>
-                prev.map((l) => (l.id === updatedLead.id ? updatedLead : l))
-              );
+              // UPSERT: if lead exists update it, if not add it (handles leads entering this sub_origin)
+              setLocalLeads((prev) => {
+                const exists = prev.some((l) => l.id === updatedLead.id);
+                if (exists) {
+                  return prev.map((l) => (l.id === updatedLead.id ? updatedLead : l));
+                } else {
+                  // Lead just entered this sub_origin via UPDATE - add it
+                  return [updatedLead, ...prev];
+                }
+              });
             }
             invalidateLeadsImmediate();
           } else if (payload.eventType === "DELETE") {
