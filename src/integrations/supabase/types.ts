@@ -799,6 +799,7 @@ export type Database = {
           token_expires_at: string | null
           updated_at: string
           user_id: string | null
+          workspace_id: string | null
         }
         Insert: {
           access_token: string
@@ -811,6 +812,7 @@ export type Database = {
           token_expires_at?: string | null
           updated_at?: string
           user_id?: string | null
+          workspace_id?: string | null
         }
         Update: {
           access_token?: string
@@ -823,8 +825,17 @@ export type Database = {
           token_expires_at?: string | null
           updated_at?: string
           user_id?: string | null
+          workspace_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "instagram_connections_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       instagram_messages: {
         Row: {
@@ -2048,6 +2059,38 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "workspace_members_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      workspace_whatsapp_accounts: {
+        Row: {
+          created_at: string
+          id: string
+          session_id: string
+          session_name: string
+          workspace_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          session_id: string
+          session_name: string
+          workspace_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          session_id?: string
+          session_name?: string
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "workspace_whatsapp_accounts_workspace_id_fkey"
             columns: ["workspace_id"]
             isOneToOne: false
             referencedRelation: "workspaces"
