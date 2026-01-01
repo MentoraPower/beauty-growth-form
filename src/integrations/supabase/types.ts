@@ -31,6 +31,7 @@ export type Database = {
           sub_origin_id: string | null
           title: string
           updated_at: string
+          workspace_id: string | null
         }
         Insert: {
           closer_name?: string | null
@@ -48,6 +49,7 @@ export type Database = {
           sub_origin_id?: string | null
           title: string
           updated_at?: string
+          workspace_id?: string | null
         }
         Update: {
           closer_name?: string | null
@@ -65,6 +67,7 @@ export type Database = {
           sub_origin_id?: string | null
           title?: string
           updated_at?: string
+          workspace_id?: string | null
         }
         Relationships: [
           {
@@ -72,6 +75,13 @@ export type Database = {
             columns: ["sub_origin_id"]
             isOneToOne: false
             referencedRelation: "crm_sub_origins"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "calendar_appointments_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
             referencedColumns: ["id"]
           },
         ]
@@ -82,20 +92,31 @@ export type Database = {
           id: string
           nome: string
           ordem: number
+          workspace_id: string | null
         }
         Insert: {
           created_at?: string
           id?: string
           nome: string
           ordem?: number
+          workspace_id?: string | null
         }
         Update: {
           created_at?: string
           id?: string
           nome?: string
           ordem?: number
+          workspace_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "crm_origins_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       crm_sub_origins: {
         Row: {
@@ -213,6 +234,7 @@ export type Database = {
           type: string
           updated_at: string
           widgets: Json | null
+          workspace_id: string | null
         }
         Insert: {
           created_at?: string
@@ -221,6 +243,7 @@ export type Database = {
           type?: string
           updated_at?: string
           widgets?: Json | null
+          workspace_id?: string | null
         }
         Update: {
           created_at?: string
@@ -229,8 +252,17 @@ export type Database = {
           type?: string
           updated_at?: string
           widgets?: Json | null
+          workspace_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "dashboards_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       dispatch_conversations: {
         Row: {
@@ -239,6 +271,7 @@ export type Database = {
           messages: Json
           title: string
           updated_at: string
+          workspace_id: string | null
         }
         Insert: {
           created_at?: string
@@ -246,6 +279,7 @@ export type Database = {
           messages?: Json
           title?: string
           updated_at?: string
+          workspace_id?: string | null
         }
         Update: {
           created_at?: string
@@ -253,8 +287,17 @@ export type Database = {
           messages?: Json
           title?: string
           updated_at?: string
+          workspace_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "dispatch_conversations_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       dispatch_csv_list_recipients: {
         Row: {
@@ -352,6 +395,7 @@ export type Database = {
           type: string
           updated_at: string
           valid_leads: number
+          workspace_id: string | null
         }
         Insert: {
           completed_at?: string | null
@@ -375,6 +419,7 @@ export type Database = {
           type: string
           updated_at?: string
           valid_leads?: number
+          workspace_id?: string | null
         }
         Update: {
           completed_at?: string | null
@@ -398,6 +443,7 @@ export type Database = {
           type?: string
           updated_at?: string
           valid_leads?: number
+          workspace_id?: string | null
         }
         Relationships: [
           {
@@ -421,6 +467,13 @@ export type Database = {
             referencedRelation: "crm_sub_origins"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "dispatch_jobs_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
         ]
       }
       email_automations: {
@@ -434,6 +487,7 @@ export type Database = {
           sub_origin_id: string | null
           subject: string
           trigger_pipeline_id: string | null
+          workspace_id: string | null
         }
         Insert: {
           body_html: string
@@ -445,6 +499,7 @@ export type Database = {
           sub_origin_id?: string | null
           subject: string
           trigger_pipeline_id?: string | null
+          workspace_id?: string | null
         }
         Update: {
           body_html?: string
@@ -456,6 +511,7 @@ export type Database = {
           sub_origin_id?: string | null
           subject?: string
           trigger_pipeline_id?: string | null
+          workspace_id?: string | null
         }
         Relationships: [
           {
@@ -470,6 +526,13 @@ export type Database = {
             columns: ["trigger_pipeline_id"]
             isOneToOne: false
             referencedRelation: "pipelines"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "email_automations_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
             referencedColumns: ["id"]
           },
         ]
@@ -510,6 +573,7 @@ export type Database = {
           name: string
           subject: string
           updated_at: string
+          workspace_id: string | null
         }
         Insert: {
           body_html: string
@@ -519,6 +583,7 @@ export type Database = {
           name: string
           subject: string
           updated_at?: string
+          workspace_id?: string | null
         }
         Update: {
           body_html?: string
@@ -528,8 +593,17 @@ export type Database = {
           name?: string
           subject?: string
           updated_at?: string
+          workspace_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "email_templates_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       email_tracking_events: {
         Row: {
@@ -1468,6 +1542,7 @@ export type Database = {
           text: string
           type: string
           updated_at: string
+          workspace_id: string | null
         }
         Insert: {
           audio_data?: string | null
@@ -1479,6 +1554,7 @@ export type Database = {
           text: string
           type?: string
           updated_at?: string
+          workspace_id?: string | null
         }
         Update: {
           audio_data?: string | null
@@ -1490,8 +1566,17 @@ export type Database = {
           text?: string
           type?: string
           updated_at?: string
+          workspace_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "quick_messages_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       sales: {
         Row: {
@@ -1937,6 +2022,62 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      workspace_members: {
+        Row: {
+          created_at: string
+          id: string
+          role: string
+          user_id: string
+          workspace_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role?: string
+          user_id: string
+          workspace_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: string
+          user_id?: string
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "workspace_members_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      workspaces: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
     }
     Views: {
