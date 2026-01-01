@@ -69,6 +69,17 @@ export function WorkspaceDropdown() {
           </button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="start" className="w-56">
+          <div className="px-2 py-1.5 mb-1">
+            <div className="flex items-center gap-2 px-2.5 py-2 rounded-lg bg-sidebar-accent">
+              <div className="h-5 w-5 rounded-[4px] bg-gradient-to-br from-orange-500 to-orange-400 flex items-center justify-center flex-shrink-0">
+                <span className="text-[9px] font-semibold text-white">
+                  {currentWorkspace ? getInitials(currentWorkspace.name) : 'WS'}
+                </span>
+              </div>
+              <span className="text-sm font-medium">{currentWorkspace?.name || 'Workspace'}</span>
+            </div>
+          </div>
+          <DropdownMenuSeparator />
           {workspaces.map((workspace) => (
             <DropdownMenuItem
               key={workspace.id}
