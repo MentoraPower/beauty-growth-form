@@ -46,10 +46,20 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
         .eq('user_id', user.id);
 
       if (!memberData || memberData.length === 0) {
-        // User has no workspaces, add them to default workspace
+        // User has no workspaces, try to add them to the default workspace.
+        // (Our workspaces SELECT policy requires membership, so we must join first.)
         const defaultWorkspaceId = '00000000-0000-0000-0000-000000000001';
-        
-        // Check if default workspace exists
+
+        const { error: joinError } = await supabase.from('workspace_members').insert({
+          workspace_id: defaultWorkspaceId,
+          user_id: user.id,
+          role: 'member'
+        });
+
+        if (joinError) {
+          console.warn('Could not join default workspace:', joinError);
+        }
+
         const { data: defaultWs } = await supabase
           .from('workspaces')
           .select('*')
@@ -57,17 +67,14 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
           .maybeSingle();
 
         if (defaultWs) {
-          // Add user as member
-          await supabase.from('workspace_members').insert({
-            workspace_id: defaultWorkspaceId,
-            user_id: user.id,
-            role: 'member'
-          });
-          
           setWorkspaces([defaultWs]);
           setCurrentWorkspace(defaultWs);
           localStorage.setItem(WORKSPACE_STORAGE_KEY, defaultWs.id);
+        } else {
+          setWorkspaces([]);
+          setCurrentWorkspace(null);
         }
+
         setIsLoading(false);
         return;
       }
@@ -128,14 +135,14 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return null;
 
-      // Create workspace
-      const { data: newWorkspace, error: wsError } = await supabase
-        .from('workspaces')
-        .insert({ name, created_by: user.id })
-        .select()
-        .single();
+      // Create workspace (avoid RETURNING/select before membership exists, due to RLS)
+      const workspaceId = crypto.randomUUID();
 
-      if (wsError || !newWorkspace) {
+      const { error: wsError } = await supabase
+        .from('workspaces')
+        .insert({ id: workspaceId, name, created_by: user.id });
+
+      if (wsError) {
         console.error('Error creating workspace:', wsError);
         return null;
       }
@@ -144,15 +151,25 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
       const { error: memberError } = await supabase
         .from('workspace_members')
         .insert({
-          workspace_id: newWorkspace.id,
+          workspace_id: workspaceId,
           user_id: user.id,
           role: 'owner'
         });
 
       if (memberError) {
         console.error('Error adding member:', memberError);
-        // Rollback workspace creation
-        await supabase.from('workspaces').delete().eq('id', newWorkspace.id);
+        return null;
+      }
+
+      // Now that membership exists, we can SELECT the workspace row
+      const { data: newWorkspace, error: fetchError } = await supabase
+        .from('workspaces')
+        .select('*')
+        .eq('id', workspaceId)
+        .single();
+
+      if (fetchError || !newWorkspace) {
+        console.error('Error fetching created workspace:', fetchError);
         return null;
       }
 
