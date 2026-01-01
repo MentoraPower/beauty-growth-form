@@ -42,11 +42,25 @@ export function WorkspaceDropdown() {
     );
   }
 
+  const getInitials = (name: string) => {
+    return name
+      .split(' ')
+      .map(word => word[0])
+      .join('')
+      .toUpperCase()
+      .slice(0, 2);
+  };
+
   return (
     <>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <button className="h-8 flex items-center gap-2 px-3 ml-3 rounded-lg border border-border/50 bg-muted/30 hover:bg-muted/50 transition-colors outline-none">
+          <button className="h-8 flex items-center gap-2 px-2 ml-3 rounded-lg border border-border/50 bg-muted/30 hover:bg-muted/50 transition-colors outline-none">
+            <div className="h-5 w-5 rounded-[4px] bg-gradient-to-br from-orange-500 to-orange-400 flex items-center justify-center">
+              <span className="text-[9px] font-semibold text-white">
+                {currentWorkspace ? getInitials(currentWorkspace.name) : 'WS'}
+              </span>
+            </div>
             <span className="text-sm font-medium">{currentWorkspace?.name || 'Selecionar workspace'}</span>
             <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
           </button>
@@ -56,9 +70,14 @@ export function WorkspaceDropdown() {
             <DropdownMenuItem
               key={workspace.id}
               onClick={() => switchWorkspace(workspace.id)}
-              className="flex items-center justify-between"
+              className="flex items-center gap-2"
             >
-              <span>{workspace.name}</span>
+              <div className="h-5 w-5 rounded-[4px] bg-gradient-to-br from-orange-500 to-orange-400 flex items-center justify-center flex-shrink-0">
+                <span className="text-[9px] font-semibold text-white">
+                  {getInitials(workspace.name)}
+                </span>
+              </div>
+              <span className="flex-1">{workspace.name}</span>
               {currentWorkspace?.id === workspace.id && (
                 <Check className="h-4 w-4 text-primary" />
               )}
