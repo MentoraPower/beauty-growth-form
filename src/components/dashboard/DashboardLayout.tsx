@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect, memo, useRef, useMemo } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { Menu, X, LogOut, LayoutGrid, Settings, ChevronDown, User, Inbox, ChevronsLeft, ChevronsRight, SquareUser, Send } from "lucide-react";
+import { Menu, X, LogOut, LayoutGrid, Inbox, SquareUser, Send, ChevronsRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import scaleLogo from "@/assets/scale-logo-menu.png";
 import scaleLogoFull from "@/assets/scale-logo-full.png";
@@ -45,9 +45,6 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [activePanel, setActivePanel] = useState<ActivePanel>(globalActivePanel);
   const [canAccessWhatsapp, setCanAccessWhatsapp] = useState(false);
-  const [profileMenuOpen, setProfileMenuOpen] = useState(false);
-  const [userName, setUserName] = useState<string>("");
-  const [userEmail, setUserEmail] = useState<string>("");
   const location = useLocation();
   const navigate = useNavigate();
   const sidebarRef = useRef<HTMLElement>(null);
@@ -141,23 +138,11 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
     }
   }, [location.pathname, isCRMActive, isAtendimentoActive, isSettingsActive, isAnalizerActive, isEquipeActive, isDisparoActive]);
 
-  // Fetch user permissions for WhatsApp access and user info
+  // Fetch user permissions for WhatsApp access
   useEffect(() => {
     const fetchPermissions = async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
-
-      // Set user email
-      setUserEmail(user.email || "");
-      
-      // Fetch profile name
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('name')
-        .eq('id', user.id)
-        .single();
-      
-      setUserName(profile?.name || user.email?.split('@')[0] || "Usuário");
 
       // Check if user is admin first
       const { data: roleData } = await supabase
@@ -448,79 +433,6 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
                 </button>
               </div>
             </nav>
-
-            {/* Profile Section with Dropdown */}
-            <div className="border-t border-white/10 px-3 py-3">
-              <div className="relative">
-                <button
-                  onClick={() => setProfileMenuOpen(!profileMenuOpen)}
-                  className={cn(
-                    "relative flex items-center w-full rounded-lg transition-all duration-200",
-                    profileMenuOpen 
-                      ? "bg-white/20 text-white" 
-                      : "bg-white/10 text-white/70 hover:bg-white/20 hover:text-white"
-                  )}
-                  style={{ height: profileMenuOpen ? 'auto' : 40 }}
-                >
-                  <div className="flex items-center w-full py-2">
-                    <div className="w-10 flex items-center justify-center flex-shrink-0">
-                      <div className="w-7 h-7 rounded-full bg-white/20 flex items-center justify-center">
-                        <User className="h-4 w-4 text-white" strokeWidth={1.5} />
-                      </div>
-                    </div>
-                    <div className="flex-1 flex items-center justify-between transition-all duration-200 overflow-hidden pr-2 opacity-0 w-0 group-hover:opacity-100 group-hover:w-auto">
-                      <span className="text-sm font-medium whitespace-nowrap truncate max-w-[80px]">
-                        {userName}
-                      </span>
-                      <ChevronDown 
-                        className={cn(
-                          "h-4 w-4 transition-transform duration-200 flex-shrink-0",
-                          profileMenuOpen && "rotate-180"
-                        )} 
-                      />
-                    </div>
-                  </div>
-                </button>
-                
-                {/* Dropdown Menu */}
-                <div 
-                  className={cn(
-                    "overflow-hidden transition-all duration-200",
-                    profileMenuOpen ? "max-h-40 opacity-100 mt-2" : "max-h-0 opacity-0"
-                  )}
-                >
-                  <button
-                    onClick={() => {
-                      setProfileMenuOpen(false);
-                      navigate('/settings');
-                    }}
-                    className="flex items-center w-full h-10 rounded-lg transition-all duration-200 bg-white/5 text-white/70 hover:bg-white/15 hover:text-white mb-1"
-                  >
-                    <div className="w-10 flex items-center justify-center flex-shrink-0">
-                      <Settings className="h-4 w-4" strokeWidth={1.5} />
-                    </div>
-                    <span className="text-sm font-medium whitespace-nowrap transition-all duration-200 overflow-hidden opacity-0 w-0 group-hover:opacity-100 group-hover:w-auto">
-                      Configurações
-                    </span>
-                  </button>
-                  
-                  <button
-                    onClick={async () => {
-                      await supabase.auth.signOut();
-                      navigate("/auth");
-                    }}
-                    className="flex items-center w-full h-10 rounded-lg transition-all duration-200 bg-white/5 text-white/70 hover:bg-red-500/20 hover:text-red-400"
-                  >
-                    <div className="w-10 flex items-center justify-center flex-shrink-0">
-                      <LogOut className="h-4 w-4" strokeWidth={1.5} />
-                    </div>
-                    <span className="text-sm font-medium whitespace-nowrap transition-all duration-200 overflow-hidden opacity-0 w-0 group-hover:opacity-100 group-hover:w-auto">
-                      Sair
-                    </span>
-                  </button>
-                </div>
-              </div>
-            </div>
           </div>
         </aside>
 
@@ -685,34 +597,8 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
               </div>
             </nav>
 
-            {/* Profile Section - Mobile */}
+            {/* Logout - Mobile */}
             <div className="border-t border-white/10 p-3">
-              <div className="flex items-center gap-3 px-4 py-2 mb-2">
-                <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center">
-                  <User className="h-4 w-4 text-white" strokeWidth={1.5} />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-white truncate">{userName}</p>
-                  <p className="text-xs text-white/50 truncate">{userEmail}</p>
-                </div>
-              </div>
-              
-              <Link
-                to="/settings"
-                onClick={() => setSidebarOpen(false)}
-                className={cn(
-                  "relative flex items-center w-full rounded-xl transition-colors duration-200 px-4 py-3 gap-3",
-                  isSettingsActive
-                    ? "bg-white/10 text-white"
-                    : "text-white/60 hover:bg-white/5 hover:text-white"
-                )}
-              >
-                <Settings className="h-5 w-5 flex-shrink-0" strokeWidth={1.5} />
-                <span className="text-sm font-medium whitespace-nowrap">
-                  Configurações
-                </span>
-              </Link>
-              
               <button
                 onClick={async () => {
                   await supabase.auth.signOut();
