@@ -67,6 +67,10 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
+    // Get workspace_id from query params
+    const url = new URL(req.url);
+    const workspaceId = url.searchParams.get("workspace_id");
+
     const caller = await getCaller(req);
     if (!caller.userId) return json(401, { error: caller.error || "Não autenticado" });
 
@@ -87,6 +91,7 @@ Deno.serve(async (req) => {
       phone: string | null;
       photo_url: string | null;
       role: AppRole | null;
+      created_at?: string;
       permissions: {
         can_access_whatsapp: boolean;
         can_create_origins: boolean;
@@ -96,14 +101,45 @@ Deno.serve(async (req) => {
       } | null;
     }> = [];
 
+    // If workspace_id provided, filter by workspace members
+    let workspaceMemberIds: string[] | null = null;
+    let workspaceMembersMap = new Map<string, { role: string; created_at: string }>();
+    
+    if (workspaceId) {
+      const { data: workspaceMembers } = await supabaseAdmin
+        .from("workspace_members")
+        .select("user_id, role, created_at")
+        .eq("workspace_id", workspaceId);
+      
+      if (workspaceMembers && workspaceMembers.length > 0) {
+        workspaceMemberIds = workspaceMembers.map((wm: any) => wm.user_id);
+        workspaceMembers.forEach((wm: any) => {
+          workspaceMembersMap.set(wm.user_id, { role: wm.role, created_at: wm.created_at });
+        });
+      } else {
+        // No members in this workspace
+        return json(200, { members: [] });
+      }
+    }
+
     // List users from auth
     const perPage = 1000;
     for (let page = 1; page <= 20; page++) {
       const { data, error } = await supabaseAdmin.auth.admin.listUsers({ page, perPage });
       if (error) return json(500, { error: error.message });
 
-      const users = data?.users ?? [];
+      let users = data?.users ?? [];
       if (users.length === 0) break;
+
+      // Filter by workspace members if workspace_id provided
+      if (workspaceMemberIds) {
+        users = users.filter((u: any) => workspaceMemberIds!.includes(u.id));
+      }
+
+      if (users.length === 0) {
+        if ((data?.users?.length ?? 0) < perPage) break;
+        continue;
+      }
 
       const ids = users.map((u: any) => u.id);
 
@@ -130,6 +166,7 @@ Deno.serve(async (req) => {
         const profile = profileByUser.get(u.id);
         const role = roleByUser.get(u.id) ?? null;
         const perm = permByUser.get(u.id) ?? null;
+        const workspaceMemberInfo = workspaceMembersMap.get(u.id);
 
         members.push({
           user_id: u.id,
@@ -138,6 +175,7 @@ Deno.serve(async (req) => {
           phone: profile?.phone ?? null,
           photo_url: profile?.photo_url ?? null,
           role,
+          created_at: workspaceMemberInfo?.created_at ?? u.created_at,
           permissions: perm
             ? {
                 can_access_whatsapp: !!perm.can_access_whatsapp,
@@ -150,7 +188,7 @@ Deno.serve(async (req) => {
         });
       }
 
-      if (users.length < perPage) break;
+      if ((data?.users?.length ?? 0) < perPage) break;
     }
 
     // sort by name/email for UI stability
