@@ -686,7 +686,7 @@ export const PromptInputBox = React.forwardRef((props: PromptInputBoxProps, ref:
               
               {modelDropdownOpen && (
                 <div 
-                  className="absolute bottom-full right-0 mb-1 bg-white border rounded-none shadow-lg z-50 min-w-[100px]"
+                  className="absolute bottom-full left-0 mb-1 bg-white border rounded-none shadow-lg z-50 min-w-[120px]"
                   style={{ borderColor: '#00000010' }}
                 >
                   <div 
