@@ -123,8 +123,11 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
       setIsSwitching(true);
       setCurrentWorkspace(workspace);
       localStorage.setItem(WORKSPACE_STORAGE_KEY, workspaceId);
+      // Clear last sub-origin from previous workspace
+      localStorage.removeItem('crm_last_sub_origin');
       // Small delay to show the loading overlay before reload
       setTimeout(() => {
+        // Navigate to clean /crm without any origin params from previous workspace
         window.location.href = '/crm';
       }, 300);
     }
