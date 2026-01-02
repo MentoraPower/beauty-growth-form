@@ -214,34 +214,56 @@ export function DisparoSubmenuPanel({ isOpen, onClose }: DisparoSubmenuPanelProp
     }
     
     try {
-      // First delete associated dispatch_jobs (foreign key constraint)
-      await supabase
+      // 1) Delete associated dispatch_jobs first (DB FK may otherwise try to SET NULL and fail constraints)
+      const { error: jobsError } = await supabase
         .from("dispatch_jobs")
         .delete()
         .eq("conversation_id", id);
-      
-      // Then delete associated csv_lists
-      await supabase
+
+      if (jobsError) throw jobsError;
+
+      // 2) Delete CSV data (recipients -> lists)
+      const { data: csvLists, error: csvListsFetchError } = await supabase
         .from("dispatch_csv_lists")
-        .delete()
+        .select("id")
         .eq("conversation_id", id);
-      
-      // Finally delete the conversation
-      const { error } = await supabase
+
+      if (csvListsFetchError) throw csvListsFetchError;
+
+      const csvListIds = (csvLists ?? []).map((l) => l.id).filter(Boolean) as string[];
+
+      if (csvListIds.length > 0) {
+        const { error: recipientsError } = await supabase
+          .from("dispatch_csv_list_recipients")
+          .delete()
+          .in("list_id", csvListIds);
+
+        if (recipientsError) throw recipientsError;
+
+        const { error: listsDeleteError } = await supabase
+          .from("dispatch_csv_lists")
+          .delete()
+          .in("id", csvListIds);
+
+        if (listsDeleteError) throw listsDeleteError;
+      }
+
+      // 3) Finally delete the conversation
+      const { error: convError } = await supabase
         .from("dispatch_conversations")
         .delete()
         .eq("id", id);
 
-      if (error) throw error;
-      
+      if (convError) throw convError;
+
       toast.success("Conversa apagada");
     } catch (error) {
       console.error("Error deleting conversation:", error);
       toast.error("Erro ao apagar conversa");
-      
+
       // Rollback on error - restore the conversation
       setConversations(previousConversations);
-      
+
       // If we navigated away, go back to the conversation
       if (wasCurrentConversation) {
         navigate(`/disparo?conversation=${id}`, { replace: true });
