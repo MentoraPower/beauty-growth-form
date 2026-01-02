@@ -226,8 +226,7 @@ export function AnimatedAIInput({
 
           {/* Bottom Actions Bar */}
           <div 
-            className="h-14 bg-zinc-50 flex items-center px-3 rounded-b-xl"
-            style={{ borderTop: '1px solid #00000010' }}
+            className="h-14 bg-zinc-50 flex items-center px-3 border-t border-black/5"
           >
             <div className="flex items-center justify-between w-full">
               {/* Left side - Model selector and file upload */}
