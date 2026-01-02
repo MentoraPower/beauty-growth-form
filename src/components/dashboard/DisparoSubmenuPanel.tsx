@@ -214,6 +214,19 @@ export function DisparoSubmenuPanel({ isOpen, onClose }: DisparoSubmenuPanelProp
     }
     
     try {
+      // First delete associated dispatch_jobs (foreign key constraint)
+      await supabase
+        .from("dispatch_jobs")
+        .delete()
+        .eq("conversation_id", id);
+      
+      // Then delete associated csv_lists
+      await supabase
+        .from("dispatch_csv_lists")
+        .delete()
+        .eq("conversation_id", id);
+      
+      // Finally delete the conversation
       const { error } = await supabase
         .from("dispatch_conversations")
         .delete()
