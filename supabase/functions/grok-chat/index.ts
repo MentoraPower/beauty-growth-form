@@ -1418,31 +1418,40 @@ serve(async (req) => {
       });
     }
 
-    // Use OpenAI GPT-5 (default)
-    const gptModel = hasImage ? "gpt-5-2025-08-07" : "gpt-5-mini-2025-08-07";
-    console.log("Using OpenAI model:", gptModel);
-    console.log("Calling OpenAI API with messages count:", messages.length);
+    // Use Lovable AI Gateway (free tier) with Gemini 2.5 Flash
+    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
+    
+    if (!LOVABLE_API_KEY) {
+      console.error("LOVABLE_API_KEY not found");
+      return new Response(JSON.stringify({ error: "API key do Lovable AI não configurada" }), {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
-    const response = await fetch("https://api.openai.com/v1/chat/completions", {
+    const geminiModel = "google/gemini-2.5-flash";
+    console.log("Using Lovable AI model:", geminiModel);
+    console.log("Calling Lovable AI Gateway with messages count:", messages.length);
+
+    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
-        "Authorization": `Bearer ${OPENAI_API_KEY}`,
+        "Authorization": `Bearer ${LOVABLE_API_KEY}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: gptModel,
+        model: geminiModel,
         messages: [
           { role: "system", content: systemPrompt },
           ...messages,
         ],
         stream: true,
-        max_completion_tokens: maxTokens,
       }),
     });
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error("OpenAI API error:", response.status, errorText);
+      console.error("Lovable AI error:", response.status, errorText);
       
       if (response.status === 429) {
         return new Response(JSON.stringify({ error: "Limite de requisições excedido. Tente novamente mais tarde." }), {
@@ -1452,13 +1461,13 @@ serve(async (req) => {
       }
       
       if (response.status === 402) {
-        return new Response(JSON.stringify({ error: "Créditos insuficientes na API do OpenAI." }), {
+        return new Response(JSON.stringify({ error: "Créditos insuficientes. Adicione créditos em Settings → Workspace → Usage." }), {
           status: 402,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
       
-      return new Response(JSON.stringify({ error: "Erro ao conectar com o OpenAI" }), {
+      return new Response(JSON.stringify({ error: "Erro ao conectar com o Lovable AI" }), {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
