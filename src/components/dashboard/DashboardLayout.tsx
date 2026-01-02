@@ -462,7 +462,7 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
           >
             <div
               className={cn(
-                "h-full p-2 rounded-2xl",
+                "h-full p-2 rounded-2xl bg-white",
                 animationsEnabled && "transition-opacity duration-200"
               )}
               style={{
@@ -470,10 +470,9 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
                 minWidth: submenuWidth,
                 opacity: crmSubmenuOpen ? 1 : 0,
                 transitionDelay: (animationsEnabled && crmSubmenuOpen) ? '50ms' : '0ms',
-                backgroundColor: '#F8F8F8',
               }}
             >
-              <div className="h-full bg-zinc-900 rounded-xl overflow-hidden">
+              <div className="h-full bg-zinc-800 rounded-xl overflow-hidden">
                 <div className="h-full pl-4 pr-2">
                   <MemoizedCRMOriginsPanel
                     isOpen={crmSubmenuOpen}
@@ -513,7 +512,7 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
           >
             <div
               className={cn(
-                "h-full p-2 rounded-2xl",
+                "h-full p-2 rounded-2xl bg-white",
                 animationsEnabled && "transition-opacity duration-200"
               )}
               style={{
@@ -521,10 +520,9 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
                 minWidth: disparoSubmenuWidth,
                 opacity: disparoSubmenuOpen ? 1 : 0,
                 transitionDelay: (animationsEnabled && disparoSubmenuOpen) ? '50ms' : '0ms',
-                backgroundColor: '#F8F8F8',
               }}
             >
-              <div className="h-full bg-zinc-900 rounded-xl overflow-hidden">
+              <div className="h-full bg-zinc-800 rounded-xl overflow-hidden">
                 <div className="h-full pl-2 pr-2">
                   <DisparoSubmenuPanel
                     isOpen={disparoSubmenuOpen}
