@@ -349,12 +349,12 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
   const [csvListId, setCsvListId] = useState<string | null>(null);
   const [csvMappedColumns, setCsvMappedColumns] = useState<{ name?: string; email?: string; whatsapp?: string }>({});
   
-  // Typewriter hook for smooth text streaming
+  // Typewriter hook for smooth text streaming (slower for natural typing effect)
   const typewriter = useTypewriter({ 
-    charsPerTick: 12, 
-    tickInterval: 16, 
-    catchUpThreshold: 150,
-    catchUpMultiplier: 5 
+    charsPerTick: 2, 
+    tickInterval: 12, 
+    catchUpThreshold: 200,
+    catchUpMultiplier: 3 
   });
   
   // Progressive steps hook for Data Intelligence animation
