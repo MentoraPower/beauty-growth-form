@@ -592,17 +592,21 @@ export function AutomationsDropdown({
       toast.error("Selecione a pipeline de destino");
       return;
     }
+    if (webhookType === "receive" && !webhookTriggerPipelineId) {
+      toast.error("Selecione em qual pipeline o lead vai cair");
+      return;
+    }
 
     try {
       const webhookData = {
         name: webhookName,
         type: webhookType,
         url: webhookType === "send" ? webhookUrl : getGeneratedWebhookUrl(),
-        scope: webhookScope,
-        origin_id: webhookOriginId || null,
+        scope: "sub_origin" as const,
+        origin_id: null,
         sub_origin_id: subOriginId,
         trigger: webhookType === "send" ? webhookTrigger : null,
-        trigger_pipeline_id: webhookType === "send" && webhookTrigger === "lead_moved" ? webhookTriggerPipelineId : null,
+        trigger_pipeline_id: webhookTriggerPipelineId || null,
         is_active: true,
         auto_tag_name: webhookAutoTagName.trim() || null,
         auto_tag_color: webhookAutoTagColor || "#6366f1",
@@ -1514,46 +1518,23 @@ export function AutomationsDropdown({
                     </>
                   )}
 
-                  <Select 
-                    value={webhookSubOriginId} 
-                    onValueChange={(v) => {
-                      setWebhookSubOriginId(v);
-                      setWebhookScope("sub_origin");
-                    }}
-                  >
-                    <SelectTrigger className="h-10">
-                      <SelectValue placeholder="Onde o lead vai cair..." />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {origins.map((origin) => {
-                        const originSubOrigins = subOrigins.filter(s => s.origin_id === origin.id);
-                        if (originSubOrigins.length === 0) return null;
-                        
-                        return (
-                          <div key={origin.id}>
-                            <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground bg-muted/50">
-                              {origin.nome}
-                            </div>
-                            {originSubOrigins.map((subOrigin) => {
-                              const subOriginPipelines = allPipelines.filter(p => p.sub_origin_id === subOrigin.id);
-                              return (
-                                <SelectItem key={subOrigin.id} value={subOrigin.id}>
-                                  <div className="flex flex-col">
-                                    <span>{subOrigin.nome}</span>
-                                    {subOriginPipelines.length > 0 && (
-                                      <span className="text-[10px] text-muted-foreground">
-                                        {subOriginPipelines.map(p => p.nome).join(" → ")}
-                                      </span>
-                                    )}
-                                  </div>
-                                </SelectItem>
-                              );
-                            })}
-                          </div>
-                        );
-                      })}
-                    </SelectContent>
-                  </Select>
+                  {webhookType === "receive" && (
+                    <Select 
+                      value={webhookTriggerPipelineId} 
+                      onValueChange={setWebhookTriggerPipelineId}
+                    >
+                      <SelectTrigger className="h-10">
+                        <SelectValue placeholder="Em qual pipeline o lead vai cair?" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {pipelines.map((pipeline) => (
+                          <SelectItem key={pipeline.id} value={pipeline.id}>
+                            {pipeline.nome}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
 
                   {webhookType === "receive" && (
                     <>
@@ -2215,46 +2196,23 @@ export function AutomationsDropdown({
                     </>
                   )}
 
-                  <Select 
-                    value={webhookSubOriginId} 
-                    onValueChange={(v) => {
-                      setWebhookSubOriginId(v);
-                      setWebhookScope("sub_origin");
-                    }}
-                  >
-                    <SelectTrigger className="h-10">
-                      <SelectValue placeholder="Onde o lead vai cair..." />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {origins.map((origin) => {
-                        const originSubOrigins = subOrigins.filter(s => s.origin_id === origin.id);
-                        if (originSubOrigins.length === 0) return null;
-                        
-                        return (
-                          <div key={origin.id}>
-                            <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground bg-muted/50">
-                              {origin.nome}
-                            </div>
-                            {originSubOrigins.map((subOrigin) => {
-                              const subOriginPipelines = allPipelines.filter(p => p.sub_origin_id === subOrigin.id);
-                              return (
-                                <SelectItem key={subOrigin.id} value={subOrigin.id}>
-                                  <div className="flex flex-col">
-                                    <span>{subOrigin.nome}</span>
-                                    {subOriginPipelines.length > 0 && (
-                                      <span className="text-[10px] text-muted-foreground">
-                                        {subOriginPipelines.map(p => p.nome).join(" → ")}
-                                      </span>
-                                    )}
-                                  </div>
-                                </SelectItem>
-                              );
-                            })}
-                          </div>
-                        );
-                      })}
-                    </SelectContent>
-                  </Select>
+                  {webhookType === "receive" && (
+                    <Select 
+                      value={webhookTriggerPipelineId} 
+                      onValueChange={setWebhookTriggerPipelineId}
+                    >
+                      <SelectTrigger className="h-10">
+                        <SelectValue placeholder="Em qual pipeline o lead vai cair?" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {pipelines.map((pipeline) => (
+                          <SelectItem key={pipeline.id} value={pipeline.id}>
+                            {pipeline.nome}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
 
                   {webhookType === "receive" && (
                     <div className="p-3 rounded-lg bg-muted/50 border border-border">
