@@ -129,25 +129,25 @@ export function formatMessageContent(content: string): React.ReactNode {
       continue;
     }
     
-    // Check for headings - ## is main title (largest)
-    if (trimmedLine.startsWith('## ')) {
-      const text = toSentenceCase(trimmedLine.slice(3));
+    // ### is subtitle (medium)
+    if (trimmedLine.startsWith('###')) {
+      const text = toSentenceCase(trimmedLine.slice(3).trimStart());
       elements.push(
-        React.createElement('h2', { 
-          key: key++, 
-          className: 'text-2xl font-bold text-foreground mt-6 mb-3 first:mt-0 tracking-tight' 
+        React.createElement('h3', {
+          key: key++,
+          className: 'text-xl font-semibold text-foreground mt-5 mb-2'
         }, formatInlineStyles(text))
       );
       continue;
     }
-    
-    // ### is subtitle (medium)
-    if (trimmedLine.startsWith('### ')) {
-      const text = toSentenceCase(trimmedLine.slice(4));
+
+    // Check for headings - ## is main title (largest)
+    if (trimmedLine.startsWith('##')) {
+      const text = toSentenceCase(trimmedLine.slice(2).trimStart());
       elements.push(
-        React.createElement('h3', { 
-          key: key++, 
-          className: 'text-xl font-semibold text-foreground mt-5 mb-2' 
+        React.createElement('h2', {
+          key: key++,
+          className: 'text-2xl font-bold text-foreground mt-6 mb-3 first:mt-0 tracking-tight'
         }, formatInlineStyles(text))
       );
       continue;
@@ -229,17 +229,17 @@ export const formatCopyToRichHtml = (text: string): string => {
       continue;
     }
     
-    // Main title: ## Title
-    if (trimmed.startsWith('## ')) {
-      const titleText = formatInlineTextToHtml(toSentenceCaseString(trimmed.slice(3)));
-      htmlLines.push(`<h2 style="font-size: 1.5rem; font-weight: 700; color: #111; margin: 1.5rem 0 0.75rem 0; line-height: 1.3;">${titleText}</h2>`);
+    // Subtitle: ### Subtitle
+    if (trimmed.startsWith('###')) {
+      const subtitleText = formatInlineTextToHtml(toSentenceCaseString(trimmed.slice(3).trimStart()));
+      htmlLines.push(`<h3 style="font-size: 1.25rem; font-weight: 600; color: #222; margin: 1.25rem 0 0.5rem 0; line-height: 1.4;">${subtitleText}</h3>`);
       continue;
     }
-    
-    // Subtitle: ### Subtitle
-    if (trimmed.startsWith('### ')) {
-      const subtitleText = formatInlineTextToHtml(toSentenceCaseString(trimmed.slice(4)));
-      htmlLines.push(`<h3 style="font-size: 1.25rem; font-weight: 600; color: #222; margin: 1.25rem 0 0.5rem 0; line-height: 1.4;">${subtitleText}</h3>`);
+
+    // Main title: ## Title
+    if (trimmed.startsWith('##')) {
+      const titleText = formatInlineTextToHtml(toSentenceCaseString(trimmed.slice(2).trimStart()));
+      htmlLines.push(`<h2 style="font-size: 1.5rem; font-weight: 700; color: #111; margin: 1.5rem 0 0.75rem 0; line-height: 1.3;">${titleText}</h2>`);
       continue;
     }
     
