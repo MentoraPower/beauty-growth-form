@@ -2152,6 +2152,34 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
       // Regular content - update message
       const finalCleanContent = removeAgentPrefix(cleanContent);
       
+      // Check if this is an edit response that should update the side panel
+      // Detect if the AI returned HTML code that should update the side panel
+      const containsHtmlCode = /<(!DOCTYPE|html|head|body|div|table|style)/i.test(finalCleanContent);
+      const isEditRequest = /\b(adicione|adiciona|coloque|coloca|mude|muda|altere|altera|troque|troca|remove|remova|tire|tira|edite|edita|modifique|modifica|atualize|atualiza|insira|insere|botão|button|link|cor|color|título|title|texto|text|dourado|golden|vermelho|red|azul|blue|verde|green)\b/i.test(messageContent);
+      
+      // If user asked for an edit and AI returned HTML, update the side panel
+      if (isEditRequest && containsHtmlCode && sidePanelHtml) {
+        // Extract HTML from the response (remove markdown code blocks if present)
+        let updatedHtml = finalCleanContent
+          .replace(/^```html\n?/i, '')
+          .replace(/\n?```$/i, '')
+          .replace(/^[\s\S]*?(<!DOCTYPE|<html)/i, '$1') // Remove text before HTML
+          .trim();
+        
+        // If the response contains full HTML, update the side panel
+        if (updatedHtml.includes('<') && updatedHtml.includes('>')) {
+          setSidePanelHtml(updatedHtml);
+          setHtmlSource('ai');
+          if (!sidePanelOpen) {
+            setSidePanelOpen(true);
+            setSidePanelShowCodePreview(true);
+          }
+          toast.success("Email atualizado no painel lateral!");
+          logAction('ai', 'Atualizou o email/copy', `Edição solicitada: ${messageContent.substring(0, 50)}...`);
+          scheduleScrollToBottom();
+        }
+      }
+      
       // Check if content looks like copy/email
       const isLargeContent = finalCleanContent.length > 300;
       const looksLikeCopy = /\b(copy|headline|cta|oferta|venda|benefício)\b/i.test(messageContent) || finalCleanContent.length >= 200;
