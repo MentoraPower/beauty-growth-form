@@ -223,10 +223,10 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[700px] p-0 gap-0 overflow-hidden">
+      <DialogContent className="sm:max-w-[850px] p-0 gap-0 overflow-hidden">
         <DialogTitle className="sr-only">Configurações</DialogTitle>
         
-        <div className="flex h-[620px]">
+        <div className="flex h-[700px]">
           {/* Sidebar Menu */}
           <div className="w-[200px] bg-zinc-50 p-3 flex flex-col gap-1" style={{ borderRight: '1px solid #00000010' }}>
             <div className="px-2 py-3 mb-2">
