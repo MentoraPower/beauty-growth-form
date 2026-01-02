@@ -1582,7 +1582,7 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
   };
 
   // Handle sending messages - main function (large, continues with chat logic)
-  const handleSend = async (message: string, files?: File[]) => {
+  const handleSend = async (message: string, files?: File[], model?: AIModel) => {
     if (!message.trim() && (!files || files.length === 0)) return;
     
     if (isProcessingMessageRef.current) {
@@ -1851,6 +1851,11 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
         (() => {
           let content = userMessage.content;
           
+          // Add model prefix based on selected model
+          const modelPrefix = model === 'Grok' ? '[MODEL:grok]' : 
+                             model === 'Copywriting' ? '[MODEL:gpt][CONTEXT:copywriting]' : 
+                             '[MODEL:gpt]';
+          
           if (csvParseResult && csvParseResult.leads.length > 0) {
             const stats = csvParseResult.detailedStats;
             const totalLeads = stats?.totalLeads ?? csvParseResult.leads.length;
@@ -1859,7 +1864,9 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
             const hasEmail = !!csvParseResult.mappedColumns.email;
             
             const csvContext = `[NOVA LISTA CSV RECEBIDA]\nArquivo: "${csvFileNameLocal}"\nTotal de leads: ${totalLeads}\nEmails válidos: ${validEmails}\nColuna de NOME: ${hasName ? `✅ "${csvParseResult.mappedColumns.name}"` : '❌ Não identificada'}\nColuna de EMAIL: ${hasEmail ? `✅ "${csvParseResult.mappedColumns.email}"` : '❌ Não identificada'}`;
-            content = csvContext;
+            content = `${modelPrefix} ${csvContext}`;
+          } else {
+            content = `${modelPrefix} ${content}`;
           }
           
           if (imageBase64) {
@@ -1875,8 +1882,8 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
         })()
       ];
 
-      // Check mode from message
-      const isCopywritingMode = message.includes('[CONTEXT:copywriting]') || message.includes('[Agente:Copywriting]');
+      // Check mode from message or selected model
+      const isCopywritingMode = model === 'Copywriting' || message.includes('[CONTEXT:copywriting]') || message.includes('[Agente:Copywriting]');
       
       const response = await fetch(CHAT_URL, {
         method: "POST",
@@ -2274,7 +2281,7 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
                       }}
                     >
                       <AnimatedAIInput
-                        onSubmit={(value, model) => handleSend(value)}
+                        onSubmit={(value, model) => handleSend(value, undefined, model)}
                         isLoading={isBusy}
                         placeholder="Digite sua mensagem aqui..."
                         headerText="Ask Scale to create"
@@ -2433,7 +2440,7 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
                   sidePanelOpen ? "max-w-4xl" : "max-w-5xl"
                 )}>
                   <AnimatedAIInput
-                    onSubmit={(value, model) => handleSend(value)}
+                    onSubmit={(value, model) => handleSend(value, undefined, model)}
                     isLoading={isBusy}
                     placeholder="Digite sua mensagem aqui..."
                     headerText="Ask Scale to create"
