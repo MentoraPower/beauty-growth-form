@@ -243,13 +243,13 @@ export function DisparoSubmenuPanel({ isOpen, onClose }: DisparoSubmenuPanelProp
 
   return (
     <>
-      <div className="flex flex-col h-full py-4">
+      <div className="flex flex-col h-full py-4 bg-card text-foreground">
         {/* Header */}
         <div className="flex items-center justify-between px-2 mb-4">
-          <h2 className="text-lg font-semibold text-white">Disparo</h2>
+          <h2 className="text-lg font-semibold text-foreground">Disparo</h2>
           <button
             onClick={onClose}
-            className="w-7 h-7 rounded-full bg-white/10 flex items-center justify-center hover:bg-white/20 transition-colors"
+            className="w-7 h-7 rounded-full bg-accent flex items-center justify-center hover:bg-accent/80 transition-colors"
           >
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="url(#gradient-chevrons)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <defs>
@@ -282,12 +282,12 @@ export function DisparoSubmenuPanel({ isOpen, onClose }: DisparoSubmenuPanelProp
         {conversations.length > 0 && (
           <div className="px-2 py-3">
             <div className="relative">
-              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-white/40" />
-              <Input 
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+              <Input
                 placeholder="Buscar..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-8 h-8 text-xs bg-white/5 border-white/10 rounded-md text-white placeholder:text-white/40 focus-visible:ring-1 focus-visible:ring-white/20 focus-visible:border-white/20"
+                className="pl-8 h-8 text-xs bg-background border-border rounded-md text-foreground placeholder:text-muted-foreground focus-visible:ring-1 focus-visible:ring-ring/20 focus-visible:border-ring/30"
               />
             </div>
           </div>
@@ -295,28 +295,28 @@ export function DisparoSubmenuPanel({ isOpen, onClose }: DisparoSubmenuPanelProp
 
         {/* Label */}
         <div className="px-2 mb-2">
-          <span className="text-xs tracking-wide text-white/70 font-medium">Seus chats</span>
+          <span className="text-xs tracking-wide text-muted-foreground font-medium">Seus chats</span>
         </div>
 
         {/* Conversations list */}
         <div className="flex-1 overflow-y-auto px-2 space-y-1 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
           {isLoading ? (
             <div className="flex items-center justify-center py-8">
-              <div className="w-5 h-5 border-2 border-white/20 border-t-white/60 rounded-full animate-spin" />
+              <div className="w-5 h-5 border-2 border-border border-t-foreground/60 rounded-full animate-spin" />
             </div>
           ) : filteredConversations.length === 0 ? (
-            <div className="text-center py-8 text-white/40 text-sm">
+            <div className="text-center py-8 text-muted-foreground text-sm">
               {searchQuery ? "Nenhuma conversa encontrada" : "Nenhuma conversa ainda"}
             </div>
           ) : (
             filteredConversations.map((conv) => (
-              <div 
+              <div
                 key={conv.id}
                 className={cn(
                   "flex items-center justify-between group rounded-lg transition-colors cursor-pointer",
-                  currentConversationId === conv.id 
-                    ? "bg-white/10 text-white" 
-                    : "hover:bg-white/5 text-white/80 hover:text-white"
+                  currentConversationId === conv.id
+                    ? "bg-accent text-foreground"
+                    : "hover:bg-accent/60 text-muted-foreground hover:text-foreground"
                 )}
               >
                 <button
@@ -325,15 +325,13 @@ export function DisparoSubmenuPanel({ isOpen, onClose }: DisparoSubmenuPanelProp
                 >
                   <span className="block truncate max-w-[140px]">{sanitizeTitle(conv.title)}</span>
                 </button>
-                
+
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <button 
+                    <button
                       className={cn(
                         "h-7 w-7 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity mr-1 rounded",
-                        currentConversationId === conv.id 
-                          ? "hover:bg-white/20" 
-                          : "hover:bg-white/20"
+                        "hover:bg-accent/80"
                       )}
                       onClick={(e) => e.stopPropagation()}
                     >
@@ -341,14 +339,14 @@ export function DisparoSubmenuPanel({ isOpen, onClose }: DisparoSubmenuPanelProp
                     </button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className="bg-background border border-border z-[60]">
-                    <DropdownMenuItem 
+                    <DropdownMenuItem
                       onClick={(e) => openRenameDialog(conv.id, conv.title, e)}
                       className="cursor-pointer"
                     >
                       <Pencil className="h-4 w-4 mr-2" />
                       Renomear
                     </DropdownMenuItem>
-                    <DropdownMenuItem 
+                    <DropdownMenuItem
                       onClick={(e) => deleteConversation(conv.id, e)}
                       className="text-destructive cursor-pointer"
                     >

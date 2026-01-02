@@ -916,25 +916,25 @@ export function CRMOriginsPanel({ isOpen, onClose, sidebarWidth, embedded = fals
     <>
       {/* Header */}
       <div className="px-4 pl-2 py-4 flex items-center justify-between">
-        <h2 className="text-white font-semibold text-sm">Espaços</h2>
+        <h2 className="text-foreground font-semibold text-sm">Espaços</h2>
         <button
           onClick={onClose}
-          className="w-7 h-7 flex items-center justify-center rounded-full border border-zinc-700 hover:bg-zinc-800 transition-colors"
+          className="w-7 h-7 flex items-center justify-center rounded-full border border-border hover:bg-accent transition-colors"
         >
-          <ChevronsRight className="w-4 h-4 text-zinc-400" />
+          <ChevronsRight className="w-4 h-4 text-muted-foreground" />
         </button>
       </div>
 
       {/* Search field */}
       <div className="px-2 pb-3">
-        <div className="flex items-center gap-2 border-b border-zinc-700 pb-2">
-          <Search className="w-4 h-4 text-zinc-400" />
+        <div className="flex items-center gap-2 border-b border-border pb-2">
+          <Search className="w-4 h-4 text-muted-foreground" />
           <input
             type="text"
             placeholder="Pesquisar..."
-            className="flex-1 bg-transparent text-sm text-white placeholder:text-zinc-500 focus:outline-none"
+            className="flex-1 bg-transparent text-sm text-foreground placeholder:text-muted-foreground focus:outline-none"
           />
-          <div className="flex items-center gap-0.5 text-zinc-400">
+          <div className="flex items-center gap-0.5 text-muted-foreground">
             <LayoutGrid className="w-3.5 h-3.5" />
             <span className="text-xs font-medium">K</span>
           </div>
@@ -997,7 +997,7 @@ export function CRMOriginsPanel({ isOpen, onClose, sidebarWidth, embedded = fals
       </div>
 
       {/* Fixed Footer - Credit Chart Card */}
-      <div className="flex-shrink-0 px-3 pb-4 pt-2 border-t border-zinc-800/50">
+      <div className="flex-shrink-0 px-3 pb-4 pt-2 border-t border-border">
         <div 
           className="relative w-full rounded-2xl overflow-hidden"
           style={{ 
@@ -1122,7 +1122,7 @@ export function CRMOriginsPanel({ isOpen, onClose, sidebarWidth, embedded = fals
 
   // When embedded, just return the content
   if (embedded) {
-    return <div className="h-full flex flex-col bg-zinc-900 text-white">{content}</div>;
+    return <div className="h-full flex flex-col bg-card text-foreground">{content}</div>;
   }
 
   // Standalone mode (mobile/fallback)
