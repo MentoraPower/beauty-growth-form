@@ -602,13 +602,13 @@ export function AutomationsDropdown({
     try {
       const webhookData = {
         name: webhookName,
-        type: webhookType,
+        type: webhookType === "update" ? "receive" : webhookType, // "update" is stored as "receive" type
         url: webhookType === "send" ? webhookUrl : getGeneratedWebhookUrl(),
         scope: "sub_origin" as const,
         origin_id: null,
         sub_origin_id: subOriginId,
         trigger: webhookType === "send" ? webhookTrigger : null,
-        trigger_pipeline_id: webhookTriggerPipelineId || null,
+        trigger_pipeline_id: webhookType === "receive" ? (webhookTriggerPipelineId || null) : null, // update type has no pipeline
         is_active: true,
         auto_tag_name: webhookAutoTagName.trim() || null,
         auto_tag_color: webhookAutoTagColor || "#6366f1",
@@ -1540,11 +1540,9 @@ export function AutomationsDropdown({
                   )}
 
                   {webhookType === "update" && (
-                    <div className="p-3 rounded-lg bg-blue-500/10 border border-blue-500/30">
-                      <span className="text-xs text-blue-400">
-                        O webhook de atualização não move leads entre pipelines. Apenas atualiza os dados do lead existente em qualquer pipeline desta sub-origem.
-                      </span>
-                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      O webhook de atualização não move leads entre pipelines. Apenas atualiza os dados do lead existente em qualquer pipeline desta sub-origem.
+                    </p>
                   )}
 
                   {(webhookType === "receive" || webhookType === "update") && (
@@ -2227,11 +2225,9 @@ export function AutomationsDropdown({
                   )}
 
                   {webhookType === "update" && (
-                    <div className="p-3 rounded-lg bg-blue-500/10 border border-blue-500/30">
-                      <span className="text-xs text-blue-400">
-                        O webhook de atualização não move leads entre pipelines. Apenas atualiza os dados do lead existente em qualquer pipeline desta sub-origem.
-                      </span>
-                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      O webhook de atualização não move leads entre pipelines. Apenas atualiza os dados do lead existente em qualquer pipeline desta sub-origem.
+                    </p>
                   )}
 
                   {(webhookType === "receive" || webhookType === "update") && (
