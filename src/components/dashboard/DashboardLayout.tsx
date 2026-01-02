@@ -439,9 +439,9 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
         {/* CRM Submenu Clip Container - clips the submenu animation */}
         <div
           style={{
-            left: sidebarCollapsedWidth + 12,
-            top: 'calc(45px + 12px)',
-            height: 'calc(100vh - 45px - 1.5rem)',
+            left: sidebarCollapsedWidth + 6,
+            top: 'calc(45px + 6px)',
+            height: 'calc(100vh - 45px - 12px)',
             width: submenuWidth + 8,
             zIndex: 39,
             pointerEvents: crmSubmenuOpen ? 'auto' : 'none',
@@ -473,7 +473,7 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
                 transitionDelay: (animationsEnabled && crmSubmenuOpen) ? '50ms' : '0ms',
               }}
             >
-              <div className="h-full px-3 py-2">
+              <div className="h-full px-2 py-2">
                 <MemoizedCRMOriginsPanel
                   isOpen={crmSubmenuOpen}
                   onClose={handleCloseCrmSubmenu}
@@ -488,9 +488,9 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
         {/* Disparo Submenu Clip Container - clips the submenu animation */}
         <div
           style={{
-            left: sidebarCollapsedWidth + 12,
-            top: 'calc(45px + 12px)',
-            height: 'calc(100vh - 45px - 1.5rem)',
+            left: sidebarCollapsedWidth + 6,
+            top: 'calc(45px + 6px)',
+            height: 'calc(100vh - 45px - 12px)',
             width: disparoSubmenuWidth + 8,
             zIndex: 39,
             pointerEvents: disparoSubmenuOpen ? 'auto' : 'none',
