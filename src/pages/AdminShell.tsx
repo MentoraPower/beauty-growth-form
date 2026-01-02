@@ -45,7 +45,7 @@ function TopNavbar() {
   return (
     <>
       <div 
-        className="fixed top-0 left-0 right-0 z-50 h-[45px] bg-background flex items-center justify-between px-3"
+        className="fixed top-0 left-0 right-0 z-50 h-[45px] bg-white flex items-center justify-between px-3"
         style={{ borderBottom: '1px solid #00000010' }}
       >
         <WorkspaceDropdown />
@@ -54,9 +54,9 @@ function TopNavbar() {
         <div className="relative" ref={dropdownRef}>
           <button
             onClick={() => setProfileMenuOpen(!profileMenuOpen)}
-            className="w-8 h-8 rounded-full bg-gradient-to-br from-zinc-700 to-zinc-900 flex items-center justify-center hover:opacity-80 transition-opacity"
+            className="w-8 h-8 rounded-full bg-zinc-200 flex items-center justify-center hover:bg-zinc-300 transition-colors"
           >
-            <User className="h-4 w-4 text-white" strokeWidth={1.5} />
+            <User className="h-4 w-4 text-zinc-600" strokeWidth={1.5} />
           </button>
           
           {/* Dropdown */}
