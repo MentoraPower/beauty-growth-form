@@ -585,14 +585,16 @@ export default function LeadDetail() {
                     <div className="flex-1 min-w-0">
                       <p className="text-xs text-muted-foreground">WhatsApp</p>
                       <EditableField
-                        value={lead.whatsapp || ""}
-                        onSave={(value) => updateLeadField("whatsapp", value)}
+                        value={lead.whatsapp?.replace(/^\+\d+\s*/, "") || ""}
+                        onSave={(value) => updateLeadField("whatsapp", value.replace(/^\+\d+\s*/, ""))}
                         placeholder="Digite o WhatsApp"
                         displayValue={
                           !lead.whatsapp || lead.whatsapp === "" ? (
                             <span className="text-sm font-medium text-muted-foreground italic">incompleto</span>
                           ) : (
-                            <span className="text-sm font-medium">{lead.country_code} {lead.whatsapp}</span>
+                            <span className="text-sm font-medium">
+                              {lead.country_code} {lead.whatsapp.replace(/^\+\d+\s*/, "")}
+                            </span>
                           )
                         }
                       />
