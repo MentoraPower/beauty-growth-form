@@ -12,6 +12,7 @@ import { CsvSidePanel, CsvLead as CsvLeadType } from "./CsvSidePanel";
 import { DispatchData } from "./DispatchAnalysis";
 import { EmailChatCard } from "./EmailChatCard";
 import { CsvChatCard } from "./CsvChatCard";
+import { ThinkingIndicator } from "./ThinkingIndicator";
 import { AIWorkDetails, WorkStep, WorkSubItem, createLeadsAnalysisStep, createEmailGenerationStep, createDispatchStep, createCustomStep } from "./AIWorkDetails";
 import { DataIntelligence, InsightStep, createCsvAnalysisSteps } from "./DataIntelligence";
 import { supabase } from "@/integrations/supabase/client";
@@ -2429,12 +2430,7 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
                 
                 {/* Loading indicator */}
                 {isLoading && messages[messages.length - 1]?.role !== "assistant" && (
-                  <div className="flex items-center gap-2 text-muted-foreground text-sm">
-                    <span className="relative overflow-hidden">
-                      <span className="relative z-10">Pensando...</span>
-                      <span className="absolute inset-0 bg-gradient-to-r from-transparent via-white/60 to-transparent animate-[shimmer_2s_infinite] -translate-x-full" style={{ animation: 'shimmer 2s infinite' }} />
-                    </span>
-                  </div>
+                  <ThinkingIndicator />
                 )}
                 <div ref={messagesEndRef} />
               </div>
