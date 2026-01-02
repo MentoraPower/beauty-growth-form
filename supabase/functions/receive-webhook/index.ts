@@ -864,7 +864,7 @@ const handler = async (req: Request): Promise<Response> => {
       const leadData: Record<string, any> = {
         name: String(payload.name).trim(),
         email: String(payload.email).trim(),
-        whatsapp: String(payload.whatsapp || payload.phone || ""),
+        whatsapp: String(payload.whatsapp || payload.phone || "").replace(/^\+55\s*/, "").replace(/^\+\d{1,3}\s*/, ""),
         country_code: String(payload.country_code || "+55"),
         instagram: String(payload.instagram || ""),
         clinic_name: payload.clinic_name ? String(payload.clinic_name) : null,
