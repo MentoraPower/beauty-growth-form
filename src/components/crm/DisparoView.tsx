@@ -52,7 +52,8 @@ import {
   formatMessageContent,
   sanitizeHtml,
   extractCleanCopy,
-  getPromptSummary
+  getPromptSummary,
+  formatCopyToRichHtml
 } from "@/lib/disparo/formatting";
 
 interface DisparoViewProps {
@@ -696,7 +697,11 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
                 previewHtml={emailCard.generatedHtml}
                 onClick={() => {
                   const cleanCopy = extractCleanCopy(emailCard.generatedHtml);
-                  setSidePanelHtml(cleanCopy);
+                  // Convert markdown to rich HTML if it has ## or ### titles
+                  const formattedHtml = cleanCopy.includes('## ') || cleanCopy.includes('### ')
+                    ? formatCopyToRichHtml(cleanCopy)
+                    : cleanCopy;
+                  setSidePanelHtml(formattedHtml);
                   setSidePanelSubject(emailCard.subject || '');
                   setSidePanelPreheader(emailCard.preheader || '');
                   setSidePanelMode(emailCard.mode || 'email');
@@ -2353,7 +2358,11 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
                                 const data = msg.componentData?.data?.emailCard;
                                 if (data) {
                                   const cleanHtml = extractCleanCopy(data.generatedHtml);
-                                  setSidePanelHtml(cleanHtml);
+                                  // Convert markdown to rich HTML if it has ## or ### titles
+                                  const formattedHtml = cleanHtml.includes('## ') || cleanHtml.includes('### ')
+                                    ? formatCopyToRichHtml(cleanHtml)
+                                    : cleanHtml;
+                                  setSidePanelHtml(formattedHtml);
                                   setSidePanelSubject(data.subject || '');
                                   setSidePanelPreheader(data.preheader || '');
                                   setSidePanelMode(data.mode || 'email');
@@ -2376,7 +2385,11 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
                                 const data = msg.componentData?.data;
                                 if (data) {
                                   const cleanHtml = extractCleanCopy(data.generatedHtml);
-                                  setSidePanelHtml(cleanHtml);
+                                  // Convert markdown to rich HTML if it has ## or ### titles
+                                  const formattedHtml = cleanHtml.includes('## ') || cleanHtml.includes('### ')
+                                    ? formatCopyToRichHtml(cleanHtml)
+                                    : cleanHtml;
+                                  setSidePanelHtml(formattedHtml);
                                   setSidePanelSubject(data.subject || '');
                                   setSidePanelPreheader(data.preheader || '');
                                   setSidePanelMode(data.mode || 'email');
