@@ -436,86 +436,101 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
           </div>
         </aside>
 
-        {/* CRM Submenu Panel - always mounted, animated via transform */}
+        {/* CRM Submenu Clip Container - clips the submenu animation */}
         <div
           style={{
-            left: sidebarCollapsedWidth + 16,
-            width: submenuWidth,
-            transform: crmSubmenuOpen ? 'translateX(0)' : `translateX(-${submenuWidth + 24}px)`,
-            zIndex: 39,
-            pointerEvents: crmSubmenuOpen ? 'auto' : 'none',
-            willChange: animationsEnabled ? 'transform' : 'auto',
+            left: sidebarCollapsedWidth + 12,
             top: 'calc(45px + 12px)',
             height: 'calc(100vh - 45px - 1.5rem)',
+            width: submenuWidth + 8,
+            zIndex: 39,
+            pointerEvents: crmSubmenuOpen ? 'auto' : 'none',
           }}
-          className={cn(
-            "hidden lg:block fixed overflow-hidden rounded-2xl",
-            animationsEnabled && "transition-transform duration-300 ease-out"
-          )}
-          style-bg={{ backgroundColor: '#F8F8F8' }}
+          className="hidden lg:block fixed overflow-hidden"
         >
+          {/* CRM Submenu Panel - animated inside clip container */}
           <div
-            className={cn(
-              "h-full p-2 rounded-2xl",
-              animationsEnabled && "transition-opacity duration-200"
-            )}
             style={{
               width: submenuWidth,
-              minWidth: submenuWidth,
-              opacity: crmSubmenuOpen ? 1 : 0,
-              transitionDelay: (animationsEnabled && crmSubmenuOpen) ? '50ms' : '0ms',
-              backgroundColor: '#F8F8F8',
+              transform: crmSubmenuOpen ? 'translateX(4px)' : `translateX(-${submenuWidth}px)`,
+              willChange: animationsEnabled ? 'transform' : 'auto',
             }}
+            className={cn(
+              "h-full rounded-2xl overflow-hidden",
+              animationsEnabled && "transition-transform duration-300 ease-out"
+            )}
           >
-            <div className="h-full bg-zinc-900 rounded-xl overflow-hidden">
-              <div className="h-full pl-4 pr-2">
-                <MemoizedCRMOriginsPanel
-                  isOpen={crmSubmenuOpen}
-                  onClose={handleCloseCrmSubmenu}
-                  sidebarWidth={sidebarCollapsedWidth}
-                  embedded={true}
-                />
+            <div
+              className={cn(
+                "h-full p-2 rounded-2xl",
+                animationsEnabled && "transition-opacity duration-200"
+              )}
+              style={{
+                width: submenuWidth,
+                minWidth: submenuWidth,
+                opacity: crmSubmenuOpen ? 1 : 0,
+                transitionDelay: (animationsEnabled && crmSubmenuOpen) ? '50ms' : '0ms',
+                backgroundColor: '#F8F8F8',
+              }}
+            >
+              <div className="h-full bg-zinc-900 rounded-xl overflow-hidden">
+                <div className="h-full pl-4 pr-2">
+                  <MemoizedCRMOriginsPanel
+                    isOpen={crmSubmenuOpen}
+                    onClose={handleCloseCrmSubmenu}
+                    sidebarWidth={sidebarCollapsedWidth}
+                    embedded={true}
+                  />
+                </div>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Disparo Submenu Panel - always mounted, animated via transform */}
+        {/* Disparo Submenu Clip Container - clips the submenu animation */}
         <div
           style={{
-            left: sidebarCollapsedWidth + 16,
-            width: disparoSubmenuWidth,
-            transform: disparoSubmenuOpen ? 'translateX(0)' : `translateX(-${disparoSubmenuWidth + 24}px)`,
-            zIndex: 39,
-            pointerEvents: disparoSubmenuOpen ? 'auto' : 'none',
-            willChange: animationsEnabled ? 'transform' : 'auto',
+            left: sidebarCollapsedWidth + 12,
             top: 'calc(45px + 12px)',
             height: 'calc(100vh - 45px - 1.5rem)',
+            width: disparoSubmenuWidth + 8,
+            zIndex: 39,
+            pointerEvents: disparoSubmenuOpen ? 'auto' : 'none',
           }}
-          className={cn(
-            "hidden lg:block fixed overflow-hidden rounded-2xl",
-            animationsEnabled && "transition-transform duration-300 ease-out"
-          )}
+          className="hidden lg:block fixed overflow-hidden"
         >
+          {/* Disparo Submenu Panel - animated inside clip container */}
           <div
-            className={cn(
-              "h-full p-2 rounded-2xl",
-              animationsEnabled && "transition-opacity duration-200"
-            )}
             style={{
               width: disparoSubmenuWidth,
-              minWidth: disparoSubmenuWidth,
-              opacity: disparoSubmenuOpen ? 1 : 0,
-              transitionDelay: (animationsEnabled && disparoSubmenuOpen) ? '50ms' : '0ms',
-              backgroundColor: '#F8F8F8',
+              transform: disparoSubmenuOpen ? 'translateX(4px)' : `translateX(-${disparoSubmenuWidth}px)`,
+              willChange: animationsEnabled ? 'transform' : 'auto',
             }}
+            className={cn(
+              "h-full rounded-2xl overflow-hidden",
+              animationsEnabled && "transition-transform duration-300 ease-out"
+            )}
           >
-            <div className="h-full bg-zinc-900 rounded-xl overflow-hidden">
-              <div className="h-full pl-2 pr-2">
-                <DisparoSubmenuPanel
-                  isOpen={disparoSubmenuOpen}
-                  onClose={handleCloseDisparoSubmenu}
-                />
+            <div
+              className={cn(
+                "h-full p-2 rounded-2xl",
+                animationsEnabled && "transition-opacity duration-200"
+              )}
+              style={{
+                width: disparoSubmenuWidth,
+                minWidth: disparoSubmenuWidth,
+                opacity: disparoSubmenuOpen ? 1 : 0,
+                transitionDelay: (animationsEnabled && disparoSubmenuOpen) ? '50ms' : '0ms',
+                backgroundColor: '#F8F8F8',
+              }}
+            >
+              <div className="h-full bg-zinc-900 rounded-xl overflow-hidden">
+                <div className="h-full pl-2 pr-2">
+                  <DisparoSubmenuPanel
+                    isOpen={disparoSubmenuOpen}
+                    onClose={handleCloseDisparoSubmenu}
+                  />
+                </div>
               </div>
             </div>
           </div>
@@ -638,10 +653,10 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
         <main 
           style={{ 
             left: crmSubmenuOpen 
-              ? sidebarCollapsedWidth + 16 + submenuWidth + 4
+              ? sidebarCollapsedWidth + 12 + submenuWidth + 12
               : disparoSubmenuOpen 
-                ? sidebarCollapsedWidth + 16 + disparoSubmenuWidth + 4
-                : sidebarCollapsedWidth + 16 + 4,
+                ? sidebarCollapsedWidth + 12 + disparoSubmenuWidth + 12
+                : sidebarCollapsedWidth + 12 + 4,
             top: 'calc(45px + 12px)',
             right: 12,
             height: 'calc(100vh - 45px - 1.5rem)',
