@@ -937,11 +937,11 @@ const handler = async (req: Request): Promise<Response> => {
         }
         
         // Only update other fields if they have values
-        // IMPORTANT: In update-only mode, do NOT update name, email, or whatsapp (identification fields)
+        // IMPORTANT: In update-only mode, do NOT update identification fields (name, email, whatsapp, country_code)
         if (!isUpdateOnly && leadData.name && leadData.name.trim()) updateData.name = leadData.name;
-        if (leadData.email && leadData.email.trim()) updateData.email = leadData.email;
-        if (leadData.whatsapp && leadData.whatsapp.trim()) updateData.whatsapp = leadData.whatsapp;
-        if (leadData.country_code && leadData.country_code.trim()) updateData.country_code = leadData.country_code;
+        if (!isUpdateOnly && leadData.email && leadData.email.trim()) updateData.email = leadData.email;
+        if (!isUpdateOnly && leadData.whatsapp && leadData.whatsapp.trim()) updateData.whatsapp = leadData.whatsapp;
+        if (!isUpdateOnly && leadData.country_code && leadData.country_code.trim()) updateData.country_code = leadData.country_code;
         if (leadData.instagram && leadData.instagram.trim()) updateData.instagram = leadData.instagram;
         if (leadData.clinic_name && leadData.clinic_name.trim()) updateData.clinic_name = leadData.clinic_name;
         if (leadData.service_area && leadData.service_area.trim()) updateData.service_area = leadData.service_area;
