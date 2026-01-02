@@ -627,9 +627,9 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
         <main 
           style={{ 
             left: crmSubmenuOpen 
-              ? sidebarCollapsedWidth + 12 + 4 + submenuWidth 
+              ? sidebarCollapsedWidth + 12 + submenuWidth - 16
               : disparoSubmenuOpen 
-                ? sidebarCollapsedWidth + 12 + 4 + disparoSubmenuWidth
+                ? sidebarCollapsedWidth + 12 + disparoSubmenuWidth - 16
                 : sidebarCollapsedWidth + 12 + 4,
             top: 'calc(45px + 12px)',
             right: 12,
