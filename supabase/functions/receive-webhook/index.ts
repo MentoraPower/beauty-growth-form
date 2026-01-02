@@ -1156,6 +1156,10 @@ const handler = async (req: Request): Promise<Response> => {
         break;
       } else if (webhook.scope === "sub_origin" && subOriginId && webhook.sub_origin_id === subOriginId) {
         matchedWebhook = webhook;
+        // Use configured pipeline from webhook if available
+        if (webhook.trigger_pipeline_id) {
+          targetPipelineId = webhook.trigger_pipeline_id;
+        }
         break;
       }
     }
@@ -1164,8 +1168,8 @@ const handler = async (req: Request): Promise<Response> => {
       console.log("No matching webhook found, but will still process lead");
     }
 
-    // Get first pipeline for the target sub-origin
-    if (targetSubOriginId) {
+    // Get first pipeline for the target sub-origin (only if not already set from webhook)
+    if (targetSubOriginId && !targetPipelineId) {
       const { data: pipelines } = await supabase
         .from("pipelines")
         .select("id")
