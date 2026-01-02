@@ -439,9 +439,9 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
         {/* CRM Submenu Panel - always mounted, animated via transform */}
         <div
           style={{
-            left: sidebarCollapsedWidth + 12,
+            left: sidebarCollapsedWidth + 16,
             width: submenuWidth,
-            transform: crmSubmenuOpen ? 'translateX(0)' : `translateX(-${submenuWidth + 20}px)`,
+            transform: crmSubmenuOpen ? 'translateX(0)' : `translateX(-${submenuWidth + 24}px)`,
             zIndex: 39,
             pointerEvents: crmSubmenuOpen ? 'auto' : 'none',
             willChange: animationsEnabled ? 'transform' : 'auto',
@@ -449,13 +449,14 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
             height: 'calc(100vh - 45px - 1.5rem)',
           }}
           className={cn(
-            "hidden lg:block fixed overflow-hidden",
+            "hidden lg:block fixed overflow-hidden rounded-2xl",
             animationsEnabled && "transition-transform duration-300 ease-out"
           )}
+          style-bg={{ backgroundColor: '#F8F8F8' }}
         >
           <div
             className={cn(
-              "h-full pl-4 pr-2 bg-zinc-900 rounded-r-2xl",
+              "h-full p-2 rounded-2xl",
               animationsEnabled && "transition-opacity duration-200"
             )}
             style={{
@@ -463,23 +464,28 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
               minWidth: submenuWidth,
               opacity: crmSubmenuOpen ? 1 : 0,
               transitionDelay: (animationsEnabled && crmSubmenuOpen) ? '50ms' : '0ms',
+              backgroundColor: '#F8F8F8',
             }}
           >
-            <MemoizedCRMOriginsPanel
-              isOpen={crmSubmenuOpen}
-              onClose={handleCloseCrmSubmenu}
-              sidebarWidth={sidebarCollapsedWidth}
-              embedded={true}
-            />
+            <div className="h-full bg-zinc-900 rounded-xl overflow-hidden">
+              <div className="h-full pl-4 pr-2">
+                <MemoizedCRMOriginsPanel
+                  isOpen={crmSubmenuOpen}
+                  onClose={handleCloseCrmSubmenu}
+                  sidebarWidth={sidebarCollapsedWidth}
+                  embedded={true}
+                />
+              </div>
+            </div>
           </div>
         </div>
 
         {/* Disparo Submenu Panel - always mounted, animated via transform */}
         <div
           style={{
-            left: sidebarCollapsedWidth + 12,
+            left: sidebarCollapsedWidth + 16,
             width: disparoSubmenuWidth,
-            transform: disparoSubmenuOpen ? 'translateX(0)' : `translateX(-${disparoSubmenuWidth + 20}px)`,
+            transform: disparoSubmenuOpen ? 'translateX(0)' : `translateX(-${disparoSubmenuWidth + 24}px)`,
             zIndex: 39,
             pointerEvents: disparoSubmenuOpen ? 'auto' : 'none',
             willChange: animationsEnabled ? 'transform' : 'auto',
@@ -487,13 +493,13 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
             height: 'calc(100vh - 45px - 1.5rem)',
           }}
           className={cn(
-            "hidden lg:block fixed overflow-hidden",
+            "hidden lg:block fixed overflow-hidden rounded-2xl",
             animationsEnabled && "transition-transform duration-300 ease-out"
           )}
         >
           <div
             className={cn(
-              "h-full pl-2 pr-2 bg-zinc-900 rounded-r-2xl",
+              "h-full p-2 rounded-2xl",
               animationsEnabled && "transition-opacity duration-200"
             )}
             style={{
@@ -501,12 +507,17 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
               minWidth: disparoSubmenuWidth,
               opacity: disparoSubmenuOpen ? 1 : 0,
               transitionDelay: (animationsEnabled && disparoSubmenuOpen) ? '50ms' : '0ms',
+              backgroundColor: '#F8F8F8',
             }}
           >
-            <DisparoSubmenuPanel
-              isOpen={disparoSubmenuOpen}
-              onClose={handleCloseDisparoSubmenu}
-            />
+            <div className="h-full bg-zinc-900 rounded-xl overflow-hidden">
+              <div className="h-full pl-2 pr-2">
+                <DisparoSubmenuPanel
+                  isOpen={disparoSubmenuOpen}
+                  onClose={handleCloseDisparoSubmenu}
+                />
+              </div>
+            </div>
           </div>
         </div>
 
@@ -627,10 +638,10 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
         <main 
           style={{ 
             left: crmSubmenuOpen 
-              ? sidebarCollapsedWidth + 12 + submenuWidth - 16
+              ? sidebarCollapsedWidth + 16 + submenuWidth + 4
               : disparoSubmenuOpen 
-                ? sidebarCollapsedWidth + 12 + disparoSubmenuWidth - 16
-                : sidebarCollapsedWidth + 12 + 4,
+                ? sidebarCollapsedWidth + 16 + disparoSubmenuWidth + 4
+                : sidebarCollapsedWidth + 16 + 4,
             top: 'calc(45px + 12px)',
             right: 12,
             height: 'calc(100vh - 45px - 1.5rem)',
