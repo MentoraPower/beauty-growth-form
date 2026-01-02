@@ -1025,10 +1025,34 @@ export function EmailSidePanel({
       padding: 24px;
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
       font-size: 14px;
-      line-height: 1.5;
+      line-height: 1.6;
       color: #1a1a1a;
       -webkit-font-smoothing: antialiased;
       -moz-osx-font-smoothing: grayscale;
+    }
+    h2 {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: #111;
+      margin: 1.5rem 0 0.75rem 0;
+      line-height: 1.3;
+    }
+    h3 {
+      font-size: 1.25rem;
+      font-weight: 600;
+      color: #222;
+      margin: 1.25rem 0 0.5rem 0;
+      line-height: 1.4;
+    }
+    p {
+      margin: 0.5rem 0;
+      line-height: 1.7;
+    }
+    strong {
+      font-weight: 600;
+    }
+    em {
+      font-style: italic;
     }
     table {
       border-collapse: collapse;
@@ -1044,7 +1068,7 @@ export function EmailSidePanel({
     }
   </style>
 </head>
-<body>${htmlContent || '<p style="color: #999; text-align: center; padding: 40px;">Nenhum conteúdo para exibir</p>'}</body>
+<body>${getSanitizedHtml(true) || '<p style="color: #999; text-align: center; padding: 40px;">Nenhum conteúdo para exibir</p>'}</body>
 </html>`}
                   className="w-full flex-1 border-0 bg-white"
                   title="Email Preview"
