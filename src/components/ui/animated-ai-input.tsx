@@ -82,13 +82,30 @@ const OPENAI_ICON = (
 
 // Grok/xAI Icon
 const GROK_ICON = (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <svg width="16" height="16" viewBox="0 0 1000 960" fill="none" xmlns="http://www.w3.org/2000/svg">
     <path
-      d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
+      d="M188.5 500.3L477.4 0.6H596.4L307.4 500.3H188.5Z"
+      fill="currentColor"
+    />
+    <path
+      d="M691.7 959.7L402.7 460.1L462.7 356.8L811.2 959.7H691.7Z"
+      fill="currentColor"
+    />
+    <path
+      d="M811.2 0.6L521.6 501.4L462 397.8L691.4 0.6H811.2Z"
+      fill="currentColor"
+    />
+    <path
+      d="M0 959.7V856.5L522.5 856.5L582.5 959.7H0Z"
+      fill="currentColor"
+    />
+    <path
+      d="M940.5 103.3V959.7H821.6V206.5L940.5 103.3Z"
+      fill="currentColor"
+    />
+    <path
+      d="M940.5 0.6V70L821.6 173.2V0.6H940.5Z"
+      fill="currentColor"
     />
   </svg>
 );
