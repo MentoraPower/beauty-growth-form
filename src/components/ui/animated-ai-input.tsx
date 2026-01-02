@@ -224,9 +224,12 @@ export function AnimatedAIInput({
             />
           </div>
 
+          {/* Separator line */}
+          <div className="h-px bg-black/5 mx-3" />
+
           {/* Bottom Actions Bar */}
           <div 
-            className="h-14 bg-zinc-50 flex items-center px-3 border-t border-black/5"
+            className="h-14 bg-zinc-50 flex items-center px-3"
           >
             <div className="flex items-center justify-between w-full">
               {/* Left side - Model selector and file upload */}
