@@ -1514,56 +1514,46 @@ export function AutomationsDropdown({
                     </>
                   )}
 
-                  <Select
-                    value={webhookScope}
-                    onValueChange={(v: "all" | "origin" | "sub_origin") => {
-                      setWebhookScope(v);
-                      setWebhookOriginId("");
-                      setWebhookSubOriginId("");
+                  <Select 
+                    value={webhookSubOriginId} 
+                    onValueChange={(v) => {
+                      setWebhookSubOriginId(v);
+                      setWebhookScope("sub_origin");
                     }}
                   >
                     <SelectTrigger className="h-10">
-                      <SelectValue />
+                      <SelectValue placeholder="Onde o lead vai cair..." />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="all">Todas as origens</SelectItem>
-                      <SelectItem value="origin">Origem específica</SelectItem>
-                      <SelectItem value="sub_origin">Sub-origem específica</SelectItem>
+                      {origins.map((origin) => {
+                        const originSubOrigins = subOrigins.filter(s => s.origin_id === origin.id);
+                        if (originSubOrigins.length === 0) return null;
+                        
+                        return (
+                          <div key={origin.id}>
+                            <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground bg-muted/50">
+                              {origin.nome}
+                            </div>
+                            {originSubOrigins.map((subOrigin) => {
+                              const subOriginPipelines = allPipelines.filter(p => p.sub_origin_id === subOrigin.id);
+                              return (
+                                <SelectItem key={subOrigin.id} value={subOrigin.id}>
+                                  <div className="flex flex-col">
+                                    <span>{subOrigin.nome}</span>
+                                    {subOriginPipelines.length > 0 && (
+                                      <span className="text-[10px] text-muted-foreground">
+                                        {subOriginPipelines.map(p => p.nome).join(" → ")}
+                                      </span>
+                                    )}
+                                  </div>
+                                </SelectItem>
+                              );
+                            })}
+                          </div>
+                        );
+                      })}
                     </SelectContent>
                   </Select>
-
-                  {webhookScope === "origin" && (
-                    <Select value={webhookOriginId} onValueChange={setWebhookOriginId}>
-                      <SelectTrigger className="h-10">
-                        <SelectValue placeholder="Selecione a origem..." />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {origins.map((origin) => (
-                          <SelectItem key={origin.id} value={origin.id}>
-                            {origin.nome}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  )}
-
-                  {webhookScope === "sub_origin" && (
-                    <Select value={webhookSubOriginId} onValueChange={setWebhookSubOriginId}>
-                      <SelectTrigger className="h-10">
-                        <SelectValue placeholder="Selecione a sub-origem..." />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {subOrigins.map((subOrigin) => {
-                          const origin = origins.find((o) => o.id === subOrigin.origin_id);
-                          return (
-                            <SelectItem key={subOrigin.id} value={subOrigin.id}>
-                              {origin?.nome} / {subOrigin.nome}
-                            </SelectItem>
-                          );
-                        })}
-                      </SelectContent>
-                    </Select>
-                  )}
 
                   {webhookType === "receive" && (
                     <>
@@ -2225,53 +2215,46 @@ export function AutomationsDropdown({
                     </>
                   )}
 
-                  <Select value={webhookScope} onValueChange={(v: "all" | "origin" | "sub_origin") => {
-                    setWebhookScope(v);
-                    setWebhookOriginId("");
-                    setWebhookSubOriginId("");
-                  }}>
+                  <Select 
+                    value={webhookSubOriginId} 
+                    onValueChange={(v) => {
+                      setWebhookSubOriginId(v);
+                      setWebhookScope("sub_origin");
+                    }}
+                  >
                     <SelectTrigger className="h-10">
-                      <SelectValue />
+                      <SelectValue placeholder="Onde o lead vai cair..." />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="all">Todas as origens</SelectItem>
-                      <SelectItem value="origin">Origem específica</SelectItem>
-                      <SelectItem value="sub_origin">Sub-origem específica</SelectItem>
+                      {origins.map((origin) => {
+                        const originSubOrigins = subOrigins.filter(s => s.origin_id === origin.id);
+                        if (originSubOrigins.length === 0) return null;
+                        
+                        return (
+                          <div key={origin.id}>
+                            <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground bg-muted/50">
+                              {origin.nome}
+                            </div>
+                            {originSubOrigins.map((subOrigin) => {
+                              const subOriginPipelines = allPipelines.filter(p => p.sub_origin_id === subOrigin.id);
+                              return (
+                                <SelectItem key={subOrigin.id} value={subOrigin.id}>
+                                  <div className="flex flex-col">
+                                    <span>{subOrigin.nome}</span>
+                                    {subOriginPipelines.length > 0 && (
+                                      <span className="text-[10px] text-muted-foreground">
+                                        {subOriginPipelines.map(p => p.nome).join(" → ")}
+                                      </span>
+                                    )}
+                                  </div>
+                                </SelectItem>
+                              );
+                            })}
+                          </div>
+                        );
+                      })}
                     </SelectContent>
                   </Select>
-
-                  {webhookScope === "origin" && (
-                    <Select value={webhookOriginId} onValueChange={setWebhookOriginId}>
-                      <SelectTrigger className="h-10">
-                        <SelectValue placeholder="Selecione a origem..." />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {origins.map((origin) => (
-                          <SelectItem key={origin.id} value={origin.id}>
-                            {origin.nome}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  )}
-
-                  {webhookScope === "sub_origin" && (
-                    <Select value={webhookSubOriginId} onValueChange={setWebhookSubOriginId}>
-                      <SelectTrigger className="h-10">
-                        <SelectValue placeholder="Selecione a sub-origem..." />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {subOrigins.map((subOrigin) => {
-                          const origin = origins.find(o => o.id === subOrigin.origin_id);
-                          return (
-                            <SelectItem key={subOrigin.id} value={subOrigin.id}>
-                              {origin?.nome} / {subOrigin.nome}
-                            </SelectItem>
-                          );
-                        })}
-                      </SelectContent>
-                    </Select>
-                  )}
 
                   {webhookType === "receive" && (
                     <div className="p-3 rounded-lg bg-muted/50 border border-border">
