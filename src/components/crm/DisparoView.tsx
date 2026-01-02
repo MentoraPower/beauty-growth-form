@@ -698,11 +698,7 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
                 previewHtml={emailCard.generatedHtml}
                 onClick={() => {
                   const cleanCopy = extractCleanCopy(emailCard.generatedHtml);
-                  // Convert markdown to rich HTML if it has ## or ### titles
-                  const formattedHtml = cleanCopy.includes('## ') || cleanCopy.includes('### ')
-                    ? formatCopyToRichHtml(cleanCopy)
-                    : cleanCopy;
-                  setSidePanelHtml(formattedHtml);
+                  setSidePanelHtml(cleanCopy);
                   setSidePanelSubject(emailCard.subject || '');
                   setSidePanelPreheader(emailCard.preheader || '');
                   setSidePanelMode(emailCard.mode || 'email');
@@ -2359,11 +2355,7 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
                                 const data = msg.componentData?.data?.emailCard;
                                 if (data) {
                                   const cleanHtml = extractCleanCopy(data.generatedHtml);
-                                  // Convert markdown to rich HTML if it has ## or ### titles
-                                  const formattedHtml = cleanHtml.includes('## ') || cleanHtml.includes('### ')
-                                    ? formatCopyToRichHtml(cleanHtml)
-                                    : cleanHtml;
-                                  setSidePanelHtml(formattedHtml);
+                                  setSidePanelHtml(cleanHtml);
                                   setSidePanelSubject(data.subject || '');
                                   setSidePanelPreheader(data.preheader || '');
                                   setSidePanelMode(data.mode || 'email');
