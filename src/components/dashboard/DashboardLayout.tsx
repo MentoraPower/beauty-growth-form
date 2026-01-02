@@ -449,7 +449,7 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
             bottom: 8,
           }}
           className={cn(
-            "hidden lg:block fixed rounded-r-2xl bg-zinc-900 overflow-hidden",
+            "hidden lg:block fixed overflow-hidden",
             animationsEnabled && "transition-transform duration-300 ease-out"
           )}
         >
@@ -487,7 +487,7 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
             bottom: 8,
           }}
           className={cn(
-            "hidden lg:block fixed rounded-r-2xl bg-zinc-900 overflow-hidden",
+            "hidden lg:block fixed overflow-hidden",
             animationsEnabled && "transition-transform duration-300 ease-out"
           )}
         >
