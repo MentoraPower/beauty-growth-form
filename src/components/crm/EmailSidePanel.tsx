@@ -220,7 +220,13 @@ export function EmailSidePanel({
   const wasGeneratingRef = useRef(false);
   const prevHtmlLengthRef = useRef(0);
 
-  // TipTap Editor
+  // Keep latest showCodePreview in a ref so TipTap doesn't mutate htmlContent
+  const showCodePreviewRef = useRef(showCodePreview);
+  useEffect(() => {
+    showCodePreviewRef.current = showCodePreview;
+  }, [showCodePreview]);
+
+  // TipTap Editor (used only in text-only mode)
   const editor = useEditor({
     extensions: [
       StarterKit.configure({
@@ -237,16 +243,21 @@ export function EmailSidePanel({
     ],
     content: htmlContent || '<p>Escreva aqui...</p>',
     onUpdate: ({ editor }) => {
+      // IMPORTANT: In code/preview mode, TipTap is not visible and must not transform content.
+      if (showCodePreviewRef.current) return;
       onHtmlChange(editor.getHTML());
     },
   });
 
   // Sync editor content when htmlContent changes externally
   useEffect(() => {
-    if (editor && htmlContent !== editor.getHTML() && !editor.isFocused) {
+    if (!editor) return;
+    if (showCodePreview) return;
+
+    if (htmlContent !== editor.getHTML() && !editor.isFocused) {
       editor.commands.setContent(htmlContent || '<p>Escreva aqui...</p>');
     }
-  }, [htmlContent, editor]);
+  }, [htmlContent, editor, showCodePreview]);
 
   // Dispatch leads mode state
   const [dispatchJob, setDispatchJob] = useState<DispatchJob | null>(null);
@@ -621,15 +632,27 @@ export function EmailSidePanel({
       .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
       .replace(/on\w+="[^"]*"/gi, '')
       .replace(/on\w+='[^']*'/gi, '');
-    
-    // Apply rich formatting with titles, subtitles, etc.
-    // Only apply if requested AND content is not already HTML
-    if (applyFormatting && !looksLikeHtml(content)) {
-      // Convert markdown-style formatting to HTML
-      // This handles ## titles, ### subtitles, **bold**, _italic_, and bullet points
-      content = formatCopyToRichHtml(content);
+
+    if (applyFormatting) {
+      const hasMdHeadings = /##\s|###\s/.test(content);
+      const hasH2H3Tags = /<h2\b|<h3\b/i.test(content);
+
+      // If it's plain markdown, format it.
+      // If it's "HTML-wrapped markdown" like <p>## Title</p>, strip tags then format it.
+      if (!looksLikeHtml(content) || (hasMdHeadings && !hasH2H3Tags)) {
+        const markdownSource = looksLikeHtml(content)
+          ? content
+              .replace(/<br\s*\/?\s*>/gi, '\n')
+              .replace(/<\/(p|div|li|h[1-6])>/gi, '\n')
+              .replace(/<[^>]+>/g, '')
+              .replace(/\n{3,}/g, '\n\n')
+              .trim()
+          : content;
+
+        content = formatCopyToRichHtml(markdownSource);
+      }
     }
-    
+
     return content;
   };
 
