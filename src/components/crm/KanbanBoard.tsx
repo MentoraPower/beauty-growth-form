@@ -1249,7 +1249,7 @@ export function KanbanBoard() {
   return (
     <div className="relative flex flex-col h-full overflow-hidden">
       {/* Header - all on same line */}
-      <div className="flex items-center gap-4 mb-2">
+      <div className="flex items-center gap-4 mb-1">
         {/* Title - left */}
         <h1 className="text-xl font-light flex-shrink-0">{pageTitle}</h1>
 

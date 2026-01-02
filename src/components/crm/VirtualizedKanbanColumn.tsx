@@ -165,12 +165,12 @@ export const VirtualizedKanbanColumn = memo(function VirtualizedKanbanColumn({
             ) : null}
             
             {/* Extra padding at bottom for scroll area */}
-            {leads.length > 0 && <div className="h-12" />}
+            {leads.length > 0 && <div className="h-4" />}
           </SortableContext>
         </div>
       </div>
       {/* Bottom gradient fade */}
-      <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-background to-transparent pointer-events-none rounded-b-xl" />
+      <div className="absolute bottom-0 left-0 right-0 h-12 bg-gradient-to-t from-background to-transparent pointer-events-none rounded-b-xl" />
     </div>
   );
 });
