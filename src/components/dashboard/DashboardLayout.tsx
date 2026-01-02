@@ -439,7 +439,7 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
         {/* CRM Submenu Clip Container - clips the submenu animation */}
         <div
           style={{
-            left: sidebarCollapsedWidth + 12,
+            left: 12 + sidebarCollapsedWidth + 12,
             top: 'calc(45px + 6px)',
             height: 'calc(100vh - 45px - 12px)',
             width: submenuWidth + 8,
@@ -488,7 +488,7 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
         {/* Disparo Submenu Clip Container - clips the submenu animation */}
         <div
           style={{
-            left: sidebarCollapsedWidth + 12,
+            left: 12 + sidebarCollapsedWidth + 12,
             top: 'calc(45px + 6px)',
             height: 'calc(100vh - 45px - 12px)',
             width: disparoSubmenuWidth + 8,
@@ -537,7 +537,7 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
           <button
             onClick={() => setCrmSubmenuOpen(true)}
             style={{ 
-              left: sidebarCollapsedWidth + 12 - 16,
+              left: 12 + sidebarCollapsedWidth + 12 - 16,
               zIndex: 40,
             }}
             className="hidden lg:flex fixed top-1/2 -translate-y-1/2 w-8 h-16 items-center justify-center bg-zinc-900 rounded-r-xl hover:bg-zinc-800 transition-colors shadow-lg"
@@ -551,7 +551,7 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
           <button
             onClick={() => setDisparoSubmenuOpen(true)}
             style={{ 
-              left: sidebarCollapsedWidth + 12 - 16,
+              left: 12 + sidebarCollapsedWidth + 12 - 16,
               zIndex: 40,
             }}
             className="hidden lg:flex fixed top-1/2 -translate-y-1/2 w-8 h-16 items-center justify-center bg-zinc-900 rounded-r-xl hover:bg-zinc-800 transition-colors shadow-lg"
@@ -649,10 +649,10 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
         <main 
           style={{ 
             left: crmSubmenuOpen 
-              ? sidebarCollapsedWidth + 12 + submenuWidth + 12
+              ? 12 + sidebarCollapsedWidth + 12 + submenuWidth + 12
               : disparoSubmenuOpen 
-                ? sidebarCollapsedWidth + 12 + disparoSubmenuWidth + 12
-                : sidebarCollapsedWidth + 12 + 4,
+                ? 12 + sidebarCollapsedWidth + 12 + disparoSubmenuWidth + 12
+                : 12 + sidebarCollapsedWidth + 12 + 4,
             top: 'calc(45px + 12px)',
             right: 12,
             height: 'calc(100vh - 45px - 1.5rem)',
