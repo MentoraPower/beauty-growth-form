@@ -624,12 +624,9 @@ export function EmailSidePanel({
     
     // Apply rich formatting with titles, subtitles, etc.
     if (applyFormatting) {
-      // Check if content has markdown-style formatting (## or ###)
-      if (content.includes('## ') || content.includes('### ')) {
-        content = formatCopyToRichHtml(content);
-      } else {
-        content = formatTextContent(content);
-      }
+      // Always use formatCopyToRichHtml to convert markdown-style formatting to HTML
+      // This handles ## titles, ### subtitles, **bold**, _italic_, and bullet points
+      content = formatCopyToRichHtml(content);
     }
     
     return content;
