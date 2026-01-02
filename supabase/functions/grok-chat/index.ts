@@ -295,14 +295,108 @@ const detectContentCreationRequest = (messages: any[]): boolean => {
   return creationPatterns.some(pattern => pattern.test(content));
 };
 
-const getSystemPrompt = (greeting: string, activeAgent: string | null = null, hasImage: boolean = false, isCodeRequest: boolean = false, isCsvRequest: boolean = false, isMetricsRequest: boolean = false, metricsData: any = null, isContentCreation: boolean = false) => {
+// Detectar se é um pedido de EDIÇÃO de conteúdo existente
+const detectEditRequest = (messages: any[]): boolean => {
+  const lastMessage = messages[messages.length - 1];
+  if (!lastMessage || lastMessage.role !== 'user') return false;
+  
+  const content = typeof lastMessage.content === 'string' 
+    ? lastMessage.content.toLowerCase() 
+    : '';
+  
+  const editPatterns = [
+    // Verbos de edição
+    /adicione?/i,
+    /adiciona/i,
+    /coloque?/i,
+    /coloca/i,
+    /mude?/i,
+    /muda/i,
+    /altere?/i,
+    /altera/i,
+    /troque?/i,
+    /troca/i,
+    /remove?/i,
+    /remova/i,
+    /tire?/i,
+    /tira/i,
+    /edite?/i,
+    /edita/i,
+    /modifique?/i,
+    /modifica/i,
+    /atualize?/i,
+    /atualiza/i,
+    /insira/i,
+    /insere/i,
+    // Referências a elementos
+    /bot[aã]o/i,
+    /button/i,
+    /link/i,
+    /cor\s/i,
+    /color/i,
+    /t[ií]tulo/i,
+    /title/i,
+    /texto/i,
+    /cta/i,
+    /assunto/i,
+    /preheader/i,
+    // Cores específicas
+    /dourado/i,
+    /golden/i,
+    /vermelho/i,
+    /azul/i,
+    /verde/i,
+    /preto/i,
+    /branco/i,
+  ];
+  
+  return editPatterns.some(pattern => pattern.test(content));
+};
+
+// Check if there's existing content in the side panel (from context)
+const hasExistingContent = (messages: any[]): boolean => {
+  // Check system message for side panel content
+  const systemMessage = messages.find(m => m.role === 'system');
+  if (!systemMessage) return false;
+  
+  const content = typeof systemMessage.content === 'string' ? systemMessage.content : '';
+  return content.includes('CONTEÚDO COMPLETO DO EMAIL/COPY:') || 
+         content.includes('EMAIL/COPY ATUAL (painel lateral)');
+};
+
+const getSystemPrompt = (greeting: string, activeAgent: string | null = null, hasImage: boolean = false, isCodeRequest: boolean = false, isCsvRequest: boolean = false, isMetricsRequest: boolean = false, metricsData: any = null, isContentCreation: boolean = false, isEditMode: boolean = false) => {
   const randomGreeting = getRandomGreeting(greeting);
   
   let specialMode = '';
   
+  // Modo edição - prioridade máxima quando há conteúdo existente
+  if (isEditMode) {
+    specialMode += `
+═══════════════════════════════════════
+MODO EDIÇÃO DE EMAIL/COPY ATIVO
+═══════════════════════════════════════
+O usuário está pedindo para MODIFICAR o email/copy existente no painel lateral.
+
+1. Você TEM ACESSO ao conteúdo atual (veja "CONTEÚDO COMPLETO DO EMAIL/COPY" no contexto)
+2. Faça a edição pedida e retorne a versão COMPLETA atualizada
+3. Use o formato ---INÍCIO DO EMAIL--- ... ---FIM DO EMAIL---
+4. Mantenha toda a estrutura original, alterando APENAS o que foi solicitado
+5. NUNCA devolva apenas o trecho alterado - devolva o conteúdo COMPLETO
+
+**Exemplos de edições:**
+- "Adicione um botão dourado com link" → Adicione no CORPO um CTA como "👉 [TEXTO DO BOTÃO](URL)"
+- "Mude a cor do botão para dourado" → Atualize a descrição do botão
+- "Tire o título" → Remova o título principal
+- "Mude o assunto para X" → Atualize a linha ASSUNTO:
+
+**REGRA DE OURO:** 
+Sempre retorne ---INÍCIO DO EMAIL--- ... ---FIM DO EMAIL--- com o conteúdo COMPLETO editado.
+`;
+  }
+  
   // Modo imagem - prioridade máxima
   if (hasImage) {
-    specialMode = `
+    specialMode += `
 ═══════════════════════════════════════
 MODO IMAGEM ATIVO
 ═══════════════════════════════════════
@@ -1462,7 +1556,8 @@ serve(async (req) => {
     }
 
     const isContentCreation = detectContentCreationRequest(messages);
-    const systemPrompt = getSystemPrompt(greeting, activeAgent, hasImage, isCodeRequest, isCsvRequest, isMetricsRequest, metricsData, isContentCreation);
+    const isEditMode = detectEditRequest(messages) && hasExistingContent(messages);
+    const systemPrompt = getSystemPrompt(greeting, activeAgent, hasImage, isCodeRequest, isCsvRequest, isMetricsRequest, metricsData, isContentCreation, isEditMode);
 
     // Detect model selection from message content
     const lastUserMessage = messages[messages.length - 1];
