@@ -54,7 +54,8 @@ import {
   sanitizeHtml,
   extractCleanCopy,
   getPromptSummary,
-  formatCopyToRichHtml
+  formatCopyToRichHtml,
+  normalizeSidePanelHtml
 } from "@/lib/disparo/formatting";
 
 interface DisparoViewProps {
@@ -697,8 +698,8 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
                 chatName={emailCard.emailName || 'Email'}
                 previewHtml={emailCard.generatedHtml}
                 onClick={() => {
-                  const cleanCopy = extractCleanCopy(emailCard.generatedHtml);
-                  setSidePanelHtml(cleanCopy);
+                  const normalizedHtml = normalizeSidePanelHtml(emailCard.generatedHtml);
+                  setSidePanelHtml(normalizedHtml);
                   setSidePanelSubject(emailCard.subject || '');
                   setSidePanelPreheader(emailCard.preheader || '');
                   setSidePanelMode(emailCard.mode || 'email');
@@ -910,8 +911,8 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
           if (isNewFormat && rawData.sidePanelState) {
             const sp = rawData.sidePanelState;
             if (sp.html) {
-              const cleanHtml = extractCleanCopy(sp.html);
-              setSidePanelHtml(cleanHtml);
+              const normalizedHtml = normalizeSidePanelHtml(sp.html);
+              setSidePanelHtml(normalizedHtml);
             }
             if (sp.subject) setSidePanelSubject(sp.subject);
             if (sp.preheader) setSidePanelPreheader(sp.preheader);
@@ -2354,8 +2355,8 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
                               onClick={() => {
                                 const data = msg.componentData?.data?.emailCard;
                                 if (data) {
-                                  const cleanHtml = extractCleanCopy(data.generatedHtml);
-                                  setSidePanelHtml(cleanHtml);
+                                  const normalizedHtml = normalizeSidePanelHtml(data.generatedHtml);
+                                  setSidePanelHtml(normalizedHtml);
                                   setSidePanelSubject(data.subject || '');
                                   setSidePanelPreheader(data.preheader || '');
                                   setSidePanelMode(data.mode || 'email');
@@ -2377,12 +2378,8 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
                               onClick={() => {
                                 const data = msg.componentData?.data;
                                 if (data) {
-                                  const cleanHtml = extractCleanCopy(data.generatedHtml);
-                                  // Convert markdown to rich HTML if it has ## or ### titles
-                                  const formattedHtml = cleanHtml.includes('## ') || cleanHtml.includes('### ')
-                                    ? formatCopyToRichHtml(cleanHtml)
-                                    : cleanHtml;
-                                  setSidePanelHtml(formattedHtml);
+                                  const normalizedHtml = normalizeSidePanelHtml(data.generatedHtml);
+                                  setSidePanelHtml(normalizedHtml);
                                   setSidePanelSubject(data.subject || '');
                                   setSidePanelPreheader(data.preheader || '');
                                   setSidePanelMode(data.mode || 'email');

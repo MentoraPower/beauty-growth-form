@@ -242,6 +242,15 @@ export const formatCopyToRichHtml = (text: string): string => {
 };
 
 /**
+ * Check if text looks like HTML (has tags)
+ */
+export const looksLikeHtml = (text: string): boolean => {
+  if (!text) return false;
+  // Check for common HTML tags
+  return /<[a-z][\s\S]*>/i.test(text);
+};
+
+/**
  * Extract clean copy from text (content between --- delimiters)
  */
 export const extractCleanCopy = (text: string): string => {
@@ -261,6 +270,25 @@ export const extractCleanCopy = (text: string): string => {
     .trim();
   
   return cleaned || text;
+};
+
+/**
+ * Normalize content to HTML for the side panel
+ * Converts markdown to HTML if needed, returns HTML as-is
+ */
+export const normalizeSidePanelHtml = (text: string): string => {
+  if (!text) return '';
+  
+  // Extract clean copy first
+  const cleanText = extractCleanCopy(text);
+  
+  // If already HTML, return as-is
+  if (looksLikeHtml(cleanText)) {
+    return cleanText;
+  }
+  
+  // Convert markdown to rich HTML
+  return formatCopyToRichHtml(cleanText);
 };
 
 /**
