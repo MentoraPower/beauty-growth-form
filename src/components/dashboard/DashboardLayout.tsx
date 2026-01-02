@@ -440,8 +440,8 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
         <div
           style={{
             left: 12 + sidebarCollapsedWidth + 12,
-            top: 'calc(45px + 6px)',
-            height: 'calc(100vh - 45px - 12px)',
+            top: 'calc(45px + 12px)',
+            height: 'calc(100vh - 45px - 1.5rem)',
             width: submenuWidth + 8,
             zIndex: 39,
             pointerEvents: crmSubmenuOpen ? 'auto' : 'none',
@@ -489,8 +489,8 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
         <div
           style={{
             left: 12 + sidebarCollapsedWidth + 12,
-            top: 'calc(45px + 6px)',
-            height: 'calc(100vh - 45px - 12px)',
+            top: 'calc(45px + 12px)',
+            height: 'calc(100vh - 45px - 1.5rem)',
             width: disparoSubmenuWidth + 8,
             zIndex: 39,
             pointerEvents: disparoSubmenuOpen ? 'auto' : 'none',
