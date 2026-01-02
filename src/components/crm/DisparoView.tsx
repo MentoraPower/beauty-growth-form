@@ -2293,34 +2293,6 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
                   </motion.div>
                 )}
                 
-                {/* Conversation Header - shows in all conversations with messages */}
-                {messages.length > 0 && (
-                  <motion.div 
-                    className="mb-8"
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.4 }}
-                  >
-                    <div className="flex items-center gap-3 mb-4">
-                      <img src={disparoLogo} alt="Scale" className="w-6 h-6" />
-                      <h2 className="text-xl font-medium text-foreground">
-                        SCALE AGENT EMAIL
-                      </h2>
-                    </div>
-                    <DataIntelligence 
-                      steps={[
-                        {
-                          id: 'agent_ready',
-                          title: 'Agente de email ativo',
-                          description: 'Pronto para criar, editar e disparar emails personalizados.',
-                          status: 'completed' as const,
-                          isExpandable: false
-                        }
-                      ]} 
-                    />
-                  </motion.div>
-                )}
-                
                 {/* Messages */}
                 {messages.map((msg) => (
                   <div
