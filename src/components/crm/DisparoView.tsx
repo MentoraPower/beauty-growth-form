@@ -1800,9 +1800,20 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
         const sourceText = htmlSource === 'ai' 
           ? 'VOCÊ (a IA) gerou este email durante a conversa' 
           : 'O usuário colou/editou este HTML manualmente';
-        contextInfo.push(`• Email HTML: ✅ PRONTO (${sidePanelHtml.length} caracteres)`);
+        
+        contextInfo.push(`\n=== EMAIL/COPY ATUAL (painel lateral) ===`);
+        contextInfo.push(`• Status: ✅ PRONTO (${sidePanelHtml.length} caracteres)`);
         contextInfo.push(`• Quem criou: ${sourceText}`);
-        contextInfo.push(`• Assunto do email: "${sidePanelSubject || '(sem assunto definido)'}"`);
+        contextInfo.push(`• Assunto: "${sidePanelSubject || '(sem assunto definido)'}"`);
+        contextInfo.push(`• Preheader: "${sidePanelPreheader || '(sem preheader)'}"`);
+        
+        // Include full content so AI can edit it (limit to 8000 chars)
+        const contentPreview = sidePanelHtml.length > 8000 
+          ? sidePanelHtml.substring(0, 8000) + '\n[... conteúdo truncado ...]'
+          : sidePanelHtml;
+        
+        contextInfo.push(`\nCONTEÚDO COMPLETO DO EMAIL/COPY:\n${contentPreview}`);
+        contextInfo.push(`=== FIM DO EMAIL/COPY ===`);
       } else if (sidePanelGenerating) {
         contextInfo.push(`• Email HTML: ⏳ Gerando agora...`);
       } else if (dispatchType === 'email') {
