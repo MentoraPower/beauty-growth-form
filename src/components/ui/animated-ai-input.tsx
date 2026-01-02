@@ -11,6 +11,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { motion, AnimatePresence } from "framer-motion";
+import grokIcon from "@/assets/grok-icon.png";
 
 interface UseAutoResizeTextareaProps {
   minHeight: number;
@@ -76,10 +77,7 @@ const OPENAI_ICON = (
 
 // Grok/xAI Icon
 const GROK_ICON = (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" fill="none" />
-    <path d="M16 6L8 13H12L8 18L16 11H12L16 6Z" fill="currentColor" />
-  </svg>
+  <img src={grokIcon} alt="Grok" width={16} height={16} className="object-contain" />
 );
 
 export type AIModel = "ChatGPT" | "Grok" | "Copywriting";
