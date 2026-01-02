@@ -558,14 +558,12 @@ export function AutomationsDropdown({
 
   const getGeneratedWebhookUrl = () => {
     const baseUrl = `https://scalebeauty.com.br/api/webhook`;
-    if (webhookScope === "all") {
-      return baseUrl;
-    } else if (webhookScope === "origin" && webhookOriginId) {
-      return `${baseUrl}?origin_id=${webhookOriginId}`;
-    } else if (webhookScope === "sub_origin" && webhookSubOriginId) {
-      return `${baseUrl}?sub_origin_id=${webhookSubOriginId}`;
+    const params = new URLSearchParams();
+    params.append("sub_origin_id", subOriginId);
+    if (webhookTriggerPipelineId) {
+      params.append("pipeline_id", webhookTriggerPipelineId);
     }
-    return baseUrl;
+    return `${baseUrl}?${params.toString()}`;
   };
 
   const copyWebhookUrl = (url: string) => {
