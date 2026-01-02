@@ -462,7 +462,7 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
           >
             <div
               className={cn(
-                "h-full p-2 rounded-2xl bg-white",
+                "h-full p-3 rounded-2xl bg-white",
                 animationsEnabled && "transition-opacity duration-200"
               )}
               style={{
@@ -512,7 +512,7 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
           >
             <div
               className={cn(
-                "h-full p-2 rounded-2xl bg-white",
+                "h-full p-3 rounded-2xl bg-white",
                 animationsEnabled && "transition-opacity duration-200"
               )}
               style={{
