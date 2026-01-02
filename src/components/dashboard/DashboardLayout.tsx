@@ -452,7 +452,7 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
           <div
             style={{
               width: submenuWidth,
-              transform: crmSubmenuOpen ? 'translateX(4px)' : `translateX(-${submenuWidth}px)`,
+              transform: crmSubmenuOpen ? 'translateX(0px)' : `translateX(-${submenuWidth}px)`,
               willChange: animationsEnabled ? 'transform' : 'auto',
             }}
             className={cn(
@@ -462,7 +462,7 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
           >
             <div
               className={cn(
-                "h-full p-3 rounded-2xl bg-white",
+                "h-full rounded-2xl bg-white",
                 animationsEnabled && "transition-opacity duration-200"
               )}
               style={{
@@ -472,15 +472,13 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
                 transitionDelay: (animationsEnabled && crmSubmenuOpen) ? '50ms' : '0ms',
               }}
             >
-              <div className="h-full bg-zinc-800 rounded-xl overflow-hidden">
-                <div className="h-full pl-4 pr-2">
-                  <MemoizedCRMOriginsPanel
-                    isOpen={crmSubmenuOpen}
-                    onClose={handleCloseCrmSubmenu}
-                    sidebarWidth={sidebarCollapsedWidth}
-                    embedded={true}
-                  />
-                </div>
+              <div className="h-full px-3 py-2">
+                <MemoizedCRMOriginsPanel
+                  isOpen={crmSubmenuOpen}
+                  onClose={handleCloseCrmSubmenu}
+                  sidebarWidth={sidebarCollapsedWidth}
+                  embedded={true}
+                />
               </div>
             </div>
           </div>
@@ -502,7 +500,7 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
           <div
             style={{
               width: disparoSubmenuWidth,
-              transform: disparoSubmenuOpen ? 'translateX(4px)' : `translateX(-${disparoSubmenuWidth}px)`,
+              transform: disparoSubmenuOpen ? 'translateX(0px)' : `translateX(-${disparoSubmenuWidth}px)`,
               willChange: animationsEnabled ? 'transform' : 'auto',
             }}
             className={cn(
@@ -512,7 +510,7 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
           >
             <div
               className={cn(
-                "h-full p-3 rounded-2xl bg-white",
+                "h-full rounded-2xl bg-white",
                 animationsEnabled && "transition-opacity duration-200"
               )}
               style={{
@@ -522,13 +520,11 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
                 transitionDelay: (animationsEnabled && disparoSubmenuOpen) ? '50ms' : '0ms',
               }}
             >
-              <div className="h-full bg-zinc-800 rounded-xl overflow-hidden">
-                <div className="h-full pl-2 pr-2">
-                  <DisparoSubmenuPanel
-                    isOpen={disparoSubmenuOpen}
-                    onClose={handleCloseDisparoSubmenu}
-                  />
-                </div>
+              <div className="h-full px-3 py-2">
+                <DisparoSubmenuPanel
+                  isOpen={disparoSubmenuOpen}
+                  onClose={handleCloseDisparoSubmenu}
+                />
               </div>
             </div>
           </div>
