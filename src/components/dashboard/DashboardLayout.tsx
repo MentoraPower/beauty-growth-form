@@ -455,7 +455,7 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
         >
           <div
             className={cn(
-              "h-full pl-4 pr-2",
+              "h-full pl-4 pr-2 bg-zinc-900 rounded-2xl",
               animationsEnabled && "transition-opacity duration-200"
             )}
             style={{
@@ -493,7 +493,7 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
         >
           <div
             className={cn(
-              "h-full pl-2 pr-2",
+              "h-full pl-2 pr-2 bg-zinc-900 rounded-2xl",
               animationsEnabled && "transition-opacity duration-200"
             )}
             style={{
