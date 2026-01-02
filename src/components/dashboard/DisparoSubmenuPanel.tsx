@@ -373,7 +373,7 @@ export function DisparoSubmenuPanel({ isOpen, onClose }: DisparoSubmenuPanelProp
                       <MoreVertical className="h-3.5 w-3.5" />
                     </button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="bg-background border border-border z-[60]">
+                  <DropdownMenuContent align="end" className="bg-popover border border-border shadow-md z-[9999]" sideOffset={4}>
                     <DropdownMenuItem
                       onClick={(e) => openRenameDialog(conv.id, conv.title, e)}
                       className="cursor-pointer"
