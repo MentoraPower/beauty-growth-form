@@ -439,7 +439,7 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
         {/* CRM Submenu Clip Container - clips the submenu animation */}
         <div
           style={{
-            left: sidebarCollapsedWidth + 6,
+            left: sidebarCollapsedWidth + 12,
             top: 'calc(45px + 6px)',
             height: 'calc(100vh - 45px - 12px)',
             width: submenuWidth + 8,
@@ -488,7 +488,7 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
         {/* Disparo Submenu Clip Container - clips the submenu animation */}
         <div
           style={{
-            left: sidebarCollapsedWidth + 6,
+            left: sidebarCollapsedWidth + 12,
             top: 'calc(45px + 6px)',
             height: 'calc(100vh - 45px - 12px)',
             width: disparoSubmenuWidth + 8,
