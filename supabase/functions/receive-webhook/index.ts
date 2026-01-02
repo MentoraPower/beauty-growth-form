@@ -837,10 +837,14 @@ const handler = async (req: Request): Promise<Response> => {
     if (subOriginId) {
       const targetSubOriginId = subOriginId;
       
+      // Check if this is an update-only webhook
+      const mode = url.searchParams.get("mode");
+      const isUpdateOnly = mode === "update";
+      
       // Get the pipeline_id from URL or find the first pipeline for this sub-origin
       let targetPipelineId = url.searchParams.get("pipeline_id");
       
-      if (!targetPipelineId) {
+      if (!targetPipelineId && !isUpdateOnly) {
         // Quick lookup for first pipeline of the sub-origin
         const { data: pipelines } = await supabase
           .from("pipelines")
@@ -921,13 +925,16 @@ const handler = async (req: Request): Promise<Response> => {
 
       if (existingLead?.id) {
         const previousPipelineId = existingLead.pipeline_id;
-        const pipelineChanged = previousPipelineId && previousPipelineId !== targetPipelineId;
+        // Only check for pipeline change if NOT in update-only mode
+        const pipelineChanged = !isUpdateOnly && previousPipelineId && previousPipelineId !== targetPipelineId;
 
         // Build update data - only update fields that have non-empty values
         const updateData: Record<string, any> = {};
         
-        // Always update pipeline to the new destination
-        updateData.pipeline_id = targetPipelineId;
+        // Only update pipeline if NOT in update-only mode
+        if (!isUpdateOnly && targetPipelineId) {
+          updateData.pipeline_id = targetPipelineId;
+        }
         
         // Only update other fields if they have values
         if (leadData.name && leadData.name.trim()) updateData.name = leadData.name;
@@ -992,13 +999,14 @@ const handler = async (req: Request): Promise<Response> => {
           });
           console.log(`[Webhook] Lead moved from "${fromPipelineName}" to "${toPipelineName}" via webhook`);
         } else {
-          // Just a data update, no pipeline change
+          // Just a data update, no pipeline change (or update-only mode)
           await supabase.from("lead_tracking").insert({
             lead_id: savedLeadId,
             tipo: "atualizacao",
-            titulo: "Lead atualizado via Webhook",
-            descricao: "Dados atualizados via webhook",
-            origem: "webhook",
+            titulo: isUpdateOnly ? "Dados atualizados via Webhook (modo atualização)" : "Lead atualizado via Webhook",
+            descricao: isUpdateOnly ? "Webhook configurado para apenas atualizar dados sem mover pipeline" : "Dados atualizados via webhook",
+            origem: isUpdateOnly ? "webhook-update" : "webhook",
+            dados: isUpdateOnly ? { mode: "update", triggered_by: "webhook" } : null
           }).then(({ error }) => {
             if (error) console.log("[Webhook] Tracking insert failed:", error.message);
           });

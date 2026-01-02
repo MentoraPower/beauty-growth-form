@@ -145,7 +145,7 @@ export function AutomationsDropdown({
   const [isCreatingWebhook, setIsCreatingWebhook] = useState(false);
   const [editingWebhookId, setEditingWebhookId] = useState<string | null>(null);
   const [webhookName, setWebhookName] = useState("");
-  const [webhookType, setWebhookType] = useState<"receive" | "send">("receive");
+  const [webhookType, setWebhookType] = useState<"receive" | "send" | "update">("receive");
   const [webhookUrl, setWebhookUrl] = useState("");
   const [webhookScope, setWebhookScope] = useState<"all" | "origin" | "sub_origin">("all");
   const [webhookOriginId, setWebhookOriginId] = useState<string>("");
@@ -560,8 +560,11 @@ export function AutomationsDropdown({
     const baseUrl = `https://scalebeauty.com.br/api/webhook`;
     const params = new URLSearchParams();
     params.append("sub_origin_id", subOriginId);
-    if (webhookTriggerPipelineId) {
+    if (webhookType === "receive" && webhookTriggerPipelineId) {
       params.append("pipeline_id", webhookTriggerPipelineId);
+    }
+    if (webhookType === "update") {
+      params.append("mode", "update");
     }
     return `${baseUrl}?${params.toString()}`;
   };
@@ -594,6 +597,7 @@ export function AutomationsDropdown({
       toast.error("Selecione em qual pipeline o lead vai cair");
       return;
     }
+    // "update" type doesn't need pipeline validation - works across all pipelines
 
     try {
       const webhookData = {
@@ -1462,13 +1466,14 @@ export function AutomationsDropdown({
                       onChange={(e) => setWebhookName(e.target.value)}
                       className="h-10"
                     />
-                    <Select value={webhookType} onValueChange={(v: "receive" | "send") => setWebhookType(v)}>
+                    <Select value={webhookType} onValueChange={(v: "receive" | "send" | "update") => setWebhookType(v)}>
                       <SelectTrigger className="h-10">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="receive">Receber</SelectItem>
                         <SelectItem value="send">Enviar</SelectItem>
+                        <SelectItem value="update">Atualizar</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -1534,7 +1539,15 @@ export function AutomationsDropdown({
                     </Select>
                   )}
 
-                  {webhookType === "receive" && (
+                  {webhookType === "update" && (
+                    <div className="p-3 rounded-lg bg-blue-500/10 border border-blue-500/30">
+                      <span className="text-xs text-blue-400">
+                        O webhook de atualização não move leads entre pipelines. Apenas atualiza os dados do lead existente em qualquer pipeline desta sub-origem.
+                      </span>
+                    </div>
+                  )}
+
+                  {(webhookType === "receive" || webhookType === "update") && (
                     <>
                       <div className="p-3 rounded-lg bg-muted/50 border border-border">
                         <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider block mb-2">
@@ -1675,7 +1688,7 @@ export function AutomationsDropdown({
                           <div className={cn("w-2 h-2 rounded-full", webhook.is_active ? "bg-emerald-500" : "bg-gray-400")} />
                           <span className="text-sm font-medium">{webhook.name}</span>
                           <span className="text-xs px-2 py-0.5 rounded bg-muted text-muted-foreground">
-                            {webhook.type === "receive" ? "Receber" : "Enviar"}
+                            {webhook.type === "receive" ? "Receber" : (webhook.type as string) === "update" ? "Atualizar" : "Enviar"}
                           </span>
                         </div>
                         <div className="flex items-center gap-2">
@@ -2143,13 +2156,14 @@ export function AutomationsDropdown({
                       onChange={(e) => setWebhookName(e.target.value)}
                       className="h-10"
                     />
-                    <Select value={webhookType} onValueChange={(v: "receive" | "send") => setWebhookType(v)}>
+                    <Select value={webhookType} onValueChange={(v: "receive" | "send" | "update") => setWebhookType(v)}>
                       <SelectTrigger className="h-10">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="receive">Receber</SelectItem>
                         <SelectItem value="send">Enviar</SelectItem>
+                        <SelectItem value="update">Atualizar</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -2212,7 +2226,15 @@ export function AutomationsDropdown({
                     </Select>
                   )}
 
-                  {webhookType === "receive" && (
+                  {webhookType === "update" && (
+                    <div className="p-3 rounded-lg bg-blue-500/10 border border-blue-500/30">
+                      <span className="text-xs text-blue-400">
+                        O webhook de atualização não move leads entre pipelines. Apenas atualiza os dados do lead existente em qualquer pipeline desta sub-origem.
+                      </span>
+                    </div>
+                  )}
+
+                  {(webhookType === "receive" || webhookType === "update") && (
                     <div className="p-3 rounded-lg bg-muted/50 border border-border">
                       <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider block mb-2">
                         URL gerada
