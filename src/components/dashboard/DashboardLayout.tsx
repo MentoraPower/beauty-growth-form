@@ -456,13 +456,13 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
               willChange: animationsEnabled ? 'transform' : 'auto',
             }}
             className={cn(
-              "h-full rounded-2xl overflow-hidden",
+              "h-full overflow-hidden bg-white",
               animationsEnabled && "transition-transform duration-300 ease-out"
             )}
           >
             <div
               className={cn(
-                "h-full rounded-2xl bg-white",
+                "h-full",
                 animationsEnabled && "transition-opacity duration-200"
               )}
               style={{
@@ -504,13 +504,13 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
               willChange: animationsEnabled ? 'transform' : 'auto',
             }}
             className={cn(
-              "h-full rounded-2xl overflow-hidden",
+              "h-full overflow-hidden bg-white",
               animationsEnabled && "transition-transform duration-300 ease-out"
             )}
           >
             <div
               className={cn(
-                "h-full rounded-2xl bg-white",
+                "h-full",
                 animationsEnabled && "transition-opacity duration-200"
               )}
               style={{
