@@ -454,9 +454,10 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
               width: submenuWidth,
               transform: crmSubmenuOpen ? 'translateX(0px)' : `translateX(-${submenuWidth}px)`,
               willChange: animationsEnabled ? 'transform' : 'auto',
+              border: '1px solid #00000010',
             }}
             className={cn(
-              "h-full overflow-hidden bg-white",
+              "h-full overflow-hidden bg-white rounded-2xl",
               animationsEnabled && "transition-transform duration-300 ease-out"
             )}
           >
@@ -502,9 +503,10 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
               width: disparoSubmenuWidth,
               transform: disparoSubmenuOpen ? 'translateX(0px)' : `translateX(-${disparoSubmenuWidth}px)`,
               willChange: animationsEnabled ? 'transform' : 'auto',
+              border: '1px solid #00000010',
             }}
             className={cn(
-              "h-full overflow-hidden bg-white",
+              "h-full overflow-hidden bg-white rounded-2xl",
               animationsEnabled && "transition-transform duration-300 ease-out"
             )}
           >
