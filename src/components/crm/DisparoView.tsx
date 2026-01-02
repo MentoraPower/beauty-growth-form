@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect, useCallback } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
-import { PromptInputBox } from "@/components/ui/ai-prompt-box";
+import { AnimatedAIInput, AIModel } from "@/components/ui/animated-ai-input";
 import { motion, AnimatePresence } from "framer-motion";
 
 import { toast } from "sonner";
@@ -2273,10 +2273,11 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
                         ease: [0.16, 1, 0.3, 1]
                       }}
                     >
-                      <PromptInputBox
-                        onSend={handleSend}
+                      <AnimatedAIInput
+                        onSubmit={(value, model) => handleSend(value)}
                         isLoading={isBusy}
                         placeholder="Digite sua mensagem aqui..."
+                        headerText="Ask Scale to create"
                       />
                       <p className="text-center text-xs text-gray-400 mt-2">
                         A Scale pode cometer erros. Confira informações importantes.
@@ -2431,10 +2432,11 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
                   "mx-auto transition-all duration-300",
                   sidePanelOpen ? "max-w-4xl" : "max-w-5xl"
                 )}>
-                  <PromptInputBox
-                    onSend={handleSend}
+                  <AnimatedAIInput
+                    onSubmit={(value, model) => handleSend(value)}
                     isLoading={isBusy}
                     placeholder="Digite sua mensagem aqui..."
+                    headerText="Ask Scale to create"
                   />
                   <p className="text-center text-xs text-gray-400 mt-2">
                     A Scale pode cometer erros. Confira informações importantes.
