@@ -884,46 +884,50 @@ const handler = async (req: Request): Promise<Response> => {
         leadData.biggest_difficulty = String(payload.biggest_difficulty);
       }
 
-      // Check for existing lead GLOBALLY by email OR whatsapp (same contact can be in multiple origins)
+      // Check for existing lead in the SAME SUB-ORIGIN by email OR whatsapp
       let savedLeadId: string | null = null;
-      let existingLead: { id: string; name: string; email: string; whatsapp: string; sub_origin_id: string | null } | null = null;
+      let existingLead: { id: string; name: string; email: string; whatsapp: string; sub_origin_id: string | null; pipeline_id: string | null } | null = null;
       let isUpdate = false;
 
-      // First, check by email globally
+      // First, check by email within the same sub-origin
       if (leadData.email && leadData.email.trim() !== "") {
         const { data: leadByEmail } = await supabase
           .from("leads")
-          .select("id, name, email, whatsapp, sub_origin_id")
+          .select("id, name, email, whatsapp, sub_origin_id, pipeline_id")
+          .eq("sub_origin_id", targetSubOriginId)
           .eq("email", leadData.email)
           .maybeSingle();
         
         if (leadByEmail) {
           existingLead = leadByEmail;
-          console.log(`[Webhook] Found existing lead by email globally: ${leadByEmail.id}`);
+          console.log(`[Webhook] Found existing lead by email in sub-origin: ${leadByEmail.id}`);
         }
       }
 
-      // If not found by email, check by whatsapp globally
+      // If not found by email, check by whatsapp within the same sub-origin
       if (!existingLead && leadData.whatsapp && leadData.whatsapp.trim() !== "") {
         const { data: leadByPhone } = await supabase
           .from("leads")
-          .select("id, name, email, whatsapp, sub_origin_id")
+          .select("id, name, email, whatsapp, sub_origin_id, pipeline_id")
+          .eq("sub_origin_id", targetSubOriginId)
           .eq("whatsapp", leadData.whatsapp)
           .maybeSingle();
         
         if (leadByPhone) {
           existingLead = leadByPhone;
-          console.log(`[Webhook] Found existing lead by whatsapp globally: ${leadByPhone.id}`);
+          console.log(`[Webhook] Found existing lead by whatsapp in sub-origin: ${leadByPhone.id}`);
         }
       }
 
       if (existingLead?.id) {
+        const previousPipelineId = existingLead.pipeline_id;
+        const pipelineChanged = previousPipelineId && previousPipelineId !== targetPipelineId;
+
         // Build update data - only update fields that have non-empty values
         const updateData: Record<string, any> = {};
         
-        // Always update pipeline and sub_origin to the new destination
+        // Always update pipeline to the new destination
         updateData.pipeline_id = targetPipelineId;
-        updateData.sub_origin_id = targetSubOriginId;
         
         // Only update other fields if they have values
         if (leadData.name && leadData.name.trim()) updateData.name = leadData.name;
@@ -958,20 +962,47 @@ const handler = async (req: Request): Promise<Response> => {
         isUpdate = true;
         console.log(`[Webhook] Lead updated: ${savedLeadId}`);
 
-        // Add tracking for update
-        const fromSubOrigin = existingLead.sub_origin_id !== targetSubOriginId 
-          ? `Movido para nova sub-origem` 
-          : `Dados atualizados`;
-        
-        await supabase.from("lead_tracking").insert({
-          lead_id: savedLeadId,
-          tipo: "atualizacao",
-          titulo: "Lead atualizado via Webhook",
-          descricao: fromSubOrigin,
-          origem: "webhook",
-        }).then(({ error }) => {
-          if (error) console.log("[Webhook] Tracking insert failed:", error.message);
-        });
+        // Add tracking based on whether pipeline changed
+        if (pipelineChanged) {
+          // Fetch pipeline names for detailed tracking
+          const pipelineIds = [previousPipelineId, targetPipelineId].filter(Boolean);
+          const { data: pipelines } = await supabase
+            .from("pipelines")
+            .select("id, nome")
+            .in("id", pipelineIds);
+          
+          const fromPipelineName = pipelines?.find(p => p.id === previousPipelineId)?.nome || "Pipeline anterior";
+          const toPipelineName = pipelines?.find(p => p.id === targetPipelineId)?.nome || "Nova pipeline";
+
+          await supabase.from("lead_tracking").insert({
+            lead_id: savedLeadId,
+            tipo: "mudou_pipeline",
+            titulo: `Movido para ${toPipelineName} via Webhook`,
+            descricao: `Pipeline anterior: ${fromPipelineName}`,
+            origem: "webhook-automatico",
+            dados: {
+              from_pipeline_id: previousPipelineId,
+              to_pipeline_id: targetPipelineId,
+              from_pipeline_name: fromPipelineName,
+              to_pipeline_name: toPipelineName,
+              triggered_by: "webhook"
+            }
+          }).then(({ error }) => {
+            if (error) console.log("[Webhook] Pipeline move tracking insert failed:", error.message);
+          });
+          console.log(`[Webhook] Lead moved from "${fromPipelineName}" to "${toPipelineName}" via webhook`);
+        } else {
+          // Just a data update, no pipeline change
+          await supabase.from("lead_tracking").insert({
+            lead_id: savedLeadId,
+            tipo: "atualizacao",
+            titulo: "Lead atualizado via Webhook",
+            descricao: "Dados atualizados via webhook",
+            origem: "webhook",
+          }).then(({ error }) => {
+            if (error) console.log("[Webhook] Tracking insert failed:", error.message);
+          });
+        }
       } else {
         // Create new lead
         const { data, error } = await supabase
@@ -1221,13 +1252,13 @@ const handler = async (req: Request): Promise<Response> => {
     console.log("Creating lead with data:", JSON.stringify(leadData).substring(0, 500));
 
     // Check for existing lead in the same sub-origin by email OR whatsapp
-    let existingLead: { id: string } | null = null;
+    let existingLead: { id: string; pipeline_id: string | null } | null = null;
 
     // First, check by email within the same sub-origin
     if (leadData.email && leadData.email.trim() !== "") {
       const { data: leadByEmail } = await supabase
         .from("leads")
-        .select("id")
+        .select("id, pipeline_id")
         .eq("sub_origin_id", targetSubOriginId)
         .eq("email", leadData.email)
         .maybeSingle();
@@ -1242,7 +1273,7 @@ const handler = async (req: Request): Promise<Response> => {
     if (!existingLead && leadData.whatsapp && leadData.whatsapp.trim() !== "") {
       const { data: leadByPhone } = await supabase
         .from("leads")
-        .select("id")
+        .select("id, pipeline_id")
         .eq("sub_origin_id", targetSubOriginId)
         .eq("whatsapp", leadData.whatsapp)
         .maybeSingle();
@@ -1255,6 +1286,9 @@ const handler = async (req: Request): Promise<Response> => {
 
     let savedLead;
     if (existingLead) {
+      const previousPipelineId = existingLead.pipeline_id;
+      const pipelineChanged = previousPipelineId && previousPipelineId !== targetPipelineId;
+
       // Update existing lead
       const { data, error } = await supabase
         .from("leads")
@@ -1269,6 +1303,44 @@ const handler = async (req: Request): Promise<Response> => {
       }
       savedLead = data;
       console.log("Lead updated:", savedLead.id);
+
+      // Add tracking based on whether pipeline changed
+      if (pipelineChanged) {
+        // Fetch pipeline names for detailed tracking
+        const pipelineIds = [previousPipelineId, targetPipelineId].filter(Boolean);
+        const { data: pipelines } = await supabase
+          .from("pipelines")
+          .select("id, nome")
+          .in("id", pipelineIds);
+        
+        const fromPipelineName = pipelines?.find(p => p.id === previousPipelineId)?.nome || "Pipeline anterior";
+        const toPipelineName = pipelines?.find(p => p.id === targetPipelineId)?.nome || "Nova pipeline";
+
+        await supabase.from("lead_tracking").insert({
+          lead_id: savedLead.id,
+          tipo: "mudou_pipeline",
+          titulo: `Movido para ${toPipelineName} via Webhook`,
+          descricao: `Pipeline anterior: ${fromPipelineName}`,
+          origem: "webhook-automatico",
+          dados: {
+            from_pipeline_id: previousPipelineId,
+            to_pipeline_id: targetPipelineId,
+            from_pipeline_name: fromPipelineName,
+            to_pipeline_name: toPipelineName,
+            triggered_by: "webhook"
+          }
+        });
+        console.log(`[Webhook] Lead moved from "${fromPipelineName}" to "${toPipelineName}" via webhook`);
+      } else {
+        // Just a data update, no pipeline change
+        await supabase.from("lead_tracking").insert({
+          lead_id: savedLead.id,
+          tipo: "atualizacao",
+          titulo: "Lead atualizado via Webhook",
+          descricao: "Dados atualizados via webhook",
+          origem: matchedWebhook?.name || "webhook",
+        });
+      }
     } else {
       // Create new lead
       const { data, error } = await supabase
