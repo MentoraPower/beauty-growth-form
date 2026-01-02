@@ -270,19 +270,19 @@ function SortableOriginItem({
         <button
           onClick={() => toggleOrigin(origin.id)}
           className={cn(
-            "flex items-center gap-2 flex-1 py-2 px-2 rounded-lg transition-all duration-200 ease-out text-sm text-muted-foreground hover:text-foreground hover:bg-accent",
+            "flex items-center gap-2 flex-1 py-2 px-2 rounded-lg transition-all duration-200 ease-out text-sm text-foreground/70 hover:text-foreground hover:bg-accent",
             userPermissions.isAdmin && "group-hover/origin:translate-x-4 group-has-[.actions-area:hover]/origin:translate-x-0"
           )}
         >
           {isOriginExpanded ? (
-            <FolderOpen className="h-4 w-4 flex-shrink-0 fill-current text-muted-foreground" />
+            <FolderOpen className="h-4 w-4 flex-shrink-0 fill-current text-foreground/60" />
           ) : (
-            <Folder className="h-4 w-4 flex-shrink-0 fill-current text-muted-foreground" />
+            <Folder className="h-4 w-4 flex-shrink-0 fill-current text-foreground/60" />
           )}
           <span className="flex-1 text-left truncate font-bold">{origin.nome}</span>
           <ChevronRight 
             className={cn(
-              "h-3 w-3 transition-transform duration-300 text-muted-foreground",
+              "h-3 w-3 transition-transform duration-300 text-foreground/50",
               isOriginExpanded ? "rotate-90" : ""
             )} 
           />
@@ -376,12 +376,12 @@ function SortableOriginItem({
                         "flex items-center gap-2 flex-1 py-1.5 px-2 rounded-lg transition-all duration-200 ease-out text-xs",
                         isActive 
                           ? "bg-accent font-medium text-foreground"
-                          : "text-muted-foreground hover:text-foreground hover:bg-accent"
+                          : "text-foreground/70 hover:text-foreground hover:bg-accent"
                       )}
                     >
                       <Kanban className={cn(
                         "h-3 w-3 flex-shrink-0",
-                        isActive ? "text-orange-500" : "text-muted-foreground"
+                        isActive ? "text-orange-500" : "text-foreground/60"
                       )} />
                       <span className={cn(
                         "truncate font-bold",
@@ -390,11 +390,11 @@ function SortableOriginItem({
                       <span className={cn(
                         "ml-auto text-[10px] px-1.5 py-0.5 rounded-full min-w-[24px] text-center tabular-nums transition-opacity duration-200",
                         isCountLoading 
-                          ? "bg-accent text-muted-foreground"
+                          ? "bg-accent text-foreground/50"
                           : leadCount > 0 
                             ? isActive 
                               ? "bg-secondary text-foreground"
-                              : "bg-accent text-muted-foreground"
+                              : "bg-accent text-foreground/60"
                             : "opacity-0"
                       )}>
                         {isCountLoading ? "..." : leadCount > 0 ? leadCount.toLocaleString('pt-BR') : '0'}
