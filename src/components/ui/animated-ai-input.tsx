@@ -203,7 +203,7 @@ export function AnimatedAIInput({
           )}
 
           {/* Textarea Area */}
-          <div className="relative bg-white">
+          <div className="relative bg-white rounded-t-xl">
             <textarea
               ref={textareaRef}
               value={value}
