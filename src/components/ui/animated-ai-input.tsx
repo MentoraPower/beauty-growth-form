@@ -76,31 +76,13 @@ const OPENAI_ICON = (
 
 // Grok/xAI Icon
 const GROK_ICON = (
-  <svg width="16" height="16" viewBox="0 0 1000 960" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <path
-      d="M188.5 500.3L477.4 0.6H596.4L307.4 500.3H188.5Z"
-      fill="currentColor"
-    />
-    <path
-      d="M691.7 959.7L402.7 460.1L462.7 356.8L811.2 959.7H691.7Z"
-      fill="currentColor"
-    />
-    <path
-      d="M811.2 0.6L521.6 501.4L462 397.8L691.4 0.6H811.2Z"
-      fill="currentColor"
-    />
-    <path
-      d="M0 959.7V856.5L522.5 856.5L582.5 959.7H0Z"
-      fill="currentColor"
-    />
-    <path
-      d="M940.5 103.3V959.7H821.6V206.5L940.5 103.3Z"
-      fill="currentColor"
-    />
-    <path
-      d="M940.5 0.6V70L821.6 173.2V0.6H940.5Z"
-      fill="currentColor"
-    />
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M4.5 12L11.5 0.1H14.3L7.3 12H4.5Z" fill="currentColor" />
+    <path d="M16.6 23L9.6 11L11.1 8.5L19.5 23H16.6Z" fill="currentColor" />
+    <path d="M19.5 0.1L12.5 12L11.1 9.5L16.6 0.1H19.5Z" fill="currentColor" />
+    <path d="M0 23V20.5H12.5L14 23H0Z" fill="currentColor" />
+    <path d="M22.6 2.5V23H19.7V5L22.6 2.5Z" fill="currentColor" />
+    <path d="M22.6 0.1V1.7L19.7 4.2V0.1H22.6Z" fill="currentColor" />
   </svg>
 );
 
