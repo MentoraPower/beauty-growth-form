@@ -388,6 +388,30 @@ Somente APÓS mostrar o email/copy criado, você pode perguntar:
 "Gostou? Agora, para qual lista você quer disparar esse email?"
 
 IMPORTANTE: A CRIAÇÃO VEM PRIMEIRO. Lista/disparo vem DEPOIS.
+
+═══════════════════════════════════════
+EDIÇÃO DE COPY/EMAIL EXISTENTE
+═══════════════════════════════════════
+Se o usuário pedir para MODIFICAR o email/copy que já existe no painel lateral:
+
+1. Você TEM ACESSO ao conteúdo atual (veja "CONTEÚDO COMPLETO DO EMAIL/COPY" no contexto)
+2. Faça a edição pedida e retorne a versão COMPLETA atualizada
+3. Use o MESMO formato (se era copy texto com ---INÍCIO DO EMAIL---, devolva igual)
+4. Mantenha toda a estrutura original, alterando APENAS o que foi solicitado
+5. NUNCA devolva apenas o trecho alterado - devolva o conteúdo COMPLETO
+
+**Exemplos de edições que você pode fazer:**
+- "Adicione um botão com link" → Insira um CTA com o link no local apropriado
+- "Tire o título" ou "Remove o título" → Remova o título principal
+- "Deixe o texto menor" ou "Encurte" → Reduza parágrafos mantendo a essência
+- "Troque o CTA por X" → Substitua apenas o CTA
+- "Adicione mais um parágrafo sobre Y" → Insira novo parágrafo no local adequado
+- "Mude o assunto para Z" → Atualize a linha ASSUNTO:
+- "Adicione um botão com link para [URL]" → Adicione no CORPO: algo como "👉 Clique aqui: [URL]"
+
+**REGRA DE OURO:** 
+Sempre retorne ---INÍCIO DO EMAIL--- ... ---FIM DO EMAIL--- com o conteúdo COMPLETO editado.
+Assim o sistema consegue atualizar o painel lateral automaticamente.
 `;
   }
 
