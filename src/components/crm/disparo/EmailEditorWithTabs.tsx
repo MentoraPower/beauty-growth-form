@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
-import { sanitizeHtml } from '@/lib/disparo/formatting';
+import { sanitizeHtml, formatCopyToRichHtml } from '@/lib/disparo/formatting';
 
 interface EmailEditorWithTabsProps {
   html: string;
@@ -81,7 +81,11 @@ export function EmailEditorWithTabs({
               {html ? (
                 <div 
                   className="prose prose-sm max-w-none"
-                  dangerouslySetInnerHTML={{ __html: sanitizeHtml(html) }}
+                  dangerouslySetInnerHTML={{ 
+                    __html: html.includes('## ') || html.includes('### ') 
+                      ? formatCopyToRichHtml(sanitizeHtml(html))
+                      : sanitizeHtml(html) 
+                  }}
                 />
               ) : (
                 <div className="flex items-center justify-center h-[280px] text-muted-foreground text-sm">

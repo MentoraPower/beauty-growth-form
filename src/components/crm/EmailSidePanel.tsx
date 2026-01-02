@@ -12,6 +12,7 @@ import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Link from '@tiptap/extension-link';
 import { TiptapFloatingToolbar } from './TiptapFloatingToolbar';
+import { formatCopyToRichHtml } from '@/lib/disparo/formatting';
 
 // Format text with markdown-like syntax: **bold**, _italic_, ~strikethrough~, `code`
 const formatTextContent = (text: string): string => {
@@ -621,9 +622,14 @@ export function EmailSidePanel({
       .replace(/on\w+="[^"]*"/gi, '')
       .replace(/on\w+='[^']*'/gi, '');
     
-    // Apply text formatting if requested (for text-only mode)
+    // Apply rich formatting with titles, subtitles, etc.
     if (applyFormatting) {
-      content = formatTextContent(content);
+      // Check if content has markdown-style formatting (## or ###)
+      if (content.includes('## ') || content.includes('### ')) {
+        content = formatCopyToRichHtml(content);
+      } else {
+        content = formatTextContent(content);
+      }
     }
     
     return content;

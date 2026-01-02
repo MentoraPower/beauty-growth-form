@@ -172,9 +172,15 @@ export function formatMessageContent(content: string): React.ReactNode {
 }
 
 /**
- * Format inline text: **bold** and _italic_ (legacy alias)
+ * Helper to format inline text: **bold** and _italic_ to HTML string
  */
-const formatInlineText = formatInlineStyles;
+const formatInlineTextToHtml = (text: string): string => {
+  return text
+    // Bold: **text**
+    .replace(/\*\*([^*]+)\*\*/g, '<strong style="font-weight: 600; color: inherit;">$1</strong>')
+    // Italic: _text_
+    .replace(/_([^_]+)_/g, '<em style="font-style: italic;">$1</em>');
+};
 
 /**
  * Sanitize HTML for safe preview
@@ -184,6 +190,55 @@ export const sanitizeHtml = (html: string): string => {
     .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
     .replace(/on\w+="[^"]*"/gi, '')
     .replace(/on\w+='[^']*'/gi, '');
+};
+
+/**
+ * Convert markdown-style copy to HTML with rich typography for side panel display
+ * Transforms ## titles, ### subtitles, **bold**, _italic_, and bullet points
+ */
+export const formatCopyToRichHtml = (text: string): string => {
+  if (!text) return '';
+  
+  const lines = text.split('\n');
+  const htmlLines: string[] = [];
+  
+  for (const line of lines) {
+    const trimmed = line.trim();
+    
+    // Skip empty lines - add spacing
+    if (trimmed === '') {
+      htmlLines.push('<div style="height: 0.75rem;"></div>');
+      continue;
+    }
+    
+    // Main title: ## Title
+    if (trimmed.startsWith('## ')) {
+      const titleText = formatInlineTextToHtml(trimmed.slice(3));
+      htmlLines.push(`<h2 style="font-size: 1.5rem; font-weight: 700; color: #111; margin: 1.5rem 0 0.75rem 0; line-height: 1.3;">${titleText}</h2>`);
+      continue;
+    }
+    
+    // Subtitle: ### Subtitle
+    if (trimmed.startsWith('### ')) {
+      const subtitleText = formatInlineTextToHtml(trimmed.slice(4));
+      htmlLines.push(`<h3 style="font-size: 1.25rem; font-weight: 600; color: #222; margin: 1.25rem 0 0.5rem 0; line-height: 1.4;">${subtitleText}</h3>`);
+      continue;
+    }
+    
+    // Bullet points: - or •
+    const bulletMatch = trimmed.match(/^([-•])\s+(.*)$/);
+    if (bulletMatch) {
+      const bulletText = formatInlineTextToHtml(bulletMatch[2]);
+      htmlLines.push(`<div style="display: flex; align-items: flex-start; gap: 0.625rem; margin: 0.375rem 0; color: #444;"><span style="color: #666; margin-top: 0.125rem;">•</span><span style="flex: 1; line-height: 1.7;">${bulletText}</span></div>`);
+      continue;
+    }
+    
+    // Regular paragraph
+    const paragraphText = formatInlineTextToHtml(trimmed);
+    htmlLines.push(`<p style="font-size: 1rem; color: #333; line-height: 1.7; margin: 0.5rem 0;">${paragraphText}</p>`);
+  }
+  
+  return htmlLines.join('\n');
 };
 
 /**
