@@ -204,30 +204,30 @@ export function AnimatedAIInput({
   return (
     <div className={cn("w-full", className)}>
       <div className="w-full">
-        <div className="relative rounded-xl overflow-hidden bg-zinc-900" style={{ border: '1px solid #ffffff10' }}>
+        <div className="relative rounded-xl overflow-hidden" style={{ border: '1px solid #00000015' }}>
           {/* Header */}
           {showHeader && (
             <div 
-              className="flex items-center gap-2 px-4 py-2.5 bg-zinc-800"
-              style={{ borderBottom: '1px solid #ffffff10' }}
+              className="flex items-center gap-2 px-4 py-2.5 bg-zinc-50"
+              style={{ borderBottom: '1px solid #00000010' }}
             >
-              <span className="text-sm text-zinc-400">{headerText}</span>
+              <span className="text-sm text-zinc-500">{headerText}</span>
             </div>
           )}
 
           {/* Textarea Area */}
-          <div className="relative bg-zinc-900">
+          <div className="relative bg-white">
             <textarea
               ref={textareaRef}
               value={value}
               placeholder={placeholder}
               disabled={disabled || isLoading}
               className={cn(
-                "w-full bg-transparent text-white placeholder:text-zinc-500",
+                "w-full bg-transparent text-zinc-900 placeholder:text-zinc-400",
                 "resize-none border-none outline-none focus:ring-0",
                 "text-base leading-relaxed px-4 py-3",
                 "min-h-[72px] max-h-[300px]",
-                "scrollbar-thin scrollbar-thumb-zinc-600 scrollbar-track-transparent"
+                "scrollbar-thin scrollbar-thumb-zinc-300 scrollbar-track-transparent"
               )}
               onKeyDown={handleKeyDown}
               onChange={(e) => {
@@ -239,8 +239,8 @@ export function AnimatedAIInput({
 
           {/* Bottom Actions Bar */}
           <div 
-            className="h-14 bg-zinc-800 flex items-center px-3"
-            style={{ borderTop: '1px solid #ffffff10' }}
+            className="h-14 bg-zinc-50 flex items-center px-3"
+            style={{ borderTop: '1px solid #00000010' }}
           >
             <div className="flex items-center justify-between w-full">
               {/* Left side - Model selector and file upload */}
@@ -249,7 +249,7 @@ export function AnimatedAIInput({
                   <DropdownMenuTrigger asChild>
                     <Button
                       variant="ghost"
-                      className="flex items-center gap-1 h-8 pl-1.5 pr-2 text-xs rounded-md text-zinc-300 hover:bg-zinc-700/50 focus-visible:ring-1 focus-visible:ring-offset-0 focus-visible:ring-zinc-500"
+                      className="flex items-center gap-1 h-8 pl-1.5 pr-2 text-xs rounded-md text-zinc-700 hover:bg-zinc-200/50 focus-visible:ring-1 focus-visible:ring-offset-0 focus-visible:ring-zinc-400"
                     >
                       <AnimatePresence mode="wait">
                         <motion.div
@@ -293,15 +293,15 @@ export function AnimatedAIInput({
                   </DropdownMenuContent>
                 </DropdownMenu>
 
-                <div className="h-4 w-px bg-zinc-600 mx-0.5" />
+                <div className="h-4 w-px bg-zinc-200 mx-0.5" />
 
                 <button
                   type="button"
                   onClick={handleFileClick}
                   className={cn(
-                    "rounded-lg p-2 bg-zinc-700 cursor-pointer",
-                    "hover:bg-zinc-600 transition-colors",
-                    "text-zinc-400 hover:text-zinc-200"
+                    "rounded-lg p-2 bg-zinc-100 cursor-pointer",
+                    "hover:bg-zinc-200 transition-colors",
+                    "text-zinc-400 hover:text-zinc-600"
                   )}
                   aria-label="Attach file"
                 >
@@ -324,8 +324,8 @@ export function AnimatedAIInput({
                 className={cn(
                   "rounded-lg p-2 transition-all",
                   value.trim() && !isLoading && !disabled
-                    ? "bg-white hover:bg-zinc-100 text-zinc-900 cursor-pointer"
-                    : "bg-zinc-700 text-zinc-500 cursor-not-allowed"
+                    ? "bg-zinc-900 hover:bg-zinc-800 text-white cursor-pointer"
+                    : "bg-zinc-100 text-zinc-400 cursor-not-allowed"
                 )}
                 aria-label="Send message"
               >
