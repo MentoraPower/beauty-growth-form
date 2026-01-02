@@ -593,7 +593,7 @@ export default function LeadDetail() {
                             <span className="text-sm font-medium text-muted-foreground italic">incompleto</span>
                           ) : (
                             <span className="text-sm font-medium">
-                              {lead.country_code} {lead.whatsapp.replace(/^\+\d+\s*/, "")}
+                              {lead.whatsapp.replace(/^\+\d+\s*/, "")}
                             </span>
                           )
                         }
