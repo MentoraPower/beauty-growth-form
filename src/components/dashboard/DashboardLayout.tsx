@@ -445,8 +445,8 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
             zIndex: 39,
             pointerEvents: crmSubmenuOpen ? 'auto' : 'none',
             willChange: animationsEnabled ? 'transform' : 'auto',
-            top: 'calc(45px + 4px)',
-            bottom: 8,
+            top: 'calc(45px + 12px)',
+            height: 'calc(100vh - 45px - 1.5rem)',
           }}
           className={cn(
             "hidden lg:block fixed overflow-hidden",
@@ -483,8 +483,8 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
             zIndex: 39,
             pointerEvents: disparoSubmenuOpen ? 'auto' : 'none',
             willChange: animationsEnabled ? 'transform' : 'auto',
-            top: 'calc(45px + 4px)',
-            bottom: 8,
+            top: 'calc(45px + 12px)',
+            height: 'calc(100vh - 45px - 1.5rem)',
           }}
           className={cn(
             "hidden lg:block fixed overflow-hidden",
