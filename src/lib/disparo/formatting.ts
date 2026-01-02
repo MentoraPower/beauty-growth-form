@@ -78,81 +78,9 @@ export function highlightHtml(code: string): React.ReactNode[] {
 }
 
 /**
- * Parse markdown-like formatting with rich typography:
- * ## Title (large), ### Subtitle (medium), **bold**, _italic_, - bullet points
- */
-export const formatMessageContent = (content: string): React.ReactNode => {
-  // First remove any agent prefix
-  const cleanContent = removeAgentPrefix(content);
-  
-  // Split content by lines to handle headings and bullets
-  const lines = cleanContent.split('\n');
-  const elements: React.ReactNode[] = [];
-  
-  lines.forEach((line, lineIndex) => {
-    const trimmedLine = line.trim();
-    
-    // ## Title - Large heading
-    if (trimmedLine.startsWith('## ')) {
-      const titleText = trimmedLine.slice(3);
-      elements.push(
-        React.createElement('h2', { 
-          key: `h2-${lineIndex}`, 
-          className: 'text-xl font-semibold text-foreground mt-4 mb-2 first:mt-0' 
-        }, formatInlineText(titleText))
-      );
-      return;
-    }
-    
-    // ### Subtitle - Medium heading
-    if (trimmedLine.startsWith('### ')) {
-      const subtitleText = trimmedLine.slice(4);
-      elements.push(
-        React.createElement('h3', { 
-          key: `h3-${lineIndex}`, 
-          className: 'text-lg font-medium text-foreground/90 mt-3 mb-1.5' 
-        }, formatInlineText(subtitleText))
-      );
-      return;
-    }
-    
-    // Bullet points: - or •
-    if (trimmedLine.startsWith('- ') || trimmedLine.startsWith('• ')) {
-      const bulletText = trimmedLine.slice(2);
-      elements.push(
-        React.createElement('div', { 
-          key: `bullet-${lineIndex}`, 
-          className: 'flex items-start gap-2 my-1 pl-1' 
-        }, [
-          React.createElement('span', { key: 'dot', className: 'text-primary mt-1.5 text-xs' }, '•'),
-          React.createElement('span', { key: 'text', className: 'text-[15px] text-foreground/80 leading-relaxed' }, formatInlineText(bulletText))
-        ])
-      );
-      return;
-    }
-    
-    // Empty lines
-    if (trimmedLine === '') {
-      elements.push(React.createElement('div', { key: `space-${lineIndex}`, className: 'h-2' }));
-      return;
-    }
-    
-    // Regular paragraph
-    elements.push(
-      React.createElement('p', { 
-        key: `p-${lineIndex}`, 
-        className: 'text-[15px] text-foreground/80 leading-relaxed my-1' 
-      }, formatInlineText(trimmedLine))
-    );
-  });
-  
-  return React.createElement('div', { className: 'space-y-0.5' }, elements);
-};
-
-/**
  * Format inline text: **bold** and _italic_
  */
-const formatInlineText = (text: string): React.ReactNode => {
+const formatInlineStyles = (text: string): React.ReactNode => {
   const parts = text.split(/(\*\*[^*]+\*\*|_[^_]+_)/g);
   
   return parts.map((part, index) => {
@@ -167,6 +95,86 @@ const formatInlineText = (text: string): React.ReactNode => {
     return part;
   });
 };
+
+/**
+ * Formats message content with headings, bullet points, and inline formatting
+ * Enhanced typography with larger titles and better spacing for rich copy content
+ */
+export function formatMessageContent(content: string): React.ReactNode {
+  if (!content) return null;
+  
+  // First remove any agent prefix
+  const cleanContent = removeAgentPrefix(content);
+  
+  const lines = cleanContent.split('\n');
+  const elements: React.ReactNode[] = [];
+  let key = 0;
+  
+  for (const line of lines) {
+    const trimmedLine = line.trim();
+    
+    // Skip empty lines but add spacing
+    if (trimmedLine === '') {
+      elements.push(React.createElement('div', { key: key++, className: 'h-3' }));
+      continue;
+    }
+    
+    // Check for headings - ## is main title (largest)
+    if (trimmedLine.startsWith('## ')) {
+      const text = trimmedLine.slice(3);
+      elements.push(
+        React.createElement('h2', { 
+          key: key++, 
+          className: 'text-2xl font-bold text-foreground mt-6 mb-3 first:mt-0 tracking-tight' 
+        }, formatInlineStyles(text))
+      );
+      continue;
+    }
+    
+    // ### is subtitle (medium)
+    if (trimmedLine.startsWith('### ')) {
+      const text = trimmedLine.slice(4);
+      elements.push(
+        React.createElement('h3', { 
+          key: key++, 
+          className: 'text-xl font-semibold text-foreground mt-5 mb-2' 
+        }, formatInlineStyles(text))
+      );
+      continue;
+    }
+    
+    // Check for bullet points (- or •)
+    const bulletMatch = trimmedLine.match(/^([-•])\s+(.*)$/);
+    if (bulletMatch) {
+      const [, , text] = bulletMatch;
+      elements.push(
+        React.createElement('div', { 
+          key: key++, 
+          className: 'flex items-start gap-2.5 text-muted-foreground py-1' 
+        }, [
+          React.createElement('span', { key: 'dot', className: 'text-primary mt-1.5 text-sm' }, '•'),
+          React.createElement('span', { key: 'text', className: 'flex-1 leading-relaxed' }, formatInlineStyles(text))
+        ])
+      );
+      continue;
+    }
+    
+    // Regular paragraph with improved readability
+    elements.push(
+      React.createElement('p', { 
+        key: key++, 
+        className: 'text-base text-muted-foreground leading-7' 
+      }, formatInlineStyles(trimmedLine))
+    );
+  }
+  
+  return React.createElement('div', { className: 'space-y-2' }, elements);
+}
+
+/**
+ * Format inline text: **bold** and _italic_ (legacy alias)
+ */
+const formatInlineText = formatInlineStyles;
 
 /**
  * Sanitize HTML for safe preview
