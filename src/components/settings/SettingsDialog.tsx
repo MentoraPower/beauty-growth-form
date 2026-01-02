@@ -10,7 +10,7 @@ import {
   DialogContent,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { User, Bell, Shield, Palette, HelpCircle, ChevronRight } from "lucide-react";
+import { User, Bell, Shield, Palette, HelpCircle, ChevronRight, Plug } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface SettingsDialogProps {
@@ -18,13 +18,14 @@ interface SettingsDialogProps {
   onOpenChange: (open: boolean) => void;
 }
 
-type SettingsTab = "profile" | "notifications" | "security" | "appearance" | "help";
+type SettingsTab = "profile" | "notifications" | "security" | "appearance" | "integrations" | "help";
 
 const menuItems: { id: SettingsTab; label: string; icon: React.ElementType }[] = [
   { id: "profile", label: "Perfil", icon: User },
   { id: "notifications", label: "Notificações", icon: Bell },
   { id: "security", label: "Segurança", icon: Shield },
   { id: "appearance", label: "Aparência", icon: Palette },
+  { id: "integrations", label: "API e integrações", icon: Plug },
   { id: "help", label: "Ajuda", icon: HelpCircle },
 ];
 
@@ -191,6 +192,18 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
             </div>
           </div>
         );
+      case "integrations":
+        return (
+          <div className="space-y-6">
+            <div>
+              <h2 className="text-lg font-semibold text-zinc-900">API e integrações</h2>
+              <p className="text-sm text-zinc-500">Conecte serviços externos e gerencie APIs</p>
+            </div>
+            <div className="flex items-center justify-center h-40 rounded-xl bg-zinc-50 text-zinc-400">
+              Em breve
+            </div>
+          </div>
+        );
       case "help":
         return (
           <div className="space-y-6">
@@ -213,7 +226,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
       <DialogContent className="sm:max-w-[700px] p-0 gap-0 overflow-hidden">
         <DialogTitle className="sr-only">Configurações</DialogTitle>
         
-        <div className="flex h-[560px]">
+        <div className="flex h-[620px]">
           {/* Sidebar Menu */}
           <div className="w-[200px] bg-zinc-50 p-3 flex flex-col gap-1" style={{ borderRight: '1px solid #00000010' }}>
             <div className="px-2 py-3 mb-2">
