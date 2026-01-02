@@ -260,8 +260,8 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
   const disparoSubmenuWidth = 200;
 
   return (
-    <div className="min-h-screen bg-[#F8F8F8] px-3 pt-1 pb-3">
-      <div className="min-h-[calc(100vh-1rem)] relative">
+    <div className="min-h-screen bg-[#F8F8F8] px-3 pb-3">
+      <div className="min-h-[calc(100vh-0.75rem)] relative">
         <LoadingBar />
         
         {/* Mobile Header */}
