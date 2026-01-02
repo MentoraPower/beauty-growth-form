@@ -270,19 +270,19 @@ function SortableOriginItem({
         <button
           onClick={() => toggleOrigin(origin.id)}
           className={cn(
-            "flex items-center gap-2 flex-1 py-2 px-2 rounded-lg transition-all duration-200 ease-out text-sm text-zinc-300 hover:text-white hover:bg-zinc-800",
+            "flex items-center gap-2 flex-1 py-2 px-2 rounded-lg transition-all duration-200 ease-out text-sm text-muted-foreground hover:text-foreground hover:bg-accent",
             userPermissions.isAdmin && "group-hover/origin:translate-x-4 group-has-[.actions-area:hover]/origin:translate-x-0"
           )}
         >
           {isOriginExpanded ? (
-            <FolderOpen className="h-4 w-4 flex-shrink-0 fill-current text-zinc-400" />
+            <FolderOpen className="h-4 w-4 flex-shrink-0 fill-current text-muted-foreground" />
           ) : (
-            <Folder className="h-4 w-4 flex-shrink-0 fill-current text-zinc-400" />
+            <Folder className="h-4 w-4 flex-shrink-0 fill-current text-muted-foreground" />
           )}
           <span className="flex-1 text-left truncate font-bold">{origin.nome}</span>
           <ChevronRight 
             className={cn(
-              "h-3 w-3 transition-transform duration-300 text-zinc-500",
+              "h-3 w-3 transition-transform duration-300 text-muted-foreground",
               isOriginExpanded ? "rotate-90" : ""
             )} 
           />
@@ -375,13 +375,13 @@ function SortableOriginItem({
                       className={cn(
                         "flex items-center gap-2 flex-1 py-1.5 px-2 rounded-lg transition-all duration-200 ease-out text-xs",
                         isActive 
-                          ? "bg-zinc-800 font-medium text-white"
-                          : "text-zinc-400 hover:text-white hover:bg-zinc-800"
+                          ? "bg-accent font-medium text-foreground"
+                          : "text-muted-foreground hover:text-foreground hover:bg-accent"
                       )}
                     >
                       <Kanban className={cn(
                         "h-3 w-3 flex-shrink-0",
-                        isActive ? "text-orange-500" : "text-zinc-500"
+                        isActive ? "text-orange-500" : "text-muted-foreground"
                       )} />
                       <span className={cn(
                         "truncate font-bold",
@@ -390,11 +390,11 @@ function SortableOriginItem({
                       <span className={cn(
                         "ml-auto text-[10px] px-1.5 py-0.5 rounded-full min-w-[24px] text-center tabular-nums transition-opacity duration-200",
                         isCountLoading 
-                          ? "bg-zinc-800 text-zinc-500"
+                          ? "bg-accent text-muted-foreground"
                           : leadCount > 0 
                             ? isActive 
-                              ? "bg-zinc-700 text-white"
-                              : "bg-zinc-800 text-zinc-400"
+                              ? "bg-secondary text-foreground"
+                              : "bg-accent text-muted-foreground"
                             : "opacity-0"
                       )}>
                         {isCountLoading ? "..." : leadCount > 0 ? leadCount.toLocaleString('pt-BR') : '0'}
