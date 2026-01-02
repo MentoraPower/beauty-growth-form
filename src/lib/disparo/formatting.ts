@@ -78,6 +78,16 @@ export function highlightHtml(code: string): React.ReactNode[] {
 }
 
 /**
+ * Convert title case to sentence case (only first letter uppercase)
+ * "Desperte Sua Essência" → "Desperte sua essência"
+ */
+const toSentenceCase = (text: string): string => {
+  if (!text || text.length < 2) return text;
+  // Keep first character as-is, lowercase the rest except after punctuation
+  return text.charAt(0) + text.slice(1).replace(/(?<![.!?:]\s)\b[A-ZÁÉÍÓÚÂÊÎÔÛÃÕÇ]/g, (char) => char.toLowerCase());
+};
+
+/**
  * Format inline text: **bold** and _italic_
  */
 const formatInlineStyles = (text: string): React.ReactNode => {
@@ -121,7 +131,7 @@ export function formatMessageContent(content: string): React.ReactNode {
     
     // Check for headings - ## is main title (largest)
     if (trimmedLine.startsWith('## ')) {
-      const text = trimmedLine.slice(3);
+      const text = toSentenceCase(trimmedLine.slice(3));
       elements.push(
         React.createElement('h2', { 
           key: key++, 
@@ -133,7 +143,7 @@ export function formatMessageContent(content: string): React.ReactNode {
     
     // ### is subtitle (medium)
     if (trimmedLine.startsWith('### ')) {
-      const text = trimmedLine.slice(4);
+      const text = toSentenceCase(trimmedLine.slice(4));
       elements.push(
         React.createElement('h3', { 
           key: key++, 
@@ -170,6 +180,14 @@ export function formatMessageContent(content: string): React.ReactNode {
   
   return React.createElement('div', { className: 'space-y-2' }, elements);
 }
+
+/**
+ * Convert title case to sentence case for HTML output
+ */
+const toSentenceCaseString = (text: string): string => {
+  if (!text || text.length < 2) return text;
+  return text.charAt(0) + text.slice(1).replace(/(?<![.!?:]\s)\b[A-ZÁÉÍÓÚÂÊÎÔÛÃÕÇ]/g, (char) => char.toLowerCase());
+};
 
 /**
  * Helper to format inline text: **bold** and _italic_ to HTML string
@@ -213,14 +231,14 @@ export const formatCopyToRichHtml = (text: string): string => {
     
     // Main title: ## Title
     if (trimmed.startsWith('## ')) {
-      const titleText = formatInlineTextToHtml(trimmed.slice(3));
+      const titleText = formatInlineTextToHtml(toSentenceCaseString(trimmed.slice(3)));
       htmlLines.push(`<h2 style="font-size: 1.5rem; font-weight: 700; color: #111; margin: 1.5rem 0 0.75rem 0; line-height: 1.3;">${titleText}</h2>`);
       continue;
     }
     
     // Subtitle: ### Subtitle
     if (trimmed.startsWith('### ')) {
-      const subtitleText = formatInlineTextToHtml(trimmed.slice(4));
+      const subtitleText = formatInlineTextToHtml(toSentenceCaseString(trimmed.slice(4)));
       htmlLines.push(`<h3 style="font-size: 1.25rem; font-weight: 600; color: #222; margin: 1.25rem 0 0.5rem 0; line-height: 1.4;">${subtitleText}</h3>`);
       continue;
     }
