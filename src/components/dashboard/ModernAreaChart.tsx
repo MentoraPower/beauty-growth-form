@@ -21,9 +21,9 @@ interface ModernAreaChartProps {
 const CustomTooltip = ({ active, payload, label }: any) => {
   if (active && payload && payload.length) {
     return (
-      <div className="bg-neutral-900 border border-neutral-700 rounded-xl px-4 py-3 shadow-xl">
-        <p className="text-neutral-400 text-xs mb-1">{label}</p>
-        <p className="text-white font-semibold">
+      <div className="bg-card border border-border rounded-xl px-4 py-3 shadow-xl">
+        <p className="text-muted-foreground text-xs mb-1">{label}</p>
+        <p className="text-foreground font-semibold">
           Leads: <span className="text-primary">{payload[0].value}</span>
         </p>
       </div>
@@ -47,7 +47,7 @@ const ModernAreaChart = ({ data, title }: ModernAreaChartProps) => {
             </linearGradient>
             <linearGradient id="lineGradient" x1="0" y1="0" x2="1" y2="0">
               <stop offset="0%" stopColor="hsl(var(--primary))" />
-              <stop offset="100%" stopColor="#FF6B6B" />
+              <stop offset="100%" stopColor="hsl(25, 95%, 53%)" />
             </linearGradient>
           </defs>
           <CartesianGrid
