@@ -202,9 +202,9 @@ export default function Equipe() {
   return (
     <div className="flex gap-4 h-[calc(100vh-6rem)]">
       {/* Left Side - Members List */}
-      <div className="w-[260px] flex-shrink-0 flex flex-col rounded-xl overflow-hidden" style={{ backgroundColor: '#FFFFFF', border: '1px solid #00000010' }}>
-        <div className="flex items-center justify-between p-4" style={{ borderBottom: '1px solid #00000010' }}>
-          <h1 className="text-sm font-semibold text-gray-700">Equipe</h1>
+      <div className="w-[260px] flex-shrink-0 flex flex-col rounded-xl overflow-hidden bg-white dark:bg-zinc-900 border border-black/5 dark:border-white/10">
+        <div className="flex items-center justify-between p-4 border-b border-black/5 dark:border-white/10">
+          <h1 className="text-sm font-semibold text-gray-700 dark:text-zinc-200">Equipe</h1>
           <Button
             onClick={() => setIsAddDialogOpen(true)}
             size="sm"
@@ -229,8 +229,8 @@ export default function Equipe() {
                 className={cn(
                   "p-3 rounded-lg cursor-pointer transition-all duration-200",
                   selectedMember?.user_id === member.user_id
-                    ? "bg-gradient-to-r from-slate-200/80 to-slate-100/60 shadow-sm"
-                    : "hover:bg-slate-100/60"
+                    ? "bg-gradient-to-r from-slate-200/80 to-slate-100/60 dark:from-zinc-700/80 dark:to-zinc-800/60 shadow-sm"
+                    : "hover:bg-slate-100/60 dark:hover:bg-zinc-800/60"
                 )}
               >
                 <div className="flex items-center gap-3">
@@ -245,19 +245,19 @@ export default function Equipe() {
                       "w-10 h-10 rounded-full flex items-center justify-center",
                       selectedMember?.user_id === member.user_id
                         ? "bg-gradient-to-br from-slate-700 to-slate-900"
-                        : "bg-gradient-to-br from-slate-200 to-slate-300"
+                        : "bg-gradient-to-br from-slate-200 to-slate-300 dark:from-zinc-600 dark:to-zinc-700"
                     )}>
                       <UserCircle className={cn(
                         "w-6 h-6",
-                        selectedMember?.user_id === member.user_id ? "text-white" : "text-slate-500"
+                        selectedMember?.user_id === member.user_id ? "text-white" : "text-slate-500 dark:text-zinc-300"
                       )} strokeWidth={1.5} />
                     </div>
                   )}
                   <div className="flex-1 min-w-0">
-                    <p className="font-medium text-sm text-slate-800 truncate">
+                    <p className="font-medium text-sm text-slate-800 dark:text-zinc-200 truncate">
                       {member.name || "Sem nome"}
                     </p>
-                    <p className="text-xs text-slate-500 truncate">
+                    <p className="text-xs text-slate-500 dark:text-zinc-400 truncate">
                       {member.role ? roleLabels[member.role] || member.role : "Sem função"}
                     </p>
                   </div>
@@ -273,11 +273,11 @@ export default function Equipe() {
         {selectedMember ? (
           <div className="space-y-4 animate-fade-in">
             {/* Header Card */}
-            <div className="rounded-xl p-6" style={{ backgroundColor: '#FFFFFF', border: '1px solid #00000010' }}>
+            <div className="rounded-xl p-6 bg-white dark:bg-zinc-900 border border-black/5 dark:border-white/10">
               <div className="flex items-start justify-between">
                 <div className="flex items-center gap-4">
                   <div 
-                    className="relative w-16 h-16 rounded-2xl bg-slate-100 flex items-center justify-center overflow-hidden group cursor-pointer"
+                    className="relative w-16 h-16 rounded-2xl bg-slate-100 dark:bg-zinc-800 flex items-center justify-center overflow-hidden group cursor-pointer"
                     onClick={() => fileInputRef.current?.click()}
                   >
                     {selectedMember.photo_url ? (
@@ -287,7 +287,7 @@ export default function Equipe() {
                         className="w-full h-full object-cover"
                       />
                     ) : (
-                      <UserCircle className="w-10 h-10 text-slate-400" strokeWidth={1} />
+                      <UserCircle className="w-10 h-10 text-slate-400 dark:text-zinc-500" strokeWidth={1} />
                     )}
                     <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                       <Camera className="w-5 h-5 text-white" />
@@ -306,10 +306,10 @@ export default function Equipe() {
                     onChange={handlePhotoUpload}
                   />
                   <div>
-                    <h2 className="text-xl font-semibold text-slate-800">
+                    <h2 className="text-xl font-semibold text-slate-800 dark:text-zinc-100">
                       {selectedMember.name || "Sem nome"}
                     </h2>
-                    <p className="text-sm text-slate-500">
+                    <p className="text-sm text-slate-500 dark:text-zinc-400">
                       {selectedMember.role ? roleLabels[selectedMember.role] || selectedMember.role : "Sem função"}
                     </p>
                   </div>
@@ -350,12 +350,12 @@ export default function Equipe() {
             <ActivityHistoryBlock />
           </div>
         ) : (
-          <div className="h-full flex flex-col items-center justify-center text-slate-400">
-            <div className="w-24 h-24 rounded-3xl bg-gradient-to-br from-slate-100 to-slate-200 flex items-center justify-center mb-6 shadow-inner">
-              <UserCircle className="w-14 h-14 text-slate-300" strokeWidth={1} />
+          <div className="h-full flex flex-col items-center justify-center text-slate-400 dark:text-zinc-500">
+            <div className="w-24 h-24 rounded-3xl bg-gradient-to-br from-slate-100 to-slate-200 dark:from-zinc-800 dark:to-zinc-700 flex items-center justify-center mb-6 shadow-inner">
+              <UserCircle className="w-14 h-14 text-slate-300 dark:text-zinc-500" strokeWidth={1} />
             </div>
-            <p className="text-lg font-medium text-slate-500">Nenhum perfil selecionado</p>
-            <p className="text-sm mt-1 text-slate-400">Selecione um membro para ver os detalhes</p>
+            <p className="text-lg font-medium text-slate-500 dark:text-zinc-400">Nenhum perfil selecionado</p>
+            <p className="text-sm mt-1 text-slate-400 dark:text-zinc-500">Selecione um membro para ver os detalhes</p>
           </div>
         )}
       </div>

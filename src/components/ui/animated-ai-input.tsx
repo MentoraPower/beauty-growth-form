@@ -191,30 +191,29 @@ export function AnimatedAIInput({
   return (
     <div className={cn("w-full", className)}>
       <div className="w-full">
-        <div className="relative rounded-xl overflow-hidden" style={{ border: '1px solid #00000015' }}>
+        <div className="relative rounded-xl overflow-hidden border border-black/10 dark:border-white/10">
           {/* Header */}
           {showHeader && (
             <div 
-              className="flex items-center gap-2 px-4 py-2.5 bg-zinc-50"
-              style={{ borderBottom: '1px solid #00000010' }}
+              className="flex items-center gap-2 px-4 py-2.5 bg-zinc-50 dark:bg-zinc-800 border-b border-black/5 dark:border-white/10"
             >
-              <span className="text-sm text-zinc-500">{headerText}</span>
+              <span className="text-sm text-zinc-500 dark:text-zinc-400">{headerText}</span>
             </div>
           )}
 
           {/* Textarea Area */}
-          <div className="relative bg-white rounded-t-xl">
+          <div className="relative bg-white dark:bg-zinc-900 rounded-t-xl">
             <textarea
               ref={textareaRef}
               value={value}
               placeholder={placeholder}
               disabled={disabled || isLoading}
               className={cn(
-                "w-full bg-transparent text-zinc-900 placeholder:text-zinc-400",
+                "w-full bg-transparent text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 dark:placeholder:text-zinc-500",
                 "resize-none border-none outline-none focus:ring-0",
                 "text-base leading-relaxed px-4 py-3",
                 "min-h-[72px] max-h-[300px]",
-                "scrollbar-thin scrollbar-thumb-zinc-300 scrollbar-track-transparent"
+                "scrollbar-thin scrollbar-thumb-zinc-300 dark:scrollbar-thumb-zinc-600 scrollbar-track-transparent"
               )}
               onKeyDown={handleKeyDown}
               onChange={(e) => {
@@ -225,11 +224,11 @@ export function AnimatedAIInput({
           </div>
 
           {/* Separator line */}
-          <div className="h-px bg-black/5 mx-3" />
+          <div className="h-px bg-black/5 dark:bg-white/5 mx-3" />
 
           {/* Bottom Actions Bar */}
           <div 
-            className="h-14 bg-zinc-50 flex items-center px-3"
+            className="h-14 bg-zinc-50 dark:bg-zinc-800 flex items-center px-3"
           >
             <div className="flex items-center justify-between w-full">
               {/* Left side - Model selector and file upload */}
@@ -238,7 +237,7 @@ export function AnimatedAIInput({
                   <DropdownMenuTrigger asChild>
                     <Button
                       variant="ghost"
-                      className="flex items-center gap-1 h-8 pl-1.5 pr-2 text-xs rounded-md text-zinc-700 hover:bg-zinc-200/50 focus-visible:ring-1 focus-visible:ring-offset-0 focus-visible:ring-zinc-400"
+                      className="flex items-center gap-1 h-8 pl-1.5 pr-2 text-xs rounded-md text-zinc-700 dark:text-zinc-300 hover:bg-zinc-200/50 dark:hover:bg-zinc-700/50 focus-visible:ring-1 focus-visible:ring-offset-0 focus-visible:ring-zinc-400"
                     >
                       <AnimatePresence mode="wait">
                         <motion.div
@@ -260,8 +259,8 @@ export function AnimatedAIInput({
                     align="start"
                     className={cn(
                       "min-w-[10rem]",
-                      "border-zinc-200",
-                      "bg-white"
+                      "border-zinc-200 dark:border-zinc-700",
+                      "bg-white dark:bg-zinc-800"
                     )}
                   >
                     {AI_MODELS.map((model) => (
@@ -282,15 +281,15 @@ export function AnimatedAIInput({
                   </DropdownMenuContent>
                 </DropdownMenu>
 
-                <div className="h-4 w-px bg-zinc-200 mx-0.5" />
+                <div className="h-4 w-px bg-zinc-200 dark:bg-zinc-600 mx-0.5" />
 
                 <button
                   type="button"
                   onClick={handleFileClick}
                   className={cn(
-                    "rounded-lg p-2 bg-zinc-100 cursor-pointer",
-                    "hover:bg-zinc-200 transition-colors",
-                    "text-zinc-400 hover:text-zinc-600"
+                    "rounded-lg p-2 bg-zinc-100 dark:bg-zinc-700 cursor-pointer",
+                    "hover:bg-zinc-200 dark:hover:bg-zinc-600 transition-colors",
+                    "text-zinc-400 dark:text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300"
                   )}
                   aria-label="Attach file"
                 >
@@ -313,8 +312,8 @@ export function AnimatedAIInput({
                 className={cn(
                   "rounded-lg p-2 transition-all",
                   value.trim() && !isLoading && !disabled
-                    ? "bg-zinc-900 hover:bg-zinc-800 text-white cursor-pointer"
-                    : "bg-zinc-100 text-zinc-400 cursor-not-allowed"
+                    ? "bg-zinc-900 hover:bg-zinc-800 dark:bg-zinc-100 dark:hover:bg-zinc-200 text-white dark:text-zinc-900 cursor-pointer"
+                    : "bg-zinc-100 dark:bg-zinc-700 text-zinc-400 dark:text-zinc-500 cursor-not-allowed"
                 )}
                 aria-label="Send message"
               >

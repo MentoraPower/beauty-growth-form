@@ -687,7 +687,7 @@ export function EmailSidePanel({
               {onClose && (
                 <button
                   onClick={onClose}
-                  className="w-8 h-8 rounded-full border border-border/30 bg-white hover:bg-zinc-50 flex items-center justify-center transition-colors group"
+                  className="w-8 h-8 rounded-full border border-border/30 bg-white dark:bg-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-700 flex items-center justify-center transition-colors group"
                   title="Fechar painel"
                 >
                   <ChevronsRight className="w-4 h-4 text-muted-foreground group-hover:text-foreground transition-colors" />
@@ -702,7 +702,7 @@ export function EmailSidePanel({
               <span>{dispatchJob?.sent_count || 0} de {dispatchJob?.valid_leads || 0} enviados</span>
               <span className="font-semibold text-foreground">{progress}%</span>
             </div>
-            <div className="h-2.5 bg-zinc-100 rounded-full overflow-hidden">
+            <div className="h-2.5 bg-zinc-100 dark:bg-zinc-800 rounded-full overflow-hidden">
               <motion.div
                 initial={{ width: 0 }}
                 animate={{ width: `${progress}%` }}
@@ -761,7 +761,7 @@ export function EmailSidePanel({
           ) : (
             <div className="divide-y divide-border">
               {/* Header */}
-              <div className="grid grid-cols-[40px_1fr_1.5fr] gap-3 px-5 py-2.5 bg-muted/50 text-xs font-medium text-muted-foreground sticky top-0">
+              <div className="grid grid-cols-[40px_1fr_1.5fr] gap-3 px-5 py-2.5 bg-muted/50 dark:bg-zinc-800/50 text-xs font-medium text-muted-foreground sticky top-0">
                 <div></div>
                 <div>Nome</div>
                 <div>Email</div>
@@ -843,7 +843,7 @@ export function EmailSidePanel({
   // Render Dispatch Details mode
   if (mode === 'dispatch_details' && dispatchData) {
     return (
-      <div className="w-[65%] min-w-[700px] max-w-[1400px] h-full flex-shrink-0 bg-white flex flex-col rounded-2xl overflow-hidden" style={{ border: '1px solid #00000010' }}>
+      <div className="w-[65%] min-w-[700px] max-w-[1400px] h-full flex-shrink-0 bg-white dark:bg-zinc-900 flex flex-col rounded-2xl overflow-hidden border border-black/5 dark:border-white/10">
         <DispatchAnalysis
           data={dispatchData}
           onNewDispatch={onNewDispatch}
@@ -863,7 +863,7 @@ export function EmailSidePanel({
             {onClose && (
               <button
                 onClick={onClose}
-                className="w-8 h-8 rounded-full border border-border/30 bg-white hover:bg-zinc-50 flex items-center justify-center transition-colors group"
+                className="w-8 h-8 rounded-full border border-border/30 bg-white dark:bg-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-700 flex items-center justify-center transition-colors group"
                 title="Fechar painel"
               >
                 <ChevronsRight className="w-4 h-4 text-muted-foreground group-hover:text-foreground transition-colors" />
@@ -950,7 +950,7 @@ export function EmailSidePanel({
         {showCodePreview ? (
           // Code/Preview mode with tabs
           activeTab === 'code' ? (
-            <div className="relative h-full w-full overflow-hidden bg-muted/30">
+            <div className="relative h-full w-full overflow-hidden bg-muted/30 dark:bg-zinc-800/30">
               {/* Editing indicator overlay */}
               {editingIndicator && (
                 <div className="absolute top-2 left-1/2 -translate-x-1/2 z-20 flex items-center gap-2 bg-primary/90 text-primary-foreground px-4 py-2 rounded-full shadow-lg animate-fade-in">
