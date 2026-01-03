@@ -495,14 +495,9 @@ export function ChartRenderer({
       }
       return (
         <div className="flex flex-col items-center justify-center h-full gap-2">
-          <div className="relative">
-            <div className="absolute inset-0 blur-2xl bg-gradient-to-r from-primary/20 to-primary/10 rounded-full" />
-            <div className="relative flex items-center gap-2">
-              <span className="text-5xl font-bold bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
-                {numberData.total.toLocaleString()}
-              </span>
-            </div>
-          </div>
+          <span className="text-5xl font-bold bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
+            {numberData.total.toLocaleString()}
+          </span>
         </div>
       );
     }
