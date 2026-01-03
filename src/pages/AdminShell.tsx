@@ -7,6 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { User, Settings, LogOut } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { SettingsDialog } from "@/components/settings/SettingsDialog";
+import { ThemeToggle } from "@/components/ThemeToggle";
 
 function TopNavbar() {
   const navigate = useNavigate();
@@ -50,49 +51,54 @@ function TopNavbar() {
       >
         <WorkspaceDropdown />
         
-        {/* Profile Avatar */}
-        <div className="relative" ref={dropdownRef}>
-          <button
-            onClick={() => setProfileMenuOpen(!profileMenuOpen)}
-            className="w-8 h-8 rounded-full bg-zinc-200 flex items-center justify-center hover:bg-zinc-300 transition-colors"
-          >
-            <User className="h-4 w-4 text-zinc-600" strokeWidth={1.5} />
-          </button>
+        {/* Right side actions */}
+        <div className="flex items-center gap-3">
+          <ThemeToggle />
           
-          {/* Dropdown */}
-          <div 
-            className={cn(
-              "absolute right-0 top-full mt-2 w-48 bg-white rounded-xl shadow-xl overflow-hidden transition-all duration-200 origin-top-right",
-              profileMenuOpen ? "opacity-100 scale-100" : "opacity-0 scale-95 pointer-events-none"
-            )}
-            style={{ border: '1px solid #00000010' }}
-          >
-            <div className="px-3 py-2" style={{ borderBottom: '1px solid #00000010' }}>
-              <p className="text-sm font-medium text-zinc-900 truncate">{userName}</p>
-            </div>
+          {/* Profile Avatar */}
+          <div className="relative" ref={dropdownRef}>
+            <button
+              onClick={() => setProfileMenuOpen(!profileMenuOpen)}
+              className="w-8 h-8 rounded-full bg-zinc-200 flex items-center justify-center hover:bg-zinc-300 transition-colors"
+            >
+              <User className="h-4 w-4 text-zinc-600" strokeWidth={1.5} />
+            </button>
             
-            <div className="p-1">
-              <button
-                onClick={() => {
-                  setProfileMenuOpen(false);
-                  setSettingsOpen(true);
-                }}
-                className="flex items-center gap-2 w-full px-3 py-2 text-sm text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900 rounded-lg transition-colors"
-              >
-                <Settings className="h-4 w-4" />
-                Configurações
-              </button>
+            {/* Dropdown */}
+            <div 
+              className={cn(
+                "absolute right-0 top-full mt-2 w-48 bg-white rounded-xl shadow-xl overflow-hidden transition-all duration-200 origin-top-right",
+                profileMenuOpen ? "opacity-100 scale-100" : "opacity-0 scale-95 pointer-events-none"
+              )}
+              style={{ border: '1px solid #00000010' }}
+            >
+              <div className="px-3 py-2" style={{ borderBottom: '1px solid #00000010' }}>
+                <p className="text-sm font-medium text-zinc-900 truncate">{userName}</p>
+              </div>
               
-              <button
-                onClick={async () => {
-                  await supabase.auth.signOut();
-                  navigate("/auth");
-                }}
-                className="flex items-center gap-2 w-full px-3 py-2 text-sm text-zinc-600 hover:bg-red-50 hover:text-red-600 rounded-lg transition-colors"
-              >
-                <LogOut className="h-4 w-4" />
-                Sair
-              </button>
+              <div className="p-1">
+                <button
+                  onClick={() => {
+                    setProfileMenuOpen(false);
+                    setSettingsOpen(true);
+                  }}
+                  className="flex items-center gap-2 w-full px-3 py-2 text-sm text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900 rounded-lg transition-colors"
+                >
+                  <Settings className="h-4 w-4" />
+                  Configurações
+                </button>
+                
+                <button
+                  onClick={async () => {
+                    await supabase.auth.signOut();
+                    navigate("/auth");
+                  }}
+                  className="flex items-center gap-2 w-full px-3 py-2 text-sm text-zinc-600 hover:bg-red-50 hover:text-red-600 rounded-lg transition-colors"
+                >
+                  <LogOut className="h-4 w-4" />
+                  Sair
+                </button>
+              </div>
             </div>
           </div>
         </div>
