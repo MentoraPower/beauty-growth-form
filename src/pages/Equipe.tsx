@@ -346,6 +346,8 @@ export default function Equipe() {
               <ActivitiesBlock />
               <PerformanceBlock />
             </div>
+
+            <ActivityHistoryBlock />
           </div>
         ) : (
           <div className="h-full flex flex-col items-center justify-center text-slate-400 dark:text-zinc-500">
