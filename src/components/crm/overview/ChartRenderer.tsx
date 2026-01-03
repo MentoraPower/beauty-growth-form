@@ -685,14 +685,16 @@ export function ChartRenderer({
         }
       });
 
-      const getColorStyle = (count: number) => {
-        if (count === 0) return { background: 'hsl(var(--muted))' };
+      const getColorStyle = (count: number, isDark: boolean = document.documentElement.classList.contains('dark')) => {
+        if (count === 0) return { background: isDark ? '#3f3f46' : '#e4e4e7' };
         const ratio = count / maxCount;
         if (ratio < 0.25) return { background: 'linear-gradient(135deg, #fed7aa, #fdba74)' };
         if (ratio < 0.5) return { background: 'linear-gradient(135deg, #fdba74, #fb923c)' };
         if (ratio < 0.75) return { background: 'linear-gradient(135deg, #fb923c, #f97316)' };
         return { background: 'linear-gradient(135deg, #f97316, #ea580c)' };
       };
+
+      const isDark = document.documentElement.classList.contains('dark');
 
       const dayLabels = ['D', 'S', 'T', 'Q', 'Q', 'S', 'S'];
 
@@ -738,7 +740,7 @@ export function ChartRenderer({
                             style={{ 
                               gridColumn: weekIndex + 1,
                               gridRow: dayIndex + 1,
-                              ...(dayData ? getColorStyle(dayData.count) : { background: 'hsl(var(--muted))' })
+                              ...(dayData ? getColorStyle(dayData.count, isDark) : { background: isDark ? '#3f3f46' : '#e4e4e7' })
                             }}
                           />
                         </TooltipTrigger>
@@ -759,7 +761,7 @@ export function ChartRenderer({
             <div className="flex items-center justify-center gap-2 pt-2 mt-2 border-t border-border/20 shrink-0">
               <span className="text-[9px] text-muted-foreground font-medium">Menos</span>
               <div className="flex gap-1">
-                <div className="w-3 h-3 rounded-sm" style={{ background: 'hsl(var(--muted))' }} />
+                <div className="w-3 h-3 rounded-sm bg-muted" />
                 <div className="w-3 h-3 rounded-sm" style={{ background: 'linear-gradient(135deg, #fed7aa, #fdba74)' }} />
                 <div className="w-3 h-3 rounded-sm" style={{ background: 'linear-gradient(135deg, #fdba74, #fb923c)' }} />
                 <div className="w-3 h-3 rounded-sm" style={{ background: 'linear-gradient(135deg, #fb923c, #f97316)' }} />
