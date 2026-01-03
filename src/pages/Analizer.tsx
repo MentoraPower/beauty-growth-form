@@ -84,21 +84,25 @@ const Analizer = () => {
           />
           
           {/* Hour markers - minimal dots */}
-          {[...Array(12)].map((_, i) => (
-            <div
-              key={i}
-              className="absolute top-1/2 left-1/2"
-              style={{
-                width: i % 3 === 0 ? 6 : 3,
-                height: i % 3 === 0 ? 6 : 3,
-                borderRadius: '50%',
-                background: i % 3 === 0 ? 'rgba(255,255,255,0.4)' : 'rgba(255,255,255,0.2)',
-                transform: `rotate(${i * 30}deg) translateY(-60px)`,
-                marginLeft: i % 3 === 0 ? -3 : -1.5,
-                marginTop: -60,
-              }}
-            />
-          ))}
+          {[...Array(12)].map((_, i) => {
+            const angle = (i * 30 - 90) * (Math.PI / 180);
+            const radius = 60;
+            const size = i % 3 === 0 ? 6 : 3;
+            return (
+              <div
+                key={i}
+                className="absolute"
+                style={{
+                  width: size,
+                  height: size,
+                  borderRadius: '50%',
+                  background: i % 3 === 0 ? 'rgba(255,255,255,0.4)' : 'rgba(255,255,255,0.2)',
+                  left: `calc(50% + ${Math.cos(angle) * radius}px - ${size / 2}px)`,
+                  top: `calc(50% + ${Math.sin(angle) * radius}px - ${size / 2}px)`,
+                }}
+              />
+            );
+          })}
         </div>
         
         {/* Coming Soon Text */}
