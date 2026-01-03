@@ -686,7 +686,7 @@ export function ChartRenderer({
       });
 
       const getColorStyle = (count: number) => {
-        if (count === 0) return { background: 'hsl(var(--muted) / 0.3)' };
+        if (count === 0) return { background: 'hsl(var(--muted))' };
         const ratio = count / maxCount;
         if (ratio < 0.25) return { background: 'linear-gradient(135deg, #fed7aa, #fdba74)' };
         if (ratio < 0.5) return { background: 'linear-gradient(135deg, #fdba74, #fb923c)' };
@@ -738,7 +738,7 @@ export function ChartRenderer({
                             style={{ 
                               gridColumn: weekIndex + 1,
                               gridRow: dayIndex + 1,
-                              ...(dayData ? getColorStyle(dayData.count) : { background: 'hsl(var(--muted) / 0.15)' })
+                              ...(dayData ? getColorStyle(dayData.count) : { background: 'hsl(var(--muted))' })
                             }}
                           />
                         </TooltipTrigger>
@@ -759,7 +759,7 @@ export function ChartRenderer({
             <div className="flex items-center justify-center gap-2 pt-2 mt-2 border-t border-border/20 shrink-0">
               <span className="text-[9px] text-muted-foreground font-medium">Menos</span>
               <div className="flex gap-1">
-                <div className="w-3 h-3 rounded-sm" style={{ background: 'hsl(var(--muted) / 0.3)' }} />
+                <div className="w-3 h-3 rounded-sm" style={{ background: 'hsl(var(--muted))' }} />
                 <div className="w-3 h-3 rounded-sm" style={{ background: 'linear-gradient(135deg, #fed7aa, #fdba74)' }} />
                 <div className="w-3 h-3 rounded-sm" style={{ background: 'linear-gradient(135deg, #fdba74, #fb923c)' }} />
                 <div className="w-3 h-3 rounded-sm" style={{ background: 'linear-gradient(135deg, #fb923c, #f97316)' }} />
