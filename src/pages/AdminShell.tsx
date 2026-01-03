@@ -46,8 +46,7 @@ function TopNavbar() {
   return (
     <>
       <div 
-        className="fixed top-0 left-0 right-0 z-50 h-[45px] bg-white flex items-center justify-between px-3"
-        style={{ borderBottom: '1px solid #00000010' }}
+        className="fixed top-0 left-0 right-0 z-50 h-[45px] bg-card flex items-center justify-between px-3 border-b border-border"
       >
         <WorkspaceDropdown />
         
@@ -59,21 +58,20 @@ function TopNavbar() {
           <div className="relative" ref={dropdownRef}>
             <button
               onClick={() => setProfileMenuOpen(!profileMenuOpen)}
-              className="w-8 h-8 rounded-full bg-zinc-200 flex items-center justify-center hover:bg-zinc-300 transition-colors"
+              className="w-8 h-8 rounded-full bg-muted flex items-center justify-center hover:bg-accent transition-colors"
             >
-              <User className="h-4 w-4 text-zinc-600" strokeWidth={1.5} />
+              <User className="h-4 w-4 text-muted-foreground" strokeWidth={1.5} />
             </button>
             
             {/* Dropdown */}
             <div 
               className={cn(
-                "absolute right-0 top-full mt-2 w-48 bg-white rounded-xl shadow-xl overflow-hidden transition-all duration-200 origin-top-right",
+                "absolute right-0 top-full mt-2 w-48 bg-card rounded-xl shadow-xl overflow-hidden transition-all duration-200 origin-top-right border border-border",
                 profileMenuOpen ? "opacity-100 scale-100" : "opacity-0 scale-95 pointer-events-none"
               )}
-              style={{ border: '1px solid #00000010' }}
             >
-              <div className="px-3 py-2" style={{ borderBottom: '1px solid #00000010' }}>
-                <p className="text-sm font-medium text-zinc-900 truncate">{userName}</p>
+              <div className="px-3 py-2 border-b border-border">
+                <p className="text-sm font-medium text-foreground truncate">{userName}</p>
               </div>
               
               <div className="p-1">
@@ -82,7 +80,7 @@ function TopNavbar() {
                     setProfileMenuOpen(false);
                     setSettingsOpen(true);
                   }}
-                  className="flex items-center gap-2 w-full px-3 py-2 text-sm text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900 rounded-lg transition-colors"
+                  className="flex items-center gap-2 w-full px-3 py-2 text-sm text-muted-foreground hover:bg-accent hover:text-foreground rounded-lg transition-colors"
                 >
                   <Settings className="h-4 w-4" />
                   Configurações
@@ -93,7 +91,7 @@ function TopNavbar() {
                     await supabase.auth.signOut();
                     navigate("/auth");
                   }}
-                  className="flex items-center gap-2 w-full px-3 py-2 text-sm text-zinc-600 hover:bg-red-50 hover:text-red-600 rounded-lg transition-colors"
+                  className="flex items-center gap-2 w-full px-3 py-2 text-sm text-muted-foreground hover:bg-destructive/10 hover:text-destructive rounded-lg transition-colors"
                 >
                   <LogOut className="h-4 w-4" />
                   Sair

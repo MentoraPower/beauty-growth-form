@@ -95,34 +95,34 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
         return (
           <div className="space-y-6">
             <div>
-              <h2 className="text-lg font-semibold text-zinc-900">Perfil</h2>
-              <p className="text-sm text-zinc-500">Gerencie suas informações pessoais</p>
+              <h2 className="text-lg font-semibold text-foreground">Perfil</h2>
+              <p className="text-sm text-muted-foreground">Gerencie suas informações pessoais</p>
             </div>
 
-            <div className="flex items-center gap-4 p-4 rounded-xl bg-zinc-50" style={{ border: '1px solid #00000008' }}>
-              <div className="h-14 w-14 rounded-full bg-zinc-200 flex items-center justify-center">
-                <User className="h-6 w-6 text-zinc-500" />
+            <div className="flex items-center gap-4 p-4 rounded-xl bg-muted border border-border">
+              <div className="h-14 w-14 rounded-full bg-accent flex items-center justify-center">
+                <User className="h-6 w-6 text-muted-foreground" />
               </div>
               <div>
-                <p className="font-medium text-zinc-900">{name || "Usuário"}</p>
-                <p className="text-sm text-zinc-500">{email}</p>
+                <p className="font-medium text-foreground">{name || "Usuário"}</p>
+                <p className="text-sm text-muted-foreground">{email}</p>
               </div>
             </div>
 
             <div className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="name" className="text-zinc-700">Nome</Label>
+                <Label htmlFor="name" className="text-foreground">Nome</Label>
                 <Input
                   id="name"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   placeholder="Seu nome"
-                  className="bg-white border-zinc-200 focus:border-zinc-400 focus:ring-zinc-400"
+                  className="bg-card border-border focus:border-primary focus:ring-primary"
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="email" className="text-zinc-700">E-mail</Label>
+                <Label htmlFor="email" className="text-foreground">E-mail</Label>
                 <Input
                   id="email"
                   type="email"
@@ -130,9 +130,9 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="seu@email.com"
                   disabled
-                  className="bg-zinc-50 border-zinc-200"
+                  className="bg-muted border-border"
                 />
-                <p className="text-xs text-zinc-400">
+                <p className="text-xs text-muted-foreground">
                   O e-mail não pode ser alterado
                 </p>
               </div>
@@ -142,14 +142,14 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
               <Button
                 variant="outline"
                 onClick={() => onOpenChange(false)}
-                className="border-zinc-200 text-zinc-700 hover:bg-zinc-50"
+                className="border-border text-foreground hover:bg-accent"
               >
                 Cancelar
               </Button>
               <Button
                 onClick={() => updateProfile.mutate()}
                 disabled={updateProfile.isPending || isLoading}
-                className="bg-zinc-900 hover:bg-zinc-800 text-white"
+                className="bg-foreground hover:bg-foreground/90 text-background"
               >
                 {updateProfile.isPending ? "Salvando..." : "Salvar alterações"}
               </Button>
@@ -160,10 +160,10 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
         return (
           <div className="space-y-6">
             <div>
-              <h2 className="text-lg font-semibold text-zinc-900">Notificações</h2>
-              <p className="text-sm text-zinc-500">Configure como você recebe notificações</p>
+              <h2 className="text-lg font-semibold text-foreground">Notificações</h2>
+              <p className="text-sm text-muted-foreground">Configure como você recebe notificações</p>
             </div>
-            <div className="flex items-center justify-center h-40 rounded-xl bg-zinc-50 text-zinc-400">
+            <div className="flex items-center justify-center h-40 rounded-xl bg-muted text-muted-foreground">
               Em breve
             </div>
           </div>
@@ -172,10 +172,10 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
         return (
           <div className="space-y-6">
             <div>
-              <h2 className="text-lg font-semibold text-zinc-900">Segurança</h2>
-              <p className="text-sm text-zinc-500">Gerencie sua senha e autenticação</p>
+              <h2 className="text-lg font-semibold text-foreground">Segurança</h2>
+              <p className="text-sm text-muted-foreground">Gerencie sua senha e autenticação</p>
             </div>
-            <div className="flex items-center justify-center h-40 rounded-xl bg-zinc-50 text-zinc-400">
+            <div className="flex items-center justify-center h-40 rounded-xl bg-muted text-muted-foreground">
               Em breve
             </div>
           </div>
@@ -184,10 +184,10 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
         return (
           <div className="space-y-6">
             <div>
-              <h2 className="text-lg font-semibold text-zinc-900">Aparência</h2>
-              <p className="text-sm text-zinc-500">Personalize a interface do sistema</p>
+              <h2 className="text-lg font-semibold text-foreground">Aparência</h2>
+              <p className="text-sm text-muted-foreground">Personalize a interface do sistema</p>
             </div>
-            <div className="flex items-center justify-center h-40 rounded-xl bg-zinc-50 text-zinc-400">
+            <div className="flex items-center justify-center h-40 rounded-xl bg-muted text-muted-foreground">
               Em breve
             </div>
           </div>
@@ -196,10 +196,10 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
         return (
           <div className="space-y-6">
             <div>
-              <h2 className="text-lg font-semibold text-zinc-900">API e integrações</h2>
-              <p className="text-sm text-zinc-500">Conecte serviços externos e gerencie APIs</p>
+              <h2 className="text-lg font-semibold text-foreground">API e integrações</h2>
+              <p className="text-sm text-muted-foreground">Conecte serviços externos e gerencie APIs</p>
             </div>
-            <div className="flex items-center justify-center h-40 rounded-xl bg-zinc-50 text-zinc-400">
+            <div className="flex items-center justify-center h-40 rounded-xl bg-muted text-muted-foreground">
               Em breve
             </div>
           </div>
@@ -208,10 +208,10 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
         return (
           <div className="space-y-6">
             <div>
-              <h2 className="text-lg font-semibold text-zinc-900">Ajuda</h2>
-              <p className="text-sm text-zinc-500">Suporte e documentação</p>
+              <h2 className="text-lg font-semibold text-foreground">Ajuda</h2>
+              <p className="text-sm text-muted-foreground">Suporte e documentação</p>
             </div>
-            <div className="flex items-center justify-center h-40 rounded-xl bg-zinc-50 text-zinc-400">
+            <div className="flex items-center justify-center h-40 rounded-xl bg-muted text-muted-foreground">
               Em breve
             </div>
           </div>
@@ -223,14 +223,14 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[850px] p-0 gap-0 overflow-hidden">
+      <DialogContent className="sm:max-w-[850px] p-0 gap-0 overflow-hidden bg-card">
         <DialogTitle className="sr-only">Configurações</DialogTitle>
         
         <div className="flex h-[700px]">
           {/* Sidebar Menu */}
-          <div className="w-[200px] bg-zinc-50 p-3 flex flex-col gap-1" style={{ borderRight: '1px solid #00000010' }}>
+          <div className="w-[200px] bg-muted p-3 flex flex-col gap-1 border-r border-border">
             <div className="px-2 py-3 mb-2">
-              <h3 className="text-sm font-semibold text-zinc-900">Configurações</h3>
+              <h3 className="text-sm font-semibold text-foreground">Configurações</h3>
             </div>
             
             {menuItems.map((item) => (
@@ -240,22 +240,21 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
                 className={cn(
                   "flex items-center gap-3 w-full px-3 py-2.5 text-sm rounded-lg transition-colors text-left",
                   activeTab === item.id
-                    ? "bg-white text-zinc-900 shadow-sm"
-                    : "text-zinc-600 hover:bg-white/50 hover:text-zinc-900"
+                    ? "bg-card text-foreground shadow-sm border border-border"
+                    : "text-muted-foreground hover:bg-card/50 hover:text-foreground"
                 )}
-                style={activeTab === item.id ? { border: '1px solid #00000008' } : undefined}
               >
                 <item.icon className="h-4 w-4" />
                 <span className="flex-1">{item.label}</span>
                 {activeTab === item.id && (
-                  <ChevronRight className="h-4 w-4 text-zinc-400" />
+                  <ChevronRight className="h-4 w-4 text-muted-foreground" />
                 )}
               </button>
             ))}
           </div>
 
           {/* Content Area */}
-          <div className="flex-1 p-6 overflow-y-auto">
+          <div className="flex-1 p-6 overflow-y-auto bg-card">
             {renderContent()}
           </div>
         </div>
