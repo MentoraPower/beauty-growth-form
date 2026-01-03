@@ -58,17 +58,17 @@ export const KanbanColumn = memo(function KanbanColumn({
         ref={setNodeRef}
         className={`flex-1 min-h-0 rounded-xl rounded-b-none border border-b-0 transition-colors duration-100 flex flex-col overflow-hidden ${
           isTargeted
-            ? "bg-black/[0.02] border-black/15 border-dashed"
-            : "bg-muted/40 border-black/10"
+            ? "bg-accent/50 border-border border-dashed"
+            : "bg-muted/40 border-border"
         }`}
       >
         {/* Header */}
-        <div className="px-4 pt-4 pb-2 border-b border-black/5">
+        <div className="px-4 pt-4 pb-2 border-b border-border">
           <div className="flex items-center justify-between mb-2">
-            <h2 className="font-semibold text-sm">{pipeline.nome}</h2>
+            <h2 className="font-semibold text-sm text-foreground">{pipeline.nome}</h2>
             <span className={`text-xs px-2 py-0.5 rounded-full transition-colors ${
               isTargeted 
-                ? "bg-black/5 text-foreground" 
+                ? "bg-accent text-foreground" 
                 : "text-muted-foreground bg-muted"
             }`}>
               {displayCount.toLocaleString('pt-BR')}
@@ -87,7 +87,7 @@ export const KanbanColumn = memo(function KanbanColumn({
               {/* Top placeholder for cross-pipeline drag (only when column is empty) */}
               {showTopPlaceholder && (
                 <div className="mb-2">
-                  <div className="h-[100px] rounded-lg border-2 border-dashed border-black/20 bg-black/[0.03]" />
+                  <div className="h-[100px] rounded-lg border-2 border-dashed border-border bg-accent/30" />
                 </div>
               )}
 
@@ -104,7 +104,7 @@ export const KanbanColumn = memo(function KanbanColumn({
               {leads.length === 0 && !showTopPlaceholder && (
                 <div className={`text-center text-sm py-8 rounded-lg border-2 border-dashed transition-colors duration-100 ${
                   isTargeted 
-                    ? "border-black/20 text-foreground bg-black/[0.02]" 
+                    ? "border-border text-foreground bg-accent/30" 
                     : "border-transparent text-muted-foreground"
                 }`}>
                   {isTargeted ? "Solte aqui" : "Nenhum lead"}

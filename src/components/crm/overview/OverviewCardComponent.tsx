@@ -317,15 +317,13 @@ export function OverviewCardComponent({
     <div
       ref={cardRef}
       className={cn(
-        "relative rounded-xl p-4 transition-shadow group",
+        "relative rounded-xl p-4 transition-shadow group bg-card border border-border",
         !isDragging && "w-full", // w-full only when NOT dragging (uses wrapper percentage)
         isDragging && "opacity-50",
         isResizing ? "shadow-lg" : "shadow-sm"
       )}
       style={{
         height: currentSize.height,
-        backgroundColor: '#FFFFFF',
-        border: '1px solid #00000010',
         // When dragging (in DragOverlay), use fixed pixel width to maintain size
         ...(isDragging && dragPixelWidth ? { width: dragPixelWidth } : {}),
       }}
@@ -397,7 +395,7 @@ export function OverviewCardComponent({
       </div>
 
       {/* Chart content wrapper */}
-      <div className="h-[calc(100%-40px)] rounded-xl p-3" style={{ backgroundColor: '#F8F8F8' }}>
+      <div className="h-[calc(100%-40px)] rounded-xl p-3 bg-muted">
         {card.dataSource ? (
           <ChartRenderer
             cardId={card.id}

@@ -669,7 +669,7 @@ export function EmailSidePanel({
     const isCompleted = dispatchJob?.status === 'completed';
 
     return (
-      <div className="w-[65%] min-w-[700px] max-w-[1400px] h-full flex-shrink-0 bg-white flex flex-col rounded-2xl overflow-hidden" style={{ border: '1px solid #00000010' }}>
+      <div className="w-[65%] min-w-[700px] max-w-[1400px] h-full flex-shrink-0 bg-card flex flex-col rounded-2xl overflow-hidden border border-border">
         {/* Header with progress bar */}
         <div className="border-b border-border p-5 space-y-4">
           <div className="flex items-center justify-between">
@@ -854,10 +854,10 @@ export function EmailSidePanel({
   }
 
   return (
-    <div className="w-[65%] min-w-[700px] max-w-[1400px] h-full flex-shrink-0 bg-white flex flex-col rounded-2xl overflow-hidden" style={{ border: '1px solid #00000010' }}>
+    <div className="w-[65%] min-w-[700px] max-w-[1400px] h-full flex-shrink-0 bg-card flex flex-col rounded-2xl overflow-hidden border border-border">
       {/* Tabs - always at the top when showCodePreview is true */}
       {showCodePreview && (
-        <div className="flex items-center justify-between px-5 py-3 border-b border-border/30 bg-white">
+        <div className="flex items-center justify-between px-5 py-3 border-b border-border bg-card">
           <div className="flex items-center gap-3">
             {/* Close button - circle with >> icon */}
             {onClose && (
@@ -870,13 +870,13 @@ export function EmailSidePanel({
               </button>
             )}
             
-            <div className="flex items-center gap-1 bg-zinc-100 rounded-lg p-1">
+            <div className="flex items-center gap-1 bg-muted rounded-lg p-1">
               <button
                 onClick={() => setActiveTab('preview')}
                 className={cn(
                   "flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-all",
                   activeTab === 'preview'
-                    ? "bg-white text-foreground shadow-sm border border-border/30"
+                    ? "bg-card text-foreground shadow-sm border border-border"
                     : "text-muted-foreground hover:text-foreground"
                 )}
               >
@@ -888,7 +888,7 @@ export function EmailSidePanel({
                 className={cn(
                   "flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-all",
                   activeTab === 'code'
-                    ? "bg-white text-foreground shadow-sm border border-border/30"
+                    ? "bg-card text-foreground shadow-sm border border-border"
                     : "text-muted-foreground hover:text-foreground"
                 )}
               >
@@ -913,7 +913,7 @@ export function EmailSidePanel({
       
       {/* Email Subject/Preheader Header */}
       {showCodePreview && (
-        <div className="px-5 py-4 border-b border-border/20 bg-white">
+        <div className="px-5 py-4 border-b border-border bg-card">
           <div className="space-y-3">
             {/* Subject - editable */}
             <div>
@@ -946,11 +946,11 @@ export function EmailSidePanel({
       )}
 
       {/* Content */}
-      <div className="flex-1 overflow-hidden relative bg-white">
+      <div className="flex-1 overflow-hidden relative bg-card">
         {showCodePreview ? (
           // Code/Preview mode with tabs
           activeTab === 'code' ? (
-            <div className="relative h-full w-full overflow-hidden bg-white">
+            <div className="relative h-full w-full overflow-hidden bg-muted/30">
               {/* Editing indicator overlay */}
               {editingIndicator && (
                 <div className="absolute top-2 left-1/2 -translate-x-1/2 z-20 flex items-center gap-2 bg-primary/90 text-primary-foreground px-4 py-2 rounded-full shadow-lg animate-fade-in">
@@ -994,7 +994,7 @@ export function EmailSidePanel({
               
             </div>
           ) : (
-            <div className="h-full w-full bg-white flex flex-col">
+            <div className="h-full w-full bg-card flex flex-col">
               {showPreviewLoading ? (
                 // Skeleton loading state
                 <div className="p-6 space-y-4 animate-pulse">

@@ -49,7 +49,7 @@ export const ViewTabs = memo(function ViewTabs({ activeView, onViewChange, onSet
 
   return (
     <div className="w-full mb-2">
-      <div className="w-full flex items-center justify-between bg-white rounded-lg px-4 py-2" style={{ border: '1px solid #00000010' }}>
+      <div className="w-full flex items-center justify-between bg-card rounded-lg px-4 py-2 border border-border">
         <div ref={containerRef} className="relative inline-flex items-center gap-5">
           {/* Animated gradient indicator */}
           <div 
