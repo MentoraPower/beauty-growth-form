@@ -260,7 +260,7 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
   const disparoSubmenuWidth = 200;
 
   return (
-    <div className="min-h-screen bg-[#F8F8F8] px-3 pb-3">
+    <div className="min-h-screen bg-background px-3 pb-3">
       <div className="min-h-[calc(100vh-0.75rem)] relative">
         <LoadingBar />
         
@@ -454,10 +454,9 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
               width: submenuWidth,
               transform: crmSubmenuOpen ? 'translateX(0px)' : `translateX(-${submenuWidth}px)`,
               willChange: animationsEnabled ? 'transform' : 'auto',
-              border: '1px solid #00000010',
             }}
             className={cn(
-              "h-full overflow-hidden bg-white rounded-2xl",
+              "h-full overflow-hidden bg-card rounded-2xl border border-border",
               animationsEnabled && "transition-transform duration-300 ease-out"
             )}
           >
@@ -503,10 +502,9 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
               width: disparoSubmenuWidth,
               transform: disparoSubmenuOpen ? 'translateX(0px)' : `translateX(-${disparoSubmenuWidth}px)`,
               willChange: animationsEnabled ? 'transform' : 'auto',
-              border: '1px solid #00000010',
             }}
             className={cn(
-              "h-full overflow-hidden bg-white rounded-2xl",
+              "h-full overflow-hidden bg-card rounded-2xl border border-border",
               animationsEnabled && "transition-transform duration-300 ease-out"
             )}
           >
@@ -660,7 +658,7 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
           }}
           className="hidden lg:block fixed transition-[left] duration-300 ease-out"
         >
-          <div className={cn("h-full overflow-hidden relative rounded-2xl shadow-sm flex flex-col", isDisparoActive ? "" : "pt-1 pb-3 px-5")} style={{ backgroundColor: '#F8F8F8', border: '1px solid #00000009' }}>
+          <div className={cn("h-full overflow-hidden relative rounded-2xl shadow-sm flex flex-col bg-card border border-border", isDisparoActive ? "" : "pt-1 pb-3 px-5")}>
             <PageTransition>
               <RouteContentMemo>
                 {children}
