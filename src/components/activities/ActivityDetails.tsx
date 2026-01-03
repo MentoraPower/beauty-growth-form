@@ -111,7 +111,7 @@ export const ActivityDetails = memo(function ActivityDetails({
   return (
     <div className="flex-1 flex flex-col h-full">
       {/* Header */}
-      <div className="flex items-center gap-3 pb-3 border-b border-black/5">
+      <div className="flex items-center gap-3 pb-3 border-b border-black/5 dark:border-white/10">
         <div className="flex items-center justify-center text-foreground">
           {activity.tipo === 'ligacao' ? <Phone className="h-5 w-5" strokeWidth={1.5} /> : <ClipboardList className="h-5 w-5" strokeWidth={1.5} />}
         </div>
@@ -133,7 +133,7 @@ export const ActivityDetails = memo(function ActivityDetails({
             
             {/* Balão editável que cresce conforme o conteúdo */}
             <div className="inline-block max-w-full">
-              <div className="bg-green-100 text-foreground rounded-2xl rounded-tl-sm p-4 shadow-sm inline-block">
+              <div className="bg-green-100 dark:bg-green-900/40 text-foreground rounded-2xl rounded-tl-sm p-4 shadow-sm inline-block">
                 <EditorContent 
                   editor={editor} 
                   className="prose prose-sm prose-invert max-w-none [&_.ProseMirror]:min-h-[24px] [&_.ProseMirror]:outline-none [&_.ProseMirror_p]:mb-2 [&_.ProseMirror_p:last-child]:mb-0 [&_.ProseMirror_p.is-editor-empty:first-child::before]:content-['Digite_seu_script...'] [&_.ProseMirror_p.is-editor-empty:first-child::before]:text-primary-foreground/50 [&_.ProseMirror_p.is-editor-empty:first-child::before]:float-left [&_.ProseMirror_p.is-editor-empty:first-child::before]:pointer-events-none" 
@@ -146,7 +146,7 @@ export const ActivityDetails = memo(function ActivityDetails({
           <div className="h-full flex flex-col">
             {/* Toolbar - only visible when active */}
             <div className={cn(
-              "flex items-center gap-1 pb-2 border-b border-black/5 transition-all duration-300",
+              "flex items-center gap-1 pb-2 border-b border-black/5 dark:border-white/10 transition-all duration-300",
               showToolbar ? "opacity-100 h-auto" : "opacity-0 h-0 overflow-hidden pb-0 border-b-0"
             )}>
               <DropdownMenu>
