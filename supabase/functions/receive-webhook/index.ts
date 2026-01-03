@@ -499,8 +499,8 @@ function guessName(raw: any, normalized: Record<string, any>): string | null {
 
 // Normalize payload from different sources (Elementor WordPress, direct, etc.)
 function normalizePayload(raw: any): Record<string, any> {
-  // If it's already a flat object with expected fields, return as-is
-  if (raw?.name && raw?.email) {
+  // If it's already a flat object with expected name field, return as-is
+  if (raw?.name) {
     return raw;
   }
 
@@ -650,8 +650,8 @@ async function processLead(args: ProcessLeadArgs) {
 
     console.log(`[${requestId}] Normalized payload:`, JSON.stringify(payload).substring(0, 800));
 
-    if (!payload.name || !payload.email) {
-      console.log(`[${requestId}] Missing required fields, skipping. Keys:`, Object.keys(rawPayload));
+    if (!payload.name) {
+      console.log(`[${requestId}] Missing required field: name, skipping. Keys:`, Object.keys(rawPayload));
       return;
     }
 
@@ -812,19 +812,19 @@ const handler = async (req: Request): Promise<Response> => {
 
     console.log("Normalized payload:", JSON.stringify(payload).substring(0, 500));
 
-    // Validate required fields
+    // Validate required fields - only name is required
     // NOTE: Elementor shows "submissão falhou" for non-2xx responses, então mantemos 200.
-    if (!payload.name || !payload.email) {
-      console.error("Missing required fields: name and email. Received keys:", Object.keys(rawPayload));
+    if (!payload.name) {
+      console.error("Missing required field: name. Received keys:", Object.keys(rawPayload));
       console.error("Normalized keys:", Object.keys(payload));
 
       return new Response(
         JSON.stringify({
           success: false,
-          error: "Missing required fields: name and email",
+          error: "Missing required field: name",
           received_fields: Object.keys(rawPayload),
           normalized_fields: Object.keys(payload),
-          tip: "No Elementor, configure os IDs dos campos como: name, email, whatsapp",
+          tip: "No Elementor, configure o ID do campo de nome como: name, nome ou full_name",
         }),
         {
           status: 200,
