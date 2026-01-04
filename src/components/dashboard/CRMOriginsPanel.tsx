@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { Kanban, ChevronRight, ChevronsRight, Folder, FolderOpen, MoreVertical, Plus, Pencil, Trash2, GripVertical, CalendarDays, ListTodo, Search, LayoutGrid, FileSpreadsheet } from "lucide-react";
+import { Kanban, ChevronRight, ChevronsRight, Folder, FolderOpen, MoreVertical, Plus, Pencil, Trash2, GripVertical, CalendarDays, ListTodo, Search, LayoutGrid, FileSpreadsheet, Copy, Link, Settings } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
@@ -411,37 +411,75 @@ function SortableOriginItem({
                           <MoreVertical className="h-4 w-4 text-muted-foreground" />
                         </button>
                       </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" className="w-48 z-[9999] bg-popover border border-border/50 shadow-lg">
+                      <DropdownMenuContent 
+                        align="start" 
+                        side="right"
+                        sideOffset={8}
+                        className="w-56 z-[9999] bg-popover p-1.5 rounded-xl shadow-xl border border-border/40"
+                      >
+                        {/* Export */}
                         <DropdownMenuItem 
                           onClick={(e) => {
                             e.stopPropagation();
-                            // Small delay to let dropdown close first
                             setTimeout(() => {
                               window.dispatchEvent(new CustomEvent('open-export-dialog', { 
                                 detail: { subOriginId: subOrigin.id } 
                               }));
                             }, 100);
                           }}
-                          className="gap-3 cursor-pointer"
+                          className="gap-3 h-9 rounded-lg cursor-pointer"
                         >
                           <svg className="h-4 w-4 text-[#0F9D58]" viewBox="0 0 24 24" fill="currentColor">
                             <path d="M19 11V9h-4V5h-2v4H9v2h4v4h2v-4h4zm2-8H3c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h18c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H3V5h18v14z"/>
                           </svg>
-                          Exportar para Planilha
+                          <span className="text-[13px]">Exportar para Planilha</span>
                         </DropdownMenuItem>
+
+                        <DropdownMenuItem 
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            const url = `${window.location.origin}/crm?origin=${subOrigin.id}`;
+                            navigator.clipboard.writeText(url);
+                            toast.success("Link copiado!");
+                          }}
+                          className="gap-3 h-9 rounded-lg cursor-pointer"
+                        >
+                          <Link className="h-4 w-4 text-muted-foreground" />
+                          <span className="text-[13px]">Copiar link</span>
+                        </DropdownMenuItem>
+
                         {userPermissions.isAdmin && (
                           <>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem onClick={() => openEditSubOriginDialog(subOrigin)} className="gap-3">
-                              <Pencil className="h-4 w-4 text-muted-foreground" />
-                              Editar nome
-                            </DropdownMenuItem>
+                            <DropdownMenuSeparator className="my-1.5" />
+                            
                             <DropdownMenuItem 
-                              className="text-destructive focus:text-destructive gap-3"
+                              onClick={() => openEditSubOriginDialog(subOrigin)} 
+                              className="gap-3 h-9 rounded-lg cursor-pointer"
+                            >
+                              <Pencil className="h-4 w-4 text-muted-foreground" />
+                              <span className="text-[13px]">Renomear</span>
+                            </DropdownMenuItem>
+
+                            <DropdownMenuItem 
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                // Future: duplicate functionality
+                                toast.info("Em breve");
+                              }}
+                              className="gap-3 h-9 rounded-lg cursor-pointer"
+                            >
+                              <Copy className="h-4 w-4 text-muted-foreground" />
+                              <span className="text-[13px]">Duplicar</span>
+                            </DropdownMenuItem>
+
+                            <DropdownMenuSeparator className="my-1.5" />
+                            
+                            <DropdownMenuItem 
+                              className="gap-3 h-9 rounded-lg cursor-pointer text-red-500 focus:text-red-500 focus:bg-red-50 dark:focus:bg-red-950/20"
                               onClick={() => handleDeleteSubOrigin(subOrigin.id)}
                             >
                               <Trash2 className="h-4 w-4" />
-                              Excluir sub-origem
+                              <span className="text-[13px]">Excluir</span>
                             </DropdownMenuItem>
                           </>
                         )}
