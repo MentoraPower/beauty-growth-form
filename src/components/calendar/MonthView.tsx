@@ -64,7 +64,7 @@ function DayCell({
       ref={setNodeRef}
       onClick={onClick}
       className={cn(
-        "min-h-[100px] border-t border-l border-border/50 p-1 cursor-pointer hover:bg-muted/30 transition-colors",
+        "min-h-[100px] border-t border-l border-border/30 dark:border-white/[0.06] p-1 cursor-pointer hover:bg-muted/30 transition-colors",
         !isCurrentMonth && "bg-muted/20",
         isOver && "bg-primary/10"
       )}
@@ -163,11 +163,11 @@ export function MonthView({
     <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
       <div className="h-full flex flex-col">
         {/* Weekday headers */}
-        <div className="grid grid-cols-7 border-b border-border">
+        <div className="grid grid-cols-7 border-b border-border/30 dark:border-white/[0.06]">
           {WEEKDAYS.map((weekday) => (
             <div
               key={weekday}
-              className="py-2 text-center text-sm font-medium text-muted-foreground border-l border-border/50 first:border-l-0"
+              className="py-2 text-center text-sm font-medium text-muted-foreground border-l border-border/30 dark:border-white/[0.06] first:border-l-0"
             >
               {weekday}
             </div>
