@@ -166,12 +166,12 @@ export function WeekView({
     >
       <div className="h-full flex flex-col">
         {/* Header */}
-        <div className="flex border-b border-border">
+        <div className="flex border-b border-border/30 dark:border-white/[0.06]">
           <div className="w-16 flex-shrink-0" />
           {days.map((day) => (
             <div
               key={day.toISOString()}
-              className="flex-1 py-2 text-center border-l border-border/50"
+              className="flex-1 py-2 text-center border-l border-border/30 dark:border-white/[0.06]"
             >
               <div className="text-xs text-muted-foreground uppercase">
                 {format(day, "EEE", { locale: ptBR })}
@@ -213,13 +213,13 @@ export function WeekView({
               const showCurrentTime = todayInSaoPaulo && isSameDay(day, todayInSaoPaulo);
 
               return (
-                <div key={day.toISOString()} className="flex-1 relative border-l border-border/50 pt-2">
+                <div key={day.toISOString()} className="flex-1 relative border-l border-border/30 dark:border-white/[0.06] pt-2">
                   {/* Hour cells */}
                   {HOURS.map((hour) => (
                     <div
                       key={hour}
                       onClick={(e) => onDayClick(day, hour, e)}
-                      className="h-[60px] border-t border-l border-border/50 cursor-pointer hover:bg-muted/30"
+                      className="h-[60px] border-t border-l border-border/30 dark:border-white/[0.06] cursor-pointer hover:bg-muted/30"
                     />
                   ))}
 
