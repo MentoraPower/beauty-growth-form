@@ -234,7 +234,7 @@ function StaticLeadRow({ lead, isSelected, onLeadClick, onToggleSelection, tags 
     <div
       onClick={() => onLeadClick(lead)}
       className={cn(
-        "grid gap-6 py-2.5 px-3 hover:bg-muted/40 rounded cursor-pointer transition-colors group border-b border-border/20 last:border-b-0",
+        "grid gap-6 py-2.5 px-3 hover:bg-muted/40 rounded cursor-pointer transition-colors group border-b border-border/10 last:border-b-0",
         "grid-cols-[40px_minmax(140px,1.5fr)_minmax(160px,1fr)_minmax(120px,1fr)_minmax(120px,1fr)_minmax(100px,1fr)_minmax(80px,0.5fr)_40px]",
         isSelected && "bg-primary/5"
       )}
