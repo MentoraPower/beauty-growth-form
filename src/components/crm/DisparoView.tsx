@@ -790,6 +790,53 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
     }
   }, [logAction]);
 
+  const showCrmOriginsList = useCallback(async () => {
+    if (isLoading || isConversationLoading) return;
+
+    setIsLoading(true);
+    try {
+      const response = await fetch(CHAT_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          command: "LIST_ORIGINS",
+          conversationId: conversationIdRef.current,
+        }),
+      });
+
+      if (!response.ok) throw new Error("Failed to load CRM origins");
+
+      const result = await response.json();
+
+      if (result.type !== "origins") {
+        throw new Error(`Unexpected response: ${result?.type || "unknown"}`);
+      }
+
+      const componentData: MessageComponentData = {
+        type: "origins_list",
+        data: { origins: result.data },
+      };
+
+      const messageId = crypto.randomUUID();
+      const assistantMessage: Message = {
+        id: messageId,
+        content: "Escolha uma lista do CRM para o disparo:",
+        role: "assistant",
+        timestamp: new Date(),
+        componentData,
+        component: reconstructMessageComponent(componentData, messageId),
+      };
+
+      setMessages((prev) => [...prev, assistantMessage]);
+      logAction("system", "Listas do CRM carregadas");
+    } catch (error) {
+      console.error("Error loading CRM origins:", error);
+      toast.error("Erro ao carregar listas do CRM");
+    } finally {
+      setIsLoading(false);
+    }
+  }, [isLoading, isConversationLoading, logAction]);
+
   // Load conversation from URL
   useEffect(() => {
     const convId = searchParams.get('conversation') || searchParams.get('conv');
@@ -1039,23 +1086,62 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
     }
   }, [searchParams, currentConversationId, isLoading, sidePanelGenerating]);
 
-  // Reconstruct components after messages are loaded
+  const originsPromptedRef = useRef<string | null>(null);
+
+  // Reconstruct components after messages are loaded (avoid infinite loops when component is null)
   useEffect(() => {
-    if (initialLoadDone && messages.length > 0) {
-      const needsReconstruction = messages.some(m => m.componentData && !m.component);
-      if (needsReconstruction) {
-        setMessages(prev => prev.map(m => {
-          if (m.componentData && !m.component) {
-            return {
-              ...m,
-              component: reconstructMessageComponent(m.componentData, m.id)
-            };
-          }
-          return m;
-        }));
-      }
-    }
+    if (!initialLoadDone || messages.length === 0) return;
+
+    const needsReconstruction = messages.some(
+      (m) => m.componentData && m.component === undefined
+    );
+
+    if (!needsReconstruction) return;
+
+    setMessages((prev) =>
+      prev.map((m) => {
+        if (m.componentData && m.component === undefined) {
+          return {
+            ...m,
+            component: reconstructMessageComponent(m.componentData, m.id),
+          };
+        }
+        return m;
+      })
+    );
   }, [initialLoadDone, messages]);
+
+  // Ensure CRM list buttons are available inside the chat when no list is selected
+  useEffect(() => {
+    if (!initialLoadDone || isConversationLoading) return;
+    if (isLoading || sidePanelGenerating) return;
+    if (selectedOriginData || csvListId) return;
+
+    const convKey = currentConversationId || "new";
+    if (originsPromptedRef.current === convKey) return;
+
+    const alreadyHasOriginsList = messages.some(
+      (m) => m.componentData?.type === "origins_list"
+    );
+
+    if (alreadyHasOriginsList) {
+      originsPromptedRef.current = convKey;
+      return;
+    }
+
+    originsPromptedRef.current = convKey;
+    void showCrmOriginsList();
+  }, [
+    initialLoadDone,
+    isConversationLoading,
+    isLoading,
+    sidePanelGenerating,
+    selectedOriginData,
+    csvListId,
+    messages,
+    currentConversationId,
+    showCrmOriginsList,
+  ]);
 
   // Track last saved signature
   const lastSavedSignatureRef = useRef<string>('');
