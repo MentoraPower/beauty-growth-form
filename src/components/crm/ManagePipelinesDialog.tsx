@@ -100,7 +100,7 @@ function SortablePipelineItem({
           "group relative flex items-center gap-3 rounded-xl border-2 p-3 pl-4 transition-all",
           dragging && !isOverlay
             ? "opacity-30 border-dashed border-muted-foreground/30 bg-muted/10"
-            : "bg-gradient-to-r from-background via-background to-muted/20 border-border/60 hover:border-primary/40 hover:shadow-lg hover:shadow-primary/5",
+            : "bg-gradient-to-r from-background via-background to-muted/20 border-border/30 dark:border-white/[0.06] hover:border-primary/40 hover:shadow-lg hover:shadow-primary/5",
           isOverlay && "shadow-2xl border-primary/50 bg-background"
         )}
       >
@@ -435,7 +435,7 @@ export function ManagePipelinesDialog({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-4xl max-h-[85vh] overflow-hidden p-0">
-        <DialogHeader className="px-6 pt-6 pb-4 border-b border-border bg-muted/30">
+        <DialogHeader className="px-6 pt-6 pb-4 border-b border-border/30 dark:border-white/[0.06] bg-muted/30">
           <DialogTitle className="text-lg font-semibold">Gerenciar Pipelines</DialogTitle>
         </DialogHeader>
         {content}
