@@ -176,9 +176,9 @@ export default function Equipe() {
     return (
       <div className="flex gap-4 h-[calc(100vh-6rem)]">
         {/* Left Side - Members List Skeleton */}
-        <div className="w-[260px] flex-shrink-0 flex flex-col bg-gradient-to-b from-slate-50 to-white rounded-xl border border-slate-100 overflow-hidden">
-          <div className="flex items-center justify-between p-4 bg-gradient-to-r from-slate-100/80 to-slate-50/50 border-b border-slate-100">
-            <h1 className="text-sm font-semibold text-slate-800">Equipe</h1>
+        <div className="w-[260px] flex-shrink-0 flex flex-col bg-card rounded-xl border border-border/30 overflow-hidden">
+          <div className="flex items-center justify-between p-4 bg-zinc-100/40 dark:bg-zinc-900/40 border-b border-border/30">
+            <h1 className="text-sm font-semibold text-foreground">Equipe</h1>
             <Button
               size="sm"
               disabled
@@ -190,7 +190,7 @@ export default function Equipe() {
           </div>
           <MembersListSkeleton />
         </div>
-        
+
         {/* Right Side - Details Skeleton */}
         <div className="flex-1 overflow-y-auto">
           <MemberDetailsSkeleton />
@@ -199,12 +199,13 @@ export default function Equipe() {
     );
   }
 
+
   return (
     <div className="flex gap-4 h-[calc(100vh-6rem)]">
       {/* Left Side - Members List */}
-      <div className="w-[260px] flex-shrink-0 flex flex-col rounded-xl overflow-hidden bg-white dark:bg-zinc-900 border border-black/5 dark:border-white/10">
-        <div className="flex items-center justify-between p-4 border-b border-black/5 dark:border-white/10">
-          <h1 className="text-sm font-semibold text-gray-700 dark:text-zinc-200">Equipe</h1>
+      <div className="w-[260px] flex-shrink-0 flex flex-col rounded-xl overflow-hidden bg-card border border-border/30">
+        <div className="flex items-center justify-between p-4 border-b border-border/30">
+          <h1 className="text-sm font-semibold text-foreground">Equipe</h1>
           <Button
             onClick={() => setIsAddDialogOpen(true)}
             size="sm"
@@ -229,35 +230,42 @@ export default function Equipe() {
                 className={cn(
                   "p-3 rounded-lg cursor-pointer transition-all duration-200",
                   selectedMember?.user_id === member.user_id
-                    ? "bg-gradient-to-r from-slate-200/80 to-slate-100/60 dark:from-zinc-700/80 dark:to-zinc-800/60 shadow-sm"
-                    : "hover:bg-slate-100/60 dark:hover:bg-zinc-800/60"
+                    ? "bg-zinc-100/70 dark:bg-zinc-800/50 shadow-sm"
+                    : "hover:bg-zinc-100/50 dark:hover:bg-zinc-800/40"
                 )}
               >
                 <div className="flex items-center gap-3">
                   {member.photo_url ? (
-                    <img 
-                      src={member.photo_url} 
+                    <img
+                      src={member.photo_url}
                       alt={member.name || ""}
                       className="w-10 h-10 rounded-full object-cover"
                     />
                   ) : (
-                    <div className={cn(
-                      "w-10 h-10 rounded-full flex items-center justify-center",
-                      selectedMember?.user_id === member.user_id
-                        ? "bg-gradient-to-br from-slate-700 to-slate-900"
-                        : "bg-gradient-to-br from-slate-200 to-slate-300 dark:from-zinc-600 dark:to-zinc-700"
-                    )}>
-                      <UserCircle className={cn(
-                        "w-6 h-6",
-                        selectedMember?.user_id === member.user_id ? "text-white" : "text-slate-500 dark:text-zinc-300"
-                      )} strokeWidth={1.5} />
+                    <div
+                      className={cn(
+                        "w-10 h-10 rounded-full flex items-center justify-center",
+                        selectedMember?.user_id === member.user_id
+                          ? "bg-foreground"
+                          : "bg-zinc-200 dark:bg-zinc-800"
+                      )}
+                    >
+                      <UserCircle
+                        className={cn(
+                          "w-6 h-6",
+                          selectedMember?.user_id === member.user_id
+                            ? "text-background"
+                            : "text-muted-foreground"
+                        )}
+                        strokeWidth={1.5}
+                      />
                     </div>
                   )}
                   <div className="flex-1 min-w-0">
-                    <p className="font-medium text-sm text-slate-800 dark:text-zinc-200 truncate">
+                    <p className="font-medium text-sm text-foreground truncate">
                       {member.name || "Sem nome"}
                     </p>
-                    <p className="text-xs text-slate-500 dark:text-zinc-400 truncate">
+                    <p className="text-xs text-muted-foreground truncate">
                       {member.role ? roleLabels[member.role] || member.role : "Sem função"}
                     </p>
                   </div>
@@ -268,73 +276,77 @@ export default function Equipe() {
         </div>
       </div>
 
+
       {/* Right Side - Member Details */}
       <div className="flex-1 overflow-y-auto">
-        {selectedMember ? (
-          <div className="space-y-4 animate-fade-in">
-            {/* Header Card */}
-            <div className="rounded-xl p-6 bg-white dark:bg-zinc-900 border border-black/5 dark:border-white/10">
-              <div className="flex items-start justify-between">
-                <div className="flex items-center gap-4">
-                  <div 
-                    className="relative w-16 h-16 rounded-2xl bg-slate-100 dark:bg-zinc-800 flex items-center justify-center overflow-hidden group cursor-pointer"
-                    onClick={() => fileInputRef.current?.click()}
-                  >
-                    {selectedMember.photo_url ? (
-                      <img 
-                        src={selectedMember.photo_url} 
-                        alt={selectedMember.name || ""}
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      <UserCircle className="w-10 h-10 text-slate-400 dark:text-zinc-500" strokeWidth={1} />
-                    )}
-                    <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                      <Camera className="w-5 h-5 text-white" />
-                    </div>
-                    {uploadingPhoto && (
-                      <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-                        <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+          {selectedMember ? (
+            <div className="space-y-4 animate-fade-in">
+              {/* Header Card */}
+              <div className="rounded-xl p-6 bg-card border border-border/30">
+                <div className="flex items-start justify-between">
+                  <div className="flex items-center gap-4">
+                    <div
+                      className="relative w-16 h-16 rounded-2xl bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center overflow-hidden group cursor-pointer"
+                      onClick={() => fileInputRef.current?.click()}
+                    >
+                      {selectedMember.photo_url ? (
+                        <img
+                          src={selectedMember.photo_url}
+                          alt={selectedMember.name || ""}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <UserCircle className="w-10 h-10 text-muted-foreground" strokeWidth={1} />
+                      )}
+                      <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                        <Camera className="w-5 h-5 text-white" />
                       </div>
-                    )}
+                      {uploadingPhoto && (
+                        <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                          <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                        </div>
+                      )}
+                    </div>
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={handlePhotoUpload}
+                    />
+                    <div>
+                      <h2 className="text-xl font-semibold text-foreground">
+                        {selectedMember.name || "Sem nome"}
+                      </h2>
+                      <p className="text-sm text-muted-foreground">
+                        {selectedMember.role
+                          ? roleLabels[selectedMember.role] || selectedMember.role
+                          : "Sem função"}
+                      </p>
+                    </div>
                   </div>
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    onChange={handlePhotoUpload}
-                  />
-                  <div>
-                    <h2 className="text-xl font-semibold text-slate-800 dark:text-zinc-100">
-                      {selectedMember.name || "Sem nome"}
-                    </h2>
-                    <p className="text-sm text-slate-500 dark:text-zinc-400">
-                      {selectedMember.role ? roleLabels[selectedMember.role] || selectedMember.role : "Sem função"}
-                    </p>
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setEditingMember(selectedMember)}
+                      className="h-8"
+                    >
+                      <Settings2 className="w-4 h-4 mr-1.5" />
+                      Permissões
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleDeleteMember(selectedMember.user_id)}
+                      className="h-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
                   </div>
-                </div>
-                <div className="flex gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setEditingMember(selectedMember)}
-                    className="h-8"
-                  >
-                    <Settings2 className="w-4 h-4 mr-1.5" />
-                    Permissões
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleDeleteMember(selectedMember.user_id)}
-                    className="h-8 text-destructive hover:text-destructive hover:bg-destructive/10"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </Button>
                 </div>
               </div>
-            </div>
+
 
             {/* Info and Stats Grid */}
             <div className="grid grid-cols-3 gap-4">
@@ -350,13 +362,14 @@ export default function Equipe() {
             <ActivityHistoryBlock />
           </div>
         ) : (
-          <div className="h-full flex flex-col items-center justify-center text-slate-400 dark:text-zinc-500">
-            <div className="w-24 h-24 rounded-3xl bg-gradient-to-br from-slate-100 to-slate-200 dark:from-zinc-800 dark:to-zinc-700 flex items-center justify-center mb-6 shadow-inner">
-              <UserCircle className="w-14 h-14 text-slate-300 dark:text-zinc-500" strokeWidth={1} />
+          <div className="h-full flex flex-col items-center justify-center text-muted-foreground">
+            <div className="w-24 h-24 rounded-3xl bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center mb-6 shadow-inner">
+              <UserCircle className="w-14 h-14 text-muted-foreground/70" strokeWidth={1} />
             </div>
-            <p className="text-lg font-medium text-slate-500 dark:text-zinc-400">Nenhum perfil selecionado</p>
-            <p className="text-sm mt-1 text-slate-400 dark:text-zinc-500">Selecione um membro para ver os detalhes</p>
+            <p className="text-lg font-medium text-foreground/70">Nenhum perfil selecionado</p>
+            <p className="text-sm mt-1 text-muted-foreground">Selecione um membro para ver os detalhes</p>
           </div>
+
         )}
       </div>
 

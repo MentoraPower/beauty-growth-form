@@ -22,7 +22,7 @@ export function MemberDetailsSkeleton() {
   return (
     <div className="space-y-4 animate-fade-in">
       {/* Header Card Skeleton */}
-      <div className="bg-white rounded-xl p-6 border border-slate-100 shadow-sm">
+      <div className="bg-card rounded-xl p-6 border border-border/30 shadow-sm">
         <div className="flex items-start justify-between">
           <div className="flex items-center gap-4">
             <Skeleton className="w-16 h-16 rounded-2xl" />
@@ -41,7 +41,7 @@ export function MemberDetailsSkeleton() {
       {/* Info and Stats Grid Skeleton */}
       <div className="grid grid-cols-3 gap-4">
         {/* Contact Block Skeleton */}
-        <div className="bg-white rounded-xl p-5 border border-slate-100 shadow-sm">
+        <div className="bg-card rounded-xl p-5 border border-border/30 shadow-sm">
           <Skeleton className="h-3 w-16 mb-4" />
           <div className="space-y-4">
             {[1, 2, 3].map((i) => (
@@ -54,7 +54,7 @@ export function MemberDetailsSkeleton() {
         </div>
 
         {/* Activities Block Skeleton */}
-        <div className="bg-white rounded-xl p-5 border border-slate-100 shadow-sm">
+        <div className="bg-card rounded-xl p-5 border border-border/30 shadow-sm">
           <Skeleton className="h-3 w-20 mb-4" />
           <div className="flex flex-col items-center justify-center h-[calc(100%-32px)]">
             <Skeleton className="w-12 h-12 rounded-xl mb-3" />
@@ -63,7 +63,7 @@ export function MemberDetailsSkeleton() {
         </div>
 
         {/* Performance Block Skeleton */}
-        <div className="bg-white rounded-xl p-5 border border-slate-100 shadow-sm">
+        <div className="bg-card rounded-xl p-5 border border-border/30 shadow-sm">
           <Skeleton className="h-3 w-24 mb-4" />
           <div className="flex flex-col items-center justify-center h-[calc(100%-32px)]">
             <Skeleton className="w-12 h-12 rounded-xl mb-3" />
@@ -73,7 +73,7 @@ export function MemberDetailsSkeleton() {
       </div>
 
       {/* Activity History Skeleton */}
-      <div className="bg-white rounded-xl p-5 border border-slate-100 shadow-sm">
+      <div className="bg-card rounded-xl p-5 border border-border/30 shadow-sm">
         <Skeleton className="h-3 w-36 mb-4" />
         <div className="flex flex-col items-center justify-center py-10">
           <Skeleton className="w-14 h-14 rounded-2xl mb-4" />
@@ -84,3 +84,4 @@ export function MemberDetailsSkeleton() {
     </div>
   );
 }
+
