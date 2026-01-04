@@ -1297,7 +1297,8 @@ export function KanbanBoard() {
           {/* Export Button */}
           <ExportLeadsDropdown 
             subOriginId={subOriginId}
-            totalLeads={totalLeadCount}
+            pipelines={pipelines}
+            pipelineCounts={pipelineCounts}
           />
           {/* Filters - Modern Style */}
           <DropdownMenu>
