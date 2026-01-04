@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { Kanban, ChevronRight, ChevronsRight, Folder, FolderOpen, MoreVertical, Plus, Pencil, Trash2, GripVertical, CalendarDays, ListTodo, Search, LayoutGrid } from "lucide-react";
+import { Kanban, ChevronRight, ChevronsRight, Folder, FolderOpen, MoreVertical, Plus, Pencil, Trash2, GripVertical, CalendarDays, ListTodo, Search, LayoutGrid, FileSpreadsheet } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
@@ -401,33 +401,48 @@ function SortableOriginItem({
                       </span>
                     </button>
                     
-                    {/* Sub-origin Actions - only show for admins */}
-                    {userPermissions.isAdmin && (
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <button 
-                            onClick={(e) => e.stopPropagation()}
-                            className="p-1.5 rounded opacity-0 group-hover:opacity-100 transition-all duration-200 ease-out hover:bg-zinc-800"
-                          >
-                            <MoreVertical className="h-4 w-4 text-zinc-400" />
-                          </button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" className="w-40 z-[9999] bg-popover">
-                          <DropdownMenuItem onClick={() => openEditSubOriginDialog(subOrigin)}>
-                            <Pencil className="h-4 w-4 mr-2" />
-                            Editar
-                          </DropdownMenuItem>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem 
-                            className="text-destructive focus:text-destructive"
-                            onClick={() => handleDeleteSubOrigin(subOrigin.id)}
-                          >
-                            <Trash2 className="h-4 w-4 mr-2" />
-                            Excluir
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    )}
+                    {/* Sub-origin Actions */}
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <button 
+                          onClick={(e) => e.stopPropagation()}
+                          className="p-1.5 rounded opacity-0 group-hover:opacity-100 transition-all duration-200 ease-out hover:bg-accent"
+                        >
+                          <MoreVertical className="h-4 w-4 text-muted-foreground" />
+                        </button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="w-48 z-[9999] bg-popover border border-border/50 shadow-lg">
+                        <DropdownMenuItem 
+                          onClick={() => {
+                            window.dispatchEvent(new CustomEvent('open-export-dialog', { 
+                              detail: { subOriginId: subOrigin.id } 
+                            }));
+                          }}
+                          className="gap-3"
+                        >
+                          <svg className="h-4 w-4 text-[#0F9D58]" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M19 11V9h-4V5h-2v4H9v2h4v4h2v-4h4zm2-8H3c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h18c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H3V5h18v14z"/>
+                          </svg>
+                          Exportar para Planilha
+                        </DropdownMenuItem>
+                        {userPermissions.isAdmin && (
+                          <>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem onClick={() => openEditSubOriginDialog(subOrigin)} className="gap-3">
+                              <Pencil className="h-4 w-4 text-muted-foreground" />
+                              Editar nome
+                            </DropdownMenuItem>
+                            <DropdownMenuItem 
+                              className="text-destructive focus:text-destructive gap-3"
+                              onClick={() => handleDeleteSubOrigin(subOrigin.id)}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                              Excluir sub-origem
+                            </DropdownMenuItem>
+                          </>
+                        )}
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </div>
                 </li>
               );
