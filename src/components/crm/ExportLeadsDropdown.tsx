@@ -1,5 +1,5 @@
 import { useState, useCallback } from "react";
-import { Download, FileSpreadsheet, Check } from "lucide-react";
+import { Download, FileSpreadsheet, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -9,8 +9,16 @@ import {
   DropdownMenuTrigger,
   DropdownMenuCheckboxItem,
 } from "@/components/ui/dropdown-menu";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { Pipeline } from "@/types/crm";
 
 interface ExportColumn {
   key: string;
@@ -19,10 +27,9 @@ interface ExportColumn {
 }
 
 interface ExportLeadsDropdownProps {
-  pipelineId?: string | null;
-  pipelineName?: string;
   subOriginId: string | null;
-  totalLeads?: number;
+  pipelines: Pipeline[];
+  pipelineCounts?: Record<string, number>;
 }
 
 const DEFAULT_COLUMNS: ExportColumn[] = [
@@ -37,13 +44,13 @@ const DEFAULT_COLUMNS: ExportColumn[] = [
 ];
 
 export function ExportLeadsDropdown({ 
-  pipelineId, 
-  pipelineName, 
   subOriginId,
-  totalLeads = 0 
+  pipelines,
+  pipelineCounts = {},
 }: ExportLeadsDropdownProps) {
   const [columns, setColumns] = useState<ExportColumn[]>(DEFAULT_COLUMNS);
   const [isExporting, setIsExporting] = useState(false);
+  const [selectedPipeline, setSelectedPipeline] = useState<string>("all");
 
   const toggleColumn = (key: string) => {
     setColumns(prev => 
@@ -51,6 +58,19 @@ export function ExportLeadsDropdown({
         col.key === key ? { ...col, selected: !col.selected } : col
       )
     );
+  };
+
+  const getExportCount = () => {
+    if (selectedPipeline === "all") {
+      return Object.values(pipelineCounts).reduce((sum, count) => sum + count, 0);
+    }
+    return pipelineCounts[selectedPipeline] || 0;
+  };
+
+  const getSelectedPipelineName = () => {
+    if (selectedPipeline === "all") return "todas-pipelines";
+    const pipeline = pipelines.find(p => p.id === selectedPipeline);
+    return pipeline?.nome.toLowerCase().replace(/\s+/g, "-") || "pipeline";
   };
 
   const exportToCsv = useCallback(async () => {
@@ -75,8 +95,8 @@ export function ExportLeadsDropdown({
         .eq("sub_origin_id", subOriginId);
 
       // Filter by pipeline if specified
-      if (pipelineId) {
-        query = query.eq("pipeline_id", pipelineId);
+      if (selectedPipeline !== "all") {
+        query = query.eq("pipeline_id", selectedPipeline);
       }
 
       // Order by created_at
@@ -137,9 +157,7 @@ export function ExportLeadsDropdown({
       const link = document.createElement("a");
       link.href = url;
       
-      const fileName = pipelineName 
-        ? `leads-${pipelineName.toLowerCase().replace(/\s+/g, "-")}-${new Date().toISOString().split("T")[0]}.csv`
-        : `leads-export-${new Date().toISOString().split("T")[0]}.csv`;
+      const fileName = `leads-${getSelectedPipelineName()}-${new Date().toISOString().split("T")[0]}.csv`;
       
       link.download = fileName;
       document.body.appendChild(link);
@@ -154,21 +172,50 @@ export function ExportLeadsDropdown({
     } finally {
       setIsExporting(false);
     }
-  }, [columns, pipelineId, pipelineName, subOriginId]);
+  }, [columns, selectedPipeline, subOriginId, getSelectedPipelineName]);
 
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="outline" size="sm" className="h-9 gap-2">
+        <Button variant="outline" size="icon" className="h-9 w-9">
           <Download className="w-4 h-4" />
-          Exportar
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-64 bg-popover z-[9999]">
+      <DropdownMenuContent align="end" className="w-72 bg-popover z-[9999]">
         <DropdownMenuLabel className="flex items-center gap-2">
           <FileSpreadsheet className="w-4 h-4" />
           Exportar para CSV
         </DropdownMenuLabel>
+        <DropdownMenuSeparator />
+        
+        {/* Pipeline Selector */}
+        <div className="px-2 py-2 space-y-1.5">
+          <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">
+            Pipeline
+          </span>
+          <Select value={selectedPipeline} onValueChange={setSelectedPipeline}>
+            <SelectTrigger className="h-8 text-xs">
+              <SelectValue placeholder="Selecione uma pipeline" />
+            </SelectTrigger>
+            <SelectContent className="z-[99999]">
+              <SelectItem value="all">
+                Todas as pipelines ({Object.values(pipelineCounts).reduce((sum, count) => sum + count, 0)})
+              </SelectItem>
+              {pipelines.map((pipeline) => (
+                <SelectItem key={pipeline.id} value={pipeline.id}>
+                  <div className="flex items-center gap-2">
+                    <span 
+                      className="w-2 h-2 rounded-full" 
+                      style={{ backgroundColor: pipeline.cor }}
+                    />
+                    {pipeline.nome} ({pipelineCounts[pipeline.id] || 0})
+                  </div>
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
         <DropdownMenuSeparator />
         
         <div className="px-2 py-1.5">
@@ -204,7 +251,7 @@ export function ExportLeadsDropdown({
             ) : (
               <>
                 <Download className="w-4 h-4" />
-                Baixar CSV {totalLeads > 0 && `(${totalLeads} leads)`}
+                Baixar CSV ({getExportCount()} leads)
               </>
             )}
           </Button>
