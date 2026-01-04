@@ -357,11 +357,11 @@ export function AddAppointmentDropdown({
         ref={panelRef}
         role="dialog"
         aria-label={isEditing ? "Editar agendamento" : "Novo agendamento"}
-        className="pointer-events-auto fixed w-[400px] max-w-[calc(100vw-24px)] bg-popover text-popover-foreground rounded-lg border border-border shadow-2xl overflow-hidden animate-in fade-in zoom-in-95"
+        className="pointer-events-auto fixed w-[400px] max-w-[calc(100vw-24px)] bg-popover text-popover-foreground rounded-lg border border-border/30 dark:border-white/[0.06] shadow-2xl overflow-hidden animate-in fade-in zoom-in-95"
         style={{ left: panelPosition.left, top: panelPosition.top }}
       >
         {/* Header with close button */}
-        <div className="flex items-center justify-end p-2 border-b border-border/50">
+        <div className="flex items-center justify-end p-2 border-b border-border/30 dark:border-white/[0.06]">
           {isEditing && (
             <button
               type="button"
@@ -395,7 +395,7 @@ export function AddAppointmentDropdown({
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               required
-              className="flex-1 bg-transparent border-0 border-b-2 border-muted focus:border-primary px-0 py-2 text-lg font-medium text-foreground placeholder:text-muted-foreground focus:outline-none transition-colors"
+              className="flex-1 bg-transparent border-0 border-b-2 border-muted dark:border-white/[0.06] focus:border-primary px-0 py-2 text-lg font-medium text-foreground placeholder:text-muted-foreground focus:outline-none transition-colors"
               placeholder="Adicionar título"
             />
           </div>
@@ -434,7 +434,7 @@ export function AddAppointmentDropdown({
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="Adicionar email"
-              className="flex-1 h-9 text-sm bg-transparent border-0 border-b border-muted focus:border-primary px-0"
+              className="flex-1 h-9 text-sm bg-transparent border-0 border-b border-muted dark:border-white/[0.06] focus:border-primary px-0"
             />
           </div>
 
@@ -447,7 +447,7 @@ export function AddAppointmentDropdown({
               onChange={(e) => setDescription(e.target.value)}
               placeholder="Adicionar descrição"
               rows={2}
-              className="flex-1 resize-none text-sm bg-transparent border-0 border-b border-muted focus:border-primary px-0"
+              className="flex-1 resize-none text-sm bg-transparent border-0 border-b border-muted dark:border-white/[0.06] focus:border-primary px-0"
             />
           </div>
 
@@ -459,7 +459,7 @@ export function AddAppointmentDropdown({
               value={closerName}
               onChange={(e) => setCloserName(e.target.value)}
               placeholder="Closer"
-              className="flex-1 h-9 text-sm bg-transparent border-0 border-b border-muted focus:border-primary px-0"
+              className="flex-1 h-9 text-sm bg-transparent border-0 border-b border-muted dark:border-white/[0.06] focus:border-primary px-0"
             />
           </div>
 
@@ -471,7 +471,7 @@ export function AddAppointmentDropdown({
               value={sdrName}
               onChange={(e) => setSdrName(e.target.value)}
               placeholder="SDR"
-              className="flex-1 h-9 text-sm bg-transparent border-0 border-b border-muted focus:border-primary px-0"
+              className="flex-1 h-9 text-sm bg-transparent border-0 border-b border-muted dark:border-white/[0.06] focus:border-primary px-0"
             />
           </div>
 
@@ -484,7 +484,7 @@ export function AddAppointmentDropdown({
                   type="checkbox"
                   checked={isPaid}
                   onChange={(e) => setIsPaid(e.target.checked)}
-                  className="w-4 h-4 rounded border-muted accent-primary"
+                  className="w-4 h-4 rounded border-muted dark:border-white/20 accent-primary"
                 />
                 <span className="text-sm text-foreground">Pago</span>
               </label>
@@ -526,7 +526,7 @@ export function AddAppointmentDropdown({
                 type="checkbox"
                 checked={isNoshow}
                 onChange={(e) => setIsNoshow(e.target.checked)}
-                className="w-4 h-4 rounded border-muted accent-destructive"
+                className="w-4 h-4 rounded border-muted dark:border-white/20 accent-destructive"
               />
               <span className="text-sm text-foreground">No Show</span>
             </label>
