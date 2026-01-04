@@ -1152,6 +1152,52 @@ const handler = async (req: Request): Promise<Response> => {
           .catch((e) => console.error("[EmailAutomation] Error:", e));
       }
 
+      // Auto-create webhook record if it doesn't exist (for visibility in UI)
+      if (targetSubOriginId && !isUpdateOnly) {
+        try {
+          const { data: existingWebhook } = await supabase
+            .from("crm_webhooks")
+            .select("id")
+            .eq("sub_origin_id", targetSubOriginId)
+            .eq("type", "receive")
+            .eq("is_active", true)
+            .maybeSingle();
+
+          if (!existingWebhook) {
+            // Fetch sub-origin name for webhook naming
+            const { data: subOriginData } = await supabase
+              .from("crm_sub_origins")
+              .select("nome")
+              .eq("id", targetSubOriginId)
+              .single();
+
+            const webhookName = subOriginData?.nome 
+              ? `Webhook - ${subOriginData.nome}` 
+              : "Webhook Automático";
+
+            const webhookUrl = `https://ytdfwkchsumgdvcroaqg.supabase.co/functions/v1/receive-webhook?sub_origin_id=${targetSubOriginId}${targetPipelineId ? `&pipeline_id=${targetPipelineId}` : ''}`;
+
+            const { error: insertError } = await supabase.from("crm_webhooks").insert({
+              name: webhookName,
+              type: "receive",
+              url: webhookUrl,
+              scope: "sub_origin",
+              sub_origin_id: targetSubOriginId,
+              trigger_pipeline_id: targetPipelineId || null,
+              is_active: true,
+            });
+
+            if (insertError) {
+              console.log("[Webhook] Auto-create webhook failed:", insertError.message);
+            } else {
+              console.log(`[Webhook] Auto-created webhook "${webhookName}" for sub_origin ${targetSubOriginId}`);
+            }
+          }
+        } catch (webhookError) {
+          console.log("[Webhook] Error checking/creating webhook record:", webhookError);
+        }
+      }
+
       return new Response(
         JSON.stringify({ success: true, lead_id: savedLeadId, message: "Lead received" }),
         {
