@@ -1,5 +1,6 @@
 import { Suspense } from "react";
 import { KanbanBoard } from "@/components/crm/KanbanBoard";
+import { ExportLeadsDialog } from "@/components/crm/ExportLeadsDialog";
 import { useAuth } from "@/hooks/useAuth";
 
 function CRMLoading() {
@@ -18,8 +19,11 @@ export default function CRM() {
   }
 
   return (
-    <Suspense fallback={<CRMLoading />}>
-      <KanbanBoard />
-    </Suspense>
+    <>
+      <Suspense fallback={<CRMLoading />}>
+        <KanbanBoard />
+      </Suspense>
+      <ExportLeadsDialog />
+    </>
   );
 }

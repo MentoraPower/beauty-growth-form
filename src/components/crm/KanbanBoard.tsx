@@ -28,8 +28,7 @@ import { KanbanCard } from "./KanbanCard";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Settings, Search, Filter, X, CalendarIcon, Zap, Webhook, GitBranch, LayoutGrid, Download } from "lucide-react";
-import { ExportLeadsDropdown } from "./ExportLeadsDropdown";
+import { Settings, Search, Filter, X, CalendarIcon, Zap, Webhook, GitBranch, LayoutGrid } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -1294,12 +1293,6 @@ export function KanbanBoard() {
             />
           </div>
 
-          {/* Export Button */}
-          <ExportLeadsDropdown 
-            subOriginId={subOriginId}
-            pipelines={pipelines}
-            pipelineCounts={pipelineCounts}
-          />
           {/* Filters - Modern Style */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
