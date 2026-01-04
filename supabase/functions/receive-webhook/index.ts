@@ -937,9 +937,12 @@ const handler = async (req: Request): Promise<Response> => {
         }
         
         // Only update other fields if they have values
-        // IMPORTANT: In update-only mode, do NOT update identification fields (name, email, whatsapp, country_code)
+        // IMPORTANT: 
+        // - EMAIL is NEVER updated (it's the primary identifier)
+        // - In update-only mode, do NOT update identification fields (name, whatsapp, country_code)
+        // - In receive mode, name/whatsapp/country_code CAN be updated if provided
         if (!isUpdateOnly && leadData.name && leadData.name.trim()) updateData.name = leadData.name;
-        if (!isUpdateOnly && leadData.email && leadData.email.trim()) updateData.email = leadData.email;
+        // EMAIL NEVER UPDATED - it's the primary identifier for duplicate detection
         if (!isUpdateOnly && leadData.whatsapp && leadData.whatsapp.trim()) updateData.whatsapp = leadData.whatsapp;
         if (!isUpdateOnly && leadData.country_code && leadData.country_code.trim()) updateData.country_code = leadData.country_code;
         if (leadData.instagram && leadData.instagram.trim()) updateData.instagram = leadData.instagram;
@@ -1298,10 +1301,40 @@ const handler = async (req: Request): Promise<Response> => {
       const previousPipelineId = existingLead.pipeline_id;
       const pipelineChanged = previousPipelineId && previousPipelineId !== targetPipelineId;
 
-      // Update existing lead
+      // Build update data - only update fields that have non-empty values
+      // EMAIL is NEVER updated (it's the primary identifier)
+      const updateData: Record<string, any> = {
+        pipeline_id: targetPipelineId,
+        sub_origin_id: targetSubOriginId,
+      };
+
+      // Name, WhatsApp, DDI - can be updated if provided
+      if (leadData.name && leadData.name.trim()) updateData.name = leadData.name;
+      // EMAIL NEVER UPDATED - it's the primary identifier
+      if (leadData.whatsapp && leadData.whatsapp.trim()) updateData.whatsapp = leadData.whatsapp;
+      if (leadData.country_code && leadData.country_code.trim()) updateData.country_code = leadData.country_code;
+
+      // Other fields - update if provided
+      if (leadData.instagram && leadData.instagram.trim()) updateData.instagram = leadData.instagram;
+      if (leadData.clinic_name && leadData.clinic_name.trim()) updateData.clinic_name = leadData.clinic_name;
+      if (leadData.service_area && leadData.service_area.trim()) updateData.service_area = leadData.service_area;
+      if (leadData.monthly_billing && leadData.monthly_billing.trim()) updateData.monthly_billing = leadData.monthly_billing;
+      if (leadData.weekly_attendance && leadData.weekly_attendance.trim()) updateData.weekly_attendance = leadData.weekly_attendance;
+      if (leadData.workspace_type && leadData.workspace_type.trim()) updateData.workspace_type = leadData.workspace_type;
+      if (leadData.years_experience && leadData.years_experience.trim()) updateData.years_experience = leadData.years_experience;
+      if (leadData.average_ticket !== null && leadData.average_ticket !== undefined) updateData.average_ticket = leadData.average_ticket;
+      if (leadData.estimated_revenue !== null && leadData.estimated_revenue !== undefined) updateData.estimated_revenue = leadData.estimated_revenue;
+      if (leadData.biggest_difficulty && leadData.biggest_difficulty.trim()) updateData.biggest_difficulty = leadData.biggest_difficulty;
+      if (leadData.utm_source) updateData.utm_source = leadData.utm_source;
+      if (leadData.utm_medium) updateData.utm_medium = leadData.utm_medium;
+      if (leadData.utm_campaign) updateData.utm_campaign = leadData.utm_campaign;
+      if (leadData.utm_term) updateData.utm_term = leadData.utm_term;
+      if (leadData.utm_content) updateData.utm_content = leadData.utm_content;
+
+      // Update existing lead with only the fields that have values
       const { data, error } = await supabase
         .from("leads")
-        .update(leadData)
+        .update(updateData)
         .eq("id", existingLead.id)
         .select()
         .single();
