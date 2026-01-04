@@ -413,12 +413,16 @@ function SortableOriginItem({
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end" className="w-48 z-[9999] bg-popover border border-border/50 shadow-lg">
                         <DropdownMenuItem 
-                          onClick={() => {
-                            window.dispatchEvent(new CustomEvent('open-export-dialog', { 
-                              detail: { subOriginId: subOrigin.id } 
-                            }));
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            // Small delay to let dropdown close first
+                            setTimeout(() => {
+                              window.dispatchEvent(new CustomEvent('open-export-dialog', { 
+                                detail: { subOriginId: subOrigin.id } 
+                              }));
+                            }, 100);
                           }}
-                          className="gap-3"
+                          className="gap-3 cursor-pointer"
                         >
                           <svg className="h-4 w-4 text-[#0F9D58]" viewBox="0 0 24 24" fill="currentColor">
                             <path d="M19 11V9h-4V5h-2v4H9v2h4v4h2v-4h4zm2-8H3c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h18c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H3V5h18v14z"/>
