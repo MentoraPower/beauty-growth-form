@@ -770,7 +770,7 @@ export function ListView({ pipelines, leadsByPipeline, subOriginId, tagsMap }: L
                     {leads.length > 0 && (
                       <div className="overflow-x-auto">
                         <div className="min-w-[950px]">
-                          <div className="grid gap-6 py-2 px-3 text-[10px] uppercase tracking-wider text-muted-foreground font-medium border-b border-border/30 grid-cols-[40px_minmax(140px,1.5fr)_minmax(160px,1fr)_minmax(120px,1fr)_minmax(120px,1fr)_minmax(100px,1fr)_minmax(80px,0.5fr)_40px]">
+                          <div className="grid gap-6 py-2 px-3 text-[10px] uppercase tracking-wider text-muted-foreground font-medium border-b border-white/[0.04] grid-cols-[40px_minmax(140px,1.5fr)_minmax(160px,1fr)_minmax(120px,1fr)_minmax(120px,1fr)_minmax(100px,1fr)_minmax(80px,0.5fr)_40px]">
                             <div className="flex items-center">
                               <Checkbox
                                 checked={allSelected}
