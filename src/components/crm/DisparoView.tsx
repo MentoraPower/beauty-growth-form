@@ -755,7 +755,7 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          command: `LIST_LEADS:email:${subOriginId}`,
+          command: `FETCH_LEADS:email:${subOriginId}`,
           conversationId: conversationIdRef.current
         }),
       });
