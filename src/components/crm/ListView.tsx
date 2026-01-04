@@ -246,7 +246,7 @@ function StaticLeadRow({ lead, isSelected, onLeadClick, onToggleSelection, tags 
           checked={isSelected}
           onCheckedChange={() => {}}
           onClick={(e) => onToggleSelection(lead.id, e)}
-          className="border-[#00000040] data-[state=checked]:bg-[#00000040] data-[state=checked]:border-[#00000040]"
+          className="border-black/20 dark:border-white/20 data-[state=checked]:bg-primary data-[state=checked]:border-primary"
         />
       </div>
       
