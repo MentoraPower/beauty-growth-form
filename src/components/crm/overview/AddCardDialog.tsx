@@ -140,14 +140,14 @@ export function AddCardDialog({ open, onClose, onAddCard }: AddCardDialogProps) 
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="w-[90vw] max-w-4xl max-h-[85vh] h-auto p-0 gap-0 overflow-hidden bg-background border-border">
+      <DialogContent className="w-[90vw] max-w-4xl max-h-[85vh] h-auto p-0 gap-0 overflow-hidden bg-background border-border/30 dark:border-white/[0.06]">
         <DialogHeader className="p-5 pb-0">
           <DialogTitle className="text-lg font-semibold">Adicionar cartão</DialogTitle>
         </DialogHeader>
         
         <div className="flex h-[520px] max-h-[calc(85vh-60px)]">
           {/* Sidebar */}
-          <div className="w-48 border-r border-border p-3 flex flex-col gap-0.5">
+          <div className="w-48 border-r border-border/30 dark:border-white/[0.06] p-3 flex flex-col gap-0.5">
             {CATEGORIES.map((category) => (
               <button
                 key={category.id}
@@ -167,7 +167,7 @@ export function AddCardDialog({ open, onClose, onAddCard }: AddCardDialogProps) 
           {/* Main Content */}
           <div className="flex-1 flex flex-col">
             {/* Search */}
-            <div className="p-4 border-b border-border">
+            <div className="p-4 border-b border-border/30 dark:border-white/[0.06]">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
@@ -186,7 +186,7 @@ export function AddCardDialog({ open, onClose, onAddCard }: AddCardDialogProps) 
                   <button
                     key={template.id}
                     onClick={() => handleAddCard(template)}
-                    className="group flex flex-col bg-card border border-border rounded-xl overflow-hidden hover:border-foreground/20 hover:shadow-lg transition-all text-left"
+                    className="group flex flex-col bg-card border border-border/30 dark:border-white/[0.06] rounded-xl overflow-hidden hover:border-foreground/20 hover:shadow-lg transition-all text-left"
                   >
                     {/* Preview Area */}
                     <div className="h-28 bg-muted/30 flex items-center justify-center p-4">
@@ -196,7 +196,7 @@ export function AddCardDialog({ open, onClose, onAddCard }: AddCardDialogProps) 
                     </div>
                     
                     {/* Info */}
-                    <div className="p-3 border-t border-border/50">
+                    <div className="p-3 border-t border-border/30 dark:border-white/[0.06]">
                       <h4 className="font-medium text-sm text-foreground">{template.title}</h4>
                       <p className="text-xs text-muted-foreground mt-0.5 line-clamp-1">
                         {template.description}
