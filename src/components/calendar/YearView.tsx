@@ -51,7 +51,7 @@ function MiniMonth({
   return (
     <div
       onClick={onClick}
-      className="p-3 rounded-lg border border-border/50 hover:border-border hover:bg-muted/30 cursor-pointer transition-colors"
+      className="p-3 rounded-lg border border-border/30 dark:border-white/[0.06] hover:border-border/50 dark:hover:border-white/[0.12] hover:bg-muted/30 cursor-pointer transition-colors"
     >
       <div className="text-sm font-semibold mb-2 capitalize">
         {format(month, "MMMM", { locale: ptBR })}

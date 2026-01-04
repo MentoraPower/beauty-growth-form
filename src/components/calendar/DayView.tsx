@@ -127,7 +127,7 @@ export function DayView({
     >
       <div className="h-full flex flex-col">
         {/* Header */}
-        <div className="flex border-b border-border">
+        <div className="flex border-b border-border/30 dark:border-white/[0.06]">
           <div className="w-16 flex-shrink-0" />
           <div className="flex-1 py-3 text-center">
             <div className="text-sm text-muted-foreground">
@@ -156,13 +156,13 @@ export function DayView({
             </div>
 
             {/* Grid */}
-            <div ref={gridRef} className="flex-1 relative border-l border-border pt-2">
+            <div ref={gridRef} className="flex-1 relative border-l border-border/30 dark:border-white/[0.06] pt-2">
               {/* Hour slots */}
               {HOURS.map((hour) => (
                 <div
                   key={`slot-${hour}`}
                   onClick={(e) => onDayClick(date, hour, e)}
-                  className="h-[60px] border-t border-border/50 cursor-pointer hover:bg-muted/30 relative"
+                  className="h-[60px] border-t border-border/30 dark:border-white/[0.06] cursor-pointer hover:bg-muted/30 relative"
                 />
               ))}
 
