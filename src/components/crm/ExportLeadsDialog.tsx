@@ -1,15 +1,19 @@
 import { useState, useCallback, useEffect, useRef } from "react";
-import { Download, FileText, Check } from "lucide-react";
+import { FileText, Check, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
-  DialogHeader,
-  DialogTitle,
 } from "@/components/ui/dialog";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
+import { Switch } from "@/components/ui/switch";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuCheckboxItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Pipeline } from "@/types/crm";
@@ -252,124 +256,102 @@ export function ExportLeadsDialog() {
     }
   }, [columns, selectedPipelines, subOriginId, fileName, pipelines]);
 
+  const getSelectedPipelinesLabel = () => {
+    if (selectedPipelines.has("all")) return "Todas as etapas";
+    const count = selectedPipelines.size;
+    if (count === 0) return "Selecionar etapas";
+    if (count === 1) {
+      const id = Array.from(selectedPipelines)[0];
+      const pipeline = pipelines.find(p => p.id === id);
+      return pipeline?.nome || "1 etapa";
+    }
+    return `${count} etapas selecionadas`;
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
-      <DialogContent className="sm:max-w-lg">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-[#0F9D58]/10 flex items-center justify-center">
-              <svg className="h-5 w-5 text-[#0F9D58]" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M19 11V9h-4V5h-2v4H9v2h4v4h2v-4h4zm2-8H3c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h18c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H3V5h18v14z"/>
-              </svg>
-            </div>
-            <div>
-              <span>Exportar para Planilha</span>
-              <p className="text-sm font-normal text-muted-foreground mt-0.5">{subOriginName}</p>
-            </div>
-          </DialogTitle>
-        </DialogHeader>
-        
+      <DialogContent className="sm:max-w-md">
         {isLoading ? (
           <div className="flex items-center justify-center py-12">
-            <div className="w-6 h-6 border-2 border-[#0F9D58]/30 border-t-[#0F9D58] rounded-full animate-spin" />
+            <div className="w-6 h-6 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
           </div>
         ) : (
-          <div className="space-y-6 pt-2">
+          <div className="space-y-5 pt-1">
+            {/* Sub Origin Name as subtle header */}
+            <div className="text-center">
+              <p className="text-sm text-muted-foreground">{subOriginName}</p>
+            </div>
+
             {/* File Name */}
             <div className="space-y-2">
               <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
                 Nome do arquivo
               </Label>
-              <div className="flex items-center gap-2">
-                <div className="flex-1 relative">
-                  <FileText className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                  <Input
-                    value={fileName}
-                    onChange={(e) => setFileName(e.target.value)}
-                    className="pl-9 pr-12"
-                    placeholder="nome-do-arquivo"
-                  />
-                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">.csv</span>
-                </div>
+              <div className="flex-1 relative">
+                <FileText className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <Input
+                  value={fileName}
+                  onChange={(e) => setFileName(e.target.value)}
+                  className="pl-9 pr-12"
+                  placeholder="nome-do-arquivo"
+                />
+                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">.csv</span>
               </div>
             </div>
 
-            {/* Pipeline Multi-Select */}
+            {/* Pipeline Selection */}
             <div className="space-y-3">
-              <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                Pipelines para exportar
-              </Label>
-              <div className="space-y-1.5 max-h-48 overflow-y-auto">
-                {/* All option */}
-                <button
-                  onClick={() => togglePipeline("all")}
-                  className={cn(
-                    "w-full flex items-center gap-3 p-2.5 rounded-lg border transition-all text-left",
-                    selectedPipelines.has("all")
-                      ? "border-[#0F9D58] bg-[#0F9D58]/5"
-                      : "border-border/50 hover:border-border hover:bg-accent/50"
-                  )}
-                >
-                  <div className={cn(
-                    "w-5 h-5 rounded-md border-2 flex items-center justify-center transition-colors",
-                    selectedPipelines.has("all")
-                      ? "border-[#0F9D58] bg-[#0F9D58]"
-                      : "border-muted-foreground/30"
-                  )}>
-                    {selectedPipelines.has("all") && <Check className="w-3 h-3 text-white" />}
-                  </div>
-                  <div className="flex-1">
-                    <span className="text-sm font-medium">Todas as pipelines</span>
-                  </div>
-                  <span className="text-xs text-muted-foreground tabular-nums">
-                    {Object.values(pipelineCounts).reduce((sum, count) => sum + count, 0)} leads
-                  </span>
-                </button>
-                
-                {/* Individual pipelines */}
-                {pipelines.map((pipeline) => {
-                  const isSelected = selectedPipelines.has(pipeline.id) || selectedPipelines.has("all");
-                  return (
-                    <button
-                      key={pipeline.id}
-                      onClick={() => togglePipeline(pipeline.id)}
-                      className={cn(
-                        "w-full flex items-center gap-3 p-2.5 rounded-lg border transition-all text-left",
-                        isSelected && !selectedPipelines.has("all")
-                          ? "border-[#0F9D58] bg-[#0F9D58]/5"
-                          : "border-border/50 hover:border-border hover:bg-accent/50",
-                        selectedPipelines.has("all") && "opacity-60"
-                      )}
-                      disabled={selectedPipelines.has("all")}
-                    >
-                      <div className={cn(
-                        "w-5 h-5 rounded-md border-2 flex items-center justify-center transition-colors",
-                        isSelected
-                          ? "border-[#0F9D58] bg-[#0F9D58]"
-                          : "border-muted-foreground/30"
-                      )}>
-                        {isSelected && <Check className="w-3 h-3 text-white" />}
-                      </div>
-                      <span 
-                        className="w-2.5 h-2.5 rounded-full flex-shrink-0" 
-                        style={{ backgroundColor: pipeline.cor }}
-                      />
-                      <div className="flex-1">
-                        <span className="text-sm">{pipeline.nome}</span>
-                      </div>
-                      <span className="text-xs text-muted-foreground tabular-nums">
-                        {pipelineCounts[pipeline.id] || 0}
-                      </span>
-                    </button>
-                  );
-                })}
+              <div className="flex items-center justify-between">
+                <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                  Etapas
+                </Label>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-muted-foreground">Todas</span>
+                  <Switch
+                    checked={selectedPipelines.has("all")}
+                    onCheckedChange={() => togglePipeline("all")}
+                  />
+                </div>
               </div>
+              
+              {!selectedPipelines.has("all") && (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <button className="w-full flex items-center justify-between px-3 py-2.5 rounded-lg border border-border bg-background hover:bg-accent/50 transition-colors text-left">
+                      <span className="text-sm">{getSelectedPipelinesLabel()}</span>
+                      <ChevronDown className="w-4 h-4 text-muted-foreground" />
+                    </button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="start" className="w-[--radix-dropdown-menu-trigger-width]">
+                    {pipelines.map((pipeline) => {
+                      const isSelected = selectedPipelines.has(pipeline.id);
+                      return (
+                        <DropdownMenuCheckboxItem
+                          key={pipeline.id}
+                          checked={isSelected}
+                          onCheckedChange={() => togglePipeline(pipeline.id)}
+                          className="gap-2"
+                        >
+                          <span 
+                            className="w-2 h-2 rounded-full flex-shrink-0" 
+                            style={{ backgroundColor: pipeline.cor }}
+                          />
+                          <span className="flex-1">{pipeline.nome}</span>
+                          <span className="text-xs text-muted-foreground tabular-nums ml-2">
+                            {pipelineCounts[pipeline.id] || 0}
+                          </span>
+                        </DropdownMenuCheckboxItem>
+                      );
+                    })}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              )}
             </div>
 
             {/* Columns */}
             <div className="space-y-3">
               <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                Colunas para exportar
+                Colunas
               </Label>
               <div className="grid grid-cols-2 gap-1.5">
                 {columns.map((col) => (
@@ -377,19 +359,19 @@ export function ExportLeadsDialog() {
                     key={col.key}
                     onClick={() => toggleColumn(col.key)}
                     className={cn(
-                      "flex items-center gap-2 p-2 rounded-lg border transition-all text-left",
+                      "flex items-center gap-2 p-2 rounded-lg transition-all text-left",
                       col.selected
-                        ? "border-[#0F9D58]/50 bg-[#0F9D58]/5"
-                        : "border-border/50 hover:border-border hover:bg-accent/50"
+                        ? "bg-accent"
+                        : "hover:bg-accent/50"
                     )}
                   >
                     <div className={cn(
                       "w-4 h-4 rounded border-2 flex items-center justify-center transition-colors",
                       col.selected
-                        ? "border-[#0F9D58] bg-[#0F9D58]"
+                        ? "border-primary bg-primary"
                         : "border-muted-foreground/30"
                     )}>
-                      {col.selected && <Check className="w-2.5 h-2.5 text-white" />}
+                      {col.selected && <Check className="w-2.5 h-2.5 text-primary-foreground" />}
                     </div>
                     <span className="text-sm">{col.label}</span>
                   </button>
@@ -400,18 +382,15 @@ export function ExportLeadsDialog() {
             <Button 
               onClick={exportToCsv} 
               disabled={isExporting || columns.filter(c => c.selected).length === 0}
-              className="w-full gap-2 h-11 bg-[#0F9D58] hover:bg-[#0F9D58]/90 text-white"
+              className="w-full h-11"
             >
               {isExporting ? (
                 <>
-                  <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  <div className="w-4 h-4 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin mr-2" />
                   Exportando...
                 </>
               ) : (
-                <>
-                  <Download className="w-4 h-4" />
-                  Baixar CSV ({getExportCount().toLocaleString('pt-BR')} leads)
-                </>
+                "Exportar"
               )}
             </Button>
           </div>
