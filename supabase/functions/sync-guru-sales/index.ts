@@ -88,17 +88,26 @@ Deno.serve(async (req) => {
         throw new Error(`Guru API error: ${guruResponse.status} - ${errorText}`);
       }
 
-      const guruData: GuruApiResponse = await guruResponse.json();
+      const guruData = await guruResponse.json();
       
-      if (guruData.data && guruData.data.length > 0) {
-        allTransactions.push(...guruData.data);
+      // Log full response structure for debugging
+      if (currentPage === 1) {
+        console.log(`[sync-guru-sales] Full response keys:`, Object.keys(guruData));
+        console.log(`[sync-guru-sales] Response structure:`, JSON.stringify(guruData).substring(0, 2000));
+      }
+      
+      // Handle different response structures
+      const transactions = guruData.data || guruData || [];
+      const meta = guruData.meta || guruData.pagination || {};
+      
+      if (Array.isArray(transactions) && transactions.length > 0) {
+        allTransactions.push(...transactions);
       }
       
       // Update pagination info
-      if (guruData.meta) {
-        lastPage = guruData.meta.last_page;
-        console.log(`[sync-guru-sales] Page ${currentPage}/${lastPage}, got ${guruData.data?.length || 0} transactions, total so far: ${allTransactions.length}`);
-      }
+      lastPage = meta.last_page || meta.lastPage || meta.total_pages || 1;
+      const total = meta.total || meta.count || transactions.length;
+      console.log(`[sync-guru-sales] Page ${currentPage}/${lastPage}, got ${transactions.length} transactions, total from API: ${total}`);
       
       currentPage++;
     } while (currentPage <= lastPage);
