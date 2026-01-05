@@ -422,11 +422,9 @@ function SortableOriginItem({
                         <DropdownMenuItem 
                           onClick={(e) => {
                             e.stopPropagation();
-                            setTimeout(() => {
-                              window.dispatchEvent(new CustomEvent('open-export-dialog', { 
-                                detail: { subOriginId: subOrigin.id } 
-                              }));
-                            }, 100);
+                            window.dispatchEvent(new CustomEvent('open-export-dialog', { 
+                              detail: { subOriginId: subOrigin.id } 
+                            }));
                           }}
                           className="gap-3 h-9 rounded-lg cursor-pointer"
                         >

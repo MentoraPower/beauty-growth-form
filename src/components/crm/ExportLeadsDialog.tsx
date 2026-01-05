@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { Download, FileText, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -43,15 +43,14 @@ export function ExportLeadsDialog() {
   const [pipelineCounts, setPipelineCounts] = useState<Record<string, number>>({});
   const [isLoading, setIsLoading] = useState(false);
   const [fileName, setFileName] = useState("");
+  const isProcessingRef = useRef(false);
 
   // Listen for custom event
   useEffect(() => {
-    let isProcessing = false;
-    
     const handleOpenExport = async (e: CustomEvent<{ subOriginId: string }>) => {
       // Prevent duplicate opens
-      if (isProcessing) return;
-      isProcessing = true;
+      if (isProcessingRef.current || isOpen) return;
+      isProcessingRef.current = true;
       
       setSubOriginId(e.detail.subOriginId);
       setIsOpen(true);
@@ -60,7 +59,7 @@ export function ExportLeadsDialog() {
       
       // Reset flag after a short delay
       setTimeout(() => {
-        isProcessing = false;
+        isProcessingRef.current = false;
       }, 500);
       
       // Fetch sub-origin name
@@ -102,7 +101,7 @@ export function ExportLeadsDialog() {
 
     window.addEventListener('open-export-dialog', handleOpenExport as EventListener);
     return () => window.removeEventListener('open-export-dialog', handleOpenExport as EventListener);
-  }, []);
+  }, [isOpen]);
 
   const toggleColumn = (key: string) => {
     setColumns(prev => 
