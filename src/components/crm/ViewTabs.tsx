@@ -1,4 +1,4 @@
-import { useRef, useLayoutEffect, useState, memo, ReactNode, useEffect } from "react";
+import { useRef, useLayoutEffect, useState, memo, ReactNode, useMemo } from "react";
 import { cn } from "@/lib/utils";
 import {
   DndContext,
@@ -160,11 +160,16 @@ export const ViewTabs = memo(function ViewTabs({ activeView, onViewChange, onSet
     })
   );
 
-  // Get visible tabs in order
-  const visibleTabs = tabConfig.order
-    .filter(id => !tabConfig.hidden.includes(id))
-    .map(id => defaultTabs.find(t => t.id === id))
-    .filter((t): t is TabItem => t !== undefined);
+  // Get visible tabs in order - memoized to avoid infinite loops
+  const visibleTabs = useMemo(() => {
+    return tabConfig.order
+      .filter(id => !tabConfig.hidden.includes(id))
+      .map(id => defaultTabs.find(t => t.id === id))
+      .filter((t): t is TabItem => t !== undefined);
+  }, [tabConfig.order, tabConfig.hidden]);
+
+  // Stable key for visible tabs to use in dependencies
+  const visibleTabsKey = visibleTabs.map(t => t.id).join(',');
 
   // Update indicator position when active view changes
   useLayoutEffect(() => {
@@ -180,7 +185,7 @@ export const ViewTabs = memo(function ViewTabs({ activeView, onViewChange, onSet
         width: tabRect.width,
       });
     }
-  }, [activeView, visibleTabs]);
+  }, [activeView, visibleTabsKey]);
 
   const setTabRef = (id: CRMView) => (el: HTMLButtonElement | null) => {
     if (el) {
