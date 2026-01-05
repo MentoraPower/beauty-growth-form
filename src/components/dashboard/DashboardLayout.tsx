@@ -661,7 +661,7 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
             }}
             className="fixed transition-[left] duration-300 ease-out"
           >
-            <div className={cn("h-full overflow-hidden relative flex flex-col bg-background", isDisparoActive ? "" : "pt-1 pb-3 pr-3")}>
+            <div className={cn("h-full overflow-hidden relative flex flex-col bg-background", isDisparoActive ? "" : "pt-1 pb-3 px-3")}>
               <PageTransition>
                 <RouteContentMemo>
                   {children}
