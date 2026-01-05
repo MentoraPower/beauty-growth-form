@@ -512,28 +512,35 @@ export function ChartRenderer({
         return renderEmptyState();
       }
       const maxCount = Math.max(...barData.map(d => d.count), 1);
+      const totalCount = barData.reduce((sum, d) => sum + d.count, 0);
       
       return (
         <div className="h-full flex flex-col justify-between py-1 gap-1">
           {barData.map((item, index) => {
-            const percentage = (item.count / maxCount) * 100;
+            const barPercentage = (item.count / maxCount) * 100;
+            const sharePercentage = totalCount > 0 ? ((item.count / totalCount) * 100).toFixed(1) : '0';
             return (
               <div key={index} className="flex flex-col gap-1 flex-1 min-h-0 justify-center">
                 {/* Label row - always visible above bar */}
                 <div className="flex items-center justify-between px-1">
-                  <span className="text-xs font-medium text-foreground truncate max-w-[70%]">
+                  <span className="text-xs font-medium text-foreground truncate max-w-[60%]">
                     {item.name}
                   </span>
-                  <span className="text-sm font-bold text-foreground shrink-0">
-                    {item.count}
-                  </span>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <span className="text-xs text-muted-foreground">
+                      {sharePercentage}%
+                    </span>
+                    <span className="text-sm font-bold text-foreground">
+                      {item.count}
+                    </span>
+                  </div>
                 </div>
                 {/* Bar */}
                 <div className="w-full bg-muted/50 rounded-lg overflow-hidden" style={{ height: '40px' }}>
                   <div 
                     className="h-full rounded-lg transition-all duration-700 ease-out"
                     style={{ 
-                      width: `${Math.max(percentage, 2)}%`,
+                      width: `${Math.max(barPercentage, 2)}%`,
                       background: `linear-gradient(90deg, ${MODERN_COLORS[index % MODERN_COLORS.length].gradient[1]}, ${MODERN_COLORS[index % MODERN_COLORS.length].gradient[0]})`,
                     }}
                   />
