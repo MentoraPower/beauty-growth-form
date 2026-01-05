@@ -97,8 +97,8 @@ function SortableTab({ tab, isActive, onViewChange, onTabHover, onHide, setTabRe
           onMouseEnter={() => onTabHover?.(tab.id)}
           style={style}
           className={cn(
-            "relative text-[13px] font-semibold tracking-wide transition-colors duration-150 pb-0.5 cursor-grab active:cursor-grabbing",
-            isActive 
+            "relative text-[13px] font-semibold tracking-wide transition-colors duration-150 pb-0.5",
+            isActive
               ? "text-foreground"
               : "text-muted-foreground hover:text-foreground/80"
           )}
