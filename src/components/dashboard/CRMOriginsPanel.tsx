@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { Kanban, ChevronRight, ChevronsRight, Folder, FolderOpen, MoreVertical, Plus, Pencil, Trash2, GripVertical, CalendarDays, ListTodo, Search, LayoutGrid, FileSpreadsheet, Copy, Link, Settings } from "lucide-react";
+import { Kanban, ChevronRight, ChevronsRight, Folder, FolderOpen, MoreVertical, Plus, Pencil, Trash2, GripVertical, CalendarDays, ListTodo, Search, LayoutGrid, Copy, Settings } from "lucide-react";
+import googleSheetsIcon from "@/assets/google-sheets-icon.png";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
@@ -429,23 +430,8 @@ function SortableOriginItem({
                           }}
                           className="gap-3 h-9 rounded-lg cursor-pointer"
                         >
-                          <svg className="h-4 w-4 text-[#0F9D58]" viewBox="0 0 24 24" fill="currentColor">
-                            <path d="M19 11V9h-4V5h-2v4H9v2h4v4h2v-4h4zm2-8H3c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h18c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H3V5h18v14z"/>
-                          </svg>
+                          <img src={googleSheetsIcon} alt="Google Sheets" className="h-4 w-4" />
                           <span className="text-[13px]">Exportar para Planilha</span>
-                        </DropdownMenuItem>
-
-                        <DropdownMenuItem 
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            const url = `${window.location.origin}/crm?origin=${subOrigin.id}`;
-                            navigator.clipboard.writeText(url);
-                            toast.success("Link copiado!");
-                          }}
-                          className="gap-3 h-9 rounded-lg cursor-pointer"
-                        >
-                          <Link className="h-4 w-4 text-muted-foreground" />
-                          <span className="text-[13px]">Copiar link</span>
                         </DropdownMenuItem>
 
                         {userPermissions.isAdmin && (
