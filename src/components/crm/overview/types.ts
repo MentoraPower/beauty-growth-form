@@ -18,9 +18,7 @@ export type DataSource =
   | "total_leads"
   | "recent_leads"
   | "leads_by_tag"
-  | "leads_by_utm_source"
-  | "leads_by_utm_medium"
-  | "leads_by_utm_campaign";
+  | "leads_by_utm";
 
 export interface OverviewCard {
   id: string;
@@ -85,33 +83,13 @@ export const CARD_TEMPLATES: CardTemplate[] = [
     category: "charts",
   },
   {
-    id: "leads_by_utm_source",
-    title: "Gráfico de Pizza - UTM Source",
-    description: "Distribuição de leads por utm_source",
-    chartType: "pie",
-    dataSource: "leads_by_utm_source",
-    defaultSize: { widthPercent: 30, height: 360 },
-    icon: "Link",
-    category: "charts",
-  },
-  {
-    id: "leads_by_utm_medium",
-    title: "Gráfico de Barras - UTM Medium",
-    description: "Distribuição de leads por utm_medium",
+    id: "leads_by_utm",
+    title: "Gráfico de Barras - Leads por UTM",
+    description: "Distribuição de leads por origem de tráfego (UTM)",
     chartType: "bar_vertical",
-    dataSource: "leads_by_utm_medium",
+    dataSource: "leads_by_utm",
     defaultSize: { widthPercent: 40, height: 320 },
-    icon: "BarChart3",
-    category: "charts",
-  },
-  {
-    id: "leads_by_utm_campaign",
-    title: "Gráfico de Pizza - UTM Campaign",
-    description: "Distribuição de leads por utm_campaign",
-    chartType: "pie",
-    dataSource: "leads_by_utm_campaign",
-    defaultSize: { widthPercent: 30, height: 360 },
-    icon: "Target",
+    icon: "Link",
     category: "charts",
   },
   {

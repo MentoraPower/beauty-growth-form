@@ -108,59 +108,42 @@ export function ChartRenderer({
           .slice(0, 8);
       }
       case "leads_by_tag": {
-        const tagCounts: Record<string, { name: string; count: number; color: string }> = {};
+        const tagCounts: Record<string, { name: string; count: number; value: number; color: string }> = {};
         leadTags.forEach((tag, index) => {
           if (!tagCounts[tag.name]) {
             tagCounts[tag.name] = { 
               name: tag.name, 
               count: 0, 
+              value: 0,
               color: tag.color || MODERN_COLORS[index % MODERN_COLORS.length].solid 
             };
           }
           tagCounts[tag.name].count++;
+          tagCounts[tag.name].value++;
         });
         return Object.values(tagCounts).sort((a, b) => b.count - a.count).slice(0, 10);
       }
-      case "leads_by_utm_source": {
+      case "leads_by_utm": {
         const counts: Record<string, number> = {};
         leads.forEach((lead) => {
-          const value = (lead as any).utm_source || "Sem UTM";
-          counts[value] = (counts[value] || 0) + 1;
+          // Combine utm_source and utm_medium for better grouping
+          const source = (lead as any).utm_source;
+          const medium = (lead as any).utm_medium;
+          const campaign = (lead as any).utm_campaign;
+          
+          let label = "Sem UTM";
+          if (source || medium || campaign) {
+            const parts = [source, medium, campaign].filter(Boolean);
+            label = parts.join(" / ") || "Sem UTM";
+          }
+          
+          counts[label] = (counts[label] || 0) + 1;
         });
         return Object.entries(counts)
           .map(([name, value], index) => ({
             name,
             value,
-            color: MODERN_COLORS[index % MODERN_COLORS.length].solid,
-          }))
-          .sort((a, b) => b.value - a.value)
-          .slice(0, 10);
-      }
-      case "leads_by_utm_medium": {
-        const counts: Record<string, number> = {};
-        leads.forEach((lead) => {
-          const value = (lead as any).utm_medium || "Sem UTM";
-          counts[value] = (counts[value] || 0) + 1;
-        });
-        return Object.entries(counts)
-          .map(([name, count], index) => ({
-            name,
-            count,
-            color: MODERN_COLORS[index % MODERN_COLORS.length].solid,
-          }))
-          .sort((a, b) => b.count - a.count)
-          .slice(0, 10);
-      }
-      case "leads_by_utm_campaign": {
-        const counts: Record<string, number> = {};
-        leads.forEach((lead) => {
-          const value = (lead as any).utm_campaign || "Sem UTM";
-          counts[value] = (counts[value] || 0) + 1;
-        });
-        return Object.entries(counts)
-          .map(([name, value], index) => ({
-            name,
-            value,
+            count: value, // for horizontal bar compatibility
             color: MODERN_COLORS[index % MODERN_COLORS.length].solid,
           }))
           .sort((a, b) => b.value - a.value)
