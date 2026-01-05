@@ -420,11 +420,12 @@ function SortableOriginItem({
                       >
                         {/* Export */}
                         <DropdownMenuItem 
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            window.dispatchEvent(new CustomEvent('open-export-dialog', { 
-                              detail: { subOriginId: subOrigin.id } 
-                            }));
+                          onSelect={() => {
+                            requestAnimationFrame(() => {
+                              window.dispatchEvent(new CustomEvent('open-export-dialog', { 
+                                detail: { subOriginId: subOrigin.id } 
+                              }));
+                            });
                           }}
                           className="gap-3 h-9 rounded-lg cursor-pointer"
                         >
