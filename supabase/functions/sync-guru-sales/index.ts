@@ -65,9 +65,9 @@ Deno.serve(async (req) => {
     do {
       const guruUrl = new URL("https://digitalmanager.guru/api/v2/transactions");
       guruUrl.searchParams.set("product_name", PRODUCT_NAME);
-      guruUrl.searchParams.set("confirmed_at_ini", START_DATE);
-      guruUrl.searchParams.set("confirmed_at_end", END_DATE);
-      guruUrl.searchParams.set("status", "approved");
+      guruUrl.searchParams.set("ordered_at_ini", START_DATE);
+      guruUrl.searchParams.set("ordered_at_end", END_DATE);
+      guruUrl.searchParams.set("status", "approved"); // Only approved sales
       guruUrl.searchParams.set("per_page", "100");
       guruUrl.searchParams.set("page", String(currentPage));
 
