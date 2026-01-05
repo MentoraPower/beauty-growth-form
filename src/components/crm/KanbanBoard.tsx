@@ -1251,7 +1251,7 @@ export function KanbanBoard() {
       {/* Header - all on same line */}
       <div className="flex items-center gap-4 mb-1">
         {/* Title - left */}
-        <h1 className="text-xs font-medium tracking-wide text-muted-foreground flex-shrink-0">{pageTitle}</h1>
+        <h1 className="text-xs font-bold tracking-wide text-foreground/70 flex-shrink-0">{pageTitle}</h1>
 
         {/* Hidden AutomationsDropdown - controlled externally */}
         {subOriginId && (
