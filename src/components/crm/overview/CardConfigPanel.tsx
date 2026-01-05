@@ -22,9 +22,7 @@ const DATA_SOURCES: Array<{ id: DataSource; title: string }> = [
   { id: "leads_over_time", title: "Leads ao Longo do Tempo" },
   { id: "recent_leads", title: "Leads Recentes" },
   { id: "leads_by_tag", title: "Leads por Tag" },
-  { id: "leads_by_utm_source", title: "Leads por UTM Source" },
-  { id: "leads_by_utm_medium", title: "Leads por UTM Medium" },
-  { id: "leads_by_utm_campaign", title: "Leads por UTM Campaign" },
+  { id: "leads_by_utm", title: "Leads por UTM" },
 ];
 
 export function CardConfigPanel({ 
