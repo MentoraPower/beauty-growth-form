@@ -82,12 +82,12 @@ export const VirtualizedKanbanColumn = memo(function VirtualizedKanbanColumn({
       <div
         className={`flex-1 min-h-0 rounded-xl rounded-b-none border border-b-0 transition-colors duration-100 flex flex-col overflow-hidden ${
           isTargeted
-            ? "bg-zinc-100 dark:bg-zinc-800 border-black/15 dark:border-white/15 border-dashed"
-            : "bg-zinc-100/70 dark:bg-zinc-800/50 border-black/10 dark:border-white/10"
+            ? "bg-zinc-100 dark:bg-zinc-900 border-black/15 dark:border-white/10 border-dashed"
+            : "bg-zinc-100/70 dark:bg-zinc-900/80 border-black/10 dark:border-white/[0.06]"
         }`}
       >
         {/* Header */}
-        <div className="px-4 pt-4 pb-2 border-b border-black/5">
+        <div className="px-4 pt-4 pb-2 border-b border-black/5 dark:border-white/[0.06]">
           <div className="flex items-center justify-between mb-2">
             <h2 className="font-semibold text-sm">{pipeline.nome}</h2>
             <span className={`text-xs px-2 py-0.5 rounded-full transition-colors ${
