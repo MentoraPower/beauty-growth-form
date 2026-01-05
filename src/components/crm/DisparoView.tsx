@@ -2369,7 +2369,7 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
     <div className="flex h-full bg-background p-3 gap-3">
       {/* Chat Area */}
       <div className={cn(
-        "flex flex-col bg-card rounded-2xl border border-border overflow-hidden transition-all duration-300",
+        "flex flex-col overflow-hidden transition-all duration-300",
         sidePanelOpen || csvPanelOpen ? "flex-1 min-w-0" : "flex-1"
       )}>
         {/* Loading state */}
