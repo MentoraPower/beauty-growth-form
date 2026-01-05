@@ -1333,6 +1333,7 @@ export type Database = {
           card_id: string
           card_order: number
           chart_type: string
+          config: Json | null
           created_at: string
           data_source: string | null
           height: number
@@ -1347,6 +1348,7 @@ export type Database = {
           card_id: string
           card_order?: number
           chart_type: string
+          config?: Json | null
           created_at?: string
           data_source?: string | null
           height?: number
@@ -1361,6 +1363,7 @@ export type Database = {
           card_id?: string
           card_order?: number
           chart_type?: string
+          config?: Json | null
           created_at?: string
           data_source?: string | null
           height?: number

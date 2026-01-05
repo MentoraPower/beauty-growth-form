@@ -277,6 +277,7 @@ export function OverviewView({ leads, pipelines, leadTags, subOriginId, onAddDia
     width_percent: number | null;
     height: number;
     card_order: number;
+    config?: unknown;
   }): OverviewCard => ({
     id: row.card_id,
     title: row.title,
@@ -287,6 +288,9 @@ export function OverviewView({ leads, pipelines, leadTags, subOriginId, onAddDia
       height: row.height 
     },
     order: row.card_order,
+    config: (row.config && typeof row.config === 'object' && !Array.isArray(row.config)) 
+      ? row.config as Record<string, any> 
+      : undefined,
   }), []);
 
   // Load cards from Supabase and subscribe to realtime updates
@@ -413,6 +417,7 @@ export function OverviewView({ leads, pipelines, leadTags, subOriginId, onAddDia
             width: Math.round((card.size.widthPercent / 100) * (containerWidth || 1000)), // legacy column
             height: Math.round(card.size.height),
             card_order: card.order,
+            config: card.config || {},
           },
           { onConflict: "sub_origin_id,card_id" }
         );
@@ -438,6 +443,7 @@ export function OverviewView({ leads, pipelines, leadTags, subOriginId, onAddDia
         width: Math.round((card.size.widthPercent / 100) * (containerWidth || 1000)), // legacy column
         height: Math.round(card.size.height),
         card_order: card.order,
+        config: card.config || {},
       }));
 
       const { error } = await supabase
@@ -485,6 +491,7 @@ export function OverviewView({ leads, pipelines, leadTags, subOriginId, onAddDia
           width: Math.round((newCard.size.widthPercent / 100) * (containerWidth || 1000)), // legacy column
           height: newCard.size.height,
           card_order: newCard.order,
+          config: newCard.config || {},
         });
 
       if (error) throw error;
