@@ -343,7 +343,7 @@ export const ViewTabs = memo(function ViewTabs({ activeView, onViewChange, onSet
                       hiddenTabs.map(tab => (
                         <DropdownMenuItem
                           key={tab.id}
-                          onClick={() => handleShowTab(tab.id)}
+                          onSelect={() => handleShowTab(tab.id)}
                           className="cursor-pointer"
                         >
                           {tab.label}
