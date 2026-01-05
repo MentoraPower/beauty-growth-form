@@ -21,7 +21,7 @@ import {
   ContextMenuItem,
   ContextMenuTrigger,
 } from "@/components/ui/context-menu";
-import { GripVertical, X } from "lucide-react";
+import { X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
 
@@ -82,34 +82,25 @@ function SortableTab({ tab, isActive, onViewChange, onTabHover, onHide, setTabRe
   return (
     <ContextMenu>
       <ContextMenuTrigger asChild>
-        <div
-          ref={setNodeRef}
+        <button
+          ref={(el) => {
+            setNodeRef(el);
+            setTabRef(el);
+          }}
+          onClick={() => onViewChange(tab.id)}
+          onMouseEnter={() => onTabHover?.(tab.id)}
           style={style}
-          className="relative flex items-center group"
+          className={cn(
+            "relative text-[13px] font-semibold tracking-wide transition-colors duration-150 pb-0.5 cursor-grab active:cursor-grabbing",
+            isActive 
+              ? "text-foreground"
+              : "text-muted-foreground hover:text-foreground/80"
+          )}
+          {...attributes}
+          {...listeners}
         >
-          {/* Drag handle - appears on hover */}
-          <div
-            {...attributes}
-            {...listeners}
-            className="absolute -left-4 opacity-0 group-hover:opacity-60 hover:opacity-100 cursor-grab active:cursor-grabbing transition-opacity"
-          >
-            <GripVertical className="w-3 h-3 text-muted-foreground" />
-          </div>
-          
-          <button
-            ref={setTabRef}
-            onClick={() => onViewChange(tab.id)}
-            onMouseEnter={() => onTabHover?.(tab.id)}
-            className={cn(
-              "relative text-[13px] font-semibold tracking-wide transition-colors duration-150 pb-0.5",
-              isActive 
-                ? "text-foreground"
-                : "text-muted-foreground hover:text-foreground/80"
-            )}
-          >
-            {tab.label}
-          </button>
-        </div>
+          {tab.label}
+        </button>
       </ContextMenuTrigger>
       <ContextMenuContent className="min-w-[160px]">
         <ContextMenuItem
