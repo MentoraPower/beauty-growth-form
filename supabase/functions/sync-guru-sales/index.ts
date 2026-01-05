@@ -53,41 +53,60 @@ Deno.serve(async (req) => {
     const PIPELINE_COMPROU_GURU_ID = "459f02f0-43b1-42c2-a57b-0f4db0d751d9";
     const PRODUCT_NAME = "Power Academy";
     const START_DATE = "2026-01-04";
-    const END_DATE = "2026-01-05";
+    const END_DATE = "2026-01-06"; // Include full day of 05/01
 
     console.log(`[sync-guru-sales] Starting sync for product "${PRODUCT_NAME}" from ${START_DATE} to ${END_DATE}`);
 
-    // Fetch transactions from Guru API
-    // API requires confirmed_at_ini and confirmed_at_end for approved transactions
-    const guruUrl = new URL("https://digitalmanager.guru/api/v2/transactions");
-    guruUrl.searchParams.set("product_name", PRODUCT_NAME);
-    guruUrl.searchParams.set("confirmed_at_ini", START_DATE);
-    guruUrl.searchParams.set("confirmed_at_end", END_DATE);
-    guruUrl.searchParams.set("status", "approved");
-    guruUrl.searchParams.set("per_page", "100");
+    // Fetch ALL transactions from Guru API with pagination
+    const allTransactions: GuruTransaction[] = [];
+    let currentPage = 1;
+    let lastPage = 1;
 
-    console.log(`[sync-guru-sales] Fetching from Guru: ${guruUrl.toString()}`);
+    do {
+      const guruUrl = new URL("https://digitalmanager.guru/api/v2/transactions");
+      guruUrl.searchParams.set("product_name", PRODUCT_NAME);
+      guruUrl.searchParams.set("confirmed_at_ini", START_DATE);
+      guruUrl.searchParams.set("confirmed_at_end", END_DATE);
+      guruUrl.searchParams.set("status", "approved");
+      guruUrl.searchParams.set("per_page", "100");
+      guruUrl.searchParams.set("page", String(currentPage));
 
-    const guruResponse = await fetch(guruUrl.toString(), {
-      method: "GET",
-      headers: {
-        "Authorization": `Bearer ${guruToken}`,
-        "Accept": "application/json",
-        "Content-Type": "application/json",
-      },
-    });
+      console.log(`[sync-guru-sales] Fetching page ${currentPage} from Guru: ${guruUrl.toString()}`);
 
-    if (!guruResponse.ok) {
-      const errorText = await guruResponse.text();
-      console.error(`[sync-guru-sales] Guru API error: ${guruResponse.status} - ${errorText}`);
-      throw new Error(`Guru API error: ${guruResponse.status} - ${errorText}`);
-    }
+      const guruResponse = await fetch(guruUrl.toString(), {
+        method: "GET",
+        headers: {
+          "Authorization": `Bearer ${guruToken}`,
+          "Accept": "application/json",
+          "Content-Type": "application/json",
+        },
+      });
 
-    const guruData: GuruApiResponse = await guruResponse.json();
-    console.log(`[sync-guru-sales] Guru returned ${guruData.data?.length || 0} transactions`);
+      if (!guruResponse.ok) {
+        const errorText = await guruResponse.text();
+        console.error(`[sync-guru-sales] Guru API error: ${guruResponse.status} - ${errorText}`);
+        throw new Error(`Guru API error: ${guruResponse.status} - ${errorText}`);
+      }
+
+      const guruData: GuruApiResponse = await guruResponse.json();
+      
+      if (guruData.data && guruData.data.length > 0) {
+        allTransactions.push(...guruData.data);
+      }
+      
+      // Update pagination info
+      if (guruData.meta) {
+        lastPage = guruData.meta.last_page;
+        console.log(`[sync-guru-sales] Page ${currentPage}/${lastPage}, got ${guruData.data?.length || 0} transactions, total so far: ${allTransactions.length}`);
+      }
+      
+      currentPage++;
+    } while (currentPage <= lastPage);
+
+    console.log(`[sync-guru-sales] Guru returned ${allTransactions.length} total transactions across all pages`);
 
     const results = {
-      total_sales: guruData.data?.length || 0,
+      total_sales: allTransactions.length,
       moved_to_comprou: 0,
       already_in_comprou: 0,
       created_new: 0,
@@ -95,7 +114,7 @@ Deno.serve(async (req) => {
       details: [] as { email: string; action: string; name: string }[],
     };
 
-    if (!guruData.data || guruData.data.length === 0) {
+    if (allTransactions.length === 0) {
       console.log("[sync-guru-sales] No sales found for the specified criteria");
       return new Response(JSON.stringify(results), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -103,7 +122,7 @@ Deno.serve(async (req) => {
     }
 
     // Process each sale
-    for (const sale of guruData.data) {
+    for (const sale of allTransactions) {
       const contact = sale.contact;
       const email = contact.email?.toLowerCase()?.trim();
       const phone = contact.phone_number?.replace(/\D/g, "");
