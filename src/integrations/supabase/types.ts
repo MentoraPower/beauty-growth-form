@@ -153,6 +153,41 @@ export type Database = {
           },
         ]
       }
+      crm_tab_preferences: {
+        Row: {
+          created_at: string
+          hidden_tabs: string[]
+          id: string
+          tab_order: string[]
+          updated_at: string
+          workspace_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          hidden_tabs?: string[]
+          id?: string
+          tab_order?: string[]
+          updated_at?: string
+          workspace_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          hidden_tabs?: string[]
+          id?: string
+          tab_order?: string[]
+          updated_at?: string
+          workspace_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_tab_preferences_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: true
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       crm_webhooks: {
         Row: {
           auto_tag_color: string | null
