@@ -65,3 +65,6 @@ verify_jwt = false
 
 [functions.save-csv-dispatch-list]
 verify_jwt = false
+
+[functions.sync-guru-sales]
+verify_jwt = false
