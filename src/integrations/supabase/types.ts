@@ -158,6 +158,7 @@ export type Database = {
           created_at: string
           hidden_tabs: string[]
           id: string
+          sub_origin_id: string | null
           tab_order: string[]
           updated_at: string
           workspace_id: string | null
@@ -166,6 +167,7 @@ export type Database = {
           created_at?: string
           hidden_tabs?: string[]
           id?: string
+          sub_origin_id?: string | null
           tab_order?: string[]
           updated_at?: string
           workspace_id?: string | null
@@ -174,15 +176,23 @@ export type Database = {
           created_at?: string
           hidden_tabs?: string[]
           id?: string
+          sub_origin_id?: string | null
           tab_order?: string[]
           updated_at?: string
           workspace_id?: string | null
         }
         Relationships: [
           {
+            foreignKeyName: "crm_tab_preferences_sub_origin_id_fkey"
+            columns: ["sub_origin_id"]
+            isOneToOne: true
+            referencedRelation: "crm_sub_origins"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "crm_tab_preferences_workspace_id_fkey"
             columns: ["workspace_id"]
-            isOneToOne: true
+            isOneToOne: false
             referencedRelation: "workspaces"
             referencedColumns: ["id"]
           },
