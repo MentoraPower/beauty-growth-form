@@ -43,24 +43,30 @@ export function ExportLeadsDialog() {
   const [pipelineCounts, setPipelineCounts] = useState<Record<string, number>>({});
   const [isLoading, setIsLoading] = useState(false);
   const [fileName, setFileName] = useState("");
-  const isProcessingRef = useRef(false);
+  const lastOpenAtRef = useRef(0);
+  const isOpenRef = useRef(false);
 
-  // Listen for custom event
+  // Keep isOpenRef in sync with isOpen state
+  useEffect(() => {
+    isOpenRef.current = isOpen;
+  }, [isOpen]);
+
+  // Listen for custom event - registered only once
   useEffect(() => {
     const handleOpenExport = async (e: CustomEvent<{ subOriginId: string }>) => {
-      // Prevent duplicate opens
-      if (isProcessingRef.current || isOpen) return;
-      isProcessingRef.current = true;
+      const now = Date.now();
+      
+      // Prevent duplicate opens: check if already open or opened recently (800ms throttle)
+      if (isOpenRef.current || now - lastOpenAtRef.current < 800) {
+        return;
+      }
+      
+      lastOpenAtRef.current = now;
       
       setSubOriginId(e.detail.subOriginId);
       setIsOpen(true);
       setIsLoading(true);
       setSelectedPipelines(new Set(["all"]));
-      
-      // Reset flag after a short delay
-      setTimeout(() => {
-        isProcessingRef.current = false;
-      }, 500);
       
       // Fetch sub-origin name
       const { data: subOriginData } = await supabase
@@ -101,7 +107,7 @@ export function ExportLeadsDialog() {
 
     window.addEventListener('open-export-dialog', handleOpenExport as EventListener);
     return () => window.removeEventListener('open-export-dialog', handleOpenExport as EventListener);
-  }, [isOpen]);
+  }, []);
 
   const toggleColumn = (key: string) => {
     setColumns(prev => 
