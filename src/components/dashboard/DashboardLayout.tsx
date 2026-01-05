@@ -458,7 +458,7 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
               willChange: animationsEnabled ? 'transform' : 'auto',
             }}
             className={cn(
-              "h-full overflow-hidden bg-background",
+              "h-full overflow-hidden bg-card rounded-2xl border border-border",
               animationsEnabled && "transition-transform duration-300 ease-out"
             )}
           >
@@ -506,7 +506,7 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
               willChange: animationsEnabled ? 'transform' : 'auto',
             }}
             className={cn(
-              "h-full overflow-hidden bg-background",
+              "h-full overflow-hidden bg-card rounded-2xl border border-border",
               animationsEnabled && "transition-transform duration-300 ease-out"
             )}
           >
