@@ -128,8 +128,9 @@ export function KanbanBoard() {
   const [localLeads, setLocalLeads] = useState<Lead[]>([]);
   const isReorderingRef = useRef(false);
   const [searchQuery, setSearchQuery] = useState(urlSearchQuery);
-  const [filterMQL, setFilterMQL] = useState<"all" | "mql" | "non-mql">("all");
   const [filterTags, setFilterTags] = useState<string[]>([]);
+  const [filterAssignedTo, setFilterAssignedTo] = useState<string[]>([]);
+  const [datePreset, setDatePreset] = useState<"all" | "today" | "yesterday" | "7days" | "30days" | "custom">("all");
   const [startDate, setStartDate] = useState<Date | undefined>(undefined);
   const [endDate, setEndDate] = useState<Date | undefined>(undefined);
   const [emailBuilderProps, setEmailBuilderProps] = useState<EmailBuilderState["props"] | null>(null);
@@ -1089,11 +1090,11 @@ export function KanbanBoard() {
       );
     }
     
-    // Filter by MQL status
-    if (filterMQL === "mql") {
-      baseLeads = baseLeads.filter(lead => lead.is_mql === true);
-    } else if (filterMQL === "non-mql") {
-      baseLeads = baseLeads.filter(lead => lead.is_mql === false);
+    // Filter by assigned member
+    if (filterAssignedTo.length > 0) {
+      baseLeads = baseLeads.filter(lead => 
+        lead.assigned_to && filterAssignedTo.includes(lead.assigned_to)
+      );
     }
     
     // Filter by tags
@@ -1106,26 +1107,51 @@ export function KanbanBoard() {
       baseLeads = baseLeads.filter(lead => leadIdsWithTags.has(lead.id));
     }
     
-    // Filter by date range
-    if (startDate) {
-      const start = new Date(startDate);
+    // Filter by date range based on preset or custom dates
+    const now = new Date();
+    let filterStartDate = startDate;
+    let filterEndDate = endDate;
+    
+    if (datePreset === "today") {
+      filterStartDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      filterEndDate = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
+    } else if (datePreset === "yesterday") {
+      const yesterday = new Date(now);
+      yesterday.setDate(yesterday.getDate() - 1);
+      filterStartDate = new Date(yesterday.getFullYear(), yesterday.getMonth(), yesterday.getDate());
+      filterEndDate = new Date(yesterday.getFullYear(), yesterday.getMonth(), yesterday.getDate(), 23, 59, 59, 999);
+    } else if (datePreset === "7days") {
+      const weekAgo = new Date(now);
+      weekAgo.setDate(weekAgo.getDate() - 7);
+      filterStartDate = new Date(weekAgo.getFullYear(), weekAgo.getMonth(), weekAgo.getDate());
+      filterEndDate = now;
+    } else if (datePreset === "30days") {
+      const monthAgo = new Date(now);
+      monthAgo.setDate(monthAgo.getDate() - 30);
+      filterStartDate = new Date(monthAgo.getFullYear(), monthAgo.getMonth(), monthAgo.getDate());
+      filterEndDate = now;
+    }
+    
+    if (filterStartDate) {
+      const start = new Date(filterStartDate);
       start.setHours(0, 0, 0, 0);
       baseLeads = baseLeads.filter(lead => new Date(lead.created_at) >= start);
     }
-    if (endDate) {
-      const end = new Date(endDate);
+    if (filterEndDate) {
+      const end = new Date(filterEndDate);
       end.setHours(23, 59, 59, 999);
       baseLeads = baseLeads.filter(lead => new Date(lead.created_at) <= end);
     }
     
     return baseLeads;
-  }, [localLeads, leads, searchQuery, filterMQL, filterTags, leadTags, startDate, endDate]);
+  }, [localLeads, leads, searchQuery, filterAssignedTo, filterTags, leadTags, datePreset, startDate, endDate]);
 
-  const hasActiveFilters = filterMQL !== "all" || filterTags.length > 0 || startDate !== undefined || endDate !== undefined;
+  const hasActiveFilters = filterTags.length > 0 || filterAssignedTo.length > 0 || datePreset !== "all";
 
   const clearFilters = () => {
-    setFilterMQL("all");
     setFilterTags([]);
+    setFilterAssignedTo([]);
+    setDatePreset("all");
     setStartDate(undefined);
     setEndDate(undefined);
   };
@@ -1308,7 +1334,7 @@ export function KanbanBoard() {
                 Filtros
                 {hasActiveFilters && (
                   <span className="ml-1 px-1.5 py-0.5 text-[10px] bg-white/20 rounded-full">
-                    {(filterMQL !== "all" ? 1 : 0) + filterTags.length + (startDate ? 1 : 0) + (endDate ? 1 : 0)}
+                    {filterTags.length + filterAssignedTo.length + (datePreset !== "all" ? 1 : 0)}
                   </span>
                 )}
               </Button>
@@ -1330,69 +1356,51 @@ export function KanbanBoard() {
               </div>
 
               <div className="p-3 space-y-4">
-                {/* MQL Status Section */}
-                <div className="space-y-2">
-                  <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">
-                    Qualificação
-                  </span>
-                  
-                  <div className="space-y-2">
-                    {/* MQL Toggle */}
-                    <div className="flex items-center justify-between p-2.5 rounded-lg bg-background border border-border">
-                      <div className="flex items-center gap-2">
-                        <span className="w-2 h-2 rounded-full bg-emerald-500" />
-                        <span className="text-xs font-medium">MQL</span>
-                      </div>
-                      <button
-                        onClick={() => setFilterMQL(filterMQL === "mql" ? "all" : "mql")}
-                        className={`relative w-9 h-5 rounded-full transition-colors ${
-                          filterMQL === "mql" ? "bg-emerald-500" : "bg-muted"
-                        }`}
-                      >
-                        <span
-                          className={`absolute left-0.5 top-0.5 w-4 h-4 rounded-full bg-white shadow-sm transition-transform ${
-                            filterMQL === "mql" ? "translate-x-4" : "translate-x-0"
-                          }`}
-                        />
-                      </button>
-                    </div>
-                    
-                    {/* Non-MQL Toggle */}
-                    <div className="flex items-center justify-between p-2.5 rounded-lg bg-background border border-border">
-                      <div className="flex items-center gap-2">
-                        <span className="w-2 h-2 rounded-full bg-orange-500" />
-                        <span className="text-xs font-medium">Não MQL</span>
-                      </div>
-                      <button
-                        onClick={() => setFilterMQL(filterMQL === "non-mql" ? "all" : "non-mql")}
-                        className={`relative w-9 h-5 rounded-full transition-colors ${
-                          filterMQL === "non-mql" ? "bg-orange-500" : "bg-muted"
-                        }`}
-                      >
-                        <span
-                          className={`absolute left-0.5 top-0.5 w-4 h-4 rounded-full bg-white shadow-sm transition-transform ${
-                            filterMQL === "non-mql" ? "translate-x-4" : "translate-x-0"
-                          }`}
-                        />
-                      </button>
-                    </div>
-                  </div>
-                </div>
-
                 {/* Date Filter Section */}
                 <div className="space-y-2">
                   <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">
                     Data de Cadastro
                   </span>
                   
-                  <div className="grid grid-cols-2 gap-2">
-                    {/* Start Date */}
+                  {/* Date Preset Buttons */}
+                  <div className="grid grid-cols-2 gap-1.5">
+                    {[
+                      { key: "today", label: "Hoje" },
+                      { key: "yesterday", label: "Ontem" },
+                      { key: "7days", label: "Últimos 7 dias" },
+                      { key: "30days", label: "Últimos 30 dias" },
+                    ].map((preset) => (
+                      <button
+                        key={preset.key}
+                        onClick={() => {
+                          setDatePreset(datePreset === preset.key ? "all" : preset.key as typeof datePreset);
+                          if (datePreset !== preset.key) {
+                            setStartDate(undefined);
+                            setEndDate(undefined);
+                          }
+                        }}
+                        className={cn(
+                          "px-3 py-2 text-xs rounded-lg border transition-colors text-left",
+                          datePreset === preset.key
+                            ? "bg-foreground text-background border-foreground"
+                            : "bg-background border-border hover:bg-muted"
+                        )}
+                      >
+                        {preset.label}
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* Custom Date Range */}
+                  <div className="grid grid-cols-2 gap-2 pt-1">
                     <Popover>
                       <PopoverTrigger asChild>
                         <button
+                          onClick={() => setDatePreset("custom")}
                           className={cn(
                             "flex items-center gap-2 w-full px-3 py-2 text-xs rounded-lg bg-background border border-border text-left",
-                            !startDate && "text-muted-foreground"
+                            !startDate && "text-muted-foreground",
+                            datePreset === "custom" && startDate && "border-foreground"
                           )}
                         >
                           <CalendarIcon className="w-3.5 h-3.5" />
@@ -1403,7 +1411,10 @@ export function KanbanBoard() {
                         <Calendar
                           mode="single"
                           selected={startDate}
-                          onSelect={setStartDate}
+                          onSelect={(date) => {
+                            setStartDate(date);
+                            setDatePreset("custom");
+                          }}
                           initialFocus
                           locale={ptBR}
                           className="pointer-events-auto"
@@ -1411,13 +1422,14 @@ export function KanbanBoard() {
                       </PopoverContent>
                     </Popover>
 
-                    {/* End Date */}
                     <Popover>
                       <PopoverTrigger asChild>
                         <button
+                          onClick={() => setDatePreset("custom")}
                           className={cn(
                             "flex items-center gap-2 w-full px-3 py-2 text-xs rounded-lg bg-background border border-border text-left",
-                            !endDate && "text-muted-foreground"
+                            !endDate && "text-muted-foreground",
+                            datePreset === "custom" && endDate && "border-foreground"
                           )}
                         >
                           <CalendarIcon className="w-3.5 h-3.5" />
@@ -1428,7 +1440,10 @@ export function KanbanBoard() {
                         <Calendar
                           mode="single"
                           selected={endDate}
-                          onSelect={setEndDate}
+                          onSelect={(date) => {
+                            setEndDate(date);
+                            setDatePreset("custom");
+                          }}
                           initialFocus
                           locale={ptBR}
                           className="pointer-events-auto"
@@ -1436,15 +1451,60 @@ export function KanbanBoard() {
                       </PopoverContent>
                     </Popover>
                   </div>
+                </div>
 
-                  {/* Clear dates */}
-                  {(startDate || endDate) && (
-                    <button
-                      onClick={() => { setStartDate(undefined); setEndDate(undefined); }}
-                      className="text-[10px] text-muted-foreground hover:text-foreground transition-colors"
-                    >
-                      Limpar datas
-                    </button>
+                {/* Responsáveis Section */}
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">
+                      Responsáveis
+                    </span>
+                    {filterAssignedTo.length > 0 && (
+                      <button 
+                        onClick={() => setFilterAssignedTo([])}
+                        className="text-[10px] text-muted-foreground hover:text-foreground transition-colors"
+                      >
+                        Limpar
+                      </button>
+                    )}
+                  </div>
+                  
+                  {/* Available Team Members */}
+                  {teamMembersData && teamMembersData.length > 0 ? (
+                    <div className="max-h-28 overflow-y-auto rounded-lg border border-border/50 divide-y divide-border/30">
+                      {teamMembersData.map((member) => (
+                        <button
+                          key={member.user_id}
+                          onClick={() => {
+                            if (filterAssignedTo.includes(member.user_id)) {
+                              setFilterAssignedTo(filterAssignedTo.filter(id => id !== member.user_id));
+                            } else {
+                              setFilterAssignedTo([...filterAssignedTo, member.user_id]);
+                            }
+                          }}
+                          className={cn(
+                            "w-full flex items-center gap-2.5 px-3 py-2 text-xs hover:bg-muted/50 transition-colors text-left",
+                            filterAssignedTo.includes(member.user_id) && "bg-muted"
+                          )}
+                        >
+                          {member.photo_url ? (
+                            <img src={member.photo_url} alt="" className="w-5 h-5 rounded-full object-cover" />
+                          ) : (
+                            <div className="w-5 h-5 rounded-full bg-muted flex items-center justify-center">
+                              <span className="text-[10px] font-medium">{member.name?.charAt(0) || "?"}</span>
+                            </div>
+                          )}
+                          <span className="truncate text-foreground">{member.name || "Sem nome"}</span>
+                          {filterAssignedTo.includes(member.user_id) && (
+                            <span className="ml-auto text-foreground">✓</span>
+                          )}
+                        </button>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-center py-4 text-xs text-muted-foreground bg-muted/20 rounded-lg border border-dashed border-border/50">
+                      Nenhum membro disponível
+                    </div>
                   )}
                 </div>
                 
