@@ -46,11 +46,22 @@ export function ExportLeadsDialog() {
 
   // Listen for custom event
   useEffect(() => {
+    let isProcessing = false;
+    
     const handleOpenExport = async (e: CustomEvent<{ subOriginId: string }>) => {
+      // Prevent duplicate opens
+      if (isProcessing) return;
+      isProcessing = true;
+      
       setSubOriginId(e.detail.subOriginId);
       setIsOpen(true);
       setIsLoading(true);
       setSelectedPipelines(new Set(["all"]));
+      
+      // Reset flag after a short delay
+      setTimeout(() => {
+        isProcessing = false;
+      }, 500);
       
       // Fetch sub-origin name
       const { data: subOriginData } = await supabase
