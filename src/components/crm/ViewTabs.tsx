@@ -1,4 +1,4 @@
-import { useRef, useLayoutEffect, useState, memo, ReactNode, useMemo } from "react";
+import { useRef, useLayoutEffect, useState, memo, ReactNode, useMemo, useEffect, useCallback } from "react";
 import { cn } from "@/lib/utils";
 import {
   DndContext,
@@ -22,6 +22,8 @@ import {
   ContextMenuTrigger,
 } from "@/components/ui/context-menu";
 import { GripVertical, X } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { useWorkspace } from "@/contexts/WorkspaceContext";
 
 type CRMView = "overview" | "quadro" | "lista" | "calendario" | "email";
 
@@ -45,35 +47,11 @@ const defaultTabs: TabItem[] = [
   { id: "calendario", label: "Calendário" },
 ];
 
-const STORAGE_KEY = "crm-tabs-config";
+const defaultOrder: CRMView[] = ["overview", "quadro", "lista", "calendario"];
 
 interface TabConfig {
   order: CRMView[];
   hidden: CRMView[];
-}
-
-function loadTabConfig(): TabConfig {
-  try {
-    const saved = localStorage.getItem(STORAGE_KEY);
-    if (saved) {
-      const parsed = JSON.parse(saved);
-      return {
-        order: parsed.order || defaultTabs.map(t => t.id),
-        hidden: parsed.hidden || [],
-      };
-    }
-  } catch (e) {
-    console.error("Failed to load tab config:", e);
-  }
-  return { order: defaultTabs.map(t => t.id), hidden: [] };
-}
-
-function saveTabConfig(config: TabConfig) {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(config));
-  } catch (e) {
-    console.error("Failed to save tab config:", e);
-  }
 }
 
 interface SortableTabProps {
@@ -150,7 +128,10 @@ export const ViewTabs = memo(function ViewTabs({ activeView, onViewChange, onSet
   const containerRef = useRef<HTMLDivElement>(null);
   const tabRefs = useRef<Map<CRMView, HTMLButtonElement>>(new Map());
   const [indicator, setIndicator] = useState({ left: 0, width: 0 });
-  const [tabConfig, setTabConfig] = useState<TabConfig>(loadTabConfig);
+  const [tabConfig, setTabConfig] = useState<TabConfig>({ order: defaultOrder, hidden: [] });
+  const [isLoading, setIsLoading] = useState(true);
+  const { currentWorkspace } = useWorkspace();
+  const saveTimeoutRef = useRef<number | null>(null);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -159,6 +140,79 @@ export const ViewTabs = memo(function ViewTabs({ activeView, onViewChange, onSet
       },
     })
   );
+
+  // Load tab config from database
+  useEffect(() => {
+    if (!currentWorkspace?.id) {
+      setIsLoading(false);
+      return;
+    }
+
+    const loadConfig = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('crm_tab_preferences')
+          .select('tab_order, hidden_tabs')
+          .eq('workspace_id', currentWorkspace.id)
+          .maybeSingle();
+
+        if (error) {
+          console.error('Error loading tab config:', error);
+        } else if (data) {
+          setTabConfig({
+            order: (data.tab_order as CRMView[]) || defaultOrder,
+            hidden: (data.hidden_tabs as CRMView[]) || [],
+          });
+        }
+      } catch (e) {
+        console.error('Failed to load tab config:', e);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadConfig();
+  }, [currentWorkspace?.id]);
+
+  // Save tab config to database (debounced)
+  const saveConfig = useCallback((config: TabConfig) => {
+    if (!currentWorkspace?.id) return;
+
+    // Clear previous timeout
+    if (saveTimeoutRef.current) {
+      window.clearTimeout(saveTimeoutRef.current);
+    }
+
+    // Debounce save to avoid too many requests
+    saveTimeoutRef.current = window.setTimeout(async () => {
+      try {
+        const { error } = await supabase
+          .from('crm_tab_preferences')
+          .upsert({
+            workspace_id: currentWorkspace.id,
+            tab_order: config.order,
+            hidden_tabs: config.hidden,
+          }, {
+            onConflict: 'workspace_id',
+          });
+
+        if (error) {
+          console.error('Error saving tab config:', error);
+        }
+      } catch (e) {
+        console.error('Failed to save tab config:', e);
+      }
+    }, 500);
+  }, [currentWorkspace?.id]);
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (saveTimeoutRef.current) {
+        window.clearTimeout(saveTimeoutRef.current);
+      }
+    };
+  }, []);
 
   // Get visible tabs in order - memoized to avoid infinite loops
   const visibleTabs = useMemo(() => {
@@ -206,7 +260,7 @@ export const ViewTabs = memo(function ViewTabs({ activeView, onViewChange, onSet
       const newConfig = { ...tabConfig, order: newOrder };
       
       setTabConfig(newConfig);
-      saveTabConfig(newConfig);
+      saveConfig(newConfig);
     }
   };
 
@@ -215,7 +269,7 @@ export const ViewTabs = memo(function ViewTabs({ activeView, onViewChange, onSet
     const newConfig = { ...tabConfig, hidden: newHidden };
     
     setTabConfig(newConfig);
-    saveTabConfig(newConfig);
+    saveConfig(newConfig);
     
     // If hiding the active tab, switch to another visible tab
     if (id === activeView) {
@@ -236,7 +290,7 @@ export const ViewTabs = memo(function ViewTabs({ activeView, onViewChange, onSet
     const newConfig = { ...tabConfig, hidden: newHidden };
     
     setTabConfig(newConfig);
-    saveTabConfig(newConfig);
+    saveConfig(newConfig);
   };
 
   return (
