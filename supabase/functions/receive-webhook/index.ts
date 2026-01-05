@@ -1155,13 +1155,14 @@ const handler = async (req: Request): Promise<Response> => {
       // Auto-create webhook record if it doesn't exist (for visibility in UI)
       if (targetSubOriginId && !isUpdateOnly) {
         try {
-          const { data: existingWebhook } = await supabase
+          const { data: existingWebhooks } = await supabase
             .from("crm_webhooks")
             .select("id")
             .eq("sub_origin_id", targetSubOriginId)
             .eq("type", "receive")
-            .eq("is_active", true)
-            .maybeSingle();
+            .limit(1);
+          
+          const existingWebhook = existingWebhooks && existingWebhooks.length > 0 ? existingWebhooks[0] : null;
 
           if (!existingWebhook) {
             // Fetch sub-origin name for webhook naming
