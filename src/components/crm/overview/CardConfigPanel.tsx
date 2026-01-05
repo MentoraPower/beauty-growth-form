@@ -73,13 +73,14 @@ export function CardConfigPanel({
         if (fieldsError) throw fieldsError;
         setCustomFields(fields || []);
 
-        // Load all responses for these leads
-        if (fields && fields.length > 0 && leads.length > 0) {
-          const leadIds = leads.map(l => l.id);
+        // Load responses for these fields - filter by field_id instead of lead_id
+        // This avoids hitting Supabase's .in() limit when there are many leads
+        if (fields && fields.length > 0) {
+          const fieldIds = fields.map(f => f.id);
           const { data: responses, error: responsesError } = await supabase
             .from("lead_custom_field_responses")
             .select("field_id, lead_id, response_value")
-            .in("lead_id", leadIds);
+            .in("field_id", fieldIds);
 
           if (responsesError) throw responsesError;
           setCustomFieldResponses(responses || []);
@@ -92,7 +93,7 @@ export function CardConfigPanel({
     };
 
     loadCustomFields();
-  }, [subOriginId, leads]);
+  }, [subOriginId]);
 
   const handleDataSourceChange = (dataSource: DataSource) => {
     onUpdateCard(card.id, { dataSource });
