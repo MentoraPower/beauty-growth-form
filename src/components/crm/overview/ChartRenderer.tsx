@@ -81,22 +81,6 @@ export function ChartRenderer({
     if (!dataSource) return null;
     
     switch (dataSource) {
-      case "leads_by_pipeline": {
-        return pipelines.map((pipeline, index) => ({
-          name: pipeline.nome,
-          // Use exact count from pipelineCounts if available, otherwise fallback to filtering
-          value: pipelineCounts?.[pipeline.id] ?? leads.filter((l) => l.pipeline_id === pipeline.id).length,
-          color: MODERN_COLORS[index % MODERN_COLORS.length].solid,
-        }));
-      }
-      case "leads_by_mql": {
-        const mql = leads.filter((l) => l.is_mql).length;
-        const nonMql = leads.filter((l) => !l.is_mql).length;
-        return [
-          { name: "MQL", value: mql, color: MODERN_COLORS[0].solid },
-          { name: "Não-MQL", value: nonMql, color: MODERN_COLORS[4].solid },
-        ];
-      }
       case "leads_over_time": {
         const last30Days = eachDayOfInterval({
           start: subDays(new Date(), 29),
@@ -136,6 +120,51 @@ export function ChartRenderer({
           tagCounts[tag.name].count++;
         });
         return Object.values(tagCounts).sort((a, b) => b.count - a.count).slice(0, 10);
+      }
+      case "leads_by_utm_source": {
+        const counts: Record<string, number> = {};
+        leads.forEach((lead) => {
+          const value = (lead as any).utm_source || "Sem UTM";
+          counts[value] = (counts[value] || 0) + 1;
+        });
+        return Object.entries(counts)
+          .map(([name, value], index) => ({
+            name,
+            value,
+            color: MODERN_COLORS[index % MODERN_COLORS.length].solid,
+          }))
+          .sort((a, b) => b.value - a.value)
+          .slice(0, 10);
+      }
+      case "leads_by_utm_medium": {
+        const counts: Record<string, number> = {};
+        leads.forEach((lead) => {
+          const value = (lead as any).utm_medium || "Sem UTM";
+          counts[value] = (counts[value] || 0) + 1;
+        });
+        return Object.entries(counts)
+          .map(([name, count], index) => ({
+            name,
+            count,
+            color: MODERN_COLORS[index % MODERN_COLORS.length].solid,
+          }))
+          .sort((a, b) => b.count - a.count)
+          .slice(0, 10);
+      }
+      case "leads_by_utm_campaign": {
+        const counts: Record<string, number> = {};
+        leads.forEach((lead) => {
+          const value = (lead as any).utm_campaign || "Sem UTM";
+          counts[value] = (counts[value] || 0) + 1;
+        });
+        return Object.entries(counts)
+          .map(([name, value], index) => ({
+            name,
+            value,
+            color: MODERN_COLORS[index % MODERN_COLORS.length].solid,
+          }))
+          .sort((a, b) => b.value - a.value)
+          .slice(0, 10);
       }
       default:
         return null;
