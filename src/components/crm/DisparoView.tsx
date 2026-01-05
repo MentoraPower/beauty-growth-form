@@ -389,6 +389,9 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
   const isCreatingConversationRef = useRef(false);
   const isProcessingMessageRef = useRef(false);
   
+  // Mutex: Promise-based lock to prevent duplicate conversation creation
+  const creationLockRef = useRef<Promise<string | null> | null>(null);
+  
   // Active request control
   const activeAbortRef = useRef<AbortController | null>(null);
   const activeRunIdRef = useRef<string | null>(null);
@@ -1299,24 +1302,10 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
     const lastMessage = messages[messages.length - 1];
     const isUserJustSent = lastMessage?.role === 'user';
 
+    // CRITICAL: Auto-save should NEVER create new conversations
+    // All conversation creation must happen exclusively in handleSend
     if (!currentConversationId) {
-      if (isProcessingMessageRef.current || isCreatingConversationRef.current) {
-        console.log('[DisparoView] Skipping auto-save - handleSend is managing conversation creation');
-        return;
-      }
-      
-      if (messages.length > 0) {
-        isCreatingConversationRef.current = true;
-        saveConversationNow(true).then((newId) => {
-          if (newId) {
-            setCurrentConversationId(newId);
-            conversationIdRef.current = newId;
-            lastSavedSignatureRef.current = currentSignature;
-          }
-        }).finally(() => {
-          isCreatingConversationRef.current = false;
-        });
-      }
+      console.log('[DisparoView] Auto-save skipped - no conversation ID (handleSend will create)');
       return;
     }
 
@@ -1758,70 +1747,98 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
     let targetConversationId = conversationIdRef.current;
     
     if (isFirstMessage) {
-      if (isCreatingConversationRef.current) {
-        console.log('[DisparoView] Already creating conversation, blocking duplicate');
-        isProcessingMessageRef.current = false;
-        setIsLoading(false);
-        return;
+      // Use Promise-based mutex to prevent race conditions
+      if (creationLockRef.current) {
+        console.log('[DisparoView] Waiting for existing creation lock...');
+        try {
+          const existingId = await creationLockRef.current;
+          if (existingId) {
+            console.log('[DisparoView] Reusing conversation from lock:', existingId);
+            targetConversationId = existingId;
+          }
+        } catch {
+          // Lock failed, proceed to create
+        }
       }
       
-      isCreatingConversationRef.current = true;
-      
-      try {
-        const titleBase = csvParseResult 
-          ? `📊 ${csvFileNameLocal} (${csvParseResult.leads.length} leads)`
-          : messageContent;
-        const title = titleBase.length > 50 
-          ? titleBase.substring(0, 50).trim() + '...' 
-          : titleBase || "Nova conversa";
+      // Double-check after awaiting lock
+      if (conversationIdRef.current) {
+        console.log('[DisparoView] Conversation already exists after lock:', conversationIdRef.current);
+        targetConversationId = conversationIdRef.current;
+      } else if (!creationLockRef.current) {
+        // Create new conversation with Promise lock
+        isCreatingConversationRef.current = true;
         
-        const conversationData = {
-          messages: [{ 
-            id: userMessage.id, 
-            content: userMessage.content, 
-            role: userMessage.role, 
-            timestamp: userMessage.timestamp.toISOString() 
-          }],
-          sidePanelState: {},
-          selectedOriginData: null,
-          dispatchType: null,
-          actionHistory: [],
-          htmlSource: null
-        };
+        const creationPromise = (async (): Promise<string | null> => {
+          try {
+            const titleBase = csvParseResult 
+              ? `📊 ${csvFileNameLocal} (${csvParseResult.leads.length} leads)`
+              : messageContent;
+            const title = titleBase.length > 50 
+              ? titleBase.substring(0, 50).trim() + '...' 
+              : titleBase || "Nova conversa";
+            
+            const conversationData = {
+              messages: [{ 
+                id: userMessage.id, 
+                content: userMessage.content, 
+                role: userMessage.role, 
+                timestamp: userMessage.timestamp.toISOString() 
+              }],
+              sidePanelState: {},
+              selectedOriginData: null,
+              dispatchType: null,
+              actionHistory: [],
+              htmlSource: null
+            };
+            
+            const { data, error } = await supabase
+              .from("dispatch_conversations")
+              .insert({ 
+                messages: conversationData as any,
+                title,
+                workspace_id: currentWorkspace?.id
+              })
+              .select()
+              .single();
+            
+            if (error) throw error;
+            
+            // Update refs IMMEDIATELY before any async operations
+            conversationIdRef.current = data.id;
+            skipNextUrlLoadRef.current = data.id;
+            setConversationId(data.id);
+            setSearchParams({ conversation: data.id }, { replace: true });
+            
+            localStorage.setItem('disparo-submenu-should-open', 'true');
+            window.dispatchEvent(new Event('disparo-submenu-open'));
+            
+            console.log('[DisparoView] Created conversation:', data.id);
+            return data.id;
+          } catch (error) {
+            console.error('[DisparoView] Error creating conversation:', error);
+            throw error;
+          }
+        })();
         
-        const { data, error } = await supabase
-          .from("dispatch_conversations")
-          .insert({ 
-            messages: conversationData as any,
-            title,
-            workspace_id: currentWorkspace?.id
-          })
-          .select()
-          .single();
+        creationLockRef.current = creationPromise;
         
-        if (error) throw error;
-        
-        targetConversationId = data.id;
-
-        // Avoid immediate re-hydration from URL right after creation (keeps optimistic UI stable)
-        skipNextUrlLoadRef.current = data.id;
-        setConversationId(data.id);
-
-        setSearchParams({ conversation: data.id }, { replace: true });
-        
-        localStorage.setItem('disparo-submenu-should-open', 'true');
-        window.dispatchEvent(new Event('disparo-submenu-open'));
-        
-        console.log('[DisparoView] Created conversation:', data.id);
-      } catch (error) {
-        console.error('[DisparoView] Error creating conversation:', error);
-        isProcessingMessageRef.current = false;
-        isCreatingConversationRef.current = false;
-        setIsLoading(false);
-        toast.error('Erro ao criar conversa');
-        return;
-      } finally {
-        isCreatingConversationRef.current = false;
+        try {
+          targetConversationId = await creationPromise;
+        } catch (error) {
+          isProcessingMessageRef.current = false;
+          isCreatingConversationRef.current = false;
+          creationLockRef.current = null;
+          setIsLoading(false);
+          toast.error('Erro ao criar conversa');
+          return;
+        } finally {
+          isCreatingConversationRef.current = false;
+          // Clear lock after a short delay to allow concurrent calls to complete
+          setTimeout(() => {
+            creationLockRef.current = null;
+          }, 100);
+        }
       }
     }
 
