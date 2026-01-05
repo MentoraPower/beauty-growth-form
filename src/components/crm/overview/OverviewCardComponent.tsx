@@ -22,6 +22,19 @@ type ResizeDirection =
   | "left" | "right" | "top" | "bottom" 
   | "top-left" | "top-right" | "bottom-left" | "bottom-right";
 
+interface CustomField {
+  id: string;
+  field_label: string;
+  field_key: string;
+  field_type: string;
+}
+
+interface CustomFieldResponse {
+  field_id: string;
+  lead_id: string;
+  response_value: string | null;
+}
+
 interface OverviewCardComponentProps {
   card: OverviewCard;
   leads: Lead[];
@@ -36,6 +49,8 @@ interface OverviewCardComponentProps {
   containerWidth?: number;
   pipelineCounts?: Record<string, number>;
   totalLeadCount?: number;
+  customFields?: CustomField[];
+  customFieldResponses?: CustomFieldResponse[];
 }
 
 
@@ -53,6 +68,8 @@ export function OverviewCardComponent({
   containerWidth: externalContainerWidth,
   pipelineCounts,
   totalLeadCount,
+  customFields = [],
+  customFieldResponses = [],
 }: OverviewCardComponentProps) {
   const [isResizing, setIsResizing] = useState(false);
   const [resizeDirection, setResizeDirection] = useState<ResizeDirection | null>(null);
@@ -407,6 +424,9 @@ export function OverviewCardComponent({
             height={currentSize.height - 70}
             pipelineCounts={pipelineCounts}
             totalLeadCount={totalLeadCount}
+            customFieldId={card.config?.customFieldId}
+            customFields={customFields}
+            customFieldResponses={customFieldResponses}
           />
         ) : (
           <button

@@ -102,6 +102,19 @@ function getCardsInSameLine(allCards: OverviewCard[], targetCardId: string): Ove
   return [];
 }
 
+interface CustomField {
+  id: string;
+  field_label: string;
+  field_key: string;
+  field_type: string;
+}
+
+interface CustomFieldResponse {
+  field_id: string;
+  lead_id: string;
+  response_value: string | null;
+}
+
 // Sortable wrapper for cards - controls width via percentage with gap offset
 function SortableCard({
   card,
@@ -117,6 +130,8 @@ function SortableCard({
   allCards,
   pipelineCounts,
   totalLeadCount,
+  customFields,
+  customFieldResponses,
 }: {
   card: OverviewCard;
   leads: Lead[];
@@ -131,6 +146,8 @@ function SortableCard({
   allCards: OverviewCard[];
   pipelineCounts?: Record<string, number>;
   totalLeadCount?: number;
+  customFields?: CustomField[];
+  customFieldResponses?: CustomFieldResponse[];
 }) {
   const {
     attributes,
@@ -190,6 +207,8 @@ function SortableCard({
         dragHandleProps={{ ...attributes, ...listeners }}
         pipelineCounts={pipelineCounts}
         totalLeadCount={totalLeadCount}
+        customFields={customFields}
+        customFieldResponses={customFieldResponses}
       />
     </div>
   );
@@ -198,6 +217,10 @@ function SortableCard({
 export function OverviewView({ leads, pipelines, leadTags, subOriginId, onAddDialogOpenChange, addDialogOpen, pipelineCounts, totalLeadCount }: OverviewViewProps) {
   const [cards, setCards] = useState<OverviewCard[]>([]);
   const [internalAddDialogOpen, setInternalAddDialogOpen] = useState(false);
+  
+  // Custom fields state
+  const [customFields, setCustomFields] = useState<CustomField[]>([]);
+  const [customFieldResponses, setCustomFieldResponses] = useState<CustomFieldResponse[]>([]);
   
   // Use controlled or uncontrolled mode for dialog
   const isAddDialogOpen = addDialogOpen !== undefined ? addDialogOpen : internalAddDialogOpen;
@@ -333,6 +356,44 @@ export function OverviewView({ leads, pipelines, leadTags, subOriginId, onAddDia
       supabase.removeChannel(channel);
     };
   }, [subOriginId, rowToCard]);
+
+  // Load custom fields and responses
+  useEffect(() => {
+    if (!subOriginId) {
+      setCustomFields([]);
+      setCustomFieldResponses([]);
+      return;
+    }
+
+    const loadCustomFields = async () => {
+      try {
+        const { data: fields, error: fieldsError } = await supabase
+          .from("sub_origin_custom_fields")
+          .select("id, field_label, field_key, field_type")
+          .eq("sub_origin_id", subOriginId)
+          .order("ordem");
+
+        if (fieldsError) throw fieldsError;
+        setCustomFields(fields || []);
+
+        // Load all responses for these leads
+        if (fields && fields.length > 0 && leads.length > 0) {
+          const leadIds = leads.map(l => l.id);
+          const { data: responses, error: responsesError } = await supabase
+            .from("lead_custom_field_responses")
+            .select("field_id, lead_id, response_value")
+            .in("lead_id", leadIds);
+
+          if (responsesError) throw responsesError;
+          setCustomFieldResponses(responses || []);
+        }
+      } catch (error) {
+        console.error("Error loading custom fields:", error);
+      }
+    };
+
+    loadCustomFields();
+  }, [subOriginId, leads]);
 
   // Save card to Supabase
   const saveCardToDb = useCallback(async (card: OverviewCard) => {
@@ -739,6 +800,8 @@ export function OverviewView({ leads, pipelines, leadTags, subOriginId, onAddDia
                   allCards={sortedCards}
                   pipelineCounts={pipelineCounts}
                   totalLeadCount={totalLeadCount}
+                  customFields={customFields}
+                  customFieldResponses={customFieldResponses}
                 />
               ))}
             </div>
@@ -767,6 +830,8 @@ export function OverviewView({ leads, pipelines, leadTags, subOriginId, onAddDia
                     isDragging
                     pipelineCounts={pipelineCounts}
                     totalLeadCount={totalLeadCount}
+                    customFields={customFields}
+                    customFieldResponses={customFieldResponses}
                   />
                 </div>
               );
@@ -806,6 +871,7 @@ export function OverviewView({ leads, pipelines, leadTags, subOriginId, onAddDia
           leads={leads}
           pipelines={pipelines}
           leadTags={leadTags}
+          subOriginId={subOriginId}
           onClose={() => setConfigPanelCard(null)}
           onUpdateCard={handleUpdateCard}
         />,
