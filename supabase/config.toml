@@ -68,3 +68,6 @@ verify_jwt = false
 
 [functions.sync-guru-sales]
 verify_jwt = false
+
+[functions.import-guru-sales]
+verify_jwt = false
