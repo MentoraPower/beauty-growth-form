@@ -14,12 +14,13 @@ export type ChartType =
   | "heatmap";
 
 export type DataSource = 
-  | "leads_by_pipeline" 
-  | "leads_by_mql" 
   | "leads_over_time" 
   | "total_leads"
   | "recent_leads"
-  | "leads_by_tag";
+  | "leads_by_tag"
+  | "leads_by_utm_source"
+  | "leads_by_utm_medium"
+  | "leads_by_utm_campaign";
 
 export interface OverviewCard {
   id: string;
@@ -44,16 +45,6 @@ export interface CardTemplate {
 
 export const CARD_TEMPLATES: CardTemplate[] = [
   {
-    id: "leads_by_pipeline",
-    title: "Gráfico de Pizza - Leads por Pipeline",
-    description: "Distribuição de leads por pipeline",
-    chartType: "pie",
-    dataSource: "leads_by_pipeline",
-    defaultSize: { widthPercent: 30, height: 360 },
-    icon: "PieChart",
-    category: "featured",
-  },
-  {
     id: "total_leads",
     title: "Cartão Numérico - Total de Leads",
     description: "Mostra o número total de leads no CRM",
@@ -72,16 +63,6 @@ export const CARD_TEMPLATES: CardTemplate[] = [
     defaultSize: { widthPercent: 50, height: 320 },
     icon: "TrendingUp",
     category: "featured",
-  },
-  {
-    id: "leads_by_mql",
-    title: "Gráfico de Pizza - MQL vs Não-MQL",
-    description: "Proporção de leads qualificados",
-    chartType: "pie",
-    dataSource: "leads_by_mql",
-    defaultSize: { widthPercent: 30, height: 360 },
-    icon: "Target",
-    category: "charts",
   },
   {
     id: "recent_leads",
@@ -104,13 +85,33 @@ export const CARD_TEMPLATES: CardTemplate[] = [
     category: "charts",
   },
   {
-    id: "leads_vertical_bar",
-    title: "Gráfico de Barras Verticais - Leads por Pipeline",
-    description: "Barras verticais modernas por pipeline",
+    id: "leads_by_utm_source",
+    title: "Gráfico de Pizza - UTM Source",
+    description: "Distribuição de leads por utm_source",
+    chartType: "pie",
+    dataSource: "leads_by_utm_source",
+    defaultSize: { widthPercent: 30, height: 360 },
+    icon: "Link",
+    category: "charts",
+  },
+  {
+    id: "leads_by_utm_medium",
+    title: "Gráfico de Barras - UTM Medium",
+    description: "Distribuição de leads por utm_medium",
     chartType: "bar_vertical",
-    dataSource: "leads_by_pipeline",
-    defaultSize: { widthPercent: 45, height: 320 },
+    dataSource: "leads_by_utm_medium",
+    defaultSize: { widthPercent: 40, height: 320 },
     icon: "BarChart3",
+    category: "charts",
+  },
+  {
+    id: "leads_by_utm_campaign",
+    title: "Gráfico de Pizza - UTM Campaign",
+    description: "Distribuição de leads por utm_campaign",
+    chartType: "pie",
+    dataSource: "leads_by_utm_campaign",
+    defaultSize: { widthPercent: 30, height: 360 },
+    icon: "Target",
     category: "charts",
   },
   {
