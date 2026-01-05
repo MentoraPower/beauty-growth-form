@@ -51,27 +51,31 @@ Deno.serve(async (req) => {
     const SUB_ORIGIN_ID = "06828c22-3c33-477a-b9cf-72125b951d59"; // Rev. Power Academy
     const PIPELINE_ENTRADA_ID = "bc19894b-9a8d-4da8-beaa-f45f66650526";
     const PIPELINE_COMPROU_GURU_ID = "459f02f0-43b1-42c2-a57b-0f4db0d751d9";
-    const PRODUCT_NAME = "Power Academy";
+    const OFFER_KEY = "renovacao-power-womam";
     const START_DATE = "2026-01-04";
-    const END_DATE = "2026-01-06"; // Include full day of 05/01
+    const END_DATE = "2026-01-06";
 
-    console.log(`[sync-guru-sales] Starting sync for product "${PRODUCT_NAME}" from ${START_DATE} to ${END_DATE}`);
+    console.log(`[sync-guru-sales] Starting sync for offer "${OFFER_KEY}" from ${START_DATE} to ${END_DATE}`);
 
-    // Fetch ALL transactions from Guru API with pagination
+    // Fetch ALL transactions from Guru API with cursor-based pagination
     const allTransactions: GuruTransaction[] = [];
-    let currentPage = 1;
-    let lastPage = 1;
+    let nextCursor: string | null = null;
+    let pageNum = 0;
 
     do {
+      pageNum++;
       const guruUrl = new URL("https://digitalmanager.guru/api/v2/transactions");
-      guruUrl.searchParams.set("product_name", PRODUCT_NAME);
+      guruUrl.searchParams.set("offer_key", OFFER_KEY);
       guruUrl.searchParams.set("ordered_at_ini", START_DATE);
       guruUrl.searchParams.set("ordered_at_end", END_DATE);
-      guruUrl.searchParams.set("status", "approved"); // Only approved sales
+      guruUrl.searchParams.set("status", "approved");
       guruUrl.searchParams.set("per_page", "100");
-      guruUrl.searchParams.set("page", String(currentPage));
+      
+      if (nextCursor) {
+        guruUrl.searchParams.set("cursor", nextCursor);
+      }
 
-      console.log(`[sync-guru-sales] Fetching page ${currentPage} from Guru: ${guruUrl.toString()}`);
+      console.log(`[sync-guru-sales] Fetching page ${pageNum} from Guru: ${guruUrl.toString()}`);
 
       const guruResponse = await fetch(guruUrl.toString(), {
         method: "GET",
@@ -91,26 +95,24 @@ Deno.serve(async (req) => {
       const guruData = await guruResponse.json();
       
       // Log full response structure for debugging
-      if (currentPage === 1) {
+      if (pageNum === 1) {
         console.log(`[sync-guru-sales] Full response keys:`, Object.keys(guruData));
-        console.log(`[sync-guru-sales] Response structure:`, JSON.stringify(guruData).substring(0, 2000));
+        console.log(`[sync-guru-sales] total_rows from API:`, guruData.total_rows);
       }
       
-      // Handle different response structures
-      const transactions = guruData.data || guruData || [];
-      const meta = guruData.meta || guruData.pagination || {};
+      const transactions = guruData.data || [];
       
       if (Array.isArray(transactions) && transactions.length > 0) {
         allTransactions.push(...transactions);
       }
       
-      // Update pagination info
-      lastPage = meta.last_page || meta.lastPage || meta.total_pages || 1;
-      const total = meta.total || meta.count || transactions.length;
-      console.log(`[sync-guru-sales] Page ${currentPage}/${lastPage}, got ${transactions.length} transactions, total from API: ${total}`);
+      // Use cursor-based pagination
+      const hasMore = guruData.has_more_pages === true;
+      nextCursor = hasMore ? guruData.next_cursor : null;
       
-      currentPage++;
-    } while (currentPage <= lastPage);
+      console.log(`[sync-guru-sales] Page ${pageNum}: got ${transactions.length} transactions, total so far: ${allTransactions.length}, has_more: ${hasMore}`);
+      
+    } while (nextCursor);
 
     console.log(`[sync-guru-sales] Guru returned ${allTransactions.length} total transactions across all pages`);
 
@@ -194,7 +196,7 @@ Deno.serve(async (req) => {
               lead_id: lead.id,
               tipo: "movimentacao",
               titulo: "Movido para Comprou Guru",
-              descricao: `Lead movido automaticamente após compra no Guru (${PRODUCT_NAME})`,
+              descricao: `Lead movido automaticamente após compra no Guru (Oferta: ${OFFER_KEY})`,
               origem: "sync-guru-sales",
               dados: { 
                 from_pipeline: lead.pipeline_id,
