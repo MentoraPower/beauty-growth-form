@@ -29,7 +29,6 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { supabase } from "@/integrations/supabase/client";
-import { useWorkspace } from "@/contexts/WorkspaceContext";
 
 type CRMView = "overview" | "quadro" | "lista" | "calendario" | "email";
 
@@ -39,6 +38,7 @@ interface ViewTabsProps {
   onSettingsClick: () => void;
   extraActions?: ReactNode;
   onTabHover?: (view: CRMView) => void;
+  subOriginId: string;
 }
 
 interface TabItem {
@@ -121,13 +121,12 @@ function SortableTab({ tab, isActive, onViewChange, onTabHover, onHide, setTabRe
   );
 }
 
-export const ViewTabs = memo(function ViewTabs({ activeView, onViewChange, onSettingsClick, extraActions, onTabHover }: ViewTabsProps) {
+export const ViewTabs = memo(function ViewTabs({ activeView, onViewChange, onSettingsClick, extraActions, onTabHover, subOriginId }: ViewTabsProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const tabRefs = useRef<Map<CRMView, HTMLButtonElement>>(new Map());
   const [indicator, setIndicator] = useState({ left: 0, width: 0 });
   const [tabConfig, setTabConfig] = useState<TabConfig>({ order: defaultOrder, hidden: [] });
   const [isLoading, setIsLoading] = useState(true);
-  const { currentWorkspace } = useWorkspace();
   const saveTimeoutRef = useRef<number | null>(null);
 
   const sensors = useSensors(
@@ -140,17 +139,21 @@ export const ViewTabs = memo(function ViewTabs({ activeView, onViewChange, onSet
 
   // Load tab config from database
   useEffect(() => {
-    if (!currentWorkspace?.id) {
+    if (!subOriginId) {
       setIsLoading(false);
       return;
     }
+
+    // Reset to defaults when subOriginId changes
+    setTabConfig({ order: defaultOrder, hidden: [] });
+    setIsLoading(true);
 
     const loadConfig = async () => {
       try {
         const { data, error } = await supabase
           .from('crm_tab_preferences')
           .select('tab_order, hidden_tabs')
-          .eq('workspace_id', currentWorkspace.id)
+          .eq('sub_origin_id', subOriginId)
           .maybeSingle();
 
         if (error) {
@@ -169,11 +172,11 @@ export const ViewTabs = memo(function ViewTabs({ activeView, onViewChange, onSet
     };
 
     loadConfig();
-  }, [currentWorkspace?.id]);
+  }, [subOriginId]);
 
   // Save tab config to database (debounced)
   const saveConfig = useCallback((config: TabConfig) => {
-    if (!currentWorkspace?.id) return;
+    if (!subOriginId) return;
 
     // Clear previous timeout
     if (saveTimeoutRef.current) {
@@ -186,11 +189,11 @@ export const ViewTabs = memo(function ViewTabs({ activeView, onViewChange, onSet
         const { error } = await supabase
           .from('crm_tab_preferences')
           .upsert({
-            workspace_id: currentWorkspace.id,
+            sub_origin_id: subOriginId,
             tab_order: config.order,
             hidden_tabs: config.hidden,
           }, {
-            onConflict: 'workspace_id',
+            onConflict: 'sub_origin_id',
           });
 
         if (error) {
@@ -200,7 +203,7 @@ export const ViewTabs = memo(function ViewTabs({ activeView, onViewChange, onSet
         console.error('Failed to save tab config:', e);
       }
     }, 500);
-  }, [currentWorkspace?.id]);
+  }, [subOriginId]);
 
   // Cleanup timeout on unmount
   useEffect(() => {
