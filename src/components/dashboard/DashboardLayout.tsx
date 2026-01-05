@@ -12,6 +12,7 @@ import { LoadingBar } from "@/components/LoadingBar";
 import { ConnectionStatus } from "@/components/realtime/ConnectionStatus";
 import { supabase } from "@/integrations/supabase/client";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
+import { useIsDesktop } from "@/hooks/use-mobile";
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -48,6 +49,7 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
   const location = useLocation();
   const navigate = useNavigate();
   const sidebarRef = useRef<HTMLElement>(null);
+  const isDesktop = useIsDesktop();
 
   const isCRMActive = location.pathname.startsWith("/crm") || location.pathname === "/";
   const isAtendimentoActive = location.pathname.startsWith("/atendimento");
@@ -643,36 +645,37 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
           />
         )}
 
-        {/* Main Content - uses left animation to push/resize content */}
-        <main 
-          style={{ 
-            left: crmSubmenuOpen 
-              ? 12 + sidebarCollapsedWidth + 12 + submenuWidth + 12
-              : disparoSubmenuOpen 
-                ? 12 + sidebarCollapsedWidth + 12 + disparoSubmenuWidth + 12
-                : 12 + sidebarCollapsedWidth + 12 + 4,
-            top: 'calc(45px + 12px)',
-            right: 12,
-            height: 'calc(100vh - 45px - 1.5rem)',
-            willChange: 'left',
-          }}
-          className="hidden lg:block fixed transition-[left] duration-300 ease-out"
-        >
-          <div className={cn("h-full overflow-hidden relative rounded-2xl shadow-sm flex flex-col bg-card border border-border", isDisparoActive ? "" : "pt-1 pb-3 px-5")}>
+        {/* Main Content - Conditionally render only ONE to avoid duplicate children mounts */}
+        {isDesktop ? (
+          <main 
+            style={{ 
+              left: crmSubmenuOpen 
+                ? 12 + sidebarCollapsedWidth + 12 + submenuWidth + 12
+                : disparoSubmenuOpen 
+                  ? 12 + sidebarCollapsedWidth + 12 + disparoSubmenuWidth + 12
+                  : 12 + sidebarCollapsedWidth + 12 + 4,
+              top: 'calc(45px + 12px)',
+              right: 12,
+              height: 'calc(100vh - 45px - 1.5rem)',
+              willChange: 'left',
+            }}
+            className="fixed transition-[left] duration-300 ease-out"
+          >
+            <div className={cn("h-full overflow-hidden relative rounded-2xl shadow-sm flex flex-col bg-card border border-border", isDisparoActive ? "" : "pt-1 pb-3 px-5")}>
+              <PageTransition>
+                <RouteContentMemo>
+                  {children}
+                </RouteContentMemo>
+              </PageTransition>
+            </div>
+          </main>
+        ) : (
+          <main className="pt-[calc(45px+56px)] min-h-screen p-4">
             <PageTransition>
-              <RouteContentMemo>
-                {children}
-              </RouteContentMemo>
+              {children}
             </PageTransition>
-          </div>
-        </main>
-        
-        {/* Mobile Main Content */}
-        <main className="lg:hidden pt-[calc(45px+56px)] min-h-screen p-4">
-          <PageTransition>
-            {children}
-          </PageTransition>
-        </main>
+          </main>
+        )}
       </div>
     </div>
   );
