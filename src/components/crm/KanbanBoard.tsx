@@ -390,6 +390,7 @@ export function KanbanBoard() {
   });
 
   // Fetch leads WITH tags in a single query - much faster!
+  // Uses range(0, 9999) to fetch up to 10000 leads (bypasses default 1000 row limit)
   const { data: leadsWithTags, dataUpdatedAt, isLoading: isLoadingLeads } = useQuery({
     queryKey: ["crm-leads-with-tags", subOriginId],
     queryFn: async () => {
@@ -401,7 +402,7 @@ export function KanbanBoard() {
         `)
         .eq("sub_origin_id", subOriginId)
         .order("created_at", { ascending: false })
-        .limit(5000); // Increase limit to load all leads
+        .range(0, 9999); // Use range instead of limit to properly bypass row limits
 
       if (error) throw error;
       return data as (Lead & { lead_tags: { id: string; name: string; color: string }[] })[];
