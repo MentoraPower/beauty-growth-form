@@ -1585,6 +1585,7 @@ export function KanbanBoard() {
             onViewChange={handleViewChange}
             onTabHover={handleTabHover}
             onSettingsClick={() => setSettingsDialogOpen(true)}
+            subOriginId={subOriginId}
             extraActions={activeView === "overview" ? (
               <button
                 onClick={() => setOverviewAddCardOpen(true)}
