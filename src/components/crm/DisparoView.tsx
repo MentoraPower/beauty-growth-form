@@ -929,10 +929,36 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
           
           if (error || !data) {
             console.error("Conversation not found:", convId);
-            const newParams = new URLSearchParams(searchParams);
-            newParams.delete('conversation');
-            newParams.delete('conv');
-            setSearchParams(newParams);
+            // Reset all state when conversation doesn't exist (deleted)
+            setCurrentConversationId(null);
+            conversationIdRef.current = null;
+            setMessages([]);
+            messagesRef.current = [];
+            setCsvLeads(null);
+            setCsvListId(null);
+            setCsvFileName('lista.csv');
+            setCsvRawData([]);
+            setCsvHeaders([]);
+            setCsvMappedColumns({});
+            setPendingEmailContext(null);
+            setSidePanelOpen(false);
+            setSidePanelRestoredFromDB(false);
+            setSidePanelHtml('');
+            setSidePanelSubject('');
+            setSidePanelPreheader('');
+            setSidePanelContext(null);
+            setSelectedOriginData(null);
+            setDispatchType(null);
+            setActionHistory([]);
+            setSidePanelDispatchData(null);
+            setPendingQuestion(null);
+            setSidePanelGenerating(false);
+            setSidePanelEditing(false);
+            setIsLoading(false);
+            creationLockRef.current = null;
+            
+            // Clear URL
+            setSearchParams({}, { replace: true });
             setInitialLoadDone(true);
             isHydratingRef.current = false;
             setIsConversationLoading(false);
