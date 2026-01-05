@@ -18,7 +18,8 @@ export type DataSource =
   | "total_leads"
   | "recent_leads"
   | "leads_by_tag"
-  | "leads_by_utm";
+  | "leads_by_utm"
+  | "leads_by_custom_field";
 
 export interface OverviewCard {
   id: string;
@@ -27,7 +28,10 @@ export interface OverviewCard {
   dataSource: DataSource | null;
   size: CardSize;
   order: number;
-  config?: Record<string, any>;
+  config?: {
+    customFieldId?: string;
+    [key: string]: any;
+  };
 }
 
 export interface CardTemplate {
@@ -90,6 +94,16 @@ export const CARD_TEMPLATES: CardTemplate[] = [
     dataSource: "leads_by_utm",
     defaultSize: { widthPercent: 40, height: 320 },
     icon: "Link",
+    category: "charts",
+  },
+  {
+    id: "leads_by_custom_field",
+    title: "Gráfico de Barras - Campo Personalizado",
+    description: "Distribuição de leads por campo personalizado",
+    chartType: "bar",
+    dataSource: "leads_by_custom_field",
+    defaultSize: { widthPercent: 40, height: 320 },
+    icon: "Settings2",
     category: "charts",
   },
   {

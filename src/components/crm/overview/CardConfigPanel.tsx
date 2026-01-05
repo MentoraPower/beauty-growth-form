@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { X, Settings2, Eye, Percent, List } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
@@ -7,12 +7,27 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { DataSource, OverviewCard } from "./types";
 import { Lead, Pipeline } from "@/types/crm";
 import { ChartRenderer } from "./ChartRenderer";
+import { supabase } from "@/integrations/supabase/client";
+
+interface CustomField {
+  id: string;
+  field_label: string;
+  field_key: string;
+  field_type: string;
+}
+
+interface CustomFieldResponse {
+  field_id: string;
+  lead_id: string;
+  response_value: string | null;
+}
 
 interface CardConfigPanelProps {
   card: OverviewCard;
   leads: Lead[];
   pipelines: Pipeline[];
   leadTags: Array<{ lead_id: string; name: string; color: string }>;
+  subOriginId: string | null;
   onClose: () => void;
   onUpdateCard: (cardId: string, updates: Partial<OverviewCard>) => void;
 }
@@ -23,6 +38,7 @@ const DATA_SOURCES: Array<{ id: DataSource; title: string }> = [
   { id: "recent_leads", title: "Leads Recentes" },
   { id: "leads_by_tag", title: "Leads por Tag" },
   { id: "leads_by_utm", title: "Leads por UTM" },
+  { id: "leads_by_custom_field", title: "Leads por Campo Personalizado" },
 ];
 
 export function CardConfigPanel({ 
@@ -30,16 +46,68 @@ export function CardConfigPanel({
   leads, 
   pipelines, 
   leadTags,
+  subOriginId,
   onClose, 
   onUpdateCard 
 }: CardConfigPanelProps) {
   const [showAsDonut, setShowAsDonut] = useState(false);
   const [showPercentages, setShowPercentages] = useState(false);
   const [showLegend, setShowLegend] = useState(true);
+  const [customFields, setCustomFields] = useState<CustomField[]>([]);
+  const [customFieldResponses, setCustomFieldResponses] = useState<CustomFieldResponse[]>([]);
+  const [isLoadingFields, setIsLoadingFields] = useState(false);
+
+  // Load custom fields when subOriginId changes
+  useEffect(() => {
+    if (!subOriginId) return;
+
+    const loadCustomFields = async () => {
+      setIsLoadingFields(true);
+      try {
+        const { data: fields, error: fieldsError } = await supabase
+          .from("sub_origin_custom_fields")
+          .select("id, field_label, field_key, field_type")
+          .eq("sub_origin_id", subOriginId)
+          .order("ordem");
+
+        if (fieldsError) throw fieldsError;
+        setCustomFields(fields || []);
+
+        // Load all responses for these leads
+        if (fields && fields.length > 0 && leads.length > 0) {
+          const leadIds = leads.map(l => l.id);
+          const { data: responses, error: responsesError } = await supabase
+            .from("lead_custom_field_responses")
+            .select("field_id, lead_id, response_value")
+            .in("lead_id", leadIds);
+
+          if (responsesError) throw responsesError;
+          setCustomFieldResponses(responses || []);
+        }
+      } catch (error) {
+        console.error("Error loading custom fields:", error);
+      } finally {
+        setIsLoadingFields(false);
+      }
+    };
+
+    loadCustomFields();
+  }, [subOriginId, leads]);
 
   const handleDataSourceChange = (dataSource: DataSource) => {
     onUpdateCard(card.id, { dataSource });
   };
+
+  const handleCustomFieldChange = (fieldId: string) => {
+    onUpdateCard(card.id, { 
+      config: { 
+        ...card.config, 
+        customFieldId: fieldId 
+      } 
+    });
+  };
+
+  const selectedCustomField = customFields.find(f => f.id === card.config?.customFieldId);
 
   return (
     <>
@@ -69,6 +137,9 @@ export function CardConfigPanel({
               leadTags={leadTags}
               height={400}
               showEmptyState={false}
+              customFieldId={card.config?.customFieldId}
+              customFields={customFields}
+              customFieldResponses={customFieldResponses}
             />
           </div>
         </div>
@@ -108,6 +179,45 @@ export function CardConfigPanel({
                   </SelectContent>
                 </Select>
               </div>
+
+              {/* Campo Personalizado Selector - only show when custom field data source is selected */}
+              {card.dataSource === "leads_by_custom_field" && (
+                <div className="space-y-2">
+                  <label className="text-sm text-muted-foreground">Campo Personalizado</label>
+                  {isLoadingFields ? (
+                    <div className="h-10 bg-muted/50 rounded-md animate-pulse" />
+                  ) : customFields.length === 0 ? (
+                    <p className="text-sm text-muted-foreground italic">
+                      Nenhum campo personalizado encontrado
+                    </p>
+                  ) : (
+                    <Select 
+                      value={card.config?.customFieldId || ""} 
+                      onValueChange={handleCustomFieldChange}
+                    >
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="Selecionar campo" />
+                      </SelectTrigger>
+                      <SelectContent className="bg-background border border-border">
+                        {customFields.map((field) => (
+                          <SelectItem key={field.id} value={field.id}>
+                            {field.field_label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+                  {selectedCustomField && (
+                    <p className="text-xs text-muted-foreground">
+                      Tipo: {selectedCustomField.field_type === "text" ? "Texto" : 
+                             selectedCustomField.field_type === "number" ? "Número" :
+                             selectedCustomField.field_type === "select" ? "Seleção" :
+                             selectedCustomField.field_type === "boolean" ? "Sim/Não" : 
+                             selectedCustomField.field_type}
+                    </p>
+                  )}
+                </div>
+              )}
 
               {/* Tela */}
               <div className="space-y-4">

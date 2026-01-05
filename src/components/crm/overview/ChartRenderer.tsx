@@ -34,6 +34,19 @@ const MODERN_COLORS = [
   { solid: "#292929", gradient: ["#3d3d3d", "#171717"] }, // Charcoal
 ];
 
+interface CustomField {
+  id: string;
+  field_label: string;
+  field_key: string;
+  field_type: string;
+}
+
+interface CustomFieldResponse {
+  field_id: string;
+  lead_id: string;
+  response_value: string | null;
+}
+
 interface ChartRendererProps {
   cardId: string;
   dataSource: DataSource | undefined;
@@ -45,6 +58,9 @@ interface ChartRendererProps {
   showEmptyState?: boolean;
   pipelineCounts?: Record<string, number>;
   totalLeadCount?: number;
+  customFieldId?: string;
+  customFields?: CustomField[];
+  customFieldResponses?: CustomFieldResponse[];
 }
 
 // Custom tooltip component
@@ -75,6 +91,9 @@ export function ChartRenderer({
   showEmptyState = true,
   pipelineCounts,
   totalLeadCount,
+  customFieldId,
+  customFields = [],
+  customFieldResponses = [],
 }: ChartRendererProps) {
   // Calculate data based on dataSource
   const chartData = useMemo(() => {
@@ -149,10 +168,36 @@ export function ChartRenderer({
           .sort((a, b) => b.value - a.value)
           .slice(0, 10);
       }
+      case "leads_by_custom_field": {
+        if (!customFieldId) return null;
+        
+        const field = customFields.find(f => f.id === customFieldId);
+        if (!field) return null;
+
+        // Group leads by custom field response value
+        const counts: Record<string, number> = {};
+        leads.forEach((lead) => {
+          const response = customFieldResponses.find(
+            r => r.lead_id === lead.id && r.field_id === customFieldId
+          );
+          const value = response?.response_value?.trim() || "Sem resposta";
+          counts[value] = (counts[value] || 0) + 1;
+        });
+
+        return Object.entries(counts)
+          .map(([name, value], index) => ({
+            name,
+            value,
+            count: value,
+            color: MODERN_COLORS[index % MODERN_COLORS.length].solid,
+          }))
+          .sort((a, b) => b.value - a.value)
+          .slice(0, 10);
+      }
       default:
         return null;
     }
-  }, [dataSource, leads, pipelines, leadTags, pipelineCounts, totalLeadCount]);
+  }, [dataSource, leads, pipelines, leadTags, pipelineCounts, totalLeadCount, customFieldId, customFields, customFieldResponses]);
 
   // Get previous period for comparison (for number cards)
   const previousPeriodChange = useMemo(() => {
