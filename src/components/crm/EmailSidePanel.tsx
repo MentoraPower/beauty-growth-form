@@ -314,12 +314,13 @@ export function EmailSidePanel({
       const isCsvDispatch = !!(jobData as any).csv_list_id;
 
       if (isCsvDispatch) {
-        // Fetch recipients from CSV list
+        // Fetch recipients from CSV list (up to 10k)
         const { data: csvRecipients } = await supabase
           .from('dispatch_csv_list_recipients')
           .select('id, name, email')
           .eq('list_id', (jobData as any).csv_list_id)
-          .order('name');
+          .order('name')
+          .range(0, 9999);
 
         if (csvRecipients) {
           setDispatchLeads(
@@ -331,13 +332,14 @@ export function EmailSidePanel({
           );
         }
       } else {
-        // CRM dispatch - original flow
+        // CRM dispatch - original flow (up to 10k)
         const { data: leadsData } = await supabase
           .from('leads')
           .select('id, name, email')
           .eq('sub_origin_id', jobData.sub_origin_id)
           .not('email', 'is', null)
-          .order('name');
+          .order('name')
+          .range(0, 9999);
 
         if (leadsData) {
           setDispatchLeads(
