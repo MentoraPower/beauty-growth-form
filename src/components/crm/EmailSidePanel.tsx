@@ -265,6 +265,28 @@ export function EmailSidePanel({
   const [sentLeadIds, setSentLeadIds] = useState<Set<string>>(new Set());
   const [sentEmails, setSentEmails] = useState<Set<string>>(new Set()); // For CSV: track by email
   const [dispatchLoading, setDispatchLoading] = useState(true);
+  const dispatchJobRef = useRef<DispatchJob | null>(null);
+
+  // Keep ref in sync
+  useEffect(() => {
+    dispatchJobRef.current = dispatchJob;
+  }, [dispatchJob]);
+
+  // Fetch ONLY sent emails (lightweight polling for checkmarks)
+  const fetchSentEmails = useCallback(async () => {
+    if (!dispatchJobId) return;
+
+    const { data: sentEmailsData } = await supabase
+      .from('sent_emails')
+      .select('lead_id, lead_email')
+      .eq('dispatch_job_id', dispatchJobId)
+      .eq('status', 'sent');
+
+    if (sentEmailsData) {
+      setSentLeadIds(new Set(sentEmailsData.map(e => e.lead_id).filter(Boolean) as string[]));
+      setSentEmails(new Set(sentEmailsData.map(e => e.lead_email)));
+    }
+  }, [dispatchJobId]);
 
   // Fetch dispatch job data
   const fetchDispatchData = useCallback(async () => {
@@ -297,17 +319,6 @@ export function EmailSidePanel({
             email: r.email
           })));
         }
-
-        // For CSV: fetch sent emails by email address
-        const { data: sentEmailsData } = await supabase
-          .from('sent_emails')
-          .select('lead_email')
-          .eq('dispatch_job_id', dispatchJobId)
-          .eq('status', 'sent');
-
-        if (sentEmailsData) {
-          setSentEmails(new Set(sentEmailsData.map(e => e.lead_email)));
-        }
       } else {
         // CRM dispatch - original flow
         const { data: leadsData } = await supabase
@@ -324,22 +335,14 @@ export function EmailSidePanel({
             email: l.email
           })));
         }
-
-        // Fetch sent emails for this job
-        const { data: sentEmailsData } = await supabase
-          .from('sent_emails')
-          .select('lead_id')
-          .eq('dispatch_job_id', dispatchJobId)
-          .eq('status', 'sent');
-
-        if (sentEmailsData) {
-          setSentLeadIds(new Set(sentEmailsData.map(e => e.lead_id).filter(Boolean)));
-        }
       }
+
+      // Fetch sent emails for this job
+      await fetchSentEmails();
     }
 
     setDispatchLoading(false);
-  }, [dispatchJobId]);
+  }, [dispatchJobId, fetchSentEmails]);
 
   // Load dispatch data when mode changes to dispatch_leads
   useEffect(() => {
@@ -348,6 +351,19 @@ export function EmailSidePanel({
       fetchDispatchData();
     }
   }, [mode, dispatchJobId, fetchDispatchData]);
+
+  // Polling interval for sent emails when job is running (realtime backup)
+  useEffect(() => {
+    if (mode !== 'dispatch_leads' || !dispatchJobId) return;
+    
+    const pollInterval = setInterval(() => {
+      if (dispatchJobRef.current?.status === 'running') {
+        fetchSentEmails();
+      }
+    }, 1500); // Poll every 1.5s
+
+    return () => clearInterval(pollInterval);
+  }, [mode, dispatchJobId, fetchSentEmails]);
 
   // Real-time updates for the job
   useResilientChannel({
@@ -362,7 +378,7 @@ export function EmailSidePanel({
       enabled: mode === 'dispatch_leads',
       intervalMs: 2000,
       fetchFn: fetchDispatchData,
-      shouldPoll: () => dispatchJob?.status === 'running',
+      shouldPoll: () => dispatchJobRef.current?.status === 'running',
     },
   });
 
