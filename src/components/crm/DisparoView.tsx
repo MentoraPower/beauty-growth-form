@@ -15,6 +15,7 @@ import { CsvChatCard } from "./CsvChatCard";
 import { ThinkingIndicator } from "./ThinkingIndicator";
 import { AIWorkDetails, WorkStep, WorkSubItem, createLeadsAnalysisStep, createEmailGenerationStep, createDispatchStep, createCustomStep } from "./AIWorkDetails";
 import { DataIntelligence, InsightStep, createCsvAnalysisSteps } from "./DataIntelligence";
+import { DispatchStatsCard } from "./DispatchStatsCard";
 import { supabase } from "@/integrations/supabase/client";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
 import { Check, ExternalLink } from "lucide-react";
@@ -63,7 +64,7 @@ interface DisparoViewProps {
 }
 
 interface MessageComponentData {
-  type: 'leads_preview' | 'html_editor' | 'origins_list' | 'dispatch_progress' | 'csv_preview' | 'email_choice' | 'email_generator' | 'copy_choice' | 'copy_input' | 'email_generator_streaming' | 'ai_work_details' | 'data_intelligence' | 'email_setup';
+  type: 'leads_preview' | 'html_editor' | 'origins_list' | 'dispatch_progress' | 'csv_preview' | 'email_choice' | 'email_generator' | 'copy_choice' | 'copy_input' | 'email_generator_streaming' | 'ai_work_details' | 'data_intelligence' | 'email_setup' | 'dispatch_stats';
   data?: any;
 }
 
@@ -538,27 +539,43 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
     logAction('system', 'DISPATCH_ERROR', `Failed: ${error.failedCount}, Error: ${error.lastError}`);
   }, [logAction]);
 
-  // Handle dispatch completion
-  const handleDispatchComplete = useCallback((result: { sent: number; failed: number; errorLog?: Array<{ leadEmail: string; error: string }> }) => {
+  // Handle dispatch completion - adds stats component to chat
+  const handleDispatchComplete = useCallback((result: { sent: number; failed: number; jobId?: string; errorLog?: Array<{ leadEmail: string; error: string }> }) => {
     const hasErrors = result.failed > 0;
     
     let content: string;
     if (hasErrors) {
       const errorDetails = result.errorLog?.slice(0, 3).map(e => `• ${e.leadEmail}: ${e.error}`).join('\n') || 'Detalhes indisponíveis';
-      content = `📊 **Disparo concluído com falhas**\n\n✅ ${result.sent} emails enviados com sucesso\n❌ ${result.failed} emails falharam\n\n**Principais erros:**\n${errorDetails}`;
+      content = `📊 **Disparo concluído com falhas**\n\n✅ ${result.sent} emails enviados com sucesso\n❌ ${result.failed} emails falharam\n\n**Principais erros:**\n${errorDetails}\n\nVeja as estatísticas em tempo real abaixo:`;
     } else {
-      content = `🎉 **Disparo concluído com sucesso!**\n\nTodos os ${result.sent} emails foram enviados sem erros.`;
+      content = `🎉 **Disparo concluído com sucesso!**\n\nTodos os ${result.sent} emails foram enviados sem erros.\n\nAcompanhe as métricas de abertura e cliques em tempo real:`;
     }
+    
+    const jobId = result.jobId || activeJobId;
+    
+    const componentData: MessageComponentData | undefined = jobId 
+      ? { type: 'dispatch_stats', data: { jobId } }
+      : undefined;
     
     const completeMessage: Message = {
       id: crypto.randomUUID(),
       content,
       role: "assistant",
-      timestamp: new Date()
+      timestamp: new Date(),
+      componentData
     };
+    
     setMessages(prev => [...prev, completeMessage]);
     logAction('system', 'DISPATCH_COMPLETE', `Sent: ${result.sent}, Failed: ${result.failed}`);
-  }, [logAction]);
+    
+    // Also open stats panel
+    if (jobId) {
+      setActiveJobId(jobId);
+      setSidePanelMode('dispatch_stats');
+      setSidePanelShowCodePreview(false);
+      setSidePanelOpen(true);
+    }
+  }, [logAction, activeJobId]);
 
   // Handler for HTML submit from reload
   const handleHtmlSubmitFromReload = useCallback((html: string, subOriginId: string, dispatchType: string) => {
@@ -730,6 +747,23 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
               columns={columns}
               previewData={previewData}
               mappedColumns={mc}
+            />
+          </div>
+        );
+      }
+      case 'dispatch_stats': {
+        const { jobId } = (componentData.data || {}) as any;
+        if (!jobId) return null;
+        return (
+          <div className="mt-4 w-full max-w-md">
+            <DispatchStatsCard 
+              jobId={jobId}
+              onOpenPanel={() => {
+                setActiveJobId(jobId);
+                setSidePanelMode('dispatch_stats');
+                setSidePanelShowCodePreview(false);
+                setSidePanelOpen(true);
+              }}
             />
           </div>
         );
@@ -2601,6 +2635,21 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
                                   setSidePanelShowCodePreview(true);
                                   setSidePanelOpen(true);
                                 }
+                              }}
+                            />
+                          </div>
+                        )}
+                        
+                        {/* Dispatch stats card */}
+                        {msg.componentData?.type === 'dispatch_stats' && msg.componentData.data?.jobId && (
+                          <div className="mt-3 w-full max-w-md">
+                            <DispatchStatsCard 
+                              jobId={msg.componentData.data.jobId}
+                              onOpenPanel={() => {
+                                setActiveJobId(msg.componentData!.data.jobId);
+                                setSidePanelMode('dispatch_stats');
+                                setSidePanelShowCodePreview(false);
+                                setSidePanelOpen(true);
                               }}
                             />
                           </div>
