@@ -2249,10 +2249,10 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
         }
       }
       
-      // Check if content looks like copy/email
-      const isLargeContent = finalCleanContent.length > 300;
-      const looksLikeCopy = /\b(copy|headline|cta|oferta|venda|benefício)\b/i.test(messageContent) || finalCleanContent.length >= 200;
-      const shouldShowCard = isCopywritingMode || looksLikeCopy || isLargeContent;
+      // Only show EmailChatCard when in copywriting mode AND user explicitly requested copy generation
+      // Don't show for regular chat responses, instructions, or dispatch preparation
+      const userRequestedCopy = /\b(crie|cria|gere|gera|escreve|escreva|faça|faz|redige|redija|elabore|elabora)\s+(uma?\s+)?(copy|email|e-mail|texto|headline|assunto|subject)\b/i.test(messageContent);
+      const shouldShowCard = isCopywritingMode && userRequestedCopy && finalCleanContent.length > 300;
       
       setMessages(prev => 
         prev.map(m => {
