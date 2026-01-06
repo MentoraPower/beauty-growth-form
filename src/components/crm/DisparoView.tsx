@@ -2098,7 +2098,6 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
         setSidePanelOpen(true);
         setHtmlSource('user');
         logAction('system', 'Painel aberto para colar HTML', 'Usuário escolheu opção 3');
-        toast.success("Painel aberto! Cole seu HTML no editor de código.");
       }
       
       // Check for structured email format
