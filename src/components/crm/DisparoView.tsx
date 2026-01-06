@@ -63,7 +63,7 @@ interface DisparoViewProps {
 }
 
 interface MessageComponentData {
-  type: 'leads_preview' | 'html_editor' | 'origins_list' | 'dispatch_progress' | 'csv_preview' | 'email_choice' | 'email_generator' | 'copy_choice' | 'copy_input' | 'email_generator_streaming' | 'ai_work_details' | 'data_intelligence';
+  type: 'leads_preview' | 'html_editor' | 'origins_list' | 'dispatch_progress' | 'csv_preview' | 'email_choice' | 'email_generator' | 'copy_choice' | 'copy_input' | 'email_generator_streaming' | 'ai_work_details' | 'data_intelligence' | 'email_setup';
   data?: any;
 }
 
@@ -701,6 +701,24 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
           </div>
         );
       }
+      case 'email_setup': {
+        const { source, title } = (componentData.data || {}) as any;
+        const buttonText = source === 'html_ready' ? 'Configurar email' : 'Abrir editor';
+        return (
+          <div className="mt-4 w-full">
+            <EmailChatCard
+              subject={title || 'HTML pronto'}
+              chatName={buttonText}
+              previewHtml=""
+              onClick={() => {
+                setSidePanelMode('email');
+                setSidePanelShowCodePreview(true);
+                setSidePanelOpen(true);
+              }}
+            />
+          </div>
+        );
+      }
       case 'csv_preview': {
         const { fileName, totalRows, columns, previewData, mappedColumns: mc } = (componentData.data || {}) as any;
         if (!fileName) return null;
@@ -1102,21 +1120,30 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
     }
   }, [searchParams, currentConversationId, isLoading, sidePanelGenerating]);
 
-  // Reconstruct components after messages are loaded (avoid infinite loops when component is null)
+  // Reconstruct components after messages are loaded (avoid infinite loops)
   useEffect(() => {
     if (!initialLoadDone) return;
-    setMessages((prev) =>
-      prev.map((m) => {
+    
+    // Only process if there are messages that need component reconstruction
+    const needsReconstruction = messages.some(m => m.componentData && m.component === undefined);
+    if (!needsReconstruction) return;
+    
+    setMessages((prev) => {
+      let hasChanges = false;
+      const updated = prev.map((m) => {
         if (m.componentData && m.component === undefined) {
+          hasChanges = true;
           return {
             ...m,
             component: reconstructMessageComponent(m.componentData, m.id),
           };
         }
         return m;
-      })
-    );
-  }, [initialLoadDone, messages]);
+      });
+      // Only return new array if we actually made changes
+      return hasChanges ? updated : prev;
+    });
+  }, [initialLoadDone]);
 
   // Track last saved signature
   const lastSavedSignatureRef = useRef<string>('');
@@ -1692,6 +1719,10 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
     // Early detection: open side panel IMMEDIATELY if user chose "HTML pronto"
     const userChoseHtmlReadyEarly = /\b(3|três|opção\s*3|tenho\s+(o\s+)?html|já\s+tenho\s+(o\s+)?html|html\s+pronto|colar\s+(o\s+)?html|quero\s+colar|vou\s+colar)\b/i.test(messageContent);
     
+    // Early detection: user confirming dispatch
+    const userConfirmingDispatch = /^\s*(sim|pode|ok|vamos|disparar|pode disparar|enviar|manda|confirmo|confirma|bora|vai|envie|dispara)\s*[.!]?\s*$/i.test(messageContent);
+    
+    // Handle "HTML pronto" - open panel and add EmailChatCard
     if (userChoseHtmlReadyEarly && !sidePanelHtml) {
       setSidePanelHtml('');
       setSidePanelSubject('');
@@ -1701,6 +1732,88 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
       setSidePanelOpen(true);
       setHtmlSource('user');
       logAction('system', 'Painel aberto para colar HTML', 'Usuário escolheu opção 3');
+      
+      // Add user message first
+      const userMsg: Message = {
+        id: crypto.randomUUID(),
+        content: messageContent,
+        role: "user",
+        timestamp: new Date()
+      };
+      setMessages(prev => [...prev, userMsg]);
+      
+      // Add assistant message with EmailChatCard component
+      const emailSetupComponentData: MessageComponentData = {
+        type: 'email_setup' as const,
+        data: { source: 'html_ready', title: 'Configurar email (HTML pronto)' }
+      };
+      const assistantMsg: Message = {
+        id: crypto.randomUUID(),
+        content: "Perfeito! Abri o painel lateral para você. Cole seu HTML na aba 'Código', preencha o assunto e preheader, e depois me avise quando estiver pronto!",
+        role: "assistant",
+        timestamp: new Date(),
+        componentData: emailSetupComponentData,
+        component: (
+          <div className="mt-4 w-full">
+            <EmailChatCard
+              subject="Configurar email (HTML pronto)"
+              chatName="Abrir editor"
+              previewHtml=""
+              onClick={() => {
+                setSidePanelMode('email');
+                setSidePanelShowCodePreview(true);
+                setSidePanelOpen(true);
+              }}
+            />
+          </div>
+        )
+      };
+      setMessages(prev => [...prev, assistantMsg]);
+      
+      // Save conversation
+      setTimeout(() => saveConversationNow(), 100);
+      
+      isProcessingMessageRef.current = false;
+      return; // Skip AI call for this flow
+    }
+    
+    // Handle dispatch confirmation - trigger dispatch directly
+    if (userConfirmingDispatch) {
+      const hasHtml = sidePanelHtml && sidePanelHtml.length > 50;
+      const hasDestination = selectedOriginData?.subOriginId || csvListId;
+      
+      if (hasHtml && hasDestination) {
+        // Add user message
+        const userMsg: Message = {
+          id: crypto.randomUUID(),
+          content: messageContent,
+          role: "user",
+          timestamp: new Date()
+        };
+        setMessages(prev => [...prev, userMsg]);
+        
+        // Build dispatch command and execute directly
+        const encodedHtml = btoa(encodeURIComponent(sidePanelHtml));
+        const encodedSubject = sidePanelSubject ? btoa(encodeURIComponent(sidePanelSubject)) : '';
+        const convId = conversationIdRef.current || currentConversationId || '';
+        
+        let dispatchCommand: string;
+        if (csvListId) {
+          dispatchCommand = `START_DISPATCH_CSV:email:${csvListId}:html:${convId}:${encodedSubject}:${encodedHtml}`;
+        } else {
+          dispatchCommand = `START_DISPATCH:email:${selectedOriginData!.subOriginId}:html:${convId}:${encodedSubject}:${encodedHtml}`;
+        }
+        
+        console.log('[DisparoView] Direct dispatch triggered by user confirmation');
+        isProcessingMessageRef.current = false;
+        
+        // Execute dispatch directly
+        executeDispatch(dispatchCommand);
+        return; // Skip AI call
+      } else {
+        // Missing prerequisites - let AI respond
+        console.log('[DisparoView] User confirmed but missing prerequisites:', { hasHtml, hasDestination });
+      }
     }
     
     const userMessage: Message = {

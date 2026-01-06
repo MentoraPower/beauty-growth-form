@@ -104,7 +104,7 @@ export function EmailChatCard({
             type="button"
             className="py-1 px-2.5 bg-zinc-800 hover:bg-zinc-700 text-white text-xs font-medium rounded-[4px] transition-colors self-start"
           >
-            Review Email
+            {previewHtml ? 'Review Email' : 'Abrir editor'}
           </button>
         </div>
       </div>
