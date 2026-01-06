@@ -2085,6 +2085,22 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
       // Process commands and clean content
       const { cleanContent, components, csvChanged } = await processCommands(fullContent);
       
+      // Detect if user chose option 3 (has HTML ready) - open side panel for pasting
+      const userChoseHtmlReady = /\b(3|três|opção\s*3|tenho\s+(o\s+)?html|já\s+tenho\s+(o\s+)?html|html\s+pronto|colar\s+(o\s+)?html|quero\s+colar|vou\s+colar)\b/i.test(messageContent);
+      
+      if (userChoseHtmlReady && selectedOriginData && !sidePanelHtml) {
+        // Open side panel empty for user to paste HTML
+        setSidePanelHtml('');
+        setSidePanelSubject('');
+        setSidePanelPreheader('');
+        setSidePanelMode('email');
+        setSidePanelShowCodePreview(true);
+        setSidePanelOpen(true);
+        setHtmlSource('user');
+        logAction('system', 'Painel aberto para colar HTML', 'Usuário escolheu opção 3');
+        toast.success("Painel aberto! Cole seu HTML no editor de código.");
+      }
+      
       // Check for structured email format
       const structuredEmail = extractStructuredEmail(cleanContent);
       const promptSummary = getPromptSummary(messageContent);
