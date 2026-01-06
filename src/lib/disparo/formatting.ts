@@ -113,8 +113,8 @@ const formatInlineStyles = (text: string): React.ReactNode => {
 export function formatMessageContent(content: string): React.ReactNode {
   if (!content) return null;
   
-  // First remove any agent prefix
-  const cleanContent = removeAgentPrefix(content);
+  // First remove any agent prefix and normalize CRM capitalization
+  const cleanContent = removeAgentPrefix(content).replace(/\bcrm\b/gi, 'CRM');
   
   const lines = cleanContent.split('\n');
   const elements: React.ReactNode[] = [];

@@ -1689,6 +1689,20 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
       messageContent = displayMessageContent || 'Analise esta imagem';
     }
     
+    // Early detection: open side panel IMMEDIATELY if user chose "HTML pronto"
+    const userChoseHtmlReadyEarly = /\b(3|três|opção\s*3|tenho\s+(o\s+)?html|já\s+tenho\s+(o\s+)?html|html\s+pronto|colar\s+(o\s+)?html|quero\s+colar|vou\s+colar)\b/i.test(messageContent);
+    
+    if (userChoseHtmlReadyEarly && !sidePanelHtml) {
+      setSidePanelHtml('');
+      setSidePanelSubject('');
+      setSidePanelPreheader('');
+      setSidePanelMode('email');
+      setSidePanelShowCodePreview(true);
+      setSidePanelOpen(true);
+      setHtmlSource('user');
+      logAction('system', 'Painel aberto para colar HTML', 'Usuário escolheu opção 3');
+    }
+    
     const userMessage: Message = {
       id: crypto.randomUUID(),
       content: csvParseResult ? '' : messageContent,
@@ -2085,20 +2099,7 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
       // Process commands and clean content
       const { cleanContent, components, csvChanged } = await processCommands(fullContent);
       
-      // Detect if user chose option 3 (has HTML ready) - open side panel for pasting
-      const userChoseHtmlReady = /\b(3|três|opção\s*3|tenho\s+(o\s+)?html|já\s+tenho\s+(o\s+)?html|html\s+pronto|colar\s+(o\s+)?html|quero\s+colar|vou\s+colar)\b/i.test(messageContent);
-      
-      if (userChoseHtmlReady && selectedOriginData && !sidePanelHtml) {
-        // Open side panel empty for user to paste HTML
-        setSidePanelHtml('');
-        setSidePanelSubject('');
-        setSidePanelPreheader('');
-        setSidePanelMode('email');
-        setSidePanelShowCodePreview(true);
-        setSidePanelOpen(true);
-        setHtmlSource('user');
-        logAction('system', 'Painel aberto para colar HTML', 'Usuário escolheu opção 3');
-      }
+      // Note: Side panel opening for "HTML pronto" is now handled earlier in handleSend (before streaming)
       
       // Check for structured email format
       const structuredEmail = extractStructuredEmail(cleanContent);
