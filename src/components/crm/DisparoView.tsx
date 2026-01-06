@@ -2472,6 +2472,28 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
                           </div>
                         )}
                         
+                        {/* Email card - only for copy/email creation */}
+                        {msg.componentData?.type === 'email_generator_streaming' && msg.componentData.data?.generatedHtml && msg.componentData.data?.isComplete && (
+                          <div className="mt-3 w-full">
+                            <EmailChatCard
+                              subject={msg.componentData.data.subject || 'Copy gerada'}
+                              chatName={msg.componentData.data.emailName || 'Copy'}
+                              previewHtml={msg.componentData.data.generatedHtml}
+                              onClick={() => {
+                                const data = msg.componentData?.data;
+                                if (data) {
+                                  const normalizedHtml = normalizeSidePanelHtml(data.generatedHtml);
+                                  setSidePanelHtml(normalizedHtml);
+                                  setSidePanelSubject(data.subject || '');
+                                  setSidePanelPreheader(data.preheader || '');
+                                  setSidePanelMode(data.mode || 'email');
+                                  setSidePanelShowCodePreview(true);
+                                  setSidePanelOpen(true);
+                                }
+                              }}
+                            />
+                          </div>
+                        )}
                         
                         {/* Other components */}
                         {msg.component && (
