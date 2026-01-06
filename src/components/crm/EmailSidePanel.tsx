@@ -260,10 +260,14 @@ export function EmailSidePanel({
   }, [htmlContent, editor, showCodePreview]);
 
   // Dispatch leads mode state
+  const normalizeEmail = useCallback((email?: string | null) => {
+    return (email ?? "").trim().toLowerCase();
+  }, []);
+
   const [dispatchJob, setDispatchJob] = useState<DispatchJob | null>(null);
   const [dispatchLeads, setDispatchLeads] = useState<DispatchLead[]>([]);
   const [sentLeadIds, setSentLeadIds] = useState<Set<string>>(new Set());
-  const [sentEmails, setSentEmails] = useState<Set<string>>(new Set()); // For CSV: track by email
+  const [sentEmails, setSentEmails] = useState<Set<string>>(new Set()); // For CSV/CRM fallback: track by email
   const [dispatchLoading, setDispatchLoading] = useState(true);
   const dispatchJobRef = useRef<DispatchJob | null>(null);
 
@@ -283,10 +287,15 @@ export function EmailSidePanel({
       .eq('status', 'sent');
 
     if (sentEmailsData) {
-      setSentLeadIds(new Set(sentEmailsData.map(e => e.lead_id).filter(Boolean) as string[]));
-      setSentEmails(new Set(sentEmailsData.map(e => e.lead_email)));
+      setSentLeadIds(new Set(sentEmailsData.map((e) => e.lead_id).filter(Boolean) as string[]));
+
+      const normalizedEmails = sentEmailsData
+        .map((e) => normalizeEmail(e.lead_email))
+        .filter(Boolean);
+
+      setSentEmails(new Set(normalizedEmails));
     }
-  }, [dispatchJobId]);
+  }, [dispatchJobId, normalizeEmail]);
 
   // Fetch dispatch job data
   const fetchDispatchData = useCallback(async () => {
@@ -313,11 +322,13 @@ export function EmailSidePanel({
           .order('name');
 
         if (csvRecipients) {
-          setDispatchLeads(csvRecipients.map(r => ({
-            id: r.id,
-            name: r.name || 'Lead',
-            email: r.email
-          })));
+          setDispatchLeads(
+            csvRecipients.map((r) => ({
+              id: r.id,
+              name: r.name || 'Lead',
+              email: r.email,
+            }))
+          );
         }
       } else {
         // CRM dispatch - original flow
@@ -329,11 +340,15 @@ export function EmailSidePanel({
           .order('name');
 
         if (leadsData) {
-          setDispatchLeads(leadsData.filter(l => l.email && l.email.includes('@')).map(l => ({
-            id: l.id,
-            name: l.name,
-            email: l.email
-          })));
+          setDispatchLeads(
+            leadsData
+              .filter((l) => l.email && l.email.includes('@'))
+              .map((l) => ({
+                id: l.id,
+                name: l.name,
+                email: l.email,
+              }))
+          );
         }
       }
 
@@ -355,7 +370,7 @@ export function EmailSidePanel({
   // Polling interval for sent emails when job is running (realtime backup)
   useEffect(() => {
     if (mode !== 'dispatch_leads' || !dispatchJobId) return;
-    
+
     const pollInterval = setInterval(() => {
       if (dispatchJobRef.current?.status === 'running') {
         fetchSentEmails();
@@ -391,11 +406,15 @@ export function EmailSidePanel({
     onPayload: (payload) => {
       const newEmail = payload.new as { lead_id: string | null; lead_email: string; status: string };
       if (newEmail.status === 'sent') {
-        // Support both CRM (lead_id) and CSV (lead_email) tracking
+        // Support both CRM (lead_id) and CSV/CRM fallback (lead_email) tracking
         if (newEmail.lead_id) {
-          setSentLeadIds(prev => new Set([...prev, newEmail.lead_id!]));
+          setSentLeadIds((prev) => new Set([...prev, newEmail.lead_id!]));
         }
-        setSentEmails(prev => new Set([...prev, newEmail.lead_email]));
+
+        const emailKey = normalizeEmail(newEmail.lead_email);
+        if (emailKey) {
+          setSentEmails((prev) => new Set([...prev, emailKey]));
+        }
       }
     },
   });
@@ -719,7 +738,7 @@ export function EmailSidePanel({
               <span>{dispatchJob?.sent_count || 0} de {dispatchJob?.valid_leads || 0} enviados</span>
               <span className="font-semibold text-foreground">{progress}%</span>
             </div>
-            <div className="h-2.5 bg-zinc-100 dark:bg-zinc-800 rounded-full overflow-hidden">
+            <div className="h-2.5 bg-muted rounded-full overflow-hidden">
               <motion.div
                 initial={{ width: 0 }}
                 animate={{ width: `${progress}%` }}
@@ -778,7 +797,7 @@ export function EmailSidePanel({
           ) : (
             <div className="divide-y divide-border">
               {/* Header */}
-              <div className="grid grid-cols-[40px_1fr_1.5fr] gap-3 px-5 py-2.5 bg-zinc-100 dark:bg-zinc-800 text-xs font-medium text-muted-foreground sticky top-0 z-10">
+              <div className="grid grid-cols-[40px_1fr_1.5fr] gap-3 px-5 py-2.5 bg-muted text-xs font-medium text-muted-foreground sticky top-0 z-10">
                 <div></div>
                 <div>Nome</div>
                 <div>Email</div>
@@ -786,8 +805,8 @@ export function EmailSidePanel({
 
               {/* Rows */}
               {dispatchLeads.map((lead) => {
-                // Check if sent by lead_id (CRM) or email (CSV)
-                const isSent = sentLeadIds.has(lead.id) || sentEmails.has(lead.email);
+                // Check if sent by lead_id (CRM) or email (CSV/CRM fallback)
+                const isSent = sentLeadIds.has(lead.id) || sentEmails.has(normalizeEmail(lead.email));
                 const isCurrentlySending = isRunning && dispatchJob?.current_lead_name?.includes(lead.name);
                 
                 return (
