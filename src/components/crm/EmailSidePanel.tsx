@@ -297,7 +297,22 @@ export function EmailSidePanel({
     }
   }, [dispatchJobId, normalizeEmail]);
 
-  // Fetch dispatch job data
+  // Fetch ONLY the dispatch job row (progress/status updates)
+  const fetchDispatchJobOnly = useCallback(async () => {
+    if (!dispatchJobId) return;
+
+    const { data: jobData } = await supabase
+      .from('dispatch_jobs')
+      .select('*')
+      .eq('id', dispatchJobId)
+      .single();
+
+    if (jobData) {
+      setDispatchJob(jobData as unknown as DispatchJob);
+    }
+  }, [dispatchJobId]);
+
+  // Fetch dispatch job + full leads list (initial load)
   const fetchDispatchData = useCallback(async () => {
     if (!dispatchJobId) return;
 
@@ -310,48 +325,59 @@ export function EmailSidePanel({
     if (jobData) {
       setDispatchJob(jobData as unknown as DispatchJob);
 
+      const pageSize = 1000;
+      const maxRows = 20000; // safety cap
+
       // Check if this is a CSV dispatch (has csv_list_id)
       const isCsvDispatch = !!(jobData as any).csv_list_id;
 
       if (isCsvDispatch) {
-        // Fetch recipients from CSV list (up to 10k)
-        const { data: csvRecipients } = await supabase
-          .from('dispatch_csv_list_recipients')
-          .select('id, name, email')
-          .eq('list_id', (jobData as any).csv_list_id)
-          .order('name')
-          .range(0, 9999);
+        // Fetch recipients from CSV list (paged to avoid 1000-row caps)
+        const allRecipients: Array<{ id: string; name: string | null; email: string }> = [];
+        for (let from = 0; from < maxRows; from += pageSize) {
+          const { data: page } = await supabase
+            .from('dispatch_csv_list_recipients')
+            .select('id, name, email')
+            .eq('list_id', (jobData as any).csv_list_id)
+            .order('name')
+            .range(from, from + pageSize - 1);
 
-        if (csvRecipients) {
-          setDispatchLeads(
-            csvRecipients.map((r) => ({
-              id: r.id,
-              name: r.name || 'Lead',
-              email: r.email,
-            }))
-          );
+          if (page?.length) allRecipients.push(...page);
+          if (!page || page.length < pageSize) break;
         }
+
+        setDispatchLeads(
+          allRecipients.map((r) => ({
+            id: r.id,
+            name: r.name || 'Lead',
+            email: r.email,
+          }))
+        );
       } else {
-        // CRM dispatch - original flow (up to 10k)
-        const { data: leadsData } = await supabase
-          .from('leads')
-          .select('id, name, email')
-          .eq('sub_origin_id', jobData.sub_origin_id)
-          .not('email', 'is', null)
-          .order('name')
-          .range(0, 9999);
+        // CRM dispatch - original flow (paged to avoid 1000-row caps)
+        const allLeads: Array<{ id: string; name: string; email: string }> = [];
+        for (let from = 0; from < maxRows; from += pageSize) {
+          const { data: page } = await supabase
+            .from('leads')
+            .select('id, name, email')
+            .eq('sub_origin_id', jobData.sub_origin_id)
+            .not('email', 'is', null)
+            .order('name')
+            .range(from, from + pageSize - 1);
 
-        if (leadsData) {
-          setDispatchLeads(
-            leadsData
-              .filter((l) => l.email && l.email.includes('@'))
-              .map((l) => ({
-                id: l.id,
-                name: l.name,
-                email: l.email,
-              }))
-          );
+          if (page?.length) allLeads.push(...(page as any));
+          if (!page || page.length < pageSize) break;
         }
+
+        setDispatchLeads(
+          allLeads
+            .filter((l) => l.email && l.email.includes('@'))
+            .map((l) => ({
+              id: l.id,
+              name: l.name,
+              email: l.email,
+            }))
+        );
       }
 
       // Fetch sent emails for this job
@@ -382,6 +408,20 @@ export function EmailSidePanel({
     return () => clearInterval(pollInterval);
   }, [mode, dispatchJobId, fetchSentEmails]);
 
+  // Polling interval for job progress (backup when realtime is flaky)
+  useEffect(() => {
+    if (!isOpen || mode !== 'dispatch_leads' || !dispatchJobId) return;
+
+    const pollInterval = setInterval(() => {
+      const status = dispatchJobRef.current?.status;
+      if (!status || status === 'running' || status === 'paused') {
+        fetchDispatchJobOnly();
+      }
+    }, 1500);
+
+    return () => clearInterval(pollInterval);
+  }, [isOpen, mode, dispatchJobId, fetchDispatchJobOnly]);
+
   // Real-time updates for the job
   useResilientChannel({
     channelName: `dispatch-panel-${dispatchJobId}`,
@@ -394,8 +434,11 @@ export function EmailSidePanel({
     pollingFallback: {
       enabled: mode === 'dispatch_leads',
       intervalMs: 2000,
-      fetchFn: fetchDispatchData,
-      shouldPoll: () => dispatchJobRef.current?.status === 'running',
+      fetchFn: fetchDispatchJobOnly,
+      shouldPoll: () => {
+        const status = dispatchJobRef.current?.status;
+        return status === 'running' || status === 'paused' || !status;
+      },
     },
   });
 
