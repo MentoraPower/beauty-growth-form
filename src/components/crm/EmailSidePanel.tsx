@@ -762,7 +762,7 @@ export function EmailSidePanel({
           ) : (
             <div className="divide-y divide-border">
               {/* Header */}
-              <div className="grid grid-cols-[40px_1fr_1.5fr] gap-3 px-5 py-2.5 bg-muted/50 dark:bg-zinc-800/50 text-xs font-medium text-muted-foreground sticky top-0">
+              <div className="grid grid-cols-[40px_1fr_1.5fr] gap-3 px-5 py-2.5 bg-zinc-100 dark:bg-zinc-800 text-xs font-medium text-muted-foreground sticky top-0 z-10">
                 <div></div>
                 <div>Nome</div>
                 <div>Email</div>
