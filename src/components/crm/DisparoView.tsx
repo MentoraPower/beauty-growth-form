@@ -762,7 +762,7 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
         
         const assistantMessage: Message = {
           id: crypto.randomUUID(),
-          content: `Encontrei **${result.data.totalLeads}** leads na lista "${subOriginName}".\n\n📧 **${result.data.validLeads}** têm email válido para disparo.\n\nAgora me envie o HTML do email ou descreva o que você quer que eu crie!`,
+          content: `Encontrei **${result.data.totalLeads}** leads na lista "${subOriginName}".\n\n📧 **${result.data.validLeads}** têm email válido para disparo.\n\nAgora sobre o email, qual opção você prefere?\n\n1️⃣ Criar do zero (eu crio a copy + o HTML)\n2️⃣ Já tenho a copy (você envia o texto e eu transformo em HTML)\n3️⃣ Já tenho o HTML pronto (você cola aqui e eu uso direto)\n\nResponda com 1, 2 ou 3.`,
           role: "assistant",
           timestamp: new Date(),
           componentData,
@@ -1166,13 +1166,14 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
         if (title === "Nova conversa") {
           const firstUserMessage = currentMessages.find(m => m.role === "user");
           if (firstUserMessage) {
-            let cleanContent = firstUserMessage.content
-              .replace(/\[(Agente:[^\]]+|CONTEXT:[^\]]+|Search)\]\s*/gi, '')
-              .replace(/^CONTEXT\s*/i, '')
-              .replace(/^copy\s*/i, '')
-              .replace(/text-copyright/gi, '')
-              .replace(/^\s*/, '')
-              .trim();
+              let cleanContent = firstUserMessage.content
+                .replace(/\[(Agente:[^\]]+|CONTEXT:[^\]]+|Search)\]\s*/gi, '')
+                .replace(/^CONTEXT\s*/i, '')
+                .replace(/^copy\s*/i, '')
+                .replace(/text-copyright/gi, '')
+                .replace(/\bcrm\b/gi, 'CRM')
+                .replace(/^\s*/, '')
+                .trim();
             
             if (cleanContent.length > 0) {
               title = cleanContent.slice(0, 50) + (cleanContent.length > 50 ? "..." : "");
@@ -2449,7 +2450,7 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
                         {/* Message content */}
                         {msg.content && (
                           <div className="text-foreground text-sm whitespace-pre-wrap">
-                            {formatMessageContent(msg.content)}
+                            {formatMessageContent(msg.content.replace(/\bcrm\b/gi, 'CRM'))}
                           </div>
                         )}
                         
