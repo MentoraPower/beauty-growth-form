@@ -669,7 +669,7 @@ export function EmailSidePanel({
     const isCompleted = dispatchJob?.status === 'completed';
 
     return (
-      <div className="w-[65%] min-w-[700px] max-w-[1400px] h-full flex-shrink-0 bg-card flex flex-col rounded-2xl overflow-hidden border border-border">
+      <div className="w-[580px] h-full flex-shrink-0 bg-card flex flex-col rounded-2xl overflow-hidden border border-border">
         {/* Header with progress bar */}
         <div className="border-b border-border px-5 py-3 space-y-4">
           <div className="flex items-center justify-between">
