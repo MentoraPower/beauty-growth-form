@@ -1115,18 +1115,9 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
     }
   }, [searchParams, currentConversationId, isLoading, sidePanelGenerating]);
 
-  const originsPromptedRef = useRef<string | null>(null);
-
   // Reconstruct components after messages are loaded (avoid infinite loops when component is null)
   useEffect(() => {
-    if (!initialLoadDone || messages.length === 0) return;
-
-    const needsReconstruction = messages.some(
-      (m) => m.componentData && m.component === undefined
-    );
-
-    if (!needsReconstruction) return;
-
+    if (!initialLoadDone) return;
     setMessages((prev) =>
       prev.map((m) => {
         if (m.componentData && m.component === undefined) {
@@ -1139,38 +1130,6 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
       })
     );
   }, [initialLoadDone, messages]);
-
-  // Ensure CRM list buttons are available inside the chat when no list is selected
-  useEffect(() => {
-    if (!initialLoadDone || isConversationLoading) return;
-    if (isLoading || sidePanelGenerating) return;
-    if (selectedOriginData || csvListId) return;
-
-    const convKey = currentConversationId || "new";
-    if (originsPromptedRef.current === convKey) return;
-
-    const alreadyHasOriginsList = messages.some(
-      (m) => m.componentData?.type === "origins_list"
-    );
-
-    if (alreadyHasOriginsList) {
-      originsPromptedRef.current = convKey;
-      return;
-    }
-
-    originsPromptedRef.current = convKey;
-    void showCrmOriginsList();
-  }, [
-    initialLoadDone,
-    isConversationLoading,
-    isLoading,
-    sidePanelGenerating,
-    selectedOriginData,
-    csvListId,
-    messages,
-    currentConversationId,
-    showCrmOriginsList,
-  ]);
 
   // Track last saved signature
   const lastSavedSignatureRef = useRef<string>('');
