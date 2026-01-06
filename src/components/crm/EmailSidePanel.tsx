@@ -671,19 +671,10 @@ export function EmailSidePanel({
     return (
       <div className="w-[65%] min-w-[700px] max-w-[1400px] h-full flex-shrink-0 bg-card flex flex-col rounded-2xl overflow-hidden border border-border">
         {/* Header with progress bar */}
-        <div className="border-b border-border p-5 space-y-4">
+        <div className="border-b border-border px-5 py-3 space-y-4">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Mail className="w-4 h-4 text-primary" />
-              <span className="font-medium">Disparo de Emails</span>
-            </div>
             <div className="flex items-center gap-3">
-              {isCompleted && (
-                <div className="flex items-center gap-1.5 text-sm text-green-600 dark:text-green-400">
-                  <Check className="w-4 h-4" />
-                  <span>Concluído</span>
-                </div>
-              )}
+              {/* Close button - left side like email mode */}
               {onClose && (
                 <button
                   onClick={onClose}
@@ -693,7 +684,17 @@ export function EmailSidePanel({
                   <ChevronsRight className="w-4 h-4 text-muted-foreground group-hover:text-foreground transition-colors" />
                 </button>
               )}
+              <div className="flex items-center gap-2">
+                <Mail className="w-4 h-4 text-primary" />
+                <span className="font-medium">Disparo de Emails</span>
+              </div>
             </div>
+            {isCompleted && (
+              <div className="flex items-center gap-1.5 text-sm text-green-600 dark:text-green-400">
+                <Check className="w-4 h-4" />
+                <span>Concluído</span>
+              </div>
+            )}
           </div>
 
           {/* Progress bar */}
