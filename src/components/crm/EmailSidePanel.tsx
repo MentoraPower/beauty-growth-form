@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useResilientChannel } from "@/hooks/useResilientChannel";
 import { DispatchAnalysis, DispatchData } from "./DispatchAnalysis";
+import { DispatchStatsPanel } from "./DispatchStatsPanel";
 import { motion } from "framer-motion";
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
@@ -55,7 +56,7 @@ interface DispatchJob {
   current_lead_name: string | null;
 }
 
-export type SidePanelMode = 'email' | 'dispatch_details' | 'workflow' | 'dispatch_leads';
+export type SidePanelMode = 'email' | 'dispatch_details' | 'workflow' | 'dispatch_leads' | 'dispatch_stats';
 
 interface EmailSidePanelProps {
   isOpen: boolean;
@@ -918,6 +919,16 @@ export function EmailSidePanel({
           )}
         </ScrollArea>
       </div>
+    );
+  }
+
+  // Render Dispatch Stats mode (post-dispatch analytics)
+  if (mode === 'dispatch_stats' && dispatchJobId) {
+    return (
+      <DispatchStatsPanel
+        jobId={dispatchJobId}
+        onClose={onClose}
+      />
     );
   }
 
