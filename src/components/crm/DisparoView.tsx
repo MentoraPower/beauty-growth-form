@@ -582,25 +582,12 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
   function reconstructMessageComponent(componentData: MessageComponentData, messageId: string): React.ReactNode {
     switch (componentData.type) {
       case 'email_choice': {
-        const { preview } = (componentData.data || {}) as any;
-        if (!preview) return null;
-        return (
-          <div className="mt-4 w-full">
-            <LeadsPreviewComponent preview={preview} />
-          </div>
-        );
+        // LeadsPreviewComponent removed - not needed in chat
+        return null;
       }
       case 'leads_preview': {
-        const { preview, subOriginId: soId, dispatchType: dt } = (componentData.data || {}) as any;
-        if (!preview || !soId || !dt) return null;
-        return (
-          <div className="mt-4 space-y-4 w-full">
-            <LeadsPreviewComponent preview={preview} />
-            <HtmlEditorComponent
-              onSubmit={(html) => handleHtmlSubmitFromReload(html, soId, dt)}
-            />
-          </div>
-        );
+        // LeadsPreviewComponent removed - not needed in chat
+        return null;
       }
       case 'html_editor': {
         const { subOriginId: soId, dispatchType: dt, initialContent } = (componentData.data || {}) as any;
@@ -1623,13 +1610,7 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
         }
 
         if (result.type === 'leads_preview') {
-          const previewComponent = (
-            <LeadsPreviewComponent 
-              key={`preview-${Date.now()}`}
-              preview={result.data} 
-            />
-          );
-          components.push(previewComponent);
+          // LeadsPreviewComponent removed - not needed in chat
         }
 
         if (result.type === 'dispatch_updated') {
