@@ -402,6 +402,9 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
   const isSavingRef = useRef(false);
   const lastStreamSaveTimeRef = useRef(0);
   const STREAM_SAVE_INTERVAL = 3000;
+  
+  // Ref for save function to avoid circular dependency
+  const saveConversationNowRef = useRef<(() => Promise<string | null>) | null>(null);
 
   const setConversationId = useCallback((id: string | null) => {
     conversationIdRef.current = id;
@@ -539,7 +542,7 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
     logAction('system', 'DISPATCH_ERROR', `Failed: ${error.failedCount}, Error: ${error.lastError}`);
   }, [logAction]);
 
-  // Handle dispatch completion - adds stats component to chat
+  // Handle dispatch completion - adds stats component to chat and persists to DB
   const handleDispatchComplete = useCallback((result: { sent: number; failed: number; jobId?: string; errorLog?: Array<{ leadEmail: string; error: string }> }) => {
     const hasErrors = result.failed > 0;
     
@@ -565,16 +568,27 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
       componentData
     };
     
-    setMessages(prev => [...prev, completeMessage]);
+    // Update messages using ref for proper persistence
+    const newMessages = [...messagesRef.current, completeMessage];
+    messagesRef.current = newMessages;
+    setMessages(newMessages);
+    
     logAction('system', 'DISPATCH_COMPLETE', `Sent: ${result.sent}, Failed: ${result.failed}`);
     
-    // Also open stats panel
+    // Open stats panel
     if (jobId) {
       setActiveJobId(jobId);
       setSidePanelMode('dispatch_stats');
       setSidePanelShowCodePreview(false);
       setSidePanelOpen(true);
     }
+    
+    // Persist to database immediately using ref
+    setTimeout(() => {
+      if (saveConversationNowRef.current) {
+        saveConversationNowRef.current();
+      }
+    }, 100);
   }, [logAction, activeJobId]);
 
   // Handler for HTML submit from reload
@@ -1318,6 +1332,11 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
       }
     }
   }, [sidePanelHtml, sidePanelSubject, sidePanelOpen, sidePanelContext, sidePanelWorkflowSteps, sidePanelShowCodePreview, sidePanelTitle, sidePanelMode, selectedOriginData, dispatchType, actionHistory, htmlSource, csvListId, csvFileName, csvMappedColumns, sidePanelPreheader]);
+
+  // Update ref for use in callbacks defined before this function
+  useEffect(() => {
+    saveConversationNowRef.current = saveConversationNow;
+  }, [saveConversationNow]);
 
   // Auto-save effect
   useEffect(() => {
