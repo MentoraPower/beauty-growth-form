@@ -390,6 +390,12 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
   const isCreatingConversationRef = useRef(false);
   const isProcessingMessageRef = useRef(false);
   
+  // Critical state refs for dispatch (avoid stale closures)
+  const sidePanelHtmlRef = useRef(sidePanelHtml);
+  const sidePanelSubjectRef = useRef(sidePanelSubject);
+  const selectedOriginDataRef = useRef(selectedOriginData);
+  const csvListIdRef = useRef(csvListId);
+  
   // Mutex: Promise-based lock to prevent duplicate conversation creation
   const creationLockRef = useRef<Promise<string | null> | null>(null);
   
@@ -429,6 +435,12 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
   useEffect(() => {
     conversationIdRef.current = currentConversationId;
   }, [currentConversationId]);
+
+  // Keep critical state refs in sync
+  useEffect(() => { sidePanelHtmlRef.current = sidePanelHtml; }, [sidePanelHtml]);
+  useEffect(() => { sidePanelSubjectRef.current = sidePanelSubject; }, [sidePanelSubject]);
+  useEffect(() => { selectedOriginDataRef.current = selectedOriginData; }, [selectedOriginData]);
+  useEffect(() => { csvListIdRef.current = csvListId; }, [csvListId]);
 
   // TYPEWRITER SYNC - update message content from typewriter
   const lastTypewriterContentRef = useRef('');
@@ -1830,10 +1842,23 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
       return; // Skip AI call for this flow
     }
     
-    // Handle dispatch confirmation - trigger dispatch directly
+    // Handle dispatch confirmation - trigger dispatch directly (USE REFS to avoid stale state!)
     if (userConfirmingDispatch) {
-      const hasHtml = sidePanelHtml && sidePanelHtml.length > 50;
-      const hasDestination = selectedOriginData?.subOriginId || csvListId;
+      const currentHtml = sidePanelHtmlRef.current;
+      const currentSubject = sidePanelSubjectRef.current;
+      const currentOriginData = selectedOriginDataRef.current;
+      const currentCsvListId = csvListIdRef.current;
+      
+      const hasHtml = currentHtml && currentHtml.length > 50;
+      const hasDestination = currentOriginData?.subOriginId || currentCsvListId;
+      
+      console.log('[DisparoView] Dispatch confirmation check:', { 
+        hasHtml, 
+        htmlLength: currentHtml?.length, 
+        hasDestination, 
+        subOriginId: currentOriginData?.subOriginId, 
+        csvListId: currentCsvListId 
+      });
       
       if (hasHtml && hasDestination) {
         // Add user message
@@ -1846,15 +1871,15 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
         setMessages(prev => [...prev, userMsg]);
         
         // Build dispatch command and execute directly
-        const encodedHtml = btoa(encodeURIComponent(sidePanelHtml));
-        const encodedSubject = sidePanelSubject ? btoa(encodeURIComponent(sidePanelSubject)) : '';
+        const encodedHtml = btoa(encodeURIComponent(currentHtml));
+        const encodedSubject = currentSubject ? btoa(encodeURIComponent(currentSubject)) : '';
         const convId = conversationIdRef.current || currentConversationId || '';
         
         let dispatchCommand: string;
-        if (csvListId) {
-          dispatchCommand = `START_DISPATCH_CSV:email:${csvListId}:html:${convId}:${encodedSubject}:${encodedHtml}`;
+        if (currentCsvListId) {
+          dispatchCommand = `START_DISPATCH_CSV:email:${currentCsvListId}:html:${convId}:${encodedSubject}:${encodedHtml}`;
         } else {
-          dispatchCommand = `START_DISPATCH:email:${selectedOriginData!.subOriginId}:html:${convId}:${encodedSubject}:${encodedHtml}`;
+          dispatchCommand = `START_DISPATCH:email:${currentOriginData!.subOriginId}:html:${convId}:${encodedSubject}:${encodedHtml}`;
         }
         
         console.log('[DisparoView] Direct dispatch triggered by user confirmation');
@@ -1865,7 +1890,13 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
         return; // Skip AI call
       } else {
         // Missing prerequisites - let AI respond
-        console.log('[DisparoView] User confirmed but missing prerequisites:', { hasHtml, hasDestination });
+        console.log('[DisparoView] User confirmed but missing prerequisites:', { 
+          hasHtml, 
+          htmlLength: currentHtml?.length,
+          hasDestination,
+          subOriginId: currentOriginData?.subOriginId,
+          csvListId: currentCsvListId
+        });
       }
     }
     
@@ -2674,8 +2705,24 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
                           </div>
                         )}
                         
+                        {/* Email setup card - render from componentData for persistence */}
+                        {msg.componentData?.type === 'email_setup' && (
+                          <div className="mt-3 w-full">
+                            <EmailChatCard
+                              subject={msg.componentData.data?.title || 'Configurar email'}
+                              chatName={msg.componentData.data?.source === 'html_ready' ? 'Abrir editor' : 'Abrir editor'}
+                              previewHtml=""
+                              onClick={() => {
+                                setSidePanelMode('email');
+                                setSidePanelShowCodePreview(true);
+                                setSidePanelOpen(true);
+                              }}
+                            />
+                          </div>
+                        )}
+                        
                         {/* Other components */}
-                        {msg.component && (
+                        {msg.component && !msg.componentData?.type && (
                           <div className="w-full">
                             {msg.component}
                           </div>
