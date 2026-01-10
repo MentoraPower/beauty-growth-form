@@ -20,7 +20,10 @@ import {
   Eye,
   MoreVertical,
   Hash,
+  Save,
+  FileDown,
 } from "lucide-react";
+import { FormTemplateDialog } from "./FormTemplateDialog";
 import { toast } from "sonner";
 import {
   DropdownMenu,
@@ -307,6 +310,8 @@ export function OnboardingFormBuilder({
   const [isSaving, setIsSaving] = useState(false);
   const [isPublishing, setIsPublishing] = useState(false);
   const [activeId, setActiveId] = useState<string | null>(null);
+  const [templateDialogOpen, setTemplateDialogOpen] = useState(false);
+  const [templateDialogMode, setTemplateDialogMode] = useState<"save" | "load">("save");
 
   // Sync local state with props
   useEffect(() => {
@@ -530,6 +535,69 @@ export function OnboardingFormBuilder({
     return fieldType?.label || type;
   };
 
+  const handleApplyTemplate = async (templateFields: any[], templateIsSequential: boolean) => {
+    // Delete existing fields
+    if (fields.length > 0) {
+      await supabase
+        .from("lead_onboarding_fields")
+        .delete()
+        .eq("form_id", form.id);
+    }
+
+    // Create new fields from template
+    const newFields: OnboardingField[] = [];
+    for (let i = 0; i < templateFields.length; i++) {
+      const templateField = templateFields[i];
+      const fieldData = {
+        form_id: form.id,
+        field_type: templateField.field_type,
+        title: templateField.title,
+        description: templateField.description,
+        options: templateField.options,
+        is_required: templateField.is_required,
+        ordem: i,
+      };
+
+      const { data, error } = await supabase
+        .from("lead_onboarding_fields")
+        .insert(fieldData)
+        .select()
+        .single();
+
+      if (!error && data) {
+        newFields.push({
+          id: data.id,
+          form_id: data.form_id,
+          field_type: data.field_type,
+          title: data.title,
+          description: data.description,
+          options: data.options,
+          is_required: data.is_required,
+          ordem: data.ordem,
+        });
+      }
+    }
+
+    setFields(newFields);
+    setIsSequential(templateIsSequential);
+
+    // Update form sequential mode
+    await supabase
+      .from("lead_onboarding_forms")
+      .update({ is_sequential: templateIsSequential })
+      .eq("id", form.id);
+  };
+
+  const openSaveTemplateDialog = () => {
+    setTemplateDialogMode("save");
+    setTemplateDialogOpen(true);
+  };
+
+  const openLoadTemplateDialog = () => {
+    setTemplateDialogMode("load");
+    setTemplateDialogOpen(true);
+  };
+
   return (
     <div className="relative w-full h-full overflow-hidden rounded-xl border border-[#00000010] bg-background">
       {/* Header */}
@@ -540,13 +608,34 @@ export function OnboardingFormBuilder({
           </Button>
           <h2 className="text-lg font-semibold">Editor de Onboarding</h2>
         </div>
-        <Button
-          onClick={handlePublish}
-          disabled={isPublishing || fields.length === 0}
-          className="bg-gradient-to-r from-[#F40000] to-[#A10000] hover:from-[#D40000] hover:to-[#910000]"
-        >
-          {isPublishing ? "Publicando..." : "Publicar"}
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={openLoadTemplateDialog}
+            className="gap-1.5"
+          >
+            <FileDown className="h-4 w-4" />
+            Usar Modelo
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={openSaveTemplateDialog}
+            disabled={fields.length === 0}
+            className="gap-1.5"
+          >
+            <Save className="h-4 w-4" />
+            Salvar Modelo
+          </Button>
+          <Button
+            onClick={handlePublish}
+            disabled={isPublishing || fields.length === 0}
+            className="bg-gradient-to-r from-[#F40000] to-[#A10000] hover:from-[#D40000] hover:to-[#910000]"
+          >
+            {isPublishing ? "Publicando..." : "Publicar"}
+          </Button>
+        </div>
       </div>
 
       {/* Content */}
@@ -674,6 +763,16 @@ export function OnboardingFormBuilder({
           </div>
         </div>
       </div>
+
+      {/* Template Dialog */}
+      <FormTemplateDialog
+        open={templateDialogOpen}
+        onOpenChange={setTemplateDialogOpen}
+        mode={templateDialogMode}
+        currentFields={fields}
+        isSequential={isSequential}
+        onApplyTemplate={handleApplyTemplate}
+      />
     </div>
   );
 }
