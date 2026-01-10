@@ -790,6 +790,27 @@ export type Database = {
           },
         ]
       }
+      google_tokens: {
+        Row: {
+          created_at: string | null
+          id: string
+          refresh_token: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          refresh_token: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          refresh_token?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       instagram_chats: {
         Row: {
           conversation_id: string
