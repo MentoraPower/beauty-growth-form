@@ -1370,6 +1370,47 @@ export type Database = {
           },
         ]
       }
+      onboarding_form_templates: {
+        Row: {
+          created_at: string
+          description: string | null
+          fields: Json
+          id: string
+          is_sequential: boolean
+          name: string
+          updated_at: string
+          workspace_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          fields?: Json
+          id?: string
+          is_sequential?: boolean
+          name: string
+          updated_at?: string
+          workspace_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          fields?: Json
+          id?: string
+          is_sequential?: boolean
+          name?: string
+          updated_at?: string
+          workspace_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "onboarding_form_templates_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       origin_settings: {
         Row: {
           agenda_mode: boolean
