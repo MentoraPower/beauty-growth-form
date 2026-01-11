@@ -150,7 +150,7 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
         return null;
       }
 
-      // Add creator as owner
+      // Add creator as owner first
       const { error: memberError } = await supabase
         .from('workspace_members')
         .insert({
@@ -162,6 +162,30 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
       if (memberError) {
         console.error('Error adding member:', memberError);
         return null;
+      }
+
+      // Get all members from the default workspace and add them to the new workspace
+      const defaultWorkspaceId = '00000000-0000-0000-0000-000000000001';
+      const { data: defaultMembers } = await supabase
+        .from('workspace_members')
+        .select('user_id')
+        .eq('workspace_id', defaultWorkspaceId)
+        .neq('user_id', user.id); // Exclude creator (already added as owner)
+
+      if (defaultMembers && defaultMembers.length > 0) {
+        const newMembers = defaultMembers.map(m => ({
+          workspace_id: workspaceId,
+          user_id: m.user_id,
+          role: 'member'
+        }));
+
+        const { error: bulkError } = await supabase
+          .from('workspace_members')
+          .insert(newMembers);
+
+        if (bulkError) {
+          console.warn('Error adding other members:', bulkError);
+        }
       }
 
       // Now that membership exists, we can SELECT the workspace row
