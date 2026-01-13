@@ -82,8 +82,8 @@ export const VirtualizedKanbanColumn = memo(function VirtualizedKanbanColumn({
       <div
         className={`flex-1 min-h-0 rounded-xl rounded-b-none border border-b-0 transition-colors duration-100 flex flex-col overflow-hidden ${
           isTargeted
-            ? "bg-orange-50 dark:bg-zinc-900 border-orange-200/50 dark:border-white/10 border-dashed"
-            : "bg-orange-50/50 dark:bg-zinc-900/80 border-orange-100/50 dark:border-white/[0.06]"
+            ? "bg-orange-100 dark:bg-zinc-900 border-orange-300/50 dark:border-white/10 border-dashed"
+            : "bg-orange-100/70 dark:bg-zinc-900/80 border-orange-200/50 dark:border-white/[0.06]"
         }`}
       >
         {/* Header */}
