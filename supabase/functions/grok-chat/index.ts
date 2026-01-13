@@ -355,16 +355,21 @@ const detectEditRequest = (messages: any[]): boolean => {
 
 // Check if there's existing content in the side panel (from context)
 const hasExistingContent = (messages: any[]): boolean => {
-  // Check system message for side panel content
-  const systemMessage = messages.find(m => m.role === 'system');
-  if (!systemMessage) return false;
-  
-  const content = typeof systemMessage.content === 'string' ? systemMessage.content : '';
-  return content.includes('CONTEÚDO COMPLETO DO EMAIL/COPY:') || 
-         content.includes('EMAIL/COPY ATUAL (painel lateral)');
+  // Check all messages for side panel content indicators
+  for (const msg of messages) {
+    const content = typeof msg.content === 'string' ? msg.content : '';
+    if (content.includes('CONTEÚDO COMPLETO DO EMAIL/COPY:') || 
+        content.includes('EMAIL/COPY ATUAL (painel lateral)') ||
+        content.includes('HTML ATUAL NO PAINEL:') ||
+        content.includes('[CONTEXT:email_html]') ||
+        content.includes('---INÍCIO DO EMAIL---')) {
+      return true;
+    }
+  }
+  return false;
 };
 
-const getSystemPrompt = (greeting: string, activeAgent: string | null = null, hasImage: boolean = false, isCodeRequest: boolean = false, isCsvRequest: boolean = false, isMetricsRequest: boolean = false, metricsData: any = null, isContentCreation: boolean = false, isEditMode: boolean = false) => {
+const getSystemPrompt = (greeting: string, activeAgent: string | null = null, hasImage: boolean = false, isCodeRequest: boolean = false, isCsvRequest: boolean = false, isMetricsRequest: boolean = false, metricsData: any = null, isContentCreation: boolean = false, isEditMode: boolean = false, hasEmailContent: boolean = false) => {
   const randomGreeting = getRandomGreeting(greeting);
   
   let specialMode = '';
@@ -890,7 +895,12 @@ FLUXO NATURAL DA CONVERSA
 
 4. CSV: Peça arquivo com colunas nome + email
 
-5. CONTEÚDO DO EMAIL - FLUXO OBRIGATÓRIO:
+5. CONTEÚDO DO EMAIL - FLUXO INTELIGENTE:
+   ${hasEmailContent ? `
+   ⚠️ JÁ EXISTE EMAIL/HTML PRONTO NO PAINEL LATERAL!
+   NÃO pergunte sobre as opções 1, 2 ou 3 - o email já está configurado.
+   Apenas confirme: "Já temos o email pronto! Quer revisar ou podemos iniciar o disparo?"
+   ` : `
    Após selecionar a lista de leads, SEMPRE pergunte ao usuário qual das opções ele prefere:
    
    "Perfeito! Agora sobre o email, me conta:
@@ -900,7 +910,7 @@ FLUXO NATURAL DA CONVERSA
    3️⃣ **Já tenho o HTML pronto** - Pode colar aqui que eu uso direto
    
    Qual você prefere?"
-   
+   `}
    - Se escolher opção 1: Pergunte sobre o produto/serviço, público-alvo e objetivo. Depois CRIE a copy completa.
    - Se escolher opção 2: Peça para enviar a copy e TRANSFORME em HTML estilizado.
    - Se escolher opção 3: Responda EXATAMENTE: "Perfeito! Abri o painel lateral para você. Cole seu HTML na aba 'Código', preencha o assunto e preheader, e depois me avise quando estiver pronto!" (O sistema abrirá automaticamente o painel lateral vazio para o usuário colar o HTML)
@@ -1582,8 +1592,9 @@ serve(async (req) => {
     }
 
     const isContentCreation = detectContentCreationRequest(messages);
-    const isEditMode = detectEditRequest(messages) && hasExistingContent(messages);
-    const systemPrompt = getSystemPrompt(greeting, activeAgent, hasImage, isCodeRequest, isCsvRequest, isMetricsRequest, metricsData, isContentCreation, isEditMode);
+    const hasEmailContent = hasExistingContent(messages);
+    const isEditMode = detectEditRequest(messages) && hasEmailContent;
+    const systemPrompt = getSystemPrompt(greeting, activeAgent, hasImage, isCodeRequest, isCsvRequest, isMetricsRequest, metricsData, isContentCreation, isEditMode, hasEmailContent);
 
     // Detect model selection from message content
     const lastUserMessage = messages[messages.length - 1];
