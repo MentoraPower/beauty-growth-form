@@ -201,11 +201,65 @@ const ChatListItem = memo(function ChatListItem({
         )}>
           {chat.time}
         </span>
-        {chat.unread > 0 && (
-          <span className="bg-emerald-500 text-white text-[10px] font-semibold min-w-[18px] h-[18px] flex items-center justify-center rounded-full px-1">
-            {chat.unread}
-          </span>
-        )}
+        <div className="flex items-center gap-1.5 h-5">
+          {chat.unread > 0 && (
+            <span className="bg-emerald-500 text-white text-[10px] font-semibold min-w-[18px] h-[18px] flex items-center justify-center rounded-full px-1">
+              {chat.unread}
+            </span>
+          )}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+              <button className="p-0.5 hover:bg-muted/50 rounded opacity-0 group-hover:opacity-100 transition-opacity">
+                <MoreVertical className="w-4 h-4 text-muted-foreground" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-48">
+              <DropdownMenuItem
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onDeleteMessages(chat.id);
+                }}
+              >
+                <Trash2 className="w-4 h-4 mr-2" />
+                Apagar mensagens
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              {isBlocked ? (
+                <DropdownMenuItem
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onUnblock(chat.phone);
+                  }}
+                >
+                  <ShieldCheck className="w-4 h-4 mr-2 text-emerald-500" />
+                  Desbloquear
+                </DropdownMenuItem>
+              ) : (
+                <DropdownMenuItem
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onBlock(chat.phone, chat.id, chat.name);
+                  }}
+                  className="text-amber-600"
+                >
+                  <ShieldBan className="w-4 h-4 mr-2" />
+                  Bloquear
+                </DropdownMenuItem>
+              )}
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                className="text-destructive"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onDeleteChat(chat.id);
+                }}
+              >
+                <Trash2 className="w-4 h-4 mr-2" />
+                Apagar contato
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
       </div>
     </div>
   );
