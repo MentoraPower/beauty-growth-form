@@ -574,52 +574,44 @@ async function handler(req: Request): Promise<Response> {
 
     // Handle message reactions
     if (event === "messages.reaction") {
-      const reactionData = payload.data;
+      const reactionDataArray = payload.data;
       
-      // Extract reaction info - structure varies by API
-      // Common structures:
-      // { reaction: { key: { id: "msgId" }, text: "👍" } }
-      // { key: { id: "msgId" }, reaction: { text: "👍" } }
-      // { message: { reactionMessage: { key: { id: "msgId" }, text: "👍" } } }
+      // WasenderAPI sends reactions as an array in data[]
+      // Structure: { data: [{ key: { id: "msgId" }, reaction: { text: "👍" } }] }
+      const reactions = Array.isArray(reactionDataArray) ? reactionDataArray : [reactionDataArray];
       
-      const reactionMessage = reactionData?.message?.reactionMessage || 
-                             reactionData?.reaction || 
-                             reactionData;
-      
-      const targetMsgId = reactionMessage?.key?.id || 
-                         reactionData?.key?.id ||
-                         reactionData?.msgId?.toString();
-      
-      // Empty text means reaction was removed
-      const reactionEmoji = reactionMessage?.text || 
-                           reactionMessage?.emoji || 
-                           reactionData?.text || 
-                           null;
-      
-      console.log(`[Wasender Webhook] Reaction - targetMsgId: ${targetMsgId}, emoji: ${reactionEmoji}`);
-      
-      if (targetMsgId) {
-        // Find and update the message with the reaction
-        const { data: targetMsg } = await supabase
-          .from("whatsapp_messages")
-          .select("id, chat_id")
-          .or(`message_id.eq.${targetMsgId},whatsapp_key_id.eq.${targetMsgId}`)
-          .maybeSingle();
+      for (const item of reactions) {
+        // Extract target message ID from key
+        const targetMsgId = item?.key?.id || item?.reaction?.key?.id;
         
-        if (targetMsg) {
-          // Update reaction - empty string or null removes the reaction
-          const { error: updateError } = await supabase
+        // Extract emoji - empty text means reaction was removed
+        const reactionEmoji = item?.reaction?.text || "";
+        
+        console.log(`[Wasender Webhook] Reaction - targetMsgId: ${targetMsgId}, emoji: "${reactionEmoji}"`);
+        
+        if (targetMsgId) {
+          // Find the message by whatsapp_key_id or message_id
+          const { data: targetMsg } = await supabase
             .from("whatsapp_messages")
-            .update({ reaction: reactionEmoji || null })
-            .eq("id", targetMsg.id);
+            .select("id, chat_id")
+            .or(`message_id.eq.${targetMsgId},whatsapp_key_id.eq.${targetMsgId}`)
+            .maybeSingle();
           
-          if (updateError) {
-            console.error(`[Wasender Webhook] Failed to update reaction:`, updateError);
+          if (targetMsg) {
+            // Update reaction - empty string removes the reaction
+            const { error: updateError } = await supabase
+              .from("whatsapp_messages")
+              .update({ reaction: reactionEmoji || null })
+              .eq("id", targetMsg.id);
+            
+            if (updateError) {
+              console.error(`[Wasender Webhook] Failed to update reaction:`, updateError);
+            } else {
+              console.log(`[Wasender Webhook] Updated reaction on message ${targetMsg.id}: ${reactionEmoji || "(removed)"}`);
+            }
           } else {
-            console.log(`[Wasender Webhook] Updated reaction on message ${targetMsg.id}: ${reactionEmoji || "(removed)"}`);
+            console.log(`[Wasender Webhook] Reaction: Target message not found for ${targetMsgId}`);
           }
-        } else {
-          console.log(`[Wasender Webhook] Reaction: Target message not found for ${targetMsgId}`);
         }
       }
       
@@ -688,54 +680,6 @@ async function handler(req: Request): Promise<Response> {
         }
         
         console.log(`[Wasender Webhook] Message ${msgId} not found in database`);
-      }
-      
-      return new Response(JSON.stringify({ ok: true }), { 
-        headers: { ...corsHeaders, "Content-Type": "application/json" } 
-      });
-    }
-    
-    // Handle message reactions
-    if (event === "messages.reaction") {
-      const reactionData = payload.data;
-      const reactionKey = reactionData?.key || reactionData?.reaction?.key || {};
-      const messageId = reactionKey?.id;
-      const numericMsgId = reactionData?.msgId?.toString();
-      
-      // Get reaction emoji - can be empty string if reaction was removed
-      const reaction = reactionData?.reaction?.text || reactionData?.text || "";
-      const fromMe = reactionKey?.fromMe || false;
-      
-      console.log(`[Wasender Webhook] Reaction event - messageId: ${messageId}, reaction: "${reaction}", fromMe: ${fromMe}`);
-      
-      // Update message with reaction
-      if (messageId || numericMsgId) {
-        const targetId = messageId || numericMsgId;
-        
-        // Get current message to update reactions
-        const { data: currentMsg } = await supabase
-          .from("whatsapp_messages")
-          .select("id, reaction")
-          .eq("message_id", targetId)
-          .single();
-        
-        if (currentMsg) {
-          // If reaction is empty, it means reaction was removed
-          const newReaction = reaction || null;
-          
-          const { error } = await supabase
-            .from("whatsapp_messages")
-            .update({ reaction: newReaction })
-            .eq("id", currentMsg.id);
-          
-          if (error) {
-            console.log(`[Wasender Webhook] Error updating reaction: ${error.message}`);
-          } else {
-            console.log(`[Wasender Webhook] Message ${targetId} reaction updated to: "${newReaction || 'removed'}"`);
-          }
-        } else {
-          console.log(`[Wasender Webhook] Message not found for reaction: ${targetId}`);
-        }
       }
       
       return new Response(JSON.stringify({ ok: true }), { 
