@@ -84,7 +84,7 @@ export const ChatSidebar = memo(function ChatSidebar({
           onTouchMoveCapture={onMarkChatListInteracting}
           onPointerDownCapture={onMarkChatListInteracting}
         >
-          <div className="flex flex-col">
+          <div className="flex flex-col px-2 divide-y divide-black/[0.04] dark:divide-white/[0.06]">
             {isInitialLoad && chats.length === 0 ? (
               <div className="flex items-center justify-center h-full py-20">
                 <RefreshCw className="w-6 h-6 text-muted-foreground animate-spin" />
@@ -156,7 +156,7 @@ const ChatListItem = memo(function ChatListItem({
   return (
     <div
       className={cn(
-        "group flex items-center gap-3 mx-2 my-0.5 px-3 py-2.5 cursor-pointer transition-all overflow-hidden rounded-lg",
+        "group flex items-center gap-3 px-3 py-2.5 cursor-pointer transition-all overflow-hidden rounded-lg",
         isSelected 
           ? "bg-black/5 dark:bg-white/5" 
           : "hover:bg-black/[0.03] dark:hover:bg-white/5"
