@@ -25,16 +25,16 @@ const MessagesSkeleton = memo(function MessagesSkeleton() {
   return (
     <div className="flex flex-col justify-end h-full gap-2 pb-2">
       <div className="flex justify-start">
-        <div className="w-[45%] h-12 bg-card rounded-lg rounded-tl-none animate-pulse border border-border/30" />
+        <div className="w-[45%] h-12 bg-black/[0.04] dark:bg-white/[0.08] rounded-lg rounded-tl-none animate-pulse" />
       </div>
       <div className="flex justify-end">
-        <div className="w-[55%] h-16 bg-emerald-100 dark:bg-emerald-900/30 rounded-lg rounded-tr-none animate-pulse" />
+        <div className="w-[55%] h-16 bg-sky-100 dark:bg-sky-900/40 rounded-lg rounded-tr-none animate-pulse" />
       </div>
       <div className="flex justify-start">
-        <div className="w-[40%] h-10 bg-card rounded-lg rounded-tl-none animate-pulse border border-border/30" />
+        <div className="w-[40%] h-10 bg-black/[0.04] dark:bg-white/[0.08] rounded-lg rounded-tl-none animate-pulse" />
       </div>
       <div className="flex justify-end">
-        <div className="w-[50%] h-14 bg-emerald-100 dark:bg-emerald-900/30 rounded-lg rounded-tr-none animate-pulse" />
+        <div className="w-[50%] h-14 bg-sky-100 dark:bg-sky-900/40 rounded-lg rounded-tr-none animate-pulse" />
       </div>
     </div>
   );
