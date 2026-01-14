@@ -114,24 +114,27 @@ async function resolveLidToPhone(lid: string): Promise<string | null> {
 }
 
 // Fetch contact info (name, photo) using WasenderAPI
-async function fetchContactInfo(phone: string): Promise<{ name: string | null; imgUrl: string | null }> {
+async function fetchContactInfo(
+  phone: string,
+  sessionApiKey?: string,
+): Promise<{ name: string | null; imgUrl: string | null }> {
   try {
     // WasenderAPI endpoint: GET /api/contacts/{contactPhoneNumber}
     const formattedPhone = phone.replace(/\D/g, "");
-    
+
     console.log(`[Wasender] Fetching contact info for: ${formattedPhone}`);
-    
-    const result = await wasenderRequest(`/contacts/${formattedPhone}`);
-    
+
+    const result = await wasenderRequest(`/contacts/${formattedPhone}`, {}, false, sessionApiKey);
+
     console.log(`[Wasender] Contact info result:`, JSON.stringify(result));
-    
+
     // WasenderAPI returns { success: true, data: { id, name, notify, verifiedName, imgUrl, status } }
     const data = result?.data || {};
     const name = data.name || data.notify || data.verifiedName || null;
     const imgUrl = data.imgUrl || null;
-    
+
     console.log(`[Wasender] Contact ${formattedPhone}: name=${name}, photo=${imgUrl ? "Yes" : "No"}`);
-    
+
     return { name, imgUrl };
   } catch (error) {
     console.error(`[Wasender] Failed to fetch contact info for ${phone}:`, error);
@@ -140,20 +143,20 @@ async function fetchContactInfo(phone: string): Promise<{ name: string | null; i
 }
 
 // Fetch contact profile picture using WasenderAPI (dedicated endpoint)
-async function fetchContactPicture(phone: string): Promise<string | null> {
+async function fetchContactPicture(phone: string, sessionApiKey?: string): Promise<string | null> {
   try {
     // WasenderAPI endpoint: GET /api/contacts/{contactPhoneNumber}/picture
     const formattedPhone = phone.replace(/\D/g, "");
-    
+
     console.log(`[Wasender] Fetching profile picture for: ${formattedPhone}`);
-    
-    const result = await wasenderRequest(`/contacts/${formattedPhone}/picture`);
-    
+
+    const result = await wasenderRequest(`/contacts/${formattedPhone}/picture`, {}, false, sessionApiKey);
+
     console.log(`[Wasender] Profile picture result:`, JSON.stringify(result));
-    
+
     // WasenderAPI returns { success: true, data: { imgUrl: "..." } }
     const imgUrl = result?.data?.imgUrl || result?.imgUrl || null;
-    
+
     return imgUrl;
   } catch (error) {
     console.error(`[Wasender] Failed to fetch picture for ${phone}:`, error);
@@ -515,40 +518,47 @@ async function handler(req: Request): Promise<Response> {
       const formattedPhone = formatPhoneForApi(phone);
       // sessionId is required for account isolation
       const requestSessionId = body.sessionId || body.session_id || null;
-      console.log(`[Wasender] Getting contact info for ${formattedPhone}, sessionId: ${requestSessionId || "none"}`);
-      
+      const sessionLabel =
+        requestSessionId && typeof requestSessionId === "string"
+          ? `${requestSessionId.slice(0, 6)}...${requestSessionId.slice(-4)}`
+          : "none";
+
+      console.log(`[Wasender] Getting contact info for ${formattedPhone}, sessionId: ${sessionLabel}`);
+
+      const sessionApiKey = typeof requestSessionId === "string" ? requestSessionId : undefined;
+
       // Use fetchContactInfo to get both name and photo in one call
-      const contactInfo = await fetchContactInfo(formattedPhone);
-      
+      const contactInfo = await fetchContactInfo(formattedPhone, sessionApiKey);
+
       // If no photo from contact info, try dedicated picture endpoint
       let photoUrl = contactInfo.imgUrl;
       if (!photoUrl) {
-        photoUrl = await fetchContactPicture(formattedPhone);
+        photoUrl = await fetchContactPicture(formattedPhone, sessionApiKey);
       }
-      
+
       // Update the chat record in database with both name and photo
       // IMPORTANT: Filter by session_id for account isolation
       const updateData: any = { updated_at: new Date().toISOString() };
       if (photoUrl) updateData.photo_url = photoUrl;
       if (contactInfo.name) updateData.name = contactInfo.name;
-      
+
       if (photoUrl || contactInfo.name) {
         let query = supabase
           .from("whatsapp_chats")
           .update(updateData)
           .eq("phone", formattedPhone);
-        
+
         // Add session_id filter for account isolation
         if (requestSessionId) {
           query = query.eq("session_id", requestSessionId);
         }
-        
+
         const { error } = await query;
-        
+
         if (error) {
           console.error(`[Wasender] Error updating chat:`, error);
         } else {
-          console.log(`[Wasender] Updated chat for ${formattedPhone} (session: ${requestSessionId}): name=${contactInfo.name}, photo=${photoUrl ? "Yes" : "No"}`);
+          console.log(`[Wasender] Updated chat for ${formattedPhone} (session: ${sessionLabel}): name=${contactInfo.name}, photo=${photoUrl ? "Yes" : "No"}`);
         }
       }
 
@@ -567,14 +577,22 @@ async function handler(req: Request): Promise<Response> {
     // =========================
     if (action === "get-contact-info") {
       const formattedPhone = formatPhoneForApi(phone);
-      console.log(`[Wasender] Getting contact info for ${formattedPhone}`);
-      
-      const contactInfo = await fetchContactInfo(formattedPhone);
-      
+      const requestSessionId = body.sessionId || body.session_id || null;
+      const sessionLabel =
+        requestSessionId && typeof requestSessionId === "string"
+          ? `${requestSessionId.slice(0, 6)}...${requestSessionId.slice(-4)}`
+          : "none";
+
+      console.log(`[Wasender] Getting contact info for ${formattedPhone}, sessionId: ${sessionLabel}`);
+
+      const sessionApiKey = typeof requestSessionId === "string" ? requestSessionId : undefined;
+
+      const contactInfo = await fetchContactInfo(formattedPhone, sessionApiKey);
+
       // Also try to get photo from dedicated endpoint if not available
       let photoUrl = contactInfo.imgUrl;
       if (!photoUrl) {
-        photoUrl = await fetchContactPicture(formattedPhone);
+        photoUrl = await fetchContactPicture(formattedPhone, sessionApiKey);
       }
 
       return new Response(JSON.stringify({ 
