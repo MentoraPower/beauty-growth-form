@@ -649,11 +649,13 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
         {isDesktop ? (
           <main 
             style={{ 
-              left: crmSubmenuOpen 
-                ? 12 + sidebarCollapsedWidth + 12 + submenuWidth + 8
-                : disparoSubmenuOpen 
-                  ? 12 + sidebarCollapsedWidth + 12 + disparoSubmenuWidth + 8
-                  : 12 + sidebarCollapsedWidth + 12 + 8,
+              left: isAtendimentoActive
+                ? 12 + sidebarCollapsedWidth + 12
+                : crmSubmenuOpen 
+                  ? 12 + sidebarCollapsedWidth + 12 + submenuWidth + 8
+                  : disparoSubmenuOpen 
+                    ? 12 + sidebarCollapsedWidth + 12 + disparoSubmenuWidth + 8
+                    : 12 + sidebarCollapsedWidth + 12 + 8,
               top: '49px',
               right: 0,
               height: 'calc(100vh - 49px)',
