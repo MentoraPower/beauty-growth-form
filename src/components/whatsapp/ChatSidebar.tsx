@@ -155,7 +155,7 @@ const ChatListItem = memo(function ChatListItem({
   return (
     <div
       className={cn(
-        "group flex w-full items-center gap-3 px-3 py-2.5 cursor-pointer transition-all border-b border-border/10 overflow-hidden max-w-full",
+        "group flex items-center gap-3 mx-2 my-0.5 px-3 py-2.5 cursor-pointer transition-all overflow-hidden rounded-lg",
         isSelected 
           ? "bg-black/5 dark:bg-white/5" 
           : "hover:bg-muted/40"
