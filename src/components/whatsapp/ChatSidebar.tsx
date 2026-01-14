@@ -215,7 +215,11 @@ const ChatListItem = memo(function ChatListItem({
         <img 
           src={chat.photo_url || DEFAULT_AVATAR} 
           alt={chat.name} 
-          className="w-11 h-11 rounded-full object-cover bg-neutral-200 shadow-sm" 
+          className="w-11 h-11 rounded-full object-cover bg-neutral-200 shadow-sm"
+          loading="lazy"
+          onError={(e) => {
+            e.currentTarget.src = DEFAULT_AVATAR;
+          }}
         />
         {chat.unread > 0 && (
           <div className="absolute -top-0.5 -right-0.5 w-3 h-3 bg-emerald-500 rounded-full border-2 border-background" />

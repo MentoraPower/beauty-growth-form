@@ -325,9 +325,13 @@ const LeadInfoPanel = ({ phone, photoUrl, contactName, onClose, onNameUpdate }: 
         <div className="bg-muted/50 dark:bg-muted/30 px-4 py-6">
           <div className="flex items-center gap-3">
             <img 
-              src={photoUrl || DEFAULT_AVATAR} 
-              alt={contactName || "Contato"} 
-              className="w-10 h-10 rounded-full object-cover bg-muted" 
+              src={photoUrl || DEFAULT_AVATAR}
+              alt={contactName || "Contato"}
+              className="w-10 h-10 rounded-full object-cover bg-muted"
+              loading="lazy"
+              onError={(e) => {
+                e.currentTarget.src = DEFAULT_AVATAR;
+              }}
             />
             <span className="text-sm font-medium text-foreground">{contactName || phone}</span>
           </div>
@@ -468,9 +472,13 @@ const LeadInfoPanel = ({ phone, photoUrl, contactName, onClose, onNameUpdate }: 
       <div className="bg-muted/50 dark:bg-muted/30 px-4 py-4">
         <div className="flex items-center gap-3">
           <img 
-            src={displayPhoto || DEFAULT_AVATAR} 
-            alt={lead.name} 
-            className="w-10 h-10 rounded-full object-cover bg-muted flex-shrink-0" 
+            src={displayPhoto || DEFAULT_AVATAR}
+            alt={lead.name}
+            className="w-10 h-10 rounded-full object-cover bg-muted flex-shrink-0"
+            loading="lazy"
+            onError={(e) => {
+              e.currentTarget.src = DEFAULT_AVATAR;
+            }}
           />
           <span className="text-sm font-medium text-foreground truncate">{lead.name}</span>
         </div>
