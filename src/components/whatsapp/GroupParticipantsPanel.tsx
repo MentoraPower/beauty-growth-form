@@ -370,7 +370,7 @@ export const GroupParticipantsPanel = ({
   return (
     <div className="w-[340px] border-l border-border bg-white dark:bg-zinc-900 flex flex-col overflow-hidden">
       {/* Header */}
-      <div className="bg-muted/50 dark:bg-muted/30 px-4 py-4">
+      <div className="bg-white dark:bg-zinc-900 px-4 py-4 border-b border-border/50">
         <div className="flex items-center gap-3">
           {groupPhoto ? (
             <img
