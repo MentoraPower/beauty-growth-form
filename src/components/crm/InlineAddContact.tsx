@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { createPortal } from "react-dom";
-import { Plus, X, User, Phone, Mail, Instagram } from "lucide-react";
+import { Plus, X, User, Phone, Mail } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { countries, Country, getFlagUrl } from "@/data/countries";
@@ -249,17 +249,6 @@ export function InlineAddContact({ pipelineId, subOriginId }: InlineAddContactPr
           type="email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          className="h-8 pl-8 text-xs"
-        />
-      </div>
-
-      {/* Instagram */}
-      <div className="relative">
-        <Instagram className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
-        <Input
-          placeholder="@instagram"
-          value={instagram}
-          onChange={(e) => setInstagram(e.target.value)}
           className="h-8 pl-8 text-xs"
         />
       </div>

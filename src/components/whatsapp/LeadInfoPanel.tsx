@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Phone, Mail, Instagram, ChevronRight, ChevronDown, Clock, User, Plus, Loader2 } from "lucide-react";
+import { Phone, Mail, ChevronRight, ChevronDown, Clock, User, Plus, Loader2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { countries } from "@/data/countries";
@@ -511,11 +511,6 @@ const LeadInfoPanel = ({ phone, photoUrl, contactName, onClose, onNameUpdate }: 
               <PhoneField 
                 dialCode={lead.country_code}
                 phoneNumber={lead.whatsapp}
-              />
-              <Field 
-                label="Instagram" 
-                value={lead.instagram}
-                icon={<Instagram className="w-3 h-3" />}
               />
             </div>
           </CollapsibleContent>
