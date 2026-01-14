@@ -305,13 +305,13 @@ export const ChatInputArea = memo(function ChatInputArea({
                       className="absolute bottom-full right-0 mb-2 z-50"
                     >
                       <QuickMessages 
-                        onSelect={(text, audioData, audioDuration) => {
-                          if (audioData) {
-                            onSendQuickAudio(audioData, audioDuration || 0);
-                          } else {
-                            onMessageChange(text);
-                          }
+                        onSelect={(text) => {
+                          onMessageChange(text);
                           setShowQuickMessages(false);
+                        }}
+                        onSelectAudio={async (audioBase64) => {
+                          setShowQuickMessages(false);
+                          await onSendAudioFromQuickMessage(audioBase64);
                         }}
                         sessionId={sessionId}
                       />
@@ -349,10 +349,8 @@ export const ChatInputArea = memo(function ChatInputArea({
           </div>
         )}
       </div>
-    </div>
+    </>
   );
 });
 
 ChatInputArea.displayName = "ChatInputArea";
-
-export { ChatInputArea };
