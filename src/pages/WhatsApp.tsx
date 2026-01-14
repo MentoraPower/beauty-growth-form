@@ -839,10 +839,6 @@ const WhatsApp = (props: WhatsAppProps) => {
                   contactPresence={contactPresence}
                   showLeadPanel={showLeadPanel}
                   onToggleLeadPanel={() => setShowLeadPanel(prev => !prev)}
-                  onOpenCallModal={() => {
-                    // Call functionality removed - Infobip integration deprecated
-                    toast({ title: "Funcionalidade de chamadas desativada", variant: "destructive" });
-                  }}
                 />
 
                 <MessageArea

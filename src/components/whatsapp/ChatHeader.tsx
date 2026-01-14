@@ -1,6 +1,6 @@
 import { memo } from "react";
 import { cn } from "@/lib/utils";
-import { Phone, PanelRightOpen, PanelRightClose, Users } from "lucide-react";
+import { PanelRightOpen, PanelRightClose, Users } from "lucide-react";
 import { Chat, getInitials, formatPhoneDisplay } from "@/hooks/useWhatsAppChats";
 
 interface ChatHeaderProps {
@@ -8,7 +8,6 @@ interface ChatHeaderProps {
   contactPresence: { phone: string; type: string; timestamp: number } | null;
   showLeadPanel: boolean;
   onToggleLeadPanel: () => void;
-  onOpenCallModal: () => void;
 }
 
 export const ChatHeader = memo(function ChatHeader({
@@ -16,7 +15,6 @@ export const ChatHeader = memo(function ChatHeader({
   contactPresence,
   showLeadPanel,
   onToggleLeadPanel,
-  onOpenCallModal,
 }: ChatHeaderProps) {
   return (
     <div className="h-14 px-4 flex items-center gap-3 bg-muted/30 border-b border-border/30">
@@ -63,16 +61,6 @@ export const ChatHeader = memo(function ChatHeader({
           <p className="text-xs text-muted-foreground">{formatPhoneDisplay(selectedChat.phone)}</p>
         )}
       </div>
-      {/* Hide call button for groups */}
-      {!selectedChat.isGroup && (
-        <button
-          onClick={onOpenCallModal}
-          className="p-2 hover:bg-muted/50 rounded-full transition-colors"
-          title="Fazer ligação"
-        >
-          <Phone className="w-5 h-5 text-emerald-500" />
-        </button>
-      )}
       <button
         onClick={onToggleLeadPanel}
         className="p-2 hover:bg-muted/50 rounded-full transition-colors"
