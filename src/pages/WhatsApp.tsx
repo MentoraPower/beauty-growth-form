@@ -3,7 +3,6 @@ import { useSearchParams } from "react-router-dom";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import CallModal from "@/components/whatsapp/CallModal";
 import LeadInfoPanel from "@/components/whatsapp/LeadInfoPanel";
 import ImageLightbox from "@/components/whatsapp/ImageLightbox";
 import { AddWhatsAppAccountDialog } from "@/components/whatsapp/AddWhatsAppAccountDialog";
@@ -58,7 +57,6 @@ const WhatsApp = (props: WhatsAppProps) => {
   const [message, setMessage] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [isSending, setIsSending] = useState(false);
-  const [isCallModalOpen, setIsCallModalOpen] = useState(false);
   const [showLeadPanel, setShowLeadPanel] = useState(true);
   const [messageMenuId, setMessageMenuId] = useState<string | null>(null);
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
@@ -650,14 +648,6 @@ const WhatsApp = (props: WhatsAppProps) => {
     }
   };
 
-  // Initiate call
-  const initiateCall = async () => {
-    if (!selectedChat) return;
-    const { error } = await supabase.functions.invoke("infobip-call", { body: { to: selectedChat.phone } });
-    if (error) throw error;
-    toast({ title: "Ligação iniciada", description: `Chamando ${selectedChat.name}...` });
-  };
-
   // Initialize app
   const hasParentAccounts = props.whatsappAccounts && props.whatsappAccounts.length > 0;
   const hasParentSelectedAccount = props.selectedAccountId !== undefined && props.selectedAccountId !== null;
@@ -702,119 +692,157 @@ const WhatsApp = (props: WhatsAppProps) => {
     
     hasLoadedOnceRef.current = true;
     
-    const reloadChatsForAccount = async () => {
-      try {
-        await fetchChats(chats.length === 0);
-        fetchWhatsAppGroups();
-        syncAllChats();
-      } finally {
-        setIsAccountChanging(false);
-        setIsInitializingApp(false);
-      }
+    const loadChatsForAccount = async () => {
+      await fetchChats();
+      setIsAccountChanging(false);
+      setIsInitializingApp(false);
     };
     
-    reloadChatsForAccount();
-  }, [selectedAccountId, whatsappAccounts, fetchChats, syncAllChats, fetchWhatsAppGroups, chats.length, setChats, chatsRef, setSelectedChat, setMessages]);
+    loadChatsForAccount();
+  }, [selectedAccountId, whatsappAccounts, fetchChats, setChats, chatsRef, setSelectedChat, setMessages, chats.length]);
 
-  // Handle phone param in URL
+  // Load groups when sidebar tab changes
+  useEffect(() => {
+    if (sidebarTab === "grupos" && whatsappGroups.length === 0 && !isLoadingGroups) {
+      fetchWhatsAppGroups();
+    }
+  }, [sidebarTab, fetchWhatsAppGroups, whatsappGroups.length, isLoadingGroups]);
+
+  // Handle phone parameter from URL
   useEffect(() => {
     const phoneParam = searchParams.get("phone");
-    if (!phoneParam || chats.length === 0 || selectedChat) return;
-
-    const matchingChat = chats.find(c => c.phone === phoneParam || c.phone.includes(phoneParam) || phoneParam.includes(c.phone));
-    if (matchingChat) {
-      setSelectedChat(matchingChat);
-      fetchMessages(matchingChat.id, matchingChat.isGroup);
-      setSearchParams({}, { replace: true });
+    if (phoneParam && chats.length > 0) {
+      const cleanParam = phoneParam.replace(/\D/g, "");
+      const existingChat = chats.find(c => c.phone.replace(/\D/g, "") === cleanParam);
+      
+      if (existingChat) {
+        setSelectedChat(existingChat);
+      } else {
+        const tempChat: Chat = {
+          id: `temp-${cleanParam}`,
+          name: phoneParam,
+          lastMessage: "",
+          time: "",
+          lastMessageTime: null,
+          unread: 0,
+          avatar: "?",
+          phone: cleanParam,
+          photo_url: null,
+          lastMessageStatus: null,
+          lastMessageFromMe: false,
+        };
+        setSelectedChat(tempChat);
+      }
+      
+      setSearchParams({});
     }
-  }, [chats, searchParams, selectedChat, setSearchParams, setSelectedChat, fetchMessages]);
+  }, [searchParams, chats, setSelectedChat, setSearchParams]);
 
-  // Contact presence subscription
+  // Setup realtime presence subscription
   useEffect(() => {
-    const channel = supabase
-      .channel("whatsapp-presence")
+    const selectedAccount = whatsappAccounts.find(acc => acc.id === selectedAccountId);
+    const sessionApiKey = selectedAccount?.api_key;
+    
+    if (!sessionApiKey) return;
+
+    const channelId = `presence-${sessionApiKey.substring(0, 12)}`;
+    const channel = supabase.channel(channelId);
+
+    channel
       .on("broadcast", { event: "presence" }, (payload) => {
-        const { phone, presenceType, timestamp } = payload.payload as { phone: string; presenceType: string; timestamp: number };
-        
-        if (selectedChat && phone === selectedChat.phone.replace(/\D/g, "")) {
-          if (presenceType === "composing" || presenceType === "recording") {
-            setContactPresence({ phone, type: presenceType, timestamp });
-          } else {
-            setContactPresence(null);
-          }
+        const { phone, type } = payload.payload || {};
+        if (phone && type) {
+          setContactPresence({ phone, type, timestamp: Date.now() });
         }
       })
       .subscribe();
 
-    return () => { supabase.removeChannel(channel); };
-  }, [selectedChat?.phone]);
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [selectedAccountId, whatsappAccounts]);
 
-  // Auto-clear presence
+  // Auto-clear presence after 5 seconds
   useEffect(() => {
     if (!contactPresence) return;
-    const timeout = setTimeout(() => setContactPresence(null), 5000);
+    
+    const timeout = setTimeout(() => {
+      if (Date.now() - contactPresence.timestamp > 4500) {
+        setContactPresence(null);
+      }
+    }, 5000);
+    
     return () => clearTimeout(timeout);
-  }, [contactPresence?.timestamp]);
+  }, [contactPresence]);
 
-  // Fetch messages when chat selected
+  // Fetch messages when chat is selected
   useEffect(() => {
     if (selectedChat) {
-      setMessages([]);
-      fetchMessages(selectedChat.id, selectedChat.isGroup);
+      fetchMessages(selectedChat);
     }
-  }, [selectedChat?.id, fetchMessages, setMessages]);
+  }, [selectedChat?.id, fetchMessages]);
 
-  // Audio from quick messages
-  const handleSendAudioFromQuickMessage = async (audioBase64: string) => {
-    const response = await fetch(audioBase64);
-    const blob = await response.blob();
-    await sendAudioMessage(blob, blob.type || "audio/webm");
-  };
+  const selectedAccount = whatsappAccounts.find(acc => acc.id === selectedAccountId);
+  const sessionApiKey = selectedAccount?.api_key || null;
 
-  const sessionApiKey = whatsappAccounts.find(acc => acc.id === selectedAccountId)?.api_key;
+  // Loading state
+  if (isInitializingApp || isAccountChanging) {
+    return (
+      <div className="flex items-center justify-center h-full bg-background">
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+          <p className="text-sm text-muted-foreground">
+            {isAccountChanging ? "Trocando de conta..." : "Carregando WhatsApp..."}
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <>
-      <div className="h-full min-h-0 flex overflow-hidden bg-background relative">
-        {/* Left Sidebar */}
-        <ChatSidebar
-          chats={chats}
-          selectedChat={selectedChat}
-          searchQuery={searchQuery}
-          onSearchChange={setSearchQuery}
-          onSelectChat={(chat) => {
-            setSelectedChat(chat);
-            setReplyToMessage(null);
-            setIsSending(false);
-            setMessage("");
-          }}
-          isInitialLoad={isInitialLoad}
-          isSyncing={isSyncing}
-          sidebarTab={sidebarTab}
-          onSidebarTabChange={setSidebarTab}
-          whatsappGroups={whatsappGroups}
-          isLoadingGroups={isLoadingGroups}
-          onSelectGroup={handleSelectGroup}
-          onFetchGroups={fetchWhatsAppGroups}
-          onMarkChatListInteracting={markChatListInteracting}
-          blockedContacts={blockedContacts}
-          onDeleteChatMessages={handleDeleteChatMessages}
-          onDeleteChat={handleDeleteChat}
-          onBlockContact={(phone, chatId, name) => setBlockConfirmDialog({ open: true, phone, chatId, name })}
-          onUnblockContact={handleUnblockContact}
-        />
+      <div className="flex flex-col h-full bg-background overflow-hidden">
+        <div className="flex flex-1 overflow-hidden">
+          {/* Sidebar */}
+          <ChatSidebar
+            chats={chats}
+            selectedChat={selectedChat}
+            searchQuery={searchQuery}
+            onSearchChange={setSearchQuery}
+            onSelectChat={(chat) => {
+              setSelectedChat(chat);
+              setReplyToMessage(null);
+              setMessage("");
+            }}
+            isInitialLoad={isInitialLoad}
+            isSyncing={isSyncing}
+            sidebarTab={sidebarTab}
+            onSidebarTabChange={setSidebarTab}
+            whatsappGroups={whatsappGroups}
+            isLoadingGroups={isLoadingGroups}
+            onSelectGroup={handleSelectGroup}
+            onFetchGroups={fetchWhatsAppGroups}
+            onMarkChatListInteracting={markChatListInteracting}
+            blockedContacts={blockedContacts}
+            onDeleteChatMessages={handleDeleteChatMessages}
+            onDeleteChat={handleDeleteChat}
+            onBlockContact={(phone, chatId, name) => setBlockConfirmDialog({ open: true, phone, chatId, name })}
+            onUnblockContact={handleUnblockContact}
+          />
 
-        {/* Right Panel - Chat Area */}
-        <div className="flex-1 flex min-h-0">
-          <div className="flex-1 flex flex-col bg-muted/10 min-h-0 h-full">
+          {/* Main Chat Area */}
+          <div className="flex-1 flex flex-col overflow-hidden">
             {selectedChat ? (
               <>
                 <ChatHeader
                   selectedChat={selectedChat}
                   contactPresence={contactPresence}
                   showLeadPanel={showLeadPanel}
-                  onToggleLeadPanel={() => setShowLeadPanel(!showLeadPanel)}
-                  onOpenCallModal={() => setIsCallModalOpen(true)}
+                  onToggleLeadPanel={() => setShowLeadPanel(prev => !prev)}
+                  onOpenCallModal={() => {
+                    // Call functionality removed - Infobip integration deprecated
+                    toast({ title: "Funcionalidade de chamadas desativada", variant: "destructive" });
+                  }}
                 />
 
                 <MessageArea
@@ -826,10 +854,13 @@ const WhatsApp = (props: WhatsAppProps) => {
                   messageMenuId={messageMenuId}
                   onMessageMenuChange={setMessageMenuId}
                   onReplyMessage={(msg) => setReplyToMessage(msg)}
-                  onEditMessage={(msg) => { setEditingMessage(msg); setEditText(msg.text); }}
+                  onEditMessage={(msg) => {
+                    setEditingMessage(msg);
+                    setEditText(msg.text || "");
+                  }}
                   onDeleteMessage={deleteMessage}
                   onScrollToQuoted={scrollToQuotedMessage}
-                  onImageClick={(index) => setLightboxIndex(index)}
+                  onImageClick={(idx) => setLightboxIndex(idx)}
                   scrollToBottom={scrollToBottom}
                 />
 
@@ -837,7 +868,8 @@ const WhatsApp = (props: WhatsAppProps) => {
                   message={message}
                   onMessageChange={setMessage}
                   onSendMessage={sendMessage}
-                  isSending={isSending || isSendingAudio}
+                  onFileUpload={handleFileUpload}
+                  isSending={isSending}
                   isRecording={isRecording}
                   recordingTime={recordingTime}
                   recordingStream={recordingStream}
@@ -845,9 +877,13 @@ const WhatsApp = (props: WhatsAppProps) => {
                   onStopRecording={stopRecording}
                   onCancelRecording={cancelRecording}
                   formatRecordingTime={formatRecordingTime}
-                  onFileUpload={handleFileUpload}
-                  onSendAudioFromQuickMessage={handleSendAudioFromQuickMessage}
-                  sessionId={sessionApiKey}
+                  onSendAudioFromQuickMessage={async (audioBase64: string) => {
+                    // Convert base64 to blob and send
+                    const response = await fetch(audioBase64);
+                    const blob = await response.blob();
+                    await sendAudioMessage(blob);
+                  }}
+                  sessionId={sessionApiKey || undefined}
                   replyToMessage={replyToMessage}
                   onCancelReply={() => setReplyToMessage(null)}
                   onSendPresence={sendPresenceUpdate}
@@ -873,7 +909,7 @@ const WhatsApp = (props: WhatsAppProps) => {
                   const cleanPhone = phone.replace(/@s\.whatsapp\.net$/, "");
                   const existingChat = chats.find(c => c.phone.replace(/\D/g, "") === cleanPhone.replace(/\D/g, ""));
                   if (existingChat) {
-                    setSelectedChat(existingChat);
+                    setSelectedChat(existingChat as Chat);
                     setSidebarTab("conversas");
                   } else {
                     const tempChat: Chat = {
@@ -907,17 +943,6 @@ const WhatsApp = (props: WhatsAppProps) => {
       </div>
 
       {/* Modals & Dialogs */}
-      {selectedChat && (
-        <CallModal
-          isOpen={isCallModalOpen}
-          onClose={() => setIsCallModalOpen(false)}
-          contactName={selectedChat.name}
-          contactPhone={selectedChat.phone}
-          contactAvatar={selectedChat.photo_url}
-          onInitiateCall={initiateCall}
-        />
-      )}
-
       {lightboxIndex !== null && allImages.length > 0 && (
         <ImageLightbox
           images={allImages}

@@ -9,10 +9,6 @@
       "destination": "https://ytdfwkchsumgdvcroaqg.supabase.co/functions/v1/receive-webhook/:path*"
     },
     {
-      "source": "/api/waha-webhook",
-      "destination": "https://ytdfwkchsumgdvcroaqg.supabase.co/functions/v1/waha-webhook"
-    },
-    {
       "source": "/(.*)",
       "destination": "/index.html"
     }
