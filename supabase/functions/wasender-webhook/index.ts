@@ -572,6 +572,62 @@ async function handler(req: Request): Promise<Response> {
       });
     }
 
+    // Handle message reactions
+    if (event === "messages.reaction") {
+      const reactionData = payload.data;
+      
+      // Extract reaction info - structure varies by API
+      // Common structures:
+      // { reaction: { key: { id: "msgId" }, text: "👍" } }
+      // { key: { id: "msgId" }, reaction: { text: "👍" } }
+      // { message: { reactionMessage: { key: { id: "msgId" }, text: "👍" } } }
+      
+      const reactionMessage = reactionData?.message?.reactionMessage || 
+                             reactionData?.reaction || 
+                             reactionData;
+      
+      const targetMsgId = reactionMessage?.key?.id || 
+                         reactionData?.key?.id ||
+                         reactionData?.msgId?.toString();
+      
+      // Empty text means reaction was removed
+      const reactionEmoji = reactionMessage?.text || 
+                           reactionMessage?.emoji || 
+                           reactionData?.text || 
+                           null;
+      
+      console.log(`[Wasender Webhook] Reaction - targetMsgId: ${targetMsgId}, emoji: ${reactionEmoji}`);
+      
+      if (targetMsgId) {
+        // Find and update the message with the reaction
+        const { data: targetMsg } = await supabase
+          .from("whatsapp_messages")
+          .select("id, chat_id")
+          .or(`message_id.eq.${targetMsgId},whatsapp_key_id.eq.${targetMsgId}`)
+          .maybeSingle();
+        
+        if (targetMsg) {
+          // Update reaction - empty string or null removes the reaction
+          const { error: updateError } = await supabase
+            .from("whatsapp_messages")
+            .update({ reaction: reactionEmoji || null })
+            .eq("id", targetMsg.id);
+          
+          if (updateError) {
+            console.error(`[Wasender Webhook] Failed to update reaction:`, updateError);
+          } else {
+            console.log(`[Wasender Webhook] Updated reaction on message ${targetMsg.id}: ${reactionEmoji || "(removed)"}`);
+          }
+        } else {
+          console.log(`[Wasender Webhook] Reaction: Target message not found for ${targetMsgId}`);
+        }
+      }
+      
+      return new Response(JSON.stringify({ ok: true }), { 
+        headers: { ...corsHeaders, "Content-Type": "application/json" } 
+      });
+    }
+
     // Handle message deletion (when contact deletes a message)
     // WasenderAPI sends "messages.delete" with data.message.keys[] array
     if (event === "messages.delete" || event === "messages.deleted") {
