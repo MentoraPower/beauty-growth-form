@@ -30,7 +30,7 @@ const GroupItem = memo(function GroupItem({
   return (
     <div 
       onClick={() => onSelect?.(group)}
-      className="flex items-center gap-3 px-3 py-2.5 hover:bg-muted/50 transition-colors cursor-pointer border-b border-border/30 last:border-b-0"
+      className="flex items-center gap-3 px-3 py-2.5 hover:bg-muted/50 transition-colors cursor-pointer rounded-lg"
     >
       {/* Avatar with participant count badge */}
       <div className="relative flex-shrink-0">
@@ -154,14 +154,16 @@ export const GroupsList = memo(function GroupsList({
           <RefreshCw className={cn("w-4 h-4 text-muted-foreground", isLoading && "animate-spin")} />
         </button>
       </div>
-      <ScrollArea className="flex-1">
-        {groups.map((group) => (
-          <GroupItem 
-            key={group.id} 
-            group={group} 
-            onSelect={onSelectGroup}
-          />
-        ))}
+      <ScrollArea className="flex-1 px-2 py-2">
+        <div className="space-y-1">
+          {groups.map((group) => (
+            <GroupItem 
+              key={group.id} 
+              group={group} 
+              onSelect={onSelectGroup}
+            />
+          ))}
+        </div>
       </ScrollArea>
     </div>
   );
