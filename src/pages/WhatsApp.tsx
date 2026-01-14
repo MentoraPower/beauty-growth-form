@@ -343,16 +343,20 @@ const WhatsApp = (props: WhatsAppProps) => {
           console.log("[WhatsApp] Group updated via realtime:", payload.new);
           const updatedGroup = payload.new as any;
           
-          setWhatsappGroups(prev => prev.map(g => 
-            g.groupJid === updatedGroup.group_jid 
-              ? {
-                  ...g,
-                  name: updatedGroup.name || g.name,
-                  participantCount: updatedGroup.participant_count ?? g.participantCount,
-                  photoUrl: updatedGroup.photo_url || g.photoUrl,
-                }
-              : g
-          ));
+          setWhatsappGroups(prev => {
+            const updated = prev.map(g => 
+              g.groupJid === updatedGroup.group_jid 
+                ? {
+                    ...g,
+                    name: updatedGroup.name || g.name,
+                    participantCount: updatedGroup.participant_count ?? g.participantCount,
+                    photoUrl: updatedGroup.photo_url || g.photoUrl,
+                  }
+                : g
+            );
+            // Re-sort by name to maintain consistent order
+            return updated.sort((a, b) => a.name.localeCompare(b.name, 'pt-BR', { sensitivity: 'base' }));
+          });
         }
       )
       .on(
@@ -371,13 +375,17 @@ const WhatsApp = (props: WhatsAppProps) => {
             // Avoid duplicates
             if (prev.some(g => g.groupJid === newGroup.group_jid)) return prev;
             
-            return [...prev, {
+            const newList = [...prev, {
               id: newGroup.id,
               groupJid: newGroup.group_jid,
               name: newGroup.name,
               participantCount: newGroup.participant_count ?? 0,
               photoUrl: newGroup.photo_url,
+              unreadCount: 0,
+              hasNewEvent: false,
             }];
+            // Sort by name to maintain consistent order
+            return newList.sort((a, b) => a.name.localeCompare(b.name, 'pt-BR', { sensitivity: 'base' }));
           });
         }
       )
