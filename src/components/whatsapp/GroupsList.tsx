@@ -38,7 +38,7 @@ const GroupItem = memo(function GroupItem({
     <div 
       onClick={() => onSelect?.(group)}
       className={cn(
-        "flex items-center gap-3 px-3 py-2.5 transition-colors cursor-pointer rounded-lg mx-2",
+        "flex items-center gap-3 px-3 py-2.5 transition-colors cursor-pointer rounded-lg",
         isSelected 
           ? "bg-black/5 dark:bg-white/5" 
           : "hover:bg-black/[0.03] dark:hover:bg-white/5"
@@ -168,14 +168,15 @@ export const GroupsList = memo(function GroupsList({
         </button>
       </div>
       <ScrollArea className="flex-1 py-2">
-        <div className="space-y-1">
+        <div className="divide-y divide-black/[0.04] dark:divide-white/[0.06]">
           {groups.map((group) => (
-            <GroupItem 
-              key={group.id} 
-              group={group} 
-              onSelect={onSelectGroup}
-              isSelected={selectedGroupId === group.id || selectedGroupId === group.groupJid}
-            />
+            <div key={group.id} className="px-2">
+              <GroupItem 
+                group={group} 
+                onSelect={onSelectGroup}
+                isSelected={selectedGroupId === group.id || selectedGroupId === group.groupJid}
+              />
+            </div>
           ))}
         </div>
       </ScrollArea>
