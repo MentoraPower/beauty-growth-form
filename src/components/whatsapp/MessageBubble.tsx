@@ -473,9 +473,22 @@ export const MessageBubble = memo(function MessageBubble({
             "w-fit inline-block max-w-full break-words rounded-2xl px-3 py-2 relative transition-all duration-300",
             msg.sent
               ? "bg-sky-100 dark:bg-sky-900/40 rounded-tr-sm"
-              : "bg-black/[0.04] dark:bg-white/[0.08] rounded-tl-sm"
+              : "bg-black/[0.04] dark:bg-white/[0.08] rounded-tl-sm",
+            msg.reaction && "mt-3"
           )}
         >
+          {/* Reaction badge */}
+          {msg.reaction && (
+            <div 
+              className={cn(
+                "absolute -top-3 text-base leading-none bg-card border border-border rounded-full px-1.5 py-0.5 shadow-sm",
+                msg.sent ? "right-2" : "left-2"
+              )}
+            >
+              {msg.reaction}
+            </div>
+          )}
+
           {/* Show sender name and avatar for group messages */}
           {showSenderInfo && (
             <GroupSenderInfo msg={msg} participantPhotos={participantPhotos} />
