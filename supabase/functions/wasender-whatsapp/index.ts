@@ -682,12 +682,13 @@ async function handler(req: Request): Promise<Response> {
     // ACTION: edit-message
     // =========================
     if (action === "edit-message") {
+      console.log(`[Wasender] Action: edit-message, sessionId: ${sessionId ? sessionId.substring(0, 8) + "..." : "N/A"}`);
       console.log(`[Wasender] Editing message ${msgId}`);
       
       const result = await wasenderRequest(`/messages/${msgId}`, {
         method: "PUT",
         body: JSON.stringify({ text: newText }),
-      });
+      }, false, sessionId);
 
       return new Response(JSON.stringify({ success: true, data: result }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
