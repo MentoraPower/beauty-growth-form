@@ -147,21 +147,50 @@ export default function Atendimento() {
   return (
     <div className="h-full p-3">
       <div className="h-full flex flex-col overflow-hidden bg-white dark:bg-zinc-950 rounded-xl border border-black/[0.08] dark:border-white/[0.08]">
-      {/* Compact Header */}
+      {/* Header with Tabs and Account Selector aligned */}
       <div className="flex-shrink-0 border-b border-black/[0.08] dark:border-white/[0.08] bg-white dark:bg-zinc-950">
-        <div className="h-11 px-4 flex items-center justify-end">
+        <div className="flex items-center w-[320px]">
+          {/* Tabs */}
+          <button
+            onClick={() => setSidebarTab("conversas")}
+            className={cn(
+              "relative flex-1 flex items-center justify-center gap-2 py-2.5 text-sm font-medium transition-all",
+              sidebarTab === "conversas" 
+                ? "text-foreground" 
+                : "text-muted-foreground hover:text-foreground hover:bg-muted/30"
+            )}
+          >
+            <span>Conversas</span>
+            {sidebarTab === "conversas" && (
+              <div className="absolute bottom-0 left-4 right-4 h-0.5 bg-emerald-500 rounded-full" />
+            )}
+          </button>
+          <button
+            onClick={() => setSidebarTab("grupos")}
+            className={cn(
+              "relative flex-1 flex items-center justify-center gap-2 py-2.5 text-sm font-medium transition-all",
+              sidebarTab === "grupos" 
+                ? "text-foreground" 
+                : "text-muted-foreground hover:text-foreground hover:bg-muted/30"
+            )}
+          >
+            <span>Grupos</span>
+            {sidebarTab === "grupos" && (
+              <div className="absolute bottom-0 left-4 right-4 h-0.5 bg-emerald-500 rounded-full" />
+            )}
+          </button>
 
-          {/* WhatsApp Account Selector - Right side */}
+          {/* WhatsApp Account Selector */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-            <button className="flex items-center gap-2 text-sm text-foreground bg-black/10 dark:bg-white/10 hover:bg-black/15 dark:hover:bg-white/15 px-2.5 py-1.5 rounded-lg transition-all">
-              <Smartphone className="w-4 h-4 text-emerald-500" />
-              <span className="truncate max-w-[160px] font-medium">
+              <button className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground px-2 py-1.5 rounded transition-all mr-2">
+                <Smartphone className="w-3.5 h-3.5 text-emerald-500" />
+                <span className="truncate max-w-[80px]">
                   {selectedAccountId 
-                    ? whatsappAccounts.find(a => a.id === selectedAccountId)?.name || "Conta WhatsApp"
-                    : "Selecionar conta"}
+                    ? whatsappAccounts.find(a => a.id === selectedAccountId)?.name || "Conta"
+                    : "Conta"}
                 </span>
-                <ChevronDown className="w-3.5 h-3.5 text-muted-foreground" />
+                <ChevronDown className="w-3 h-3" />
               </button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-64">
@@ -220,38 +249,6 @@ export default function Atendimento() {
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
-        </div>
-        
-        {/* Tabs - Below header, aligned with sidebar */}
-        <div className="flex w-[320px]">
-          <button
-            onClick={() => setSidebarTab("conversas")}
-            className={cn(
-              "relative flex-1 flex items-center justify-center gap-2 py-2 text-sm font-medium transition-all",
-              sidebarTab === "conversas" 
-                ? "text-foreground" 
-                : "text-muted-foreground hover:text-foreground hover:bg-muted/30"
-            )}
-          >
-            <span>Conversas</span>
-            {sidebarTab === "conversas" && (
-              <div className="absolute bottom-0 left-4 right-4 h-0.5 bg-emerald-500 rounded-full" />
-            )}
-          </button>
-          <button
-            onClick={() => setSidebarTab("grupos")}
-            className={cn(
-              "relative flex-1 flex items-center justify-center gap-2 py-2 text-sm font-medium transition-all",
-              sidebarTab === "grupos" 
-                ? "text-foreground" 
-                : "text-muted-foreground hover:text-foreground hover:bg-muted/30"
-            )}
-          >
-            <span>Grupos</span>
-            {sidebarTab === "grupos" && (
-              <div className="absolute bottom-0 left-4 right-4 h-0.5 bg-emerald-500 rounded-full" />
-            )}
-          </button>
         </div>
       </div>
 
