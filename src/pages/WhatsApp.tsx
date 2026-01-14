@@ -659,10 +659,10 @@ const WhatsApp = (props: WhatsAppProps) => {
       if (error) throw error;
       
       setMessages(prev => prev.map(m => 
-        m.id === editingMessage.id ? { ...m, text: editText.trim() } : m
+        m.id === editingMessage.id ? { ...m, text: editText.trim(), isEdited: true } : m
       ));
       
-      await supabase.from("whatsapp_messages").update({ text: editText.trim() }).eq("id", editingMessage.id);
+      await supabase.from("whatsapp_messages").update({ text: editText.trim(), is_edited: true }).eq("id", editingMessage.id);
       
       toast({ title: "Mensagem editada" });
     } catch (error: any) {
