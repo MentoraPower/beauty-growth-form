@@ -59,15 +59,9 @@ const GroupItem = memo(function GroupItem({
 
       {/* Content */}
       <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-2">
-          <span className="font-medium text-sm text-foreground truncate">
-            {group.name}
-          </span>
-        </div>
-        <div className="flex items-center gap-1.5 text-xs text-muted-foreground mt-0.5">
-          <Users className="w-3 h-3" />
-          <span>{group.participantCount >= 0 ? `${group.participantCount} participantes` : "—"}</span>
-        </div>
+        <span className="font-medium text-sm text-foreground truncate block">
+          {group.name}
+        </span>
       </div>
 
       {/* Notification badges (right side) */}
