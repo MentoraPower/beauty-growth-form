@@ -505,7 +505,7 @@ const LeadInfoPanel = ({ phone, photoUrl, contactName, onClose, onNameUpdate }: 
       <div className="flex-1 overflow-y-auto">
         {/* Contato Section */}
         <Collapsible open={openSections.contato} onOpenChange={() => toggleSection('contato')}>
-          <CollapsibleTrigger className="w-full flex items-center justify-between px-4 py-3 hover:bg-muted/30 transition-colors border-b border-border">
+          <CollapsibleTrigger className="w-full flex items-center justify-between px-4 py-3 hover:bg-muted/30 transition-colors border-b border-black/[0.06] dark:border-white/[0.06]">
             <span className="text-sm font-medium text-foreground">Contato</span>
             {openSections.contato ? (
               <ChevronDown className="w-4 h-4 text-muted-foreground" />
@@ -514,7 +514,7 @@ const LeadInfoPanel = ({ phone, photoUrl, contactName, onClose, onNameUpdate }: 
             )}
           </CollapsibleTrigger>
           <CollapsibleContent>
-            <div className="px-4 py-4 space-y-4 border-b border-border">
+            <div className="px-4 py-4 space-y-4 border-b border-black/[0.06] dark:border-white/[0.06]">
               <Field label="Nome" value={lead.name} />
               <Field label="Email" value={lead.email} />
               <PhoneField 
@@ -527,7 +527,7 @@ const LeadInfoPanel = ({ phone, photoUrl, contactName, onClose, onNameUpdate }: 
 
         {/* Negócio Section */}
         <Collapsible open={openSections.negocio} onOpenChange={() => toggleSection('negocio')}>
-          <CollapsibleTrigger className="w-full flex items-center justify-between px-4 py-3 hover:bg-muted/30 transition-colors border-b border-border">
+          <CollapsibleTrigger className="w-full flex items-center justify-between px-4 py-3 hover:bg-muted/30 transition-colors border-b border-black/[0.06] dark:border-white/[0.06]">
             <span className="text-sm font-medium text-foreground">Negócio</span>
             {openSections.negocio ? (
               <ChevronDown className="w-4 h-4 text-muted-foreground" />
@@ -536,7 +536,7 @@ const LeadInfoPanel = ({ phone, photoUrl, contactName, onClose, onNameUpdate }: 
             )}
           </CollapsibleTrigger>
           <CollapsibleContent>
-            <div className="px-4 py-4 space-y-4 border-b border-border">
+            <div className="px-4 py-4 space-y-4 border-b border-black/[0.06] dark:border-white/[0.06]">
               <Field label="Área de Atuação" value={lead.service_area} />
               <Field label="Espaço" value={lead.workspace_type} />
               <Field label="Experiência" value={lead.years_experience} />
@@ -557,7 +557,7 @@ const LeadInfoPanel = ({ phone, photoUrl, contactName, onClose, onNameUpdate }: 
 
         {/* Histórico Section */}
         <Collapsible open={openSections.historico} onOpenChange={() => toggleSection('historico')}>
-          <CollapsibleTrigger className="w-full flex items-center justify-between px-4 py-3 hover:bg-muted/30 transition-colors border-b border-border">
+          <CollapsibleTrigger className="w-full flex items-center justify-between px-4 py-3 hover:bg-muted/30 transition-colors border-b border-black/[0.06] dark:border-white/[0.06]">
             <span className="text-sm font-medium text-foreground">Histórico</span>
             {openSections.historico ? (
               <ChevronDown className="w-4 h-4 text-muted-foreground" />
@@ -566,7 +566,7 @@ const LeadInfoPanel = ({ phone, photoUrl, contactName, onClose, onNameUpdate }: 
             )}
           </CollapsibleTrigger>
           <CollapsibleContent>
-            <div className="px-4 py-4 border-b border-border">
+            <div className="px-4 py-4 border-b border-black/[0.06] dark:border-white/[0.06]">
               <div className="flex items-start gap-3">
                 <div className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center flex-shrink-0">
                   <User className="w-4 h-4 text-muted-foreground" />
