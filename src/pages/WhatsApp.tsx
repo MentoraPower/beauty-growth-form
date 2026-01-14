@@ -1029,7 +1029,7 @@ const WhatsApp = (props: WhatsAppProps) => {
           />
 
           {/* Main Chat Area */}
-          <div className="flex-1 flex flex-col overflow-hidden">
+          <div className="flex-1 flex flex-col overflow-hidden bg-muted/10 dark:bg-zinc-950">
             {selectedChat ? (
               <>
                 <ChatHeader
