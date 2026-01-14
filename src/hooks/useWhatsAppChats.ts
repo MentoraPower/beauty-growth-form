@@ -72,15 +72,39 @@ interface UseWhatsAppChatsOptions {
   whatsappAccounts: Array<{ id: string; api_key?: string }>;
 }
 
+// Storage key for persisting selected chat
+const getSelectedChatStorageKey = (accountId: string | null) => 
+  accountId ? `whatsapp_selected_chat_${accountId}` : null;
+
 export function useWhatsAppChats({ selectedAccountId, whatsappAccounts }: UseWhatsAppChatsOptions) {
   const [chats, setChats] = useState<Chat[]>([]);
-  const [selectedChat, setSelectedChat] = useState<Chat | null>(null);
+  const [selectedChat, setSelectedChatInternal] = useState<Chat | null>(null);
   const [isInitialLoad, setIsInitialLoad] = useState(true);
   const [isSyncing, setIsSyncing] = useState(false);
   const chatsRef = useRef<Chat[]>([]);
   const pendingChatUpdatesRef = useRef<Map<string, any>>(new Map());
   const chatListInteractingRef = useRef(false);
   const chatListIdleTimeoutRef = useRef<number | null>(null);
+  const selectedChatRestoredRef = useRef(false);
+
+  // Wrapper to persist selected chat
+  const setSelectedChat = useCallback((chatOrUpdater: Chat | null | ((prev: Chat | null) => Chat | null)) => {
+    setSelectedChatInternal(prev => {
+      const newChat = typeof chatOrUpdater === 'function' ? chatOrUpdater(prev) : chatOrUpdater;
+      
+      // Persist to localStorage
+      const storageKey = getSelectedChatStorageKey(selectedAccountId);
+      if (storageKey) {
+        if (newChat) {
+          localStorage.setItem(storageKey, JSON.stringify({ id: newChat.id, phone: newChat.phone }));
+        } else {
+          localStorage.removeItem(storageKey);
+        }
+      }
+      
+      return newChat;
+    });
+  }, [selectedAccountId]);
 
   const formatChatData = useCallback((chat: any): Chat | null => {
     const phone = chat.phone || "";
@@ -359,6 +383,39 @@ export function useWhatsAppChats({ selectedAccountId, whatsappAccounts }: UseWha
       supabase.removeChannel(channel);
     };
   }, [updateChatInState, removeChatFromState, selectedAccountId, whatsappAccounts]);
+
+  // Restore selected chat from localStorage after chats load
+  useEffect(() => {
+    if (isInitialLoad || selectedChatRestoredRef.current || chats.length === 0) return;
+    
+    const storageKey = getSelectedChatStorageKey(selectedAccountId);
+    if (!storageKey) return;
+    
+    const savedData = localStorage.getItem(storageKey);
+    if (!savedData) {
+      selectedChatRestoredRef.current = true;
+      return;
+    }
+    
+    try {
+      const { id, phone } = JSON.parse(savedData);
+      const foundChat = chats.find(c => c.id === id || c.phone === phone);
+      
+      if (foundChat) {
+        setSelectedChatInternal(foundChat);
+      }
+    } catch (e) {
+      console.error("Error restoring selected chat:", e);
+    }
+    
+    selectedChatRestoredRef.current = true;
+  }, [chats, isInitialLoad, selectedAccountId]);
+
+  // Reset restored flag when account changes
+  useEffect(() => {
+    selectedChatRestoredRef.current = false;
+    setSelectedChatInternal(null);
+  }, [selectedAccountId]);
 
   return {
     chats,
