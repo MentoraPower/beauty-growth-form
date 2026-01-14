@@ -154,9 +154,9 @@ export function useWhatsAppMessages({ selectedChat, onMarkAsRead }: UseWhatsAppM
     }
   }, [onMarkAsRead]);
 
-  // Hide empty records
+  // Hide empty records (but keep deleted messages visible so the UI can show the placeholder)
   const visibleMessages = messages.filter(
-    (m) => Boolean(m.mediaType) || Boolean(m.text?.trim()) || Boolean(m.mediaUrl)
+    (m) => m.status === "DELETED" || Boolean(m.mediaType) || Boolean(m.text?.trim()) || Boolean(m.mediaUrl)
   );
 
   // Get all images for lightbox
