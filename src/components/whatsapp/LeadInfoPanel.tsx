@@ -310,7 +310,7 @@ const LeadInfoPanel = ({ phone, photoUrl, contactName, onClose, onNameUpdate }: 
 
   if (isLoading) {
     return (
-      <div className="w-[340px] border-l border-black/[0.08] dark:border-white/[0.08] bg-white dark:bg-zinc-900 flex items-center justify-center">
+      <div className="w-[340px] border-l border-black/[0.08] dark:border-white/[0.08] bg-white dark:bg-zinc-950 flex items-center justify-center">
         <div className="flex flex-col items-center gap-3">
           <div className="w-12 h-12 rounded-full bg-muted animate-pulse" />
           <div className="animate-pulse text-muted-foreground text-sm">Carregando...</div>
@@ -321,7 +321,7 @@ const LeadInfoPanel = ({ phone, photoUrl, contactName, onClose, onNameUpdate }: 
 
   if (!lead) {
     return (
-      <div className="w-[340px] border-l border-black/[0.08] dark:border-white/[0.08] bg-white dark:bg-zinc-900 flex flex-col">
+      <div className="w-[340px] border-l border-black/[0.08] dark:border-white/[0.08] bg-white dark:bg-zinc-950 flex flex-col">
         {/* Header */}
         <div className="bg-zinc-50 dark:bg-zinc-800/50 px-4 py-6 border-b border-black/[0.06] dark:border-white/[0.06]">
           <div className="flex items-center gap-3">
@@ -468,7 +468,7 @@ const LeadInfoPanel = ({ phone, photoUrl, contactName, onClose, onNameUpdate }: 
   }
 
   return (
-    <div className="w-[340px] border-l border-black/[0.08] dark:border-white/[0.08] bg-white dark:bg-zinc-900 flex flex-col overflow-hidden">
+    <div className="w-[340px] border-l border-black/[0.08] dark:border-white/[0.08] bg-white dark:bg-zinc-950 flex flex-col overflow-hidden">
       {/* Header */}
       <div className="bg-zinc-50 dark:bg-zinc-800/50 px-4 py-4 border-b border-black/[0.06] dark:border-white/[0.06]">
         <div className="flex items-center gap-3">

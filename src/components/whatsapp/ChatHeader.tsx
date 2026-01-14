@@ -24,7 +24,7 @@ export const ChatHeader = memo(function ChatHeader({
   const isGroup = selectedChat.isGroup;
 
   return (
-    <div className="h-[60px] px-4 flex items-center gap-3 bg-white dark:bg-zinc-900 border-b border-black/[0.08] dark:border-white/[0.08]">
+    <div className="h-[60px] px-4 flex items-center gap-3 bg-white dark:bg-zinc-950 border-b border-black/[0.08] dark:border-white/[0.08]">
       <div className="relative flex-shrink-0">
         {isGroup ? (
           // Group avatar - show photo if available, otherwise show initials with Users icon badge

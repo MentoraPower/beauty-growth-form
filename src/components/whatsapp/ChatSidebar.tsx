@@ -60,7 +60,7 @@ export const ChatSidebar = memo(function ChatSidebar({
   );
 
   return (
-    <div className="w-[320px] flex flex-col border-r border-black/[0.08] dark:border-white/[0.08] bg-white dark:bg-zinc-900">
+    <div className="w-[320px] flex flex-col border-r border-black/[0.08] dark:border-white/[0.08] bg-white dark:bg-zinc-950">
 
       {/* Search */}
       <div className="px-3 py-2.5 border-b border-black/[0.06] dark:border-white/[0.06]">
