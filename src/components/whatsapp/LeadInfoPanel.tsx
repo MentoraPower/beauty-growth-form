@@ -267,7 +267,8 @@ const LeadInfoPanel = ({ phone, photoUrl, contactName, onClose, onNameUpdate }: 
     return countries.find(c => c.dialCode === cleanDialCode) || countries[0]; // Default to Brazil
   };
 
-  const displayPhoto = lead?.photo_url || photoUrl;
+  // Prioritize photoUrl from WhatsApp (most recently fetched) over lead.photo_url
+  const displayPhoto = photoUrl || lead?.photo_url;
 
   // Field component for consistent styling
   const Field = ({ label, value, icon }: { label: string; value?: string | null; icon?: React.ReactNode }) => (

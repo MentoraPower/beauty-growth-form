@@ -9,6 +9,7 @@ interface ChatHeaderProps {
   contactPresence: { phone: string; type: string; timestamp: number } | null;
   showLeadPanel: boolean;
   onToggleLeadPanel: () => void;
+  photoUrl?: string | null;
 }
 
 export const ChatHeader = memo(function ChatHeader({
@@ -16,7 +17,11 @@ export const ChatHeader = memo(function ChatHeader({
   contactPresence,
   showLeadPanel,
   onToggleLeadPanel,
+  photoUrl,
 }: ChatHeaderProps) {
+  // Use photoUrl prop if provided, otherwise fallback to selectedChat.photo_url
+  const displayPhoto = photoUrl || selectedChat.photo_url || DEFAULT_AVATAR;
+
   return (
     <div className="h-[60px] px-4 flex items-center gap-3 bg-muted/40 border-b border-border/30">
       <div className="relative flex-shrink-0">
@@ -26,7 +31,7 @@ export const ChatHeader = memo(function ChatHeader({
           </div>
         ) : (
           <img 
-            src={selectedChat.photo_url || DEFAULT_AVATAR} 
+            src={displayPhoto} 
             alt={selectedChat.name} 
             className="w-11 h-11 rounded-full object-cover shadow-sm ring-2 ring-background" 
             onError={(e) => {
