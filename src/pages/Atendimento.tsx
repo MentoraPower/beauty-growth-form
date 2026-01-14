@@ -159,9 +159,9 @@ export default function Atendimento() {
           {/* WhatsApp Account Selector - Right side */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <button className="flex items-center gap-2 text-sm text-foreground hover:bg-background/60 px-2.5 py-1 rounded-lg transition-all">
-                <Smartphone className="w-4 h-4 text-emerald-500" />
-                <span className="truncate max-w-[160px] font-medium">
+            <button className="flex items-center gap-2 text-sm text-foreground bg-black/10 dark:bg-white/10 hover:bg-black/15 dark:hover:bg-white/15 px-2.5 py-1.5 rounded-lg transition-all">
+              <Smartphone className="w-4 h-4 text-emerald-500" />
+              <span className="truncate max-w-[160px] font-medium">
                   {selectedAccountId 
                     ? whatsappAccounts.find(a => a.id === selectedAccountId)?.name || "Conta WhatsApp"
                     : "Selecionar conta"}
