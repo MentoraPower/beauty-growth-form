@@ -893,24 +893,31 @@ const WhatsApp = (props: WhatsAppProps) => {
                 const sessionId = selectedAccount?.api_key;
                 
                 if (sessionId) {
-                  try {
-                    const { data } = await supabase.functions.invoke("wasender-whatsapp", {
-                      body: { 
-                        action: "get-profile-picture", 
-                        phone: chat.phone,
-                        sessionId,
-                      },
-                    });
-                    
+                  // Fetch in background without blocking selection
+                  supabase.functions.invoke("wasender-whatsapp", {
+                    body: { 
+                      action: "get-profile-picture", 
+                      phone: chat.phone,
+                      sessionId,
+                    },
+                  }).then(({ data }) => {
                     if (data?.photoUrl) {
-                      // Update the chat in state with the new photo
-                      const updatedChat = { ...chat, photo_url: data.photoUrl };
-                      setSelectedChat(updatedChat);
-                      setChats(prev => prev.map(c => c.id === chat.id ? updatedChat : c));
+                      console.log("[WhatsApp] Profile picture fetched:", data.photoUrl.substring(0, 50) + "...");
+                      // Update selectedChat only if still the same chat
+                      setSelectedChat(prev => {
+                        if (prev?.id === chat.id) {
+                          return { ...prev, photo_url: data.photoUrl };
+                        }
+                        return prev;
+                      });
+                      // Update chats list
+                      setChats(prev => prev.map(c => 
+                        c.id === chat.id ? { ...c, photo_url: data.photoUrl } : c
+                      ));
                     }
-                  } catch (error) {
+                  }).catch(error => {
                     console.error("[WhatsApp] Error fetching profile picture:", error);
-                  }
+                  });
                 }
               }
             }}
