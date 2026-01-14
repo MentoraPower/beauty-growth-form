@@ -428,6 +428,24 @@ export function useWhatsAppChats({ selectedAccountId, whatsappAccounts }: UseWha
         // Check if this is a group (phone ends with @g.us)
         const isGroup = chatData.phone?.endsWith("@g.us");
         
+        // For groups, also fetch photo from whatsapp_groups table if chat has no photo
+        let groupPhoto = chatData.photo_url;
+        let participantCount = 0;
+        
+        if (isGroup && !groupPhoto) {
+          const { data: groupData } = await supabase
+            .from("whatsapp_groups")
+            .select("photo_url, participant_count")
+            .eq("group_jid", chatData.phone)
+            .eq("session_id", sessionApiKey)
+            .maybeSingle();
+          
+          if (groupData) {
+            groupPhoto = groupData.photo_url || null;
+            participantCount = groupData.participant_count || 0;
+          }
+        }
+        
         const restoredChat: Chat = {
           id: chatData.id,
           name: chatData.name || chatData.phone || "",
@@ -437,10 +455,11 @@ export function useWhatsAppChats({ selectedAccountId, whatsappAccounts }: UseWha
           unread: chatData.unread_count || 0,
           avatar: (chatData.name || chatData.phone || "?").substring(0, 2).toUpperCase(),
           phone: chatData.phone || "",
-          photo_url: chatData.photo_url || null,
+          photo_url: groupPhoto || chatData.photo_url || null,
           lastMessageStatus: chatData.last_message_status || null,
           lastMessageFromMe: chatData.last_message_from_me || false,
           isGroup,
+          participantCount: participantCount || undefined,
         };
         
         setSelectedChatInternal(restoredChat);
