@@ -101,7 +101,7 @@ export const ChatInputArea = memo(function ChatInputArea({
     <>
       {/* Edit Preview */}
       {isEditing && (
-        <div className="px-4 py-2 bg-muted/50 border-t border-border/30 flex items-center gap-2">
+        <div className="px-4 py-2 bg-muted/50 border-t border-black/[0.06] dark:border-white/[0.06] flex items-center gap-2">
           <Pencil className="w-4 h-4 text-emerald-500 flex-shrink-0" />
           <div className="flex-1 min-w-0 pl-2 border-l-2 border-emerald-500">
             <p className="text-xs font-medium text-emerald-600 dark:text-emerald-400">
@@ -123,7 +123,7 @@ export const ChatInputArea = memo(function ChatInputArea({
 
       {/* Reply Preview */}
       {replyToMessage && (
-        <div className="px-4 py-2 bg-muted/50 border-t border-border/30 flex items-center gap-2">
+        <div className="px-4 py-2 bg-muted/50 border-t border-black/[0.06] dark:border-white/[0.06] flex items-center gap-2">
           <Reply className="w-4 h-4 text-emerald-500 flex-shrink-0" />
           <div className="flex-1 min-w-0 pl-2 border-l-2 border-emerald-500">
             <p className="text-xs font-medium text-emerald-600 dark:text-emerald-400">
