@@ -166,84 +166,15 @@ export const ChatSidebar = memo(function ChatSidebar({
       
       {/* Grupos Tab Content */}
       {sidebarTab === "grupos" && (
-        <ScrollArea className="flex-1 overscroll-contain overflow-x-hidden">
-          {isLoadingGroups ? (
-            <div className="flex items-center justify-center py-20">
-              <RefreshCw className="w-6 h-6 text-muted-foreground animate-spin" />
-            </div>
-          ) : whatsappGroups.length > 0 ? (
-            <div className="flex flex-col">
-              <div className="flex items-center justify-between px-3 py-2 border-b border-border/20 bg-muted/10">
-                <span className="text-xs text-muted-foreground font-medium">
-                  {whatsappGroups.length} grupos
-                </span>
-                <button
-                  onClick={onFetchGroups}
-                  disabled={isLoadingGroups}
-                  className="flex items-center gap-1 text-xs text-emerald-500 hover:text-emerald-400 transition-colors disabled:opacity-50"
-                >
-                  <RefreshCw className={cn("w-3.5 h-3.5", isLoadingGroups && "animate-spin")} />
-                  Atualizar
-                </button>
-              </div>
-              {whatsappGroups
-                .filter(group => 
-                  !searchQuery || 
-                  group.name.toLowerCase().includes(searchQuery.toLowerCase())
-                )
-                .map((group) => (
-                  <div
-                    key={group.id}
-                    className="flex items-center gap-3 px-3 py-3 border-b border-border/20 hover:bg-muted/20 transition-colors cursor-pointer"
-                    onClick={() => onSelectGroup(group)}
-                  >
-                    <div className="relative flex-shrink-0">
-                      {group.photoUrl ? (
-                        <img
-                          src={group.photoUrl}
-                          alt={group.name}
-                          className="w-12 h-12 rounded-full object-cover"
-                          onError={(e) => {
-                            e.currentTarget.style.display = 'none';
-                            e.currentTarget.nextElementSibling?.classList.remove('hidden');
-                          }}
-                        />
-                      ) : null}
-                      <div className={cn(
-                        "w-12 h-12 rounded-full bg-emerald-600 flex items-center justify-center text-white font-medium",
-                        group.photoUrl && "hidden"
-                      )}>
-                        {group.name.substring(0, 2).toUpperCase()}
-                      </div>
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <span className="font-medium text-foreground truncate block">{group.name}</span>
-                      <div className="flex items-center gap-1 text-xs text-muted-foreground mt-0.5">
-                        <Users className="w-3 h-3" />
-                        <span>
-                          {group.participantCount >= 0
-                            ? `${group.participantCount} participantes`
-                            : "— participantes"}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-            </div>
-          ) : (
-            <div className="flex flex-col items-center justify-center py-20 gap-3">
-              <Users className="w-10 h-10 text-muted-foreground/50" />
-              <p className="text-sm text-muted-foreground">Nenhum grupo encontrado</p>
-              <button 
-                onClick={onFetchGroups}
-                className="text-sm text-emerald-500 hover:underline flex items-center gap-1"
-              >
-                <RefreshCw className="w-4 h-4" />
-                Atualizar grupos
-              </button>
-            </div>
+        <GroupsList
+          groups={whatsappGroups.filter(group => 
+            !searchQuery || 
+            group.name.toLowerCase().includes(searchQuery.toLowerCase())
           )}
-        </ScrollArea>
+          isLoading={isLoadingGroups}
+          onRefresh={onFetchGroups}
+          onSelectGroup={onSelectGroup}
+        />
       )}
     </div>
   );

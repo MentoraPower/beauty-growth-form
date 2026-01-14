@@ -189,7 +189,7 @@ const WhatsApp = (props: WhatsAppProps) => {
     }
   }, [selectedAccountId, setSelectedAccountId, setWhatsappAccounts]);
 
-  // Fetch WhatsApp groups
+  // Fetch WhatsApp groups via Edge Function
   const fetchWhatsAppGroups = useCallback(async () => {
     const selectedAccount = whatsappAccounts.find(acc => acc.id === selectedAccountId);
     const sessionApiKey = selectedAccount?.api_key;
@@ -201,6 +201,7 @@ const WhatsApp = (props: WhatsAppProps) => {
 
     setIsLoadingGroups(true);
     try {
+      // First, show cached groups from database for instant feedback
       const { data: dbGroups } = await supabase
         .from("whatsapp_groups")
         .select("*")
@@ -212,31 +213,28 @@ const WhatsApp = (props: WhatsAppProps) => {
           id: g.id,
           groupJid: g.group_jid,
           name: g.name,
-          participantCount: g.participant_count || 0,
+          participantCount: g.participant_count ?? 0,
           photoUrl: g.photo_url,
         })));
-        setIsLoadingGroups(false);
       }
       
-      const response = await fetch("https://www.wasenderapi.com/api/groups", {
-        method: "GET",
-        headers: {
-          "Authorization": `Bearer ${sessionApiKey}`,
-          "Content-Type": "application/json",
-        },
+      // Then fetch fresh data from WasenderAPI via Edge Function
+      const { data, error } = await supabase.functions.invoke("wasender-whatsapp", {
+        body: { action: "fetch-groups", sessionId: sessionApiKey },
       });
 
-      if (!response.ok) throw new Error(`Failed to fetch groups: ${response.status}`);
+      if (error) {
+        console.error("[WhatsApp] Edge function error:", error);
+        return;
+      }
 
-      const result = await response.json();
-
-      if (result.success && Array.isArray(result.data)) {
-        const groups: WhatsAppGroup[] = result.data.map((g: any) => ({
-          id: g.id || g.jid || "",
-          groupJid: g.id || g.jid || "",
-          name: g.subject || g.name || "Grupo",
-          participantCount: g.participants?.length ?? g.size ?? 0,
-          photoUrl: g.profilePicture || g.pictureUrl || g.imgUrl || null,
+      if (data?.success && Array.isArray(data.groups)) {
+        const groups: WhatsAppGroup[] = data.groups.map((g: any) => ({
+          id: g.id || g.groupJid,
+          groupJid: g.groupJid,
+          name: g.name,
+          participantCount: g.participantCount ?? 0,
+          photoUrl: g.photoUrl,
         }));
         setWhatsappGroups(groups);
       }
