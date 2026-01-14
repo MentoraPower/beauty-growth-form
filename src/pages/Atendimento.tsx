@@ -8,6 +8,8 @@ import WhatsApp from "./WhatsApp";
 import { supabase } from "@/integrations/supabase/client";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
 
+type SidebarTab = "conversas" | "grupos";
+
 interface WhatsAppAccount {
   id: string;
   name: string;
@@ -26,6 +28,25 @@ export default function Atendimento() {
   const [isLoadingAccounts, setIsLoadingAccounts] = useState(false);
   const [showAddAccountDialog, setShowAddAccountDialog] = useState(false);
   const [accountToConnect, setAccountToConnect] = useState<WhatsAppAccount | null>(null);
+  
+  // Sidebar tab state - managed here and passed down
+  const [sidebarTab, setSidebarTabInternal] = useState<SidebarTab>(() => {
+    const tabFromUrl = searchParams.get('tab');
+    return tabFromUrl === 'grupos' ? 'grupos' : 'conversas';
+  });
+  
+  const setSidebarTab = useCallback((tab: SidebarTab) => {
+    setSidebarTabInternal(tab);
+    setSearchParams(currentParams => {
+      const newParams = new URLSearchParams(currentParams);
+      if (tab === 'grupos') {
+        newParams.set('tab', 'grupos');
+      } else {
+        newParams.delete('tab');
+      }
+      return newParams;
+    }, { replace: true });
+  }, [setSearchParams]);
 
   // Store selected account per workspace
   const getStorageKey = useCallback(() => {
@@ -126,83 +147,117 @@ export default function Atendimento() {
   return (
     <div className="h-full flex flex-col overflow-hidden bg-background">
       {/* Compact Header */}
-      <div className="flex-shrink-0 h-11 border-b border-border/40 px-4 flex items-center justify-between bg-muted/30">
-        <div className="flex items-center gap-2">
-          <div className="flex items-center gap-2 text-sm font-medium text-foreground">
-            <WhatsAppIcon className="h-4 w-4 text-emerald-500" />
-            <span>WhatsApp</span>
+      <div className="flex-shrink-0 border-b border-border/40 bg-white dark:bg-zinc-900">
+        <div className="h-11 px-4 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 text-sm font-medium text-foreground">
+              <WhatsAppIcon className="h-4 w-4 text-emerald-500" />
+              <span>WhatsApp</span>
+            </div>
           </div>
-        </div>
 
-        {/* WhatsApp Account Selector - Right side */}
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <button className="flex items-center gap-2 text-sm text-foreground hover:bg-background/60 px-2.5 py-1 rounded-lg transition-all">
-              <Smartphone className="w-4 h-4 text-emerald-500" />
-              <span className="truncate max-w-[160px] font-medium">
-                {selectedAccountId 
-                  ? whatsappAccounts.find(a => a.id === selectedAccountId)?.name || "Conta WhatsApp"
-                  : "Selecionar conta"}
-              </span>
-              <ChevronDown className="w-3.5 h-3.5 text-muted-foreground" />
-            </button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-64">
-            {isLoadingAccounts ? (
-              <div className="flex items-center justify-center py-4">
-                <RefreshCw className="w-4 h-4 animate-spin text-muted-foreground" />
-              </div>
-            ) : whatsappAccounts.length > 0 ? (
-              <>
-                {whatsappAccounts.map((account) => {
-                  const isConnected = account.status?.toLowerCase() === "connected";
-                  return (
-                    <DropdownMenuItem
-                      key={account.id}
-                      className={cn(
-                        "cursor-pointer flex items-center gap-2",
-                        selectedAccountId === account.id && "bg-muted"
-                      )}
-                      onClick={() => handleAccountChange(account)}
-                    >
-                      <div className={cn(
-                        "w-2 h-2 rounded-full",
-                        isConnected ? "bg-emerald-500" : "bg-amber-500"
-                      )} />
-                      <div className="flex-1 min-w-0">
-                        <p className="font-medium truncate">{account.name}</p>
-                        {account.phone_number && (
-                          <p className="text-xs text-muted-foreground truncate">{account.phone_number}</p>
+          {/* WhatsApp Account Selector - Right side */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button className="flex items-center gap-2 text-sm text-foreground hover:bg-background/60 px-2.5 py-1 rounded-lg transition-all">
+                <Smartphone className="w-4 h-4 text-emerald-500" />
+                <span className="truncate max-w-[160px] font-medium">
+                  {selectedAccountId 
+                    ? whatsappAccounts.find(a => a.id === selectedAccountId)?.name || "Conta WhatsApp"
+                    : "Selecionar conta"}
+                </span>
+                <ChevronDown className="w-3.5 h-3.5 text-muted-foreground" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-64">
+              {isLoadingAccounts ? (
+                <div className="flex items-center justify-center py-4">
+                  <RefreshCw className="w-4 h-4 animate-spin text-muted-foreground" />
+                </div>
+              ) : whatsappAccounts.length > 0 ? (
+                <>
+                  {whatsappAccounts.map((account) => {
+                    const isConnected = account.status?.toLowerCase() === "connected";
+                    return (
+                      <DropdownMenuItem
+                        key={account.id}
+                        className={cn(
+                          "cursor-pointer flex items-center gap-2",
+                          selectedAccountId === account.id && "bg-muted"
                         )}
-                      </div>
-                      {isConnected && selectedAccountId === account.id && (
-                        <Check className="w-4 h-4 text-emerald-500" />
-                      )}
-                      {!isConnected && (
-                        <span className="text-xs text-amber-600">Conectar</span>
-                      )}
-                    </DropdownMenuItem>
-                  );
-                })}
-                <DropdownMenuSeparator />
-              </>
-            ) : (
-              <div className="px-2 py-3 text-sm text-muted-foreground text-center">
-                Nenhuma conta conectada
-              </div>
+                        onClick={() => handleAccountChange(account)}
+                      >
+                        <div className={cn(
+                          "w-2 h-2 rounded-full",
+                          isConnected ? "bg-emerald-500" : "bg-amber-500"
+                        )} />
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium truncate">{account.name}</p>
+                          {account.phone_number && (
+                            <p className="text-xs text-muted-foreground truncate">{account.phone_number}</p>
+                          )}
+                        </div>
+                        {isConnected && selectedAccountId === account.id && (
+                          <Check className="w-4 h-4 text-emerald-500" />
+                        )}
+                        {!isConnected && (
+                          <span className="text-xs text-amber-600">Conectar</span>
+                        )}
+                      </DropdownMenuItem>
+                    );
+                  })}
+                  <DropdownMenuSeparator />
+                </>
+              ) : (
+                <div className="px-2 py-3 text-sm text-muted-foreground text-center">
+                  Nenhuma conta conectada
+                </div>
+              )}
+              <DropdownMenuItem 
+                className="cursor-pointer"
+                onClick={() => {
+                  setAccountToConnect(null);
+                  setShowAddAccountDialog(true);
+                }}
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                Adicionar conta WhatsApp
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+        
+        {/* Tabs - Below header */}
+        <div className="flex border-t border-border/30">
+          <button
+            onClick={() => setSidebarTab("conversas")}
+            className={cn(
+              "relative flex-1 flex items-center justify-center gap-2 py-2 text-sm font-medium transition-all",
+              sidebarTab === "conversas" 
+                ? "text-foreground" 
+                : "text-muted-foreground hover:text-foreground hover:bg-muted/30"
             )}
-            <DropdownMenuItem 
-              className="cursor-pointer"
-              onClick={() => {
-                setAccountToConnect(null);
-                setShowAddAccountDialog(true);
-              }}
-            >
-              <Plus className="w-4 h-4 mr-2" />
-              Adicionar conta WhatsApp
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+          >
+            <span>Conversas</span>
+            {sidebarTab === "conversas" && (
+              <div className="absolute bottom-0 left-4 right-4 h-0.5 bg-emerald-500 rounded-full" />
+            )}
+          </button>
+          <button
+            onClick={() => setSidebarTab("grupos")}
+            className={cn(
+              "relative flex-1 flex items-center justify-center gap-2 py-2 text-sm font-medium transition-all",
+              sidebarTab === "grupos" 
+                ? "text-foreground" 
+                : "text-muted-foreground hover:text-foreground hover:bg-muted/30"
+            )}
+          >
+            <span>Grupos</span>
+            {sidebarTab === "grupos" && (
+              <div className="absolute bottom-0 left-4 right-4 h-0.5 bg-emerald-500 rounded-full" />
+            )}
+          </button>
+        </div>
       </div>
 
       {/* Tab Content - Full height and width */}
@@ -217,6 +272,8 @@ export default function Atendimento() {
           accountToConnect={accountToConnect}
           setAccountToConnect={setAccountToConnect}
           fetchWhatsAppAccounts={fetchWhatsAppAccounts}
+          sidebarTab={sidebarTab}
+          setSidebarTab={setSidebarTab}
         />
       </div>
     </div>

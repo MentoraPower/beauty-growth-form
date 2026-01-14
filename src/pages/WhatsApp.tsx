@@ -28,6 +28,8 @@ interface WhatsAppProps {
   accountToConnect?: { id: string; name: string; phone_number?: string; status: string; api_key?: string } | null;
   setAccountToConnect?: React.Dispatch<React.SetStateAction<{ id: string; name: string; phone_number?: string; status: string; api_key?: string } | null>>;
   fetchWhatsAppAccounts?: () => Promise<void>;
+  sidebarTab?: "conversas" | "grupos";
+  setSidebarTab?: (tab: "conversas" | "grupos") => void;
 }
 
 const WhatsApp = (props: WhatsAppProps) => {
@@ -67,24 +69,31 @@ const WhatsApp = (props: WhatsAppProps) => {
   // Groups & Sidebar
   const [whatsappGroups, setWhatsappGroups] = useState<WhatsAppGroup[]>([]);
   const [isLoadingGroups, setIsLoadingGroups] = useState(false);
-  const [sidebarTab, setSidebarTabInternal] = useState<"conversas" | "grupos">(() => {
+  
+  // Use props or fallback to local state for sidebar tab
+  const [localSidebarTab, setLocalSidebarTabInternal] = useState<"conversas" | "grupos">(() => {
     const tabFromUrl = searchParams.get('tab');
     return tabFromUrl === 'grupos' ? 'grupos' : 'conversas';
   });
   
-  // Wrapper to persist sidebar tab in URL
+  const sidebarTab = props.sidebarTab ?? localSidebarTab;
+  
   const setSidebarTab = useCallback((tab: "conversas" | "grupos") => {
-    setSidebarTabInternal(tab);
-    setSearchParams(currentParams => {
-      const newParams = new URLSearchParams(currentParams);
-      if (tab === 'grupos') {
-        newParams.set('tab', 'grupos');
-      } else {
-        newParams.delete('tab');
-      }
-      return newParams;
-    }, { replace: true });
-  }, [setSearchParams]);
+    if (props.setSidebarTab) {
+      props.setSidebarTab(tab);
+    } else {
+      setLocalSidebarTabInternal(tab);
+      setSearchParams(currentParams => {
+        const newParams = new URLSearchParams(currentParams);
+        if (tab === 'grupos') {
+          newParams.set('tab', 'grupos');
+        } else {
+          newParams.delete('tab');
+        }
+        return newParams;
+      }, { replace: true });
+    }
+  }, [props.setSidebarTab, setSearchParams]);
   
   // Account loading state
   const [isLoadingAccounts, setIsLoadingAccounts] = useState(false);

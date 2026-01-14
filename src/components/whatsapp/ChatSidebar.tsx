@@ -61,42 +61,6 @@ export const ChatSidebar = memo(function ChatSidebar({
 
   return (
     <div className="w-[320px] flex flex-col border-r border-border/30 bg-white dark:bg-zinc-900">
-      {/* Tabs */}
-      <div className="flex border-b border-border/30 bg-white dark:bg-zinc-900">
-        <button
-          onClick={() => onSidebarTabChange("conversas")}
-          className={cn(
-            "relative flex-1 flex items-center justify-center gap-2 py-2 text-sm font-medium transition-all",
-            sidebarTab === "conversas" 
-              ? "text-foreground" 
-              : "text-muted-foreground hover:text-foreground hover:bg-muted/30"
-          )}
-        >
-          <span>Conversas</span>
-          {sidebarTab === "conversas" && (
-            <div className="absolute bottom-0 left-4 right-4 h-0.5 bg-emerald-500 rounded-full" />
-          )}
-        </button>
-        <button
-          onClick={() => { 
-            onSidebarTabChange("grupos");
-            if (whatsappGroups.length === 0 && !isLoadingGroups) {
-              onFetchGroups();
-            }
-          }}
-          className={cn(
-            "relative flex-1 flex items-center justify-center gap-2 py-2 text-sm font-medium transition-all",
-            sidebarTab === "grupos" 
-              ? "text-foreground" 
-              : "text-muted-foreground hover:text-foreground hover:bg-muted/30"
-          )}
-        >
-          <span>Grupos</span>
-          {sidebarTab === "grupos" && (
-            <div className="absolute bottom-0 left-4 right-4 h-0.5 bg-emerald-500 rounded-full" />
-          )}
-        </button>
-      </div>
 
       {/* Search */}
       <div className="px-3 py-2.5 border-b border-border/30">
