@@ -75,7 +75,7 @@ export const ChatSidebar = memo(function ChatSidebar({
       </div>
 
       {/* Tabs */}
-      <div className="flex border-b border-border/30 bg-card/30">
+      <div className="flex border-b border-border/30 bg-white dark:bg-zinc-900">
         <button
           onClick={() => onSidebarTabChange("conversas")}
           className={cn(
