@@ -332,34 +332,33 @@ export const MessageBubble = memo(function MessageBubble({
   const isClientDeletedMessage = msg.status === "DELETED" && !msg.sent;
 
   return (
-    <div className={cn("flex flex-col", msg.sent ? "items-end" : "items-start")}>
-      {/* Message row with actions */}
-      <div className={cn("flex group", msg.sent ? "justify-end" : "justify-start")}>
-        {/* Menu for sent messages */}
-        <MessageActionMenu
-          msg={msg}
-          messageMenuId={messageMenuId}
-          onMessageMenuChange={onMessageMenuChange}
-          onReplyMessage={onReplyMessage}
-          onEditMessage={onEditMessage}
-          onDeleteMessage={onDeleteMessage}
-        />
-        
-        {/* Reply button for received messages */}
-        {!msg.sent && msg.status !== "DELETED" && (
-          <button
-            onClick={() => onReplyMessage(msg)}
-            className="p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity hover:bg-muted/50 mr-1 self-center"
-          >
-            <Reply className="w-4 h-4 text-muted-foreground" />
-          </button>
-        )}
-        
-        {/* Bubble container */}
+    <div className={cn("flex w-full group", msg.sent ? "justify-end" : "justify-start")}>
+      {/* Menu for sent messages */}
+      <MessageActionMenu
+        msg={msg}
+        messageMenuId={messageMenuId}
+        onMessageMenuChange={onMessageMenuChange}
+        onReplyMessage={onReplyMessage}
+        onEditMessage={onEditMessage}
+        onDeleteMessage={onDeleteMessage}
+      />
+      
+      {/* Reply button for received messages */}
+      {!msg.sent && msg.status !== "DELETED" && (
+        <button
+          onClick={() => onReplyMessage(msg)}
+          className="p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity hover:bg-muted/50 mr-1 self-center"
+        >
+          <Reply className="w-4 h-4 text-muted-foreground" />
+        </button>
+      )}
+      
+      {/* Bubble container with indicator below */}
+      <div className="flex flex-col">
         <div
           data-message-id={msg.message_id}
           className={cn(
-            "max-w-[65%] rounded-2xl px-3 py-2 relative transition-all duration-300",
+            "max-w-[65vw] rounded-2xl px-3 py-2 relative transition-all duration-300",
             msg.sent 
               ? "bg-sky-100 dark:bg-sky-900/40 rounded-tr-sm" 
               : "bg-black/[0.04] dark:bg-white/[0.08] rounded-tl-sm"
@@ -380,14 +379,14 @@ export const MessageBubble = memo(function MessageBubble({
           
           <MessageFooter msg={msg} />
         </div>
+        
+        {/* Client deleted message indicator - below the bubble */}
+        {isClientDeletedMessage && (
+          <span className="text-[10px] text-muted-foreground/60 italic mt-0.5 pl-1">
+            Mensagem apagada pelo cliente
+          </span>
+        )}
       </div>
-      
-      {/* Client deleted message indicator - OUTSIDE the bubble */}
-      {isClientDeletedMessage && (
-        <p className="text-[10px] text-muted-foreground/60 italic mt-0.5 ml-1">
-          Mensagem apagada pelo cliente
-        </p>
-      )}
     </div>
   );
 });
