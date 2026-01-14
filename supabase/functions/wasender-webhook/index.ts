@@ -481,41 +481,65 @@ async function handler(req: Request): Promise<Response> {
     }
 
     // Handle message deletion (when contact deletes a message)
-    // WasenderAPI sends "messages.deleted" event
+    // WasenderAPI sends "messages.delete" with data.message.keys[] array
     if (event === "messages.delete" || event === "messages.deleted") {
       const deleteData = payload.data;
-      const messageKey = deleteData?.key || deleteData;
-      const messageId = messageKey?.id;
-      const numericMsgId = deleteData?.msgId?.toString();
       
-      console.log(`[Wasender Webhook] Message deleted event - messageId: ${messageId}, numericMsgId: ${numericMsgId}`);
+      // WasenderAPI sends keys in data.message.keys array format
+      const keysArray = deleteData?.message?.keys || [];
+      // Fallback to old format
+      const singleKey = deleteData?.key || deleteData;
       
-      // Try both message_id formats
-      if (messageId) {
-        const { error } = await supabase
-          .from("whatsapp_messages")
-          .update({ status: "DELETED" })
-          .eq("message_id", messageId);
-        
-        if (error) {
-          console.log(`[Wasender Webhook] Error updating by messageId: ${error.message}`);
-        } else {
-          console.log(`[Wasender Webhook] Message ${messageId} marked as DELETED`);
+      // Collect all message IDs to delete
+      const messageIdsToDelete: string[] = [];
+      
+      // Handle array format: { message: { keys: [{ id: "...", ... }] } }
+      if (Array.isArray(keysArray) && keysArray.length > 0) {
+        for (const keyObj of keysArray) {
+          if (keyObj?.id) {
+            messageIdsToDelete.push(keyObj.id);
+          }
         }
       }
       
-      // Also try numeric msgId if different
-      if (numericMsgId && numericMsgId !== messageId) {
-        const { error } = await supabase
+      // Handle single key format (fallback)
+      if (messageIdsToDelete.length === 0 && singleKey?.id) {
+        messageIdsToDelete.push(singleKey.id);
+      }
+      
+      // Also try numeric msgId
+      const numericMsgId = deleteData?.msgId?.toString();
+      if (numericMsgId && !messageIdsToDelete.includes(numericMsgId)) {
+        messageIdsToDelete.push(numericMsgId);
+      }
+      
+      console.log(`[Wasender Webhook] Message delete event - IDs to delete: ${messageIdsToDelete.join(", ")}`);
+      
+      // Update all found messages to DELETED status
+      for (const msgId of messageIdsToDelete) {
+        // Try by message_id first
+        const { error: err1, count: count1 } = await supabase
           .from("whatsapp_messages")
           .update({ status: "DELETED" })
-          .eq("message_id", numericMsgId);
+          .eq("message_id", msgId);
         
-        if (error) {
-          console.log(`[Wasender Webhook] Error updating by numericMsgId: ${error.message}`);
-        } else {
-          console.log(`[Wasender Webhook] Message ${numericMsgId} marked as DELETED`);
+        if (!err1 && count1 && count1 > 0) {
+          console.log(`[Wasender Webhook] Message ${msgId} marked as DELETED (by message_id)`);
+          continue;
         }
+        
+        // Try by whatsapp_key_id
+        const { error: err2, count: count2 } = await supabase
+          .from("whatsapp_messages")
+          .update({ status: "DELETED" })
+          .eq("whatsapp_key_id", msgId);
+        
+        if (!err2 && count2 && count2 > 0) {
+          console.log(`[Wasender Webhook] Message ${msgId} marked as DELETED (by whatsapp_key_id)`);
+          continue;
+        }
+        
+        console.log(`[Wasender Webhook] Message ${msgId} not found in database`);
       }
       
       return new Response(JSON.stringify({ ok: true }), { 
