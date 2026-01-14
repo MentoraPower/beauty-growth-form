@@ -12,6 +12,8 @@ export interface WhatsAppGroup {
   photoUrl?: string | null;
   unreadCount?: number;
   hasNewEvent?: boolean; // join/leave events
+  lastMessage?: string | null;
+  lastMessageTime?: string | null;
 }
 
 interface GroupsListProps {
@@ -62,6 +64,11 @@ const GroupItem = memo(function GroupItem({
         <span className="font-medium text-sm text-foreground truncate block">
           {group.name}
         </span>
+        {group.lastMessage && (
+          <span className="text-xs text-muted-foreground truncate block mt-0.5">
+            {group.lastMessage}
+          </span>
+        )}
       </div>
 
       {/* Notification badges (right side) */}
