@@ -1008,7 +1008,7 @@ async function handler(req: Request): Promise<Response> {
     // ========== Handle groups.upsert event ==========
     if (event === "groups.upsert") {
       console.log(`[Wasender Webhook] 📋 groups.upsert event received`);
-      console.log(`[Wasender Webhook] Full groups.upsert payload:`, JSON.stringify(payload.data, null, 2));
+      console.log(`[Wasender Webhook] Full groups.upsert payload:`, JSON.stringify(payload.data, null, 2).substring(0, 2000));
       
       const groups = payload.data?.groups || payload.data || [];
       const groupsArray = Array.isArray(groups) ? groups : [groups];
@@ -1024,39 +1024,78 @@ async function handler(req: Request): Promise<Response> {
         
         console.log(`[Wasender Webhook] Group info - JID: ${groupJid}, Name: ${groupName}, Photo: ${groupPhoto ? 'yes' : 'no'}, Participants: ${participantCount}`);
         
-        if (groupJid) {
-          // Update whatsapp_groups table
-          const updateData: Record<string, any> = {};
-          if (groupName) updateData.name = groupName;
-          if (groupPhoto) updateData.photo_url = groupPhoto;
-          if (participantCount !== null) updateData.participant_count = participantCount;
-          if (description !== null) updateData.description = description;
+        if (groupJid && sessionId) {
+          // UPSERT whatsapp_groups table (create if not exists, update if exists)
+          const groupUpsertData: Record<string, any> = {
+            group_jid: groupJid,
+            session_id: sessionId,
+            updated_at: new Date().toISOString(),
+          };
+          if (groupName) groupUpsertData.name = groupName;
+          if (groupPhoto) groupUpsertData.photo_url = groupPhoto;
+          if (participantCount !== null) groupUpsertData.participant_count = participantCount;
+          if (description !== null) groupUpsertData.description = description;
           
-          if (Object.keys(updateData).length > 0) {
-            const { error: groupUpdateError } = await supabase
-              .from("whatsapp_groups")
-              .update(updateData)
-              .eq("group_jid", groupJid);
+          const { error: groupUpsertError } = await supabase
+            .from("whatsapp_groups")
+            .upsert(groupUpsertData, { onConflict: "group_jid,session_id" });
+          
+          if (groupUpsertError) {
+            console.error(`[Wasender Webhook] Error upserting group ${groupJid}:`, groupUpsertError);
+          } else {
+            console.log(`[Wasender Webhook] ✅ Upserted group ${groupJid} - name: ${groupName}, photo: ${groupPhoto ? 'yes' : 'no'}, participants: ${participantCount}`);
+          }
+          
+          // UPSERT whatsapp_chats for the group (so it appears in chat list)
+          const chatUpsertData: Record<string, any> = {
+            phone: groupJid,
+            session_id: sessionId,
+            updated_at: new Date().toISOString(),
+          };
+          if (groupName) chatUpsertData.name = groupName;
+          if (groupPhoto) chatUpsertData.photo_url = groupPhoto;
+          
+          const { error: chatUpsertError } = await supabase
+            .from("whatsapp_chats")
+            .upsert(chatUpsertData, { onConflict: "phone,session_id" });
+          
+          if (chatUpsertError) {
+            console.error(`[Wasender Webhook] Error upserting chat for group ${groupJid}:`, chatUpsertError);
+          } else {
+            console.log(`[Wasender Webhook] ✅ Upserted whatsapp_chats for group ${groupJid}`);
+          }
+          
+          // Save participants if available
+          if (group.participants && Array.isArray(group.participants) && group.participants.length > 0) {
+            console.log(`[Wasender Webhook] 👥 Saving ${group.participants.length} participants for group ${groupJid}`);
             
-            if (groupUpdateError) {
-              console.error(`[Wasender Webhook] Error updating group ${groupJid}:`, groupUpdateError);
-            } else {
-              console.log(`[Wasender Webhook] ✅ Updated group ${groupJid} - name: ${groupName}, photo: ${groupPhoto ? 'updated' : 'unchanged'}`);
+            for (const participant of group.participants) {
+              const participantJid = participant.id || participant.jid || "";
+              const phone = participantJid.replace("@s.whatsapp.net", "").replace("@c.us", "").replace(/\D/g, "");
+              const isAdmin = participant.admin === "admin" || participant.isAdmin === true;
+              const isSuperAdmin = participant.admin === "superadmin" || participant.isSuperAdmin === true;
+              const pName = participant.name || participant.notify || participant.pushname || null;
+              
+              if (phone && phone.length >= 8) {
+                const { error: pError } = await supabase
+                  .from("whatsapp_group_participants")
+                  .upsert({
+                    group_jid: groupJid,
+                    session_id: sessionId,
+                    participant_jid: participantJid || `${phone}@s.whatsapp.net`,
+                    phone: phone,
+                    name: pName,
+                    is_admin: isAdmin,
+                    is_super_admin: isSuperAdmin,
+                    updated_at: new Date().toISOString(),
+                  }, { onConflict: "group_jid,session_id,participant_jid" });
+                
+                if (pError) {
+                  console.error(`[Wasender Webhook] Error upserting participant ${phone}:`, pError);
+                }
+              }
             }
-            
-            // Also update whatsapp_chats if the group exists there (for group chats)
-            const groupChatPhone = groupJid.replace("@g.us", "@g.us");
-            const { error: chatUpdateError } = await supabase
-              .from("whatsapp_chats")
-              .update({ 
-                name: groupName || undefined,
-                photo_url: groupPhoto || undefined
-              })
-              .eq("phone", groupJid);
-            
-            if (!chatUpdateError) {
-              console.log(`[Wasender Webhook] ✅ Also updated whatsapp_chats for group ${groupJid}`);
-            }
+            console.log(`[Wasender Webhook] ✅ Saved participants for group ${groupJid}`);
           }
         }
       }
@@ -1069,7 +1108,7 @@ async function handler(req: Request): Promise<Response> {
     // ========== Handle groups.update event (name/photo/description changes) ==========
     if (event === "groups.update") {
       console.log(`[Wasender Webhook] 📋 groups.update event received`);
-      console.log(`[Wasender Webhook] Full groups.update payload:`, JSON.stringify(payload.data, null, 2));
+      console.log(`[Wasender Webhook] Full groups.update payload:`, JSON.stringify(payload.data, null, 2).substring(0, 2000));
       
       const groups = payload.data?.groups || payload.data || [];
       const groupsArray = Array.isArray(groups) ? groups : [groups];
@@ -1084,38 +1123,72 @@ async function handler(req: Request): Promise<Response> {
         
         console.log(`[Wasender Webhook] Group update - JID: ${groupJid}, Name: ${groupName}, Photo: ${groupPhoto ? 'valid' : 'invalid/unchanged'}`);
         
-        if (groupJid) {
+        if (groupJid && sessionId) {
           // Build update object only with changed fields
-          const updateData: Record<string, any> = {};
+          const updateData: Record<string, any> = {
+            updated_at: new Date().toISOString(),
+          };
           if (groupName !== null) updateData.name = groupName;
           if (groupPhoto !== null) updateData.photo_url = groupPhoto;
           if (description !== null) updateData.description = description;
           
-          if (Object.keys(updateData).length > 0) {
-            // Update whatsapp_groups table
+          // First check if group exists, if not create it
+          const { data: existingGroup } = await supabase
+            .from("whatsapp_groups")
+            .select("id")
+            .eq("group_jid", groupJid)
+            .eq("session_id", sessionId)
+            .maybeSingle();
+          
+          if (!existingGroup) {
+            // Create the group
+            const { error: groupInsertError } = await supabase
+              .from("whatsapp_groups")
+              .insert({
+                group_jid: groupJid,
+                session_id: sessionId,
+                name: groupName || groupJid,
+                photo_url: groupPhoto,
+                description: description,
+              });
+            
+            if (groupInsertError) {
+              console.error(`[Wasender Webhook] Error creating group ${groupJid}:`, groupInsertError);
+            } else {
+              console.log(`[Wasender Webhook] ✅ Created new group ${groupJid} from groups.update`);
+            }
+          } else {
+            // Update existing group
             const { error: groupUpdateError } = await supabase
               .from("whatsapp_groups")
               .update(updateData)
-              .eq("group_jid", groupJid);
+              .eq("group_jid", groupJid)
+              .eq("session_id", sessionId);
             
             if (groupUpdateError) {
               console.error(`[Wasender Webhook] Error updating group ${groupJid}:`, groupUpdateError);
             } else {
               console.log(`[Wasender Webhook] ✅ Updated group ${groupJid}`);
             }
-            
-            // Also update whatsapp_chats if the group exists there
-            const { error: chatUpdateError } = await supabase
-              .from("whatsapp_chats")
-              .update({ 
-                name: groupName || undefined,
-                photo_url: groupPhoto || undefined
-              })
-              .eq("phone", groupJid);
-            
-            if (!chatUpdateError) {
-              console.log(`[Wasender Webhook] ✅ Also updated whatsapp_chats for group ${groupJid}`);
-            }
+          }
+          
+          // UPSERT whatsapp_chats for the group (so it appears in chat list)
+          const chatUpsertData: Record<string, any> = {
+            phone: groupJid,
+            session_id: sessionId,
+            updated_at: new Date().toISOString(),
+          };
+          if (groupName) chatUpsertData.name = groupName;
+          if (groupPhoto) chatUpsertData.photo_url = groupPhoto;
+          
+          const { error: chatUpsertError } = await supabase
+            .from("whatsapp_chats")
+            .upsert(chatUpsertData, { onConflict: "phone,session_id" });
+          
+          if (chatUpsertError) {
+            console.error(`[Wasender Webhook] Error upserting chat for group ${groupJid}:`, chatUpsertError);
+          } else {
+            console.log(`[Wasender Webhook] ✅ Upserted whatsapp_chats for group ${groupJid}`);
           }
         }
       }
