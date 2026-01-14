@@ -118,7 +118,7 @@ export const MessageArea = memo(function MessageArea({
   return (
     <div
       ref={messagesContainerRef}
-      className="flex-1 overflow-y-auto px-2 py-3 space-y-1.5 min-h-0 min-w-0"
+      className="flex-1 overflow-y-auto px-1 py-3 space-y-1.5 min-h-0 min-w-0"
       style={BACKGROUND_STYLE}
     >
       {isLoadingMessages ? (
