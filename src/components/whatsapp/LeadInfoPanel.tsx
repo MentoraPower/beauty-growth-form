@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { DEFAULT_AVATAR } from "@/lib/whatsapp-utils";
 
 interface Lead {
   id: string;
@@ -267,7 +268,6 @@ const LeadInfoPanel = ({ phone, photoUrl, contactName, onClose, onNameUpdate }: 
   };
 
   const displayPhoto = lead?.photo_url || photoUrl;
-  const defaultAvatar = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyMTIgMjEyIj48cGF0aCBmaWxsPSIjREZFNUU3IiBkPSJNMCAwaDIxMnYyMTJIMHoiLz48cGF0aCBmaWxsPSIjRkZGIiBkPSJNMTA2IDEwNmMtMjUuNCAwLTQ2LTIwLjYtNDYtNDZzMjAuNi00NiA0Ni00NiA0NiAyMC42IDQ2IDQ2LTIwLjYgNDYtNDYgNDZ6bTAgMTNjMzAuNiAwIDkyIDE1LjQgOTIgNDZ2MjNIMTR2LTIzYzAtMzAuNiA2MS40LTQ2IDkyLTQ2eiIvPjwvc3ZnPg==";
 
   // Field component for consistent styling
   const Field = ({ label, value, icon }: { label: string; value?: string | null; icon?: React.ReactNode }) => (
@@ -325,7 +325,7 @@ const LeadInfoPanel = ({ phone, photoUrl, contactName, onClose, onNameUpdate }: 
         <div className="bg-muted/50 dark:bg-muted/30 px-4 py-6">
           <div className="flex items-center gap-3">
             <img 
-              src={photoUrl || defaultAvatar} 
+              src={photoUrl || DEFAULT_AVATAR} 
               alt={contactName || "Contato"} 
               className="w-10 h-10 rounded-full object-cover bg-muted" 
             />
@@ -468,7 +468,7 @@ const LeadInfoPanel = ({ phone, photoUrl, contactName, onClose, onNameUpdate }: 
       <div className="bg-muted/50 dark:bg-muted/30 px-4 py-4">
         <div className="flex items-center gap-3">
           <img 
-            src={displayPhoto || defaultAvatar} 
+            src={displayPhoto || DEFAULT_AVATAR} 
             alt={lead.name} 
             className="w-10 h-10 rounded-full object-cover bg-muted flex-shrink-0" 
           />
