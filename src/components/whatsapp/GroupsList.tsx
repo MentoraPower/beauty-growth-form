@@ -71,10 +71,7 @@ const GroupItem = memo(function GroupItem({
           {group.name}
         </span>
         {(group.lastMessage || group.hasNewEvent) && (
-          <span className={cn(
-            "text-xs truncate block mt-0.5",
-            group.hasNewEvent ? "text-amber-600 dark:text-amber-400 font-medium" : "text-foreground/50"
-          )}>
+          <span className="text-xs truncate block mt-0.5 text-foreground/50">
             {group.lastMessage || "Novo evento no grupo"}
           </span>
         )}
@@ -82,10 +79,6 @@ const GroupItem = memo(function GroupItem({
 
       {/* Notification badges (right side) */}
       <div className="flex items-center gap-1.5 flex-shrink-0">
-        {/* New event indicator (join/leave) */}
-        {group.hasNewEvent && (
-          <span className="w-2.5 h-2.5 rounded-full bg-amber-500 animate-pulse" title="Novo evento no grupo" />
-        )}
         {/* Unread messages badge */}
         {typeof group.unreadCount === 'number' && group.unreadCount > 0 && (
           <div className="bg-emerald-500 text-white text-[11px] font-semibold rounded-full min-w-[20px] h-[20px] flex items-center justify-center px-1.5">
