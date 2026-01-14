@@ -17,13 +17,13 @@ export const ChatHeader = memo(function ChatHeader({
   onToggleLeadPanel,
 }: ChatHeaderProps) {
   return (
-    <div className="h-14 px-4 flex items-center gap-3 bg-muted/30 border-b border-border/30">
+    <div className="h-[60px] px-4 flex items-center gap-3 bg-muted/40 border-b border-border/30">
       <div className="relative flex-shrink-0">
         {selectedChat.photo_url ? (
           <img 
             src={selectedChat.photo_url} 
             alt={selectedChat.name} 
-            className="w-10 h-10 rounded-full object-cover bg-neutral-200" 
+            className="w-11 h-11 rounded-full object-cover bg-neutral-200 shadow-sm ring-2 ring-background" 
             onError={(e) => {
               e.currentTarget.style.display = 'none';
               e.currentTarget.nextElementSibling?.classList.remove('hidden');
@@ -31,7 +31,7 @@ export const ChatHeader = memo(function ChatHeader({
           />
         ) : null}
         <div className={cn(
-          "w-10 h-10 rounded-full flex items-center justify-center text-sm font-medium",
+          "w-11 h-11 rounded-full flex items-center justify-center text-sm font-semibold shadow-sm ring-2 ring-background",
           selectedChat.isGroup 
             ? "bg-emerald-600 text-white" 
             : "bg-muted text-muted-foreground",
@@ -44,8 +44,8 @@ export const ChatHeader = memo(function ChatHeader({
           )}
         </div>
       </div>
-      <div className="flex-1">
-        <h3 className="font-medium text-foreground">{selectedChat.name}</h3>
+      <div className="flex-1 min-w-0">
+        <h3 className="font-semibold text-foreground truncate">{selectedChat.name}</h3>
         {selectedChat.isGroup ? (
           <p className="text-xs text-muted-foreground flex items-center gap-1">
             <Users className="w-3 h-3" />
@@ -54,7 +54,7 @@ export const ChatHeader = memo(function ChatHeader({
               : "Grupo"}
           </p>
         ) : contactPresence && contactPresence.phone === selectedChat.phone.replace(/\D/g, "") ? (
-          <p className="text-xs text-emerald-500 animate-pulse">
+          <p className="text-xs text-emerald-500 font-medium animate-pulse">
             {contactPresence.type === "composing" ? "digitando..." : "gravando áudio..."}
           </p>
         ) : (
@@ -63,7 +63,7 @@ export const ChatHeader = memo(function ChatHeader({
       </div>
       <button
         onClick={onToggleLeadPanel}
-        className="p-2 hover:bg-muted/50 rounded-full transition-colors"
+        className="p-2.5 hover:bg-background/60 rounded-lg transition-all duration-200"
         title={showLeadPanel ? "Ocultar painel" : "Mostrar painel"}
       >
         {showLeadPanel ? <PanelRightClose className="w-5 h-5 text-muted-foreground" /> : <PanelRightOpen className="w-5 h-5 text-muted-foreground" />}

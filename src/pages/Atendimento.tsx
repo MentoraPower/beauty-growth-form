@@ -124,28 +124,22 @@ export default function Atendimento() {
   };
 
   return (
-    <div className="h-full flex flex-col -mr-3 -mb-3 -ml-3 rounded-2xl overflow-hidden bg-background">
-      {/* Tabs Header */}
-      <div className="flex-shrink-0 border-b border-border px-4 pt-2 pb-0 flex items-center justify-between">
-        <div className="flex gap-1">
-          <button
-            className={cn(
-              "relative flex items-center gap-2 px-4 py-2 transition-all duration-200 text-sm font-medium rounded-t-lg",
-              "text-foreground"
-            )}
-          >
-            <WhatsAppIcon className="h-4 w-4" />
+    <div className="h-full flex flex-col overflow-hidden bg-background">
+      {/* Compact Header */}
+      <div className="flex-shrink-0 h-11 border-b border-border/40 px-4 flex items-center justify-between bg-muted/30">
+        <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 text-sm font-medium text-foreground">
+            <WhatsAppIcon className="h-4 w-4 text-emerald-500" />
             <span>WhatsApp</span>
-            <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-primary/60 to-primary-dark/60" />
-          </button>
+          </div>
         </div>
 
         {/* WhatsApp Account Selector - Right side */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <button className="flex items-center gap-2 text-sm text-foreground hover:bg-muted/50 px-3 py-1.5 rounded-md transition-colors mb-1">
+            <button className="flex items-center gap-2 text-sm text-foreground hover:bg-background/60 px-2.5 py-1 rounded-lg transition-all">
               <Smartphone className="w-4 h-4 text-emerald-500" />
-              <span className="truncate max-w-[180px] font-medium">
+              <span className="truncate max-w-[160px] font-medium">
                 {selectedAccountId 
                   ? whatsappAccounts.find(a => a.id === selectedAccountId)?.name || "Conta WhatsApp"
                   : "Selecionar conta"}

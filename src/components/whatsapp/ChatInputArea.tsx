@@ -97,7 +97,7 @@ export const ChatInputArea = memo(function ChatInputArea({
       )}
 
       {/* Message Input */}
-      <div className="px-4 py-3 bg-muted/30 border-t border-border/30 flex-shrink-0 mt-auto">
+      <div className="px-3 py-2.5 bg-card/50 border-t border-border/30 flex-shrink-0 mt-auto">
         {isRecording ? (
           // Recording UI
           <div className="flex items-center gap-2">
@@ -145,7 +145,7 @@ export const ChatInputArea = memo(function ChatInputArea({
                   }}
                   onKeyDown={handleKeyDown}
                   disabled={isSending}
-                  className="bg-card border-border/50 text-sm rounded-xl min-h-[48px] max-h-[120px] resize-none pr-12 w-full"
+                  className="bg-muted/40 border-0 text-sm rounded-2xl min-h-[44px] max-h-[120px] resize-none pr-12 w-full focus-visible:ring-1 focus-visible:ring-emerald-500/50 placeholder:text-muted-foreground/60"
                   rows={1}
                 />
                 {/* Send Button inside input */}
@@ -171,7 +171,7 @@ export const ChatInputArea = memo(function ChatInputArea({
               <button
                 onClick={onStartRecording}
                 disabled={isSending}
-                className="p-3 bg-muted hover:bg-muted/80 rounded-full transition-colors disabled:opacity-50 shrink-0"
+                className="p-2.5 bg-muted/50 hover:bg-emerald-100 dark:hover:bg-emerald-900/30 rounded-full transition-all disabled:opacity-50 shrink-0"
               >
                 <Mic className="w-5 h-5 text-muted-foreground" />
               </button>
