@@ -22,6 +22,52 @@ interface MessageBubbleProps {
   participantPhotos?: Record<string, string>;
 }
 
+// Sub-component: Message status icon (smaller for inline)
+const MessageStatusIcon = memo(function MessageStatusIcon({ status }: { status?: string }) {
+  if (status === "READ" || status === "PLAYED") {
+    return <CheckCheck className="w-3 h-3 text-blue-500" />;
+  }
+  if (status === "DELIVERED") {
+    return <CheckCheck className="w-3 h-3 text-muted-foreground/70" />;
+  }
+  if (status === "SENDING") {
+    return <div className="w-2.5 h-2.5 border-[1.5px] border-muted-foreground border-t-transparent rounded-full animate-spin" />;
+  }
+  return <Check className="w-3 h-3 text-muted-foreground/70" />;
+});
+
+// Sub-component: Inline footer for text messages (time + status)
+const InlineFooter = memo(function InlineFooter({ msg }: { msg: Message }) {
+  return (
+    <span className="inline-flex items-center gap-0.5 ml-1.5 align-bottom whitespace-nowrap">
+      {msg.isEdited && msg.status !== "DELETED" && (
+        <span className="text-[9px] text-muted-foreground/60 italic">Editada</span>
+      )}
+      <span className="text-[9px] text-muted-foreground/70">{msg.time}</span>
+      {msg.sent && msg.status !== "DELETED" && (
+        <MessageStatusIcon status={msg.status} />
+      )}
+    </span>
+  );
+});
+
+// Sub-component: Block footer for media messages (time + status on new line)
+const BlockFooter = memo(function BlockFooter({ msg }: { msg: Message }) {
+  if (msg.mediaType === "audio") return null;
+
+  return (
+    <div className="mt-1 flex items-center gap-0.5 justify-end">
+      {msg.isEdited && msg.status !== "DELETED" && (
+        <span className="text-[9px] text-muted-foreground/60 italic">Editada</span>
+      )}
+      <span className="text-[9px] text-muted-foreground/70">{msg.time}</span>
+      {msg.sent && msg.status !== "DELETED" && (
+        <MessageStatusIcon status={msg.status} />
+      )}
+    </div>
+  );
+});
+
 // Sub-component: Message content renderer
 const MessageContent = memo(function MessageContent({
   msg,
@@ -67,6 +113,7 @@ const MessageContent = memo(function MessageContent({
             {formatWhatsAppText(msg.text)}
           </p>
         )}
+        <BlockFooter msg={msg} />
       </div>
     );
   }
@@ -80,11 +127,11 @@ const MessageContent = memo(function MessageContent({
           sent={msg.sent}
           renderFooter={(audioDuration) => (
             <div className="flex items-center justify-between mt-1 px-1">
-              <span className="text-[10px] text-muted-foreground tabular-nums">
+              <span className="text-[9px] text-muted-foreground tabular-nums">
                 {audioDuration}
               </span>
-              <div className="flex items-center gap-1">
-                <span className="text-[10px] text-muted-foreground">{msg.time}</span>
+              <div className="flex items-center gap-0.5">
+                <span className="text-[9px] text-muted-foreground/70">{msg.time}</span>
                 {msg.sent && msg.status !== "DELETED" && (
                   <MessageStatusIcon status={msg.status} />
                 )}
@@ -99,13 +146,16 @@ const MessageContent = memo(function MessageContent({
   // Sticker
   if ((msg.mediaType === "sticker" || msg.text?.includes("🎨 Sticker")) && msg.mediaUrl) {
     return (
-      <img 
-        src={msg.mediaUrl} 
-        alt="Sticker" 
-        className="max-w-[150px] max-h-[150px]"
-        loading="lazy"
-        onLoad={() => scrollToBottom("auto")}
-      />
+      <div>
+        <img 
+          src={msg.mediaUrl} 
+          alt="Sticker" 
+          className="max-w-[150px] max-h-[150px]"
+          loading="lazy"
+          onLoad={() => scrollToBottom("auto")}
+        />
+        <BlockFooter msg={msg} />
+      </div>
     );
   }
 
@@ -134,6 +184,7 @@ const MessageContent = memo(function MessageContent({
             {formatWhatsAppText(msg.text)}
           </p>
         )}
+        <BlockFooter msg={msg} />
       </div>
     );
   }
@@ -141,38 +192,28 @@ const MessageContent = memo(function MessageContent({
   // File/Document
   if (msg.mediaType && msg.mediaUrl) {
     return (
-      <a 
-        href={msg.mediaUrl} 
-        target="_blank" 
-        rel="noopener noreferrer"
-        className="flex items-center gap-2 p-2 bg-muted/30 rounded-lg hover:bg-muted/50 transition-colors"
-      >
-        <File className="w-8 h-8 text-emerald-500" />
-        <span className="text-sm text-foreground">Documento</span>
-      </a>
+      <div>
+        <a 
+          href={msg.mediaUrl} 
+          target="_blank" 
+          rel="noopener noreferrer"
+          className="flex items-center gap-2 p-2 bg-muted/30 rounded-lg hover:bg-muted/50 transition-colors"
+        >
+          <File className="w-8 h-8 text-emerald-500" />
+          <span className="text-sm text-foreground">Documento</span>
+        </a>
+        <BlockFooter msg={msg} />
+      </div>
     );
   }
 
-  // Text
+  // Text - inline footer at the end
   return (
-    <span className="text-sm text-foreground whitespace-pre-wrap">
+    <span className="text-sm text-foreground whitespace-pre-wrap break-words">
       {formatWhatsAppText(msg.text)}
+      <InlineFooter msg={msg} />
     </span>
   );
-});
-
-// Sub-component: Message status icon
-const MessageStatusIcon = memo(function MessageStatusIcon({ status }: { status?: string }) {
-  if (status === "READ" || status === "PLAYED") {
-    return <CheckCheck className="w-4 h-4 text-blue-500" />;
-  }
-  if (status === "DELIVERED") {
-    return <CheckCheck className="w-4 h-4 text-muted-foreground" />;
-  }
-  if (status === "SENDING") {
-    return <div className="w-3 h-3 border-2 border-muted-foreground border-t-transparent rounded-full animate-spin" />;
-  }
-  return <Check className="w-4 h-4 text-muted-foreground" />;
 });
 
 // Sub-component: Quoted message preview
@@ -301,23 +342,6 @@ const MessageActionMenu = memo(function MessageActionMenu({
   );
 });
 
-// Sub-component: Message footer (timestamp + status)
-const MessageFooter = memo(function MessageFooter({ msg }: { msg: Message }) {
-  if (msg.mediaType === "audio") return null;
-
-  return (
-    <div className="mt-1 inline-flex items-center gap-1 self-end">
-      {msg.isEdited && msg.status !== "DELETED" && (
-        <span className="text-[10px] text-muted-foreground/70 italic">Editada</span>
-      )}
-      <span className="text-[10px] text-muted-foreground">{msg.time}</span>
-      {msg.sent && msg.status !== "DELETED" && (
-        <MessageStatusIcon status={msg.status} />
-      )}
-    </div>
-  );
-});
-
 // Helper: Generate initials from name or phone
 const getInitials = (name?: string | null, phone?: string | null): string => {
   if (name) {
@@ -441,7 +465,7 @@ export const MessageBubble = memo(function MessageBubble({
         <div
           data-message-id={msg.message_id}
           className={cn(
-            "w-fit inline-flex flex-col max-w-full break-words rounded-2xl px-3 py-2 relative transition-all duration-300",
+            "w-fit inline-block max-w-full break-words rounded-2xl px-3 py-2 relative transition-all duration-300",
             msg.sent
               ? "bg-sky-100 dark:bg-sky-900/40 rounded-tr-sm"
               : "bg-black/[0.04] dark:bg-white/[0.08] rounded-tl-sm"
@@ -464,8 +488,6 @@ export const MessageBubble = memo(function MessageBubble({
             onImageClick={onImageClick}
             scrollToBottom={scrollToBottom}
           />
-
-          <MessageFooter msg={msg} />
         </div>
 
         {isClientDeletedMessage && (
