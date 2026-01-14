@@ -57,37 +57,42 @@ export const ChatSidebar = memo(function ChatSidebar({
   );
 
   return (
-    <div className="w-[340px] flex flex-col border-r border-border bg-background">
+    <div className="w-[320px] flex flex-col border-r border-border/50 bg-card/50">
       {/* Search */}
-      <div className="px-3 py-3 border-b border-border/30">
+      <div className="px-3 py-2.5 border-b border-border/30">
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <Input
             placeholder={sidebarTab === "conversas" ? "Pesquisar conversas..." : "Pesquisar grupos..."}
             value={searchQuery}
             onChange={(e) => onSearchChange(e.target.value)}
-            className="pl-9 bg-muted/30 border border-black/[0.08] h-9 text-sm placeholder:text-muted-foreground/60"
+            className="pl-9 bg-muted/40 border-0 h-9 text-sm placeholder:text-muted-foreground/60 rounded-lg focus-visible:ring-1 focus-visible:ring-emerald-500/50"
           />
         </div>
       </div>
 
       {/* Tabs */}
-      <div className="flex border-b border-border">
+      <div className="flex border-b border-border/30 bg-card/30">
         <button
           onClick={() => onSidebarTabChange("conversas")}
           className={cn(
-            "relative flex-1 flex items-center justify-center gap-2 py-2.5 text-sm font-medium transition-colors",
+            "relative flex-1 flex items-center justify-center gap-2 py-2 text-sm font-medium transition-all",
             sidebarTab === "conversas" 
               ? "text-foreground" 
-              : "text-muted-foreground hover:text-foreground"
+              : "text-muted-foreground hover:text-foreground hover:bg-muted/30"
           )}
         >
           <span>Conversas</span>
           {chats.length > 0 && (
-            <span className="text-xs text-muted-foreground">{chats.length}</span>
+            <span className={cn(
+              "text-[10px] px-1.5 py-0.5 rounded-full",
+              sidebarTab === "conversas" 
+                ? "bg-emerald-500/20 text-emerald-600 dark:text-emerald-400" 
+                : "bg-muted text-muted-foreground"
+            )}>{chats.length}</span>
           )}
           {sidebarTab === "conversas" && (
-            <div className="absolute bottom-0 left-2 right-2 h-0.5 bg-foreground" />
+            <div className="absolute bottom-0 left-4 right-4 h-0.5 bg-emerald-500 rounded-full" />
           )}
         </button>
         <button
@@ -98,18 +103,23 @@ export const ChatSidebar = memo(function ChatSidebar({
             }
           }}
           className={cn(
-            "relative flex-1 flex items-center justify-center gap-2 py-2.5 text-sm font-medium transition-colors",
+            "relative flex-1 flex items-center justify-center gap-2 py-2 text-sm font-medium transition-all",
             sidebarTab === "grupos" 
               ? "text-foreground" 
-              : "text-muted-foreground hover:text-foreground"
+              : "text-muted-foreground hover:text-foreground hover:bg-muted/30"
           )}
         >
           <span>Grupos</span>
           {whatsappGroups.length > 0 && (
-            <span className="text-xs text-muted-foreground">{whatsappGroups.length}</span>
+            <span className={cn(
+              "text-[10px] px-1.5 py-0.5 rounded-full",
+              sidebarTab === "grupos" 
+                ? "bg-emerald-500/20 text-emerald-600 dark:text-emerald-400" 
+                : "bg-muted text-muted-foreground"
+            )}>{whatsappGroups.length}</span>
           )}
           {sidebarTab === "grupos" && (
-            <div className="absolute bottom-0 left-2 right-2 h-0.5 bg-foreground" />
+            <div className="absolute bottom-0 left-4 right-4 h-0.5 bg-emerald-500 rounded-full" />
           )}
         </button>
       </div>
@@ -263,8 +273,10 @@ const ChatListItem = memo(function ChatListItem({
   return (
     <div
       className={cn(
-        "flex w-full items-center gap-3 px-3 py-3 cursor-pointer transition-colors border-b border-border/20 overflow-hidden max-w-full",
-        isSelected ? "bg-muted/40" : "hover:bg-muted/20"
+        "group flex w-full items-center gap-3 px-3 py-2.5 cursor-pointer transition-all border-b border-border/10 overflow-hidden max-w-full",
+        isSelected 
+          ? "bg-emerald-50 dark:bg-emerald-900/20 border-l-2 border-l-emerald-500" 
+          : "hover:bg-muted/40 border-l-2 border-l-transparent"
       )}
       onClick={() => onSelect(chat)}
     >
@@ -272,8 +284,11 @@ const ChatListItem = memo(function ChatListItem({
         <img 
           src={chat.photo_url || DEFAULT_AVATAR} 
           alt={chat.name} 
-          className="w-12 h-12 rounded-full object-cover bg-neutral-200" 
+          className="w-11 h-11 rounded-full object-cover bg-neutral-200 shadow-sm" 
         />
+        {chat.unread > 0 && (
+          <div className="absolute -top-0.5 -right-0.5 w-3 h-3 bg-emerald-500 rounded-full border-2 border-background" />
+        )}
       </div>
       <div className="flex-1 min-w-0 overflow-hidden w-0">
         <div className="flex items-center gap-2 min-w-0">
@@ -292,19 +307,22 @@ const ChatListItem = memo(function ChatListItem({
           </p>
         </div>
       </div>
-      <div className="flex flex-col items-end gap-1 flex-shrink-0">
-        <span className={cn("text-xs whitespace-nowrap", chat.unread > 0 ? "text-emerald-500" : "text-muted-foreground")}>
+      <div className="flex flex-col items-end gap-1.5 flex-shrink-0">
+        <span className={cn(
+          "text-[11px] font-medium whitespace-nowrap", 
+          chat.unread > 0 ? "text-emerald-600 dark:text-emerald-400" : "text-muted-foreground"
+        )}>
           {chat.time}
         </span>
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-1.5 h-5">
           {chat.unread > 0 && (
-            <span className="bg-emerald-500 text-white text-xs min-w-[20px] h-5 flex items-center justify-center rounded-full px-1.5">
+            <span className="bg-emerald-500 text-white text-[10px] font-semibold min-w-[18px] h-[18px] flex items-center justify-center rounded-full px-1">
               {chat.unread}
             </span>
           )}
           <DropdownMenu>
             <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-              <button className="p-1 hover:bg-muted/50 rounded-full opacity-0 group-hover:opacity-100 transition-opacity">
+              <button className="p-0.5 hover:bg-muted/50 rounded opacity-0 group-hover:opacity-100 transition-opacity">
                 <MoreVertical className="w-4 h-4 text-muted-foreground" />
               </button>
             </DropdownMenuTrigger>

@@ -3,6 +3,10 @@
  */
 
 export { ChatList } from './ChatList';
+export { ChatHeader } from './ChatHeader';
+export { ChatSidebar } from './ChatSidebar';
+export { ChatInputArea } from './ChatInputArea';
+export { MessageArea } from './MessageArea';
 export { MessageList } from './MessageList';
 export { AudioWaveform } from './AudioWaveform';
 export { RecordingWaveform } from './RecordingWaveform';
