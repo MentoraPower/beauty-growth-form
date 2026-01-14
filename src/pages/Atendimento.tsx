@@ -147,7 +147,7 @@ export default function Atendimento() {
   return (
     <div className="h-full flex flex-col overflow-hidden bg-background">
       {/* Compact Header */}
-      <div className="flex-shrink-0 border-b border-border/40 bg-white dark:bg-zinc-900">
+      <div className="flex-shrink-0 border-b border-black/[0.08] dark:border-white/[0.08] bg-white dark:bg-zinc-900">
         <div className="h-11 px-4 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <div className="flex items-center gap-2 text-sm font-medium text-foreground">
@@ -228,7 +228,7 @@ export default function Atendimento() {
         </div>
         
         {/* Tabs - Below header, aligned with sidebar */}
-        <div className="flex border-t border-border/30 w-[320px]">
+        <div className="flex border-t border-black/[0.06] dark:border-white/[0.06] w-[320px]">
           <button
             onClick={() => setSidebarTab("conversas")}
             className={cn(

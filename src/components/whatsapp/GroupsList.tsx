@@ -101,7 +101,7 @@ export const GroupsList = memo(function GroupsList({
   if (isLoading && groups.length === 0) {
     return (
       <div className={cn("flex-1 flex flex-col", className)}>
-        <div className="flex items-center justify-between px-4 py-3 border-b border-border/30 bg-muted/20">
+        <div className="flex items-center justify-between px-4 py-3 border-b border-black/[0.06] dark:border-white/[0.06] bg-muted/20">
           <div className="flex items-center gap-2 text-sm font-medium text-foreground">
             <Users className="w-4 h-4 text-emerald-600" />
             <span>Grupos</span>
@@ -121,7 +121,7 @@ export const GroupsList = memo(function GroupsList({
   if (groups.length === 0) {
     return (
       <div className={cn("flex-1 flex flex-col", className)}>
-        <div className="flex items-center justify-between px-4 py-3 border-b border-border/30 bg-muted/20">
+        <div className="flex items-center justify-between px-4 py-3 border-b border-black/[0.06] dark:border-white/[0.06] bg-muted/20">
           <div className="flex items-center gap-2 text-sm font-medium text-foreground">
             <Users className="w-4 h-4 text-emerald-600" />
             <span>Grupos</span>
@@ -153,7 +153,7 @@ export const GroupsList = memo(function GroupsList({
 
   return (
     <div className={cn("flex-1 flex flex-col min-h-0", className)}>
-      <div className="flex items-center justify-between px-4 py-3 border-b border-border/30 bg-muted/20">
+      <div className="flex items-center justify-between px-4 py-3 border-b border-black/[0.06] dark:border-white/[0.06] bg-muted/20">
         <div className="flex items-center gap-2 text-sm font-medium text-foreground">
           <Users className="w-4 h-4 text-emerald-600" />
           <span>Grupos ({groups.length})</span>
