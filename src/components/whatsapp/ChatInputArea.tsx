@@ -97,7 +97,7 @@ export const ChatInputArea = memo(function ChatInputArea({
       )}
 
       {/* Message Input */}
-      <div className="mx-3 mb-3 px-3 py-2.5 bg-card/50 border border-black/[0.04] dark:border-white/[0.06] rounded-2xl flex-shrink-0 mt-auto">
+      <div className="mx-3 mb-5 px-3 py-2.5 bg-card/50 border border-black/[0.08] dark:border-white/[0.10] rounded-2xl flex-shrink-0 mt-auto">
         {isRecording ? (
           // Recording UI
           <div className="flex items-center gap-2">
