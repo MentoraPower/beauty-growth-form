@@ -695,3 +695,31 @@
     transform: translateX(200%);
   }
 }
+
+/* Toast progress bar animation */
+@keyframes toast-progress {
+  from {
+    transform: scaleX(1);
+  }
+  to {
+    transform: scaleX(0);
+  }
+}
+
+/* Sonner toast with progress bar */
+[data-sonner-toast] {
+  position: relative;
+  overflow: hidden;
+}
+
+[data-sonner-toast]::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, hsl(25 100% 50%) 0%, hsl(35 100% 55%) 100%);
+  transform-origin: left;
+  animation: toast-progress 4s linear forwards;
+}
