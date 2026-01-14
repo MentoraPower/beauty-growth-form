@@ -73,7 +73,7 @@ const GroupItem = memo(function GroupItem({
         {(group.lastMessage || group.hasNewEvent) && (
           <span className={cn(
             "text-xs truncate block mt-0.5",
-            group.hasNewEvent ? "text-amber-600 dark:text-amber-400 font-medium" : "text-foreground/60"
+            group.hasNewEvent ? "text-amber-600 dark:text-amber-400 font-medium" : "text-foreground/50"
           )}>
             {group.lastMessage || "Novo evento no grupo"}
           </span>
