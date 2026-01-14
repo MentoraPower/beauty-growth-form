@@ -283,6 +283,9 @@ async function handler(req: Request): Promise<Response> {
       "contacts.update",
       // Presence
       "presence.update",
+      // Session management (útil para atualizar status em tempo real)
+      "qrcode.updated",
+      "session.status",
     ];
     
     // Events we explicitly IGNORE (don't need to save or process)
@@ -290,8 +293,6 @@ async function handler(req: Request): Promise<Response> {
       "call",                        // Chamadas - não processamos
       "poll.results",                // Enquetes - não precisamos
       "messages-newsletter.received", // Newsletter - não precisamos
-      "qrcode.updated",              // QR code - não precisamos (gerenciado pela API)
-      "session.status",              // Status da sessão - não precisamos
       "chats.delete",                // Delete de chats - opcional
       "contacts.upsert",             // Contatos individuais - não rastreamos
       "message.sent",                // Confirmação de envio - já temos via messages.update
