@@ -9,6 +9,10 @@
       "destination": "https://ytdfwkchsumgdvcroaqg.supabase.co/functions/v1/receive-webhook/:path*"
     },
     {
+      "source": "/api/wasender-webhook",
+      "destination": "https://ytdfwkchsumgdvcroaqg.supabase.co/functions/v1/wasender-webhook"
+    },
+    {
       "source": "/(.*)",
       "destination": "/index.html"
     }
