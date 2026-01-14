@@ -197,7 +197,7 @@ export const ChatInputArea = memo(function ChatInputArea({
                   }}
                   onKeyDown={handleKeyDown}
                   disabled={isSending}
-                  className="bg-muted/40 border-0 text-sm rounded-2xl min-h-[48px] max-h-[160px] resize-none pr-12 py-3 w-full focus-visible:ring-1 focus-visible:ring-emerald-500/50 placeholder:text-muted-foreground/60 overflow-y-auto"
+                  className="bg-muted/40 border-0 text-sm rounded-2xl min-h-[56px] max-h-[160px] resize-none pr-12 py-4 w-full focus-visible:ring-1 focus-visible:ring-emerald-500/50 placeholder:text-muted-foreground/60 overflow-y-auto"
                   rows={1}
                 />
                 {/* Send Button inside input */}
