@@ -295,6 +295,106 @@ export const ViewTabs = memo(function ViewTabs({ activeView, onViewChange, onSet
 
   return (
     <div className="w-full mb-2">
+      <DndContext
+        sensors={sensors}
+        collisionDetection={closestCenter}
+        onDragEnd={handleDragEnd}
+      >
+        <div ref={containerRef} className="relative inline-flex items-center gap-5 px-4 pb-2">
+          {/* Animated gradient indicator */}
+          <div 
+            className="absolute bottom-0 h-[1.5px] rounded-sm bg-gradient-to-r from-orange-400 to-orange-600"
+            style={{
+              left: indicator.left,
+              width: indicator.width,
+              transition: "left 200ms cubic-bezier(0.4, 0, 0.2, 1), width 200ms cubic-bezier(0.4, 0, 0.2, 1)",
+            }}
+          />
+          
+          <SortableContext
+            items={visibleTabs.map(t => t.id)}
+            strategy={horizontalListSortingStrategy}
+          >
+            {visibleTabs.map((tab) => (
+              <SortableTab
+                key={tab.id}
+                tab={tab}
+                isActive={activeView === tab.id}
+                onViewChange={onViewChange}
+                onTabHover={onTabHover}
+                onHide={handleHideTab}
+                setTabRef={setTabRef(tab.id)}
+              />
+            ))}
+          </SortableContext>
+          
+          {/* Add view button - shows hidden tabs */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button
+                className="flex items-center gap-1 px-2 py-0.5 rounded-md bg-muted/50 hover:bg-muted text-[12px] font-medium text-muted-foreground hover:text-foreground transition-colors"
+              >
+                <Plus className="w-3 h-3" />
+                Adicionar visualização
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" className="min-w-[180px]">
+              {hiddenTabs.length > 0 ? (
+                hiddenTabs.map(tab => (
+                  <DropdownMenuItem
+                    key={tab.id}
+                    onSelect={() => handleShowTab(tab.id)}
+                    className="cursor-pointer"
+                  >
+                    {tab.label}
+                  </DropdownMenuItem>
+                ))
+              ) : (
+                <div className="px-2 py-1.5 text-xs text-muted-foreground">
+                  Todas as visualizações já estão visíveis
+                </div>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
+          
+          {/* Separator */}
+          <div className="w-px h-4 bg-border mx-1" />
+          
+          {/* Automations tab (not draggable/hideable) */}
+          <button
+            ref={setTabRef("email")}
+            onClick={() => onViewChange("email")}
+            onMouseEnter={() => onTabHover?.("email")}
+            className={cn(
+              "relative text-[13px] font-semibold tracking-wide transition-colors duration-150 pb-0.5",
+              activeView === "email" 
+                ? "text-foreground"
+                : "text-muted-foreground hover:text-foreground/80"
+            )}
+          >
+            Automations
+          </button>
+          
+          {/* Spacer to push extra actions to the right */}
+          <div className="flex-1" />
+          
+          {/* Extra Actions + Settings Icon */}
+          <div className="flex items-center gap-2">
+            {extraActions}
+            <button 
+              onClick={onSettingsClick}
+              className="p-1.5 rounded-lg hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+                <circle cx="12" cy="12" r="4"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+      </DndContext>
+      
+      {/* Simple line below */}
       <div className="h-px bg-border" />
     </div>
   );
