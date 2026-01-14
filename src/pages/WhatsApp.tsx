@@ -593,8 +593,15 @@ const WhatsApp = (props: WhatsAppProps) => {
     }
     
     try {
+      const selectedAccount = whatsappAccounts.find(acc => acc.id === selectedAccountId);
+      const sessionId = selectedAccount?.api_key;
+      
+      if (!sessionId) {
+        throw new Error("Sessão não encontrada");
+      }
+      
       const { error } = await supabase.functions.invoke("wasender-whatsapp", {
-        body: { action: "delete-message", msgId: numericMsgId },
+        body: { action: "delete-message", msgId: numericMsgId, sessionId },
       });
       
       if (error) throw error;

@@ -698,6 +698,7 @@ async function handler(req: Request): Promise<Response> {
     // ACTION: delete-message
     // =========================
     if (action === "delete-message") {
+      console.log(`[Wasender] Action: delete-message, sessionId: ${sessionId ? sessionId.substring(0, 8) + "..." : "N/A"}`);
       console.log(`[Wasender] Deleting message ${msgId}`);
       
       if (!msgId) {
@@ -711,7 +712,7 @@ async function handler(req: Request): Promise<Response> {
       try {
         const result = await wasenderRequest(`/messages/${msgId}`, {
           method: "DELETE",
-        });
+        }, false, sessionId);
         
         console.log(`[Wasender] Delete success for msgId ${msgId}:`, result);
         return new Response(JSON.stringify({ success: true, data: result }), {
