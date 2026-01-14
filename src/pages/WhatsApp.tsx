@@ -67,7 +67,24 @@ const WhatsApp = (props: WhatsAppProps) => {
   // Groups & Sidebar
   const [whatsappGroups, setWhatsappGroups] = useState<WhatsAppGroup[]>([]);
   const [isLoadingGroups, setIsLoadingGroups] = useState(false);
-  const [sidebarTab, setSidebarTab] = useState<"conversas" | "grupos">("conversas");
+  const [sidebarTab, setSidebarTabInternal] = useState<"conversas" | "grupos">(() => {
+    const tabFromUrl = searchParams.get('tab');
+    return tabFromUrl === 'grupos' ? 'grupos' : 'conversas';
+  });
+  
+  // Wrapper to persist sidebar tab in URL
+  const setSidebarTab = useCallback((tab: "conversas" | "grupos") => {
+    setSidebarTabInternal(tab);
+    setSearchParams(currentParams => {
+      const newParams = new URLSearchParams(currentParams);
+      if (tab === 'grupos') {
+        newParams.set('tab', 'grupos');
+      } else {
+        newParams.delete('tab');
+      }
+      return newParams;
+    }, { replace: true });
+  }, [setSearchParams]);
   
   // Account loading state
   const [isLoadingAccounts, setIsLoadingAccounts] = useState(false);
