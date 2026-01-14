@@ -41,9 +41,9 @@ const InlineFooter = memo(function InlineFooter({ msg }: { msg: Message }) {
   return (
     <span className="inline-flex items-center gap-0.5 ml-1.5 align-bottom whitespace-nowrap">
       {msg.isEdited && msg.status !== "DELETED" && (
-        <span className="text-[9px] text-muted-foreground/60 italic">Editada</span>
+        <span className="text-[11px] text-muted-foreground/60 italic">Editada</span>
       )}
-      <span className="text-[9px] text-muted-foreground/70">{msg.time}</span>
+      <span className="text-[11px] text-muted-foreground/70">{msg.time}</span>
       {msg.sent && msg.status !== "DELETED" && (
         <MessageStatusIcon status={msg.status} />
       )}
@@ -58,9 +58,9 @@ const BlockFooter = memo(function BlockFooter({ msg }: { msg: Message }) {
   return (
     <div className="mt-1 flex items-center gap-0.5 justify-end">
       {msg.isEdited && msg.status !== "DELETED" && (
-        <span className="text-[9px] text-muted-foreground/60 italic">Editada</span>
+        <span className="text-[11px] text-muted-foreground/60 italic">Editada</span>
       )}
-      <span className="text-[9px] text-muted-foreground/70">{msg.time}</span>
+      <span className="text-[11px] text-muted-foreground/70">{msg.time}</span>
       {msg.sent && msg.status !== "DELETED" && (
         <MessageStatusIcon status={msg.status} />
       )}
@@ -127,11 +127,11 @@ const MessageContent = memo(function MessageContent({
           sent={msg.sent}
           renderFooter={(audioDuration) => (
             <div className="flex items-center justify-between mt-1 px-1">
-              <span className="text-[9px] text-muted-foreground tabular-nums">
+              <span className="text-[11px] text-muted-foreground tabular-nums">
                 {audioDuration}
               </span>
               <div className="flex items-center gap-0.5">
-                <span className="text-[9px] text-muted-foreground/70">{msg.time}</span>
+                <span className="text-[11px] text-muted-foreground/70">{msg.time}</span>
                 {msg.sent && msg.status !== "DELETED" && (
                   <MessageStatusIcon status={msg.status} />
                 )}
