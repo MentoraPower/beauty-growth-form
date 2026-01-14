@@ -490,19 +490,81 @@ async function handler(req: Request): Promise<Response> {
 
     // Handle message-receipt.update event (read receipts for groups)
     if (event === "message-receipt.update") {
-      const messageData = payload.data?.message;
+      const messageData = payload.data?.message || payload.data;
       const messageKey = messageData?.key;
       const messageId = messageKey?.id;
-      const receipt = messageData?.receipt;
+      const numericMsgId = messageData?.msgId?.toString();
+      const remoteJid = messageKey?.remoteJid || messageData?.remoteJid || "";
+      const receipt = messageData?.receipt || messageData?.update;
+      const newStatus = receipt?.status || messageData?.status || "READ";
       
-      if (messageId && receipt) {
-        // If we have a receipt, it means the message was read
-        console.log(`[Wasender Webhook] Receipt update for message ${messageId}`);
+      console.log(`[Wasender Webhook] Receipt update - messageId: ${messageId}, numericMsgId: ${numericMsgId}, remoteJid: ${remoteJid}, status: ${newStatus}`);
+      
+      if (messageId || numericMsgId) {
+        // Use same status ranking logic as messages.update
+        const statusRank: Record<string, number> = { 
+          "PENDING": 1, 
+          "SENT": 2, 
+          "DELIVERED": 3, 
+          "READ": 4, 
+          "PLAYED": 4 
+        };
+        const newRank = statusRank[newStatus] || 0;
         
-        await supabase
+        // Build query to find the message - try by message_id or whatsapp_key_id
+        // Also filter by phone (remoteJid) for better accuracy in groups
+        let query = supabase
           .from("whatsapp_messages")
-          .update({ status: "READ" })
-          .eq("message_id", messageId);
+          .select("id, chat_id, status, phone")
+          .or(`message_id.eq.${messageId || numericMsgId},whatsapp_key_id.eq.${messageId || numericMsgId}`);
+        
+        // If we have a remoteJid (group or contact), use it to narrow down
+        if (remoteJid && remoteJid.includes("@")) {
+          const phoneFromJid = remoteJid.replace("@g.us", "").replace("@s.whatsapp.net", "").replace("@c.us", "");
+          query = query.eq("phone", phoneFromJid);
+        }
+        
+        const { data: currentMsg } = await query.maybeSingle();
+        
+        if (currentMsg) {
+          const currentRank = statusRank[currentMsg.status || "PENDING"] || 0;
+          
+          if (newRank > currentRank) {
+            const { error: updateError } = await supabase
+              .from("whatsapp_messages")
+              .update({ status: newStatus })
+              .eq("id", currentMsg.id);
+            
+            if (updateError) {
+              console.error(`[Wasender Webhook] Failed to update receipt status:`, updateError);
+            } else {
+              console.log(`[Wasender Webhook] Receipt: Updated message ${currentMsg.id} from ${currentMsg.status} to ${newStatus}`);
+              
+              // Update chat's last_message_status if applicable
+              if (currentMsg.chat_id) {
+                const { data: latestMsg } = await supabase
+                  .from("whatsapp_messages")
+                  .select("id, status")
+                  .eq("chat_id", currentMsg.chat_id)
+                  .order("created_at", { ascending: false })
+                  .limit(1)
+                  .maybeSingle();
+                
+                if (latestMsg && latestMsg.id === currentMsg.id) {
+                  await supabase
+                    .from("whatsapp_chats")
+                    .update({ last_message_status: newStatus })
+                    .eq("id", currentMsg.chat_id);
+                  console.log(`[Wasender Webhook] Updated chat ${currentMsg.chat_id} last_message_status to ${newStatus}`);
+                }
+              }
+            }
+          } else {
+            console.log(`[Wasender Webhook] Receipt: Skipping update (${currentMsg.status} >= ${newStatus})`);
+          }
+        } else {
+          console.log(`[Wasender Webhook] Receipt: Message not found for ${messageId || numericMsgId}`);
+        }
       }
       
       return new Response(JSON.stringify({ ok: true }), { 
