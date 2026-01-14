@@ -147,16 +147,34 @@ const MessageContent = memo(function MessageContent({
   }
 
   // Sticker
-  if ((msg.mediaType === "sticker" || msg.text?.includes("🎨 Sticker")) && msg.mediaUrl) {
+  if (msg.mediaType === "sticker") {
+    if (msg.mediaUrl) {
+      return (
+        <div>
+          <img 
+            src={msg.mediaUrl} 
+            alt="Sticker" 
+            className="max-w-[150px] max-h-[150px]"
+            loading="lazy"
+            onLoad={() => scrollToBottom("auto")}
+            onError={(e) => {
+              e.currentTarget.style.display = 'none';
+              const fallback = document.createElement('div');
+              fallback.className = 'flex items-center justify-center w-[120px] h-[120px] bg-muted/30 rounded-lg text-2xl';
+              fallback.textContent = '🎨';
+              e.currentTarget.parentElement?.appendChild(fallback);
+            }}
+          />
+          <BlockFooter msg={msg} />
+        </div>
+      );
+    }
+    // Fallback when no media URL available
     return (
       <div>
-        <img 
-          src={msg.mediaUrl} 
-          alt="Sticker" 
-          className="max-w-[150px] max-h-[150px]"
-          loading="lazy"
-          onLoad={() => scrollToBottom("auto")}
-        />
+        <div className="flex items-center justify-center w-[120px] h-[120px] bg-muted/20 rounded-lg">
+          <span className="text-4xl">🎨</span>
+        </div>
         <BlockFooter msg={msg} />
       </div>
     );

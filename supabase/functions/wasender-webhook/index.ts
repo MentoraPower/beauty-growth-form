@@ -2082,7 +2082,19 @@ async function handler(req: Request): Promise<Response> {
       }
     } else if (message.stickerMessage) {
       mediaType = "sticker";
-      text = text || "🎨 Sticker";
+      // Don't set placeholder text for stickers - let the UI render the image
+      text = "";
+
+      // Try to download and upload sticker media
+      if (message.stickerMessage.mediaKey && message.stickerMessage.url) {
+        mediaUrl = await downloadAndUploadMedia(
+          message.stickerMessage.url,
+          message.stickerMessage.mediaKey,
+          message.stickerMessage.mimetype || "image/webp",
+          supabase,
+          messageData
+        );
+      }
     } else if (message.contactMessage) {
       text = text || `👤 ${message.contactMessage.displayName || "Contato"}`;
     } else if (message.locationMessage) {
@@ -2095,7 +2107,8 @@ async function handler(req: Request): Promise<Response> {
                         message.imageMessage?.contextInfo ||
                         message.videoMessage?.contextInfo ||
                         message.audioMessage?.contextInfo ||
-                        message.documentMessage?.contextInfo || null;
+                        message.documentMessage?.contextInfo ||
+                        message.stickerMessage?.contextInfo || null;
     
     let quotedMessageId: string | null = null;
     let quotedText: string | null = null;
