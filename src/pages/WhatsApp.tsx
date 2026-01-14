@@ -189,8 +189,8 @@ const WhatsApp = (props: WhatsAppProps) => {
     }
   }, [selectedAccountId, setSelectedAccountId, setWhatsappAccounts]);
 
-  // Fetch WhatsApp groups via Edge Function
-  const fetchWhatsAppGroups = useCallback(async () => {
+  // Fetch WhatsApp groups from database only (realtime handles updates)
+  const fetchWhatsAppGroups = useCallback(async (forceRefresh = false) => {
     const selectedAccount = whatsappAccounts.find(acc => acc.id === selectedAccountId);
     const sessionApiKey = selectedAccount?.api_key;
     
@@ -201,7 +201,7 @@ const WhatsApp = (props: WhatsAppProps) => {
 
     setIsLoadingGroups(true);
     try {
-      // First, show cached groups from database for instant feedback
+      // Load groups from database
       const { data: dbGroups } = await supabase
         .from("whatsapp_groups")
         .select("*")
@@ -216,9 +216,15 @@ const WhatsApp = (props: WhatsAppProps) => {
           participantCount: g.participant_count ?? 0,
           photoUrl: g.photo_url,
         })));
+        
+        // If we have cached groups and not forcing refresh, skip API call
+        if (!forceRefresh) {
+          setIsLoadingGroups(false);
+          return;
+        }
       }
       
-      // Then fetch fresh data from WasenderAPI via Edge Function
+      // Fetch fresh data from WasenderAPI via Edge Function only on first load or manual refresh
       const { data, error } = await supabase.functions.invoke("wasender-whatsapp", {
         body: { action: "fetch-groups", sessionId: sessionApiKey },
       });
@@ -243,6 +249,75 @@ const WhatsApp = (props: WhatsAppProps) => {
     } finally {
       setIsLoadingGroups(false);
     }
+  }, [selectedAccountId, whatsappAccounts]);
+
+  // Realtime subscription for group updates (participant count changes)
+  useEffect(() => {
+    const selectedAccount = whatsappAccounts.find(acc => acc.id === selectedAccountId);
+    const sessionApiKey = selectedAccount?.api_key;
+    
+    if (!sessionApiKey) return;
+    
+    console.log("[WhatsApp] Setting up realtime subscription for groups");
+    
+    const channel = supabase
+      .channel(`whatsapp-groups-${sessionApiKey.substring(0, 12)}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'whatsapp_groups',
+          filter: `session_id=eq.${sessionApiKey}`,
+        },
+        (payload) => {
+          console.log("[WhatsApp] Group updated via realtime:", payload.new);
+          const updatedGroup = payload.new as any;
+          
+          setWhatsappGroups(prev => prev.map(g => 
+            g.groupJid === updatedGroup.group_jid 
+              ? {
+                  ...g,
+                  name: updatedGroup.name || g.name,
+                  participantCount: updatedGroup.participant_count ?? g.participantCount,
+                  photoUrl: updatedGroup.photo_url || g.photoUrl,
+                }
+              : g
+          ));
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'whatsapp_groups',
+          filter: `session_id=eq.${sessionApiKey}`,
+        },
+        (payload) => {
+          console.log("[WhatsApp] New group via realtime:", payload.new);
+          const newGroup = payload.new as any;
+          
+          setWhatsappGroups(prev => {
+            // Avoid duplicates
+            if (prev.some(g => g.groupJid === newGroup.group_jid)) return prev;
+            
+            return [...prev, {
+              id: newGroup.id,
+              groupJid: newGroup.group_jid,
+              name: newGroup.name,
+              participantCount: newGroup.participant_count ?? 0,
+              photoUrl: newGroup.photo_url,
+            }];
+          });
+        }
+      )
+      .subscribe();
+    
+    return () => {
+      console.log("[WhatsApp] Cleaning up groups realtime subscription");
+      supabase.removeChannel(channel);
+    };
   }, [selectedAccountId, whatsappAccounts]);
 
   // Handle selecting a group

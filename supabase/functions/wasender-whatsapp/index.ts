@@ -1362,7 +1362,7 @@ async function handler(req: Request): Promise<Response> {
     }
 
     // =========================
-    // ACTION: fetch-groups (Fetch all groups with participant count)
+    // ACTION: fetch-groups (Fetch all groups with participant count and save participants to DB)
     // =========================
     if (action === "fetch-groups") {
       console.log(`[Wasender] Fetching groups for session: ${sessionId}`);
@@ -1387,11 +1387,12 @@ async function handler(req: Request): Promise<Response> {
           const groupJid = group.id || group.jid || "";
           const groupName = group.subject || group.name || "Grupo";
           
-          // Get participant count from the group data or fetch participants
-          let participantCount = group.participants?.length ?? group.size ?? -1;
+          // Get participants - either from group data or fetch them
+          let participants: any[] = group.participants || [];
+          let participantCount = participants.length || group.size || 0;
           
-          // If no participant count, try to fetch participants
-          if (participantCount < 0) {
+          // If no participants in group data, fetch them
+          if (participants.length === 0) {
             try {
               const participantsResult = await wasenderRequest(
                 `/groups/${encodeURIComponent(groupJid)}/participants`,
@@ -1399,13 +1400,53 @@ async function handler(req: Request): Promise<Response> {
                 false,
                 sessionId
               );
-              participantCount = Array.isArray(participantsResult?.data) 
-                ? participantsResult.data.length 
-                : 0;
+              participants = Array.isArray(participantsResult?.data) 
+                ? participantsResult.data 
+                : [];
+              participantCount = participants.length;
               console.log(`[Wasender] Group ${groupJid} has ${participantCount} participants`);
             } catch (participantError) {
               console.error(`[Wasender] Failed to fetch participants for ${groupJid}:`, participantError);
+              participants = [];
               participantCount = 0;
+            }
+          }
+          
+          // Save participants to database
+          if (participants.length > 0) {
+            // First, remove old participants for this group+session
+            await supabase
+              .from("whatsapp_group_participants")
+              .delete()
+              .eq("group_jid", groupJid)
+              .eq("session_id", sessionId);
+            
+            // Insert new participants
+            const participantsToInsert = participants.map((p: any) => {
+              const participantJid = p.id || p.jid || "";
+              const phone = participantJid.replace("@s.whatsapp.net", "").replace("@c.us", "").replace(/\D/g, "");
+              return {
+                group_jid: groupJid,
+                session_id: sessionId,
+                participant_jid: participantJid,
+                phone: phone,
+                name: p.name || p.notify || p.pushname || null,
+                is_admin: p.admin === "admin" || p.isAdmin === true,
+                is_super_admin: p.admin === "superadmin" || p.isSuperAdmin === true,
+                photo_url: p.imgUrl || p.profilePicture || null,
+              };
+            }).filter((p: any) => p.phone && p.phone.length >= 8);
+            
+            if (participantsToInsert.length > 0) {
+              const { error: insertError } = await supabase
+                .from("whatsapp_group_participants")
+                .insert(participantsToInsert);
+              
+              if (insertError) {
+                console.error(`[Wasender] Error inserting participants for ${groupJid}:`, insertError);
+              } else {
+                console.log(`[Wasender] Saved ${participantsToInsert.length} participants for group ${groupJid}`);
+              }
             }
           }
           
@@ -1419,7 +1460,7 @@ async function handler(req: Request): Promise<Response> {
             }
           }
           
-          // Upsert to database
+          // Upsert group to database
           const { error: upsertError } = await supabase
             .from("whatsapp_groups")
             .upsert({
@@ -1444,7 +1485,7 @@ async function handler(req: Request): Promise<Response> {
           });
         }
         
-        console.log(`[Wasender] Processed ${processedGroups.length} groups`);
+        console.log(`[Wasender] Processed ${processedGroups.length} groups with participants saved`);
         
         return new Response(JSON.stringify({ 
           success: true, 
