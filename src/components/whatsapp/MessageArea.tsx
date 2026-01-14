@@ -260,8 +260,8 @@ export const MessageArea = memo(function MessageArea({
                     className={cn(
                       "max-w-[65%] rounded-2xl px-3 py-2 relative transition-all duration-300",
                       msg.sent 
-                        ? "bg-emerald-100 dark:bg-emerald-900/40 rounded-tr-sm" 
-                        : "bg-sky-50 dark:bg-sky-900/30 rounded-tl-sm border border-sky-100 dark:border-sky-800/40"
+                        ? "bg-sky-100 dark:bg-sky-900/40 rounded-tr-sm" 
+                        : "bg-zinc-100 dark:bg-zinc-800/60 rounded-tl-sm"
                     )}
                   >
                     {/* Quoted message preview */}
