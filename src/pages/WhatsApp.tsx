@@ -952,7 +952,7 @@ const WhatsApp = (props: WhatsAppProps) => {
   // Loading state
   if (isInitializingApp || isAccountChanging) {
     return (
-      <div className="flex items-center justify-center h-full bg-white dark:bg-black">
+      <div className="flex items-center justify-center h-full bg-white dark:bg-zinc-900">
         <div className="flex flex-col items-center gap-4">
           <div className="w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin" />
           <p className="text-sm text-muted-foreground">
@@ -965,7 +965,7 @@ const WhatsApp = (props: WhatsAppProps) => {
 
   return (
     <>
-      <div className="flex flex-col h-full bg-white dark:bg-black overflow-hidden">
+      <div className="flex flex-col h-full bg-white dark:bg-zinc-900 overflow-hidden">
         <div className="flex flex-1 overflow-hidden">
           {/* Sidebar */}
           <ChatSidebar

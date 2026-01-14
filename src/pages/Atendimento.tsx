@@ -145,7 +145,7 @@ export default function Atendimento() {
   };
 
   return (
-    <div className="h-full flex flex-col overflow-hidden bg-white dark:bg-black">
+    <div className="h-full flex flex-col overflow-hidden bg-white dark:bg-zinc-900">
       {/* Compact Header */}
       <div className="flex-shrink-0 border-b border-black/[0.08] dark:border-white/[0.08] bg-white dark:bg-zinc-900">
         <div className="h-11 px-4 flex items-center justify-between">
