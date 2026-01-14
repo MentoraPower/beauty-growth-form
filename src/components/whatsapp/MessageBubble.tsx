@@ -342,25 +342,30 @@ export const MessageBubble = memo(function MessageBubble({
         onEditMessage={onEditMessage}
         onDeleteMessage={onDeleteMessage}
       />
-      
+
       {/* Reply button for received messages */}
       {!msg.sent && msg.status !== "DELETED" && (
         <button
           onClick={() => onReplyMessage(msg)}
-          className="p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity hover:bg-muted/50 mr-1 self-center"
+          className="p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity hover:bg-muted/50 mr-1 self-center flex-shrink-0"
         >
           <Reply className="w-4 h-4 text-muted-foreground" />
         </button>
       )}
-      
-      {/* Bubble container with indicator below */}
-      <div className="flex flex-col">
+
+      {/* Bubble + (optional) indicator */}
+      <div
+        className={cn(
+          "flex flex-col min-w-0 max-w-[78%] sm:max-w-[65%]",
+          msg.sent ? "items-end" : "items-start"
+        )}
+      >
         <div
           data-message-id={msg.message_id}
           className={cn(
-            "max-w-[65vw] rounded-2xl px-3 py-2 relative transition-all duration-300",
-            msg.sent 
-              ? "bg-sky-100 dark:bg-sky-900/40 rounded-tr-sm" 
+            "w-fit max-w-full break-words rounded-2xl px-3 py-2 relative transition-all duration-300",
+            msg.sent
+              ? "bg-sky-100 dark:bg-sky-900/40 rounded-tr-sm"
               : "bg-black/[0.04] dark:bg-white/[0.08] rounded-tl-sm"
           )}
         >
@@ -369,20 +374,19 @@ export const MessageBubble = memo(function MessageBubble({
             messages={messages}
             onScrollToQuoted={onScrollToQuoted}
           />
-          
+
           <MessageContent
             msg={msg}
             allImages={allImages}
             onImageClick={onImageClick}
             scrollToBottom={scrollToBottom}
           />
-          
+
           <MessageFooter msg={msg} />
         </div>
-        
-        {/* Client deleted message indicator - below the bubble */}
+
         {isClientDeletedMessage && (
-          <span className="text-[10px] text-muted-foreground/60 italic mt-0.5 pl-1">
+          <span className="mt-0.5 text-[10px] text-muted-foreground/60 italic leading-none">
             Mensagem apagada pelo cliente
           </span>
         )}
