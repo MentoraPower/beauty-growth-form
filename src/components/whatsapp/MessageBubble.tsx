@@ -1,7 +1,7 @@
 import { memo } from "react";
 import { cn } from "@/lib/utils";
 import { Check, CheckCheck, File, MoreVertical, Pencil, Reply, Trash2 } from "lucide-react";
-import { Message, isViewedStatus } from "@/hooks/useWhatsAppMessages";
+import { Message } from "@/hooks/useWhatsAppMessages";
 import { AudioWaveform } from "./AudioWaveform";
 import { formatWhatsAppText } from "@/lib/whatsapp-format";
 
@@ -303,7 +303,7 @@ const MessageFooter = memo(function MessageFooter({ msg }: { msg: Message }) {
   if (msg.mediaType === "audio") return null;
 
   return (
-    <div className="flex items-center justify-end gap-1 mt-1">
+    <div className="mt-1 inline-flex items-center gap-1 self-end">
       {msg.isEdited && msg.status !== "DELETED" && (
         <span className="text-[10px] text-muted-foreground/70 italic">Editada</span>
       )}
@@ -363,7 +363,7 @@ export const MessageBubble = memo(function MessageBubble({
         <div
           data-message-id={msg.message_id}
           className={cn(
-            "w-fit max-w-full break-words rounded-2xl px-3 py-2 relative transition-all duration-300",
+            "inline-flex flex-col max-w-full break-words rounded-2xl px-3 py-2 relative transition-all duration-300",
             msg.sent
               ? "bg-sky-100 dark:bg-sky-900/40 rounded-tr-sm"
               : "bg-black/[0.04] dark:bg-white/[0.08] rounded-tl-sm"
