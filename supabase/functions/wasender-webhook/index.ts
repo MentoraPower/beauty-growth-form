@@ -34,6 +34,36 @@ function isWhatsAppLID(phone: string): boolean {
   return false;
 }
 
+// Known test/placeholder phone numbers to ignore
+const IGNORED_TEST_PHONES = [
+  "5511999999999",
+  "11999999999",
+  "999999999",
+  "5500000000000",
+  "1234567890",
+  "0000000000",
+];
+
+// Helper: Check if phone is a valid real phone (not a placeholder/test number)
+function isValidRealPhone(phone: string): boolean {
+  if (!phone) return false;
+  const cleaned = phone.replace(/\D/g, "");
+  
+  // Reject very short or very long numbers
+  if (cleaned.length < 8 || cleaned.length > 15) return false;
+  
+  // Reject known test/placeholder numbers
+  if (IGNORED_TEST_PHONES.includes(cleaned)) return false;
+  
+  // Reject numbers that look like placeholders (all same digit or sequential)
+  // e.g., 99999999, 11111111, 12345678
+  const lastDigits = cleaned.slice(-8);
+  if (/^(\d)\1+$/.test(lastDigits)) return false; // All same digits
+  if (/^0+$/.test(cleaned)) return false; // All zeros
+  
+  return true;
+}
+
 // Helper: Convert mediaKey to base64 string (handles Buffer objects)
 function normalizeMediaKey(mediaKey: any): string {
   if (!mediaKey) return "";
@@ -1068,7 +1098,7 @@ async function handler(req: Request): Promise<Response> {
             participantName = participant.name || participant.notify || participant.pushname || null;
           }
 
-          if (phone && phone.length >= 8) {
+          if (phone && phone.length >= 8 && isValidRealPhone(phone)) {
             // Collect display names (dedup)
             if (!processedPhones.has(phone)) {
               processedPhones.add(phone);
@@ -1635,23 +1665,23 @@ async function handler(req: Request): Promise<Response> {
         // Add participant from key
         if (participantFromKey) {
           const phone = participantFromKey.replace("@s.whatsapp.net", "").replace("@c.us", "").replace(/\D/g, "");
-          if (phone && phone.length >= 8 && phone.length <= 15 && !processedPhones.has(phone)) {
+          if (phone && phone.length >= 8 && phone.length <= 15 && isValidRealPhone(phone) && !processedPhones.has(phone)) {
             processedPhones.add(phone);
             processedNames.push(formatPhoneDisplay(phone));
             await trackLeadGroupAction(supabase, phone, groupJid, action, sessionId);
           }
         }
-        
+
         // Process stub params
         for (const param of stubParams) {
           const { phone, name } = extractPhoneFromParam(param);
-          if (phone && phone.length >= 8 && phone.length <= 15 && !processedPhones.has(phone)) {
+          if (phone && phone.length >= 8 && phone.length <= 15 && isValidRealPhone(phone) && !processedPhones.has(phone)) {
             processedPhones.add(phone);
             processedNames.push(name || formatPhoneDisplay(phone));
             await trackLeadGroupAction(supabase, phone, groupJid, action, sessionId);
           }
         }
-        
+
         // Create system message in chat
         if (processedNames.length > 0 && groupJid && sessionId) {
           try {
