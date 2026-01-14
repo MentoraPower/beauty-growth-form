@@ -238,10 +238,10 @@ const WhatsApp = (props: WhatsAppProps) => {
         // Fetch unread counts and recent system events for each group
         const groupJids = dbGroups.map(g => g.group_jid);
         
-        // Get unread message counts from whatsapp_chats (groups are stored there too)
+        // Get unread message counts and last message from whatsapp_chats (groups are stored there too)
         const { data: groupChats } = await supabase
           .from("whatsapp_chats")
-          .select("phone, unread_count")
+          .select("phone, unread_count, last_message, last_message_time")
           .eq("session_id", sessionApiKey)
           .in("phone", groupJids);
         
@@ -249,24 +249,40 @@ const WhatsApp = (props: WhatsAppProps) => {
         const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
         const { data: recentSystemEvents } = await supabase
           .from("whatsapp_messages")
-          .select("phone")
+          .select("phone, text")
           .eq("session_id", sessionApiKey)
           .eq("media_type", "system")
           .in("phone", groupJids)
-          .gte("created_at", oneDayAgo);
+          .gte("created_at", oneDayAgo)
+          .order("created_at", { ascending: false });
         
-        const unreadMap = new Map(groupChats?.map(c => [c.phone, c.unread_count ?? 0]) || []);
+        const chatDataMap = new Map(groupChats?.map(c => [c.phone, c]) || []);
+        const latestSystemEventMap = new Map<string, string>();
+        recentSystemEvents?.forEach(e => {
+          if (!latestSystemEventMap.has(e.phone)) {
+            latestSystemEventMap.set(e.phone, e.text || "");
+          }
+        });
         const groupsWithEvents = new Set(recentSystemEvents?.map(e => e.phone) || []);
         
-        setWhatsappGroups(dbGroups.map(g => ({
-          id: g.id,
-          groupJid: g.group_jid,
-          name: g.name,
-          participantCount: g.participant_count ?? 0,
-          photoUrl: g.photo_url,
-          unreadCount: unreadMap.get(g.group_jid) ?? 0,
-          hasNewEvent: groupsWithEvents.has(g.group_jid),
-        })));
+        setWhatsappGroups(dbGroups.map(g => {
+          const chatData = chatDataMap.get(g.group_jid);
+          const systemEvent = latestSystemEventMap.get(g.group_jid);
+          // Prioritize system event text if exists, otherwise use last message
+          const lastMessage = systemEvent || chatData?.last_message || null;
+          
+          return {
+            id: g.id,
+            groupJid: g.group_jid,
+            name: g.name,
+            participantCount: g.participant_count ?? 0,
+            photoUrl: g.photo_url,
+            unreadCount: chatData?.unread_count ?? 0,
+            hasNewEvent: groupsWithEvents.has(g.group_jid),
+            lastMessage,
+            lastMessageTime: chatData?.last_message_time || null,
+          };
+        }));
         
         // If we have cached groups and not forcing refresh, skip API call
         if (!forceRefresh) {
