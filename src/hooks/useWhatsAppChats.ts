@@ -393,6 +393,13 @@ export function useWhatsAppChats({ selectedAccountId, whatsappAccounts }: UseWha
       return;
     }
     
+    // If there's already a selected chat matching the URL, don't restore
+    // This prevents overwriting manually selected groups
+    if (selectedChat?.id === chatIdFromUrl) {
+      selectedChatRestoredRef.current = true;
+      return;
+    }
+    
     // First try to find in loaded chats
     const foundChat = chats.find(c => c.id === chatIdFromUrl);
     
@@ -479,7 +486,7 @@ export function useWhatsAppChats({ selectedAccountId, whatsappAccounts }: UseWha
     };
     
     fetchChatById();
-  }, [chats, isInitialLoad, searchParams, selectedAccountId, whatsappAccounts, setChats]);
+  }, [chats, isInitialLoad, searchParams, selectedAccountId, whatsappAccounts, setChats, selectedChat?.id]);
 
   // Reset restored flag when account changes
   useEffect(() => {
