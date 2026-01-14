@@ -111,6 +111,16 @@ const getBatchKey = (payload: SupabaseRealtimePayload): string | undefined => {
 /**
  * Validate and type-check message payload
  */
+/**
+ * Helper to parse boolean values that may come as strings from database
+ */
+const parseBoolean = (value: unknown): boolean => {
+  if (typeof value === 'boolean') return value;
+  if (typeof value === 'string') return value.toLowerCase() === 'true' || value === '1';
+  if (typeof value === 'number') return value !== 0;
+  return Boolean(value);
+};
+
 export const normalizeMessage = (data: unknown): WhatsAppMessage | null => {
   if (!data || typeof data !== 'object') return null;
   
@@ -118,19 +128,28 @@ export const normalizeMessage = (data: unknown): WhatsAppMessage | null => {
   
   if (!msg.id || !msg.phone) return null;
   
+  // Parse from_me properly - it may come as boolean, string, or null
+  const fromMe = msg.from_me !== null && msg.from_me !== undefined 
+    ? parseBoolean(msg.from_me) 
+    : null;
+  
+  const quotedFromMe = msg.quoted_from_me !== null && msg.quoted_from_me !== undefined
+    ? parseBoolean(msg.quoted_from_me)
+    : null;
+  
   return {
     id: String(msg.id),
     chat_id: msg.chat_id ? String(msg.chat_id) : null,
     phone: String(msg.phone),
     text: msg.text ? String(msg.text) : null,
-    from_me: msg.from_me === true,
+    from_me: fromMe,
     status: msg.status ? String(msg.status) : null,
     media_type: msg.media_type ? String(msg.media_type) : null,
     media_url: msg.media_url ? String(msg.media_url) : null,
     created_at: String(msg.created_at || new Date().toISOString()),
     message_id: msg.message_id ? String(msg.message_id) : null,
     quoted_text: msg.quoted_text ? String(msg.quoted_text) : null,
-    quoted_from_me: msg.quoted_from_me === true,
+    quoted_from_me: quotedFromMe,
     quoted_message_id: msg.quoted_message_id ? String(msg.quoted_message_id) : null,
     reaction: msg.reaction ? String(msg.reaction) : null,
     whatsapp_key_id: msg.whatsapp_key_id ? String(msg.whatsapp_key_id) : null,
@@ -147,6 +166,11 @@ export const normalizeConversation = (data: unknown): WhatsAppChat | null => {
   
   if (!chat.id || !chat.phone) return null;
   
+  // Parse last_message_from_me properly
+  const lastMessageFromMe = chat.last_message_from_me !== null && chat.last_message_from_me !== undefined
+    ? parseBoolean(chat.last_message_from_me)
+    : null;
+  
   return {
     id: String(chat.id),
     phone: String(chat.phone),
@@ -154,7 +178,7 @@ export const normalizeConversation = (data: unknown): WhatsAppChat | null => {
     photo_url: chat.photo_url ? String(chat.photo_url) : null,
     last_message: chat.last_message ? String(chat.last_message) : null,
     last_message_time: chat.last_message_time ? String(chat.last_message_time) : null,
-    last_message_from_me: chat.last_message_from_me === true,
+    last_message_from_me: lastMessageFromMe,
     last_message_status: chat.last_message_status ? String(chat.last_message_status) : null,
     unread_count: typeof chat.unread_count === 'number' ? chat.unread_count : null,
     created_at: String(chat.created_at || new Date().toISOString()),
