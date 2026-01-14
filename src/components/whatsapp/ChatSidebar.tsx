@@ -125,6 +125,7 @@ export const ChatSidebar = memo(function ChatSidebar({
           isLoading={isLoadingGroups}
           onRefresh={() => onFetchGroups(true)}
           onSelectGroup={onSelectGroup}
+          selectedGroupId={selectedChat?.phone || selectedChat?.id}
         />
       )}
     </div>

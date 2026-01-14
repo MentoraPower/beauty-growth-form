@@ -21,22 +21,28 @@ interface GroupsListProps {
   isLoading: boolean;
   onRefresh: () => void;
   onSelectGroup?: (group: WhatsAppGroup) => void;
+  selectedGroupId?: string | null;
   className?: string;
 }
 
 const GroupItem = memo(function GroupItem({
   group,
   onSelect,
+  isSelected,
 }: {
   group: WhatsAppGroup;
   onSelect?: (group: WhatsAppGroup) => void;
+  isSelected?: boolean;
 }) {
-  const hasNotification = (group.unreadCount && group.unreadCount > 0) || group.hasNewEvent;
-  
   return (
     <div 
       onClick={() => onSelect?.(group)}
-      className="flex items-center gap-3 px-3 py-2.5 hover:bg-muted/50 transition-colors cursor-pointer rounded-lg"
+      className={cn(
+        "flex items-center gap-3 px-3 py-2.5 transition-colors cursor-pointer rounded-lg mx-2",
+        isSelected 
+          ? "bg-black/5 dark:bg-white/5" 
+          : "hover:bg-muted/50"
+      )}
     >
       {/* Avatar */}
       <div className="relative flex-shrink-0">
@@ -64,9 +70,12 @@ const GroupItem = memo(function GroupItem({
         <span className="font-medium text-sm text-foreground truncate block">
           {group.name}
         </span>
-        {group.lastMessage && (
-          <span className="text-xs text-muted-foreground truncate block mt-0.5">
-            {group.lastMessage}
+        {(group.lastMessage || group.hasNewEvent) && (
+          <span className={cn(
+            "text-xs truncate block mt-0.5",
+            group.hasNewEvent ? "text-amber-600 dark:text-amber-400 font-medium" : "text-muted-foreground"
+          )}>
+            {group.lastMessage || "Novo evento no grupo"}
           </span>
         )}
       </div>
@@ -93,6 +102,7 @@ export const GroupsList = memo(function GroupsList({
   isLoading,
   onRefresh,
   onSelectGroup,
+  selectedGroupId,
   className,
 }: GroupsListProps) {
   if (isLoading && groups.length === 0) {
@@ -164,13 +174,14 @@ export const GroupsList = memo(function GroupsList({
           <RefreshCw className={cn("w-4 h-4 text-muted-foreground", isLoading && "animate-spin")} />
         </button>
       </div>
-      <ScrollArea className="flex-1 px-2 py-2">
+      <ScrollArea className="flex-1 py-2">
         <div className="space-y-1">
           {groups.map((group) => (
             <GroupItem 
               key={group.id} 
               group={group} 
               onSelect={onSelectGroup}
+              isSelected={selectedGroupId === group.id || selectedGroupId === group.groupJid}
             />
           ))}
         </div>
