@@ -55,11 +55,11 @@ const DateSeparator = memo(function DateSeparator({ date }: { date: string }) {
   );
 });
 
-// System message (join/leave notifications)
+// System message (join/leave notifications) - WhatsApp style
 const SystemMessage = memo(function SystemMessage({ text }: { text: string }) {
   return (
-    <div className="flex items-center justify-center my-2">
-      <span className="text-[11px] text-muted-foreground/70 bg-muted/30 px-2.5 py-0.5 rounded-full">
+    <div className="flex items-center justify-center my-1">
+      <span className="text-[11px] text-muted-foreground/50 text-center leading-relaxed">
         {text}
       </span>
     </div>
