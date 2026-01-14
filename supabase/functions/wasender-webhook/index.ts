@@ -1039,16 +1039,22 @@ async function handler(req: Request): Promise<Response> {
       const groupJid = groupData?.jid || groupData?.groupId || "";
       const participants = groupData?.participants || [];
       const action = groupData?.action || ""; // "add", "remove", "promote", "demote"
-      
-      console.log(`[Wasender Webhook] 👥 group-participants.update - group: ${groupJid}, action: ${action}, participants: ${JSON.stringify(participants)}, sessionId: ${sessionId}`);
-      
+
+      console.log(
+        `[Wasender Webhook] 👥 group-participants.update - group: ${groupJid}, action: ${action}, participants: ${JSON.stringify(participants)}, sessionId: ${sessionId}`,
+      );
+
+      // Keep a list of who entered/left to generate WhatsApp-style system message
+      const processedPhones = new Set<string>();
+      const processedNames: string[] = [];
+
       // Only track add (join) and remove (leave) actions
       if ((action === "add" || action === "remove") && participants.length > 0) {
         for (const participant of participants) {
           let phone = "";
           let participantJid = "";
           let participantName: string | null = null;
-          
+
           // Handle different participant formats
           if (typeof participant === "string") {
             // Old format: "554491233661@s.whatsapp.net"
@@ -1061,32 +1067,41 @@ async function handler(req: Request): Promise<Response> {
             phone = phoneNumber.replace("@s.whatsapp.net", "").replace("@c.us", "").replace(/\D/g, "");
             participantName = participant.name || participant.notify || participant.pushname || null;
           }
-          
+
           if (phone && phone.length >= 8) {
+            // Collect display names (dedup)
+            if (!processedPhones.has(phone)) {
+              processedPhones.add(phone);
+              processedNames.push(participantName || `+${phone}`);
+            }
+
             // Track lead action in CRM
             await trackLeadGroupAction(supabase, phone, groupJid, action, sessionId);
-            
+
             // Update whatsapp_group_participants table
             if (action === "add") {
               // Insert new participant
               const { error: insertError } = await supabase
                 .from("whatsapp_group_participants")
-                .upsert({
-                  group_jid: groupJid,
-                  session_id: sessionId,
-                  participant_jid: participantJid || `${phone}@s.whatsapp.net`,
-                  phone: phone,
-                  name: participantName,
-                  is_admin: false,
-                  is_super_admin: false,
-                }, { onConflict: "group_jid,session_id,participant_jid" });
-              
+                .upsert(
+                  {
+                    group_jid: groupJid,
+                    session_id: sessionId,
+                    participant_jid: participantJid || `${phone}@s.whatsapp.net`,
+                    phone: phone,
+                    name: participantName,
+                    is_admin: false,
+                    is_super_admin: false,
+                  },
+                  { onConflict: "group_jid,session_id,participant_jid" },
+                );
+
               if (insertError) {
                 console.error(`[Wasender Webhook] Error inserting participant ${phone}:`, insertError);
               } else {
                 console.log(`[Wasender Webhook] ✅ Added participant ${phone} to group ${groupJid}`);
               }
-              
+
               // Increment participant_count in whatsapp_groups
               const { data: currentGroup } = await supabase
                 .from("whatsapp_groups")
@@ -1094,13 +1109,13 @@ async function handler(req: Request): Promise<Response> {
                 .eq("group_jid", groupJid)
                 .eq("session_id", sessionId)
                 .single();
-              
+
               if (currentGroup) {
                 await supabase
                   .from("whatsapp_groups")
-                  .update({ 
+                  .update({
                     participant_count: (currentGroup.participant_count || 0) + 1,
-                    updated_at: new Date().toISOString()
+                    updated_at: new Date().toISOString(),
                   })
                   .eq("group_jid", groupJid)
                   .eq("session_id", sessionId);
@@ -1114,13 +1129,13 @@ async function handler(req: Request): Promise<Response> {
                 .eq("group_jid", groupJid)
                 .eq("phone", phone)
                 .eq("session_id", sessionId);
-              
+
               if (deleteError) {
                 console.error(`[Wasender Webhook] Error removing participant ${phone}:`, deleteError);
               } else {
                 console.log(`[Wasender Webhook] ✅ Removed participant ${phone} from group ${groupJid}`);
               }
-              
+
               // Decrement participant_count in whatsapp_groups
               const { data: currentGroup } = await supabase
                 .from("whatsapp_groups")
@@ -1128,13 +1143,13 @@ async function handler(req: Request): Promise<Response> {
                 .eq("group_jid", groupJid)
                 .eq("session_id", sessionId)
                 .single();
-              
+
               if (currentGroup && currentGroup.participant_count > 0) {
                 await supabase
                   .from("whatsapp_groups")
-                  .update({ 
+                  .update({
                     participant_count: currentGroup.participant_count - 1,
-                    updated_at: new Date().toISOString()
+                    updated_at: new Date().toISOString(),
                   })
                   .eq("group_jid", groupJid)
                   .eq("session_id", sessionId);
@@ -1144,9 +1159,91 @@ async function handler(req: Request): Promise<Response> {
           }
         }
       }
-      
-      return new Response(JSON.stringify({ ok: true }), { 
-        headers: { ...corsHeaders, "Content-Type": "application/json" } 
+
+      // Create system message in chat so UI shows "X entrou/saiu" like WhatsApp
+      if ((action === "add" || action === "remove") && processedNames.length > 0 && groupJid && sessionId) {
+        try {
+          // Find or create chat_id for this group
+          const { data: existingChat } = await supabase
+            .from("whatsapp_chats")
+            .select("id")
+            .eq("phone", groupJid)
+            .eq("session_id", sessionId)
+            .maybeSingle();
+
+          let chatId: string | null = existingChat?.id ?? null;
+
+          if (!chatId) {
+            const { data: groupRow } = await supabase
+              .from("whatsapp_groups")
+              .select("name, photo_url")
+              .eq("group_jid", groupJid)
+              .eq("session_id", sessionId)
+              .maybeSingle();
+
+            const { data: createdChat, error: createError } = await supabase
+              .from("whatsapp_chats")
+              .upsert(
+                {
+                  phone: groupJid,
+                  name: groupRow?.name || groupJid,
+                  photo_url: groupRow?.photo_url || null,
+                  session_id: sessionId,
+                  last_message: null,
+                  last_message_time: null,
+                  unread_count: 0,
+                },
+                { onConflict: "phone,session_id" },
+              )
+              .select("id")
+              .single();
+
+            if (createError) {
+              console.error(`[Wasender Webhook] Error creating chat for group ${groupJid}:`, createError);
+            } else {
+              chatId = createdChat?.id ?? null;
+            }
+          }
+
+          if (chatId) {
+            const participantText = processedNames.join(", ");
+            const systemText = action === "add"
+              ? `${participantText} entrou no grupo`
+              : `${participantText} saiu do grupo`;
+
+            const systemMessageId = `system-gp-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+
+            const { error: insertError } = await supabase
+              .from("whatsapp_messages")
+              .insert({
+                chat_id: chatId,
+                phone: groupJid,
+                session_id: sessionId,
+                message_id: systemMessageId,
+                text: systemText,
+                from_me: false,
+                media_type: "system",
+                status: "RECEIVED",
+                created_at: new Date().toISOString(),
+              });
+
+            // Ignore duplicates if message_id happens to be constrained
+            if (insertError) {
+              const isDuplicate = (insertError as any)?.code === "23505" || String((insertError as any)?.message || "").toLowerCase().includes("duplicate");
+              if (!isDuplicate) {
+                console.error(`[Wasender Webhook] Error inserting system message (group-participants.update):`, insertError);
+              }
+            } else {
+              console.log(`[Wasender Webhook] ✅ Created system message (group-participants.update): "${systemText}"`);
+            }
+          }
+        } catch (e) {
+          console.error(`[Wasender Webhook] Error creating system message (group-participants.update):`, e);
+        }
+      }
+
+      return new Response(JSON.stringify({ ok: true }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
     
@@ -1331,7 +1428,7 @@ async function handler(req: Request): Promise<Response> {
             // Insert system message
             const { error: insertError } = await supabase
               .from("whatsapp_messages")
-              .upsert({
+              .insert({
                 chat_id: groupChat.id,
                 phone: groupJid,
                 session_id: sessionId,
@@ -1341,10 +1438,14 @@ async function handler(req: Request): Promise<Response> {
                 media_type: "system",
                 status: "RECEIVED",
                 created_at: new Date().toISOString(),
-              }, { onConflict: "message_id" });
-            
+              });
+
+            // Ignore duplicates if message_id happens to be constrained
             if (insertError) {
-              console.error(`[Wasender Webhook] Error inserting system message:`, insertError);
+              const isDuplicate = (insertError as any)?.code === "23505" || String((insertError as any)?.message || "").toLowerCase().includes("duplicate");
+              if (!isDuplicate) {
+                console.error(`[Wasender Webhook] Error inserting system message:`, insertError);
+              }
             } else {
               console.log(`[Wasender Webhook] ✅ Created system message: "${systemText}"`);
             }
