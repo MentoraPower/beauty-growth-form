@@ -464,11 +464,13 @@ export function useWhatsAppChats({ selectedAccountId, whatsappAccounts }: UseWha
         
         setSelectedChatInternal(restoredChat);
         
-        // Add to chats list if not already there
-        setChats(prev => {
-          if (prev.some(c => c.id === restoredChat.id)) return prev;
-          return [restoredChat, ...prev];
-        });
+        // Only add to chats list if not a group (groups should only appear in grupos tab)
+        if (!isGroup) {
+          setChats(prev => {
+            if (prev.some(c => c.id === restoredChat.id)) return prev;
+            return [restoredChat, ...prev];
+          });
+        }
       } catch (err) {
         console.error("[useWhatsAppChats] Error restoring chat from URL:", err);
       } finally {
