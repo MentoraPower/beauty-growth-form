@@ -1,4 +1,4 @@
-import { memo, useRef, useState } from "react";
+import { memo, useRef, useState, useEffect, useCallback } from "react";
 import { cn } from "@/lib/utils";
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -65,6 +65,7 @@ export const ChatInputArea = memo(function ChatInputArea({
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [showQuickMessages, setShowQuickMessages] = useState(false);
   
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const videoInputRef = useRef<HTMLInputElement>(null);
@@ -72,6 +73,20 @@ export const ChatInputArea = memo(function ChatInputArea({
   const emojiPickerRef = useRef<HTMLDivElement>(null);
   const quickMsgButtonRef = useRef<HTMLButtonElement>(null);
   const quickMsgPickerRef = useRef<HTMLDivElement>(null);
+
+  // Auto-resize textarea
+  const adjustTextareaHeight = useCallback(() => {
+    const textarea = textareaRef.current;
+    if (textarea) {
+      textarea.style.height = "auto";
+      const newHeight = Math.min(Math.max(textarea.scrollHeight, 48), 160);
+      textarea.style.height = `${newHeight}px`;
+    }
+  }, []);
+
+  useEffect(() => {
+    adjustTextareaHeight();
+  }, [message, adjustTextareaHeight]);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && !e.shiftKey) {
@@ -171,6 +186,7 @@ export const ChatInputArea = memo(function ChatInputArea({
             <div className="flex items-end gap-2">
               <div className="flex-1 relative">
                 <Textarea
+                  ref={textareaRef}
                   placeholder={isEditing ? "Edite a mensagem" : "Digite uma mensagem"}
                   value={message}
                   onChange={(e) => {
@@ -181,7 +197,7 @@ export const ChatInputArea = memo(function ChatInputArea({
                   }}
                   onKeyDown={handleKeyDown}
                   disabled={isSending}
-                  className="bg-muted/40 border-0 text-sm rounded-2xl min-h-[44px] max-h-[120px] resize-none pr-12 w-full focus-visible:ring-1 focus-visible:ring-emerald-500/50 placeholder:text-muted-foreground/60"
+                  className="bg-muted/40 border-0 text-sm rounded-2xl min-h-[48px] max-h-[160px] resize-none pr-12 py-3 w-full focus-visible:ring-1 focus-visible:ring-emerald-500/50 placeholder:text-muted-foreground/60 overflow-y-auto"
                   rows={1}
                 />
                 {/* Send Button inside input */}
