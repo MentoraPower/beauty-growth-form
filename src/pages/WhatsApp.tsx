@@ -982,10 +982,9 @@ const WhatsApp = (props: WhatsAppProps) => {
                 />
 
                 <ChatInputArea
-                  message={message}
-                  onMessageChange={setMessage}
-                  onSendMessage={sendMessage}
-                  onFileUpload={handleFileUpload}
+                  message={editingMessage ? editText : message}
+                  onMessageChange={editingMessage ? setEditText : setMessage}
+                  onSendMessage={editingMessage ? editMessageHandler : sendMessage}
                   isSending={isSending}
                   isRecording={isRecording}
                   recordingTime={recordingTime}
@@ -994,6 +993,12 @@ const WhatsApp = (props: WhatsAppProps) => {
                   onStopRecording={stopRecording}
                   onCancelRecording={cancelRecording}
                   formatRecordingTime={formatRecordingTime}
+                  onFileUpload={handleFileUpload}
+                  isEditing={!!editingMessage}
+                  onCancelEdit={() => {
+                    setEditingMessage(null);
+                    setEditText("");
+                  }}
                   onSendAudioFromQuickMessage={async (audioBase64: string) => {
                     // Convert base64 to blob and send
                     const response = await fetch(audioBase64);

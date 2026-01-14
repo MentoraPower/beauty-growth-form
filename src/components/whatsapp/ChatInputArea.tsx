@@ -1,8 +1,18 @@
 import { memo, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 import { Textarea } from "@/components/ui/textarea";
-import { 
-  Smile, Mic, Send, X, ArrowUp, File, FileImage, FileVideo, Zap, Reply 
+import {
+  Smile,
+  Mic,
+  Send,
+  X,
+  ArrowUp,
+  File,
+  FileImage,
+  FileVideo,
+  Zap,
+  Reply,
+  Pencil,
 } from "lucide-react";
 import { EmojiPicker } from "./EmojiPicker";
 import { QuickMessages } from "./QuickMessages";
@@ -27,6 +37,8 @@ interface ChatInputAreaProps {
   replyToMessage: Message | null;
   onCancelReply: () => void;
   onSendPresence: (type: "composing" | "recording") => void;
+  isEditing?: boolean;
+  onCancelEdit?: () => void;
 }
 
 export const ChatInputArea = memo(function ChatInputArea({
@@ -47,6 +59,8 @@ export const ChatInputArea = memo(function ChatInputArea({
   replyToMessage,
   onCancelReply,
   onSendPresence,
+  isEditing,
+  onCancelEdit,
 }: ChatInputAreaProps) {
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [showQuickMessages, setShowQuickMessages] = useState(false);
@@ -70,6 +84,28 @@ export const ChatInputArea = memo(function ChatInputArea({
 
   return (
     <>
+      {/* Edit Preview */}
+      {isEditing && (
+        <div className="px-4 py-2 bg-muted/50 border-t border-border/30 flex items-center gap-2">
+          <Pencil className="w-4 h-4 text-emerald-500 flex-shrink-0" />
+          <div className="flex-1 min-w-0 pl-2 border-l-2 border-emerald-500">
+            <p className="text-xs font-medium text-emerald-600 dark:text-emerald-400">
+              Editando mensagem
+            </p>
+            <p className="text-xs text-muted-foreground truncate">
+              Pressione enviar para salvar
+            </p>
+          </div>
+          <button
+            onClick={onCancelEdit}
+            className="p-1 hover:bg-muted/50 rounded-full"
+            type="button"
+          >
+            <X className="w-4 h-4 text-muted-foreground" />
+          </button>
+        </div>
+      )}
+
       {/* Reply Preview */}
       {replyToMessage && (
         <div className="px-4 py-2 bg-muted/50 border-t border-border/30 flex items-center gap-2">
@@ -79,18 +115,18 @@ export const ChatInputArea = memo(function ChatInputArea({
               {replyToMessage.sent ? "Você" : "Contato"}
             </p>
             <p className="text-xs text-muted-foreground truncate">
-              {replyToMessage.mediaType 
-                ? replyToMessage.mediaType === "image" ? "📷 Imagem"
-                  : replyToMessage.mediaType === "video" ? "🎥 Vídeo"
-                  : replyToMessage.mediaType === "audio" ? "🎵 Áudio"
-                  : "📄 Arquivo"
+              {replyToMessage.mediaType
+                ? replyToMessage.mediaType === "image"
+                  ? "📷 Imagem"
+                  : replyToMessage.mediaType === "video"
+                    ? "🎥 Vídeo"
+                    : replyToMessage.mediaType === "audio"
+                      ? "🎵 Áudio"
+                      : "📄 Arquivo"
                 : replyToMessage.text}
             </p>
           </div>
-          <button 
-            onClick={onCancelReply}
-            className="p-1 hover:bg-muted/50 rounded-full"
-          >
+          <button onClick={onCancelReply} className="p-1 hover:bg-muted/50 rounded-full" type="button">
             <X className="w-4 h-4 text-muted-foreground" />
           </button>
         </div>
@@ -135,7 +171,7 @@ export const ChatInputArea = memo(function ChatInputArea({
             <div className="flex items-end gap-2">
               <div className="flex-1 relative">
                 <Textarea
-                  placeholder="Digite uma mensagem"
+                  placeholder={isEditing ? "Edite a mensagem" : "Digite uma mensagem"}
                   value={message}
                   onChange={(e) => {
                     onMessageChange(e.target.value);
