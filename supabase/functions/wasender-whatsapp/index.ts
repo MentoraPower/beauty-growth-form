@@ -1393,6 +1393,7 @@ async function handler(req: Request): Promise<Response> {
 
     // =========================
     // ACTION: fetch-groups (Fetch all groups with participant count and save participants to DB)
+    // Uses /groups/all endpoint per WasenderAPI docs: https://wasenderapi.com/api-docs/groups/get-all-groups
     // =========================
     if (action === "fetch-groups") {
       console.log(`[Wasender] Fetching groups for session: ${sessionId}`);
@@ -1405,11 +1406,30 @@ async function handler(req: Request): Promise<Response> {
       }
       
       try {
-        // Fetch groups from WasenderAPI
-        const groupsResult = await wasenderRequest("/groups", { method: "GET" }, false, sessionId);
-        const groups = groupsResult?.data || [];
+        // Use /groups/all endpoint to fetch ALL groups (per WasenderAPI docs)
+        // This returns more complete group data including participants
+        let groups: any[] = [];
         
-        console.log(`[Wasender] Found ${groups.length} groups`);
+        try {
+          // Try /groups/all first (recommended endpoint)
+          const groupsResult = await wasenderRequest("/groups/all", { method: "GET" }, false, sessionId);
+          groups = groupsResult?.data || groupsResult || [];
+          console.log(`[Wasender] /groups/all returned ${Array.isArray(groups) ? groups.length : 'non-array'} groups`);
+        } catch (allError) {
+          console.log(`[Wasender] /groups/all failed, trying /groups fallback:`, allError);
+          // Fallback to /groups if /groups/all is not available
+          const groupsResult = await wasenderRequest("/groups", { method: "GET" }, false, sessionId);
+          groups = groupsResult?.data || [];
+          console.log(`[Wasender] /groups returned ${groups.length} groups`);
+        }
+        
+        // Ensure groups is an array
+        if (!Array.isArray(groups)) {
+          console.error(`[Wasender] Groups response is not an array:`, typeof groups);
+          groups = [];
+        }
+        
+        console.log(`[Wasender] Processing ${groups.length} groups`);
         
         const processedGroups: any[] = [];
         
@@ -1520,6 +1540,7 @@ async function handler(req: Request): Promise<Response> {
         return new Response(JSON.stringify({ 
           success: true, 
           groups: processedGroups,
+          totalFetched: groups.length,
         }), {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
