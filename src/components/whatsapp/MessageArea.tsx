@@ -55,6 +55,17 @@ const DateSeparator = memo(function DateSeparator({ date }: { date: string }) {
   );
 });
 
+// System message (join/leave notifications)
+const SystemMessage = memo(function SystemMessage({ text }: { text: string }) {
+  return (
+    <div className="flex items-center justify-center my-2">
+      <span className="text-[11px] text-muted-foreground/70 bg-muted/30 px-2.5 py-0.5 rounded-full">
+        {text}
+      </span>
+    </div>
+  );
+});
+
 // Empty state
 const EmptyMessages = memo(function EmptyMessages() {
   return (
@@ -95,6 +106,18 @@ export const MessageArea = memo(function MessageArea({
       const currentDateKey = msg.created_at ? getMessageDateKey(msg.created_at) : "";
       const showDateSeparator = currentDateKey && currentDateKey !== lastDateKey;
       if (currentDateKey) lastDateKey = currentDateKey;
+      
+      // System messages (join/leave) - render as centered small text
+      if (msg.mediaType === "system") {
+        return (
+          <div key={msg.id}>
+            {showDateSeparator && msg.created_at && (
+              <DateSeparator date={msg.created_at} />
+            )}
+            <SystemMessage text={msg.text} />
+          </div>
+        );
+      }
       
       return (
         <div key={msg.id}>

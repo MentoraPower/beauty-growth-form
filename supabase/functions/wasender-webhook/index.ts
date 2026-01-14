@@ -1288,6 +1288,8 @@ async function handler(req: Request): Promise<Response> {
         
         // Process all participants from stubParams
         const processedPhones = new Set<string>();
+        const processedNames: string[] = [];
+        
         for (const param of stubParams) {
           const { phone, jid } = extractPhoneInfo(param);
           if (phone && phone.length >= 8 && phone.length <= 15 && !processedPhones.has(phone)) {
@@ -1295,6 +1297,57 @@ async function handler(req: Request): Promise<Response> {
             console.log(`[Wasender Webhook] Extracted phone from stubParam: ${phone}`);
             await trackLeadGroupAction(supabase, phone, groupJid, action, sessionId);
             await updateParticipantInDb(phone, jid, groupJid, action === "add");
+            
+            // Try to get participant name for the system message
+            const { data: participantData } = await supabase
+              .from("whatsapp_group_participants")
+              .select("name, phone")
+              .eq("phone", phone)
+              .eq("group_jid", groupJid)
+              .single();
+            
+            processedNames.push(participantData?.name || `+${phone}`);
+          }
+        }
+        
+        // Create a system message for the group chat
+        if (processedNames.length > 0 && groupJid) {
+          // Find the chat_id for this group
+          const { data: groupChat } = await supabase
+            .from("whatsapp_chats")
+            .select("id")
+            .eq("phone", groupJid)
+            .eq("session_id", sessionId)
+            .single();
+          
+          if (groupChat) {
+            const participantText = processedNames.join(", ");
+            const systemText = action === "add" 
+              ? `${participantText} entrou no grupo`
+              : `${participantText} saiu do grupo`;
+            
+            const messageId = msgData?.key?.id || `system-${Date.now()}`;
+            
+            // Insert system message
+            const { error: insertError } = await supabase
+              .from("whatsapp_messages")
+              .upsert({
+                chat_id: groupChat.id,
+                phone: groupJid,
+                session_id: sessionId,
+                message_id: messageId,
+                text: systemText,
+                from_me: false,
+                media_type: "system",
+                status: "RECEIVED",
+                created_at: new Date().toISOString(),
+              }, { onConflict: "message_id" });
+            
+            if (insertError) {
+              console.error(`[Wasender Webhook] Error inserting system message:`, insertError);
+            } else {
+              console.log(`[Wasender Webhook] ✅ Created system message: "${systemText}"`);
+            }
           }
         }
       }
