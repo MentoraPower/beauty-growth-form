@@ -10,6 +10,8 @@ export interface WhatsAppGroup {
   name: string;
   participantCount: number;
   photoUrl?: string | null;
+  unreadCount?: number;
+  hasNewEvent?: boolean; // join/leave events
 }
 
 interface GroupsListProps {
@@ -27,6 +29,8 @@ const GroupItem = memo(function GroupItem({
   group: WhatsAppGroup;
   onSelect?: (group: WhatsAppGroup) => void;
 }) {
+  const hasNotification = (group.unreadCount && group.unreadCount > 0) || group.hasNewEvent;
+  
   return (
     <div 
       onClick={() => onSelect?.(group)}
@@ -62,9 +66,15 @@ const GroupItem = memo(function GroupItem({
 
       {/* Content */}
       <div className="flex-1 min-w-0">
-        <span className="font-medium text-sm text-foreground truncate block">
-          {group.name}
-        </span>
+        <div className="flex items-center gap-2">
+          <span className="font-medium text-sm text-foreground truncate">
+            {group.name}
+          </span>
+          {/* New event indicator (join/leave) */}
+          {group.hasNewEvent && (
+            <span className="flex-shrink-0 w-2 h-2 rounded-full bg-amber-500 animate-pulse" title="Novo evento no grupo" />
+          )}
+        </div>
         <div className="flex items-center gap-1 text-xs text-muted-foreground mt-0.5">
           <Users className="w-3 h-3" />
           <span>
@@ -74,6 +84,13 @@ const GroupItem = memo(function GroupItem({
           </span>
         </div>
       </div>
+
+      {/* Unread messages badge */}
+      {group.unreadCount && group.unreadCount > 0 && (
+        <div className="flex-shrink-0 bg-emerald-500 text-white text-[11px] font-semibold rounded-full min-w-[20px] h-[20px] flex items-center justify-center px-1.5">
+          {group.unreadCount > 99 ? '99+' : group.unreadCount}
+        </div>
+      )}
     </div>
   );
 });
