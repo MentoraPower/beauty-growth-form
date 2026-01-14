@@ -17,6 +17,7 @@ export interface Message {
   quotedText?: string | null;
   quotedFromMe?: boolean | null;
   isEdited?: boolean | null;
+  reaction?: string | null;
   // Group message sender info
   senderJid?: string | null;
   senderPhone?: string | null;
@@ -144,6 +145,7 @@ export function useWhatsAppMessages({ selectedChat, onMarkAsRead }: UseWhatsAppM
         quotedText: msg.quoted_text,
         quotedFromMe: msg.quoted_from_me,
         isEdited: msg.is_edited,
+        reaction: msg.reaction,
         // Group sender info
         senderJid: msg.sender_jid,
         senderPhone: msg.sender_phone,
@@ -216,6 +218,7 @@ export function useWhatsAppMessages({ selectedChat, onMarkAsRead }: UseWhatsAppM
               quotedMessageId: msg.quoted_message_id,
               quotedText: msg.quoted_text,
               quotedFromMe: msg.quoted_from_me,
+              reaction: msg.reaction,
               // Group sender info
               senderJid: msg.sender_jid,
               senderPhone: msg.sender_phone,
@@ -246,6 +249,7 @@ export function useWhatsAppMessages({ selectedChat, onMarkAsRead }: UseWhatsAppM
                 read: isViewedStatus(newStatus),
                 text: msg.text ?? m.text,
                 mediaUrl: msg.media_url ?? m.mediaUrl,
+                reaction: msg.reaction ?? m.reaction,
               };
             }
             return m;
