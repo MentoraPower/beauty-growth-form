@@ -193,8 +193,8 @@ const ChatListItem = memo(function ChatListItem({
       className={cn(
         "group flex w-full items-center gap-3 px-3 py-2.5 cursor-pointer transition-all border-b border-border/10 overflow-hidden max-w-full",
         isSelected 
-          ? "bg-emerald-50 dark:bg-emerald-900/20 border-l-2 border-l-emerald-500" 
-          : "hover:bg-muted/40 border-l-2 border-l-transparent"
+          ? "bg-black/5 dark:bg-white/5" 
+          : "hover:bg-muted/40"
       )}
       onClick={() => onSelect(chat)}
     >
