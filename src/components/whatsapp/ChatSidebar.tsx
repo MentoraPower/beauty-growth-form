@@ -21,7 +21,7 @@ interface ChatSidebarProps {
   whatsappGroups: WhatsAppGroup[];
   isLoadingGroups: boolean;
   onSelectGroup: (group: WhatsAppGroup) => void;
-  onFetchGroups: () => void;
+  onFetchGroups: (forceRefresh?: boolean) => void;
   onMarkChatListInteracting: () => void;
   blockedContacts: Set<string>;
   onDeleteChatMessages: (chatId: string) => void;
@@ -172,7 +172,7 @@ export const ChatSidebar = memo(function ChatSidebar({
             group.name.toLowerCase().includes(searchQuery.toLowerCase())
           )}
           isLoading={isLoadingGroups}
-          onRefresh={onFetchGroups}
+          onRefresh={() => onFetchGroups(true)}
           onSelectGroup={onSelectGroup}
         />
       )}

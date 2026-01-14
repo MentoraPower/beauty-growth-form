@@ -969,19 +969,101 @@ async function handler(req: Request): Promise<Response> {
       if ((action === "add" || action === "remove") && participants.length > 0) {
         for (const participant of participants) {
           let phone = "";
+          let participantJid = "";
+          let participantName: string | null = null;
           
           // Handle different participant formats
           if (typeof participant === "string") {
             // Old format: "554491233661@s.whatsapp.net"
+            participantJid = participant;
             phone = participant.replace("@s.whatsapp.net", "").replace("@c.us", "").replace(/\D/g, "");
           } else if (typeof participant === "object" && participant !== null) {
             // New format: { id: "...", phoneNumber: "554491233661@s.whatsapp.net" }
+            participantJid = participant.id || participant.jid || "";
             const phoneNumber = participant.phoneNumber || participant.pn || participant.phone || "";
             phone = phoneNumber.replace("@s.whatsapp.net", "").replace("@c.us", "").replace(/\D/g, "");
+            participantName = participant.name || participant.notify || participant.pushname || null;
           }
           
           if (phone && phone.length >= 8) {
+            // Track lead action in CRM
             await trackLeadGroupAction(supabase, phone, groupJid, action, sessionId);
+            
+            // Update whatsapp_group_participants table
+            if (action === "add") {
+              // Insert new participant
+              const { error: insertError } = await supabase
+                .from("whatsapp_group_participants")
+                .upsert({
+                  group_jid: groupJid,
+                  session_id: sessionId,
+                  participant_jid: participantJid || `${phone}@s.whatsapp.net`,
+                  phone: phone,
+                  name: participantName,
+                  is_admin: false,
+                  is_super_admin: false,
+                }, { onConflict: "group_jid,session_id,participant_jid" });
+              
+              if (insertError) {
+                console.error(`[Wasender Webhook] Error inserting participant ${phone}:`, insertError);
+              } else {
+                console.log(`[Wasender Webhook] ✅ Added participant ${phone} to group ${groupJid}`);
+              }
+              
+              // Increment participant_count in whatsapp_groups
+              const { data: currentGroup } = await supabase
+                .from("whatsapp_groups")
+                .select("participant_count")
+                .eq("group_jid", groupJid)
+                .eq("session_id", sessionId)
+                .single();
+              
+              if (currentGroup) {
+                await supabase
+                  .from("whatsapp_groups")
+                  .update({ 
+                    participant_count: (currentGroup.participant_count || 0) + 1,
+                    updated_at: new Date().toISOString()
+                  })
+                  .eq("group_jid", groupJid)
+                  .eq("session_id", sessionId);
+                console.log(`[Wasender Webhook] ✅ Incremented participant count for group ${groupJid}`);
+              }
+            } else if (action === "remove") {
+              // Remove participant
+              const { error: deleteError } = await supabase
+                .from("whatsapp_group_participants")
+                .delete()
+                .eq("group_jid", groupJid)
+                .eq("phone", phone)
+                .eq("session_id", sessionId);
+              
+              if (deleteError) {
+                console.error(`[Wasender Webhook] Error removing participant ${phone}:`, deleteError);
+              } else {
+                console.log(`[Wasender Webhook] ✅ Removed participant ${phone} from group ${groupJid}`);
+              }
+              
+              // Decrement participant_count in whatsapp_groups
+              const { data: currentGroup } = await supabase
+                .from("whatsapp_groups")
+                .select("participant_count")
+                .eq("group_jid", groupJid)
+                .eq("session_id", sessionId)
+                .single();
+              
+              if (currentGroup && currentGroup.participant_count > 0) {
+                await supabase
+                  .from("whatsapp_groups")
+                  .update({ 
+                    participant_count: currentGroup.participant_count - 1,
+                    updated_at: new Date().toISOString()
+                  })
+                  .eq("group_jid", groupJid)
+                  .eq("session_id", sessionId);
+                console.log(`[Wasender Webhook] ✅ Decremented participant count for group ${groupJid}`);
+              }
+            }
           }
         }
       }
@@ -1013,9 +1095,9 @@ async function handler(req: Request): Promise<Response> {
         // Try to get participant phone from different sources
         const stubParams = msgData?.messageStubParameters || [];
         
-        // Helper to extract phone from various formats
-        const extractPhone = (param: any): string => {
-          if (!param) return "";
+        // Helper to extract phone and jid from various formats
+        const extractPhoneInfo = (param: any): { phone: string; jid: string } => {
+          if (!param) return { phone: "", jid: "" };
           
           // If it's a string that looks like JSON, try to parse it
           if (typeof param === "string") {
@@ -1023,15 +1105,18 @@ async function handler(req: Request): Promise<Response> {
             try {
               const parsed = JSON.parse(param);
               if (parsed.phoneNumber) {
-                return parsed.phoneNumber.replace("@s.whatsapp.net", "").replace("@c.us", "").replace(/\D/g, "");
+                const phone = parsed.phoneNumber.replace("@s.whatsapp.net", "").replace("@c.us", "").replace(/\D/g, "");
+                return { phone, jid: parsed.phoneNumber };
               }
               if (parsed.pn) {
-                return parsed.pn.replace(/\D/g, "");
+                const phone = parsed.pn.replace(/\D/g, "");
+                return { phone, jid: `${phone}@s.whatsapp.net` };
               }
             } catch {
               // Not JSON, treat as JID
               if (param.includes("@")) {
-                return param.replace("@s.whatsapp.net", "").replace("@c.us", "").replace("@lid", "").replace(/\D/g, "");
+                const phone = param.replace("@s.whatsapp.net", "").replace("@c.us", "").replace("@lid", "").replace(/\D/g, "");
+                return { phone, jid: param };
               }
             }
           }
@@ -1040,11 +1125,77 @@ async function handler(req: Request): Promise<Response> {
           if (typeof param === "object" && param !== null) {
             const phoneNumber = param.phoneNumber || param.pn || param.phone || "";
             if (phoneNumber) {
-              return phoneNumber.replace("@s.whatsapp.net", "").replace("@c.us", "").replace(/\D/g, "");
+              const phone = phoneNumber.replace("@s.whatsapp.net", "").replace("@c.us", "").replace(/\D/g, "");
+              return { phone, jid: param.id || param.jid || `${phone}@s.whatsapp.net` };
             }
           }
           
-          return "";
+          return { phone: "", jid: "" };
+        };
+        
+        // Helper to update participant count in database
+        const updateParticipantInDb = async (phone: string, participantJid: string, groupJid: string, isAdd: boolean) => {
+          if (!sessionId) return;
+          
+          if (isAdd) {
+            // Insert new participant
+            await supabase
+              .from("whatsapp_group_participants")
+              .upsert({
+                group_jid: groupJid,
+                session_id: sessionId,
+                participant_jid: participantJid || `${phone}@s.whatsapp.net`,
+                phone: phone,
+                is_admin: false,
+                is_super_admin: false,
+              }, { onConflict: "group_jid,session_id,participant_jid" });
+            
+            // Increment participant_count
+            const { data: currentGroup } = await supabase
+              .from("whatsapp_groups")
+              .select("participant_count")
+              .eq("group_jid", groupJid)
+              .eq("session_id", sessionId)
+              .single();
+            
+            if (currentGroup) {
+              await supabase
+                .from("whatsapp_groups")
+                .update({ 
+                  participant_count: (currentGroup.participant_count || 0) + 1,
+                  updated_at: new Date().toISOString()
+                })
+                .eq("group_jid", groupJid)
+                .eq("session_id", sessionId);
+            }
+          } else {
+            // Remove participant
+            await supabase
+              .from("whatsapp_group_participants")
+              .delete()
+              .eq("group_jid", groupJid)
+              .eq("phone", phone)
+              .eq("session_id", sessionId);
+            
+            // Decrement participant_count
+            const { data: currentGroup } = await supabase
+              .from("whatsapp_groups")
+              .select("participant_count")
+              .eq("group_jid", groupJid)
+              .eq("session_id", sessionId)
+              .single();
+            
+            if (currentGroup && currentGroup.participant_count > 0) {
+              await supabase
+                .from("whatsapp_groups")
+                .update({ 
+                  participant_count: currentGroup.participant_count - 1,
+                  updated_at: new Date().toISOString()
+                })
+                .eq("group_jid", groupJid)
+                .eq("session_id", sessionId);
+            }
+          }
         };
         
         // Get participant from key
@@ -1054,17 +1205,19 @@ async function handler(req: Request): Promise<Response> {
           if (phone && phone.length >= 8 && phone.length <= 15) {
             console.log(`[Wasender Webhook] Extracted phone from participantPn: ${phone}`);
             await trackLeadGroupAction(supabase, phone, groupJid, action, sessionId);
+            await updateParticipantInDb(phone, participantFromKey, groupJid, action === "add");
           }
         }
         
         // Process all participants from stubParams
         const processedPhones = new Set<string>();
         for (const param of stubParams) {
-          const phone = extractPhone(param);
+          const { phone, jid } = extractPhoneInfo(param);
           if (phone && phone.length >= 8 && phone.length <= 15 && !processedPhones.has(phone)) {
             processedPhones.add(phone);
             console.log(`[Wasender Webhook] Extracted phone from stubParam: ${phone}`);
             await trackLeadGroupAction(supabase, phone, groupJid, action, sessionId);
+            await updateParticipantInDb(phone, jid, groupJid, action === "add");
           }
         }
       }
