@@ -108,9 +108,12 @@ export const AudioWaveform = ({ src, sent = false, renderFooter }: AudioWaveform
     const progress =
       typeof progressOverride === "number" ? progressOverride : duration > 0 ? currentTime / duration : 0;
 
-    // Use design tokens (HSL) for colors
+    // Detect dark mode
+    const isDarkMode = document.documentElement.classList.contains("dark");
+
+    // Use design tokens (HSL) for colors - white in dark mode for unplayed
     const playedColor = sent ? "hsl(var(--primary-dark))" : "hsl(var(--primary))";
-    const unplayedColor = "hsl(var(--muted-foreground) / 0.35)";
+    const unplayedColor = isDarkMode ? "rgba(255, 255, 255, 0.4)" : "hsl(var(--muted-foreground) / 0.35)";
 
     ctx.clearRect(0, 0, width, height);
 
