@@ -207,12 +207,16 @@ const MessageContent = memo(function MessageContent({
     );
   }
 
-  // Text - inline footer at the end
+  // Text - inline footer floats right, wraps to bottom on long messages
   return (
-    <span className="text-sm text-foreground whitespace-pre-wrap break-words">
-      {formatWhatsAppText(msg.text)}
-      <InlineFooter msg={msg} />
-    </span>
+    <div className="inline">
+      <span className="text-sm text-foreground whitespace-pre-wrap break-words">
+        {formatWhatsAppText(msg.text)}
+      </span>
+      <span className="float-right ml-2 mt-1">
+        <InlineFooter msg={msg} />
+      </span>
+    </div>
   );
 });
 
