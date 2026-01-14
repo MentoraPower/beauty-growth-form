@@ -261,7 +261,7 @@ export const MessageArea = memo(function MessageArea({
                       "max-w-[65%] rounded-2xl px-3 py-2 relative transition-all duration-300",
                       msg.sent 
                         ? "bg-sky-100 dark:bg-sky-900/40 rounded-tr-sm" 
-                        : "bg-zinc-100 dark:bg-zinc-800/60 rounded-tl-sm"
+                        : "bg-black/[0.04] dark:bg-white/[0.08] rounded-tl-sm"
                     )}
                   >
                     {/* Quoted message preview */}
