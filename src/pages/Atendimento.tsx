@@ -149,13 +149,7 @@ export default function Atendimento() {
       <div className="h-full flex flex-col overflow-hidden bg-white dark:bg-zinc-950 rounded-xl border border-black/[0.08] dark:border-white/[0.08]">
       {/* Compact Header */}
       <div className="flex-shrink-0 border-b border-black/[0.08] dark:border-white/[0.08] bg-white dark:bg-zinc-950">
-        <div className="h-11 px-4 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="flex items-center gap-2 text-sm font-medium text-foreground">
-              <WhatsAppIcon className="h-4 w-4 text-emerald-500" />
-              <span>WhatsApp</span>
-            </div>
-          </div>
+        <div className="h-11 px-4 flex items-center justify-end">
 
           {/* WhatsApp Account Selector - Right side */}
           <DropdownMenu>
