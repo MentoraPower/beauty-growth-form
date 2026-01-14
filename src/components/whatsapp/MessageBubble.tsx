@@ -342,28 +342,24 @@ export const MessageBubble = memo(function MessageBubble({
         onEditMessage={onEditMessage}
         onDeleteMessage={onDeleteMessage}
       />
-
-      {/* Reply button spacer for received messages (keeps alignment even when deleted) */}
-      {!msg.sent && (
-        <div className="mr-1 self-center flex-shrink-0 w-7 h-7 flex items-center justify-center">
-          {msg.status !== "DELETED" && (
-            <button
-              onClick={() => onReplyMessage(msg)}
-              className="p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity hover:bg-muted/50"
-            >
-              <Reply className="w-4 h-4 text-muted-foreground" />
-            </button>
-          )}
-        </div>
-      )}
-
+      {/* Reply button (overlay, does not affect alignment) */}
+      
       {/* Bubble + (optional) indicator */}
       <div
         className={cn(
-          "flex flex-col w-fit min-w-0 max-w-[78%] sm:max-w-[65%]",
+          "relative flex flex-col w-fit min-w-0 max-w-[78%] sm:max-w-[65%]",
           msg.sent ? "items-end" : "items-start"
         )}
       >
+        {!msg.sent && msg.status !== "DELETED" && (
+          <button
+            onClick={() => onReplyMessage(msg)}
+            aria-label="Responder"
+            className="absolute left-0 top-1/2 -translate-x-full -translate-y-1/2 p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity hover:bg-muted/50"
+          >
+            <Reply className="w-4 h-4 text-muted-foreground" />
+          </button>
+        )}
         <div
           data-message-id={msg.message_id}
           className={cn(
