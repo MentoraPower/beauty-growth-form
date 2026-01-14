@@ -778,7 +778,7 @@ const WhatsApp = (props: WhatsAppProps) => {
   // Fetch messages when chat is selected
   useEffect(() => {
     if (selectedChat) {
-      fetchMessages(selectedChat);
+      fetchMessages(selectedChat.id);
     }
   }, [selectedChat?.id, fetchMessages]);
 
