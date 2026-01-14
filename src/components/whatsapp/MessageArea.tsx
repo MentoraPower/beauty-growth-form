@@ -13,6 +13,7 @@ interface MessageAreaProps {
   onReplyMessage: (msg: Message) => void;
   onEditMessage: (msg: Message) => void;
   onDeleteMessage: (msg: Message) => void;
+  onReactMessage?: (msg: Message, emoji: string) => void;
   onScrollToQuoted: (quotedMessageId: string) => void;
   onImageClick: (index: number) => void;
   scrollToBottom: (behavior?: ScrollBehavior) => void;
@@ -92,6 +93,7 @@ export const MessageArea = memo(function MessageArea({
   onReplyMessage,
   onEditMessage,
   onDeleteMessage,
+  onReactMessage,
   onScrollToQuoted,
   onImageClick,
   scrollToBottom,
@@ -133,6 +135,7 @@ export const MessageArea = memo(function MessageArea({
             onReplyMessage={onReplyMessage}
             onEditMessage={onEditMessage}
             onDeleteMessage={onDeleteMessage}
+            onReactMessage={onReactMessage}
             onScrollToQuoted={onScrollToQuoted}
             onImageClick={onImageClick}
             scrollToBottom={scrollToBottom}
