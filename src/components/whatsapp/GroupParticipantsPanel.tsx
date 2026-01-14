@@ -137,20 +137,20 @@ export const GroupParticipantsPanel = ({
     }
     lastFetchRef.current = { key: fetchKey, at: now };
 
-    setIsLoading(true);
     setError(null);
 
-    // First, try to load from cache for instant display
+    // First, try to load from cache for instant display (no loading state)
     const cached = await loadCachedParticipants();
     if (cached.length > 0) {
       setParticipants(cached);
       setIsLoading(false);
-      // Still fetch fresh data in background
+      // Still fetch fresh data in background (silently)
       fetchFromApiInBackground();
       return;
     }
 
-    // No cache, fetch from API
+    // No cache - only show loading when we need to fetch from API
+    setIsLoading(true);
     await fetchFromApi();
   };
 
