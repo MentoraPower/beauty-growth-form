@@ -17,6 +17,7 @@ import { ChatSidebar } from "@/components/whatsapp/ChatSidebar";
 import { ChatHeader } from "@/components/whatsapp/ChatHeader";
 import { MessageArea } from "@/components/whatsapp/MessageArea";
 import { ChatInputArea } from "@/components/whatsapp/ChatInputArea";
+import { MediaPreviewDialog } from "@/components/whatsapp/MediaPreviewDialog";
 
 interface WhatsAppProps {
   selectedAccountId?: string | null;
@@ -65,6 +66,7 @@ const WhatsApp = (props: WhatsAppProps) => {
   const [blockedContacts, setBlockedContacts] = useState<Set<string>>(new Set());
   const [blockConfirmDialog, setBlockConfirmDialog] = useState<{ open: boolean; phone: string; chatId: string; name: string } | null>(null);
   const [contactPresence, setContactPresence] = useState<{ phone: string; type: string; timestamp: number } | null>(null);
+  const [pendingMedia, setPendingMedia] = useState<{ file: File; type: "image" | "video" } | null>(null);
   
   // Groups & Sidebar
   const [whatsappGroups, setWhatsappGroups] = useState<WhatsAppGroup[]>([]);
@@ -556,8 +558,22 @@ const WhatsApp = (props: WhatsAppProps) => {
     }
   };
 
-  // File upload handler
+  // File upload handler - for images/videos, show preview; for files, send directly
   const handleFileUpload = async (file: File, type: "image" | "file" | "video") => {
+    if (!selectedChat || isSending) return;
+    
+    // For images and videos, show preview dialog
+    if (type === "image" || type === "video") {
+      setPendingMedia({ file, type });
+      return;
+    }
+    
+    // For files, send directly
+    await sendMediaWithCaption(file, type, "");
+  };
+
+  // Send media with caption (used by preview dialog and direct file upload)
+  const sendMediaWithCaption = async (file: File, type: "image" | "file" | "video", caption: string) => {
     if (!selectedChat || isSending) return;
     
     setIsSending(true);
@@ -583,7 +599,7 @@ const WhatsApp = (props: WhatsAppProps) => {
       const tempId = `temp-${Date.now()}`;
       const tempMsg: Message = {
         id: tempId,
-        text: type === "image" ? "" : type === "video" ? "" : file.name,
+        text: caption || (type === "file" ? file.name : ""),
         time: new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit", timeZone: "America/Sao_Paulo" }),
         sent: true,
         read: false,
@@ -599,7 +615,7 @@ const WhatsApp = (props: WhatsAppProps) => {
       const sessionId = selectedAccount?.api_key || null;
 
       const { data, error } = await supabase.functions.invoke("wasender-whatsapp", {
-        body: { action, phone: selectedChat.phone, mediaUrl: publicUrl, filename: file.name, caption: "", sessionId },
+        body: { action, phone: selectedChat.phone, mediaUrl: publicUrl, filename: file.name, caption, sessionId },
       });
 
       if (error) throw error;
@@ -607,7 +623,7 @@ const WhatsApp = (props: WhatsAppProps) => {
       const { data: insertedMsg } = await supabase.from("whatsapp_messages").insert({
         chat_id: selectedChat.id,
         phone: selectedChat.phone,
-        text: type === "image" ? "" : type === "video" ? "" : file.name,
+        text: caption || (type === "file" ? file.name : ""),
         from_me: true,
         status: "SENT",
         media_url: publicUrl,
@@ -633,13 +649,12 @@ const WhatsApp = (props: WhatsAppProps) => {
 
       handleUpdateChatAfterAudio(selectedChat.id, lastMsgText, newTimestamp);
 
-      // Success notification removed per user request
-
     } catch (error: any) {
       console.error("Error uploading file:", error);
       toast({ title: "Erro ao enviar", description: error.message, variant: "destructive" });
     } finally {
       setIsSending(false);
+      setPendingMedia(null);
     }
   };
 
@@ -1196,6 +1211,19 @@ const WhatsApp = (props: WhatsAppProps) => {
           fetchWhatsAppAccountsLocal();
           setAccountToConnect(null);
         }}
+      />
+
+      {/* Media Preview Dialog */}
+      <MediaPreviewDialog
+        file={pendingMedia?.file || null}
+        type={pendingMedia?.type || "image"}
+        onSend={(caption) => {
+          if (pendingMedia) {
+            sendMediaWithCaption(pendingMedia.file, pendingMedia.type, caption);
+          }
+        }}
+        onCancel={() => setPendingMedia(null)}
+        isSending={isSending}
       />
     </>
   );
