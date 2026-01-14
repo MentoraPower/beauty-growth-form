@@ -227,8 +227,8 @@ export default function Atendimento() {
           </DropdownMenu>
         </div>
         
-        {/* Tabs - Below header */}
-        <div className="flex border-t border-border/30">
+        {/* Tabs - Below header, aligned with sidebar */}
+        <div className="flex border-t border-border/30 w-[320px]">
           <button
             onClick={() => setSidebarTab("conversas")}
             className={cn(
