@@ -573,45 +573,44 @@ async function handler(req: Request): Promise<Response> {
     }
 
     // Handle message reactions
+    // WasenderAPI sends reactions in format: { data: { message: { key: { id }, reaction: { key: { id }, text } } } }
     if (event === "messages.reaction") {
-      const reactionDataArray = payload.data;
+      const reactionData = payload.data;
       
-      // WasenderAPI sends reactions as an array in data[]
-      // Structure: { data: [{ key: { id: "msgId" }, reaction: { text: "👍" } }] }
-      const reactions = Array.isArray(reactionDataArray) ? reactionDataArray : [reactionDataArray];
+      // Extract the nested message object
+      const messageObj = reactionData?.message;
       
-      for (const item of reactions) {
-        // Extract target message ID from key
-        const targetMsgId = item?.key?.id || item?.reaction?.key?.id;
+      // The target message ID is in message.reaction.key.id (the message being reacted TO)
+      const targetMsgId = messageObj?.reaction?.key?.id || messageObj?.key?.id;
+      
+      // Extract emoji - empty text means reaction was removed
+      const reactionEmoji = messageObj?.reaction?.text || "";
+      
+      console.log(`[Wasender Webhook] Reaction event - targetMsgId: ${targetMsgId}, emoji: "${reactionEmoji}"`);
+      console.log(`[Wasender Webhook] Reaction full data:`, JSON.stringify(reactionData).substring(0, 500));
+      
+      if (targetMsgId) {
+        // Find the message by whatsapp_key_id or message_id
+        const { data: targetMsg } = await supabase
+          .from("whatsapp_messages")
+          .select("id, chat_id")
+          .or(`message_id.eq.${targetMsgId},whatsapp_key_id.eq.${targetMsgId}`)
+          .maybeSingle();
         
-        // Extract emoji - empty text means reaction was removed
-        const reactionEmoji = item?.reaction?.text || "";
-        
-        console.log(`[Wasender Webhook] Reaction - targetMsgId: ${targetMsgId}, emoji: "${reactionEmoji}"`);
-        
-        if (targetMsgId) {
-          // Find the message by whatsapp_key_id or message_id
-          const { data: targetMsg } = await supabase
+        if (targetMsg) {
+          // Update reaction - empty string removes the reaction
+          const { error: updateError } = await supabase
             .from("whatsapp_messages")
-            .select("id, chat_id")
-            .or(`message_id.eq.${targetMsgId},whatsapp_key_id.eq.${targetMsgId}`)
-            .maybeSingle();
+            .update({ reaction: reactionEmoji || null })
+            .eq("id", targetMsg.id);
           
-          if (targetMsg) {
-            // Update reaction - empty string removes the reaction
-            const { error: updateError } = await supabase
-              .from("whatsapp_messages")
-              .update({ reaction: reactionEmoji || null })
-              .eq("id", targetMsg.id);
-            
-            if (updateError) {
-              console.error(`[Wasender Webhook] Failed to update reaction:`, updateError);
-            } else {
-              console.log(`[Wasender Webhook] Updated reaction on message ${targetMsg.id}: ${reactionEmoji || "(removed)"}`);
-            }
+          if (updateError) {
+            console.error(`[Wasender Webhook] Failed to update reaction:`, updateError);
           } else {
-            console.log(`[Wasender Webhook] Reaction: Target message not found for ${targetMsgId}`);
+            console.log(`[Wasender Webhook] ✅ Updated reaction on message ${targetMsg.id}: ${reactionEmoji || "(removed)"}`);
           }
+        } else {
+          console.log(`[Wasender Webhook] Reaction: Target message not found for ${targetMsgId}`);
         }
       }
       
@@ -1976,6 +1975,49 @@ async function handler(req: Request): Promise<Response> {
     // Extract message content
     const messageBody = messageData.messageBody || "";
     const message = messageData.message || {};
+    
+    // ========== CHECK FOR REACTION MESSAGE IN UPSERT ==========
+    // When a client reacts to a message, WasenderAPI may also send messages.upsert with reactionMessage
+    // We need to process this as a reaction update, not as a new message
+    if (message.reactionMessage) {
+      console.log(`[Wasender Webhook] 🔄 Detected reactionMessage in messages.upsert - processing as reaction`);
+      
+      // The target message is in reactionMessage.key.id
+      const targetMsgId = message.reactionMessage.key?.id;
+      const reactionEmoji = message.reactionMessage.text || "";
+      
+      console.log(`[Wasender Webhook] Reaction from upsert - targetMsgId: ${targetMsgId}, emoji: "${reactionEmoji}"`);
+      
+      if (targetMsgId) {
+        // Find the message by whatsapp_key_id or message_id
+        const { data: targetMsg } = await supabase
+          .from("whatsapp_messages")
+          .select("id, chat_id")
+          .or(`message_id.eq.${targetMsgId},whatsapp_key_id.eq.${targetMsgId}`)
+          .maybeSingle();
+        
+        if (targetMsg) {
+          // Update reaction - empty string removes the reaction
+          const { error: updateError } = await supabase
+            .from("whatsapp_messages")
+            .update({ reaction: reactionEmoji || null })
+            .eq("id", targetMsg.id);
+          
+          if (updateError) {
+            console.error(`[Wasender Webhook] Failed to update reaction from upsert:`, updateError);
+          } else {
+            console.log(`[Wasender Webhook] ✅ Updated reaction on message ${targetMsg.id} from upsert: ${reactionEmoji || "(removed)"}`);
+          }
+        } else {
+          console.log(`[Wasender Webhook] Reaction from upsert: Target message not found for ${targetMsgId}`);
+        }
+      }
+      
+      // Return early - this was a reaction, not a new message
+      return new Response(JSON.stringify({ ok: true }), { 
+        headers: { ...corsHeaders, "Content-Type": "application/json" } 
+      });
+    }
     
     let text = messageBody || message.conversation || message.extendedTextMessage?.text || "";
     let mediaType: string | null = null;
