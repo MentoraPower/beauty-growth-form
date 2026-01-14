@@ -368,9 +368,9 @@ export const GroupParticipantsPanel = ({
   }, [participants.length]);
 
   return (
-    <div className="w-[340px] border-l border-border bg-white dark:bg-zinc-900 flex flex-col overflow-hidden">
+    <div className="w-[340px] border-l border-black/[0.08] dark:border-white/[0.08] bg-white dark:bg-zinc-900 flex flex-col overflow-hidden">
       {/* Header */}
-      <div className="bg-white dark:bg-zinc-900 px-4 py-4 border-b border-border/50">
+      <div className="bg-white dark:bg-zinc-900 px-4 py-4 border-b border-black/[0.06] dark:border-white/[0.06]">
         <div className="flex items-center gap-3">
           {groupPhoto ? (
             <img
@@ -399,7 +399,7 @@ export const GroupParticipantsPanel = ({
       </div>
 
       {/* Participants List Header */}
-      <div className="flex items-center justify-between px-4 py-2 border-b border-border/50">
+      <div className="flex items-center justify-between px-4 py-2 border-b border-black/[0.06] dark:border-white/[0.06]">
         <span className="text-sm font-medium text-foreground">Participantes</span>
         {isLoadingPhotos && (
           <button
@@ -430,7 +430,7 @@ export const GroupParticipantsPanel = ({
         ) : participants.length === 0 ? (
           <div className="text-center py-8 text-sm text-muted-foreground">Nenhum participante encontrado</div>
         ) : (
-          <div className="divide-y divide-border/30">
+          <div className="divide-y divide-black/[0.04] dark:divide-white/[0.06]">
             {participants.map((participant) => (
               <div
                 key={participant.id}
