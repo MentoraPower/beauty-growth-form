@@ -300,83 +300,82 @@ export const ViewTabs = memo(function ViewTabs({ activeView, onViewChange, onSet
         collisionDetection={closestCenter}
         onDragEnd={handleDragEnd}
       >
-        <div ref={containerRef} className="relative inline-flex items-center gap-5 px-4 pb-2">
-          {/* Animated gradient indicator */}
-          <div 
-            className="absolute bottom-0 h-[1.5px] rounded-sm bg-gradient-to-r from-orange-400 to-orange-600"
-            style={{
-              left: indicator.left,
-              width: indicator.width,
-              transition: "left 200ms cubic-bezier(0.4, 0, 0.2, 1), width 200ms cubic-bezier(0.4, 0, 0.2, 1)",
-            }}
-          />
-          
-          <SortableContext
-            items={visibleTabs.map(t => t.id)}
-            strategy={horizontalListSortingStrategy}
-          >
-            {visibleTabs.map((tab) => (
-              <SortableTab
-                key={tab.id}
-                tab={tab}
-                isActive={activeView === tab.id}
-                onViewChange={onViewChange}
-                onTabHover={onTabHover}
-                onHide={handleHideTab}
-                setTabRef={setTabRef(tab.id)}
-              />
-            ))}
-          </SortableContext>
-          
-          {/* Add view button - shows hidden tabs */}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <button
-                className="flex items-center gap-1 px-2 py-0.5 rounded-md bg-muted/50 hover:bg-muted text-[12px] font-medium text-muted-foreground hover:text-foreground transition-colors"
-              >
-                <Plus className="w-3 h-3" />
-                Adicionar visualização
-              </button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="start" className="min-w-[180px]">
-              {hiddenTabs.length > 0 ? (
-                hiddenTabs.map(tab => (
-                  <DropdownMenuItem
-                    key={tab.id}
-                    onSelect={() => handleShowTab(tab.id)}
-                    className="cursor-pointer"
-                  >
-                    {tab.label}
-                  </DropdownMenuItem>
-                ))
-              ) : (
-                <div className="px-2 py-1.5 text-xs text-muted-foreground">
-                  Todas as visualizações já estão visíveis
-                </div>
+        <div className="flex items-center justify-between w-full px-4 pb-2">
+          <div ref={containerRef} className="relative inline-flex items-center gap-5">
+            {/* Animated gradient indicator */}
+            <div 
+              className="absolute bottom-0 h-[1.5px] rounded-sm bg-gradient-to-r from-orange-400 to-orange-600"
+              style={{
+                left: indicator.left,
+                width: indicator.width,
+                transition: "left 200ms cubic-bezier(0.4, 0, 0.2, 1), width 200ms cubic-bezier(0.4, 0, 0.2, 1)",
+              }}
+            />
+            
+            <SortableContext
+              items={visibleTabs.map(t => t.id)}
+              strategy={horizontalListSortingStrategy}
+            >
+              {visibleTabs.map((tab) => (
+                <SortableTab
+                  key={tab.id}
+                  tab={tab}
+                  isActive={activeView === tab.id}
+                  onViewChange={onViewChange}
+                  onTabHover={onTabHover}
+                  onHide={handleHideTab}
+                  setTabRef={setTabRef(tab.id)}
+                />
+              ))}
+            </SortableContext>
+            
+            {/* Add view button - shows hidden tabs */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button
+                  className="flex items-center gap-1 px-2 py-0.5 rounded-md bg-muted/50 hover:bg-muted text-[12px] font-medium text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  <Plus className="w-3 h-3" />
+                  Adicionar visualização
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start" className="min-w-[180px]">
+                {hiddenTabs.length > 0 ? (
+                  hiddenTabs.map(tab => (
+                    <DropdownMenuItem
+                      key={tab.id}
+                      onSelect={() => handleShowTab(tab.id)}
+                      className="cursor-pointer"
+                    >
+                      {tab.label}
+                    </DropdownMenuItem>
+                  ))
+                ) : (
+                  <div className="px-2 py-1.5 text-xs text-muted-foreground">
+                    Todas as visualizações já estão visíveis
+                  </div>
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
+            
+            {/* Separator */}
+            <div className="w-px h-4 bg-border mx-1" />
+            
+            {/* Automations tab (not draggable/hideable) */}
+            <button
+              ref={setTabRef("email")}
+              onClick={() => onViewChange("email")}
+              onMouseEnter={() => onTabHover?.("email")}
+              className={cn(
+                "relative text-[13px] font-semibold tracking-wide transition-colors duration-150 pb-0.5",
+                activeView === "email" 
+                  ? "text-foreground"
+                  : "text-muted-foreground hover:text-foreground/80"
               )}
-            </DropdownMenuContent>
-          </DropdownMenu>
-          
-          {/* Separator */}
-          <div className="w-px h-4 bg-border mx-1" />
-          
-          {/* Automations tab (not draggable/hideable) */}
-          <button
-            ref={setTabRef("email")}
-            onClick={() => onViewChange("email")}
-            onMouseEnter={() => onTabHover?.("email")}
-            className={cn(
-              "relative text-[13px] font-semibold tracking-wide transition-colors duration-150 pb-0.5",
-              activeView === "email" 
-                ? "text-foreground"
-                : "text-muted-foreground hover:text-foreground/80"
-            )}
-          >
-            Automations
-          </button>
-          
-          {/* Spacer to push extra actions to the right */}
-          <div className="flex-1" />
+            >
+              Automations
+            </button>
+          </div>
           
           {/* Extra Actions + Settings Icon */}
           <div className="flex items-center gap-2">
