@@ -228,7 +228,7 @@ export default function Atendimento() {
         </div>
         
         {/* Tabs - Below header, aligned with sidebar */}
-        <div className="flex border-t border-black/[0.06] dark:border-white/[0.06] w-[320px]">
+        <div className="flex w-[320px]">
           <button
             onClick={() => setSidebarTab("conversas")}
             className={cn(
