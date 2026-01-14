@@ -385,7 +385,7 @@ export function useWhatsAppChats({ selectedAccountId, whatsappAccounts }: UseWha
 
   // Restore selected chat from URL after chats load
   useEffect(() => {
-    if (isInitialLoad || selectedChatRestoredRef.current || chats.length === 0) return;
+    if (isInitialLoad || selectedChatRestoredRef.current) return;
     
     const chatIdFromUrl = searchParams.get('chat');
     if (!chatIdFromUrl) {
@@ -393,14 +393,72 @@ export function useWhatsAppChats({ selectedAccountId, whatsappAccounts }: UseWha
       return;
     }
     
+    // First try to find in loaded chats
     const foundChat = chats.find(c => c.id === chatIdFromUrl);
     
     if (foundChat) {
       setSelectedChatInternal(foundChat);
+      selectedChatRestoredRef.current = true;
+      return;
     }
     
-    selectedChatRestoredRef.current = true;
-  }, [chats, isInitialLoad, searchParams]);
+    // Chat not in list - try to fetch directly from database (may be a group)
+    const fetchChatById = async () => {
+      try {
+        const selectedAccount = whatsappAccounts.find(acc => acc.id === selectedAccountId);
+        const sessionApiKey = selectedAccount?.api_key;
+        
+        if (!sessionApiKey) {
+          selectedChatRestoredRef.current = true;
+          return;
+        }
+        
+        const { data: chatData, error } = await supabase
+          .from("whatsapp_chats")
+          .select("*")
+          .eq("id", chatIdFromUrl)
+          .eq("session_id", sessionApiKey)
+          .maybeSingle();
+        
+        if (error || !chatData) {
+          selectedChatRestoredRef.current = true;
+          return;
+        }
+        
+        // Check if this is a group (phone ends with @g.us)
+        const isGroup = chatData.phone?.endsWith("@g.us");
+        
+        const restoredChat: Chat = {
+          id: chatData.id,
+          name: chatData.name || chatData.phone || "",
+          lastMessage: chatData.last_message || "",
+          time: chatData.last_message_time ? formatTime(chatData.last_message_time) : "",
+          lastMessageTime: chatData.last_message_time || null,
+          unread: chatData.unread_count || 0,
+          avatar: (chatData.name || chatData.phone || "?").substring(0, 2).toUpperCase(),
+          phone: chatData.phone || "",
+          photo_url: chatData.photo_url || null,
+          lastMessageStatus: chatData.last_message_status || null,
+          lastMessageFromMe: chatData.last_message_from_me || false,
+          isGroup,
+        };
+        
+        setSelectedChatInternal(restoredChat);
+        
+        // Add to chats list if not already there
+        setChats(prev => {
+          if (prev.some(c => c.id === restoredChat.id)) return prev;
+          return [restoredChat, ...prev];
+        });
+      } catch (err) {
+        console.error("[useWhatsAppChats] Error restoring chat from URL:", err);
+      } finally {
+        selectedChatRestoredRef.current = true;
+      }
+    };
+    
+    fetchChatById();
+  }, [chats, isInitialLoad, searchParams, selectedAccountId, whatsappAccounts, setChats]);
 
   // Reset restored flag when account changes
   useEffect(() => {
