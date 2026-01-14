@@ -654,9 +654,9 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
                 : disparoSubmenuOpen 
                   ? 12 + sidebarCollapsedWidth + 12 + disparoSubmenuWidth + 8
                   : 12 + sidebarCollapsedWidth + 12 + 8,
-              top: 'calc(45px + 12px)',
+              top: 'calc(45px + 20px)',
               right: 0,
-              height: 'calc(100vh - 45px - 1.5rem)',
+              height: 'calc(100vh - 45px - 2.5rem)',
               willChange: 'left',
             }}
             className="fixed transition-[left] duration-300 ease-out"
