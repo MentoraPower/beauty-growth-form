@@ -37,10 +37,11 @@ export const MessageArea = memo(function MessageArea({
   scrollToBottom,
 }: MessageAreaProps) {
   const renderMessageContent = (msg: Message) => {
-    if (msg.status === "DELETED") {
+    // Only hide content for OUR deleted messages
+    if (msg.status === "DELETED" && msg.sent) {
       return (
         <p className="text-sm text-muted-foreground italic">
-          {msg.sent ? "mensagem apagada" : "Mensagem apagada pelo cliente"}
+          mensagem apagada
         </p>
       );
     }
@@ -305,6 +306,13 @@ export const MessageArea = memo(function MessageArea({
                     })()}
                     
                     {renderMessageContent(msg)}
+                    
+                    {/* Client deleted message indicator - show below content */}
+                    {msg.status === "DELETED" && !msg.sent && (
+                      <p className="text-[10px] text-muted-foreground/70 italic mt-1">
+                        Mensagem apagada pelo cliente
+                      </p>
+                    )}
                     
                     {/* Timestamp and status */}
                     {msg.mediaType !== "audio" && (
