@@ -235,12 +235,37 @@ const WhatsApp = (props: WhatsAppProps) => {
         .order("name", { ascending: true });
 
       if (dbGroups && dbGroups.length > 0) {
+        // Fetch unread counts and recent system events for each group
+        const groupJids = dbGroups.map(g => g.group_jid);
+        
+        // Get unread message counts from whatsapp_chats (groups are stored there too)
+        const { data: groupChats } = await supabase
+          .from("whatsapp_chats")
+          .select("phone, unread_count")
+          .eq("session_id", sessionApiKey)
+          .in("phone", groupJids);
+        
+        // Get recent system events (last 24h) for "entrou/saiu" indicator
+        const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+        const { data: recentSystemEvents } = await supabase
+          .from("whatsapp_messages")
+          .select("phone")
+          .eq("session_id", sessionApiKey)
+          .eq("media_type", "system")
+          .in("phone", groupJids)
+          .gte("created_at", oneDayAgo);
+        
+        const unreadMap = new Map(groupChats?.map(c => [c.phone, c.unread_count ?? 0]) || []);
+        const groupsWithEvents = new Set(recentSystemEvents?.map(e => e.phone) || []);
+        
         setWhatsappGroups(dbGroups.map(g => ({
           id: g.id,
           groupJid: g.group_jid,
           name: g.name,
           participantCount: g.participant_count ?? 0,
           photoUrl: g.photo_url,
+          unreadCount: unreadMap.get(g.group_jid) ?? 0,
+          hasNewEvent: groupsWithEvents.has(g.group_jid),
         })));
         
         // If we have cached groups and not forcing refresh, skip API call
@@ -267,6 +292,8 @@ const WhatsApp = (props: WhatsAppProps) => {
           name: g.name,
           participantCount: g.participantCount ?? 0,
           photoUrl: g.photoUrl,
+          unreadCount: 0,
+          hasNewEvent: false,
         }));
         setWhatsappGroups(groups);
       }
