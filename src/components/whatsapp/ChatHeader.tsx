@@ -1,7 +1,8 @@
 import { memo } from "react";
 import { cn } from "@/lib/utils";
 import { PanelRightOpen, PanelRightClose, Users } from "lucide-react";
-import { Chat, getInitials, formatPhoneDisplay } from "@/hooks/useWhatsAppChats";
+import { Chat, formatPhoneDisplay } from "@/hooks/useWhatsAppChats";
+import { DEFAULT_AVATAR } from "@/lib/whatsapp-utils";
 
 interface ChatHeaderProps {
   selectedChat: Chat;
@@ -19,30 +20,20 @@ export const ChatHeader = memo(function ChatHeader({
   return (
     <div className="h-[60px] px-4 flex items-center gap-3 bg-muted/40 border-b border-border/30">
       <div className="relative flex-shrink-0">
-        {selectedChat.photo_url ? (
+        {selectedChat.isGroup ? (
+          <div className="w-11 h-11 rounded-full flex items-center justify-center bg-emerald-600 text-white shadow-sm ring-2 ring-background">
+            <Users className="w-5 h-5" />
+          </div>
+        ) : (
           <img 
-            src={selectedChat.photo_url} 
+            src={selectedChat.photo_url || DEFAULT_AVATAR} 
             alt={selectedChat.name} 
-            className="w-11 h-11 rounded-full object-cover bg-neutral-200 shadow-sm ring-2 ring-background" 
+            className="w-11 h-11 rounded-full object-cover shadow-sm ring-2 ring-background" 
             onError={(e) => {
-              e.currentTarget.style.display = 'none';
-              e.currentTarget.nextElementSibling?.classList.remove('hidden');
+              e.currentTarget.src = DEFAULT_AVATAR;
             }}
           />
-        ) : null}
-        <div className={cn(
-          "w-11 h-11 rounded-full flex items-center justify-center text-sm font-semibold shadow-sm ring-2 ring-background",
-          selectedChat.isGroup 
-            ? "bg-emerald-600 text-white" 
-            : "bg-muted text-muted-foreground",
-          selectedChat.photo_url && "hidden"
-        )}>
-          {selectedChat.isGroup ? (
-            <Users className="w-5 h-5" />
-          ) : (
-            getInitials(selectedChat.name)
-          )}
-        </div>
+        )}
       </div>
       <div className="flex-1 min-w-0">
         <h3 className="font-semibold text-foreground truncate">{selectedChat.name}</h3>

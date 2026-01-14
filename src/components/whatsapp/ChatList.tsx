@@ -70,23 +70,14 @@ const ChatItem = memo(function ChatItem({
     >
       {/* Avatar */}
       <div className="relative flex-shrink-0">
-        {chat.photoUrl ? (
-          <img
-            src={chat.photoUrl}
-            alt={chat.name}
-            className="w-12 h-12 rounded-full object-cover"
-            onError={(e) => {
-              e.currentTarget.style.display = 'none';
-              e.currentTarget.nextElementSibling?.classList.remove('hidden');
-            }}
-          />
-        ) : null}
-        <div className={cn(
-          "w-12 h-12 rounded-full bg-muted flex items-center justify-center text-sm font-medium text-muted-foreground",
-          chat.photoUrl && "hidden"
-        )}>
-          {getInitials(chat.name)}
-        </div>
+        <img
+          src={chat.photoUrl || DEFAULT_AVATAR}
+          alt={chat.name}
+          className="w-12 h-12 rounded-full object-cover"
+          onError={(e) => {
+            e.currentTarget.src = DEFAULT_AVATAR;
+          }}
+        />
         
         {/* Unread badge */}
         {chat.unreadCount > 0 && (
