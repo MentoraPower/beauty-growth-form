@@ -86,14 +86,6 @@ export const ChatSidebar = memo(function ChatSidebar({
           )}
         >
           <span>Conversas</span>
-          {nonGroupChats.length > 0 && (
-            <span className={cn(
-              "text-[10px] px-1.5 py-0.5 rounded-full",
-              sidebarTab === "conversas" 
-                ? "bg-emerald-500/20 text-emerald-600 dark:text-emerald-400" 
-                : "bg-muted text-muted-foreground"
-            )}>{nonGroupChats.length}</span>
-          )}
           {sidebarTab === "conversas" && (
             <div className="absolute bottom-0 left-4 right-4 h-0.5 bg-emerald-500 rounded-full" />
           )}
@@ -113,14 +105,6 @@ export const ChatSidebar = memo(function ChatSidebar({
           )}
         >
           <span>Grupos</span>
-          {whatsappGroups.length > 0 && (
-            <span className={cn(
-              "text-[10px] px-1.5 py-0.5 rounded-full",
-              sidebarTab === "grupos" 
-                ? "bg-emerald-500/20 text-emerald-600 dark:text-emerald-400" 
-                : "bg-muted text-muted-foreground"
-            )}>{whatsappGroups.length}</span>
-          )}
           {sidebarTab === "grupos" && (
             <div className="absolute bottom-0 left-4 right-4 h-0.5 bg-emerald-500 rounded-full" />
           )}
