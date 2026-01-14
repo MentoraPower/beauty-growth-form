@@ -1403,7 +1403,7 @@ async function handler(req: Request): Promise<Response> {
               .eq("group_jid", groupJid)
               .single();
             
-            processedNames.push(participantData?.name || `+${phone}`);
+            processedNames.push(participantData?.name || formatPhoneDisplay(phone));
           }
         }
         
@@ -1637,7 +1637,7 @@ async function handler(req: Request): Promise<Response> {
           const phone = participantFromKey.replace("@s.whatsapp.net", "").replace("@c.us", "").replace(/\D/g, "");
           if (phone && phone.length >= 8 && phone.length <= 15 && !processedPhones.has(phone)) {
             processedPhones.add(phone);
-            processedNames.push(`+${phone}`);
+            processedNames.push(formatPhoneDisplay(phone));
             await trackLeadGroupAction(supabase, phone, groupJid, action, sessionId);
           }
         }
@@ -1647,7 +1647,7 @@ async function handler(req: Request): Promise<Response> {
           const { phone, name } = extractPhoneFromParam(param);
           if (phone && phone.length >= 8 && phone.length <= 15 && !processedPhones.has(phone)) {
             processedPhones.add(phone);
-            processedNames.push(name || `+${phone}`);
+            processedNames.push(name || formatPhoneDisplay(phone));
             await trackLeadGroupAction(supabase, phone, groupJid, action, sessionId);
           }
         }
