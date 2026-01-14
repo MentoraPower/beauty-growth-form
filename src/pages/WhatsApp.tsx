@@ -882,10 +882,37 @@ const WhatsApp = (props: WhatsAppProps) => {
             selectedChat={selectedChat}
             searchQuery={searchQuery}
             onSearchChange={setSearchQuery}
-            onSelectChat={(chat) => {
+            onSelectChat={async (chat) => {
               setSelectedChat(chat);
               setReplyToMessage(null);
               setMessage("");
+              
+              // Fetch profile picture if not available (and not a group)
+              if (!chat.photo_url && !chat.isGroup && !chat.phone.includes("@g.us")) {
+                const selectedAccount = whatsappAccounts.find(acc => acc.id === selectedAccountId);
+                const sessionId = selectedAccount?.api_key;
+                
+                if (sessionId) {
+                  try {
+                    const { data } = await supabase.functions.invoke("wasender-whatsapp", {
+                      body: { 
+                        action: "get-profile-picture", 
+                        phone: chat.phone,
+                        sessionId,
+                      },
+                    });
+                    
+                    if (data?.photoUrl) {
+                      // Update the chat in state with the new photo
+                      const updatedChat = { ...chat, photo_url: data.photoUrl };
+                      setSelectedChat(updatedChat);
+                      setChats(prev => prev.map(c => c.id === chat.id ? updatedChat : c));
+                    }
+                  } catch (error) {
+                    console.error("[WhatsApp] Error fetching profile picture:", error);
+                  }
+                }
+              }
             }}
             isInitialLoad={isInitialLoad}
             isSyncing={isSyncing}

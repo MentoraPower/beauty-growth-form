@@ -513,7 +513,9 @@ async function handler(req: Request): Promise<Response> {
     // =========================
     if (action === "get-profile-picture") {
       const formattedPhone = formatPhoneForApi(phone);
-      console.log(`[Wasender] Getting contact info for ${formattedPhone}`);
+      // sessionId is required for account isolation
+      const requestSessionId = body.sessionId || body.session_id || null;
+      console.log(`[Wasender] Getting contact info for ${formattedPhone}, sessionId: ${requestSessionId || "none"}`);
       
       // Use fetchContactInfo to get both name and photo in one call
       const contactInfo = await fetchContactInfo(formattedPhone);
@@ -525,20 +527,28 @@ async function handler(req: Request): Promise<Response> {
       }
       
       // Update the chat record in database with both name and photo
+      // IMPORTANT: Filter by session_id for account isolation
       const updateData: any = { updated_at: new Date().toISOString() };
       if (photoUrl) updateData.photo_url = photoUrl;
       if (contactInfo.name) updateData.name = contactInfo.name;
       
       if (photoUrl || contactInfo.name) {
-        const { error } = await supabase
+        let query = supabase
           .from("whatsapp_chats")
           .update(updateData)
           .eq("phone", formattedPhone);
         
+        // Add session_id filter for account isolation
+        if (requestSessionId) {
+          query = query.eq("session_id", requestSessionId);
+        }
+        
+        const { error } = await query;
+        
         if (error) {
           console.error(`[Wasender] Error updating chat:`, error);
         } else {
-          console.log(`[Wasender] Updated chat for ${formattedPhone}: name=${contactInfo.name}, photo=${photoUrl ? "Yes" : "No"}`);
+          console.log(`[Wasender] Updated chat for ${formattedPhone} (session: ${requestSessionId}): name=${contactInfo.name}, photo=${photoUrl ? "Yes" : "No"}`);
         }
       }
 
