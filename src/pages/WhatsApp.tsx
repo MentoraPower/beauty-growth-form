@@ -633,7 +633,7 @@ const WhatsApp = (props: WhatsAppProps) => {
 
       handleUpdateChatAfterAudio(selectedChat.id, lastMsgText, newTimestamp);
 
-      toast({ title: type === "image" ? "Imagem enviada" : type === "video" ? "Vídeo enviado" : "Arquivo enviado" });
+      // Success notification removed per user request
 
     } catch (error: any) {
       console.error("Error uploading file:", error);
@@ -657,7 +657,7 @@ const WhatsApp = (props: WhatsAppProps) => {
     if (!messageId || String(messageId).startsWith("local-")) {
       setMessages(prev => prev.map(m => m.id === msg.id ? { ...m, status: "DELETED" } : m));
       await supabase.from("whatsapp_messages").update({ status: "DELETED" }).eq("id", msg.id);
-      toast({ title: "Mensagem apagada localmente" });
+      // Success notification removed per user request
       return;
     }
     
@@ -686,7 +686,7 @@ const WhatsApp = (props: WhatsAppProps) => {
       setMessages(prev => prev.map(m => m.id === msg.id ? { ...m, status: "DELETED" } : m));
       await supabase.from("whatsapp_messages").update({ status: "DELETED" }).eq("id", msg.id);
       
-      toast({ title: "Mensagem apagada para todos" });
+      // Success notification removed per user request
     } catch (error: any) {
       console.error("[WhatsApp] Error deleting message:", error);
       setMessages(prev => prev.map(m => m.id === msg.id ? { ...m, status: "DELETED" } : m));
@@ -741,7 +741,7 @@ const WhatsApp = (props: WhatsAppProps) => {
       
       await supabase.from("whatsapp_messages").update({ text: editText.trim(), is_edited: true }).eq("id", editingMessage.id);
       
-      toast({ title: "Mensagem editada" });
+      // Success notification removed per user request
     } catch (error: any) {
       console.error("[WhatsApp] Error editing message:", error);
       toast({ title: "Erro ao editar", variant: "destructive" });
