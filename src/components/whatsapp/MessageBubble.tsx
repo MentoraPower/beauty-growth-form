@@ -1,10 +1,11 @@
-import { memo, useMemo } from "react";
+import { memo, useState } from "react";
 import { cn } from "@/lib/utils";
-import { Check, CheckCheck, File, MoreVertical, Pencil, Reply, Trash2 } from "lucide-react";
+import { Check, CheckCheck, File, MoreVertical, Pencil, Reply, Smile, Trash2 } from "lucide-react";
 import { Message } from "@/hooks/useWhatsAppMessages";
 import { AudioWaveform } from "./AudioWaveform";
 import { formatWhatsAppText } from "@/lib/whatsapp-format";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { ReactionPicker } from "./ReactionPicker";
 
 interface MessageBubbleProps {
   msg: Message;
@@ -15,6 +16,7 @@ interface MessageBubbleProps {
   onReplyMessage: (msg: Message) => void;
   onEditMessage: (msg: Message) => void;
   onDeleteMessage: (msg: Message) => void;
+  onReactMessage?: (msg: Message, emoji: string) => void;
   onScrollToQuoted: (quotedMessageId: string) => void;
   onImageClick: (index: number) => void;
   scrollToBottom: (behavior?: ScrollBehavior) => void;
@@ -427,12 +429,14 @@ export const MessageBubble = memo(function MessageBubble({
   onReplyMessage,
   onEditMessage,
   onDeleteMessage,
+  onReactMessage,
   onScrollToQuoted,
   onImageClick,
   scrollToBottom,
   isGroupChat,
   participantPhotos,
 }: MessageBubbleProps) {
+  const [showReactionPicker, setShowReactionPicker] = useState(false);
   const isClientDeletedMessage = msg.status === "DELETED" && !msg.sent;
   
   // Show sender info only for received messages in group chats that have sender info
@@ -458,14 +462,35 @@ export const MessageBubble = memo(function MessageBubble({
           msg.sent ? "items-end" : "items-start"
         )}
       >
+        {/* Reply button for received messages */}
         {!msg.sent && msg.status !== "DELETED" && (
-          <button
-            onClick={() => onReplyMessage(msg)}
-            aria-label="Responder"
-            className="absolute left-0 top-1/2 -translate-x-full -translate-y-1/2 p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity hover:bg-muted/50"
-          >
-            <Reply className="w-4 h-4 text-muted-foreground" />
-          </button>
+          <div className="absolute left-0 top-1/2 -translate-x-full -translate-y-1/2 flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+            <button
+              onClick={() => onReplyMessage(msg)}
+              aria-label="Responder"
+              className="p-1 rounded-full hover:bg-muted/50"
+            >
+              <Reply className="w-4 h-4 text-muted-foreground" />
+            </button>
+            {onReactMessage && msg.message_id && (
+              <div className="relative">
+                <button
+                  onClick={() => setShowReactionPicker(!showReactionPicker)}
+                  aria-label="Reagir"
+                  className="p-1 rounded-full hover:bg-muted/50"
+                >
+                  <Smile className="w-4 h-4 text-muted-foreground" />
+                </button>
+                {showReactionPicker && (
+                  <ReactionPicker
+                    position="left"
+                    onSelect={(emoji) => onReactMessage(msg, emoji)}
+                    onClose={() => setShowReactionPicker(false)}
+                  />
+                )}
+              </div>
+            )}
+          </div>
         )}
         <div
           data-message-id={msg.message_id}

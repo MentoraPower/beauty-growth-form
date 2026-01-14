@@ -274,6 +274,33 @@ async function handler(req: Request): Promise<Response> {
     }
 
     // =========================
+    // ACTION: send-reaction
+    // =========================
+    if (action === "send-reaction") {
+      const to = formatPhoneForApi(phone);
+      const { reaction, targetMsgId } = body;
+      
+      console.log(`[Wasender] Sending reaction "${reaction}" to message ${targetMsgId} in chat ${to}`);
+      
+      // WasenderAPI: POST /send-reaction with { to, msgId, reaction }
+      // Empty reaction removes the reaction
+      const payload = {
+        to,
+        msgId: parseInt(targetMsgId, 10),
+        reaction: reaction || "", // Empty string to remove reaction
+      };
+      
+      const result = await wasenderRequest("/send-reaction", {
+        method: "POST",
+        body: JSON.stringify(payload),
+      }, false, sessionId);
+      
+      return new Response(JSON.stringify({ success: true, data: result }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // =========================
     // ACTION: clear-all
     // =========================
     if (action === "clear-all") {

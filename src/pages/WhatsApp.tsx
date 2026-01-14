@@ -766,6 +766,55 @@ const WhatsApp = (props: WhatsAppProps) => {
     }
   };
 
+  // Send reaction to message
+  const sendReaction = async (msg: Message, emoji: string) => {
+    if (!selectedChat || !msg.message_id) return;
+    
+    const messageId = String(msg.message_id);
+    
+    // Only numeric message IDs can receive reactions via API
+    if (!/^\d+$/.test(messageId)) {
+      console.log("[WhatsApp] Cannot react to message with non-numeric ID:", messageId);
+      return;
+    }
+    
+    try {
+      const selectedAccount = whatsappAccounts.find(acc => acc.id === selectedAccountId);
+      const sessionId = selectedAccount?.api_key;
+      
+      if (!sessionId) {
+        throw new Error("Sessão não encontrada");
+      }
+      
+      // Optimistic update
+      setMessages(prev => prev.map(m => 
+        m.id === msg.id ? { ...m, reaction: emoji } : m
+      ));
+      
+      const { error } = await supabase.functions.invoke("wasender-whatsapp", {
+        body: { 
+          action: "send-reaction", 
+          phone: selectedChat.phone,
+          targetMsgId: messageId, 
+          reaction: emoji,
+          sessionId 
+        },
+      });
+      
+      if (error) throw error;
+      
+      // Update database
+      await supabase.from("whatsapp_messages").update({ reaction: emoji }).eq("id", msg.id);
+      
+    } catch (error: any) {
+      console.error("[WhatsApp] Error sending reaction:", error);
+      // Revert optimistic update
+      setMessages(prev => prev.map(m => 
+        m.id === msg.id ? { ...m, reaction: msg.reaction } : m
+      ));
+    }
+  };
+
   // Delete chat messages
   const handleDeleteChatMessages = async (chatId: string) => {
     try {
@@ -1068,6 +1117,7 @@ const WhatsApp = (props: WhatsAppProps) => {
                     setEditText(msg.text || "");
                   }}
                   onDeleteMessage={deleteMessage}
+                  onReactMessage={sendReaction}
                   onScrollToQuoted={scrollToQuotedMessage}
                   onImageClick={(idx) => setLightboxIndex(idx)}
                   scrollToBottom={scrollToBottom}
