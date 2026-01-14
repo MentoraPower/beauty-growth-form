@@ -1361,6 +1361,109 @@ async function handler(req: Request): Promise<Response> {
       });
     }
 
+    // =========================
+    // ACTION: fetch-groups (Fetch all groups with participant count)
+    // =========================
+    if (action === "fetch-groups") {
+      console.log(`[Wasender] Fetching groups for session: ${sessionId}`);
+      
+      if (!sessionId) {
+        return new Response(JSON.stringify({ error: "sessionId is required" }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      
+      try {
+        // Fetch groups from WasenderAPI
+        const groupsResult = await wasenderRequest("/groups", { method: "GET" }, false, sessionId);
+        const groups = groupsResult?.data || [];
+        
+        console.log(`[Wasender] Found ${groups.length} groups`);
+        
+        const processedGroups: any[] = [];
+        
+        for (const group of groups) {
+          const groupJid = group.id || group.jid || "";
+          const groupName = group.subject || group.name || "Grupo";
+          
+          // Get participant count from the group data or fetch participants
+          let participantCount = group.participants?.length ?? group.size ?? -1;
+          
+          // If no participant count, try to fetch participants
+          if (participantCount < 0) {
+            try {
+              const participantsResult = await wasenderRequest(
+                `/groups/${encodeURIComponent(groupJid)}/participants`,
+                { method: "GET" },
+                false,
+                sessionId
+              );
+              participantCount = Array.isArray(participantsResult?.data) 
+                ? participantsResult.data.length 
+                : 0;
+              console.log(`[Wasender] Group ${groupJid} has ${participantCount} participants`);
+            } catch (participantError) {
+              console.error(`[Wasender] Failed to fetch participants for ${groupJid}:`, participantError);
+              participantCount = 0;
+            }
+          }
+          
+          // Fetch group photo
+          let photoUrl = group.profilePicture || group.pictureUrl || group.imgUrl || null;
+          if (!photoUrl) {
+            try {
+              photoUrl = await fetchGroupPicture(groupJid, sessionId);
+            } catch (photoError) {
+              console.error(`[Wasender] Failed to fetch photo for ${groupJid}:`, photoError);
+            }
+          }
+          
+          // Upsert to database
+          const { error: upsertError } = await supabase
+            .from("whatsapp_groups")
+            .upsert({
+              group_jid: groupJid,
+              name: groupName,
+              photo_url: photoUrl,
+              participant_count: participantCount,
+              session_id: sessionId,
+              updated_at: new Date().toISOString(),
+            }, { onConflict: "group_jid,session_id" });
+          
+          if (upsertError) {
+            console.error(`[Wasender] Error upserting group ${groupJid}:`, upsertError);
+          }
+          
+          processedGroups.push({
+            id: groupJid,
+            groupJid,
+            name: groupName,
+            participantCount,
+            photoUrl,
+          });
+        }
+        
+        console.log(`[Wasender] Processed ${processedGroups.length} groups`);
+        
+        return new Response(JSON.stringify({ 
+          success: true, 
+          groups: processedGroups,
+        }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      } catch (fetchError: any) {
+        console.error(`[Wasender] Error fetching groups:`, fetchError);
+        return new Response(JSON.stringify({ 
+          error: fetchError.message,
+          groups: [],
+        }), {
+          status: 500,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+    }
+
     return new Response(JSON.stringify({ error: "Unknown action" }), {
       status: 400,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
