@@ -309,6 +309,9 @@ export const MessageArea = memo(function MessageArea({
                     {/* Timestamp and status */}
                     {msg.mediaType !== "audio" && (
                       <div className="flex items-center justify-end gap-1 mt-1">
+                        {msg.isEdited && msg.status !== "DELETED" && (
+                          <span className="text-[10px] text-muted-foreground/70 italic">Editada</span>
+                        )}
                         <span className="text-[10px] text-muted-foreground">{msg.time}</span>
                         {msg.sent && msg.status !== "DELETED" && (
                           isViewedStatus(msg.status) 

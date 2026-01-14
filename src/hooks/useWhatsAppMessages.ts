@@ -16,6 +16,7 @@ export interface Message {
   quotedMessageId?: string | null;
   quotedText?: string | null;
   quotedFromMe?: boolean | null;
+  isEdited?: boolean | null;
 }
 
 type WhatsAppMessageStatus = string | null | undefined;
@@ -138,6 +139,7 @@ export function useWhatsAppMessages({ selectedChat, onMarkAsRead }: UseWhatsAppM
         quotedMessageId: msg.quoted_message_id,
         quotedText: msg.quoted_text,
         quotedFromMe: msg.quoted_from_me,
+        isEdited: msg.is_edited,
       }));
 
       setMessages(formattedMessages);

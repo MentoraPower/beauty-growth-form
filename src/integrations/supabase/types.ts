@@ -1951,6 +1951,7 @@ export type Database = {
           created_at: string
           from_me: boolean | null
           id: string
+          is_edited: boolean | null
           media_type: string | null
           media_url: string | null
           message_id: string | null
@@ -1969,6 +1970,7 @@ export type Database = {
           created_at?: string
           from_me?: boolean | null
           id?: string
+          is_edited?: boolean | null
           media_type?: string | null
           media_url?: string | null
           message_id?: string | null
@@ -1987,6 +1989,7 @@ export type Database = {
           created_at?: string
           from_me?: boolean | null
           id?: string
+          is_edited?: boolean | null
           media_type?: string | null
           media_url?: string | null
           message_id?: string | null
