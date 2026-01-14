@@ -253,33 +253,7 @@ export const ChatInputArea = memo(function ChatInputArea({
             />
 
             {/* Bottom Toolbar with Icons */}
-            <div className="flex items-center gap-1 relative">
-              {/* Emoji */}
-              <div className="relative">
-                <button 
-                  ref={emojiButtonRef}
-                  onClick={() => setShowEmojiPicker(!showEmojiPicker)}
-                  className={cn(
-                    "p-2 hover:bg-muted/50 rounded-full transition-all duration-200",
-                    showEmojiPicker && "bg-emerald-500/10"
-                  )}
-                  title="Emojis"
-                >
-                  <Smile className={cn("w-5 h-5 transition-colors", showEmojiPicker ? "text-emerald-500" : "text-muted-foreground")} />
-                </button>
-                
-                {showEmojiPicker && (
-                  <div ref={emojiPickerRef} className="absolute bottom-full left-0 mb-2 z-50">
-                    <EmojiPicker 
-                      onSelect={(emoji) => {
-                        onMessageChange(message + emoji);
-                        setShowEmojiPicker(false);
-                      }}
-                    />
-                  </div>
-                )}
-              </div>
-
+            <div className="flex items-center justify-end gap-1 relative">
               <div className="flex items-center gap-1">
                 {/* Images */}
                 <button 
@@ -331,15 +305,41 @@ export const ChatInputArea = memo(function ChatInputArea({
                       className="absolute bottom-full right-0 mb-2 z-50"
                     >
                       <QuickMessages 
-                        onSelect={(text) => {
-                          onMessageChange(text);
+                        onSelect={(text, audioData, audioDuration) => {
+                          if (audioData) {
+                            onSendQuickAudio(audioData, audioDuration || 0);
+                          } else {
+                            onMessageChange(text);
+                          }
                           setShowQuickMessages(false);
-                        }}
-                        onSelectAudio={async (audioBase64) => {
-                          setShowQuickMessages(false);
-                          await onSendAudioFromQuickMessage(audioBase64);
                         }}
                         sessionId={sessionId}
+                      />
+                    </div>
+                  )}
+                </div>
+
+                {/* Emoji */}
+                <div className="relative">
+                  <button 
+                    ref={emojiButtonRef}
+                    onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+                    className={cn(
+                      "p-2 hover:bg-muted/50 rounded-full transition-all duration-200",
+                      showEmojiPicker && "bg-emerald-500/10"
+                    )}
+                    title="Emojis"
+                  >
+                    <Smile className={cn("w-5 h-5 transition-colors", showEmojiPicker ? "text-emerald-500" : "text-muted-foreground")} />
+                  </button>
+                  
+                  {showEmojiPicker && (
+                    <div ref={emojiPickerRef} className="absolute bottom-full right-0 mb-2 z-50">
+                      <EmojiPicker 
+                        onSelect={(emoji) => {
+                          onMessageChange(message + emoji);
+                          setShowEmojiPicker(false);
+                        }}
                       />
                     </div>
                   )}
@@ -349,6 +349,10 @@ export const ChatInputArea = memo(function ChatInputArea({
           </div>
         )}
       </div>
-    </>
+    </div>
   );
 });
+
+ChatInputArea.displayName = "ChatInputArea";
+
+export { ChatInputArea };
