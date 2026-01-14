@@ -16,6 +16,8 @@ interface MessageAreaProps {
   onScrollToQuoted: (quotedMessageId: string) => void;
   onImageClick: (index: number) => void;
   scrollToBottom: (behavior?: ScrollBehavior) => void;
+  isGroupChat?: boolean;
+  participantPhotos?: Record<string, string>;
 }
 
 // Loading skeleton
@@ -82,6 +84,8 @@ export const MessageArea = memo(function MessageArea({
   onScrollToQuoted,
   onImageClick,
   scrollToBottom,
+  isGroupChat,
+  participantPhotos,
 }: MessageAreaProps) {
   // Render messages with date separators
   const renderMessages = () => {
@@ -109,6 +113,8 @@ export const MessageArea = memo(function MessageArea({
             onScrollToQuoted={onScrollToQuoted}
             onImageClick={onImageClick}
             scrollToBottom={scrollToBottom}
+            isGroupChat={isGroupChat}
+            participantPhotos={participantPhotos}
           />
         </div>
       );
