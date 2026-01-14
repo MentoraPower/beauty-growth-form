@@ -1,4 +1,5 @@
 import { useState, useCallback, useRef, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 
 export interface Chat {
@@ -72,11 +73,8 @@ interface UseWhatsAppChatsOptions {
   whatsappAccounts: Array<{ id: string; api_key?: string }>;
 }
 
-// Storage key for persisting selected chat
-const getSelectedChatStorageKey = (accountId: string | null) => 
-  accountId ? `whatsapp_selected_chat_${accountId}` : null;
-
 export function useWhatsAppChats({ selectedAccountId, whatsappAccounts }: UseWhatsAppChatsOptions) {
+  const [searchParams, setSearchParams] = useSearchParams();
   const [chats, setChats] = useState<Chat[]>([]);
   const [selectedChat, setSelectedChatInternal] = useState<Chat | null>(null);
   const [isInitialLoad, setIsInitialLoad] = useState(true);
@@ -87,24 +85,25 @@ export function useWhatsAppChats({ selectedAccountId, whatsappAccounts }: UseWha
   const chatListIdleTimeoutRef = useRef<number | null>(null);
   const selectedChatRestoredRef = useRef(false);
 
-  // Wrapper to persist selected chat
+  // Wrapper to persist selected chat in URL
   const setSelectedChat = useCallback((chatOrUpdater: Chat | null | ((prev: Chat | null) => Chat | null)) => {
     setSelectedChatInternal(prev => {
       const newChat = typeof chatOrUpdater === 'function' ? chatOrUpdater(prev) : chatOrUpdater;
       
-      // Persist to localStorage
-      const storageKey = getSelectedChatStorageKey(selectedAccountId);
-      if (storageKey) {
+      // Persist to URL search params
+      setSearchParams(currentParams => {
+        const newParams = new URLSearchParams(currentParams);
         if (newChat) {
-          localStorage.setItem(storageKey, JSON.stringify({ id: newChat.id, phone: newChat.phone }));
+          newParams.set('chat', newChat.id);
         } else {
-          localStorage.removeItem(storageKey);
+          newParams.delete('chat');
         }
-      }
+        return newParams;
+      }, { replace: true });
       
       return newChat;
     });
-  }, [selectedAccountId]);
+  }, [setSearchParams]);
 
   const formatChatData = useCallback((chat: any): Chat | null => {
     const phone = chat.phone || "";
@@ -384,32 +383,24 @@ export function useWhatsAppChats({ selectedAccountId, whatsappAccounts }: UseWha
     };
   }, [updateChatInState, removeChatFromState, selectedAccountId, whatsappAccounts]);
 
-  // Restore selected chat from localStorage after chats load
+  // Restore selected chat from URL after chats load
   useEffect(() => {
     if (isInitialLoad || selectedChatRestoredRef.current || chats.length === 0) return;
     
-    const storageKey = getSelectedChatStorageKey(selectedAccountId);
-    if (!storageKey) return;
-    
-    const savedData = localStorage.getItem(storageKey);
-    if (!savedData) {
+    const chatIdFromUrl = searchParams.get('chat');
+    if (!chatIdFromUrl) {
       selectedChatRestoredRef.current = true;
       return;
     }
     
-    try {
-      const { id, phone } = JSON.parse(savedData);
-      const foundChat = chats.find(c => c.id === id || c.phone === phone);
-      
-      if (foundChat) {
-        setSelectedChatInternal(foundChat);
-      }
-    } catch (e) {
-      console.error("Error restoring selected chat:", e);
+    const foundChat = chats.find(c => c.id === chatIdFromUrl);
+    
+    if (foundChat) {
+      setSelectedChatInternal(foundChat);
     }
     
     selectedChatRestoredRef.current = true;
-  }, [chats, isInitialLoad, selectedAccountId]);
+  }, [chats, isInitialLoad, searchParams]);
 
   // Reset restored flag when account changes
   useEffect(() => {
