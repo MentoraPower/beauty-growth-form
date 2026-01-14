@@ -147,45 +147,47 @@ export default function Atendimento() {
   return (
     <div className="h-full p-3">
       <div className="h-full flex flex-col overflow-hidden bg-white dark:bg-zinc-950 rounded-xl border border-black/[0.08] dark:border-white/[0.08]">
-      {/* Header with Tabs and Account Selector aligned */}
+      {/* Header with Tabs and Account Selector */}
       <div className="flex-shrink-0 border-b border-black/[0.08] dark:border-white/[0.08] bg-white dark:bg-zinc-950">
-        <div className="flex items-center w-[320px]">
-          {/* Tabs */}
-          <button
-            onClick={() => setSidebarTab("conversas")}
-            className={cn(
-              "relative flex-1 flex items-center justify-center gap-2 py-2.5 text-sm font-medium transition-all",
-              sidebarTab === "conversas" 
-                ? "text-foreground" 
-                : "text-muted-foreground hover:text-foreground hover:bg-muted/30"
-            )}
-          >
-            <span>Conversas</span>
-            {sidebarTab === "conversas" && (
-              <div className="absolute bottom-0 left-4 right-4 h-0.5 bg-emerald-500 rounded-full" />
-            )}
-          </button>
-          <button
-            onClick={() => setSidebarTab("grupos")}
-            className={cn(
-              "relative flex-1 flex items-center justify-center gap-2 py-2.5 text-sm font-medium transition-all",
-              sidebarTab === "grupos" 
-                ? "text-foreground" 
-                : "text-muted-foreground hover:text-foreground hover:bg-muted/30"
-            )}
-          >
-            <span>Grupos</span>
-            {sidebarTab === "grupos" && (
-              <div className="absolute bottom-0 left-4 right-4 h-0.5 bg-emerald-500 rounded-full" />
-            )}
-          </button>
+        <div className="flex items-center justify-between">
+          {/* Tabs - Left side */}
+          <div className="flex items-center w-[320px]">
+            <button
+              onClick={() => setSidebarTab("conversas")}
+              className={cn(
+                "relative flex-1 flex items-center justify-center gap-2 py-2.5 text-sm font-medium transition-all",
+                sidebarTab === "conversas" 
+                  ? "text-foreground" 
+                  : "text-muted-foreground hover:text-foreground hover:bg-muted/30"
+              )}
+            >
+              <span>Conversas</span>
+              {sidebarTab === "conversas" && (
+                <div className="absolute bottom-0 left-4 right-4 h-0.5 bg-emerald-500 rounded-full" />
+              )}
+            </button>
+            <button
+              onClick={() => setSidebarTab("grupos")}
+              className={cn(
+                "relative flex-1 flex items-center justify-center gap-2 py-2.5 text-sm font-medium transition-all",
+                sidebarTab === "grupos" 
+                  ? "text-foreground" 
+                  : "text-muted-foreground hover:text-foreground hover:bg-muted/30"
+              )}
+            >
+              <span>Grupos</span>
+              {sidebarTab === "grupos" && (
+                <div className="absolute bottom-0 left-4 right-4 h-0.5 bg-emerald-500 rounded-full" />
+              )}
+            </button>
+          </div>
 
-          {/* WhatsApp Account Selector */}
+          {/* WhatsApp Account Selector - Right side */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <button className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground px-2 py-1.5 rounded transition-all mr-2">
+              <button className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground px-3 py-1.5 rounded transition-all mr-3">
                 <Smartphone className="w-3.5 h-3.5 text-emerald-500" />
-                <span className="truncate max-w-[80px]">
+                <span className="truncate max-w-[120px]">
                   {selectedAccountId 
                     ? whatsappAccounts.find(a => a.id === selectedAccountId)?.name || "Conta"
                     : "Conta"}
