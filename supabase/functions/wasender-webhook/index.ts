@@ -1567,6 +1567,174 @@ async function handler(req: Request): Promise<Response> {
     }
     const messageData = payload.data?.messages || payload.data;
     
+    // ========== Handle messageStubType for system messages (join/leave) in messages.upsert/messages.received ==========
+    const messageStubType = messageData?.messageStubType;
+    if (messageStubType !== undefined && messageStubType !== null) {
+      const stubRemoteJid = messageData?.key?.remoteJid || messageData?.remoteJid || "";
+      const isGroupStub = stubRemoteJid.includes("@g.us");
+      
+      console.log(`[Wasender Webhook] 📨 Detected messageStubType: ${messageStubType} for ${stubRemoteJid}`);
+      
+      // messageStubType values for group events:
+      // 20 = participant added/joined (GROUP_PARTICIPANT_ADD)
+      // 21 = participant removed/left (GROUP_PARTICIPANT_REMOVE)
+      // 27 = participant joined via invite link (GROUP_PARTICIPANT_INVITE)
+      // 28 = participant joined via link (GROUP_PARTICIPANT_LINK_JOIN)
+      // 32 = group created
+      if (isGroupStub && (messageStubType === 20 || messageStubType === 21 || messageStubType === 27 || messageStubType === 28)) {
+        const action = (messageStubType === 21) ? "remove" : "add";
+        const groupJid = stubRemoteJid;
+        const stubParams = messageData?.messageStubParameters || [];
+        
+        console.log(`[Wasender Webhook] 👥 Group system event: action=${action}, groupJid=${groupJid}, stubParams=${JSON.stringify(stubParams)}`);
+        
+        // Helper to extract phone from various formats
+        const extractPhoneFromParam = (param: any): { phone: string; name: string | null } => {
+          if (!param) return { phone: "", name: null };
+          
+          if (typeof param === "string") {
+            try {
+              const parsed = JSON.parse(param);
+              if (parsed.phoneNumber) {
+                return { 
+                  phone: parsed.phoneNumber.replace("@s.whatsapp.net", "").replace("@c.us", "").replace(/\D/g, ""),
+                  name: parsed.notify || parsed.name || null
+                };
+              }
+              if (parsed.pn) {
+                return { phone: parsed.pn.replace(/\D/g, ""), name: parsed.notify || parsed.name || null };
+              }
+            } catch {
+              if (param.includes("@")) {
+                return { 
+                  phone: param.replace("@s.whatsapp.net", "").replace("@c.us", "").replace("@lid", "").replace(/\D/g, ""),
+                  name: null
+                };
+              }
+            }
+          }
+          
+          if (typeof param === "object" && param !== null) {
+            const phoneNumber = param.phoneNumber || param.pn || param.phone || "";
+            if (phoneNumber) {
+              return { 
+                phone: phoneNumber.replace("@s.whatsapp.net", "").replace("@c.us", "").replace(/\D/g, ""),
+                name: param.notify || param.name || null
+              };
+            }
+          }
+          
+          return { phone: "", name: null };
+        };
+        
+        // Also try to get participant from key.participantPn
+        const participantFromKey = messageData?.key?.participantPn || messageData?.key?.participant || "";
+        const processedPhones = new Set<string>();
+        const processedNames: string[] = [];
+        
+        // Add participant from key
+        if (participantFromKey) {
+          const phone = participantFromKey.replace("@s.whatsapp.net", "").replace("@c.us", "").replace(/\D/g, "");
+          if (phone && phone.length >= 8 && phone.length <= 15 && !processedPhones.has(phone)) {
+            processedPhones.add(phone);
+            processedNames.push(`+${phone}`);
+            await trackLeadGroupAction(supabase, phone, groupJid, action, sessionId);
+          }
+        }
+        
+        // Process stub params
+        for (const param of stubParams) {
+          const { phone, name } = extractPhoneFromParam(param);
+          if (phone && phone.length >= 8 && phone.length <= 15 && !processedPhones.has(phone)) {
+            processedPhones.add(phone);
+            processedNames.push(name || `+${phone}`);
+            await trackLeadGroupAction(supabase, phone, groupJid, action, sessionId);
+          }
+        }
+        
+        // Create system message in chat
+        if (processedNames.length > 0 && groupJid && sessionId) {
+          try {
+            // Find or create chat for this group
+            const { data: existingChat } = await supabase
+              .from("whatsapp_chats")
+              .select("id")
+              .eq("phone", groupJid)
+              .eq("session_id", sessionId)
+              .maybeSingle();
+            
+            let chatId: string | null = existingChat?.id ?? null;
+            
+            if (!chatId) {
+              const { data: groupRow } = await supabase
+                .from("whatsapp_groups")
+                .select("name, photo_url")
+                .eq("group_jid", groupJid)
+                .eq("session_id", sessionId)
+                .maybeSingle();
+              
+              const { data: createdChat, error: createError } = await supabase
+                .from("whatsapp_chats")
+                .upsert({
+                  phone: groupJid,
+                  name: groupRow?.name || groupJid,
+                  photo_url: groupRow?.photo_url || null,
+                  session_id: sessionId,
+                  last_message: null,
+                  last_message_time: null,
+                  unread_count: 0,
+                }, { onConflict: "phone,session_id" })
+                .select("id")
+                .single();
+              
+              if (!createError) {
+                chatId = createdChat?.id ?? null;
+              }
+            }
+            
+            if (chatId) {
+              const participantText = processedNames.join(", ");
+              const systemText = action === "add"
+                ? `${participantText} entrou no grupo`
+                : `${participantText} saiu do grupo`;
+              
+              const systemMessageId = messageData?.key?.id || `system-stub-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+              
+              const { error: insertError } = await supabase
+                .from("whatsapp_messages")
+                .insert({
+                  chat_id: chatId,
+                  phone: groupJid,
+                  session_id: sessionId,
+                  message_id: systemMessageId,
+                  text: systemText,
+                  from_me: false,
+                  media_type: "system",
+                  status: "RECEIVED",
+                  created_at: new Date().toISOString(),
+                });
+              
+              if (insertError) {
+                const isDuplicate = (insertError as any)?.code === "23505" || String((insertError as any)?.message || "").toLowerCase().includes("duplicate");
+                if (!isDuplicate) {
+                  console.error(`[Wasender Webhook] Error inserting system message:`, insertError);
+                }
+              } else {
+                console.log(`[Wasender Webhook] ✅ Created system message: "${systemText}"`);
+              }
+            }
+          } catch (e) {
+            console.error(`[Wasender Webhook] Error creating system message for stub:`, e);
+          }
+        }
+        
+        // Return early - this was a system event, not a regular message
+        return new Response(JSON.stringify({ ok: true }), { 
+          headers: { ...corsHeaders, "Content-Type": "application/json" } 
+        });
+      }
+    }
+    
     if (!messageData) {
       console.log("[Wasender Webhook] No message data found");
       return new Response(JSON.stringify({ ok: true }), { 
