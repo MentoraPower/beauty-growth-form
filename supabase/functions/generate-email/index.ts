@@ -99,10 +99,10 @@ serve(async (req) => {
   try {
     const body = await req.json();
     const { hasCopy, copyText, objective, tone, companyName, productService, additionalInfo } = body;
-    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
+    const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY');
     
-    if (!LOVABLE_API_KEY) {
-      throw new Error("LOVABLE_API_KEY is not configured");
+    if (!OPENAI_API_KEY) {
+      throw new Error("OPENAI_API_KEY is not configured");
     }
 
     let systemPrompt: string;
@@ -136,14 +136,14 @@ Lembre-se: Mantenha o texto exatamente como está, apenas aplique o design HTML.
 Lembre-se: Use {{name}} para personalização do nome. Retorne APENAS o código HTML.`;
     }
 
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    const response = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
       headers: {
-        "Authorization": `Bearer ${LOVABLE_API_KEY}`,
+        "Authorization": `Bearer ${OPENAI_API_KEY}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
+        model: "gpt-4o-mini",
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: userPrompt }
@@ -154,7 +154,7 @@ Lembre-se: Use {{name}} para personalização do nome. Retorne APENAS o código 
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error("AI Gateway error:", response.status, errorText);
+      console.error("OpenAI error:", response.status, errorText);
       
       if (response.status === 429) {
         return new Response(JSON.stringify({ error: "Limite de requisições excedido. Tente novamente em alguns segundos." }), {
@@ -163,14 +163,7 @@ Lembre-se: Use {{name}} para personalização do nome. Retorne APENAS o código 
         });
       }
       
-      if (response.status === 402) {
-        return new Response(JSON.stringify({ error: "Créditos insuficientes. Adicione créditos no workspace." }), {
-          status: 402,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-      
-      throw new Error(`AI Gateway error: ${response.status}`);
+      throw new Error(`OpenAI error: ${response.status}`);
     }
 
     // Return streaming response
