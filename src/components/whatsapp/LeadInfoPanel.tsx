@@ -277,7 +277,7 @@ const LeadInfoPanel = ({ phone, photoUrl, contactName, onClose, onNameUpdate }: 
         {icon}
         {label}
       </label>
-      <div className="bg-muted/30 rounded-lg px-3 py-2.5 text-sm text-foreground border border-border/50">
+      <div className="bg-muted/30 rounded-lg px-3 py-2.5 text-sm text-foreground border border-black/[0.08] dark:border-white/[0.08]">
         {value || <span className="text-muted-foreground/60">Clique aqui para adicionar</span>}
       </div>
     </div>
@@ -292,7 +292,7 @@ const LeadInfoPanel = ({ phone, photoUrl, contactName, onClose, onNameUpdate }: 
       <div className="space-y-1">
         <label className="text-xs text-muted-foreground">Telefone</label>
         <div className="flex items-center gap-2">
-          <div className="flex items-center gap-1.5 bg-muted/30 rounded-lg px-2.5 py-2.5 border border-border/50">
+          <div className="flex items-center gap-1.5 bg-muted/30 rounded-lg px-2.5 py-2.5 border border-black/[0.08] dark:border-white/[0.08]">
             <img 
               src={flagUrl} 
               alt={country.name}
@@ -300,7 +300,7 @@ const LeadInfoPanel = ({ phone, photoUrl, contactName, onClose, onNameUpdate }: 
             />
             <ChevronDown className="w-3 h-3 text-muted-foreground" />
           </div>
-          <div className="flex-1 bg-muted/30 rounded-lg px-3 py-2.5 text-sm text-foreground border border-border/50">
+          <div className="flex-1 bg-muted/30 rounded-lg px-3 py-2.5 text-sm text-foreground border border-black/[0.08] dark:border-white/[0.08]">
             {phoneNumber || <span className="text-muted-foreground/60">Clique aqui para adicionar</span>}
           </div>
         </div>
