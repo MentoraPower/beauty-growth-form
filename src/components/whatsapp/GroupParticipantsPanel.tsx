@@ -368,7 +368,7 @@ export const GroupParticipantsPanel = ({
   }, [participants.length]);
 
   return (
-    <div className="w-[340px] border-l border-border bg-background flex flex-col overflow-hidden">
+    <div className="w-[340px] border-l border-border bg-white dark:bg-zinc-900 flex flex-col overflow-hidden">
       {/* Header */}
       <div className="bg-muted/50 dark:bg-muted/30 px-4 py-4">
         <div className="flex items-center gap-3">
