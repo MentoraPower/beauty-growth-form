@@ -51,7 +51,10 @@ export const ChatSidebar = memo(function ChatSidebar({
   onBlockContact,
   onUnblockContact,
 }: ChatSidebarProps) {
-  const filteredChats = chats.filter((chat) =>
+  // Filter out groups from conversas tab - groups should only appear in grupos tab
+  const nonGroupChats = chats.filter((chat) => !chat.phone?.includes("@g.us") && !chat.isGroup);
+  
+  const filteredChats = nonGroupChats.filter((chat) =>
     chat.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     chat.phone.includes(searchQuery)
   );
@@ -83,13 +86,13 @@ export const ChatSidebar = memo(function ChatSidebar({
           )}
         >
           <span>Conversas</span>
-          {chats.length > 0 && (
+          {nonGroupChats.length > 0 && (
             <span className={cn(
               "text-[10px] px-1.5 py-0.5 rounded-full",
               sidebarTab === "conversas" 
                 ? "bg-emerald-500/20 text-emerald-600 dark:text-emerald-400" 
                 : "bg-muted text-muted-foreground"
-            )}>{chats.length}</span>
+            )}>{nonGroupChats.length}</span>
           )}
           {sidebarTab === "conversas" && (
             <div className="absolute bottom-0 left-4 right-4 h-0.5 bg-emerald-500 rounded-full" />
