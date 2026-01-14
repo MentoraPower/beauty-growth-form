@@ -61,19 +61,6 @@ export const ChatSidebar = memo(function ChatSidebar({
 
   return (
     <div className="w-[320px] flex flex-col border-r border-border/30 bg-white dark:bg-zinc-900">
-      {/* Search */}
-      <div className="px-3 py-2.5 border-b border-border/30">
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-          <Input
-            placeholder={sidebarTab === "conversas" ? "Pesquisar conversas..." : "Pesquisar grupos..."}
-            value={searchQuery}
-            onChange={(e) => onSearchChange(e.target.value)}
-            className="pl-9 bg-muted/40 border-0 h-9 text-sm placeholder:text-muted-foreground/60 rounded-lg focus-visible:ring-1 focus-visible:ring-emerald-500/50"
-          />
-        </div>
-      </div>
-
       {/* Tabs */}
       <div className="flex border-b border-border/30 bg-white dark:bg-zinc-900">
         <button
@@ -109,6 +96,19 @@ export const ChatSidebar = memo(function ChatSidebar({
             <div className="absolute bottom-0 left-4 right-4 h-0.5 bg-emerald-500 rounded-full" />
           )}
         </button>
+      </div>
+
+      {/* Search */}
+      <div className="px-3 py-2.5 border-b border-border/30">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <Input
+            placeholder={sidebarTab === "conversas" ? "Pesquisar conversas..." : "Pesquisar grupos..."}
+            value={searchQuery}
+            onChange={(e) => onSearchChange(e.target.value)}
+            className="pl-9 bg-muted/40 border-0 h-9 text-sm placeholder:text-muted-foreground/60 rounded-lg focus-visible:ring-1 focus-visible:ring-emerald-500/50"
+          />
+        </div>
       </div>
 
       {/* Conversas Tab Content */}
