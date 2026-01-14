@@ -87,7 +87,7 @@ const GroupItem = memo(function GroupItem({
           <span className="w-2.5 h-2.5 rounded-full bg-amber-500 animate-pulse" title="Novo evento no grupo" />
         )}
         {/* Unread messages badge */}
-        {group.unreadCount && group.unreadCount > 0 && (
+        {typeof group.unreadCount === 'number' && group.unreadCount > 0 && (
           <div className="bg-emerald-500 text-white text-[11px] font-semibold rounded-full min-w-[20px] h-[20px] flex items-center justify-center px-1.5">
             {group.unreadCount > 99 ? '99+' : group.unreadCount}
           </div>
