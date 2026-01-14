@@ -36,7 +36,7 @@ const GroupItem = memo(function GroupItem({
       onClick={() => onSelect?.(group)}
       className="flex items-center gap-3 px-3 py-2.5 hover:bg-muted/50 transition-colors cursor-pointer rounded-lg"
     >
-      {/* Avatar with participant count badge */}
+      {/* Avatar */}
       <div className="relative flex-shrink-0">
         {group.photoUrl ? (
           <img
@@ -55,13 +55,6 @@ const GroupItem = memo(function GroupItem({
         )}>
           {getInitials(group.name)}
         </div>
-        
-        {/* Participant count badge */}
-        {group.participantCount > 0 && (
-          <div className="absolute -top-1 -right-1 bg-emerald-500 text-white text-[10px] font-semibold rounded-full min-w-[20px] h-[20px] flex items-center justify-center px-1 shadow-sm border border-background">
-            {group.participantCount > 99 ? '99+' : group.participantCount}
-          </div>
-        )}
       </div>
 
       {/* Content */}
@@ -70,27 +63,26 @@ const GroupItem = memo(function GroupItem({
           <span className="font-medium text-sm text-foreground truncate">
             {group.name}
           </span>
-          {/* New event indicator (join/leave) */}
-          {group.hasNewEvent && (
-            <span className="flex-shrink-0 w-2 h-2 rounded-full bg-amber-500 animate-pulse" title="Novo evento no grupo" />
-          )}
         </div>
-        <div className="flex items-center gap-1 text-xs text-muted-foreground mt-0.5">
+        <div className="flex items-center gap-1.5 text-xs text-muted-foreground mt-0.5">
           <Users className="w-3 h-3" />
-          <span>
-            {group.participantCount >= 0
-              ? `${group.participantCount} participantes`
-              : "— participantes"}
-          </span>
+          <span>{group.participantCount >= 0 ? `${group.participantCount} participantes` : "—"}</span>
         </div>
       </div>
 
-      {/* Unread messages badge */}
-      {group.unreadCount && group.unreadCount > 0 && (
-        <div className="flex-shrink-0 bg-emerald-500 text-white text-[11px] font-semibold rounded-full min-w-[20px] h-[20px] flex items-center justify-center px-1.5">
-          {group.unreadCount > 99 ? '99+' : group.unreadCount}
-        </div>
-      )}
+      {/* Notification badges (right side) */}
+      <div className="flex items-center gap-1.5 flex-shrink-0">
+        {/* New event indicator (join/leave) */}
+        {group.hasNewEvent && (
+          <span className="w-2.5 h-2.5 rounded-full bg-amber-500 animate-pulse" title="Novo evento no grupo" />
+        )}
+        {/* Unread messages badge */}
+        {group.unreadCount && group.unreadCount > 0 && (
+          <div className="bg-emerald-500 text-white text-[11px] font-semibold rounded-full min-w-[20px] h-[20px] flex items-center justify-center px-1.5">
+            {group.unreadCount > 99 ? '99+' : group.unreadCount}
+          </div>
+        )}
+      </div>
     </div>
   );
 });
