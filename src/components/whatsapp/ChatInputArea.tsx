@@ -253,7 +253,8 @@ export const ChatInputArea = memo(function ChatInputArea({
             />
 
             {/* Bottom Toolbar with Icons */}
-            <div className="flex items-center justify-end gap-1 relative">
+            <div className="flex items-center justify-between gap-1 relative">
+              {/* Left side - Attachments */}
               <div className="flex items-center gap-1">
                 {/* Images */}
                 <button 
@@ -281,7 +282,10 @@ export const ChatInputArea = memo(function ChatInputArea({
                 >
                   <File className="w-5 h-5 text-muted-foreground" />
                 </button>
+              </div>
 
+              {/* Right side - Quick Messages & Emoji */}
+              <div className="flex items-center gap-1">
                 {/* Quick Messages */}
                 <div className="relative">
                   <button 
