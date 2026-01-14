@@ -258,8 +258,60 @@ async function handler(req: Request): Promise<Response> {
 
     const event = payload.event;
     // WaSender sends sessionId in webhook payload - this is the session's API key
-    const sessionId = payload.sessionId || payload.session_id || null;
-    console.log(`[Wasender Webhook] Session ID: ${sessionId || "N/A"}`);
+    const sessionId = payload.sessionId || payload.session_id || payload.apiKey || null;
+    console.log(`[Wasender Webhook] Session ID: ${sessionId ? sessionId.substring(0, 20) + "..." : "N/A"}`);
+    
+    // ========== EARLY FILTER: Only process events we care about ==========
+    const SUPPORTED_EVENTS = [
+      // Messages
+      "messages.received",
+      "messages.upsert",
+      "messages.update",
+      "messages.delete",
+      "messages.reaction",
+      "messages-group.received",
+      "messages-personal.received",
+      "message-receipt.update",
+      // Chats
+      "chats.upsert",
+      "chats.update",
+      // Groups
+      "groups.upsert",
+      "groups.update",
+      "group-participants.update",
+      // Contacts (for group photo updates)
+      "contacts.update",
+      // Presence
+      "presence.update",
+    ];
+    
+    // Events we explicitly IGNORE (don't need to save or process)
+    const IGNORED_EVENTS = [
+      "call",                        // Chamadas - não processamos
+      "poll.results",                // Enquetes - não precisamos
+      "messages-newsletter.received", // Newsletter - não precisamos
+      "qrcode.updated",              // QR code - não precisamos (gerenciado pela API)
+      "session.status",              // Status da sessão - não precisamos
+      "chats.delete",                // Delete de chats - opcional
+      "contacts.upsert",             // Contatos individuais - não rastreamos
+      "message.sent",                // Confirmação de envio - já temos via messages.update
+    ];
+    
+    if (IGNORED_EVENTS.includes(event)) {
+      console.log(`[Wasender Webhook] ⏭️ Ignoring event (not needed): ${event}`);
+      return new Response(JSON.stringify({ ok: true, ignored: true }), { 
+        headers: { ...corsHeaders, "Content-Type": "application/json" } 
+      });
+    }
+    
+    if (!SUPPORTED_EVENTS.includes(event)) {
+      console.log(`[Wasender Webhook] ⚠️ Unknown event (not in supported list): ${event}`);
+      return new Response(JSON.stringify({ ok: true, unknown: true }), { 
+        headers: { ...corsHeaders, "Content-Type": "application/json" } 
+      });
+    }
+    
+    console.log(`[Wasender Webhook] ✅ Processing supported event: ${event}`);
     
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
     
