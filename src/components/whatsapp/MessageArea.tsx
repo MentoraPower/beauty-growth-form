@@ -40,7 +40,7 @@ export const MessageArea = memo(function MessageArea({
     if (msg.status === "DELETED") {
       return (
         <p className="text-sm text-muted-foreground italic">
-          mensagem apagada
+          {msg.sent ? "mensagem apagada" : "Mensagem apagada pelo cliente"}
         </p>
       );
     }
