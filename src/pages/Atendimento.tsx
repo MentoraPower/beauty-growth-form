@@ -145,7 +145,8 @@ export default function Atendimento() {
   };
 
   return (
-    <div className="h-full flex flex-col overflow-hidden bg-white dark:bg-zinc-950 rounded-xl border border-black/[0.08] dark:border-white/[0.08]">
+    <div className="h-full p-3">
+      <div className="h-full flex flex-col overflow-hidden bg-white dark:bg-zinc-950 rounded-xl border border-black/[0.08] dark:border-white/[0.08]">
       {/* Compact Header */}
       <div className="flex-shrink-0 border-b border-black/[0.08] dark:border-white/[0.08] bg-white dark:bg-zinc-950">
         <div className="h-11 px-4 flex items-center justify-between">
@@ -275,6 +276,7 @@ export default function Atendimento() {
           sidebarTab={sidebarTab}
           setSidebarTab={setSidebarTab}
         />
+      </div>
       </div>
     </div>
   );
