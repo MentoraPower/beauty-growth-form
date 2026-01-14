@@ -1628,8 +1628,28 @@ async function handler(req: Request): Promise<Response> {
 
     let displayName = pushName || formatPhoneDisplay(phone);
 
+    // Extract sender info for group messages (who sent this message)
+    let senderJid: string | null = null;
+    let senderPhone: string | null = null;
+    let senderName: string | null = null;
+
     // For groups, use the group name (not the sender name)
     if (isGroupMessage) {
+      // Extract sender info from key.participant (the person who sent the message in the group)
+      const participant = key.participant || key.participantPn || "";
+      if (participant && !fromMe) {
+        senderJid = participant;
+        // Extract phone from participant JID (e.g., "5511999999999@s.whatsapp.net" -> "5511999999999")
+        senderPhone = participant
+          .replace("@s.whatsapp.net", "")
+          .replace("@c.us", "")
+          .replace("@lid", "")
+          .replace(/\D/g, "");
+        // Use pushName as sender name
+        senderName = pushName || null;
+        console.log(`[Wasender Webhook] Group sender: jid=${senderJid}, phone=${senderPhone}, name=${senderName}`);
+      }
+
       try {
         const groupQuery = supabase
           .from("whatsapp_groups")
@@ -1726,6 +1746,10 @@ async function handler(req: Request): Promise<Response> {
       quoted_message_id: quotedMessageId,
       quoted_text: quotedText,
       quoted_from_me: quotedFromMe,
+      // Add sender info for group messages
+      sender_jid: senderJid,
+      sender_phone: senderPhone,
+      sender_name: senderName,
     };
     
     // Only set session_id if we have one

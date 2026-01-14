@@ -17,6 +17,10 @@ export interface Message {
   quotedText?: string | null;
   quotedFromMe?: boolean | null;
   isEdited?: boolean | null;
+  // Group message sender info
+  senderJid?: string | null;
+  senderPhone?: string | null;
+  senderName?: string | null;
 }
 
 type WhatsAppMessageStatus = string | null | undefined;
@@ -140,6 +144,10 @@ export function useWhatsAppMessages({ selectedChat, onMarkAsRead }: UseWhatsAppM
         quotedText: msg.quoted_text,
         quotedFromMe: msg.quoted_from_me,
         isEdited: msg.is_edited,
+        // Group sender info
+        senderJid: msg.sender_jid,
+        senderPhone: msg.sender_phone,
+        senderName: msg.sender_name,
       }));
 
       setMessages(formattedMessages);
@@ -208,6 +216,10 @@ export function useWhatsAppMessages({ selectedChat, onMarkAsRead }: UseWhatsAppM
               quotedMessageId: msg.quoted_message_id,
               quotedText: msg.quoted_text,
               quotedFromMe: msg.quoted_from_me,
+              // Group sender info
+              senderJid: msg.sender_jid,
+              senderPhone: msg.sender_phone,
+              senderName: msg.sender_name,
             };
 
             return [...prev, newMessage];

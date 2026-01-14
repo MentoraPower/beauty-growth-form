@@ -1960,6 +1960,9 @@ export type Database = {
           quoted_message_id: string | null
           quoted_text: string | null
           reaction: string | null
+          sender_jid: string | null
+          sender_name: string | null
+          sender_phone: string | null
           session_id: string | null
           status: string | null
           text: string | null
@@ -1979,6 +1982,9 @@ export type Database = {
           quoted_message_id?: string | null
           quoted_text?: string | null
           reaction?: string | null
+          sender_jid?: string | null
+          sender_name?: string | null
+          sender_phone?: string | null
           session_id?: string | null
           status?: string | null
           text?: string | null
@@ -1998,6 +2004,9 @@ export type Database = {
           quoted_message_id?: string | null
           quoted_text?: string | null
           reaction?: string | null
+          sender_jid?: string | null
+          sender_name?: string | null
+          sender_phone?: string | null
           session_id?: string | null
           status?: string | null
           text?: string | null

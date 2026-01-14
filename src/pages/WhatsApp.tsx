@@ -1005,6 +1005,7 @@ const WhatsApp = (props: WhatsAppProps) => {
                   onScrollToQuoted={scrollToQuotedMessage}
                   onImageClick={(idx) => setLightboxIndex(idx)}
                   scrollToBottom={scrollToBottom}
+                  isGroupChat={selectedChat.isGroup}
                 />
 
                 <ChatInputArea

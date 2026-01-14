@@ -1,9 +1,10 @@
-import { memo } from "react";
+import { memo, useMemo } from "react";
 import { cn } from "@/lib/utils";
 import { Check, CheckCheck, File, MoreVertical, Pencil, Reply, Trash2 } from "lucide-react";
 import { Message } from "@/hooks/useWhatsAppMessages";
 import { AudioWaveform } from "./AudioWaveform";
 import { formatWhatsAppText } from "@/lib/whatsapp-format";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 interface MessageBubbleProps {
   msg: Message;
@@ -17,6 +18,8 @@ interface MessageBubbleProps {
   onScrollToQuoted: (quotedMessageId: string) => void;
   onImageClick: (index: number) => void;
   scrollToBottom: (behavior?: ScrollBehavior) => void;
+  isGroupChat?: boolean;
+  participantPhotos?: Record<string, string>;
 }
 
 // Sub-component: Message content renderer
@@ -315,6 +318,76 @@ const MessageFooter = memo(function MessageFooter({ msg }: { msg: Message }) {
   );
 });
 
+// Helper: Generate initials from name or phone
+const getInitials = (name?: string | null, phone?: string | null): string => {
+  if (name) {
+    const parts = name.trim().split(/\s+/);
+    if (parts.length >= 2) {
+      return (parts[0][0] + parts[1][0]).toUpperCase();
+    }
+    return name.slice(0, 2).toUpperCase();
+  }
+  if (phone) {
+    return phone.slice(-2);
+  }
+  return "?";
+};
+
+// Helper: Generate consistent color from phone number (returns HSL color)
+const getSenderColor = (phone?: string | null): { bg: string; text: string } => {
+  const colors = [
+    { bg: "hsl(330, 80%, 60%)", text: "hsl(330, 80%, 45%)" }, // pink
+    { bg: "hsl(270, 70%, 60%)", text: "hsl(270, 70%, 45%)" }, // purple
+    { bg: "hsl(230, 70%, 60%)", text: "hsl(230, 70%, 45%)" }, // indigo
+    { bg: "hsl(210, 80%, 55%)", text: "hsl(210, 80%, 40%)" }, // blue
+    { bg: "hsl(185, 70%, 50%)", text: "hsl(185, 70%, 35%)" }, // cyan
+    { bg: "hsl(160, 60%, 45%)", text: "hsl(160, 60%, 35%)" }, // teal
+    { bg: "hsl(140, 60%, 50%)", text: "hsl(140, 60%, 35%)" }, // green
+    { bg: "hsl(45, 90%, 55%)", text: "hsl(45, 90%, 40%)" },   // amber
+    { bg: "hsl(25, 90%, 55%)", text: "hsl(25, 90%, 40%)" },   // orange
+    { bg: "hsl(0, 75%, 55%)", text: "hsl(0, 75%, 40%)" },     // red
+  ];
+  if (!phone) return colors[0];
+  const hash = phone.split("").reduce((acc, char) => acc + char.charCodeAt(0), 0);
+  return colors[hash % colors.length];
+};
+
+// Sub-component: Sender info for group messages
+const GroupSenderInfo = memo(function GroupSenderInfo({
+  msg,
+  participantPhotos,
+}: {
+  msg: Message;
+  participantPhotos?: Record<string, string>;
+}) {
+  const senderPhoto = participantPhotos?.[msg.senderPhone || ""] || null;
+  const initials = getInitials(msg.senderName, msg.senderPhone);
+  const colors = getSenderColor(msg.senderPhone);
+  
+  // Get display name - prefer sender name, fallback to formatted phone
+  const displayName = msg.senderName || (msg.senderPhone ? `+${msg.senderPhone}` : "Participante");
+  
+  return (
+    <div className="flex items-center gap-2 mb-1">
+      <Avatar className="w-5 h-5">
+        <AvatarImage src={senderPhoto || undefined} alt={displayName} />
+        <AvatarFallback 
+          className="text-[10px] text-white"
+          style={{ backgroundColor: colors.bg }}
+        >
+          {initials}
+        </AvatarFallback>
+      </Avatar>
+      <span 
+        className="text-xs font-medium"
+        style={{ color: colors.text }}
+      >
+        {displayName}
+      </span>
+    </div>
+  );
+});
+
 // Main component: Message bubble
 export const MessageBubble = memo(function MessageBubble({
   msg,
@@ -328,8 +401,13 @@ export const MessageBubble = memo(function MessageBubble({
   onScrollToQuoted,
   onImageClick,
   scrollToBottom,
+  isGroupChat,
+  participantPhotos,
 }: MessageBubbleProps) {
   const isClientDeletedMessage = msg.status === "DELETED" && !msg.sent;
+  
+  // Show sender info only for received messages in group chats that have sender info
+  const showSenderInfo = isGroupChat && !msg.sent && (msg.senderPhone || msg.senderName);
 
   return (
     <div className={cn("flex w-full group", msg.sent ? "justify-end" : "justify-start")}>
@@ -369,6 +447,11 @@ export const MessageBubble = memo(function MessageBubble({
               : "bg-black/[0.04] dark:bg-white/[0.08] rounded-tl-sm"
           )}
         >
+          {/* Show sender name and avatar for group messages */}
+          {showSenderInfo && (
+            <GroupSenderInfo msg={msg} participantPhotos={participantPhotos} />
+          )}
+
           <QuotedMessagePreview
             msg={msg}
             messages={messages}
