@@ -75,10 +75,10 @@ const EmptyMessages = memo(function EmptyMessages() {
   );
 });
 
-// Background pattern style
-const BACKGROUND_STYLE = {
+// Background pattern style - light mode uses subtle pattern, dark mode is plain black
+const BACKGROUND_STYLE_LIGHT = {
   backgroundImage: `url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23000000' fill-opacity='0.02'%3E%3Ccircle cx='10' cy='10' r='1'/%3E%3Ccircle cx='30' cy='30' r='1'/%3E%3Ccircle cx='50' cy='10' r='1'/%3E%3Ccircle cx='70' cy='30' r='1'/%3E%3Ccircle cx='90' cy='10' r='1'/%3E%3Ccircle cx='10' cy='50' r='1'/%3E%3Ccircle cx='30' cy='70' r='1'/%3E%3Ccircle cx='50' cy='50' r='1'/%3E%3Ccircle cx='70' cy='70' r='1'/%3E%3Ccircle cx='90' cy='50' r='1'/%3E%3Ccircle cx='10' cy='90' r='1'/%3E%3Ccircle cx='50' cy='90' r='1'/%3E%3Ccircle cx='90' cy='90' r='1'/%3E%3C/g%3E%3C/svg%3E")`,
-  backgroundColor: "hsl(var(--muted) / 0.1)",
+  backgroundColor: "hsl(220 14% 96% / 0.5)",
 };
 
 export const MessageArea = memo(function MessageArea({
@@ -147,8 +147,8 @@ export const MessageArea = memo(function MessageArea({
   return (
     <div
       ref={messagesContainerRef}
-      className="flex-1 overflow-y-auto px-2 py-3 space-y-1.5 min-h-0 min-w-0"
-      style={BACKGROUND_STYLE}
+      className="flex-1 overflow-y-auto px-2 py-3 space-y-1.5 min-h-0 min-w-0 bg-zinc-100/50 dark:bg-black"
+      style={typeof window !== 'undefined' && document.documentElement.classList.contains('dark') ? undefined : BACKGROUND_STYLE_LIGHT}
     >
       {isLoadingMessages ? (
         <MessagesSkeleton />
