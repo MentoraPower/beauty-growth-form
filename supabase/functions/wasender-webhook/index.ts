@@ -1911,11 +1911,18 @@ async function handler(req: Request): Promise<Response> {
     // WasenderAPI provides two types of IDs:
     // 1. msgId (numeric) - used for replyTo parameter when sending replies
     // 2. key.id (string) - WhatsApp's internal message ID, used in contextInfo.stanzaId for quoted messages
-    const numericMsgId = messageData.msgId || payload.data?.msgId;
-    const whatsappKeyId = key.id || messageData.id || null;
+    // IMPORTANT: msgId can be in MULTIPLE locations depending on payload structure:
+    // - key.msgId (inside the key object - THIS IS THE PRIMARY LOCATION for messages.upsert!)
+    // - payload.data.msgId (top level of data - for messages.update events)
+    // - messageData.msgId (legacy location)
+    const numericMsgId = key.msgId || messageData.msgId || payload.data?.msgId || payload.msgId || null;
+    const whatsappKeyId = key.id || messageData.id || payload.data?.key?.id || null;
+    
+    console.log(`[Wasender Webhook] ID extraction - key.msgId: ${key.msgId}, messageData.msgId: ${messageData.msgId}, payload.data.msgId: ${payload.data?.msgId}, key.id: ${key.id}`);
+    
     // For message_id, prioritize numeric msgId (needed for replyTo), fallback to key.id
     const messageId = numericMsgId ? String(numericMsgId) : (whatsappKeyId || `${Date.now()}`);
-    console.log(`[Wasender Webhook] Message IDs - message_id: ${messageId}, whatsapp_key_id: ${whatsappKeyId || "N/A"}, numeric: ${numericMsgId || "N/A"}`);
+    console.log(`[Wasender Webhook] ✅ Final IDs - message_id: ${messageId}, whatsapp_key_id: ${whatsappKeyId || "N/A"}, numeric: ${numericMsgId ? "YES" : "NO"}`);
     const fromMe = key.fromMe || false;
     const remoteJid = key.remoteJid || "";
 
