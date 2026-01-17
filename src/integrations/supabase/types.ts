@@ -2175,7 +2175,19 @@ export type Database = {
         Args: { _conversation_id: string }
         Returns: string
       }
+      get_form_lead_workspace_id: {
+        Args: { _form_id: string }
+        Returns: string
+      }
       get_lead_workspace_id: { Args: { _lead_id: string }; Returns: string }
+      get_scheduled_email_workspace_id: {
+        Args: { _scheduled_email_id: string }
+        Returns: string
+      }
+      get_sent_email_workspace_id: {
+        Args: { _sent_email_id: string }
+        Returns: string
+      }
       get_sub_origin_workspace_id: {
         Args: { _sub_origin_id: string }
         Returns: string
