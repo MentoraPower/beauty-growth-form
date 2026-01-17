@@ -336,8 +336,6 @@ export function OverviewView({ leads, pipelines, leadTags, subOriginId, onAddDia
           filter: `sub_origin_id=eq.${subOriginId}`
         },
         (payload) => {
-          console.log('[Realtime] overview_cards change:', payload.eventType);
-          
           if (payload.eventType === 'INSERT') {
             const newCard = rowToCard(payload.new as any);
             setCards(prev => {
