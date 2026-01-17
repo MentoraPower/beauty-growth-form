@@ -10,6 +10,29 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type",
 };
 
+// Auth helper - verifies JWT and returns user claims
+async function verifyAuth(req: Request): Promise<{ userId: string } | null> {
+  const authHeader = req.headers.get('Authorization');
+  if (!authHeader?.startsWith('Bearer ')) {
+    return null;
+  }
+  
+  const supabase = createClient(
+    Deno.env.get('SUPABASE_URL')!,
+    Deno.env.get('SUPABASE_ANON_KEY')!,
+    { global: { headers: { Authorization: authHeader } } }
+  );
+  
+  const token = authHeader.replace('Bearer ', '');
+  const { data, error } = await supabase.auth.getClaims(token);
+  
+  if (error || !data?.claims?.sub) {
+    return null;
+  }
+  
+  return { userId: data.claims.sub as string };
+}
+
 interface SendEmailRequest {
   leadId: string;
   leadName: string;
@@ -26,6 +49,17 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
+    // Verify authentication
+    const auth = await verifyAuth(req);
+    if (!auth) {
+      console.log("[send-email] Unauthorized request - no valid JWT");
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401,
+        headers: { "Content-Type": "application/json", ...corsHeaders },
+      });
+    }
+    console.log(`[send-email] Authenticated user: ${auth.userId}`);
+
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseKey);

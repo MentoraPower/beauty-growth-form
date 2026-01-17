@@ -1,5 +1,6 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const groqApiKey = Deno.env.get('GROK_API_KEY'); // Note: using GROK_API_KEY but it contains Groq key
 
@@ -12,6 +13,29 @@ const corsHeaders = {
 const SERVICE_COST = 2800;
 const MIN_REVENUE_RATIO = 0.55; // Service should be at most 55% of revenue
 const MIN_AFFORDABLE_REVENUE = Math.ceil(SERVICE_COST / MIN_REVENUE_RATIO); // ~R$ 5,091
+
+// Auth helper - verifies JWT and returns user claims
+async function verifyAuth(req: Request): Promise<{ userId: string } | null> {
+  const authHeader = req.headers.get('Authorization');
+  if (!authHeader?.startsWith('Bearer ')) {
+    return null;
+  }
+  
+  const supabase = createClient(
+    Deno.env.get('SUPABASE_URL')!,
+    Deno.env.get('SUPABASE_ANON_KEY')!,
+    { global: { headers: { Authorization: authHeader } } }
+  );
+  
+  const token = authHeader.replace('Bearer ', '');
+  const { data, error } = await supabase.auth.getClaims(token);
+  
+  if (error || !data?.claims?.sub) {
+    return null;
+  }
+  
+  return { userId: data.claims.sub as string };
+}
 
 const SYSTEM_PROMPT = `Voce e um analista de leads especializado no mercado de beleza e estetica. Sua funcao e analisar dados de potenciais clientes e escrever uma analise concisa sobre o perfil do lead.
 
@@ -44,6 +68,17 @@ serve(async (req) => {
   }
 
   try {
+    // Verify authentication
+    const auth = await verifyAuth(req);
+    if (!auth) {
+      console.log("[analyze-lead-profile] Unauthorized request - no valid JWT");
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+    console.log(`[analyze-lead-profile] Authenticated user: ${auth.userId}`);
+
     const leadData = await req.json();
     
     console.log("Analyzing lead profile:", leadData.name);

@@ -1,10 +1,34 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
+
+// Auth helper - verifies JWT and returns user claims
+async function verifyAuth(req: Request): Promise<{ userId: string } | null> {
+  const authHeader = req.headers.get('Authorization');
+  if (!authHeader?.startsWith('Bearer ')) {
+    return null;
+  }
+  
+  const supabase = createClient(
+    Deno.env.get('SUPABASE_URL')!,
+    Deno.env.get('SUPABASE_ANON_KEY')!,
+    { global: { headers: { Authorization: authHeader } } }
+  );
+  
+  const token = authHeader.replace('Bearer ', '');
+  const { data, error } = await supabase.auth.getClaims(token);
+  
+  if (error || !data?.claims?.sub) {
+    return null;
+  }
+  
+  return { userId: data.claims.sub as string };
+}
 
 const EMAIL_GENERATOR_PROMPT = `Você é um especialista em copywriting e design de emails de marketing. Sua função é criar emails HTML profissionais, bonitos e que convertem.
 
@@ -97,6 +121,17 @@ serve(async (req) => {
   }
 
   try {
+    // Verify authentication
+    const auth = await verifyAuth(req);
+    if (!auth) {
+      console.log("[generate-email] Unauthorized request - no valid JWT");
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    console.log(`[generate-email] Authenticated user: ${auth.userId}`);
+
     const body = await req.json();
     const { hasCopy, copyText, objective, tone, companyName, productService, additionalInfo } = body;
     const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY');

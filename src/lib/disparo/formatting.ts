@@ -202,13 +202,10 @@ const formatInlineTextToHtml = (text: string): string => {
 
 /**
  * Sanitize HTML for safe preview
+ * Re-exports from lib/sanitize.ts for backwards compatibility
  */
-export const sanitizeHtml = (html: string): string => {
-  return html
-    .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
-    .replace(/on\w+="[^"]*"/gi, '')
-    .replace(/on\w+='[^']*'/gi, '');
-};
+import { sanitizeHtml as sanitizeHtmlFull } from '../sanitize';
+export const sanitizeHtml = sanitizeHtmlFull;
 
 /**
  * Convert markdown-style copy to HTML with rich typography for side panel display
