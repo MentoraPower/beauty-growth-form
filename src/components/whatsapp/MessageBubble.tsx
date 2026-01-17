@@ -480,9 +480,9 @@ export const MessageBubble = memo(function MessageBubble({
           msg.sent ? "items-end" : "items-start"
         )}
       >
-        {/* Reply button for received messages */}
+        {/* Reply and react buttons for received messages - positioned to the RIGHT of the bubble */}
         {!msg.sent && msg.status !== "DELETED" && (
-          <div className="absolute left-0 top-1/2 -translate-x-full -translate-y-1/2 flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+          <div className="absolute right-0 top-1/2 translate-x-full -translate-y-1/2 flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity pl-1">
             <button
               onClick={() => onReplyMessage(msg)}
               aria-label="Responder"
@@ -501,7 +501,7 @@ export const MessageBubble = memo(function MessageBubble({
                 </button>
                 {showReactionPicker && (
                   <ReactionPicker
-                    position="left"
+                    position="right"
                     onSelect={(emoji) => onReactMessage(msg, emoji)}
                     onClose={() => setShowReactionPicker(false)}
                   />
