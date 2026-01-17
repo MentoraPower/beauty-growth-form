@@ -49,7 +49,7 @@ export function formatWhatsAppText(text: string | unknown): React.ReactNode {
   const processUrls = (input: string, startKey: number): React.ReactNode[] => {
     const result: React.ReactNode[] = [];
     let lastIndex = 0;
-    let match;
+    let match: RegExpExecArray | null;
     let currentKey = startKey;
     
     const regex = new RegExp(urlRegex.source, 'g');
@@ -95,7 +95,7 @@ export function formatWhatsAppText(text: string | unknown): React.ReactNode {
     
     patterns.forEach((pattern, patternIndex) => {
       const regex = new RegExp(pattern.regex.source, 'g');
-      let match;
+      let match: RegExpExecArray | null;
       while ((match = regex.exec(input)) !== null) {
         allMatches.push({
           index: match.index,

@@ -53,11 +53,10 @@ interface LeadInfoPanelProps {
   phone: string;
   photoUrl?: string | null;
   contactName?: string | null;
-  onClose?: () => void;
   onNameUpdate?: (newName: string) => void;
 }
 
-const LeadInfoPanel = ({ phone, photoUrl, contactName, onClose, onNameUpdate }: LeadInfoPanelProps) => {
+const LeadInfoPanel = ({ phone, photoUrl, contactName, onNameUpdate }: LeadInfoPanelProps) => {
   const [lead, setLead] = useState<Lead | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({
