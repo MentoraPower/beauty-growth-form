@@ -6,11 +6,11 @@ import { useToast } from "@/hooks/use-toast";
 import LeadInfoPanel from "@/components/whatsapp/LeadInfoPanel";
 import ImageLightbox from "@/components/whatsapp/ImageLightbox";
 import { AddWhatsAppAccountDialog } from "@/components/whatsapp/AddWhatsAppAccountDialog";
-import { GroupsList, WhatsAppGroup } from "@/components/whatsapp/GroupsList";
+import { WhatsAppGroup } from "@/components/whatsapp/GroupsList";
 import { GroupParticipantsPanel } from "@/components/whatsapp/GroupParticipantsPanel";
 
 // New refactored components and hooks
-import { useWhatsAppChats, Chat, formatTime, isWhatsAppInternalId } from "@/hooks/useWhatsAppChats";
+import { useWhatsAppChats, Chat, formatTime } from "@/hooks/useWhatsAppChats";
 import { useWhatsAppMessages, Message } from "@/hooks/useWhatsAppMessages";
 import { useWhatsAppRecording } from "@/hooks/useWhatsAppRecording";
 import { ChatSidebar } from "@/components/whatsapp/ChatSidebar";
@@ -112,13 +112,10 @@ const WhatsApp = (props: WhatsAppProps) => {
     isSyncing,
     chatsRef,
     fetchChats,
-    updateChatInState,
     removeChatFromState,
     updateChatName,
-    syncAllChats,
     markChatAsRead,
     markChatListInteracting,
-    formatChatData,
   } = useWhatsAppChats({ selectedAccountId, whatsappAccounts });
 
   const {
@@ -139,7 +136,7 @@ const WhatsApp = (props: WhatsAppProps) => {
     scrollToQuotedMessage,
   } = useWhatsAppMessages({ selectedChat, onMarkAsRead: markChatAsRead });
 
-  const handleAudioMessageSent = useCallback((tempId: string, insertedMsg: any, publicUrl: string) => {
+  const handleAudioMessageSent = useCallback((tempId: string, insertedMsg: any) => {
     setMessages(prev => prev.map(m => m.id === tempId ? { ...m, id: insertedMsg.id, status: "SENT" } : m));
   }, [setMessages]);
 
@@ -164,7 +161,6 @@ const WhatsApp = (props: WhatsAppProps) => {
     isRecording,
     recordingTime,
     recordingStream,
-    isSendingAudio,
     startRecording,
     stopRecording,
     cancelRecording,

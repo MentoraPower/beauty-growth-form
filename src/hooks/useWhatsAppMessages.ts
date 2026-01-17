@@ -113,7 +113,7 @@ export function useWhatsAppMessages({ selectedChat, onMarkAsRead }: UseWhatsAppM
     }
   }, []);
 
-  const fetchMessages = useCallback(async (chatId: string, isGroup: boolean = false) => {
+  const fetchMessages = useCallback(async (chatId: string) => {
     setIsLoadingMessages(true);
     try {
       const { data, error } = await supabase
