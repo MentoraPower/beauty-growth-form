@@ -2,4 +2,4 @@
  * Virtualized Components Index
  */
 
-export { VirtualizedList, VirtualizedMessages } from './VirtualizedList';
+export { VirtualizedList } from './VirtualizedList';

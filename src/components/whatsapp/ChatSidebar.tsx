@@ -3,8 +3,9 @@ import { cn } from "@/lib/utils";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Input } from "@/components/ui/input";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
-import { Search, Check, CheckCheck, RefreshCw, Trash2, MoreVertical, MessageSquare, Users, ShieldBan, ShieldCheck } from "lucide-react";
-import { Chat, DEFAULT_AVATAR, getInitials } from "@/hooks/useWhatsAppChats";
+import { Search, Check, CheckCheck, RefreshCw, Trash2, MoreVertical, ShieldBan, ShieldCheck } from "lucide-react";
+import { Chat } from "@/hooks/useWhatsAppChats";
+import { DEFAULT_AVATAR } from "@/lib/whatsapp-utils";
 import { stripWhatsAppFormatting } from "@/lib/whatsapp-format";
 import { GroupsList, WhatsAppGroup } from "./GroupsList";
 
