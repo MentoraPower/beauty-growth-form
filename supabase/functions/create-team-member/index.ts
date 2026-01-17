@@ -92,8 +92,6 @@ Deno.serve(async (req) => {
     const trimmedPassword = String(password ?? "").trim();
     const trimmedRole = String(role ?? "").trim() as AppRole;
 
-    console.log("[create-team-member] request", { email: trimmedEmail, role: trimmedRole });
-
     if (!trimmedName || !trimmedEmail || !trimmedPassword || !trimmedRole) {
       return json(400, { error: "Todos os campos são obrigatórios" });
     }

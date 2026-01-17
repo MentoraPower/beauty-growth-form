@@ -1,5 +1,6 @@
 import { useState, useCallback, useMemo, useRef, useEffect } from "react";
 import { cn } from "@/lib/utils";
+import { sanitizeHtml } from "@/lib/sanitize";
 import {
   ReactFlow,
   Controls,
@@ -733,7 +734,7 @@ const EmailNode = ({ id, data, selected }: NodeProps) => {
             style={{ maxHeight: "390px", fontSize: "11px" }}
             onWheelCapture={(e) => e.stopPropagation()}
             dangerouslySetInnerHTML={{ 
-              __html: bodyHtml || '<div style="color:#999; font-style:italic;">Clique para editar o e-mail...</div>' 
+              __html: sanitizeHtml(bodyHtml || '<div style="color:#999; font-style:italic;">Clique para editar o e-mail...</div>') 
             }}
           />
         </div>

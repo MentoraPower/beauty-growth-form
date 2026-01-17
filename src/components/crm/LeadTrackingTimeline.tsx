@@ -126,7 +126,6 @@ export function LeadTrackingTimeline({ leadId, utmData, leadEmail, leadWhatsapp 
           filter: `lead_id=eq.${leadId}`
         },
         (payload) => {
-          console.log('[LeadTracking] New event received:', payload.new);
           const newEvent = payload.new as TrackingEvent;
           // Add new event at the beginning (most recent first)
           setEvents(prev => {
