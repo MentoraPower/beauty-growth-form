@@ -1150,6 +1150,7 @@ export type Database = {
           wants_more_info: boolean | null
           weekly_attendance: string
           whatsapp: string
+          workspace_id: string | null
           workspace_type: string
           years_experience: string
         }
@@ -1183,6 +1184,7 @@ export type Database = {
           wants_more_info?: boolean | null
           weekly_attendance: string
           whatsapp: string
+          workspace_id?: string | null
           workspace_type: string
           years_experience: string
         }
@@ -1216,6 +1218,7 @@ export type Database = {
           wants_more_info?: boolean | null
           weekly_attendance?: string
           whatsapp?: string
+          workspace_id?: string | null
           workspace_type?: string
           years_experience?: string
         }
@@ -1232,6 +1235,13 @@ export type Database = {
             columns: ["sub_origin_id"]
             isOneToOne: false
             referencedRelation: "crm_sub_origins"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "leads_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
             referencedColumns: ["id"]
           },
         ]
@@ -1461,6 +1471,7 @@ export type Database = {
           nome: string
           ordem: number
           sub_origin_id: string | null
+          workspace_id: string | null
         }
         Insert: {
           cor?: string
@@ -1469,6 +1480,7 @@ export type Database = {
           nome: string
           ordem?: number
           sub_origin_id?: string | null
+          workspace_id?: string | null
         }
         Update: {
           cor?: string
@@ -1477,6 +1489,7 @@ export type Database = {
           nome?: string
           ordem?: number
           sub_origin_id?: string | null
+          workspace_id?: string | null
         }
         Relationships: [
           {
@@ -1484,6 +1497,13 @@ export type Database = {
             columns: ["sub_origin_id"]
             isOneToOne: false
             referencedRelation: "crm_sub_origins"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pipelines_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
             referencedColumns: ["id"]
           },
         ]
@@ -1572,6 +1592,7 @@ export type Database = {
           customer_name: string | null
           description: string | null
           id: string
+          workspace_id: string | null
         }
         Insert: {
           amount: number
@@ -1579,6 +1600,7 @@ export type Database = {
           customer_name?: string | null
           description?: string | null
           id?: string
+          workspace_id?: string | null
         }
         Update: {
           amount?: number
@@ -1586,8 +1608,17 @@ export type Database = {
           customer_name?: string | null
           description?: string | null
           id?: string
+          workspace_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "sales_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       scheduled_emails: {
         Row: {
@@ -1605,6 +1636,7 @@ export type Database = {
           sent_at: string | null
           status: string
           subject: string
+          workspace_id: string | null
         }
         Insert: {
           automation_id: string
@@ -1621,6 +1653,7 @@ export type Database = {
           sent_at?: string | null
           status?: string
           subject: string
+          workspace_id?: string | null
         }
         Update: {
           automation_id?: string
@@ -1637,6 +1670,7 @@ export type Database = {
           sent_at?: string | null
           status?: string
           subject?: string
+          workspace_id?: string | null
         }
         Relationships: [
           {
@@ -1651,6 +1685,13 @@ export type Database = {
             columns: ["lead_id"]
             isOneToOne: false
             referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "scheduled_emails_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
             referencedColumns: ["id"]
           },
         ]
@@ -1670,6 +1711,7 @@ export type Database = {
           sent_at: string | null
           status: string
           subject: string
+          workspace_id: string | null
         }
         Insert: {
           body_html: string
@@ -1685,6 +1727,7 @@ export type Database = {
           sent_at?: string | null
           status?: string
           subject: string
+          workspace_id?: string | null
         }
         Update: {
           body_html?: string
@@ -1700,6 +1743,7 @@ export type Database = {
           sent_at?: string | null
           status?: string
           subject?: string
+          workspace_id?: string | null
         }
         Relationships: [
           {
@@ -1714,6 +1758,13 @@ export type Database = {
             columns: ["lead_id"]
             isOneToOne: false
             referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sent_emails_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
             referencedColumns: ["id"]
           },
         ]
@@ -2115,6 +2166,15 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      can_access_session: {
+        Args: { _session_id: string; _user_id: string }
+        Returns: boolean
+      }
+      get_lead_workspace_id: { Args: { _lead_id: string }; Returns: string }
+      get_sub_origin_workspace_id: {
+        Args: { _sub_origin_id: string }
+        Returns: string
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
