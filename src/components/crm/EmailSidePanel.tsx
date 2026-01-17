@@ -14,6 +14,7 @@ import StarterKit from '@tiptap/starter-kit';
 import Link from '@tiptap/extension-link';
 import { TiptapFloatingToolbar } from './TiptapFloatingToolbar';
 import { formatCopyToRichHtml, looksLikeHtml } from '@/lib/disparo/formatting';
+import { sanitizeHtml } from '@/lib/sanitize';
 
 // Format text with markdown-like syntax: **bold**, _italic_, ~strikethrough~, `code`
 const formatTextContent = (text: string): string => {
@@ -709,10 +710,8 @@ export function EmailSidePanel({
   };
 
   const getSanitizedHtml = (applyFormatting = false) => {
-    let content = htmlContent
-      .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
-      .replace(/on\w+="[^"]*"/gi, '')
-      .replace(/on\w+='[^']*'/gi, '');
+    // Use robust sanitization from lib/sanitize.ts
+    let content = sanitizeHtml(htmlContent);
 
     if (applyFormatting) {
       const hasMdHeadings = /##\s|###\s/.test(content);

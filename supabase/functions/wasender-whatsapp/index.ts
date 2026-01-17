@@ -9,9 +9,51 @@ const corsHeaders = {
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
 const WASENDER_API_KEY = Deno.env.get("WASENDER_API_KEY")!;
 const WASENDER_PERSONAL_TOKEN = Deno.env.get("WASENDER_PERSONAL_TOKEN")!;
 const WASENDER_BASE_URL = "https://www.wasenderapi.com/api";
+
+// Actions that require user authentication (send messages, modify data)
+const ACTIONS_REQUIRING_AUTH = [
+  "send-text",
+  "send-image", 
+  "send-audio",
+  "send-video",
+  "send-document",
+  "send-sticker",
+  "send-contact",
+  "send-location",
+  "send-reaction",
+  "send-presence",
+  "delete-message",
+  "edit-message",
+  "mark-as-read",
+  "clear-all",
+];
+
+// Auth helper - verifies JWT and returns user claims
+async function verifyAuth(req: Request): Promise<{ userId: string } | null> {
+  const authHeader = req.headers.get('Authorization');
+  if (!authHeader?.startsWith('Bearer ')) {
+    return null;
+  }
+  
+  const supabase = createClient(
+    SUPABASE_URL,
+    SUPABASE_ANON_KEY,
+    { global: { headers: { Authorization: authHeader } } }
+  );
+  
+  const token = authHeader.replace('Bearer ', '');
+  const { data, error } = await supabase.auth.getClaims(token);
+  
+  if (error || !data?.claims?.sub) {
+    return null;
+  }
+  
+  return { userId: data.claims.sub as string };
+}
 
 // Helper: Format phone for WasenderAPI (E.164 without @c.us)
 // For groups (@g.us), preserve the JID as-is
@@ -248,6 +290,19 @@ async function handler(req: Request): Promise<Response> {
     const body = await req.json();
     const { action, phone, text, mediaUrl, filename, caption, presenceType, delayMs, msgId, newText, base64, mimetype, sessionId } = body;
     console.log(`[Wasender] Action: ${action}, sessionId: ${sessionId || 'N/A'}`);
+
+    // Check if this action requires authentication
+    if (ACTIONS_REQUIRING_AUTH.includes(action)) {
+      const auth = await verifyAuth(req);
+      if (!auth) {
+        console.log(`[Wasender] Unauthorized request for action: ${action}`);
+        return new Response(JSON.stringify({ error: "Unauthorized" }), {
+          status: 401,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      console.log(`[Wasender] Authenticated user: ${auth.userId} for action: ${action}`);
+    }
 
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
