@@ -1,6 +1,15 @@
 import { useState, useCallback, useRef, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { 
+  DEFAULT_AVATAR, 
+  getInitials, 
+  isWhatsAppInternalId, 
+  formatPhoneDisplay 
+} from "@/lib/whatsapp-utils";
+
+// Re-export for backward compatibility
+export { DEFAULT_AVATAR, getInitials, isWhatsAppInternalId, formatPhoneDisplay };
 
 export interface Chat {
   id: string;
@@ -17,39 +26,6 @@ export interface Chat {
   isGroup?: boolean;
   participantCount?: number;
 }
-
-const DEFAULT_AVATAR = "/images/whatsapp-default-avatar.svg";
-
-export const getInitials = (name: string): string => {
-  if (!name) return "?";
-  const parts = name.trim().split(" ");
-  if (parts.length >= 2) {
-    return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
-  }
-  return name.substring(0, 2).toUpperCase();
-};
-
-export const isWhatsAppInternalId = (phone: string): boolean => {
-  if (!phone) return false;
-  const cleaned = phone.replace(/\D/g, "");
-  if (cleaned.length > 14) return true;
-  if (/^(120|146|180|203|234|447)\d{10,}$/.test(cleaned)) return true;
-  return false;
-};
-
-export const formatPhoneDisplay = (phone: string): string => {
-  if (!phone) return "";
-  if (isWhatsAppInternalId(phone)) return phone;
-  const cleaned = phone.replace(/\D/g, "");
-  if (cleaned.length === 13) {
-    return `+${cleaned.slice(0, 2)} ${cleaned.slice(2, 4)} ${cleaned.slice(4, 9)}-${cleaned.slice(9)}`;
-  } else if (cleaned.length === 12) {
-    return `+${cleaned.slice(0, 2)} ${cleaned.slice(2, 4)} ${cleaned.slice(4, 8)}-${cleaned.slice(8)}`;
-  } else if (cleaned.length >= 10) {
-    return `+${cleaned.slice(0, 2)} ${cleaned.slice(2)}`;
-  }
-  return phone;
-};
 
 export const formatTime = (dateString: string): string => {
   const date = new Date(dateString);
@@ -512,5 +488,3 @@ export function useWhatsAppChats({ selectedAccountId, whatsappAccounts }: UseWha
     formatChatData,
   };
 }
-
-export { DEFAULT_AVATAR };
