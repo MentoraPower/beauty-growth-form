@@ -2170,6 +2170,11 @@ export type Database = {
         Args: { _session_id: string; _user_id: string }
         Returns: boolean
       }
+      get_csv_list_workspace_id: { Args: { _list_id: string }; Returns: string }
+      get_dispatch_conversation_workspace_id: {
+        Args: { _conversation_id: string }
+        Returns: string
+      }
       get_lead_workspace_id: { Args: { _lead_id: string }; Returns: string }
       get_sub_origin_workspace_id: {
         Args: { _sub_origin_id: string }
