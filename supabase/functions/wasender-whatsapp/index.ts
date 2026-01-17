@@ -326,22 +326,32 @@ async function handler(req: Request): Promise<Response> {
     if (action === "send-text") {
       const to = formatPhoneForApi(phone);
       const quotedMsgId = body.quotedMsgId;
-      console.log(`[Wasender] Sending text to ${to}: ${text?.substring(0, 50)}...${quotedMsgId ? ` (reply to ${quotedMsgId})` : ""}`);
+      const quotedWhatsAppKeyId = body.quotedWhatsAppKeyId;
+      console.log(`[Wasender] Sending text to ${to}: ${text?.substring(0, 50)}...${quotedMsgId ? ` (reply to msgId=${quotedMsgId}, keyId=${quotedWhatsAppKeyId || "N/A"})` : ""}`);
       
       const payload: any = { to, text };
       
       // Add quoted message reference if replying
       // WasenderAPI uses "replyTo" parameter with integer msgId
+      // IMPORTANT: WasenderAPI ONLY accepts numeric msgId for replyTo
+      // WhatsApp key IDs (strings like "3A8A65F005EA5EA71C37") cannot be used
+      let replyAdded = false;
+      
       if (quotedMsgId) {
         // Only use replyTo if the quotedMsgId is purely numeric
-        // WhatsApp key IDs like "3A8A65F005EA5EA71C37" should be skipped
-        if (/^\d+$/.test(quotedMsgId)) {
-          const replyToId = parseInt(quotedMsgId, 10);
+        if (/^\d+$/.test(String(quotedMsgId))) {
+          const replyToId = parseInt(String(quotedMsgId), 10);
           payload.replyTo = replyToId;
-          console.log(`[Wasender] Adding replyTo: ${replyToId}`);
+          replyAdded = true;
+          console.log(`[Wasender] ✅ Adding replyTo: ${replyToId}`);
         } else {
-          console.log(`[Wasender] quotedMsgId "${quotedMsgId}" is not purely numeric (likely WhatsApp key ID), skipping reply`);
+          console.log(`[Wasender] ⚠️ quotedMsgId "${quotedMsgId}" is not numeric (WhatsApp key ID). Reply will be sent as regular message without quote indicator on client side.`);
+          console.log(`[Wasender] This happens for older messages that were synced before numeric msgId tracking was implemented.`);
         }
+      }
+      
+      if (!replyAdded && quotedMsgId) {
+        console.log(`[Wasender] Message will be sent without replyTo. Client may not see it as a reply.`);
       }
       
       // Pass sessionId to use the correct account's API key

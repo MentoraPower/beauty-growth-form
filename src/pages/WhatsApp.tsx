@@ -494,12 +494,21 @@ const WhatsApp = (props: WhatsAppProps) => {
       const selectedAccount = whatsappAccounts.find(acc => acc.id === selectedAccountId);
       const sessionId = selectedAccount?.api_key || null;
 
+      // Check if quoted message has numeric ID (required for WasenderAPI replyTo)
+      const quotedMsgIdStr = quotedMsg?.message_id?.toString() || null;
+      const isNumericQuotedId = quotedMsgIdStr && /^\d+$/.test(quotedMsgIdStr);
+      
+      // Log warning for non-numeric IDs (older messages)
+      if (quotedMsg && !isNumericQuotedId) {
+        console.warn(`[WhatsApp] Replying to message with non-numeric ID (${quotedMsgIdStr}). Client may not see this as a reply - older messages don't have numeric msgId required by WasenderAPI.`);
+      }
+
       const { data, error } = await supabase.functions.invoke("wasender-whatsapp", {
         body: {
           action: "send-text",
           phone: selectedChat.phone,
           text: messageText,
-          quotedMsgId: quotedMsg?.message_id?.toString(),
+          quotedMsgId: quotedMsgIdStr,
           sessionId,
         },
       });
