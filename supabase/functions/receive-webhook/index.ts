@@ -841,6 +841,19 @@ const handler = async (req: Request): Promise<Response> => {
       const mode = url.searchParams.get("mode");
       const isUpdateOnly = mode === "update";
       
+      // Get the workspace_id from the sub_origin -> origin relationship
+      let workspaceId: string | null = null;
+      const { data: originData } = await supabase
+        .from("crm_origins")
+        .select("workspace_id")
+        .eq("id", (await supabase.from("crm_sub_origins").select("origin_id").eq("id", targetSubOriginId).single()).data?.origin_id || "")
+        .single();
+      
+      if (originData?.workspace_id) {
+        workspaceId = originData.workspace_id;
+        console.log(`[Webhook] Resolved workspace_id: ${workspaceId} for sub_origin: ${targetSubOriginId}`);
+      }
+      
       // Get the pipeline_id from URL or find the first pipeline for this sub-origin
       let targetPipelineId = url.searchParams.get("pipeline_id");
       
@@ -862,6 +875,7 @@ const handler = async (req: Request): Promise<Response> => {
       }
 
       const leadData: Record<string, any> = {
+        workspace_id: workspaceId,
         name: String(payload.name).trim(),
         email: String(payload.email).trim(),
         whatsapp: String(payload.whatsapp || payload.phone || "").replace(/^\+55\s*/, "").replace(/^\+\d{1,3}\s*/, ""),
