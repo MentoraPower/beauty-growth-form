@@ -39,6 +39,7 @@ interface ManagePipelinesDialogProps {
   onOpenChange: (open: boolean) => void;
   pipelines: Pipeline[];
   subOriginId: string | null;
+  workspaceId?: string | null;
   embedded?: boolean;
 }
 
@@ -202,6 +203,7 @@ export function ManagePipelinesDialog({
   onOpenChange,
   pipelines,
   subOriginId,
+  workspaceId,
   embedded = false,
 }: ManagePipelinesDialogProps) {
   const queryClient = useQueryClient();
@@ -289,6 +291,7 @@ export function ManagePipelinesDialog({
         ordem: maxOrdem + 1,
         cor: "#6366f1",
         sub_origin_id: subOriginId,
+        workspace_id: workspaceId,
       });
 
       if (error) throw error;

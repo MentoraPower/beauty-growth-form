@@ -1709,6 +1709,7 @@ export function KanbanBoard() {
                       onOpenChange={() => {}}
                       pipelines={pipelines}
                       subOriginId={subOriginId}
+                      workspaceId={currentWorkspace?.id}
                       embedded={true}
                     />
                   </Suspense>
@@ -1878,6 +1879,7 @@ export function KanbanBoard() {
           onOpenChange={setIsPipelinesDialogOpen}
           pipelines={pipelines}
           subOriginId={subOriginId}
+          workspaceId={currentWorkspace?.id}
         />
       </Suspense>
     </div>
