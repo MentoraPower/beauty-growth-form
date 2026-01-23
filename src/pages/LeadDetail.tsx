@@ -7,7 +7,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Mail, Calendar, MoreVertical, Trash2, User, ArrowRightLeft } from "lucide-react";
+import { Mail, Calendar, MoreVertical, Trash2, User, ArrowRightLeft, Instagram } from "lucide-react";
 import WhatsApp from "@/components/icons/WhatsApp";
 import { Skeleton } from "@/components/ui/skeleton";
 import { motion, AnimatePresence, LayoutGroup } from "framer-motion";
@@ -600,6 +600,26 @@ export default function LeadDetail() {
                     </div>
                   </div>
 
+                  <div className="flex items-center gap-3 p-3 bg-muted/30 border border-[#00000010] rounded-lg">
+                    <div className="h-10 w-10 rounded-full border border-black/10 flex items-center justify-center flex-shrink-0">
+                      <Instagram className="h-5 w-5 text-neutral-600" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs text-muted-foreground">Instagram</p>
+                      <EditableField
+                        value={lead.instagram === "@" ? "" : lead.instagram || ""}
+                        onSave={(value) => updateLeadField("instagram", value.startsWith("@") ? value : `@${value}`)}
+                        placeholder="Digite o Instagram"
+                        displayValue={
+                          !lead.instagram || lead.instagram === "" || lead.instagram === "@" ? (
+                            <span className="text-sm font-medium text-muted-foreground italic">incompleto</span>
+                          ) : (
+                            <span className="text-sm font-medium">{lead.instagram}</span>
+                          )
+                        }
+                      />
+                    </div>
+                  </div>
 
                   <div className="flex items-center gap-3 p-3 bg-muted/30 border border-[#00000010] rounded-lg">
                     <div className="h-10 w-10 rounded-full border border-black/10 flex items-center justify-center">
