@@ -9,6 +9,7 @@ import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
 import { trackLeadEvent } from "@/lib/leadTracking";
 import { cn } from "@/lib/utils";
+import { useWorkspace } from "@/contexts/WorkspaceContext";
 
 interface InlineAddContactProps {
   pipelineId: string;
@@ -17,6 +18,7 @@ interface InlineAddContactProps {
 
 export function InlineAddContact({ pipelineId, subOriginId }: InlineAddContactProps) {
   const queryClient = useQueryClient();
+  const { currentWorkspace } = useWorkspace();
   const [isOpen, setIsOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [name, setName] = useState("");
@@ -95,6 +97,7 @@ export function InlineAddContact({ pipelineId, subOriginId }: InlineAddContactPr
         years_experience: "0",
         pipeline_id: pipelineId,
         sub_origin_id: subOriginId,
+        workspace_id: currentWorkspace?.id,
         ordem: 0,
       }).select("id").single();
 
