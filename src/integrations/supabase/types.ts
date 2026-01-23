@@ -159,6 +159,7 @@ export type Database = {
           hidden_tabs: string[]
           id: string
           sub_origin_id: string | null
+          tab_labels: Json | null
           tab_order: string[]
           updated_at: string
           workspace_id: string | null
@@ -168,6 +169,7 @@ export type Database = {
           hidden_tabs?: string[]
           id?: string
           sub_origin_id?: string | null
+          tab_labels?: Json | null
           tab_order?: string[]
           updated_at?: string
           workspace_id?: string | null
@@ -177,6 +179,7 @@ export type Database = {
           hidden_tabs?: string[]
           id?: string
           sub_origin_id?: string | null
+          tab_labels?: Json | null
           tab_order?: string[]
           updated_at?: string
           workspace_id?: string | null
