@@ -23,6 +23,14 @@ interface ExportColumn {
   key: string;
   label: string;
   selected: boolean;
+  isCustomField?: boolean;
+  fieldId?: string;
+}
+
+interface CustomField {
+  id: string;
+  field_key: string;
+  field_label: string;
 }
 
 const DEFAULT_COLUMNS: ExportColumn[] = [
@@ -41,6 +49,7 @@ export function ExportLeadsDialog() {
   const [subOriginId, setSubOriginId] = useState<string | null>(null);
   const [subOriginName, setSubOriginName] = useState("");
   const [columns, setColumns] = useState<ExportColumn[]>(DEFAULT_COLUMNS);
+  const [customFields, setCustomFields] = useState<CustomField[]>([]);
   const [isExporting, setIsExporting] = useState(false);
   const [selectedPipelines, setSelectedPipelines] = useState<Set<string>>(new Set(["all"]));
   const [pipelines, setPipelines] = useState<Pipeline[]>([]);
@@ -104,6 +113,31 @@ export function ExportLeadsDialog() {
           counts[p.id] = count || 0;
         }
         setPipelineCounts(counts);
+      }
+      
+      // Fetch custom fields for this sub-origin
+      const { data: customFieldsData } = await supabase
+        .from("sub_origin_custom_fields")
+        .select("id, field_key, field_label")
+        .eq("sub_origin_id", e.detail.subOriginId)
+        .order("ordem");
+      
+      if (customFieldsData && customFieldsData.length > 0) {
+        setCustomFields(customFieldsData);
+        
+        // Add custom fields to columns with selected=false by default
+        const customColumns: ExportColumn[] = customFieldsData.map(field => ({
+          key: `custom_${field.id}`,
+          label: field.field_label,
+          selected: false,
+          isCustomField: true,
+          fieldId: field.id,
+        }));
+        
+        setColumns([...DEFAULT_COLUMNS, ...customColumns]);
+      } else {
+        setCustomFields([]);
+        setColumns([...DEFAULT_COLUMNS]);
       }
       
       setIsLoading(false);
@@ -174,6 +208,10 @@ export function ExportLeadsDialog() {
       return;
     }
 
+    // Separate standard columns from custom fields
+    const standardColumns = selectedColumns.filter(c => !c.isCustomField);
+    const customFieldColumns = selectedColumns.filter(c => c.isCustomField);
+
     setIsExporting(true);
     
     try {
@@ -185,6 +223,12 @@ export function ExportLeadsDialog() {
         ? pipelines.map(p => p.id)
         : Array.from(selectedPipelines);
       
+      // Build select query for standard columns (always include id for custom field matching)
+      const selectFields = standardColumns.map(c => c.key);
+      if (!selectFields.includes("id")) {
+        selectFields.unshift("id");
+      }
+
       for (const pipelineId of pipelineIds) {
         let page = 0;
         const pageSize = 1000;
@@ -193,7 +237,7 @@ export function ExportLeadsDialog() {
         while (hasMore) {
           const { data, error } = await supabase
             .from("leads")
-            .select(selectedColumns.map(c => c.key).join(","))
+            .select(selectFields.join(","))
             .eq("sub_origin_id", subOriginId)
             .eq("pipeline_id", pipelineId)
             .order("created_at", { ascending: false })
@@ -216,13 +260,58 @@ export function ExportLeadsDialog() {
         return;
       }
 
+      // If there are custom field columns, fetch their responses
+      let customFieldResponses: Record<string, Record<string, string>> = {};
+      
+      if (customFieldColumns.length > 0) {
+        const leadIds = allLeads.map(l => l.id);
+        const fieldIds = customFieldColumns.map(c => c.fieldId).filter(Boolean) as string[];
+        
+        // Fetch custom field responses in batches
+        const batchSize = 500;
+        const allResponses: Array<{ lead_id: string; field_id: string; response_value: string | null }> = [];
+        
+        for (let i = 0; i < leadIds.length; i += batchSize) {
+          const batchLeadIds = leadIds.slice(i, i + batchSize);
+          
+          const { data: responsesData } = await supabase
+            .from("lead_custom_field_responses")
+            .select("lead_id, field_id, response_value")
+            .in("lead_id", batchLeadIds)
+            .in("field_id", fieldIds);
+          
+          if (responsesData) {
+            allResponses.push(...responsesData);
+          }
+        }
+        
+        // Build a map: leadId -> { fieldId -> value }
+        for (const response of allResponses) {
+          if (!customFieldResponses[response.lead_id]) {
+            customFieldResponses[response.lead_id] = {};
+          }
+          customFieldResponses[response.lead_id][response.field_id] = response.response_value || "";
+        }
+      }
+
+      // Build CSV headers (exclude the id column we added for matching)
+      const exportColumns = selectedColumns.filter(c => c.key !== "id" || selectedColumns.some(sc => sc.key === "id" && !c.isCustomField));
       const headers = selectedColumns.map(c => c.label);
+      
       const rows = allLeads.map(lead => 
         selectedColumns.map(col => {
-          const value = lead[col.key];
-          if (col.key === "created_at" && value) {
-            return new Date(value as string).toLocaleDateString("pt-BR");
+          let value: string;
+          
+          if (col.isCustomField && col.fieldId) {
+            // Get custom field value from responses map
+            value = customFieldResponses[lead.id]?.[col.fieldId] || "";
+          } else {
+            value = lead[col.key];
+            if (col.key === "created_at" && value) {
+              return new Date(value as string).toLocaleDateString("pt-BR");
+            }
           }
+          
           const strValue = String(value ?? "");
           if (strValue.includes(",") || strValue.includes('"') || strValue.includes("\n")) {
             return `"${strValue.replace(/"/g, '""')}"`;
@@ -348,13 +437,13 @@ export function ExportLeadsDialog() {
               )}
             </div>
 
-            {/* Columns */}
+            {/* Standard Columns */}
             <div className="space-y-3">
               <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                Colunas
+                Colunas padrão
               </Label>
               <div className="grid grid-cols-2 gap-1.5">
-                {columns.map((col) => (
+                {columns.filter(col => !col.isCustomField).map((col) => (
                   <button
                     key={col.key}
                     onClick={() => toggleColumn(col.key)}
@@ -378,6 +467,39 @@ export function ExportLeadsDialog() {
                 ))}
               </div>
             </div>
+
+            {/* Custom Fields */}
+            {customFields.length > 0 && (
+              <div className="space-y-3">
+                <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                  Campos personalizados
+                </Label>
+                <div className="grid grid-cols-2 gap-1.5">
+                  {columns.filter(col => col.isCustomField).map((col) => (
+                    <button
+                      key={col.key}
+                      onClick={() => toggleColumn(col.key)}
+                      className={cn(
+                        "flex items-center gap-2 p-2 rounded-lg transition-all text-left",
+                        col.selected
+                          ? "bg-accent"
+                          : "hover:bg-accent/50"
+                      )}
+                    >
+                      <div className={cn(
+                        "w-4 h-4 rounded border-2 flex items-center justify-center transition-colors",
+                        col.selected
+                          ? "border-primary bg-primary"
+                          : "border-muted-foreground/30"
+                      )}>
+                        {col.selected && <Check className="w-2.5 h-2.5 text-primary-foreground" />}
+                      </div>
+                      <span className="text-sm truncate">{col.label}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
             
             <Button 
               onClick={exportToCsv} 
