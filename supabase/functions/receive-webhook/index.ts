@@ -952,11 +952,16 @@ const handler = async (req: Request): Promise<Response> => {
         
         // Only update other fields if they have values
         // IMPORTANT: 
-        // - EMAIL is NEVER updated (it's the primary identifier)
+        // - EMAIL is only updated if the current email is empty (it's the primary identifier)
         // - In update-only mode, do NOT update identification fields (name, whatsapp, country_code)
         // - In receive mode, name/whatsapp/country_code CAN be updated if provided
         if (!isUpdateOnly && leadData.name && leadData.name.trim()) updateData.name = leadData.name;
-        // EMAIL NEVER UPDATED - it's the primary identifier for duplicate detection
+        // EMAIL: only update if current email is empty/missing AND new email is provided
+        const currentEmail = existingLead.email || "";
+        if (leadData.email && leadData.email.trim() && (!currentEmail || !currentEmail.trim() || currentEmail.includes("incompleto_") || currentEmail.includes("@temp.com"))) {
+          updateData.email = leadData.email;
+          console.log(`[Webhook] Updating empty email to: ${leadData.email}`);
+        }
         if (!isUpdateOnly && leadData.whatsapp && leadData.whatsapp.trim()) updateData.whatsapp = leadData.whatsapp;
         if (!isUpdateOnly && leadData.country_code && leadData.country_code.trim()) updateData.country_code = leadData.country_code;
         if (leadData.instagram && leadData.instagram.trim()) updateData.instagram = leadData.instagram;
