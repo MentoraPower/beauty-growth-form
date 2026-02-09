@@ -116,7 +116,7 @@ export function useWhatsAppMessages({ selectedChat, onMarkAsRead }: UseWhatsAppM
   const fetchMessages = useCallback(async (chatId: string) => {
     setIsLoadingMessages(true);
     try {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from("whatsapp_messages")
         .select("*")
         .eq("chat_id", chatId)

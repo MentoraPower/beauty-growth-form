@@ -91,7 +91,7 @@ export function AddWhatsAppAccountDialog({ open, onOpenChange, onSuccess, existi
     }
 
     try {
-      const { error } = await supabase
+      const { error } = await (supabase as any)
         .from("workspace_whatsapp_accounts")
         .upsert({
           workspace_id: currentWorkspace.id,

@@ -68,7 +68,7 @@ export function DisparoSubmenuPanel({ isOpen, onClose }: DisparoSubmenuPanelProp
       setIsLoading(true);
     }
     try {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from("dispatch_conversations")
         .select("id, title, created_at, updated_at")
         .eq("workspace_id", currentWorkspace.id)
@@ -181,7 +181,7 @@ export function DisparoSubmenuPanel({ isOpen, onClose }: DisparoSubmenuPanelProp
     if (!renameConvId || !renameValue.trim()) return;
 
     try {
-      const { error } = await supabase
+      const { error } = await (supabase as any)
         .from("dispatch_conversations")
         .update({ title: renameValue.trim() })
         .eq("id", renameConvId);
@@ -215,7 +215,7 @@ export function DisparoSubmenuPanel({ isOpen, onClose }: DisparoSubmenuPanelProp
     
     try {
       // 1) Delete associated dispatch_jobs first (DB FK may otherwise try to SET NULL and fail constraints)
-      const { error: jobsError } = await supabase
+      const { error: jobsError } = await (supabase as any)
         .from("dispatch_jobs")
         .delete()
         .eq("conversation_id", id);
@@ -223,7 +223,7 @@ export function DisparoSubmenuPanel({ isOpen, onClose }: DisparoSubmenuPanelProp
       if (jobsError) throw jobsError;
 
       // 2) Delete CSV data (recipients -> lists)
-      const { data: csvLists, error: csvListsFetchError } = await supabase
+      const { data: csvLists, error: csvListsFetchError } = await (supabase as any)
         .from("dispatch_csv_lists")
         .select("id")
         .eq("conversation_id", id);
@@ -233,14 +233,14 @@ export function DisparoSubmenuPanel({ isOpen, onClose }: DisparoSubmenuPanelProp
       const csvListIds = (csvLists ?? []).map((l) => l.id).filter(Boolean) as string[];
 
       if (csvListIds.length > 0) {
-        const { error: recipientsError } = await supabase
+        const { error: recipientsError } = await (supabase as any)
           .from("dispatch_csv_list_recipients")
           .delete()
           .in("list_id", csvListIds);
 
         if (recipientsError) throw recipientsError;
 
-        const { error: listsDeleteError } = await supabase
+        const { error: listsDeleteError } = await (supabase as any)
           .from("dispatch_csv_lists")
           .delete()
           .in("id", csvListIds);
@@ -249,7 +249,7 @@ export function DisparoSubmenuPanel({ isOpen, onClose }: DisparoSubmenuPanelProp
       }
 
       // 3) Finally delete the conversation
-      const { error: convError } = await supabase
+      const { error: convError } = await (supabase as any)
         .from("dispatch_conversations")
         .delete()
         .eq("id", id);

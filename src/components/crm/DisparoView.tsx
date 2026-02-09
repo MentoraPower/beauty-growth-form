@@ -986,7 +986,7 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
       
       const loadConversation = async () => {
         try {
-          const { data, error } = await supabase
+          const { data, error } = await (supabase as any)
             .from("dispatch_conversations")
             .select("*")
             .eq("id", convId)
@@ -1084,7 +1084,7 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
             if (cs.csvMappedColumns) setCsvMappedColumns(cs.csvMappedColumns);
             
             if (cs.csvListId) {
-              const { data: recipients } = await supabase
+              const { data: recipients } = await (supabase as any)
                 .from('dispatch_csv_list_recipients')
                 .select('id, name, email, whatsapp')
                 .eq('list_id', cs.csvListId)
@@ -1100,7 +1100,7 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
             }
           }
 
-          const { data: activeJob } = await supabase
+          const { data: activeJob } = await (supabase as any)
             .from('dispatch_jobs')
             .select('id, status')
             .eq('conversation_id', convId)
@@ -1307,7 +1307,7 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
       };
 
       if (convId && !forceCreate) {
-        const { error } = await supabase
+        const { error } = await (supabase as any)
           .from("dispatch_conversations")
           .update({ 
             messages: conversationData as any,
@@ -1320,7 +1320,7 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
         console.log('[DisparoView] Saved conversation', convId, 'with', currentMessages.length, 'messages');
         return convId;
       } else {
-        const { data, error } = await supabase
+        const { data, error } = await (supabase as any)
           .from("dispatch_conversations")
           .insert({ 
             messages: conversationData as any,
@@ -1586,7 +1586,7 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
       
       if (csvListId) {
         try {
-          await supabase
+          await (supabase as any)
             .from('dispatch_csv_list_recipients')
             .delete()
             .eq('list_id', csvListId);
@@ -1601,7 +1601,7 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
             }));
           
           if (recipients.length > 0) {
-            await supabase
+            await (supabase as any)
               .from('dispatch_csv_list_recipients')
               .insert(recipients);
           }
@@ -1970,7 +1970,7 @@ export function DisparoView({ subOriginId }: DisparoViewProps) {
               htmlSource: null
             };
             
-            const { data, error } = await supabase
+            const { data, error } = await (supabase as any)
               .from("dispatch_conversations")
               .insert({ 
                 messages: conversationData as any,

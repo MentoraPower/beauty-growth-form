@@ -77,7 +77,7 @@ export function EmailAutomationsView({ pipelines, subOriginId }: EmailAutomation
 
       console.log("Fetching automation for sub_origin:", subOriginId);
       
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from("email_automations")
         .select("*")
         .eq("sub_origin_id", subOriginId)
@@ -156,7 +156,7 @@ export function EmailAutomationsView({ pipelines, subOriginId }: EmailAutomation
     queryFn: async () => {
       if (!automationId) return 0;
 
-      const { count, error } = await supabase
+      const { count, error } = await (supabase as any)
         .from("scheduled_emails")
         .select("*", { count: "exact", head: true })
         .eq("automation_id", automationId)
@@ -284,7 +284,7 @@ export function EmailAutomationsView({ pipelines, subOriginId }: EmailAutomation
     try {
       if (automationId) {
         // Update existing
-        const { error } = await supabase
+        const { error } = await (supabase as any)
           .from("email_automations")
           .update({
             trigger_pipeline_id: triggerPipelineId,
@@ -297,7 +297,7 @@ export function EmailAutomationsView({ pipelines, subOriginId }: EmailAutomation
         if (error) throw error;
       } else {
         // Create new
-        const { data, error } = await supabase
+        const { data, error } = await (supabase as any)
           .from("email_automations")
           .insert({
             name: "Automação de Email",

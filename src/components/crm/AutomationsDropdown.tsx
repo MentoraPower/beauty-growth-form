@@ -308,7 +308,7 @@ export function AutomationsDropdown({
   const { data: pendingEmailsCounts = {} } = useQuery({
     queryKey: ["scheduled-emails-counts", subOriginId],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from("scheduled_emails")
         .select("automation_id")
         .eq("status", "pending");

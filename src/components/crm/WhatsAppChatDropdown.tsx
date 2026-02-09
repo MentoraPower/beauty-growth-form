@@ -117,7 +117,7 @@ export function WhatsAppChatDropdown({ phone, countryCode, contactName, sessionI
     setIsLoading(true);
     try {
       // Build query with session_id filter for account isolation
-      let query = supabase
+      let query = (supabase as any)
         .from("whatsapp_chats")
         .select("id, photo_url, last_message_time, session_id")
         .in("phone", candidates);
@@ -140,7 +140,7 @@ export function WhatsAppChatDropdown({ phone, countryCode, contactName, sessionI
 
       setChatData({ id: existingChat.id, photo_url: existingChat.photo_url });
 
-      const { data: messagesData } = await supabase
+      const { data: messagesData } = await (supabase as any)
         .from("whatsapp_messages")
         .select("*")
         .eq("chat_id", existingChat.id)
@@ -171,7 +171,7 @@ export function WhatsAppChatDropdown({ phone, countryCode, contactName, sessionI
   const fetchAllChats = useCallback(async () => {
     setIsLoading(true);
     try {
-      let query = supabase
+      let query = (supabase as any)
         .from("whatsapp_chats")
         .select("*");
       
@@ -209,7 +209,7 @@ export function WhatsAppChatDropdown({ phone, countryCode, contactName, sessionI
     setIsLoading(true);
 
     try {
-      let query = supabase
+      let query = (supabase as any)
         .from("whatsapp_chats")
         .select("id, photo_url")
         .eq("phone", chatPhone);
@@ -224,7 +224,7 @@ export function WhatsAppChatDropdown({ phone, countryCode, contactName, sessionI
       if (existingChat) {
         setChatData(existingChat);
 
-        const { data: messagesData } = await supabase
+        const { data: messagesData } = await (supabase as any)
           .from("whatsapp_messages")
           .select("*")
           .eq("chat_id", existingChat.id)
@@ -392,7 +392,7 @@ export function WhatsAppChatDropdown({ phone, countryCode, contactName, sessionI
           chatUpsertData.session_id = sessionId;
         }
         
-        const { data: newChat } = await supabase
+        const { data: newChat } = await (supabase as any)
           .from("whatsapp_chats")
           .upsert(chatUpsertData, { onConflict: "phone,session_id" })
           .select()
@@ -405,7 +405,7 @@ export function WhatsAppChatDropdown({ phone, countryCode, contactName, sessionI
       }
 
       if (chatId) {
-        const { data: insertedMsg } = await supabase
+        const { data: insertedMsg } = await (supabase as any)
           .from("whatsapp_messages")
           .insert({
             chat_id: chatId,
@@ -419,7 +419,7 @@ export function WhatsAppChatDropdown({ phone, countryCode, contactName, sessionI
           .select()
           .single();
 
-        await supabase
+        await (supabase as any)
           .from("whatsapp_chats")
           .update({
             last_message: messageText,
@@ -565,7 +565,7 @@ export function WhatsAppChatDropdown({ phone, countryCode, contactName, sessionI
         
         // Refresh messages
         if (chatData?.id) {
-          const { data: messagesData } = await supabase
+          const { data: messagesData } = await (supabase as any)
             .from("whatsapp_messages")
             .select("*")
             .eq("chat_id", chatData.id)
