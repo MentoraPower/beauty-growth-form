@@ -1098,10 +1098,10 @@ const handler = async (req: Request): Promise<Response> => {
       // Save custom field responses if any exist
       if (savedLeadId && targetSubOriginId) {
         try {
-          // Fetch custom fields for this sub-origin
+          // Fetch custom fields for this sub-origin (include field_type for file handling)
           const { data: customFields } = await supabase
             .from("sub_origin_custom_fields")
-            .select("id, field_key")
+            .select("id, field_key, field_type")
             .eq("sub_origin_id", targetSubOriginId);
 
           if (customFields && customFields.length > 0) {
@@ -1134,10 +1134,100 @@ const handler = async (req: Request): Promise<Response> => {
               }
               
               if (value !== undefined && value !== null && String(value).trim() !== "") {
+                let responseValue = String(value);
+                
+                // Handle file-type fields: detect base64 and upload to storage
+                if (field.field_type === "file") {
+                  try {
+                    const base64Value = responseValue;
+                    
+                    // Detect mime type and extension from base64 data URI or raw base64
+                    let mimeType = "application/octet-stream";
+                    let rawBase64 = base64Value;
+                    let extension = "bin";
+                    
+                    // Check for data URI format: data:mime/type;base64,DATA
+                    const dataUriMatch = base64Value.match(/^data:([^;]+);base64,(.+)$/);
+                    if (dataUriMatch) {
+                      mimeType = dataUriMatch[1];
+                      rawBase64 = dataUriMatch[2];
+                    }
+                    
+                    // Determine extension from mime type
+                    const mimeExtMap: Record<string, string> = {
+                      "image/png": "png",
+                      "image/jpeg": "jpg",
+                      "image/jpg": "jpg",
+                      "image/gif": "gif",
+                      "image/webp": "webp",
+                      "image/svg+xml": "svg",
+                      "application/pdf": "pdf",
+                      "application/vnd.openxmlformats-officedocument.wordprocessingml.document": "docx",
+                      "application/msword": "doc",
+                      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": "xlsx",
+                      "application/vnd.ms-excel": "xls",
+                      "application/vnd.openxmlformats-officedocument.presentationml.presentation": "pptx",
+                      "application/vnd.ms-powerpoint": "ppt",
+                      "text/csv": "csv",
+                      "text/plain": "txt",
+                    };
+                    
+                    extension = mimeExtMap[mimeType] || "bin";
+                    
+                    // If no data URI, try to detect from base64 magic bytes
+                    if (!dataUriMatch) {
+                      // Check first bytes of decoded data for signatures
+                      const first4 = rawBase64.substring(0, 8);
+                      if (first4.startsWith("iVBOR")) { mimeType = "image/png"; extension = "png"; }
+                      else if (first4.startsWith("/9j/")) { mimeType = "image/jpeg"; extension = "jpg"; }
+                      else if (first4.startsWith("JVBER")) { mimeType = "application/pdf"; extension = "pdf"; }
+                      else if (first4.startsWith("UEsDB")) { 
+                        // ZIP-based (docx, xlsx, pptx)
+                        mimeType = "application/octet-stream"; extension = "zip"; 
+                      }
+                    }
+                    
+                    // Decode base64 to binary
+                    const binaryString = atob(rawBase64);
+                    const bytes = new Uint8Array(binaryString.length);
+                    for (let i = 0; i < binaryString.length; i++) {
+                      bytes[i] = binaryString.charCodeAt(i);
+                    }
+                    
+                    // Generate unique filename
+                    const timestamp = Date.now();
+                    const randomSuffix = Math.random().toString(36).substring(2, 8);
+                    const filePath = `${targetSubOriginId}/${savedLeadId}/${field.id}_${timestamp}_${randomSuffix}.${extension}`;
+                    
+                    // Upload to Supabase Storage
+                    const { data: uploadData, error: uploadError } = await supabase.storage
+                      .from("custom-field-files")
+                      .upload(filePath, bytes, {
+                        contentType: mimeType,
+                        upsert: true,
+                      });
+                    
+                    if (uploadError) {
+                      console.log(`[Webhook] File upload error for field ${field.id}:`, uploadError.message);
+                    } else {
+                      // Get public URL
+                      const { data: urlData } = supabase.storage
+                        .from("custom-field-files")
+                        .getPublicUrl(filePath);
+                      
+                      responseValue = urlData.publicUrl;
+                      console.log(`[Webhook] File uploaded for field ${field.id}: ${responseValue}`);
+                    }
+                  } catch (fileError) {
+                    console.log(`[Webhook] Error processing file for field ${field.id}:`, fileError);
+                    // Keep original value if upload fails
+                  }
+                }
+                
                 customResponses.push({
                   lead_id: savedLeadId,
                   field_id: field.id,
-                  response_value: String(value),
+                  response_value: responseValue,
                 });
               }
             }

@@ -58,6 +58,9 @@ export function CustomFieldsPanel({ subOriginId, isOpen, onClose, onFieldsChange
           const options = field.options as string[] | null;
           model[field.id] = options?.[0] || "opcao";
           break;
+        case "file":
+          model[field.id] = "data:image/png;base64,iVBOR...ou qualquer base64";
+          break;
         default:
           model[field.id] = "valor";
       }
@@ -173,6 +176,7 @@ export function CustomFieldsPanel({ subOriginId, isOpen, onClose, onFieldsChange
       case "number": return "Número";
       case "select": return "Seleção";
       case "boolean": return "Sim/Não";
+      case "file": return "Arquivo";
       default: return type;
     }
   };
@@ -305,6 +309,7 @@ export function CustomFieldsPanel({ subOriginId, isOpen, onClose, onFieldsChange
                 <SelectItem value="number">Número</SelectItem>
                 <SelectItem value="select">Seleção</SelectItem>
                 <SelectItem value="boolean">Sim/Não</SelectItem>
+                <SelectItem value="file">Arquivo (Comprovante)</SelectItem>
               </SelectContent>
             </Select>
           </div>
