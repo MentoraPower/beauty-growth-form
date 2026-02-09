@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { EditableField } from "./EditableField";
+import { FilePreview } from "./FilePreview";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { Settings2 } from "lucide-react";
@@ -145,6 +146,8 @@ export function LeadCustomFields({ leadId, subOriginId, onOpenManager, refreshTr
         return <LucideIcons.ToggleLeft className="h-4 w-4 text-muted-foreground" />;
       case "select":
         return <LucideIcons.List className="h-4 w-4 text-muted-foreground" />;
+      case "file":
+        return <LucideIcons.Paperclip className="h-4 w-4 text-muted-foreground" />;
       default:
         return <LucideIcons.Type className="h-4 w-4 text-muted-foreground" />;
     }
@@ -195,6 +198,8 @@ export function LeadCustomFields({ leadId, subOriginId, onOpenManager, refreshTr
         <div className="grid grid-cols-2 gap-4">
           {fields.map((field, index) => {
             const value = responses[field.id] || "";
+            const isFileField = field.field_type === "file";
+            const hasFileUrl = isFileField && value && (value.startsWith("http://") || value.startsWith("https://"));
             
             return (
               <div 
@@ -209,12 +214,18 @@ export function LeadCustomFields({ leadId, subOriginId, onOpenManager, refreshTr
                     {field.is_required && <span className="text-destructive ml-1">*</span>}
                   </p>
                 </div>
-                <EditableField
-                  value={value}
-                  onSave={(newValue) => handleUpdateField(field.id, newValue)}
-                  placeholder={`Digite ${field.field_label.toLowerCase()}`}
-                  displayValue={formatDisplayValue(field, value)}
-                />
+                {hasFileUrl ? (
+                  <FilePreview url={value} />
+                ) : isFileField && !value ? (
+                  <span className="text-sm font-medium text-muted-foreground italic">sem arquivo</span>
+                ) : (
+                  <EditableField
+                    value={value}
+                    onSave={(newValue) => handleUpdateField(field.id, newValue)}
+                    placeholder={`Digite ${field.field_label.toLowerCase()}`}
+                    displayValue={formatDisplayValue(field, value)}
+                  />
+                )}
               </div>
             );
           })}
