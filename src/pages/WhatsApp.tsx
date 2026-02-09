@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useSearchParams } from "react-router-dom";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase as supabaseTyped } from "@/integrations/supabase/client";
+const supabase = supabaseTyped as any;
 import { useToast } from "@/hooks/use-toast";
 import LeadInfoPanel from "@/components/whatsapp/LeadInfoPanel";
 import ImageLightbox from "@/components/whatsapp/ImageLightbox";
@@ -267,7 +268,7 @@ const WhatsApp = (props: WhatsAppProps) => {
           const chatData = chatDataMap.get(g.group_jid);
           const systemEvent = latestSystemEventMap.get(g.group_jid);
           // Prioritize system event text if exists, otherwise use last message
-          const lastMessage = systemEvent || chatData?.last_message || null;
+          const lastMessage = systemEvent || (chatData as any)?.last_message || null;
           
           return {
             id: g.id,
@@ -275,10 +276,10 @@ const WhatsApp = (props: WhatsAppProps) => {
             name: g.name,
             participantCount: g.participant_count ?? 0,
             photoUrl: g.photo_url,
-            unreadCount: chatData?.unread_count ?? 0,
+            unreadCount: (chatData as any)?.unread_count ?? 0,
             hasNewEvent: groupsWithEvents.has(g.group_jid),
             lastMessage,
-            lastMessageTime: chatData?.last_message_time || null,
+            lastMessageTime: (chatData as any)?.last_message_time || null,
           };
         }));
         

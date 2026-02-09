@@ -282,7 +282,7 @@ export function EmailSidePanel({
   const fetchSentEmails = useCallback(async () => {
     if (!dispatchJobId) return;
 
-    const { data: sentEmailsData } = await supabase
+    const { data: sentEmailsData } = await (supabase as any)
       .from('sent_emails')
       .select('lead_id, lead_email')
       .eq('dispatch_job_id', dispatchJobId)
@@ -303,7 +303,7 @@ export function EmailSidePanel({
   const fetchDispatchJobOnly = useCallback(async () => {
     if (!dispatchJobId) return;
 
-    const { data: jobData } = await supabase
+    const { data: jobData } = await (supabase as any)
       .from('dispatch_jobs')
       .select('*')
       .eq('id', dispatchJobId)
@@ -318,7 +318,7 @@ export function EmailSidePanel({
   const fetchDispatchData = useCallback(async () => {
     if (!dispatchJobId) return;
 
-    const { data: jobData } = await supabase
+    const { data: jobData } = await (supabase as any)
       .from('dispatch_jobs')
       .select('*')
       .eq('id', dispatchJobId)
@@ -337,7 +337,7 @@ export function EmailSidePanel({
         // Fetch recipients from CSV list (paged to avoid 1000-row caps)
         const allRecipients: Array<{ id: string; name: string | null; email: string }> = [];
         for (let from = 0; from < maxRows; from += pageSize) {
-          const { data: page } = await supabase
+          const { data: page } = await (supabase as any)
             .from('dispatch_csv_list_recipients')
             .select('id, name, email')
             .eq('list_id', (jobData as any).csv_list_id)

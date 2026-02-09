@@ -36,14 +36,14 @@ export function DispatchStatsCard({ jobId, onOpenPanel }: DispatchStatsCardProps
 
     try {
       // Fetch dispatch job data
-      const { data: jobData } = await supabase
+      const { data: jobData } = await (supabase as any)
         .from('dispatch_jobs')
         .select('sent_count, failed_count')
         .eq('id', jobId)
         .single();
 
       // Fetch sent email IDs for this job
-      const { data: sentEmails } = await supabase
+      const { data: sentEmails } = await (supabase as any)
         .from('sent_emails')
         .select('id')
         .eq('dispatch_job_id', jobId)
@@ -56,7 +56,7 @@ export function DispatchStatsCard({ jobId, onOpenPanel }: DispatchStatsCardProps
         const emailIds = sentEmails.map(e => e.id);
         
         // Fetch tracking events for these emails
-        const { data: trackingEvents } = await supabase
+        const { data: trackingEvents } = await (supabase as any)
           .from('email_tracking_events')
           .select('event_type')
           .in('sent_email_id', emailIds);

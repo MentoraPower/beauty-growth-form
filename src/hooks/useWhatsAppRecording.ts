@@ -174,7 +174,7 @@ export function useWhatsAppRecording({
 
       if (error) throw error;
 
-      const { data: insertedMsg } = await supabase.from("whatsapp_messages").insert({
+      const { data: insertedMsg } = await (supabase as any).from("whatsapp_messages").insert({
         chat_id: selectedChat.id,
         phone: selectedChat.phone,
         text: "",
@@ -194,7 +194,7 @@ export function useWhatsAppRecording({
 
       const newTimestamp = new Date().toISOString();
       
-      await supabase.from("whatsapp_chats").update({
+      await (supabase as any).from("whatsapp_chats").update({
         last_message: "🎵 Áudio",
         last_message_time: newTimestamp,
         last_message_status: "SENT",

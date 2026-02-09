@@ -1365,7 +1365,7 @@ const AnalyticsNode = ({ id, data, selected }: NodeProps) => {
       try {
         if (automationId) {
           // Get scheduled emails for this automation
-          const { data: scheduledEmails, error: schedError } = await supabase
+          const { data: scheduledEmails, error: schedError } = await (supabase as any)
             .from("scheduled_emails")
             .select("id, status, created_at, sent_at")
             .eq("automation_id", automationId);
@@ -1382,7 +1382,7 @@ const AnalyticsNode = ({ id, data, selected }: NodeProps) => {
           let clicks = 0;
 
           if (emailIds.length > 0) {
-            const { data: trackingEvents } = await supabase
+            const { data: trackingEvents } = await (supabase as any)
               .from("email_tracking_events")
               .select("event_type, scheduled_email_id")
               .in("scheduled_email_id", emailIds);
@@ -1468,7 +1468,7 @@ const AnalyticsNode = ({ id, data, selected }: NodeProps) => {
           });
         } else {
           // Fallback to local whatsapp_messages table
-          const { data: messages } = await supabase
+          const { data: messages } = await (supabase as any)
             .from("whatsapp_messages")
             .select("status, created_at, from_me")
             .eq("from_me", true)

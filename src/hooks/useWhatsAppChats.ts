@@ -168,7 +168,7 @@ export function useWhatsAppChats({ selectedAccountId, whatsappAccounts }: UseWha
       const selectedAccount = whatsappAccounts.find(acc => acc.id === selectedAccountId);
       const sessionApiKey = selectedAccount?.api_key;
       
-      let query = supabase
+      let query = (supabase as any)
         .from("whatsapp_chats")
         .select("*")
         .order("last_message_time", { ascending: false });
@@ -271,7 +271,7 @@ export function useWhatsAppChats({ selectedAccountId, whatsappAccounts }: UseWha
     });
 
     try {
-      await supabase
+      await (supabase as any)
         .from("whatsapp_chats")
         .update({ name: newName })
         .eq("id", chatId);
@@ -304,7 +304,7 @@ export function useWhatsAppChats({ selectedAccountId, whatsappAccounts }: UseWha
   }, [whatsappAccounts, selectedAccountId, fetchChats]);
 
   const markChatAsRead = useCallback(async (chatId: string) => {
-    await supabase.from("whatsapp_chats").update({ unread_count: 0 }).eq("id", chatId);
+    await (supabase as any).from("whatsapp_chats").update({ unread_count: 0 }).eq("id", chatId);
     setChats(prev => prev.map(c => c.id === chatId ? { ...c, unread: 0 } : c));
     setSelectedChat(prev => prev?.id === chatId ? { ...prev, unread: 0 } : prev);
   }, []);
@@ -396,7 +396,7 @@ export function useWhatsAppChats({ selectedAccountId, whatsappAccounts }: UseWha
           return;
         }
         
-        const { data: chatData, error } = await supabase
+        const { data: chatData, error } = await (supabase as any)
           .from("whatsapp_chats")
           .select("*")
           .eq("id", chatIdFromUrl)
@@ -416,7 +416,7 @@ export function useWhatsAppChats({ selectedAccountId, whatsappAccounts }: UseWha
         let participantCount = 0;
         
         if (isGroup && !groupPhoto) {
-          const { data: groupData } = await supabase
+          const { data: groupData } = await (supabase as any)
             .from("whatsapp_groups")
             .select("photo_url, participant_count")
             .eq("group_jid", chatData.phone)

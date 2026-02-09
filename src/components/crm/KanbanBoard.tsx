@@ -351,7 +351,7 @@ export function KanbanBoard() {
   const { data: emailAutomations = [] } = useQuery({
     queryKey: ["email-automations-triggers", subOriginId],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from("email_automations")
         .select("*")
         .eq("is_active", true);

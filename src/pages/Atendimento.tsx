@@ -81,7 +81,7 @@ export default function Atendimento() {
     setIsLoadingAccounts(true);
     try {
       // Get linked accounts for this workspace
-      const { data: linkedAccounts } = await supabase
+      const { data: linkedAccounts } = await (supabase as any)
         .from("workspace_whatsapp_accounts")
         .select("session_id, session_name")
         .eq("workspace_id", currentWorkspace.id);

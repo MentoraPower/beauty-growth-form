@@ -46,7 +46,7 @@ export const GroupParticipantsPanel = ({
   // Load cached participants from database
   const loadCachedParticipants = async (): Promise<Participant[]> => {
     try {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from("whatsapp_group_participants")
         .select("*")
         .eq("group_jid", groupJid)
@@ -92,7 +92,7 @@ export const GroupParticipantsPanel = ({
         is_super_admin: p.isSuperAdmin || false,
       }));
 
-      const { error } = await supabase
+      const { error } = await (supabase as any)
         .from("whatsapp_group_participants")
         .upsert(records, { onConflict: "group_jid,session_id,participant_jid" });
 
@@ -102,7 +102,7 @@ export const GroupParticipantsPanel = ({
         console.log("[GroupParticipantsPanel] Saved to cache:", records.length);
         
         // Update participant_count in whatsapp_groups
-        await supabase
+        await (supabase as any)
           .from("whatsapp_groups")
           .update({ participant_count: participantsList.length })
           .eq("group_jid", groupJid)
@@ -116,7 +116,7 @@ export const GroupParticipantsPanel = ({
   // Update single participant photo in cache
   const updatePhotoInCache = async (participantJid: string, photoUrl: string) => {
     try {
-      await supabase
+      await (supabase as any)
         .from("whatsapp_group_participants")
         .update({ photo_url: photoUrl })
         .eq("group_jid", groupJid)
