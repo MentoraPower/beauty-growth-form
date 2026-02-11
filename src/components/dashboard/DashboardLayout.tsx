@@ -195,7 +195,7 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
             height: 'calc(100vh - 45px - 1.5rem)',
             borderRight: '1px solid rgba(255, 255, 255, 0.125)',
           }}
-          className="group hidden lg:flex flex-col fixed bg-[#0f0f12] overflow-hidden z-50 rounded-2xl w-16 hover:w-[180px] transition-[width] duration-200 ease-out"
+          className="group hidden lg:flex flex-col fixed bg-black overflow-hidden z-50 rounded-2xl w-16 hover:w-[180px] transition-[width] duration-200 ease-out"
         >
           <div className="flex flex-col h-full relative">
             {/* Logo */}
@@ -311,7 +311,7 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
         {/* Mobile Sidebar */}
         <aside
           className={cn(
-            "lg:hidden fixed left-0 bottom-0 w-64 bg-[#0f0f12] border-r border-white/10 z-40 transform transition-transform duration-300 ease-in-out",
+            "lg:hidden fixed left-0 bottom-0 w-64 bg-black border-r border-white/10 z-40 transform transition-transform duration-300 ease-in-out",
             sidebarOpen ? "translate-x-0" : "-translate-x-full"
           )}
           style={{ top: 'calc(45px + 56px)' }}
