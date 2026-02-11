@@ -328,34 +328,6 @@ export const ViewTabs = memo(function ViewTabs({ activeView, onViewChange, onSet
               ))}
             </SortableContext>
             
-            {/* Add view button - shows hidden tabs */}
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <button
-                  className="flex items-center gap-1 px-2 py-0.5 rounded-md bg-muted/50 hover:bg-muted text-[12px] font-medium text-muted-foreground hover:text-foreground transition-colors"
-                >
-                  <Plus className="w-3 h-3" />
-                  Adicionar visualização
-                </button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="start" className="min-w-[180px]">
-                {hiddenTabs.length > 0 ? (
-                  hiddenTabs.map(tab => (
-                    <DropdownMenuItem
-                      key={tab.id}
-                      onSelect={() => handleShowTab(tab.id)}
-                      className="cursor-pointer"
-                    >
-                      {tab.label}
-                    </DropdownMenuItem>
-                  ))
-                ) : (
-                  <div className="px-2 py-1.5 text-xs text-muted-foreground">
-                    Todas as visualizações já estão visíveis
-                  </div>
-                )}
-              </DropdownMenuContent>
-            </DropdownMenu>
             
           </div>
           
