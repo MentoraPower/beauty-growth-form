@@ -30,7 +30,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { supabase } from "@/integrations/supabase/client";
 
-type CRMView = "overview" | "quadro" | "lista" | "calendario" | "email";
+type CRMView = "overview" | "quadro" | "calendario";
 
 interface ViewTabsProps {
   activeView: CRMView;
@@ -49,11 +49,10 @@ interface TabItem {
 const defaultTabs: TabItem[] = [
   { id: "overview", label: "OverView" },
   { id: "quadro", label: "Quadro" },
-  { id: "lista", label: "List" },
   { id: "calendario", label: "Calendário" },
 ];
 
-const defaultOrder: CRMView[] = ["overview", "quadro", "lista", "calendario"];
+const defaultOrder: CRMView[] = ["overview", "quadro", "calendario"];
 
 interface TabConfig {
   order: CRMView[];

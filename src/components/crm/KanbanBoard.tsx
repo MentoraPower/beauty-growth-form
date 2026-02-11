@@ -23,7 +23,7 @@ import { Lead, Pipeline } from "@/types/crm";
 import { triggerWebhook } from "@/lib/webhooks";
 import { trackPipelineMove, trackPositionChange } from "@/lib/leadTracking";
 import { VirtualizedKanbanColumn } from "./VirtualizedKanbanColumn";
-import { ListView } from "./ListView";
+
 import { KanbanCard } from "./KanbanCard";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -90,7 +90,7 @@ interface EmailBuilderState {
   };
 }
 
-type CRMView = "overview" | "quadro" | "lista" | "calendario" | "email";
+type CRMView = "overview" | "quadro" | "calendario";
 
 export function KanbanBoard() {
   const { currentWorkspace } = useWorkspace();
@@ -107,7 +107,7 @@ export function KanbanBoard() {
   const getInitialView = (): CRMView => {
     if (urlView) return urlView;
     const savedView = localStorage.getItem("crm-view-preference") as CRMView | null;
-    if (savedView && ["overview", "quadro", "lista", "calendario", "email"].includes(savedView)) {
+    if (savedView && ["overview", "quadro", "calendario"].includes(savedView)) {
       return savedView;
     }
     return "overview";
@@ -1756,23 +1756,9 @@ export function KanbanBoard() {
 
 
 
-      {/* Lista View - keep mounted when visited, hide with CSS for instant switching */}
-      {subOriginId && (activeView === "lista" || activeView === "quadro") && (
-        <div 
-          className={activeView === "lista" ? "flex-1 min-h-0 flex flex-col" : "hidden"}
-          style={{ display: activeView === "lista" ? undefined : "none" }}
-        >
-          <ListView
-            pipelines={pipelines}
-            leadsByPipeline={leadsByPipeline}
-            subOriginId={subOriginId}
-            tagsMap={tagsMap}
-          />
-        </div>
-      )}
 
       {/* Quadro (Kanban) View - keep mounted when visited, hide with CSS for instant switching */}
-      {(activeView === "quadro" || activeView === "lista") && (
+      {activeView === "quadro" && (
         <div 
           className={activeView === "quadro" ? "flex-1 min-h-0 flex flex-col" : "hidden"}
           style={{ display: activeView === "quadro" ? undefined : "none" }}
