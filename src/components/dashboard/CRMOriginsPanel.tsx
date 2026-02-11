@@ -1038,46 +1038,6 @@ export function CRMOriginsPanel({ isOpen, onClose, sidebarWidth, embedded = fals
         )}
       </div>
 
-      {/* Fixed Footer - Credit Chart Card */}
-      <div className="flex-shrink-0 px-3 pb-4 pt-2 border-t border-border">
-        <div 
-          className="relative w-full rounded-2xl overflow-hidden"
-          style={{ 
-            backgroundImage: 'url(/images/crm-submenu-bg.jpg)',
-            backgroundSize: 'cover',
-            backgroundPosition: 'center'
-          }}
-        >
-          {/* Content inside the card */}
-          <div className="p-4 space-y-3">
-            {/* Header */}
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-medium text-white/80">Créditos</span>
-              <span className="text-xs text-white/60">Mensal</span>
-            </div>
-            
-            {/* Credit value */}
-            <div className="flex items-baseline gap-1">
-              <span className="text-2xl font-bold text-white">1.250</span>
-              <span className="text-xs text-white/60">/ 2.000</span>
-            </div>
-            
-            {/* Progress bar */}
-            <div className="h-2 bg-white/20 rounded-full overflow-hidden">
-              <div 
-                className="h-full bg-white rounded-full transition-all duration-500"
-                style={{ width: '62.5%' }}
-              />
-            </div>
-            
-            {/* Stats */}
-            <div className="flex items-center justify-between text-[10px]">
-              <span className="text-white/70">Usados: 750</span>
-              <span className="text-white/70">Restantes: 1.250</span>
-            </div>
-          </div>
-        </div>
-      </div>
 
       {/* Create/Edit Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
