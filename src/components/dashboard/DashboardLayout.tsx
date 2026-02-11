@@ -1,12 +1,10 @@
 import { useState, useCallback, useEffect, memo, useRef, useMemo } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { Menu, X, LogOut, LayoutGrid, Inbox, SquareUser, Send, ChevronsRight } from "lucide-react";
+import { Menu, X, LogOut, LayoutGrid, ChevronsRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import scaleLogo from "@/assets/scale-logo-menu.png";
 import scaleLogoFull from "@/assets/scale-logo-full.png";
-import analizerLogo from "@/assets/analizer-logo.png";
 import { CRMOriginsPanel } from "./CRMOriginsPanel";
-import { DisparoSubmenuPanel } from "./DisparoSubmenuPanel";
 import { PageTransition } from "./PageTransition";
 import { LoadingBar } from "@/components/LoadingBar";
 import { ConnectionStatus } from "@/components/realtime/ConnectionStatus";
@@ -18,13 +16,13 @@ interface DashboardLayoutProps {
   children: React.ReactNode;
 }
 
-type ActivePanel = 'none' | 'crm' | 'atendimento' | 'settings' | 'analizer' | 'equipe' | 'disparo';
+type ActivePanel = 'none' | 'crm' | 'settings';
 
 // Load panel state from localStorage
 const getInitialPanelState = (): ActivePanel => {
   if (typeof window !== 'undefined') {
     const saved = localStorage.getItem('active_panel');
-    if (saved === 'crm' || saved === 'atendimento') {
+    if (saved === 'crm') {
       return saved as ActivePanel;
     }
   }
@@ -45,18 +43,13 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
   const { currentWorkspace } = useWorkspace();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [activePanel, setActivePanel] = useState<ActivePanel>(globalActivePanel);
-  const [canAccessWhatsapp, setCanAccessWhatsapp] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
   const sidebarRef = useRef<HTMLElement>(null);
   const isDesktop = useIsDesktop();
 
   const isCRMActive = location.pathname.startsWith("/crm") || location.pathname === "/";
-  const isAtendimentoActive = location.pathname.startsWith("/atendimento");
   const isSettingsActive = location.pathname === "/settings";
-  const isAnalizerActive = location.pathname === "/analizer";
-  const isEquipeActive = location.pathname === "/equipe";
-  const isDisparoActive = location.pathname === "/disparo";
 
   // Initialize submenu states directly from localStorage (no animation on refresh)
   const getInitialCrmSubmenuState = () => {
@@ -66,18 +59,10 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
       (window.location.pathname.startsWith("/crm") || window.location.pathname === "/");
   };
   
-  const getInitialDisparoSubmenuState = () => {
-    if (typeof window === 'undefined') return false;
-    const savedDisparo = localStorage.getItem('disparo_submenu_open');
-    return savedDisparo === 'true' && window.location.pathname.startsWith("/disparo");
-  };
-
   const [crmSubmenuOpen, setCrmSubmenuOpen] = useState(getInitialCrmSubmenuState);
-  const [disparoSubmenuOpen, setDisparoSubmenuOpen] = useState(getInitialDisparoSubmenuState);
   
   // Track if submenus were restored from storage (skip animation)
   const [crmSubmenuRestored] = useState(getInitialCrmSubmenuState);
-  const [disparoSubmenuRestored] = useState(getInitialDisparoSubmenuState);
   const [animationsEnabled, setAnimationsEnabled] = useState(false);
   
   // Enable animations after first render
@@ -91,95 +76,20 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
     setCrmSubmenuOpen(false);
   }, []);
 
-  const handleCloseDisparoSubmenu = useCallback(() => {
-    setDisparoSubmenuOpen(false);
-  }, []);
-
   // Persist submenu states to localStorage
   useEffect(() => {
     localStorage.setItem('crm_submenu_open', String(crmSubmenuOpen));
   }, [crmSubmenuOpen]);
 
-  useEffect(() => {
-    localStorage.setItem('disparo_submenu_open', String(disparoSubmenuOpen));
-  }, [disparoSubmenuOpen]);
-
-  // Listen for signal to open disparo submenu when new conversation is created
-  useEffect(() => {
-    const handleOpenSubmenu = () => {
-      const shouldOpen = localStorage.getItem('disparo-submenu-should-open');
-      if (shouldOpen === 'true') {
-        setDisparoSubmenuOpen(true);
-        localStorage.removeItem('disparo-submenu-should-open');
-      }
-    };
-
-    // Check on mount and listen for events
-    handleOpenSubmenu();
-    window.addEventListener('disparo-submenu-open', handleOpenSubmenu);
-    
-    return () => {
-      window.removeEventListener('disparo-submenu-open', handleOpenSubmenu);
-    };
-  }, []);
-
   // Sync activePanel with current route (without forcing submenu open)
   useEffect(() => {
-    if (isDisparoActive && activePanel !== 'disparo') {
-      setActivePanel('disparo');
-    } else if (isEquipeActive && activePanel !== 'equipe') {
-      setActivePanel('equipe');
-    } else if (isAnalizerActive && activePanel !== 'analizer') {
-      setActivePanel('analizer');
-    } else if (isAtendimentoActive && activePanel !== 'atendimento') {
-      setActivePanel('atendimento');
-    } else if (isSettingsActive && activePanel !== 'settings') {
+    if (isSettingsActive && activePanel !== 'settings') {
       setActivePanel('settings');
     } else if (isCRMActive && activePanel !== 'crm') {
       setActivePanel('crm');
     }
-  }, [location.pathname, isCRMActive, isAtendimentoActive, isSettingsActive, isAnalizerActive, isEquipeActive, isDisparoActive]);
+  }, [location.pathname, isCRMActive, isSettingsActive]);
 
-  // Fetch user permissions for WhatsApp access
-  useEffect(() => {
-    const fetchPermissions = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-
-      // Check if user is admin first
-      const { data: roleData } = await supabase
-        .from('user_roles')
-        .select('role')
-        .eq('user_id', user.id)
-        .single();
-
-      if (roleData?.role === 'admin') {
-        setCanAccessWhatsapp(true);
-        return;
-      }
-
-      // Check user_permissions
-      const { data: permissions } = await supabase
-        .from('user_permissions')
-        .select('can_access_whatsapp')
-        .eq('user_id', user.id)
-        .single();
-
-      setCanAccessWhatsapp(permissions?.can_access_whatsapp ?? false);
-    };
-
-    fetchPermissions();
-  }, []);
-
-  // Build nav items based on permissions
-  const navItems = [
-    ...(canAccessWhatsapp ? [{ 
-      id: 'atendimento' as ActivePanel, 
-      href: "/atendimento", 
-      icon: Inbox, 
-      label: "Atendimento",
-    }] : []),
-  ];
 
   // Sync with global state and localStorage (without affecting submenu)
   useEffect(() => {
@@ -193,7 +103,6 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
 
     if (panelId === 'crm') {
       setCrmSubmenuOpen(true);
-      setDisparoSubmenuOpen(false);
 
       // Check if already on CRM with an origin
       const originParam = new URLSearchParams(location.search).get('origin');
@@ -242,15 +151,11 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
       return;
     }
 
-    setCrmSubmenuOpen(false);
-    setDisparoSubmenuOpen(false);
+      setCrmSubmenuOpen(false);
   }, [location.pathname, location.search, navigate, currentWorkspace?.id]);
 
   // Navigate when panel changes
   useEffect(() => {
-    if (activePanel === 'atendimento' && !location.pathname.startsWith('/atendimento')) {
-      navigate('/atendimento');
-    }
     if (activePanel === 'settings' && location.pathname !== '/settings') {
       navigate('/settings');
     }
@@ -259,7 +164,6 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
   // Sidebar dimensions
   const sidebarCollapsedWidth = 64;
   const submenuWidth = 256;
-  const disparoSubmenuWidth = 200;
 
   return (
     <div className="min-h-screen bg-background px-3 pb-3">
@@ -335,104 +239,6 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
                   </span>
                 </button>
 
-                {/* Equipe Button */}
-                <button
-                  onClick={() => {
-                    setActivePanel('equipe');
-                    setCrmSubmenuOpen(false);
-                    navigate('/equipe');
-                  }}
-                  className={cn(
-                    "relative flex items-center h-10 rounded-lg transition-all duration-200",
-                    activePanel === 'equipe'
-                      ? "bg-white/10 text-white before:absolute before:-left-3 before:top-1/2 before:-translate-y-1/2 before:h-[70%] before:w-1.5 before:rounded-r-full before:bg-gradient-to-b before:from-orange-500 before:to-amber-500"
-                      : "text-white/70 hover:bg-white/5 hover:text-white"
-                  )}
-                >
-                  <div className="w-10 flex items-center justify-center flex-shrink-0">
-                    <SquareUser className="h-5 w-5" strokeWidth={1.5} />
-                  </div>
-                  <span className="text-sm font-medium whitespace-nowrap transition-all duration-200 overflow-hidden opacity-0 w-0 group-hover:opacity-100 group-hover:w-auto">
-                    Equipe
-                  </span>
-                </button>
-
-                {/* Atendimento */}
-                {navItems.map((item) => {
-                  const isSelected = activePanel === item.id;
-                  return (
-                    <button
-                      key={item.id}
-                      onClick={() => handleNavClick(item.id)}
-                      className={cn(
-                        "relative flex items-center h-10 rounded-lg transition-all duration-200",
-                        isSelected
-                          ? "bg-white/10 text-white before:absolute before:-left-3 before:top-1/2 before:-translate-y-1/2 before:h-[70%] before:w-1.5 before:rounded-r-full before:bg-gradient-to-b before:from-orange-500 before:to-amber-500"
-                          : "text-white/70 hover:bg-white/5 hover:text-white"
-                      )}
-                    >
-                      <div className="w-10 flex items-center justify-center flex-shrink-0">
-                        <item.icon className="h-5 w-5" />
-                      </div>
-                      <span className="text-sm font-medium whitespace-nowrap transition-all duration-200 overflow-hidden opacity-0 w-0 group-hover:opacity-100 group-hover:w-auto">
-                        {item.label}
-                      </span>
-                    </button>
-                  );
-                })}
-
-                {/* Separator */}
-                <div className="my-2 border-t border-white/10" />
-
-                {/* Analizer */}
-                <button
-                  onClick={() => {
-                    setActivePanel('analizer');
-                    setCrmSubmenuOpen(false);
-                    navigate('/analizer');
-                  }}
-                  className={cn(
-                    "relative flex items-center h-10 rounded-lg transition-all duration-200",
-                    activePanel === 'analizer'
-                      ? "bg-white/10 text-white before:absolute before:-left-3 before:top-1/2 before:-translate-y-1/2 before:h-[70%] before:w-1.5 before:rounded-r-full before:bg-gradient-to-b before:from-orange-500 before:to-amber-500"
-                      : "text-white/50 hover:bg-white/5 hover:text-white/70"
-                  )}
-                >
-                  <div className="w-10 flex items-center justify-center flex-shrink-0">
-                    <img 
-                      src={analizerLogo} 
-                      alt="Analizer" 
-                      className="w-5 h-5 object-contain"
-                      style={{ opacity: activePanel === 'analizer' ? 1 : 0.5 }}
-                    />
-                  </div>
-                  <span className="text-sm font-medium whitespace-nowrap transition-all duration-200 overflow-hidden opacity-0 w-0 group-hover:opacity-100 group-hover:w-auto">
-                    Analizer
-                  </span>
-                </button>
-
-                {/* Disparo */}
-                <button
-                  onClick={() => {
-                    setActivePanel('disparo');
-                    setCrmSubmenuOpen(false);
-                    setDisparoSubmenuOpen(true);
-                    navigate('/disparo');
-                  }}
-                  className={cn(
-                    "relative flex items-center h-10 rounded-lg transition-all duration-200",
-                    activePanel === 'disparo'
-                      ? "bg-white/10 text-white before:absolute before:-left-3 before:top-1/2 before:-translate-y-1/2 before:h-[70%] before:w-1.5 before:rounded-r-full before:bg-gradient-to-b before:from-orange-500 before:to-amber-500"
-                      : "text-white/50 hover:bg-white/5 hover:text-white/70"
-                  )}
-                >
-                  <div className="w-10 flex items-center justify-center flex-shrink-0">
-                    <Send className="h-5 w-5" strokeWidth={1.5} style={{ opacity: activePanel === 'disparo' ? 1 : 0.5 }} />
-                  </div>
-                  <span className="text-sm font-medium whitespace-nowrap transition-all duration-200 overflow-hidden opacity-0 w-0 group-hover:opacity-100 group-hover:w-auto">
-                    Disparo
-                  </span>
-                </button>
               </div>
             </nav>
           </div>
@@ -486,51 +292,6 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
           </div>
         </div>
 
-        {/* Disparo Submenu Clip Container - clips the submenu animation */}
-        <div
-          style={{
-            left: 12 + sidebarCollapsedWidth + 12,
-            top: 'calc(45px + 12px)',
-            height: 'calc(100vh - 45px - 1.5rem)',
-            width: disparoSubmenuWidth + 8,
-            zIndex: 39,
-            pointerEvents: disparoSubmenuOpen ? 'auto' : 'none',
-          }}
-          className="hidden lg:block fixed overflow-hidden"
-        >
-          {/* Disparo Submenu Panel - animated inside clip container */}
-          <div
-            style={{
-              width: disparoSubmenuWidth,
-              transform: disparoSubmenuOpen ? 'translateX(0px)' : `translateX(-${disparoSubmenuWidth}px)`,
-              willChange: animationsEnabled ? 'transform' : 'auto',
-            }}
-            className={cn(
-              "h-full overflow-hidden bg-card rounded-2xl border border-border",
-              animationsEnabled && "transition-transform duration-300 ease-out"
-            )}
-          >
-            <div
-              className={cn(
-                "h-full",
-                animationsEnabled && "transition-opacity duration-200"
-              )}
-              style={{
-                width: disparoSubmenuWidth,
-                minWidth: disparoSubmenuWidth,
-                opacity: disparoSubmenuOpen ? 1 : 0,
-                transitionDelay: (animationsEnabled && disparoSubmenuOpen) ? '50ms' : '0ms',
-              }}
-            >
-              <div className="h-full px-3 py-2">
-                <DisparoSubmenuPanel
-                  isOpen={disparoSubmenuOpen}
-                  onClose={handleCloseDisparoSubmenu}
-                />
-              </div>
-            </div>
-          </div>
-        </div>
 
         {/* Floating button to reopen CRM submenu when closed */}
         {isCRMActive && !crmSubmenuOpen && (
@@ -546,19 +307,6 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
           </button>
         )}
 
-        {/* Floating button to reopen Disparo submenu when closed */}
-        {isDisparoActive && !disparoSubmenuOpen && (
-          <button
-            onClick={() => setDisparoSubmenuOpen(true)}
-            style={{ 
-              left: 12 + sidebarCollapsedWidth + 12 - 16,
-              zIndex: 40,
-            }}
-            className="hidden lg:flex fixed top-1/2 -translate-y-1/2 w-8 h-16 items-center justify-center bg-zinc-900 rounded-r-xl hover:bg-zinc-800 transition-colors shadow-lg"
-          >
-            <ChevronsRight className="w-4 h-4 text-white" />
-          </button>
-        )}
 
         {/* Mobile Sidebar */}
         <aside
@@ -593,28 +341,6 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
                   </span>
                 </button>
                 
-                {/* Atendimento - Mobile */}
-                {navItems.map((item) => {
-                  const isActive = activePanel === item.id;
-                  return (
-                    <Link
-                      key={item.href}
-                      to={item.href}
-                      onClick={() => setSidebarOpen(false)}
-                      className={cn(
-                        "relative flex items-center w-full rounded-xl transition-colors duration-200 px-4 py-3 gap-3",
-                        isActive
-                          ? "bg-white/10 text-white before:absolute before:left-0 before:top-1/2 before:-translate-y-1/2 before:h-[70%] before:w-1.5 before:rounded-r-full before:bg-gradient-to-b before:from-orange-500 before:to-amber-500"
-                          : "text-white/60 hover:bg-white/5 hover:text-white"
-                      )}
-                    >
-                      <item.icon className="h-5 w-5 flex-shrink-0" />
-                      <span className="text-sm font-medium whitespace-nowrap">
-                        {item.label}
-                      </span>
-                    </Link>
-                  );
-                })}
 
               </div>
             </nav>
@@ -649,13 +375,9 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
         {isDesktop ? (
           <main 
             style={{ 
-              left: isAtendimentoActive
-                ? 12 + sidebarCollapsedWidth + 12
-                : crmSubmenuOpen 
-                  ? 12 + sidebarCollapsedWidth + 12 + submenuWidth + 8
-                  : disparoSubmenuOpen 
-                    ? 12 + sidebarCollapsedWidth + 12 + disparoSubmenuWidth + 8
-                    : 12 + sidebarCollapsedWidth + 12 + 8,
+              left: crmSubmenuOpen 
+                ? 12 + sidebarCollapsedWidth + 12 + submenuWidth + 8
+                : 12 + sidebarCollapsedWidth + 12 + 8,
               top: '49px',
               right: 0,
               height: 'calc(100vh - 49px)',
@@ -663,7 +385,7 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
             }}
             className="fixed transition-[left] duration-300 ease-out"
           >
-            <div className={cn("h-full overflow-hidden relative flex flex-col bg-background", isDisparoActive || isAtendimentoActive ? "" : "pt-1 pb-3 px-3")}>
+            <div className="h-full overflow-hidden relative flex flex-col bg-background pt-1 pb-3 px-3">
               <PageTransition>
                 <RouteContentMemo>
                   {children}
