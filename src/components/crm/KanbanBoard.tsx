@@ -59,9 +59,6 @@ const ManagePipelinesDialog = lazy(() =>
 
 const CalendarPageLazy = lazy(() => import("@/pages/CalendarPage"));
 
-const EmailAutomationsView = lazy(() => 
-  import("./EmailAutomationsView").then(m => ({ default: m.EmailAutomationsView }))
-);
 
 
 const OverviewView = lazy(() => 
@@ -171,7 +168,7 @@ export function KanbanBoard() {
     hoverTimeoutRef.current = window.setTimeout(() => {
       if (view === "overview") import("./overview/OverviewView");
       if (view === "calendario") import("@/pages/CalendarPage");
-      if (view === "email") import("./EmailAutomationsView");
+      
       hoverTimeoutRef.current = null;
     }, 100); // 100ms debounce
   }, []);
@@ -1757,19 +1754,6 @@ export function KanbanBoard() {
         </Suspense>
       )}
 
-      {/* Email View */}
-      {subOriginId && activeView === "email" && (
-        <Suspense fallback={
-          <div className="flex-1 flex items-center justify-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
-          </div>
-        }>
-          <EmailAutomationsView 
-            pipelines={pipelines} 
-            subOriginId={subOriginId}
-          />
-        </Suspense>
-      )}
 
 
       {/* Lista View - keep mounted when visited, hide with CSS for instant switching */}

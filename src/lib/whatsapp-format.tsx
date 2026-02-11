@@ -1,5 +1,4 @@
 import React from "react";
-import { SafeLink } from "@/components/whatsapp/SafeLink";
 
 /**
  * Parses WhatsApp text formatting and returns React elements
@@ -62,9 +61,9 @@ export function formatWhatsAppText(text: string | unknown): React.ReactNode {
       // Add clickable link with security preview
       const url = match[1];
       result.push(
-        <SafeLink key={currentKey++} url={url}>
+        <a key={currentKey++} href={url} target="_blank" rel="noopener noreferrer" className="text-blue-500 underline hover:text-blue-600 break-all">
           {url}
-        </SafeLink>
+        </a>
       );
       
       lastIndex = match.index + match[0].length;

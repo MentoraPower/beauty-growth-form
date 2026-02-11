@@ -45,5 +45,3 @@ export { useIsMobile } from './use-mobile';
 export { useToast, toast } from './use-toast';
 export { useAnimatedNumber } from './use-animated-number';
 export { useAuth } from './useAuth';
-export { useTypewriter } from './useTypewriter';
-export { useProgressiveSteps } from './useProgressiveSteps';
