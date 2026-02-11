@@ -358,23 +358,6 @@ export const ViewTabs = memo(function ViewTabs({ activeView, onViewChange, onSet
               </DropdownMenuContent>
             </DropdownMenu>
             
-            {/* Separator */}
-            <div className="w-px h-4 bg-border mx-1" />
-            
-            {/* Automations tab (not draggable/hideable) */}
-            <button
-              ref={setTabRef("email")}
-              onClick={() => onViewChange("email")}
-              onMouseEnter={() => onTabHover?.("email")}
-              className={cn(
-                "relative text-[13px] font-semibold tracking-wide transition-colors duration-150 pb-0.5",
-                activeView === "email" 
-                  ? "text-foreground"
-                  : "text-muted-foreground hover:text-foreground/80"
-              )}
-            >
-              Automations
-            </button>
           </div>
           
           {/* Extra Actions + Settings Icon */}
