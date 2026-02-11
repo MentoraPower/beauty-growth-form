@@ -11,14 +11,10 @@ import NotFound from "./pages/NotFound";
 import CRM from "./pages/CRM";
 import LeadDetail from "./pages/LeadDetail";
 import Auth from "./pages/Auth";
-import Atendimento from "./pages/Atendimento";
 import AdminShell from "./pages/AdminShell";
 import Settings from "./pages/Settings";
 import OnboardingForm from "./pages/OnboardingForm";
 import CalendarPage from "./pages/CalendarPage";
-import Analizer from "./pages/Analizer";
-import Equipe from "./pages/Equipe";
-import Disparo from "./pages/Disparo";
 
 const queryClient = new QueryClient();
 
@@ -35,15 +31,9 @@ const App = () => (
                 <Route index element={<Navigate to="/crm" replace />} />
                 <Route path="crm" element={<CRM />} />
                 <Route path="crm/:id" element={<LeadDetail />} />
-                <Route path="atendimento" element={<Atendimento />} />
-                <Route path="whatsapp" element={<Navigate to="/atendimento?tab=whatsapp" replace />} />
-                <Route path="instagram" element={<Navigate to="/atendimento?tab=instagram" replace />} />
                 <Route path="calendario" element={<CalendarPage />} />
                 <Route path="agenda" element={<CalendarPage />} />
                 <Route path="settings" element={<Settings />} />
-                <Route path="equipe" element={<Equipe />} />
-                <Route path="analizer" element={<Analizer />} />
-                <Route path="disparo" element={<Disparo />} />
               </Route>
               <Route path="/termos" element={<TermsOfUse />} />
               <Route path="/privacidade" element={<PrivacyPolicy />} />
