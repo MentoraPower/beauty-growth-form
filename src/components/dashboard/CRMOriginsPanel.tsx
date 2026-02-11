@@ -388,18 +388,6 @@ function SortableOriginItem({
                         "truncate font-bold",
                         isActive && "bg-gradient-to-r from-orange-500 to-amber-400 bg-clip-text text-transparent"
                       )}>{subOrigin.nome}</span>
-                      <span className={cn(
-                        "ml-auto text-[10px] px-1.5 py-0.5 rounded-full min-w-[24px] text-center tabular-nums transition-opacity duration-200",
-                        isCountLoading 
-                          ? "bg-accent text-foreground/50"
-                          : leadCount > 0 
-                            ? isActive 
-                              ? "bg-secondary text-foreground"
-                              : "bg-accent text-foreground/60"
-                            : "opacity-0"
-                      )}>
-                        {isCountLoading ? "..." : leadCount > 0 ? leadCount.toLocaleString('pt-BR') : '0'}
-                      </span>
                     </button>
                     
                     {/* Sub-origin Actions */}
