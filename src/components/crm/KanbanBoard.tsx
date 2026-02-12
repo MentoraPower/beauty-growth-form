@@ -59,7 +59,7 @@ const ManagePipelinesDialog = lazy(() =>
 
 const CalendarPageLazy = lazy(() => import("@/pages/CalendarPage"));
 
-
+import { resolveOriginParam, originIdToSlug } from "@/lib/origin-slugs";
 
 const OverviewView = lazy(() => 
   import("./overview/OverviewView").then(m => ({ default: m.OverviewView }))
@@ -95,7 +95,8 @@ type CRMView = "overview" | "quadro" | "calendario";
 export function KanbanBoard() {
   const { currentWorkspace } = useWorkspace();
   const [searchParams, setSearchParams] = useSearchParams();
-  const subOriginId = searchParams.get("origin");
+  const originParam = searchParams.get("origin");
+  const subOriginId = resolveOriginParam(originParam) || originParam;
   const urlSearchQuery = searchParams.get("search") || "";
   const urlView = searchParams.get("view") as CRMView | null;
   const isEmailBuilderOpen = searchParams.get("emailBuilder") === "open";
@@ -275,7 +276,7 @@ export function KanbanBoard() {
   // Persist last used subOriginId for instant navigation
   useEffect(() => {
     if (subOriginId) {
-      localStorage.setItem("crm_last_sub_origin", subOriginId);
+      localStorage.setItem("crm_last_sub_origin", originIdToSlug(subOriginId));
     }
   }, [subOriginId]);
 

@@ -9,6 +9,7 @@ import { PageTransition } from "./PageTransition";
 import { LoadingBar } from "@/components/LoadingBar";
 import { ConnectionStatus } from "@/components/realtime/ConnectionStatus";
 import { supabase } from "@/integrations/supabase/client";
+import { originIdToSlug, slugify } from "@/lib/origin-slugs";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
 import { useIsDesktop } from "@/hooks/use-mobile";
 
@@ -137,13 +138,14 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
 
         const { data: subOrigins } = await supabase
           .from('crm_sub_origins')
-          .select('id')
+          .select('id, nome')
           .eq('origin_id', origins[0].id)
           .order('ordem')
           .limit(1);
 
         if (subOrigins && subOrigins.length > 0) {
-          navigate(`/crm?origin=${subOrigins[0].id}&view=overview`, { replace: true });
+          const slug = originIdToSlug(subOrigins[0].id) || slugify(subOrigins[0].nome);
+          navigate(`/crm?origin=${slug}&view=overview`, { replace: true });
         }
       })();
 
