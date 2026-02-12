@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useMemo, lazy, Suspense, useRef } from "react";
+import { createPortal } from "react-dom";
 import {
   DndContext,
   DragEndEvent,
@@ -1247,7 +1248,24 @@ export function KanbanBoard() {
     );
   }
 
+  const navbarSlot = typeof document !== 'undefined' ? document.getElementById('navbar-center-slot') : null;
+
   return (
+    <>
+      {/* Search in navbar via portal */}
+      {navbarSlot && createPortal(
+        <div className="relative w-full">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <Input
+            type="text"
+            placeholder="Pesquisar leads..."
+            value={searchQuery}
+            onChange={(e) => handleSearchChange(e.target.value)}
+            className="pl-9 h-8 rounded-full bg-muted border-0 text-sm"
+          />
+        </div>,
+        navbarSlot
+      )}
     <div className="relative flex flex-col h-full overflow-hidden">
       {/* Header - all on same line */}
       <div className="flex items-center gap-4 mb-1">
@@ -1283,17 +1301,6 @@ export function KanbanBoard() {
 
         {/* Right side - Search, Export and Filters */}
         <div className="flex items-center gap-2 flex-shrink-0">
-          <div className="relative w-64">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-            <Input
-              type="text"
-              placeholder="Pesquisar leads..."
-              value={searchQuery}
-              onChange={(e) => handleSearchChange(e.target.value)}
-              className="pl-9 h-9"
-            />
-          </div>
-
           {/* Filters - Modern Style */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -1794,5 +1801,6 @@ export function KanbanBoard() {
         />
       </Suspense>
     </div>
+    </>
   );
 }
