@@ -284,13 +284,13 @@ export function LeadTrackingTimeline({ leadId, utmData, leadEmail, leadWhatsapp 
                 
                 {/* Vertical line */}
                 {hasContentBelow && (
-                  <div className="w-0.5 flex-1 bg-gray-200 dark:bg-[#1e2433] my-2" />
+                  <div className="w-0.5 flex-1 bg-gray-200 dark:bg-[#1f1f1f] my-2" />
                 )}
               </div>
               
               {/* Right side - Card content */}
               <div className="flex-1 pb-6">
-                <Card className="border-black/5 dark:border-white/[0.06] bg-white dark:bg-[#111827] shadow-sm hover:shadow-md transition-shadow">
+                <Card className="border-black/5 dark:border-white/[0.06] bg-white dark:bg-[#141414] shadow-sm hover:shadow-md transition-shadow">
                   <CardContent className="p-4">
                     <p className="text-sm font-semibold text-foreground">Lead existe em outras origens</p>
                     <p className="text-xs text-muted-foreground mt-1">
@@ -331,13 +331,13 @@ export function LeadTrackingTimeline({ leadId, utmData, leadEmail, leadWhatsapp 
                 
                 {/* Vertical line */}
                 {events.length > 0 && (
-                  <div className="w-0.5 flex-1 bg-gray-200 dark:bg-[#1e2433] my-2" />
+                  <div className="w-0.5 flex-1 bg-gray-200 dark:bg-[#1f1f1f] my-2" />
                 )}
               </div>
               
               {/* Right side - UTM Card content */}
               <div className="flex-1 pb-6">
-                <Card className="border-black/5 dark:border-white/[0.06] bg-white dark:bg-[#111827] shadow-sm">
+                <Card className="border-black/5 dark:border-white/[0.06] bg-white dark:bg-[#141414] shadow-sm">
                   <CardContent className="p-4">
                     <p className="text-sm font-semibold text-foreground mb-3">Parâmetros UTM</p>
                     
@@ -357,7 +357,7 @@ export function LeadTrackingTimeline({ leadId, utmData, leadEmail, leadWhatsapp 
 
           {/* No UTM and no events */}
           {!hasUTMData && events.length === 0 && (
-            <div className="p-4 bg-muted/20 dark:bg-[#111827]/50 rounded-lg border border-dashed border-black/10 dark:border-white/[0.06]">
+            <div className="p-4 bg-muted/20 dark:bg-[#141414]/50 rounded-lg border border-dashed border-black/10 dark:border-white/[0.06]">
               <p className="text-sm text-muted-foreground text-center">Nenhum rastreamento registrado</p>
             </div>
           )}
@@ -378,13 +378,13 @@ export function LeadTrackingTimeline({ leadId, utmData, leadEmail, leadWhatsapp 
                   
                   {/* Vertical line */}
                   {!isLast && (
-                    <div className="w-0.5 flex-1 bg-gray-200 dark:bg-[#1e2433] my-2" />
+                    <div className="w-0.5 flex-1 bg-gray-200 dark:bg-[#1f1f1f] my-2" />
                   )}
                 </div>
                 
                 {/* Right side - Card content */}
                 <div className="flex-1 pb-6">
-                  <Card className="border-black/5 dark:border-white/[0.06] bg-white dark:bg-[#111827] shadow-sm hover:shadow-md transition-shadow">
+                  <Card className="border-black/5 dark:border-white/[0.06] bg-white dark:bg-[#141414] shadow-sm hover:shadow-md transition-shadow">
                     <CardContent className="p-4">
                       {/* Title */}
                       <p className="text-sm font-semibold text-foreground">{event.titulo}</p>
@@ -411,7 +411,7 @@ export function LeadTrackingTimeline({ leadId, utmData, leadEmail, leadWhatsapp 
                           <Button
                             variant="outline"
                             size="sm"
-                            className="h-7 text-xs border-gray-200 dark:border-[#1e2433]"
+                            className="h-7 text-xs border-gray-200 dark:border-[#1f1f1f]"
                             onClick={() => setExpandedEvent(expandedEvent === event.id ? null : event.id)}
                           >
                             {expandedEvent === event.id ? (
@@ -428,7 +428,7 @@ export function LeadTrackingTimeline({ leadId, utmData, leadEmail, leadWhatsapp 
                           </Button>
                           
                           {expandedEvent === event.id && (
-                            <pre className="mt-2 p-3 bg-muted/50 dark:bg-[#0d1520] rounded-lg text-xs overflow-x-auto border border-black/5 dark:border-white/[0.06]">
+                            <pre className="mt-2 p-3 bg-muted/50 dark:bg-[#0e0e0e] rounded-lg text-xs overflow-x-auto border border-black/5 dark:border-white/[0.06]">
                               {JSON.stringify(event.dados, null, 2)}
                             </pre>
                           )}
