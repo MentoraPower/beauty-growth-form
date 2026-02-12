@@ -197,7 +197,7 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
             height: 'calc(100vh - 45px)',
             borderRight: '1px solid rgba(255, 255, 255, 0.125)',
           }}
-          className="group hidden lg:flex flex-col fixed bg-black overflow-hidden z-50 rounded-b-2xl w-16 hover:w-[180px] transition-[width] duration-200 ease-out"
+          className="group hidden lg:flex flex-col fixed bg-black overflow-hidden z-50 w-16 hover:w-[180px] transition-[width] duration-200 ease-out"
         >
           <div className="flex flex-col h-full relative">
             {/* Logo */}
@@ -271,7 +271,7 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
               animationsEnabled && "transition-transform duration-300 ease-out"
             )}
           >
-            <div className="h-full bg-card rounded-br-2xl border border-border border-t-0 border-l-0">
+            <div className="h-full bg-card border border-border border-t-0 border-l-0">
               <div
                 className={cn(
                   "h-full",
