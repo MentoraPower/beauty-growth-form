@@ -312,8 +312,8 @@ export function ChartRenderer({
       const outerRadius = Math.max(baseRadius, 35);
       const innerRadius = outerRadius * 0.6;
 
-      const totalFontSize = Math.max(Math.min(height * 0.09, 24), 12);
-      const labelFontSize = Math.max(Math.min(height * 0.032, 9), 7);
+      const totalFontSize = Math.max(Math.min(height * 0.1, 28), 16);
+      const labelFontSize = Math.max(Math.min(height * 0.04, 12), 9);
 
       const minLabelSpacing = labelFontSize + 6;
 
@@ -433,8 +433,8 @@ export function ChartRenderer({
               dominantBaseline="middle"
               style={{ fontSize: labelFontSize }}
             >
-              <tspan className="fill-muted-foreground">{safeName} </tspan>
-              <tspan className="fill-foreground font-semibold">{label.value}</tspan>
+              <tspan className="fill-muted-foreground font-medium">{safeName} </tspan>
+              <tspan className="fill-foreground font-bold">{label.value}</tspan>
             </text>
           </g>
         );
