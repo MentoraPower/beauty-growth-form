@@ -111,18 +111,19 @@ export function ChartRenderer({
     
     switch (dataSource) {
       case "leads_over_time": {
-        const last30Days = eachDayOfInterval({
-          start: subDays(new Date(), 29),
+        const last7Days = eachDayOfInterval({
+          start: subDays(new Date(), 6),
           end: new Date(),
         });
-        return last30Days.map((day) => {
+        return last7Days.map((day) => {
           const dayStart = startOfDay(day);
           const count = leads.filter((l) => {
             const leadDate = startOfDay(new Date(l.created_at));
             return leadDate.getTime() === dayStart.getTime();
           }).length;
           return {
-            date: format(day, "dd/MM", { locale: ptBR }),
+            date: format(day, "EEE", { locale: ptBR }),
+            fullDate: format(day, "dd/MM", { locale: ptBR }),
             count,
           };
         });
@@ -457,7 +458,7 @@ export function ChartRenderer({
     }
 
     case "area": {
-      const areaData = chartData as Array<{ date: string; count: number }>;
+      const areaData = chartData as Array<{ date: string; fullDate?: string; count: number }>;
       if (!Array.isArray(areaData) || areaData.length === 0) {
         return renderEmptyState();
       }
@@ -465,11 +466,11 @@ export function ChartRenderer({
       
       return (
         <ResponsiveContainer width="100%" height="100%">
-          <AreaChart data={areaData} margin={{ top: 20, right: 10, left: -15, bottom: 0 }}>
+          <AreaChart data={areaData} margin={{ top: 10, right: 10, left: -20, bottom: 5 }}>
             <defs>
               <linearGradient id={`areaGradient-${cardId}`} x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor={MODERN_COLORS[0].solid} stopOpacity={0.4} />
-                <stop offset="50%" stopColor={MODERN_COLORS[0].solid} stopOpacity={0.15} />
+                <stop offset="0%" stopColor={MODERN_COLORS[0].solid} stopOpacity={0.3} />
+                <stop offset="60%" stopColor={MODERN_COLORS[0].solid} stopOpacity={0.08} />
                 <stop offset="100%" stopColor={MODERN_COLORS[0].solid} stopOpacity={0} />
               </linearGradient>
               <linearGradient id={`lineGradient-${cardId}`} x1="0" y1="0" x2="1" y2="0">
@@ -479,20 +480,32 @@ export function ChartRenderer({
             </defs>
             <XAxis 
               dataKey="date" 
-              tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }} 
+              tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))', fontWeight: 500 }} 
               tickLine={false}
               axisLine={false}
-              interval="preserveStartEnd"
-              dy={10}
+              interval={0}
+              dy={8}
             />
             <YAxis 
               tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }} 
               tickLine={false}
               axisLine={false}
-              domain={[0, maxValue + Math.ceil(maxValue * 0.1)]}
+              domain={[0, maxValue + Math.ceil(maxValue * 0.2)]}
+              allowDecimals={false}
               dx={-5}
             />
-            <Tooltip content={<CustomTooltip />} />
+            <Tooltip 
+              content={({ active, payload }) => {
+                if (!active || !payload?.length) return null;
+                const data = payload[0].payload;
+                return (
+                  <div className="bg-popover border border-border/30 dark:border-white/10 rounded-lg px-3 py-2 shadow-lg">
+                    <p className="text-xs text-muted-foreground">{data.fullDate || data.date}</p>
+                    <p className="text-sm font-semibold text-foreground">{data.count} leads</p>
+                  </div>
+                );
+              }}
+            />
             <Area
               type="monotone"
               dataKey="count"
@@ -502,8 +515,13 @@ export function ChartRenderer({
               fill={`url(#areaGradient-${cardId})`}
               strokeWidth={2.5}
               animationBegin={0}
-              animationDuration={1000}
-              dot={false}
+              animationDuration={800}
+              dot={{ 
+                r: 3, 
+                fill: MODERN_COLORS[0].solid,
+                stroke: 'hsl(var(--card))',
+                strokeWidth: 2,
+              }}
               activeDot={{ 
                 r: 5, 
                 fill: MODERN_COLORS[0].solid,
