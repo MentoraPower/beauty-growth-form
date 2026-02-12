@@ -192,7 +192,7 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
         <aside
           ref={sidebarRef}
           style={{ 
-            left: 12,
+            left: 0,
             top: '45px',
             height: 'calc(100vh - 45px)',
             borderRight: '1px solid rgba(255, 255, 255, 0.125)',
@@ -249,7 +249,7 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
         {/* CRM Submenu Clip Container - clips the submenu animation */}
         <div
           style={{
-            left: 12 + sidebarCollapsedWidth - 16,
+            left: sidebarCollapsedWidth - 16,
             top: '45px',
             height: 'calc(100vh - 45px)',
             width: submenuWidth + 16 + 4,
@@ -303,7 +303,7 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
           <button
             onClick={() => setCrmSubmenuOpen(true)}
             style={{ 
-              left: 12 + sidebarCollapsedWidth + 12 - 16,
+              left: sidebarCollapsedWidth - 4,
               zIndex: 40,
             }}
             className="hidden lg:flex fixed top-1/2 -translate-y-1/2 w-5 h-10 items-center justify-center bg-zinc-900 rounded-r-md hover:bg-zinc-800 transition-colors shadow-md"
@@ -381,8 +381,8 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
           <main 
             style={{ 
               left: crmSubmenuOpen 
-                ? 12 + sidebarCollapsedWidth - 16 + submenuWidth + 16 + 4
-                : 12 + sidebarCollapsedWidth + 12 + 8,
+                ? sidebarCollapsedWidth - 16 + submenuWidth + 16 + 4
+                : sidebarCollapsedWidth + 8,
               top: '49px',
               right: 0,
               height: 'calc(100vh - 49px)',
