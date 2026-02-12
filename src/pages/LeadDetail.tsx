@@ -536,6 +536,7 @@ export default function LeadDetail() {
                 transition={{ duration: 0.15 }}
                 className="h-[calc(100vh-280px)] overflow-y-auto"
               >
+              <div className="space-y-6">
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {/* Contact Info */}
               <Card className="border-[#00000010] shadow-none">
@@ -609,11 +610,13 @@ export default function LeadDetail() {
                 </CardContent>
               </Card>
 
-              {/* Business Info - Custom Fields */}
+              {/* Placeholder for second column if needed */}
+              <div />
+              </div>
+
+              {/* Business Info - Custom Fields - Full Width */}
               <Card className="border-[#00000010] shadow-none">
                 <CardContent className="p-6">
-                  
-                  {/* Custom Fields for this sub-origin */}
                   <LeadCustomFields 
                     leadId={lead.id} 
                     subOriginId={lead.sub_origin_id}
@@ -622,7 +625,7 @@ export default function LeadDetail() {
                   />
                 </CardContent>
               </Card>
-                </div>
+              </div>
               </motion.div>
             )}
 
