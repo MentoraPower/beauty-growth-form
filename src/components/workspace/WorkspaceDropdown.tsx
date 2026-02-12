@@ -44,12 +44,7 @@ export function WorkspaceDropdown() {
   }
 
   const getInitials = (name: string) => {
-    return name
-      .split(' ')
-      .map(word => word[0])
-      .join('')
-      .toUpperCase()
-      .slice(0, 2);
+    return name.charAt(0).toUpperCase();
   };
 
   return (
@@ -62,7 +57,7 @@ export function WorkspaceDropdown() {
                 {currentWorkspace ? getInitials(currentWorkspace.name) : 'WS'}
               </span>
             </div>
-            <span className="text-xs font-medium text-foreground">{currentWorkspace?.name || 'Selecionar workspace'}</span>
+            <span className="text-xs font-bold text-foreground">{currentWorkspace?.name || 'Selecionar workspace'}</span>
             <ChevronDown className={`h-3.5 w-3.5 text-muted-foreground transition-transform duration-200 ${isDropdownOpen ? 'rotate-180' : ''}`} />
           </button>
         </DropdownMenuTrigger>
