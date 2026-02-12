@@ -1451,60 +1451,7 @@ export function KanbanBoard() {
                   </div>
                 </div>
 
-                {/* Responsáveis Section */}
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">
-                      Responsáveis
-                    </span>
-                    {filterAssignedTo.length > 0 && (
-                      <button 
-                        onClick={() => setFilterAssignedTo([])}
-                        className="text-[10px] text-muted-foreground hover:text-foreground transition-colors"
-                      >
-                        Limpar
-                      </button>
-                    )}
-                  </div>
-                  
-                  {/* Available Team Members */}
-                  {teamMembersData && teamMembersData.length > 0 ? (
-                    <div className="max-h-28 overflow-y-auto rounded-lg border border-border/50 divide-y divide-border/30">
-                      {teamMembersData.map((member) => (
-                        <button
-                          key={member.user_id}
-                          onClick={() => {
-                            if (filterAssignedTo.includes(member.user_id)) {
-                              setFilterAssignedTo(filterAssignedTo.filter(id => id !== member.user_id));
-                            } else {
-                              setFilterAssignedTo([...filterAssignedTo, member.user_id]);
-                            }
-                          }}
-                          className={cn(
-                            "w-full flex items-center gap-2.5 px-3 py-2 text-xs hover:bg-muted/50 transition-colors text-left",
-                            filterAssignedTo.includes(member.user_id) && "bg-muted"
-                          )}
-                        >
-                          {member.photo_url ? (
-                            <img src={member.photo_url} alt="" className="w-5 h-5 rounded-full object-cover" />
-                          ) : (
-                            <div className="w-5 h-5 rounded-full bg-muted flex items-center justify-center">
-                              <span className="text-[10px] font-medium">{member.name?.charAt(0) || "?"}</span>
-                            </div>
-                          )}
-                          <span className="truncate text-foreground">{member.name || "Sem nome"}</span>
-                          {filterAssignedTo.includes(member.user_id) && (
-                            <span className="ml-auto text-foreground">✓</span>
-                          )}
-                        </button>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="text-center py-4 text-xs text-muted-foreground bg-muted/20 rounded-lg border border-dashed border-border/50">
-                      Nenhum membro disponível
-                    </div>
-                  )}
-                </div>
+
                 
                 {/* Tags Section */}
                 <div className="space-y-2">
