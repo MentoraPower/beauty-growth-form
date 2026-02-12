@@ -1381,7 +1381,7 @@ export function KanbanBoard() {
                           "px-3 py-2 text-xs rounded-lg border transition-colors text-left",
                           datePreset === preset.key
                             ? "bg-foreground text-background border-foreground"
-                            : "bg-background border-border hover:bg-muted"
+                            : "bg-background border-border/50 dark:border-white/[0.1] hover:bg-muted"
                         )}
                       >
                         {preset.label}
@@ -1396,7 +1396,7 @@ export function KanbanBoard() {
                         <button
                           onClick={() => setDatePreset("custom")}
                           className={cn(
-                            "flex items-center gap-2 w-full px-3 py-2 text-xs rounded-lg bg-background border border-border text-left",
+                            "flex items-center gap-2 w-full px-3 py-2 text-xs rounded-lg bg-background border border-border/50 dark:border-white/[0.1] text-left",
                             !startDate && "text-muted-foreground",
                             datePreset === "custom" && startDate && "border-foreground"
                           )}
@@ -1425,7 +1425,7 @@ export function KanbanBoard() {
                         <button
                           onClick={() => setDatePreset("custom")}
                           className={cn(
-                            "flex items-center gap-2 w-full px-3 py-2 text-xs rounded-lg bg-background border border-border text-left",
+                            "flex items-center gap-2 w-full px-3 py-2 text-xs rounded-lg bg-background border border-border/50 dark:border-white/[0.1] text-left",
                             !endDate && "text-muted-foreground",
                             datePreset === "custom" && endDate && "border-foreground"
                           )}
