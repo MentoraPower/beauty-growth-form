@@ -1306,16 +1306,15 @@ export function KanbanBoard() {
             <DropdownMenuTrigger asChild>
               <Button 
                 variant={hasActiveFilters ? "default" : "outline"} 
-                size="sm" 
+                size="icon" 
                 className={hasActiveFilters 
-                  ? "h-9 gap-2 bg-gradient-to-r from-[#F40000] to-[#A10000] text-white border-0" 
-                  : "h-9 gap-2"
+                  ? "h-9 w-9 bg-gradient-to-r from-[#f97316] to-[#fb923c] text-white border-0 relative" 
+                  : "h-9 w-9 relative"
                 }
               >
                 <Filter className="w-4 h-4" />
-                Filtros
                 {hasActiveFilters && (
-                  <span className="ml-1 px-1.5 py-0.5 text-[10px] bg-white/20 rounded-full">
+                  <span className="absolute -top-1 -right-1 min-w-[16px] h-4 px-1 text-[10px] font-medium bg-foreground text-background rounded-full flex items-center justify-center">
                     {filterTags.length + (datePreset !== "all" ? 1 : 0)}
                   </span>
                 )}
