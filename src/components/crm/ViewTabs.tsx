@@ -293,7 +293,7 @@ export const ViewTabs = memo(function ViewTabs({ activeView, onViewChange, onSet
   };
 
   return (
-    <div className="w-full mb-2 overflow-visible">
+    <div className="w-full">
       <DndContext
         sensors={sensors}
         collisionDetection={closestCenter}
@@ -344,8 +344,7 @@ export const ViewTabs = memo(function ViewTabs({ activeView, onViewChange, onSet
         </div>
       </DndContext>
       
-      {/* Full-width line touching submenu and right edge */}
-      <div className="h-px bg-border" style={{ marginLeft: '-0.75rem', marginRight: '-0.75rem', width: 'calc(100% + 1.5rem)' }} />
+      {/* Line removed - rendered by parent KanbanBoard for full-width */}
     </div>
   );
 });
