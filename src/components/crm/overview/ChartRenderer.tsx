@@ -306,16 +306,17 @@ export function ChartRenderer({
       }
 
       const total = pieData.reduce((acc, cur) => acc + cur.value, 0);
+      const totalFontSize = Math.max(Math.min(height * 0.09, 24), 16);
 
-      const baseRadius = Math.min(height * 0.22, 70);
-      const outerRadius = Math.max(baseRadius, 30);
-      const innerRadius = outerRadius * 0.6;
-      const totalFontSize = Math.max(Math.min(height * 0.08, 22), 14);
+      // Donut size scales with available height
+      const chartSize = Math.min(height * 0.7, 160);
+      const outerRadius = chartSize / 2 - 4;
+      const innerRadius = outerRadius * 0.58;
 
       return (
-        <div className="flex items-center w-full h-full gap-2 px-2">
-          {/* Donut chart - left side */}
-          <div className="relative flex-shrink-0" style={{ width: outerRadius * 2.6, height: outerRadius * 2.6 }}>
+        <div className="flex items-center justify-center w-full h-full gap-4 px-3">
+          {/* Donut chart */}
+          <div className="relative flex-shrink-0" style={{ width: chartSize, height: chartSize }}>
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <defs>
@@ -353,21 +354,21 @@ export function ChartRenderer({
             </div>
           </div>
 
-          {/* Legend - right side */}
-          <ScrollArea className="flex-1 min-w-0" style={{ maxHeight: height - 16 }}>
-            <div className="flex flex-col gap-1.5 pr-2">
+          {/* Legend */}
+          <ScrollArea className="flex-1 min-w-0" style={{ maxHeight: chartSize }}>
+            <div className="flex flex-col gap-2">
               {pieData.map((item, index) => {
                 const pct = total > 0 ? Math.round((item.value / total) * 100) : 0;
-                const safeName = item.name.length > 20 ? `${item.name.slice(0, 18)}…` : item.name;
+                const safeName = item.name.length > 16 ? `${item.name.slice(0, 14)}…` : item.name;
                 return (
                   <div key={index} className="flex items-center gap-2 min-w-0">
                     <div
-                      className="w-2.5 h-2.5 rounded-full flex-shrink-0"
+                      className="w-3 h-3 rounded-sm flex-shrink-0"
                       style={{ background: MODERN_COLORS[index % MODERN_COLORS.length].solid }}
                     />
-                    <span className="text-xs text-muted-foreground truncate flex-1 font-medium">{safeName}</span>
-                    <span className="text-xs font-bold text-foreground tabular-nums flex-shrink-0">{item.value}</span>
-                    <span className="text-[10px] text-muted-foreground/70 tabular-nums flex-shrink-0 w-8 text-right">{pct}%</span>
+                    <span className="text-[11px] text-muted-foreground truncate flex-1 leading-tight">{safeName}</span>
+                    <span className="text-[11px] font-bold text-foreground tabular-nums flex-shrink-0">{item.value}</span>
+                    <span className="text-[10px] text-muted-foreground/60 tabular-nums flex-shrink-0">{pct}%</span>
                   </div>
                 );
               })}
