@@ -746,16 +746,15 @@ export function ChartRenderer({
         return renderEmptyState();
       }
 
-      // Get last 12 weeks of data
+      // Get last 8 weeks of data (56 days)
       const today = new Date();
-      const startDate = subDays(today, 84); // 12 weeks
+      const startDate = subDays(today, 55);
       const days = eachDayOfInterval({ start: startDate, end: today });
       
       // Create a map of date to count
       const countMap: Record<string, number> = {};
       heatmapData.forEach(d => {
-        const key = d.date;
-        countMap[key] = d.count;
+        countMap[d.date] = d.count;
       });
 
       // Find max for color scaling
@@ -779,7 +778,7 @@ export function ChartRenderer({
       });
 
       const getColorStyle = (count: number, isDark: boolean) => {
-        if (count === 0) return { background: isDark ? 'rgba(255, 255, 255, 0.15)' : 'rgba(0, 0, 0, 0.06)' };
+        if (count === 0) return { background: isDark ? 'rgba(255, 255, 255, 0.06)' : 'rgba(0, 0, 0, 0.04)' };
         const ratio = count / maxCount;
         if (ratio < 0.25) return { background: 'linear-gradient(135deg, #fed7aa, #fdba74)' };
         if (ratio < 0.5) return { background: 'linear-gradient(135deg, #fdba74, #fb923c)' };
@@ -788,32 +787,63 @@ export function ChartRenderer({
       };
 
       const isDark = document.documentElement.classList.contains('dark');
-
       const dayLabels = ['D', 'S', 'T', 'Q', 'Q', 'S', 'S'];
+
+      // Get month labels for top
+      const monthLabels: Array<{ label: string; colStart: number; colSpan: number }> = [];
+      let lastMonth = -1;
+      weeks.forEach((week, weekIndex) => {
+        const firstDay = week[0]?.date;
+        if (firstDay) {
+          const month = firstDay.getMonth();
+          if (month !== lastMonth) {
+            const label = format(firstDay, "MMM", { locale: ptBR });
+            monthLabels.push({ label, colStart: weekIndex, colSpan: 1 });
+            lastMonth = month;
+          } else if (monthLabels.length > 0) {
+            monthLabels[monthLabels.length - 1].colSpan++;
+          }
+        }
+      });
+
+      // Total count
+      const totalCount = heatmapData.reduce((sum, d) => sum + d.count, 0);
 
       return (
         <TooltipProvider>
           <div className="h-full w-full flex flex-col p-3 overflow-hidden">
+            {/* Month labels row */}
+            <div className="flex mb-1.5 shrink-0" style={{ paddingLeft: '20px' }}>
+              {monthLabels.map((m, i) => (
+                <div 
+                  key={i} 
+                  className="text-[10px] text-muted-foreground font-medium capitalize"
+                  style={{ 
+                    flex: m.colSpan,
+                  }}
+                >
+                  {m.label}
+                </div>
+              ))}
+            </div>
+
             {/* Main grid container */}
             <div className="flex-1 flex min-h-0">
               {/* Day labels column */}
               <div 
-                className="flex flex-col justify-between pr-2 py-[2px]"
-                style={{ height: '100%' }}
+                className="flex flex-col justify-between pr-1.5 py-[1px]"
+                style={{ height: '100%', width: '18px' }}
               >
                 {dayLabels.map((label, i) => (
-                  <div 
-                    key={i} 
-                    className="flex-1 flex items-center justify-end"
-                  >
-                    <span className="text-[10px] text-muted-foreground font-medium leading-none">
-                      {label}
+                  <div key={i} className="flex-1 flex items-center justify-end">
+                    <span className="text-[9px] text-muted-foreground/70 font-medium leading-none">
+                      {i % 2 === 1 ? label : ''}
                     </span>
                   </div>
                 ))}
               </div>
               
-              {/* Weeks grid - CSS Grid for perfect fill */}
+              {/* Weeks grid */}
               <div 
                 className="flex-1 grid min-w-0"
                 style={{ 
@@ -829,18 +859,19 @@ export function ChartRenderer({
                       <UITooltip key={`${weekIndex}-${dayIndex}`}>
                         <TooltipTrigger asChild>
                           <div 
-                            className="w-full h-full rounded-sm transition-all duration-200 hover:scale-110 hover:ring-2 hover:ring-primary/50 cursor-pointer"
+                            className="w-full h-full rounded-[3px] transition-all duration-150 hover:ring-1.5 hover:ring-foreground/20 cursor-pointer"
                             style={{ 
                               gridColumn: weekIndex + 1,
                               gridRow: dayIndex + 1,
-                              ...(dayData ? getColorStyle(dayData.count, isDark) : { background: isDark ? 'rgba(255, 255, 255, 0.15)' : 'rgba(0, 0, 0, 0.06)' })
+                              minHeight: '2px',
+                              ...(dayData ? getColorStyle(dayData.count, isDark) : { background: isDark ? 'rgba(255, 255, 255, 0.06)' : 'rgba(0, 0, 0, 0.04)' })
                             }}
                           />
                         </TooltipTrigger>
                         {dayData && (
-                          <TooltipContent side="top" className="bg-popover backdrop-blur-sm border border-white/10">
-                            <p className="font-semibold text-foreground">{format(dayData.date, "dd MMM yyyy", { locale: ptBR })}</p>
-                            <p className="text-primary font-bold">{dayData.count} leads</p>
+                          <TooltipContent side="top" className="bg-popover border border-border/30 dark:border-white/10 rounded-lg px-3 py-2 shadow-lg">
+                            <p className="text-xs text-muted-foreground">{format(dayData.date, "dd MMM yyyy", { locale: ptBR })}</p>
+                            <p className="text-sm font-semibold text-foreground">{dayData.count} leads</p>
                           </TooltipContent>
                         )}
                       </UITooltip>
@@ -850,17 +881,22 @@ export function ChartRenderer({
               </div>
             </div>
             
-            {/* Legend - compact */}
-            <div className="flex items-center justify-center gap-2 pt-2 mt-2 border-t border-border/10 dark:border-white/[0.06] shrink-0">
-              <span className="text-[9px] text-muted-foreground font-medium">Menos</span>
-              <div className="flex gap-1">
-                <div className="w-3 h-3 rounded-sm" style={{ background: isDark ? 'rgba(255, 255, 255, 0.15)' : 'rgba(0, 0, 0, 0.06)' }} />
-                <div className="w-3 h-3 rounded-sm" style={{ background: 'linear-gradient(135deg, #fed7aa, #fdba74)' }} />
-                <div className="w-3 h-3 rounded-sm" style={{ background: 'linear-gradient(135deg, #fdba74, #fb923c)' }} />
-                <div className="w-3 h-3 rounded-sm" style={{ background: 'linear-gradient(135deg, #fb923c, #f97316)' }} />
-                <div className="w-3 h-3 rounded-sm" style={{ background: 'linear-gradient(135deg, #f97316, #ea580c)' }} />
+            {/* Footer: Legend + Total */}
+            <div className="flex items-center justify-between pt-2 mt-1.5 border-t border-border/10 dark:border-white/[0.04] shrink-0">
+              <span className="text-[10px] text-muted-foreground font-medium">
+                {totalCount} atividades
+              </span>
+              <div className="flex items-center gap-1.5">
+                <span className="text-[9px] text-muted-foreground/60">Menos</span>
+                <div className="flex gap-[3px]">
+                  <div className="w-2.5 h-2.5 rounded-[2px]" style={{ background: isDark ? 'rgba(255, 255, 255, 0.06)' : 'rgba(0, 0, 0, 0.04)' }} />
+                  <div className="w-2.5 h-2.5 rounded-[2px]" style={{ background: 'linear-gradient(135deg, #fed7aa, #fdba74)' }} />
+                  <div className="w-2.5 h-2.5 rounded-[2px]" style={{ background: 'linear-gradient(135deg, #fdba74, #fb923c)' }} />
+                  <div className="w-2.5 h-2.5 rounded-[2px]" style={{ background: 'linear-gradient(135deg, #fb923c, #f97316)' }} />
+                  <div className="w-2.5 h-2.5 rounded-[2px]" style={{ background: 'linear-gradient(135deg, #f97316, #ea580c)' }} />
+                </div>
+                <span className="text-[9px] text-muted-foreground/60">Mais</span>
               </div>
-              <span className="text-[9px] text-muted-foreground font-medium">Mais</span>
             </div>
           </div>
         </TooltipProvider>
