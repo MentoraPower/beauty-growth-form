@@ -96,7 +96,7 @@ export function ActivitiesBoard({ leadId, leadName, currentPipelineId, currentSu
   return (
     <div className="space-y-4">
       {/* Step Navigation */}
-      <Card className="border-[#00000010] dark:border-white/10 bg-muted/30 dark:bg-card shadow-none">
+      <Card className="border-border/20 dark:border-white/[0.06] bg-card shadow-none">
         <CardContent className="p-4 pt-2">
           <StepNavigation
             pipelines={pipelines}
@@ -114,7 +114,7 @@ export function ActivitiesBoard({ leadId, leadName, currentPipelineId, currentSu
       {/* Two columns layout - left narrower */}
       <div className="grid grid-cols-1 lg:grid-cols-[480px_1fr] gap-4 h-[calc(100vh-420px)] min-h-0 overflow-hidden">
         {/* Left block - Activities List */}
-        <Card className="border-[#00000010] dark:border-white/10 bg-[#fafafa] dark:bg-card shadow-none flex flex-col overflow-hidden">
+        <Card className="border-border/20 dark:border-white/[0.06] bg-card shadow-none flex flex-col overflow-hidden">
           <CardContent className="p-4 flex flex-col h-full min-h-0">
             {isLoadingActivities ? (
               <div className="space-y-3 flex-1">
@@ -234,7 +234,7 @@ export function ActivitiesBoard({ leadId, leadName, currentPipelineId, currentSu
         </Card>
 
         {/* Right block - Activity Details / Tasks */}
-        <Card className="border-[#00000010] dark:border-white/10 bg-[#fafafa] dark:bg-card shadow-none flex flex-col overflow-hidden">
+        <Card className="border-border/20 dark:border-white/[0.06] bg-card shadow-none flex flex-col overflow-hidden">
           <CardContent className="p-4 h-full flex flex-col min-h-0 overflow-y-auto">
             <ActivityDetails
               activity={selectedActivity}
