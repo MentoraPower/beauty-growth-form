@@ -183,7 +183,7 @@ export function OnboardingSection({ leadId, leadName, inline = false, onOpenBuil
       {/* Header with title and menu */}
       <div className="flex items-center justify-between">
         <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
-          Onboarding
+          Lead Form
         </h3>
         
         <DropdownMenu>
