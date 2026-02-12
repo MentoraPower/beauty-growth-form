@@ -50,6 +50,9 @@ function TopNavbar() {
       >
         <WorkspaceDropdown />
         
+        {/* Center slot for page-specific content (e.g., search) */}
+        <div id="navbar-center-slot" className="flex-1 flex items-center justify-center max-w-md mx-4" />
+        
         {/* Right side actions */}
         <div className="flex items-center gap-3">
           <ThemeToggle />
