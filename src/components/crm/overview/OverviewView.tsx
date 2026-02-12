@@ -794,28 +794,53 @@ export function OverviewView({ leads, pipelines, leadTags, subOriginId, onAddDia
 
   if (isLoading) {
     return (
-      <div className="flex flex-wrap gap-4 p-0 content-start">
+      <div className="flex flex-wrap gap-4 p-0 content-start animate-in fade-in duration-300">
         {[
-          { w: 50, h: 200 },
-          { w: 50, h: 200 },
-          { w: 33.33, h: 220 },
-          { w: 33.33, h: 220 },
-          { w: 33.33, h: 220 },
+          { w: 25, h: 180 },
+          { w: 25, h: 180 },
+          { w: 50, h: 180 },
+          { w: 50, h: 280 },
+          { w: 50, h: 280 },
         ].map((s, i) => {
-          const cardsInRow = s.w === 50 ? 2 : 3;
+          // Calculate how many cards share the same width (same row pattern)
+          const sameWidthCards = [25, 25, 50, 50, 50];
+          const rowSizes = [2, 2, 2, 2, 2]; // cards per row for each card
+          const cardsInRow = s.w <= 25 ? 4 : s.w <= 33.34 ? 3 : 2;
           const gapOffset = ((cardsInRow - 1) * 16) / cardsInRow;
           return (
             <div
               key={i}
               className="rounded-xl border border-border/30 dark:border-white/[0.06] bg-card overflow-hidden flex flex-col"
-              style={{ width: `calc(${s.w}% - ${gapOffset}px)`, height: s.h }}
+              style={{ 
+                width: `calc(${s.w}% - ${gapOffset}px)`, 
+                height: s.h,
+                animationDelay: `${i * 80}ms`,
+              }}
             >
-              <div className="p-4 space-y-2">
-                <div className="h-4 w-1/3 bg-muted/60 rounded animate-pulse" />
-                <div className="h-3 w-1/2 bg-muted/40 rounded animate-pulse" />
+              {/* Header skeleton */}
+              <div className="px-4 pt-4 pb-2 flex items-center justify-between">
+                <div className="h-3.5 w-24 bg-muted/50 rounded-md animate-pulse" />
+                <div className="h-3 w-3 bg-muted/30 rounded animate-pulse" />
               </div>
-              <div className="px-4 pb-4 flex-1 min-h-0">
-                <div className="h-full w-full bg-muted/30 rounded-lg animate-pulse" />
+              {/* Chart area skeleton */}
+              <div className="px-4 pb-4 flex-1 min-h-0 flex items-end gap-1.5">
+                {s.h >= 250 ? (
+                  // Taller cards: bar chart skeleton
+                  <>
+                    {[40, 65, 50, 80, 55, 70, 45].map((h, j) => (
+                      <div 
+                        key={j} 
+                        className="flex-1 bg-muted/30 rounded-t-md animate-pulse"
+                        style={{ height: `${h}%`, animationDelay: `${(i * 80) + (j * 60)}ms` }}
+                      />
+                    ))}
+                  </>
+                ) : (
+                  // Shorter cards: number/metric skeleton
+                  <div className="w-full h-full flex items-center justify-center">
+                    <div className="h-10 w-20 bg-muted/40 rounded-lg animate-pulse" />
+                  </div>
+                )}
               </div>
             </div>
           );
