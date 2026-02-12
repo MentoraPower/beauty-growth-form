@@ -29,7 +29,7 @@ import { KanbanCard } from "./KanbanCard";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Settings, Search, Filter, X, CalendarIcon, Zap, Webhook, GitBranch, LayoutGrid } from "lucide-react";
+import { Settings, Search, Filter, X, CalendarIcon, Zap, Webhook, GitBranch, LayoutGrid, Plus } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -1503,6 +1503,23 @@ export function KanbanBoard() {
             </DropdownMenuContent>
           </DropdownMenu>
 
+          {/* Dynamic Action Button - changes based on active view */}
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-9 gap-2 text-xs font-medium"
+            onClick={() => {
+              if (activeView === "overview") {
+                setOverviewAddCardOpen(true);
+              } else {
+                setIsPipelinesDialogOpen(true);
+              }
+            }}
+          >
+            <Plus className="w-3.5 h-3.5" />
+            {activeView === "overview" ? "Adicionar cartão" : "Pipelines"}
+          </Button>
+
           {/* Settings Button */}
           <button 
             onClick={() => setSettingsDialogOpen(true)}
@@ -1519,20 +1536,12 @@ export function KanbanBoard() {
       {/* View Tabs - OverView | Quadro | Calendário */}
       {subOriginId && (
         <>
-          <ViewTabs 
+           <ViewTabs 
             activeView={activeView} 
             onViewChange={handleViewChange}
             onTabHover={handleTabHover}
             onSettingsClick={() => setSettingsDialogOpen(true)}
             subOriginId={subOriginId}
-            extraActions={activeView === "overview" ? (
-              <button
-                onClick={() => setOverviewAddCardOpen(true)}
-                className="px-3 py-1.5 text-xs font-medium rounded-md bg-foreground text-background hover:bg-foreground/90 transition-colors"
-              >
-                Adicionar cartão
-              </button>
-            ) : undefined}
           />
           
           {/* Settings Dialog */}
@@ -1570,18 +1579,6 @@ export function KanbanBoard() {
                   >
                     <Webhook className="w-4 h-4" />
                     WebHook
-                  </button>
-                  <button
-                    onClick={() => setSettingsTab("pipelines")}
-                    className={cn(
-                      "flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors",
-                      settingsTab === "pipelines"
-                        ? "border-orange-500 text-foreground"
-                        : "border-transparent text-muted-foreground hover:text-foreground"
-                    )}
-                  >
-                    <GitBranch className="w-4 h-4" />
-                    Pipelines
                   </button>
                 </div>
               </div>
@@ -1638,19 +1635,6 @@ export function KanbanBoard() {
                       embeddedTab="webhooks"
                     />
                   </div>
-                )}
-                
-                {settingsTab === "pipelines" && (
-                  <Suspense fallback={<div className="p-6"><Skeleton className="h-64 w-full" /></div>}>
-                    <ManagePipelinesDialog
-                      open={true}
-                      onOpenChange={() => {}}
-                      pipelines={pipelines}
-                      subOriginId={subOriginId}
-                      workspaceId={currentWorkspace?.id}
-                      embedded={true}
-                    />
-                  </Suspense>
                 )}
               </div>
             </DialogContent>
