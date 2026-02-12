@@ -146,9 +146,9 @@ export function ActivitiesBoard({ leadId, leadName, currentPipelineId, currentSu
                           onClick={() => handleActivityClick(activity)}
                           className={cn(
                             "flex items-center gap-3 py-2 px-2 rounded-lg cursor-pointer transition-colors",
-                            selectedActivity?.id === activity.id 
-                              ? "bg-primary/5" 
-                              : "hover:bg-muted/50",
+                          selectedActivity?.id === activity.id 
+                            ? "bg-black/[0.04] dark:bg-white/[0.06]" 
+                            : "hover:bg-muted/50",
                             activity.concluida && "opacity-60"
                           )}
                         >
