@@ -334,7 +334,7 @@ export function OverviewCardComponent({
     <div
       ref={cardRef}
       className={cn(
-        "relative rounded-xl p-4 transition-shadow group bg-card border border-border",
+        "relative rounded-xl p-4 transition-shadow group bg-card border border-border/50 dark:border-white/[0.08]",
         !isDragging && "w-full", // w-full only when NOT dragging (uses wrapper percentage)
         isDragging && "opacity-50",
         isResizing ? "shadow-lg" : "shadow-sm"

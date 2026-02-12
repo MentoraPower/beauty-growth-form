@@ -496,6 +496,7 @@ export function ChartRenderer({
             <Area
               type="monotone"
               dataKey="count"
+              name="Quantidade"
               stroke={`url(#lineGradient-${cardId})`}
               fillOpacity={1}
               fill={`url(#areaGradient-${cardId})`}
@@ -819,7 +820,7 @@ export function ChartRenderer({
                           />
                         </TooltipTrigger>
                         {dayData && (
-                          <TooltipContent side="top" className="bg-background/95 backdrop-blur-sm border border-border/50">
+                          <TooltipContent side="top" className="bg-popover backdrop-blur-sm border border-white/10">
                             <p className="font-semibold text-foreground">{format(dayData.date, "dd MMM yyyy", { locale: ptBR })}</p>
                             <p className="text-primary font-bold">{dayData.count} leads</p>
                           </TooltipContent>
