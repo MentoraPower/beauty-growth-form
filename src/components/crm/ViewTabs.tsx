@@ -344,8 +344,8 @@ export const ViewTabs = memo(function ViewTabs({ activeView, onViewChange, onSet
         </div>
       </DndContext>
       
-      {/* Simple line below */}
-      <div className="h-px bg-border" />
+      {/* Full-width line touching submenu and right edge */}
+      <div className="h-px bg-border -mx-3" />
     </div>
   );
 });
