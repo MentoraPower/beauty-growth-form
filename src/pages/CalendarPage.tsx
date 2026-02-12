@@ -5,6 +5,7 @@ import { ptBR } from "date-fns/locale";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
+import { resolveOriginParam } from "@/lib/origin-slugs";
 import { DayView } from "@/components/calendar/DayView";
 import { WeekView } from "@/components/calendar/WeekView";
 import { MonthView } from "@/components/calendar/MonthView";
@@ -38,7 +39,8 @@ export interface PendingSlot {
 
 export default function CalendarPage() {
   const [searchParams, setSearchParams] = useSearchParams();
-  const subOriginId = searchParams.get("origin");
+  const originParam = searchParams.get("origin");
+  const subOriginId = resolveOriginParam(originParam) || originParam;
   const prefillName = searchParams.get("prefill_name");
   const prefillEmail = searchParams.get("prefill_email");
   

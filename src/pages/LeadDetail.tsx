@@ -1,6 +1,7 @@
 import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { resolveOriginParam } from "@/lib/origin-slugs";
 import { useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
 
@@ -94,7 +95,8 @@ export default function LeadDetail() {
   const { isLoading: authLoading } = useAuth("/auth");
   const { id } = useParams<{ id: string }>();
   const [searchParams, setSearchParams] = useSearchParams();
-  const subOriginId = searchParams.get("origin");
+  const originParam = searchParams.get("origin");
+  const subOriginId = resolveOriginParam(originParam) || originParam;
   const searchQuery = searchParams.get("search");
   const tabParam = searchParams.get("tab");
   const navigate = useNavigate();

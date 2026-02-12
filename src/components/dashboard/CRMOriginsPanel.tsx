@@ -4,6 +4,7 @@ import { Kanban, ChevronRight, ChevronsRight, Folder, FolderOpen, MoreVertical, 
 import googleSheetsIcon from "@/assets/google-sheets-icon.png";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
+import { registerSubOrigins, originIdToSlug, resolveOriginParam } from "@/lib/origin-slugs";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
 import {
   DndContext,
@@ -627,6 +628,8 @@ export function CRMOriginsPanel({ isOpen, onClose, sidebarWidth, embedded = fals
           tipo: (s.tipo === 'calendario' ? 'calendario' : 'tarefas') as 'tarefas' | 'calendario'
         }));
         setSubOrigins(parsedSubOrigins);
+        // Register slugs for URL mapping
+        registerSubOrigins(parsedSubOrigins);
       }
       
       hasInitialized.current = true;
@@ -923,23 +926,25 @@ export function CRMOriginsPanel({ isOpen, onClose, sidebarWidth, embedded = fals
 
   const handleSubOriginClick = (subOriginId: string, tipo: 'tarefas' | 'calendario') => {
     const currentOrigin = new URLSearchParams(window.location.search).get('origin');
+    const currentResolvedId = resolveOriginParam(currentOrigin);
     
-    if (currentOrigin === subOriginId) {
+    if (currentResolvedId === subOriginId) {
       return;
     }
     
     window.dispatchEvent(new CustomEvent('suborigin-change'));
     
+    const slug = originIdToSlug(subOriginId);
     if (tipo === 'calendario') {
-      navigate(`/calendario?origin=${subOriginId}`);
+      navigate(`/calendario?origin=${slug}`);
     } else {
-      navigate(`/crm?origin=${subOriginId}`);
+      navigate(`/crm?origin=${slug}`);
     }
   };
 
-  const currentSubOriginId = new URLSearchParams(location.search).get('origin');
+  const currentSubOriginId = resolveOriginParam(new URLSearchParams(location.search).get('origin'));
   const currentCalendarOriginId = location.pathname === '/calendario' 
-    ? new URLSearchParams(location.search).get('origin') 
+    ? resolveOriginParam(new URLSearchParams(location.search).get('origin'))
     : null;
   // Embedded content for unified submenu
   const content = (
