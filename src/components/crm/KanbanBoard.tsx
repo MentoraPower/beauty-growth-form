@@ -1471,7 +1471,7 @@ export function KanbanBoard() {
                   
                   {/* Selected Tags */}
                   {filterTags.length > 0 && (
-                    <div className="flex flex-wrap gap-1.5 p-2 bg-muted/20 rounded-lg border border-border/50">
+                    <div className="flex flex-wrap gap-1.5 p-2 bg-muted/20 rounded-lg border border-border/30 dark:border-white/[0.1]">
                       {filterTags.map((tagName) => {
                         const tag = allTags.find(t => t.name === tagName);
                         return (
@@ -1495,7 +1495,7 @@ export function KanbanBoard() {
                   
                   {/* Available Tags */}
                   {allTags.length > 0 ? (
-                    <div className="max-h-28 overflow-y-auto rounded-lg border border-border/50 divide-y divide-border/30">
+                    <div className="max-h-28 overflow-y-auto rounded-lg border border-border/30 dark:border-white/[0.1] divide-y divide-border/20 dark:divide-white/[0.06]">
                       {allTags.filter(tag => !filterTags.includes(tag.name)).map((tag) => (
                         <button
                           key={tag.name}
@@ -1511,7 +1511,7 @@ export function KanbanBoard() {
                       ))}
                     </div>
                   ) : (
-                    <div className="text-center py-4 text-xs text-muted-foreground bg-muted/20 rounded-lg border border-dashed border-border/50">
+                    <div className="text-center py-4 text-xs text-muted-foreground bg-muted/20 rounded-lg border border-dashed border-border/30 dark:border-white/[0.1]">
                       Nenhuma tag disponível
                     </div>
                   )}
