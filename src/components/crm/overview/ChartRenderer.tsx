@@ -469,13 +469,8 @@ export function ChartRenderer({
           <AreaChart data={areaData} margin={{ top: 10, right: 10, left: -20, bottom: 5 }}>
             <defs>
               <linearGradient id={`areaGradient-${cardId}`} x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor={MODERN_COLORS[0].solid} stopOpacity={0.3} />
-                <stop offset="60%" stopColor={MODERN_COLORS[0].solid} stopOpacity={0.08} />
-                <stop offset="100%" stopColor={MODERN_COLORS[0].solid} stopOpacity={0} />
-              </linearGradient>
-              <linearGradient id={`lineGradient-${cardId}`} x1="0" y1="0" x2="1" y2="0">
-                <stop offset="0%" stopColor={MODERN_COLORS[0].gradient[0]} />
-                <stop offset="100%" stopColor={MODERN_COLORS[0].gradient[1]} />
+                <stop offset="0%" stopColor="hsl(var(--muted-foreground))" stopOpacity={0.08} />
+                <stop offset="100%" stopColor="hsl(var(--muted-foreground))" stopOpacity={0} />
               </linearGradient>
             </defs>
             <XAxis 
@@ -510,25 +505,14 @@ export function ChartRenderer({
               type="monotone"
               dataKey="count"
               name="Quantidade"
-              stroke={`url(#lineGradient-${cardId})`}
+              stroke="hsl(var(--muted-foreground) / 0.25)"
               fillOpacity={1}
               fill={`url(#areaGradient-${cardId})`}
-              strokeWidth={2.5}
+              strokeWidth={1.5}
               animationBegin={0}
               animationDuration={800}
-              dot={{ 
-                r: 3, 
-                fill: MODERN_COLORS[0].solid,
-                stroke: 'hsl(var(--card))',
-                strokeWidth: 2,
-              }}
-              activeDot={{ 
-                r: 5, 
-                fill: MODERN_COLORS[0].solid,
-                stroke: 'white',
-                strokeWidth: 2,
-                className: 'drop-shadow-md'
-              }}
+              dot={false}
+              activeDot={false}
             />
           </AreaChart>
         </ResponsiveContainer>
