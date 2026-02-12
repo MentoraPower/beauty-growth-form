@@ -475,7 +475,7 @@ export default function LeadDetail() {
         {/* Tabs Navigation */}
         <LayoutGroup>
           <div className="relative">
-            <div className="flex gap-6 border-b border-black/10">
+            <div className="flex gap-6 pb-0">
               {tabs.map((tab) => (
                 <button
                   key={tab.id}
@@ -499,6 +499,8 @@ export default function LeadDetail() {
             </div>
           </div>
         </LayoutGroup>
+        {/* Separator line below tabs */}
+        <div className="h-px bg-border" />
 
         {/* Tab Content */}
         <div className="mt-4 flex-1">
