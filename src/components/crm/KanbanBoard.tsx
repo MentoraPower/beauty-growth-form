@@ -1337,7 +1337,7 @@ export function KanbanBoard() {
                 )}
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="center" className="w-72 bg-popover z-[9999] p-0 overflow-hidden">
+            <DropdownMenuContent align="end" sideOffset={8} className="w-72 bg-popover z-[9999] p-0 overflow-hidden">
               {/* Header */}
               <div className="px-4 py-3 border-b border-border bg-muted/30">
                 <div className="flex items-center justify-between">
