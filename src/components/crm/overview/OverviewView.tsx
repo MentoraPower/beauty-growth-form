@@ -132,6 +132,7 @@ function SortableCard({
   totalLeadCount,
   customFields,
   customFieldResponses,
+  skipAnimation,
 }: {
   card: OverviewCard;
   leads: Lead[];
@@ -148,6 +149,7 @@ function SortableCard({
   totalLeadCount?: number;
   customFields?: CustomField[];
   customFieldResponses?: CustomFieldResponse[];
+  skipAnimation?: boolean;
 }) {
   const {
     attributes,
@@ -209,13 +211,18 @@ function SortableCard({
         totalLeadCount={totalLeadCount}
         customFields={customFields}
         customFieldResponses={customFieldResponses}
+        skipAnimation={skipAnimation}
       />
     </div>
   );
 }
 
+// Module-level set to track which subOrigins have already animated
+const animatedSubOrigins = new Set<string>();
+
 export function OverviewView({ leads, pipelines, leadTags, subOriginId, onAddDialogOpenChange, addDialogOpen, pipelineCounts, totalLeadCount }: OverviewViewProps) {
   const [cards, setCards] = useState<OverviewCard[]>([]);
+  const [skipAnimation, setSkipAnimation] = useState(() => subOriginId ? animatedSubOrigins.has(subOriginId) : false);
   const [internalAddDialogOpen, setInternalAddDialogOpen] = useState(false);
   
   // Custom fields state
@@ -237,6 +244,22 @@ export function OverviewView({ leads, pipelines, leadTags, subOriginId, onAddDia
   const [containerWidth, setContainerWidth] = useState(0);
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
+
+  // Mark this subOrigin as animated after first render
+  useEffect(() => {
+    if (subOriginId && !animatedSubOrigins.has(subOriginId)) {
+      const timer = setTimeout(() => {
+        animatedSubOrigins.add(subOriginId);
+        setSkipAnimation(true);
+      }, 1000); // after animations complete
+      return () => clearTimeout(timer);
+    }
+  }, [subOriginId]);
+
+  // Update skipAnimation when subOriginId changes
+  useEffect(() => {
+    setSkipAnimation(subOriginId ? animatedSubOrigins.has(subOriginId) : false);
+  }, [subOriginId]);
 
   // Monitor container width
   useEffect(() => {
@@ -812,7 +835,7 @@ export function OverviewView({ leads, pipelines, leadTags, subOriginId, onAddDia
           <SortableContext items={sortedCards.map((c) => c.id)} strategy={rectSortingStrategy}>
             <div ref={containerRef} className="flex flex-wrap gap-4 pb-4 content-start overflow-hidden">
               {sortedCards.map((card) => (
-                <SortableCard
+                 <SortableCard
                   key={card.id}
                   card={card}
                   leads={leads}
@@ -829,6 +852,7 @@ export function OverviewView({ leads, pipelines, leadTags, subOriginId, onAddDia
                   totalLeadCount={totalLeadCount}
                   customFields={customFields}
                   customFieldResponses={customFieldResponses}
+                  skipAnimation={skipAnimation}
                 />
               ))}
             </div>

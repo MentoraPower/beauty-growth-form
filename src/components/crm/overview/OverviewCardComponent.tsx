@@ -51,6 +51,7 @@ interface OverviewCardComponentProps {
   totalLeadCount?: number;
   customFields?: CustomField[];
   customFieldResponses?: CustomFieldResponse[];
+  skipAnimation?: boolean;
 }
 
 
@@ -70,6 +71,7 @@ export function OverviewCardComponent({
   totalLeadCount,
   customFields = [],
   customFieldResponses = [],
+  skipAnimation = false,
 }: OverviewCardComponentProps) {
   const [isResizing, setIsResizing] = useState(false);
   const [resizeDirection, setResizeDirection] = useState<ResizeDirection | null>(null);
@@ -427,6 +429,7 @@ export function OverviewCardComponent({
             customFieldId={card.config?.customFieldId}
             customFields={customFields}
             customFieldResponses={customFieldResponses}
+            skipAnimation={skipAnimation}
           />
         ) : (
           <button
