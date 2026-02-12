@@ -249,10 +249,10 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
         {/* CRM Submenu Clip Container - clips the submenu animation */}
         <div
           style={{
-            left: 12 + sidebarCollapsedWidth + 12,
+            left: 12 + sidebarCollapsedWidth - 8,
             top: '45px',
             height: 'calc(100vh - 45px)',
-            width: submenuWidth + 8,
+            width: submenuWidth + 8 + 20,
             zIndex: 39,
             pointerEvents: crmSubmenuOpen ? 'auto' : 'none',
           }}
@@ -261,34 +261,37 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
           {/* CRM Submenu Panel - animated inside clip container */}
           <div
             style={{
-              width: submenuWidth,
-              transform: crmSubmenuOpen ? 'translateX(0px)' : `translateX(-${submenuWidth}px)`,
+              width: submenuWidth + 20,
+              transform: crmSubmenuOpen ? 'translateX(0px)' : `translateX(-${submenuWidth + 20}px)`,
               willChange: animationsEnabled ? 'transform' : 'auto',
+              paddingLeft: 20,
             }}
             className={cn(
-              "h-full overflow-hidden bg-card rounded-b-2xl border border-border border-t-0",
+              "h-full overflow-hidden",
               animationsEnabled && "transition-transform duration-300 ease-out"
             )}
           >
-            <div
-              className={cn(
-                "h-full",
-                animationsEnabled && "transition-opacity duration-200"
-              )}
-              style={{
-                width: submenuWidth,
-                minWidth: submenuWidth,
-                opacity: crmSubmenuOpen ? 1 : 0,
-                transitionDelay: (animationsEnabled && crmSubmenuOpen) ? '50ms' : '0ms',
-              }}
-            >
-              <div className="h-full px-2 py-2">
-                <MemoizedCRMOriginsPanel
-                  isOpen={crmSubmenuOpen}
-                  onClose={handleCloseCrmSubmenu}
-                  sidebarWidth={sidebarCollapsedWidth}
-                  embedded={true}
-                />
+            <div className="h-full bg-card rounded-b-2xl border border-border border-t-0">
+              <div
+                className={cn(
+                  "h-full",
+                  animationsEnabled && "transition-opacity duration-200"
+                )}
+                style={{
+                  width: submenuWidth,
+                  minWidth: submenuWidth,
+                  opacity: crmSubmenuOpen ? 1 : 0,
+                  transitionDelay: (animationsEnabled && crmSubmenuOpen) ? '50ms' : '0ms',
+                }}
+              >
+                <div className="h-full px-2 py-2">
+                  <MemoizedCRMOriginsPanel
+                    isOpen={crmSubmenuOpen}
+                    onClose={handleCloseCrmSubmenu}
+                    sidebarWidth={sidebarCollapsedWidth}
+                    embedded={true}
+                  />
+                </div>
               </div>
             </div>
           </div>
@@ -378,7 +381,7 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
           <main 
             style={{ 
               left: crmSubmenuOpen 
-                ? 12 + sidebarCollapsedWidth + 12 + submenuWidth + 8
+                ? 12 + sidebarCollapsedWidth - 8 + submenuWidth + 20 + 8
                 : 12 + sidebarCollapsedWidth + 12 + 8,
               top: '49px',
               right: 0,
