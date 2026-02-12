@@ -301,7 +301,7 @@ function SortableOriginItem({
                   <MoreVertical className="h-4 w-4 text-zinc-400" />
                 </button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-40 z-[9999] bg-popover">
+              <DropdownMenuContent align="end" className="w-40 z-[9999] bg-popover border-border/30 dark:border-white/[0.06]">
                 <DropdownMenuItem onClick={() => openEditOriginDialog(origin)}>
                   <Pencil className="h-4 w-4 mr-2" />
                   Editar
@@ -404,7 +404,7 @@ function SortableOriginItem({
                         align="start" 
                         side="right"
                         sideOffset={8}
-                        className="w-56 z-[9999] bg-popover p-1.5 rounded-xl shadow-xl border border-border/40"
+                        className="w-56 z-[9999] bg-popover p-1.5 rounded-xl shadow-xl border border-border/30 dark:border-white/[0.06]"
                       >
                         {/* Export */}
                         <DropdownMenuItem 
