@@ -17,14 +17,14 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { LazyAssignMemberDropdown } from "./LazyAssignMemberDropdown";
+
 
 interface KanbanCardProps {
   lead: Lead;
   isDragging?: boolean;
   subOriginId?: string | null;
   tags?: LeadTag[];
-  assignedMemberInfo?: { name: string | null; photo_url: string | null };
+  
 }
 
 // Custom animateLayoutChanges - disable animations after drop for instant positioning
@@ -62,7 +62,7 @@ const formatTimeAgo = (date: Date): string => {
   return "agora";
 };
 
-export const KanbanCard = memo(function KanbanCard({ lead, isDragging: isDraggingOverlay, subOriginId, tags = [], assignedMemberInfo }: KanbanCardProps) {
+export const KanbanCard = memo(function KanbanCard({ lead, isDragging: isDraggingOverlay, subOriginId, tags = [] }: KanbanCardProps) {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const dragStartPos = useRef<{ x: number; y: number } | null>(null);
@@ -190,13 +190,7 @@ export const KanbanCard = memo(function KanbanCard({ lead, isDragging: isDraggin
         {/* Icons and time */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <LazyAssignMemberDropdown 
-              leadId={lead.id} 
-              assignedTo={lead.assigned_to} 
-              size="sm"
-              assignedMemberName={assignedMemberInfo?.name}
-              assignedMemberPhoto={assignedMemberInfo?.photo_url}
-            />
+            
             {hasWhatsapp && (
               <Tooltip>
                 <TooltipTrigger asChild>

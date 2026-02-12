@@ -126,7 +126,7 @@ export function KanbanBoard() {
   const isReorderingRef = useRef(false);
   const [searchQuery, setSearchQuery] = useState(urlSearchQuery);
   const [filterTags, setFilterTags] = useState<string[]>([]);
-  const [filterAssignedTo, setFilterAssignedTo] = useState<string[]>([]);
+  
   const [datePreset, setDatePreset] = useState<"all" | "today" | "yesterday" | "7days" | "30days" | "custom">("all");
   const [startDate, setStartDate] = useState<Date | undefined>(undefined);
   const [endDate, setEndDate] = useState<Date | undefined>(undefined);
@@ -426,26 +426,8 @@ export function KanbanBoard() {
     enabled: !!subOriginId,
   });
 
-  // Fetch team members for displaying assigned member info on cards
-  const { data: teamMembersData } = useQuery({
-    queryKey: ["team-members-for-cards"],
-    queryFn: async () => {
-      const { data, error } = await supabase.functions.invoke("list-team-members");
-      if (error) throw new Error(error.message);
-      return (data?.members || []) as { id: string; name: string | null; user_id: string; photo_url: string | null }[];
-    },
-    staleTime: 60000,
-    gcTime: 300000,
-  });
 
-  // Create a map of user_id -> member info for quick lookup
-  const teamMembersMap = useMemo(() => {
-    const map = new Map<string, { name: string | null; photo_url: string | null }>();
-    teamMembersData?.forEach(member => {
-      map.set(member.user_id, { name: member.name, photo_url: member.photo_url });
-    });
-    return map;
-  }, [teamMembersData]);
+
 
   // Extract leads and tags from combined query
   const leads = useMemo(() => 
@@ -1088,12 +1070,7 @@ export function KanbanBoard() {
       );
     }
     
-    // Filter by assigned member
-    if (filterAssignedTo.length > 0) {
-      baseLeads = baseLeads.filter(lead => 
-        lead.assigned_to && filterAssignedTo.includes(lead.assigned_to)
-      );
-    }
+    
     
     // Filter by tags
     if (filterTags.length > 0) {
@@ -1142,13 +1119,12 @@ export function KanbanBoard() {
     }
     
     return baseLeads;
-  }, [localLeads, leads, searchQuery, filterAssignedTo, filterTags, leadTags, datePreset, startDate, endDate]);
+  }, [localLeads, leads, searchQuery, filterTags, leadTags, datePreset, startDate, endDate]);
 
-  const hasActiveFilters = filterTags.length > 0 || filterAssignedTo.length > 0 || datePreset !== "all";
+  const hasActiveFilters = filterTags.length > 0 || datePreset !== "all";
 
   const clearFilters = () => {
     setFilterTags([]);
-    setFilterAssignedTo([]);
     setDatePreset("all");
     setStartDate(undefined);
     setEndDate(undefined);
@@ -1332,7 +1308,7 @@ export function KanbanBoard() {
                 Filtros
                 {hasActiveFilters && (
                   <span className="ml-1 px-1.5 py-0.5 text-[10px] bg-white/20 rounded-full">
-                    {filterTags.length + filterAssignedTo.length + (datePreset !== "all" ? 1 : 0)}
+                    {filterTags.length + (datePreset !== "all" ? 1 : 0)}
                   </span>
                 )}
               </Button>
@@ -1759,7 +1735,6 @@ export function KanbanBoard() {
                       dropIndicator={dropIndicator}
                       activePipelineId={activeLead?.pipeline_id}
                       tagsMap={tagsMap}
-                      teamMembersMap={teamMembersMap}
                     />
                   )}
                   {pipelines.map((pipeline) => (
@@ -1774,7 +1749,7 @@ export function KanbanBoard() {
                       dropIndicator={dropIndicator}
                       activePipelineId={activeLead?.pipeline_id}
                       tagsMap={tagsMap}
-                      teamMembersMap={teamMembersMap}
+                      
                     />
                   ))}
                 </div>
@@ -1788,7 +1763,7 @@ export function KanbanBoard() {
                     lead={activeLead} 
                     isDragging 
                     tags={tagsMap.get(activeLead.id) || []} 
-                    assignedMemberInfo={activeLead.assigned_to ? teamMembersMap.get(activeLead.assigned_to) : undefined}
+                    
                   />
                 </div>
               ) : null}
