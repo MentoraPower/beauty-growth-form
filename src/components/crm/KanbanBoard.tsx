@@ -1673,8 +1673,14 @@ export function KanbanBoard() {
       {/* Overview View */}
       {subOriginId && activeView === "overview" && (
         <Suspense fallback={
-          <div className="flex-1 flex items-center justify-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+          <div className="flex flex-wrap gap-4 p-0 flex-1">
+            {[{ w: "50%", h: 180 }, { w: "50%", h: 180 }, { w: "33.33%", h: 200 }, { w: "33.33%", h: 200 }, { w: "33.33%", h: 200 }].map((s, i) => (
+              <div key={i} className="animate-pulse bg-muted/60 rounded-xl p-4" style={{ width: `calc(${s.w} - 8px)`, height: s.h }}>
+                <Skeleton className="h-4 w-24 mb-3" />
+                <Skeleton className="h-3 w-16 mb-4" />
+                <Skeleton className="h-16 w-full rounded-md" />
+              </div>
+            ))}
           </div>
         }>
           <OverviewView
@@ -1693,8 +1699,9 @@ export function KanbanBoard() {
       {/* Calendário View */}
       {subOriginId && activeView === "calendario" && (
         <Suspense fallback={
-          <div className="flex-1 flex items-center justify-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+          <div className="flex-1 p-4">
+            <Skeleton className="h-8 w-48 mb-4" />
+            <Skeleton className="h-[400px] w-full rounded-xl" />
           </div>
         }>
           <CalendarPageLazy />
