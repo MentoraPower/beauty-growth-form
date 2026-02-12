@@ -1543,6 +1543,8 @@ export function KanbanBoard() {
             onSettingsClick={() => setSettingsDialogOpen(true)}
             subOriginId={subOriginId}
           />
+          {/* Full-width separator line - uses negative margin to break out of px-3 padding */}
+          <div className="h-px bg-border -mx-3 mb-2" />
           
           {/* Settings Dialog */}
           <Dialog open={settingsDialogOpen} onOpenChange={setSettingsDialogOpen}>
