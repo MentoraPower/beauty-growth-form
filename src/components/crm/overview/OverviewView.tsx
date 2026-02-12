@@ -769,11 +769,32 @@ export function OverviewView({ leads, pipelines, leadTags, subOriginId, onAddDia
   const activeCard = activeId ? cards.find((c) => c.id === activeId) : null;
   const sortedCards = [...cards].sort((a, b) => a.order - b.order);
 
-  // Show loading state
+  // Show skeleton loading state
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-full">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+      <div className="flex flex-wrap gap-4 p-0 content-start">
+        {/* Skeleton cards mimicking overview layout */}
+        {[
+          { w: "50%", h: 180 },
+          { w: "50%", h: 180 },
+          { w: "33.33%", h: 200 },
+          { w: "33.33%", h: 200 },
+          { w: "33.33%", h: 200 },
+        ].map((s, i) => (
+          <div
+            key={i}
+            className="rounded-xl border border-border/30 dark:border-white/[0.06] bg-card overflow-hidden"
+            style={{ width: `calc(${s.w} - 8px)`, height: s.h }}
+          >
+            <div className="p-4 space-y-3">
+              <div className="h-4 w-1/3 bg-muted/60 rounded animate-pulse" />
+              <div className="h-3 w-1/2 bg-muted/40 rounded animate-pulse" />
+            </div>
+            <div className="px-4 pb-4 flex-1">
+              <div className="h-full w-full bg-muted/30 rounded-lg animate-pulse" />
+            </div>
+          </div>
+        ))}
       </div>
     );
   }
