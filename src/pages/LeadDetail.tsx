@@ -22,7 +22,7 @@ import { LeadCustomFields } from "@/components/crm/LeadCustomFields";
 import { CustomFieldsPanel } from "@/components/crm/CustomFieldsPanel";
 import { OnboardingSection, OnboardingBuilderData } from "@/components/onboarding/OnboardingSection";
 import { OnboardingFormBuilder } from "@/components/onboarding/OnboardingFormBuilder";
-import { CalendarDropdown } from "@/components/crm/CalendarDropdown";
+
 
 
 import {
@@ -414,11 +414,6 @@ export default function LeadDetail() {
                   <h1 className="text-xl font-bold leading-tight">
                     {lead.name === "Incompleto" ? "incompleto" : lead.name}
                   </h1>
-                                   <CalendarDropdown
-                                    leadName={lead.name}
-                                    leadEmail={lead.email}
-                                    subOriginId={lead.sub_origin_id}
-                                  />
                 </div>
               </div>
             </div>
