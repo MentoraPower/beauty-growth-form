@@ -832,7 +832,7 @@ export function ChartRenderer({
             </div>
             
             {/* Legend - compact */}
-            <div className="flex items-center justify-center gap-2 pt-2 mt-2 border-t border-border/20 shrink-0">
+            <div className="flex items-center justify-center gap-2 pt-2 mt-2 border-t border-border/10 dark:border-white/[0.06] shrink-0">
               <span className="text-[9px] text-muted-foreground font-medium">Menos</span>
               <div className="flex gap-1">
                 <div className="w-3 h-3 rounded-sm" style={{ background: isDark ? 'rgba(255, 255, 255, 0.15)' : 'rgba(0, 0, 0, 0.06)' }} />
