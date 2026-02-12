@@ -61,7 +61,7 @@ export function WorkspaceDropdown() {
             <ChevronDown className={`h-3.5 w-3.5 text-muted-foreground transition-transform duration-200 ${isDropdownOpen ? 'rotate-180' : ''}`} />
           </button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="start" className="w-56">
+        <DropdownMenuContent align="start" className="w-56 bg-popover border border-border">
           <div className="px-2 py-1.5 mb-1">
             <div className="flex items-center gap-2 px-2.5 py-2 rounded-lg bg-sidebar-accent">
               <div className="h-5 w-5 rounded-[4px] bg-gradient-to-br from-orange-500 to-orange-400 flex items-center justify-center flex-shrink-0">
