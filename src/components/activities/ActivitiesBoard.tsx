@@ -112,7 +112,7 @@ export function ActivitiesBoard({ leadId, leadName, currentPipelineId, currentSu
       </Card>
 
       {/* Two columns layout - left narrower */}
-      <div className="grid grid-cols-1 lg:grid-cols-[480px_1fr] gap-4 h-[calc(100vh-380px)]">
+      <div className="grid grid-cols-1 lg:grid-cols-[480px_1fr] gap-4 h-[calc(100vh-380px)] min-h-0 overflow-hidden">
         {/* Left block - Activities List */}
         <Card className="border-[#00000010] dark:border-white/10 bg-[#fafafa] dark:bg-card shadow-none flex flex-col overflow-hidden">
           <CardContent className="p-4 flex flex-col h-full min-h-0">
