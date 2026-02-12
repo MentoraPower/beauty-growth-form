@@ -193,11 +193,11 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
           ref={sidebarRef}
           style={{ 
             left: 12,
-            top: 'calc(45px + 12px)',
-            height: 'calc(100vh - 45px - 1.5rem)',
+            top: '45px',
+            height: 'calc(100vh - 45px)',
             borderRight: '1px solid rgba(255, 255, 255, 0.125)',
           }}
-          className="group hidden lg:flex flex-col fixed bg-black overflow-hidden z-50 rounded-2xl w-16 hover:w-[180px] transition-[width] duration-200 ease-out"
+          className="group hidden lg:flex flex-col fixed bg-black overflow-hidden z-50 rounded-b-2xl w-16 hover:w-[180px] transition-[width] duration-200 ease-out"
         >
           <div className="flex flex-col h-full relative">
             {/* Logo */}
@@ -250,8 +250,8 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
         <div
           style={{
             left: 12 + sidebarCollapsedWidth + 12,
-            top: 'calc(45px + 12px)',
-            height: 'calc(100vh - 45px - 1.5rem)',
+            top: '45px',
+            height: 'calc(100vh - 45px)',
             width: submenuWidth + 8,
             zIndex: 39,
             pointerEvents: crmSubmenuOpen ? 'auto' : 'none',
@@ -266,7 +266,7 @@ const DashboardLayout = memo(function DashboardLayout({ children }: DashboardLay
               willChange: animationsEnabled ? 'transform' : 'auto',
             }}
             className={cn(
-              "h-full overflow-hidden bg-card rounded-2xl border border-border",
+              "h-full overflow-hidden bg-card rounded-b-2xl border border-border border-t-0",
               animationsEnabled && "transition-transform duration-300 ease-out"
             )}
           >
